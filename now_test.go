@@ -5,10 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
+
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/now/nowtest"
 
@@ -295,5 +300,150 @@ func TestNowParsesOnlyValidWeeklyResults(t *testing.T) {
 	}
 	if _, err := weeklyresults.Parse([]byte(`{}`)); err == nil {
 		t.Fatal("weeklyresults accepted an empty export")
+	}
+}
+
+type nowInput struct {
+	race        raceInput
+	held        nowHeld
+	live        heldSeasonFeed[leaguefeed.Lineups]
+	projections heldSeasonFeed[[]marketfeeds.Feed]
+	at          time.Time
+	reportWeek  int
+	current     int
+	week        int
+}
+
+func (in nowInput) snapshot() nowapp.Snapshot {
+	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(in.held.schedules))
+	for k, v := range in.held.schedules {
+		schedules[k] = nowFeed(v)
+	}
+	firsts := make(map[int]nowapp.FirstScore, len(in.held.firsts.weeks))
+	for k, v := range in.held.firsts.weeks {
+		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
+	}
+	return nowapp.Snapshot{Race: in.race.snapshot(), Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(in.held.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: in.held.firsts.copies}}, Live: nowFeed(in.live), Projections: nowFeed(in.projections), At: in.at, ReportWeek: in.reportWeek, Current: in.current, Week: in.week}
+}
+func buildNow(in nowInput) (NowBoard, error) {
+	b, e := nowapp.Build(in.snapshot())
+	return wireNow(b), e
+}
+
+func TestNowWireTwins(t *testing.T) {
+	t.Parallel()
+	var board nowapp.Board
+	n := 0
+	fillWire(reflect.ValueOf(&board).Elem(), &n)
+	if string(sourcesWire(t, board)) != string(sourcesWire(t, wireNow(board))) {
+		t.Fatal("Now converter lost a field")
+	}
+	var live nowapp.LiveGameView
+	// Game payloads are shared transport types; populate each root-owned envelope twin.
+	fillWire(reflect.ValueOf(&live).Elem().FieldByName("Box"), &n)
+	var player nowapp.SpinePlayer
+	fillWire(reflect.ValueOf(&player).Elem(), &n)
+	live.Spine = []nowapp.SpineEntry{{Player: player, Game: "BUF at LAR", Play: livegame.Play{ID: "play", At: raceHeldAt}}}
+	live.WeekSpine = live.Spine
+	live.Source, live.AsOf, live.Failure, live.DetailAsOf, live.DetailFailure = "source", "at", "failure", "detail at", "detail failure"
+	live.Unmatched, live.WeekHeld, live.WeekGames, live.Active = 3, 4, 5, true
+	for _, v := range []nowapp.LiveGameView{live, {}, {Spine: []nowapp.SpineEntry{}, WeekSpine: []nowapp.SpineEntry{}}} {
+		if string(sourcesWire(t, v)) != string(sourcesWire(t, wireLive(v))) {
+			t.Fatal("Live game converter lost a field or slice shape")
+		}
+	}
+}
+
+func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
+	t.Parallel()
+	a := targetTestApp(t)
+	fixture := realNow(t, 5)
+	if _, err := a.rulebook.Sync(a.ctx, fixture.race.config); err != nil {
+		t.Fatal(err)
+	}
+	a.race, a.now, a.seasonLineups = fixture.race.held, fixture.held, fixture.live
+	a.now.firsts = scoreFirsts{weeks: map[int]firstScores{5: {at: raceHeldAt, week: fixture.race.held.weeks.value[4]}}, copies: 1}
+	in := a.nowReadInput(5, 0, "")
+	a.seasonMu.Lock()
+	delete(a.now.schedules, 5)
+	delete(a.now.firsts.weeks, 5)
+	a.now.byes.refreshError = "replaced"
+	a.seasonMu.Unlock()
+	if len(in.Held.Schedules) != 1 || len(in.Held.Firsts.Weeks) != 1 || in.Held.Byes.RefreshError != "" {
+		t.Fatal("snapshot retained mutable root state")
+	}
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	done := make(chan error, 1)
+	go func() { _, err := nowapp.Build(in); done <- err }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("construction waited on season lock")
+	}
+}
+
+func TestNowConcurrentRefreshAndRead(t *testing.T) {
+	t.Parallel()
+	a, transport, _, _ := seasonTestApp(t)
+	if _, err := a.rulebook.Sync(a.ctx, realRace(t, "2026").config); err != nil {
+		t.Fatal(err)
+	}
+	a.week.Number = 5
+	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
+	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
+	published, release := make(chan struct{}), make(chan struct{})
+	var once sync.Once
+	a.seasonPause = func(ctx context.Context, _ time.Duration) error {
+		once.Do(func() {
+			close(published)
+			select {
+			case <-release:
+			case <-ctx.Done():
+			}
+		})
+		return ctx.Err()
+	}
+	defer close(release)
+	refreshed := make(chan error, 1)
+	go func() { refreshed <- a.TargetNowRefresh(5, true) }()
+	select {
+	case <-published:
+	case <-time.After(5 * time.Second):
+		t.Fatal("refresh did not publish")
+	}
+	firstRead, readDone := make(chan struct{}, 1), make(chan error, 1)
+	go func() {
+		for i := 0; i < 12; i++ {
+			if _, err := a.TargetNow(0, 0, ""); err != nil {
+				readDone <- err
+				return
+			}
+			if i == 0 {
+				firstRead <- struct{}{}
+			}
+		}
+		readDone <- nil
+	}()
+	select {
+	case <-firstRead:
+	case err := <-readDone:
+		t.Fatalf("reading during refresh: %v", err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("read blocked behind refresh")
+	}
+	release <- struct{}{}
+	if err := <-refreshed; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-readDone; err != nil {
+		t.Fatal(err)
+	}
+	in := a.nowReadInput(5, 0, "")
+	if in.Held.Schedules[5].FetchedAt.IsZero() || in.Held.Byes.FetchedAt.IsZero() || in.Race.Held.Weeks.FetchedAt.IsZero() {
+		t.Fatal("refresh failed to publish feeds")
 	}
 }

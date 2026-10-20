@@ -2,9 +2,11 @@ package now
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -116,5 +118,36 @@ func TestWeekSpineNewestFirstMarkedAndCounted(t *testing.T) {
 	if order != "dcba" || entries[0].Game != "BUF at LAR" || entries[1].Game != "DET at ARI" ||
 		!entries[0].Player.Mine || entries[1].Player.Mine {
 		t.Fatalf("order %s entries %+v", order, entries)
+	}
+}
+
+func TestLiveSnapshotParallelConstructionDoesNotMutateInputs(t *testing.T) {
+	g, err := livegame.ParseSummary(liveFixture(t, "espn-summary-401872991"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 12, 0, 0, 0, 0, time.UTC)
+	in := LiveSnapshot{Board: livegame.Held{Games: []livegame.Game{g}, At: at, Source: "ESPN"}, Details: map[string]livegame.Detail{g.ID: {Game: g, At: at}}, Follow: g.ID, Zone: time.UTC}
+	before, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for range 8 {
+		wg.Go(func() {
+			v := LiveReading(in)
+			if v.Followed == nil || v.DetailAsOf == "" {
+				t.Error("lost held details")
+			}
+			_ = HeldWeekGames(in)
+		})
+	}
+	wg.Wait()
+	after, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatal("construction mutated live snapshot")
 	}
 }

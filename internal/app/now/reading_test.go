@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -658,4 +659,28 @@ func realRace(t *testing.T, year string) raceapp.Snapshot {
 func realNow(t *testing.T, week int) Snapshot {
 	d := nowtest.Load(t)
 	return Snapshot{Race: realRace(t, "2025"), Week: week, Current: 5, At: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Held: Held{Schedules: map[int]Feed[[]nflschedule.RawWeek]{5: held([]nflschedule.RawWeek{d.Schedule})}, Byes: held(d.Byes)}, Projections: held([]marketfeeds.Feed{d.Projections})}
+}
+
+func TestSnapshotParallelConstructionDoesNotMutateInputs(t *testing.T) {
+	in := realNow(t, 5)
+	before, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Go(func() {
+			if _, err := Build(in); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	wg.Wait()
+	after, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatal("construction mutated the published snapshot")
+	}
 }

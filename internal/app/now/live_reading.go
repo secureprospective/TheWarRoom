@@ -205,3 +205,27 @@ func SeedLiveGames(held Feed[[]nflschedule.RawWeek], at time.Time) livegame.Held
 	slices.SortFunc(out, func(a, b livegame.Game) int { return a.Kickoff.Compare(b.Kickoff) })
 	return livegame.Held{Games: out, Source: "Held MFL NFL schedule", At: held.FetchedAt, Failure: held.RefreshError}
 }
+
+func HeldMatchupStarters(live leaguefeed.Lineups, weeks []leaguefeed.WeekResult, week int, mine string) map[string]bool {
+	if live.Week == week {
+		if ids := MatchupStarterIDs(live, mine); len(ids) > 0 {
+			return ids
+		}
+	}
+	out := map[string]bool{}
+	for _, w := range weeks {
+		if w.Week != week {
+			continue
+		}
+		if g, ok := findGame(w, mine); ok {
+			for _, side := range []leaguefeed.Side{g.Home, g.Away} {
+				for _, p := range side.Players {
+					if p.Starter {
+						out[p.ID.String()] = side.Franchise == mine
+					}
+				}
+			}
+		}
+	}
+	return out
+}

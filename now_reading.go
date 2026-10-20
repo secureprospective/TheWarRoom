@@ -1,8 +1,10 @@
 package main
 
 import (
-	"maps"
 	"time"
+
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
@@ -10,48 +12,28 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
-type nowInput struct {
-	race        raceInput
-	held        nowHeld
-	live        heldSeasonFeed[leaguefeed.Lineups]
-	projections heldSeasonFeed[[]marketfeeds.Feed]
-	at          time.Time
-	reportWeek  int
-	current     int
-	week        int
-}
-
 func (a *App) nowReadInput(week, reportWeek int, mine string) nowapp.Snapshot {
 	current := a.marketWeek()
 	projections := a.heldMarketForWeek(current)[marketfeeds.Projections]
 	a.seasonMu.Lock()
-	held, now, live := a.race, a.now, a.seasonLineups
-	held.power = nil // Now does not read power reports.
-	now.schedules = maps.Clone(now.schedules)
-	now.firsts.weeks = maps.Clone(now.firsts.weeks)
+	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(a.now.schedules))
+	for k, v := range a.now.schedules {
+		schedules[k] = nowFeed(v)
+	}
+	firsts := make(map[int]nowapp.FirstScore, len(a.now.firsts.weeks))
+	for k, v := range a.now.firsts.weeks {
+		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
+	}
+	in := nowapp.Snapshot{Race: raceapp.Snapshot{Held: raceapp.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.seasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
 	a.seasonMu.Unlock()
 	a.lookupMu.Lock()
-	lookup, hasLookup := a.lookup, a.hasLookup
+	in.Race.Lookup, in.Race.HasLookup = a.lookup, a.hasLookup
 	a.lookupMu.Unlock()
-	return (nowInput{race: raceInput{held: held, config: a.rulebook.ActiveConfig(), lookup: lookup, hasLookup: hasLookup, mine: mine, zone: time.Local}, held: now, live: live, projections: projections, at: a.timeNow(), current: current, week: week, reportWeek: reportWeek}).snapshot()
+	in.Race.Config, in.Race.Mine, in.Race.Zone = a.rulebook.ActiveConfig(), mine, time.Local
+	return in
 }
 func nowFeed[T any](f heldSeasonFeed[T]) nowapp.Feed[T] {
 	return nowapp.Feed[T]{Value: f.value, FetchedAt: f.fetchedAt, RefreshError: f.refreshError, ReadPending: f.readPending}
-}
-func (in nowInput) snapshot() nowapp.Snapshot {
-	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(in.held.schedules))
-	for k, v := range in.held.schedules {
-		schedules[k] = nowFeed(v)
-	}
-	firsts := make(map[int]nowapp.FirstScore, len(in.held.firsts.weeks))
-	for k, v := range in.held.firsts.weeks {
-		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
-	}
-	return nowapp.Snapshot{Race: in.race.snapshot(), Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(in.held.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: in.held.firsts.copies}}, Live: nowFeed(in.live), Projections: nowFeed(in.projections), At: in.at, ReportWeek: in.reportWeek, Current: in.current, Week: in.week}
-}
-func buildNow(in nowInput) (NowBoard, error) {
-	b, e := nowapp.Build(in.snapshot())
-	return wireNow(b), e
 }
 func wireNow(b nowapp.Board) NowBoard {
 	return NowBoard{ReportWeek: b.ReportWeek, ReportWeeks: wireChoices(b.ReportWeeks), Week: b.Week, Weeks: wireChoices(b.Weeks), Matchup: wireReport(b.Matchup), Board: wireBoard(b.Board), Waiting: b.Waiting}
@@ -73,3 +55,36 @@ func liveWeekUnplayed(l heldSeasonFeed[leaguefeed.Lineups], s map[int]heldSeason
 	return nowapp.LiveWeekUnplayed(nowFeed(l), schedules, at)
 }
 func possessive(s string) string { return nowapp.Possessive(s) }
+
+// ReportEntity ties a literal display name to its held identity, including names in prose.
+type ReportEntity struct {
+	Text string `json:"text"`
+	Kind string `json:"kind"`
+	ID   string `json:"id"`
+}
+
+func attachReportEntities(r *Report, entities []ReportEntity) {
+	s := report.Report{Columns: r.Columns, Title: r.Title, Note: r.Note, How: r.How}
+	for _, row := range r.Rows {
+		s.Rows = append(s.Rows, report.Row{Cells: row.Cells, Group: row.Group})
+	}
+	for _, row := range r.Summary {
+		s.Summary = append(s.Summary, report.Row{Cells: row.Cells, Group: row.Group})
+	}
+	for _, e := range r.Entities {
+		s.Entities = append(s.Entities, report.Entity(e))
+	}
+	es := make([]report.Entity, len(entities))
+	for i, e := range entities {
+		es[i] = report.Entity(e)
+	}
+	nowapp.AttachReportEntities(&s, es)
+	if s.Entities == nil {
+		r.Entities = nil
+		return
+	}
+	r.Entities = make([]ReportEntity, len(s.Entities))
+	for i, e := range s.Entities {
+		r.Entities[i] = ReportEntity(e)
+	}
+}

@@ -9,7 +9,6 @@ import (
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 type SpinePlayer struct {
@@ -28,28 +27,9 @@ type SpineEntry struct {
 func (a *App) heldMatchupStarters(mine string) map[string]bool {
 	week := a.marketWeek()
 	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	if a.seasonLineups.value.Week == week {
-		if ids := nowapp.MatchupStarterIDs(a.seasonLineups.value, mine); len(ids) > 0 {
-			return ids
-		}
-	}
-	out := map[string]bool{}
-	for _, w := range a.race.weeks.value {
-		if w.Week != week {
-			continue
-		}
-		if g, ok := findGame(w, mine); ok {
-			for _, side := range []leaguefeed.Side{g.Home, g.Away} {
-				for _, p := range side.Players {
-					if p.Starter {
-						out[p.ID.String()] = side.Franchise == mine
-					}
-				}
-			}
-		}
-	}
-	return out
+	live, weeks := a.seasonLineups.value, a.race.weeks.value
+	a.seasonMu.Unlock()
+	return nowapp.HeldMatchupStarters(live, weeks, week, mine)
 }
 
 // liveGameSpines fills the followed game's spine and the week's: every held play (followed
