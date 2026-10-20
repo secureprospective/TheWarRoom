@@ -11,3 +11,16 @@ GUIDES/
 WORK_LOGS/
 frontend/package.json.md5
 /TheWarRoom
+
+# Local-only state (purge 2026-10-20)
+.worktrees/
+.cache/
+.phase-tmp/
+.tmp/
+.env
+.env.*
+!.env.example
+*.db
+*.db-wal
+*.db-shm
+.DS_Store
