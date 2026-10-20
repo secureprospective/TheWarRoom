@@ -278,3 +278,26 @@ func TestNativeBidClockRechecksLegalityAndClosesUnawardableBids(t *testing.T) {
 		t.Fatal("an illegal bid signed a contract")
 	}
 }
+
+func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
+	t.Parallel()
+	for _, action := range []string{"place", "raise", "withdraw"} {
+		t.Run(action, func(t *testing.T) {
+			f := bidApp(t)
+			bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
+			f.now = bid.RecordedAt.Add(24 * time.Hour)
+			var err error
+			switch action {
+			case "place":
+				err = f.tryPlace(t, "owner.two", "franchise.02", "5004", 7*million, 1)
+			case "raise":
+				_, err = f.raise(t, "owner.one", "franchise.01", bid, 6*million, 1)
+			case "withdraw":
+				err = f.withdraw(t, "owner.one", "franchise.01", bid)
+			}
+			if err == nil || !strings.Contains(err.Error(), "closed") {
+				t.Fatalf("%s at deadline: %v", action, err)
+			}
+		})
+	}
+}

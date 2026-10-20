@@ -139,6 +139,9 @@ func (x *bidExecution) withdraw(raw *RawCommand) error {
 	if auction.Decided || !auction.Bids[j].live() || auction.Bids[j].Franchise != args.Franchise {
 		return fmt.Errorf("choose your own bid that is still standing")
 	}
+	if err := x.auctionOpen(auction); err != nil {
+		return err
+	}
 	raw.Args.BidOutcome = &BidOutcome{Player: auction.Player, Season: x.rules.Season}
 	return nil
 }
@@ -171,6 +174,9 @@ func (x *bidExecution) bidBar(player, franchise string) error {
 
 // judge runs the bid rules, then the roster and the cap, and returns what the app records about the bid.
 func (x *bidExecution) judge(player, franchise string, auction *bidAuction, p nativecheck.BidProposal) (*BidOutcome, error) {
+	if err := x.auctionOpen(auction); err != nil {
+		return nil, err
+	}
 	policy, err := nativecheck.NewBidPolicy(x.rules)
 	if err != nil {
 		return nil, fmt.Errorf("read bid rules: %w", err)
@@ -318,4 +324,18 @@ func franchiseOf(bids []bidRecord, id string) string {
 		}
 	}
 	return ""
+}
+
+func (x *bidExecution) auctionOpen(auction *bidAuction) error {
+	if auction == nil {
+		return nil
+	}
+	stand := bidStandFor(x.rules)
+	if stand.State != leaguerules.IsKnown || stand.Value <= 0 {
+		return fmt.Errorf("the bid closing time needs a ruling")
+	}
+	if !x.now.Before(auction.standingAt().Add(stand.Value)) {
+		return fmt.Errorf("bidding has closed; this auction is waiting for a decision")
+	}
+	return nil
 }
