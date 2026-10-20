@@ -115,6 +115,7 @@ linters:
             - "!**/internal/app/scoring/**"
             - "!**/internal/app/sources/**"
             - "!**/internal/app/market/**"
+            - "!**/internal/app/research/**"
             - "!**/internal/app/report/**"
           allow:
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -208,6 +209,19 @@ linters:
           allow:
             - github.com/secureprospective/TheWarRoom/internal/app/market$
             - github.com/secureprospective/TheWarRoom/internal/app/market/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-research-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/research/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/research$
+            - github.com/secureprospective/TheWarRoom/internal/app/research/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
           deny:
