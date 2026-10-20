@@ -2,6 +2,8 @@ module github.com/secureprospective/TheWarRoom
 
 go 1.26.4
 
+toolchain go1.26.10
+
 require (
 	github.com/parquet-go/parquet-go v0.32.0
 	github.com/wailsapp/wails/v2 v2.13.0
