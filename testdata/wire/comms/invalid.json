@@ -1,0 +1,39 @@
+{
+  "Board": {
+    "feed": {
+      "id": "",
+      "title": "",
+      "note": "",
+      "status": "",
+      "source": "",
+      "asOf": "",
+      "how": "",
+      "columns": null,
+      "rows": null,
+      "summary": null,
+      "link": null
+    },
+    "transactions": {
+      "id": "",
+      "title": "",
+      "note": "",
+      "status": "",
+      "source": "",
+      "asOf": "",
+      "how": "",
+      "columns": null,
+      "rows": null,
+      "summary": null,
+      "link": null
+    },
+    "events": null,
+    "boardNote": "",
+    "leagueTalk": "",
+    "boardPosts": null,
+    "team": "",
+    "kind": "",
+    "teams": null,
+    "kinds": null
+  },
+  "Error": "league feed: invalid kind \"post\""
+}

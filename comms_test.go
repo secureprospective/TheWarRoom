@@ -399,3 +399,81 @@ func TestCommsMissingTermsAndSources(t *testing.T) {
 		t.Fatal(out, err)
 	}
 }
+
+func TestCommsBindingGoldens(t *testing.T) {
+	zone := time.Local
+	time.Local = time.UTC
+	t.Cleanup(func() { time.Local = zone })
+	in := realComms(t)
+	a := targetTestApp(t)
+	a.seasonTransactions, a.commsBoards, a.lookup = in.transactions, in.boards, in.lookup
+	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name  string
+		scope RawCommsScope
+	}{
+		{"all", RawCommsScope{}}, {"trade", RawCommsScope{Kind: "trade", Team: "0001"}},
+		{"invalid", RawCommsScope{Kind: "post"}}, {"unknown", RawCommsScope{Team: "9999"}},
+	} {
+		board, err := a.TargetComms(tc.scope)
+		checkCommsGolden(t, tc.name, struct {
+			Board CommsBoard
+			Error string
+		}{board, commsError(err)})
+	}
+	opened := ""
+	a.openURL = func(_ context.Context, url string) { opened = url }
+	for _, destination := range []string{"league-board", "polls", "invalid"} {
+		opened = ""
+		err := a.TargetOpenComms(destination)
+		checkCommsGolden(t, "open-"+destination, struct{ URL, Error string }{opened, commsError(err)})
+	}
+	keyring.MockInit()
+	fresh, transport, pauses, _ := seasonTestApp(t)
+	if err := fresh.keyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+		t.Fatal(err)
+	}
+	err := fresh.TargetCommsRefresh(true)
+	checkCommsGolden(t, "refresh", struct {
+		Error           string
+		Requests, Keyed []string
+		Pauses          int
+	}{
+		commsError(err), transport.requests, transport.keyed, len(*pauses)})
+}
+
+func commsError(err error) string {
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+func checkCommsGolden[T any](t *testing.T, name string, value T) {
+	t.Helper()
+	got, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = append(got, '\n')
+	dir := "testdata/wire/comms"
+	path := filepath.Join(dir, name+".json")
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, got, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Fatalf("%s: Comms binding contract changed", path)
+	}
+}
