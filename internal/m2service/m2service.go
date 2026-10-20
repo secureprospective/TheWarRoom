@@ -1,7 +1,7 @@
 // Package m2service builds the M2 power-rankings board: it sums each franchise's player values
 // (a measurable from the latest model run) by current ownership, blends that with the MFL
 // standings through powerrankings, and joins the display columns. It holds read surfaces only,
-// so m2_app.go stays a thin adapter.
+// so power_rankings_app.go stays a thin adapter.
 package m2service
 
 import (

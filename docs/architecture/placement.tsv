@@ -105,9 +105,6 @@ livegame_spine.go	now
 livegame_test.go	now
 livegame_week_test.go	now
 logging.go	platform
-m1_app.go	scoring
-m2_app.go	scoring
-m2_app_test.go	scoring
 main.go	platform
 market_feeds_app.go	market
 market_feeds_reading.go	market
@@ -186,12 +183,15 @@ pool_app_test.go	offers
 pool_landing_test.go	offers
 pool_market_layout_test.go	offers
 pool_values.go	offers
+power_rankings_app.go	scoring
+power_rankings_app_test.go	scoring
 pulse_alerts_app_test.go	control
 race_app.go	race
 race_playoffs_reading.go	race
 race_points_reading.go	race
 race_reading.go	race
 race_test.go	race
+rankings_app.go	scoring
 refresh_app.go	control
 refresh_publication_test.go	control
 release_app.go	contracts

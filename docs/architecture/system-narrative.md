@@ -143,8 +143,8 @@ are still pending.
 | `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
 | `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
-| `m1_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
-| `m2_app.go` | `powerRankings`, behind the race readings; no binding |
+| `rankings_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
+| `power_rankings_app.go` | `powerRankings`, behind the race readings; no binding |
 | `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `admin_app.go` | `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default) |
 | `control_room_app.go` | `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old) |
