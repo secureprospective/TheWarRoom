@@ -1,0 +1,25 @@
+{
+ "value": {
+  "plans": [],
+  "summary": ""
+ },
+ "provenance": {
+  "source": "TheWarRoom bid plans (this computer)",
+  "freshness": {
+   "state": "fail",
+   "fetchedAt": "2026-10-10T12:00:00Z",
+   "note": "Local plans; nothing is read from MFL here"
+  },
+  "kind": "live"
+ },
+ "status": "failed",
+ "absenceReason": "fixture startup failure",
+ "count": 0,
+ "threshold": 0,
+ "baseline": "Plans saved on this computer",
+ "cutoff": "2026-10-10T12:00:00Z",
+ "method": "Envelope plans plus the bid_facts table; rules read live",
+ "inputSHA": "",
+ "buildStamp": "dev test",
+ "howCounted": "Your own bid plans only. Nothing is stored about other franchises; the bid to beat is points you typed. A plan lands only when MFL's rosters show the player on your roster with the planned contract."
+}

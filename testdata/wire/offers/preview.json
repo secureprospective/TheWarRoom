@@ -1,0 +1,17 @@
+{
+ "conditionalDrops": null,
+ "problem": "Fixture startup failure",
+ "player": "",
+ "salary": {
+  "cents": 0,
+  "text": ""
+ },
+ "snapped": "",
+ "points": "",
+ "rules": [],
+ "blocked": false,
+ "note": "",
+ "post": "",
+ "ruleSummary": "",
+ "closesNote": ""
+}

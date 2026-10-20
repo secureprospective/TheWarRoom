@@ -1,0 +1,52 @@
+{
+ "receipt": {
+  "correlationId": "",
+  "spec": {
+   "intent": "",
+   "leagueId": "",
+   "franchiseId": "",
+   "subject": {
+    "players": null,
+    "picks": null
+   },
+   "expected": {},
+   "gravity": "",
+   "undo": "",
+   "target": {
+    "kind": ""
+   }
+  },
+  "state": "",
+  "audit": null
+ },
+ "facts": {
+  "conditionalDrop": "",
+  "conditionalName": "",
+  "player": "",
+  "salary": 0,
+  "years": 0,
+  "points": 0,
+  "snipe": false,
+  "beat": null,
+  "evidence": "",
+  "closes": ""
+ },
+ "player": "",
+ "salary": {
+  "cents": 0,
+  "text": ""
+ },
+ "points": "",
+ "contract": "",
+ "beatText": "",
+ "form": {
+  "salary": "",
+  "beat": ""
+ },
+ "state": "",
+ "status": "",
+ "rules": null,
+ "ruleSummary": "",
+ "post": "",
+ "actions": null
+}

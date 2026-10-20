@@ -1,0 +1,74 @@
+{
+ "value": {
+  "engineNote": "",
+  "ppgNote": "",
+  "sorts": [
+   {
+    "key": "name",
+    "label": "Player"
+   },
+   {
+    "key": "position",
+    "label": "Pos"
+   },
+   {
+    "key": "team",
+    "label": "NFL team"
+   },
+   {
+    "key": "engine",
+    "label": "Engine points"
+   },
+   {
+    "key": "ppg",
+    "label": "This season points per game"
+   },
+   {
+    "key": "lab",
+    "label": "Lab dynasty value"
+   },
+   {
+    "key": "minimum",
+    "label": "Minimum"
+   },
+   {
+    "key": "projected",
+    "label": "Projected points"
+   },
+   {
+    "key": "rank",
+    "label": "MFL rank"
+   },
+   {
+    "key": "adp",
+    "label": "ADP"
+   },
+   {
+    "key": "aav",
+    "label": "AAV"
+   }
+  ],
+  "rows": [],
+  "positions": [],
+  "summary": ""
+ },
+ "provenance": {
+  "source": "MFL freeAgents",
+  "freshness": {
+   "state": "fail",
+   "fetchedAt": "",
+   "note": "free agents not fetched yet"
+  },
+  "kind": "live"
+ },
+ "status": "failed",
+ "absenceReason": "Free agents have not been fetched from MFL yet",
+ "count": 0,
+ "threshold": 0,
+ "baseline": "Latest MFL free-agent list",
+ "cutoff": "",
+ "method": "MFL freeAgents export; §6 minimum by experience, computed in Go",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Every player MFL lists as a free agent, joined to the held players directory for name, position, NFL team, age and draft year. Experience is this season minus the draft year; a player with no real draft year is shown at the rookie minimum and marked. The minimum is the Official Rulebook §6 table by experience. Free agents the directory does not know (team units) are left out."
+}
