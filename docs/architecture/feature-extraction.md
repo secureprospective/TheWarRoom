@@ -104,3 +104,20 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   production construction. Shared fixture loading lives in `commstest`.
 - Mutants must run in isolation: restore the source before starting a full-suite compilation,
   otherwise an unrelated test process can compile the planted mutation.
+
+## Sources additions
+
+- A new root binding golden temporarily needs a placement row and one ratchet slot in its own
+  commit. Lower the ratchet with the moved/deleted paths; do not leave the temporary increase.
+- Stateful compilation can move synchronously behind the existing root `factsMu.TryLock`; its
+  scheduler and cache warmers stay root. Likewise, keep `loadingSignals`, held-report publication
+  and the deferred health notification in their original order around the service call.
+- Pass live-state reads as explicit callbacks when they originally followed store writes. In
+  crosswalk linking, moving roster/name snapshots before link writes changes ordering; invoke
+  those readers in the service only after the links are written and read back.
+- Split borrowed history capabilities by operation (health, facts, imports, signals, crosswalk),
+  rather than creating one oversized store interface. Settings shared with photos and
+  cross-feature refresh routing remain with their root owner.
+- Preserve root integration scenarios that exercise shared state or another feature. Move pure
+  implementation assertions beside the service; a test-only bridge can keep an unrelated root
+  scenario intact without adding a production builder back to the adapter.
