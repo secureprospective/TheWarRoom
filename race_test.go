@@ -562,3 +562,37 @@ func TestRaceWireMatchesGo(t *testing.T) {
 		t.Fatal("race wire stale; TWR_WRITE_WIRE=1 go test -run TestRaceWireMatchesGo .")
 	}
 }
+
+func TestRaceBindingsGolden(t *testing.T) {
+	t.Parallel()
+	a := targetTestApp(t)
+	board, err := a.TargetRace(0, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "race", "unfetched", board)
+	in := realRace(t, "2026")
+	in.held.power = map[string]PowerRankingsResult{ViewSeason: testPower()}
+	board, err = buildRace(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	board.Standings.Rows = board.Standings.Rows[:5]
+	for i := range board.Board.Reports {
+		r := &board.Board.Reports[i]
+		r.Rows = r.Rows[:min(len(r.Rows), 3)]
+	}
+	checkGolden(t, "race", "held", board)
+	errs := map[string]string{}
+	if _, err := a.TargetRace(40, "", ""); err != nil {
+		errs["week"] = err.Error()
+	}
+	if _, err := a.TargetRace(0, "unknown", ""); err != nil {
+		errs["team"] = err.Error()
+	}
+	refresh, _, _, _ := seasonTestApp(t)
+	if err := refresh.TargetRaceRefresh(true); err != nil {
+		errs["refresh"] = err.Error()
+	}
+	checkGolden(t, "race", "errors", errs)
+}
