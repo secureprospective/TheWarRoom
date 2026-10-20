@@ -46,7 +46,7 @@ type Freshness struct {
 	Note      string `json:"note"`
 }
 
-// These strings cross IPC and must match frontend/src/components/board/freshness.ts.
+// These strings cross IPC and must match frontend/src/app/data/freshness.ts.
 const (
 	FreshLive  = "live"
 	FreshStale = "stale"

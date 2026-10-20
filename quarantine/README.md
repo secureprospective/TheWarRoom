@@ -34,3 +34,37 @@ To bring one back, move it to its old path (drop the `quarantine/go/` prefix).
 Kept on purpose: `internal/store/history/replay_bench_test.go` (Block C replay fix yardstick), the
 `*_live_test.go` feed checks (the only drift check against real MFL/CFBD/nflverse data), and files
 that mix opt-in and always-on tests.
+
+## Alpha harness UI (moved 2026-10-20, branch `session/purge-harness`)
+
+The original Alpha UI, reached from the target shell's "Harness" button, and the Go bindings only
+it called. The target UI replaced every screen it had.
+
+Frontend, under `frontend/src/` (same paths as before):
+
+- `App.tsx`, `components/**` (rankings, power rankings, feed, calendar, transactions, home, inspector,
+  shell, board primitives) and `store/**` (the Zustand stores): 29 files, about 6,700 lines.
+- Two pieces the target UI used were copied out before the move: the `FreshnessState` union is now
+  `frontend/src/app/data/freshness.ts`, and `isTypingTarget` is now `frontend/src/app/shell/keys.ts`.
+  The full originals stay in `components/board/` here.
+
+Go, under `go/` (whole files with no live code left; original content, bindings included):
+
+- `leagueschedule_app.go` (`GetLeagueSchedule`), `m1_player_score_app.go` (`GetPlayerScore`),
+  `rulebook_app.go` (`GetLeagueSetting`, `SetLeagueSettingOverride`), `transactions_feed_app.go` (`GetFeed`).
+
+Deleted from live files (recover them from git, `session/purge-tom`): `AppInfo` (`version.go`);
+`ExecuteTransaction`, `PreviewTransaction`, `GetCurrentPhase`, `runTransaction` and their DTOs
+(`transactions_app.go`); `GetCalendarEvents` (`transactions_calendar_app.go`); `GetRoster`,
+`GetFreeAgentPool`, `GetFranchises`, `GetLegalOps`, `capDeltaDTOs`, `resolveDirectory`
+(`m4_app.go`); `GetRankings`, `latestBoard`, `priorRanks`, `rankRows`, `RankRow` (`m1_app.go`);
+`joinModel` (`model_app.go`); `GetPowerRankings` (`m2_app.go`); `RefreshLeague` (`refresh_app.go`,
+folded into `refreshScope("league")`); `localFreshness` (`freshness.go`). The removed switch: the
+`harness.open` / `target.open` commands, the shell `harness` field, the two buttons, and the lazy
+mount in `frontend/src/TargetMount.tsx`.
+
+Kept on purpose: `ScoreLeague`, the only writer of the board run; see `SYSTEM_MAP.md`, Built but not wired.
+
+To bring the harness back: move `frontend/src/` and the Go files back to their old paths, restore the
+deleted methods from `session/purge-tom`, run `make bindings`, and restore `TargetMount.tsx`,
+`state.ts` (`harness`), the two registry commands and the buttons from the same branch.
