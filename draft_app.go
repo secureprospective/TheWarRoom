@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"slices"
-	"strconv"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -189,24 +189,9 @@ func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) M
 	return section
 }
 
-func countLabel(n int, noun string) string {
-	suffix := "s"
-	if n == 1 {
-		suffix = ""
-	}
-	return fmt.Sprintf("%s %s%s", countNumber(n), noun, suffix)
-}
-func countNumber(n int) string {
-	text := strconv.Itoa(n)
-	start := 0
-	if n < 0 {
-		start = 1
-	}
-	for i := len(text) - 3; i > start; i -= 3 {
-		text = text[:i] + "," + text[i:]
-	}
-	return text
-}
+// countLabel and countNumber are report.Count and report.Number, the shared count wordings.
+func countLabel(n int, noun string) string { return report.Count(n, noun) }
+func countNumber(n int) string             { return report.Number(n) }
 func slotTone(tone string) string {
 	return map[string]string{"down": "below its slot beyond chance", "even": "within chance of its slot", "up": "above its slot beyond chance"}[tone]
 }

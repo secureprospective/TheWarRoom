@@ -188,3 +188,24 @@ type Reading[T any] struct {
 	BuildStamp    string        `json:"buildStamp"`
 	HowCounted    string        `json:"howCounted"`
 }
+
+// Count words a count with its noun: "1 trade", "1,204 trades".
+func Count(n int, noun string) string {
+	suffix := "s"
+	if n == 1 {
+		suffix = ""
+	}
+	return fmt.Sprintf("%s %s%s", Number(n), noun, suffix)
+}
+
+// Number writes a whole number with thousands separators: 1,204.
+func Number(n int) string {
+	text := strconv.Itoa(n)
+	start := 0
+	if n < 0 {
+		start = 1
+	}
+	for i := len(text) - 3; i > start; i -= 3 {
+		text = text[:i] + "," + text[i:]
+	}
+	return text
