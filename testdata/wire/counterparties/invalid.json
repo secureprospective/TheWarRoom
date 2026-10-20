@@ -1,0 +1,54 @@
+{
+ "value": {
+  "words": {
+   "team": "",
+   "sides": "",
+   "perSeason": "",
+   "now": "",
+   "later": "",
+   "picks": "",
+   "age": "",
+   "partners": "",
+   "partner": "",
+   "day": "",
+   "since": "",
+   "legend": "",
+   "up": "",
+   "down": ""
+  },
+  "countText": "",
+  "summary": "",
+  "asOf": "",
+  "headline": "",
+  "note": "",
+  "picks": null,
+  "teams": null,
+  "cards": null,
+  "trendSay": null,
+  "trends": {
+   "seasons": null,
+   "tiers": null
+  },
+  "pairs": null,
+  "rows": null
+ },
+ "provenance": {
+  "source": "",
+  "freshness": {
+   "state": "",
+   "fetchedAt": "",
+   "note": ""
+  },
+  "kind": ""
+ },
+ "status": "failed",
+ "absenceReason": "counterparties scope: invalid season range",
+ "count": 0,
+ "threshold": 40,
+ "baseline": "",
+ "cutoff": "",
+ "method": "both sides of the valued trades, cut by standing, window and posture",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "",
+ "howCounted": ""
+}

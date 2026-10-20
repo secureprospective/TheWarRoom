@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -483,5 +485,49 @@ func TestExcludedTiersAreNotThin(t *testing.T) {
 	}
 	if !teamExcluded(s, nil, sides) || teamExcluded(lab.TeamScope{}, nil, sides) {
 		t.Fatal("empty filtered Inspector confused with thin history")
+	}
+}
+
+func TestCounterpartiesWireMatchesGolden(t *testing.T) {
+	a := NewApp()
+	for _, c := range []struct {
+		name  string
+		scope RawCounterpartiesScope
+		fid   string
+	}{
+		{"league", RawCounterpartiesScope{From: 2017, To: 2026}, "0001"},
+		{"filtered", RawCounterpartiesScope{From: 2017, To: 2026, Tiers: []string{"contender"}, Postures: []string{"now"}}, "0014"},
+		{"thin", RawCounterpartiesScope{From: 2017, To: 2017, Windows: []string{"summer"}, Postures: []string{"later"}}, "0002"},
+		{"invalid", RawCounterpartiesScope{From: 2026, To: 2017}, "0099"},
+		{"unknown", RawCounterpartiesScope{From: 2017, To: 2026, Team: "0099"}, "0099"},
+	} {
+		checkCounterpartiesWire(t, c.name, a.TargetCounterparties(c.scope))
+		checkCounterpartiesWire(t, c.name+"-team", a.TargetCounterpartTeam(RawCounterpartTeam{Scope: c.scope, Fid: c.fid}))
+	}
+}
+
+func checkCounterpartiesWire[T any](t *testing.T, name string, value T) {
+	t.Helper()
+	got, err := json.MarshalIndent(value, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = append(got, '\n')
+	path := "testdata/wire/counterparties/" + name + ".json"
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.MkdirAll("testdata/wire/counterparties", 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, got, 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(want, got) {
+		t.Errorf("%s: Counterparties wire contract changed", path)
 	}
 }

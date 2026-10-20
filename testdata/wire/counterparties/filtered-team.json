@@ -1,0 +1,603 @@
+{
+ "value": {
+  "partnersText": "6",
+  "words": {
+   "team": "Team",
+   "sides": "Sides",
+   "perSeason": "Per season",
+   "now": "For now",
+   "later": "For later",
+   "picks": "Picks in − out",
+   "age": "Age in − out",
+   "partners": "Partners",
+   "partner": "Most frequent partner",
+   "day": "On the day",
+   "since": "Since",
+   "legend": "Posture shares describe the selected trades, not a finding against chance. Red ranges are losses beyond chance; green ranges are gains beyond chance.",
+   "up": "↑",
+   "down": "↓"
+  },
+  "countText": "6",
+  "fid": "0014",
+  "name": "Cincinnati Bengals",
+  "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings. Showing only trades that bought for now.",
+  "flowScale": 1.361,
+  "sides": 6,
+  "empty": false,
+  "note": "",
+  "seasons": [
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2017,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 14,
+    "label": "2017 · finished 14",
+    "title": "2017: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 14"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2018,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 21,
+    "label": "2018 · finished 21",
+    "title": "2018: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 21"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2019,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 26,
+    "label": "2019 · finished 26",
+    "title": "2019: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 26"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2020,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 31,
+    "label": "2020 · finished 31",
+    "title": "2020: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 31"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2021,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 12,
+    "label": "2021 · finished 12",
+    "title": "2021: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 12"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2022,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 22,
+    "label": "2022 · finished 22",
+    "title": "2022: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 22"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2023,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 32,
+    "label": "2023 · finished 32",
+    "title": "2023: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 32"
+   },
+   {
+    "nowText": "0",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2024,
+    "n": 0,
+    "now": 0,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "",
+    "net": null,
+    "finish": 31,
+    "label": "2024 · finished 31",
+    "title": "2024: 0 trade sides; 0 for now, 0 for later, 0 like for like; finished 31"
+   },
+   {
+    "nowText": "4",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2025,
+    "n": 4,
+    "now": 4,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "Contenders",
+    "net": 0.28500000000000003,
+    "finish": 7,
+    "label": "2025 · finished 7",
+    "title": "2025: 4 trade sides; 4 for now, 0 for later, 0 like for like; finished 7"
+   },
+   {
+    "nowText": "2",
+    "laterText": "0",
+    "swapText": "0",
+    "againstText": "0",
+    "season": 2026,
+    "n": 2,
+    "now": 2,
+    "later": 0,
+    "swap": 0,
+    "against": 0,
+    "flagged": false,
+    "mostlyText": "Contenders",
+    "net": -0.052,
+    "finish": null,
+    "label": "2026",
+    "title": "2026: 2 trade sides; 2 for now, 0 for later, 0 like for like"
+   }
+  ],
+  "seasonSay": "6 trade sides, 3.0 a season. Bars: bought for now, built for later, like for like. An outlined season is one where at least two trades and at least 30% of its trades went against the team's standing that day: buying for now while rebuilding, or building while contending.",
+  "posture": [
+   {
+    "id": "now",
+    "label": "Bought for now",
+    "p": 1,
+    "tone": "",
+    "title": "Bought for now · share of the filtered trades"
+   },
+   {
+    "id": "later",
+    "label": "Built for later",
+    "p": 0,
+    "tone": "",
+    "title": "Built for later · share of the filtered trades"
+   },
+   {
+    "id": "swap",
+    "label": "Like for like",
+    "p": 0,
+    "tone": "",
+    "title": "Like for like · share of the filtered trades"
+   }
+  ],
+  "kinds": [
+   {
+    "kind": "LB",
+    "name": "Linebackers",
+    "inN": 3,
+    "outN": 0,
+    "inW": 1.361,
+    "outW": 0,
+    "text": "0 out · 3 in"
+   },
+   {
+    "kind": "WR",
+    "name": "Wide receivers",
+    "inN": 2,
+    "outN": 0,
+    "inW": 1.1840000000000002,
+    "outW": 0,
+    "text": "0 out · 2 in"
+   },
+   {
+    "kind": "pick3:later",
+    "name": "Later-draft 3rds and later",
+    "inN": 1,
+    "outN": 1,
+    "inW": 0.039,
+    "outW": 0.062,
+    "text": "1 out · 1 in"
+   },
+   {
+    "kind": "DL",
+    "name": "Defensive linemen",
+    "inN": 0,
+    "outN": 1,
+    "inW": 0,
+    "outW": 0.067,
+    "text": "1 out · 0 in"
+   },
+   {
+    "kind": "DB",
+    "name": "Defensive backs",
+    "inN": 1,
+    "outN": 1,
+    "inW": 0.246,
+    "outW": 0.374,
+    "text": "1 out · 1 in"
+   },
+   {
+    "kind": "pick3:next",
+    "name": "Next-draft 3rds and later",
+    "inN": 1,
+    "outN": 3,
+    "inW": 0.057,
+    "outW": 0.402,
+    "text": "3 out · 1 in"
+   },
+   {
+    "kind": "pick1:later",
+    "name": "Later-draft 1sts",
+    "inN": 0,
+    "outN": 1,
+    "inW": 0,
+    "outW": 0.47,
+    "text": "1 out · 0 in"
+   },
+   {
+    "kind": "pick2:next",
+    "name": "Next-draft 2nds",
+    "inN": 0,
+    "outN": 2,
+    "inW": 0,
+    "outW": 0.538,
+    "text": "2 out · 0 in"
+   },
+   {
+    "kind": "pick1:next",
+    "name": "Next-draft 1sts",
+    "inN": 0,
+    "outN": 1,
+    "inW": 0,
+    "outW": 0.74,
+    "text": "1 out · 0 in"
+   }
+  ],
+  "kindSay": "Bars are forecast wins sent and taken in for each kind of asset; the figures count the assets.",
+  "partners": [
+   {
+    "fid": "0005",
+    "name": "Los Angeles Chargers",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": 0.27,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "+0.27 on the day"
+   },
+   {
+    "fid": "0021",
+    "name": "Chicago Bears",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": 0.024,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "+0.02 on the day"
+   },
+   {
+    "fid": "0001",
+    "name": "Buffalo Bills",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": -0.175,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "-0.17 on the day"
+   },
+   {
+    "fid": "0026",
+    "name": "San Francisco 49ers",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": 0.166,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "+0.17 on the day"
+   },
+   {
+    "fid": "0027",
+    "name": "Los Angeles Rams",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": 0.01,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "+0.01 on the day"
+   },
+   {
+    "fid": "0013",
+    "name": "Baltimore Ravens",
+    "n": 1,
+    "net": {
+     "n": 1,
+     "mean": -0.062,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "tradesText": "1 trade",
+    "netText": "-0.06 on the day"
+   }
+  ],
+  "partnersSay": "",
+  "behaviour": {
+   "n": 6,
+   "perSeason": 3,
+   "posture": {
+    "later": {
+     "k": 0,
+     "n": 6,
+     "p": 0,
+     "lo": -0.00002530349119522179,
+     "hi": 0.00002530349119522179,
+     "base": 0.24356955380577427
+    },
+    "now": {
+     "k": 6,
+     "n": 6,
+     "p": 1,
+     "lo": 0.9999746965088048,
+     "hi": 1.0000253034911952,
+     "base": 0.24356955380577427
+    },
+    "swap": {
+     "k": 0,
+     "n": 6,
+     "p": 0,
+     "lo": -0.00002530349119522179,
+     "hi": 0.00002530349119522179,
+     "base": 0.5128608923884515
+    }
+   },
+   "partners": {
+    "contender": {
+     "k": 1,
+     "n": 6,
+     "p": 0.16666666666666666,
+     "lo": -0.1315378368639238,
+     "hi": 0.4648711701972571,
+     "tone": "even"
+    },
+    "hunt": {
+     "k": 4,
+     "n": 6,
+     "p": 0.6666666666666666,
+     "lo": 0.28946449079611114,
+     "hi": 1.043868842537222,
+     "tone": "even"
+    },
+    "rebuild": {
+     "k": 1,
+     "n": 6,
+     "p": 0.16666666666666666,
+     "lo": -0.1315378368639238,
+     "hi": 0.4648711701972571,
+     "tone": "even"
+    }
+   },
+   "windows": {
+    "season": {
+     "k": 4,
+     "n": 6,
+     "p": 0.6666666666666666,
+     "lo": 0.28946449079611114,
+     "hi": 1.043868842537222,
+     "base": 0.2587926509186352,
+     "tone": "up"
+    },
+    "spring": {
+     "k": 2,
+     "n": 6,
+     "p": 0.3333333333333333,
+     "lo": -0.043868842537222175,
+     "hi": 0.7105355092038887,
+     "base": 0.4146981627296588,
+     "tone": "even"
+    },
+    "summer": {
+     "k": 0,
+     "n": 6,
+     "p": 0,
+     "lo": -0.00002530349119522179,
+     "hi": 0.00002530349119522179,
+     "base": 0.32650918635170606,
+     "tone": "down"
+    }
+   },
+   "now": {
+    "n": 6,
+    "mean": 0.03883333333333334,
+    "lo": -0.08846753921320938,
+    "hi": 0.16613420587987604,
+    "total": 0.23300000000000004,
+    "tone": "even"
+   },
+   "real": {
+    "n": 0,
+    "mean": null,
+    "lo": null,
+    "hi": null,
+    "tone": "even"
+   },
+   "picks": {
+    "n": 6,
+    "mean": -1,
+    "lo": -1.715690808473417,
+    "hi": -0.28430919152658296,
+    "total": -6,
+    "tone": "down"
+   },
+   "age": {
+    "n": 2,
+    "mean": 1.6499999999999986,
+    "lo": -2.7600000000000016,
+    "hi": 6.059999999999999,
+    "total": 3.299999999999997,
+    "tone": "even"
+   }
+  },
+  "asTier": [
+   {
+    "excluded": false,
+    "tier": "contender",
+    "n": 6,
+    "edge": {
+     "n": 6,
+     "mean": 0.03883333333333334,
+     "lo": -0.08846753921320938,
+     "hi": 0.16613420587987604,
+     "total": 0.23300000000000004,
+     "tone": "even"
+    },
+    "label": "As Contenders (6)",
+    "text": "+0.04 expected wins a trade, within chance of zero"
+   },
+   {
+    "excluded": true,
+    "tier": "hunt",
+    "n": 0,
+    "edge": {
+     "n": 0,
+     "mean": null,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "label": "As In the hunt (0)",
+    "text": "Not in the current filter"
+   },
+   {
+    "excluded": true,
+    "tier": "rebuild",
+    "n": 0,
+    "edge": {
+     "n": 0,
+     "mean": null,
+     "lo": null,
+     "hi": null,
+     "tone": "even"
+    },
+    "label": "As Rebuilding (0)",
+    "text": "Not in the current filter"
+   }
+  ],
+  "day": {
+   "n": 6,
+   "mean": 0.03883333333333334,
+   "lo": -0.08846753921320938,
+   "hi": 0.16613420587987604,
+   "total": 0.23300000000000004,
+   "tone": "even"
+  },
+  "since": {
+   "n": 0,
+   "mean": null,
+   "lo": null,
+   "hi": null,
+   "tone": "even"
+  },
+  "dayText": "+0.23 expected wins on the day, all trades",
+  "sinceText": ""
+ },
+ "provenance": {
+  "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "2026-10-06T15:57:20+00:00",
+   "note": "Frozen historical input; not current league truth"
+  },
+  "kind": "archive"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 6,
+ "threshold": 1,
+ "baseline": "The league's own posture and window shares in the same seasons; a share is coloured only where it clears chance",
+ "cutoff": "2026-10-06T01:42:57+00:00",
+ "method": "this team's sides of the valued trades against the league in the same seasons; 1.96 standard-error ranges",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "dev ",
+ "howCounted": "A team's tier is its rank on the day of the trade: its live standing once three games were final, otherwise the previous season's finish, exactly as the frozen archive recorded it. Contenders are ranked 1 to 10, teams in the hunt 11 to 22, rebuilding teams 23 to 32; the standings run through the archive cutoff 2026-10-06, never today's live table. What a trade did is read from each side's flow: bought for now when it took in more player value than it sent and sent more pick value than it took, built for later the reverse, like for like otherwise. Value is forecast wins on the day; a flow under 0.05 forecast wins counts as even. On the day is the expected wins a side gained at the league's own prices; since is the wins its assets actually delivered against the other side's, for trades with two or more played seasons. Every range is the 95% likely range of the average per trade; a range touching zero is within chance, not a finding."
+}
