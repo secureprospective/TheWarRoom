@@ -106,6 +106,9 @@ type App struct {
 	clockChanged     func(context.Context)
 	weekCancel       context.CancelFunc
 	weekWorkers      sync.WaitGroup
+	workerMu         sync.Mutex
+	stopping         bool
+	shutdownOnce     sync.Once
 	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
 
 	seasonMu            sync.Mutex
@@ -266,7 +269,7 @@ func (a *App) startup(ctx context.Context) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
-	a.compileFactsInBackground(ctx)
+	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
@@ -380,19 +383,37 @@ func (a *App) logMigrationFindings() {
 
 // shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
-	if a.weekCancel != nil {
-		a.weekCancel()
-	}
-	if a.workCancel != nil {
-		a.workCancel()
-	}
-	a.weekWorkers.Wait()
-	for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
-		if p != nil {
-			_ = p.Close()
+	a.shutdownOnce.Do(func() {
+		a.workerMu.Lock()
+		a.stopping = true
+		if a.weekCancel != nil {
+			a.weekCancel()
 		}
+		if a.workCancel != nil {
+			a.workCancel()
+		}
+		a.workerMu.Unlock()
+		a.weekWorkers.Wait()
+		for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
+			if p != nil {
+				_ = p.Close()
+			}
+		}
+		releaseInstanceLock(a.lockFile)
+	})
+}
+
+func (a *App) startWorker(work func()) {
+	a.workerMu.Lock()
+	defer a.workerMu.Unlock()
+	if a.stopping {
+		return
 	}
-	releaseInstanceLock(a.lockFile)
+	a.weekWorkers.Add(1)
+	go func() {
+		defer a.weekWorkers.Done()
+		work()
+	}()
 }
 
 // configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it.

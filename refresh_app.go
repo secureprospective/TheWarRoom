@@ -153,24 +153,24 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 // to the log.
 func (a *App) refreshInBackground(parent context.Context) {
 	a.weekStart.Do(func() {
+		a.workerMu.Lock()
+		if a.stopping {
+			a.workerMu.Unlock()
+			return
+		}
 		parent, a.weekCancel = context.WithCancel(parent)
-		a.weekWorkers.Add(1)
-		go func() {
-			defer a.weekWorkers.Done()
+		a.workerMu.Unlock()
+		a.startWorker(func() {
 			if a.ready() == nil {
 				a.nativeWaiverClock(parent)
 			}
-		}()
-		a.weekWorkers.Add(1)
-		go func() {
-			defer a.weekWorkers.Done()
+		})
+		a.startWorker(func() {
 			if a.ready() == nil {
 				a.watchMoves(parent)
 			}
-		}()
-		a.weekWorkers.Add(1)
-		go func() {
-			defer a.weekWorkers.Done()
+		})
+		a.startWorker(func() {
 			if a.ready() != nil {
 				return
 			}
@@ -178,7 +178,7 @@ func (a *App) refreshInBackground(parent context.Context) {
 				a.launchRefresh(parent)
 			}
 			a.refreshWeeksInBackground(parent)
-		}()
+		})
 	})
 }
 
