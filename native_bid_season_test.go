@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -51,7 +52,7 @@ func TestNativeBidPlayoffStandingComesFromNativeBracket(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	field := bidPlayoffField(bracket, directory)
+	field := nativeapp.PlayoffField(bracket, directory)
 	in := bracket.Fields[0].Seeds[0].Franchise
 	if field[in] != nativecheck.PlayoffIn {
 		t.Fatal("a playoff team was treated as out of the field")
@@ -80,7 +81,7 @@ func TestNativeBidPlayoffStandingComesFromNativeBracket(t *testing.T) {
 	if refusal := check(out); !strings.Contains(refusal, "yours is not one") {
 		t.Fatalf("excluded team's bid: %s", refusal)
 	}
-	unknown := bidPlayoffField(commissioner.NativeBracket{}, directory)
+	unknown := nativeapp.PlayoffField(commissioner.NativeBracket{}, directory)
 	if len(unknown) != 0 {
 		t.Fatal("an unavailable field invented exclusions")
 	}
@@ -109,11 +110,11 @@ func TestNativeBidOffseasonAndMissingInSeasonWeek(t *testing.T) {
 	f.refused(t, "franchise.01", "5002", 5*million, 2, "holds no NFL week")
 	kickoff := time.Date(2027, 9, 10, 17, 0, 0, 0, time.UTC)
 	held := []leagueweek.Week{{Number: 1, Games: []leagueweek.Game{{Kickoff: kickoff}}}}
-	phase := nflWeekAt(held, kickoff.Add(-time.Microsecond))
+	phase := nativeapp.WeekAt(held, kickoff.Add(-time.Microsecond))
 	if !phase.Offseason {
 		t.Fatal("before the first held kickoff is not offseason")
 	}
-	if phase := nflWeekAt(held, kickoff); phase.Offseason || !phase.WeekKnown {
+	if phase := nativeapp.WeekAt(held, kickoff); phase.Offseason || !phase.WeekKnown {
 		t.Fatal("kickoff did not end offseason")
 	}
 	policy, err := nativecheck.NewBidPolicy(leaguerules.LegacyNFL())
