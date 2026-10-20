@@ -1,0 +1,267 @@
+{
+ "value": {
+  "teams": [
+   {
+    "id": "0001",
+    "name": "Buffalo Bills",
+    "assets": [
+     {
+      "team": "LAR",
+      "contract": "$17,700,000 · 1 years",
+      "now": {
+       "text": "No score",
+       "sub": "this season",
+       "detail": "",
+       "held": false
+      },
+      "dynasty": {
+       "text": "Not valued yet",
+       "sub": "Lab model not compiled",
+       "detail": "",
+       "held": false
+      },
+      "token": "11675",
+      "name": "Adams, Davante",
+      "position": "WR"
+     },
+     {
+      "team": "LVR",
+      "contract": "$580,000 · 2 years",
+      "now": {
+       "text": "No score",
+       "sub": "this season",
+       "detail": "",
+       "held": false
+      },
+      "dynasty": {
+       "text": "Not valued yet",
+       "sub": "Lab model not compiled",
+       "detail": "",
+       "held": false
+      },
+      "token": "13448",
+      "name": "Butler, Adam",
+      "position": "DT"
+     }
+    ]
+   },
+   {
+    "id": "0002",
+    "name": "New England Patriots",
+    "assets": [
+     {
+      "dynasty": {
+       "text": "Not valued",
+       "sub": "Lab model not compiled",
+       "detail": "",
+       "held": false
+      },
+      "token": "FP_0002_2027_1",
+      "name": "2027 round 1 · New England Patriots"
+     },
+     {
+      "dynasty": {
+       "text": "Not valued",
+       "sub": "Lab model not compiled",
+       "detail": "",
+       "held": false
+      },
+      "token": "FP_0002_2027_2",
+      "name": "2027 round 2 · New England Patriots"
+     }
+    ]
+   }
+  ],
+  "plans": [],
+  "preview": {
+   "id": "",
+   "post": "Trade agreement for MFL and ProBoards\nBuffalo Bills gives:\n- Adams, Davante · $17,700,000 a year through 2026 · UFA\nCap space exchanged: none (salary-cap trading abolished).\nArizona Cardinals gives:\n- Shakir, Khalil · $9,430,000 a year through 2028 · UFA\nCap space exchanged: none (salary-cap trading abolished).\nMy rationale: Balance salary with a younger starter.\nOther GM's rationale: add before accepting on ProBoards.\nBoth GMs must agree on ProBoards; then propose and accept on MFL. Three DOT approvals, then commissioner approval.\nOnce posted and accepted on ProBoards, the trade cannot be withdrawn.\nVerify no selected pick is compensatory; MFL does not identify that here.\nLocal plan only. Nothing submitted or posted by TheWarRoom.",
+   "reasons": [
+    "Arizona Cardinals: deal exceeds the held salary cap"
+   ],
+   "teams": [
+    {
+     "team": "Buffalo Bills",
+     "figures": [
+      {
+       "label": "Cap used this season",
+       "before": "$118,440,000",
+       "after": "$110,170,000",
+       "change": "−$8,270,000"
+      },
+      {
+       "label": "2027 commitments at today's salaries",
+       "before": "$73,940,000",
+       "after": "$83,370,000",
+       "change": "+$9,430,000"
+      },
+      {
+       "label": "Cap room this season",
+       "before": "$6,560,000",
+       "after": "$14,830,000",
+       "change": "+$8,270,000"
+      },
+      {
+       "label": "Next season’s cap room (this season’s cap carried forward)",
+       "before": "$51,060,000",
+       "after": "$41,630,000",
+       "change": "−$9,430,000"
+      },
+      {
+       "label": "Active roster · 35–48",
+       "before": "35",
+       "after": "35",
+       "change": ""
+      },
+      {
+       "label": "Taxi squad · maximum 8",
+       "before": "0",
+       "after": "0",
+       "change": ""
+      }
+     ],
+     "roster": [
+      {
+       "team": "LVR",
+       "contract": "$580,000 · 2 years",
+       "now": {
+        "text": "No score",
+        "sub": "this season",
+        "detail": "",
+        "held": false
+       },
+       "dynasty": {
+        "text": "Not valued yet",
+        "sub": "Lab model not compiled",
+        "detail": "",
+        "held": false
+       },
+       "token": "13448",
+       "name": "Butler, Adam · ROSTER",
+       "position": "DT"
+      },
+      {
+       "team": "JAC",
+       "contract": "$2,200,000 · 2 years",
+       "now": {
+        "text": "No score",
+        "sub": "this season",
+        "detail": "",
+        "held": false
+       },
+       "dynasty": {
+        "text": "Not valued yet",
+        "sub": "Lab model not compiled",
+        "detail": "",
+        "held": false
+       },
+       "token": "17034",
+       "name": "Ewers, Quinn · ROSTER",
+       "position": "QB"
+      }
+     ]
+    },
+    {
+     "team": "Arizona Cardinals",
+     "figures": [
+      {
+       "label": "Cap used this season",
+       "before": "$117,590,000",
+       "after": "$125,860,000",
+       "change": "+$8,270,000"
+      },
+      {
+       "label": "2027 commitments at today's salaries",
+       "before": "$104,670,000",
+       "after": "$95,240,000",
+       "change": "−$9,430,000"
+      },
+      {
+       "label": "Cap room this season",
+       "before": "$7,410,000",
+       "after": "-$860,000",
+       "change": "−$8,270,000"
+      },
+      {
+       "label": "Next season’s cap room (this season’s cap carried forward)",
+       "before": "$20,330,000",
+       "after": "$29,760,000",
+       "change": "+$9,430,000"
+      },
+      {
+       "label": "Active roster · 35–48",
+       "before": "38",
+       "after": "38",
+       "change": ""
+      },
+      {
+       "label": "Taxi squad · maximum 8",
+       "before": "6",
+       "after": "6",
+       "change": ""
+      }
+     ],
+     "roster": [
+      {
+       "team": "LAR",
+       "contract": "$17,700,000 · 1 years",
+       "now": {
+        "text": "No score",
+        "sub": "this season",
+        "detail": "",
+        "held": false
+       },
+       "dynasty": {
+        "text": "Not valued yet",
+        "sub": "Lab model not compiled",
+        "detail": "",
+        "held": false
+       },
+       "token": "11675",
+       "name": "Adams, Davante · ROSTER",
+       "position": "WR"
+      },
+      {
+       "team": "NYG",
+       "contract": "$670,000 · 4 years",
+       "now": {
+        "text": "No score",
+        "sub": "this season",
+        "detail": "",
+        "held": false
+       },
+       "dynasty": {
+        "text": "Not valued yet",
+        "sub": "Lab model not compiled",
+        "detail": "",
+        "held": false
+       },
+       "token": "16255",
+       "name": "Banks, Deonte · ROSTER",
+       "position": "CB"
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "provenance": {
+  "source": "whatif.db; held MFL rosters and futureDraftPicks",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "",
+   "note": "Held MFL mirror; no network or what-if state"
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 0,
+ "threshold": 0,
+ "baseline": "Current MFL mirror revision",
+ "cutoff": "",
+ "method": "Integer cents; Go-authored display",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app."
+}

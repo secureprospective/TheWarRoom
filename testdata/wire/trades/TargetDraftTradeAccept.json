@@ -1,0 +1,48 @@
+{
+ "correlationId": "fixture-correlation",
+ "spec": {
+  "intent": "trade.accept",
+  "leagueId": "14432",
+  "franchiseId": "0025",
+  "subject": {
+   "players": [
+    "0099",
+    "15754"
+   ],
+   "picks": [
+    "FP_0001_2027_1"
+   ]
+  },
+  "expected": {
+   "trade": {
+    "tradeId": "77",
+    "offering": "0001",
+    "accepting": "0025",
+    "offeringGives": [
+     "0099",
+     "FP_0001_2027_1"
+    ],
+    "acceptingGives": [
+     "15754"
+    ]
+   }
+  },
+  "gravity": "G2",
+  "undo": "irreversible",
+  "target": {
+   "kind": "mapped",
+   "url": "https://www47.myfantasyleague.com/2026/options?L=14432\u0026O=05"
+  },
+  "deadline": "2026-10-07T16:00:00Z"
+ },
+ "state": "ready",
+ "audit": [
+  {
+   "at": "2026-10-07T15:00:00Z",
+   "from": "draft",
+   "event": "checks_pass",
+   "to": "ready",
+   "note": "offer 77 from Other team"
+  }
+ ]
+}

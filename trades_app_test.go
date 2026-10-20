@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -264,5 +265,81 @@ func TestTradeSupersede(t *testing.T) {
 				t.Fatal("other trade superseded", err)
 			}
 		})
+	}
+}
+
+func TestTradesBindingGoldens(t *testing.T) {
+	t.Parallel()
+	a, transport, offer := tradeDraftApp(t)
+	reading, err := a.TargetTrades("0025")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "trades", "TargetTrades", reading)
+	receipt, err := a.TargetDraftTradeAccept("0025", offer.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt.CorrelationID = "fixture-correlation"
+	checkGolden(t, "trades", "TargetDraftTradeAccept", receipt)
+	builder := a.TargetTradeBuilder(RawTradeBuilder{Mine: "invalid", Action: "read"})
+	checkGolden(t, "trades", "TargetTradeBuilder-invalid", builder)
+	if len(transport.requests) != 0 {
+		t.Fatal("binding fetched")
+	}
+}
+
+func TestTradesDenialGoldens(t *testing.T) {
+	t.Parallel()
+	f := tradeApp(t)
+	f.app.localZone = time.UTC
+	denials := map[string]string{}
+	for _, who := range []string{"stranger", "owner.one"} {
+		_, err := f.action(t, who, commissioner.TradeOffer, tradePlayerOffer())
+		denials[who+"/offer-franchise.02"] = errorWords(err)
+		_, err = f.action(t, who, commissioner.TradeOverride, commissioner.RawTradeArgs{ID: "absent", Decision: "veto"})
+		denials[who+"/override"] = errorWords(err)
+	}
+	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.set(t, "calendar.windows", `{"closed":{"start":{"month":1,"day":1},"opens":[]}}`, "now")
+	_, err := f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer())
+	denials["closed/offer"] = errorWords(err)
+	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["trade"]}}`, "now")
+	f.set(t, "calendar.tradeDeadline", `"2026-01-01T00:00:00Z"`, "now")
+	_, err = f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer())
+	denials["deadline/offer"] = errorWords(err)
+	a, transport, offer := tradeDraftApp(t)
+	_, err = a.TargetDraftTradeAccept("0001", offer.ID)
+	denials["local/offerer-accept"] = errorWords(err)
+	_, held, err := a.tradeState("0025")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: "0025", ID: offer.ID, Action: "revoke"}, held)
+	denials["local/wrong-revoke"] = errorWords(err)
+	checkGolden(t, "trades", "denials", denials)
+	if len(transport.requests) != 0 {
+		t.Fatal("denial fetched")
+	}
+}
+
+func TestTradeBuilderPopulatedGolden(t *testing.T) {
+	t.Parallel()
+	a, transport := realTradeBuilderApp(t)
+	reading := a.TargetTradeBuilder(realDeal())
+	if reading.Status != ReadingOK || reading.Value.Preview == nil {
+		t.Fatal(reading)
+	}
+	reading.Value.Teams = reading.Value.Teams[:2]
+	for i := range reading.Value.Teams {
+		reading.Value.Teams[i].Assets = reading.Value.Teams[i].Assets[:2]
+	}
+	for i := range reading.Value.Preview.Teams {
+		reading.Value.Preview.Teams[i].Roster = reading.Value.Preview.Teams[i].Roster[:2]
+	}
+	checkGolden(t, "trades", "TargetTradeBuilder-preview", reading)
+	if len(transport.requests) != 0 {
+		t.Fatal("builder fetched")
 	}
 }

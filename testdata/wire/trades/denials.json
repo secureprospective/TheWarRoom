@@ -1,0 +1,10 @@
+{
+ "closed/offer": "trade action: league action closed: No league window opens this action now.",
+ "deadline/offer": "trade action: league action closed: The trade deadline passed on Jan 1, 2026 at 12:00 AM UTC.",
+ "local/offerer-accept": "you made this offer; accept is the other owner's",
+ "local/wrong-revoke": "trade action belongs to the other owner",
+ "owner.one/offer-franchise.02": "trade action: record trade action: league change refused: only the seated owner with trading enabled may act for this franchise",
+ "owner.one/override": "Only the commissioner may override a trade",
+ "stranger/offer-franchise.02": "trade action: record trade action: league change refused: only the seated owner with trading enabled may act for this franchise",
+ "stranger/override": "Only the commissioner may override a trade"
+}
