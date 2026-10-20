@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft/drafttest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
@@ -204,11 +205,11 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 	at := time.Date(2026, 10, 5, 13, 44, 0, 0, time.Local)
 	run := history.Run{ID: 3, AsOf: at, Engine: "secret-version"}
 	want := "Engine run: October 5, 2026, 1:44 PM."
-	if got := a.draftValueNote(run); got != want {
+	if got := draftapp.ValueNote(run, a.measureMeanings(run.MissingMeasures), time.Local); got != want {
 		t.Fatal(got)
 	}
 	run.MissingMeasures = []string{"context.birth_date"}
-	got := a.draftValueNote(run)
+	got := draftapp.ValueNote(run, a.measureMeanings(run.MissingMeasures), time.Local)
 	if !strings.Contains(got, "Missing player information:") || strings.Contains(got, "context.birth_date") || strings.Contains(got, "secret-version") || !strings.Contains(got, "Date of birth") || got == want {
 		t.Fatal(got)
 	}

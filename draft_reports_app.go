@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"slices"
 	"strconv"
-	"strings"
 	"time"
 
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
@@ -14,7 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func (a *App) refreshDraftReports(ctx context.Context) {
@@ -75,14 +73,10 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 	a.lookupMu.Lock()
 	lookup := a.lookup
 	a.lookupMu.Unlock()
-	names := map[string]string{}
-	for _, p := range results.value {
-		if p.Player != nil {
-			if f, ok := lookup.Facts(p.Player.String()); ok {
-				names[p.Player.String()] = f.Name
-			}
-		}
-	}
+	names := draftapp.Names(results.value, func(id string) (string, bool) {
+		f, ok := lookup.Facts(id)
+		return f.Name, ok
+	})
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
 	values, valueNote := a.draftReportValues(ctx)
@@ -102,43 +96,23 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 	return board, nil
 }
 
+// draftReportValues reads the engine values the draft and pool screens show, through the service.
 func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string) {
-	values := map[string]float64{}
-	run, ok, err := a.history.LatestRun(ctx, a.season, history.RunModel)
-	if err != nil {
-		return values, "Engine points unavailable: " + err.Error()
+	return draftapp.Values(ctx, a.history, a.season, a.measureMeanings, time.Local)
+}
+
+// measureMeanings is describeMeasures reduced to each measure's plain meaning.
+func (a *App) measureMeanings(names []string) []string {
+	described := a.describeMeasures(names)
+	out := make([]string, len(described))
+	for i, m := range described {
+		out[i] = m.Meaning
 	}
-	if !ok {
-		return values, "Engine points unavailable until the engine first runs."
-	}
-	scores, err := a.history.ModelScores(ctx, run.ID)
-	if err != nil {
-		return values, "Engine points unavailable: " + err.Error()
-	}
-	for _, s := range scores {
-		values[s.MFLID] = s.DynastyPPG
-	}
-	return values, a.draftValueNote(run)
+	return out
 }
 
 // engineRunText is report.EngineRun, the one wording for when the engine last valued players.
 func engineRunText(at time.Time, zone *time.Location) string { return report.EngineRun(at, zone) }
-
-func (a *App) draftValueNote(run history.Run) string {
-	note := engineRunText(run.AsOf, time.Local) + "."
-	missing := []string{}
-	for _, m := range a.describeMeasures(run.MissingMeasures) {
-		if m.Meaning != "" {
-			missing = append(missing, strings.TrimSuffix(m.Meaning, "."))
-		} else {
-			missing = append(missing, "an unknown player measure")
-		}
-	}
-	if len(missing) > 0 {
-		note += " Missing player information: " + strings.Join(missing, "; ") + "."
-	}
-	return note
-}
 
 func (a *App) TargetOpenMFLDraftRoom() error {
 	if err := a.ready(); err != nil {

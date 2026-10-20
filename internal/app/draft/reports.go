@@ -48,6 +48,19 @@ func shell[T any](id, title, how string, h Held[T], zone *time.Location, columns
 	return report.Shell(id, title, how, h.Feed, len(h.Value), zone, columns...)
 }
 
+// Names are the names of the drafted players that name knows, by MFL id.
+func Names(picks []draftreports.Pick, name func(id string) (string, bool)) map[string]string {
+	names := map[string]string{}
+	for _, p := range picks {
+		if p.Player != nil {
+			if n, ok := name(p.Player.String()); ok {
+				names[p.Player.String()] = n
+			}
+		}
+	}
+	return names
+}
+
 func pickLabel(p draftreports.Pick) string { return fmt.Sprintf("%d.%02d", p.Round, p.Slot) }
 func pickPlayer(p draftreports.Pick, names map[string]string) string {
 	if p.Skipped {
