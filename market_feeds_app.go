@@ -3,18 +3,26 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
-func marketKinds() []string {
-	return []string{marketfeeds.Projections, marketfeeds.Ranks, marketfeeds.ADP, marketfeeds.AAV}
+// MarketFact is one market cell of a pool row, the wire twin of marketapp.Fact; value is the
+// number behind the text, for the pool's own lines.
+type MarketFact struct {
+	value  *float64
+	Label  string       `json:"label"`
+	Text   string       `json:"text"`
+	Reason string       `json:"reason"`
+	Range  *MarketRange `json:"range"`
 }
+
+func marketKinds() []string { return marketapp.Kinds() }
 
 func (a *App) heldMarket() map[string]heldSeasonFeed[[]marketfeeds.Feed] {
 	return a.heldMarketForWeek(a.marketWeek())
@@ -101,18 +109,7 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 }
 
 func marketArchiveScope(src, kind string, week int) bool {
-	u, err := url.Parse(src)
-	if err != nil {
-		return false
-	}
-	switch kind {
-	case marketfeeds.Projections:
-		return u.Query().Get("W") == strconv.Itoa(week)
-	case marketfeeds.ADP:
-		return u.Query().Get("PERIOD") == "ALL"
-	default:
-		return true
-	}
+	return marketapp.ArchiveScope(src, kind, week)
 }
 
 func (a *App) TargetMarketReportsRefresh(force bool) error {
@@ -139,22 +136,39 @@ func (a *App) TargetMarketReports() (ReportBoard, error) {
 	return buildMarketReports(held, marketNames(held, lookup), week, time.Local), nil
 }
 
-// marketNames labels every player the held reports list: name, position and team for a player,
-// and the name alone for a team unit (a defense, a kicking unit) that MFL-wide reports price.
+// marketNames labels every player the held reports list, through the service.
 func marketNames(held map[string]heldSeasonFeed[[]marketfeeds.Feed], lookup normalize.Lookup) map[string]string {
-	names := map[string]string{}
-	for _, feed := range held {
-		if len(feed.value) != 1 {
-			continue
-		}
-		for _, p := range feed.value[0].Players {
-			id := p.ID.String()
-			if f, ok := lookup.Facts(id); ok {
-				names[id] = f.Name + " · " + string(f.Position) + " · " + f.Team
-			} else if name, ok := lookup.Name(id); ok {
-				names[id] = name + " · team unit"
-			}
+	return marketapp.Names(marketHeld(held), lookup)
+}
+
+// buildMarketReports builds the board in the feature service and converts it to its wire type.
+func buildMarketReports(held map[string]heldSeasonFeed[[]marketfeeds.Feed], names map[string]string, week int, zone *time.Location) ReportBoard {
+	return wireBoard(marketapp.Reports(marketHeld(held), names, week, zone))
+}
+
+func marketFacts(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string][]MarketFact {
+	return marketFactsAt(held, time.Local)
+}
+
+// marketFactsAt is every listed player's market cells, built in the service, as wire facts.
+func marketFactsAt(held map[string]heldSeasonFeed[[]marketfeeds.Feed], zone *time.Location) map[string][]MarketFact {
+	built := marketapp.Facts(marketHeld(held), zone)
+	out := make(map[string][]MarketFact, len(built))
+	for id, facts := range built {
+		out[id] = make([]MarketFact, len(facts))
+		for i, f := range facts {
+			out[id][i] = MarketFact{value: f.Value, Label: f.Label, Text: f.Text, Reason: f.Reason, Range: wireRange(f.Range)}
 		}
 	}
-	return names
+	return out
+}
+
+func marketWeekText(week int) string { return marketapp.WeekText(week) }
+
+func marketHeld(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string]marketapp.Held {
+	out := make(map[string]marketapp.Held, len(held))
+	for kind, feed := range held {
+		out[kind] = marketapp.Held{Value: feed.value, Feed: feed.state()}
+	}
+	return out
 }

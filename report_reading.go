@@ -94,12 +94,18 @@ func wireRows(rows []report.Row) []ReportRow {
 	out := make([]ReportRow, len(rows))
 	for i, r := range rows {
 		out[i] = ReportRow{Sort: r.Sort, Titles: r.Titles, Cells: r.Cells, Mine: r.Mine, Bars: r.Bars, Group: r.Group}
-		if r.Range != nil {
-			rng := MarketRange(*r.Range)
-			out[i].Range = &rng
-		}
+		out[i].Range = wireRange(r.Range)
 	}
 	return wireSlice(rows, out)
+}
+
+// wireRange converts a service range to its wire twin, MarketRange; nil stays nil.
+func wireRange(r *report.Range) *MarketRange {
+	if r == nil {
+		return nil
+	}
+	rng := MarketRange(*r)
+	return &rng
 }
 
 func wireChoices(choices []report.Choice) []RaceChoice {
