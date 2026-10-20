@@ -6,8 +6,9 @@ import (
 	"maps"
 	"slices"
 
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 type SpinePlayer struct {
@@ -23,61 +24,18 @@ type SpineEntry struct {
 	Game   string        `json:"game"` // "AWAY at HOME", so a week-wide entry names its game
 }
 
-func matchupStarterIDs(l leaguefeed.Lineups, mine string) map[string]bool {
-	opponent := ""
-	for _, m := range l.Matchups {
-		if m.Home == mine {
-			opponent = m.Away
-		}
-		if m.Away == mine {
-			opponent = m.Home
-		}
-	}
-	out := map[string]bool{}
-	if opponent == "" || mine == "" {
-		return out
-	}
-	for _, f := range l.Franchises {
-		if f.Franchise != mine && f.Franchise != opponent {
-			continue
-		}
-		for _, id := range f.Starters {
-			out[id.String()] = f.Franchise == mine
-		}
-	}
-	return out
-}
 func (a *App) heldMatchupStarters(mine string) map[string]bool {
 	week := a.marketWeek()
 	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	if a.seasonLineups.value.Week == week {
-		if ids := matchupStarterIDs(a.seasonLineups.value, mine); len(ids) > 0 {
-			return ids
-		}
-	}
-	out := map[string]bool{}
-	for _, w := range a.race.weeks.value {
-		if w.Week != week {
-			continue
-		}
-		if g, ok := findGame(w, mine); ok {
-			for _, side := range []leaguefeed.Side{g.Home, g.Away} {
-				for _, p := range side.Players {
-					if p.Starter {
-						out[p.ID.String()] = side.Franchise == mine
-					}
-				}
-			}
-		}
-	}
-	return out
+	live, weeks := a.seasonLineups.value, a.race.weeks.value
+	a.seasonMu.Unlock()
+	return nowapp.HeldMatchupStarters(live, weeks, week, mine)
 }
 
 // liveGameSpines fills the followed game's spine and the week's: every held play (followed
 // games and finals already read) with a starter from my matchup. Nothing is fetched here.
 func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter livegame.Adapter, mine string) error {
-	held := heldWeekGames(adapter)
+	held := nowapp.HeldWeekGames(nowapp.LiveSnapshot{Details: maps.Clone(adapter.Details)})
 	v.WeekHeld = len(held)
 	if v.Followed == nil && len(held) == 0 {
 		return nil
@@ -99,25 +57,12 @@ func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter liveg
 		return err
 	}
 	if v.Followed != nil {
-		v.Spine, v.Unmatched = matchSpine([]livegame.Game{*v.Followed}, known, players)
+		entries, unmatched := nowapp.MatchSpine([]livegame.Game{*v.Followed}, known, serviceSpinePlayers(players))
+		v.Spine, v.Unmatched = wireSpines(entries), unmatched
 	}
-	v.WeekSpine, _ = matchSpine(held, known, players)
+	entries, _ := nowapp.MatchSpine(held, known, serviceSpinePlayers(players))
+	v.WeekSpine = wireSpines(entries)
 	return nil
-}
-
-// heldWeekGames returns each game whose plays are held, once (a final is held under two ids).
-func heldWeekGames(adapter livegame.Adapter) []livegame.Game {
-	out := []livegame.Game{}
-	seen := map[string]bool{}
-	for _, key := range slices.Sorted(maps.Keys(adapter.Details)) {
-		d := adapter.Details[key]
-		if d.At.IsZero() || len(d.Game.Plays) == 0 || seen[d.Game.ID] {
-			continue
-		}
-		seen[d.Game.ID] = true
-		out = append(out, d.Game)
-	}
-	return out
 }
 
 func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]SpinePlayer, error) {
@@ -144,37 +89,6 @@ func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]SpinePl
 	return players, nil
 }
 
-// matchSpine joins plays to players by ESPN id only, newest first: by the play's wall clock when
-// both plays carry one, otherwise by the game's own play order.
-func matchSpine(games []livegame.Game, known map[string]bool, players map[string]SpinePlayer) ([]SpineEntry, int) {
-	out := []SpineEntry{}
-	unmatched := 0
-	for _, g := range games {
-		label := g.Away.Abbreviation + " at " + g.Home.Abbreviation
-		for _, p := range g.Plays {
-			for _, id := range p.Participants {
-				if !known[id] {
-					unmatched++
-					continue
-				}
-				if player, ok := players[id]; ok {
-					out = append(out, SpineEntry{Player: player, Play: p, Game: label})
-				}
-			}
-		}
-	}
-	slices.SortStableFunc(out, func(a, b SpineEntry) int {
-		if !a.Play.At.IsZero() && !b.Play.At.IsZero() && !a.Play.At.Equal(b.Play.At) {
-			return b.Play.At.Compare(a.Play.At)
-		}
-		if a.Game != b.Game {
-			return 0
-		}
-		return b.Play.Sequence - a.Play.Sequence
-	})
-	return out, unmatched
-}
-
 func (a *App) inspectLiveBox(ctx context.Context, v *LiveGameView) error {
 	ids, err := a.history.SourceIDs(ctx, "espn")
 	if err != nil {
@@ -194,4 +108,24 @@ func (a *App) inspectLiveBox(ctx context.Context, v *LiveGameView) error {
 	}
 	attachReportEntities(&v.Box, slices.Collect(maps.Values(entities)))
 	return nil
+}
+func wireSpines(entries []nowapp.SpineEntry) []SpineEntry {
+	if entries == nil {
+		return nil
+	}
+	out := make([]SpineEntry, len(entries))
+	for i, e := range entries {
+		out[i] = SpineEntry{Player: SpinePlayer{ID: e.Player.ID, Name: e.Player.Name, Team: e.Player.Team, Mine: e.Player.Mine, Photo: PhotoView(e.Player.Photo)}, Play: e.Play, Game: e.Game}
+	}
+	return out
+}
+func serviceSpinePlayers(players map[string]SpinePlayer) map[string]nowapp.SpinePlayer {
+	out := make(map[string]nowapp.SpinePlayer, len(players))
+	for k, p := range players {
+		out[k] = nowapp.SpinePlayer{ID: p.ID, Name: p.Name, Team: p.Team, Mine: p.Mine, Photo: nowapp.PhotoView(p.Photo)}
+	}
+	return out
+}
+func wireLive(v nowapp.LiveGameView) LiveGameView {
+	return LiveGameView{Games: v.Games, Followed: v.Followed, Source: v.Source, AsOf: v.AsOf, Failure: v.Failure, DetailAsOf: v.DetailAsOf, DetailFailure: v.DetailFailure, Scoring: v.Scoring, Spine: wireSpines(v.Spine), Unmatched: v.Unmatched, WeekSpine: wireSpines(v.WeekSpine), WeekHeld: v.WeekHeld, WeekGames: v.WeekGames, Box: wireReport(v.Box), Active: v.Active}
 }

@@ -1,0 +1,34 @@
+{
+ "games": [],
+ "followed": null,
+ "source": "Held MFL NFL schedule · play feeds and headshots: personal use only",
+ "asOf": "Time not supplied",
+ "failure": "",
+ "detailAsOf": "",
+ "detailFailure": "",
+ "scoring": [],
+ "spine": [],
+ "unmatched": 0,
+ "weekSpine": [],
+ "weekHeld": 0,
+ "weekGames": 0,
+ "box": {
+  "id": "X-01",
+  "title": "NFL box score",
+  "note": "Follow a game from the week strip.",
+  "status": "empty",
+  "source": "Source: ESPN game details · play feeds and headshots: personal use only",
+  "asOf": "",
+  "how": "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.",
+  "columns": [
+   "Team",
+   "Category",
+   "Player",
+   "Statistics"
+  ],
+  "rows": [],
+  "summary": [],
+  "link": null
+ },
+ "active": false
+}

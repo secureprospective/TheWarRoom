@@ -3,7 +3,7 @@
 The recipe the Archive extraction followed (reorg PR 3). Wails keeps binding one `App`; a
 feature's root files shrink to adapters and its logic moves to `internal/app/<feature>/`.
 
-Shared view models live in `internal/app/season`, wording in `internal/app/report`. A feature
+Shared season snapshot/view lives in `internal/app/season`, and Race and Now both read it; wording lives in `internal/app/report`. A feature
 never imports a sibling; root adapters compose features through the shared contracts.
 
 ## Steps, one commit each
@@ -248,9 +248,10 @@ The native league extraction (reorg PR 12) added the owner side.
   using Now's existing helper rather than copying another feature's calculation. The service's
   `Snapshot`, `Held` and `Feed[T]` own no locks, timers, callbacks or goroutines.
 - A feature may already expose package-private construction to another feature. Keep a small
-  root facade until that consumer moves: Race's `raceView` preserves Now's fields and vocabulary
-  while delegating calculations to `race.View`. Do not edit the other feature merely to finish
-  deleting a root file. Retain test-only wrappers for unrelated root integration scenarios.
+  root facade until that consumer moves: Now delegates the shared season view to `season.View` inside its service; the root keeps only
+  the Race facade still used by integration tests. Remove obsolete helpers when the last production
+  consumer moves, without changing the other feature's bindings. Retain test-only wrappers for
+  unrelated root integration scenarios.
 - Race guards refresh versus reads through real feed publication, verifies the power index is
   detached (a missing clone fails), and constructs with the root season lock held. Package tests
   concurrently build one snapshot and compare its serialized inputs before/after.
@@ -279,3 +280,19 @@ The native league extraction (reorg PR 12) added the owner side.
   publication while multiple readers build clock/window snapshots. Also mutate held nested
   data after capture to prove detachment, and evaluate the service while the root locks are
   held to prove it does not acquire them. Removing either slice clone must fail the test.
+
+- Now's `nowReadInput` copies schedule and first-score indexes plus feed metadata under
+  `seasonMu` into `now.Snapshot`, `Held`, `FirstScores` and `Feed[T]`. It borrows immutable
+  published weekly results, brackets, standings, lineups, projections and schedule payloads;
+  lookup and copied rulebook config come from their existing owners after unlock. The root
+  retains first-score archive discovery and schedule/bye refresh publication.
+- Live game's root owns the polling adapter, `liveGameMu`, backoff, archive I/O, crosswalk
+  reads and photo policy. `now.LiveSnapshot` receives board metadata and a detached detail
+  index, never the adapter's fetcher, final store or scheduling state. Pure construction may
+  run within the root's serialized demand-driven poll, but never under `seasonMu`. Starter
+  selection captures immutable live/week payloads under that lock and calls the service after
+  unlock. No timers or goroutines move into `internal/app/now`.
+- Now's root tests read through actual `TargetNowRefresh` publication, guard detached indexes
+  and construct while the season lock is held. Service tests build Now and Live snapshots
+  concurrently and compare serialized inputs before/after. A planted JSON-tag rename fails
+  the root goldens; a planted schedule-index deletion fails the immutability/race guard.

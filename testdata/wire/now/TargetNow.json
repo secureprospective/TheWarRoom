@@ -1,0 +1,308 @@
+{
+ "reportWeek": 0,
+ "reportWeeks": [],
+ "week": 0,
+ "weeks": [],
+ "matchup": {
+  "id": "X-03",
+  "title": "My matchup",
+  "note": "Report data unavailable; refresh from MFL to fill this report. Player names are not loaded yet; refresh from MFL.",
+  "status": "failed",
+  "source": "Source: MFL",
+  "asOf": "As of: not fetched",
+  "how": "Both lineups side by side, starter against starter in the league's slot order, with each starter's points and the team totals as MFL scores them. A week MFL has not scored shows the held live scores, or the lineups set so far.",
+  "columns": [
+   "Slot",
+   "Mine",
+   "Points",
+   "Opponent",
+   "Points"
+  ],
+  "rows": [],
+  "summary": [
+   {
+    "cells": [
+     "Week",
+     "Week 0"
+    ],
+    "range": null
+   }
+  ],
+  "link": null
+ },
+ "board": {
+  "title": "This week's reports",
+  "loading": "Reading the week…",
+  "refresh": "Refresh from MFL",
+  "howLabel": "How this is counted",
+  "mflLabel": "",
+  "mflUrl": "",
+  "reports": [
+   {
+    "id": "M-005",
+    "title": "Every matchup",
+    "note": "Report data unavailable; refresh from MFL to fill this report. Player names are not loaded yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each game of the week, away team on the left, starter against starter in the league's slot order with each one's points and the totals. My game first.",
+    "columns": [
+     "Slot",
+     "Away",
+     "Points",
+     "Home",
+     "Points"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-003",
+    "title": "Weekly results",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Every game's score and winner as MFL scored it. Playoff scores include the home-field points MFL adds. My game first, then the highest winning score.",
+    "columns": [
+     "Winner",
+     "Points",
+     "Loser",
+     "Points",
+     "Margin"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-007",
+    "title": "Weekly summary",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "The week at a glance from MFL's scores: the high and low score, the league average, the closest game, the biggest win and the most points left on the bench (the best lineup MFL found from the same roster, less the points scored). Then the week's ten best starters.",
+    "columns": [
+     "Player",
+     "Position",
+     "Franchise",
+     "Points"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-021",
+    "title": "Recaps",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each game in plain sentences, written only from MFL's numbers: the score and margin, each side's top starter, and what the loser's best lineup (MFL's best lineup from the same roster) would have scored. My game first, then the highest winning score.",
+    "columns": [
+     "Game",
+     "Recap"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-022",
+    "title": "Top scorers by position",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "The week's three best starters at each position, in the league's position order. Ties keep name order.",
+    "columns": [
+     "Player",
+     "Franchise",
+     "Points"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-072",
+    "title": "Fantasy box score",
+    "note": "Report data unavailable; refresh from MFL to fill this report. Player names are not loaded yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "My game, starter by starter: each one's NFL game and fantasy points, and whether MFL's best lineup (the most the same roster could have scored under the league's starter rules) started him; then any bench player it would have started. MFL's stat-by-stat scoring lines are not held, so each line is the player's points.",
+    "columns": [
+     "Slot",
+     "Player",
+     "NFL game",
+     "Points",
+     "Lineup call"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-004",
+    "title": "Last 3 weeks",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each franchise's result and points in the last three weeks MFL scored, up to the week chosen, then its points and record over those weeks. A week without a game counts its points but no result. Most points first.",
+    "columns": [
+     "Franchise",
+     "Points",
+     "Record"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-018",
+    "title": "Fantasy previews",
+    "note": "MFL projections are not held yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each game's projected totals: the sum of MFL's projections for the starters each side has set. A starter MFL does not project counts zero. My game first.",
+    "columns": [
+     "Away",
+     "Projected",
+     "Home",
+     "Projected",
+     "Favored"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-015",
+    "title": "NFL schedule",
+    "note": "The NFL schedule for this week is not held yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL NFL schedule",
+    "asOf": "As of: not fetched",
+    "how": "The week's NFL games in kickoff order, with the teams on bye. My players are those on my roster for the week, by their NFL team in MFL's player directory today.",
+    "columns": [
+     "Kickoff",
+     "Game",
+     "Result",
+     "My players"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-016",
+    "title": "NFL box score",
+    "note": "The NFL schedule for this week is not held yet; refresh from MFL. Player names are not loaded yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL NFL schedule",
+    "asOf": "As of: not fetched",
+    "how": "My players and my opponent's, grouped by the NFL game they played in, with each one's fantasy points. A player's NFL team is his team in MFL's player directory today. Games in kickoff order.",
+    "columns": [
+     "Player",
+     "Franchise",
+     "Role",
+     "Points"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-088",
+    "title": "Official stat changes",
+    "note": "Report data unavailable; refresh from MFL to fill this report. Player names are not loaded yet; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "MFL corrects stats after games. For each scored week, the app compares the first copy of MFL's weekly results it held with the latest, player by player; a change can flip a result. Weeks MFL scored before the app first read it compare from that first read. Newest week first.",
+    "columns": [
+     "Player",
+     "Franchise",
+     "First held",
+     "Now",
+     "Change"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-001",
+    "title": "Live fantasy scoring",
+    "note": "Report data unavailable; refresh from MFL to fill this report. Off-game view: held weekly scores; no live poll.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "MFL liveScoring, refreshed every 30 seconds while Now is open and a held NFL game has kicked off but is not final. Errors back off and keep the held scores. My matchup reads first.",
+    "columns": [
+     "Matchup",
+     "Franchise",
+     "Points"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Week",
+       "Week 0"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   }
+  ]
+ },
+ "waiting": "Reading the league's weeks from MFL…"
+}

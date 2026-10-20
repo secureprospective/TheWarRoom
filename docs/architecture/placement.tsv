@@ -146,10 +146,7 @@ native_waivers_orders_test.go	commissioner
 native_waivers_test.go	commissioner
 native_wire_test.go	commissioner
 now_app.go	now
-now_entities.go	now
-now_nfl_reading.go	now
 now_reading.go	now
-now_recap_reading.go	now
 now_test.go	now
 offers_app.go	offers
 offers_app_test.go	offers
@@ -312,6 +309,9 @@ internal/app/personal	offers
 internal/app/pool	offers
 internal/app/bids	offers
 internal/app/race	race
-internal/app/race/racetest	race
 control_wire_test.go	control
 internal/app/control	control
+internal/app/season/seasontest	platform
+
+internal/app/now	now
+internal/app/now/nowtest	now

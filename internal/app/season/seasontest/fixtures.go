@@ -1,5 +1,5 @@
-// Package racetest supplies shared real-source Race fixtures.
-package racetest
+// Package seasontest supplies shared real-source season fixtures.
+package seasontest
 
 import (
 	"compress/gzip"

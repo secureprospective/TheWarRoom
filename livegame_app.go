@@ -5,10 +5,12 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"net/http"
 	"regexp"
-	"slices"
 	"time"
+
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 )
@@ -136,87 +138,8 @@ func (a *App) seedLiveGames(at time.Time) livegame.Held {
 	a.seasonMu.Lock()
 	held := a.now.schedules[week]
 	a.seasonMu.Unlock()
-	out := []livegame.Game{}
-	seen := map[string]bool{}
-	for _, g := range nflGames(held.value, at) {
-		id := g.away + "-" + g.home
-		if seen[id] {
-			continue
-		}
-		seen[id] = true
-		status := "pre"
-		if g.started {
-			status = "in"
-		}
-		if g.final {
-			status = "post"
-		}
-		out = append(out, livegame.Game{ID: id, Kickoff: g.kickoff, Home: livegame.Team{Abbreviation: g.home, Score: g.scores[1]}, Away: livegame.Team{Abbreviation: g.away, Score: g.scores[0]}, Status: status, Box: []livegame.Box{}, Plays: []livegame.Play{}})
-	}
-	slices.SortFunc(out, func(a, b livegame.Game) int { return a.Kickoff.Compare(b.Kickoff) })
-	return livegame.Held{Games: out, Source: "Held MFL NFL schedule", At: held.fetchedAt, Failure: held.refreshError}
+	return nowapp.SeedLiveGames(nowFeed(held), at)
 }
 func liveGameReading(a livegame.Adapter, follow string, active bool) LiveGameView {
-	source := a.Board.Source
-	if source == "" {
-		source = "Held NFL schedule; scores unavailable"
-	}
-	if a.Board.Stale {
-		source = "Held " + source
-	}
-	v := LiveGameView{Games: a.Board.Games, Source: source + " · play feeds and headshots: personal use only", AsOf: reportTime(a.Board.At, time.Local), Failure: a.Board.Failure, Scoring: []livegame.Play{}, Spine: []SpineEntry{}, WeekSpine: []SpineEntry{}, WeekGames: len(a.Board.Games), Active: active}
-	if g, ok := a.Followed(follow); ok {
-		d := a.Details[g.ID]
-		v.DetailFailure = d.Failure
-		if !d.At.IsZero() {
-			v.DetailAsOf = reportTime(d.At, time.Local)
-			g.Box = d.Game.Box
-			g.Plays = d.Game.Plays
-			if a.Board.Source == "ESPN" && d.At.After(a.Board.At) {
-				g = d.Game
-			} else {
-				g.State, g.Last = d.Game.State, d.Game.Last
-			}
-			v.Scoring = livegame.ScoringPlays(g.Plays)
-		}
-		v.Followed = &g
-	}
-	v.Box = liveBoxReport(v)
-	return v
-}
-func liveBoxReport(v LiveGameView) Report {
-	asOf := ""
-	if v.DetailAsOf != "" {
-		asOf = "As of: " + v.DetailAsOf
-	}
-	r := Report{ID: "X-01", Title: "NFL box score", Status: "empty", Source: "Source: ESPN game details · play feeds and headshots: personal use only", AsOf: asOf, Note: v.DetailFailure, How: "Passing, rushing, receiving and defense by team, as ESPN supplies them. Yahoo supplies scores and last play only. Held details keep their own time.", Columns: []string{"Team", "Category", "Player", "Statistics"}, Rows: []ReportRow{}, Summary: []ReportRow{}}
-	if v.Followed == nil {
-		r.Note = "Follow a game from the week strip."
-		return r
-	}
-	if v.Followed.Status == "pre" {
-		r.Note = "Not started; no game box score yet."
-		return r
-	}
-	for _, b := range v.Followed.Box {
-		for _, p := range b.Rows {
-			text := ""
-			for i, s := range p.Stats {
-				if i > 0 {
-					text += " · "
-				}
-				text += b.Labels[i] + " " + s
-			}
-			r.Rows = append(r.Rows, ReportRow{Cells: []string{b.Team, b.Category, p.Name, text}})
-		}
-	}
-	if len(r.Rows) > 0 {
-		r.Status = "ok"
-		if v.DetailFailure != "" {
-			r.Status = "stale"
-		}
-	} else {
-		r.Note += " Box score not held."
-	}
-	return r
+	return wireLive(nowapp.LiveReading(nowapp.LiveSnapshot{Board: a.Board, Details: maps.Clone(a.Details), Follow: follow, Active: active, Zone: time.Local}))
 }

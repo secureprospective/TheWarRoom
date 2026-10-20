@@ -1,4 +1,4 @@
-package main
+package now
 
 import (
 	"cmp"
@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
@@ -45,7 +46,7 @@ func (v nowView) beatText(g leaguefeed.Game) string {
 	return v.name(win.Franchise) + " beat " + v.name(lose.Franchise) + " by " + scoreText(win.Points-lose.Points)
 }
 
-func (v nowView) weekSummary() Report {
+func (v nowView) weekSummary() report.Report {
 	r, ok := v.scoredReport("M-007", "Weekly summary",
 		"The week at a glance from MFL's scores: the high and low score, the league average, the closest game, "+
 			"the biggest win and the most points left on the bench (the best lineup MFL found from the same "+
@@ -67,9 +68,9 @@ func (v nowView) weekSummary() Report {
 	for _, s := range sides {
 		total += s.Points
 	}
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"High score", v.sideText(byPoints[0])}},
-		ReportRow{Cells: []string{"Low score", v.sideText(byPoints[len(byPoints)-1])}},
-		ReportRow{Cells: []string{"League average", scoreText((total + leaguefeed.Points(len(sides)/2)) / leaguefeed.Points(len(sides)))}})
+	r.Summary = append(r.Summary, report.Row{Cells: []string{"High score", v.sideText(byPoints[0])}},
+		report.Row{Cells: []string{"Low score", v.sideText(byPoints[len(byPoints)-1])}},
+		report.Row{Cells: []string{"League average", scoreText((total + leaguefeed.Points(len(sides)/2)) / leaguefeed.Points(len(sides)))}})
 	if len(v.shown.Games) > 0 {
 		margin := func(g leaguefeed.Game) leaguefeed.Points {
 			win, lose, _ := winnerFirst(g)
@@ -77,13 +78,13 @@ func (v nowView) weekSummary() Report {
 		}
 		games := slices.Clone(v.shown.Games)
 		slices.SortStableFunc(games, func(a, b leaguefeed.Game) int { return cmp.Compare(margin(a), margin(b)) })
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"Closest game", v.beatText(games[0])}},
-			ReportRow{Cells: []string{"Biggest win", v.beatText(games[len(games)-1])}})
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"Closest game", v.beatText(games[0])}},
+			report.Row{Cells: []string{"Biggest win", v.beatText(games[len(games)-1])}})
 	}
 	bench := slices.Clone(sides)
 	slices.SortStableFunc(bench, func(a, b leaguefeed.Side) int { return cmp.Compare(b.Best-b.Points, a.Best-a.Points) })
 	if left := bench[0].Best - bench[0].Points; left > 0 {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"Most left on the bench",
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"Most left on the bench",
 			v.name(bench[0].Franchise) + " · " + scoreText(left)}})
 	}
 	for _, s := range v.weekStarters()[:min(10, len(v.weekStarters()))] {
@@ -122,7 +123,7 @@ func (v nowView) recap(g leaguefeed.Game) string {
 	for _, s := range []leaguefeed.Side{win, lose} {
 		if p, ok := v.topStarter(s); ok {
 			name, pos := v.player(p.ID)
-			parts = append(parts, fmt.Sprintf("%s top starter was %s (%s) with %s.", possessive(v.name(s.Franchise)), name, pos,
+			parts = append(parts, fmt.Sprintf("%s top starter was %s (%s) with %s.", Possessive(v.name(s.Franchise)), name, pos,
 				scoreText(p.Points)))
 		}
 	}
@@ -139,7 +140,7 @@ func (v nowView) recap(g leaguefeed.Game) string {
 	return strings.Join(parts, " ")
 }
 
-func (v nowView) recaps() Report {
+func (v nowView) recaps() report.Report {
 	r, ok := v.scoredReport("M-021", "Recaps",
 		"Each game in plain sentences, written only from MFL's numbers: the score and margin, each side's top "+
 			"starter, and what the loser's best lineup (MFL's best lineup from the same roster) would have scored. "+
@@ -156,7 +157,7 @@ func (v nowView) recaps() Report {
 	return r
 }
 
-func (v nowView) topByPosition() Report {
+func (v nowView) topByPosition() report.Report {
 	r, ok := v.scoredReport("M-022", "Top scorers by position",
 		"The week's three best starters at each position, in the league's position order. Ties keep name order.",
 		"Player", "Franchise", "Points")
@@ -223,7 +224,7 @@ func allSides(w leaguefeed.WeekResult) []leaguefeed.Side {
 	return sides
 }
 
-func (v nowView) statChanges() Report {
+func (v nowView) statChanges() report.Report {
 	r := v.weeksReport("M-088", "Official stat changes",
 		"MFL corrects stats after games. For each scored week, the app compares the first copy of MFL's weekly "+
 			"results it held with the latest, player by player; a change can flip a result. Weeks MFL scored before "+
@@ -233,17 +234,17 @@ func (v nowView) statChanges() Report {
 	if r.Status == "failed" {
 		return r
 	}
-	firsts := v.now.held.firsts
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Copies compared", strconv.Itoa(firsts.copies)}})
+	firsts := v.now.Held.Firsts
+	r.Summary = append(r.Summary, report.Row{Cells: []string{"Copies compared", strconv.Itoa(firsts.Copies)}})
 	weeks := slices.Clone(v.weeks)
 	slices.Reverse(weeks)
 	for _, w := range weeks {
-		first, ok := firsts.weeks[w.Week]
+		first, ok := firsts.Weeks[w.Week]
 		if !ok || !weekScored(w) {
 			continue
 		}
-		players, flips := weekChanges(first.week, w)
-		group := "Week " + strconv.Itoa(w.Week) + " · first held " + reportTime(first.at, v.in.zone)
+		players, flips := weekChanges(first.Week, w)
+		group := "Week " + strconv.Itoa(w.Week) + " · first held " + reportTime(first.At, v.in.Zone)
 		for _, c := range players {
 			name, _ := v.player(c.player.ID)
 			row := v.row(c.franchise, name, v.name(c.franchise), scoreText(c.first), scoreText(c.now),
@@ -252,11 +253,11 @@ func (v nowView) statChanges() Report {
 			r.Rows = append(r.Rows, row)
 		}
 		for _, s := range flips {
-			r.Summary = append(r.Summary, ReportRow{Cells: []string{"Week " + strconv.Itoa(w.Week) + " result changed",
+			r.Summary = append(r.Summary, report.Row{Cells: []string{"Week " + strconv.Itoa(w.Week) + " result changed",
 				v.name(s.Franchise) + " now " + resultWord(s.Result)}})
 		}
 	}
-	if len(firsts.weeks) == 0 {
+	if len(firsts.Weeks) == 0 {
 		r.Status, r.Note = "empty", strings.TrimSpace(r.Note+
 			" No held copy of the weekly results has a scored week yet; changes show once MFL has been read again.")
 	} else if len(r.Rows) == 0 {
@@ -276,8 +277,8 @@ func signedText(p leaguefeed.Points) string {
 	return scoreText(p)
 }
 
-// possessive is a franchise name's possessive: "Buffalo Bills'", "Miami Heat's".
-func possessive(name string) string {
+// Possessive is a franchise name's Possessive: "Buffalo Bills'", "Miami Heat's".
+func Possessive(name string) string {
 	if strings.HasSuffix(name, "s") {
 		return name + "'"
 	}
