@@ -85,6 +85,26 @@ writes the league record.
   and every routed act (`testdata/wire/commissioner/denials.json`). Check it with a planted
   gate-skip mutant, and race two writes at one version to show exactly one lands.
 
+The native league extraction (reorg PR 12) added the owner side.
+
+- **The gate is the seam.** `native_gate.go` (the registry, `runNativeAction`, `ownerZone`) stays at
+  root whole: an owner action's `Run` takes the gate's `Permit`, so the only way to start one is
+  through the gate. The owner door (`submitOwnerAction`), each family's `seat` (which franchise a
+  command acts for) and the permit-matches-command checks in `recordOwnerAction`, `runLineupSet` and
+  `runDraftPick` stay beside it; they decide who acts, not how a value is shaped.
+- **The store checks again.** Each owner write re-checks inside its own transaction, with the version
+  check and the append: `ExecuteCommissionerWithFacts` asks the gate again, and `RecordDraftPick`
+  checks the permit, the franchise's seat and the draft. The adapter's gate call is the early
+  refusal, not the only one; neither moves.
+- **What moves is shaped data.** The facts mapping, the lineup decode, the bid season and the starting
+  snapshot's shape take held values as arguments. The reads of held state (`lookupMu`, `seasonMu`,
+  `refreshMu`, `targetSnapshotMu`) stay in the root adapter that takes the lock.
+- **Freeze an owner's refusals.** `testdata/wire/native/denials.json`: a stranger and an owner acting
+  for another franchise on every owner act and desk, an owner on the commissioner's starting snapshot
+  and overrides, each shut window, a passed deadline, a locked lineup player, a pick out of turn, an
+  unreadable session and each malformed request. Skipping the gate's refusal in `runNativeAction`
+  changes six entries (the store's second gate still refuses, in other words).
+
 ## Tests
 
 - Root keeps the wire golden and `TestReportWireTwinsMatch`, which fills every field of a

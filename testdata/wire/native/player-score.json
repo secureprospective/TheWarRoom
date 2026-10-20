@@ -1,0 +1,13 @@
+{
+ "league": "native.seed",
+ "player": "1000",
+ "season": 2026,
+ "week": 1,
+ "status": "Unavailable",
+ "words": "This player has no NFL statistics identity",
+ "missing": [
+  "This player has no matching NFL statistics identity"
+ ],
+ "items": [],
+ "changes": []
+}

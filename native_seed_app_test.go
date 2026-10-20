@@ -260,18 +260,3 @@ func TestNativeAssetsWire(t *testing.T) {
 	}
 	checkWire(t, "internal/commissioner/testdata/native-assets.wire.json", body, "native assets")
 }
-
-func TestHeldConferencesNameEachDivisionsConference(t *testing.T) {
-	t.Parallel()
-	config := league.RawConfig{
-		Conferences: []league.Conference{{ID: "00", Name: "AFC"}, {ID: "01", Name: " "}},
-		Divisions:   []league.Division{{ID: "00", Conference: "00"}, {ID: "01", Conference: "01"}, {ID: "02"}}}
-	got := heldConferences(config)
-	want := map[string]string{"00": "AFC", "01": "01"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("a division carries its conference's name, or its id when unnamed, and none when it has no conference: %v", got)
-	}
-	if len(heldConferences(league.RawConfig{})) != 0 {
-		t.Fatal("a league without conferences held none")
-	}
-}

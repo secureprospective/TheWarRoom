@@ -1,0 +1,37 @@
+{
+ "league": "native.seed",
+ "revision": 4,
+ "season": 2026,
+ "player": "0099",
+ "name": "Player, 0099",
+ "franchise": "Held team 2",
+ "action": "cut",
+ "actionName": "release",
+ "allowed": true,
+ "reason": "",
+ "needs": [],
+ "years": 0,
+ "salaryCents": null,
+ "salaries": [],
+ "deadMoney": [
+  {
+   "season": 2026,
+   "cents": 1050000000
+  }
+ ],
+ "reliefCents": 0,
+ "cap": {
+  "beforeCents": 1850000000,
+  "afterCents": 1900000000,
+  "changeCents": 50000000,
+  "roomAfterCents": 10600000000,
+  "words": "Counted salary this season rises by $500,000.00, from $18,500,000.00 to $19,000,000.00. The move ends within the salary cap."
+ },
+ "basis": [
+  "35% of each of his remaining salaries, $30,000,000.00 in all, charged to the 2026 season."
+ ],
+ "notes": [
+  "If another team claims Player, 0099 on waivers, this charge ends."
+ ],
+ "source": "App league; priced from this league's own rules and recorded contract, never from MFL"
+}

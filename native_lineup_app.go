@@ -1,15 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -20,33 +19,9 @@ import (
 // about, it is closed unless a window or an exception opens it.
 const lineupWindow leaguerules.Action = "lineup"
 
-// RawLineupSet is an owner's request to set the starters of their own franchise for a week.
-type RawLineupSet struct {
-	League    string   `json:"league"`
-	Franchise string   `json:"franchise"`
-	Season    int      `json:"season"`
-	Week      int      `json:"week"`
-	Starters  []string `json:"starters"`
-	Expected  int64    `json:"expected"`
-	Request   string   `json:"request"`
-}
-
-func decodeLineupSet(body []byte) (RawLineupSet, error) {
-	var in RawLineupSet
-	decoder := json.NewDecoder(bytes.NewReader(body))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(&in); err != nil {
-		return in, fmt.Errorf("read the lineup: %w", err)
-	}
-	if err := decoder.Decode(&struct{}{}); err != io.EOF {
-		return in, fmt.Errorf("send exactly one lineup")
-	}
-	if !strings.HasPrefix(in.League, "native.") || in.League == "native." || strings.TrimSpace(in.League) != in.League ||
-		strings.TrimSpace(in.Request) == "" || in.Expected < 0 {
-		return in, fmt.Errorf("choose an app league and a valid request and league version")
-	}
-	return in, nil
-}
+// RawLineupSet is an owner's request to set the starters of their own franchise for a week. It is not a
+// Wails model (the binding takes the body as a string), so it aliases the service type.
+type RawLineupSet = nativeapp.LineupSet
 
 // lineupSetAction is the registered owner action; native_gate_test.go holds it to the gate with the rest.
 func lineupSetAction() NativeOwnerAction {
@@ -57,9 +32,9 @@ func lineupSetAction() NativeOwnerAction {
 // it was handed is for this very lineup, so a permit for anything else cannot start it.
 func runLineupSet(ctx context.Context, a *App, permit commissioner.Permit,
 	input json.RawMessage) (commissioner.Receipt, error) {
-	in, err := decodeLineupSet(input)
+	in, err := nativeapp.DecodeLineupSet(input)
 	if err != nil {
-		return commissioner.Receipt{}, err
+		return commissioner.Receipt{}, err //nolint:wrapcheck // the lineup's own words, unchanged from before the move
 	}
 	if permit.League() != in.League || permit.Franchise() != in.Franchise || permit.Action() != lineupWindow {
 		return commissioner.Receipt{}, fmt.Errorf("this lineup was not cleared by the league calendar")
@@ -84,7 +59,7 @@ func runLineupSet(ctx context.Context, a *App, permit commissioner.Permit,
 // TargetNativeLineupSet sets an owner's lineup through the native action gate and the league ledger. The
 // lineup must be legal under the league's lineup check, and no player whose game has started can move.
 func (a *App) TargetNativeLineupSet(body string) (commissioner.Receipt, error) {
-	in, err := decodeLineupSet([]byte(body))
+	in, err := nativeapp.DecodeLineupSet([]byte(body))
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("lineup input: %w", err)
 	}

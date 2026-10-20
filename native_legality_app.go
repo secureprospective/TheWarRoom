@@ -3,76 +3,28 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// mflNoDraftYear is the year MFL fills in where it holds no draft year at all.
-const mflNoDraftYear = 1970
-
 // nativeFacts reads the football facts the app already holds, with no network: positions and draft years
-// from the held players directory, NFL listings from the held injuries feed. A fact that is not held is
-// left unmarked as held, so a check says it cannot tell rather than guessing.
+// from the held players directory under its lock, NFL listings from the held injuries feed.
 func (a *App) nativeFacts() nativecheck.Facts {
 	facts := nativecheck.Facts{}
 	a.lookupMu.Lock()
 	if a.hasLookup {
-		for _, id := range a.lookup.IDs() {
-			if f, ok := a.lookup.Facts(id); ok {
-				facts[id] = nativecheck.PlayerFacts{Name: f.Name, Position: nativePosition(f.Position), Team: f.Team,
-					DraftYear: f.DraftYear, DraftYearHeld: f.HasDraftYear && f.DraftYear > mflNoDraftYear}
-			}
-		}
+		facts = nativeapp.PlayerFacts(a.lookup)
 	}
 	a.lookupMu.Unlock()
 	if !a.injuriesHeld() {
 		return facts
 	}
-	listed := a.heldInjuries().Status
-	for id, f := range facts {
-		f.DesignationHeld, f.Designation = true, nativeDesignation(listed[id])
-		facts[id] = f
-	}
+	nativeapp.Designate(facts, a.heldInjuries().Status)
 	return facts
-}
-
-// nativePosition maps the engine's position onto the league rules' position codes.
-func nativePosition(p domain.Position) leaguerules.Position {
-	switch p {
-	case domain.PosK:
-		return leaguerules.PK
-	case domain.PosFlag:
-		return ""
-	case domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosDE, domain.PosDT, domain.PosLB,
-		domain.PosCB, domain.PosS:
-	}
-	return leaguerules.Position(p)
-}
-
-// nativeDesignation reads MFL's injury vocabulary as the NFL listings a league can accept for IR. A
-// listing the menu does not name is kept as MFL words it, so the check can say what it saw.
-func nativeDesignation(status string) leaguerules.NFLStatus {
-	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "":
-		return ""
-	case "ir", "ir-r":
-		return leaguerules.InjuredReserve
-	case "ir-pup":
-		return leaguerules.PUP
-	case "ir-nfi":
-		return leaguerules.NFI
-	case "out":
-		return leaguerules.Out
-	case "suspended":
-		return leaguerules.Suspended
-	}
-	return leaguerules.NFLStatus(strings.TrimSpace(status))
 }
 
 func (a *App) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
@@ -190,4 +142,111 @@ func (a *App) TargetNativeContractQuote(raw commissioner.RawContractQuote) (comm
 		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
 	}
 	return quote, nil
+}
+
+type RawNativeResultsScope struct {
+	League string `json:"league"`
+	Season int    `json:"season"`
+	Week   int    `json:"week"`
+}
+
+func (r RawNativeResultsScope) Validate() error {
+	if err := (RawLeagueScheduleScope{League: r.League}).Validate(); err != nil {
+		return fmt.Errorf("native results scope: %w", err)
+	}
+	if r.Season < 1920 || r.Season > 9999 || r.Week < 1 || r.Week > 22 {
+		return fmt.Errorf("choose a season and week")
+	}
+	return nil
+}
+
+// TargetNativeResults scores one week of the app league's published schedule from its lineups and held
+// NFL evidence. A game missing a score has no result yet.
+func (a *App) TargetNativeResults(league string, season, week int) (commissioner.NativeResults, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: week}).Validate(); err != nil {
+		return commissioner.NativeResults{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.NativeResults{}, fmt.Errorf("native results startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.NativeResults(ctx, league, season, week)
+	if err != nil {
+		return commissioner.NativeResults{}, fmt.Errorf("native results: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetNativeStandings ranks a season's regular-season results under the league's tie-breakers, with any
+// commissioner override beside the computed standings.
+func (a *App) TargetNativeStandings(league string, season int) (commissioner.NativeStandings, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.NativeStandings{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.NativeStandings{}, fmt.Errorf("native standings startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.NativeStandings(ctx, league, season)
+	if err != nil {
+		return commissioner.NativeStandings{}, fmt.Errorf("native standings: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetNativeScorePreview reads a score adjustment, in the form it would be sent, and warns when it
+// would turn over a game's result. It records nothing.
+func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, error) {
+	raw, err := commissioner.Decode(body)
+	if err != nil {
+		return commissioner.ScorePreview{}, fmt.Errorf("score preview input: %w", err)
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.ScorePreview{}, fmt.Errorf("score preview startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	preview, err := a.history.NativeScorePreview(ctx, raw)
+	if err != nil {
+		return commissioner.ScorePreview{}, fmt.Errorf("score preview: %w", err)
+	}
+	return preview, nil
+}
+
+// TargetNativeBracket reads a season's playoffs: the seeds, each round's games, anything the commissioner set
+// by hand, and the champion with the season's title once the final is decided.
+func (a *App) TargetNativeBracket(league string, season int) (commissioner.NativeBracket, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.NativeBracket{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.NativeBracket{}, fmt.Errorf("native bracket startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.NativeBracket(ctx, league, season)
+	if err != nil {
+		return commissioner.NativeBracket{}, fmt.Errorf("native bracket: %w", err)
+	}
+	return reading, nil
+}
+
+// TargetStatQueue lists the statistics the NFL changed after the league counted them, newest first, with the
+// decisions already made. Nothing in the queue moves a score until it is approved.
+func (a *App) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
+		return commissioner.StatQueue{}, err
+	}
+	if err := a.ready(); err != nil {
+		return commissioner.StatQueue{}, fmt.Errorf("statistics queue startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	defer cancel()
+	reading, err := a.history.StatQueue(ctx, league, season)
+	if err != nil {
+		return commissioner.StatQueue{}, fmt.Errorf("statistics queue: %w", err)
+	}
+	return reading, nil
 }
