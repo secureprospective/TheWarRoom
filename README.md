@@ -9,6 +9,7 @@
 <br/>
 
 [![Road to Alpha](https://img.shields.io/badge/ROAD_TO_ALPHA-CORE_SOLID_·_NEXT_LAYER_LOADING-DC143C?style=for-the-badge&labelColor=0d1117)](#-the-onion--build-progress)
+[![Opening Day](https://img.shields.io/badge/NEXT-ONE_SERVER_·_EVERY_OWNER_·_JULY_2027_DRAFT-1F6FEB?style=for-the-badge&labelColor=0d1117)](#-opening-the-doors--one-server-every-owner)
 
 [![Powered by Go](https://img.shields.io/badge/Powered%20by-Go%201.26-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Fitted Model](https://img.shields.io/badge/Model-Fitted%202021–2025%20·%20Holdout%20Checked-8A2BE2)](#-3--two-numbers-per-player)
@@ -39,6 +40,7 @@
  │  PIPELINE ....... LIVE       MFL · nflverse · DynastyProcess · CFBD · free   │
  │  POWER RANKS .... LIVE       this season · the franchise · Δ every run       │
  │  LEDGER ......... EXACT      int64 cents · append-only · $0.00 drift, ever   │
+ │  SERVER ......... BUILDING   one brain · every owner's desktop · July 2027   │
  │  ENDGAME ........ CHARTED    replace the platform · seat the AI owners       │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -318,9 +320,56 @@ The console gets built like the engine was: **like an onion.** Each ring cuts th
       One operator, one console, one league — proven before it's shared.
 ```
 
-*Alpha is deliberately a seat for one.* The tool gets run hard against a real season by the person who knows exactly what it should say — because a front office that hasn't survived its own commissioner has no business in anyone else's hands. The doors open when the product has earned them, not when the roadmap says so.
+*Alpha is deliberately a seat for one.* The tool gets run hard against a real season by the person who knows exactly what it should say — because a front office that hasn't survived its own commissioner has no business in anyone else's hands. The doors open when the product has earned them, not when the roadmap says so. **And it's earning them: the doors open for the July 2027 draft** [↓](#-opening-the-doors--one-server-every-owner).
 
 The roadmap to done: [`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`](docs/build-handoffs/UI_Target_Roadmap_2026-10.md) · the design sessions behind it: [`docs/ui/Wireframe_Session_Plan.md`](docs/ui/Wireframe_Session_Plan.md).
+
+---
+
+## 🌐 Opening the Doors — One Server, Every Owner
+
+> A front office for one is a tool. A front office for the whole league is a **platform.**
+> **Target: every owner on their own desktop, running the July 2027 rookie draft through TheWarRoom.**
+
+Today the brain lives on the commissioner's desktop. Next, it moves out: **one server in the homelab, one database, one clock**, and every owner's app (Windows, Mac or Linux) talks to it. The engine doesn't get rewritten for this. It was built pure from day one, so it simply changes address.
+
+```
+   🖥️ Owner desktops ×12+          ☁️ Cloudflare Tunnel           🏠 twr-server
+   Win · Mac · Linux        ──HTTPS──▶  no open ports at home ◀──────  the league engine
+   password · TOTP for the commish      no exposed IP                 the ONE ledger (truth)
+                                                                      owns every deadline
+                                                                         │
+                                                                         ▼ every 15 min
+                                                                      💾 encrypted off-site backup
+```
+
+**Five gates, all decided before a line of server code was written:**
+
+| Gate | The ruling |
+|:--|:--|
+| 🧱 **Shape** | A separate server program. One database. The server owns the clock, so no desktop can fake a deadline. |
+| 🔑 **Logins** | Invite codes handed over in person. Passwords hashed with Argon2id. TOTP for commissioners. Printed recovery codes. |
+| 🛡️ **Security** | Cloudflare Tunnel, an isolated network and an encrypted disk. **Eight security tests must pass before a single owner connects.** |
+| ⏱️ **Rollout** | Never lose more than 15 minutes of data. Back up and running within 4 hours. Sealed backup keys held off-site by a trusted deputy. |
+| 🤖 **Pi Durable** | A side experiment in self-healing builds: failure → test → fix → a PR for a human. Agents open PRs; they never merge. |
+
+### 🔬 Measure first, build second
+
+Before building the server, **Block 0 tested every assumption the plan rested on.** Most held up: the engine already lifts cleanly out of the desktop app, the homelab has room to spare, and a login costs 0.16 s of hashing. One didn't: replaying the ledger got dramatically slower as it grew. **2,000 events took 135 seconds to read.** No real league is that big yet, which is exactly why nobody had noticed, and exactly why we went looking.
+
+The fix is built and measured: **the same 2,000 events now read in 66 ms, about 2,000× faster, and 10,000 read in 123 ms.** It lands in Block B, with faster tests (the history suite went from 10 minutes to about 1) and a Windows build that compiles.
+
+```
+   ✅ BLOCK A   fast push + CI ──────────────── done
+   ✅ BLOCK 0   the truth pass ──────────────── done · guesses → measurements
+   ▶  BLOCK B   safe today ──────────────────── replay fix · Windows · migrations · backups · restore drill
+      BLOCK C   the server core ─────────────── Dec → Feb · accounts · logins · the tunnel
+      BLOCK D   anyone can install it ───────── Mar · installers · the updater
+      BLOCK E   upgrades + security tests ───── Apr
+   🔒 MAY 28    build freeze
+   ✉️ JUN 25    invites go out · drills
+   🏈 JULY      THE DRAFT
+```
 
 ---
 
@@ -394,7 +443,7 @@ MFL provides six things. **TheWarRoom takes them back in order, and no cut ships
       2 · SCORING ─────────────────── stored rules × ingested stats.
       3 · WAIVERS & AUCTION ───────── the first operational cut. Needs the calendar.
       4 · ROOKIE DRAFT ROOM ───────── same machinery, one round later.
-      5 · LINEUPS ────────────────── needs multi-user. MFL becomes display-only.
+      5 · LINEUPS ────────────────── needs multi-user, and multi-user is being built now (above). MFL becomes display-only.
       6 · HOSTING & COMMS ────────── last. The lights go out on the old building.
 ```
 

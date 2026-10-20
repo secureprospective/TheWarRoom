@@ -88,7 +88,7 @@ func (a *App) TargetWhatIf(raw RawWhatIfRequest) Reading[WhatIfView] {
 	defer a.whatifMu.Unlock()
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
 	defer cancel()
 	session, store, err := a.whatIfSession(ctx, raw)
 	if err != nil {
