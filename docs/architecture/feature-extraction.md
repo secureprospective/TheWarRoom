@@ -89,3 +89,18 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   root. A populated wire-twin test complements fixture goldens by exercising nullable fields.
 - Placement and SYSTEM_MAP changes that remove old paths must accompany the move commit:
   those gates reject references to deleted files. Finish the narrative and root ratchet next.
+
+## Comms additions
+
+- Held season exports pass as `report.Feed[T]` snapshots; `report.Shell`, `report.Time` and
+  `report.ProseName` own existing presentation vocabulary. Root helpers delegate, rather than
+  copying formatters into each feature. `Feed` does not transfer ownership of held state.
+- Shared-lock reads and refresh publication can remain root callbacks. Capture freshness
+  metadata before taking the existing refresh lock, then pass it to the service under that
+  lock, preserving the original ordering. Authentication, key removal and archive fallback
+  stay with their owner.
+- Preserve cross-feature scenarios in their original root files. A test-only fixture facade
+  can delegate to the extracted service without moving another feature's test or duplicating
+  production construction. Shared fixture loading lives in `commstest`.
+- Mutants must run in isolation: restore the source before starting a full-suite compilation,
+  otherwise an unrelated test process can compile the planted mutation.
