@@ -15,6 +15,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // Row is one table row; it is main.ReportRow.
@@ -107,4 +108,27 @@ func ScoreText(p leaguefeed.Points) string {
 // Hundredths rounds a decimal score to exact hundredths of a point.
 func Hundredths(points float64) leaguefeed.Points {
 	return leaguefeed.Points(math.Round(points * 100))
+}
+
+type ReadingStatus string
+
+const (
+	ReadingOK       ReadingStatus = "ok"
+	ReadingThin     ReadingStatus = "thin"
+	ReadingFailed   ReadingStatus = "failed"
+	ReadingNotWired ReadingStatus = "not_wired"
+)
+
+type Reading[T any] struct {
+	snapshot.Sourced[T]
+	Status        ReadingStatus `json:"status"`
+	AbsenceReason *string       `json:"absenceReason"`
+	Count         int           `json:"count"`
+	Threshold     int           `json:"threshold"`
+	Baseline      string        `json:"baseline"`
+	Cutoff        string        `json:"cutoff"`
+	Method        string        `json:"method"`
+	InputSHA      string        `json:"inputSHA"`
+	BuildStamp    string        `json:"buildStamp"`
+	HowCounted    string        `json:"howCounted"`
 }
