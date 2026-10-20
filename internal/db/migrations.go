@@ -94,6 +94,10 @@ func (p *Pools) migrateStep(ctx context.Context, version int, step Migration) er
 
 func (p *Pools) backupMigration(ctx context.Context, version int) (string, error) {
 	dest := fmt.Sprintf("%s.pre-v%d.bak", p.path, version)
+	// VACUUM INTO accepts an empty existing file; a non-empty one still fails it.
+	if err := createOwnerOnly(dest); err != nil {
+		return "", fmt.Errorf("db: pre-migration backup: %w", err)
+	}
 	if _, err := p.write.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
 		return "", fmt.Errorf("db: pre-migration backup: %w", err)
 	}

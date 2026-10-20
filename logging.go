@@ -18,7 +18,7 @@ const maxLogFiles = 10
 // startup.
 func setupLogging(dir string) error {
 	logDir := filepath.Join(dir, "logs")
-	if err := os.MkdirAll(logDir, 0o750); err != nil {
+	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		return fmt.Errorf("create log dir %q: %w", logDir, err)
 	}
 	name := fmt.Sprintf("thewarroom-%s.log", time.Now().UTC().Format("20060102T150405Z"))

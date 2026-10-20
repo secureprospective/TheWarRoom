@@ -45,6 +45,9 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
 		return nil, err
 	}
+	if err := createOwnerOnly(path); err != nil {
+		return nil, err
+	}
 	writeDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		path, busyTimeoutMS,
@@ -89,6 +92,21 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	}
 
 	return &Pools{read: read, write: write, path: path}, nil
+}
+
+// createOwnerOnly creates a missing file empty and 0600 (an empty file is a valid empty
+// database). SQLite would create it 0644, and it gives the WAL, shared-memory and journal
+// files the main file's mode, so this keeps all of them owner-only. An existing file is
+// left as it is.
+func createOwnerOnly(path string) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	return nil
 }
 
 func checkUserVersion(ctx context.Context, path string, maxVersion int) (err error) {

@@ -192,3 +192,27 @@ func TestOpenRefusesNewerVersionWithoutWriting(t *testing.T) {
 		})
 	}
 }
+
+// The database, its WAL and shared-memory files, and a pre-migration backup hold the league
+// ledger: other local users must not read them.
+func TestOpenCreatesOwnerOnlyFiles(t *testing.T) {
+	t.Parallel()
+	pools := tempPools(t)
+	ctx := context.Background()
+	if _, err := pools.Write().ExecContext(ctx, "CREATE TABLE t (x INTEGER)"); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	backup, err := pools.backupMigration(ctx, 1)
+	if err != nil {
+		t.Fatalf("backup: %v", err)
+	}
+	for _, path := range []string{pools.path, pools.path + "-wal", pools.path + "-shm", backup} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat %s: %v", path, err)
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Errorf("%s mode = %v, want 0600", filepath.Base(path), mode)
+		}
+	}
+}
