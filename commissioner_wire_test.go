@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -233,4 +235,44 @@ func heldSeedSnapshot(t *testing.T) *commissioner.RawNativeSnapshot {
 		t.Fatal(err)
 	}
 	return wire.Snapshot
+}
+
+// TestCommissionerSimultaneousChangesLandOnce races two changes made at the same league version, with
+// readers of the same ledger running alongside: the version check and the ledger write share one store
+// transaction, so exactly one change lands and the other reads as stale.
+func TestCommissionerSimultaneousChangesLandOnce(t *testing.T) {
+	t.Parallel()
+	f := waiverApp(t)
+	first := f.raw(t, commissioner.RulesSet, commissioner.RawArgs{Field: "roster.limits",
+		Value: json.RawMessage(`{"min":0,"max":90}`)}, "league")
+	second := first
+	second.Request, second.Args.Value = "race.second", json.RawMessage(`{"min":0,"max":80}`)
+	var wg sync.WaitGroup
+	errs := make([]error, 2)
+	for i, raw := range []commissioner.RawCommand{first, second} {
+		wg.Go(func() { _, errs[i] = f.app.TargetCommissionerExecute(encodedCommand(t, raw)) })
+	}
+	for range 4 {
+		wg.Go(func() {
+			_, _ = f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
+			_, _ = f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
+				LocalZone: "UTC", Franchise: "franchise.01", Action: "cut"})
+			_, _ = f.app.TargetCommissionerLedger(legalityLeague)
+		})
+	}
+	wg.Wait()
+	if (errs[0] == nil) == (errs[1] == nil) {
+		t.Fatalf("two changes at one version must land exactly once: %v / %v", errs[0], errs[1])
+	}
+	lost := errs[0]
+	if lost == nil {
+		lost = errs[1]
+	}
+	if !strings.HasPrefix(lost.Error(), "League version is ") {
+		t.Fatalf("the losing change must read as stale: %v", lost)
+	}
+	records, err := f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil || int64(len(records)) != first.Expected+1 {
+		t.Fatalf("ledger holds %d records, want %d: %v", len(records), first.Expected+1, err)
+	}
 }
