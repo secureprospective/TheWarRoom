@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"time"
 
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -166,6 +168,7 @@ func (a *App) heldResearchInput() researchInput {
 	a.seasonMu.Lock()
 	held := a.research
 	held.feeds, held.news = maps.Clone(held.feeds), maps.Clone(held.news)
+	held.links = maps.Clone(held.links)
 	injuries := a.seasonInjuries
 	schedules := maps.Clone(a.now.schedules)
 	a.seasonMu.Unlock()
@@ -264,7 +267,7 @@ func (a *App) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 	if _, _, ok := in.lookup.DisplayFacts(pid.String()); !ok {
 		return ResearchPlayerReading{}, fmt.Errorf("research: player not in the held directory")
 	}
-	return (researchView{researchInput: in}).playerReading(pid.String(), a.rulebook.FranchiseNames(), "How this is counted"), nil
+	return wireResearchPlayer(researchapp.ReadPlayer(in.snapshot(), pid.String(), a.rulebook.FranchiseNames(), "How this is counted")), nil
 }
 
 func (a *App) researchStatus(text string) {

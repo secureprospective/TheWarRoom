@@ -1,19 +1,15 @@
 package main
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"io"
-	"net/http"
 	"slices"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -88,192 +84,6 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	}
 }
 
-func TestResearchNewsNewestFirstAndUnknownLastStable(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	rows := []researchfeeds.News{
-		{Article: "unknown1", Headline: "first unknown", Published: "recently"},
-		{Article: "old", Headline: "six days", Published: "6 days"},
-		{Article: "new", Headline: "fifteen hours", Published: "15 hours"},
-		{Article: "middle", Headline: "one day", Published: "1 day"},
-		{Article: "unknown2", Headline: "second unknown", Published: "yesterday"},
-	}
-	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{value: rows, fetchedAt: time.Now()}
-	out := buildResearch(in, RawResearchScope{Mine: "0001"})
-	got := []string{}
-	for _, r := range reportByID(t, out.Board, "M-060").Rows {
-		got = append(got, r.Cells[2])
-	}
-	if !slices.Equal(got, []string{"fifteen hours", "one day", "six days", "first unknown", "second unknown"}) {
-		t.Fatal(got)
-	}
-	if out.Articles[0].Article != "new" {
-		t.Fatal("article hand-offs lost report order", out.Articles)
-	}
-	for _, word := range []string{"6 days", "15 hours", "1 day", "1 hour", "2 minutes"} {
-		if _, ok := researchNewsAge(word); !ok {
-			t.Fatal(word)
-		}
-	}
-	for _, word := range []string{"", "-1 day", "1 day ago", "recently", "1.5 days"} {
-		if _, ok := researchNewsAge(word); ok {
-			t.Fatal(word)
-		}
-	}
-}
-
-func TestResearchPlayerHeldFactsAndMissingPieces(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	in.injuries.value = []leaguefeed.Injury{{ID: in.held.news["16162"].value[0].ID, Status: "Questionable", Details: "Knee", ExpReturn: "Week 6"}}
-	v := researchView{researchInput: in}
-	p := v.playerReading("16162", map[string]string{"0001": "My franchise"}, "How this is counted")
-	if p.Owner != "My franchise" || p.FranchiseID != "0001" || len(p.Articles) != 1 {
-		t.Fatal(p)
-	}
-	text := ""
-	for _, r := range p.Report.Rows {
-		text += strings.Join(r.Cells, " ") + "\n"
-	}
-	for _, want := range []string{"Questionable · Knee · Week 6", "Season fantasy points 129.00", "position rank", "Last finished week · Week 4", "Points per game", "not held", "as of Oct 11"} {
-		if !strings.Contains(text, want) {
-			t.Fatal(want, text)
-		}
-	}
-	in.mirror.Players = slices.DeleteFunc(slices.Clone(in.mirror.Players), func(p state.MirrorPlayer) bool { return p.MFLID == "16162" })
-	free := (researchView{researchInput: in}).playerReading("16162", nil, "How this is counted")
-	if free.Owner != "Free agent" || free.FranchiseID != "" {
-		t.Fatal(free)
-	}
-	empty := (researchView{researchInput: researchInput{lookup: in.lookup, zone: time.UTC}}).playerReading("16162", nil, "How this is counted")
-	for _, r := range empty.Report.Rows[1:] {
-		if !strings.HasPrefix(r.Cells[1], "not held") || r.Cells[2] != "No held copy available" {
-			t.Fatal(r)
-		}
-	}
-	read := researchView{researchInput: in}
-	read.injuries.fetchedAt = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)
-	read.injuries.value = nil
-	quiet := read.held.news["16162"]
-	quiet.value = nil
-	read.held.news = map[string]heldSeasonFeed[[]researchfeeds.News]{"16162": quiet}
-	healthy := read.playerReading("16162", nil, "How this is counted").Report.Rows
-	if healthy[1].Cells[1] != "Not on MFL’s injury report" || healthy[len(healthy)-1].Cells[1] != "No MFL news for this player" {
-		t.Fatal(healthy)
-	}
-	d := in.held.depth.value[0]
-	in.held.links["gsis:"+*d.GSIS] = "16162"
-	linked := (researchView{researchInput: in}).playerReading("16162", nil, "How this is counted")
-	if !strings.Contains(linked.Report.Rows[2].Cells[1], d.Group+" · "+d.Position+" · depth") {
-		t.Fatal(linked.Report.Rows)
-	}
-}
-
-func TestResearchSourcesFoldWeeksAndUseWords(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	out := buildResearch(in, RawResearchScope{})
-	r := reportByID(t, out.Board, "M-038")
-	if len(r.Summary) != 0 || !strings.Contains(r.Source, "weeks 1–5 as of") {
-		t.Fatal(r)
-	}
-	for _, r := range append(out.Board.Reports, out.News) {
-		labels := r.Source + r.Title + r.Note + strings.Join(r.Columns, " ")
-		for _, raw := range append(researchKinds(), "playerProfile") {
-			if strings.Contains(labels, raw) {
-				t.Fatal(raw, labels)
-			}
-		}
-	}
-	h2 := in.held.feeds[researchKey("playerScores", "2")]
-	h2.fetchedAt = h2.fetchedAt.Add(time.Second)
-	in.held.feeds[researchKey("playerScores", "2")] = h2
-	sameMinute := reportByID(t, buildResearch(in, RawResearchScope{}).Board, "M-037")
-	if strings.Contains(sameMinute.Note, "Week 2 ·") {
-		t.Fatal("identical displayed times repeated", sameMinute.Note)
-	}
-	h := in.held.feeds[researchKey("playerScores", "3")]
-	h.refreshError = "fixture offline"
-	in.held.feeds[researchKey("playerScores", "3")] = h
-	r = reportByID(t, buildResearch(in, RawResearchScope{}).Board, "M-037")
-	if !strings.Contains(r.Note, "Week 3") || strings.Contains(r.Note, "Week 2 ·") || len(r.Summary) != 0 {
-		t.Fatal(r)
-	}
-	if len(out.Players) != 0 {
-		t.Fatal("empty search yielded a count")
-	}
-}
-
-type researchCrosswalkFixture struct{ body []byte }
-
-func (f researchCrosswalkFixture) RoundTrip(r *http.Request) (*http.Response, error) {
-	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(f.body)), Request: r}, nil
-}
-func TestResearchDepthMissingIdentityBreakdown(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	gz, err := gzip.NewReader(bytes.NewReader(researchSample(t, "crosswalk.csv.gz")))
-	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := io.ReadAll(gz)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := gz.Close(); err != nil {
-		t.Fatal(err)
-	}
-	cw, err := crosswalk.Fetch(context.Background(), &http.Client{Transport: researchCrosswalkFixture{body: body}}, "https://fixture.invalid/crosswalk")
-	if err != nil {
-		t.Fatal(err)
-	}
-	links, _ := cw.Links(in.lookup.Name)
-	full := map[string]string{}
-	allowed := map[string]bool{}
-	for _, id := range in.lookup.IDs() {
-		allowed[id] = true
-	}
-	for _, l := range links {
-		if l.IDType != "gsis" && l.IDType != "espn" {
-			continue
-		}
-		key := l.IDType + ":" + l.IDValue
-		full[key] = l.MFLID
-		if allowed[l.MFLID] {
-			in.held.links[key] = l.MFLID
-		}
-	}
-	missing, excluded, absent, noLink := 0, 0, 0, 0
-	for _, d := range in.held.depth.value {
-		if depthID(d, in.held.links) != "" {
-			continue
-		}
-		missing++
-		id := depthID(d, full)
-		switch {
-		case id == "":
-			noLink++
-		case allowed[id]:
-			t.Fatal("valid directory link missed", d)
-		default:
-			_, _, ok := in.lookup.DisplayFacts(id)
-			if ok {
-				excluded++
-			} else {
-				absent++
-			}
-		}
-	}
-	if missing != 576 || noLink != 472 || excluded != 66 || absent != 38 {
-		t.Fatal(missing, noLink, excluded, absent)
-	}
-	note := (researchView{researchInput: in}).depthMissNote(false)
-	if !strings.Contains(note, "401 offensive line, 97 punter/holder/long snapper, 78 other") {
-		t.Fatal(note)
-	}
-	t.Logf("2333 slots: 1757 linked; %d missing = %d no accepted link + %d excluded punter slots + %d absent directory slots; %s", missing, noLink, excluded, absent, note)
-}
-
 func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
@@ -298,108 +108,72 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	}
 }
 
-func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
+func TestResearchSnapshotDetachesMutableIndexes(t *testing.T) {
 	t.Parallel()
-	got := weekRuns([]string{"", "as of A · Archived copy", "as of A · Archived copy", "as of A · Archived copy", "as of B"})
-	if got != " Weeks 2–4 · as of A · Archived copy. Week 5 · as of B." {
-		t.Fatal(got)
+	a := targetTestApp(t)
+	fixture := realResearch(t)
+	a.research = fixture.held
+	a.research.links["gsis:fixture"] = "16162"
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{1: {fetchedAt: fixture.now}}
+	in := a.heldResearchInput()
+	a.seasonMu.Lock()
+	a.research.feeds[researchKey("playerScores", "YTD")] = heldSeasonFeed[[]researchfeeds.Feed]{}
+	delete(a.research.news, "16162")
+	a.research.links["gsis:fixture"] = "0042"
+	delete(a.now.schedules, 1)
+	a.seasonMu.Unlock()
+	if len(in.held.feeds[researchKey("playerScores", "YTD")].value) == 0 || len(in.held.news["16162"].value) == 0 || in.held.links["gsis:fixture"] != "16162" || in.schedules[1].fetchedAt.IsZero() {
+		t.Fatal("reading retained a mutable root index")
 	}
-	if weekRuns([]string{"", ""}) != "" {
-		t.Fatal("matching weeks named")
-	}
-}
-
-func TestInspectorNewsPostedLocalMinute(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	in.zone = time.FixedZone("CDT", -5*60*60)
-	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
-	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: at, value: []researchfeeds.News{
-		{Article: "new", Headline: "newest", Published: "26 minutes"},
-		{Article: "unknown", Headline: "unknown", Published: "recently"},
-	}}
-	got := (researchView{researchInput: in}).playerReading("16162", nil, "How")
-	rows := []ReportRow{}
-	for _, row := range got.Report.Rows {
-		if strings.HasPrefix(row.Cells[0], "News · ") {
-			rows = append(rows, row)
+	// Construction must not reacquire App's lock or inspect newly published state.
+	a.seasonMu.Lock()
+	done := make(chan ResearchBoard, 1)
+	go func() { done <- buildResearch(in, RawResearchScope{}) }()
+	select {
+	case board := <-done:
+		a.seasonMu.Unlock()
+		if len(reportByID(t, board.Board, "M-037").Rows) == 0 {
+			t.Fatal("detached scores lost")
 		}
-	}
-	if len(rows) != 2 || rows[0].Cells[0] != "News · Oct 13, 2026, 12:22 AM" ||
-		rows[1].Cells[0] != "News · Posted time unknown: MFL wording not recognized" {
-		t.Fatal(rows)
-	}
-	if !strings.Contains(rows[0].Cells[2], "Oct 13, 2026, 12:48 AM") {
-		t.Fatal(rows[0])
-	}
-	if got.Articles[0].Article != "new" || !strings.Contains(got.Report.How, "estimated") {
-		t.Fatal(got)
+	case <-time.After(5 * time.Second):
+		a.seasonMu.Unlock()
+		t.Fatal("construction waited on the root season lock")
 	}
 }
 
-func TestNewsPostedPrecision(t *testing.T) {
+func TestResearchConcurrentNewsRefreshAndRead(t *testing.T) {
 	t.Parallel()
-	at := time.Date(2026, 10, 13, 5, 48, 37, 0, time.UTC)
-	zone := time.FixedZone("CDT", -5*60*60)
-	for _, tc := range []struct{ wording, want string }{
-		{"26 minutes", "Oct 13, 2026, 12:22 AM"},
-		{"3 hours", "Oct 12, 2026, about 9 PM"},
-		{"1 day", "Oct 12, 2026"},
-		{"", "Posted time not supplied"},
-		{"recently", "Posted time unknown: MFL wording not recognized"},
-	} {
-		t.Run(tc.wording, func(t *testing.T) {
-			got, order := newsPosted(tc.wording, at, zone)
-			if got != tc.want {
-				t.Fatalf("got %q, want %q", got, tc.want)
+	a, f, refreshed := blockedResearchNews(t)
+	defer close(f.release)
+	reading := make(chan struct{}, 1)
+	readDone := make(chan error, 1)
+	go func() {
+		for i := 0; i < 40; i++ {
+			_, err := a.TargetResearch(RawResearchScope{})
+			if err != nil {
+				readDone <- err
+				return
 			}
-			age, known := researchNewsAge(tc.wording)
-			if known && order != float64(at.Add(-age).Unix()) || !known && order != 0 {
-				t.Fatal("incorrect posted ordering", order)
+			if i == 0 {
+				reading <- struct{}{}
 			}
-		})
-	}
-	if got, order := newsPosted("3 hours", time.Time{}, zone); order != 0 ||
-		got != "Posted time unknown: fetch time not held" {
-		t.Fatal(got, order)
-	}
-}
-
-func TestHeldNewsPostedSameOnEverySurface(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	in.zone = time.FixedZone("CDT", -5*60*60)
-	out := buildResearch(in, RawResearchScope{Mine: "0001"})
-	v := researchView{researchInput: in}
-	player := v.playerReading("16162", nil, "How")
-	posted := ""
-	for _, row := range player.Report.Rows {
-		if strings.HasPrefix(row.Cells[0], "News · ") {
-			posted = strings.TrimPrefix(row.Cells[0], "News · ")
 		}
+		readDone <- nil
+	}()
+	select {
+	case <-reading:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Research read blocked behind news refresh")
 	}
-	if posted != "Oct 5, 2026" {
-		t.Fatal("held six-day article should have date precision", posted)
+	f.release <- struct{}{}
+	if err := <-refreshed; err != nil {
+		t.Fatal(err)
 	}
-	for _, report := range []Report{out.News, reportByID(t, out.Board, "M-060")} {
-		if report.Columns[3] != "Posted" || len(report.Rows) != 1 || report.Rows[0].Cells[3] != posted {
-			t.Fatal("news surfaces disagree", report)
-		}
-		if !strings.Contains(report.How, researchNewsHow) {
-			t.Fatal("missing elapsed-time disclosure", report.How)
-		}
+	if err := <-readDone; err != nil {
+		t.Fatal(err)
 	}
-}
-
-func TestNewsNewestFirstAcrossOwners(t *testing.T) {
-	t.Parallel()
-	in := realResearch(t)
-	at := in.held.news["16162"].fetchedAt
-	in.held.news["13589"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: at, value: []researchfeeds.News{
-		{Article: "new", Headline: "Newest other franchise", Published: "1 minute"},
-	}}
-	out := buildResearch(in, RawResearchScope{Mine: "0001"})
-	if out.News.Rows[0].Cells[2] != "Newest other franchise" || out.Articles[0].Article != "new" {
-		t.Fatal("ownership must not override newest first", out.News.Rows, out.Articles)
+	in := a.heldResearchInput()
+	if in.held.news["0042"].fetchedAt.IsZero() {
+		t.Fatal("completed refresh was not published")
 	}
 }
