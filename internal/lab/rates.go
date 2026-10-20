@@ -95,18 +95,6 @@ func PerDelivered(p *Price, d *Delivered) *Range {
 	return &Range{value, value * math.Exp(-Z*rel), value * math.Exp(Z*rel), math.Exp(2 * Z * rel)}
 }
 
-func evidence(r *Range) string {
-	if r == nil {
-		return "none"
-	}
-	if r.Spread <= 2.5 {
-		return "solid"
-	}
-	if r.Spread <= 6 {
-		return "rough"
-	}
-	return "thin"
-}
 func MeanVar(values []float64) Stats {
 	n := len(values)
 	if n == 0 {
