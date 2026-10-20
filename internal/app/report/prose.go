@@ -16,3 +16,10 @@ type Held[T any] struct {
 	Value []T
 	Feed
 }
+
+func PluralNoun(n float64, noun string) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
+}

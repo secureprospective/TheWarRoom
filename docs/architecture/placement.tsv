@@ -167,8 +167,6 @@ pool_market_layout_test.go	offers
 pool_wire_test.go	offers
 power_rankings_app.go	scoring
 race_app.go	race
-race_playoffs_reading.go	race
-race_points_reading.go	race
 race_reading.go	race
 race_test.go	race
 refresh_app.go	control
@@ -229,6 +227,7 @@ internal/app/market	market
 internal/app/market/markettest	market
 internal/app/native	commissioner
 internal/app/report	platform
+internal/app/season	platform
 internal/archive	archive
 internal/commissioner	commissioner
 internal/db	platform
@@ -314,3 +313,5 @@ internal/app/offers	offers
 internal/app/personal	offers
 internal/app/pool	offers
 internal/app/bids	offers
+internal/app/race	race
+internal/app/race/racetest	race

@@ -3,6 +3,8 @@ package scoring
 import (
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
@@ -36,16 +38,16 @@ func TestPowerRowsMoveAgainstThePreviousRun(t *testing.T) {
 // the roster and its age, and each view counts the roster its own way by default.
 func TestBoardWeightsAndDefaultsPerView(t *testing.T) {
 	t.Parallel()
-	if w := boardWeights(ViewSeason, 0.3, true, 4); w.Roster != 0.5 || w.Age != 0 {
+	if w := boardWeights(season.ViewSeason, 0.3, true, 4); w.Roster != 0.5 || w.Age != 0 {
 		t.Errorf("auto after 4 weeks: %+v, want roster 0.5", w)
 	}
-	if w := boardWeights(ViewSeason, 0.3, false, 4); w.Roster != 0.3 {
+	if w := boardWeights(season.ViewSeason, 0.3, false, 4); w.Roster != 0.3 {
 		t.Errorf("the slider's weight must hold when auto is off: %+v", w)
 	}
-	if w := boardWeights(ViewFranchise, 0.3, true, 4); w.Roster != 1 || w.Age != powerrankings.FranchiseAgeWeight {
+	if w := boardWeights(season.ViewFranchise, 0.3, true, 4); w.Roster != 1 || w.Age != powerrankings.FranchiseAgeWeight {
 		t.Errorf("franchise: %+v", w)
 	}
-	if DefaultAgg(ViewSeason) != m2service.AggLineup || DefaultAgg(ViewFranchise) != m2service.AggSum {
+	if DefaultAgg(season.ViewSeason) != m2service.AggLineup || DefaultAgg(season.ViewFranchise) != m2service.AggSum {
 		t.Error("view defaults")
 	}
 }

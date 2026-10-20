@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
@@ -150,7 +152,7 @@ func (a *App) seasonWeeks() int {
 	return n
 }
 
-func wirePower(b scoringapp.PowerRankingsResult) PowerRankingsResult {
+func wirePower(b season.PowerRankingsResult) PowerRankingsResult {
 	out := PowerRankingsResult{OK: b.OK, Error: b.Error, Label: b.Label, Season: b.Season, View: b.View,
 		Weight: b.Weight, WeightAuto: b.WeightAuto, AgeWeight: b.AgeWeight, ModelRunID: b.ModelRunID,
 		PreviousRunID: b.PreviousRunID, AggMode: b.AggMode, StarterN: b.StarterN, Freshness: b.Freshness,

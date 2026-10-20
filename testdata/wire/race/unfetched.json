@@ -1,0 +1,322 @@
+{
+ "standings": {
+  "id": "M-002",
+  "title": "Standings",
+  "note": "Report data unavailable; refresh from MFL to fill this report. MFL's tiebreak order is not held, so ties keep MFL's franchise order; refresh from MFL.",
+  "status": "failed",
+  "source": "Source: MFL",
+  "asOf": "As of: not fetched",
+  "how": "Records count regular-season games by MFL's result; a tie counts half a win in win percentage. Points for counts every week MFL scored, playoff weeks included, as MFL's own standings do; points against counts regular-season games. Games back trail the division leader: a win and a loss are one game apart. Each division is in the league's tiebreak order (Tiebreakers shows each step).",
+  "columns": [
+   "Franchise",
+   "Record",
+   "Win %",
+   "Points for",
+   "Points against",
+   "Streak",
+   "Games back"
+  ],
+  "rows": [],
+  "summary": null,
+  "link": null
+ },
+ "board": {
+  "title": "League race reports",
+  "loading": "Reading the league race…",
+  "refresh": "Refresh from MFL",
+  "howLabel": "How this is counted",
+  "mflLabel": "",
+  "mflUrl": "",
+  "reports": [
+   {
+    "id": "M-008",
+    "title": "Power rankings: this season",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL standings and the app's model",
+    "asOf": "As of: not fetched",
+    "how": "",
+    "columns": [
+     "Rank",
+     "Franchise",
+     "Move",
+     "Record",
+     "Roster value",
+     "Results",
+     "Blend"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "C-02",
+    "title": "Power rankings: the franchise",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL standings and the app's model",
+    "asOf": "As of: not fetched",
+    "how": "",
+    "columns": [
+     "Rank",
+     "Franchise",
+     "Move",
+     "Roster value",
+     "Roster age",
+     "Blend"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-090",
+    "title": "Projected playoff seeding",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "If the regular season ended today: each division leader is seeded first, in the league's tiebreak order, then the best of the rest as wild cards, until each conference's bracket is full. The opening round follows the bracket's size: the top seeds sit out, and the rest meet highest seed against lowest.",
+    "columns": [
+     "Conference",
+     "Seed",
+     "Franchise",
+     "Record",
+     "How they get in",
+     "Opening round"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-170",
+    "title": "On the bubble",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "The wild-card holders and every franchise that can still catch its conference's last seed: one that trails it by no more games than it has left. Games back: a win and a loss are one game apart. A team level on games back trails on the tiebreak order.",
+    "columns": [
+     "Conference",
+     "Franchise",
+     "Record",
+     "Place",
+     "Games left",
+     "Still to play"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-074",
+    "title": "Tiebreakers",
+    "note": "Report data unavailable; refresh from MFL to fill this report. MFL's tiebreak order is not held, so ties keep MFL's franchise order; refresh from MFL.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "The league's own tiebreak order from MFL, applied to today's ties step by step. When a step separates some teams but leaves others level, those still level start again from the first tiebreak. Head-to-head counts only when every tied team has played every other; division and conference percentage count only when all the tied teams share that division or conference. All-play and points for count every week MFL scored.",
+    "columns": [
+     "Race",
+     "Tied teams",
+     "Step",
+     "What it found",
+     "Result"
+    ],
+    "rows": [],
+    "summary": [
+     {
+      "cells": [
+       "Tiebreak order",
+       "1 Win percentage"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-014",
+    "title": "Playoff brackets",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Every bracket the league defines on MFL, game by game, with MFL's seeds and scores. A side not yet known shows the seed or the earlier game it comes from. The winner is MFL's result for that week's game.",
+    "columns": [
+     "Bracket",
+     "Round",
+     "Home",
+     "Away",
+     "Result"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-161",
+    "title": "All-play",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each week, every franchise's score is compared with every other franchise's score that week: higher is an all-play win, lower a loss, equal a tie. Every week MFL scored counts, playoff weeks included, as MFL's own all-play does. Wins against all-play pace are actual regular-season wins minus the wins the all-play percentage gives over the same games. Every bar runs from 0 to 1.",
+    "columns": [
+     "Franchise",
+     "All-play record",
+     "Record",
+     "Wins against all-play pace",
+     "All-play %"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-071",
+    "title": "Weekly points",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Each franchise's score in every week MFL scored, most points first. All bars share one scale, from zero to the highest score any franchise posted in a week, so they compare down the column.",
+    "columns": [
+     "Franchise",
+     "Points for",
+     "Per week",
+     "Points by week"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-076",
+    "title": "Starter points by position",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Points scored by each franchise's starters, by position, in every week MFL scored. Bench points do not count, and neither do the home-field points MFL adds in playoff games, so a playoff host's total sits just under its points for. Most starter points first.",
+    "columns": [
+     "Franchise",
+     "Starter points"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-077",
+    "title": "Starter points by player",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Every player the franchise started in a week MFL scored, with his points in those starts. Bench weeks do not count. Most points first.",
+    "columns": [
+     "Player",
+     "Position",
+     "Starts",
+     "Points as starter",
+     "Per start"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-011",
+    "title": "Fantasy schedule by week",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Every game MFL lists, week by week, away team first. Played games show MFL's score and winner.",
+    "columns": [
+     "Week",
+     "Away",
+     "Home",
+     "Result"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-012",
+    "title": "Schedule by franchise",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "One franchise's games in week order. A week without a game is a playoff bye or a week after its season ended.",
+    "columns": [
+     "Week",
+     "Opponent",
+     "Where",
+     "Result"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-013",
+    "title": "Schedule grid",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "One row per franchise in standings order, one column per week. \"@\" marks an away game; W, L or T is MFL's result once the game is played. Team short names are the league's own.",
+    "columns": [
+     "Franchise"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-009",
+    "title": "Starting lineups",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "Every franchise's starters in the chosen week, by position, with each starter's points. Most points first.",
+    "columns": [
+     "Franchise",
+     "Points",
+     "Starters"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   },
+   {
+    "id": "M-010",
+    "title": "Lineup detail",
+    "note": "Report data unavailable; refresh from MFL to fill this report.",
+    "status": "failed",
+    "source": "Source: MFL",
+    "asOf": "As of: not fetched",
+    "how": "The franchise's starters in the chosen week with each one's points, then any bench player MFL's best lineup would have started. Best lineup is the most the same roster could have scored under the league's starter rules, as MFL counts it.",
+    "columns": [
+     "Position",
+     "Player",
+     "Points",
+     "Lineup call"
+    ],
+    "rows": [],
+    "summary": null,
+    "link": null
+   }
+  ]
+ },
+ "week": 0,
+ "weeks": [],
+ "team": "",
+ "teams": []
+}

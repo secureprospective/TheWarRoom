@@ -3,6 +3,9 @@
 The recipe the Archive extraction followed (reorg PR 3). Wails keeps binding one `App`; a
 feature's root files shrink to adapters and its logic moves to `internal/app/<feature>/`.
 
+Shared view models live in `internal/app/season`, wording in `internal/app/report`. A feature
+never imports a sibling; root adapters compose features through the shared contracts.
+
 ## Steps, one commit each
 
 1. **Freeze the wire first.** Add a root test that JSON-encodes the feature's binding results for
@@ -238,3 +241,16 @@ The native league extraction (reorg PR 12) added the owner side.
   Run both root and service under `go test -race`; plant a missing copy or wrong refresh lock to
   prove the guards reject it. Keep wire goldens and populated converter twins at root, pure
   construction assertions beside the service, and shared raw fixtures in `researchtest`.
+
+- Race's `raceReadInput` captures feed/live metadata, kickoff-derived `LiveUnplayed` and a copied
+  power-board index under `seasonMu`. Published payloads/rows are immutable; refresh replaces
+  them. `raceInput.snapshot` converts power rows and creates live-week overlays after unlock,
+  using Now's existing helper rather than copying another feature's calculation. The service's
+  `Snapshot`, `Held` and `Feed[T]` own no locks, timers, callbacks or goroutines.
+- A feature may already expose package-private construction to another feature. Keep a small
+  root facade until that consumer moves: Race's `raceView` preserves Now's fields and vocabulary
+  while delegating calculations to `race.View`. Do not edit the other feature merely to finish
+  deleting a root file. Retain test-only wrappers for unrelated root integration scenarios.
+- Race guards refresh versus reads through real feed publication, verifies the power index is
+  detached (a missing clone fails), and constructs with the root season lock held. Package tests
+  concurrently build one snapshot and compare its serialized inputs before/after.
