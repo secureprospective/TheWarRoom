@@ -335,6 +335,17 @@ principal (`commissionerPrincipal`), the commissioner door's routing refusals, a
 store call with its authorizer, so authorization, validation and the ledger append still share one
 store transaction. `testdata/wire/commissioner` freezes the wire and the exact denial words.
 
+`internal/app/native` is the native league's pure logic, stateless: `facts.go` reads the football
+facts a native check uses from the held players directory (`PlayerFacts`; the root holds `lookupMu`)
+and the held injury statuses (`Designate`), maps positions and NFL listings, and decodes the owner's
+lineup request (`DecodeLineupSet`; `RawLineupSet` is an alias, not a Wails model); `season.go` judges
+the NFL week a bid falls in (`WeekAt`) and the playoff field (`PlayoffField`); `seed.go` shapes the
+starting snapshot from held values. It never decides who may act. The root keeps every binding, the
+native gate (`native_gate.go`: the registry, `runNativeAction`, `ownerZone`), the owner door and its
+families with their permit checks (`native_owner_app.go`), the principal read, the held-state locks,
+the clock (`native_schedule_app.go`) and each history store call, which re-checks the permit inside
+its own transaction (`ExecuteCommissionerWithFacts` asks the gate again). `testdata/wire/native` freezes the wire and the exact denial words.
+
 `internal/app/market` is the Market service, stateless: `reports.go` builds the player market
 reports and the pool's market cells from the held feeds the root copies under `seasonMu`;
 `lab.go` and `profile.go` read the Lab surfaces from the decode the App holds (`market.Lab`, with
@@ -684,7 +695,7 @@ Wire fixture: `internal/commissioner/testdata/stat-queue-wire.json`.
 
 ## Native results and standings
 
-`native_results_app.go` exposes `TargetNativeResults(league, season, week)`,
+`native_legality_app.go` exposes `TargetNativeResults(league, season, week)`,
 `TargetNativeStandings(league, season)` and read-only `TargetNativeScorePreview(body)`.
 `internal/commissioner/native_week_score.go` folds supplied weekly starters through the native
 player-score reading, then adds franchise deltas once; an incomplete starter leaves no final total.
@@ -710,7 +721,7 @@ A v B: neither score is complete."
 
 ## Native playoffs
 
-`native_results_app.go` adds `TargetNativeBracket(league, season)`, a read-only reading of a season's playoffs.
+`native_legality_app.go` adds `TargetNativeBracket(league, season)`, a read-only reading of a season's playoffs.
 `internal/commissioner/playoff_rules.go` resolves the playoff rules the season runs under
 (`RulesInForce`, plus a bracket shape from the league's own graph, the built-in Legacy graph or a saved
 shape) into `PlayoffRules`, or into a plain "Needs a ruling: ..." sentence when they do not fit together (a
@@ -841,7 +852,7 @@ Commissioner manual order is separate and can supply priority without inventing 
 its server-computed decisions are not accepted from IPC. `ProcessDueWaivers` submits only closed-window
 processing through that same path. The cancellable `nativeWaiverClock` runs with the app's managed
 background workers and resumes held windows after restart; no network feed is involved.
-`native_waivers_app.go` exposes `TargetNativeWaiverAction(RawCommand)` and
+`native_owner_app.go` exposes `TargetNativeWaiverAction(RawCommand)` and
 `TargetNativeWaivers(league, franchise, at)`. Neither port migrates the imported owner screens.
 
 ## Native free-agent bids
@@ -871,7 +882,7 @@ clock also runs the bid worker, resuming persisted auctions on startup. `BidEnvi
 the held NFL week and the native bracket's playoff field. Before the first held kickoff, or after a held
 rollover and before September when no schedule is held, week-specific limits do not apply; other missing
 weeks remain refused. The jobs reading reports the native waiver and bid queues as built without exposing
-blind auction counts or times. `native_bids_app.go` exposes `TargetNativeBidAction(RawCommand)` and
+blind auction counts or times. `native_owner_app.go` exposes `TargetNativeBidAction(RawCommand)` and
 `TargetNativeBids(league, franchise)`, and registers all three owner actions with the native gate.
 Restricted free-agent bids wait for the tender step, which the app does not yet record.
 
@@ -904,7 +915,7 @@ The rollover append lock resolves `NativeBracketReading` through history links b
 frozen plan, so the archived champion is the decided season winner, not an unset snapshot field.
 ## Native trades
 
-`native_trades_app.go` exposes `TargetNativeTradeAction` (offer, accept, decline, withdraw) through the native
+`native_owner_app.go` exposes `TargetNativeTradeAction` (offer, accept, decline, withdraw) through the native
 owner registry and calendar gate, and `TargetNativeTrades(league, viewer)` (viewer is the seated franchise).
 `internal/commissioner/trade_rules.go` resolves CM-014 without defaulting unset settings; an offer records
 its review policy and expiry. `trade_execute.go` checks ownership, future-pick eligibility, all-party roster
