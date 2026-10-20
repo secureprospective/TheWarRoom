@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -227,27 +227,30 @@ func (a *App) TargetNowRefresh(week int, force bool) error {
 	return nil
 }
 
-// TargetNow reads held data only. week is the week shown (0: the current NFL week) and mine the
-// GM's franchise ("": none chosen); Go checks both.
+// TargetNow reads held data only; refresh and scheduling remain owned by App.
 func (a *App) TargetNow(week, reportWeek int, mine string) (NowBoard, error) {
 	if err := a.ready(); err != nil {
 		return NowBoard{}, fmt.Errorf("now: startup: %w", err)
 	}
-	current := a.marketWeek()
-	projections := a.heldMarketForWeek(current)[marketfeeds.Projections]
-	a.seasonMu.Lock()
-	held, now, live := a.race, a.now, a.seasonLineups
-	a.seasonMu.Unlock()
-	a.lookupMu.Lock()
-	lookup, hasLookup := a.lookup, a.hasLookup
-	a.lookupMu.Unlock()
-	board, err := buildNow(nowInput{
-		race: raceInput{held: held, config: a.rulebook.ActiveConfig(), lookup: lookup, hasLookup: hasLookup,
-			mine: mine, zone: time.Local},
-		held: now, live: live, projections: projections, at: a.timeNow(), current: current, week: week, reportWeek: reportWeek,
-	})
-	if err == nil && held.weeks.fetchedAt.IsZero() && held.weeks.refreshError == "" {
-		board.Waiting = "Reading the league's weeks from MFL…"
+	in := a.nowReadInput(week, reportWeek, mine)
+	board, err := nowapp.Build(in)
+	out := wireNow(board)
+	if err == nil && in.Race.Held.Weeks.FetchedAt.IsZero() && in.Race.Held.Weeks.RefreshError == "" {
+		out.Waiting = "Reading the league's weeks from MFL…"
 	}
-	return board, err
+	return out, err //nolint:wrapcheck // preserve binding validation text
+}
+
+// NowBoard is League Pulse › Now: the week shown, the GM's own matchup first, then the week's
+// reports. Week is the week Go accepted.
+type NowBoard struct {
+	ReportWeek  int          `json:"reportWeek"`
+	ReportWeeks []RaceChoice `json:"reportWeeks"`
+	Week        int          `json:"week"`
+	Weeks       []RaceChoice `json:"weeks"`
+	Matchup     Report       `json:"matchup"`
+	Board       ReportBoard  `json:"board"`
+	// Waiting is set while the league's weeks have not been read yet (just after launch): the screen says so
+	// instead of drawing an empty week. The season event re-reads the board when they arrive.
+	Waiting string `json:"waiting"`
 }

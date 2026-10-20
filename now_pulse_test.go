@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"path/filepath"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -28,78 +27,6 @@ func pulseLive(t *testing.T) leaguefeed.Lineups {
 		t.Fatal(err)
 	}
 	return live
-}
-
-func TestPulsePlayerKickoffAndStableSlots(t *testing.T) {
-	t.Parallel()
-	in := realNow(t, 5)
-	v, err := newNowView(in)
-	if err != nil {
-		t.Fatal(err)
-	}
-	v.live = true
-	me, them, _, ok := v.myGame()
-	if !ok {
-		t.Fatal("fixture has no matchup")
-	}
-	me.Scored = false
-	var checked bool
-	for _, p := range me.Players {
-		g, found := v.games[v.team(p)]
-		if !found {
-			continue
-		}
-		p.Points = 0
-		v.now.at = g.kickoff.Add(-time.Second)
-		want := "yet to play · " + g.kickoff.In(v.in.zone).Format("Mon 3:04 PM")
-		if got := v.playerPointsText(me, p); got != want {
-			t.Fatalf("before kickoff: %q, want %q", got, want)
-		}
-		me.Players = []leaguefeed.WeekPlayer{p}
-		p.Starter = true
-		me.Players[0] = p
-		if rows := v.classicRows(me, them); !strings.Contains(fmt.Sprint(rows), want) {
-			t.Fatal("matchup bypassed the kickoff rule", rows)
-		}
-		if row := v.boxRow(me, p, ""); row.Cells[3] != want {
-			t.Fatal("box score bypassed the kickoff rule", row)
-		}
-		v.now.at = g.kickoff
-		if got := v.playerPointsText(me, p); got != "0.00" {
-			t.Fatal("at kickoff", got)
-		}
-		checked = true
-		break
-	}
-	if !checked {
-		t.Fatal("no player with a held NFL kickoff")
-	}
-}
-
-func TestPulseSlotsIgnoreFeedShuffle(t *testing.T) {
-	t.Parallel()
-	v, err := newNowView(realNow(t, 5))
-	if err != nil {
-		t.Fatal(err)
-	}
-	me, them, _, _ := v.myGame()
-	lastName, lastPos := "", ""
-	for _, p := range v.starters(me) {
-		name, pos := v.player(p.ID)
-		if pos == lastPos && name < lastName {
-			t.Fatal("fallback order is not alphabetical", lastName, name)
-		}
-		lastName, lastPos = name, pos
-	}
-	before := v.classicRows(me, them)
-	me.Players = slices.Clone(me.Players)
-	them.Players = slices.Clone(them.Players)
-	slices.Reverse(me.Players)
-	slices.Reverse(them.Players)
-	after := v.classicRows(me, them)
-	if !reflect.DeepEqual(before, after) {
-		t.Fatal("a shuffled feed changed the slot rows")
-	}
 }
 
 func TestPulseRaceLiveSchedule(t *testing.T) {
@@ -135,28 +62,6 @@ func TestPulseRaceLiveSchedule(t *testing.T) {
 	}
 	if got := v.scheduleByTeam().Rows[4].Cells; got[0] != "Week 5" || got[3] != "Not played yet" {
 		t.Fatalf("live week before kickoff: %v", got)
-	}
-}
-
-func TestPulseLiveWeekUnplayedFollowsKickoffs(t *testing.T) {
-	t.Parallel()
-	now := realNow(t, 5)
-	games := nflGames(now.held.schedules[5].value, now.at)
-	first := time.Time{}
-	for _, g := range games {
-		if first.IsZero() || g.kickoff.Before(first) {
-			first = g.kickoff
-		}
-	}
-	live := held(leaguefeed.Lineups{Week: 5})
-	if !liveWeekUnplayed(live, now.held.schedules, first.Add(-time.Minute)) {
-		t.Fatal("before the first kickoff the live week must read unplayed")
-	}
-	if liveWeekUnplayed(live, now.held.schedules, first) {
-		t.Fatal("at the first kickoff the live week has begun")
-	}
-	if liveWeekUnplayed(live, nil, first.Add(-time.Minute)) {
-		t.Fatal("a week whose schedule is not held counts as begun")
 	}
 }
 
@@ -199,46 +104,6 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 				t.Fatalf("%q != %q", got, want)
 			}
 		}
-	}
-}
-
-func TestPulseReportsDefaultLastScored(t *testing.T) {
-	t.Parallel()
-	in := nowInput{race: realRace(t, "2026"), current: 5, at: raceHeldAt}
-	for i := range in.race.held.weeks.value {
-		w := &in.race.held.weeks.value[i]
-		if w.Week == 4 {
-			for j := range w.Games {
-				g := &w.Games[j]
-				g.Home.Scored, g.Away.Scored = true, true
-				g.Home.Result, g.Away.Result = "W", "L"
-				g.Home.Points, g.Away.Points = 24615, 22125
-			}
-		}
-	}
-	board := nowBoard(t, in)
-	if board.Week != 5 || board.ReportWeek != 4 || len(board.ReportWeeks) != len(in.race.held.weeks.value) {
-		t.Fatal(board.Week, board.ReportWeek, board.ReportWeeks)
-	}
-	for i, w := range board.ReportWeeks {
-		if w.Value != strconv.Itoa(i+1) {
-			t.Fatal("missing report week", w)
-		}
-	}
-	for _, id := range []string{"M-003", "M-007", "M-021", "M-022"} {
-		r := nowReport(t, board, id)
-		if r.Status != "ok" || !strings.Contains(fmt.Sprint(r.Summary), "Week 4") {
-			t.Fatal(id, r.Status, r.Summary)
-		}
-	}
-	in.reportWeek = 5
-	chosen := nowBoard(t, in)
-	if r := nowReport(t, chosen, "M-003"); r.Status != "empty" || chosen.ReportWeek != 5 {
-		t.Fatal("explicit unscored week must be selectable", r)
-	}
-	in.reportWeek = 3
-	if b := nowBoard(t, in); b.ReportWeek != 3 || nowReport(t, b, "M-003").Status != "ok" {
-		t.Fatal("explicit scored week not selected")
 	}
 }
 
@@ -336,46 +201,3 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 
 // Before the week's first kickoff a held live matchup is not in progress, and a starter whose NFL
 // team has no game that week reads bye (or no NFL team), never 0.00.
-func TestPulseByeAndNotStartedWeek(t *testing.T) {
-	t.Parallel()
-	v, err := newNowView(realNow(t, 5))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(v.games) == 0 {
-		t.Fatal("fixture holds no NFL schedule for week 5")
-	}
-	v.live = true
-	game, _, _, ok := v.myGame()
-	if !ok {
-		t.Fatal("fixture has no matchup")
-	}
-	first := time.Time{}
-	for _, g := range v.games {
-		if first.IsZero() || g.kickoff.Before(first) {
-			first = g.kickoff
-		}
-	}
-	all := leaguefeed.Game{Home: game, Away: game}
-	all.Home.Scored, all.Away.Scored = false, false
-	v.now.at = first.Add(-time.Minute)
-	if got := v.gameState(all); got != "Not played yet" {
-		t.Fatalf("before the first kickoff: %q", got)
-	}
-	v.now.at = first
-	if got := v.gameState(all); !strings.HasPrefix(got, "In progress: ") {
-		t.Fatalf("at the first kickoff: %q", got)
-	}
-	game.Scored = false
-	p := game.Players[0]
-	delete(v.games, v.team(p))
-	if v.team(p) == "" || v.team(p) == "FA" {
-		t.Fatal("fixture player has no NFL team", p.ID)
-	}
-	if got := v.playerPointsText(game, p); got != "bye" {
-		t.Fatalf("team without a game: %q, want bye", got)
-	}
-	if noGameText("FA") != "no NFL team" || noGameText("") != "no NFL team" {
-		t.Fatal("an NFL free agent must read no NFL team")
-	}
-}

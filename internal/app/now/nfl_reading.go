@@ -1,4 +1,4 @@
-package main
+package now
 
 import (
 	"cmp"
@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
-// nflGame is one NFL game of the chosen week, away team first.
-type nflGame struct {
+// NFLGame is one NFL game of the chosen week, away team first.
+type NFLGame struct {
 	away, home string
 	scores     [2]int // away, home
 	kickoff    time.Time
@@ -21,9 +22,9 @@ type nflGame struct {
 	final      bool
 }
 
-// nflGames maps each NFL team playing in the held week to its game, graded at the supplied instant.
-func nflGames(weeks []nflschedule.RawWeek, at time.Time) map[string]nflGame {
-	out := map[string]nflGame{}
+// NFLGames maps each NFL team playing in the held week to its game, graded at the supplied instant.
+func NFLGames(weeks []nflschedule.RawWeek, at time.Time) map[string]NFLGame {
+	out := map[string]NFLGame{}
 	if len(weeks) != 1 {
 		return out
 	}
@@ -33,7 +34,7 @@ func nflGames(weeks []nflschedule.RawWeek, at time.Time) map[string]nflGame {
 			home = 0
 		}
 		secs, _ := strconv.ParseInt(m.Kickoff, 10, 64)
-		g := nflGame{away: m.Teams[1-home], home: m.Teams[home], kickoff: time.Unix(secs, 0).UTC()}
+		g := NFLGame{away: m.Teams[1-home], home: m.Teams[home], kickoff: time.Unix(secs, 0).UTC()}
 		g.started = !at.Before(g.kickoff) && m.Scores[0] != "" && m.Scores[1] != ""
 		g.final = g.started && m.GameSecondsRemaining == "0"
 		g.scores[0], _ = strconv.Atoi(m.Scores[1-home])
@@ -43,9 +44,9 @@ func nflGames(weeks []nflschedule.RawWeek, at time.Time) map[string]nflGame {
 	return out
 }
 
-func (g nflGame) label() string { return g.away + " at " + g.home }
+func (g NFLGame) label() string { return g.away + " at " + g.home }
 
-func (g nflGame) result() string {
+func (g NFLGame) result() string {
 	switch {
 	case !g.started:
 		return "Not played yet"
@@ -59,10 +60,10 @@ func (g nflGame) result() string {
 	return fmt.Sprintf("%s won %d–%d", g.home, g.scores[1], g.scores[0])
 }
 
-func (v nowView) nflReport(id, title, how string, columns ...string) Report {
-	r := reportShell(id, title, how, v.schedule, v.in.zone, columns...)
+func (v nowView) nflReport(id, title, how string, columns ...string) report.Report {
+	r := reportShell(id, title, how, v.schedule, v.in.Zone, columns...)
 	r.Source = "Source: MFL NFL schedule"
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Week", weekLabel(v.shown)}})
+	r.Summary = append(r.Summary, report.Row{Cells: []string{"Week", weekLabel(v.shown)}})
 	if r.Status == "failed" {
 		r.Note = "The NFL schedule for this week is not held yet; refresh from MFL."
 	}
@@ -70,7 +71,7 @@ func (v nowView) nflReport(id, title, how string, columns ...string) Report {
 }
 
 func (v nowView) team(p leaguefeed.WeekPlayer) string {
-	if f, ok := v.in.lookup.Facts(p.ID.String()); ok {
+	if f, ok := v.in.Lookup.Facts(p.ID.String()); ok {
 		return f.Team
 	}
 	return ""
@@ -79,7 +80,7 @@ func (v nowView) team(p leaguefeed.WeekPlayer) string {
 // byeTeams lists the NFL teams on bye in the chosen week, by the held bye weeks.
 func (v nowView) byeTeams() []string {
 	out := []string{}
-	for _, b := range v.now.held.byes.value {
+	for _, b := range v.now.Held.Byes.Value {
 		if b.ByeWeek() == v.week {
 			out = append(out, b.Team)
 		}
@@ -92,7 +93,7 @@ func (v nowView) byeTeams() []string {
 func (v nowView) nflGameText(team string) string {
 	g, ok := v.games[team]
 	switch {
-	case len(v.schedule.value) == 0:
+	case len(v.schedule.Value) == 0:
 		return "NFL schedule not fetched yet"
 	case team == "":
 		return "No NFL team"
@@ -110,7 +111,7 @@ func (v nowView) myPlayers() []leaguefeed.WeekPlayer {
 	me, _, _, ok := v.myGame()
 	if !ok {
 		for _, s := range v.shown.Others {
-			if s.Franchise == v.in.mine {
+			if s.Franchise == v.in.Mine {
 				return s.Players
 			}
 		}
@@ -119,7 +120,7 @@ func (v nowView) myPlayers() []leaguefeed.WeekPlayer {
 	return me.Players
 }
 
-func (v nowView) nflWeek() Report {
+func (v nowView) nflWeek() report.Report {
 	r := v.nflReport("M-015", "NFL schedule",
 		"The week's NFL games in kickoff order, with the teams on bye. My players are those on my roster for the "+
 			"week, by their NFL team in MFL's player directory today.", "Kickoff", "Game", "Result", "My players")
@@ -127,18 +128,18 @@ func (v nowView) nflWeek() Report {
 		return r
 	}
 	if byes := v.byeTeams(); len(byes) > 0 {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"On bye", strings.Join(byes, ", ")}})
-	} else if v.now.held.byes.fetchedAt.IsZero() {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"On bye", "Bye weeks not fetched yet"}})
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"On bye", strings.Join(byes, ", ")}})
+	} else if v.now.Held.Byes.FetchedAt.IsZero() {
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"On bye", "Bye weeks not fetched yet"}})
 	} else {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"On bye", "No team"}})
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"On bye", "No team"}})
 	}
 	mine := map[string][]string{}
 	for _, p := range v.myPlayers() {
 		name, _ := v.player(p.ID)
 		mine[v.team(p)] = append(mine[v.team(p)], name)
 	}
-	if v.in.mine != "" && len(mine) == 0 {
+	if v.in.Mine != "" && len(mine) == 0 {
 		r.Note = strings.TrimSpace(r.Note + " MFL lists no roster for my franchise this week yet.")
 	}
 	byeNames := []string{}
@@ -146,15 +147,15 @@ func (v nowView) nflWeek() Report {
 		byeNames = append(byeNames, mine[team]...)
 	}
 	if len(byeNames) > 0 {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"My players on bye", strings.Join(byeNames, "; ")}})
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"My players on bye", strings.Join(byeNames, "; ")}})
 	}
-	games := []nflGame{}
+	games := []NFLGame{}
 	for team, g := range v.games {
 		if team == g.home {
 			games = append(games, g)
 		}
 	}
-	slices.SortFunc(games, func(a, b nflGame) int {
+	slices.SortFunc(games, func(a, b NFLGame) int {
 		return cmp.Or(a.kickoff.Compare(b.kickoff), strings.Compare(a.label(), b.label()))
 	})
 	for _, g := range games {
@@ -163,7 +164,7 @@ func (v nowView) nflWeek() Report {
 		if cell == "" {
 			cell = "—"
 		}
-		row := v.row("", reportTime(g.kickoff, v.in.zone), g.label(), g.result(), cell)
+		row := v.row("", reportTime(g.kickoff, v.in.Zone), g.label(), g.result(), cell)
 		row.Mine = len(players) > 0
 		r.Rows = append(r.Rows, row)
 	}
@@ -177,7 +178,7 @@ func roleText(p leaguefeed.WeekPlayer) string {
 	return "Bench"
 }
 
-func (v nowView) nflBoxScore() Report {
+func (v nowView) nflBoxScore() report.Report {
 	r := v.nflReport("M-016", "NFL box score",
 		"My players and my opponent's, grouped by the NFL game they played in, with each one's fantasy points. "+
 			"A player's NFL team is his team in MFL's player directory today. Games in kickoff order.",
@@ -240,7 +241,7 @@ func (v nowView) nflBoxScore() Report {
 	return r
 }
 
-func (v nowView) boxScore() Report {
+func (v nowView) boxScore() report.Report {
 	r := v.shownReport("M-072", "Fantasy box score",
 		"My game, starter by starter: each one's NFL game and fantasy points, and whether MFL's best lineup (the "+
 			"most the same roster could have scored under the league's starter rules) started him; then any bench "+
@@ -271,7 +272,7 @@ func (v nowView) boxScore() Report {
 	return r
 }
 
-func (v nowView) boxRow(s leaguefeed.Side, p leaguefeed.WeekPlayer, group string) ReportRow {
+func (v nowView) boxRow(s leaguefeed.Side, p leaguefeed.WeekPlayer, group string) report.Row {
 	name, pos := v.player(p.ID)
 	call := "Not scored yet"
 	switch {
@@ -288,19 +289,19 @@ func (v nowView) boxRow(s leaguefeed.Side, p leaguefeed.WeekPlayer, group string
 	return row
 }
 
-func (v nowView) previews() Report {
+func (v nowView) previews() report.Report {
 	r := reportShell("M-018", "Fantasy previews",
 		"Each game's projected totals: the sum of MFL's projections for the starters each side has set. A "+
 			"starter MFL does not project counts zero. My game first.",
-		v.now.projections, v.in.zone, "Away", "Projected", "Home", "Projected", "Favored")
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Week", weekLabel(v.shown)}})
+		v.now.Projections, v.in.Zone, "Away", "Projected", "Home", "Projected", "Favored")
+	r.Summary = append(r.Summary, report.Row{Cells: []string{"Week", weekLabel(v.shown)}})
 	if r.Status == "failed" {
 		r.Note = "MFL projections are not held yet; refresh from MFL."
 		return r
 	}
-	feeds := v.now.projections.value
+	feeds := v.now.Projections.Value
 	if len(feeds) != 1 || feeds[0].Week != v.week {
-		r.Status, r.Note = "empty", fmt.Sprintf("MFL projections are held for week %d only; choose that week.", v.now.current)
+		r.Status, r.Note = "empty", fmt.Sprintf("MFL projections are held for week %d only; choose that week.", v.now.Current)
 		return r
 	}
 	projected := map[string]leaguefeed.Points{}
@@ -328,7 +329,7 @@ func (v nowView) previews() Report {
 		row.Mine = v.isMine(g)
 		r.Rows = append(r.Rows, row)
 	}
-	r.Summary = append(r.Summary, ReportRow{Cells: []string{"Starters MFL does not project", strconv.Itoa(missing)}})
+	r.Summary = append(r.Summary, report.Row{Cells: []string{"Starters MFL does not project", strconv.Itoa(missing)}})
 	return r
 }
 

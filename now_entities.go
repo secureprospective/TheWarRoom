@@ -1,9 +1,8 @@
 package main
 
 import (
-	"cmp"
-	"slices"
-	"strings"
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 )
 
 // ReportEntity ties a literal display name to its held identity, including names in prose.
@@ -13,39 +12,28 @@ type ReportEntity struct {
 	ID   string `json:"id"`
 }
 
-func (v nowView) inspectable(r *Report) {
-	entities := []ReportEntity{}
-	for _, id := range v.in.lookup.IDs() {
-		name, _, ok := v.in.lookup.DisplayFacts(id)
-		if ok {
-			entities = append(entities, ReportEntity{Text: name.Name, Kind: "player", ID: id})
-		}
-	}
-	for id, name := range v.names {
-		entities = append(entities, ReportEntity{Text: name, Kind: "franchise", ID: id})
-	}
-	attachReportEntities(r, entities)
-}
-
 func attachReportEntities(r *Report, entities []ReportEntity) {
-	texts := append(slices.Clone(r.Columns), r.Title, r.Note, r.How)
-	for _, row := range append(slices.Clone(r.Rows), r.Summary...) {
-		texts = append(texts, row.Cells...)
-		texts = append(texts, row.Group)
+	s := report.Report{Columns: r.Columns, Title: r.Title, Note: r.Note, How: r.How}
+	for _, row := range r.Rows {
+		s.Rows = append(s.Rows, report.Row{Cells: row.Cells, Group: row.Group})
 	}
-	seen := map[string]int{}
-	for _, e := range entities {
-		seen[e.Text]++
+	for _, row := range r.Summary {
+		s.Summary = append(s.Summary, report.Row{Cells: row.Cells, Group: row.Group})
 	}
-	for _, e := range entities {
-		if e.Text == "" || seen[e.Text] != 1 {
-			continue // An ambiguous display name is never assigned a guessed identity.
-		}
-		if slices.ContainsFunc(texts, func(s string) bool { return strings.Contains(s, e.Text) }) {
-			r.Entities = append(r.Entities, e)
-		}
+	for _, e := range r.Entities {
+		s.Entities = append(s.Entities, report.Entity(e))
 	}
-	slices.SortFunc(r.Entities, func(a, b ReportEntity) int {
-		return cmp.Or(cmp.Compare(len(b.Text), len(a.Text)), strings.Compare(a.Text, b.Text))
-	})
+	es := make([]report.Entity, len(entities))
+	for i, e := range entities {
+		es[i] = report.Entity(e)
+	}
+	nowapp.AttachReportEntities(&s, es)
+	if s.Entities == nil {
+		r.Entities = nil
+		return
+	}
+	r.Entities = make([]ReportEntity, len(s.Entities))
+	for i, e := range s.Entities {
+		r.Entities[i] = ReportEntity(e)
+	}
 }

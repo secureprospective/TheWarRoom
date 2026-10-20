@@ -9,7 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 )
 
-// A final kept through the real history archive is read back after a restart with no fetch.
 func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
@@ -46,34 +45,5 @@ func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
 	view := liveGameReading(adapter, "DET-ARI", false)
 	if view.DetailAsOf == "" || len(view.Scoring) == 0 || view.Followed.Last == nil || view.Box.Status != "ok" {
 		t.Fatalf("final shape: asOf %q scoring %d last %v box %s", view.DetailAsOf, len(view.Scoring), view.Followed.Last, view.Box.Status)
-	}
-}
-
-func TestWeekSpineNewestFirstMarkedAndCounted(t *testing.T) {
-	t.Parallel()
-	at := time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC)
-	play := func(id string, minutes int, who string) livegame.Play {
-		return livegame.Play{ID: id, Sequence: minutes, At: at.Add(time.Duration(minutes) * time.Minute), Participants: []string{who}}
-	}
-	early := livegame.Game{ID: "1", Away: livegame.Team{Abbreviation: "DET"}, Home: livegame.Team{Abbreviation: "ARI"},
-		Plays: []livegame.Play{play("a", 1, "m"), play("c", 30, "o")}}
-	late := livegame.Game{ID: "2", Away: livegame.Team{Abbreviation: "BUF"}, Home: livegame.Team{Abbreviation: "LAR"},
-		Plays: []livegame.Play{play("b", 10, "o"), play("d", 40, "m")}}
-	adapter := livegame.Adapter{Details: map[string]livegame.Detail{
-		"DET-ARI": {Game: early, At: at, Final: true}, "1": {Game: early, At: at, Final: true},
-		"2": {Game: late, At: at}, "3": {At: at}}}
-	held := heldWeekGames(adapter)
-	if len(held) != 2 {
-		t.Fatal("held games counted twice or empty games counted", len(held))
-	}
-	players := map[string]SpinePlayer{"m": {ID: "1", Mine: true}, "o": {ID: "2"}}
-	entries, _ := matchSpine(held, map[string]bool{"m": true, "o": true}, players)
-	order := ""
-	for _, e := range entries {
-		order += e.Play.ID
-	}
-	if order != "dcba" || entries[0].Game != "BUF at LAR" || entries[1].Game != "DET at ARI" ||
-		!entries[0].Player.Mine || entries[1].Player.Mine {
-		t.Fatalf("order %s entries %+v", order, entries)
 	}
 }

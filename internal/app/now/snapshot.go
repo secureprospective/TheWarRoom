@@ -5,6 +5,7 @@ import (
 	"time"
 
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
@@ -54,3 +55,8 @@ type LiveSnapshot struct {
 	Active  bool
 	Zone    *time.Location
 }
+
+func reportShell[T any](id, title, how string, f Feed[[]T], zone *time.Location, columns ...string) report.Report {
+	return report.Shell(id, title, how, report.Feed{FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}, len(f.Value), zone, columns...)
+}
+func reportTime(at time.Time, zone *time.Location) string { return report.Time(at, zone) }
