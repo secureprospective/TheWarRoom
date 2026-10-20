@@ -197,7 +197,7 @@ review (`~/fleet/runs/sol61-warroom-audit-triage/stdout.log`, Beelink). Claude t
 - A9's 8k-line target. The package is split only where profiling shows the tests cost time.
 
 **Corrections to the audit:**
-- Locks are nested in two places (`whatif_app.go:87`, `target_app.go:26/36`). No deadlock shown.
+- Locks are nested in two places (`whatif_app.go:87`, `snapshot_app.go:26/36`). No deadlock shown.
 - Kicker code has three cases, not one. The missing baseline fallback still stands.
 
 | Phase | Action | Days |
