@@ -316,3 +316,4 @@ internal/transactions/deadcap	contracts
 internal/transactions/freeagency	contracts
 sources_wire_test.go	sources
 internal/app/sources	sources
+scoring_wire_test.go	scoring
