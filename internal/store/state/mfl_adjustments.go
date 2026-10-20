@@ -29,13 +29,6 @@ CREATE TABLE IF NOT EXISTS mfl_salary_adjustments (
 	PRIMARY KEY (league_id, season, id)
 );`
 
-func (s *Store) initMFLAdjustmentsSchema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, mflAdjustmentsDDL); err != nil {
-		return fmt.Errorf("state: init mfl adjustments schema: %w", err)
-	}
-	return nil
-}
-
 // Adjustments returns the mirror's salary adjustments, so it can seed a what-if Store.
 func (m *Mirror) Adjustments(_ context.Context) ([]Adjustment, error) {
 	m.wmu.Lock()

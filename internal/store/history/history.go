@@ -51,7 +51,13 @@ type Store struct {
 	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
 	bidEnv BidEnvironmentSource
 
-	wmu sync.Mutex
+	leaguesMu sync.Mutex
+	leagues   nativeLeagueRevision
+	recordsMu sync.Mutex
+	records   map[string]recordRevision
+	weeklyMu  sync.Mutex
+	weekly    map[string]weeklyFile
+	wmu       sync.Mutex
 }
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
@@ -220,15 +226,9 @@ CREATE TABLE IF NOT EXISTS snapshot_checks (
 	checks      TEXT NOT NULL
 );`
 
-// registryDDL recreates the registry mirrors. They hold whatever the CSV files say, so their
-// shape can change with the files.
+// registryDDL creates registry mirrors; Initialize refreshes their rows without DDL.
 const registryDDL = `
-DROP VIEW IF EXISTS season_features;
-DROP VIEW IF EXISTS week_features;
-DROP TABLE IF EXISTS measures;
-DROP TABLE IF EXISTS sources;
-DROP TABLE IF EXISTS source_fields;
-CREATE TABLE measures (
+CREATE TABLE IF NOT EXISTS measures (
 	measure   TEXT PRIMARY KEY,
 	family    TEXT NOT NULL,
 	grain     TEXT NOT NULL,
@@ -236,7 +236,7 @@ CREATE TABLE measures (
 	positions TEXT NOT NULL,
 	meaning   TEXT NOT NULL
 );
-CREATE TABLE sources (
+CREATE TABLE IF NOT EXISTS sources (
 	source       TEXT PRIMARY KEY,
 	name         TEXT NOT NULL,
 	status       TEXT NOT NULL,
@@ -244,7 +244,7 @@ CREATE TABLE sources (
 	host         TEXT NOT NULL,
 	path_prefix  TEXT NOT NULL
 );
-CREATE TABLE source_fields (
+CREATE TABLE IF NOT EXISTS source_fields (
 	source   TEXT NOT NULL,
 	field    TEXT NOT NULL,
 	measure  TEXT NOT NULL,
@@ -252,31 +252,21 @@ CREATE TABLE source_fields (
 	PRIMARY KEY (source, field)
 );`
 
-// Initialize creates the history tables and their append-only triggers, then reloads the
-// registry mirrors and the features views in one transaction.
+// Initialize migrates the file, then refreshes the rebuildable registry mirrors.
 func (s *Store) Initialize(ctx context.Context) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
+	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
+		return fmt.Errorf("history: migrate schema: %w", err)
+	}
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("history: initialize: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var ddl strings.Builder
-	ddl.WriteString(historyDDL)
-	ddl.WriteString(eventsDDL)
-	for _, t := range appendOnly() {
-		for _, op := range []string{"UPDATE", "DELETE"} {
-			fmt.Fprintf(&ddl, `
-CREATE TRIGGER IF NOT EXISTS %[1]s_no_%[2]s BEFORE %[2]s ON %[1]s
-BEGIN SELECT RAISE(ABORT, '%[1]s is append-only: %[2]s forbidden'); END;`, t, strings.ToLower(op))
-		}
-	}
-	ddl.WriteString(registryDDL)
-	ddl.WriteString(featureViewsDDL())
-	if _, err := tx.ExecContext(ctx, ddl.String()); err != nil {
-		return fmt.Errorf("history: create schema: %w", err)
+	if _, err := tx.ExecContext(ctx, `DELETE FROM measures; DELETE FROM sources; DELETE FROM source_fields`); err != nil {
+		return fmt.Errorf("history: clear registry mirrors: %w", err)
 	}
 	if err := s.loadRegistry(ctx, tx); err != nil {
 		return err

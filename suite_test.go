@@ -87,7 +87,7 @@ func TestLineupFixtureDoesNotResetKeyring(t *testing.T) {
 }
 
 func seedHistoryFixture(ctx context.Context, path string) (err error) {
-	pools, err := db.Open(ctx, path)
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
 		return err
 	}

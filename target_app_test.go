@@ -88,7 +88,7 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	if err := root.WriteFile("history.db", seed, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	hp, err := db.Open(ctx, filepath.Join(historyDir, "history.db"))
+	hp, err := db.Open(ctx, filepath.Join(historyDir, "history.db"), history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

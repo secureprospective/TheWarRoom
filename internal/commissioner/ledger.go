@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 )
@@ -114,15 +115,17 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
 	role, err := auth.Allow(league, principal, "commish.ledger.read")
 	private := err == nil && (role == "commissioner" || role == "cocommissioner")
+	roots := reversalRoots(records)
+	hasRollover := slices.ContainsFunc(records, func(r Record) bool { return r.Command.Command == SeasonRollover })
 	for i := len(records) - 1; i >= 0; i-- {
 		r := records[i]
 		if r.Receipt.Revision > out.Revision {
 			out.Revision = r.Receipt.Revision
 		}
-		if !ledgerEntryVisible(r, records, principal, private) {
+		if !ledgerEntryVisible(r, records[roots[r.Receipt.Entry]], records, principal, private) {
 			continue
 		}
-		what, err := entryLabel(records, i)
+		what, err := entryLabelTarget(records, i, records[roots[r.Receipt.Entry]])
 		if err != nil {
 			return Ledger{}, err
 		}
@@ -139,7 +142,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		}
 		out.Entries = append(out.Entries, Entry{ID: r.Receipt.Entry, Who: who, What: what,
 			Why: r.Command.Reason, When: r.Receipt.RecordedAt, Gravity: gravity,
-			Undo: undoPlacement(records, i, p, principal, auth), ReplacedAt: replaced[r.Receipt.Entry]})
+			Undo: undoPlacement(records, i, roots[r.Receipt.Entry], p, principal, auth, hasRollover), ReplacedAt: replaced[r.Receipt.Entry]})
 	}
 	return out, nil
 }
@@ -149,7 +152,26 @@ type NativeLeague struct {
 	Name string `json:"name"`
 }
 
+func reversalRoots(records []Record) map[string]int {
+	roots := make(map[string]int, len(records))
+	for i, r := range records {
+		root := i
+		if r.Command.Command == Revert {
+			if target, ok := roots[r.Command.Args.Entry]; ok {
+				root = target
+			}
+		}
+		roots[r.Receipt.Entry] = root
+	}
+	return roots
+}
+
 func entryLabel(records []Record, i int) (string, error) {
+	roots := reversalRoots(records[:i+1])
+	return entryLabelTarget(records, i, records[roots[records[i].Receipt.Entry]])
+}
+
+func entryLabelTarget(records []Record, i int, target Record) (string, error) {
 	r := records[i]
 	if correctionCommand(r.Command.Command) {
 		return correctionDescription(records, r), nil
@@ -163,11 +185,11 @@ func entryLabel(records []Record, i int) (string, error) {
 	case DraftRevert:
 		return draftRestoreLabel(records, i), nil
 	case Revert:
-		label, ok, err := revertRuleLabel(records, i)
+		label, ok, err := revertRuleLabel(records, i, target)
 		if err != nil || ok {
 			return label, err
 		}
-		if label, ok := revertNoteLabel(records, i); ok {
+		if label, ok := revertNoteLabel(records, i, target); ok {
 			return label, nil
 		}
 	}
@@ -279,7 +301,7 @@ func scheduleLabel(r Record) string {
 
 // undoPlacement says whether this principal may reverse the entry and who may read the reversal.
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
-func undoPlacement(records []Record, i int, p Projection, principal string, auth Authorizer) string {
+func undoPlacement(records []Record, i, root int, p Projection, principal string, auth Authorizer, hasRollover bool) string {
 	r := records[i]
 	if r.Command.Command == Create || r.Command.Command == NativeSeed || liveDraftEntry(r.Command.Command) ||
 		!p.Active[r.Receipt.Entry] {
@@ -288,22 +310,22 @@ func undoPlacement(records []Record, i int, p Projection, principal string, auth
 	if _, err := auth.Allow(r.Command.League, principal, Revert); err != nil {
 		return ""
 	}
-	if rolloverReversalRefusal(records, r.Receipt.Entry) != "" {
+	if hasRollover && rolloverReversalRefusal(records, records[root].Receipt.Entry) != "" {
 		return ""
 	}
 	if governed, ok := auth.(GovernanceAuthorizer); ok &&
-		authorizeReversal(governed, r.Receipt.Entry, principal, records[:i+1]) != nil {
+		authorizeReversal(governed, records[root].Receipt.Entry, principal, records[:root+1]) != nil {
 		return ""
 	}
 	return r.Command.Visibility
 }
 
-func ledgerEntryVisible(r Record, records []Record, principal string, privileged bool) bool {
-	if privateWaiverRecord(r, records) {
+func ledgerEntryVisible(r, target Record, records []Record, principal string, privileged bool) bool {
+	if privateWaiverRecord(target, records) {
 		return (r.Principal == principal && r.Command.Command == WaiverClaim) ||
 			(privileged && processedWaiverClaim(r, records))
 	}
-	if privateBidRecord(r, records) {
+	if privateBidRecord(target, records) {
 		return r.Principal == principal || (privileged && decidedBidRecord(r, records))
 	}
 	return r.Command.Visibility != "private" || privileged

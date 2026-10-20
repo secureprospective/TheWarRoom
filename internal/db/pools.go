@@ -9,6 +9,10 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
@@ -17,19 +21,45 @@ import (
 // never hit it.
 const busyTimeoutMS = 5000
 
+const connectionPragmas = "&_pragma=foreign_keys(ON)&_pragma=recursive_triggers(ON)&_pragma=synchronous(FULL)"
+
 // Pools is the read/write pool pair for one database. Construct with Open.
 type Pools struct {
-	read  *sql.DB
-	write *sql.DB
+	read             *sql.DB
+	write            *sql.DB
+	path             string
+	checkRunMu       sync.Mutex
+	checkMu          sync.Mutex
+	lastCheck        RoutineCheck
+	migrationMu      sync.Mutex
+	findings         Findings
+	checkedVersion   int
+	migrationChecked bool
 }
 
-// Open opens both pools and checks that WAL mode took effect. The write pool opens first so the
-// file exists before the read-only pool attaches.
-func Open(ctx context.Context, path string) (*Pools, error) {
+// Open refuses newer files before opening a writer. The optional version is the file's
+// newest known migration; the default is MainVersion (also the current what-if version).
+func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
+	maxVersion := MainVersion()
+	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
+		return nil, fmt.Errorf("db: expected one nonnegative schema version")
+	}
+	if len(versions) == 1 {
+		maxVersion = versions[0]
+	}
+	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
+		return nil, err
+	}
+	if err := tightenOwned(path); err != nil {
+		return nil, err
+	}
+	if err := createOwnerOnly(path); err != nil {
+		return nil, err
+	}
 	writeDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		path, busyTimeoutMS,
-	)
+	) + connectionPragmas
 	write, err := sql.Open("sqlite", writeDSN)
 	if err != nil {
 		return nil, fmt.Errorf("db: open write pool: %w", err)
@@ -54,7 +84,7 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 	readDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&mode=ro",
 		path, busyTimeoutMS,
-	)
+	) + connectionPragmas
 	read, err := sql.Open("sqlite", readDSN)
 	if err != nil {
 		_ = write.Close()
@@ -69,7 +99,95 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 		return nil, fmt.Errorf("db: ping read pool: %w", err)
 	}
 
-	return &Pools{read: read, write: write}, nil
+	return &Pools{read: read, write: write, path: path}, nil
+}
+
+// createOwnerOnly creates a missing file empty and 0600 (an empty file is a valid empty
+// database). SQLite would create it 0644, and it gives the WAL, shared-memory and journal
+// files the main file's mode, so this keeps all of them owner-only. An existing file is
+// left as it is.
+func createOwnerOnly(path string) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	return nil
+}
+
+// tightenOwned makes the database, its sidecars and its backups owner-only where an older build
+// left them group- or other-readable. Only regular files under the database's own names are
+// changed; a symlink is never followed, so nothing outside the data dir is touched.
+func tightenOwned(path string) error {
+	base := filepath.Base(path)
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	for _, e := range entries {
+		name := e.Name()
+		owned := name == base || name == base+"-wal" || name == base+"-shm" || name == base+"-journal" ||
+			strings.HasPrefix(name, base+".premigration-") ||
+			(strings.HasPrefix(name, base+".pre-v") && strings.HasSuffix(name, ".bak"))
+		if !owned || !e.Type().IsRegular() {
+			continue
+		}
+		if err := tightenFile(filepath.Join(filepath.Dir(path), name)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// tightenFile changes the mode through the opened file, and only when it is the regular file
+// the directory listed: a file swapped for a symlink after the listing is left alone.
+func tightenFile(path string) error {
+	listed, err := os.Lstat(path)
+	if err != nil || !listed.Mode().IsRegular() || listed.Mode().Perm()&0o077 == 0 {
+		return nil // a file gone or replaced since the listing is not ours to change
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+	opened, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	if !os.SameFile(listed, opened) {
+		return nil
+	}
+	if err := f.Chmod(listed.Mode().Perm() &^ 0o077); err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	return nil
+}
+
+func checkUserVersion(ctx context.Context, path string, maxVersion int) (err error) {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("db: stat database: %w", err)
+	}
+	probe, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro", path))
+	if err != nil {
+		return fmt.Errorf("db: open version probe: %w", err)
+	}
+	defer func() {
+		if closeErr := probe.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("db: close version probe: %w", closeErr))
+		}
+	}()
+	var version int
+	if err := probe.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return fmt.Errorf("db: read user_version: %w", err)
+	}
+	return refuseNewer(version, maxVersion)
 }
 
 // Read returns the read-only pool.

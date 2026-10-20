@@ -60,14 +60,6 @@ type CalendarEvent struct {
 	CreatedAt   string
 }
 
-// initCalendarSchema creates the table and its immutability triggers.
-func (s *Store) initCalendarSchema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, calendarEventsDDL); err != nil {
-		return fmt.Errorf("state: init calendar schema: %w", err)
-	}
-	return nil
-}
-
 // AppendCalendarEvent appends one calendar row; a reschedule or cancel is a new row with the same
 // event_id. Whether firing the payload is legal is judged when it runs, not here.
 func (w *txWriter) AppendCalendarEvent(ctx context.Context, e CalendarEvent) error {

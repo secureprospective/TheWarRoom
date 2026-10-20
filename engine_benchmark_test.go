@@ -28,7 +28,7 @@ func TestOfflineEngineSnapshotTiming(t *testing.T) {
 		t.Skip("requires disposable offline snapshot")
 	}
 	ctx := context.Background()
-	hp, err := db.Open(ctx, filepath.Join(dir, "history-bench.db"))
+	hp, err := db.Open(ctx, filepath.Join(dir, "history-bench.db"), history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

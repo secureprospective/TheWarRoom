@@ -30,14 +30,6 @@ CREATE TRIGGER IF NOT EXISTS cap_relief_ledger_no_delete
 BEFORE DELETE ON cap_relief_ledger
 BEGIN SELECT RAISE(ABORT, 'cap_relief_ledger is append-only'); END;`
 
-// initCapReliefSchema creates the table and its immutability triggers.
-func (s *Store) initCapReliefSchema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, capReliefDDL); err != nil {
-		return fmt.Errorf("state: init cap-relief schema: %w", err)
-	}
-	return nil
-}
-
 // AddCapRelief appends one cap-relief credit (§13). Whether the appeal is justified is the
 // commissioner's call.
 func (w *txWriter) AddCapRelief(ctx context.Context, e CapReliefEntry) error {

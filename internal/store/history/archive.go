@@ -96,21 +96,37 @@ func (s *Store) Body(ctx context.Context, sha256 string) ([]byte, error) {
 // bodies are never offered: a compile reads them through its manifest.
 func (s *Store) ArchivedBodies(ctx context.Context, part string,
 	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
-	return s.archivedBodies(ctx, part, accept, false)
+	return s.archivedBodies(ctx, part, accept, false, false)
 }
 
 // ReferenceBodies also admits imported league-archive bodies for read-only reference surfaces.
 // Live-fetch fallbacks still use ArchivedBodies and never relabel an imported capture as live.
 func (s *Store) ReferenceBodies(ctx context.Context, part string,
 	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
-	return s.archivedBodies(ctx, part, accept, true)
+	return s.archivedBodies(ctx, part, accept, true, false)
 }
 
-func (s *Store) archivedBodies(ctx context.Context, part string,
-	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool, includeImports bool) (found bool, err error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `
+// ExactArchivedBodies reads one registered URL without admitting similarly named files.
+func (s *Store) ExactArchivedBodies(ctx context.Context, wanted string,
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool) (bool, error) {
+	return s.archivedBodies(ctx, wanted, accept, false, true)
+}
+
+const archiveContainsQuery = `
 SELECT f.source, f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
-WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`, part)
+WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`
+
+const archiveExactQuery = `
+SELECT f.source, f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
+WHERE f.status = 200 AND f.url = ? ORDER BY f.fetched_at DESC, f.fetch_id DESC`
+
+func (s *Store) archivedBodies(ctx context.Context, part string,
+	accept func(fetchedURL string, body []byte, fetchedAt time.Time) bool, includeImports, exact bool) (found bool, err error) {
+	query := archiveContainsQuery
+	if exact {
+		query = archiveExactQuery
+	}
+	rows, err := s.pools.Read().QueryContext(ctx, query, part)
 	if err != nil {
 		return false, fmt.Errorf("history: archived bodies: %w", err)
 	}

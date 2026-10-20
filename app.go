@@ -99,14 +99,19 @@ type App struct {
 	targetSnapshot    snapshot.Snapshot
 	hasTargetSnapshot bool
 
-	weekMu           sync.Mutex
-	week             leagueweek.Week
-	weekFetchedAt    time.Time
-	weekRefreshError string
-	clockChanged     func(context.Context)
-	weekCancel       context.CancelFunc
-	weekWorkers      sync.WaitGroup
-	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
+	weekMu             sync.Mutex
+	week               leagueweek.Week
+	weekFetchedAt      time.Time
+	weekRefreshError   string
+	clockChanged       func(context.Context)
+	weekCancel         context.CancelFunc
+	weekWorkers        sync.WaitGroup
+	workerMu           sync.Mutex
+	stopping           bool
+	backups            *db.Backups
+	databaseCheckStart sync.Once
+	shutdownOnce       sync.Once
+	weekStart          sync.Once // domReady fires again on a webview reload; one worker only
 
 	seasonMu            sync.Mutex
 	seasonCalendar      heldSeasonFeed[[]ingestion.RawCalendarEvent]
@@ -266,7 +271,8 @@ func (a *App) startup(ctx context.Context) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
-	a.compileFactsInBackground(ctx)
+	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
+	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
@@ -279,6 +285,15 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, err
 	}
 	a.lockFile = lock
+	if a.backups, err = newDatabaseBackups(dir); err != nil {
+		return "", nil, err
+	}
+	if err := a.backups.Recover(ctx); err != nil {
+		return "", nil, fmt.Errorf("recover databases: %w", err)
+	}
+	if _, err := a.backups.BeforeMigrations(ctx, time.Now().UTC()); err != nil {
+		return "", nil, fmt.Errorf("capture before migrations: %w", err)
+	}
 	if a.pools, err = db.Open(ctx, path); err != nil {
 		return "", nil, fmt.Errorf("open database: %w", err)
 	}
@@ -286,10 +301,10 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	if err != nil {
 		return "", nil, err //nolint:wrapcheck // the registry's errors name the CSV line
 	}
-	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild()))); err != nil {
+	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild())), history.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open history database: %w", err)
 	}
-	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild()))); err != nil {
+	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild())), state.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.histPools, reg)
@@ -355,6 +370,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		}
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
+	a.logMigrationFindings()
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
 	a.moves = moveStore
 	hist.SetLineupEnvironment(appLineupEnv{app: a})
@@ -363,32 +379,68 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	return refreshed, nil
 }
 
-// shutdown releases the database and the instance lock.
-func (a *App) shutdown(_ context.Context) {
-	if a.weekCancel != nil {
-		a.weekCancel()
-	}
-	if a.workCancel != nil {
-		a.workCancel()
-	}
-	a.weekWorkers.Wait()
-	for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
-		if p != nil {
-			_ = p.Close()
+func (a *App) logMigrationFindings() {
+	for _, file := range []struct {
+		name  string
+		pools *db.Pools
+	}{
+		{"thewarroom", a.pools}, {"history", a.histPools}, {"whatif", a.whatifPools},
+	} {
+		if file.pools != nil {
+			findings := file.pools.MigrationFindings()
+			log.Printf("the war room: %s migration checks: before=%+v after=%+v", file.name, findings.Before, findings.After)
 		}
 	}
-	releaseInstanceLock(a.lockFile)
 }
 
-// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it.
+// shutdown releases the database and the instance lock.
+func (a *App) shutdown(_ context.Context) {
+	a.shutdownOnce.Do(func() {
+		a.workerMu.Lock()
+		a.stopping = true
+		if a.weekCancel != nil {
+			a.weekCancel()
+		}
+		if a.workCancel != nil {
+			a.workCancel()
+		}
+		a.workerMu.Unlock()
+		a.weekWorkers.Wait()
+		for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
+			if p != nil {
+				_ = p.Close()
+			}
+		}
+		releaseInstanceLock(a.lockFile)
+	})
+}
+
+func (a *App) startWorker(work func()) {
+	a.workerMu.Lock()
+	defer a.workerMu.Unlock()
+	if a.stopping {
+		return
+	}
+	a.weekWorkers.Add(1)
+	go func() {
+		defer a.weekWorkers.Done()
+		work()
+	}()
+}
+
+// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it
+// owner-only. A dir left by an older build (0750) is tightened, since it holds the ledger.
 func configDir() (string, error) {
 	cfg, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("user config dir: %w", err)
 	}
 	dir := filepath.Join(cfg, "TheWarRoom")
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("create data dir %q: %w", dir, err)
+	}
+	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // a directory needs its x bit; 0700 is owner-only
+		return "", fmt.Errorf("restrict data dir %q: %w", dir, err)
 	}
 	return dir, nil
 }

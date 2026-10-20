@@ -22,7 +22,7 @@ func statStore(t *testing.T, path string) (*Store, *db.Pools) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(context.Background(), path)
+	pools, err := db.Open(context.Background(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,6 +91,7 @@ func readStatPort(t *testing.T, s *Store) []source.HeldWeek {
 }
 
 func TestPlayerWeekStatsArchiveRevisions(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "history.db")
 	s, pools := statStore(t, path)
 	if weeks := readStatPort(t, s); len(weeks) != 0 {
@@ -131,6 +132,7 @@ func TestPlayerWeekStatsArchiveRevisions(t *testing.T) {
 }
 
 func TestPlayerWeekStatsMissingDoesNotReuseOldLine(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	putStatBody(t, s, statBody(t, "244", true), "", t0())
 	latest := putStatBody(t, s, statBody(t, "0", false), "", t0().Add(time.Hour))
@@ -141,6 +143,7 @@ func TestPlayerWeekStatsMissingDoesNotReuseOldLine(t *testing.T) {
 }
 
 func TestPlayerWeekStatsRejectsMalformedHeldFile(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	putStatBody(t, s, statBody(t, "244", true), "", t0())
 	putStatBody(t, s, statBody(t, "not a number", true), "", t0().Add(time.Hour))
@@ -152,6 +155,7 @@ func TestPlayerWeekStatsRejectsMalformedHeldFile(t *testing.T) {
 }
 
 func TestPlayerWeekStatsScope(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	for _, scope := range []source.RawStatScope{
 		{}, {GSIS: "00-0023459", Season: 2020, Week: 1},
@@ -169,5 +173,45 @@ func TestPlayerWeekStatsScope(t *testing.T) {
 	if _, err := s.PlayerWeekStats(ctx, source.RawStatScope{
 		GSIS: "00-0023459", Season: 2025, Week: 1}); err == nil {
 		t.Fatal("ignored cancelled reading")
+	}
+}
+
+func TestWeeklyFileDecodedOnceByHash(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	body := statBody(t, "244", true)
+	sha := putStatBody(t, s, body, "", t0())
+	first := readStatPort(t, s)
+	first[0].Week.Line.Quantities["passing_yards"] = 999
+	weeks, err := s.decodedWeeks(sha, []byte("not CSV"))
+	if err != nil || len(weeks) != 2 {
+		t.Fatalf("cached body was parsed again: %d, %v", len(weeks), err)
+	}
+	again := readStatPort(t, s)
+	if again[0].Week.Line.Quantities["passing_yards"] != 2440000 {
+		t.Fatal("caller mutated the cached statistics")
+	}
+	putStatBody(t, s, statBody(t, "245", true), "", t0().Add(time.Hour))
+	if got := readStatPort(t, s); len(got) != 2 || got[0].Week.Line.Quantities["passing_yards"] != 2450000 {
+		t.Fatalf("new hash did not invalidate statistics: %+v", got)
+	}
+}
+
+func TestExactArchiveLookupExcludesSimilarURLs(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	putStatBody(t, s, statBody(t, "999", true), ".backup", t0().Add(time.Hour))
+	feed, _ := s.reg.Feed("stats_player_week")
+	calls := 0
+	found, err := s.ExactArchivedBodies(t.Context(), feed.URLFor(2025), func(url string, _ []byte, _ time.Time) bool {
+		calls++
+		if url != feed.URLFor(2025) {
+			t.Errorf("substring URL admitted: %s", url)
+		}
+		return false
+	})
+	if err != nil || found || calls != 1 {
+		t.Fatalf("exact archive: %d calls, found %v, %v", calls, found, err)
 	}
 }

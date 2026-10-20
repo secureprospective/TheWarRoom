@@ -58,12 +58,12 @@ func run(ctx context.Context, args []string) (err error) {
 		return err
 	}
 	defer func() { err = errors.Join(err, pools.Close()) }()
-	hp, err := copyPools(ctx, *historyPath, temp)
+	hp, err := copyPools(ctx, *historyPath, temp, history.SchemaVersion())
 	if err != nil {
 		return err
 	}
 	defer func() { err = errors.Join(err, hp.Close()) }()
-	wp, err := copyPools(ctx, *whatifPath, temp)
+	wp, err := copyPools(ctx, *whatifPath, temp, state.SchemaVersion())
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func run(ctx context.Context, args []string) (err error) {
 	return writeClock(*out, clock)
 }
 
-func copyPools(ctx context.Context, src, temp string) (*db.Pools, error) {
+func copyPools(ctx context.Context, src, temp string, versions ...int) (*db.Pools, error) {
 	body, err := os.ReadFile(src)
 	if err != nil {
 		return nil, fmt.Errorf("fixtures: read snapshot: %w", err)
@@ -94,7 +94,7 @@ func copyPools(ctx context.Context, src, temp string) (*db.Pools, error) {
 	if err := errors.Join(writeErr, file.Close()); err != nil {
 		return nil, fmt.Errorf("fixtures: copy snapshot: %w", err)
 	}
-	pools, err := db.Open(ctx, file.Name())
+	pools, err := db.Open(ctx, file.Name(), versions...)
 	if err != nil {
 		return nil, fmt.Errorf("fixtures: open copy: %w", err)
 	}

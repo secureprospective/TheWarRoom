@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
 	"sort"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -140,6 +141,7 @@ func cloneFranchise(fs *FranchiseState) FranchiseState {
 		FranchiseID: fs.FranchiseID,
 		Players:     clonePlayers(fs.Players),
 		CapUsed:     fs.CapUsed,
+		CapInvalid:  fs.CapInvalid,
 	}
 }
 
@@ -188,5 +190,27 @@ func requireOneRow(res sql.Result, mflID string) error {
 	if n != 1 {
 		return fmt.Errorf("state: write for %q affected %d rows, want 1 (memory/DB drift)", mflID, n)
 	}
+	return nil
+}
+
+func (s *Store) applyCellCap(ctx context.Context, fr map[string]*FranchiseState) error {
+	// Cap usage is derived from the ledger cells, the source of truth, not the legacy salary column.
+	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season, s.discounts)
+	if err != nil {
+		return err
+	}
+	for fid, f := range fr {
+		f.CapUsed = perFranchise[fid]
+		for i := range f.Players {
+			p := &f.Players[i]
+			cs, ok := perPlayer[p.MFLID]
+			if !ok {
+				f.CapInvalid = true
+				log.Printf("state: load: WARNING rostered player %q has base salary %s but no PAID %d ledger cell (cell drift) — cap total invalid until reconciled", p.MFLID, p.Salary, s.season)
+			}
+			p.CapSalary = cs
+		}
+	}
+
 	return nil
 }

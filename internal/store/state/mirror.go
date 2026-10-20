@@ -58,15 +58,6 @@ type Adjustment struct {
 	Description string
 }
 
-const mirrorDDL = `
-CREATE TABLE IF NOT EXISTS league_mirror (
-	id           INTEGER PRIMARY KEY CHECK (id = 1),
-	season       INTEGER NOT NULL,
-	sha256       TEXT NOT NULL,
-	snapshot     TEXT NOT NULL,
-	refreshed_at TEXT NOT NULL
-);`
-
 // NewMirror returns an unloaded mirror over pools. discounts supplies the taxi and IR cap
 // percentages.
 func NewMirror(pools *db.Pools, discounts CapDiscounts) *Mirror {
@@ -76,7 +67,7 @@ func NewMirror(pools *db.Pools, discounts CapDiscounts) *Mirror {
 // Initialize creates the table and loads what it holds. An empty mirror is legal: the first
 // refresh fills it.
 func (m *Mirror) Initialize(ctx context.Context) error {
-	if _, err := m.pools.Write().ExecContext(ctx, mirrorDDL); err != nil {
+	if err := m.pools.InitializeMain(ctx); err != nil {
 		return fmt.Errorf("state: mirror schema: %w", err)
 	}
 	var raw, at string
@@ -103,31 +94,60 @@ func (m *Mirror) Initialize(ctx context.Context) error {
 // Replace makes snap the mirror. It writes only when snap differs from what is held, and
 // reports whether it did; either way it rebuilds the view, so new cap percentages apply.
 func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error) {
-	if snap.Season == 0 || len(snap.Players) == 0 {
-		return false, fmt.Errorf("state: mirror refresh for season %d with %d players refused: an empty league would wipe the mirror", snap.Season, len(snap.Players))
-	}
-	m.wmu.Lock()
-	defer m.wmu.Unlock()
-	prev := m.hash
-	enc, err := m.install(snap)
-	if err != nil || m.hash == prev {
+	prepared, changed, err := m.StageReplace(snap, m.discounts)
+	if err != nil {
 		return false, err
 	}
-	at := time.Now().UTC().Format(time.RFC3339Nano)
-	if _, err := m.pools.Write().ExecContext(ctx, `
+	if err := m.pools.CommitPrepared(ctx, prepared); err != nil {
+		return false, fmt.Errorf("state: mirror replace: %w", err)
+	}
+	return changed, nil
+}
+
+// StageReplace builds a private view and holds the writer lock until commit or release.
+func (m *Mirror) StageReplace(snap MirrorSnapshot, discounts CapDiscounts) (db.PreparedWrite, bool, error) {
+	if snap.Season == 0 || len(snap.Players) == 0 {
+		return db.PreparedWrite{}, false, fmt.Errorf("state: mirror refresh for season %d with %d players refused: an empty league would wipe the mirror", snap.Season, len(snap.Players))
+	}
+	m.wmu.Lock()
+	staged := NewMirror(m.pools, discounts)
+	enc, err := staged.install(snap)
+	if err != nil {
+		m.wmu.Unlock()
+		return db.PreparedWrite{}, false, err
+	}
+	changed := staged.hash != m.hash
+	at := m.refreshedAt
+	if changed {
+		at = time.Now().UTC().Format(time.RFC3339Nano)
+	}
+	prepared := db.PreparedWrite{
+		Persist: func(ctx context.Context, tx *sql.Tx) error {
+			if !changed {
+				return nil
+			}
+			if _, err := tx.ExecContext(ctx, `
 INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
 ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
-	snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`,
-		snap.Season, m.hash, string(enc), at); err != nil {
-		return false, fmt.Errorf("state: mirror write: %w", err)
+ snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`, snap.Season, staged.hash, string(enc), at); err != nil {
+				return fmt.Errorf("state: mirror write: %w", err)
+			}
+			return nil
+		},
+		Lock: m.mu.Lock, Unlock: m.mu.Unlock, Release: m.wmu.Unlock,
+		Publish: func() {
+			m.franchises, m.byPlayer = staged.franchises, staged.byPlayer
+			m.snap, m.hash, m.refreshedAt = staged.snap, staged.hash, at
+		},
 	}
-	m.refreshedAt = at
-	return true, nil
+	return prepared, changed, nil
 }
 
 // install sorts and validates snap, builds its view and swaps it in. It returns the canonical
 // encoding, whose sha256 becomes the mirror's hash. The caller holds wmu.
 func (m *Mirror) install(snap MirrorSnapshot) ([]byte, error) {
+	snap.Players = slices.Clone(snap.Players)
+	snap.Adjustments = slices.Clone(snap.Adjustments)
 	sort.Slice(snap.Players, func(i, j int) bool { return snap.Players[i].MFLID < snap.Players[j].MFLID })
 	sort.Slice(snap.Adjustments, func(i, j int) bool { return snap.Adjustments[i].ID < snap.Adjustments[j].ID })
 	fr := map[string]*FranchiseState{}

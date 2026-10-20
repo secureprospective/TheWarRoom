@@ -122,7 +122,7 @@ func league(ctx context.Context, path string) (normalize.Lookup, string, error) 
 // read loads every value the model reads: player facts, college seasons and NFL weeks. lastWeek
 // is each season's last week of league scoring.
 func read(ctx context.Context, path string, first, holdout int) ([]model.Obs, map[int]int, error) {
-	pools, err := db.Open(ctx, path)
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
 		return nil, nil, fmt.Errorf("fit: open %s: %w", path, err)
 	}

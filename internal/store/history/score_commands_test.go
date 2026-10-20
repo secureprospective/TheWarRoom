@@ -66,6 +66,7 @@ func setupScoreLeague(t *testing.T, s *Store) {
 }
 
 func TestNativePositionCommandsCompensationAndReopen(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "position.db")
 	s, pools := statStore(t, path)
 	setupScoreLeague(t, s)
@@ -123,6 +124,7 @@ func assertPositionPoints(t *testing.T, s *Store, want leaguerules.Position, tot
 }
 
 func TestNativeDeltaCommandsReplayOnceAndReopen(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "delta.db")
 	s, pools := statStore(t, path)
 	setupScoreLeague(t, s)
@@ -172,6 +174,7 @@ func TestNativeDeltaCommandsReplayOnceAndReopen(t *testing.T) {
 }
 
 func TestNativeFranchiseDeltaRequiresG3(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "franchise.db")
 	s, pools := statStore(t, path)
 	setupScoreLeague(t, s)
@@ -213,6 +216,7 @@ func TestNativeFranchiseDeltaRequiresG3(t *testing.T) {
 }
 
 func TestNativeScoreCommandRefusalsDoNotAppend(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	setupScoreLeague(t, s)
 	raw := scoreCommand(t, commissioner.PlayerPosition,
@@ -260,6 +264,7 @@ func TestNativeScoreCommandRefusalsDoNotAppend(t *testing.T) {
 }
 
 func TestNativeScoreDeltaValidation(t *testing.T) {
+	t.Parallel()
 	for _, change := range []commissioner.RawScoreChange{
 		{Player: "0099", Season: 2025, Week: 1},
 		{Player: "0099", Season: 2025, Week: 1, Delta: pointsDelta(0)},
@@ -274,6 +279,7 @@ func TestNativeScoreDeltaValidation(t *testing.T) {
 }
 
 func TestNativeDeltaOverflowRefusesAppendAndCompensation(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	setupScoreLeague(t, s)
 	maximum := scoreCommand(t, commissioner.ScorePlayer, commissioner.RawScoreChange{

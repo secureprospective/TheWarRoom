@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -34,8 +35,27 @@ func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
 	return records, nil
 }
 
-func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
-	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, 0)
+// Decoded records are cached read-only; each caller gets a deep copy it may change freely.
+type recordRevision struct {
+	revision int64
+	records  []commissioner.Record
+}
+
+func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
+	var revision int64
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(revision),0) FROM league_event WHERE league=? AND stream=?`, league, commissioner.Stream).Scan(&revision); err != nil {
+		return nil, fmt.Errorf("read league revision: %w", err)
+	}
+	s.recordsMu.Lock()
+	defer s.recordsMu.Unlock()
+	hit := s.records[league]
+	if hit.revision > revision {
+		hit = recordRevision{}
+	}
+	if hit.revision == revision {
+		return deepClone(hit.records), nil
+	}
+	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, hit.revision)
 	if err != nil {
 		return nil, fmt.Errorf("read league ledger: %w", err)
 	}
@@ -43,7 +63,16 @@ func transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commi
 	if err != nil {
 		return nil, err
 	}
-	return commissionerRecords(events)
+	tail, err := commissionerRecords(events)
+	if err != nil {
+		return nil, err
+	}
+	records := append(slices.Clone(hit.records), tail...)
+	if s.records == nil {
+		s.records = map[string]recordRevision{}
+	}
+	s.records[league] = recordRevision{revision: revision, records: records}
+	return deepClone(records), nil
 }
 
 // ExecuteCommissioner performs authorization, retry lookup and append in one
@@ -73,7 +102,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		return commissioner.Receipt{}, fmt.Errorf("begin league change: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	records, err := transactionRecords(ctx, tx, raw.League)
+	records, err := s.transactionRecords(ctx, tx, raw.League)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -322,11 +351,7 @@ func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principa
 	if err := filter.Validate(); err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("validate ledger filters: %w", err)
 	}
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
-	if err != nil {
-		return commissioner.Ledger{}, err
-	}
-	records, err := commissionerRecords(events)
+	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.Ledger{}, err
 	}
@@ -360,8 +385,28 @@ func (s *Store) CommissionerPeople(ctx context.Context, league, principal string
 	return people, nil
 }
 
+type nativeLeagueRevision struct {
+	revision int64
+	names    []commissioner.NativeLeague
+	loaded   bool
+}
+
 func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT league,json_extract(payload,'$.commissioner.command.args.name') FROM league_event WHERE stream=? AND kind=? ORDER BY league`, commissioner.Stream, commissioner.Create)
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("read app leagues: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	var revision int64
+	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(rowid),0) FROM league_event`).Scan(&revision); err != nil {
+		return nil, fmt.Errorf("read app league revision: %w", err)
+	}
+	s.leaguesMu.Lock()
+	defer s.leaguesMu.Unlock()
+	if s.leagues.loaded && s.leagues.revision == revision {
+		return slices.Clone(s.leagues.names), nil
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT league,json_extract(payload,'$.commissioner.command.args.name') FROM league_event WHERE stream=? AND kind=? ORDER BY league`, commissioner.Stream, commissioner.Create)
 	if err != nil {
 		return nil, fmt.Errorf("read app leagues: %w", err)
 	}
@@ -377,7 +422,8 @@ func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague,
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("read app leagues: %w", err)
 	}
-	return out, nil
+	s.leagues = nativeLeagueRevision{revision: revision, names: out, loaded: true}
+	return slices.Clone(out), nil
 }
 
 func (s *Store) CommissionerRules(ctx context.Context, league string) (commissioner.Rules, error) {

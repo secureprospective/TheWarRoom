@@ -107,7 +107,7 @@ func (f *successionFixture) restart(t *testing.T, principal string) {
 	if err := f.store.pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(t.Context(), path)
+	pools, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,6 +123,7 @@ func (f *successionFixture) restart(t *testing.T, principal string) {
 }
 
 func TestLedgerSuccessionAcceptDecline(t *testing.T) {
+	t.Parallel()
 	for _, accept := range []bool{true, false} {
 		t.Run(fmt.Sprint(accept), func(t *testing.T) {
 			f := newSuccession(t, 2, true)
@@ -154,6 +155,7 @@ func (f *successionFixture) ballot(t *testing.T, index int, choice string) commi
 }
 
 func TestLedgerElectionMajorityRunoff(t *testing.T) {
+	t.Parallel()
 	for _, majority := range []bool{true, false} {
 		t.Run(fmt.Sprint(majority), func(t *testing.T) {
 			f := newSuccession(t, 32, true)
@@ -217,6 +219,7 @@ func TestLedgerElectionMajorityRunoff(t *testing.T) {
 }
 
 func TestLedgerVoteOutThreshold(t *testing.T) {
+	t.Parallel()
 	for _, yes := range []int{21, 22} {
 		t.Run(fmt.Sprint(yes), func(t *testing.T) {
 			f := newSuccession(t, 32, true)
@@ -260,6 +263,7 @@ func TestLedgerVoteOutThreshold(t *testing.T) {
 }
 
 func TestLedgerSuccessionRefusalsAndBallotRevert(t *testing.T) {
+	t.Parallel()
 	f := newSuccession(t, 2, true)
 	f.act(t, "cc", "commish.succession.voteout.open", commissioner.RawPeople{
 		Principal: "cc", Commissioner: "creator", ID: "removal"})
@@ -307,6 +311,7 @@ func TestLedgerSuccessionRefusalsAndBallotRevert(t *testing.T) {
 }
 
 func TestLedgerInactivityAndPeriods(t *testing.T) {
+	t.Parallel()
 	f := newSuccession(t, 2, true)
 	f.act(t, "creator", "commish.succession.inactivity.set", commissioner.RawPeople{InSeasonDays: 3, OffseasonDays: 2})
 	f.act(t, "creator", "commish.succession.activity", commissioner.RawPeople{Principal: "creator"})
@@ -336,6 +341,7 @@ func TestLedgerInactivityAndPeriods(t *testing.T) {
 }
 
 func TestLedgerSuccessionGuards(t *testing.T) {
+	t.Parallel()
 	f := newSuccession(t, 2, true)
 	refused := func(principal, command string, args commissioner.RawPeople, want string) {
 		t.Helper()

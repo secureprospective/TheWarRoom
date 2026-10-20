@@ -29,6 +29,7 @@ type FranchiseState struct {
 	FranchiseID string
 	Players     []PlayerState
 	CapUsed     domain.Money
+	CapInvalid  bool
 }
 
 // ContractChange is the full set of contract terms a transaction applies, replaced atomically.

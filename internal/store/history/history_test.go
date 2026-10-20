@@ -68,7 +68,7 @@ func (c *clock) Now() time.Time { return c.now }
 
 func newStore(t *testing.T) (*Store, *clock, *db.Pools) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"))
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"), SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,6 +113,7 @@ func features(t *testing.T, s *Store, asOf time.Time) []Feature {
 }
 
 func TestFetchArchivesOnceAndLoadIsIdempotent(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	const body = "player,Solo\n13604,41\n"
@@ -165,6 +166,7 @@ func TestFetchArchivesOnceAndLoadIsIdempotent(t *testing.T) {
 }
 
 func TestAbandonedAndFailedFetchesAreLoggedWithoutBodies(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, strings.Repeat("x", 1<<16))
@@ -190,6 +192,7 @@ func TestAbandonedAndFailedFetchesAreLoggedWithoutBodies(t *testing.T) {
 }
 
 func TestCorrectionAppendsAndAsOfReadsTheOldValue(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	if _, err := s.Ingest(ctx, solo("alpha", "Solo", "13604", "41")); err != nil {
@@ -224,6 +227,7 @@ func TestCorrectionAppendsAndAsOfReadsTheOldValue(t *testing.T) {
 }
 
 func TestWeekZerosAreWrittenOnlyAsCorrections(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	week := func(raw string) measures.Batch {
@@ -271,6 +275,7 @@ func TestWeekZerosAreWrittenOnlyAsCorrections(t *testing.T) {
 }
 
 func TestHistoryRejectsUpdateAndDelete(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.Ingest(context.Background(), solo("alpha", "Solo", "13604", "41")); err != nil {
 		t.Fatal(err)
@@ -283,6 +288,7 @@ func TestHistoryRejectsUpdateAndDelete(t *testing.T) {
 }
 
 func TestIngestRejectsBadBatchesAndRecordsTheFailure(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		b    measures.Batch
@@ -317,6 +323,7 @@ func TestIngestRejectsBadBatchesAndRecordsTheFailure(t *testing.T) {
 }
 
 func TestUnmatchedFactsWaitThenResolveWithTheirAsOf(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	b := measures.Batch{Source: "alpha", Facts: []measures.Fact{
@@ -369,6 +376,7 @@ func TestUnmatchedFactsWaitThenResolveWithTheirAsOf(t *testing.T) {
 // TestSourceGainNeedsOnlyMappingRows is the source-gain drill: a second source for an existing
 // measure arrives as one source_fields row. No code changes.
 func TestSourceGainNeedsOnlyMappingRows(t *testing.T) {
+	t.Parallel()
 	s, _, pools := newStore(t)
 	ctx := context.Background()
 	if _, err := s.Ingest(ctx, solo("alpha", "Solo", "13604", "41")); err != nil {
@@ -404,6 +412,7 @@ func TestSourceGainNeedsOnlyMappingRows(t *testing.T) {
 }
 
 func TestSourceIsLostOnlyAfterFailingPastItsMaxAge(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	state := func() SourceState {
@@ -457,6 +466,7 @@ func board(params float64, inputs string) NewRun {
 }
 
 func TestRunsKeepEveryBoardReadable(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	ctx := context.Background()
 	first, written, err := s.WriteRun(ctx, board(0.03, "in-1"))
@@ -505,6 +515,7 @@ func TestRunsKeepEveryBoardReadable(t *testing.T) {
 }
 
 func TestRunRecordsMeasuresThatStoppedFlowing(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	ctx := context.Background()
 	c.now = t0().Add(30 * 24 * time.Hour)
@@ -518,6 +529,7 @@ func TestRunRecordsMeasuresThatStoppedFlowing(t *testing.T) {
 }
 
 func TestWriteRunRejectsBadScores(t *testing.T) {
+	t.Parallel()
 	cases := map[string]func(*NewRun){
 		"no scores":     func(r *NewRun) { r.Scores = nil },
 		"no inputs":     func(r *NewRun) { r.InputsHash = "" },
@@ -545,6 +557,7 @@ func TestWriteRunRejectsBadScores(t *testing.T) {
 }
 
 func TestArchivedBodiesOfferNewestFirstUntilOneIsTaken(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	ctx := context.Background()
 	for i, body := range []string{"first", "second", "third"} {
@@ -586,6 +599,7 @@ func modelRun(knob float64) NewModelRun {
 
 // A model run is kept apart from the boards, deduplicated like them, and every one stays readable.
 func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	ctx := context.Background()
 	if _, _, err := s.WriteRun(ctx, board(0.03, "in-1")); err != nil {
@@ -620,6 +634,7 @@ func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
 }
 
 func TestMeasuresHeldListsASourcesMeasuresBySeason(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	ctx := context.Background()
 	if _, err := s.Ingest(ctx, solo("alpha", "Solo", "13604", "41")); err != nil {
@@ -643,6 +658,7 @@ func TestMeasuresHeldListsASourcesMeasuresBySeason(t *testing.T) {
 }
 
 func TestEngineRefreshRecordsFreshnessEvenWhenValuesMatch(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	nr := modelRun(2)
 	first, _, err := s.WriteModelRun(context.Background(), nr)
@@ -664,6 +680,7 @@ func TestEngineRefreshRecordsFreshnessEvenWhenValuesMatch(t *testing.T) {
 }
 
 func TestModelInputsChangedOnlyForNewValues(t *testing.T) {
+	t.Parallel()
 	s, clock, _ := newStore(t)
 	ctx := context.Background()
 	since := clock.now
@@ -687,5 +704,51 @@ func TestModelInputsChangedOnlyForNewValues(t *testing.T) {
 	changed, err = s.ModelInputsChanged(ctx, since)
 	if err != nil || changed {
 		t.Fatalf("unchanged and failed loads: %t %v", changed, err)
+	}
+}
+
+func TestExistingOrphanDoesNotPreventInitialization(t *testing.T) {
+	t.Parallel()
+	s, _, p := newStore(t)
+	conn, err := p.Write().Conn(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.ExecContext(t.Context(), `PRAGMA foreign_keys=OFF;
+INSERT INTO model_runs (run_id,kind,season,as_of,param_set_id,engine,inputs_hash,scores_hash,missing_measures,created_at)
+VALUES (42,'model',2026,'held','missing','fixture','inputs','scores','[]','held');
+PRAGMA foreign_keys=ON;`); err != nil {
+		_ = conn.Close()
+		t.Fatal(err)
+	}
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+	p.Write().SetMaxIdleConns(0)
+	p.Write().SetMaxIdleConns(1)
+	if err := s.Initialize(t.Context()); err != nil {
+		t.Fatalf("existing orphan blocked initialization: %v", err)
+	}
+	if got := count(t, s, "model_runs"); got != 1 {
+		t.Fatalf("existing runs = %d, want 1", got)
+	}
+	var table, parent string
+	var rowID, foreignKey int
+	if err := p.Read().QueryRowContext(t.Context(), `PRAGMA foreign_key_check`).Scan(&table, &rowID, &parent, &foreignKey); err != nil {
+		t.Fatal(err)
+	}
+	if table != "model_runs" || rowID != 42 || parent != "param_sets" {
+		t.Fatalf("orphan = %s row %d -> %s, want model_runs row 42 -> param_sets", table, rowID, parent)
+	}
+	if _, err := p.Write().ExecContext(t.Context(), `INSERT INTO model_runs
+SELECT 43,kind,season,as_of,param_set_id,engine,inputs_hash,scores_hash,missing_measures,created_at FROM model_runs WHERE run_id=42`); err == nil {
+		t.Fatal("new orphan accepted")
+	}
+	var missing int
+	if err := p.Read().QueryRowContext(t.Context(), `SELECT COUNT(*) FROM param_sets WHERE param_set_id='missing'`).Scan(&missing); err != nil {
+		t.Fatal(err)
+	}
+	if missing != 0 {
+		t.Fatal("initialization invented a missing parent")
 	}
 }

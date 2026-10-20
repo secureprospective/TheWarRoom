@@ -27,7 +27,7 @@ type rolloverDB struct {
 
 func (r *rolloverDB) open(t *testing.T) {
 	t.Helper()
-	pools, err := db.Open(t.Context(), r.path)
+	pools, err := db.Open(t.Context(), r.path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,6 +173,7 @@ func (r *rolloverDB) playerStatuses(t *testing.T) (int, []domain.RosterStatus) {
 }
 
 func TestSeasonRolloverDryRunWritesNothing(t *testing.T) {
+	t.Parallel()
 	r := newRolloverDB(t)
 	before := fingerprint(t, r.s)
 	receipt := r.do(t, r.rollover(t, 2027, true, "dry"))
@@ -190,6 +191,7 @@ func TestSeasonRolloverDryRunWritesNothing(t *testing.T) {
 }
 
 func TestSeasonRolloverRefusals(t *testing.T) {
+	t.Parallel()
 	r := newRolloverDB(t)
 	before := fingerprint(t, r.s)
 	for _, to := range []int{2026, 2028, 2025} {
@@ -222,6 +224,7 @@ func TestSeasonRolloverRefusals(t *testing.T) {
 }
 
 func TestSeasonRolloverWritesOneEntryAndRetriesToTheSameReceipt(t *testing.T) {
+	t.Parallel()
 	r := newRolloverDB(t)
 	events, err := r.s.Events(t.Context(), "native.test", commissioner.Stream, 0)
 	if err != nil {
@@ -266,6 +269,7 @@ func (r *rolloverDB) readings(t *testing.T) (season, rosterSeason, rulesSeason i
 }
 
 func TestSeasonRolloverReplaysAndRevertsAfterReopening(t *testing.T) {
+	t.Parallel()
 	r := newRolloverDB(t)
 	beforeSeason, beforeRoster, beforeRules, beforeLimits := r.readings(t)
 	if beforeSeason != 2026 || beforeRoster != 2026 || beforeRules != 2026 || !strings.Contains(beforeLimits, "80") {
@@ -312,6 +316,7 @@ func slicesContain(statuses []domain.RosterStatus, want domain.RosterStatus) boo
 }
 
 func TestSeasonRolloverCannotBeReversedAroundLaterChanges(t *testing.T) {
+	t.Parallel()
 	r := newRolloverDB(t)
 	receipt := r.do(t, r.rollover(t, 2027, false, "go"))
 	r.c.now = r.c.now.Add(time.Hour)

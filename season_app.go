@@ -347,14 +347,12 @@ func (a *App) refreshPendingTradesInBackground() {
 	if parent == nil {
 		parent = a.fallbackParent()
 	}
-	a.weekWorkers.Add(1)
-	go func() {
-		defer a.weekWorkers.Done()
+	a.startWorker(func() {
 		ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 		defer cancel()
 		a.refreshMu.Lock()
 		defer a.refreshMu.Unlock()
 		a.refreshPendingTrades(ctx)
 		a.seasonChanged(ctx)
-	}()
+	})
 }

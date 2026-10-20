@@ -35,7 +35,7 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		return commissioner.Preview{}, fmt.Errorf("begin league preview: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	records, err := transactionRecords(ctx, tx, raw.League)
+	records, err := s.transactionRecords(ctx, tx, raw.League)
 	if err != nil {
 		return commissioner.Preview{}, err
 	}

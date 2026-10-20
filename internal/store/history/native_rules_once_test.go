@@ -10,6 +10,7 @@ import (
 
 // A running clock must not make a reading resolve the season's rules again for every starter it scores.
 func TestNativeReadingsResolveTheirRulesOncePerLedger(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	ticks := 0
@@ -47,6 +48,7 @@ func TestNativeReadingsResolveTheirRulesOncePerLedger(t *testing.T) {
 
 // Each reading starts a new memo, so a rule recorded after one reading is in force for the next.
 func TestNativeReadingsDoNotCarryRulesFromAnEarlierReading(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.bump["franchise.05"] = map[int]leaguerules.Decimal{1: 10002}
 	points := func() leaguerules.Decimal {

@@ -20,12 +20,12 @@ type TradePlan struct {
 type TradePlans struct{ pools *db.Pools }
 
 func NewTradePlans(pools *db.Pools) *TradePlans { return &TradePlans{pools: pools} }
+
+const tradePlansDDL = `CREATE TABLE IF NOT EXISTS trade_plans (
+ id TEXT PRIMARY KEY, franchise_id TEXT NOT NULL, plan TEXT NOT NULL);`
+
 func (s *TradePlans) schema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, `CREATE TABLE IF NOT EXISTS trade_plans (
- id TEXT PRIMARY KEY, franchise_id TEXT NOT NULL, plan TEXT NOT NULL)`); err != nil {
-		return fmt.Errorf("trade plan schema: %w", err)
-	}
-	return nil
+	return initializeWhatIf(ctx, s.pools)
 }
 func (s *TradePlans) Save(ctx context.Context, p TradePlan) error {
 	if err := s.schema(ctx); err != nil {

@@ -70,7 +70,7 @@ func draftPicks() []draftreports.FuturePick {
 
 func openClockedHistory(t *testing.T, path string, now func() time.Time) (*history.Store, *db.Pools) {
 	t.Helper()
-	p, err := db.Open(t.Context(), path)
+	p, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

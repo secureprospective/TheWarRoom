@@ -308,6 +308,10 @@ VALUES (?, ?, ?, ?, ?, ?, '')`, id, seq, stamp, envelope.Draft, envelope.ChecksP
 			t.Fatalf("corruption not identified: %v", err)
 		}
 	}
+	// The v2 guard refuses this write; a row written before v2 can still be corrupt.
+	if _, err := pools.Write().ExecContext(ctx, `DROP TRIGGER move_envelopes_spec_json_insert`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := pools.Write().ExecContext(ctx,
 		`INSERT INTO move_envelopes (correlation_id, created, spec) VALUES (?, ?, ?)`,
 		"invalid-json", at.Format(timestampLayout), "{"); err != nil {
@@ -360,4 +364,22 @@ BEGIN SELECT RAISE(ABORT, 'test insertion failure'); END;`); err != nil {
 	if count != 0 {
 		t.Fatalf("audit survived rollback: %d", count)
 	}
+}
+
+// Build a version-zero fixture at a new path so its pre-upgrade backup does not already exist.
+func legacyMovesFile(t *testing.T, source *db.Pools, table string) (*Store, *db.Pools) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "legacy.db")
+	if _, err := source.Write().ExecContext(t.Context(), "VACUUM INTO ?", path); err != nil {
+		t.Fatal(err)
+	}
+	pools, err := db.Open(t.Context(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	if _, err := pools.Write().ExecContext(t.Context(), "DROP TABLE "+table+"; PRAGMA user_version=0"); err != nil {
+		t.Fatal(err)
+	}
+	return New(pools), pools
 }

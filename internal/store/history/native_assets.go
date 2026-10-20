@@ -12,11 +12,12 @@ func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissione
 	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
 		return nil, fmt.Errorf("choose an app league")
 	}
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read native league events: %w", err)
 	}
-	records, err := commissionerRecords(events)
+	defer func() { _ = tx.Rollback() }()
+	records, err := s.transactionRecords(ctx, tx, league)
 	if err != nil {
 		return nil, fmt.Errorf("read native league records: %w", err)
 	}

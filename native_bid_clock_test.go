@@ -32,6 +32,7 @@ func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
 	salary := int64(5 * million)
 	for cycle := range 2 {
 		if cycle > 0 {
+			reopened := f.set(t, "bids.standFor", `259200000000000`, "now")
 			salary += million
 			var err error
 			bid, err = f.raise(t, "owner.one", "franchise.01", bid, salary, 1)
@@ -39,6 +40,7 @@ func TestNativeBidStandForGovernsClockRevertAndReopen(t *testing.T) {
 				t.Fatal(err)
 			}
 			placed = f.now
+			f.revert(t, reopened)
 		}
 		f.closeAt(t, "5004", placed.Add(24*time.Hour))
 		rule := f.set(t, "bids.standFor", `172800000000000`, "now")
@@ -276,5 +278,28 @@ func TestNativeBidClockRechecksLegalityAndClosesUnawardableBids(t *testing.T) {
 	}
 	if _, ok := f.roster(t, "5005"); ok {
 		t.Fatal("an illegal bid signed a contract")
+	}
+}
+
+func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
+	t.Parallel()
+	for _, action := range []string{"place", "raise", "withdraw"} {
+		t.Run(action, func(t *testing.T) {
+			f := bidApp(t)
+			bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
+			f.now = bid.RecordedAt.Add(24 * time.Hour)
+			var err error
+			switch action {
+			case "place":
+				err = f.tryPlace(t, "owner.two", "franchise.02", "5004", 7*million, 1)
+			case "raise":
+				_, err = f.raise(t, "owner.one", "franchise.01", bid, 6*million, 1)
+			case "withdraw":
+				err = f.withdraw(t, "owner.one", "franchise.01", bid)
+			}
+			if err == nil || !strings.Contains(err.Error(), "closed") {
+				t.Fatalf("%s at deadline: %v", action, err)
+			}
+		})
 	}
 }

@@ -1,19 +1,10 @@
 # HANDOFF
 
-- **Baton:** Claude — 2026-10-07 (head brain on CT105; Sol 6.1 on Bee coded P5b)
-
-## Where it stands
-
-Ring 0 of the UI target is done: P1–P5b built on `session/ring-0`, live gate passed on Claude-OS
-2026-10-07, merged to main (PR #14). Ring 1 resume: `docs/build-handoffs/RESUME-2026-10-07-ring1.md`.
-
-## Next move
-
-Ring 1 planning (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md` › Ring 1), plus gap closure:
-league rules (allRules / By-Laws), verifying the MFL IR page (M-028) so drafts can reach ready,
-and a dated source for the current week.
-
-## Tried and rejected
-
-- Wails cannot type `[]playerid.PlayerID`; `ts_type` tags fix it (do not hand-edit wailsjs).
-- A 30 s clock interval showed stale minutes; the ticker reschedules on minute flips instead.
+- **Baton:** Claude/reviewer — 2026-10-20; matched backup/restore build ready for review, no push or merge.
+- **Where it stands:** `internal/db` now owns version-1 matched-set manifests, all-three-writer daily capture, offline journaled restore/recovery and calendar retention. `app.go` recovers/captures before opening pools; `database_checks_app.go` uses the existing maintenance wake. Decisions and mutation receipts: `docs/build-handoffs/BlockB_Phase6_Backups_2026-10.md`.
+- **Identity:** unchanged. Existing different-home Visitor finding retained; actual same-home matched restore retains the local commissioner's rights and populated roster/rules. History fixture also restores final native results and populated rosters identically.
+- **Verification:** db race suite and complete history race suite pass; targeted Go lint and ifaceguard pass. The single full root race run passes (427.5 s), no trade-builder flake. Focused startup/maintenance/identity rerun and full golangci-lint pass. Deliberately removed manifest, hash, barrier, recovery, retention, identity-restore and startup/maintenance wiring guards; their regressions failed before restoring the fixes.
+- **Blocked on:** reviewer/live gate, not another format decision. `make lint` hits the pre-existing tiny-file ratchet (25 versus baseline 22); HEAD also has 25, and this build adds none. Baseline was not raised; unrelated agents' files were not consolidated.
+- **Review twice:** the shared writer lock is each file's exclusive SQL connection, acquired main → history → what-if, released in reverse. Restore requires offline ownership of the data-directory instance lock; no UI button. Import source sets under that home's `backups/`. Offline checkpoint consolidates WAL before safety hashing. Complete native result evidence/lineup ports are fixture-injected, not live feed access. No production profile, binary, GUI or network exercised.
+- **Next move:** review the filesystem durability paths and barrier; run the fleet's full gate and live restore drill. Existing phase 4 arithmetic/screen snapshot and phase 7 caching/pruning scope remain unchanged.
+- **Tried/rejected:** ordinary read-only snapshot probes left WAL/SHM companions and broke immutability; immutable SQLite probes fixed the failing safety-set and duplicate-daily tests. No identity workaround, baseline bump, new schema, dependency or transport-specific restore API.

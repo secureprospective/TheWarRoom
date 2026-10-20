@@ -78,20 +78,7 @@ func noteLabel(r Record) string {
 
 // revertNoteLabel describes a reversal whose original change was a notice or league note; ok is false
 // otherwise.
-func revertNoteLabel(records []Record, i int) (string, bool) {
-	target := records[i]
-	for target.Command.Command == Revert {
-		found := false
-		for _, r := range records[:i] {
-			if r.Receipt.Entry == target.Command.Args.Entry {
-				target, found = r, true
-				break
-			}
-		}
-		if !found {
-			return "", false
-		}
-	}
+func revertNoteLabel(records []Record, i int, target Record) (string, bool) {
 	d, ok := noteDefinitionFor(target.Command.Command)
 	if !ok {
 		return "", false

@@ -20,6 +20,7 @@ func (f *bracketFixture) setRule(t *testing.T, field, value string) commissioner
 }
 
 func TestPlayoffRulesCM016GovernTheWinnerAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	const game = "AFC/wildcard_3"
@@ -44,6 +45,7 @@ func TestPlayoffRulesCM016GovernTheWinnerAndReopen(t *testing.T) {
 }
 
 func TestPlayoffRulesCM016SayWhatIsStillNeededAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	cases := []struct{ field, value, words string }{
@@ -71,6 +73,7 @@ func TestPlayoffRulesCM016SayWhatIsStillNeededAndReopen(t *testing.T) {
 }
 
 func TestBracketBuildCM046GovernsTheRoundsAndReopens(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	ready := f.bracket(t)
 	if ready.Status != "Ready to build" || len(ready.Rounds) != 0 || ready.Preset != "league_rules" {
@@ -132,6 +135,7 @@ func assertLegacyShape(t *testing.T, b commissioner.NativeBracket) {
 }
 
 func TestBracketHandSeedAndEditCM046GovernAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	base := f.bracket(t)
@@ -172,6 +176,7 @@ func TestBracketHandSeedAndEditCM046GovernAndReopen(t *testing.T) {
 }
 
 func TestBracketPresetsCM046SaveBuildAndReopen(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	short := []commissioner.BracketNodeSpec{
 		{ID: "semi_1", Week: 14, HomeSeed: 1, AwaySeed: 4}, {ID: "semi_2", Week: 14, HomeSeed: 2, AwaySeed: 3},
@@ -210,6 +215,7 @@ func TestBracketPresetsCM046SaveBuildAndReopen(t *testing.T) {
 }
 
 func TestAdvancementCM047GovernsTheNextRoundAndReopens(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	base := f.bracket(t)
@@ -259,6 +265,7 @@ func TestAdvancementCM047GovernsTheNextRoundAndReopens(t *testing.T) {
 }
 
 func TestTheTitleCM048IsStampedWithTheSeasonAndReopens(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	title := func(label string) commissioner.RawCommand {

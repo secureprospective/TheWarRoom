@@ -31,14 +31,6 @@ CREATE TRIGGER IF NOT EXISTS player_status_events_no_delete
 BEFORE DELETE ON player_status_events
 BEGIN SELECT RAISE(ABORT, 'player_status_events is append-only'); END;`
 
-// initPlayerStatusSchema creates the table and its immutability triggers.
-func (s *Store) initPlayerStatusSchema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, playerStatusDDL); err != nil {
-		return fmt.Errorf("state: init player-status schema: %w", err)
-	}
-	return nil
-}
-
 // RecordStatus appends one availability event. ReleasePlayer calls it, so no release can skip
 // marking where the player went.
 func (w *txWriter) RecordStatus(ctx context.Context, mflID string, status domain.PlayerStatus, reason string) error {

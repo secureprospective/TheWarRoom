@@ -2,6 +2,7 @@ package history
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -14,6 +15,7 @@ func eventFixture(id string) LeagueEvent {
 }
 
 func TestLeagueEventAppendReadAndTriggers(t *testing.T) {
+	t.Parallel()
 	s, _, p := newStore(t)
 	e, err := s.AppendEvent(t.Context(), eventFixture("first"), 0)
 	if err != nil || e.Revision != 1 || !e.RecordedAt.Equal(t0()) {
@@ -53,6 +55,7 @@ func TestLeagueEventAppendReadAndTriggers(t *testing.T) {
 }
 
 func TestLeagueEventConcurrentExpectedRevision(t *testing.T) {
+	t.Parallel()
 	s, _, p := newStore(t)
 	second := New(p, s.Registry())
 	var wg sync.WaitGroup
@@ -82,6 +85,7 @@ func TestLeagueEventConcurrentExpectedRevision(t *testing.T) {
 }
 
 func TestAuthorityDefaultsToMFLUntilCutover(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	for _, at := range []time.Time{t0(), t0().AddDate(100, 0, 0)} {
 		authority, err := s.Authority(t.Context(), "legacy", "contracts", at)
@@ -108,12 +112,55 @@ func TestAuthorityDefaultsToMFLUntilCutover(t *testing.T) {
 }
 
 func TestLeagueEventRejectsInvalidInput(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	for _, mutate := range []func(*LeagueEvent){func(e *LeagueEvent) { e.ID = "" }, func(e *LeagueEvent) { e.InputHash = "bad" }, func(e *LeagueEvent) { e.Payload.Version = 0 }, func(e *LeagueEvent) { e.EffectiveAt = time.Time{} }} {
 		e := eventFixture("bad")
 		mutate(&e)
 		if _, err := s.AppendEvent(t.Context(), e, 0); err == nil {
 			t.Fatal("invalid event accepted")
+		}
+	}
+}
+
+func TestLeagueEventRejectsReplacementAndUpsert(t *testing.T) {
+	t.Parallel()
+	for _, query := range []string{
+		`INSERT OR REPLACE INTO league_event SELECT id,league,'other',1,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='first'`,
+		`INSERT INTO league_event SELECT id,league,'other',1,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='first' ON CONFLICT(id) DO UPDATE SET actor=excluded.actor`,
+		`INSERT OR REPLACE INTO league_event SELECT 'replacement',league,stream,2,effective_at,recorded_at,'wrong',scope,kind,payload,input_hash,correlation_id,NULL FROM league_event WHERE id='request'`,
+	} {
+		t.Run(query, func(t *testing.T) {
+			s, _, p := newStore(t)
+			if _, err := s.AppendEvent(t.Context(), eventFixture("first"), 0); err != nil {
+				t.Fatal(err)
+			}
+			request := eventFixture("request")
+			request.Stream = "commissioner"
+			if _, err := s.AppendEvent(t.Context(), request, 0); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := p.Write().ExecContext(t.Context(), query); err == nil {
+				t.Fatal("ledger replacement accepted")
+			}
+			var count int
+			if err := p.Read().QueryRowContext(t.Context(), `SELECT COUNT(*) FROM league_event WHERE actor='commissioner' AND id IN ('first','request')`).Scan(&count); err != nil {
+				t.Fatal(err)
+			}
+			if count != 2 {
+				t.Fatalf("unchanged events = %d, want 2", count)
+			}
+		})
+	}
+}
+
+func TestLeagueEventPayloadRequiresIntegerVersion(t *testing.T) {
+	t.Parallel()
+	_, _, p := newStore(t)
+	for i, payload := range []string{`{}`, `{"version":null}`, `{"version":"1"}`, `{"version":true}`, `{"version":0}`, `{"version":1.5}`, `null`, `not json`} {
+		_, err := p.Write().ExecContext(t.Context(), `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id) VALUES (?, 'legacy', ?, 1, '', '', 'actor', 'league', 'test', ?, ?, ?)`, fmt.Sprint(i), fmt.Sprint(i), payload, strings.Repeat("a", 64), fmt.Sprint(i))
+		if err == nil {
+			t.Errorf("accepted payload %s", payload)
 		}
 	}
 }

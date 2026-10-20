@@ -52,6 +52,7 @@ func revision(t *testing.T, s *Store) int64 {
 }
 
 func TestCommissionerRulesPermissions(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -94,6 +95,7 @@ func TestCommissionerRulesPermissions(t *testing.T) {
 }
 
 func TestCommissionerRulesTiming(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -157,6 +159,7 @@ func TestCommissionerRulesTiming(t *testing.T) {
 }
 
 func TestCommissionerRulesRefusals(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -181,6 +184,7 @@ func TestCommissionerRulesRefusals(t *testing.T) {
 }
 
 func TestCommissionerPresets(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetEmpty, 0), "creator", nil); err == nil {
 		t.Fatal("empty league created without a size")
@@ -222,6 +226,7 @@ func TestCommissionerPresets(t *testing.T) {
 }
 
 func TestCommissionerRulesReplayAfterReopen(t *testing.T) {
+	t.Parallel()
 	s, c, pools := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -266,7 +271,7 @@ func TestCommissionerRulesReplayAfterReopen(t *testing.T) {
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := db.Open(t.Context(), path)
+	reopened, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

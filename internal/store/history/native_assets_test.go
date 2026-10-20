@@ -32,6 +32,7 @@ func heldSeedCommand(t *testing.T) commissioner.RawCommand {
 }
 
 func TestNativeSeedAtomicConcurrentAndReplay(t *testing.T) {
+	t.Parallel()
 	s, _, p := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -76,8 +77,9 @@ func TestNativeSeedAtomicConcurrentAndReplay(t *testing.T) {
 }
 
 func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
+	t.Parallel()
 	path := filepath.Join(t.TempDir(), "durable.db")
-	p, err := db.Open(t.Context(), path)
+	p, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +95,7 @@ func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
 	if err := p.Close(); err != nil {
 		t.Fatal(err)
 	}
-	p, err = db.Open(t.Context(), path)
+	p, err = db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,6 +111,7 @@ func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
 }
 
 func TestNativeSeedValidationLeavesNoPartialAct(t *testing.T) {
+	t.Parallel()
 	for name, breakInput := range map[string]func(*commissioner.RawNativeSnapshot){
 		"no roster date":      func(s *commissioner.RawNativeSnapshot) { s.RosterAt = time.Time{} },
 		"no draft date":       func(s *commissioner.RawNativeSnapshot) { s.DraftAt = time.Time{} },

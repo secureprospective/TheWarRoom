@@ -91,6 +91,9 @@ func (e *statEffects) apply(command string, change RawStatChange, r Record) erro
 // A version the ledger approved but the held files no longer carry is an error, never a quiet fallback.
 func countedVersion(versions []source.LineRevision, base StatBaseline) (*source.LineRevision, error) {
 	if len(versions) == 0 {
+		if base.Entry != "" || base.Digest != "" {
+			return nil, fmt.Errorf("the statistics you approved are no longer in the held files")
+		}
 		return nil, nil
 	}
 	if base.Seq >= len(versions) || !strings.HasPrefix(versions[base.Seq].Digest, base.Digest) {

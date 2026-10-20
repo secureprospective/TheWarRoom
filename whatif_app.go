@@ -177,6 +177,9 @@ func (a *App) loadWhatIf(ctx context.Context, s state.WhatIfSession) (*state.Sto
 	if err := store.Initialize(ctx, state.SnapshotSource{Snapshot: s.Snapshot}); err != nil {
 		return nil, fmt.Errorf("what-if ledger: %w", err)
 	}
+	if err := store.Err(); err != nil {
+		return nil, fmt.Errorf("what-if ledger: %w", err)
+	}
 	return store, nil
 }
 

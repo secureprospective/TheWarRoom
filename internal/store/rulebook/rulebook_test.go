@@ -110,25 +110,18 @@ func TestCapPercent_ReadsMFLValueAndOverride(t *testing.T) {
 	}
 }
 
-// TestCapPercent_ClampsOutOfRangeOverride confirms an out-of-domain override value
-// (SetOverride's scopeSetting accepts any non-empty scalar, with no value-domain
-// check at that boundary) cannot invert or overcount a franchise's cap total —
-// capPercent is the last line of defense, clamping to [0, 100].
-func TestCapPercent_ClampsOutOfRangeOverride(t *testing.T) {
+func TestCapPercent_RejectsOutOfRangeOverride(t *testing.T) {
 	s := newStore(t, &fakeSource{cfg: baseConfig()})
-
-	if err := s.SetOverride(context.Background(), scopeSetting, "includeTaxiWithSalary", "-50", "bad input"); err != nil {
-		t.Fatalf("SetOverride: %v", err)
-	}
-	if got := s.TaxiCapPercent(); got != 0 {
-		t.Errorf("TaxiCapPercent with -50 override = %v, want clamped to 0", got)
-	}
-
-	if err := s.SetOverride(context.Background(), scopeSetting, "includeIRWithSalary", "200", "bad input"); err != nil {
-		t.Fatalf("SetOverride: %v", err)
-	}
-	if got := s.IRCapPercent(); got != 100 {
-		t.Errorf("IRCapPercent with 200 override = %v, want clamped to 100", got)
+	for _, key := range []string{"includeTaxiWithSalary", "includeIRWithSalary"} {
+		before, _ := s.GetSetting(key)
+		for _, value := range []string{"-50", "200"} {
+			if err := s.SetOverride(context.Background(), scopeSetting, key, value, "bad input"); err == nil {
+				t.Fatal("invalid percent accepted")
+			}
+			if after, _ := s.GetSetting(key); after != before {
+				t.Fatal("refused override changed the setting")
+			}
+		}
 	}
 }
 
@@ -366,5 +359,30 @@ func TestSync_PromotesOnlyWhenMFLChanged(t *testing.T) {
 	}
 	if changed, err := s.Sync(ctx, named); err != nil || changed || len(vers) != 2 {
 		t.Errorf("repeat Sync = %t, %v with %d versions; want false, nil, 2", changed, err, len(vers))
+	}
+}
+
+func TestOverrideRejectsInvalidCapAndPercents(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	for _, tc := range []struct{ scope, key, value string }{
+		{"cap", "salaryCapAmount", "NaN"}, {"cap", "salaryCapAmount", "+Inf"}, {"cap", "salaryCapAmount", "92233720368.54775808"},
+		{"setting", "includeTaxiWithSalary", "NaN"}, {"setting", "includeIRWithSalary", "-1"}, {"setting", "includeIRWithSalary", "101"},
+	} {
+		t.Run(tc.scope+tc.key+tc.value, func(t *testing.T) {
+			if err := s.SetOverride(context.Background(), tc.scope, tc.key, tc.value, "test"); err == nil {
+				t.Fatalf("accepted %s", tc.value)
+			}
+		})
+	}
+}
+
+func TestSyncRejectsInvalidCapPercentWithoutChangingRules(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	for _, value := range []string{"NaN", "+Inf", "-1", "101", "wrong"} {
+		cfg := baseConfig()
+		cfg.IncludeTaxiWithSalary = value
+		if changed, err := s.Sync(context.Background(), cfg); err == nil || changed {
+			t.Errorf("sync percent %s = %t, %v", value, changed, err)
+		}
 	}
 }

@@ -38,6 +38,7 @@ func linkOf(b commissioner.NativeBracket, record string) commissioner.HistoryRec
 }
 
 func TestHistoryLinkCM049GovernsTheChampionAndFranchiseHistoryAndReopens(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	f.grantCoCommissioner(t, "cc")
@@ -74,6 +75,7 @@ func TestHistoryLinkCM049GovernsTheChampionAndFranchiseHistoryAndReopens(t *test
 }
 
 func TestHistoryLinkCM049OverridesTheSeasonsOwnChampion(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	if c := f.bracket(t).Champion; c == nil || c.Franchise != franchiseID(32) || c.Source != "Won the final" {
@@ -94,6 +96,7 @@ func TestHistoryLinkCM049OverridesTheSeasonsOwnChampion(t *testing.T) {
 }
 
 func TestHistoryLinkCM049Refusals(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	for name, raw := range map[string]commissioner.RawCommand{
 		"a franchise the league lacks": f.link(t, "champion.2025", "franchise.99"),
@@ -113,6 +116,7 @@ func TestHistoryLinkCM049Refusals(t *testing.T) {
 }
 
 func TestBracketChangesAfterKickoffNeedTheReasonThatG3Demands(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	edit := func(started bool, reason string) commissioner.RawCommand {
@@ -155,6 +159,7 @@ func TestBracketChangesAfterKickoffNeedTheReasonThatG3Demands(t *testing.T) {
 }
 
 func TestBracketChangesWithoutAHeldCalendarAreTakenAsStated(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	f.run(t, f.bracketCommand(t, commissioner.BracketEdit, change{Node: "AFC/wildcard_2/away", Team: franchiseID(2), Started: true}, "Games began"))
@@ -165,6 +170,7 @@ func TestBracketChangesWithoutAHeldCalendarAreTakenAsStated(t *testing.T) {
 }
 
 func TestBracketCommandRefusals(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.grantCoCommissioner(t, "cc")
 	cmd := f.bracketCommand
@@ -228,6 +234,7 @@ func TestBracketCommandRefusals(t *testing.T) {
 }
 
 func TestTheLedgerReadsPlayoffChangesInPlainWords(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	f.do(t, commissioner.BracketEdit, change{Node: "AFC/wildcard_2/away", Team: franchiseID(2)})
@@ -249,6 +256,7 @@ func TestTheLedgerReadsPlayoffChangesInPlainWords(t *testing.T) {
 }
 
 func TestTheBracketWaitsForTheRegularSeasonAndSaysWhy(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
 	more := f.setRule(t, "schedule.regularWeeks", "4")
@@ -274,6 +282,7 @@ func TestTheBracketWaitsForTheRegularSeasonAndSaysWhy(t *testing.T) {
 }
 
 func TestTheBracketOfALeagueWithoutAStartingSnapshotSaysSo(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
 	b, err := s.NativeBracket(t.Context(), bracketLeague, 2026)
@@ -286,6 +295,7 @@ func TestTheBracketOfALeagueWithoutAStartingSnapshotSaysSo(t *testing.T) {
 }
 
 func TestNativeBracketWire(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	ready := f.bracket(t)
 	f.do(t, commissioner.BracketBuild, rulesBuild())
@@ -327,6 +337,7 @@ func TestNativeBracketWire(t *testing.T) {
 }
 
 func TestTheBracketFollowsTheStandingsTheCommissionerSet(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	computed, err := f.s.NativeStandings(t.Context(), bracketLeague, 2026)
 	if err != nil {

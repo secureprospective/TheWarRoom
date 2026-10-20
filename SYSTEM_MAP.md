@@ -38,7 +38,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. `NewWaiverPolicy` consumes resolved CM-012 settings without inventing missing values; `Close` dates an unprocessed window from its original cut and `Award` chooses among already-eligible franchises using a supplied priority-first standings or rolling order (rolling moves the winner last). The native commissioner ledger consumes this policy for cuts, private claims and atomic awards; no imported league or hand-off state is changed. `NewBidPolicy` does the same for CM-013 free-agent bids (points, limits, steps, phase rules, tie-aware winner). Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
 | Leaf | `internal/leaguerules` | Typed commissioner-owned season rules, explicit unset values, cited Legacy NFL preset, pure ordered change resolver and preview diffs. `catalogue.go` exports the read-only field catalogue (label, section, value schema, competitive), plain-JSON `DecodeSetting`, whole-value stored encoding for durable seeds, and plain-words rendering. Imports only the standard library and pure domain value types; no store, transport, ingestion or I/O. |
-| Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. |
+| Store | `internal/db` | SQLite pools: one write connection, many read-only ones, one WAL file. `Backups` owns matched three-file manifests, fixed-order writer reservation for daily capture, startup pre-migration capture, offline journaled restore/recovery and verified-set retention. Call recovery before opening application pools; restore requires offline ownership of the data-directory instance lock. |
 | Store | `internal/store/rulebook` | League rules from MFL as immutable versions with one active pointer, plus commissioner overrides. |
 | Store | `internal/store/params` | Engine calibration: shipped defaults plus admin overrides, league-wide or per position. The Layer 4 settings are seeded from `l4.Defaults`; the model's fitted values from the embedded `fitted.json`, marked calibrated. Shipped defaults are upserted at start-up; overrides are never touched. A set splits into the board's part and the model's (`model.*`, `dynasty.*`); each run records only its own. |
 | Store | `internal/store/moves` | Append-only envelope specs and replayable audit entries in `thewarroom.db`; restart-safe move receipts and awaiting evidence queries. `bid_facts` holds current bid figures; `bid_conditions` keeps the conditional drop by audit version, keyed by an envelope's correlation id: the owner's own bid figures, no franchise column, frozen by a trigger once the bid is handed off. |
@@ -182,6 +182,10 @@ Every method that takes frontend input validates it before acting. Bindings in
   filled during startup.
 - **Migrations:** `internal/store/state/migrations.go`, forward-only and versioned; a
   `VACUUM INTO` backup is taken before any pending migration runs.
+- **Database checks:** `internal/db/routine_checks.go` retains the last attempted integrity/FK
+  checks per pool. `database_checks_app.go` runs them after the window opens and weekly while
+  open, through a cancellable, joined worker. Data Sources exposes `databaseChecks` using
+  the existing report renderer. Results are process-local; restarting runs checks again.
 - **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
   each step and its time; a failed startup shows a banner in the app.
 - **Headless check:** `thewarroom -probe` runs the full startup without a window and exits
@@ -913,3 +917,17 @@ separately; owners retain publication-only readings. `TargetCommissionerActor` r
 session identity for self-only people acts. The lazy commissioner tray uses those doors, and the
 existing `TargetNativeBracket`, for schedule and bracket acts with named game/round/seed/team pickers.
 Go-authored market and competition wire fixtures pin the frontend bodies and previews.
+
+## File migrations
+
+`internal/db` owns the shared file runner and the complete main-file DDL. `user_version`
+steps and their markers commit together after `VACUUM INTO <file>.pre-v<N>.bak`.
+Main and what-if files know v1 (current-schema adoption); history knows v2 (typed
+`quarantine_model_runs` / `quarantine_model_scores` repair, gated by FK findings).
+The state store retains its older `schema_migrations` owner/version history inside
+file adoption. History registry refreshes use DML, not startup DDL. Openers supply
+the file's newest known version before any writer opens. `Pools.MigrationFindings`
+returns both check passes; startup logs them, including unresolved unrelated FKs.
+Repeated initialization at the same file version reuses completed checks within that
+pool; `db.Check` is the explicit fresh-check path.
+Existing backup paths are never overwritten: a collision blocks the pending upgrade.

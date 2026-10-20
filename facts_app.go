@@ -24,8 +24,12 @@ const factsTimeout = 5 * time.Minute
 
 // compileFactsInBackground compiles the checked facts after launch when the archive has been
 // imported and the manifest has no snapshot for this compiler and these rules yet.
-func (a *App) compileFactsInBackground(parent context.Context) {
-	go func() {
+func (a *App) compileFactsInBackground() {
+	parent := a.workCtx
+	if parent == nil {
+		parent = a.fallbackParent()
+	}
+	a.startWorker(func() {
 		if a.ready() != nil {
 			return
 		}
@@ -46,7 +50,7 @@ func (a *App) compileFactsInBackground(parent context.Context) {
 		}
 		a.warmArchive(ctx)
 		a.fitAssetModel(ctx)
-	}()
+	})
 }
 
 // warmArchive reads the verified snapshot into the archive cache once the checked facts are in,

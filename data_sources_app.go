@@ -33,14 +33,15 @@ type DataScope struct {
 // DataSources is Control Room › Data and sources: source health and the signal files (C-07), the
 // checked facts and the checks that will prove them (L-34), and the refresh scopes (S-09).
 type DataSources struct {
-	Health     Report            `json:"health"`
-	Signals    Report            `json:"signals"`
-	Facts      Report            `json:"facts"`
-	Checks     Report            `json:"checks"`
-	ArchiveDir string            `json:"archiveDir"`
-	PhotosOn   bool              `json:"photosOn"`
-	Scopes     []DataScope       `json:"scopes"`
-	Words      map[string]string `json:"words"`
+	DatabaseChecks *Report           `json:"databaseChecks"`
+	Health         Report            `json:"health"`
+	Signals        Report            `json:"signals"`
+	Facts          Report            `json:"facts"`
+	Checks         Report            `json:"checks"`
+	ArchiveDir     string            `json:"archiveDir"`
+	PhotosOn       bool              `json:"photosOn"`
+	Scopes         []DataScope       `json:"scopes"`
+	Words          map[string]string `json:"words"`
 }
 
 // dataScopes lists the refresh Acts in the order they are offered.
@@ -156,7 +157,8 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	last := a.signals
 	a.signalsMu.Unlock()
 	return DataSources{
-		Health: healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
+		DatabaseChecks: a.databaseChecksReport(),
+		Health:         healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
 		Facts: factsReport(facts), Checks: checksReport(facts),
 		ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: dataScopes(), Words: dataWords(),
 	}, nil

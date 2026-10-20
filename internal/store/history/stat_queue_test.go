@@ -153,6 +153,7 @@ func (f *statResults) revise(franchise string, week int, tackles leaguerules.Dec
 }
 
 func TestNativeStatApprovalGovernsScoreStandingsAndQueue(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	f.revise(f.a, 2, 30000)
 	for pass := 0; pass < 2; pass++ {
@@ -199,6 +200,7 @@ func TestNativeStatApprovalGovernsScoreStandingsAndQueue(t *testing.T) {
 }
 
 func TestNativeStatRejectionKeepsTheScoreAndStaysRejectedPerRevision(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	f.revise(f.a, 2, 30000)
 	score, item := f.score(t, f.a, 2), f.queue(t).Open[0].ID
@@ -228,6 +230,7 @@ func TestNativeStatRejectionKeepsTheScoreAndStaysRejectedPerRevision(t *testing.
 }
 
 func TestNativeStatApprovalPreviewStatesPointsAndFlip(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	f.revise(f.a, 2, 30000)
 	item := f.queue(t).Open[0].ID
@@ -254,6 +257,7 @@ func TestNativeStatApprovalPreviewStatesPointsAndFlip(t *testing.T) {
 }
 
 func TestNativeStatCorrectionGovernsScoreAndStandings(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	for pass := 0; pass < 2; pass++ {
 		wins := f.row(t, f.a)
@@ -293,6 +297,7 @@ func TestNativeStatCorrectionGovernsScoreAndStandings(t *testing.T) {
 }
 
 func TestNativeStatCorrectionWhereTheFeedIsSilent(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	f.silent[fmt.Sprint(f.starter(f.a), "/", 2)] = true
 	if got := f.score(t, f.a, 2); got.Points != nil || got.PartialPoints != nil {
@@ -314,6 +319,7 @@ func TestNativeStatCorrectionWhereTheFeedIsSilent(t *testing.T) {
 }
 
 func TestNativeStatCommandsPermissionsAndRefusals(t *testing.T) {
+	t.Parallel()
 	f := statResultsTest(t)
 	f.revise(f.a, 2, 30000)
 	item := f.queue(t).Open[0].ID
@@ -367,6 +373,7 @@ func TestNativeStatCommandsPermissionsAndRefusals(t *testing.T) {
 }
 
 func TestStatQueueReadsTheArchiveTheSameWayAsASinglePlayer(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "archive.db"))
 	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "0099"}}); err != nil {
@@ -404,6 +411,7 @@ func TestStatQueueReadsTheArchiveTheSameWayAsASinglePlayer(t *testing.T) {
 }
 
 func TestStatQueueOnASeasonNoFileCoversIsEmpty(t *testing.T) {
+	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "none.db"))
 	weeks, err := seasonStatFeed{store: s, season: 2025}.Weeks(t.Context())
 	if err != nil || len(weeks) != 0 {

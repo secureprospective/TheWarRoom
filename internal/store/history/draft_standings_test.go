@@ -94,6 +94,7 @@ func (f *resultsFixture) worstFirst(worst, best string, reverse bool) string {
 }
 
 func TestRoundOneIsTakenWorstFirstAndNeedsTheTieRuleOnlyForTies(t *testing.T) {
+	t.Parallel()
 	f := draftedFixture(t)
 	before := time.Date(2027, 6, 1, 12, 0, 0, 0, time.UTC)
 	// 30 teams finished level on every tie-breaker, so the draft cannot order them without its own tie rule.
@@ -125,6 +126,7 @@ func TestRoundOneIsTakenWorstFirstAndNeedsTheTieRuleOnlyForTies(t *testing.T) {
 }
 
 func TestARecordedResultReordersRoundOneAndItsRevertRestoresIt(t *testing.T) {
+	t.Parallel()
 	f := draftedFixture(t)
 	runScoreCommand(t, f.s, draftCommand(commissioner.DraftOrderTiebreak,
 		commissioner.RawDraftArgs{Tie: commissioner.TieByFranchiseOrder}, revision(t, f.s)), "creator")
@@ -158,6 +160,7 @@ func TestARecordedResultReordersRoundOneAndItsRevertRestoresIt(t *testing.T) {
 }
 
 func TestRoundOneWaitsForEveryRegularSeasonGame(t *testing.T) {
+	t.Parallel()
 	f := draftedFixture(t)
 	runScoreCommand(t, f.s, draftCommand(commissioner.DraftOrderTiebreak,
 		commissioner.RawDraftArgs{Tie: commissioner.TieByFranchiseOrder}, revision(t, f.s)), "creator")
@@ -174,6 +177,7 @@ func TestRoundOneWaitsForEveryRegularSeasonGame(t *testing.T) {
 }
 
 func TestRoundOneIsFixedWhenTheDraftBeginsEvenIfAResultIsCorrectedLater(t *testing.T) {
+	t.Parallel()
 	f := draftedFixture(t)
 	runScoreCommand(t, f.s, draftCommand(commissioner.DraftOrderTiebreak,
 		commissioner.RawDraftArgs{Tie: commissioner.TieByFranchiseOrder}, revision(t, f.s)), "creator")

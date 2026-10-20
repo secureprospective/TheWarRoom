@@ -13,12 +13,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
@@ -105,18 +105,14 @@ func (s *Store) Reload(ctx context.Context) (ChangeSet, error) {
 // whether it did. Identical config writes nothing, so a repeated refresh adds no versions.
 // Provenance (Source) is not compared.
 func (s *Store) Sync(ctx context.Context, cfg league.RawConfig) (bool, error) {
-	s.mu.RLock()
-	active := s.active
-	s.mu.RUnlock()
-	same, err := sameConfig(active, cfg)
-	if err != nil || same {
-		return false, err
-	}
-	ver, err := s.insertVersion(ctx, cfg)
+	prepared, _, changed, err := s.StageSync(cfg)
 	if err != nil {
 		return false, err
 	}
-	return true, s.Promote(ctx, ver)
+	if err := s.pools.CommitPrepared(ctx, prepared); err != nil {
+		return false, fmt.Errorf("rulebook: sync: %w", err)
+	}
+	return changed, nil
 }
 
 // sameConfig compares two configs field by field, ignoring provenance.
@@ -180,11 +176,13 @@ func validateOverride(scope, key, value string) error {
 	}
 	switch scope {
 	case scopeCap:
-		if _, err := strconv.ParseFloat(strings.TrimSpace(value), 64); err != nil {
+		if _, err := domain.ParseMoneyMillions(value); err != nil {
 			return fmt.Errorf("rulebook: cap override %q is not numeric: %w", value, err)
 		}
 	case scopeSetting:
-		// any non-empty value is accepted
+		if key == "includeTaxiWithSalary" || key == "includeIRWithSalary" {
+			return validateCapPercent(value)
+		}
 	default:
 		return fmt.Errorf("rulebook: unknown override scope %q", scope)
 	}
@@ -266,50 +264,34 @@ func (s *Store) Versions(ctx context.Context) ([]VersionMeta, error) {
 
 // initSchema creates the version, active-pointer and override tables if absent.
 func (s *Store) initSchema(ctx context.Context) error {
-	const ddl = `
-CREATE TABLE IF NOT EXISTS rulebook_versions (
-	version    INTEGER PRIMARY KEY AUTOINCREMENT,
-	source     TEXT NOT NULL,
-	payload    TEXT NOT NULL,
-	created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS rulebook_active (
-	singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-	version   INTEGER NOT NULL REFERENCES rulebook_versions(version)
-);
-CREATE TABLE IF NOT EXISTS rulebook_overrides (
-	id         INTEGER PRIMARY KEY AUTOINCREMENT,
-	scope      TEXT NOT NULL,
-	rule_key   TEXT NOT NULL,
-	value      TEXT NOT NULL,
-	note       TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL,
-	UNIQUE (scope, rule_key)
-);`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("rulebook: init schema: %w", err)
+	if err := s.pools.InitializeMain(ctx); err != nil {
+		return fmt.Errorf("rulebook: initialize schema: %w", err)
 	}
 	return nil
 }
 
 // insertVersion stores cfg as a new immutable version and returns its number.
 func (s *Store) insertVersion(ctx context.Context, cfg league.RawConfig) (int, error) {
+	if err := validateConfigPercents(cfg); err != nil {
+		return 0, err
+	}
 	payload, err := json.Marshal(cfg)
 	if err != nil {
 		return 0, fmt.Errorf("rulebook: marshal config: %w", err)
 	}
-	now := time.Now().UTC().Format(time.RFC3339)
-	res, err := s.pools.Write().ExecContext(ctx,
-		`INSERT INTO rulebook_versions (source, payload, created_at) VALUES (?, ?, ?)`,
-		cfg.Source, string(payload), now)
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("rulebook: insert version: %w", err)
+		return 0, fmt.Errorf("rulebook: version begin: %w", err)
 	}
-	id, err := res.LastInsertId()
+	defer func() { _ = tx.Rollback() }()
+	version, err := insertConfig(ctx, tx, cfg.Source, string(payload))
 	if err != nil {
-		return 0, fmt.Errorf("rulebook: version id: %w", err)
+		return 0, err
 	}
-	return int(id), nil
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("rulebook: version commit: %w", err)
+	}
+	return version, nil
 }
 
 // setActive repoints the single active-version row to ver.

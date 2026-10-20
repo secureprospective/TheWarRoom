@@ -58,7 +58,8 @@ func main() {
 
 // runFlag runs a windowless mode and returns the exit code. `-probe` runs the real startup and
 // exits 0 if it came up; the log shows each step's time, so a hang is the last step logged.
-// `-version` prints the build label.
+// `-version` prints the build label. `-backups` lists the backup sets and `-restore <set>` restores
+// one, both with the app closed.
 func runFlag(args []string, stdout, stderr io.Writer) int {
 	switch {
 	case len(args) == 1 && args[0] == "-probe":
@@ -66,8 +67,12 @@ func runFlag(args []string, stdout, stderr io.Writer) int {
 	case len(args) == 1 && args[0] == "-version":
 		_, _ = fmt.Fprintln(stdout, buildLabel())
 		return 0
+	case len(args) == 1 && args[0] == "-backups":
+		return listBackups(stdout, stderr)
+	case len(args) == 2 && args[0] == "-restore":
+		return restoreBackup(args[1], stdout, stderr)
 	default:
-		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version]\n", args)
+		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version | -backups | -restore <set>]\n", args)
 		return 2
 	}
 }

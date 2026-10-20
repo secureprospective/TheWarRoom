@@ -6,6 +6,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -28,7 +30,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 	wanted := feed.URLFor(season)
 	var parseErr error
 	var previous string
-	_, err := s.ArchivedBodies(ctx, wanted, func(fetchedURL string, body []byte, at time.Time) bool {
+	_, err := s.ExactArchivedBodies(ctx, wanted, func(fetchedURL string, body []byte, at time.Time) bool {
 		if fetchedURL != wanted {
 			return false
 		}
@@ -38,7 +40,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 			return false
 		}
 		previous = sha
-		weeks, err := source.ReadWeeks(bytes.NewReader(body))
+		weeks, err := s.decodedWeeks(sha, body)
 		if err != nil {
 			parseErr = fmt.Errorf("read held weekly statistics %s: %w", sha, err)
 			return true
@@ -60,7 +62,12 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 	}
 	out := []source.HeldWeek{}
 	err := s.heldWeeklyFiles(ctx, scope.Season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
-		out = append(out, source.SelectHeldWeek(scope, weeks, sha, at))
+		held := source.SelectHeldWeek(scope, weeks, sha, at)
+		if held.Week != nil {
+			week := clonePlayerWeek(*held.Week)
+			held.Week = &week
+		}
+		out = append(out, held)
 	})
 	if err != nil {
 		return nil, err
@@ -117,4 +124,36 @@ func (s *Store) nativeEvidence(ctx context.Context, scope source.RawNativeScope)
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
 	return out, nil
+}
+
+type weeklyFile struct {
+	weeks []source.PlayerWeek
+	err   error
+}
+
+func (s *Store) decodedWeeks(sha string, body []byte) ([]source.PlayerWeek, error) {
+	s.weeklyMu.Lock()
+	defer s.weeklyMu.Unlock()
+	if file, ok := s.weekly[sha]; ok {
+		return file.weeks, file.err
+	}
+	weeks, err := source.ReadWeeks(bytes.NewReader(body))
+	if err != nil {
+		err = fmt.Errorf("decode weekly statistics: %w", err)
+	}
+	if s.weekly == nil {
+		s.weekly = map[string]weeklyFile{}
+	}
+	s.weekly[sha] = weeklyFile{weeks: weeks, err: err}
+	return weeks, err
+}
+
+func clonePlayerWeek(week source.PlayerWeek) source.PlayerWeek {
+	week.Line.Quantities = maps.Clone(week.Line.Quantities)
+	week.Line.Labels = maps.Clone(week.Line.Labels)
+	week.Line.Events = maps.Clone(week.Line.Events)
+	for stat, events := range week.Line.Events {
+		week.Line.Events[stat] = slices.Clone(events)
+	}
+	return week
 }

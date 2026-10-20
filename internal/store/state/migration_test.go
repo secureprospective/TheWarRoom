@@ -61,7 +61,7 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 	// drift guard sees a cell for this rostered salaried player. (A pre-ledger DB with no cells
 	// is an unsupported upgrade path — carry-forward, see the project CLAUDE.md.)
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -157,7 +157,7 @@ func TestDropLegacyMoneyColumns_Ship3Era(t *testing.T) {
 		t.Fatalf("seed ship3 contract: %v", err)
 	}
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -192,7 +192,7 @@ func TestDropLegacyMoneyColumns_Ship3Era(t *testing.T) {
 // review): a rostered player who carries a base salary but has NO PAID current-season ledger
 // cell must NOT brick startup — load() surfaces the drift with a loud WARNING and serves him at
 // $0 cap (degraded but open). Stands up the same Ship-3-era DB but WITHOUT the player's cell.
-func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
+func TestLoadMarksMissingPaidCellCapInvalid(t *testing.T) {
 	ctx := context.Background()
 	pools, err := db.Open(ctx, filepath.Join(t.TempDir(), "nocell.db"))
 	if err != nil {
@@ -217,7 +217,7 @@ func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
 	}
 	// The ledger table exists (real schema) but holds NO cell for 0001 — the planted drift.
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 
@@ -233,7 +233,17 @@ func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
 	if !strings.Contains(logbuf.String(), `state: load: WARNING rostered player "0001" has base salary`) {
 		t.Fatalf("drift not surfaced — the M1 guard logged no warning; got: %q", logbuf.String())
 	}
-	// Degraded-but-open: the drift player is served at $0 cap until reconciled.
+	if s.Err() == nil {
+		t.Error("missing PAID cell left the cap valid")
+	}
+	if amount, valid := s.CapUsed("0001"); valid || amount != 0 {
+		t.Errorf("invalid cap served: %s, %t", amount, valid)
+	}
+	called := false
+	if err := s.WriteTx(ctx, func(TxWriter) error { called = true; return nil }); err == nil || called {
+		t.Error("what-if write ran with an invalid cap")
+	}
+	// The roster remains readable while cap-dependent operations are blocked.
 	players, ok := s.Roster("0001")
 	if !ok || len(players) != 1 {
 		t.Fatalf("franchise 0001 roster missing after drift-warn: ok=%v players=%d", ok, len(players))

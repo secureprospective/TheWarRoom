@@ -11,6 +11,7 @@ import (
 // TestReplayCost grows one league's ledger through the real append path and times a full ledger
 // read at each size: the block 0 replay measurement. Opt-in: TWR_REPLAY_N=5000 go test -run TestReplayCost.
 func TestReplayCost(t *testing.T) {
+	t.Parallel()
 	n, _ := strconv.Atoi(os.Getenv("TWR_REPLAY_N"))
 	if n == 0 {
 		t.Skip("set TWR_REPLAY_N to measure")

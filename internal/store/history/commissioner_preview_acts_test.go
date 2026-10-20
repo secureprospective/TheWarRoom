@@ -52,6 +52,7 @@ func proveStorePreview(t *testing.T, s *Store, raw commissioner.RawCommand, prin
 }
 
 func TestPreviewReadsTheStatQueueAndScoresBeforeAndAfter(t *testing.T) {
+	t.Parallel()
 	for _, command := range []string{commissioner.StatApprove, commissioner.StatReject, commissioner.StatCorrect} {
 		t.Run(command, func(t *testing.T) {
 			f := statResultsTest(t)
@@ -89,6 +90,7 @@ func requirePreviewValue(t *testing.T, preview commissioner.Preview, label, befo
 }
 
 func TestPreviewStandingsUsesTheStandingRecord(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	raw := standingsCommand(commissioner.StandingsRecordAdjust, commissioner.RawStandingsChange{
 		Season: 2026, Franchise: f.a, Wins: 3}, revision(t, f.s))
@@ -100,6 +102,7 @@ func TestPreviewStandingsUsesTheStandingRecord(t *testing.T) {
 }
 
 func TestPreviewRolloverIsTheDryRunPlanAndWritesNoTables(t *testing.T) {
+	t.Parallel()
 	f := newRolloverDB(t)
 	raw := f.rollover(t, 2027, false, "rollover-preview-proof")
 	before := fingerprint(t, f.s)
@@ -124,6 +127,7 @@ func TestPreviewRolloverIsTheDryRunPlanAndWritesNoTables(t *testing.T) {
 }
 
 func TestUnauthorizedPreviewDisclosesNoPrivateValues(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	runScoreCommand(t, s, createCommand(), "creator")
 	raw := peopleCommand("commish.seat.invite", commissioner.RawPeople{ID: "private-invite",
@@ -140,6 +144,7 @@ func TestUnauthorizedPreviewDisclosesNoPrivateValues(t *testing.T) {
 }
 
 func TestEveryBuiltScoreAndStandingsCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	for _, tc := range []struct {
 		command string
@@ -174,6 +179,7 @@ func TestEveryBuiltScoreAndStandingsCommandHasARealPreview(t *testing.T) {
 }
 
 func TestBuiltLineupCorrectionHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := lineupTest(t)
 	grantDeputy(t, f)
 	raw := f.correct(t, f.a, f.legal(f.a))
@@ -182,6 +188,7 @@ func TestBuiltLineupCorrectionHasARealPreview(t *testing.T) {
 }
 
 func TestEveryBuiltBracketCommandHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := bracketTest(t)
 	shape := f.bracket(t).Rules.Shape
 	for _, tc := range []struct {
@@ -201,6 +208,7 @@ func TestEveryBuiltBracketCommandHasARealPreview(t *testing.T) {
 }
 
 func TestEveryBuiltWindowScheduleAndContractActionHasARealPreview(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	apply := func(command string, args commissioner.RawArgs) {
 		t.Helper()
@@ -232,6 +240,7 @@ func TestEveryBuiltWindowScheduleAndContractActionHasARealPreview(t *testing.T) 
 }
 
 func TestPreviewDoesNotInventScoresForAnUnheldSeason(t *testing.T) {
+	t.Parallel()
 	f := resultsTest(t)
 	for _, raw := range []commissioner.RawCommand{
 		scoreCommand(t, commissioner.ScorePlayer, commissioner.RawScoreChange{Player: "1001", Season: 2025,
@@ -253,6 +262,7 @@ func TestPreviewDoesNotInventScoresForAnUnheldSeason(t *testing.T) {
 }
 
 func TestBlockedRolloverPreviewKeepsTheRealPlanAndRefusal(t *testing.T) {
+	t.Parallel()
 	s, c, _ := newStore(t)
 	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
 	runScoreCommand(t, s, heldSeedCommand(t), "creator")
@@ -273,6 +283,7 @@ func TestBlockedRolloverPreviewKeepsTheRealPlanAndRefusal(t *testing.T) {
 }
 
 func TestRulePreviewCountsAffectedFranchisesWithoutChangingReadingCounts(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	runScoreCommand(t, s, createCommand(), "creator")
 	raw := ruleCommand("cap.amount", "200", "now", "Agree the salary cap", 1)

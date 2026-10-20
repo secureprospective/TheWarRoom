@@ -12,51 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// bidFactsDDL is the one side table for bid plans, keyed by the envelope's correlation id. It
-// holds only the owner's own figures: no franchise column, so no other team can be recorded.
-// The rulebook limits are check-time code, not constraints here. Facts change only while the
-// plan is unposted; once handed off they are the record of what was posted.
-const bidFactsDDL = `
-CREATE TABLE IF NOT EXISTS bid_facts (
- correlation_id TEXT PRIMARY KEY REFERENCES move_envelopes(correlation_id),
- player TEXT NOT NULL,
- salary_cents INTEGER NOT NULL,
- years INTEGER NOT NULL,
- points_milli INTEGER NOT NULL,
- snipe INTEGER NOT NULL CHECK (snipe IN (0, 1)),
- beat_milli INTEGER,
- evidence TEXT NOT NULL,
- closes TEXT NOT NULL
-);
-CREATE TRIGGER IF NOT EXISTS bid_facts_no_delete
-BEFORE DELETE ON bid_facts
-BEGIN SELECT RAISE(ABORT, 'bid_facts is append-only'); END;
-CREATE TRIGGER IF NOT EXISTS bid_facts_frozen
-BEFORE UPDATE ON bid_facts
-WHEN (
- SELECT to_state FROM move_audit WHERE correlation_id = OLD.correlation_id
- ORDER BY sequence DESC LIMIT 1
-) NOT IN ('draft', 'blocked', 'ready', 'stale')
-BEGIN SELECT RAISE(ABORT, 'bid_facts is frozen once the bid is handed off'); END;
-CREATE TABLE IF NOT EXISTS bid_conditions (
- correlation_id TEXT NOT NULL REFERENCES move_envelopes(correlation_id),
- sequence INTEGER NOT NULL,
- player TEXT NOT NULL,
- name TEXT NOT NULL,
- PRIMARY KEY (correlation_id, sequence)
-);
-CREATE TRIGGER IF NOT EXISTS bid_conditions_no_update
-BEFORE UPDATE ON bid_conditions
-BEGIN SELECT RAISE(ABORT, 'bid conditions are append-only'); END;
-CREATE TRIGGER IF NOT EXISTS bid_conditions_no_delete
-BEFORE DELETE ON bid_conditions
-BEGIN SELECT RAISE(ABORT, 'bid conditions are append-only'); END;
-CREATE TRIGGER IF NOT EXISTS bid_conditions_frozen
-BEFORE INSERT ON bid_conditions
-WHEN (SELECT to_state FROM move_audit WHERE correlation_id = NEW.correlation_id
- ORDER BY sequence DESC LIMIT 1) NOT IN ('draft', 'blocked', 'ready')
-BEGIN SELECT RAISE(ABORT, 'bid conditions are frozen once handed off'); END;`
-
 // SaveBid saves a bid plan's envelope and its facts in one transaction, so a plan never exists
 // without its facts. The facts of a plan already handed off cannot change.
 func (s *Store) SaveBid(ctx context.Context, e envelope.Envelope, f envelope.BidFacts) error {

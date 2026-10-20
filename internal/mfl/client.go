@@ -35,6 +35,17 @@ type hostState struct {
 	hostAt  time.Time // when; a discovery older than hostTTL is redone
 }
 
+// maxBodyBytes caps one response. The largest export, the full players list, is a few MB
+// (the largest fixture in testdata is 167 KB); a body past this is refused, not truncated.
+const maxBodyBytes = 32 << 20
+
+// ErrDisallowedHost refuses a request or redirect to anything but https on MFL's own hosts, so
+// a discovered base URL or a redirect cannot send a request (or the API key) elsewhere.
+var ErrDisallowedHost = errors.New("mfl: refusing a host outside myfantasyleague.com")
+
+// ErrBodyTooLarge refuses a response body larger than maxBodyBytes.
+var ErrBodyTooLarge = errors.New("mfl: response body too large")
+
 // ErrNonPositiveRate rejects a rate that is not positive and finite. rate.Limit(0) allows
 // nothing, and NaN slips past rps <= 0 and makes Wait block forever.
 var ErrNonPositiveRate = errors.New("mfl: requests-per-second must be a positive, real number")
@@ -55,7 +66,7 @@ func New(host string, rps float64, opts ...Option) (*Client, error) {
 		return nil, fmt.Errorf("%w: got %g", ErrNonPositiveRate, rps)
 	}
 	c := &Client{
-		http:      &http.Client{Timeout: 15 * time.Second},
+		http:      &http.Client{Timeout: 15 * time.Second, CheckRedirect: checkRedirect},
 		limiter:   rate.NewLimiter(rate.Limit(rps), 1),
 		hostState: &hostState{host: host},
 		// 1s doubling to 60s, then return the error.
@@ -113,7 +124,7 @@ func (c *Client) Do(ctx context.Context, req Request) (Response, error) {
 		_ = resp.Body.Close()
 	}()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := readBody(resp.Body)
 	if err != nil {
 		return Response{}, fmt.Errorf("failed to read response body: %w", err)
 	}
@@ -228,6 +239,9 @@ func (c *Client) executeWithRetry(
 			reqToRun = httpReq.Clone(ctx)
 		}
 
+		if err := checkURL(reqToRun.URL); err != nil {
+			return nil, err
+		}
 		resp, err := client.Do(reqToRun)
 		if err != nil {
 			return nil, fmt.Errorf("failed to execute HTTP request: %w", err)
@@ -282,11 +296,49 @@ func extractSubdomain(baseURL string) (string, error) {
 	const suffix = ".myfantasyleague.com"
 	if strings.HasSuffix(strings.ToLower(host), suffix) {
 		sub := host[:len(host)-len(suffix)]
-		if sub != "" {
+		if sub != "" && !strings.Contains(sub, ".") {
 			return sub, nil
 		}
 	}
-	return host, nil
+	return "", fmt.Errorf("%w: baseURL host %q", ErrDisallowedHost, host)
+}
+
+// allowedHost reports MFL's apex or a single-label subdomain of it (api, www47).
+func allowedHost(host string) bool {
+	host = strings.ToLower(host)
+	if host == "myfantasyleague.com" {
+		return true
+	}
+	sub, ok := strings.CutSuffix(host, ".myfantasyleague.com")
+	return ok && sub != "" && !strings.Contains(sub, ".")
+}
+
+// checkURL refuses anything but https to an allowed host on the default port.
+func checkURL(u *url.URL) error {
+	if u.Scheme != "https" || u.Port() != "" || !allowedHost(u.Hostname()) {
+		return fmt.Errorf("%w: %s://%s", ErrDisallowedHost, u.Scheme, u.Host)
+	}
+	return nil
+}
+
+// checkRedirect follows a redirect only within MFL, up to net/http's usual ten hops.
+func checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("mfl: stopped after 10 redirects")
+	}
+	return checkURL(req.URL)
+}
+
+// readBody reads at most maxBodyBytes, refusing a longer body rather than truncating it.
+func readBody(r io.Reader) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r, maxBodyBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("mfl: read body: %w", err)
+	}
+	if len(body) > maxBodyBytes {
+		return nil, fmt.Errorf("%w: over %d bytes", ErrBodyTooLarge, maxBodyBytes)
+	}
+	return body, nil
 }
 
 // LeagueHost reads the cached host without discovering it or making a request.

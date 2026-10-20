@@ -32,6 +32,7 @@ func executePeople(t *testing.T, s *Store, principal, command string, args commi
 }
 
 func TestCommissionerGovernancePermissions(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -70,6 +71,7 @@ func TestCommissionerGovernancePermissions(t *testing.T) {
 }
 
 func TestCommissionerPeoplePrivacyAndRevert(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -117,6 +119,7 @@ func TestCommissionerPeoplePrivacyAndRevert(t *testing.T) {
 }
 
 func TestCommissionerInviteSessionAndRetry(t *testing.T) {
+	t.Parallel()
 	s, _, _ := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -147,6 +150,7 @@ func TestCommissionerInviteSessionAndRetry(t *testing.T) {
 }
 
 func TestCommissionerPeopleCommandsAndRestart(t *testing.T) {
+	t.Parallel()
 	s, _, pools := newStore(t)
 	if _, err := s.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
 		t.Fatal(err)
@@ -201,7 +205,7 @@ func TestCommissionerPeopleCommandsAndRestart(t *testing.T) {
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := db.Open(t.Context(), path)
+	reopened, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -274,20 +274,7 @@ func ruleLabel(r Record, before []Record) (string, error) {
 }
 
 // revertRuleLabel describes a reversal whose original change was a rule change; ok is false otherwise.
-func revertRuleLabel(records []Record, i int) (string, bool, error) {
-	target := records[i]
-	for target.Command.Command == Revert {
-		found := false
-		for _, r := range records[:i] {
-			if r.Receipt.Entry == target.Command.Args.Entry {
-				target, found = r, true
-				break
-			}
-		}
-		if !found {
-			return "", false, nil
-		}
-	}
+func revertRuleLabel(records []Record, i int, target Record) (string, bool, error) {
 	var err error
 	target, err = ruleRecord(target)
 	if err != nil {

@@ -89,3 +89,12 @@ func TestStatCommandsAreGravityTwoAndNeedNoReason(t *testing.T) {
 		t.Fatal("a statistic decision must be shown to the league")
 	}
 }
+
+func TestApprovedStatWithoutHeldVersionsIsRefused(t *testing.T) {
+	if _, err := countedVersion(nil, StatBaseline{Digest: "0123456789abcdef", Entry: "approval"}); err == nil {
+		t.Fatal("approved statistics disappeared without an error")
+	}
+	if got, err := countedVersion(nil, StatBaseline{}); err != nil || got != nil {
+		t.Fatalf("unapproved missing feed = %v, %v", got, err)
+	}
+}

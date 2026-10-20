@@ -69,28 +69,8 @@ func (s *Store) validateOverride(key, position string, value float64) error {
 
 // initSchema creates param_defaults and param_overrides, both keyed by (param_key, position).
 func (s *Store) initSchema(ctx context.Context) error {
-	const ddl = `
-CREATE TABLE IF NOT EXISTS param_defaults (
-	param_key     TEXT    NOT NULL,
-	position      TEXT    NOT NULL DEFAULT '',
-	value_type    TEXT    NOT NULL,
-	default_val   TEXT    NOT NULL,
-	min_val       TEXT    NOT NULL,
-	max_val       TEXT    NOT NULL,
-	is_calibrated INTEGER NOT NULL DEFAULT 0,
-	description   TEXT    NOT NULL DEFAULT '',
-	PRIMARY KEY (param_key, position)
-);
-CREATE TABLE IF NOT EXISTS param_overrides (
-	param_key  TEXT NOT NULL,
-	position   TEXT NOT NULL DEFAULT '',
-	value      TEXT NOT NULL,
-	note       TEXT NOT NULL DEFAULT '',
-	updated_at TEXT NOT NULL,
-	PRIMARY KEY (param_key, position)
-);`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("params: init schema: %w", err)
+	if err := s.pools.InitializeMain(ctx); err != nil {
+		return fmt.Errorf("params: initialize schema: %w", err)
 	}
 	return nil
 }
