@@ -1,0 +1,1795 @@
+{
+ "value": {
+  "summary": "1,193 picks with 3 seasons finished; Defensive linemen profile. 100% is the same slots in other classes.",
+  "sections": [
+   {
+    "breakdowns": [
+     {
+      "title": "Quarterbacks",
+      "count": 69,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "within chance of its slot",
+        "count": 19,
+        "range": {
+         "value": 0.9444538013271798,
+         "lo": 0.6195256435303492,
+         "hi": 1.2693819591240105,
+         "text": "94.4%; likely 62.0% to 126.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 9,
+        "range": {
+         "value": 0.75138316656857,
+         "lo": 0.1657540461603748,
+         "hi": 1.337012286976765,
+         "text": "75.1%; likely 16.6% to 133.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 3,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 2,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 13,
+        "range": {
+         "value": 0.41815097540288376,
+         "lo": -0.5231442825904862,
+         "hi": 1.3594462333962538,
+         "text": "41.8%; likely -52.3% to 135.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "below its slot beyond chance · worst beyond chance",
+        "count": 14,
+        "range": {
+         "value": -0.7406042741341193,
+         "lo": -1.2677838818185079,
+         "hi": -0.2134246664497308,
+         "text": "-74.1%; likely -126.8% to -21.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 9,
+        "range": null,
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Running backs",
+      "count": 173,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "within chance of its slot",
+        "count": 23,
+        "range": {
+         "value": 1.1784190566484951,
+         "lo": 0.927318681295126,
+         "hi": 1.4295194320018643,
+         "text": "117.8%; likely 92.7% to 143.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 28,
+        "range": {
+         "value": 1.225090794252329,
+         "lo": 0.8546253891005733,
+         "hi": 1.5955561994040848,
+         "text": "122.5%; likely 85.5% to 159.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "within chance of its slot",
+        "count": 13,
+        "range": {
+         "value": 0.8098381266698101,
+         "lo": 0.16418895590647953,
+         "hi": 1.4554872974331408,
+         "text": "81.0%; likely 16.4% to 145.5%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "within chance of its slot",
+        "count": 20,
+        "range": {
+         "value": 1.0231870525988176,
+         "lo": 0.11586125453608509,
+         "hi": 1.93051285066155,
+         "text": "102.3%; likely 11.6% to 193.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 30,
+        "range": {
+         "value": 0.5967741935483872,
+         "lo": -0.11463573898842427,
+         "hi": 1.3081841260851987,
+         "text": "59.7%; likely -11.5% to 130.8%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "within chance of its slot",
+        "count": 33,
+        "range": {
+         "value": 2.621337579617834,
+         "lo": 0.6829463656475177,
+         "hi": 4.5597287935881505,
+         "text": "262.1%; likely 68.3% to 456.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "within chance of its slot",
+        "count": 26,
+        "range": {
+         "value": 0.3279445727482681,
+         "lo": -1.403161661110204,
+         "hi": 2.05905080660674,
+         "text": "32.8%; likely -140.3% to 205.9%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Wide receivers",
+      "count": 239,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "within chance of its slot",
+        "count": 22,
+        "range": {
+         "value": 0.9375533023784705,
+         "lo": 0.6985605787075021,
+         "hi": 1.176546026049439,
+         "text": "93.8%; likely 69.9% to 117.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 51,
+        "range": {
+         "value": 1.0125681973803375,
+         "lo": 0.7789494683256719,
+         "hi": 1.2461869264350032,
+         "text": "101.3%; likely 77.9% to 124.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "within chance of its slot",
+        "count": 21,
+        "range": {
+         "value": 1.1943466172381836,
+         "lo": 0.7788739421320187,
+         "hi": 1.6098192923443486,
+         "text": "119.4%; likely 77.9% to 161.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "within chance of its slot",
+        "count": 21,
+        "range": {
+         "value": 0.7632903428751181,
+         "lo": -0.024603224461830497,
+         "hi": 1.5511839102120666,
+         "text": "76.3%; likely -2.5% to 155.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 36,
+        "range": {
+         "value": 1.3299970122497757,
+         "lo": 0.3635009913484124,
+         "hi": 2.296493033151139,
+         "text": "133.0%; likely 36.4% to 229.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "within chance of its slot",
+        "count": 43,
+        "range": {
+         "value": 0.6156812339331618,
+         "lo": -0.10162992371967272,
+         "hi": 1.3329923915859963,
+         "text": "61.6%; likely -10.2% to 133.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "within chance of its slot",
+        "count": 45,
+        "range": {
+         "value": 1.3423959218351749,
+         "lo": -0.012506421547544555,
+         "hi": 2.6972982652178943,
+         "text": "134.2%; likely -1.3% to 269.7%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Tight ends",
+      "count": 92,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 3,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 10,
+        "range": {
+         "value": 0.8474936708860756,
+         "lo": 0.6439053393346504,
+         "hi": 1.051082002437501,
+         "text": "84.7%; likely 64.4% to 105.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "below its slot beyond chance",
+        "count": 11,
+        "range": {
+         "value": 0.5662042875157629,
+         "lo": 0.26818219942743693,
+         "hi": 0.8642263756040889,
+         "text": "56.6%; likely 26.8% to 86.4%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "within chance of its slot",
+        "count": 12,
+        "range": {
+         "value": 0.8069037113937192,
+         "lo": 0.19321217996417095,
+         "hi": 1.4205952428232673,
+         "text": "80.7%; likely 19.3% to 142.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 25,
+        "range": {
+         "value": 1.1965719244955524,
+         "lo": 0.32247705761302103,
+         "hi": 2.0706667913780836,
+         "text": "119.7%; likely 32.2% to 207.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "below its slot beyond chance",
+        "count": 15,
+        "range": {
+         "value": -0.07296466973886333,
+         "lo": -0.5029565909015475,
+         "hi": 0.3570272514238209,
+         "text": "-7.3%; likely -50.3% to 35.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "below its slot beyond chance",
+        "count": 16,
+        "range": {
+         "value": -0.3244078269824923,
+         "lo": -0.6122151935996119,
+         "hi": -0.036600460365372844,
+         "text": "-32.4%; likely -61.2% to -3.7%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Kickers",
+      "count": 22,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 0,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 0,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 0,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 0,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 9,
+        "range": {
+         "value": 1.5670995670995669,
+         "lo": 0.7138435831249312,
+         "hi": 2.4203555510742025,
+         "text": "156.7%; likely 71.4% to 242.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 7,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 6,
+        "range": null,
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Defensive linemen",
+      "count": 192,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 1,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 16,
+        "range": {
+         "value": 0.9518433179723503,
+         "lo": 0.7379302508843807,
+         "hi": 1.16575638506032,
+         "text": "95.2%; likely 73.8% to 116.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "below its slot beyond chance",
+        "count": 22,
+        "range": {
+         "value": 0.5462596570567178,
+         "lo": 0.2464670066195176,
+         "hi": 0.8460523074939179,
+         "text": "54.6%; likely 24.6% to 84.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "below its slot beyond chance",
+        "count": 21,
+        "range": {
+         "value": 0.600172092356231,
+         "lo": 0.2904537296243673,
+         "hi": 0.9098904550880949,
+         "text": "60.0%; likely 29.0% to 91.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 34,
+        "range": {
+         "value": 0.8221100772748778,
+         "lo": 0.13603556984410425,
+         "hi": 1.5081845847056514,
+         "text": "82.2%; likely 13.6% to 150.8%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "within chance of its slot",
+        "count": 52,
+        "range": {
+         "value": 0.8507462686567161,
+         "lo": 0.06719951090604459,
+         "hi": 1.6342930264073876,
+         "text": "85.1%; likely 6.7% to 163.4%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "below its slot beyond chance · worst beyond chance",
+        "count": 46,
+        "range": {
+         "value": -0.3369347739095638,
+         "lo": -1.0497194635465437,
+         "hi": 0.37584991572741605,
+         "text": "-33.7%; likely -105.0% to 37.6%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Linebackers",
+      "count": 194,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 2,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 31,
+        "range": {
+         "value": 1.0104514599719858,
+         "lo": 0.8157521273565757,
+         "hi": 1.205150792587396,
+         "text": "101.0%; likely 81.6% to 120.5%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "within chance of its slot",
+        "count": 22,
+        "range": {
+         "value": 1.1976132686084144,
+         "lo": 0.6538879708174705,
+         "hi": 1.7413385663993584,
+         "text": "119.8%; likely 65.4% to 174.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "within chance of its slot",
+        "count": 19,
+        "range": {
+         "value": 1.3234064785788924,
+         "lo": 0.5639902675493573,
+         "hi": 2.0828226896084274,
+         "text": "132.3%; likely 56.4% to 208.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 42,
+        "range": {
+         "value": 0.8054268696227663,
+         "lo": 0.2966654528870516,
+         "hi": 1.314188286358481,
+         "text": "80.5%; likely 29.7% to 131.4%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "within chance of its slot",
+        "count": 36,
+        "range": {
+         "value": 0.5199246095853528,
+         "lo": -0.47885778770217247,
+         "hi": 1.518707006872878,
+         "text": "52.0%; likely -47.9% to 151.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "within chance of its slot",
+        "count": 42,
+        "range": {
+         "value": 1.9890650628758877,
+         "lo": -0.3887122985218574,
+         "hi": 4.366842424273633,
+         "text": "198.9%; likely -38.9% to 436.7%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Defensive backs",
+      "count": 212,
+      "rows": [
+       {
+        "key": "",
+        "label": "1.01–1.10",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 0,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "1.11–1.32",
+        "detail": "within chance of its slot",
+        "count": 9,
+        "range": {
+         "value": 1.088364779874214,
+         "lo": 0.710136250945101,
+         "hi": 1.466593308803327,
+         "text": "108.8%; likely 71.0% to 146.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.01–2.16",
+        "detail": "within chance of its slot",
+        "count": 20,
+        "range": {
+         "value": 1.1439923712650988,
+         "lo": 0.7007499222110474,
+         "hi": 1.5872348203191502,
+         "text": "114.4%; likely 70.1% to 158.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "2.17–2.32",
+        "detail": "within chance of its slot",
+        "count": 20,
+        "range": {
+         "value": 1.3473375671714707,
+         "lo": 0.8347064069846518,
+         "hi": 1.8599687273582894,
+         "text": "134.7%; likely 83.5% to 186.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 3",
+        "detail": "within chance of its slot",
+        "count": 50,
+        "range": {
+         "value": 1.132120424518085,
+         "lo": 0.6828037726659459,
+         "hi": 1.581437076370224,
+         "text": "113.2%; likely 68.3% to 158.1%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 4",
+        "detail": "within chance of its slot",
+        "count": 47,
+        "range": {
+         "value": 1.109803033733303,
+         "lo": 0.17644165814526624,
+         "hi": 2.0431644093213395,
+         "text": "111.0%; likely 17.6% to 204.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Round 5 on",
+        "detail": "within chance of its slot",
+        "count": 66,
+        "range": {
+         "value": 0.997762237762238,
+         "lo": -0.18639307353260814,
+         "hi": 2.181917549057084,
+         "text": "99.8%; likely -18.6% to 218.2%"
+        },
+        "mark": ""
+       }
+      ]
+     }
+    ],
+    "id": "L-15",
+    "title": "Return by draft stretch · all positions",
+    "note": "100% is the slot's return. Unavailable ranges are not zeros.",
+    "rows": [
+     {
+      "key": "",
+      "label": "1.01–1.10",
+      "detail": "within chance of its slot",
+      "count": 70,
+      "range": {
+       "value": 0.9991686242665044,
+       "lo": 0.8475621707689924,
+       "hi": 1.1507750777640164,
+       "text": "99.9%; likely 84.8% to 115.1%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "1.11–1.32",
+      "detail": "within chance of its slot",
+      "count": 154,
+      "range": {
+       "value": 1.021138342706941,
+       "lo": 0.8988898329804698,
+       "hi": 1.143386852433412,
+       "text": "102.1%; likely 89.9% to 114.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "2.01–2.16",
+      "detail": "within chance of its slot",
+      "count": 112,
+      "range": {
+       "value": 0.9254300307969653,
+       "lo": 0.7337151175715506,
+       "hi": 1.11714494402238,
+       "text": "92.5%; likely 73.4% to 111.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "2.17–2.32",
+      "detail": "within chance of its slot",
+      "count": 115,
+      "range": {
+       "value": 1.0063593883927342,
+       "lo": 0.715140016087694,
+       "hi": 1.2975787606977744,
+       "text": "100.6%; likely 71.5% to 129.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Round 3",
+      "detail": "within chance of its slot",
+      "count": 239,
+      "range": {
+       "value": 0.9790716760897337,
+       "lo": 0.7158428468922464,
+       "hi": 1.242300505287221,
+       "text": "97.9%; likely 71.6% to 124.2%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Round 4",
+      "detail": "within chance of its slot",
+      "count": 247,
+      "range": {
+       "value": 1.0000430793090085,
+       "lo": 0.5670061958878179,
+       "hi": 1.433079962730199,
+       "text": "100.0%; likely 56.7% to 143.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Round 5 on",
+      "detail": "within chance of its slot",
+      "count": 256,
+      "range": {
+       "value": 1.0044747819491842,
+       "lo": 0.36480407082830235,
+       "hi": 1.644145493070066,
+       "text": "100.4%; likely 36.5% to 164.4%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "breakdowns": [
+     {
+      "title": "Quarterbacks",
+      "count": 69,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "below its slot beyond chance",
+        "count": 87,
+        "range": {
+         "value": 0.6952173355558404,
+         "lo": 0.4160494988096345,
+         "hi": 0.9743851723020464,
+         "text": "69.5%; likely 41.6% to 97.4%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 78,
+        "range": {
+         "value": 1.0337728670453952,
+         "lo": 0.6957945703649022,
+         "hi": 1.3717511637258881,
+         "text": "103.4%; likely 69.6% to 137.2%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 69,
+        "range": {
+         "value": 0.7400290944356893,
+         "lo": 0.4152086690760633,
+         "hi": 1.0648495197953154,
+         "text": "74.0%; likely 41.5% to 106.5%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 58,
+        "range": {
+         "value": 0.8465405793631796,
+         "lo": 0.43121432464479237,
+         "hi": 1.2618668340815669,
+         "text": "84.7%; likely 43.1% to 126.2%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 50,
+        "range": {
+         "value": 0.7612948769665188,
+         "lo": 0.3284929751560331,
+         "hi": 1.1940967787770045,
+         "text": "76.1%; likely 32.8% to 119.4%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Running backs",
+      "count": 173,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "within chance of its slot",
+        "count": 225,
+        "range": {
+         "value": 1.1477841930180086,
+         "lo": 0.9021188040968439,
+         "hi": 1.3934495819391732,
+         "text": "114.8%; likely 90.2% to 139.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 199,
+        "range": {
+         "value": 1.097124981379413,
+         "lo": 0.8646461598250961,
+         "hi": 1.32960380293373,
+         "text": "109.7%; likely 86.5% to 133.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 173,
+        "range": {
+         "value": 1.0834368727898314,
+         "lo": 0.8535556766599424,
+         "hi": 1.3133180689197204,
+         "text": "108.3%; likely 85.4% to 131.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 151,
+        "range": {
+         "value": 0.9019511596514918,
+         "lo": 0.6339531659164631,
+         "hi": 1.1699491533865203,
+         "text": "90.2%; likely 63.4% to 117.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 122,
+        "range": {
+         "value": 0.8852778680532986,
+         "lo": 0.6123652168368982,
+         "hi": 1.158190519269699,
+         "text": "88.5%; likely 61.2% to 115.8%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Wide receivers",
+      "count": 239,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "within chance of its slot",
+        "count": 307,
+        "range": {
+         "value": 0.9490532511522014,
+         "lo": 0.7832421729026103,
+         "hi": 1.1148643294017924,
+         "text": "94.9%; likely 78.3% to 111.5%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 273,
+        "range": {
+         "value": 0.9261740776961648,
+         "lo": 0.7857556017007108,
+         "hi": 1.0665925536916188,
+         "text": "92.6%; likely 78.6% to 106.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 239,
+        "range": {
+         "value": 0.9705217074060556,
+         "lo": 0.7892619633721766,
+         "hi": 1.1517814514399347,
+         "text": "97.1%; likely 78.9% to 115.2%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 208,
+        "range": {
+         "value": 0.8444043100281623,
+         "lo": 0.6605317103409024,
+         "hi": 1.0282769097154223,
+         "text": "84.4%; likely 66.1% to 102.8%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 178,
+        "range": {
+         "value": 0.8313009804729341,
+         "lo": 0.5879913179343815,
+         "hi": 1.0746106430114866,
+         "text": "83.1%; likely 58.8% to 107.5%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Tight ends",
+      "count": 92,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "within chance of its slot",
+        "count": 114,
+        "range": {
+         "value": 0.9624503686897333,
+         "lo": 0.7061840508953734,
+         "hi": 1.2187166864840933,
+         "text": "96.2%; likely 70.6% to 121.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "below its slot beyond chance",
+        "count": 103,
+        "range": {
+         "value": 0.6949371170590135,
+         "lo": 0.47084046216644804,
+         "hi": 0.919033771951579,
+         "text": "69.5%; likely 47.1% to 91.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 92,
+        "range": {
+         "value": 0.7649815868764647,
+         "lo": 0.5274456411826245,
+         "hi": 1.0025175325703048,
+         "text": "76.5%; likely 52.7% to 100.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 78,
+        "range": {
+         "value": 0.9527549959570295,
+         "lo": 0.6074244711559273,
+         "hi": 1.2980855207581317,
+         "text": "95.3%; likely 60.7% to 129.8%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 63,
+        "range": {
+         "value": 0.7018387553041019,
+         "lo": 0.3980839988024623,
+         "hi": 1.0055935118057415,
+         "text": "70.2%; likely 39.8% to 100.6%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Kickers",
+      "count": 22,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+        "count": 28,
+        "range": null,
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 25,
+        "range": {
+         "value": 1.5547703180212014,
+         "lo": 0.7414590104463294,
+         "hi": 2.3680816255960733,
+         "text": "155.5%; likely 74.1% to 236.8%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 22,
+        "range": {
+         "value": 1.9893536121673001,
+         "lo": 0.94210901995247,
+         "hi": 3.0365982043821305,
+         "text": "198.9%; likely 94.2% to 303.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 18,
+        "range": {
+         "value": 1.396416573348264,
+         "lo": 0.49241031265147794,
+         "hi": 2.30042283404505,
+         "text": "139.6%; likely 49.2% to 230.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "above its slot beyond chance",
+        "count": 16,
+        "range": {
+         "value": 2.4427020506634487,
+         "lo": 1.3319162059536809,
+         "hi": 3.5534878953732165,
+         "text": "244.3%; likely 133.2% to 355.3%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Defensive linemen",
+      "count": 192,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "below its slot beyond chance",
+        "count": 251,
+        "range": {
+         "value": 0.4840998461275435,
+         "lo": 0.21551712530569556,
+         "hi": 0.7526825669493914,
+         "text": "48.4%; likely 21.6% to 75.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "below its slot beyond chance",
+        "count": 220,
+        "range": {
+         "value": 0.6463556116015139,
+         "lo": 0.46420551518014164,
+         "hi": 0.8285057080228861,
+         "text": "64.6%; likely 46.4% to 82.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "below its slot beyond chance",
+        "count": 192,
+        "range": {
+         "value": 0.7583444592790386,
+         "lo": 0.5425244916838413,
+         "hi": 0.9741644268742359,
+         "text": "75.8%; likely 54.3% to 97.4%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 161,
+        "range": {
+         "value": 1.0016472203157176,
+         "lo": 0.6942319713444726,
+         "hi": 1.3090624692869626,
+         "text": "100.2%; likely 69.4% to 130.9%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 138,
+        "range": {
+         "value": 1.0041124632815792,
+         "lo": 0.6589017877395665,
+         "hi": 1.3493231388235918,
+         "text": "100.4%; likely 65.9% to 134.9%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Linebackers",
+      "count": 194,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "within chance of its slot",
+        "count": 233,
+        "range": {
+         "value": 0.8936100776711697,
+         "lo": 0.5999250852895541,
+         "hi": 1.1872950700527853,
+         "text": "89.4%; likely 60.0% to 118.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 215,
+        "range": {
+         "value": 1.0832444407975705,
+         "lo": 0.8665961899172236,
+         "hi": 1.2998926916779174,
+         "text": "108.3%; likely 86.7% to 130.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 194,
+        "range": {
+         "value": 1.0658789386401317,
+         "lo": 0.8413612512897615,
+         "hi": 1.290396625990502,
+         "text": "106.6%; likely 84.1% to 129.0%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 177,
+        "range": {
+         "value": 1.103289179937491,
+         "lo": 0.8309607468530429,
+         "hi": 1.3756176130219393,
+         "text": "110.3%; likely 83.1% to 137.6%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "above its slot beyond chance",
+        "count": 151,
+        "range": {
+         "value": 1.5430386310604092,
+         "lo": 1.1512659895762254,
+         "hi": 1.934811272544593,
+         "text": "154.3%; likely 115.1% to 193.5%"
+        },
+        "mark": ""
+       }
+      ]
+     },
+     {
+      "title": "Defensive backs",
+      "count": 212,
+      "rows": [
+       {
+        "key": "",
+        "label": "Year 1",
+        "detail": "within chance of its slot",
+        "count": 270,
+        "range": {
+         "value": 1.3122915674130529,
+         "lo": 0.8278298950246625,
+         "hi": 1.7967532398014432,
+         "text": "131.2%; likely 82.8% to 179.7%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 2",
+        "detail": "within chance of its slot",
+        "count": 242,
+        "range": {
+         "value": 1.2307877910483775,
+         "lo": 0.9480994848646445,
+         "hi": 1.5134760972321106,
+         "text": "123.1%; likely 94.8% to 151.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 3",
+        "detail": "within chance of its slot",
+        "count": 212,
+        "range": {
+         "value": 1.226842671803297,
+         "lo": 0.9702727505131779,
+         "hi": 1.483412593093416,
+         "text": "122.7%; likely 97.0% to 148.3%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 4",
+        "detail": "within chance of its slot",
+        "count": 179,
+        "range": {
+         "value": 1.3112362796071657,
+         "lo": 0.9973215861049021,
+         "hi": 1.6251509731094294,
+         "text": "131.1%; likely 99.7% to 162.5%"
+        },
+        "mark": ""
+       },
+       {
+        "key": "",
+        "label": "Year 5",
+        "detail": "within chance of its slot",
+        "count": 150,
+        "range": {
+         "value": 1.0673928444916767,
+         "lo": 0.7547570495420695,
+         "hi": 1.380028639441284,
+         "text": "106.7%; likely 75.5% to 138.0%"
+        },
+        "mark": ""
+       }
+      ]
+     }
+    ],
+    "id": "L-16",
+    "title": "Return by season after draft · all positions",
+    "note": "100% is the slot's return. Unavailable ranges are not zeros.",
+    "rows": [
+     {
+      "key": "",
+      "label": "Year 1",
+      "detail": "within chance of its slot",
+      "count": 1515,
+      "range": {
+       "value": 0.9561424288713318,
+       "lo": 0.8556099965138885,
+       "hi": 1.056674861228775,
+       "text": "95.6%; likely 85.6% to 105.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Year 2",
+      "detail": "within chance of its slot",
+      "count": 1355,
+      "range": {
+       "value": 0.9774331330942643,
+       "lo": 0.8920269859015865,
+       "hi": 1.062839280286942,
+       "text": "97.7%; likely 89.2% to 106.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Year 3",
+      "detail": "within chance of its slot",
+      "count": 1193,
+      "range": {
+       "value": 0.9785823497033811,
+       "lo": 0.888496536444044,
+       "hi": 1.0686681629627182,
+       "text": "97.9%; likely 88.8% to 106.9%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Year 4",
+      "detail": "within chance of its slot",
+      "count": 1030,
+      "range": {
+       "value": 0.9761917806074907,
+       "lo": 0.8698016298018888,
+       "hi": 1.0825819314130927,
+       "text": "97.6%; likely 87.0% to 108.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "Year 5",
+      "detail": "within chance of its slot",
+      "count": 868,
+      "range": {
+       "value": 0.996935051317725,
+       "lo": 0.8731108221228578,
+       "hi": 1.120759280512592,
+       "text": "99.7%; likely 87.3% to 112.1%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-17",
+    "title": "Return by NFL draft round · Defensive linemen",
+    "note": "100% is the slot's return. Unavailable ranges are not zeros.",
+    "rows": [
+     {
+      "key": "",
+      "label": "NFL round 1",
+      "detail": "within chance of its slot",
+      "count": 47,
+      "range": {
+       "value": 0.8375309418097522,
+       "lo": 0.6484449057050843,
+       "hi": 1.02661697791442,
+       "text": "83.8%; likely 64.8% to 102.7%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "NFL round 2",
+      "detail": "within chance of its slot",
+      "count": 32,
+      "range": {
+       "value": 0.6286431460047411,
+       "lo": 0.2183256777302101,
+       "hi": 1.0389606142792722,
+       "text": "62.9%; likely 21.8% to 103.9%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "NFL round 3",
+      "detail": "within chance of its slot",
+      "count": 50,
+      "range": {
+       "value": 0.6987721256577897,
+       "lo": 0.006621739871003451,
+       "hi": 1.3909225114445758,
+       "text": "69.9%; likely 0.7% to 139.1%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "NFL rounds 4–7",
+      "detail": "below its slot beyond chance",
+      "count": 59,
+      "range": {
+       "value": 0.10432648051549558,
+       "lo": -0.3505605006466262,
+       "hi": 0.5592134616776173,
+       "text": "10.4%; likely -35.1% to 55.9%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "No NFL pick that spring",
+      "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+      "count": 4,
+      "range": null,
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-18",
+    "title": "Return by age at the draft · Defensive linemen",
+    "note": "100% is the slot's return. Unavailable ranges are not zeros.",
+    "rows": [
+     {
+      "key": "",
+      "label": "21 or younger",
+      "detail": "within chance of its slot",
+      "count": 59,
+      "range": {
+       "value": 0.8135271807838182,
+       "lo": 0.5479842214209325,
+       "hi": 1.079070140146704,
+       "text": "81.4%; likely 54.8% to 107.9%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "22",
+      "detail": "below its slot beyond chance",
+      "count": 75,
+      "range": {
+       "value": 0.4459935123196911,
+       "lo": 0.1987908211800381,
+       "hi": 0.6931962034593441,
+       "text": "44.6%; likely 19.9% to 69.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "",
+      "label": "23 or older",
+      "detail": "within chance of its slot",
+      "count": 55,
+      "range": {
+       "value": 0.7221284733940825,
+       "lo": 0.21487663948589086,
+       "hi": 1.2293803073022742,
+       "text": "72.2%; likely 21.5% to 122.9%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-19",
+    "title": "Plays like pick #N",
+    "note": "Historical position cohorts, not predictions for a named prospect. Each line opens that round's pick asset in the Inspector.",
+    "rows": [
+     {
+      "key": "pick1:next",
+      "label": "1.01–1.10",
+      "detail": "Too few picks or less than 0.5 slot wins; not a zero",
+      "count": 1,
+      "range": null,
+      "mark": ""
+     },
+     {
+      "key": "pick1:next",
+      "label": "1.11–1.32",
+      "detail": "Taken around pick #25 · plays like pick #27",
+      "count": 16,
+      "range": {
+       "value": 0.9518433179723503,
+       "lo": 0.7379302508843807,
+       "hi": 1.16575638506032,
+       "text": "95.2%; likely 73.8% to 116.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick2:next",
+      "label": "2.01–2.16",
+      "detail": "Taken around pick #41 · plays like pick #66",
+      "count": 22,
+      "range": {
+       "value": 0.5462596570567178,
+       "lo": 0.2464670066195176,
+       "hi": 0.8460523074939179,
+       "text": "54.6%; likely 24.6% to 84.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick2:next",
+      "label": "2.17–2.32",
+      "detail": "Taken around pick #55 · plays like pick #75",
+      "count": 21,
+      "range": {
+       "value": 0.600172092356231,
+       "lo": 0.2904537296243673,
+       "hi": 0.9098904550880949,
+       "text": "60.0%; likely 29.0% to 91.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Round 3",
+      "detail": "Taken around pick #82 · plays like pick #100",
+      "count": 34,
+      "range": {
+       "value": 0.8221100772748778,
+       "lo": 0.13603556984410425,
+       "hi": 1.5081845847056514,
+       "text": "82.2%; likely 13.6% to 150.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Round 4",
+      "detail": "Taken around pick #118 · plays like pick #127",
+      "count": 52,
+      "range": {
+       "value": 0.8507462686567161,
+       "lo": 0.06719951090604459,
+       "hi": 1.6342930264073876,
+       "text": "85.1%; likely 6.7% to 163.4%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Round 5 on",
+      "detail": "Taken around pick #153 · plays like pick #199",
+      "count": 46,
+      "range": {
+       "value": -0.3369347739095638,
+       "lo": -1.0497194635465437,
+       "hi": 0.37584991572741605,
+       "text": "-33.7%; likely -105.0% to 37.6%"
+      },
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-20",
+    "title": "Hit rate against the stretch baseline",
+    "note": "Best season was top or starter; the baseline matches each pick's draft stretch.",
+    "rows": [
+     {
+      "key": "",
+      "label": "Defensive linemen",
+      "detail": "61.5% became starters or better, against 52.9% for the same stretches · above baseline beyond chance",
+      "count": 192,
+      "range": null,
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-21",
+    "title": "Kept by year 2",
+    "note": "Unknown retention is excluded, not counted as lost. Includes picks not yet judged on total return.",
+    "rows": [
+     {
+      "key": "",
+      "label": "Defensive linemen",
+      "detail": "76.9% kept by year 2 among known outcomes",
+      "count": 251,
+      "range": null,
+      "mark": ""
+     }
+    ]
+   },
+   {
+    "id": "L-22",
+    "title": "Draft it, or buy it",
+    "note": "Cost per delivered win against the going rate in the same seasons; draft stretches and NFL filters do not narrow the trade market.",
+    "rows": [
+     {
+      "key": "DL:young",
+      "label": "Defensive linemen, 24 or younger",
+      "detail": "Historical cost per delivered win",
+      "count": 163,
+      "range": {
+       "value": 0.8966061233061686,
+       "lo": 0.479218672182198,
+       "hi": 1.677527581906229,
+       "text": "89.7%; likely 47.9% to 167.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DL:prime",
+      "label": "Defensive linemen, 25 to 27",
+      "detail": "Historical cost per delivered win · lowest priced age in view (not a beyond-chance claim)",
+      "count": 321,
+      "range": {
+       "value": 0.6395407977102872,
+       "lo": 0.3904623332411741,
+       "hi": 1.0475080362829228,
+       "text": "64.0%; likely 39.0% to 104.8%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "DL:older",
+      "label": "Defensive linemen, 28 or older",
+      "detail": "Historical cost per delivered win",
+      "count": 353,
+      "range": {
+       "value": 0.8908919403650396,
+       "lo": 0.6349111745122283,
+       "hi": 1.2500779341569122,
+       "text": "89.1%; likely 63.5% to 125.0%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick1:next",
+      "label": "Next-draft 1sts",
+      "detail": "Historical cost per delivered win",
+      "count": 346,
+      "range": {
+       "value": 2.944198149851648,
+       "lo": 2.5854465186128235,
+       "hi": 3.352729473685147,
+       "text": "294.4%; likely 258.5% to 335.3%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick2:next",
+      "label": "Next-draft 2nds",
+      "detail": "Historical cost per delivered win",
+      "count": 429,
+      "range": {
+       "value": 1.062404010041465,
+       "lo": 0.7647762989402341,
+       "hi": 1.4758593880540627,
+       "text": "106.2%; likely 76.5% to 147.6%"
+      },
+      "mark": ""
+     },
+     {
+      "key": "pick3:next",
+      "label": "Next-draft 3rds and later",
+      "detail": "Historical cost per delivered win · pick route for the most common judged round in view (or first priced round if unavailable)",
+      "count": 1299,
+      "range": {
+       "value": 2.2087737885830414,
+       "lo": 1.6104854879215658,
+       "hi": 3.0293235708865227,
+       "text": "220.9%; likely 161.0% to 302.9%"
+      },
+      "mark": ""
+     }
+    ]
+   }
+  ]
+ },
+ "provenance": {
+  "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "2026-10-06T15:57:20+00:00",
+   "note": "Frozen historical input; not current league truth"
+  },
+  "kind": "archive"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 1193,
+ "threshold": 40,
+ "baseline": "100% is wins returned by the same overall slots in other draft classes",
+ "cutoff": "2026-10-06T01:42:57+00:00",
+ "method": "slot-relative ratio estimator, 1.96 standard-error ranges and monotone nine-slot value curve",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "dev ",
+ "howCounted": "A pick's return is wins above replacement in this league's scoring. Its slot is what the same overall pick returned in the other classes, never its own class. Picks from 2017 onward are judged on their first 2, 3 or 4 finished seasons. A ratio is total returned wins divided by total slot wins; each estimate needs 8 records and 0.5 slot wins. Year 1–5 uses every class with that season recorded, including not-yet-judged picks. The likely range is the ratio plus/minus 1.96 standard errors. Best/worst only beats every other known cell beyond chance; with many cells, a colour alone may be chance. Plays like pick N reads the rounded mean slot's usual value times the return ratio onto a nine-slot-smoothed, never-rising curve. Starter hits are top or starter best seasons versus the same draft stretches; 8 judged picks are required. Kept by year 2 counts only known retention outcomes, including unjudged picks. Draft or buy uses the age-split trade market in these same seasons, not the draft filters; its usual pick round is the most common among judged picks, with stable first-seen ties. Frozen history, not a live pick forecast or ownership claim."
+}
