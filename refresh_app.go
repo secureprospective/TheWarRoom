@@ -65,7 +65,7 @@ func (a *App) RefreshLeague() RefreshResult {
 	return res
 }
 
-// refreshLeague syncs the rules, then replaces the mirror with MFL's rosters and salary
+// refreshLeague stages the rules and mirror from MFL's rosters and salary
 // adjustments for the current season. Every fetch is archived by the transport.
 func (a *App) refreshLeague(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
@@ -91,19 +91,23 @@ func (a *App) refreshLeagueLocked(
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
-	rulesChanged, err := rb.Sync(ctx, cfg)
-	if err != nil {
-		return RefreshResult{}, fmt.Errorf("refresh: rules: %w", err)
-	}
-	a.rulesCheckedAt.Store(time.Now().Unix())
 	snap, err := a.fetchLeague(ctx, cfg.CurrentSeason)
 	if err != nil {
 		return RefreshResult{}, err
 	}
-	changed, err := mirror.Replace(ctx, snap)
+	rulesWrite, caps, rulesChanged, err := rb.StageSync(cfg)
 	if err != nil {
+		return RefreshResult{}, fmt.Errorf("refresh: rules: %w", err)
+	}
+	mirrorWrite, changed, err := mirror.StageReplace(snap, caps)
+	if err != nil {
+		rulesWrite.Release()
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
+	if err := a.pools.CommitPrepared(ctx, rulesWrite, mirrorWrite); err != nil {
+		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
+	}
+	a.rulesCheckedAt.Store(time.Now().Unix())
 	if changed || rulesChanged {
 		a.modelDirty.Store(true)
 	}

@@ -105,18 +105,14 @@ func (s *Store) Reload(ctx context.Context) (ChangeSet, error) {
 // whether it did. Identical config writes nothing, so a repeated refresh adds no versions.
 // Provenance (Source) is not compared.
 func (s *Store) Sync(ctx context.Context, cfg league.RawConfig) (bool, error) {
-	s.mu.RLock()
-	active := s.active
-	s.mu.RUnlock()
-	same, err := sameConfig(active, cfg)
-	if err != nil || same {
-		return false, err
-	}
-	ver, err := s.insertVersion(ctx, cfg)
+	prepared, _, changed, err := s.StageSync(cfg)
 	if err != nil {
 		return false, err
 	}
-	return true, s.Promote(ctx, ver)
+	if err := s.pools.CommitPrepared(ctx, prepared); err != nil {
+		return false, fmt.Errorf("rulebook: sync: %w", err)
+	}
+	return changed, nil
 }
 
 // sameConfig compares two configs field by field, ignoring provenance.
@@ -276,29 +272,26 @@ func (s *Store) initSchema(ctx context.Context) error {
 
 // insertVersion stores cfg as a new immutable version and returns its number.
 func (s *Store) insertVersion(ctx context.Context, cfg league.RawConfig) (int, error) {
-	for _, raw := range []string{cfg.IncludeTaxiWithSalary, cfg.IncludeIRWithSalary} {
-		if strings.TrimSpace(raw) != "" {
-			if err := validateCapPercent(raw); err != nil {
-				return 0, err
-			}
-		}
+	if err := validateConfigPercents(cfg); err != nil {
+		return 0, err
 	}
 	payload, err := json.Marshal(cfg)
 	if err != nil {
 		return 0, fmt.Errorf("rulebook: marshal config: %w", err)
 	}
-	now := time.Now().UTC().Format(time.RFC3339)
-	res, err := s.pools.Write().ExecContext(ctx,
-		`INSERT INTO rulebook_versions (source, payload, created_at) VALUES (?, ?, ?)`,
-		cfg.Source, string(payload), now)
+	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("rulebook: insert version: %w", err)
+		return 0, fmt.Errorf("rulebook: version begin: %w", err)
 	}
-	id, err := res.LastInsertId()
+	defer func() { _ = tx.Rollback() }()
+	version, err := insertConfig(ctx, tx, cfg.Source, string(payload))
 	if err != nil {
-		return 0, fmt.Errorf("rulebook: version id: %w", err)
+		return 0, err
 	}
-	return int(id), nil
+	if err := tx.Commit(); err != nil {
+		return 0, fmt.Errorf("rulebook: version commit: %w", err)
+	}
+	return version, nil
 }
 
 // setActive repoints the single active-version row to ver.

@@ -94,38 +94,53 @@ func (m *Mirror) Initialize(ctx context.Context) error {
 // Replace makes snap the mirror. It writes only when snap differs from what is held, and
 // reports whether it did; either way it rebuilds the view, so new cap percentages apply.
 func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error) {
-	if snap.Season == 0 || len(snap.Players) == 0 {
-		return false, fmt.Errorf("state: mirror refresh for season %d with %d players refused: an empty league would wipe the mirror", snap.Season, len(snap.Players))
-	}
-	m.wmu.Lock()
-	defer m.wmu.Unlock()
-	staged := NewMirror(m.pools, m.discounts)
-	enc, err := staged.install(snap)
+	prepared, changed, err := m.StageReplace(snap, m.discounts)
 	if err != nil {
 		return false, err
 	}
-	if staged.hash == m.hash {
-		m.publish(staged)
-		return false, nil
+	if err := m.pools.CommitPrepared(ctx, prepared); err != nil {
+		return false, fmt.Errorf("state: mirror replace: %w", err)
 	}
-	at := time.Now().UTC().Format(time.RFC3339Nano)
-	if _, err := m.pools.Write().ExecContext(ctx, `
-INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
-ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
-	snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`,
-		snap.Season, staged.hash, string(enc), at); err != nil {
-		return false, fmt.Errorf("state: mirror write: %w", err)
-	}
-	m.publish(staged)
-	m.refreshedAt = at
-	return true, nil
+	return changed, nil
 }
 
-func (m *Mirror) publish(staged *Mirror) {
-	m.mu.Lock()
-	m.franchises, m.byPlayer = staged.franchises, staged.byPlayer
-	m.mu.Unlock()
-	m.snap, m.hash = staged.snap, staged.hash
+// StageReplace builds a private view and holds the writer lock until commit or release.
+func (m *Mirror) StageReplace(snap MirrorSnapshot, discounts CapDiscounts) (db.PreparedWrite, bool, error) {
+	if snap.Season == 0 || len(snap.Players) == 0 {
+		return db.PreparedWrite{}, false, fmt.Errorf("state: mirror refresh for season %d with %d players refused: an empty league would wipe the mirror", snap.Season, len(snap.Players))
+	}
+	m.wmu.Lock()
+	staged := NewMirror(m.pools, discounts)
+	enc, err := staged.install(snap)
+	if err != nil {
+		m.wmu.Unlock()
+		return db.PreparedWrite{}, false, err
+	}
+	changed := staged.hash != m.hash
+	at := m.refreshedAt
+	if changed {
+		at = time.Now().UTC().Format(time.RFC3339Nano)
+	}
+	prepared := db.PreparedWrite{
+		Persist: func(ctx context.Context, tx *sql.Tx) error {
+			if !changed {
+				return nil
+			}
+			if _, err := tx.ExecContext(ctx, `
+INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
+ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
+ snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`, snap.Season, staged.hash, string(enc), at); err != nil {
+				return fmt.Errorf("state: mirror write: %w", err)
+			}
+			return nil
+		},
+		Lock: m.mu.Lock, Unlock: m.mu.Unlock, Release: m.wmu.Unlock,
+		Publish: func() {
+			m.franchises, m.byPlayer = staged.franchises, staged.byPlayer
+			m.snap, m.hash, m.refreshedAt = staged.snap, staged.hash, at
+		},
+	}
+	return prepared, changed, nil
 }
 
 // install sorts and validates snap, builds its view and swaps it in. It returns the canonical
