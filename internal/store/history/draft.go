@@ -41,7 +41,7 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 		return commissioner.Receipt{}, fmt.Errorf("begin rookie pick: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	records, err := transactionRecords(ctx, tx, in.League)
+	records, err := s.transactionRecords(ctx, tx, in.League)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}

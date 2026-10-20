@@ -51,7 +51,11 @@ type Store struct {
 	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
 	bidEnv BidEnvironmentSource
 
-	wmu sync.Mutex
+	leaguesMu sync.Mutex
+	leagues   nativeLeagueRevision
+	recordsMu sync.Mutex
+	records   map[string]recordRevision
+	wmu       sync.Mutex
 }
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
