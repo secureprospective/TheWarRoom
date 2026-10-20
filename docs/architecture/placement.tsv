@@ -56,9 +56,7 @@ corrections_transactions_test.go	commissioner
 counterparties_app.go	counterparties
 counterparties_app_test.go	counterparties
 crosswalk_app.go	sources
-crosswalk_app_test.go	sources
 data_sources_app.go	sources
-data_sources_reading.go	sources
 data_sources_test.go	sources
 database_checks_app.go	platform
 database_checks_app_test.go	platform
@@ -317,3 +315,4 @@ internal/transactions/contracts	contracts
 internal/transactions/deadcap	contracts
 internal/transactions/freeagency	contracts
 sources_wire_test.go	sources
+internal/app/sources	sources

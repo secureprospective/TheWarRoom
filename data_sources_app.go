@@ -2,14 +2,13 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -42,16 +41,6 @@ type DataSources struct {
 	PhotosOn       bool              `json:"photosOn"`
 	Scopes         []DataScope       `json:"scopes"`
 	Words          map[string]string `json:"words"`
-}
-
-// dataScopes lists the refresh Acts in the order they are offered.
-func dataScopes() []DataScope {
-	return []DataScope{
-		{"league", "League from MFL", "Rules, rosters and salary adjustments for the current season.", "Refresh League from MFL", "Refreshing…"},
-		{"signals", "Signals", "The nflverse, CFBD and contract files that are due.", "Refresh Signals", "Refreshing…"},
-		{"crosswalk", "Player crosswalk", "DynastyProcess's player ids, linked to the league's players.", "Refresh Player crosswalk", "Refreshing…"},
-		{"archive", "League archive", "Files new to the 2013–2026 archive, then the Lab's pinned inputs.", "Refresh League archive", "Refreshing…"},
-	}
 }
 
 // TargetDataRefresh renews one scope of the app's data and says what it did.
@@ -116,22 +105,6 @@ func leagueRefreshSummary(r RefreshResult) string {
 	return fmt.Sprintf("Season %d: %s; %s.", r.Season, changed, rules)
 }
 
-func signalsSummary(r SignalsReport) string {
-	counts := map[string]int{}
-	var added int
-	for _, l := range r.Loads {
-		added += l.Added
-		counts[l.Status]++
-	}
-	summary := fmt.Sprintf("Looked at %s files: %s loaded, %s already current, %s skipped, %s failed; %s new values.",
-		thousands(len(r.Loads)), thousands(counts[loadDone]), thousands(counts[loadCurrent]),
-		thousands(counts[loadSkipped]), thousands(counts[loadFailed]), thousands(added))
-	if r.CrosswalkNote != "" {
-		summary += " " + r.CrosswalkNote
-	}
-	return summary
-}
-
 // TargetDataSources reads what history holds about every source and the checked facts.
 func (a *App) TargetDataSources() (DataSources, error) {
 	if err := a.ready(); err != nil {
@@ -143,162 +116,179 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	if err != nil {
 		return DataSources{}, err
 	}
-	health, err := a.healthInput(ctx)
+	view, err := a.sourcesService().Read(ctx, a.photoHealth(), a.rosteredPositions, a.lastSignals)
 	if err != nil {
-		return DataSources{}, err
+		return DataSources{}, err //nolint:wrapcheck // preserve existing binding errors
 	}
-	facts, err := a.factsInput(ctx)
-	if err != nil {
-		return DataSources{}, err
-	}
-	signals, err := a.signalsView(ctx)
-	if err != nil {
-		return DataSources{}, err
-	}
-	a.signalsMu.Lock()
-	last := a.signals
-	a.signalsMu.Unlock()
-	return DataSources{
-		DatabaseChecks: a.databaseChecksReport(),
-		Health:         healthReport(health), Signals: signalFilesReport(signals, last, time.Local),
-		Facts: factsReport(facts), Checks: checksReport(facts),
-		ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: dataScopes(), Words: dataWords(),
-	}, nil
+	return DataSources{DatabaseChecks: a.databaseChecksReport(), Health: wireReport(view.Health), Signals: wireReport(view.Signals), Facts: wireReport(view.Facts), Checks: wireReport(view.Checks), ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: wireScopes(view.Scopes), Words: view.Words}, nil
 }
-
-func (a *App) healthInput(ctx context.Context) (healthInput, error) {
-	in := healthInput{reg: a.history.Registry(), now: time.Now(), zone: time.Local}
-	if strings.TrimSpace(os.Getenv(cfbdEnvVar)) == "" {
-		in.unset = map[string]string{college.Source: "needs a free CollegeFootballData key in " + cfbdEnvVar}
-	}
+func (a *App) lastSignals() sourcesapp.SignalsReport {
+	a.signalsMu.Lock()
+	defer a.signalsMu.Unlock()
+	return serviceSignals(a.signals)
+}
+func (a *App) photoHealth() *sourcesapp.PhotoHealth {
 	if photos := a.headshots.Load(); photos != nil {
 		st, held, size := photos.Stats()
-		in.photos = &photoHealth{off: a.photosOff.Load(), held: held, bytes: size, fetched: st.Fetched,
-			missing: st.Missing, lastFail: st.LastFailure, lastError: st.LastError}
+		return &sourcesapp.PhotoHealth{Off: a.photosOff.Load(), Held: held, Bytes: size, Fetched: st.Fetched, Missing: st.Missing, LastFail: st.LastFailure, LastError: st.LastError}
 	}
-	var err error
-	if in.sources, err = a.history.SourceHealth(ctx); err != nil {
-		return in, fmt.Errorf("app: source health: %w", err)
-	}
-	if in.mfl, err = a.history.FetchHealth(ctx, "mfl"); err != nil {
-		return in, fmt.Errorf("app: source health: %w", err)
-	}
-	engine, held, err := a.history.LatestRun(ctx, a.season, history.RunModel)
-	if err != nil {
-		return in, fmt.Errorf("app: engine health: %w", err)
-	}
-	if held {
-		in.engineAt = engine.AsOf
-	}
-	return in, nil
+	return nil
 }
 
-func (a *App) factsInput(ctx context.Context) (factsInput, error) {
-	in := factsInput{zone: time.Local}
-	data, err := a.labData()
-	if err != nil {
-		return in, fmt.Errorf("app: lab data: %w", err)
-	}
-	in.labBuilt, in.labThrough = data.Built, data.ArchiveThrough
-	if in.gaps, err = lab.FrozenGaps(); err != nil {
-		return in, fmt.Errorf("app: frozen input gaps: %w", err)
-	}
-	rec, ok, err := a.history.LatestManifest(ctx, labFrozenInputs)
-	if err != nil || !ok {
-		return in, err //nolint:wrapcheck // the store names the manifest
-	}
-	if in.manifest, err = manifest.Decode(rec.Name, rec.SHA256, rec.Entries); err != nil {
-		return in, err //nolint:wrapcheck // names the manifest
-	}
-	in.published, in.publishedAt = true, rec.PublishedAt
-	shas := make([]string, len(in.manifest.Entries))
-	for i, e := range in.manifest.Entries {
-		shas[i] = e.SHA256
-	}
-	if in.held, err = a.history.HeldBodies(ctx, shas); err != nil {
-		return in, fmt.Errorf("app: checked facts: %w", err)
-	}
-	attempts, err := a.history.Snapshots(ctx, labFrozenInputs)
-	if err != nil {
-		return in, fmt.Errorf("app: checked facts: %w", err)
-	}
-	in.status = manifest.StatusOf(snapshotAttempts(attempts), manifest.Want{ManifestSHA: rec.SHA256,
-		Compiler: factsCompiler, RulesHash: lab.CheckExceptions().SHA256})
-	if len(attempts) > 0 {
-		in.latest = &attempts[0]
-		if in.latest.Checks != "" {
-			if err := json.Unmarshal([]byte(in.latest.Checks), &in.results); err != nil {
-				return in, fmt.Errorf("app: checked facts: stored check results: %w", err)
-			}
-		}
-	}
-	return in, nil
+func (a *App) healthInput(ctx context.Context) (sourcesHealthInput, error) {
+	in, err := a.sourcesService().HealthInput(ctx, a.photoHealth())
+	return sourcesHealthInput{HealthInput: in, now: in.Now}, err //nolint:wrapcheck // preserve the existing contextual error shown by the binding
+}
+func (a *App) factsInput(ctx context.Context) (sourcesapp.FactsInput, error) {
+	return a.sourcesService().FactsInput(ctx) //nolint:wrapcheck // preserve the existing contextual error shown by the binding
+}
+func historyManifest(m manifest.Manifest, entries []byte) history.ManifestRecord {
+	return sourcesapp.HistoryManifest(m, entries)
 }
 
-func snapshotAttempts(rs []history.SnapshotRecord) []manifest.Attempt {
-	out := make([]manifest.Attempt, len(rs))
-	for i, r := range rs {
-		out[i] = manifest.Attempt{ManifestSHA: r.ManifestSHA, Compiler: r.Compiler, RulesHash: r.RulesHash,
-			ResultSHA: r.ResultSHA, Error: r.Error, BuiltAt: r.BuiltAt}
+func signalsSummary(r SignalsReport) string { return sourcesapp.SignalsSummary(serviceSignals(r)) }
+
+func (a *App) TargetCrosswalk() Report {
+	return wireReport(sourcesapp.CrosswalkReading(serviceCrosswalk(a.GetCrosswalkReport()), time.Local))
+}
+
+type sourcesHealthInput struct {
+	sourcesapp.HealthInput
+	now time.Time
+}
+
+func (a *App) sourcesService() sourcesapp.Service {
+	return sourcesapp.Service{Health: a.history, Facts: a.history, Archive: a.history, Crosswalk: a.history, Signals: a.history, Season: a.season, CollegeKey: strings.TrimSpace(os.Getenv(cfbdEnvVar)), Transport: a.fetches, LabData: a.labData}
+}
+func wireScopes(in []sourcesapp.DataScope) []DataScope {
+	if in == nil {
+		return nil
+	}
+	out := make([]DataScope, len(in))
+	for i, v := range in {
+		out[i] = DataScope(v)
 	}
 	return out
 }
 
-func historyManifest(m manifest.Manifest, entries []byte) history.ManifestRecord {
-	return history.ManifestRecord{SHA256: m.SHA256, Name: m.Name, Entries: entries}
+func wireCrosswalkRate(in sourcesapp.CrosswalkRate) CrosswalkRate {
+	return CrosswalkRate(in)
 }
 
-func (a *App) TargetCrosswalk() Report {
-	c := a.GetCrosswalkReport()
-	r := Report{ID: "C-08", Title: "Player crosswalk", Status: "ok", Source: "Source: DynastyProcess", AsOf: "As of: this launch",
-		Columns: []string{"Position", "Rostered matched", "Free agents matched"}, Rows: []ReportRow{},
-		How: "DynastyProcess links MFL players to NFL ids. Unmatched rostered players are listed with the reason; their facts wait for a link."}
-	if !c.OK {
-		r.Status, r.Note = "empty", "No crosswalk loaded since launch. Refresh the Player crosswalk scope to load it."
-		if c.Error != "" {
-			r.Status, r.Note = "failed", c.Error
+func serviceCrosswalkRate(in CrosswalkRate) sourcesapp.CrosswalkRate {
+	return sourcesapp.CrosswalkRate(in)
+}
+
+func wireCrosswalkMiss(in sourcesapp.CrosswalkMiss) CrosswalkMiss {
+	return CrosswalkMiss(in)
+}
+
+func serviceCrosswalkMiss(in CrosswalkMiss) sourcesapp.CrosswalkMiss {
+	return sourcesapp.CrosswalkMiss(in)
+}
+
+func wireCrosswalk(in sourcesapp.CrosswalkReport) CrosswalkReport {
+	out := CrosswalkReport{
+		OK:       in.OK,
+		Error:    in.Error,
+		LoadedAt: in.LoadedAt,
+		Links:    in.Links,
+		Promoted: in.Promoted,
+		Total:    wireCrosswalkRate(in.Total),
+	}
+	if in.Rates != nil {
+		out.Rates = make([]CrosswalkRate, len(in.Rates))
+		for i, v := range in.Rates {
+			out.Rates[i] = wireCrosswalkRate(v)
 		}
-		return r
 	}
-	r.AsOf = "Loaded: " + labTime(c.LoadedAt, time.Local)
-	r.Note = fmt.Sprintf("%s links; %s waiting facts resolved.", thousands(c.Links), thousands(c.Promoted))
-	for _, rate := range append(c.Rates, c.Total) {
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{rate.Position, crosswalkShare(rate.RosteredMatched, rate.Rostered), crosswalkShare(rate.FreeAgentsMatched, rate.FreeAgents)}})
+	if in.Unmatched != nil {
+		out.Unmatched = make([]CrosswalkMiss, len(in.Unmatched))
+		for i, v := range in.Unmatched {
+			out.Unmatched[i] = wireCrosswalkMiss(v)
+		}
 	}
-	for _, m := range c.Unmatched {
-		r.Rows = append(r.Rows, ReportRow{Group: "Unmatched rostered players", Cells: []string{m.Name, m.Position + " · " + nflTeamText(m.Team), m.Reason}})
-	}
-	return r
+	return out
 }
 
-func crosswalkShare(matched, total int) string {
-	if total == 0 {
-		return "None"
+func serviceCrosswalk(in CrosswalkReport) sourcesapp.CrosswalkReport {
+	out := sourcesapp.CrosswalkReport{
+		OK:       in.OK,
+		Error:    in.Error,
+		LoadedAt: in.LoadedAt,
+		Links:    in.Links,
+		Promoted: in.Promoted,
+		Total:    serviceCrosswalkRate(in.Total),
 	}
-	return fmt.Sprintf("%s of %s · %.1f%%", thousands(matched), thousands(total), 100*float64(matched)/float64(total))
+	if in.Rates != nil {
+		out.Rates = make([]sourcesapp.CrosswalkRate, len(in.Rates))
+		for i, v := range in.Rates {
+			out.Rates[i] = serviceCrosswalkRate(v)
+		}
+	}
+	if in.Unmatched != nil {
+		out.Unmatched = make([]sourcesapp.CrosswalkMiss, len(in.Unmatched))
+		for i, v := range in.Unmatched {
+			out.Unmatched[i] = serviceCrosswalkMiss(v)
+		}
+	}
+	return out
 }
 
-func nflTeamText(team string) string {
-	if team == "" {
-		return "NFL team not held"
-	}
-	return team
+func wireSignalLoad(in sourcesapp.SignalLoad) SignalLoad {
+	return SignalLoad(in)
 }
 
-func dataWords() map[string]string {
-	return map[string]string{
-		"title": "Data and sources", "refresh": "Data refresh",
-		"folder": "League archive folder (raw)", "setFolder": "Set folder",
-		"read": "Read held records", "readProgress": "Refreshing…",
-		"readResult": "Held records read; source health, signals, checked facts, player links and engine parameters updated.",
-		"how":        "How this is counted", "crosswalkHow": "How players are linked",
-		"parameters": "Engine parameters", "permission": "Changes require the admin role. Running as GM: values are read-only.",
-		"find": "Find a setting", "empty": "No settings match.", "league": "League",
-		"setting": "Setting and position", "value": "Value", "default": "Default", "override": "Override",
-		"range": "Allowed", "overridden": "Overridden", "fitted": "Fitted", "handSet": "Hand-set",
-		"apply": "Apply", "reset": "Reset", "clear": "Clear the Admin value and follow the shipped default",
-		"kept":   "The last reading is kept.",
-		"photos": "Player photos", "photosNote": "From ESPN, then Sleeper, cached on this computer for personal use. " +
-			"Off means no photo is requested.", "photosOn": "Turn photos on", "photosOff": "Turn photos off",
+func serviceSignalLoad(in SignalLoad) sourcesapp.SignalLoad {
+	return sourcesapp.SignalLoad(in)
+}
+
+func wireSignals(in sourcesapp.SignalsReport) SignalsReport {
+	out := SignalsReport{
+		OK:            in.OK,
+		Error:         in.Error,
+		StartedAt:     in.StartedAt,
+		FinishedAt:    in.FinishedAt,
+		CrosswalkNote: in.CrosswalkNote,
 	}
+	if in.Loads != nil {
+		out.Loads = make([]SignalLoad, len(in.Loads))
+		for i, v := range in.Loads {
+			out.Loads[i] = wireSignalLoad(v)
+		}
+	}
+	return out
+}
+
+func serviceSignals(in SignalsReport) sourcesapp.SignalsReport {
+	out := sourcesapp.SignalsReport{
+		OK:            in.OK,
+		Error:         in.Error,
+		StartedAt:     in.StartedAt,
+		FinishedAt:    in.FinishedAt,
+		CrosswalkNote: in.CrosswalkNote,
+	}
+	if in.Loads != nil {
+		out.Loads = make([]sourcesapp.SignalLoad, len(in.Loads))
+		for i, v := range in.Loads {
+			out.Loads[i] = serviceSignalLoad(v)
+		}
+	}
+	return out
+}
+
+func countText(n int, noun string) string      { return sourcesapp.CountText(n, noun) }
+func pluralNoun(n float64, noun string) string { return sourcesapp.PluralNoun(n, noun) }
+
+type curatedBodies struct {
+	archive manifest.Bodies
+	curated map[string][]byte
+}
+
+func (b curatedBodies) Body(ctx context.Context, sha string) ([]byte, error) {
+	return (sourcesapp.CuratedBodies{Archive: b.archive, Curated: b.curated}).Body(ctx, sha) //nolint:wrapcheck // preserve the existing contextual error shown by the binding
+}
+
+func sourceStanding(in sourcesHealthInput) (string, string) {
+	return sourcesapp.SourceStanding(in.HealthInput)
 }
