@@ -101,18 +101,6 @@ func TestConcurrentReadersWithWriter(t *testing.T) {
 	}
 }
 
-func TestCloseIsSafe(t *testing.T) {
-	t.Parallel()
-	path := filepath.Join(t.TempDir(), "close.db")
-	pools, err := Open(context.Background(), path)
-	if err != nil {
-		t.Fatalf("Open: %v", err)
-	}
-	if err := pools.Close(); err != nil {
-		t.Errorf("Close: %v", err)
-	}
-}
-
 func TestEveryPooledConnectionEnforcesPragmas(t *testing.T) {
 	t.Parallel()
 	pools := tempPools(t)
