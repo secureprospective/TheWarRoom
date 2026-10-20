@@ -1,0 +1,16 @@
+{
+  "ok": false,
+  "error": "fixture startup failed",
+  "loadedAt": "",
+  "links": 0,
+  "promoted": 0,
+  "rates": null,
+  "total": {
+    "position": "",
+    "rostered": 0,
+    "rosteredMatched": 0,
+    "freeAgents": 0,
+    "freeAgentsMatched": 0
+  },
+  "unmatched": null
+}

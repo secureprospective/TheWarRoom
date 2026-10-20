@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "error": "",
+  "loadedAt": "2026-10-11T18:00:00Z",
+  "links": 1000,
+  "promoted": 12,
+  "rates": [
+    {
+      "position": "QB",
+      "rostered": 4,
+      "rosteredMatched": 3,
+      "freeAgents": 0,
+      "freeAgentsMatched": 0
+    }
+  ],
+  "total": {
+    "position": "ALL",
+    "rostered": 4,
+    "rosteredMatched": 3,
+    "freeAgents": 0,
+    "freeAgentsMatched": 0
+  },
+  "unmatched": [
+    {
+      "mflId": "0042",
+      "name": "Waiting",
+      "team": "",
+      "position": "QB",
+      "franchise": "",
+      "reason": "no NFL id yet"
+    }
+  ]
+}

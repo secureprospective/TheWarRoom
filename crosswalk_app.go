@@ -2,37 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
-	"maps"
-	"net/http"
-	"slices"
-	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // dynastyProcessSource is the crosswalk's id in sources.csv; its loads are the directory's.
-const dynastyProcessSource = "dynastyprocess"
-
-// matchIDType is the id a match is measured on: nflverse, the production source, keys on gsis.
-const matchIDType = "gsis"
-
-// Why a player has no gsis link, beyond the crosswalk's own guards.
-const (
-	reasonNotInDP = "not in DynastyProcess (commissioner-created, or too new)"
-	reasonNoGSIS  = "no NFL id yet"
-)
-
-// reportPositions is the order the league's ten positions are reported in.
-func reportPositions() []domain.Position {
-	return []domain.Position{domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK,
-		domain.PosDT, domain.PosDE, domain.PosLB, domain.PosCB, domain.PosS}
-}
+const dynastyProcessSource = sourcesapp.DynastyProcessSource
 
 // CrosswalkRate is one position's match rate, rostered and in the free-agent pool.
 type CrosswalkRate struct {
@@ -101,42 +80,20 @@ func (a *App) GetCrosswalkReport() CrosswalkReport {
 // fetchCrosswalk reads DynastyProcess through the archive. A failure is recorded against the
 // source, so its health shows it.
 func (a *App) fetchCrosswalk(ctx context.Context) (crosswalk.Map, error) {
-	client := &http.Client{Timeout: rasFetchTimeout, Transport: a.fetches}
-	cw, err := crosswalk.Fetch(ctx, client, crosswalk.SourceURL)
-	if err != nil {
-		err = fmt.Errorf("app: fetch crosswalk: %w", err)
-		if lerr := a.history.LoadFailed(ctx, dynastyProcessSource, err); lerr != nil {
-			log.Printf("the war room: %v", lerr)
-		}
-		return crosswalk.Map{}, err
-	}
-	return cw, nil
+	return a.sourcesService().FetchCrosswalk(ctx) //nolint:wrapcheck // preserve the existing contextual error shown by the binding
 }
 
 // linkCrosswalk writes the crosswalk's links to the player directory and holds the report.
 func (a *App) linkCrosswalk(ctx context.Context, cw crosswalk.Map, lk normalize.Lookup) (CrosswalkReport, error) {
-	links, rejected := cw.Links(lk.Name)
-	rows := make([]history.PlayerIDLink, len(links))
-	for i, l := range links {
-		rows[i] = history.PlayerIDLink{IDType: l.IDType, IDValue: l.IDValue, PlayerID: l.MFLID}
-	}
-	promoted, err := a.history.LinkPlayerIDs(ctx, dynastyProcessSource, rows)
+	rep, err := a.sourcesService().LinkCrosswalk(ctx, cw, lk, func() map[string]string { return rosteredBy(a.league.Reader()) }, a.rulebook.FranchiseNames)
 	if err != nil {
-		return CrosswalkReport{}, fmt.Errorf("app: link crosswalk: %w", err)
+		return CrosswalkReport{}, err //nolint:wrapcheck // preserve the existing contextual error shown by the binding
 	}
-	linked, err := a.history.LinkedPlayers(ctx, matchIDType)
-	if err != nil {
-		return CrosswalkReport{}, fmt.Errorf("app: link crosswalk: %w", err)
-	}
-	rep := crosswalkReport(rosteredBy(a.league.Reader()), lk, linked, cw, rejected, a.rulebook.FranchiseNames())
-	rep.OK, rep.Links, rep.Promoted = true, len(links), promoted
-	rep.LoadedAt = time.Now().Format(time.RFC3339)
-	log.Printf("the war room: crosswalk: %d links, %d waiting facts resolved; rostered %d of %d matched, free agents %d of %d",
-		rep.Links, rep.Promoted, rep.Total.RosteredMatched, rep.Total.Rostered, rep.Total.FreeAgentsMatched, rep.Total.FreeAgents)
+	out := wireCrosswalk(rep)
 	a.crosswalkMu.Lock()
-	a.crosswalk = rep
+	a.crosswalk = out
 	a.crosswalkMu.Unlock()
-	return rep, nil
+	return out, nil
 }
 
 // rosteredBy maps every rostered MFL id to its franchise.
@@ -151,77 +108,4 @@ func rosteredBy(r state.Reader) map[string]string {
 	return out
 }
 
-// crosswalkReport measures the match rate per position for the rostered players and for the
-// free-agent pool (MFL's list minus the rosters), and lists every unmatched rostered player with
-// one reason.
-func crosswalkReport(rostered map[string]string, lk normalize.Lookup, linked map[string]bool, cw crosswalk.Map,
-	rejected map[string]string, names map[string]string) CrosswalkReport {
-	rates := map[domain.Position]*CrosswalkRate{}
-	rate := func(pos domain.Position) *CrosswalkRate {
-		if rates[pos] == nil {
-			rates[pos] = &CrosswalkRate{Position: string(pos)}
-		}
-		return rates[pos]
-	}
-	var rep CrosswalkReport
-	for _, id := range slices.Sorted(maps.Keys(rostered)) {
-		f, _ := lk.Facts(id)
-		r := rate(f.Position)
-		r.Rostered++
-		if linked[id] {
-			r.RosteredMatched++
-			continue
-		}
-		rep.Unmatched = append(rep.Unmatched, CrosswalkMiss{MFLID: id, Name: f.Name, Team: f.Team, Position: string(f.Position),
-			Franchise: domain.FranchiseLabel(names, rostered[id]), Reason: missReason(id, cw, rejected)})
-	}
-	for _, id := range lk.IDs() {
-		f, _ := lk.Facts(id)
-		if _, ok := rostered[id]; ok || f.Position == domain.PosFlag {
-			continue
-		}
-		r := rate(f.Position)
-		r.FreeAgents++
-		if linked[id] {
-			r.FreeAgentsMatched++
-		}
-	}
-	rep.Total.Position = "ALL"
-	order := append(reportPositions(), extraPositions(rates)...)
-	for _, pos := range order {
-		r, ok := rates[pos]
-		if !ok {
-			continue
-		}
-		rep.Rates = append(rep.Rates, *r)
-		rep.Total.Rostered += r.Rostered
-		rep.Total.RosteredMatched += r.RosteredMatched
-		rep.Total.FreeAgents += r.FreeAgents
-		rep.Total.FreeAgentsMatched += r.FreeAgentsMatched
-	}
-	return rep
-}
-
-// extraPositions lists any reported position outside the league's ten (a flagged or unknown
-// rostered player), sorted, so nothing counted goes unshown.
-func extraPositions(rates map[domain.Position]*CrosswalkRate) []domain.Position {
-	var out []domain.Position
-	for pos := range rates {
-		if !slices.Contains(reportPositions(), pos) {
-			out = append(out, pos)
-		}
-	}
-	slices.Sort(out)
-	return out
-}
-
 // missReason says why a rostered player has no gsis link.
-func missReason(id string, cw crosswalk.Map, rejected map[string]string) string {
-	if why, ok := rejected[id]; ok {
-		return why
-	}
-	if _, ok := cw.Entry(id); ok {
-		return reasonNoGSIS
-	}
-	return reasonNotInDP
-}

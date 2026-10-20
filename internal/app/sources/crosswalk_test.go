@@ -1,10 +1,14 @@
-package main
+package sources
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/crosswalk"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -44,7 +48,7 @@ func TestCrosswalkReportRatesAndReasons(t *testing.T) {
 		}
 	}
 	rostered := map[string]string{"13294": "0001", "0816": "0001", "17471": "0002", "0844": "0002"}
-	rep := crosswalkReport(rostered, lk, linked, cw, rejected, map[string]string{"0001": "Buffalo Bills"})
+	rep := BuildCrosswalk(rostered, lk, linked, cw, rejected, map[string]string{"0001": "Buffalo Bills"})
 
 	want := map[string]CrosswalkRate{
 		"QB": {Position: "QB", Rostered: 2, RosteredMatched: 1},
@@ -75,5 +79,47 @@ func TestCrosswalkReportRatesAndReasons(t *testing.T) {
 	}
 	if len(rep.Unmatched) != 3 || rep.Unmatched[0].Franchise != "Buffalo Bills" || rep.Unmatched[0].Team != "MIN" {
 		t.Errorf("unmatched = %+v", rep.Unmatched)
+	}
+}
+
+type crosswalkHistoryStub struct {
+	calls   *[]string
+	linkErr error
+}
+
+func (h crosswalkHistoryStub) LinkPlayerIDs(context.Context, string, []history.PlayerIDLink) (int, error) {
+	*h.calls = append(*h.calls, "link")
+	return 0, h.linkErr
+}
+func (h crosswalkHistoryStub) LinkedPlayers(context.Context, string) (map[string]bool, error) {
+	*h.calls = append(*h.calls, "read")
+	return map[string]bool{}, nil
+}
+func (h crosswalkHistoryStub) LoadFailed(context.Context, string, error) error { return nil }
+
+func TestCrosswalkReadsFollowSuccessfulLink(t *testing.T) {
+	t.Parallel()
+	for _, fail := range []bool{false, true} {
+		var calls []string
+		stub := crosswalkHistoryStub{calls: &calls}
+		if fail {
+			stub.linkErr = errors.New("fixture link failed")
+		}
+		snapshot := func(name string) func() map[string]string {
+			return func() map[string]string { calls = append(calls, name); return map[string]string{} }
+		}
+		rep, err := (Service{Crosswalk: stub}).LinkCrosswalk(context.Background(), crosswalk.Map{}, normalize.Lookup{}, snapshot("rosters"), snapshot("names"))
+		want := "link,read,rosters,names"
+		if fail {
+			want = "link"
+			if !errors.Is(err, stub.linkErr) || err.Error() != "app: link crosswalk: fixture link failed" {
+				t.Fatalf("link failure = %v", err)
+			}
+		} else if err != nil || !rep.OK {
+			t.Fatalf("link = %+v, %v", rep, err)
+		}
+		if got := strings.Join(calls, ","); got != want {
+			t.Errorf("read order = %s; want %s", got, want)
+		}
 	}
 }
