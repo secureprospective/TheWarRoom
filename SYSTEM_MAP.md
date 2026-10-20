@@ -32,9 +32,8 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer 1 | `internal/ingestion/playerscores` | Season fantasy-point totals for the last completed season as a history batch (`outcome.fantasy_points`), the M1 base-points proxy. |
 | Layer 1 | `internal/ingestion/sitenews` | MFL's site news (What's New) RSS from the api host. |
 | Layer 1 | `internal/ingestion/crosswalk` | MFL id → nflverse gsis from DynastyProcess `db_playerids.csv`, with a pfr index for PFR sources. One MFL id with two gsis fails the fetch. |
-| Layer 1 | `internal/ingestion/ras`, `pfrcoverage`, `schooltier` | Scouting signals: RAS combine scores and PFR coverage stats keyed through the crosswalk (a pfr id two players share is dropped), and CFBD school tiers keyed by school. None carries fantasy points. |
 | Layer 1 | `internal/normalize` | Raw records → domain types: the players lookup and roster join. |
-| Leaf | `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/scouting` | Value types. `playerid.New` is the only way to build a `PlayerID`. `scouting` holds the Layer 4 input types. |
+| Leaf | `internal/domain`, `internal/playerid`, `internal/numeric` | Value types. `playerid.New` is the only way to build a `PlayerID`. |
 | Leaf | `internal/measures` | The measure registry: `measures.csv`, `sources.csv`, `source_fields.csv` and `feeds.csv`, embedded and validated. Generates `docs/data-layer/Measure_Dictionary.md` (`make measure-dictionary`). Adding a source is a CSV row, not code. |
 | Leaf | `internal/nativecheck` | Pure native active-roster limits, per-position/group lineup checks, invalid-lineup penalty, missed flag, IR/taxi verdicts and salary-cap counting. Cap counting applies season rules, reserve shares and signed recorded charges with the league's money increment; `CapAllows` judges a net counted move delta (including conditional drops), refusing hard-cap overages and flagging soft-cap overages with a plain-word deadline in a supplied viewer zone or Needs a ruling. `NewWaiverPolicy` consumes resolved CM-012 settings without inventing missing values; `Close` dates an unprocessed window from its original cut and `Award` chooses among already-eligible franchises using a supplied priority-first standings or rolling order (rolling moves the winner last). The native commissioner ledger consumes this policy for cuts, private claims and atomic awards; no imported league or hand-off state is changed. `NewBidPolicy` does the same for CM-013 free-agent bids (points, limits, steps, phase rules, tie-aware winner). Rules and held football facts arrive as values; no MFL policy, I/O or stores. |
 | Leaf | `internal/leaguerules` | Typed commissioner-owned season rules, explicit unset values, cited Legacy NFL preset, pure ordered change resolver and preview diffs. `catalogue.go` exports the read-only field catalogue (label, section, value schema, competitive), plain-JSON `DecodeSetting`, whole-value stored encoding for durable seeds, and plain-words rendering. Imports only the standard library and pure domain value types; no store, transport, ingestion or I/O. |
@@ -48,18 +47,15 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Analytics | `internal/labcompile` | Pure facts-to-Lab compiler: calendar, production, contracts, trades/draft, directories, ledger/source proofs and full wins/replacement, five-season forecast, pick curves, market and rolling backtest analysis. `Build` produces the complete document and an immutable `Model` whose `Player`/`Pick` API uses the trade-leg valuer at a supplied moment, with explicit unvalued reasons. Passive Python kernel/method/analysis goldens and reduced conservative smoke run in verify; opt-in full archive parity covers all 18 keys and player API/leg equality, while recorded-analysis document parity remains isolated. The app fits the model after launch (`fitAssetModel`, after `warmArchive`) and C-01 reads `Model.Player` through `labAssets`; the Lab screens still read the frozen document. |
 | Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. Exact missing-input exceptions live in `testdata/missing-inputs.csv`; `facts-reference.py` independently rebuilds the Python facts oracle in a disposable directory, with its source-row proof and provenance under `internal/lab/testdata/facts`. The reduced three-season golden retains every reference relation; full parity is opt-in. Reference relations no screen reads (price list, contender trades, draft map, the evidence grade) live in `reference_test.go`. |
 | Policy | `internal/governance` | Pure typed-event fold for principals, seats, private invites, abilities, role permissions, DOT recusal and succession; standard library only, no I/O or stores. Census permission data, a single co-commissioner seat and explicit activity/ballot evidence; locked all-franchise election majority, timed recorded runoff closure and candidate-recused tie rulings. |
-| Engine | `internal/engine` | The scoring pipeline as pure functions (L1, L3, L4 dispatch, L5, L6). |
+| Engine | `internal/engine` | The scoring types history's run rows store, L3 age decay (`ApplyDecay`, `PeakLimit`, which `cmd/fit` reads) and the L6 tie order. The L1–L6 pipeline itself is in quarantine (`quarantine/README.md`). |
 | Engine | `internal/engine/rookiedraft` | Pure native rookie-draft setup, slot contracts, order/ownership planning, selection preview and fixed-instant clock replay. `FinalStandings.FirstRound` is the typed worst-first standings seam; `MissingFinalStandings` refuses absent results with "The draft order needs the final standings, which are not built yet." Unset later patterns and tie rules never default. Rules, owned picks, accepted selections (each carrying the contract fixed when it was made) and native roster/cap facts arrive as values; a pick is refused only for pushing a roster over a limit, never for a roster still short of its minimum. The ledger, calendar and gate wiring is in `internal/commissioner` (below). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons (including cap coverage by one conditional drop), and the ProBoards post text. |
 | Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `race_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
-| Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on); composition reads them back for each run. |
-| Composition | `internal/composition` | Engine inputs from the stores plus per-player facts. |
-| Composition | `internal/rankings` | M1: scores every rostered player from a params snapshot and history features, and writes one scoring run. |
+| Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7). Nothing applies the rubric while the layer 1–4 engine is quarantined. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
-| Composition | `internal/scouting/assembly` | Builds today's board's scouting profiles: RAS, coverage and school tier from their feeds, college share and breakout age from history. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
 | Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
@@ -145,7 +141,7 @@ are still pending.
 | `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
 | `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
-| `m1_app.go`, `model_app.go` | `ScoreLeague` (board run and model run; no screen calls it, see Built but not wired) |
+| `m1_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
 | `m2_app.go` | `powerRankings`, behind the race readings; no binding |
 | `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `admin_app.go` | `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default) |
@@ -201,10 +197,8 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
-- `internal/scouting/assembly`, `m1_scouting.go` and the CSV/CFBD fetchers (`pfrcoverage`, `ras`,
-  `schooltier`): today's board still reads them. The college share and breakout age already read
-  the college seasons `college` stores in history, not CFBD live. They go when their consumer,
-  today's engine, does.
+Nothing at present. The scouting fetchers listed here went to quarantine with the layer 1–4 engine
+on 2026-10-20.
 
 ## Built but not wired
 
@@ -226,10 +220,10 @@ Wire it or retire it when its ring comes up; do not count it as landed.
 - **Play-by-play scoring:** `fantasyscore/source` `ReadPlays` and `AttachPlays` attach yardage and
   touchdown distances. The golden test needs them to match MFL's scores; no production path reads
   plays, so whether distance bonuses reach native scores is unverified.
-- **`ScoreLeague`:** the only writer of the board run (the layer 1-4 engine: `internal/rankings`,
-  `composition`, `engine/l4`, `scouting/assembly`). Its button was in the Alpha harness, quarantined
-  2026-10-20; source health still reads the last board run's missing measures. The model run that
-  the screens read refreshes on its own (`engine_refresh.go`).
+- **The board run's store side:** `history.WriteRun`, `RunScores`, `RunScore`, `Runs` and the
+  `scoring_runs` / `run_scores` tables. Their only writer, `ScoreLeague` and the layer 1–4 engine,
+  was quarantined 2026-10-20 (`quarantine/README.md`); existing databases keep their board runs,
+  unread. The `l4` rubric math and `engine.CushionGuard.Slow` are likewise kept but unreached.
 - **The `transaction_corrections` table** stays in existing state databases, empty and unread. Its
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.
@@ -452,7 +446,7 @@ adapter; fantasy points and NFL game scores are not those statistics. M-055 reso
 existing Race lineup detail's best-lineup reading.
 
 `engine_refresh.go` scores after the background launch/hourly refresh has loaded signals, league
-points and the held free-agent list. A shared mutex excludes the manual path; changed-value loads,
+points and the held free-agent list; it is the only writer of the model run. A held mutex makes a pass skip; changed-value loads,
 league/list changes or a 24-hour-old run make it due. `target:season` refreshes open readers.
 C-07 lists the engine run and its age; completed background checks append their run timestamp
 without changing any scoring formula or using ownership to find points.

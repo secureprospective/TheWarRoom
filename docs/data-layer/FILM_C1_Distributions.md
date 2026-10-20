@@ -43,7 +43,7 @@ NaN = signal absent for that player. Correlations are Pearson over the pairwise-
 - **Season mix** — signals are from adjacent-but-different seasons (m24 / 2024 / 2025-FTN→re-run 2024).
   Fine for rank-correlation + distribution shape; not a within-season point estimate.
 - **CFBD key hygiene (checked, OK)** — `CFBD_API_KEY` on CT105 carries a trailing newline; the sampler
-  initially failed on it. Production is NOT affected: `m1_scouting.go:73` already `TrimSpace`s the key
+  initially failed on it. Production is NOT affected: `signals_app.go` already `TrimSpace`s the key
   (documented in `ingestion/cfbd.go`). No action needed.
 
 
