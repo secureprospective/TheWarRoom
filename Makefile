@@ -87,8 +87,10 @@ setup:
 # verify is the pre-push gate (see .pre-commit-config.yaml, stage: pre-push): everything
 # `make lint` already checks, plus the race-enabled test suite and the frontend build.
 # gitleaks is NOT repeated here — it already runs at pre-commit stage on every commit,
-# so anything reaching a push has already cleared it.
+# so anything reaching a push has already cleared it. govulncheck reports known vulnerabilities
+# in code paths the app calls (stdlib and modules); install it pinned, as the workflow does.
 verify: lint
+	govulncheck ./...
 	$(MAKE) bindings
 	cd frontend && pnpm tsc --noEmit
 	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
