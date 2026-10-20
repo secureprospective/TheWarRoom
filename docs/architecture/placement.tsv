@@ -315,3 +315,5 @@ internal/app/race	race
 internal/app/race/racetest	race
 control_wire_test.go	control
 internal/app/control	control
+
+internal/app/now	now
