@@ -175,13 +175,11 @@ pool_market_layout_test.go	offers
 pool_values.go	offers
 pool_wire_test.go	offers
 power_rankings_app.go	scoring
-power_rankings_app_test.go	scoring
 race_app.go	race
 race_playoffs_reading.go	race
 race_points_reading.go	race
 race_reading.go	race
 race_test.go	race
-rankings_app.go	scoring
 refresh_app.go	control
 refresh_publication_test.go	control
 release_app.go	contracts
@@ -212,7 +210,6 @@ shell_feeds_app.go	control
 shell_feeds_app_test.go	control
 shell_status_app.go	control
 signals_app.go	sources
-signals_app_test.go	sources
 suite_test.go	platform
 snapshot_app.go	platform
 snapshot_app_test.go	platform
@@ -316,3 +313,5 @@ internal/transactions/deadcap	contracts
 internal/transactions/freeagency	contracts
 sources_wire_test.go	sources
 internal/app/sources	sources
+scoring_wire_test.go	scoring
+internal/app/scoring	scoring

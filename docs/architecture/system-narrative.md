@@ -57,7 +57,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
 | Engine | `internal/engine/l4` | Layer 4's per-position settings table only. Its adjustable numbers are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7) under areas marked "inert, no run reads it": the rubric math that read them was removed with the layer 1–4 engine. |
-| Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
+| Composition | `internal/app/scoring`, `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
 | Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
@@ -228,6 +228,18 @@ Wire it or retire it when its ring comes up; do not count it as landed.
 - **The `transaction_corrections` table** stays in existing state databases, empty and unread. Its
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.
+
+### Scoring orchestration
+
+`internal/app/scoring` reads the current and previous model runs, builds the power boards,
+refreshes season fantasy-point totals and executes synchronous model passes through explicit
+store interfaces and readers. `power_rankings_app.go` retains the wire declarations and converts
+service results without changing nil/empty slices. The retired `ScoreLeague`, `GetRankings`,
+`GetPlayerScore` and `GetPowerRankings` bindings are not restored; Race consumes the surviving
+root power-board entry point. `engine_refresh.go` retains scheduling, `modelMu`, dirty-flag
+publication and health notifications. Directory ages and free-agent snapshots stay root because
+they read shared held state under its existing locks; callbacks preserve their original read
+order. Root wire goldens and integration tests complement implementation tests in the service.
 
 ## What does not exist, on purpose
 

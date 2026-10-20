@@ -1,4 +1,4 @@
-package main
+package scoring
 
 import (
 	"testing"
@@ -45,7 +45,7 @@ func TestBoardWeightsAndDefaultsPerView(t *testing.T) {
 	if w := boardWeights(ViewFranchise, 0.3, true, 4); w.Roster != 1 || w.Age != powerrankings.FranchiseAgeWeight {
 		t.Errorf("franchise: %+v", w)
 	}
-	if defaultAgg(ViewSeason) != m2service.AggLineup || defaultAgg(ViewFranchise) != m2service.AggSum {
+	if DefaultAgg(ViewSeason) != m2service.AggLineup || DefaultAgg(ViewFranchise) != m2service.AggSum {
 		t.Error("view defaults")
 	}
 }
