@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"regexp"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
@@ -706,4 +709,38 @@ func TestNowWireMatchesGo(t *testing.T) {
 	if string(want) != string(body) {
 		t.Fatal("now wire stale; TWR_WRITE_WIRE=1 go test -run TestNowWireMatchesGo .")
 	}
+}
+
+func TestNowBindingsGolden(t *testing.T) {
+	a := targetTestApp(t)
+	board, err := a.TargetNow(0, 0, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "now", "TargetNow", board)
+	populated := nowBoard(t, realNow(t, 5))
+	populated.Matchup.Rows = populated.Matchup.Rows[:min(3, len(populated.Matchup.Rows))]
+	for i := range populated.Board.Reports {
+		r := &populated.Board.Reports[i]
+		r.Rows = r.Rows[:min(3, len(r.Rows))]
+	}
+	checkGolden(t, "now", "held", populated)
+	stopped := &App{started: make(chan struct{}), startupErr: fmt.Errorf("fixture startup failed")}
+	close(stopped.started)
+	checkGolden(t, "now", "TargetNowRefresh", stopped.TargetNowRefresh(0, false).Error())
+	if _, err := a.TargetLiveGame(false, "invalid!", ""); err == nil {
+		t.Fatal("invalid follow accepted")
+	} else {
+		checkGolden(t, "now", "TargetLiveGame-invalid", err.Error())
+	}
+	a.liveGame.adapter = livegame.Adapter{Fetch: func(context.Context, string, string) ([]byte, error) {
+		t.Fatal("closed binding fetched")
+		return nil, nil
+	}}
+	view, err := a.TargetLiveGame(false, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "now", "TargetLiveGame", view)
+	checkGolden(t, "now", "live-held", liveWire(t))
 }
