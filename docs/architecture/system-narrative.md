@@ -125,7 +125,7 @@ are still pending.
 | `league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
 | `native_schedule_app.go` | `TargetNativeWeek(RawNativeWeekScope)`, `TargetNativeFranchiseSchedule(RawNativeScheduleScope)`: validated league/franchise/season/owner-zone scopes and explicit week reading time; published opponents, venue, bye, local first NFL kickoff and next week. Unknown held NFL dates never become guessed weeks. |
 | `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
-| `counterparties_app.go`, `counterpanel_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
+| `counterparties_app.go`, `counterparties_team_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
 | `lab_app.go` | `TargetMarket` validates season/phase input and returns a typed historical Market payload in the generic `Reading` shell extending `snapshot.Sourced`; dated provenance, count/threshold and Go-authored counting disclosure, no spread grade. |
 | `whatif_app.go` | `TargetWhatIf` validates read/cut/buyout/undo/reset intents; per-franchise persistent baseline and ordered moves in `whatif.db`. Generation-scoped coordinator ledgers replay on mutation, publish after success, keep the mirror read-only, block stale edits until Reset. Lazy Contracts panel shows Go-authored before/after cents and rules. |
 | `native_legality_app.go` | `TargetNativeCapCheck(league, viewerZone)`, `TargetNativeRosterCheck`, `TargetNativeReserveCheck`, `TargetNativeLineupCheck`, `TargetNativeHouseRules`, `TargetNativeContractQuote(RawContractQuote)` (one contract action priced on one recorded native contract at the app clock: allowed or refused with the plain reason, new salary and years, dead money by season, cap effect and how each number was reached; reads the app league ledger and held player positions only and records nothing): app-owned recorded rosters and season-effective rules, with held player positions, NFL designations and draft years. No refresh, MFL acceptance promise, score-feed wiring or owner-screen migration. |
@@ -143,8 +143,8 @@ are still pending.
 | `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
 | `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
-| `m1_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
-| `m2_app.go` | `powerRankings`, behind the race readings; no binding |
+| `rankings_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
+| `power_rankings_app.go` | `powerRankings`, behind the race readings; no binding |
 | `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `admin_app.go` | `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default) |
 | `control_room_app.go` | `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old) |
@@ -353,7 +353,7 @@ Contract Act plans: `contract_acts_app.go` exposes validated preview/draft/read 
 `frontend/src/app/shell/workScroll.ts` confines card reveals to `.wbody`, opens enclosing disclosures
 and focuses endpoint sections, and holds table rows through asynchronous panel changes.
 Draft Lab return maps lead with all-position summaries and closed, counted position breakdowns.
-`counter_filters.go` owns display treatment for filter-fixed posture shares and excluded tiers
+`counterparties_filters.go` owns display treatment for filter-fixed posture shares and excluded tiers
 in both Counterparties and its team Inspector.
 
 `internal/ingestion/draftreports` validates MFL draftResults and futureDraftPicks into typed held

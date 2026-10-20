@@ -5,6 +5,7 @@ path	feature
 acquisitions_app.go	contracts
 admin_app.go	control
 alerts_app.go	control
+alerts_app_test.go	control
 app.go	platform
 app_shutdown_test.go	platform
 archive_app.go	archive
@@ -56,10 +57,10 @@ control_room_reading.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
-counter_filters.go	counterparties
-counterpanel_app.go	counterparties
 counterparties_app.go	counterparties
 counterparties_app_test.go	counterparties
+counterparties_filters.go	counterparties
+counterparties_team_app.go	counterparties
 crosswalk_app.go	sources
 crosswalk_app_test.go	sources
 data_sources_app.go	sources
@@ -105,9 +106,6 @@ livegame_spine.go	now
 livegame_test.go	now
 livegame_week_test.go	now
 logging.go	platform
-m1_app.go	scoring
-m2_app.go	scoring
-m2_app_test.go	scoring
 main.go	platform
 market_feeds_app.go	market
 market_feeds_reading.go	market
@@ -186,12 +184,15 @@ pool_app_test.go	offers
 pool_landing_test.go	offers
 pool_market_layout_test.go	offers
 pool_values.go	offers
-pulse_alerts_app_test.go	control
+pool_wire_test.go	offers
+power_rankings_app.go	scoring
+power_rankings_app_test.go	scoring
 race_app.go	race
 race_playoffs_reading.go	race
 race_points_reading.go	race
 race_reading.go	race
 race_test.go	race
+rankings_app.go	scoring
 refresh_app.go	control
 refresh_publication_test.go	control
 release_app.go	contracts
@@ -241,7 +242,6 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
-wire_pool_test.go	offers
 internal/archive	archive
 internal/commissioner	commissioner
 internal/db	platform

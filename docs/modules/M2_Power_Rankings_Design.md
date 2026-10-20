@@ -113,7 +113,7 @@ slider (default 0.60). Pure aggregation package + depguard, app-level IPC `GetPo
 - `state.Reader().Player(mflID)` → `FranchiseID` for per-franchise aggregation.
 - `rulebook.FranchiseNames()` → id→name map (M4 slice-3 added/uses this;
   `internal/store/rulebook/helpers.go:21`). Rail/rows show real team names, id fallback.
-- M1 IPC pattern to mirror: `m1_app.go` `GetRankings()` (degrade-safe name resolution,
+- M1 IPC pattern to mirror: `rankings_app.go` `GetRankings()` (degrade-safe name resolution,
   proxy label, timeout).
 
 ## Gotchas (from project CLAUDE.md header)
@@ -167,5 +167,5 @@ scouting is left as-is (defensible: an empty roster IS the worst roster in dynas
 ## Implementation (slice-1, branch `session/m2-power-rankings`)
 - `internal/ingestion/leaguestandings/fetcher.go` — Layer-1 leagueStandings fetch (+NaN/Inf reject).
 - `internal/powerrankings/blend.go` — pure z-score blend + display min-max.
-- `m2_app.go` — `GetPowerRankings(weight, aggMode)` IPC; sum/top-N aggregation; z-score row join.
+- `power_rankings_app.go` — `GetPowerRankings(weight, aggMode)` IPC; sum/top-N aggregation; z-score row join.
 - `frontend/src/components/PowerRankingsBoard.tsx` + store slice + tab — slider, agg toggle, sortable table.

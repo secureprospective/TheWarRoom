@@ -651,7 +651,7 @@ board are quarantined, see `quarantine/README.md`; `engine_refresh.go` writes ev
 - A param edit → a new run → a changed board, with the old board still readable.
 - Both views shown.
 
-**Stage 8 design (Claude, 2026-10-04).** Code is in `m2_app.go` (`GetPowerRankings`),
+**Stage 8 design (Claude, 2026-10-04).** Code is in `power_rankings_app.go` (`GetPowerRankings`),
 `internal/m2service` (the board) and `PowerRankingsBoard.tsx`.
 
 | # | Decision | Why |
