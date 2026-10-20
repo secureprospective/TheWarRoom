@@ -1,21 +1,21 @@
-package main
+package offers
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"slices"
 	"time"
 
+	"slices"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
-// errOfferYear marks an offer from a league year the archive calendar does not hold yet.
-var errOfferYear = errors.New("offer calendar: league year unavailable")
+// ErrOfferYear marks an offer from a league year the archive calendar does not hold yet.
+var ErrOfferYear = errors.New("offer calendar: league year unavailable")
 
 type RawOfferMarks struct {
 	NFLDraft   *string `json:"nflDraft"`
@@ -54,10 +54,10 @@ func (r *RawOfferCalendar) Validate() error {
 	return nil
 }
 
-func liveOffer(d *lab.Data, year int, ts int64, sender, receiver, outcome string) (lab.Offer, error) {
+func LiveOffer(d *lab.Data, year int, ts int64, sender, receiver, outcome string) (lab.Offer, error) {
 	s, ok := d.Seasons[year]
 	if !ok {
-		return lab.Offer{}, fmt.Errorf("%w: %d", errOfferYear, year)
+		return lab.Offer{}, fmt.Errorf("%w: %d", ErrOfferYear, year)
 	}
 	var marks RawOfferMarks
 	if err := json.Unmarshal(s.Marks, &marks); err != nil {
@@ -87,34 +87,8 @@ func (r RawOfferCalendar) date(name string) *time.Time {
 	return &d
 }
 
-// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
-func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	if readErr != nil || a.pools == nil {
-		return readErr
-	}
-	d, err := a.lab()
-	if err != nil {
-		return fmt.Errorf("offers: archive owner: %w", err)
-	}
-	if err := personal.New(a.pools).ObserveOffers(ctx, lab.OfferOwner(d), a.season, pending,
-		a.seasonTransactions.value, at); err != nil {
-		return fmt.Errorf("offers: save live read: %w", err)
-	}
-	return nil
-}
-
-// offersWithLive also returns when the app last read MFL's pending offers (zero before the first read).
-func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) {
-	if a.pools == nil {
-		return d, d.ArchiveThrough, time.Time{}, nil
-	}
-	ctx, cancel := context.WithTimeout(a.fallbackParent(), 10*time.Second)
-	defer cancel()
+func Merge(d *lab.Data, rows []personal.SeenOffer, checked int64) (*lab.Data, string, time.Time, error) {
 	owner := lab.OfferOwner(d)
-	rows, checked, err := personal.New(a.pools).Offers(ctx, owner)
-	if err != nil {
-		return nil, "", time.Time{}, fmt.Errorf("offers: local history: %w", err)
-	}
 	cutoff, err := time.Parse(time.RFC3339, d.ArchiveThrough)
 	if err != nil {
 		return nil, "", time.Time{}, fmt.Errorf("offers: archive cutoff: %w", err)
@@ -132,8 +106,8 @@ func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) 
 		}) {
 			continue
 		}
-		offer, err := liveOffer(d, row.Year, row.Timestamp, row.Sender, row.Receiver, row.Outcome)
-		if errors.Is(err, errOfferYear) {
+		offer, err := LiveOffer(d, row.Year, row.Timestamp, row.Sender, row.Receiver, row.Outcome)
+		if errors.Is(err, ErrOfferYear) {
 			// Its stretch needs that year's dates; it is kept and counted once they are held.
 			unplaced++
 			continue
@@ -153,7 +127,7 @@ func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) 
 	}
 	if unplaced > 0 {
 		source += fmt.Sprintf("; %s from a league year without held dates not placed in a stretch yet",
-			countLabel(unplaced, "offer"))
+			report.Count(unplaced, "offer"))
 	}
 	return &merged, source, last, nil
 }

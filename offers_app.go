@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"math"
-	"slices"
-	"strings"
+	"time"
 
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 type RawOfferScope struct {
@@ -18,18 +20,7 @@ type RawOfferScope struct {
 	Team      string `json:"team"`
 }
 
-func (r RawOfferScope) Validate() error {
-	if r.From < 1900 || r.To > 2200 || r.From > r.To {
-		return fmt.Errorf("offers scope: invalid season range")
-	}
-	if !slices.Contains([]string{"all", "sent", "received"}, r.Direction) {
-		return fmt.Errorf("offers scope: invalid direction")
-	}
-	if !slices.Contains([]string{"", "spring", "summer", "season"}, r.Window) {
-		return fmt.Errorf("offers scope: invalid window")
-	}
-	return nil
-}
+func (r RawOfferScope) Validate() error { return offersapp.Scope(r).Validate() } //nolint:wrapcheck // preserves offer scope error text
 
 type OfferChoice struct {
 	ID    string `json:"id"`
@@ -73,16 +64,6 @@ type OffersView struct {
 	Stretches  []OfferStretchView `json:"stretches"`
 }
 
-func offerWords() OffersView {
-	return OffersView{
-		Words:      OfferWords{Heading: "Offers history", Direction: "Which offers", Seasons: "Seasons", Window: "Time of year", Team: "Counterparty", Retry: "Try again", Pending: "Updating filters; figures still describe the previous scope until Go replies."},
-		Disclosure: "MFL exposes only the GM's own offers. The archive is unavailable; whose offers, the count and the cutoff cannot be verified.", Title: "How do offers end?",
-		Directions: []OfferChoice{{ID: "all", Label: "Every visible offer"}, {ID: "sent", Label: "Sent"}, {ID: "received", Label: "Received"}},
-		Windows:    []OfferChoice{{ID: "", Label: "Every stretch"}, {ID: "spring", Label: "Spring"}, {ID: "summer", Label: "Summer"}, {ID: "season", Label: "Season"}},
-		Ranges:     []OfferChoice{{ID: "all", Label: "2013–2026", From: 2013, To: 2026}, {ID: "recent", Label: "2024–2026", From: 2024, To: 2026}, {ID: "early", Label: "2013–2016", From: 2013, To: 2016}},
-		Teams:      []TeamOption{{Fid: "", Name: "Every counterparty"}}, Stretches: []OfferStretchView{},
-	}
-}
 func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 	r := Reading[OffersView]{Sourced: snapshot.Sourced[OffersView]{Value: offerWords()}, Status: ReadingFailed, Threshold: 10, Method: "owner-scoped offerStretches; 1.96 standard-error comparisons", InputSHA: lab.DataSHA, BuildStamp: buildLabel() + " " + buildDate, HowCounted: "Only offers visible to the archived GM are available. No league-wide offer history is supplied."}
 	d, err := a.lab()
@@ -134,119 +115,106 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 	}
 	return r
 }
+
+func offerWords() OffersView { return wireOffers(offersapp.Empty()) }
 func validateOfferTeam(raw RawOfferScope, d *lab.Data) error {
-	if err := raw.Validate(); err != nil {
-		return err
+	return offersapp.ValidateTeam(offersapp.Scope(raw), d) //nolint:wrapcheck // preserves offer scope error text
+}
+func setOfferDisclosure(v *OffersView, d *lab.Data) {
+	service := offersapp.View{Teams: make([]offersapp.Team, len(v.Teams))}
+	for i, t := range v.Teams {
+		service.Teams[i] = offersapp.Team(t)
 	}
-	if raw.Team != "" {
-		if _, ok := d.Franchises[raw.Team]; !ok {
-			return fmt.Errorf("offers scope: unknown team")
+	offersapp.SetDisclosure(&service, d)
+	v.Disclosure = service.Disclosure
+	v.Teams = make([]TeamOption, len(service.Teams))
+	for i, t := range service.Teams {
+		v.Teams[i] = TeamOption(t)
+	}
+}
+func offerSummary(d *lab.Data, v lab.OfferResult, s lab.OfferScope) string {
+	return offersapp.Summary(d, v, s)
+}
+func offerOpenSummary(v lab.OfferResult) string { return offersapp.OpenSummary(v) }
+func offerStretchView(st lab.OfferStretch) OfferStretchView {
+	return wireOfferStretch(offersapp.StretchView(st))
+}
+func wireOfferStretch(st offersapp.Stretch) OfferStretchView {
+	out := OfferStretchView{ID: st.ID, Label: st.Label, CountText: st.CountText, Acceptance: st.Acceptance, Finding: st.Finding}
+	if st.Outcomes != nil {
+		out.Outcomes = make([]OfferOutcomeView, len(st.Outcomes))
+		for i, o := range st.Outcomes {
+			out.Outcomes[i] = OfferOutcomeView(o)
 		}
+	}
+	return out
+}
+func wireOffers(v offersapp.View) OffersView {
+	out := OffersView{Words: OfferWords(v.Words), Disclosure: v.Disclosure, Title: v.Title, Summary: v.Summary, CountText: v.CountText}
+	if v.Directions != nil {
+		out.Directions = make([]OfferChoice, len(v.Directions))
+		for i, c := range v.Directions {
+			out.Directions[i] = OfferChoice(c)
+		}
+	}
+	if v.Windows != nil {
+		out.Windows = make([]OfferChoice, len(v.Windows))
+		for i, c := range v.Windows {
+			out.Windows[i] = OfferChoice(c)
+		}
+	}
+	if v.Ranges != nil {
+		out.Ranges = make([]OfferChoice, len(v.Ranges))
+		for i, c := range v.Ranges {
+			out.Ranges[i] = OfferChoice(c)
+		}
+	}
+	if v.Teams != nil {
+		out.Teams = make([]TeamOption, len(v.Teams))
+		for i, c := range v.Teams {
+			out.Teams[i] = TeamOption(c)
+		}
+	}
+	if v.Stretches != nil {
+		out.Stretches = make([]OfferStretchView, len(v.Stretches))
+		for i, c := range v.Stretches {
+			out.Stretches[i] = wireOfferStretch(c)
+		}
+	}
+	return out
+}
+
+func liveOffer(d *lab.Data, year int, ts int64, sender, receiver, outcome string) (lab.Offer, error) {
+	return offersapp.LiveOffer(d, year, ts, sender, receiver, outcome) //nolint:wrapcheck // preserves the existing calendar error text
+}
+
+// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
+func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
+	if readErr != nil || a.pools == nil {
+		return readErr
+	}
+	d, err := a.lab()
+	if err != nil {
+		return fmt.Errorf("offers: archive owner: %w", err)
+	}
+	if err := personal.New(a.pools).ObserveOffers(ctx, lab.OfferOwner(d), a.season, pending,
+		a.seasonTransactions.value, at); err != nil {
+		return fmt.Errorf("offers: save live read: %w", err)
 	}
 	return nil
 }
-func setOfferDisclosure(v *OffersView, d *lab.Data) {
-	owner := lab.OfferOwner(d)
-	name := d.Franchises[owner].Name
-	own := 0
-	for _, o := range d.Offers {
-		if o.By == owner || o.To == owner {
-			own++
-		}
-	}
-	v.Disclosure = fmt.Sprintf("MFL exposes only the GM's own offers. This archive holds %s visible to %s (%s), sent and received, through %s. It does not show other GMs' private offers or league-wide offer activity.", countLabel(own, "offer"), name, owner, d.ArchiveThrough)
-	for _, id := range sortedOfferTeams(d) {
-		v.Teams = append(v.Teams, TeamOption{Fid: id, Name: d.Franchises[id].Name})
-	}
-}
-func sortedOfferTeams(d *lab.Data) []string {
-	ids := make([]string, 0, len(d.Franchises))
-	for id := range d.Franchises {
-		ids = append(ids, id)
-	}
-	slices.Sort(ids)
-	return ids
-}
-func offerSummary(d *lab.Data, v lab.OfferResult, s lab.OfferScope) string {
-	if len(v.Offers) == 0 {
-		return "No offers in view."
-	}
-	who := "to and from " + d.Franchises[v.Owner].Name
-	if v.Direction == "sent" {
-		who = "sent by " + d.Franchises[v.Owner].Name
-	}
-	if v.Direction == "received" {
-		who = "sent to " + d.Franchises[v.Owner].Name
-	}
-	if s.Team != "" && s.Team != v.Owner {
-		who += " with " + d.Franchises[s.Team].Name
-	}
-	rate := "No known endings are on record."
-	if v.Rate != nil {
-		rate = fmt.Sprintf("%s of known endings were accepted.", percent(*v.Rate))
-	}
-	findings := []string{fmt.Sprintf("%s %s. %s", countLabel(len(v.Offers), "offer"), who, rate)}
-	for _, st := range v.Stretches {
-		if st.Best || st.Worst {
-			findings = append(findings, offerFinding(st))
-		}
-	}
-	if len(findings) == 1 {
-		usable := 0
-		for _, st := range v.Stretches {
-			if st.Known >= 10 {
-				usable++
-			}
-		}
-		headline := "Too few stretches have enough decided offers to compare."
-		if usable >= 2 {
-			headline = "No stretch's acceptance rate stands out from the others beyond chance."
-		}
-		findings = append(findings, headline)
-	}
-	return strings.Join(findings, " ")
-}
-func offerFinding(st lab.OfferStretch) string {
-	label := ""
-	for _, p := range lab.OfferPhases() {
-		if p.ID == st.Phase {
-			label = p.Label
-		}
-	}
-	if st.Best {
-		return "Most often accepted: " + label + "; beyond chance against every other usable stretch."
-	}
-	if st.Worst {
-		return "Least often accepted: " + label + "; beyond chance against every other usable stretch."
-	}
-	return ""
-}
-func offerStretchView(st lab.OfferStretch) OfferStretchView {
-	v := OfferStretchView{ID: st.Phase, CountText: fmt.Sprintf("%s · %.1f a season", countLabel(st.N, "offer"), st.PerSeason), Acceptance: "Too few known endings to show acceptance", Finding: offerFinding(st), Outcomes: []OfferOutcomeView{}}
-	for _, p := range lab.OfferPhases() {
-		if p.ID == st.Phase {
-			v.Label = p.Label
-		}
-	}
-	if st.Known >= 5 {
-		v.Acceptance = fmt.Sprintf("%s accepted · %s with a known ending", percent(*st.Rate), countLabel(st.Known, "offer"))
-	}
-	for _, o := range []OfferChoice{{ID: "accepted", Label: "Accepted"}, {ID: "rejected", Label: "Rejected"}, {ID: "withdrawn", Label: "Withdrawn"}, {ID: "expired", Label: "Expired"}, {ID: "unknown", Label: "Ending not on record"}, {ID: "pending", Label: "Open offers"}} {
-		n := st.Counts[o.ID]
-		v.Outcomes = append(v.Outcomes, OfferOutcomeView{ID: o.ID, Label: o.Label, Text: o.Label + " " + countNumber(n), Width: math.Round(float64(n)/float64(max(1, st.N))*10000) / 100})
-	}
-	return v
-}
 
-func offerOpenSummary(result lab.OfferResult) string {
-	open := 0
-	for _, o := range result.Offers {
-		if o.Outcome == "pending" {
-			open++
-		}
+// offersWithLive also returns when the app last read MFL's pending offers (zero before the first read).
+func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) {
+	if a.pools == nil {
+		return d, d.ArchiveThrough, time.Time{}, nil
 	}
-	if open == 0 {
-		return " No open offers."
+	ctx, cancel := context.WithTimeout(a.fallbackParent(), 10*time.Second)
+	defer cancel()
+	owner := lab.OfferOwner(d)
+	rows, checked, err := personal.New(a.pools).Offers(ctx, owner)
+	if err != nil {
+		return nil, "", time.Time{}, fmt.Errorf("offers: local history: %w", err)
 	}
-	return " " + countLabel(open, "open offer") + "."
+	return offersapp.Merge(d, rows, checked) //nolint:wrapcheck // preserves the existing offer history errors
 }

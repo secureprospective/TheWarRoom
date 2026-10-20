@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"slices"
-	"strconv"
 	"strings"
 	"time"
+
+	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/bids"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
@@ -56,67 +56,14 @@ type BidBoard struct {
 
 type bidPlanBrief struct{ ID, State string }
 
-func bidStateWord(s envelope.State) string {
-	words := map[envelope.State]string{
-		envelope.Draft: "Draft", envelope.Blocked: "Blocked", envelope.Ready: "Ready",
-		envelope.HandedOff: "Handed off", envelope.NotYetDone: "Not yet done", envelope.BidPending: "Bid pending",
-		envelope.NotVerified: "Not verified", envelope.Landed: "Landed", envelope.AwardedOffApp: "Awarded off-app",
-		envelope.Withdrawn: "Withdrawn", envelope.Stale: "Stale", envelope.Failed: "Failed",
-	}
-	if w, ok := words[s]; ok {
-		return w
-	}
-	return string(s)
-}
-
 // bidOpen: a plan that is not over.
-func bidOpen(s envelope.State) bool {
-	return !slices.Contains([]envelope.State{envelope.Landed, envelope.AwardedOffApp, envelope.Withdrawn,
-		envelope.Stale, envelope.Failed}, s)
-}
 
 // formOf writes the figures the way the form takes them: "5.25" millions, "6.500" points.
-func formOf(f envelope.BidFacts) BidForm {
-	whole, frac := int64(f.Salary)/1e8, int64(f.Salary)%1e8
-	form := BidForm{Salary: strconv.FormatInt(whole, 10)}
-	if frac != 0 {
-		form.Salary += "." + strings.TrimRight(fmt.Sprintf("%08d", frac), "0")
-	}
-	if f.Beat != nil {
-		form.Beat = f.Beat.String()
-	}
-	return form
-}
 
 // sentenceEnd ends a status line or reason with a full stop, unless it already ends a sentence.
-func sentenceEnd(s string) string {
-	s = strings.TrimSpace(s)
-	if s == "" || strings.ContainsAny(s[len(s)-1:], ".!?") {
-		return s
-	}
-	return s + "."
-}
 
 // noted returns the receipt with every history note ending in a full stop; older plans were
 // saved without one.
-func noted(r envelope.Receipt) envelope.Receipt {
-	r.Audit = slices.Clone(r.Audit)
-	for i := range r.Audit {
-		r.Audit[i].Note = sentenceEnd(r.Audit[i].Note)
-	}
-	return r
-}
-
-func beatText(f envelope.BidFacts) string {
-	text := "No bid to beat entered"
-	if f.Beat != nil {
-		text = "Bid to beat " + f.Beat.String()
-	}
-	if f.Snipe {
-		text += " · Snipe"
-	}
-	return text
-}
 
 // bidPlan assembles one plan. The rules are read live while the plan can still change; once it
 // is handed off they were what the owner posted against, so none are shown.
@@ -148,46 +95,6 @@ func (a *App) bidPlan(ctx context.Context, r envelope.Receipt, f envelope.BidFac
 		Contract: bid.ContractText(f.Salary, f.Years), BeatText: beatText(f), Form: formOf(f),
 		State: bidStateWord(r.State), Status: sentenceEnd(status), Rules: rules, RuleSummary: summary,
 		Post: postText(line, f), Actions: bidActions(r.State, status, rules, problem)}
-}
-
-func bidActions(s envelope.State, status string, rules []bid.Result, problem string) []BidAction {
-	copyPost := BidAction{ID: "hand-off", Label: "Copy ProBoards post"}
-	again := BidAction{ID: "copy", Label: "Copy post again"}
-	switch {
-	case slices.Contains([]envelope.State{envelope.Blocked, envelope.Ready, envelope.Draft}, s):
-		reason := bidBlockReason(rules, problem)
-		if reason == "" && s == envelope.Blocked {
-			reason = status + "; change the figures to check it again"
-		}
-		if reason == "" && s == envelope.Draft {
-			reason = "This plan is not checked yet"
-		}
-		if reason != "" {
-			copyPost.Disabled, copyPost.Reason = true, sentenceEnd(reason)
-		}
-		out := []BidAction{copyPost, {ID: "revise", Label: "Change figures"}}
-		out = append(out, BidAction{ID: "withdraw", Label: "Remove plan"})
-		return out
-	case slices.Contains([]envelope.State{envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified}, s):
-		out := []BidAction{again, {ID: "posted", Label: "I posted it"}}
-		out = append(out, BidAction{ID: "unposted", Label: "I didn't post it"})
-		return out
-	case s == envelope.BidPending:
-		return []BidAction{again, {ID: "withdraw", Label: "Bid was not processed"}}
-	case s == envelope.Stale:
-		return []BidAction{{ID: "withdraw", Label: "Remove plan"}}
-	}
-	return []BidAction{}
-}
-
-func bidBlockReason(rules []bid.Result, problem string) string {
-	if problem != "" {
-		return problem
-	}
-	if bid.Blocked(rules) {
-		return bid.Note(rules)
-	}
-	return ""
 }
 
 func (a *App) bidPlans(ctx context.Context, franchise string) ([]BidPlan, error) {
@@ -416,4 +323,19 @@ func (a *App) reopened(e envelope.Envelope) (envelope.Envelope, error) {
 		return envelope.Envelope{}, fmt.Errorf("reopen: %w", err)
 	}
 	return draft, nil
+}
+
+func bidStateWord(s envelope.State) string      { return bidsapp.BidStateWord(s) }
+func bidOpen(s envelope.State) bool             { return bidsapp.BidOpen(s) }
+func formOf(f envelope.BidFacts) BidForm        { return BidForm(bidsapp.FormOf(f)) }
+func sentenceEnd(s string) string               { return bidsapp.SentenceEnd(s) }
+func noted(r envelope.Receipt) envelope.Receipt { return bidsapp.Noted(r) }
+func beatText(f envelope.BidFacts) string       { return bidsapp.BeatText(f) }
+func bidActions(s envelope.State, status string, rules []bid.Result, problem string) []BidAction {
+	actions := bidsapp.BidActions(s, status, rules, problem)
+	out := make([]BidAction, len(actions))
+	for i, a := range actions {
+		out[i] = BidAction(a)
+	}
+	return out
 }

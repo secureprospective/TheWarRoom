@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
+
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	personalstore "github.com/secureprospective/TheWarRoom/internal/store/personal"
@@ -169,4 +172,22 @@ func TestOffersClusterWireGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkGolden(t, "offers", "plans", json.RawMessage(normalizeWire(raw)))
+}
+
+func TestOffersWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	var full offersapp.View
+	n := 0
+	fillWire(reflect.ValueOf(&full).Elem(), &n)
+	service, err := json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire, err := json.Marshal(wireOffers(full))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(service) != string(wire) {
+		t.Fatalf("wire twin differs: %s != %s", wire, service)
+	}
 }

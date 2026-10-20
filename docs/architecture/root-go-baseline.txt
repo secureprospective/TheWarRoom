@@ -1,2 +1,2 @@
 # Root *.go file count (code and tests). scripts/check-root-ratchet.sh fails above it; lower it as files move out.
-220
+217

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	personalapp "github.com/secureprospective/TheWarRoom/internal/app/personal"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
@@ -51,16 +53,8 @@ func (a *App) TargetPersonal(mine string) (PersonalReading, error) {
 		feed, time.Local, "Franchise", "Offering", "Looking for")
 	report.Source = "Source: MFL trade bait · " + shellFeedTime(feed, time.Local)
 	names, franchises := snapshotNames(snap)
-	for _, bait := range feed.value {
-		offered := []string{}
-		for _, id := range strings.Split(bait.Give, ",") {
-			if id != "" {
-				canonical, _ := ingestion.ValidatePlayerID(id)
-				offered = append(offered, knownName(names, canonical.String()))
-			}
-		}
-		report.Rows = append(report.Rows, ReportRow{Cells: []string{knownName(franchises, bait.Franchise), strings.Join(offered, "\n"), bait.Want}})
-	}
+	report.Rows = append(report.Rows, wireRows(personalapp.BaitRows(feed.value, names, franchises))...)
+
 	return PersonalReading{Entries: entries, Players: a.personalPlayers(entries), Bait: report}, nil
 }
 
@@ -104,23 +98,6 @@ func (a *App) TargetPersonalHandOff(kind string) error {
 	return nil
 }
 
-func snapshotNames(snap snapshot.Snapshot) (map[string]string, map[string]string) {
-	names, franchises := map[string]string{}, map[string]string{}
-	for _, p := range snap.Players.Value {
-		names[p.ID.String()] = p.Name
-	}
-	for _, f := range snap.Franchises.Value {
-		franchises[f.ID] = f.Name
-	}
-	return names, franchises
-}
-func knownName(names map[string]string, id string) string {
-	if name := names[id]; name != "" {
-		return name
-	}
-	return "Name unavailable"
-}
-
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.
 func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,
 	parse func([]byte) ([]T, error)) heldSeasonFeed[[]T] {
@@ -157,28 +134,20 @@ type PersonalPlayer struct {
 func (a *App) personalPlayers(entries []personal.Entry) []PersonalPlayer {
 	injuries := a.heldInjuries()
 	facts := marketFacts(a.heldMarket())
-	out := []PersonalPlayer{}
-	seen := map[string]bool{}
-	for _, entry := range entries {
-		if entry.Entity != "player" || seen[entry.ID] {
-			continue
-		}
-		seen[entry.ID] = true
-		status := "NFL status unavailable"
-		if injuries.Provenance.Freshness.State == FreshLive {
-			status = injuries.Status[entry.ID]
-			if status == "" {
-				status = "No injury designation"
-			}
-			if at, err := time.Parse(time.RFC3339, injuries.Provenance.Freshness.FetchedAt); err == nil {
-				status += " · as of " + reportTime(at, time.Local)
-			}
-		}
-		market, ok := facts[entry.ID]
+	players := personalapp.Players(entries, injuries.Provenance.Freshness.State == FreshLive, injuries.Status, injuries.Provenance.Freshness.FetchedAt, time.Local, func(id string) []string {
+		market, ok := facts[id]
 		if !ok {
 			market = facts[""]
 		}
-		out = append(out, PersonalPlayer{ID: entry.ID, Status: status, Market: poolMarketLines(market)})
+		return poolMarketLines(market)
+	})
+	out := make([]PersonalPlayer, len(players))
+	for i, p := range players {
+		out[i] = PersonalPlayer(p)
 	}
 	return out
+}
+
+func snapshotNames(snap snapshot.Snapshot) (map[string]string, map[string]string) {
+	return personalapp.Names(snap)
 }

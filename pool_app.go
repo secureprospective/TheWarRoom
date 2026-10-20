@@ -1,7 +1,6 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -9,8 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
+	poolapp "github.com/secureprospective/TheWarRoom/internal/app/pool"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -262,7 +260,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 		all = append(all, row)
 	}
 	sortPool(all, raw)
-	positions := poolPositions(seen)
+	positions := poolapp.Positions(seen)
 	summary := fmt.Sprintf("%d free agents", len(all))
 	if raw.Position != "" {
 		summary = fmt.Sprintf("%d free agents at %s of %d on MFL's list", len(all), raw.Position, len(ids)-left)
@@ -270,83 +268,7 @@ func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normaliz
 	return Pool{Rows: all, Positions: positions, Summary: summary, Sorts: poolSorts(), EngineNote: engineNote, PPGNote: ppgNote}, left
 }
 
-func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time, plan bidPlanBrief) PoolRow {
-	exp := bid.ExperienceFrom(season, f.DraftYear, f.HasDraftYear)
-	experience := "Unknown (rookie minimum)"
-	switch {
-	case exp.Known && exp.Years == 0:
-		experience = "Rookie"
-	case exp.Known && exp.Years == 1:
-		experience = "1 year"
-	case exp.Known:
-		experience = fmt.Sprintf("%d years", exp.Years)
-	}
-	minimum := bid.MinimumSalary(exp.Years)
-	return PoolRow{ID: id.String(), Name: f.Name, Position: string(f.Position), Team: f.Team,
-		Age: ageText(f, now), Experience: experience,
-		Minimum: snapshot.ContractAmount{Cents: minimum, Text: bid.MoneyText(minimum)},
-		Plan:    plan.State, PlanID: plan.ID}
-}
-
-func ageText(f normalize.PlayerFacts, now time.Time) string {
-	if !f.HasBirthdate {
-		return "—"
-	}
-	born, today := time.Unix(f.Birthdate, 0).UTC(), now.UTC()
-	years := today.Year() - born.Year()
-	if today.Month() < born.Month() || (today.Month() == born.Month() && today.Day() < born.Day()) {
-		years--
-	}
-	return strconv.Itoa(years)
-}
-
 // positionOrder is the order the position filter lists in; any other position follows.
-func positionOrder(pos string) int {
-	order := []domain.Position{domain.PosQB, domain.PosRB, domain.PosWR, domain.PosTE, domain.PosK,
-		domain.PosDE, domain.PosDT, domain.PosLB, domain.PosCB, domain.PosS}
-	if i := slices.Index(order, domain.Position(pos)); i >= 0 {
-		return i
-	}
-	return len(order)
-}
-
-func poolPositions(seen map[string]bool) []string {
-	out := []string{}
-	for pos := range seen {
-		out = append(out, pos)
-	}
-	slices.SortFunc(out, func(x, y string) int {
-		return cmp.Or(cmp.Compare(positionOrder(x), positionOrder(y)), strings.Compare(x, y))
-	})
-	return out
-}
-
-func sortPool(rows []PoolRow, raw RawPoolScope) {
-	byName := func(x, y PoolRow) int {
-		return cmp.Or(strings.Compare(x.Name, y.Name), strings.Compare(x.ID, y.ID))
-	}
-	slices.SortFunc(rows, func(x, y PoolRow) int {
-		c, missing := poolNumericOrder(x, y, raw.Sort)
-		if missing {
-			return c
-		}
-		switch raw.Sort {
-		case "team":
-			c = strings.Compare(x.Team, y.Team)
-		case "position":
-			c = cmp.Compare(positionOrder(x.Position), positionOrder(y.Position))
-		case "minimum":
-			c = cmp.Compare(x.Minimum.Cents, y.Minimum.Cents)
-		}
-		if c == 0 {
-			c = byName(x, y)
-		}
-		if raw.Desc {
-			return -c
-		}
-		return c
-	})
-}
 
 func poolMarketValue(row PoolRow, index int) *float64 {
 	if index >= len(row.Market) {
@@ -383,6 +305,59 @@ func poolMarketLines(facts []MarketFact) []string {
 	return []string{parts[0] + " · " + parts[1], parts[2] + " · " + parts[3]}
 }
 
-func sortFreeAgentIDs(ids []playerid.PlayerID) {
-	slices.SortFunc(ids, func(a, b playerid.PlayerID) int { return strings.Compare(a.String(), b.String()) })
+func poolRow(id playerid.PlayerID, f normalize.PlayerFacts, season int, now time.Time, plan bidPlanBrief) PoolRow {
+	p := poolapp.Row(id, f, season, now, poolapp.Plan(plan))
+	return PoolRow{ID: p.ID, Name: p.Name, Position: p.Position, Team: p.Team, Age: p.Age, Experience: p.Experience, Minimum: p.Minimum, Plan: p.Plan, PlanID: p.PlanID}
 }
+func sortFreeAgentIDs(ids []playerid.PlayerID) { poolapp.SortIDs(ids) }
+
+func noNFLTeam(team string) bool { return team == "" || team == "FA" || team == "—" }
+
+func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
+	a.hydrateResearchContext(ctx)
+	var model assetModel
+	if held := a.assetModel.Load(); held != nil {
+		model = *held
+	}
+	also := make([]string, 0, len(ids))
+	for _, id := range ids {
+		also = append(also, id.String())
+	}
+	board := buildAssetBoard(researchView{researchInput: a.heldResearchInput()}, model, at, also)
+	out := make(map[string]AssetValue, len(board.Values))
+	for _, v := range board.Values {
+		out[v.ID] = v
+	}
+	return out, board.NowSource
+}
+
+func valuePoolRow(row *PoolRow, engine map[string]float64, assets map[string]AssetValue) {
+	row.EngineText, row.PPGText, row.LabText = "Not valued", "No score", "Not valued"
+	if v, ok := engine[row.ID]; ok {
+		row.Engine = &v
+		row.EngineText = fmt.Sprintf("%.2f points/game", v)
+	}
+	if v, ok := assets[row.ID]; ok {
+		row.PPGText, row.LabText = v.Now.Text, v.Dynasty.Text
+		if v.Now.Held {
+			row.PPG = &v.NowValue
+		}
+		if v.Dynasty.Held {
+			row.Lab = &v.DynastyValue
+		} else {
+			row.LabText = "Not valued"
+		}
+	}
+}
+
+func poolOrder(row PoolRow) poolapp.Order {
+	order := poolapp.Order{ID: row.ID, Name: row.Name, Position: row.Position, Team: row.Team, Minimum: row.Minimum.Cents, Engine: row.Engine, PPG: row.PPG, Lab: row.Lab}
+	for i := range order.Market {
+		order.Market[i] = poolMarketValue(row, i)
+	}
+	return order
+}
+func sortPool(rows []PoolRow, raw RawPoolScope) {
+	slices.SortFunc(rows, func(x, y PoolRow) int { return poolapp.Compare(poolOrder(x), poolOrder(y), raw.Sort, raw.Desc) })
+}
+func poolNumber(row PoolRow, key string) *float64 { return poolOrder(row).Number(key) }
