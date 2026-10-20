@@ -26,16 +26,16 @@ func TestBuildLabel(t *testing.T) {
 func TestIPCWaitsForStartup(t *testing.T) {
 	t.Parallel()
 	a := NewApp()
-	got := make(chan AppInfo, 1)
-	go func() { got <- a.AppInfo() }()
+	got := make(chan DataActResult, 1)
+	go func() { got <- a.TargetDataRefresh("league") }()
 	select {
-	case info := <-got:
-		t.Fatalf("AppInfo answered before startup finished: %+v", info)
+	case r := <-got:
+		t.Fatalf("TargetDataRefresh answered before startup finished: %+v", r)
 	case <-time.After(50 * time.Millisecond):
 	}
 	a.startupErr = errors.New("startup: lock held")
 	close(a.started)
-	if info := <-got; info.StartupError != "startup: lock held" {
-		t.Errorf("AppInfo after startup = %+v, want the startup failure", info)
+	if r := <-got; r.Error != "startup: lock held" {
+		t.Errorf("TargetDataRefresh after startup = %+v, want the startup failure", r)
 	}
 }

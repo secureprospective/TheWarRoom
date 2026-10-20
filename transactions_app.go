@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -48,94 +47,6 @@ type TransactionRequest struct {
 	EventKind   string `json:"eventKind"`
 	ScheduledAt string `json:"scheduledAt"`
 	Payload     string `json:"payload"`
-}
-
-// TransactionResult is OK plus the receipt, or OK=false with the reason. A failed transaction
-// changed nothing.
-type TransactionResult struct {
-	OK              bool          `json:"ok"`
-	Kind            string        `json:"kind"`
-	PlayersAffected int           `json:"playersAffected"`
-	At              string        `json:"at"`
-	Detail          string        `json:"detail"`
-	CapDeltas       []CapDeltaDTO `json:"capDeltas"`
-}
-
-// CapDeltaDTO is one line of a preview's cap impact. Amount is a signed display string ("+" a
-// charge, "−" a credit); Cents is the signed raw value. Only previews carry these.
-type CapDeltaDTO struct {
-	FranchiseID   string `json:"franchiseID"`
-	FranchiseName string `json:"franchiseName"`
-	Amount        string `json:"amount"`
-	Cents         int64  `json:"cents"`
-	Reason        string `json:"reason"`
-}
-
-// ExecuteTransaction runs a request through the coordinator and commits it.
-func (a *App) ExecuteTransaction(req TransactionRequest) TransactionResult {
-	return a.runTransaction(req, false)
-}
-
-// PreviewTransaction dry-runs a request exactly as ExecuteTransaction would, then rolls back: the
-// confirm screen learns whether it would commit, or why not, and its cap impact. Nothing is
-// stored, and the preview is never fed back as input.
-func (a *App) PreviewTransaction(req TransactionRequest) TransactionResult {
-	return a.runTransaction(req, true)
-}
-
-// runTransaction builds the request and commits or previews it. Tag, extension and signing make
-// the coordinator fetch the players directory on first use, hence the 30s budget. Prices and
-// floors are resolved server-side; only ids and counts cross the wire.
-func (a *App) runTransaction(req TransactionRequest, preview bool) TransactionResult {
-	if err := a.ready(); err != nil {
-		return TransactionResult{Detail: err.Error()}
-	}
-	txn, err := buildRequest(req)
-	if err != nil {
-		return TransactionResult{Detail: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Second)
-	defer cancel()
-
-	run := a.coordinator.Execute
-	if preview {
-		run = a.coordinator.Preview
-	}
-	rec, err := run(ctx, txn)
-	if err != nil {
-		return TransactionResult{Kind: req.Kind, Detail: err.Error()}
-	}
-	res := TransactionResult{
-		OK:              true,
-		Kind:            string(rec.Kind),
-		PlayersAffected: rec.PlayersAffected,
-		At:              rec.At.Format(time.RFC3339),
-	}
-	if preview {
-		res.CapDeltas = a.capDeltaDTOs(rec.CapDeltas)
-	}
-	return res
-}
-
-// PhaseResult is the league year's current season phase.
-type PhaseResult struct {
-	OK     bool   `json:"ok"`
-	Phase  string `json:"phase"`
-	Detail string `json:"detail"`
-}
-
-// GetCurrentPhase reads the current season phase.
-func (a *App) GetCurrentPhase() PhaseResult {
-	if err := a.ready(); err != nil {
-		return PhaseResult{Detail: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, 10*time.Second)
-	defer cancel()
-	ph, err := a.whatif.CurrentPhase(ctx)
-	if err != nil {
-		return PhaseResult{Detail: err.Error()}
-	}
-	return PhaseResult{OK: true, Phase: string(ph)}
 }
 
 // buildRequest maps the DTO onto a sealed transactions.Request; an unknown Kind is rejected
@@ -224,5 +135,16 @@ func buildContractRequest(req TransactionRequest) (transactions.Request, error) 
 		return transactions.Sign{MFLID: req.MFLID, FranchiseID: req.FranchiseID, Salary: salary, Years: req.Years}, nil
 	default:
 		return nil, fmt.Errorf("unknown transaction kind %q", req.Kind)
+	}
+}
+
+// calendarEvent maps the DTO's calendar fields. The payload stays opaque here; the operation's
+// own builder parses it when the event fires.
+func calendarEvent(req TransactionRequest) transactions.CalendarEvent {
+	return transactions.CalendarEvent{
+		EventID:     req.EventID,
+		EventKind:   req.EventKind,
+		ScheduledAt: req.ScheduledAt,
+		Payload:     req.Payload,
 	}
 }

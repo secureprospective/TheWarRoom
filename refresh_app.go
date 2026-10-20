@@ -22,12 +22,10 @@ const refreshTimeout = 2 * time.Minute
 
 // RefreshResult reports one pull of MFL truth. Changed is false when MFL held nothing new.
 type RefreshResult struct {
-	OK           bool   `json:"ok"`
-	Error        string `json:"error"`
-	Season       int    `json:"season"`
-	RulesChanged bool   `json:"rulesChanged"`
-	Changed      bool   `json:"changed"`
-	Players      int    `json:"players"`
+	Season       int  `json:"season"`
+	RulesChanged bool `json:"rulesChanged"`
+	Changed      bool `json:"changed"`
+	Players      int  `json:"players"`
 }
 
 // discoverSource fetches the league config for MFL's current season; the rulebook seeds from it
@@ -48,21 +46,6 @@ func (a *App) seasonGuess() int {
 		return a.season
 	}
 	return time.Now().Year()
-}
-
-// RefreshLeague pulls the league from MFL into the mirror (MFL wins, R2). The what-if league is
-// left as it is.
-func (a *App) RefreshLeague() RefreshResult {
-	if err := a.ready(); err != nil {
-		return RefreshResult{Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
-	defer cancel()
-	res, err := a.refreshLeague(ctx, a.rulebook, a.league)
-	if err != nil {
-		return RefreshResult{Error: err.Error()}
-	}
-	return res
 }
 
 // refreshLeague stages the rules and mirror from MFL's rosters and salary
@@ -112,7 +95,7 @@ func (a *App) refreshLeagueLocked(
 		a.modelDirty.Store(true)
 	}
 	a.rostersCheckedAt = time.Now().UTC()
-	return RefreshResult{OK: true, Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
+	return RefreshResult{Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
 		Players: len(snap.Players)}, nil
 }
 

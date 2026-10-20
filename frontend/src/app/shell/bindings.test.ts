@@ -22,7 +22,7 @@ it('opens a deep link, replaces on navigation, normalizes bad hashes and unsubsc
   c.dispatch('nav.open', { node: 'hq' });
   expect(location.hash).toBe('#/war/research');
 });
-it('ignores typing, modified shortcuts and the harness without dispatching', () => {
+it('ignores typing and modified shortcuts without dispatching', () => {
   const c = createCommands();
   const event = { key: '1', target: null, ctrlKey: false, metaKey: false, altKey: false };
   for (const target of [
@@ -38,9 +38,6 @@ it('ignores typing, modified shortcuts and the harness without dispatching', () 
     expect(dispatchKey({ ...event, [modifier]: true }, c)).toBe(false);
   expect(c.history()).toHaveLength(0);
   expect(dispatchKey(event, c)).toBe(true);
-  expect(c.read().density).toBe('narrative');
-  c.dispatch('harness.open', {});
-  expect(dispatchKey({ ...event, key: '3' }, c)).toBe(false);
   expect(c.read().density).toBe('narrative');
 });
 

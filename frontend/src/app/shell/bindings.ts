@@ -1,4 +1,4 @@
-import { isTypingTarget } from '../../components/board/keys';
+import { isTypingTarget } from './keys';
 import type { createCommands } from '../commands/registry';
 import { parseRoute, formatRoute } from './routes';
 import { routeFor } from './nodes';
@@ -7,7 +7,7 @@ export function dispatchKey(
   event: Pick<KeyboardEvent, 'key' | 'target' | 'ctrlKey' | 'metaKey' | 'altKey'>,
   executor: Executor,
 ): boolean {
-  if (executor.read().harness || isTypingTarget(event.target)) return false;
+  if (isTypingTarget(event.target)) return false;
   if (
     event.ctrlKey &&
     !event.altKey &&

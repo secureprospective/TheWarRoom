@@ -69,9 +69,11 @@ func (a *App) TargetDataRefresh(scope string) DataActResult {
 func (a *App) refreshScope(scope string) (string, error) {
 	switch scope {
 	case "league":
-		r := a.RefreshLeague()
-		if !r.OK {
-			return "", fmt.Errorf("league refresh failed: %s", r.Error)
+		ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+		defer cancel()
+		r, err := a.refreshLeague(ctx, a.rulebook, a.league)
+		if err != nil {
+			return "", fmt.Errorf("league refresh failed: %w", err)
 		}
 		return leagueRefreshSummary(r), nil
 	case "signals":

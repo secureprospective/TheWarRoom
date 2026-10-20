@@ -142,16 +142,12 @@ are still pending.
 | `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
 | `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
 | `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
-| `version.go` | `AppInfo` (version, commit, startup error for the banner) |
-| `refresh_app.go` | `RefreshLeague` (pull the league from MFL into the mirror) |
+| `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
+| `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
 | `crosswalk_app.go` | `LoadCrosswalk`, `GetCrosswalkReport` (the player directory and its match rates) |
-| `m1_app.go`, `model_app.go`, `m1_player_score_app.go` | `ScoreLeague` (board run and model run), `GetRankings` (with the measurables), `GetPlayerScore` |
-| `m2_app.go` | `GetPowerRankings` |
-| `leagueschedule_app.go` | `GetLeagueSchedule` |
-| `m4_app.go` | `GetFranchises`, `GetRoster`, `GetFreeAgentPool`, `GetLegalOps` |
-| `transactions_app.go` | `ExecuteTransaction`, `PreviewTransaction`, `GetCurrentPhase` |
-| `transactions_feed_app.go`, `transactions_calendar_app.go` | `GetFeed`, `GetCalendarEvents` |
-| `rulebook_app.go` | `GetLeagueSetting`, `SetLeagueSettingOverride` |
+| `m1_app.go`, `model_app.go` | `ScoreLeague` (board run and model run; no screen calls it, see Built but not wired) |
+| `m2_app.go` | `powerRankings`, behind the race readings; no binding |
+| `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `admin_app.go` | `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default) |
 | `control_room_app.go` | `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old) |
 | `data_sources_app.go`, `league_archive_app.go` | `TargetDataSources` (what history holds about every source and the checked facts), `TargetDataRefresh(scope)` (renews one scope and says what it did), `TargetCrosswalk` (C-08 match rates), `SetLeagueArchiveDir(dir)` (the archive's `raw/` folder, one folder per season) |
@@ -230,6 +226,10 @@ Wire it or retire it when its ring comes up; do not count it as landed.
 - **Play-by-play scoring:** `fantasyscore/source` `ReadPlays` and `AttachPlays` attach yardage and
   touchdown distances. The golden test needs them to match MFL's scores; no production path reads
   plays, so whether distance bonuses reach native scores is unverified.
+- **`ScoreLeague`:** the only writer of the board run (the layer 1-4 engine: `internal/rankings`,
+  `composition`, `engine/l4`, `scouting/assembly`). Its button was in the Alpha harness, quarantined
+  2026-10-20; source health still reads the last board run's missing measures. The model run that
+  the screens read refreshes on its own (`engine_refresh.go`).
 - **The `transaction_corrections` table** stays in existing state databases, empty and unread. Its
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.
@@ -245,14 +245,14 @@ Wire it or retire it when its ring comes up; do not count it as landed.
 - No inbound HTTP server.
 
 The target UI data contract and fixture/live providers live in `frontend/src/app/data/`;
-`components/` remains the current harness. `look/` holds the shared visual channels (gravity, urgency,
+`look/` holds the shared visual channels (gravity, urgency,
 signal) and glyphs; `assets/` is the C-01 asset board; `specimen/` is a dev-only page that loads
 only with `?specimen` in a dev build. `snapshot.NewSource` composes the initialized mirror and rulebook; the directory carries its own fetch provenance. Money in the snapshot is exact cents; absent held fields are omitted.
 
 The target shell lives in `frontend/src/app/shell/`; its six-node table and hash routes are data.
 `frontend/src/app/commands/` owns the immutable verb registry, sole dispatch path, keyboard
 bindings and in-memory recent-command log. `Act` is the only clickable primitive in the target
-UI. `frontend/src/TargetMount.tsx` switches between the target shell and the unchanged harness.
+UI. `frontend/src/TargetMount.tsx` mounts the target shell; the Alpha harness UI is in `quarantine/`.
 
 `docs/ui/registry/normalize.py` normalizes and validates `docs/ui/endpoint-registry.csv`.
 `frontend/scripts/gen-endpoints.mjs` validates the shared owner/commissioner CSV and generates
@@ -261,7 +261,6 @@ edges). The commissioner module is not imported by the app entry graph; future c
 must load it lazily. Both maps are frozen and freshness-tested;
 `frontend/src/app/registry/` owns resolution, indexed placements, compact not-wired rows and the
 pure two-route gate. `endpoint.open` navigates and highlights; merged rows target kept ids or places.
-The harness is lazy-loaded only on `harness.open`; it is not in the target entry chunk.
 
 `internal/ingestion/nflschedule` fetches and validates MFL's league-independent NFL schedule (with home side and scores) and the season's bye weeks (`byes.go`),
 then converts it into dated `internal/leagueweek` facts at a supplied instant.

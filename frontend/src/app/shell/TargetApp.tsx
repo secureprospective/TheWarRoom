@@ -144,9 +144,6 @@ export function TargetApp() {
           <Act variant="text" verb="surface.open" args={{ place: 'Status strip' }}>
             Status
           </Act>
-          <Act variant="button" verb="harness.open" args={{}}>
-            Harness
-          </Act>
         </div>
         <div className="me">
           <b>{snapshot?.franchises.value.find((f) => f.id === s.franchiseId)?.name}</b>

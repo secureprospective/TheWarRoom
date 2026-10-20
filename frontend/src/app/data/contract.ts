@@ -1,4 +1,4 @@
-import type { FreshnessState } from '../../components/board/freshness';
+import type { FreshnessState } from './freshness';
 
 // The TypeScript half of internal/snapshot. JSON keys and enum strings must match the Go structs
 // and domain constants exactly; parse.ts enforces them at the boundary.

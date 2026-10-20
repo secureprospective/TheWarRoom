@@ -15,8 +15,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// m2Timeout bounds GetPowerRankings: one MFL standings fetch plus a read of two model runs.
+// m2Timeout bounds the power-rankings read behind the race board (one MFL standings fetch plus a
+// read of two model runs) and the Target acts that borrowed it.
 const m2Timeout = 120 * time.Second
+
+// m4Timeout bounds the Target reads whose first call after a cold start may fetch the players
+// directory.
+const m4Timeout = 120 * time.Second
 
 // PowerRow is one franchise's power-ranking row: the blended score, its two components, and
 // MFL's report columns from the same standings call. Display values only. RankDelta is the move
@@ -98,31 +103,6 @@ const (
 	ViewSeason    = "season"
 	ViewFranchise = "franchise"
 )
-
-// GetPowerRankings builds the M2 board: each franchise's roster value in the view, from the
-// season's latest model run, blended (this season only) with the MFL standings, with team names
-// and the context columns joined and each rank's move since the previous model run. This season's
-// roster weight is the caller's, or with autoWeight the one the weeks played give. A failed
-// standings fetch falls back to the last good cache and is labelled stale; only a failure with
-// nothing cached is fatal.
-func (a *App) GetPowerRankings(weight float64, autoWeight bool, aggMode, view string) PowerRankingsResult {
-	if view != ViewFranchise {
-		view = ViewSeason
-	}
-	mode := m2service.ResolveAggMode(aggMode, defaultAgg(view))
-	fail := func(err error) PowerRankingsResult { return a.powerFailure(err, view, weight, autoWeight, mode) }
-	if err := a.ready(); err != nil {
-		return fail(err)
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
-	defer cancel()
-
-	standings, fresh, err := a.standingsOrArchive(ctx)
-	if err != nil {
-		return fail(fmt.Errorf("power rankings: %w", err))
-	}
-	return a.powerRankings(ctx, standings, fresh, a.remainingSchedule, weight, autoWeight, mode, view)
-}
 
 func (a *App) powerFailure(err error, view string, weight float64, auto bool, mode string) PowerRankingsResult {
 	return PowerRankingsResult{Error: err.Error(), Season: a.season, View: view, Weight: weight,

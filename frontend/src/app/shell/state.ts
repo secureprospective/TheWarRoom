@@ -26,7 +26,6 @@ export type ShellState = {
   commandbar: boolean;
   summoned: 'calendar' | null;
   comms: boolean;
-  harness: boolean;
   notice: string | null;
   endpointIds: readonly EndpointId[];
   endpointSurface: Surface | null;
@@ -49,7 +48,6 @@ function initialShellState(): ShellState {
     commandbar: false,
     summoned: null,
     comms: false,
-    harness: false,
     notice: null,
     endpointIds: [],
     endpointSurface: null,

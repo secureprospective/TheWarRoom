@@ -24,9 +24,6 @@ export function AppSettings() {
           )}
         </div>
       ))}
-      <Act variant="button" verb="harness.open" args={{}}>
-        Open harness
-      </Act>
       <Suspense fallback={<p role="status">Reading MFL's site news…</p>}>
         <WhatsNew />
       </Suspense>

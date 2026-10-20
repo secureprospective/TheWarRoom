@@ -8,55 +8,21 @@ import {envelope} from '../models';
 import {time} from '../models';
 import {personal} from '../models';
 
-export function AppInfo():Promise<main.AppInfo>;
-
 export function DeleteMFLKey():Promise<main.MFLKeyStatus>;
-
-export function ExecuteTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
-
-export function GetCalendarEvents():Promise<main.CalendarEventsResult>;
 
 export function GetCrosswalkReport():Promise<main.CrosswalkReport>;
 
-export function GetCurrentPhase():Promise<main.PhaseResult>;
-
-export function GetFeed():Promise<main.FeedResult>;
-
-export function GetFranchises():Promise<main.FranchisesResult>;
-
-export function GetFreeAgentPool():Promise<main.FreeAgentPoolResult>;
-
-export function GetLeagueSchedule():Promise<main.LeagueScheduleResult>;
-
-export function GetLeagueSetting(arg1:string):Promise<main.LeagueSettingResult>;
-
-export function GetLegalOps():Promise<main.LegalOpsResult>;
-
 export function GetParams():Promise<main.ParamsResult>;
-
-export function GetPlayerScore(arg1:string):Promise<main.PlayerScoreResult>;
-
-export function GetPowerRankings(arg1:number,arg2:boolean,arg3:string,arg4:string):Promise<main.PowerRankingsResult>;
-
-export function GetRankings():Promise<main.RankingsResult>;
-
-export function GetRoster(arg1:string):Promise<main.RosterResult>;
 
 export function LoadCrosswalk():Promise<main.CrosswalkReport>;
 
 export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
-
-export function PreviewTransaction(arg1:main.TransactionRequest):Promise<main.TransactionResult>;
-
-export function RefreshLeague():Promise<main.RefreshResult>;
 
 export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
 
 export function ScoreLeague():Promise<main.ScoreLeagueResult>;
 
 export function SetLeagueArchiveDir(arg1:string):Promise<main.DataActResult>;
-
-export function SetLeagueSettingOverride(arg1:string,arg2:string,arg3:string):Promise<main.SetLeagueSettingResult>;
 
 export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
