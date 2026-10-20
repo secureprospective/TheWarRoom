@@ -83,7 +83,7 @@ func insertCell(ctx context.Context, tx *sql.Tx, leagueID, mflID, contractID str
 	return nil
 }
 
-// initLedgerSchema creates the per-year salary ledger and its change log. The cells are the source
+// ledgerDDL creates the per-year salary ledger and its change log. The cells are the source
 // of truth: cap usage, dead cap, years remaining and the top-paid year are all computed from them.
 //
 // contract_years: one row per player-year (UNIQUE league, player, year). year_status is PAID, UFA
@@ -93,8 +93,7 @@ func insertCell(ctx context.Context, tx *sql.Tx, leagueID, mflID, contractID str
 // contract_year_changes: every change to a cell logs a dated reason in the same transaction.
 // Triggers abort update and delete ("if there is a reason the number differs, it gets a dated tag,
 // human-verifiable").
-func (s *Store) initLedgerSchema(ctx context.Context) error {
-	const ddl = `
+const ledgerDDL = `
 CREATE TABLE IF NOT EXISTS contract_years (
 	league_id    TEXT NOT NULL,
 	mfl_id       TEXT NOT NULL,
@@ -123,11 +122,6 @@ BEGIN SELECT RAISE(ABORT, 'contract_year_changes is append-only'); END;
 CREATE TRIGGER IF NOT EXISTS contract_year_changes_no_delete
 BEFORE DELETE ON contract_year_changes
 BEGIN SELECT RAISE(ABORT, 'contract_year_changes is append-only'); END;`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("state: init ledger schema: %w", err)
-	}
-	return nil
-}
 
 // MoveCellMoney moves amount between two years for one player, conserving the total (§11
 // restructure). Both deltas are logged.

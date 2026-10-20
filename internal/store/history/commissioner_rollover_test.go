@@ -27,7 +27,7 @@ type rolloverDB struct {
 
 func (r *rolloverDB) open(t *testing.T) {
 	t.Helper()
-	pools, err := db.Open(t.Context(), r.path)
+	pools, err := db.Open(t.Context(), r.path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

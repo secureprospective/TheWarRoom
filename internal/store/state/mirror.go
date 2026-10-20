@@ -58,15 +58,6 @@ type Adjustment struct {
 	Description string
 }
 
-const mirrorDDL = `
-CREATE TABLE IF NOT EXISTS league_mirror (
-	id           INTEGER PRIMARY KEY CHECK (id = 1),
-	season       INTEGER NOT NULL,
-	sha256       TEXT NOT NULL,
-	snapshot     TEXT NOT NULL,
-	refreshed_at TEXT NOT NULL
-);`
-
 // NewMirror returns an unloaded mirror over pools. discounts supplies the taxi and IR cap
 // percentages.
 func NewMirror(pools *db.Pools, discounts CapDiscounts) *Mirror {
@@ -76,7 +67,7 @@ func NewMirror(pools *db.Pools, discounts CapDiscounts) *Mirror {
 // Initialize creates the table and loads what it holds. An empty mirror is legal: the first
 // refresh fills it.
 func (m *Mirror) Initialize(ctx context.Context) error {
-	if _, err := m.pools.Write().ExecContext(ctx, mirrorDDL); err != nil {
+	if err := m.pools.InitializeMain(ctx); err != nil {
 		return fmt.Errorf("state: mirror schema: %w", err)
 	}
 	var raw, at string

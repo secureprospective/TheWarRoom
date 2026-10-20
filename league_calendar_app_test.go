@@ -21,7 +21,7 @@ func calendarTestApp(t *testing.T, at time.Time) (*App, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(t.Context(), path)
+	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func calendarTestApp(t *testing.T, at time.Time) (*App, func()) {
 			t.Fatal(err)
 		}
 		var err error
-		pools, err = db.Open(t.Context(), path)
+		pools, err = db.Open(t.Context(), path, history.SchemaVersion())
 		if err != nil {
 			t.Fatal(err)
 		}

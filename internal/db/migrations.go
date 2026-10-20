@@ -31,17 +31,24 @@ type CheckFindings struct {
 }
 
 // Migrate backs up before any pending step, then commits each step and marker atomically.
-// Findings are returned even when pre-existing foreign-key violations remain.
+// Findings are returned even when pre-existing foreign-key violations remain. Reinitialization
+// at the same version reuses this pool's completed checks; Check provides an explicit recheck.
 func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, error) {
 	p.migrationMu.Lock()
 	defer p.migrationMu.Unlock()
 	var result Findings
+	defer func() { p.findings = cloneFindings(result) }()
 	var version int
-	if err := p.write.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+	if err := p.read.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return result, fmt.Errorf("db: migration version: %w", err)
 	}
 	if err := refuseNewer(version, len(steps)); err != nil {
 		return result, err
+	}
+	if p.migrationChecked && p.checkedVersion == version && version == len(steps) {
+		result = cloneFindings(p.findings)
+		result.Backup = ""
+		return result, nil
 	}
 	before, err := Check(ctx, p.write)
 	result.Before = before
@@ -60,6 +67,9 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 		}
 	}
 	result.After, err = Check(ctx, p.write)
+	if err == nil {
+		p.migrationChecked, p.checkedVersion = true, len(steps)
+	}
 	return result, err
 }
 
@@ -95,4 +105,19 @@ func refuseNewer(version, maxVersion int) error {
 		return fmt.Errorf("db: this database was last written by a NEWER version of TheWarRoom (schema v%d; this build understands up to v%d) — update the app to open it", version, maxVersion)
 	}
 	return nil
+}
+
+// MigrationFindings returns the last migration checks without exposing mutable pool state.
+func (p *Pools) MigrationFindings() Findings {
+	p.migrationMu.Lock()
+	defer p.migrationMu.Unlock()
+	return cloneFindings(p.findings)
+}
+
+func cloneFindings(result Findings) Findings {
+	result.Before.Integrity = append([]string(nil), result.Before.Integrity...)
+	result.After.Integrity = append([]string(nil), result.After.Integrity...)
+	result.Before.ForeignKeys = append([]ForeignKeyFinding(nil), result.Before.ForeignKeys...)
+	result.After.ForeignKeys = append([]ForeignKeyFinding(nil), result.After.ForeignKeys...)
+	return result
 }

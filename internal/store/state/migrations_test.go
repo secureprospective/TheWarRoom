@@ -35,7 +35,7 @@ func readStateMigrations(ctx context.Context, t *testing.T, s *Store) map[int]st
 
 func countBackups(t *testing.T, dbPath string) int {
 	t.Helper()
-	matches, err := filepath.Glob(dbPath + ".premigration-*")
+	matches, err := filepath.Glob(dbPath + ".pre-v*.bak")
 	if err != nil {
 		t.Fatalf("glob backups: %v", err)
 	}
@@ -70,7 +70,7 @@ func TestMigrations_LegacyDBStampedMigratedAndBackedUp(t *testing.T) {
 		t.Fatalf("seed contract: %v", err)
 	}
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -99,10 +99,10 @@ func TestMigrations_LegacyDBStampedMigratedAndBackedUp(t *testing.T) {
 	}
 }
 
-// TestMigrations_FreshDBReconciledNoBackup proves a brand-new DB (whose DDL already carries the
+// TestMigrations_FreshDBReconciledAndBackedUp proves a brand-new DB (whose DDL already carries the
 // cents column and never had the legacy columns) stamps BOTH migrations 'reconciled' from the
-// data predicates, without doing real work — so no pre-migration backup is written.
-func TestMigrations_FreshDBReconciledNoBackup(t *testing.T) {
+// data predicates. The file-level adoption still takes its recovery snapshot.
+func TestMigrations_FreshDBReconciledAndBackedUp(t *testing.T) {
 	ctx := context.Background()
 	dbPath := filepath.Join(t.TempDir(), "fresh.db")
 	pools, err := db.Open(ctx, dbPath)
@@ -120,8 +120,8 @@ func TestMigrations_FreshDBReconciledNoBackup(t *testing.T) {
 	if got[1] != "reconciled" || got[2] != "reconciled" || got[3] != "reconciled" {
 		t.Fatalf("markers = %v, want v1-v3 method='reconciled'", got)
 	}
-	if n := countBackups(t, dbPath); n != 0 {
-		t.Fatalf("backup count = %d, want 0 (nothing pending on a fresh DB)", n)
+	if n := countBackups(t, dbPath); n != 1 {
+		t.Fatalf("backup count = %d, want 1 (backup before adoption)", n)
 	}
 }
 
@@ -152,8 +152,8 @@ func TestMigrations_SecondInitializeIsNoOp(t *testing.T) {
 	if len(after) != len(before) {
 		t.Fatalf("marker count changed on re-init: before=%v after=%v", before, after)
 	}
-	if n := countBackups(t, dbPath); n != 0 {
-		t.Fatalf("backup count = %d after no-op re-init, want 0", n)
+	if n := countBackups(t, dbPath); n != 1 {
+		t.Fatalf("backup count = %d after no-op re-init, want 1", n)
 	}
 }
 
@@ -213,5 +213,51 @@ func TestMigrations_DowngradeRefusedBeforeDDL(t *testing.T) {
 	}
 	if count != 0 {
 		t.Fatalf("downgrade check created %d schema objects before refusing", count)
+	}
+}
+
+func TestFileAdoptionRollsBackDDLAndLegacyMarkers(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bad-legacy.db")
+	pools, err := db.Open(t.Context(), path, SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	// Force the final legacy step to fail after money conversion and marker inserts.
+	if _, err := pools.Write().ExecContext(t.Context(), legacyContractsDDL+`
+ CREATE TABLE standings_cache (id TEXT PRIMARY KEY);
+ INSERT INTO standings_cache VALUES ('held');
+ CREATE TABLE keep_cache (id TEXT REFERENCES standings_cache(id));
+ INSERT INTO keep_cache VALUES ('held');
+ INSERT INTO contracts (id,league_id,mfl_id,franchise_id,annual_salary,adjusted_salary,contract_years,expiration_year,contract_status,season,last_updated)
+ VALUES ('c1','league','0001','0001',7,1.3,2,2028,'UFA',2026,'held');`); err != nil {
+		t.Fatal(err)
+	}
+	s := New(pools, testLeague, testSeason, nil)
+	if err := s.initSchema(t.Context()); err == nil {
+		t.Fatal("adopted legacy schema despite failing final step")
+	}
+	var version, markers int
+	if err := pools.Read().QueryRowContext(t.Context(), "PRAGMA user_version").Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if version != 0 {
+		t.Fatalf("failed adoption version=%d", version)
+	}
+	if err := pools.Read().QueryRowContext(t.Context(), "SELECT count(*) FROM sqlite_master WHERE name='schema_migrations'").Scan(&markers); err != nil {
+		t.Fatal(err)
+	}
+	if markers != 0 {
+		t.Fatal("legacy markers survived failed file adoption")
+	}
+	if have, err := s.columnExists(t.Context(), "contracts", "annual_salary_cents"); err != nil || have {
+		t.Fatalf("money conversion survived rollback: have=%v err=%v", have, err)
+	}
+	var salary float64
+	if err := pools.Read().QueryRowContext(t.Context(), "SELECT annual_salary FROM contracts WHERE id='c1'").Scan(&salary); err != nil || salary != 7 {
+		t.Fatalf("salary=%v err=%v", salary, err)
+	}
+	if n := countBackups(t, path); n != 1 {
+		t.Fatalf("backup count=%d", n)
 	}
 }

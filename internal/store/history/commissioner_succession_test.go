@@ -107,7 +107,7 @@ func (f *successionFixture) restart(t *testing.T, principal string) {
 	if err := f.store.pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(t.Context(), path)
+	pools, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

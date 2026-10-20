@@ -23,16 +23,19 @@ const connectionPragmas = "&_pragma=foreign_keys(ON)&_pragma=recursive_triggers(
 
 // Pools is the read/write pool pair for one database. Construct with Open.
 type Pools struct {
-	read        *sql.DB
-	write       *sql.DB
-	path        string
-	migrationMu sync.Mutex
+	read             *sql.DB
+	write            *sql.DB
+	path             string
+	migrationMu      sync.Mutex
+	findings         Findings
+	checkedVersion   int
+	migrationChecked bool
 }
 
-// Open opens both pools and checks that WAL mode took effect. The write pool opens first so the
-// file exists before the read-only pool attaches.
+// Open refuses newer files before opening a writer. The optional version is the file's
+// newest known migration; the default is MainVersion (also the current what-if version).
 func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
-	maxVersion := 0
+	maxVersion := MainVersion()
 	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
 		return nil, fmt.Errorf("db: expected one nonnegative schema version")
 	}

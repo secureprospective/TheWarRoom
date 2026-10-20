@@ -68,7 +68,7 @@ func (c *clock) Now() time.Time { return c.now }
 
 func newStore(t *testing.T) (*Store, *clock, *db.Pools) {
 	t.Helper()
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"))
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"), SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

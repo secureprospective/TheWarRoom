@@ -286,10 +286,10 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	if err != nil {
 		return "", nil, err //nolint:wrapcheck // the registry's errors name the CSV line
 	}
-	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild()))); err != nil {
+	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild())), history.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open history database: %w", err)
 	}
-	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild()))); err != nil {
+	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild())), state.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.histPools, reg)
@@ -355,12 +355,27 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		}
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
+	a.logMigrationFindings()
 	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
 	a.moves = moveStore
 	hist.SetLineupEnvironment(appLineupEnv{app: a})
 	hist.SetBidEnvironment(appBidEnv{app: a})
 	a.seedClockSchedules(ctx)
 	return refreshed, nil
+}
+
+func (a *App) logMigrationFindings() {
+	for _, file := range []struct {
+		name  string
+		pools *db.Pools
+	}{
+		{"thewarroom", a.pools}, {"history", a.histPools}, {"whatif", a.whatifPools},
+	} {
+		if file.pools != nil {
+			findings := file.pools.MigrationFindings()
+			log.Printf("the war room: %s migration checks: before=%+v after=%+v", file.name, findings.Before, findings.After)
+		}
+	}
 }
 
 // shutdown releases the database and the instance lock.

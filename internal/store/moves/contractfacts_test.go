@@ -16,9 +16,7 @@ func TestContractMigrationUpRoundTripAndAtomicValidation(t *testing.T) {
 	if err := s.SaveBid(ctx, existing, bidFacts); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pools.Write().ExecContext(ctx, `DROP TABLE contract_facts`); err != nil {
-		t.Fatal(err)
-	}
+	s, pools = legacyMovesFile(t, pools, "contract_facts")
 	if err := s.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}

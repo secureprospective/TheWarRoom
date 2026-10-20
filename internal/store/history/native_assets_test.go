@@ -79,7 +79,7 @@ func TestNativeSeedAtomicConcurrentAndReplay(t *testing.T) {
 func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "durable.db")
-	p, err := db.Open(t.Context(), path)
+	p, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +95,7 @@ func TestNativeSeedSurvivesDatabaseCloseAndReopen(t *testing.T) {
 	if err := p.Close(); err != nil {
 		t.Fatal(err)
 	}
-	p, err = db.Open(t.Context(), path)
+	p, err = db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

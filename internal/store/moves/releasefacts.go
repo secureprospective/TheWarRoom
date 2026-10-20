@@ -9,15 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 )
 
-const releaseFactsDDL = `
-CREATE TABLE IF NOT EXISTS release_facts (
- correlation_id TEXT PRIMARY KEY REFERENCES move_envelopes(correlation_id),
- facts TEXT NOT NULL CHECK (json_valid(facts))
-);
-CREATE TRIGGER IF NOT EXISTS release_facts_no_delete
-BEFORE DELETE ON release_facts
-BEGIN SELECT RAISE(ABORT, 'release_facts cannot be deleted'); END;`
-
 func (s *Store) SaveRelease(ctx context.Context, e envelope.Envelope, f envelope.ReleaseFacts) error {
 	spec := e.Receipt().Spec
 	if !envelope.IsRelease(spec.Intent) || spec.Expected.Player != f.Player || f.Season < 2000 || f.Charge < 0 {

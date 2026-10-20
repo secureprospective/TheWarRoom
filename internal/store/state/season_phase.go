@@ -34,14 +34,6 @@ CREATE TRIGGER IF NOT EXISTS season_phases_no_delete
 BEFORE DELETE ON season_phases
 BEGIN SELECT RAISE(ABORT, 'season_phases is append-only'); END;`
 
-// initSeasonPhaseSchema creates the table and its immutability triggers.
-func (s *Store) initSeasonPhaseSchema(ctx context.Context) error {
-	if _, err := s.pools.Write().ExecContext(ctx, seasonPhaseDDL); err != nil {
-		return fmt.Errorf("state: init season-phase schema: %w", err)
-	}
-	return nil
-}
-
 // seedInitialPhase writes the genesis row (to OFFSEASON) when the log is empty. It is the only
 // source of the initial phase: CurrentPhase has no fallback, so a missing seed fails loudly.
 // Idempotent; an existing history is never touched.

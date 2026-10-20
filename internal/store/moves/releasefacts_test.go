@@ -27,9 +27,7 @@ func TestReleaseMigrationRoundTripAndAtomicUniqueness(t *testing.T) {
 	if err := s.SaveBid(ctx, bid, f); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := p.Write().ExecContext(ctx, `DROP TABLE release_facts`); err != nil {
-		t.Fatal(err)
-	}
+	s, _ = legacyMovesFile(t, p, "release_facts")
 	if err := s.Initialize(ctx); err != nil {
 		t.Fatal(err)
 	}

@@ -9,15 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 )
 
-const contractFactsDDL = `
-CREATE TABLE IF NOT EXISTS contract_facts (
- correlation_id TEXT PRIMARY KEY REFERENCES move_envelopes(correlation_id),
- facts TEXT NOT NULL CHECK(json_valid(facts))
-);
-CREATE TRIGGER IF NOT EXISTS contract_facts_no_delete
-BEFORE DELETE ON contract_facts
-BEGIN SELECT RAISE(ABORT, 'contract_facts cannot be deleted'); END;`
-
 func (s *Store) SaveContract(ctx context.Context, e envelope.Envelope, f envelope.ContractFacts) error {
 	spec := e.Receipt().Spec
 	if !envelope.IsContract(spec.Intent) || spec.Intent != f.Intent || spec.Expected.Player != f.Player || f.Season < 2000 {
@@ -28,7 +19,9 @@ func (s *Store) SaveContract(ctx context.Context, e envelope.Envelope, f envelop
 		if err != nil {
 			return fmt.Errorf("moves: encode contract facts: %w", err)
 		}
-		if _, err := tx.ExecContext(ctx, `INSERT INTO contract_facts (correlation_id,facts) VALUES (?,?) ON CONFLICT(correlation_id) DO UPDATE SET facts=excluded.facts`, e.ID(), string(body)); err != nil {
+		if _, err := tx.ExecContext(ctx, `
+INSERT INTO contract_facts (correlation_id,facts) VALUES (?,?)
+ON CONFLICT(correlation_id) DO UPDATE SET facts=excluded.facts`, e.ID(), string(body)); err != nil {
 			return fmt.Errorf("moves: save contract facts: %w", err)
 		}
 		return nil

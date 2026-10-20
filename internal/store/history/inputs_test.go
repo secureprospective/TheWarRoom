@@ -29,7 +29,7 @@ func importStore(t *testing.T) (*Store, *clock) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"))
+	pools, err := db.Open(context.Background(), filepath.Join(t.TempDir(), "history.db"), SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

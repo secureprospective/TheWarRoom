@@ -266,28 +266,8 @@ func (s *Store) Versions(ctx context.Context) ([]VersionMeta, error) {
 
 // initSchema creates the version, active-pointer and override tables if absent.
 func (s *Store) initSchema(ctx context.Context) error {
-	const ddl = `
-CREATE TABLE IF NOT EXISTS rulebook_versions (
-	version    INTEGER PRIMARY KEY AUTOINCREMENT,
-	source     TEXT NOT NULL,
-	payload    TEXT NOT NULL,
-	created_at TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS rulebook_active (
-	singleton INTEGER PRIMARY KEY CHECK (singleton = 1),
-	version   INTEGER NOT NULL REFERENCES rulebook_versions(version)
-);
-CREATE TABLE IF NOT EXISTS rulebook_overrides (
-	id         INTEGER PRIMARY KEY AUTOINCREMENT,
-	scope      TEXT NOT NULL,
-	rule_key   TEXT NOT NULL,
-	value      TEXT NOT NULL,
-	note       TEXT NOT NULL DEFAULT '',
-	created_at TEXT NOT NULL,
-	UNIQUE (scope, rule_key)
-);`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("rulebook: init schema: %w", err)
+	if err := s.pools.InitializeMain(ctx); err != nil {
+		return fmt.Errorf("rulebook: initialize schema: %w", err)
 	}
 	return nil
 }

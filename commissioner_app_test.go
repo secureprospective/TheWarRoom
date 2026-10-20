@@ -23,7 +23,7 @@ func (s testCommissionerSession) Principal() (string, error) { return s.principa
 
 func commissionerTestApp(t *testing.T) *App {
 	t.Helper()
-	p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "history.db"))
+	p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "history.db"), history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

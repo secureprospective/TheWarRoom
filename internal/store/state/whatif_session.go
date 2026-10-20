@@ -76,7 +76,7 @@ type WhatIfSessions struct{ pools *db.Pools }
 func NewWhatIfSessions(pools *db.Pools) *WhatIfSessions { return &WhatIfSessions{pools: pools} }
 
 func (s *WhatIfSessions) Load(ctx context.Context, mine string) (WhatIfSession, bool, error) {
-	if _, err := s.pools.Write().ExecContext(ctx, `CREATE TABLE IF NOT EXISTS whatif_sessions (franchise_id TEXT PRIMARY KEY, session TEXT NOT NULL)`); err != nil {
+	if err := initializeWhatIf(ctx, s.pools); err != nil {
 		return WhatIfSession{}, false, fmt.Errorf("what-if schema: %w", err)
 	}
 	var raw string
@@ -158,3 +158,5 @@ func (m *Mirror) ReleaseStamps(ctx context.Context, player, mine string) (Mirror
 	}
 	return out, nil
 }
+
+const whatIfSessionsDDL = `CREATE TABLE IF NOT EXISTS whatif_sessions (franchise_id TEXT PRIMARY KEY, session TEXT NOT NULL);`

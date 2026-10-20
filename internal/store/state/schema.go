@@ -4,41 +4,38 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
-// initSchema creates the base tables, then each feature's, then runs the migrations.
+// initSchema adopts the whole what-if file through the shared migration runner.
 // dead_cap_ledger is append-only (no Go update API, and triggers abort update and delete), keyed
 // to an absolute league year, one charge per released player per year, and never negative (§1:
 // no cap rollover).
 func (s *Store) initSchema(ctx context.Context) error {
-	if err := s.checkNoDowngrade(ctx); err != nil {
+	return initializeWhatIf(ctx, s.pools)
+}
+
+func initializeWhatIf(ctx context.Context, pools *db.Pools) error {
+	if err := checkNoDowngrade(ctx, pools.Read()); err != nil {
 		return err
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, baseSchemaDDL); err != nil {
-		return fmt.Errorf("state: init schema: %w", err)
+	if _, err := pools.Migrate(ctx, whatIfMigrations()...); err != nil {
+		return fmt.Errorf("state: migrate schema: %w", err)
 	}
-	if err := s.initLedgerSchema(ctx); err != nil {
-		return err
+	return nil
+}
+
+// SchemaVersion is the newest whatif.db file migration this build can read.
+func SchemaVersion() int { return len(whatIfMigrations()) }
+
+func whatIfMigrations() []db.Migration { return []db.Migration{adoptWhatIf} }
+
+func adoptWhatIf(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, baseSchemaDDL+ledgerDDL+seasonPhaseDDL+capReliefDDL+mflAdjustmentsDDL+playerStatusDDL+calendarEventsDDL+tradeNotesDDL+tradePlansDDL+whatIfSessionsDDL+schemaMigrationsDDL); err != nil {
+		return fmt.Errorf("state: create schema: %w", err)
 	}
-	if err := s.initSeasonPhaseSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initCapReliefSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initMFLAdjustmentsSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initPlayerStatusSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initCalendarSchema(ctx); err != nil {
-		return err
-	}
-	if err := s.initTradeNotesSchema(ctx); err != nil {
-		return err
-	}
-	return s.runMigrations(ctx)
+	return runMigrations(ctx, tx)
 }
 
 // baseSchemaDDL creates rosters, contracts, dead_cap_ledger and transaction_counts.
@@ -96,8 +93,8 @@ CREATE TABLE IF NOT EXISTS transaction_counts (
 // migrateMoneyCents (v1) converts an old DB's REAL salaries to exact cents and verifies every
 // value, failing loudly rather than serving under-converted money. Only the base salary is carried;
 // the cap figure now comes from the ledger cells.
-func (s *Store) migrateMoneyCents(ctx context.Context) error {
-	have, err := s.columnExists(ctx, "contracts", "annual_salary_cents")
+func migrateMoneyCents(ctx context.Context, tx *sql.Tx) error {
+	have, err := columnExists(ctx, tx, "contracts", "annual_salary_cents")
 	if err != nil {
 		return err
 	}
@@ -107,11 +104,6 @@ func (s *Store) migrateMoneyCents(ctx context.Context) error {
 	// One transaction for add, backfill and verify. v2 drops the REAL column that was the recovery
 	// source, so a crash between the add and the backfill would otherwise zero every salary for good.
 	// The verify reads this transaction, because the new column isn't visible elsewhere until commit.
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("state: money-cents migration begin: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
 	if _, err := tx.ExecContext(ctx, `
 ALTER TABLE contracts ADD COLUMN annual_salary_cents INTEGER NOT NULL DEFAULT 0;
 UPDATE contracts SET annual_salary_cents = CAST(ROUND(annual_salary * 100000000) AS INTEGER);`); err != nil {
@@ -128,19 +120,16 @@ WHERE ABS(annual_salary_cents / 100000000.0 - annual_salary) > 0.000000005`).Sca
 	if bad != 0 {
 		return fmt.Errorf("state: money-cents migration left %d row(s) mismatched — aborting", bad)
 	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("state: money-cents migration commit: %w", err)
-	}
 	return nil
 }
 
 // dropLegacyMoneyColumns (v2) removes the dead money columns. annual_salary_cents stays: it is the
 // base salary load reads. Runs after v1, and drops all three in one transaction, each only if
 // present, so every DB vintage ends the same.
-func (s *Store) dropLegacyMoneyColumns(ctx context.Context) error {
+func dropLegacyMoneyColumns(ctx context.Context, tx *sql.Tx) error {
 	present := make([]string, 0, 3)
 	for _, col := range []string{"annual_salary", "adjusted_salary", "adjusted_salary_cents"} {
-		have, err := s.columnExists(ctx, "contracts", col)
+		have, err := columnExists(ctx, tx, "contracts", col)
 		if err != nil {
 			return err
 		}
@@ -151,11 +140,6 @@ func (s *Store) dropLegacyMoneyColumns(ctx context.Context) error {
 	if len(present) == 0 {
 		return nil // already dropped
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("state: drop legacy columns begin: %w", err)
-	}
-	defer func() { _ = tx.Rollback() }()
 	for _, col := range present {
 		// col comes from the fixed list above; ALTER TABLE cannot bind identifiers.
 		if _, err := tx.ExecContext(ctx,
@@ -163,28 +147,25 @@ func (s *Store) dropLegacyMoneyColumns(ctx context.Context) error {
 			return fmt.Errorf("state: drop legacy column %s: %w", col, err)
 		}
 	}
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("state: drop legacy columns commit: %w", err)
-	}
 	return nil
 }
 
 // dropContractYearsColumn (v3) drops contracts.contract_years. Only SignContract ever wrote it and
 // nothing read it: expiration_year and the contract_years ledger cells carry the term.
-func (s *Store) dropContractYearsColumn(ctx context.Context) error {
-	have, err := s.columnExists(ctx, "contracts", "contract_years")
+func dropContractYearsColumn(ctx context.Context, tx *sql.Tx) error {
+	have, err := columnExists(ctx, tx, "contracts", "contract_years")
 	if err != nil || !have {
 		return err
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, `ALTER TABLE contracts DROP COLUMN contract_years`); err != nil {
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE contracts DROP COLUMN contract_years`); err != nil {
 		return fmt.Errorf("state: drop contracts.contract_years: %w", err)
 	}
 	return nil
 }
 
 // contractYearsColumnDropped reports whether v3 is already in place (always, on a fresh DB).
-func (s *Store) contractYearsColumnDropped(ctx context.Context) (bool, error) {
-	have, err := s.columnExists(ctx, "contracts", "contract_years")
+func contractYearsColumnDropped(ctx context.Context, tx *sql.Tx) (bool, error) {
+	have, err := columnExists(ctx, tx, "contracts", "contract_years")
 	return !have, err
 }
 
@@ -193,9 +174,9 @@ func (s *Store) contractYearsColumnDropped(ctx context.Context) (bool, error) {
 func cacheTables() []string { return []string{"standings_cache", "league_schedule_cache"} }
 
 // dropFeedCaches is v4: the cache tables go.
-func (s *Store) dropFeedCaches(ctx context.Context) error {
+func dropFeedCaches(ctx context.Context, tx *sql.Tx) error {
 	for _, t := range cacheTables() {
-		if _, err := s.pools.Write().ExecContext(ctx, "DROP TABLE IF EXISTS "+t); err != nil {
+		if _, err := tx.ExecContext(ctx, "DROP TABLE IF EXISTS "+t); err != nil {
 			return fmt.Errorf("state: drop %s: %w", t, err)
 		}
 	}
@@ -203,9 +184,9 @@ func (s *Store) dropFeedCaches(ctx context.Context) error {
 }
 
 // feedCachesDropped reports whether v4 is already in place (always, on a fresh DB).
-func (s *Store) feedCachesDropped(ctx context.Context) (bool, error) {
+func feedCachesDropped(ctx context.Context, tx *sql.Tx) (bool, error) {
 	var n int
-	err := s.pools.Read().QueryRowContext(ctx,
+	err := tx.QueryRowContext(ctx,
 		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN (?, ?)`, cacheTables()[0], cacheTables()[1]).Scan(&n)
 	if err != nil {
 		return false, fmt.Errorf("state: look for feed caches: %w", err)
@@ -214,8 +195,8 @@ func (s *Store) feedCachesDropped(ctx context.Context) (bool, error) {
 }
 
 // columnExists reports whether a table has a column.
-func (s *Store) columnExists(ctx context.Context, table, column string) (bool, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
+func columnExists(ctx context.Context, query schemaQuerier, table, column string) (bool, error) {
+	rows, err := query.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%s)", table))
 	if err != nil {
 		return false, fmt.Errorf("state: table_info(%s): %w", table, err)
 	}
@@ -235,4 +216,8 @@ func (s *Store) columnExists(ctx context.Context, table, column string) (bool, e
 		return false, fmt.Errorf("state: table_info(%s) rows: %w", table, err)
 	}
 	return false, nil
+}
+
+func (s *Store) columnExists(ctx context.Context, table, column string) (bool, error) {
+	return columnExists(ctx, s.pools.Read(), table, column)
 }

@@ -35,8 +35,8 @@ SELECT player_id, season, week, measure, source, as_of, value, text FROM (
 func featureViewsDDL() string {
 	now := "'9999-12-31'"
 	return `
-CREATE VIEW season_features AS ` + featuresSQL(now, " AND week = 0") + `;
-CREATE VIEW week_features AS ` + featuresSQL(now, " AND week > 0") + `;`
+CREATE VIEW IF NOT EXISTS season_features AS ` + featuresSQL(now, " AND week = 0") + `;
+CREATE VIEW IF NOT EXISTS week_features AS ` + featuresSQL(now, " AND week > 0") + `;`
 }
 
 // Feature is the value the engine reads for one player, period and measure.

@@ -271,7 +271,7 @@ func TestCommissionerRulesReplayAfterReopen(t *testing.T) {
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := db.Open(t.Context(), path)
+	reopened, err := db.Open(t.Context(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

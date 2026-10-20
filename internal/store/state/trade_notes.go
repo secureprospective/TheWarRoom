@@ -7,12 +7,11 @@ import (
 	"time"
 )
 
-// initTradeNotesSchema creates trade_notes, the audit row for each executed trade, written in the
+// tradeNotesDDL creates trade_notes, the audit row for each executed trade, written in the
 // same transaction as its player moves. picks_note is free text: there is no pick-ownership
 // ledger yet, so "2027 1st to Franchise X" is a note, not data. rationale is required.
 // involved_franchises is comma-joined for cheap "trades involving X" queries.
-func (s *Store) initTradeNotesSchema(ctx context.Context) error {
-	const ddl = `
+const tradeNotesDDL = `
 CREATE TABLE IF NOT EXISTS trade_notes (
 	id                  TEXT PRIMARY KEY,
 	league_id           TEXT NOT NULL,
@@ -23,11 +22,6 @@ CREATE TABLE IF NOT EXISTS trade_notes (
 	involved_franchises TEXT NOT NULL
 );
 `
-	if _, err := s.pools.Write().ExecContext(ctx, ddl); err != nil {
-		return fmt.Errorf("state: init trade notes schema: %w", err)
-	}
-	return nil
-}
 
 // LogTradeNote appends the trade's audit row inside the trade's transaction.
 func (w *txWriter) LogTradeNote(ctx context.Context, picksNote, rationale string, involvedFranchises []string) error {

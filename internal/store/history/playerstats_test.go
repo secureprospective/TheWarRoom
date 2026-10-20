@@ -22,7 +22,7 @@ func statStore(t *testing.T, path string) (*Store, *db.Pools) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pools, err := db.Open(context.Background(), path)
+	pools, err := db.Open(context.Background(), path, SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -101,7 +101,7 @@ func TestNativeDirectoryNamesAndAlignmentRoundTrip(t *testing.T) {
 
 func openDirectoryHistory(t *testing.T, path string) (*history.Store, *db.Pools) {
 	t.Helper()
-	p, err := db.Open(t.Context(), path)
+	p, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

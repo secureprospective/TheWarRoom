@@ -23,36 +23,8 @@ type Store struct{ pools *db.Pools }
 func New(pools *db.Pools) *Store { return &Store{pools: pools} }
 
 func (s *Store) Initialize(ctx context.Context) error {
-	const ddl = `
-CREATE TABLE IF NOT EXISTS move_envelopes (
- correlation_id TEXT PRIMARY KEY,
- created TEXT NOT NULL,
- spec TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS move_audit (
- correlation_id TEXT NOT NULL REFERENCES move_envelopes(correlation_id),
- sequence INTEGER NOT NULL CHECK (sequence >= 0),
- at TEXT NOT NULL,
- from_state TEXT NOT NULL,
- event TEXT NOT NULL,
- to_state TEXT NOT NULL,
- note TEXT NOT NULL,
- PRIMARY KEY (correlation_id, sequence)
-);
-CREATE TRIGGER IF NOT EXISTS move_envelopes_no_update
-BEFORE UPDATE ON move_envelopes
-BEGIN SELECT RAISE(ABORT, 'move_envelopes is append-only'); END;
-CREATE TRIGGER IF NOT EXISTS move_envelopes_no_delete
-BEFORE DELETE ON move_envelopes
-BEGIN SELECT RAISE(ABORT, 'move_envelopes is append-only'); END;
-CREATE TRIGGER IF NOT EXISTS move_audit_no_update
-BEFORE UPDATE ON move_audit
-BEGIN SELECT RAISE(ABORT, 'move_audit is append-only'); END;
-CREATE TRIGGER IF NOT EXISTS move_audit_no_delete
-BEFORE DELETE ON move_audit
-BEGIN SELECT RAISE(ABORT, 'move_audit is append-only'); END;`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl+bidFactsDDL+releaseFactsDDL+contractFactsDDL); err != nil {
-		return fmt.Errorf("moves: initialize: %w", err)
+	if err := s.pools.InitializeMain(ctx); err != nil {
+		return fmt.Errorf("moves: initialize schema: %w", err)
 	}
 	return nil
 }

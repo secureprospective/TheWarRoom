@@ -61,7 +61,7 @@ func TestMigrateMoneyCents_BackfillsExactly(t *testing.T) {
 	// drift guard sees a cell for this rostered salaried player. (A pre-ledger DB with no cells
 	// is an unsupported upgrade path — carry-forward, see the project CLAUDE.md.)
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -157,7 +157,7 @@ func TestDropLegacyMoneyColumns_Ship3Era(t *testing.T) {
 		t.Fatalf("seed ship3 contract: %v", err)
 	}
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -217,7 +217,7 @@ func TestLoadWarnsAndContinuesOnMissingCell(t *testing.T) {
 	}
 	// The ledger table exists (real schema) but holds NO cell for 0001 — the planted drift.
 	s := New(pools, league, season, nil)
-	if err := s.initLedgerSchema(ctx); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, ledgerDDL); err != nil {
 		t.Fatalf("init ledger schema: %v", err)
 	}
 

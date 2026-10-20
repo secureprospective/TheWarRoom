@@ -112,7 +112,7 @@ func TestMigrationReturnsExistingForeignKeyFindings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fixture.ExecContext(t.Context(), "CREATE TABLE parent (id TEXT PRIMARY KEY); CREATE TABLE child (id TEXT REFERENCES parent(id)); INSERT INTO child VALUES ('absent')"); err != nil {
+	if _, err := fixture.ExecContext(t.Context(), "CREATE TABLE parent (id TEXT PRIMARY KEY); CREATE TABLE child (id TEXT REFERENCES parent(id)); INSERT INTO child VALUES ('absent'); CREATE TABLE checked (n INTEGER CHECK(n>0)); PRAGMA ignore_check_constraints=ON; INSERT INTO checked VALUES (-1)"); err != nil {
 		t.Fatal(err)
 	}
 	if err := fixture.Close(); err != nil {
@@ -128,6 +128,9 @@ func TestMigrationReturnsExistingForeignKeyFindings(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, findings := range []CheckFindings{result.Before, result.After} {
+		if len(findings.Integrity) != 1 || !strings.Contains(findings.Integrity[0], "CHECK constraint failed in checked") {
+			t.Fatalf("integrity findings = %+v", findings)
+		}
 		if len(findings.ForeignKeys) != 1 {
 			t.Fatalf("FK findings = %+v", result)
 		}

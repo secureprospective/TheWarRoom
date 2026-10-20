@@ -24,7 +24,7 @@ func TestArchiveMeasurement(t *testing.T) {
 		t.Fatal("measurement requires the disposable history-measure.db")
 	}
 	ctx := context.Background()
-	pools, err := db.Open(ctx, path)
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}

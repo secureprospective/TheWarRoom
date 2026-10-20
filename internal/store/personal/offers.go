@@ -10,13 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
-const offersDDL = `CREATE TABLE IF NOT EXISTS personal_offers (
- mine TEXT NOT NULL, id TEXT NOT NULL, year INTEGER NOT NULL, ts INTEGER NOT NULL,
- sender TEXT NOT NULL, receiver TEXT NOT NULL, first_seen INTEGER NOT NULL,
- last_seen INTEGER NOT NULL, first_missed INTEGER NOT NULL DEFAULT 0,
- outcome TEXT NOT NULL, PRIMARY KEY(mine,year,id,ts));
- CREATE TABLE IF NOT EXISTS personal_offer_checks (mine TEXT PRIMARY KEY, checked INTEGER NOT NULL);`
-
 type SeenOffer struct {
 	ID, Sender, Receiver, Outcome               string
 	Year                                        int

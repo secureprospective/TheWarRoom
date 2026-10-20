@@ -913,3 +913,17 @@ separately; owners retain publication-only readings. `TargetCommissionerActor` r
 session identity for self-only people acts. The lazy commissioner tray uses those doors, and the
 existing `TargetNativeBracket`, for schedule and bracket acts with named game/round/seed/team pickers.
 Go-authored market and competition wire fixtures pin the frontend bodies and previews.
+
+## File migrations
+
+`internal/db` owns the shared file runner and the complete main-file DDL. `user_version`
+steps and their markers commit together after `VACUUM INTO <file>.pre-v<N>.bak`.
+Main and what-if files know v1 (current-schema adoption); history knows v2 (typed
+`quarantine_model_runs` / `quarantine_model_scores` repair, gated by FK findings).
+The state store retains its older `schema_migrations` owner/version history inside
+file adoption. History registry refreshes use DML, not startup DDL. Openers supply
+the file's newest known version before any writer opens. `Pools.MigrationFindings`
+returns both check passes; startup logs them, including unresolved unrelated FKs.
+Repeated initialization at the same file version reuses completed checks within that
+pool; `db.Check` is the explicit fresh-check path.
+Existing backup paths are never overwritten: a collision blocks the pending upgrade.

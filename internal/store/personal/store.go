@@ -77,14 +77,8 @@ type Store struct{ pools *db.Pools }
 func New(pools *db.Pools) *Store { return &Store{pools: pools} }
 
 func (s *Store) Initialize(ctx context.Context) error {
-	const ddl = `CREATE TABLE IF NOT EXISTS personal_entries (
- mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL, entity_id TEXT NOT NULL,
- text TEXT NOT NULL, at TEXT NOT NULL, ordinal INTEGER NOT NULL,
- PRIMARY KEY (mine, kind, entity, entity_id, at));
- CREATE UNIQUE INDEX IF NOT EXISTS personal_marker ON personal_entries(mine,kind,entity,entity_id)
- WHERE kind != 'note';`
-	if _, err := s.pools.Write().ExecContext(ctx, ddl+offersDDL); err != nil {
-		return fmt.Errorf("personal: initialize: %w", err)
+	if err := s.pools.InitializeMain(ctx); err != nil {
+		return fmt.Errorf("personal: initialize schema: %w", err)
 	}
 	return nil
 }
