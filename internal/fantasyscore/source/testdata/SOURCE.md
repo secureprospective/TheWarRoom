@@ -74,7 +74,7 @@ without code changes, lists uncatalogued stats as unused, and counts them only a
 nflverse stats and play-by-play are approved in `docs/sources/Approved_Sources.md:190-206`;
 the crosswalk is approved at lines 217–221. That document explicitly preserves upstream terms
 and is NOT a blanket redistribution licence. FTN's CC-BY-SA clause is not a licence for these
-NFL stats. MFL is the existing reference integration (`SYSTEM_MAP.md`, External services), not
+NFL stats. MFL is the existing reference integration (`docs/architecture/system-narrative.md`, External services), not
 a newly contacted service; Approved_Sources has no explicit MFL redistribution licence.
 No new dependency or licence assertion is introduced.
 

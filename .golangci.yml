@@ -1,5 +1,5 @@
 # golangci-lint v2 configuration, from the christopher-coding-standards Go overlay. The
-# depguard rules are the import boundaries SYSTEM_MAP.md describes.
+# depguard rules are the import boundaries docs/architecture/system-narrative.md describes.
 
 version: "2"
 
