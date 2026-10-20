@@ -37,10 +37,12 @@ func guardJSONColumn(ctx context.Context, tx *sql.Tx, c JSONColumn) error {
 		valid = value + " = '' OR (" + valid + ")"
 	}
 	for _, op := range []string{"INSERT", "UPDATE"} {
+		// An older guard under this name may let a NULL verdict through: replace it, never keep it.
 		//nolint:gosec // SQLite cannot bind DDL identifiers; names are checked ASCII identifiers, and expressions are fixed here.
-		ddl := fmt.Sprintf(`CREATE TRIGGER %s_%s_json_%s BEFORE %s ON %s
-WHEN NOT COALESCE((%s), 0)
-BEGIN SELECT RAISE(ABORT, 'invalid JSON payload'); END;`, c.Table, c.Column, strings.ToLower(op), op, c.Table, valid)
+		ddl := fmt.Sprintf(`DROP TRIGGER IF EXISTS %[1]s_%[2]s_json_%[3]s;
+CREATE TRIGGER %[1]s_%[2]s_json_%[3]s BEFORE %[4]s ON %[1]s
+WHEN NOT COALESCE((%[5]s), 0)
+BEGIN SELECT RAISE(ABORT, 'invalid JSON payload'); END;`, c.Table, c.Column, strings.ToLower(op), op, valid)
 		if _, err := tx.ExecContext(ctx, ddl); err != nil {
 			return fmt.Errorf("db: guard %s.%s JSON: %w", c.Table, c.Column, err)
 		}

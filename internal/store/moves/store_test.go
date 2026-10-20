@@ -308,6 +308,10 @@ VALUES (?, ?, ?, ?, ?, ?, '')`, id, seq, stamp, envelope.Draft, envelope.ChecksP
 			t.Fatalf("corruption not identified: %v", err)
 		}
 	}
+	// The v2 guard refuses this write; a row written before v2 can still be corrupt.
+	if _, err := pools.Write().ExecContext(ctx, `DROP TRIGGER move_envelopes_spec_json_insert`); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := pools.Write().ExecContext(ctx,
 		`INSERT INTO move_envelopes (correlation_id, created, spec) VALUES (?, ?, ?)`,
 		"invalid-json", at.Format(timestampLayout), "{"); err != nil {
