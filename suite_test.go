@@ -59,19 +59,19 @@ func suiteFixturePath(t *testing.T, name string) string {
 func TestReducedArchiveCopiesAreIndependent(t *testing.T) {
 	t.Parallel()
 	first := reducedArchive(t)
-	if first.facts.Fingerprint() != first.sha {
+	if first.Facts.Fingerprint() != first.SHA {
 		t.Fatal("archive snapshot serialization changed its facts")
 	}
-	year := first.facts.Season.Year[0]
-	if first.facts.Season.Name[0] == nil {
+	year := first.Facts.Season.Year[0]
+	if first.Facts.Season.Name[0] == nil {
 		t.Fatal("fixture must include a league name")
 	}
-	name := *first.facts.Season.Name[0]
-	first.facts.Season.Year[0] = -1
-	*first.facts.Season.Name[0] = "mutated by this test"
+	name := *first.Facts.Season.Name[0]
+	first.Facts.Season.Year[0] = -1
+	*first.Facts.Season.Name[0] = "mutated by this test"
 	second := reducedArchive(t)
-	if second.sha != first.sha || second.facts.Season.Year[0] != year ||
-		second.facts.Season.Name[0] == nil || *second.facts.Season.Name[0] != name {
+	if second.SHA != first.SHA || second.Facts.Season.Year[0] != year ||
+		second.Facts.Season.Name[0] == nil || *second.Facts.Season.Name[0] != name {
 		t.Fatal("mutating a test's archive changed the shared fixture")
 	}
 }

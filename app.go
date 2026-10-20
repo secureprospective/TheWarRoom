@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -80,7 +82,7 @@ type App struct {
 	assetModel atomic.Pointer[assetModel]
 	// factsMu lets one checked-facts compile run at a time.
 	factsMu      sync.Mutex
-	archiveCache archiveCache
+	archiveCache archiveapp.Snapshot
 	photosOff    atomic.Bool
 	// control holds Control Room's MFL feeds (site news, scoring-event names); guarded by seasonMu.
 	control controlFeeds

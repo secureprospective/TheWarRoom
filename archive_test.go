@@ -2,31 +2,25 @@ package main
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
-	"io"
+	"fmt"
 	"os"
-	"slices"
-	"strings"
+	"reflect"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/facts"
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	"github.com/secureprospective/TheWarRoom/internal/app/archive/archivetest"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 )
 
-type reducedArchiveFixture struct {
-	SHA   string
-	Facts facts.Facts
-}
-
 // Only serial tests call this helper. The on-disk snapshot is immutable after its first compile.
-func reducedArchive(t *testing.T) archiveCache {
+func reducedArchive(t *testing.T) archiveapp.Snapshot {
 	t.Helper()
 	path := suiteFixturePath(t, "reduced-archive.json")
 	body, err := os.ReadFile(path)
 	if os.IsNotExist(err) {
-		compiled := compileReducedArchive(t)
-		fixture := reducedArchiveFixture{SHA: compiled.sha, Facts: compiled.facts}
-		body, err = json.Marshal(fixture)
+		f := archivetest.Facts(t)
+		body, err = json.Marshal(archiveapp.Snapshot{SHA: f.Fingerprint(), Facts: f})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -36,199 +30,132 @@ func reducedArchive(t *testing.T) archiveCache {
 	} else if err != nil {
 		t.Fatal(err)
 	}
-	var fixture reducedArchiveFixture
+	var fixture archiveapp.Snapshot
 	if err := json.Unmarshal(body, &fixture); err != nil {
 		t.Fatal(err)
 	}
-	return archiveCache{sha: fixture.SHA, facts: fixture.Facts, cutoff: "Oct 11, 2026"}
+	fixture.Cutoff = archivetest.Cutoff
+	return fixture
 }
 
-func compileReducedArchive(t *testing.T) archiveCache {
-	t.Helper()
-	raw, err := os.ReadFile("internal/lab/testdata/facts/inputs.json.gz")
+// TestArchiveWireMatchesGolden freezes the Archive wire contract in testdata/wire/archive: what
+// the frontend receives, field for field. The bound method opens on a fresh history (no compiled
+// snapshot); the rest build on the reduced archive, before and after a franchise is chosen.
+// Regenerate with TWR_WRITE_WIRE=1 go test -run TestArchiveWireMatchesGolden . and review the diff.
+func TestArchiveWireMatchesGolden(t *testing.T) {
+	a := targetTestApp(t)
+	bound, err := a.TargetArchive(0, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	gz, err := gzip.NewReader(bytes.NewReader(raw))
-	if err != nil {
-		t.Fatal(err)
-	}
-	body, err := io.ReadAll(gz)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := gz.Close(); err != nil {
-		t.Fatal(err)
-	}
-	var fixture struct {
-		Dictionary []string `json:"dictionary"`
-		Inputs     []struct {
-			File   string `json:"file"`
-			SHA256 string `json:"sha256"`
-			Bytes  int64  `json:"bytes"`
-			Tokens []int  `json:"tokens"`
-		} `json:"inputs"`
-	}
-	if err := json.Unmarshal(body, &fixture); err != nil {
-		t.Fatal(err)
-	}
-	inputs := []facts.ResolvedInput{}
-	for _, in := range fixture.Inputs {
-		var b []byte
-		for _, token := range in.Tokens {
-			b = append(b, fixture.Dictionary[token]...)
-		}
-		inputs = append(inputs, facts.ResolvedInput{File: in.File, SHA256: in.SHA256, Bytes: in.Bytes, Body: b})
-	}
-	curated, err := os.ReadFile("internal/lab/testdata/note_readings.csv")
-	if err != nil {
-		t.Fatal(err)
-	}
-	notes, err := facts.ParseCurated(curated)
-	if err != nil {
-		t.Fatal(err)
-	}
-	compiled, err := facts.Compile(t.Context(), inputs, notes)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return archiveCache{sha: compiled.Fingerprint(), facts: compiled, cutoff: "Oct 11, 2026"}
-}
-
-func archiveReport(t *testing.T, b ArchiveBoard, id string) Report {
-	t.Helper()
-	for _, r := range b.Board.Reports {
-		if r.ID == id {
-			return r
-		}
-	}
-	t.Fatal("missing report", id)
-	return Report{}
-}
-
-func TestArchiveBeforeImportSaysHowToImport(t *testing.T) {
-	t.Parallel()
-	b, err := buildArchive(archiveCache{}, false, 0, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, r := range b.Board.Reports {
-		if r.Status != "failed" || !strings.Contains(r.Note, "Import the league archive in Control Room › Data and sources") || len(r.Rows) != 0 {
-			t.Fatal(r.ID, r.Status, r.Note)
-		}
-		if strings.Contains(strings.ToLower(r.Note), "refresh from mfl") {
-			t.Fatal("before import, a report says to refresh from MFL", r.ID)
-		}
-	}
-}
-
-func TestArchiveReportsOnTheReducedArchive(t *testing.T) {
-	t.Parallel()
+	checkArchiveWire(t, "unimported", bound)
 	cache := reducedArchive(t)
-	b, err := buildArchive(cache, false, 0, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	history := archiveReport(t, b, "M-080")
-	if history.Status != "ok" || len(history.Rows) == 0 {
-		t.Fatal(history)
-	}
-	last := history.Rows[len(history.Rows)-1].Cells
-	if last[1] != "Season in progress" {
-		t.Fatal("the newest season is not called in progress", last)
-	}
-	rules := archiveReport(t, b, "M-182")
-	for _, row := range rules.Rows {
-		if strings.ContainsAny(strings.Join(row.Cells, " "), "{\"") {
-			t.Fatal("raw MFL setting text in the rules report", row.Cells)
-		}
-	}
-	if champions := archiveReport(t, b, "M-114"); champions.Status == "failed" || champions.Title != "League champions" {
-		t.Fatal(champions)
-	}
-	for _, id := range []string{"M-104", "M-105", "M-023", "M-110", "M-019"} {
-		if r := archiveReport(t, b, id); r.Status != "empty" || !strings.Contains(r.Note, "Choose") {
-			t.Fatal(id, "without a franchise", r.Status, r.Note)
-		}
-	}
-	team := b.Teams[0].Value
-	other := b.Teams[1].Value
-	chosen, err := buildArchive(cache, false, 0, team, other)
-	if err != nil {
-		t.Fatal(err)
-	}
-	seen := map[string]string{}
-	for _, id := range []string{"M-104", "M-105", "M-023", "M-110"} {
-		r := archiveReport(t, chosen, id)
-		shape := strings.Join(r.Columns, "|")
-		if prior, ok := seen[shape]; ok {
-			t.Fatal(id, "repeats", prior)
-		}
-		seen[shape] = id
-	}
-	for _, row := range archiveReport(t, chosen, "M-084").Rows {
-		if strings.Contains(row.Cells[0], "wins") && strings.Contains(row.Cells[3], ".") {
-			t.Fatal("a win count written with decimals", row.Cells)
-		}
-	}
-	series := archiveReport(t, chosen, "M-019")
-	for _, row := range series.Rows {
-		if !strings.Contains(row.Cells[4], "–") {
-			t.Fatal("a meeting without both scores", row.Cells)
-		}
-	}
-}
-
-func TestArchiveLineupInWords(t *testing.T) {
-	t.Parallel()
-	raw := `{"count":"21","iop_starters":"8","position":[{"name":"QB","limit":"1"},{"limit":"1-3","name":"RB"}]}`
-	if got := archiveLineup(raw); got != "QB 1 · RB 1–3 · 21 starters · 8 offensive" {
-		t.Fatal(got)
-	}
-	if archiveLineup("") != "Not recorded" || archiveLineup("{") != "Not recorded" || archiveUnquote(`"8"`) != "8" {
-		t.Fatal("unreadable settings")
-	}
-}
-
-func TestTrophyTitleNamesATrophyOnce(t *testing.T) {
-	t.Parallel()
-	for _, c := range [][3]string{
-		{"NFC", "NFC Conference Champ", "NFC Conference Champ"},
-		{"2015 Legacy Superbowl III", "2015 Legacy Champions", "2015 Legacy Superbowl III · 2015 Legacy Champions"},
-		{"Division Champions", "", "Division Champions"},
+	for _, c := range []struct {
+		name, team, other string
+		season            int
+		stale             bool
+	}{
+		{name: "league"},
+		{name: "season-stale", season: 2015, stale: true},
+		{name: "franchise", team: "0001", other: "0002"},
 	} {
-		if got := trophyTitle(c[0], c[1]); got != c[2] {
-			t.Errorf("trophyTitle(%q, %q) = %q, want %q", c[0], c[1], got, c[2])
+		b, err := buildArchive(cache, c.stale, c.season, c.team, c.other)
+		if err != nil {
+			t.Fatal(c.name, err)
+		}
+		checkArchiveWire(t, c.name, b)
+	}
+}
+
+func checkArchiveWire(t *testing.T, name string, b ArchiveBoard) {
+	t.Helper()
+	got, err := json.MarshalIndent(b, "", " ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got = append(got, '\n')
+	path := "testdata/wire/archive/" + name + ".json"
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.MkdirAll("testdata/wire/archive", 0o750); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, got, 0o644); err != nil { //nolint:gosec // a test fixture
+			t.Fatal(err)
+		}
+		return
+	}
+	want, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(want, got) {
+		t.Errorf("%s differs from the Archive binding's output; the wire contract changed", path)
+	}
+}
+
+// TestReportWireTwinsMatch proves wireBoard and wireChoices lose nothing: a board with every
+// field set, and one left empty, encode the same before and after conversion. A field added to
+// one type set and not the other, a renamed JSON tag, or a field the converter skips fails here.
+func TestReportWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	var full report.Board
+	n := 0
+	fillWire(reflect.ValueOf(&full).Elem(), &n)
+	choices := []report.Choice{{Value: "0001", Label: "One"}}
+	for _, c := range []struct {
+		name       string
+		built, got any
+	}{
+		{"full board", full, wireBoard(full)},
+		{"empty board", report.Board{}, wireBoard(report.Board{})},
+		{"empty report", report.Board{Reports: []report.Report{{}}}, wireBoard(report.Board{Reports: []report.Report{{}}})},
+		{"choices", choices, wireChoices(choices)},
+		{"nil choices", []report.Choice(nil), wireChoices(nil)},
+	} {
+		want, err := json.Marshal(c.built)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := json.Marshal(c.got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(want, got) {
+			t.Errorf("%s: wire twin encodes differently\n built %s\n wire  %s", c.name, want, got)
 		}
 	}
 }
 
-func TestArchiveRetainsEveryNonPoolReport(t *testing.T) {
-	t.Parallel()
-	b, err := buildArchive(archiveCache{}, false, 0, "", "")
-	if err != nil {
-		t.Fatal(err)
+// fillWire sets every field reachable from v to a distinct non-zero value.
+func fillWire(v reflect.Value, n *int) {
+	*n++
+	kind := v.Kind()
+	if kind == reflect.Struct {
+		for i := range v.NumField() {
+			fillWire(v.Field(i), n)
+		}
+		return
 	}
-	if b.Board.Title != "Archive" {
-		t.Fatal(b.Board.Title)
+	if kind == reflect.Pointer {
+		v.Set(reflect.New(v.Type().Elem()))
+		fillWire(v.Elem(), n)
+		return
 	}
-	ids := []string{}
-	for _, r := range b.Board.Reports {
-		ids = append(ids, r.ID)
+	if kind == reflect.Slice {
+		v.Set(reflect.MakeSlice(v.Type(), 2, 2))
+		for i := range v.Len() {
+			fillWire(v.Index(i), n)
+		}
+		return
 	}
-	want := []string{"M-080", "M-114", "M-182", "M-104", "M-105", "M-023", "M-110", "M-019",
-		"M-083", "M-084", "M-085", "M-086", "M-082", "M-073", "M-079", "M-081", "M-089"}
-	if !slices.Equal(ids, want) {
-		t.Fatalf("report ids = %v, want %v", ids, want)
+	scalars := map[reflect.Kind]func(){
+		reflect.String:  func() { v.SetString(fmt.Sprint("text ", *n)) },
+		reflect.Float64: func() { v.SetFloat(float64(*n) + 0.25) },
+		reflect.Bool:    func() { v.SetBool(true) },
 	}
-}
-
-func TestChampionsLatestUnplayedAndOldMissing(t *testing.T) {
-	t.Parallel()
-	cache := reducedArchive(t)
-	cache.facts.Season.Year = []int64{2013, 2026}
-	r := (archiveView{cache: cache}).champions()
-	if len(r.Rows) != 2 || r.Rows[0].Cells[1] != "not in MFL's archive" || r.Rows[0].Cells[2] != "No scored championship final held" || !strings.Contains(r.Rows[1].Cells[2], "final has not been played") {
-		t.Fatal(r.Rows)
+	set, ok := scalars[kind]
+	if !ok {
+		panic("fillWire: add a case for " + kind.String())
 	}
+	set()
 }

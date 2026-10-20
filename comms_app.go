@@ -37,7 +37,7 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 			in.rosterNote = " Weekly contract history unavailable; dropped salaries may not be held."
 			a.fallbackLog(err.Error())
 		}
-		in.rosters, in.rosterTimes = cache.facts.RosterWeek, rosterWeekTimes(cache.facts.NflGame)
+		in.rosters, in.rosterTimes = cache.Facts.RosterWeek, rosterWeekTimes(cache.Facts.NflGame)
 	}
 	return buildComms(in, raw)
 }

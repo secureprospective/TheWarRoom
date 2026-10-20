@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
@@ -192,17 +193,7 @@ func pctText(r race.Record) string {
 	return strings.TrimPrefix(s, "0")
 }
 
-func scoreText(p leaguefeed.Points) string {
-	sign, n := "", int64(p)
-	if n < 0 {
-		sign, n = "-", -n
-	}
-	whole := strconv.FormatInt(n/100, 10)
-	for i := len(whole) - 3; i > 0; i -= 3 {
-		whole = whole[:i] + "," + whole[i:]
-	}
-	return fmt.Sprintf("%s%s.%02d", sign, whole, n%100)
-}
+func scoreText(p leaguefeed.Points) string { return report.ScoreText(p) }
 
 func streakText(s race.Streak) string {
 	words := map[leaguefeed.Result]string{"W": "Won", "L": "Lost", "T": "Tied"}

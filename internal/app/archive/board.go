@@ -1,4 +1,11 @@
-package main
+// Package archive builds League Pulse › Archive: the league's history, champions, franchise
+// records and oddities, read from a verified compile of the imported MFL league archive.
+//
+// It is the feature service behind the root binding App.TargetArchive. It holds no state and
+// starts nothing: the caller passes the snapshot in and keeps it. Not to be confused with
+// internal/archive, the low-level HTTP response recorder that stores every fetch's raw bytes;
+// this package reads the league facts compiled from those bytes.
+package archive
 
 import (
 	"cmp"
@@ -7,12 +14,33 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 )
 
+// Snapshot is a verified compile of the league archive: the facts, the SHA the compiler recorded
+// for them, and the newest capture they include. The zero Snapshot means none is held yet.
+type Snapshot struct {
+	SHA     string
+	Facts   facts.Facts
+	Cutoff  string
+	Through time.Time
+}
+
+// Board is the Archive screen: its reports and the season and franchise pickers.
+type Board struct {
+	Board   report.Board    `json:"board"`
+	Season  int             `json:"season"`
+	Seasons []report.Choice `json:"seasons"`
+	Team    string          `json:"team"`
+	Other   string          `json:"other"`
+	Teams   []report.Choice `json:"teams"`
+}
+
 type archiveView struct {
-	cache       archiveCache
+	cache       Snapshot
 	views       facts.Views
 	names       map[string]string
 	players     map[string]string
@@ -32,7 +60,7 @@ func archivePoints(p *float64) string {
 	if p == nil {
 		return "Not recorded"
 	}
-	return scoreText(hundredths(*p))
+	return report.ScoreText(report.Hundredths(*p))
 }
 func archiveRecord(w, l, t *int64) string {
 	if w == nil {
@@ -42,9 +70,12 @@ func archiveRecord(w, l, t *int64) string {
 }
 func archiveKey(y int64, id string) string { return archiveYear(y) + ":" + id }
 
-func buildArchive(cache archiveCache, stale bool, season int, team, other string) (ArchiveBoard, error) {
-	v := archiveView{cache: cache, views: cache.facts.Views(), names: map[string]string{}, players: map[string]string{}, season: season, team: team, other: other, stale: stale}
-	fs := cache.facts.FranchiseSeason
+// Build reads every Archive report from the snapshot. A zero season means the newest; team and
+// other pick the franchise reports and the series. stale marks the reports as showing an older
+// snapshot than the newest import.
+func Build(cache Snapshot, stale bool, season int, team, other string) (Board, error) {
+	v := archiveView{cache: cache, views: cache.Facts.Views(), names: map[string]string{}, players: map[string]string{}, season: season, team: team, other: other, stale: stale}
+	fs := cache.Facts.FranchiseSeason
 	latest := map[string]string{}
 	for i, y := range fs.Year {
 		name := archiveValue(fs.Name[i])
@@ -54,24 +85,24 @@ func buildArchive(cache archiveCache, stale bool, season int, team, other string
 		v.names[archiveKey(y, fs.Fid[i])] = name
 		latest[fs.Fid[i]] = name
 	}
-	for i, pid := range cache.facts.Player.Pid {
-		v.players[pid] = cache.facts.Player.Name[i]
+	for i, pid := range cache.Facts.Player.Pid {
+		v.players[pid] = cache.Facts.Player.Name[i]
 	}
-	b := ArchiveBoard{Season: season, Team: team, Other: other, Seasons: []RaceChoice{}, Teams: []RaceChoice{}, Board: ReportBoard{Title: "Archive", Loading: "Reading the league archive…", Refresh: "Reread the imported archive", HowLabel: "How this is counted", Reports: []Report{}}}
-	for _, y := range cache.facts.Season.Year {
-		b.Seasons = append(b.Seasons, RaceChoice{Value: archiveYear(y), Label: archiveYear(y)})
+	b := Board{Season: season, Team: team, Other: other, Seasons: []report.Choice{}, Teams: []report.Choice{}, Board: report.Board{Title: "Archive", Loading: "Reading the league archive…", Refresh: "Reread the imported archive", HowLabel: "How this is counted", Reports: []report.Report{}}}
+	for _, y := range cache.Facts.Season.Year {
+		b.Seasons = append(b.Seasons, report.Choice{Value: archiveYear(y), Label: archiveYear(y)})
 	}
 	if season == 0 && len(b.Seasons) > 0 {
-		v.season = int(slices.Max(cache.facts.Season.Year))
+		v.season = int(slices.Max(cache.Facts.Season.Year))
 		b.Season = v.season
 	}
 	if err := v.validateChoices(latest); err != nil {
-		return ArchiveBoard{}, err
+		return Board{}, err
 	}
 	for id, name := range latest {
-		b.Teams = append(b.Teams, RaceChoice{Value: id, Label: name})
+		b.Teams = append(b.Teams, report.Choice{Value: id, Label: name})
 	}
-	slices.SortFunc(b.Teams, func(a, b RaceChoice) int {
+	slices.SortFunc(b.Teams, func(a, b report.Choice) int {
 		return cmp.Or(strings.Compare(a.Label, b.Label), strings.Compare(a.Value, b.Value))
 	})
 	b.Board.Reports = append(b.Board.Reports, v.history(), v.champions(), v.eras(), v.trophies(), v.franchise("M-105", "All-time franchise record"), v.franchiseBests(), v.franchiseSummary(), v.series(), v.matchupRecords(), v.seasonRecords(), v.careerRecords(), v.streaks(), v.playerRecords(), v.scoring(), v.playerChanges(), v.awards(), v.oddities())
@@ -79,20 +110,20 @@ func buildArchive(cache archiveCache, stale bool, season int, team, other string
 }
 
 func (v archiveView) validateChoices(latest map[string]string) error {
-	if v.season != 0 && v.cache.sha != "" && !slices.Contains(v.cache.facts.Season.Year, int64(v.season)) {
+	if v.season != 0 && v.cache.SHA != "" && !slices.Contains(v.cache.Facts.Season.Year, int64(v.season)) {
 		return fmt.Errorf("archive: season is not in the snapshot")
 	}
 	for _, id := range []string{v.team, v.other} {
-		if id != "" && v.cache.sha != "" && latest[id] == "" {
+		if id != "" && v.cache.SHA != "" && latest[id] == "" {
 			return fmt.Errorf("archive: franchise is not in the snapshot")
 		}
 	}
 	return nil
 }
 
-func (v archiveView) shell(id, title, how string, columns ...string) Report {
-	r := Report{ID: id, Title: title, Status: "ok", Source: "Source: imported MFL archive · snapshot cutoff " + v.cache.cutoff, How: how, Columns: columns, Rows: []ReportRow{}, Summary: []ReportRow{}}
-	if v.cache.sha == "" {
+func (v archiveView) shell(id, title, how string, columns ...string) report.Report {
+	r := report.Report{ID: id, Title: title, Status: "ok", Source: "Source: imported MFL archive · snapshot cutoff " + v.cache.Cutoff, How: how, Columns: columns, Rows: []report.Row{}, Summary: []report.Row{}}
+	if v.cache.SHA == "" {
 		r.Status = "failed"
 		r.Note = "The compiled league archive is not available. Import the league archive in Control Room › Data and sources."
 		r.Source = "Source: no compiled league archive"
@@ -114,7 +145,7 @@ func (v archiveView) player(id string) string {
 	}
 	return "Player name not recorded"
 }
-func (v archiveView) needTeam(r Report) (Report, bool) {
+func (v archiveView) needTeam(r report.Report) (report.Report, bool) {
 	if r.Status == "failed" {
 		return r, false
 	}
@@ -133,7 +164,7 @@ type archiveFinal struct {
 }
 
 func (v archiveView) finals() []archiveFinal {
-	b, g := v.cache.facts.PlayoffBracket, v.cache.facts.PlayoffGame
+	b, g := v.cache.Facts.PlayoffBracket, v.cache.Facts.PlayoffGame
 	out := []archiveFinal{}
 	for i, y := range b.Year {
 		last := int64(0)
@@ -158,7 +189,7 @@ func (v archiveView) scoredFinal(bracket int, indices []int) (archiveFinal, bool
 	if len(indices) != 2 {
 		return archiveFinal{}, false
 	}
-	b, g := v.cache.facts.PlayoffBracket, v.cache.facts.PlayoffGame
+	b, g := v.cache.Facts.PlayoffBracket, v.cache.Facts.PlayoffGame
 	a, z := indices[0], indices[1]
 	if g.Points[a] == nil || g.Points[z] == nil || *g.Points[a] == *g.Points[z] || archiveValue(g.Fid[a]) == "" || archiveValue(g.Fid[z]) == "" {
 		return archiveFinal{}, false
@@ -173,17 +204,17 @@ func superBowl(name string) bool {
 	return strings.Contains(strings.ReplaceAll(strings.ToLower(name), " ", ""), "superbowl")
 }
 
-func (v archiveView) history() Report {
+func (v archiveView) history() report.Report {
 	r := v.shell("M-080", "League history", "Champions and runners-up are the two scored sides of the final round of the league's Super Bowl, exactly as the reference season cards count them. Unplayed, tied or missing finals are not assigned a winner. Regular-season leaders have the best win percentage; tied leaders are all named, not resolved by an invented tiebreak.", "Season", "Champion", "Runner-up", "Regular-season leader", "Final")
 	finals := v.finals()
-	for _, y := range v.cache.facts.Season.Year {
+	for _, y := range v.cache.Facts.Season.Year {
 		champion, runner, score := "Final not recorded", "Final not recorded", "Not recorded"
-		if y == slices.Max(v.cache.facts.Season.Year) {
+		if y == slices.Max(v.cache.Facts.Season.Year) {
 			champion, runner, score = "Season in progress", "Season in progress", "Not played yet"
 		}
 		for _, f := range finals {
 			if f.year == y && superBowl(f.name) {
-				champion, runner, score = v.name(y, f.win), v.name(y, f.lose), scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))
+				champion, runner, score = v.name(y, f.win), v.name(y, f.lose), report.ScoreText(report.Hundredths(f.winner))+"–"+report.ScoreText(report.Hundredths(f.loser))
 			}
 		}
 		best := float64(-1)
@@ -207,38 +238,38 @@ func (v archiveView) history() Report {
 		if leader == "" {
 			leader = "No scored regular-season games"
 		}
-		r.Rows = append(r.Rows, draftRow(archiveYear(y), champion, runner, leader, score))
+		r.Rows = append(r.Rows, report.Cells(archiveYear(y), champion, runner, leader, score))
 	}
 	return r
 }
 
-func (v archiveView) champions() Report {
+func (v archiveView) champions() report.Report {
 	r := v.shell("M-114", "League champions", "Each season's Super Bowl winner, from the final round of MFL's recorded playoff bracket. A season without a scored, untied final has no champion here.", "Season", "Champion", "Final")
 	if r.Status == "failed" {
 		return r
 	}
 	finals := v.finals()
-	for _, y := range v.cache.facts.Season.Year {
+	for _, y := range v.cache.Facts.Season.Year {
 		found := false
 		for _, f := range finals {
 			if f.year == y && superBowl(f.name) {
 				found = true
-				r.Rows = append(r.Rows, draftRow(archiveYear(y), v.name(y, f.win),
-					scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(y, f.lose)))
+				r.Rows = append(r.Rows, report.Cells(archiveYear(y), v.name(y, f.win),
+					report.ScoreText(report.Hundredths(f.winner))+"–"+report.ScoreText(report.Hundredths(f.loser))+" over "+v.name(y, f.lose)))
 			}
 		}
-		if !found && y == slices.Max(v.cache.facts.Season.Year) {
-			r.Rows = append(r.Rows, draftRow(archiveYear(y), "Season under way", "Its championship final has not been played yet"))
+		if !found && y == slices.Max(v.cache.Facts.Season.Year) {
+			r.Rows = append(r.Rows, report.Cells(archiveYear(y), "Season under way", "Its championship final has not been played yet"))
 		} else if !found {
-			r.Rows = append(r.Rows, draftRow(archiveYear(y), "not in MFL's archive", "No scored championship final held"))
+			r.Rows = append(r.Rows, report.Cells(archiveYear(y), "not in MFL's archive", "No scored championship final held"))
 		}
 	}
 	return r
 }
 
-func (v archiveView) eras() Report {
+func (v archiveView) eras() report.Report {
 	r := v.shell("M-182", "League rules by season", "The reference season cards name regular-season weeks, salary cap, roster size, taxi squad, injured reserve and starting lineup. Rules are shown as recorded for each season; repeated setups are grouped. Stale bracket titles are kept as MFL recorded them, not used to change a season's date.", "Seasons", "Regular season", "Salary cap", "Roster size", "Taxi / injured reserve", "Starting lineup")
-	s := v.cache.facts.Season
+	s := v.cache.Facts.Season
 	groups := map[string]int{}
 	for i, y := range s.Year {
 		weeks := []int64{}
@@ -261,7 +292,7 @@ func (v archiveView) eras() Report {
 			r.Rows[at].Cells[0] += ", " + archiveYear(y)
 		} else {
 			groups[key] = len(r.Rows)
-			r.Rows = append(r.Rows, draftRow(append([]string{archiveYear(y)}, cells...)...))
+			r.Rows = append(r.Rows, report.Cells(append([]string{archiveYear(y)}, cells...)...))
 		}
 	}
 	return r
@@ -304,7 +335,7 @@ func archiveLineup(raw string) string {
 	return text
 }
 
-func (v archiveView) franchise(id, title string) Report {
+func (v archiveView) franchise(id, title string) report.Report {
 	r, ok := v.needTeam(v.shell(id, title, "Regular records come from the reference's season reading. Playoff records count scored head-to-head games outside the regular weeks; byes and unscored placeholders never count. All-play includes every scored week, including playoff weeks, with MFL's published all-play taking precedence. Trophy winners require a scored, untied two-team final.", "Season", "Franchise", "Regular W-L-T", "Playoff W-L-T", "Points · all weeks", "All-play W-L-T"))
 	if !ok {
 		return r
@@ -329,7 +360,7 @@ func (v archiveView) franchise(id, title string) Report {
 		pw += w
 		pl += l
 		pt += t
-		r.Rows = append(r.Rows, draftRow(archiveYear(y), v.name(y, v.team), archiveRecord(ts.RegW[i], ts.RegL[i], ts.RegT[i]), archiveRecord(&w, &l, &t), archivePoints(ts.AllWeeksPf[i]), archiveRecord(ts.AllPlayW[i], ts.AllPlayL[i], ts.AllPlayT[i])))
+		r.Rows = append(r.Rows, report.Cells(archiveYear(y), v.name(y, v.team), archiveRecord(ts.RegW[i], ts.RegL[i], ts.RegT[i]), archiveRecord(&w, &l, &t), archivePoints(ts.AllWeeksPf[i]), archiveRecord(ts.AllPlayW[i], ts.AllPlayL[i], ts.AllPlayT[i])))
 	}
 	for i, y := range g.Year {
 		if g.Fid[i] == v.team && (bestWhen == "Not recorded" || *g.Score[i] > best) {
@@ -337,17 +368,17 @@ func (v archiveView) franchise(id, title string) Report {
 			bestWhen = fmt.Sprintf("%s week %d", archiveYear(y), g.Week[i])
 		}
 	}
-	r.Summary = append(r.Summary, draftRow("All-time regular record", archiveRecord(&rw, &rl, &rt)), draftRow("All-time playoff record", archiveRecord(&pw, &pl, &pt)), draftRow("Highest weekly score", scoreText(hundredths(best))+" · "+bestWhen))
+	r.Summary = append(r.Summary, report.Cells("All-time regular record", archiveRecord(&rw, &rl, &rt)), report.Cells("All-time playoff record", archiveRecord(&pw, &pl, &pt)), report.Cells("Highest weekly score", report.ScoreText(report.Hundredths(best))+" · "+bestWhen))
 	trophies := []string{}
 	for _, f := range v.finals() {
 		if f.win == v.team {
-			trophies = append(trophies, fmt.Sprintf("%d · %s (%s) · %s–%s", f.year, f.name, f.title, scoreText(hundredths(f.winner)), scoreText(hundredths(f.loser))))
+			trophies = append(trophies, fmt.Sprintf("%d · %s (%s) · %s–%s", f.year, f.name, f.title, report.ScoreText(report.Hundredths(f.winner)), report.ScoreText(report.Hundredths(f.loser))))
 		}
 	}
 	if len(trophies) == 0 {
 		trophies = append(trophies, "No scored bracket championship recorded")
 	}
-	r.Summary = append(r.Summary, draftRow("Trophy case", strings.Join(trophies, "\n")))
+	r.Summary = append(r.Summary, report.Cells("Trophy case", strings.Join(trophies, "\n")))
 	return r
 }
 
@@ -362,22 +393,22 @@ func (v archiveView) teamFinals() []archiveFinal {
 	return out
 }
 
-func (v archiveView) trophies() Report {
+func (v archiveView) trophies() report.Report {
 	r, ok := v.needTeam(v.shell("M-104", "Trophy case", "Every bracket final the franchise won, as MFL's playoff brackets record it. A final needs two scored sides and no tie; unplayed or tied finals award nothing.", "Season", "Title", "Final"))
 	if !ok {
 		return r
 	}
 	for _, f := range v.teamFinals() {
-		r.Rows = append(r.Rows, draftRow(archiveYear(f.year), trophyTitle(f.name, f.title), scoreText(hundredths(f.winner))+"–"+scoreText(hundredths(f.loser))+" over "+v.name(f.year, f.lose)))
+		r.Rows = append(r.Rows, report.Cells(archiveYear(f.year), trophyTitle(f.name, f.title), report.ScoreText(report.Hundredths(f.winner))+"–"+report.ScoreText(report.Hundredths(f.loser))+" over "+v.name(f.year, f.lose)))
 	}
 	if len(r.Rows) == 0 {
-		r.Status, r.Note = "empty", v.name(slices.Max(v.cache.facts.Season.Year), v.team)+" has no recorded bracket championship."
+		r.Status, r.Note = "empty", v.name(slices.Max(v.cache.Facts.Season.Year), v.team)+" has no recorded bracket championship."
 	}
 	return r
 }
 
 // franchiseBests are the chosen franchise's own records: its best and worst weeks and seasons.
-func (v archiveView) franchiseBests() Report {
+func (v archiveView) franchiseBests() report.Report {
 	r, ok := v.needTeam(v.shell("M-023", "Franchise records", "The franchise's own highs and lows across every recorded season: scored weeks (playoffs included) and regular seasons. Ties for a record are all shown.", "Record", "When", "Value"))
 	if !ok {
 		return r
@@ -392,7 +423,7 @@ func (v archiveView) franchiseBests() Report {
 	}
 	ts := v.views.TeamSeason
 	for i, y := range ts.Year {
-		if ts.Fid[i] != v.team || y == slices.Max(v.cache.facts.Season.Year) {
+		if ts.Fid[i] != v.team || y == slices.Max(v.cache.Facts.Season.Year) {
 			continue
 		}
 		when := archiveYear(y) + " · " + archiveRecord(ts.RegW[i], ts.RegL[i], ts.RegT[i])
@@ -408,7 +439,7 @@ func (v archiveView) franchiseBests() Report {
 	return r
 }
 
-func (v archiveView) franchiseSummary() Report {
+func (v archiveView) franchiseSummary() report.Report {
 	r, ok := v.needTeam(v.shell("M-110", "Franchise summary", "One franchise at a glance: its seasons and names, all-time records and titles. The full season table is the All-time franchise record.", "Fact", "Value"))
 	if !ok {
 		return r
@@ -429,7 +460,7 @@ func (v archiveView) franchiseSummary() Report {
 			names = append(names, name)
 		}
 	}
-	r.Rows = append(r.Rows, draftRow("Seasons", fmt.Sprintf("%d · %d–%d", seasons, first, last)), draftRow("Names", strings.Join(names, ", ")))
+	r.Rows = append(r.Rows, report.Cells("Seasons", fmt.Sprintf("%d · %d–%d", seasons, first, last)), report.Cells("Names", strings.Join(names, ", ")))
 	r.Rows = append(r.Rows, full.Summary[:2]...)
 	titles := []string{}
 	for _, f := range v.teamFinals() {
@@ -438,7 +469,7 @@ func (v archiveView) franchiseSummary() Report {
 	if len(titles) == 0 {
 		titles = append(titles, "None recorded")
 	}
-	r.Rows = append(r.Rows, draftRow("Titles", strings.Join(titles, " · ")))
+	r.Rows = append(r.Rows, report.Cells("Titles", strings.Join(titles, " · ")))
 	return r
 }
 
@@ -460,7 +491,7 @@ func (v archiveView) playoffRecord(year int64, regular map[[2]int64]bool) (w, l,
 	return w, l, t
 }
 
-func (v archiveView) series() Report {
+func (v archiveView) series() report.Report {
 	r, ok := v.needTeam(v.shell("M-019", "All-time series", "Every scored meeting, in season and week order. The selected franchise is shown first. Unscored placeholders are not ties.", "Season", "Week", "Franchise", "Opponent", "Score", "Result"))
 	if !ok {
 		return r
@@ -491,9 +522,9 @@ func (v archiveView) series() Report {
 		case "T":
 			t++
 		}
-		r.Rows = append(r.Rows, draftRow(archiveYear(y), fmt.Sprint(g.Week[i]), v.name(y, v.team), v.name(y, v.other), archivePoints(g.Score[i])+"–"+archivePoints(theirs[fmt.Sprintf("%d:%d", y, g.Week[i])]), result))
+		r.Rows = append(r.Rows, report.Cells(archiveYear(y), fmt.Sprint(g.Week[i]), v.name(y, v.team), v.name(y, v.other), archivePoints(g.Score[i])+"–"+archivePoints(theirs[fmt.Sprintf("%d:%d", y, g.Week[i])]), result))
 	}
-	r.Summary = append(r.Summary, draftRow("Series W-L-T", fmt.Sprintf("%d-%d-%d", w, l, t)))
+	r.Summary = append(r.Summary, report.Cells("Series W-L-T", fmt.Sprintf("%d-%d-%d", w, l, t)))
 	if len(r.Rows) == 0 {
 		r.Status = "empty"
 		r.Note = "No scored meetings recorded between these franchises."

@@ -265,40 +265,6 @@ func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 	}
 }
 
-func TestPulseArchiveNamesTotalsAndFirstChampion(t *testing.T) {
-	t.Parallel()
-	cache := reducedArchive(t)
-	board, err := buildArchive(cache, false, 2026, "", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	odd := archiveReport(t, board, "M-089")
-	if strings.Contains(strings.ToLower(odd.Note+odd.How), "ring") || len(odd.Rows) == 0 {
-		t.Fatal(odd.Note)
-	}
-	if !strings.Contains(odd.Rows[0].Cells[1], " · ") || !strings.Contains(odd.Rows[0].Cells[2], ": ") {
-		t.Fatal("oddities lack count or franchise grouping", odd.Rows[0])
-	}
-	scoring := archiveReport(t, board, "M-073")
-	for _, row := range scoring.Summary {
-		if !strings.Contains(row.Cells[0], "all scored weeks") || (row.Cells[1] != "0.00" && !strings.Contains(row.Cells[1], ",")) {
-			t.Fatal("unlabelled or unformatted era total", row.Cells)
-		}
-	}
-	points := 51484.67
-	if archivePoints(&points) != "51,484.67" || archiveRecordValue(archiveRecordEntry{value: points}) != "51,484.67" {
-		t.Fatal("archive points formatter")
-	}
-	champ := archiveReport(t, board, "M-114")
-	if len(champ.Rows) == 0 || champ.Rows[0].Cells[0] != "2013" || champ.Rows[0].Cells[1] != "not in MFL's archive" {
-		t.Fatal("2013 silently omitted", champ.Rows)
-	}
-	if trophyTitle("2015 Legacy Superbowl III", "2015 Legacy Champions") !=
-		"2015 Legacy Superbowl III · 2015 Legacy Champions" {
-		t.Fatal("league's written title changed")
-	}
-}
-
 func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 	t.Parallel()
 	a, _, _ := weekTestApp(t, "17")

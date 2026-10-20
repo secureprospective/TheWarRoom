@@ -1,0 +1,9365 @@
+{
+ "board": {
+  "title": "Archive",
+  "loading": "Reading the league archive…",
+  "refresh": "Reread the imported archive",
+  "howLabel": "How this is counted",
+  "mflLabel": "",
+  "mflUrl": "",
+  "reports": [
+   {
+    "id": "M-080",
+    "title": "League history",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Champions and runners-up are the two scored sides of the final round of the league's Super Bowl, exactly as the reference season cards count them. Unplayed, tied or missing finals are not assigned a winner. Regular-season leaders have the best win percentage; tied leaders are all named, not resolved by an invented tiebreak.",
+    "columns": [
+     "Season",
+     "Champion",
+     "Runner-up",
+     "Regular-season leader",
+     "Final"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "Final not recorded",
+       "Final not recorded",
+       "New York Giants (13-0-0)",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Tennessee Titans",
+       "New York Giants",
+       "Los Angeles Rams (12-0-0)",
+       "234.80–201.65"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2022",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "Final not recorded",
+       "Final not recorded",
+       "No scored regular-season games",
+       "Not recorded"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Season in progress",
+       "Season in progress",
+       "Buffalo Bills (3-0-0)\nIndianapolis Colts (3-0-0)\nCincinnati Bengals (3-0-0)\nTampa Bay Buccaneers (3-0-0)\nDetroit Lions (3-0-0)\nLos Angeles Rams (3-0-0)\nWashington Commanders (3-0-0)",
+       "Not played yet"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-114",
+    "title": "League champions",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Each season's Super Bowl winner, from the final round of MFL's recorded playoff bracket. A season without a scored, untied final has no champion here.",
+    "columns": [
+     "Season",
+     "Champion",
+     "Final"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2019",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Tennessee Titans",
+       "234.80–201.65 over New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2022",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "not in MFL's archive",
+       "No scored championship final held"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Season under way",
+       "Its championship final has not been played yet"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-182",
+    "title": "League rules by season",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The reference season cards name regular-season weeks, salary cap, roster size, taxi squad, injured reserve and starting lineup. Rules are shown as recorded for each season; repeated setups are grouped. Stale bracket titles are kept as MFL recorded them, not used to change a season's date.",
+    "columns": [
+     "Seasons",
+     "Regular season",
+     "Salary cap",
+     "Roster size",
+     "Taxi / injured reserve",
+     "Starting lineup"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "Weeks 1–13",
+       "Not recorded",
+       "53",
+       "0 / 5",
+       "QB 0–1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 0–1 · DT 1–3 · DE 1–3 · LB 3–4 · CB 0–4 · S 0–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014",
+       "Not recorded",
+       "Not recorded",
+       "53",
+       "0 / 5",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–2 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015",
+       "Not recorded",
+       "$100.00M",
+       "53",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 15–20 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016",
+       "Not recorded",
+       "$100.00M",
+       "53",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 11 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2017",
+       "Not recorded",
+       "$100.00M",
+       "60",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2018, 2019",
+       "Not recorded",
+       "$100.00M",
+       "60",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 1–2 · DE 2–3 · LB 3–4 · CB 2–4 · S 1–3 · 16–21 starters · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020",
+       "Weeks 1–12",
+       "$100.00M",
+       "75",
+       "0 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021, 2022",
+       "Not recorded",
+       "$105.00M",
+       "75",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2023",
+       "Not recorded",
+       "$110.00M",
+       "75",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–3 · DE 2–3 · LB 3–4 · CB 2–3 · S 2–3 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2024",
+       "Not recorded",
+       "$115.00M",
+       "48",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2025",
+       "Not recorded",
+       "$120.00M",
+       "80",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026",
+       "Weeks 1–13",
+       "$125.00M",
+       "80",
+       "8 / 12",
+       "QB 1 · RB 1–3 · WR 2–5 · TE 1–3 · PK 1 · DT 2–4 · DE 2–4 · LB 2–4 · CB 2–4 · S 2–4 · 21 starters · 8 offensive · 12 defensive"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-104",
+    "title": "Trophy case",
+    "note": "Choose a franchise to see this report.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Every bracket final the franchise won, as MFL's playoff brackets record it. A final needs two scored sides and no tie; unplayed or tied finals award nothing.",
+    "columns": [
+     "Season",
+     "Title",
+     "Final"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-105",
+    "title": "All-time franchise record",
+    "note": "Choose a franchise to see this report.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Regular records come from the reference's season reading. Playoff records count scored head-to-head games outside the regular weeks; byes and unscored placeholders never count. All-play includes every scored week, including playoff weeks, with MFL's published all-play taking precedence. Trophy winners require a scored, untied two-team final.",
+    "columns": [
+     "Season",
+     "Franchise",
+     "Regular W-L-T",
+     "Playoff W-L-T",
+     "Points · all weeks",
+     "All-play W-L-T"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-023",
+    "title": "Franchise records",
+    "note": "Choose a franchise to see this report.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The franchise's own highs and lows across every recorded season: scored weeks (playoffs included) and regular seasons. Ties for a record are all shown.",
+    "columns": [
+     "Record",
+     "When",
+     "Value"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-110",
+    "title": "Franchise summary",
+    "note": "Choose a franchise to see this report.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "One franchise at a glance: its seasons and names, all-time records and titles. The full season table is the All-time franchise record.",
+    "columns": [
+     "Fact",
+     "Value"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-019",
+    "title": "All-time series",
+    "note": "Choose a franchise to see this report.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Every scored meeting, in season and week order. The selected franchise is shown first. Unscored placeholders are not ties.",
+    "columns": [
+     "Season",
+     "Week",
+     "Franchise",
+     "Opponent",
+     "Score",
+     "Result"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-083",
+    "title": "Matchup records",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Highest weekly franchise score, highest combined game score and largest winning margin. Opponents are paired by season and week. A game is counted once, on the winning side (or one side of a tie). Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Points"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Highest weekly score",
+       "New York Giants",
+       "2013 week 1",
+       "415.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Highest combined game",
+       "St. Louis Rams vs Atlanta Falcons",
+       "2013 week 15",
+       "665.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Largest winning margin",
+       "San Francisco 49ers over Seattle Seahawks",
+       "2026 week 3",
+       "229.93"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-084",
+    "title": "Single-season records",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Regular-season wins and losses use the reference season definition. Points include all weeks MFL scored. A partial season is labelled and is not extrapolated. Every tied holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Most regular-season wins",
+       "New York Giants",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Miami Dolphins",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Cincinnati Bengals",
+       "2013",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most season points · all weeks",
+       "St. Louis Rams",
+       "2013",
+       "4,508.00"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-085",
+    "title": "Career franchise records",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Franchise identity is MFL's id across seasons, not its changing name. Regular wins, losses and points are summed over recorded seasons. No unplayed games count. Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Value"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Most regular-season wins",
+       "Los Angeles Rams",
+       "2013–2026 · through cutoff",
+       "27"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most regular-season losses",
+       "Cincinnati Bengals",
+       "2013–2026 · through cutoff",
+       "24"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most career points · all weeks",
+       "Los Angeles Rams",
+       "2013–2026 · through cutoff",
+       "9,203.84"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-086",
+    "title": "Winning and losing streaks",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Consecutive scored head-to-head games, regular season and playoffs, across season boundaries. A tie ends both streaks; a bye or an unscored game does not extend or end one. Every tied longest streak is shown with its starting and ending game.",
+    "columns": [
+     "Record",
+     "Who",
+     "When",
+     "Games"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Longest losing streak",
+       "Cincinnati Bengals",
+       "2013 week 1 → 2020 week 11",
+       "24"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "New York Giants",
+       "2013 week 1 → 2013 week 13",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "Los Angeles Rams",
+       "2020 week 1 → 2020 week 14",
+       "13"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Longest winning streak",
+       "Tennessee Titans",
+       "2020 week 6 → 2026 week 2",
+       "13"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-082",
+    "title": "Player scoring records",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "MFL's recorded weekly player scores under this league's scoring, not NFL statistics or a rescoring formula. Season and career totals include every recorded scored week; missing scores are not zero. Every tied record holder is shown.",
+    "columns": [
+     "Record",
+     "Player",
+     "When",
+     "Points"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "Highest single game",
+       "Charles, Jamaal",
+       "2013 week 15",
+       "78.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most season points",
+       "Manning, Peyton",
+       "2013 · recorded weeks",
+       "586.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "Most career points",
+       "Wilson, Russell",
+       "All archived seasons · through cutoff",
+       "834.85"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-073",
+    "title": "Scoring history",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Points are the sum of franchise weekly scores, all weeks MFL scored. A partial season is not extrapolated. Era boundaries follow a change in the recorded scoring rules; the reference's regular-season calendar changes separately from 12 to 13 weeks.",
+    "columns": [
+     "Season",
+     "Scoring era",
+     "League points",
+     "Scored franchise weeks",
+     "Regular season"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2013",
+       "2013 scoring rules",
+       "104,583.00",
+       "544",
+       "Weeks 1–13"
+      ],
+      "range": null,
+      "group": "2013 scoring rules"
+     },
+     {
+      "cells": [
+       "2014",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2015",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2016",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2017",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2018",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2019",
+       "2014 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2014 scoring rules"
+     },
+     {
+      "cells": [
+       "2020",
+       "2020 scoring rules",
+       "93,008.57",
+       "544",
+       "Weeks 1–12"
+      ],
+      "range": null,
+      "group": "2020 scoring rules"
+     },
+     {
+      "cells": [
+       "2021",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2022",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2023",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2024",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2025",
+       "2021 scoring rules",
+       "0.00",
+       "0",
+       "Not recorded"
+      ],
+      "range": null,
+      "group": "2021 scoring rules"
+     },
+     {
+      "cells": [
+       "2026",
+       "2026 scoring rules",
+       "18,910.61",
+       "96",
+       "Weeks 1–13"
+      ],
+      "range": null,
+      "group": "2026 scoring rules"
+     }
+    ],
+    "summary": [
+     {
+      "cells": [
+       "2013 · all scored weeks · total points",
+       "104,583.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014, 2015, 2016, 2017, 2018, 2019 · all scored weeks · total points",
+       "0.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2020 · all scored weeks · total points",
+       "93,008.57"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2021, 2022, 2023, 2024, 2025 · all scored weeks · total points",
+       "0.00"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2026 · all scored weeks · total points",
+       "18,910.61"
+      ],
+      "range": null
+     }
+    ],
+    "link": null
+   },
+   {
+    "id": "M-079",
+    "title": "Player additions and position changes",
+    "note": "Showing the last verified snapshot; the newer import has not passed compilation. Check Control Room › Data and sources.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The selected season only. Additions are the reference's roster moves with an add role (free agents, waivers and roster loads). Position changes compare consecutive recorded seasonal player positions; a missing year is not assigned a date. Transaction dates are MFL's recorded dates.",
+    "columns": [
+     "When",
+     "Change",
+     "Player",
+     "Franchise / positions"
+    ],
+    "rows": [
+     {
+      "cells": [
+       "2016-01-31",
+       "Player added",
+       "Fatinikun, T.J.",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-19",
+       "Player added",
+       "Sanders, Emmanuel",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-13",
+       "Player added",
+       "Davis, Vernon",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-13",
+       "Player added",
+       "Miller, Lamar",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-13",
+       "Player added",
+       "Martin, Doug",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-12",
+       "Player added",
+       "Ivory, Chris",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-12",
+       "Player added",
+       "Roethlisberger, Ben",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2016-01-12",
+       "Player added",
+       "Coleman, Kurt",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-31",
+       "Player added",
+       "Flynn, Matt",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-25",
+       "Player added",
+       "Bell, Joique",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-25",
+       "Player added",
+       "Randle, Joseph",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-25",
+       "Player added",
+       "Jackson, Steven",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-25",
+       "Player added",
+       "Hicks, Akiem",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-20",
+       "Player added",
+       "Hightower, Tim",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-19",
+       "Player added",
+       "Donnell, Larry",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-19",
+       "Player added",
+       "Williams, Teddy",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-19",
+       "Player added",
+       "Bowen, Stephen",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-14",
+       "Player added",
+       "Smith, Marcus",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-11",
+       "Player added",
+       "McDougle, Dexter",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-11",
+       "Player added",
+       "Flacco, Joe",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-10",
+       "Player added",
+       "Cunningham, Jerome",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-10",
+       "Player added",
+       "Roberson, Marcus",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Smith, Lee",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Unrein, Mitch",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Bush, Josh",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Stevens, Craig",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Gwacham, Obum",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Callahan, Bryce",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Morgan, Michael",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Johnson, Jeron",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Hosley, Jayron",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Wade, Trevin",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Brate, Cameron",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Purcell, Mike",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-09",
+       "Player added",
+       "Branch, Alan",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-07",
+       "Player added",
+       "Prosinski, Chris",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-07",
+       "Player added",
+       "Griffin, Ryan",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-07",
+       "Player added",
+       "Wheeler, Philip",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-07",
+       "Player added",
+       "Bolden, Brandon",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-12-02",
+       "Player added",
+       "Skuta, Dan",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-29",
+       "Player added",
+       "Irving, David",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-28",
+       "Player added",
+       "Perillo, Justin",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-28",
+       "Player added",
+       "DiMarco, Patrick",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-28",
+       "Player added",
+       "Irving, David",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-24",
+       "Player added",
+       "Mostert, Raheem",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-24",
+       "Player added",
+       "Hewitt, Neville",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-24",
+       "Player added",
+       "Olawale, Jamize",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-14",
+       "Player added",
+       "Jerod-Eddie, Tony",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-14",
+       "Player added",
+       "Webb, Joe",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-14",
+       "Player added",
+       "Mariani, Marc",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-14",
+       "Player added",
+       "Davis, Austin",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-12",
+       "Player added",
+       "Adjei-Barimah, Jude",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-12",
+       "Player added",
+       "Drummond, Kurtis",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-12",
+       "Player added",
+       "Carrethers, Ryan",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-12",
+       "Player added",
+       "Dahl, Craig",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-08",
+       "Player added",
+       "Herndon, Javontee",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-08",
+       "Player added",
+       "Phillips, John",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-08",
+       "Player added",
+       "Thomas, Joe",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-08",
+       "Player added",
+       "Wake, Cameron",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-08",
+       "Player added",
+       "Draughn, Shaun",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-04",
+       "Player added",
+       "Gaskins, Kendall",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-04",
+       "Player added",
+       "Tye, Will",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-04",
+       "Player added",
+       "Bethea, Antoine",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-04",
+       "Player added",
+       "Whalen, Griff",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-11-04",
+       "Player added",
+       "Humphries, Adam",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-31",
+       "Player added",
+       "Williams, Nick",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-31",
+       "Player added",
+       "Conner, Kavell",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-30",
+       "Player added",
+       "Crawford, Jack",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-29",
+       "Player added",
+       "Roberts, Andre",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-29",
+       "Player added",
+       "Roberts, Andre",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-29",
+       "Player added",
+       "Golden, Robert",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-28",
+       "Player added",
+       "Richardson, Bobby",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-27",
+       "Player added",
+       "Dye, Donteea",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-25",
+       "Player added",
+       "Anderson, Jonathan",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-25",
+       "Player added",
+       "Ginn Jr., Ted",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-25",
+       "Player added",
+       "Joseph, Linval",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-25",
+       "Player added",
+       "Freeney, Dwight",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-23",
+       "Player added",
+       "Boyle, Nick",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-23",
+       "Player added",
+       "Ward, Terron",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-23",
+       "Player added",
+       "Coleman, Justin",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Ware, Spencer",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Mager, Craig",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Fowler, Jalston",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Armbrister, Thurston",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Carder, Tank",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Ware, Spencer",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "White, Myles",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-18",
+       "Player added",
+       "Autry, Denico",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-17",
+       "Player added",
+       "Bullock, Randy",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-17",
+       "Player added",
+       "Hartley, Garrett",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-17",
+       "Player added",
+       "Jones, Howard",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-16",
+       "Player added",
+       "Reynolds, LaRoy",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-16",
+       "Player added",
+       "Stoneburner, Jake",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-16",
+       "Player added",
+       "Cockrell, Ross",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-16",
+       "Player added",
+       "Acho, Sam",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-16",
+       "Player added",
+       "Redding, Cory",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-11",
+       "Player added",
+       "Jones, Landry",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-11",
+       "Player added",
+       "Walters, Bryan",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-11",
+       "Player added",
+       "Therezie, Robenson",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-11",
+       "Player added",
+       "Delaire, Ryan",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-11",
+       "Player added",
+       "Jarrett, Kyshoen",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-10",
+       "Player added",
+       "Boswell, Chris",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-10",
+       "Player added",
+       "Stupar, Nathan",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-10",
+       "Player added",
+       "Thielen, Adam",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-10",
+       "Player added",
+       "Whitlock, Nikita",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-10",
+       "Player added",
+       "Bryant, Corbin",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-06",
+       "Player added",
+       "Dunbar, Jo-Lonn",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-06",
+       "Player added",
+       "Bates, Daren",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-06",
+       "Player added",
+       "Thomas, Michael",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-06",
+       "Player added",
+       "Ross, Rashad",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Smith, Devin",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Ball, Neiron",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Meredith, Cameron",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Fales, David",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Hill, Shaun",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Brown, Jalil",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Wilber, Kyle",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Thorpe, Neiko",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-10-03",
+       "Player added",
+       "Shepherd, JaCorey",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-27",
+       "Player added",
+       "Robinson, Edmond",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-27",
+       "Player added",
+       "Worthy, Chandler",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-27",
+       "Player added",
+       "Richardson, Bobby",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-27",
+       "Player added",
+       "Philon, Darius",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-27",
+       "Player added",
+       "Mauro, Josh",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-26",
+       "Player added",
+       "Bellamy, Josh",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-26",
+       "Player added",
+       "Dent, Akeem",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-26",
+       "Player added",
+       "Humber, Ramon",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-23",
+       "Player added",
+       "Jones, T.J.",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-23",
+       "Player added",
+       "Orlovsky, Dan",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-23",
+       "Player added",
+       "McCown, Luke",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-23",
+       "Player added",
+       "Bruton, David",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-23",
+       "Player added",
+       "Guy, Lawrence",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-20",
+       "Player added",
+       "Johnson, Malcolm",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-20",
+       "Player added",
+       "Humphries, Adam",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-20",
+       "Player added",
+       "Hunt, Phillip",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Munnerlyn, Captain",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Roberts, Seth",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Gay, Jordan",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Tate, Ben",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "West, Charcandrick",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Shaw, Connor",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Sendejo, Andrew",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Johnson, Austin",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Harris, Dwayne",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-19",
+       "Player added",
+       "Celek, Garrett",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-17",
+       "Player added",
+       "Fells, Darren",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-17",
+       "Player added",
+       "Fowler, Bennie",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-17",
+       "Player added",
+       "Norwood, Jordan",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-16",
+       "Player added",
+       "Swann, Damian",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-15",
+       "Player added",
+       "Varga, Tyler",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-15",
+       "Player added",
+       "Smith, Marcus",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-15",
+       "Player added",
+       "Johnson, Will",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Harris, Alonzo",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Davis, Geremy",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Little, Greg",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Pead, Isaiah",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Rubin, Ahtyba",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Miller, Zach",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Wootton, Corey",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "McCoy, Anthony",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Acker, Kenneth",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-13",
+       "Player added",
+       "Unga, Uani",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-11",
+       "Player added",
+       "Skov, Shayne",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-11",
+       "Player added",
+       "Jones, T.J.",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-11",
+       "Player added",
+       "Jones, Taiwan",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-11",
+       "Player added",
+       "Snead, Willie",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-10",
+       "Player added",
+       "Enemkpali, IK",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Williams, Kevin",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Fells, Daniel",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Weems, Eric",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Tapp, Darryl",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Bair, Brandon",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Moore, Lance",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-09",
+       "Player added",
+       "Cundiff, Billy",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-08",
+       "Player added",
+       "Enunwa, Quincy",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Hocker, Zach",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Starr, Tyler",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Vigil, Zach",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Bailey, Rasheed",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Lambo, Josh",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Brindza, Kyle",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Franks, Andrew",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Phillips, Kenny",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Carter, Tony",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Renfree, Sean",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Anderson, Derek",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-07",
+       "Player added",
+       "Foster, Mason",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-06",
+       "Player added",
+       "Bailey, Dion",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-06",
+       "Player added",
+       "Mathews, Ricardo",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-05",
+       "Player added",
+       "Washington, Daryl",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-05",
+       "Player added",
+       "Foster, Mason",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-05",
+       "Player added",
+       "Barrett, Shaq",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-05",
+       "Player added",
+       "Bolden, Omar",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-02",
+       "Player added",
+       "Myers, Jason",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-02",
+       "Player added",
+       "Lawson, Nevin",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-09-02",
+       "Player added",
+       "Demps, Quintin",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-31",
+       "Player added",
+       "Patmon, Tyler",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-31",
+       "Player added",
+       "Hurst, Demontre",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-31",
+       "Player added",
+       "Burkhead, Rex",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-31",
+       "Player added",
+       "Hayes, William",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-30",
+       "Player added",
+       "Breaux, Delvin",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-30",
+       "Player added",
+       "Lewis, Dion",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-30",
+       "Player added",
+       "Thompson, Deonte",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "Mariota, Marcus",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "Langford, Jeremy",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "Hall, Rannell",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "Bibbs, E.J.",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "McCain, Bobby",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-29",
+       "Player added",
+       "Alexander, D.J.",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Gunter, Rodney",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Lambert, Keenan",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Pitoitua, Ropati",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Hal, Dre",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Wright, Shareece",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Couplin, Jerome",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Shead, Deshawn",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-28",
+       "Player added",
+       "Reaser, Keith",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-27",
+       "Player added",
+       "Edwards, Dwan",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-21",
+       "Player added",
+       "Meriweather, Brandon",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-21",
+       "Player added",
+       "Redding, Cory",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-19",
+       "Player added",
+       "Catapano, Mike",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-19",
+       "Player added",
+       "Exum, Antone",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-19",
+       "Player added",
+       "Brooks, Ron",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-18",
+       "Player added",
+       "Smith, Aldon",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-18",
+       "Player added",
+       "Dial, Quinton",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-18",
+       "Player added",
+       "Momah, Ifeanyi",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-15",
+       "Player added",
+       "Harris, Mike",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-15",
+       "Player added",
+       "Devito, Mike",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-15",
+       "Player added",
+       "Palmer, Nate",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-15",
+       "Player added",
+       "Jackson, Bennett",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-15",
+       "Player added",
+       "Greenberry, Deontay",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-13",
+       "Player added",
+       "Hilliard, Kenny",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Briggs, Lance",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Allen, Will",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Woods, Al",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Howard, Jaye",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Scobee, Josh",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-12",
+       "Player added",
+       "Johnson, Storm",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Walls, Darrin",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Conner, Kavell",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Pryor, Terrelle",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Vaughan, Dustin",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Henne, Chad",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Whitehead, Lucky",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Taylor, Jordan",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-10",
+       "Player added",
+       "Dyer, Michael",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-08",
+       "Player added",
+       "Williams, Tyrell",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-08",
+       "Player added",
+       "Abdullah, Ameer",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-04",
+       "Player added",
+       "Shepherd, JaCorey",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-03",
+       "Player added",
+       "Davison, Tyeler",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-03",
+       "Player added",
+       "Johnson, Gus",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Allen, Ricardo",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Fede, Terrence",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Canty, Chris",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Brooks, Ahmad",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Gradkowski, Bruce",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-08-02",
+       "Player added",
+       "Baker, Chris",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-27",
+       "Player added",
+       "Magee, Terrence",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-27",
+       "Player added",
+       "Harper, Josh",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-27",
+       "Player added",
+       "Mayle, Vince",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-27",
+       "Player added",
+       "Luc, Jeff",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-27",
+       "Player added",
+       "Allen, Ricardo",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-26",
+       "Player added",
+       "Anderson, Henry",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-26",
+       "Player added",
+       "Rawls, Thomas",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-26",
+       "Player added",
+       "Wilson, Ramik",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-26",
+       "Player added",
+       "Amos, Adrian",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-26",
+       "Player added",
+       "Diggs, Quandre",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Asante, Larry",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Hankerson, Leonard",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Scheuerman, Ross",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Cliett, Reshard",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Obarski, Tom",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-25",
+       "Player added",
+       "Lockette, Ricardo",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Pitta, Dennis",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Darkwa, Orleans",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Ball, Alan",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Coons, Travis",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Wynn, Jarius",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Blackmon, Will",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Davison, Tyeler",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "White, DeAndrew",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Spencer, Evan",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Mount, Deiontrez",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Holliman, Gerod",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Smith, Tye",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Riddick, Shaquille",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Mihalik, Brian",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Evans, Randall",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Doss, Lorenzo",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Ringo, Christian",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Harper, Chris",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Christian, Gerald",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Thompson, Mykkele",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Prewitt, Cody",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Coxson, Adrian",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Grant, Corey",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Carter, Alex",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Nelson, David",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Mayo, David",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Clay, Kaelin",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Tull, Davis",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Williams, Rasheed",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Smith, Derron",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Gaines, Charles",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Anderson, Dres",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Hunt, Akeem",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Davis, Titus",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Heeney, Ben",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Wright, Gabe",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Mumphery, Keith",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Blackson, Angelo",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Smith, D'Joun",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Alford, Mario",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Hardison, Marcus",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Parry, David",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Herrera, Amarlo",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Days, Synjyn",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Valles, Max",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Orchard, Nate",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Emanuel, Kyle",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Murphy, Marcus",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Smith, Za'Darius",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Davis, Carl",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Mayle, Vince",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Campbell, Ibraheim",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Pruitt, MyCole",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Montgomery, Ty",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Williams, Karlos",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Golson, Senquez",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-24",
+       "Player added",
+       "Alexander, Kwon",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Petty, Bryce",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Artis-Payne, Cameron",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Steward, Tony",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Smith, Preston",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Odighizuwa, Owamagbe",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Smelter, DeAndre",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Geathers, Clayton",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Greene, Rashad",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Robinson, Josh",
+       "Tampa Bay Buccaneers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Siemian, Trevor",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Shaw, Josh",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Williams, P.J.",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-23",
+       "Player added",
+       "Bennett, Michael",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Nelson, J.J.",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Anderson, Rory",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Brown, Dominique",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Heuerman, Jeff",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Golden, Markus",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Bell, Blake",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Rollins, Quinten",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "O'Shaughnessy, James",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Grissom, Geneo",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Russell, Ryan",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Spaight, Martrell",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Phillips, Jordan",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-07-15",
+       "Player added",
+       "Hull, Mike",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-24",
+       "Player added",
+       "Coleman, Kurt",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-24",
+       "Player added",
+       "Pleasant, Eddie",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-24",
+       "Player added",
+       "Pollard, Bernard",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-24",
+       "Player added",
+       "Robinson, Patrick",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-17",
+       "Player added",
+       "Vaughn, Cassius",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-17",
+       "Player added",
+       "Paysinger, Spencer",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-17",
+       "Player added",
+       "Hundley, Brett",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-13",
+       "Player added",
+       "Robinson, Adrien",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-13",
+       "Player added",
+       "Mauti, Michael",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-13",
+       "Player added",
+       "Sanders, Ace",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-13",
+       "Player added",
+       "Ward, T.J.",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Jarrett, Grady",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Lewis, Dezmin",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Flowers, Trey",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Clark, Frank",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Wilson, Damien",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Goldman, Eddie",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Sample, James",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Sasser, Bud",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Hunter, Danielle",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "O'Leary, Nick",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Shelton, Danny",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Darby, Ronald",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Richards, Jordan",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Crockett, John",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Cooper, Xavier",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Tartt, Jaquiski",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Lippett, Tony",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Hicks, Jordan",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Grayson, Garrett",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Crowder, Jamison",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Davis, Devante",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Carter, DeAndre",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Johnson, Kevin",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Gurley, Todd",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Ajayi, Jay",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Beasley, Vic",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Collins, Landon",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Zenner, Zach",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Brown, Malcolm",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Randall, Damarious",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "James, Jesse",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Rowe, Eric",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Derby, A.J.",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Mauldin, Lorenzo",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Armstead, Arik",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Brown, Malcom",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Jones, Byron",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Jones, Matt",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Gregory, Randy",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Dawson, Paul",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Collins, Jalen",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Davis, Mike",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-06-03",
+       "Player added",
+       "Kikaha, Hau'oli",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Bell, Kenny",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Kroft, Tyler",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Langford, Jeremy",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Walford, Clive",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "McBride, Tre",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Coleman, Tevin",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Diggs, Stefon",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Ray, Shane",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Edwards, Mario",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-28",
+       "Player added",
+       "Waller, Darren",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Lewis, Keenan",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Hocker, Zach",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Berry, Eric",
+       "Chicago Bears"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Powell, Ty",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Fletcher, Dane",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Vick, Michael",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-27",
+       "Player added",
+       "Hasselbeck, Matt",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Strong, Jaelen",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Williams, Maxx",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "White, Kevin",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Kendricks, Eric",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Hardy, Justin",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Waynes, Trae",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Harold, Eli",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Perryman, Denzel",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-23",
+       "Player added",
+       "Shepard, Russell",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-22",
+       "Player added",
+       "Peters, Corey",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-21",
+       "Player added",
+       "Adams, Phillip",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-21",
+       "Player added",
+       "Tandy, Keith",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-21",
+       "Player added",
+       "Melvin, Rashaan",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-21",
+       "Player added",
+       "Spaeth, Matt",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-21",
+       "Player added",
+       "Smallwood, Yawin",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-18",
+       "Player added",
+       "Dorsett, Phillip",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-17",
+       "Player added",
+       "Kerley, Jeremy",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-16",
+       "Player added",
+       "Revis, Darrelle",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-16",
+       "Player added",
+       "Cameron, Jordan",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-16",
+       "Player added",
+       "Davis, Thomas",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-16",
+       "Player added",
+       "Irvin, Bruce",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-16",
+       "Player added",
+       "Conner, Kavell",
+       "Seattle Seahawks"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Fowler, Dante",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Williams, Leonard",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Thompson, Shaq",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Dupree, Bud",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Peters, Marcus",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Allen, Javorius",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Johnson, David",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Parker, DeVante",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Lockett, Tyler",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Funchess, Devin",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Coates, Sammie",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Agholor, Nelson",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Ryan, Jake",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Conley, Chris",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "McKinney, Benardrick",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Anthony, Stephone",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Yeldon, T.J.",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Cobb, David",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Cooper, Amari",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Johnson, Duke",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Winston, Jameis",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Gordon, Melvin",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "McCain, Brice",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Johnson, Chris",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Davis, Fred",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Rucker, Frostee",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "McGloin, Matt",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-14",
+       "Player added",
+       "Duncan, Joe Don",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-12",
+       "Player added",
+       "Green-Beckham, Dorial",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-12",
+       "Player added",
+       "Perriman, Breshad",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-11",
+       "Player added",
+       "Jordan, Dion",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-10",
+       "Player added",
+       "Haralson, Parys",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-10",
+       "Player added",
+       "Sims, Eugene",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Daniels, Owen",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Ogletree, Alec",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Williams, Aaron",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Hicks, Akiem",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Cunningham, Benny",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Hayes, Geno",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-09",
+       "Player added",
+       "Irvin, Bruce",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-07",
+       "Player added",
+       "Canty, Chris",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-07",
+       "Player added",
+       "Gates, Antonio",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-07",
+       "Player added",
+       "West, Terrance",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-07",
+       "Player added",
+       "Lamur, Emmanuel",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-05-07",
+       "Player added",
+       "Olsen, Greg",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-30",
+       "Player added",
+       "Brooks, Ron",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-30",
+       "Player added",
+       "Buchanan, Michael",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-30",
+       "Player added",
+       "Jones, Abry",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-30",
+       "Player added",
+       "Wright, James",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-30",
+       "Player added",
+       "Walker, Vance",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "House, Davon",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "Pace, Calvin",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "Fales, David",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "Biggers, E.J.",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "Maualuga, Rey",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-27",
+       "Player added",
+       "Blanchard, Matt",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Sherman, Richard",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Hemingway, Junior",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Walker, Delanie",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Jones, Jarvis",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Timmons, Lawrence",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-15",
+       "Player added",
+       "Verner, Alterraun",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-11",
+       "Player added",
+       "Jennings, Greg",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "White, Melvin",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Blake, Antwon",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Greene, Shonn",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Lawson, Manny",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Morgan, Joseph",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Smith, Malcolm",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Robinson, Trent",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Caldwell, Andre",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Leshoure, Mikel",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Martin, Keshawn",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Wayne, Reggie",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Henderson, Erin",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Freeman, Josh",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Rainey, Bobby",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Wynn, Kerry",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Reed, Brooks",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-09",
+       "Player added",
+       "Tate, Brandon",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-08",
+       "Player added",
+       "McClellin, Shea",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-07",
+       "Player added",
+       "Allen, Nate",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-07",
+       "Player added",
+       "Rodgers, Jacquizz",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-07",
+       "Player added",
+       "Norman, Josh",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Reyes, Kendall",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Neal, Rajion",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Andrews, Antonio",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Jenkins, Cullen",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Brown, Tarell",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Williams, Cary",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Moats, Arthur",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Thomas, Pierre",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Hayes, Geno",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Schaub, Matt",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Polamalu, Troy",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Raji, B.J.",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-04",
+       "Player added",
+       "Conner, Kavell",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-02",
+       "Player added",
+       "Cole, Trent",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-02",
+       "Player added",
+       "Ryans, DeMeco",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-02",
+       "Player added",
+       "Timmons, Lawrence",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Polk, Chris",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Wilson, George",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Johnson, Damaris",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Johnson, Damaris",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Moore, Denarius",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Schofield, O'Brien",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Clayborn, Adrian",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Wolfe, Derek",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Harrison, James",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Jackson, Tyson",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Harris, David",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-04-01",
+       "Player added",
+       "Nicks, Hakeem",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-31",
+       "Player added",
+       "Woodhead, Danny",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Hughes, John",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Peppers, Julius",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Allen, Jared",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Hartline, Brian",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Hayne, Jarryd",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Barnidge, Gary",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Gore, Frank",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Smith, Aldon",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Fitzgerald, Larry",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Babin, Jason",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Lewis, Marcedes",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Pettigrew, Brandon",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Tebow, Tim",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Godfrey, Charles",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Guion, Letroy",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Bush, Rafael",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Crabtree, Michael",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Helfet, Cooper",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Fletcher, Bradley",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Davis, Todd",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Mallett, Ryan",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Irving, Nate",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "McLeod, Rodney",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Watts, Trey",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Woodley, LaMarr",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Forsett, Justin",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Moore, William",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Clemons, Chris",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Miller, Roy",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Jackson, Malik",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Robey, Nickell",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "McPhee, Pernell",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Forte, Matt",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Newman, Terence",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Suggs, Terrell",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Miller, Von",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Bowe, Dwayne",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-30",
+       "Player added",
+       "Hemingway, Junior",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Graham, Brandon",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Soliai, Paul",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Helu, Roy",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Woodyard, Wesley",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Harris, Marcus",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Starks, Randy",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Dansby, Karlos",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Liuget, Corey",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Toler, Greg",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Housler, Robert",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Washington, Nate",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Johnson, George",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-29",
+       "Player added",
+       "Acho, Sam",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Bowers, Da'Quan",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Taylor, Tyrod",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Dunbar, Lance",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Bowers, Da'Quan",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Taylor, Tyrod",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Dunbar, Lance",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Colvin, Aaron",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Powell, Bilal",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Carter, Duron",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Amendola, Danny",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Paul, Niles",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Gilchrist, Marcus",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Daniel, Chase",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Butler, Darius",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Bethea, Antoine",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Woodley, LaMarr",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Weddle, Eric",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Freeman, Jerrell",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Miller, Heath",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Durant, Justin",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Prater, Matt",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "McClain, Jameel",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Moody, Nick",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Skuta, Dan",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Foster, Mason",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Landry, Dawan",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-28",
+       "Player added",
+       "Mundy, Ryan",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Thomas, Earl",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Searcy, Da'Norris",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Ingram, Mark",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Warren, Pierre",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Welker, Wes",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Avant, Jason",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Parker, Preston",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Williams, Ryan",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Watson, Ben",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-27",
+       "Player added",
+       "Graham, Brandon",
+       "Philadelphia Eagles"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Brees, Drew",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Amukamara, Prince",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Moore, Rahim",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Bethel, Justin",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Carter, Bruce",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Smith, Antone",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Delmas, Louis",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Marshall, Brandon",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Allen, Cortez",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Ihenacho, Duke",
+       "Green Bay Packers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Lansanah, Danny",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Sheard, Jabaal",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Fairley, Nick",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Odrick, Jared",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Gabbert, Blaine",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Kirkpatrick, Dre",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Odrick, Jared",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Williams, Aaron",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Kendricks, Lance",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Ridley, Stevan",
+       "New England Patriots"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Palmer, Carson",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Jordan, Cameron",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Cassel, Matt",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Kerley, Jeremy",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-26",
+       "Player added",
+       "Soliai, Paul",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Heyward, Cameron",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Rodgers, Jacquizz",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Umenyiora, Osi",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Casey, Jurrell",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Moreno, Knowshon",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Smith, Jimmy",
+       "San Francisco 49ers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Mosley, C.J.",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Conte, Chris",
+       "Cincinnati Bengals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Conte, Chris",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "McDougald, Bradley",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Edwards, Dwan",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Suisham, Shaun",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Biermann, Kroy",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Skrine, Buster",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Williams, Ian",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Jones, Seantavius",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Brown, Sergio",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Wright, K.J.",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Jackson, Kareem",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Briggs, Lance",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Jackson, Fred",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Keenum, Case",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Williams, Dan",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Sherman, Richard",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Smith, Alex",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "McClain, Terrell",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Rolle, Antrel",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Crick, Jared",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Jennings, Rashad",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-25",
+       "Player added",
+       "Moeaki, Tony",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Brinkley, Jasper",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Clay, Charles",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Fitzpatrick, Ryan",
+       "San Diego Chargers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Ishmael, Kemal",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "McCourty, Devin",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Searcy, Da'Norris",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Weatherspoon, Sean",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Ponder, Christian",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Tate, Ben",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Johnson, Nico",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Hughes, Jerry",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Branch, Tyvon",
+       "Kansas City Chiefs"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Johnson, Michael",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Moore, William",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Carpenter, Dan",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Forsett, Justin",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Sanders, Emmanuel",
+       "New York Giants"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Baldwin, Doug",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Beason, Jon",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Butler, Malcolm",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Benjamin, Travis",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Cole, Audie",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Cassel, Matt",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Spikes, Brandon",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-24",
+       "Player added",
+       "Peterson, Patrick",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-23",
+       "Player added",
+       "Jarrett, Jaiquawn",
+       "Houston Texans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "White, Corey",
+       "Atlanta Falcons"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "Simon, Tharold",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "Harris, Jeremy",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "McNary, Josh",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "Parker, Ron",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-20",
+       "Player added",
+       "Patton, Quinton",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Johnson, Leonard",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Harrison, Damon",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Trevathan, Danny",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Gipson, Tashaun",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Whitehead, Tahir",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Wilhoite, Michael",
+       "Cleveland Browns"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-18",
+       "Player added",
+       "Bolden, Brandon",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-17",
+       "Player added",
+       "Forbath, Kai",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-16",
+       "Player added",
+       "Tucker, Justin",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Bostick, Brandon",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Burfict, Vontaze",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Whittaker, Fozzy",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Davis, Knile",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Iloka, George",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Webster, Larry",
+       "Pittsburgh Steelers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Gaffney, Tyler",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Lewis, Marcedes",
+       "Carolina Panthers"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Brown, Corey",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-15",
+       "Player added",
+       "Jones, Adam",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-14",
+       "Player added",
+       "Tolzien, Scott",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-14",
+       "Player added",
+       "Cook, Jared",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-14",
+       "Player added",
+       "McClain, Robert",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-14",
+       "Player added",
+       "Mclendon, Steve",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-14",
+       "Player added",
+       "Hartline, Brian",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-13",
+       "Player added",
+       "Kearse, Jermaine",
+       "Buffalo Bills"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Carter, Tony",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Crawford, Tyrone",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Jones, Landry",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Fauria, Joseph",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Harris, Josh",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Jones, Jacoby",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "DeCoud, Thomas",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Brown, Donald",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-09",
+       "Player added",
+       "Casey, James",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-08",
+       "Player added",
+       "Vernon, Olivier",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-08",
+       "Player added",
+       "Williams, Mario",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-07",
+       "Player added",
+       "Gilmore, Stephon",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-07",
+       "Player added",
+       "Dumervil, Elvis",
+       "Dallas Cowboys"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-07",
+       "Player added",
+       "Okafor, Alex",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-07",
+       "Player added",
+       "Taylor, Jamar",
+       "Baltimore Ravens"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "Jones, Jarvis",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "Bailey, Stedman",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "Armstrong, Ray-Ray",
+       "Detroit Lions"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "Bray, Tyler",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "Pierre-Louis, Kevin",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-03",
+       "Player added",
+       "McCown, Josh",
+       "New Orleans Saints"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Bailey, Stedman",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Williams, Mario",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Ellison, Rhett",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Huff, Marqueston",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Tulloch, Stephen",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Murphy, Louis",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "McGee, Brandon",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-03-01",
+       "Player added",
+       "Crichton, Scott",
+       "Jacksonville Jaguars"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-28",
+       "Player added",
+       "Cook, Jared",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-28",
+       "Player added",
+       "Reed, Jordan",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-28",
+       "Player added",
+       "Jones-Drew, Maurice",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-27",
+       "Player added",
+       "Gould, Robbie",
+       "Minnesota Vikings"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Smith, Justin",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Sanchez, Mark",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Moore, William",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Smith, Harrison",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Manning, Peyton",
+       "Indianapolis Colts"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Santos, Cairo",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Stanton, Drew",
+       "Oakland Raiders"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-26",
+       "Player added",
+       "Logan, Bennie",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-22",
+       "Player added",
+       "Maclin, Jeremy",
+       "Miami Dolphins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-22",
+       "Player added",
+       "Gostkowski, Stephen",
+       "Arizona Cardinals"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-22",
+       "Player added",
+       "Avery, Donnie",
+       "Tennessee Titans"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Matthews, Jordan",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Vereen, Brock",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Hartline, Brian",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Bailey, Stedman",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Williams, Mario",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Cook, Jared",
+       "Washington Redskins"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-21",
+       "Player added",
+       "Dickson, Ed",
+       "New York Jets"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-18",
+       "Player added",
+       "Cunningham, Benny",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-18",
+       "Player added",
+       "Jones, Art",
+       "Los Angeles Rams"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-18",
+       "Player added",
+       "McPhee, Pernell",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2015-02-18",
+       "Player added",
+       "Gachkar, Andrew",
+       "Denver Broncos"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Wilson, C.J.",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Mathews, Ricardo",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Deaderick, Brandon",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Gordy, Josh",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Williams, Teddy",
+       "WR → CB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Bowers, Da'Quan",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Paea, Stephen",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Dowling, Ras-I",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Hunt, Phillip",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Sheard, Jabaal",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jones, Taiwan",
+       "CB → RB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Pryor, Terrelle",
+       "QB → WR"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Unrein, Mitch",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Walls, Darrin",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Dobbs, Demarcus",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Parker, Ron",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Bryant, Corbin",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Crawford, Tyrone",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Howard, Jaye",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "White, Corey",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Solomon, Scott",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Blake, Antwon",
+       "S → CB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Walker, Tyrunn",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Goodman, Malliciah",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Maponga, Stansly",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Momah, Ifeanyi",
+       "WR → TE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Hughes, Montori",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Means, Steven",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Dial, Quinton",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Boyd, Josh",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2013 → 2015",
+       "Position changed",
+       "Johnson, Rufus",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Bryant, Armonty",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Bass, David",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Daniels, B.J.",
+       "QB → WR"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Thomas, De'Anthony",
+       "RB → WR"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jeffcoat, Jackson",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Hageman, Ra'Shede",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jernigan, Timmy",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Ferguson, Ego",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Joyner, Lamarcus",
+       "S → CB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Southward, Dezmen",
+       "S → CB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Sutton, Will",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Martin, Kareem",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Thornton, Khyri",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Ellis, Justin",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jones, DaQuan",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Huff, Marqueston",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Johnson, Dontae",
+       "S → CB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Allen, Ricardo",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jackson, Bennett",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Pinkins, Eric",
+       "S → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Enemkpali, IK",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Hal, Dre",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Palepoi, Tenny",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Quarles, Kelcy",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Babin, Jason",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Starks, Randy",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Smith, Antonio",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Jenkins, Cullen",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Ware, Demarcus",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Babineaux, Jonathan",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Vickerson, Kevin",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Ngata, Haloti",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Lawson, Manny",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Haralson, Parys",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "McDaniel, Tony",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Spencer, Anthony",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Woodley, LaMarr",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Graham, Corey",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Bryant, Red",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Dorsey, Glenn",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Godfrey, Charles",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Langford, Kendall",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Rubin, Ahtyba",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Douzable, Leger",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "English, Larry",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Shaughnessy, Matt",
+       "LB → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Wynn, Jarius",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Baker, Chris",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Odrick, Jared",
+       "DT → DE"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Alualu, Tyson",
+       "DE → DT"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Young, Willie",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Houston, Lamarr",
+       "DE → LB"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Thurmond, Walter",
+       "CB → S"
+      ],
+      "range": null
+     },
+     {
+      "cells": [
+       "2014 → 2015",
+       "Position changed",
+       "Schofield, O'Brien",
+       "LB → DE"
+      ],
+      "range": null
+     }
+    ],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-081",
+    "title": "Awards",
+    "note": "Deferred to ring 4: the pinned archive has no awards report. This is not evidence that the league has no awards; MFL's awards page still needs an archived capture.",
+    "status": "empty",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "Only awards recorded by MFL qualify; bracket championships appear in the Trophy case, not as invented awards.",
+    "columns": [
+     "Award",
+     "Recipient",
+     "Season"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   },
+   {
+    "id": "M-089",
+    "title": "Recorded oddities",
+    "note": "These are recorded results, not explanations of why they happened.",
+    "status": "stale",
+    "source": "Source: imported MFL archive · snapshot cutoff Oct 11, 2026",
+    "asOf": "",
+    "how": "The selected season only. This is not league lore. Only facts already flagged by the archived results are shown: scored ties and zero-point starters. A zero score does not say whether the player was injured, benched or simply scored zero.",
+    "columns": [
+     "When",
+     "Recorded oddity",
+     "Who"
+    ],
+    "rows": [],
+    "summary": [],
+    "link": null
+   }
+  ]
+ },
+ "season": 2015,
+ "seasons": [
+  {
+   "value": "2013",
+   "label": "2013"
+  },
+  {
+   "value": "2014",
+   "label": "2014"
+  },
+  {
+   "value": "2015",
+   "label": "2015"
+  },
+  {
+   "value": "2016",
+   "label": "2016"
+  },
+  {
+   "value": "2017",
+   "label": "2017"
+  },
+  {
+   "value": "2018",
+   "label": "2018"
+  },
+  {
+   "value": "2019",
+   "label": "2019"
+  },
+  {
+   "value": "2020",
+   "label": "2020"
+  },
+  {
+   "value": "2021",
+   "label": "2021"
+  },
+  {
+   "value": "2022",
+   "label": "2022"
+  },
+  {
+   "value": "2023",
+   "label": "2023"
+  },
+  {
+   "value": "2024",
+   "label": "2024"
+  },
+  {
+   "value": "2025",
+   "label": "2025"
+  },
+  {
+   "value": "2026",
+   "label": "2026"
+  }
+ ],
+ "team": "",
+ "other": "",
+ "teams": [
+  {
+   "value": "0025",
+   "label": "Arizona Cardinals"
+  },
+  {
+   "value": "0017",
+   "label": "Atlanta Falcons"
+  },
+  {
+   "value": "0013",
+   "label": "Baltimore Ravens"
+  },
+  {
+   "value": "0001",
+   "label": "Buffalo Bills"
+  },
+  {
+   "value": "0018",
+   "label": "Carolina Panthers"
+  },
+  {
+   "value": "0021",
+   "label": "Chicago Bears"
+  },
+  {
+   "value": "0014",
+   "label": "Cincinnati Bengals"
+  },
+  {
+   "value": "0015",
+   "label": "Cleveland Browns"
+  },
+  {
+   "value": "0029",
+   "label": "Dallas Cowboys"
+  },
+  {
+   "value": "0008",
+   "label": "Denver Broncos"
+  },
+  {
+   "value": "0022",
+   "label": "Detroit Lions"
+  },
+  {
+   "value": "0023",
+   "label": "Green Bay Packers"
+  },
+  {
+   "value": "0009",
+   "label": "Houston Texans"
+  },
+  {
+   "value": "0010",
+   "label": "Indianapolis Colts"
+  },
+  {
+   "value": "0011",
+   "label": "Jacksonville Jaguars"
+  },
+  {
+   "value": "0006",
+   "label": "Kansas City Chiefs"
+  },
+  {
+   "value": "0007",
+   "label": "Las Vegas Raiders"
+  },
+  {
+   "value": "0005",
+   "label": "Los Angeles Chargers"
+  },
+  {
+   "value": "0027",
+   "label": "Los Angeles Rams"
+  },
+  {
+   "value": "0004",
+   "label": "Miami Dolphins"
+  },
+  {
+   "value": "0024",
+   "label": "Minnesota Vikings"
+  },
+  {
+   "value": "0002",
+   "label": "New England Patriots"
+  },
+  {
+   "value": "0019",
+   "label": "New Orleans Saints"
+  },
+  {
+   "value": "0030",
+   "label": "New York Giants"
+  },
+  {
+   "value": "0003",
+   "label": "New York Jets"
+  },
+  {
+   "value": "0031",
+   "label": "Philadelphia Eagles"
+  },
+  {
+   "value": "0016",
+   "label": "Pittsburgh Steelers"
+  },
+  {
+   "value": "0026",
+   "label": "San Francisco 49ers"
+  },
+  {
+   "value": "0028",
+   "label": "Seattle Seahawks"
+  },
+  {
+   "value": "0020",
+   "label": "Tampa Bay Buccaneers"
+  },
+  {
+   "value": "0012",
+   "label": "Tennessee Titans"
+  },
+  {
+   "value": "0032",
+   "label": "Washington Commanders"
+  }
+ ]
+}
