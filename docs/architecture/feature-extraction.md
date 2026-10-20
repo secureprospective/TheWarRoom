@@ -121,3 +121,16 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
 - Preserve root integration scenarios that exercise shared state or another feature. Move pure
   implementation assertions beside the service; a test-only bridge can keep an unrelated root
   scenario intact without adding a production builder back to the adapter.
+
+## Scoring additions
+
+- Inventory the live methods after the purge, not the pre-purge brief. Do not restore retired
+  bindings just to golden-test them. When none survive, freeze the root entry point consumed by
+  the live feature (Scoring's power board feeds Race), including empty and populated results.
+- Keep scheduling, dirty-flag handoff, shared directory reads and event publication with their
+  root locks. Move the synchronous model pass; pass shared snapshots as callbacks at the original
+  read point, rather than taking them before validation or runner construction.
+- Service, root adapter and implementation-test moves are one compiling commit when they depend
+  on each other. Placement references to deleted paths and the lowered ratchet accompany it;
+  narrative and recipe notes can follow separately. A feature-specific result needs wire twins,
+  not a duplicate of the shared report contracts when it does not return report tables.
