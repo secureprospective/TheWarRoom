@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -107,100 +106,29 @@ func TestNormalizeRosterStatus(t *testing.T) {
 	}
 }
 
-// testLookup is a small players DB for the join tests.
-func testLookup(t *testing.T) Lookup {
-	t.Helper()
-	// ids 815/850 are above the aggregate range [151,782]; 815 keeps a leading
-	// zero so the join can prove canonicalization on a sub-1000 id.
-	lk, err := NewLookup([]players.RawPlayer{
-		{ID: "0815", Name: "Kelce, Travis", Position: "TE", Team: "KCC"},
-		{ID: "15283", Name: "Moore, Rondale", Position: "XX", Team: "MIN"}, // → PosFlag
-		{ID: "0850", Name: "Aggregate D", Position: "Def", Team: "KCC"},    // aggregate
-	})
-	if err != nil {
-		t.Fatalf("testLookup: %v", err)
-	}
-	return lk
-}
-
-// TestPlayer_Join exercises the full single-row normalize: salary→float,
-// contractStatus dirty→enum, roster status, and the name/position join.
-func TestPlayer_Join(t *testing.T) {
-	lk := testLookup(t)
+// TestContract_TypesRow exercises the single-row normalize: salary→cents, the un-padded id
+// canonicalized, contractStatus dirty→enum and roster status.
+func TestContract_TypesRow(t *testing.T) {
 	raw := rosters.RawRoster{
 		FranchiseID:    "0025",
-		PlayerID:       "815", // un-padded — must still join 0815
+		PlayerID:       "815", // un-padded — must still canonicalize to 0815
 		Salary:         "17.70",
 		ContractYear:   "2026",
 		ContractStatus: "UFA ",
 		ContractInfo:   "see notes",
 		Status:         "ROSTER",
 	}
-	pr, err := Player(raw, lk)
+	pr, err := Contract(raw)
 	if err != nil {
-		t.Fatalf("Player: %v", err)
+		t.Fatalf("Contract: %v", err)
 	}
-	if pr.MFLID.String() != "0815" || pr.Name != "Kelce, Travis" || pr.Position != domain.PosTE {
-		t.Fatalf("join wrong: %+v", pr)
+	if pr.MFLID.String() != "0815" || pr.FranchiseID != "0025" || pr.ContractInfo != "see notes" {
+		t.Fatalf("identity wrong: %+v", pr)
 	}
 	if pr.Salary != domain.Money(1_770_000_000) || pr.ContractYear != 2026 || pr.ContractStatus != domain.CStatusUFA {
 		t.Fatalf("field parse wrong: %+v", pr)
 	}
-	if pr.RosterStatus != domain.RosterActive || pr.NeedsAdminReview() {
-		t.Fatalf("status/flag wrong: %+v", pr)
-	}
-}
-
-// TestPlayer_FlagPosition: an XX player joins but is flagged for admin review, not
-// dropped or guessed.
-func TestPlayer_FlagPosition(t *testing.T) {
-	lk := testLookup(t)
-	pr, err := Player(rosters.RawRoster{FranchiseID: "0025", PlayerID: "15283", Status: "ROSTER"}, lk)
-	if err != nil {
-		t.Fatalf("Player: %v", err)
-	}
-	if pr.Position != domain.PosFlag || !pr.NeedsAdminReview() {
-		t.Fatalf("XX should flag for review: %+v", pr)
-	}
-}
-
-func TestPlayer_UnknownAndAggregate(t *testing.T) {
-	lk := testLookup(t)
-	// Unknown player id (not in the players DB).
-	if _, err := Player(rosters.RawRoster{FranchiseID: "0025", PlayerID: "99999", Status: "ROSTER"}, lk); err == nil {
-		t.Fatal("unknown player should fail loud")
-	}
-	// A roster row pointing at an aggregate (defensive: should never happen, but
-	// must not produce a half-typed record).
-	if _, err := Player(rosters.RawRoster{FranchiseID: "0025", PlayerID: "850", Status: "ROSTER"}, lk); err == nil {
-		t.Fatal("aggregate reference should fail loud")
-	}
-}
-
-// TestRosters_GroupAndOrder confirms grouping by franchise and deterministic order.
-func TestRosters_GroupAndOrder(t *testing.T) {
-	lk := testLookup(t)
-	raws := []rosters.RawRoster{
-		{FranchiseID: "0025", PlayerID: "815", Status: "ROSTER"},
-		{FranchiseID: "0001", PlayerID: "815", Status: "TAXI_SQUAD"},
-		{FranchiseID: "0025", PlayerID: "15283", Status: "ROSTER"},
-	}
-	got, err := Rosters(raws, lk)
-	if err != nil {
-		t.Fatalf("Rosters: %v", err)
-	}
-	if len(got) != 2 {
-		t.Fatalf("got %d franchises, want 2", len(got))
-	}
-	if got[0].FranchiseID != "0001" || got[1].FranchiseID != "0025" {
-		t.Fatalf("not sorted by franchise: %+v", got)
-	}
-	if len(got[1].Players) != 2 {
-		t.Fatalf("franchise 0025 should have 2 players, got %d", len(got[1].Players))
-	}
-	// Intra-roster determinism (B3 review): players sorted by canonical id, so
-	// "0815" (Kelce) precedes "15283" (Moore) regardless of MFL feed order.
-	if got[1].Players[0].MFLID.String() != "0815" || got[1].Players[1].MFLID.String() != "15283" {
-		t.Fatalf("franchise 0025 players not in deterministic id order: %+v", got[1].Players)
+	if pr.RosterStatus != domain.RosterActive {
+		t.Fatalf("status wrong: %+v", pr)
 	}
 }
