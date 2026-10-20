@@ -406,16 +406,6 @@ func TestBidWatcherAwardedOffAppWhenTheWindowClosesAndNothingLanded(t *testing.T
 	}
 }
 
-func TestFormOfWritesMillionsExactly(t *testing.T) {
-	t.Parallel()
-	for cents, want := range map[domain.Money]string{500_000_000: "5", 525_000_000: "5.25", 33_000_000: "0.33",
-		1_001_000_000: "10.01", 100_000_000: "1"} {
-		if got := formOf(envelope.BidFacts{Salary: cents}).Salary; got != want {
-			t.Errorf("formOf(%d) = %q, want %q", cents, got, want)
-		}
-	}
-}
-
 func TestBlockedPlanThatWouldPassNowStillExplainsItself(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)

@@ -1,0 +1,598 @@
+{
+ "value": {
+  "words": {
+   "heading": "Offers history",
+   "direction": "Which offers",
+   "seasons": "Seasons",
+   "window": "Time of year",
+   "team": "Counterparty",
+   "retry": "Try again",
+   "pending": "Updating filters; figures still describe the previous scope until Go replies."
+  },
+  "disclosure": "MFL exposes only the GM's own offers. This archive holds 470 offers visible to Arizona Cardinals (0025), sent and received, through 2026-10-06T01:42:57+00:00. It does not show other GMs' private offers or league-wide offer activity.",
+  "title": "How do offers end?",
+  "summary": "470 offers to and from Arizona Cardinals. 33.6% of known endings were accepted. No stretch's acceptance rate stands out from the others beyond chance. No open offers.",
+  "countText": "470",
+  "directions": [
+   {
+    "id": "all",
+    "label": "Every visible offer",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "id": "sent",
+    "label": "Sent",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "id": "received",
+    "label": "Received",
+    "from": 0,
+    "to": 0
+   }
+  ],
+  "windows": [
+   {
+    "id": "",
+    "label": "Every stretch",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "id": "spring",
+    "label": "Spring",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "id": "summer",
+    "label": "Summer",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "id": "season",
+    "label": "Season",
+    "from": 0,
+    "to": 0
+   }
+  ],
+  "ranges": [
+   {
+    "id": "all",
+    "label": "2013–2026",
+    "from": 2013,
+    "to": 2026
+   },
+   {
+    "id": "recent",
+    "label": "2024–2026",
+    "from": 2024,
+    "to": 2026
+   },
+   {
+    "id": "early",
+    "label": "2013–2016",
+    "from": 2013,
+    "to": 2016
+   }
+  ],
+  "teams": [
+   {
+    "fid": "",
+    "name": "Every counterparty"
+   },
+   {
+    "fid": "0001",
+    "name": "Buffalo Bills"
+   },
+   {
+    "fid": "0002",
+    "name": "New England Patriots"
+   },
+   {
+    "fid": "0003",
+    "name": "New York Jets"
+   },
+   {
+    "fid": "0004",
+    "name": "Miami Dolphins"
+   },
+   {
+    "fid": "0005",
+    "name": "Los Angeles Chargers"
+   },
+   {
+    "fid": "0006",
+    "name": "Kansas City Chiefs"
+   },
+   {
+    "fid": "0007",
+    "name": "Las Vegas Raiders"
+   },
+   {
+    "fid": "0008",
+    "name": "Denver Broncos"
+   },
+   {
+    "fid": "0009",
+    "name": "Houston Texans"
+   },
+   {
+    "fid": "0010",
+    "name": "Indianapolis Colts"
+   },
+   {
+    "fid": "0011",
+    "name": "Jacksonville Jaguars"
+   },
+   {
+    "fid": "0012",
+    "name": "Tennessee Titans"
+   },
+   {
+    "fid": "0013",
+    "name": "Baltimore Ravens"
+   },
+   {
+    "fid": "0014",
+    "name": "Cincinnati Bengals"
+   },
+   {
+    "fid": "0015",
+    "name": "Cleveland Browns"
+   },
+   {
+    "fid": "0016",
+    "name": "Pittsburgh Steelers"
+   },
+   {
+    "fid": "0017",
+    "name": "Atlanta Falcons"
+   },
+   {
+    "fid": "0018",
+    "name": "Carolina Panthers"
+   },
+   {
+    "fid": "0019",
+    "name": "New Orleans Saints"
+   },
+   {
+    "fid": "0020",
+    "name": "Tampa Bay Buccaneers"
+   },
+   {
+    "fid": "0021",
+    "name": "Chicago Bears"
+   },
+   {
+    "fid": "0022",
+    "name": "Detroit Lions"
+   },
+   {
+    "fid": "0023",
+    "name": "Green Bay Packers"
+   },
+   {
+    "fid": "0024",
+    "name": "Minnesota Vikings"
+   },
+   {
+    "fid": "0025",
+    "name": "Arizona Cardinals"
+   },
+   {
+    "fid": "0026",
+    "name": "San Francisco 49ers"
+   },
+   {
+    "fid": "0027",
+    "name": "Los Angeles Rams"
+   },
+   {
+    "fid": "0028",
+    "name": "Seattle Seahawks"
+   },
+   {
+    "fid": "0029",
+    "name": "Dallas Cowboys"
+   },
+   {
+    "fid": "0030",
+    "name": "New York Giants"
+   },
+   {
+    "fid": "0031",
+    "name": "Philadelphia Eagles"
+   },
+   {
+    "fid": "0032",
+    "name": "Washington Commanders"
+   }
+  ],
+  "stretches": [
+   {
+    "id": "winter",
+    "label": "After the season",
+    "countText": "16 offers · 1.5 a season",
+    "acceptance": "42.9% accepted · 14 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 6",
+      "width": 37.5
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 1",
+      "width": 6.25
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 4",
+      "width": 25
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 3",
+      "width": 18.75
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 2",
+      "width": 12.5
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "opening",
+    "label": "Before the NFL draft",
+    "countText": "95 offers · 8.6 a season",
+    "acceptance": "34.7% accepted · 95 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 33",
+      "width": 34.74
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 25",
+      "width": 26.32
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 37",
+      "width": 38.95
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 0",
+      "width": 0
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 0",
+      "width": 0
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "between",
+    "label": "NFL draft to rookie draft",
+    "countText": "36 offers · 3.3 a season",
+    "acceptance": "20.0% accepted · 35 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 7",
+      "width": 19.44
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 14",
+      "width": 38.89
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 12",
+      "width": 33.33
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 2",
+      "width": 5.56
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 1",
+      "width": 2.78
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "rookieDraft",
+    "label": "During the rookie draft",
+    "countText": "108 offers · 9.8 a season",
+    "acceptance": "34.7% accepted · 101 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 35",
+      "width": 32.41
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 31",
+      "width": 28.7
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 35",
+      "width": 32.41
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 0",
+      "width": 0
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 7",
+      "width": 6.48
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "summer",
+    "label": "Rookie draft to kickoff",
+    "countText": "96 offers · 8.7 a season",
+    "acceptance": "38.7% accepted · 93 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 36",
+      "width": 37.5
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 29",
+      "width": 30.21
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 25",
+      "width": 26.04
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 3",
+      "width": 3.13
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 3",
+      "width": 3.13
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "early",
+    "label": "Weeks 1–4",
+    "countText": "44 offers · 4.0 a season",
+    "acceptance": "24.3% accepted · 37 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 9",
+      "width": 20.45
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 14",
+      "width": 31.82
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 14",
+      "width": 31.82
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 0",
+      "width": 0
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 7",
+      "width": 15.91
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "midseason",
+    "label": "Midseason",
+    "countText": "22 offers · 2.0 a season",
+    "acceptance": "43.8% accepted · 16 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 7",
+      "width": 31.82
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 5",
+      "width": 22.73
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 4",
+      "width": 18.18
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 0",
+      "width": 0
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 6",
+      "width": 27.27
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   },
+   {
+    "id": "deadline",
+    "label": "Deadline run-in",
+    "countText": "53 offers · 4.8 a season",
+    "acceptance": "30.6% accepted · 49 offers with a known ending",
+    "finding": "",
+    "outcomes": [
+     {
+      "id": "accepted",
+      "label": "Accepted",
+      "text": "Accepted 15",
+      "width": 28.3
+     },
+     {
+      "id": "rejected",
+      "label": "Rejected",
+      "text": "Rejected 19",
+      "width": 35.85
+     },
+     {
+      "id": "withdrawn",
+      "label": "Withdrawn",
+      "text": "Withdrawn 15",
+      "width": 28.3
+     },
+     {
+      "id": "expired",
+      "label": "Expired",
+      "text": "Expired 0",
+      "width": 0
+     },
+     {
+      "id": "unknown",
+      "label": "Ending not on record",
+      "text": "Ending not on record 4",
+      "width": 7.55
+     },
+     {
+      "id": "pending",
+      "label": "Open offers",
+      "text": "Open offers 0",
+      "width": 0
+     }
+    ]
+   }
+  ]
+ },
+ "provenance": {
+  "source": "League archive through 2026-10-06T01:42:57+00:00; live offers not checked yet",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "2026-10-06T15:57:20+00:00",
+   "note": "Frozen historical input; not current league truth"
+  },
+  "kind": "archive"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 470,
+ "threshold": 10,
+ "baseline": "Other stretches with at least 10 known endings in this same scope",
+ "cutoff": "League archive through 2026-10-06T01:42:57+00:00; live offers not checked yet",
+ "method": "owner-scoped offerStretches; 1.96 standard-error comparisons",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "dev ",
+ "howCounted": "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any recorded offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. Open offers are counted separately and excluded from endings and acceptance. Ending not on record means MFL no longer lists the offer and no matching completed trade is held; it is not a rejection. Live coverage contains only offers seen by this app, not all offers since the archive. This is owner coverage, not league-wide activity."
+}

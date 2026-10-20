@@ -4,10 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+
 	"github.com/secureprospective/TheWarRoom/internal/lab"
+	personalstore "github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
 
 func TestTargetOffers(t *testing.T) {
@@ -121,5 +125,69 @@ func TestOfferStackWidthsAndCounts(t *testing.T) {
 		if sum < 99.97 || sum > 100.03 {
 			t.Fatalf("stack widths total %f", sum)
 		}
+	}
+}
+
+func TestOffersClusterDenialsGolden(t *testing.T) {
+	t.Parallel()
+	f := bidApp(t)
+	denials := map[string]string{}
+	for _, who := range []string{"stranger", "owner.two", "creator"} {
+		denials[who] = errorWords(f.tryPlace(t, who, "franchise.01", "5002", 5*million, 1))
+	}
+	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	_, err := f.app.TargetCommissionerMarket(legalityLeague, "bids.award.override")
+	denials["non-commissioner"] = errorWords(err)
+	f.set(t, "calendar.windows", `{}`, "now")
+	denials["closed"] = errorWords(f.tryPlace(t, "owner.one", "franchise.01", "5002", 5*million, 1))
+	checkGolden(t, "offers", "denials", denials)
+}
+
+func TestOffersClusterWireGolden(t *testing.T) {
+	t.Parallel()
+	a := bidTestApp(t)
+	checkGolden(t, "offers", "offers", a.TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"}))
+	personal, err := a.TargetPersonal("0001")
+	checkGolden(t, "offers", "personal", personal)
+	checkGolden(t, "offers", "personal-error", errorWords(err))
+	checkGolden(t, "offers", "personal-change", errorWords(a.TargetPersonalChange(personalstore.RawChange{})))
+	checkGolden(t, "offers", "personal-handoff", errorWords(a.TargetPersonalHandOff("invalid")))
+	checkGolden(t, "offers", "pool", a.TargetPool(RawPoolScope{Sort: "name"}))
+	a.startupErr = fmt.Errorf("fixture startup failure")
+	checkGolden(t, "offers", "pool-refresh", errorWords(a.TargetPoolRefresh(false)))
+	checkGolden(t, "offers", "preview", a.TargetBidPreview(rawBid("5", 1)))
+	plan, err := a.TargetBidDraft(rawBid("5", 1))
+	checkGolden(t, "offers", "draft", plan)
+	checkGolden(t, "offers", "draft-error", errorWords(err))
+	for name, call := range map[string]func(string) (BidPlan, error){"handoff": a.TargetBidHandOff, "posted": a.TargetBidPosted, "withdraw": a.TargetBidWithdraw} {
+		plan, err = call("missing")
+		checkGolden(t, "offers", name, plan)
+		checkGolden(t, "offers", name+"-error", errorWords(err))
+	}
+	plan, err = a.TargetBidRevise("missing", rawBid("5", 1))
+	checkGolden(t, "offers", "revise", plan)
+	checkGolden(t, "offers", "revise-error", errorWords(err))
+	raw, err := json.Marshal(a.TargetBidPlans("0001"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "offers", "plans", json.RawMessage(normalizeWire(raw)))
+}
+
+func TestOffersWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	var full offersapp.View
+	n := 0
+	fillWire(reflect.ValueOf(&full).Elem(), &n)
+	service, err := json.Marshal(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wire, err := json.Marshal(wireOffers(full))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(service) != string(wire) {
+		t.Fatalf("wire twin differs: %s != %s", wire, service)
 	}
 }
