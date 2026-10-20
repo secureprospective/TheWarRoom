@@ -29,7 +29,6 @@ contracts_plans_test.go	contracts
 commissioner_app.go	commissioner
 commissioner_app_test.go	commissioner
 commissioner_jobs_test.go	commissioner
-commissioner_market_app.go	commissioner
 commissioner_market_app_test.go	commissioner
 commissioner_ops_test.go	commissioner
 commissioner_preview_acts_test.go	commissioner
@@ -40,6 +39,7 @@ commissioner_preview_draft_test.go	commissioner
 commissioner_preview_forms_test.go	commissioner
 commissioner_preview_market_test.go	commissioner
 commissioner_shell_test.go	commissioner
+commissioner_wire_test.go	commissioner
 comms_app.go	comms
 comms_test.go	comms
 contract_acts_app.go	contracts
@@ -83,7 +83,6 @@ inspector_shell_test.go	now
 league_archive_app.go	sources
 league_calendar_app.go	commissioner
 league_calendar_app_test.go	commissioner
-native_league_schedule_app.go	commissioner
 native_league_schedule_app_test.go	commissioner
 commissioner_window_gates_test.go	commissioner
 lineup_app.go	contracts
@@ -231,6 +230,7 @@ internal/app/comms/commstest	comms
 internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
+internal/app/commissioner	commissioner
 internal/app/draft	draft
 internal/app/draft/drafttest	draft
 internal/app/market	market
