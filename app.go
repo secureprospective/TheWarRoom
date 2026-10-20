@@ -108,6 +108,7 @@ type App struct {
 	weekWorkers        sync.WaitGroup
 	workerMu           sync.Mutex
 	stopping           bool
+	backups            *db.Backups
 	databaseCheckStart sync.Once
 	shutdownOnce       sync.Once
 	weekStart          sync.Once // domReady fires again on a webview reload; one worker only
@@ -284,6 +285,15 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, err
 	}
 	a.lockFile = lock
+	if a.backups, err = newDatabaseBackups(dir); err != nil {
+		return "", nil, err
+	}
+	if err := a.backups.Recover(ctx); err != nil {
+		return "", nil, fmt.Errorf("recover databases: %w", err)
+	}
+	if _, err := a.backups.BeforeMigrations(ctx, time.Now().UTC()); err != nil {
+		return "", nil, fmt.Errorf("capture before migrations: %w", err)
+	}
 	if a.pools, err = db.Open(ctx, path); err != nil {
 		return "", nil, fmt.Errorf("open database: %w", err)
 	}

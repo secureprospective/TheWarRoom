@@ -45,7 +45,7 @@ func resultsTest(t *testing.T) *resultsFixture { return resultsTestSeeded(t, nil
 // resultsTestSeeded is resultsTest with the starting snapshot changed by seed before it is recorded.
 func resultsTestSeeded(t *testing.T, seed func(*commissioner.NativeAssets)) *resultsFixture {
 	t.Helper()
-	path := filepath.Join(t.TempDir(), "results.db")
+	path := filepath.Join(t.TempDir(), "history.db")
 	s, pools := statStore(t, path)
 	runScoreCommand(t, s, createWith(commissioner.PresetLegacy, 0), "creator")
 	held := heldSeedCommand(t)
@@ -504,5 +504,65 @@ func TestNativeStandingsClearRecordsAndInvalidOrders(t *testing.T) {
 	runScoreCommand(t, f.s, reverseCommand(receipt.Entry, revision(t, f.s), "restore-records"), "creator")
 	if f.standings(t).Override == nil {
 		t.Fatal("compensated clear did not restore records")
+	}
+}
+
+func TestMatchedRestoreKeepsPopulatedNativeResults(t *testing.T) {
+	f := resultsTest(t)
+	dir := filepath.Dir(f.path)
+	files := [3]db.BackupFile{{Name: "thewarroom.db", MaxVersion: db.MainVersion()}, {Name: "history.db", MaxVersion: SchemaVersion()}, {Name: "whatif.db", MaxVersion: db.MainVersion()}}
+	b, err := db.NewBackups(dir, "test", files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pools [3]*db.Pools
+	pools[1] = f.pools
+	for _, i := range []int{0, 2} {
+		p, err := db.Open(t.Context(), filepath.Join(dir, files[i].Name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pools[i] = p
+		t.Cleanup(func() {
+			if err := p.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+	}
+	before, err := f.s.NativeResults(t.Context(), "native.test", 2026, 1)
+	if err != nil || len(before.Games) == 0 || before.Games[0].Winner == "" {
+		t.Fatalf("no native result: %+v %v", before, err)
+	}
+	roster, err := f.s.NativeAssets(t.Context(), "native.test")
+	if err != nil || roster.Snapshot == nil || len(roster.Snapshot.Players) == 0 {
+		t.Fatalf("no native roster: %+v %v", roster, err)
+	}
+	at := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
+	set, err := b.Capture(t.Context(), pools, "daily", at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runScoreCommand(t, f.s, ruleCommand("lineup.invalidPenalty", `"zero_top_starter"`, "now", "Change after capture", revision(t, f.s)), "creator")
+	for _, p := range pools {
+		if err := p.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := b.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	f.s, f.pools = statStore(t, f.path)
+	f.install()
+	after, err := f.s.NativeResults(t.Context(), "native.test", 2026, 1)
+	if err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatalf("native results changed: %v", err)
+	}
+	restored, err := f.s.NativeAssets(t.Context(), "native.test")
+	if err != nil || !reflect.DeepEqual(roster, restored) {
+		t.Fatalf("native roster changed: %v", err)
+	}
+	people, err := f.s.CommissionerPeople(t.Context(), "native.test", "creator")
+	if err != nil || !people.MayChangeRules {
+		t.Fatalf("stored commissioner rights lost: %+v %v", people, err)
 	}
 }

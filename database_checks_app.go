@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 func (a *App) databaseFiles() []struct {
@@ -47,7 +49,9 @@ func (a *App) startDatabaseChecks() {
 			defer ticker.Stop()
 			for {
 				ctx, cancel := context.WithTimeout(parent, startupBudget)
-				a.checkDatabases(ctx, time.Now().UTC())
+				now := time.Now().UTC()
+				a.checkDatabases(ctx, now)
+				a.backupDatabases(ctx, now)
 				cancel()
 				select {
 				case <-parent.Done():
@@ -57,6 +61,35 @@ func (a *App) startDatabaseChecks() {
 			}
 		})
 	})
+}
+
+func newDatabaseBackups(dir string) (*db.Backups, error) {
+	b, err := db.NewBackups(dir, buildLabel(), [3]db.BackupFile{
+		{Name: dbFileName("thewarroom", isDevBuild()), MaxVersion: db.MainVersion()},
+		{Name: dbFileName("history", isDevBuild()), MaxVersion: history.SchemaVersion()},
+		{Name: dbFileName("whatif", isDevBuild()), MaxVersion: state.SchemaVersion()},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure database backups: %w", err)
+	}
+	return b, nil
+}
+
+func (a *App) backupDatabases(ctx context.Context, now time.Time) {
+	if a.backups == nil {
+		return
+	}
+	if _, err := a.backups.Capture(ctx, [3]*db.Pools{a.pools, a.histPools, a.whatifPools}, "daily", now); err != nil {
+		log.Printf("the war room: daily backup: %s", err)
+		return
+	}
+	reports, err := a.backups.Prune(ctx, "")
+	for _, report := range reports {
+		log.Printf("the war room: backup retention: %s", report)
+	}
+	if err != nil {
+		log.Printf("the war room: backup retention: %s", err)
+	}
 }
 
 func (a *App) databaseChecksReport() *Report {
