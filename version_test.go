@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-func TestBuildLabel(t *testing.T) {
-	t.Parallel()
+// Not parallel: it writes the package-global commit, which parallel tests read via buildLabel.
+func TestBuildLabel(t *testing.T) { //nolint:paralleltest // see above
 	saved := commit
 	t.Cleanup(func() { commit = saved })
 
