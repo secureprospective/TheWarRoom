@@ -47,6 +47,7 @@ contract_acts_cap.go	contracts
 contract_acts_cap_test.go	contracts
 contracts_app.go	contracts
 contracts_app_test.go	contracts
+contracts_wire_test.go	contracts
 control_room_app.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner

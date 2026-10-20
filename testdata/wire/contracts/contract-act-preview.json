@@ -1,0 +1,151 @@
+{
+ "value": [
+  {
+   "id": "",
+   "intent": "contract.extend",
+   "act": "Extend him",
+   "levels": [],
+   "years": [
+    1,
+    2,
+    3
+   ],
+   "teamFigures": [
+    {
+     "label": "2026 cap",
+     "before": "Unavailable",
+     "after": "Unavailable",
+     "change": ""
+    },
+    {
+     "label": "Used",
+     "before": "$49,999,876.55",
+     "after": "$49,999,876.55",
+     "change": ""
+    },
+    {
+     "label": "Room",
+     "before": "Unavailable",
+     "after": "Unavailable",
+     "change": ""
+    },
+    {
+     "label": "Modelled dead cap this season (MFL adjustments excluded)",
+     "before": "$0",
+     "after": "$0",
+     "change": ""
+    },
+    {
+     "label": "2027 commitments at today's salaries",
+     "before": "$40,000,000",
+     "after": "$40,000,000",
+     "change": ""
+    },
+    {
+     "label": "2028 commitments at today's salaries",
+     "before": "$30,000,000",
+     "after": "$30,000,000",
+     "change": ""
+    },
+    {
+     "label": "2029 commitments at today's salaries",
+     "before": "$0",
+     "after": "$15,000,000",
+     "change": "+$15,000,000"
+    },
+    {
+     "label": "2030 commitments at today's salaries",
+     "before": "$0",
+     "after": "$15,000,000",
+     "change": "+$15,000,000"
+    }
+   ],
+   "player": "Player 0043",
+   "subject": "Player 0043 · WR · $10,000,000 a year through 2028",
+   "label": "Extend him · Player 0043",
+   "price": "Price: $15,000,000",
+   "post": "Extend him · Player 0043\nOwner's contract request to the commissioner on ProBoards.\n2026: $10,000,000\n2027: $10,000,000\n2028: $10,000,000\n2029: $15,000,000\n2030: $15,000,000\nAdds 2 years: 2029 at $15,000,000; 2030 at $15,000,000\nNot checked: prior extension and this season's team extension allowance\nNot checked: future salary amounts; later years assume today's salary\nNot checked: team salary cap; no cap setting is held\nPlease process this request. Nothing has been posted or changed by the app.",
+   "how": "§10: added years = greater of 150% of highest remaining paid cell and position floor; exact cents then nearest $10,000. Existing cells unchanged.",
+   "reasons": [
+    "Not checked: prior extension and this season's team extension allowance",
+    "Not checked: future salary amounts; later years assume today's salary",
+    "Not checked: team salary cap; no cap setting is held"
+   ],
+   "figures": [
+    {
+     "season": 2026,
+     "before": "$10,000,000",
+     "after": "$10,000,000",
+     "change": "$0"
+    },
+    {
+     "season": 2027,
+     "before": "$10,000,000",
+     "after": "$10,000,000",
+     "change": "$0"
+    },
+    {
+     "season": 2028,
+     "before": "$10,000,000",
+     "after": "$10,000,000",
+     "change": "$0"
+    },
+    {
+     "season": 2029,
+     "before": "$0",
+     "after": "$15,000,000",
+     "change": "$15,000,000"
+    },
+    {
+     "season": 2030,
+     "before": "$0",
+     "after": "$15,000,000",
+     "change": "$15,000,000"
+    }
+   ],
+   "receipt": {
+    "correlationId": "",
+    "spec": {
+     "intent": "",
+     "leagueId": "",
+     "franchiseId": "",
+     "subject": {
+      "players": null,
+      "picks": null
+     },
+     "expected": {},
+     "gravity": "",
+     "undo": "",
+     "target": {
+      "kind": ""
+     }
+    },
+    "state": "",
+    "audit": null
+   },
+   "canHandOff": false,
+   "canPost": false,
+   "canWithdraw": false,
+   "canRebase": false
+  }
+ ],
+ "provenance": {
+  "source": "local contract plans; MFL mirror",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "",
+   "note": "Held MFL mirror; no network or what-if state"
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 1,
+ "threshold": 0,
+ "baseline": "Current MFL mirror revision",
+ "cutoff": "",
+ "method": "Integer cents; Go-authored display",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Rulebook §§7,9–11; Math Rules §§0,3,5–7. All calculations in exact cents, then nearest $10,000. Future baseline cells are flat-filled inferences, not observations. Tag, extension and restructure follow the coordinator phase policy. Tender and re-sign are offseason only. Unknown history is for commissioner verification, not a block. Plans never write MFL or post to ProBoards."
+}

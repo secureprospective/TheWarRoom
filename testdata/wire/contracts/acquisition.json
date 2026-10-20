@@ -1,0 +1,359 @@
+{
+ "value": {
+  "incoming": [
+   {
+    "player": "16596",
+    "bid": "",
+    "name": "Allen, Braelon · New England Patriots"
+   },
+   {
+    "player": "17061",
+    "bid": "",
+    "name": "Allen, LeQuint · New England Patriots"
+   },
+   {
+    "player": "13268",
+    "bid": "",
+    "name": "Anzalone, Alex · New England Patriots"
+   },
+   {
+    "player": "15718",
+    "bid": "",
+    "name": "Badie, Tyler · New England Patriots"
+   },
+   {
+    "player": "16723",
+    "bid": "",
+    "name": "Barner, AJ · New England Patriots"
+   },
+   {
+    "player": "17323",
+    "bid": "",
+    "name": "Barron, Justin · New England Patriots"
+   },
+   {
+    "player": "17508",
+    "bid": "",
+    "name": "Bell, Skyler · New England Patriots"
+   },
+   {
+    "player": "16164",
+    "bid": "",
+    "name": "Bigsby, Tank · New England Patriots"
+   },
+   {
+    "player": "12616",
+    "bid": "",
+    "name": "Brissett, Jacoby · New England Patriots"
+   },
+   {
+    "player": "15874",
+    "bid": "",
+    "name": "Butler, Percy · New England Patriots"
+   },
+   {
+    "player": "17614",
+    "bid": "",
+    "name": "Canady, Jadon · New England Patriots"
+   },
+   {
+    "player": "13718",
+    "bid": "",
+    "name": "Carlson, Daniel · New England Patriots"
+   }
+  ],
+  "cuts": [
+   {
+    "team": "LAR",
+    "contract": "$17,700,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "11675",
+    "name": "Adams, Davante",
+    "position": "WR"
+   },
+   {
+    "team": "LVR",
+    "contract": "$580,000 · 2 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "13448",
+    "name": "Butler, Adam",
+    "position": "DT"
+   },
+   {
+    "team": "JAC",
+    "contract": "$2,200,000 · 2 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "17034",
+    "name": "Ewers, Quinn",
+    "position": "QB"
+   },
+   {
+    "team": "BAL",
+    "contract": "$3,000,000 · 2 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "16190",
+    "name": "Flowers, Zay",
+    "position": "WR"
+   },
+   {
+    "team": "LAC",
+    "contract": "$830,000 · 2 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "17099",
+    "name": "Gadsden, Oronde",
+    "position": "TE"
+   },
+   {
+    "team": "ARI",
+    "contract": "$3,500,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "16009",
+    "name": "Gibbens, Jack",
+    "position": "LB"
+   },
+   {
+    "team": "FA",
+    "contract": "$580,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "13347",
+    "name": "Gonzalez, Zane",
+    "position": "K"
+   },
+   {
+    "team": "SFO",
+    "contract": "$600,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "16702",
+    "name": "Green, Renardo",
+    "position": "CB"
+   },
+   {
+    "team": "JAC",
+    "contract": "$6,000,000 · 3 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "14167",
+    "name": "Hines-Allen, Josh",
+    "position": "DE"
+   },
+   {
+    "team": "SEA",
+    "contract": "$7,250,000 · 2 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "15404",
+    "name": "Jones, Ernest",
+    "position": "LB"
+   },
+   {
+    "team": "KCC",
+    "contract": "$1,500,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "15808",
+    "name": "Karlaftis, George",
+    "position": "DE"
+   },
+   {
+    "team": "FA",
+    "contract": "$670,000 · 1 years",
+    "now": {
+     "text": "No score",
+     "sub": "this season",
+     "detail": "",
+     "held": false
+    },
+    "dynasty": {
+     "text": "Not valued yet",
+     "sub": "Lab model not compiled",
+     "detail": "",
+     "held": false
+    },
+    "token": "16775",
+    "name": "Karty, Joshua",
+    "position": "K"
+   }
+  ],
+  "player": "Shakir, Khalil",
+  "seasons": [
+   {
+    "label": "2026",
+    "before": "$0",
+    "after": "$9,430,000",
+    "change": "+$9,430,000"
+   },
+   {
+    "label": "2027",
+    "before": "$0",
+    "after": "$9,430,000",
+    "change": "+$9,430,000"
+   },
+   {
+    "label": "2028",
+    "before": "$0",
+    "after": "$9,430,000",
+    "change": "+$9,430,000"
+   }
+  ],
+  "team": [
+   {
+    "label": "Cap used this season",
+    "before": "$118,440,000",
+    "after": "$123,820,000",
+    "change": "+$5,380,000"
+   },
+   {
+    "label": "Cap room this season",
+    "before": "$6,560,000",
+    "after": "$1,180,000",
+    "change": "−$5,380,000"
+   }
+  ],
+  "deadCap": {
+   "cents": 945000000,
+   "text": "$9,450,000"
+  },
+  "cutName": "McLaurin, Terry",
+  "spot": "One active roster spot · 35 active players after the add (35–48 allowed)",
+  "reasons": [
+   "Later seasons assume today's salary through expiration; MFL does not publish future salary caps."
+  ]
+ },
+ "provenance": {
+  "source": "whatif.db; held contracts or app-local bid terms",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "",
+   "note": "Held MFL mirror; no network or what-if state"
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 3,
+ "threshold": 0,
+ "baseline": "Current MFL mirror revision",
+ "cutoff": "",
+ "method": "Integer cents; Go-authored display",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "The add takes one active roster spot; incoming trade IR/taxi status is retained. Each paid season's salary is shown in exact cents. Team cap uses pinned what-if with existing cuts, literal MFL adjustments and the incoming contract. A selected cut is priced by the existing coordinator's unclaimed cut engine (35% assumed, or 50% for a known restructure; final year $0). This is a preview only: no roster changed, no cut saved, nothing sent to MFL."
+}
