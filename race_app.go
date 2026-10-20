@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"maps"
 	"net/url"
 	"strconv"
 	"sync"
@@ -156,14 +157,21 @@ func (a *App) TargetRace(week int, team, mine string) (RaceBoard, error) {
 	if err := a.ready(); err != nil {
 		return RaceBoard{}, fmt.Errorf("race: startup: %w", err)
 	}
-	a.seasonMu.Lock()
-	held, live := a.race, a.seasonLineups
-	unplayed := liveWeekUnplayed(live, a.now.schedules, time.Now())
-	a.seasonMu.Unlock()
+	in := a.raceReadInput()
 	a.lookupMu.Lock()
 	lookup, hasLookup := a.lookup, a.hasLookup
 	a.lookupMu.Unlock()
-	return buildRace(raceInput{held: held, live: live, liveUnplayed: unplayed, config: a.rulebook.ActiveConfig(),
-		lookup: lookup, hasLookup: hasLookup,
-		week: week, team: team, mine: mine, zone: time.Local})
+	in.config, in.lookup, in.hasLookup = a.rulebook.ActiveConfig(), lookup, hasLookup
+	in.week, in.team, in.mine, in.zone = week, team, mine, time.Local
+	return buildRace(in)
+}
+
+// raceReadInput detaches the mutable index while holding its owner's lock. Feed payloads
+// and power rows are published immutably: refresh replaces them, never edits them.
+func (a *App) raceReadInput() raceInput {
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	held, live := a.race, a.seasonLineups
+	held.power = maps.Clone(held.power)
+	return raceInput{held: held, live: live, liveUnplayed: liveWeekUnplayed(live, a.now.schedules, time.Now())}
 }
