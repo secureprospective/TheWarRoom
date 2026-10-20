@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 type RawNativeScheduleScope struct {
@@ -125,3 +128,94 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 	}
 	return weeks, nil
 }
+
+type appBidEnv struct{ app *App }
+
+func (e appBidEnv) BidEnvironment(ctx context.Context, league string, at time.Time) (commissioner.BidEnvironment, error) {
+	records, err := e.app.leagueRecords(ctx, league)
+	if err != nil {
+		return commissioner.BidEnvironment{}, err
+	}
+	season, err := commissioner.SeasonAt(records, commissioner.ReadingInstant(records, at))
+	if err != nil {
+		return commissioner.BidEnvironment{}, fmt.Errorf("read the league season: %w", err)
+	}
+	weeks, err := e.app.nativeScheduleDates(ctx, season, at)
+	if err != nil {
+		return commissioner.BidEnvironment{}, err
+	}
+	phase := nativeapp.WeekAt(weeks, at)
+	if !phase.WeekKnown && !phase.Offseason {
+		phase.Offseason, err = commissioner.BidOffseasonAt(records, at, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
+		}
+	}
+	field := map[string]nativecheck.PlayoffStanding{}
+	if phase.WeekKnown {
+		bracket, err := e.app.history.NativeBracket(ctx, league, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
+		}
+		directory, err := commissioner.NativeDirectoryReading(league, records, at)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
+		}
+		field = nativeapp.PlayoffField(bracket, directory)
+	}
+	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
+}
+
+func (a *App) processNativeBidsDue(ctx context.Context) {
+	leagues, err := a.history.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("the war room: read native bid leagues: %v", err)
+		return
+	}
+	facts := a.nativeFacts()
+	for _, league := range leagues {
+		if err := a.history.ProcessDueBids(ctx, league.ID, facts); err != nil {
+			log.Printf("the war room: award native bids for %s: %v", league.ID, err)
+		}
+	}
+}
+
+const draftLookEvery = 15 * time.Second
+
+// nativeWaiverClock resumes persisted waiver windows, bid clocks and finished drafts without any network feed.
+
+func (a *App) nativeWaiverClock(ctx context.Context) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	var lastDrafts time.Time
+	for {
+		a.processNativeWaiversDue(ctx)
+		a.processNativeBidsDue(ctx)
+		// A finished draft is found by reading each draft, so that look is taken every few seconds.
+		if time.Since(lastDrafts) >= draftLookEvery {
+			lastDrafts = time.Now()
+			a.processNativeDraftsDue(ctx)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+		}
+	}
+}
+
+func (a *App) processNativeWaiversDue(ctx context.Context) {
+	leagues, err := a.history.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("the war room: read native waiver leagues: %v", err)
+		return
+	}
+	facts := a.nativeFacts()
+	for _, league := range leagues {
+		if err := a.history.ProcessDueWaivers(ctx, league.ID, facts); err != nil {
+			log.Printf("the war room: process native waivers for %s: %v", league.ID, err)
+		}
+	}
+}
+
+// A replay does not mutate a roster, so a closed calendar does not discard a recorded receipt.
