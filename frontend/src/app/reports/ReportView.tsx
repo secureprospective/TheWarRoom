@@ -22,7 +22,7 @@ export function ReportText({ text, entities = [] }: { text: string; entities?: R
 }
 
 // WeekBars is a row's values as bars on the report's one scale, zero to barMax.
-export function WeekBars({ bars, labels, max }: { bars: number[]; labels: string[]; max: number }) {
+function WeekBars({ bars, labels, max }: { bars: number[]; labels: string[]; max: number }) {
   const width = 300 / Math.max(bars.length, 1);
   return <svg className="report-bars" viewBox="0 0 300 40" role="img"
     aria-label={bars.map((b, i) => `${labels[i]}: ${b.toFixed(2)}`).join(', ')}>

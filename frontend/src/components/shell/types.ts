@@ -6,7 +6,7 @@ export type Density = 'narrative' | 'tactical' | 'matrix';
 
 export type ModuleId = 'home' | 'assets' | 'pulse' | 'txn' | 'trade' | 'control';
 
-export interface ModuleDef {
+interface ModuleDef {
   id: ModuleId;
   label: string;
   hint: string;

@@ -16,7 +16,7 @@ export type BuilderPlan = {
   receipt?: Receipt;
   teams: { team: string; figures: Figure[]; roster: TradeAsset[] }[];
 };
-export type BuilderView = {
+type BuilderView = {
   teams: { id: string; name: string; assets: TradeAsset[] }[];
   plans: BuilderPlan[]; preview?: BuilderPlan;
 };

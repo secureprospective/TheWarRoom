@@ -13,7 +13,7 @@ export type Research = {
   board: Board; news: Report; articles: Article[]; players: Player[];
   teams: string[]; positions: string[]; scope: Scope;
 };
-export function parsePlayer(value: unknown, path: string): Player {
+function parsePlayer(value: unknown, path: string): Player {
   const p = object(value, path, ['id', 'name', 'position', 'team', 'franchiseId', 'owner']);
   const franchiseId = text(p.franchiseId, path);
   if (franchiseId && !/^\d{4}$/.test(franchiseId)) throw new Error(`${path}: invalid franchise`);

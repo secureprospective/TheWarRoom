@@ -8,7 +8,7 @@ import type * as Bindings from '../../../wailsjs/go/main/App';
 
 export type Archive = { board: Board; season: number; seasons: Choice[]; team: string; other: string;
   teams: Choice[] };
-export function parseArchive(value: unknown): Archive {
+function parseArchive(value: unknown): Archive {
   const p = 'League archive';
   const r = object(value, p, ['board', 'season', 'seasons', 'team', 'other', 'teams']);
   const a = { board: parseBoard(r.board), season: integer(r.season, p),
@@ -23,7 +23,7 @@ export function parseArchive(value: unknown): Archive {
 }
 type ArchiveState = { archive?: Archive; pending: boolean; error: string; season: number;
   team: string | null; other: string };
-export function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>,
+function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>,
   mine: () => string) {
   const store = createStore<ArchiveState>(() =>
     ({ pending: false, error: '', season: 0, team: null, other: '' }));

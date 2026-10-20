@@ -4,7 +4,7 @@ import { commissionerControls } from '../registry/commissioner.gen';
 // The Go controls reading (TargetCommissionerControls): every census row, grouped, and whether a person
 // can use it today. Each row's plain name and question come from the registry, which is generated from
 // the census, so no wording is copied by hand here.
-export type ControlField = { field: string; label: string };
+type ControlField = { field: string; label: string };
 export type Control = { id: string; built: boolean; note: string; fields: ControlField[] };
 export type ControlGroup = { id: string; label: string; controls: Control[] };
 export type Controls = { groups: ControlGroup[] };
@@ -35,8 +35,8 @@ export function parseControls(v: unknown): Controls {
   };
 }
 
-export type Words = ReadonlyMap<string, { name: string; question: string }>;
-export const registryWords: Words = new Map(
+type Words = ReadonlyMap<string, { name: string; question: string }>;
+const registryWords: Words = new Map(
   commissionerControls.map(row => [row.id, { name: row.name, question: row.gm_question }]));
 
 // Entry is one control with its group and its words, ready to list and to search.
@@ -50,7 +50,7 @@ export function entriesOf(controls: Controls, words: Words = registryWords): Ent
 }
 
 // Hit is a search result: the control, and the rule it was found by when a rule's own label matched.
-export type Hit = { entry: Entry; via?: ControlField };
+type Hit = { entry: Entry; via?: ControlField };
 const wordsOf = (query: string) => query.toLowerCase().split(/\s+/).filter(Boolean);
 
 // searchControls finds a control by its plain question or name, or by the label of a rule it owns.

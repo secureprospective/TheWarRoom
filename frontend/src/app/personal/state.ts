@@ -8,7 +8,7 @@ function bindings(): typeof Bindings {
     throw new Error('Private lists need the desktop app; no sample data is substituted.');
   return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
 }
-export type PersonalProvider = {
+type PersonalProvider = {
   read(mine: string): Promise<PersonalReading>;
   change(mine: string, kind: ListKind, change: ListChange): Promise<void>;
   handoff(kind: ListKind | 'ir'): Promise<void>;

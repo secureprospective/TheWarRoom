@@ -1,7 +1,7 @@
 import type { Density } from '../cards/Card';
 import type { Route } from './nodes';
 
-export type Preset = {
+type Preset = {
   label: string;
   route: Route;
   density: Density;

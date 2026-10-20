@@ -96,7 +96,7 @@ function blockedLine(preview: Preview) {
   return `Blocked by ${which}. Saved now, the plan waits as Blocked until it passes.`;
 }
 
-export function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState }) {
+function PreviewView({ preview, form }: { preview?: Preview; form?: BidFormState }) {
   if (!preview) return <p role="status">Checking the bid rules…</p>;
   if (preview.problem) return <p role="status" className="bid-problem">{preview.problem}</p>;
   return (

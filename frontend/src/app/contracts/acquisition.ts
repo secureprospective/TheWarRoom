@@ -9,7 +9,7 @@ import type { Reading, Amount } from './contract';
 import type { TradeAsset } from '../data/contract';
 
 export type AcquisitionRequest = { mine: string; player?: string; bid?: string; cut?: string };
-export type Acquisition = {
+type Acquisition = {
   incoming: { player: string; bid: string; name: string }[]; cuts: TradeAsset[];
   player: string; seasons: Figure[]; team: Figure[]; deadCap: Amount; cutName: string;
   spot: string; reasons: string[];

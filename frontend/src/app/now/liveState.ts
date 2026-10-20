@@ -4,7 +4,7 @@ import { nowState } from './state';
 import { parseLive, type LiveView } from './liveContract';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
-export type LiveReader = (open: boolean, follow: string, mine: string) => Promise<LiveView>;
+type LiveReader = (open: boolean, follow: string, mine: string) => Promise<LiveView>;
 function bindings(): typeof Bindings {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
     throw new Error('Live games need the desktop app; no fixture is substituted.');

@@ -15,7 +15,7 @@ export type Draft =
   | { t: 'rec'; f: Record<string, Draft> }
   | { t: 'list'; items: Draft[]; unset?: boolean }
   | { t: 'map'; items: { k: string; v: Draft }[]; unset?: boolean };
-export type Typed = { ok: true; value: unknown } | { ok: false; error: string };
+type Typed = { ok: true; value: unknown } | { ok: false; error: string };
 type Natural = unknown;
 
 const places = (percent: boolean) => (percent ? 2 : 4);

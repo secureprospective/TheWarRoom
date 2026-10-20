@@ -41,7 +41,7 @@ export function parseDraftScope(v: unknown): DraftScope | null {
   return { from: r.from as number, to: all.to, seasons: r.seasons as number, group: r.group as string,
     segments: kept.segments, nfl: kept.nfl };
 }
-export type DraftReader = (scope: DraftScope) => Promise<SurfaceReading>;
+type DraftReader = (scope: DraftScope) => Promise<SurfaceReading>;
 function absent(reason: string, status: 'failed' | 'not_wired' = 'failed'): SurfaceReading {
   return { ...unavailable(reason, status), threshold: 40 };
 }

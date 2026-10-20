@@ -11,13 +11,13 @@ export type Scope = {
     window: string;
     team: string;
 };
-export type Pick = {
+type Pick = {
     id: string;
     label: string;
     from: number;
     to: number;
 };
-export type Stretch = {
+type Stretch = {
     id: string;
     label: string;
     countText: string;
@@ -30,7 +30,7 @@ export type Stretch = {
         width: number;
     }[];
 };
-export type OfferWords = {
+type OfferWords = {
     heading: string;
     direction: string;
     seasons: string;
@@ -122,7 +122,7 @@ export function parseOffers(value: unknown): OfferReading {
     return parsed;
 }
 export const initialScope: Scope = { from: 2013, to: 2026, direction: 'all', window: '', team: '' };
-export function unavailable(reason: string): OfferReading {
+function unavailable(reason: string): OfferReading {
     return {
         status: 'failed', absenceReason: reason, count: 0,
           threshold: 10, baseline: '', cutoff: '', method: '', inputSHA: '',

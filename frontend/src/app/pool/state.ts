@@ -32,7 +32,7 @@ export function localInput(iso: string): string {
     `T${pad(at.getHours())}:${pad(at.getMinutes())}`;
 }
 
-export async function copyText(value: string): Promise<boolean> {
+async function copyText(value: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(value);
     return true;

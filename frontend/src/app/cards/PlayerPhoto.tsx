@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 // Go's verdict on a player's photo (W1): an empty src means show the fallback, no request.
-export type PhotoView = { src: string; alt: string };
+type PhotoView = { src: string; alt: string };
 type PhotoReader = (id: string) => Promise<PhotoView>;
 
 type GoWindow = { go?: { main?: { App?: { TargetPhoto?: PhotoReader } } } };

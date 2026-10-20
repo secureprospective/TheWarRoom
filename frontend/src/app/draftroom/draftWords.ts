@@ -26,7 +26,6 @@ export const nanosToMs = (ns: number) => ns / 1e6;
 
 export const franchiseName = (draft: Draft, id: string) =>
   draft.owners.find(o => o.id === id)?.name ?? id;
-export const playerName = (draft: Draft, id: string) => draft.players[id]?.name ?? `Player ${id}`;
 export const playerLine = (p: Player) => [p.name, [p.position, p.team].filter(Boolean).join(' · ')]
   .filter(Boolean).join(', ');
 

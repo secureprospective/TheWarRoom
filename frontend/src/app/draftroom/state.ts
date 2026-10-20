@@ -9,7 +9,7 @@ import type * as Bindings from '../../../wailsjs/go/main/App';
 type Scope = { league: string; season: number; franchise: string; at: string };
 type Choice = { league: string; season: number; franchise: string; player: string; request: string;
   expected: number };
-export type Port = { read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown> };
+type Port = { read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown> };
 
 function bindings(): typeof Bindings {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
@@ -23,7 +23,7 @@ const live: Port = {
   read: scope => bindings().TargetNativeDraft(asArg<typeof Bindings.TargetNativeDraft>(scope)),
   pick: choice => bindings().TargetNativeDraftPick(asArg<typeof Bindings.TargetNativeDraftPick>(choice)),
 };
-export const zeroTime = '0001-01-01T00:00:00Z';
+const zeroTime = '0001-01-01T00:00:00Z';
 
 export type PickOutcome = { status: 'idle' } | { status: 'sending' } | { status: 'done'; message: string }
   | { status: 'refused'; message: string };

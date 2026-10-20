@@ -9,7 +9,7 @@ import { parseRules, type Rules } from './rules';
 import { parsePreview } from './preview';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
-export type Receipt = {
+type Receipt = {
   entry: string; league: string; revision: number; recordedAt: string; message: string;
 };
 export type LedgerEntry = {
@@ -18,7 +18,7 @@ export type LedgerEntry = {
   undo: '' | 'league' | 'private'; replacedAt?: string;
 };
 export type Ledger = { league: string; name: string; revision: number; entries: LedgerEntry[] };
-export type NativeLeague = { id: string; name: string };
+type NativeLeague = { id: string; name: string };
 export type Port = {
   execute(body: string): Promise<unknown>;
   preview(body: string): Promise<unknown>;
@@ -112,7 +112,7 @@ const isStale = (message: string) => message.includes('reread before changing it
 export const refusalText = (cause: unknown) =>
   (cause instanceof Error ? cause.message : String(cause)).replace(/^Error: /, '');
 
-export type Outcome =
+type Outcome =
   | { status: 'idle' }
   | { status: 'sending'; form: string }
   | { status: 'done'; form: string; receipt: Receipt }

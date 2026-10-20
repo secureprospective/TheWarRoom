@@ -5,7 +5,7 @@ import { array, object, text } from '../data/parseValues';
 import { parseOutcome, type Outcome, type Scope } from './provider';
 
 // The held copies Go can read afresh (TargetCacheScopes) and the answer to asking for one.
-export type CacheProvider = {
+type CacheProvider = {
   scopes: () => Promise<Scope[]>;
   clear: (scope: string) => Promise<Outcome>;
 };
@@ -20,12 +20,12 @@ function desktop() {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
     throw new Error('Reading data again needs the desktop app. No sample data is substituted.');
 }
-export const cacheProvider: CacheProvider = {
+const cacheProvider: CacheProvider = {
   scopes: async () => { desktop(); return parseCacheScopes(await TargetCacheScopes()); },
   clear: async scope => { desktop(); return parseOutcome(await TargetCacheClear(scope)); },
 };
 
-export function createCacheState(provider: CacheProvider) {
+function createCacheState(provider: CacheProvider) {
   type Held = { scopes: Scope[]; busy: string; error: string; outcomes: Record<string, string> };
   const store = createStore<Held>(() => ({ scopes: [], busy: '', error: '', outcomes: {} }));
   async function load() {

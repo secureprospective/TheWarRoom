@@ -32,7 +32,7 @@ export type ShellState = {
   endpointSurface: Surface | null;
   scrollRevision: number;
 };
-export function initialShellState(): ShellState {
+function initialShellState(): ShellState {
   return {
     lineupDraft: null,
     lineupReceiptId: null,

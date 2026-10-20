@@ -65,7 +65,7 @@ const pool: Parser<Pool> = (v, p) => {
     rows: array(r.rows, p, poolRow), positions: array(r.positions, p, text), summary: text(r.summary, p),
   };
 };
-export const rule: Parser<Rule> = (v, p) => {
+const rule: Parser<Rule> = (v, p) => {
   const r = object(v, p, ['rule', 'label', 'verdict', 'reason', 'mark']);
   return {
     rule: text(r.rule, p), label: text(r.label, p),

@@ -9,9 +9,9 @@ import wire from './draft.wire.testdata.json';
 
 // The Go bindings as the draft room sees it: the reading and the previews are the Go-written fixtures, and
 // every change the room sends is kept so a test can read exactly what Go would have been given.
-export type Sent = { command: string; league: string; request: string; reason: string; expected: number;
+type Sent = { command: string; league: string; request: string; reason: string; expected: number;
   effective: string; visibility: string; args: { draft: { season: number; act?: Record<string, unknown> } } };
-export type Choice = { league: string; season: number; franchise: string; player: string; request: string;
+type Choice = { league: string; season: number; franchise: string; player: string; request: string;
   expected: number };
 
 function previewFor(sent: Sent) {
