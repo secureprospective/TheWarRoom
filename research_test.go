@@ -503,3 +503,42 @@ func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
 		t.Fatal(probe)
 	}
 }
+
+func TestResearchWireGoldens(t *testing.T) {
+	t.Parallel()
+	a := targetTestApp(t)
+	board, err := a.TargetResearch(RawResearchScope{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "research", "unheld", board)
+	in := realResearch(t)
+	held := buildResearch(in, RawResearchScope{Mine: "0001", Search: "Gibbs"})
+	for i := range held.Board.Reports {
+		if len(held.Board.Reports[i].Rows) > 3 {
+			held.Board.Reports[i].Rows = held.Board.Reports[i].Rows[:3]
+		}
+	}
+	checkGolden(t, "research", "held", held)
+	checkGolden(t, "research", "player-held", (researchView{researchInput: in}).playerReading("16162", map[string]string{"0001": "Mine"}, "How this is counted"))
+	a.lookup, a.hasLookup = in.lookup, true
+	player, err := a.TargetResearchPlayer("16162")
+	if err != nil {
+		t.Fatal(err)
+	}
+	checkGolden(t, "research", "player-unheld", player)
+	a.researchStatus("Reading fantasy points")
+	checkGolden(t, "research", "status", a.TargetResearchStatus())
+	a.seasonPause = func(context.Context, time.Duration) error { return context.Canceled }
+	errors := map[string]string{}
+	if err := a.TargetResearchRefresh(false); err != nil {
+		errors["refresh"] = err.Error()
+	}
+	if err := a.TargetResearchNewsRefresh("9999"); err != nil {
+		errors["newsRefresh"] = err.Error()
+	}
+	if err := a.TargetOpenResearchArticle("16162", "forged"); err != nil {
+		errors["openArticle"] = err.Error()
+	}
+	checkGolden(t, "research", "errors", errors)
+}

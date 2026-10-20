@@ -1,0 +1,107 @@
+{
+ "id": "16162",
+ "name": "Gibbs, Jahmyr",
+ "position": "RB",
+ "team": "DET",
+ "franchiseId": "0001",
+ "owner": "Mine",
+ "report": {
+  "id": "M-062",
+  "title": "Held player research",
+  "note": "",
+  "status": "ok",
+  "source": "Source: held MFL and nflverse reports",
+  "asOf": "As of: each feed’s time below",
+  "how": "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions. Posted times are estimated from MFL’s elapsed wording at the fetch time, in your local time zone. Minutes show a minute, hours show about an hour, and days show only a date. Unrecognized wording or a missing fetch time has no posted time.",
+  "columns": [
+   "Reading",
+   "Held fact",
+   "Feed time"
+  ],
+  "rows": [
+   {
+    "cells": [
+     "Owner",
+     "Mine",
+     "Held league roster"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Injury",
+     "Not on MFL’s injury report",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "NFL depth",
+     "not held",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Season fantasy points",
+     "129.00 · 4 finished weeks with scores · position rank 2",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Last finished week · Week 4",
+     "19.95",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Points per game",
+     "32.25 · 4 finished weeks with scores",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Form",
+     "W2: 25.70, W3: 44.40, W4: 19.95 · 30.02 PPG over 3 of the last 3 finished weeks; season 32.25 PPG",
+     "as of Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Dead cap if cut today",
+     "Cannot price a cut: contract expiration is not held",
+     "MFL roster contract"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "News · Oct 5, 2026",
+     "RB Jahmyr Gibbs: Surprisingly stymied by Panthers",
+     "held · fetched Oct 11, 2026, 12:00 PM"
+    ],
+    "range": null
+   }
+  ],
+  "summary": null,
+  "link": null
+ },
+ "articles": [
+  {
+   "id": "16162",
+   "article": "rotowire640841",
+   "name": "Gibbs, Jahmyr",
+   "headline": "RB Jahmyr Gibbs: Surprisingly stymied by Panthers"
+  }
+ ],
+ "howLabel": "How this is counted"
+}

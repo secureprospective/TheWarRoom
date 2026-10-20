@@ -1,0 +1,100 @@
+{
+ "id": "16162",
+ "name": "Gibbs, Jahmyr",
+ "position": "RB",
+ "team": "DET",
+ "franchiseId": "",
+ "owner": "Free agent",
+ "report": {
+  "id": "M-062",
+  "title": "Held player research",
+  "note": "",
+  "status": "ok",
+  "source": "Source: held MFL and nflverse reports",
+  "asOf": "As of: each feed’s time below",
+  "how": "Depth slots match only through the held NFL identity crosswalk. Points per game uses finished weeks with a held score, including zero. Season points sum the same held finished-week scores used by the card; an unfinished week is excluded. Missing facts are not predictions. Posted times are estimated from MFL’s elapsed wording at the fetch time, in your local time zone. Minutes show a minute, hours show about an hour, and days show only a date. Unrecognized wording or a missing fetch time has no posted time.",
+  "columns": [
+   "Reading",
+   "Held fact",
+   "Feed time"
+  ],
+  "rows": [
+   {
+    "cells": [
+     "Owner",
+     "Free agent",
+     "Held league roster"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Injury",
+     "not held",
+     "No usable held injuries export"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "NFL depth",
+     "not held",
+     "depth charts: no archived copy: archived copy; refresh pending"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Season fantasy points",
+     "not held · no finished weekly score for this player",
+     "No held copy available"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Last finished week · No previous NFL week held",
+     "not held",
+     "No held copy available"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Points per game",
+     "not held",
+     "No held copy available"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Form",
+     "not held · no finished weekly scores for this player",
+     "No held copy available"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Dead cap if cut today",
+     "not held · no roster contract for this player",
+     "No held copy available"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "News",
+     "not held · My players’ news reads rostered players",
+     "No held copy available"
+    ],
+    "range": null
+   }
+  ],
+  "summary": null,
+  "link": null
+ },
+ "articles": [],
+ "howLabel": "How this is counted"
+}
