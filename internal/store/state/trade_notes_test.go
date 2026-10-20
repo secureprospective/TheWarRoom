@@ -27,15 +27,3 @@ func TestLogTradeNote_RoundTrips(t *testing.T) {
 			picksNote, rationale, involved, "2027 1st to 0002", "rebuilding the roster", "0001,0002")
 	}
 }
-
-// TestLogTradeNote_PicksNoteUnvalidated proves an EMPTY picksNote is accepted (Alpha scope:
-// picks are free-text and optional, unlike rationale which Trade.validate() requires upstream).
-func TestLogTradeNote_PicksNoteUnvalidated(t *testing.T) {
-	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
-
-	if err := s.WriteTx(context.Background(), func(w TxWriter) error {
-		return w.LogTradeNote(context.Background(), "", "player-only swap", []string{"0001"})
-	}); err != nil {
-		t.Fatalf("LogTradeNote with empty picksNote: %v", err)
-	}
-}

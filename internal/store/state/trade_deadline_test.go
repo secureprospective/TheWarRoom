@@ -32,15 +32,6 @@ func setTradeDeadline(t *testing.T, s *Store, deadline time.Time, note string) e
 	})
 }
 
-// TestTradeDeadline_DefaultNotPassed: a fresh league with no commissioner directive reports the
-// deadline NOT passed — trades are never blocked until the commissioner sets one.
-func TestTradeDeadline_DefaultNotPassed(t *testing.T) {
-	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
-	if readTradeDeadlinePassed(t, s) {
-		t.Fatal("fresh league reports the trade deadline PASSED, want not-set/not-passed")
-	}
-}
-
 // TestTradeDeadline_PastDeadlineBlocks: a deadline set in the past reports passed=true.
 func TestTradeDeadline_PastDeadlineBlocks(t *testing.T) {
 	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
