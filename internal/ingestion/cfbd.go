@@ -59,11 +59,3 @@ func GetCFBD(ctx context.Context, client *http.Client, url, apiKey string, maxBy
 	}
 	return body, nil
 }
-
-// Share returns num/denom, or 0 when denom is 0: the player's within-team market share.
-func Share(num, denom float64) float64 {
-	if denom == 0 {
-		return 0
-	}
-	return num / denom
-}
