@@ -119,6 +119,26 @@ The native league extraction (reorg PR 12) added the owner side.
 - Offer observation still runs under the caller's `seasonMu`, with the same pending trades and
   ending evidence in one store operation. Calendar classification and disclosure are pure;
   transaction coordination and archive/live reads remain root-owned.
+The contracts and roster-action extraction (reorg PR 13) added the plans a GM drafts locally, before any move on MFL.
+
+- **The request's franchise is the scope.** These bindings have no session or principal: the franchise
+  in the request owns every plan, and a plan, bid, what-if move or player of another franchise is refused
+  in the root adapter (`contractActAction`, `releaseAction`, `acquisitionPlayer`, `changeWhatIf`,
+  `replayWhatIf`, `contractActFacts`, `lineupSelection`), in the same place as before. A service prices
+  or words a value the root has already scoped (`ActFacts` takes the player the root found on the
+  roster); it never looks a plan up by id.
+- **Windows and locks are decided at root.** The coordinator phase's window refusal is computed in the
+  adapter and passed in (`ActFacts` takes `window`); the lineup lock, the week match and the MFL host
+  checks stay in `lineupRequest`; the release revalidation and buyout count stay beside the plan ledger.
+- **Plan writes keep their lock.** Each draft, transition, invalidation and supersede is a plan-ledger
+  call under `movesMu` (and `whatifMu` for the what-if store) in the root adapter; the read that refuses
+  a second open plan (`refuseSecondContractPlan`) stays under the same lock as the write, so two
+  simultaneous drafts land once (`TestContractsSimultaneousPlansLandOnce`, which fails without either lock).
+- **Freeze the refusals.** `testdata/wire/contracts/denials.json`: every malformed request on every
+  binding, each cross-franchise plan, move and player, an unheld franchise, each shut window (in-season
+  tender and buyout and their hand-offs, a locked and an unknown lineup week), a stale what-if, a second
+  open plan, an unconfirmed release and a fresh plan's rebase. Dropping the franchise check in
+  `contractActAction` changes four entries.
 
 ### Trades seams
 
