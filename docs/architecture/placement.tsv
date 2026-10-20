@@ -69,10 +69,8 @@ database_checks_app_test.go	platform
 dirmode_test.go	platform
 draft_app.go	draft
 draft_app_test.go	draft
-draft_landing_test.go	draft
 draft_reports_app.go	draft
-draft_reports_reading.go	draft
-draft_reports_test.go	draft
+draft_wire_test.go	draft
 engine_refresh.go	scoring
 engine_refresh_test.go	scoring
 facts_app.go	sources
@@ -161,7 +159,6 @@ native_waiver_rules_test.go	commissioner
 native_waivers_app.go	commissioner
 native_waivers_orders_test.go	commissioner
 native_waivers_test.go	commissioner
-nfl_draft_app.go	draft
 now_app.go	now
 now_entities.go	now
 now_nfl_reading.go	now
@@ -242,6 +239,8 @@ windows_app.go	control
 windows_app_test.go	control
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
+internal/app/draft	draft
+internal/app/draft/drafttest	draft
 internal/app/report	platform
 internal/archive	archive
 internal/commissioner	commissioner

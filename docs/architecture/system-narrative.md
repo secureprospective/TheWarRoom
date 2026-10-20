@@ -150,7 +150,7 @@ are still pending.
 | `control_room_app.go` | `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old) |
 | `data_sources_app.go`, `league_archive_app.go` | `TargetDataSources` (what history holds about every source and the checked facts), `TargetDataRefresh(scope)` (renews one scope and says what it did), `TargetCrosswalk` (C-08 match rates), `SetLeagueArchiveDir(dir)` (the archive's `raw/` folder, one folder per season) |
 | `archive_app.go`, `asset_board.go` | `TargetArchive(season, team, other)` (the league-history board), `TargetAssetBoard` (C-01 from held weekly scores and, once compiled, the Lab value model; never fetches) |
-| `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom` |
+| `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom`, `TargetNFLDraft` (held detailed players only) |
 | `comms_app.go`, `research_app.go` | `TargetCommsRefresh(force)`, `TargetResearchStatus` |
 | `acquisitions_app.go`, `contract_acts_app.go`, `release_app.go`, `trade_builder_app.go` | `TargetAcquisition(RawAcquisition)`, `TargetContractActs(RawContractAct)`, `TargetReleasePlans(RawReleaseRequest)`, `TargetTradeBuilder(RawTradeBuilder)`: validated what-if readings in the `Reading` shell |
 | `commissioner_app.go` | `TargetCommissionerLeagues`, `TargetCommissionerLedger(league)`, `TargetCommissionerRules(league)` (see the Composition row) |
@@ -358,8 +358,11 @@ in both Counterparties and its team Inspector.
 
 `internal/ingestion/draftreports` validates MFL draftResults and futureDraftPicks into typed held
 picks (string PlayerID, epoch instants) and ownership; one adapter family, two export fetchers.
-`draft_reports_app.go` refreshes both with archive fallback and reads local model values without
-network; `draft_reports_reading.go` authors nine report tables, grid, timing and value-distance bars.
+`draft_reports_app.go` refreshes both with archive fallback and holds them; its bindings copy the
+held feeds and call `internal/app/draft`, which reads local model values without network
+(`held.go`) and authors nine report tables, grid, timing and value-distance bars (`reports.go`),
+built as `internal/app/report` values the root converts to its wire types. The Draft Lab
+(`draft_app.go`) stays at root on the Market surface types.
 `frontend/src/app/draftreports/` is lazy inside Draft room alongside the unchanged Draft lab;
 `draft.reports` refreshes or opens the discovered MFL room without submitting a pick.
 
@@ -415,8 +418,8 @@ release the old table anchor, reveal within the work column and focus the salary
  the app's main SQLite pool (the existing dev/prod split). `personal_app.go` exposes validated
 `TargetPersonal`, `TargetPersonalChange` and read-only `TargetPersonalHandOff`; no MFL submission.
 `internal/ingestion/shellfeeds.go` validates calendar, trade bait and player-score exports.
-`roster_reports_app.go` exposes `TargetRosterReports` from held exports; `nfl_draft_app.go`
-exposes `TargetNFLDraft` from validated detailed player draft selections; `internal/lineup/byes.go`
+`roster_reports_app.go` exposes `TargetRosterReports` from held exports; `draft_reports_app.go`
+exposes `TargetNFLDraft` from validated detailed player draft selections (`internal/app/draft`); `internal/lineup/byes.go`
 checks position-minimum bye shortfalls. `calendar_app.go` merges held MFL calendar events into C-04.
 `shell_feeds_app.go` holds calendar and tradeBait, refreshed once per local day with archive fallback;
 screen reads never fetch. Their fetchers live beside the parsers in `internal/ingestion/shellfeeds.go`.
