@@ -1,0 +1,16 @@
+{
+  "value": {
+    "id": "",
+    "title": "",
+    "note": "",
+    "status": "",
+    "source": "",
+    "asOf": "",
+    "how": "",
+    "columns": null,
+    "rows": null,
+    "summary": null,
+    "link": null
+  },
+  "error": "site news: startup: fixture startup failed"
+}
