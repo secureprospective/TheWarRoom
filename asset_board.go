@@ -264,10 +264,10 @@ func (a *App) fitAssetModel(ctx context.Context) {
 	a.factsMu.Lock()
 	cache := a.archiveCache
 	a.factsMu.Unlock()
-	if cache.sha == "" {
+	if cache.SHA == "" {
 		return
 	}
-	m, _, err := labcompile.Build(ctx, cache.facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.through})
+	m, _, err := labcompile.Build(ctx, cache.Facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.Through})
 	if err != nil {
 		log.Printf("the war room: value model: %v", err)
 		return

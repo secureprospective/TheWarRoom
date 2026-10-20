@@ -9,8 +9,6 @@ alerts_app_test.go	control
 app.go	platform
 app_shutdown_test.go	platform
 archive_app.go	archive
-archive_reading.go	archive
-archive_records_reading.go	archive
 archive_test.go	archive
 asset_board.go	market
 asset_board_test.go	market
@@ -242,6 +240,8 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
+internal/app/archive	archive
+internal/app/archive/archivetest	archive
 internal/app/report	platform
 internal/archive	archive
 internal/commissioner	commissioner
