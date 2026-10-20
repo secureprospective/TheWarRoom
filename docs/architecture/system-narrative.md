@@ -117,6 +117,17 @@ contract and paying its price are built. The waiver append transaction rechecks 
 seat, including callers below the IPC door. Now/Race integration and the remaining census owner-edge wiring
 are still pending.
 
+Offers, Personal, Pool and Bids use separate stateless services under
+`internal/app/{offers,personal,pool,bids}`. Offers owns archive-calendar classification and
+presentation; Personal owns held-name, trade-bait and private-player presentation; Pool owns
+player age, experience, minimum and position ordering; Bids owns typed figure parsing, flat-held
+cut pricing and plan/action wording. Root retains Wails declarations, shared-state snapshots,
+refresh scheduling, cross-feature value/market joins and store calls. Local bid changes keep
+`movesMu` across load, validation, save and notification; offer observations keep the caller's
+`seasonMu` across pending/ending evidence and history writes. Native owner/commissioner doors,
+calendar gates, principal resolution and override paths are unchanged. No service opens a database,
+starts a worker, takes a lock or decides who may act.
+
 ## IPC surface
 
 | File | Methods |

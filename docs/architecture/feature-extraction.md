@@ -105,6 +105,18 @@ The native league extraction (reorg PR 12) added the owner side.
   unreadable session and each malformed request. Skipping the gate's refusal in `runNativeAction`
   changes six entries (the store's second gate still refuses, in other words).
 
+### Offers, Personal, Pool and Bids seams
+
+- Local bid plans and native league bids are different doors. Do not add native authorization
+  to a local what-if plan, or move native permission checks into its presentation service.
+  Preserve every manual hand-off, withdrawal, conditional-drop and commissioner override path.
+- Keep `movesMu` around the entire local load/check/save/log/notify sequence, including live
+  revalidation at hand-off and the original reopen/rebase order when revising. Pure parsing and
+  wording can move; the root invokes them at the original point in that sequence.
+- Offer observation still runs under the caller's `seasonMu`, with the same pending trades and
+  ending evidence in one store operation. Calendar classification and disclosure are pure;
+  transaction coordination and archive/live reads remain root-owned.
+
 ## Tests
 
 - Root keeps the wire golden and `TestReportWireTwinsMatch`, which fills every field of a
