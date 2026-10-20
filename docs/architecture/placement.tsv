@@ -315,3 +315,4 @@ internal/app/pool	offers
 internal/app/bids	offers
 internal/app/race	race
 internal/app/race/racetest	race
+control_wire_test.go	control
