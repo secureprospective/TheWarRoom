@@ -706,3 +706,49 @@ func TestModelInputsChangedOnlyForNewValues(t *testing.T) {
 		t.Fatalf("unchanged and failed loads: %t %v", changed, err)
 	}
 }
+
+func TestExistingOrphanDoesNotPreventInitialization(t *testing.T) {
+	t.Parallel()
+	s, _, p := newStore(t)
+	conn, err := p.Write().Conn(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := conn.ExecContext(t.Context(), `PRAGMA foreign_keys=OFF;
+INSERT INTO model_runs (run_id,kind,season,as_of,param_set_id,engine,inputs_hash,scores_hash,missing_measures,created_at)
+VALUES (42,'model',2026,'held','missing','fixture','inputs','scores','[]','held');
+PRAGMA foreign_keys=ON;`); err != nil {
+		_ = conn.Close()
+		t.Fatal(err)
+	}
+	if err := conn.Close(); err != nil {
+		t.Fatal(err)
+	}
+	p.Write().SetMaxIdleConns(0)
+	p.Write().SetMaxIdleConns(1)
+	if err := s.Initialize(t.Context()); err != nil {
+		t.Fatalf("existing orphan blocked initialization: %v", err)
+	}
+	if got := count(t, s, "model_runs"); got != 1 {
+		t.Fatalf("existing runs = %d, want 1", got)
+	}
+	var table, parent string
+	var rowID, foreignKey int
+	if err := p.Read().QueryRowContext(t.Context(), `PRAGMA foreign_key_check`).Scan(&table, &rowID, &parent, &foreignKey); err != nil {
+		t.Fatal(err)
+	}
+	if table != "model_runs" || rowID != 42 || parent != "param_sets" {
+		t.Fatalf("orphan = %s row %d -> %s, want model_runs row 42 -> param_sets", table, rowID, parent)
+	}
+	if _, err := p.Write().ExecContext(t.Context(), `INSERT INTO model_runs
+SELECT 43,kind,season,as_of,param_set_id,engine,inputs_hash,scores_hash,missing_measures,created_at FROM model_runs WHERE run_id=42`); err == nil {
+		t.Fatal("new orphan accepted")
+	}
+	var missing int
+	if err := p.Read().QueryRowContext(t.Context(), `SELECT COUNT(*) FROM param_sets WHERE param_set_id='missing'`).Scan(&missing); err != nil {
+		t.Fatal(err)
+	}
+	if missing != 0 {
+		t.Fatal("initialization invented a missing parent")
+	}
+}

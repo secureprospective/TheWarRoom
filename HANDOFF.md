@@ -1,19 +1,9 @@
 # HANDOFF
 
-- **Baton:** Claude — 2026-10-07 (head brain on CT105; Sol 6.1 on Bee coded P5b)
-
-## Where it stands
-
-Ring 0 of the UI target is done: P1–P5b built on `session/ring-0`, live gate passed on Claude-OS
-2026-10-07, merged to main (PR #14). Ring 1 resume: `docs/build-handoffs/RESUME-2026-10-07-ring1.md`.
-
-## Next move
-
-Ring 1 planning (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md` › Ring 1), plus gap closure:
-league rules (allRules / By-Laws), verifying the MFL IR page (M-028) so drafts can reach ready,
-and a dated source for the current week.
-
-## Tried and rejected
-
-- Wails cannot type `[]playerid.PlayerID`; `ts_type` tags fix it (do not hand-edit wailsjs).
-- A 30 s clock interval showed stale minutes; the ticker reschedules on minute flips instead.
+- **Baton:** Claude/reviewer — 2026-10-19; block B phase 3 is partial, not ready to call complete.
+- **Where it stands:** `6b64c638` sets all three connection pragmas and proves ledger replacement/UPSERT rejection. `45554067` probes user_version read-only before opening the writer and checks legacy state versions before state DDL. No file versions are stamped: the supported user_version remains 0.
+- **Next move:** finish one transactional migration runner per file, including baseline adoption, backups, integrity/FK checks and atomic step/version commits. Existing state migrations are still separate and their marker writes are not atomic with their steps.
+- **Blocked on:** quarantine schema decision. Recommend separate typed quarantine tables retaining orphan model_runs and all dependent model_scores, with reason/provenance; alternative is one serialized run-and-scores bundle. Do not invent param_sets. No production/dev profile was opened or repaired. The new history regression proves an existing orphan still initializes, remains detectable and does not allow new orphan writes.
+- **Verification:** full race runs passed for internal/db, internal/store/state and internal/store/history; replacement and FK mutants failed. golangci-lint and commit hooks pass. make lint stops at the existing tiny_files ratchet (23 vs 22; the prior Windows lock split added a tiny file); baseline was not raised. Root code unchanged; root suite not run.
+- **Later hooks:** stored identity/alias belongs at identity resolution before authorized ledger appends; recovery belongs around the future runner's backup/check boundary. Neither was designed here.
+- **Tried/rejected:** no guessed quarantine format or version-1 stamp on an incompletely migrated file. No push/merge; this branch has no upstream, so the startup fast-forward pull could not run.
