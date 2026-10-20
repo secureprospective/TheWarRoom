@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -23,21 +24,7 @@ type RawAcquisition struct {
 }
 
 func (r RawAcquisition) Validate() error {
-	if err := (snapshot.RawContractScope{Mine: r.Mine, Sort: "name"}).Validate(); err != nil {
-		return fmt.Errorf("acquisition scope: %w", err)
-	}
-	if r.Mine == "" || (r.Player != "" && r.Bid != "") {
-		return fmt.Errorf("acquisition: choose franchise and one source")
-	}
-	for _, id := range []string{r.Player, r.Cut} {
-		if id == "" {
-			continue
-		}
-		if _, err := playerid.New(id); err != nil {
-			return fmt.Errorf("acquisition player: %w", err)
-		}
-	}
-	return nil
+	return contractsapp.Acquisition(r).Validate() //nolint:wrapcheck // the service's errors already start "acquisition"
 }
 
 type AcquisitionChoice struct {
@@ -139,7 +126,7 @@ func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot
 		if err != nil {
 			return nil, fmt.Errorf("acquisition bid terms: %w", err)
 		}
-		out = append(out, AcquisitionChoice{Bid: r.CorrelationID, Name: acquisitionName(snap, f.Player.String()) + " · bid plan"})
+		out = append(out, AcquisitionChoice{Bid: r.CorrelationID, Name: contractsapp.Name(snap, f.Player.String()) + " · bid plan"})
 	}
 	return out, nil
 }
@@ -157,7 +144,7 @@ func (a *App) acquisitionPlayer(ctx context.Context, r RawAcquisition, snap snap
 		if err != nil {
 			return state.MirrorPlayer{}, "", fmt.Errorf("acquisition bid facts: %w", err)
 		}
-		return state.MirrorPlayer{MFLID: f.Player.String(), FranchiseID: r.Mine, RosterStatus: domain.RosterActive, Salary: f.Salary, ContractYear: m.Season + f.Years - 1}, acquisitionName(snap, f.Player.String()), nil
+		return state.MirrorPlayer{MFLID: f.Player.String(), FranchiseID: r.Mine, RosterStatus: domain.RosterActive, Salary: f.Salary, ContractYear: m.Season + f.Years - 1}, contractsapp.Name(snap, f.Player.String()), nil
 	}
 	for _, p := range m.Players {
 		if p.MFLID != r.Player || p.FranchiseID == r.Mine {
@@ -225,15 +212,6 @@ func (a *App) acquisitionProjection(ctx context.Context, r RawAcquisition, s sta
 		out.Reasons = append(out.Reasons, "The roster is below the 35-player in-season minimum.")
 	}
 	return nil
-}
-
-func acquisitionName(snap snapshot.Snapshot, id string) string {
-	for _, p := range snap.Players.Value {
-		if p.ID.String() == id && p.Name != "" {
-			return p.Name
-		}
-	}
-	return "Name unavailable"
 }
 
 func acquisitionCut(ctx context.Context, r RawAcquisition, current, store *state.Store, incomingID string, out *AcquisitionView) error {

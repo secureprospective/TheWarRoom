@@ -1,12 +1,12 @@
 package main
 
 import (
-	"cmp"
 	"fmt"
 	"slices"
 	"strings"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/lineup"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -79,52 +79,18 @@ func (r *LineupReading) judge(rules lineup.Rules, rulesErr error) {
 }
 
 func (r *LineupReading) populate(snap snapshot.Snapshot, season SeasonReading, rules lineup.Rules) {
-	players := make(map[string]snapshot.Player, len(snap.Players.Value))
-	for _, p := range snap.Players.Value {
-		players[p.ID.String()] = p
-	}
-	starting := make(map[string]bool)
-	found := false
-	for _, saved := range season.Lineups.Value.Franchises {
-		if saved.Franchise != r.Franchise {
-			continue
-		}
-		found = true
-		for _, id := range saved.Starters {
-			starting[id.String()] = true
-			r.Starters = append(r.Starters, LineupPlayer{ID: id.String(), Position: players[id.String()].Position})
-		}
-		break
+	starters, bench, found := contractsapp.Layout(snap, season.Lineups.Value, r.Franchise, rules)
+	for _, p := range starters {
+		r.Starters = append(r.Starters, LineupPlayer(p))
 	}
 	if !found && r.Provenance.Freshness.State != FreshFail {
 		fresh := &r.Provenance.Freshness
 		fresh.State = FreshFail
 		fresh.Note = joinNote(fresh.Note, "no saved lineup for franchise "+r.Franchise)
 	}
-	for _, roster := range snap.Rosters.Value {
-		if roster.FranchiseID != r.Franchise {
-			continue
-		}
-		for _, p := range roster.Players {
-			id := p.ID.String()
-			if p.RosterStatus == domain.RosterActive && !starting[id] {
-				r.Bench = append(r.Bench, LineupPlayer{ID: id, Position: players[id].Position})
-			}
-		}
+	for _, p := range bench {
+		r.Bench = append(r.Bench, LineupPlayer(p))
 	}
-	// MFL lists starters in a different order on every fetch, so its order is never used: the
-	// same lineup must lay out the same way each time.
-	byPosition := func(a, b LineupPlayer) int {
-		if order := cmp.Compare(rules.Order(a.Position), rules.Order(b.Position)); order != 0 {
-			return order
-		}
-		if name := cmp.Compare(players[a.ID].Name, players[b.ID].Name); name != 0 {
-			return name
-		}
-		return cmp.Compare(a.ID, b.ID)
-	}
-	slices.SortFunc(r.Starters, byPosition)
-	slices.SortFunc(r.Bench, byPosition)
 }
 
 func joinNote(notes ...string) string {
@@ -145,9 +111,4 @@ func (a *App) rulesFreshness() Freshness {
 	return liveFreshness(time.Unix(checked, 0))
 }
 
-func unreadableLineupRules(err error) lineup.Result {
-	return lineup.Result{Problems: []lineup.Problem{{
-		Subject: "Rules", Kind: lineup.KindUnknown,
-		Message: "The league's lineup rules could not be read: " + err.Error(),
-	}}}
-}
+func unreadableLineupRules(err error) lineup.Result { return contractsapp.UnreadableRules(err) }

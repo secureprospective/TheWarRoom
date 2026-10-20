@@ -143,9 +143,6 @@ func TestWhatIfRulesFailuresAndValidation(t *testing.T) {
 	if a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "unknown"}).Status != ReadingFailed {
 		t.Fatal("invalid action accepted")
 	}
-	if !strings.Contains(whatIfRule("WAIVER", state.PlayerState{IsRestructured: true, ExpirationYear: 2028}, 2026), "50%") {
-		t.Fatal("restructured label")
-	}
 }
 
 func TestWhatIfPresentation(t *testing.T) {
@@ -182,14 +179,6 @@ func TestWhatIfPresentation(t *testing.T) {
 	}
 	if bought.Value.Figures[0].Change != "" || bought.Value.Figures[1].Change != "−$7,000,000" || bought.Value.Figures[3].Change != "+$13,000,000" || bought.Value.Figures[4].Change != "−$20,000,000" {
 		t.Fatalf("changes %+v", bought.Value.Figures)
-	}
-	for _, delta := range []struct {
-		cents domain.Money
-		want  string
-	}{{0, ""}, {-3_000_000, "−$30,000"}, {3_000_000, "+$30,000"}} {
-		if got := whatIfChange(delta.cents); got != delta.want {
-			t.Fatalf("change %d: %s", delta.cents, got)
-		}
 	}
 }
 

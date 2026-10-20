@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
+	"reflect"
 	"regexp"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -281,4 +284,68 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 	got["lineup-draft-lock-unknown"] = blockedWords(lineups.TargetDraftLineup("0025", changedStarters(ids)))
 
 	checkGolden(t, "contracts", "denials", contractsWire(t, got))
+}
+
+// fillTwin sets every field of the struct v points to, but the plan receipt both twins share, as
+// fillWire does.
+func fillTwin(t *testing.T, v any, n *int) {
+	t.Helper()
+	value := reflect.ValueOf(v).Elem()
+	for i := range value.NumField() {
+		if value.Type().Field(i).Name != "Receipt" {
+			fillWire(value.Field(i), n)
+		}
+	}
+}
+
+// TestContractsWireTwinsMatch proves the contracts converters lose nothing: an Act, a what-if, a
+// release plan, a lineup player and each request with every field set, and empty ones, encode the
+// same as their wire twins. A field added to one side, a renamed JSON tag, or a field a converter
+// skips fails here.
+func TestContractsWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	n := 0
+	var act contractsapp.ActView
+	fillTwin(t, &act, &n)
+	var whatIf contractsapp.WhatIfView
+	fillTwin(t, &whatIf, &n)
+	var plan contractsapp.ReleasePlan
+	fillTwin(t, &plan, &n)
+	var player contractsapp.LineupPlayer
+	fillTwin(t, &player, &n)
+	var rawAct RawContractAct
+	fillTwin(t, &rawAct, &n)
+	var rawRelease RawReleaseRequest
+	fillTwin(t, &rawRelease, &n)
+	var rawWhatIf RawWhatIfRequest
+	fillTwin(t, &rawWhatIf, &n)
+	var rawAcquisition RawAcquisition
+	fillTwin(t, &rawAcquisition, &n)
+	for _, c := range []struct {
+		name       string
+		built, got any
+	}{
+		{"full act", act, wireContractAct(act)},
+		{"empty act", contractsapp.DescribeAct(envelope.Receipt{}, envelope.ContractFacts{}), contractActView(envelope.Receipt{}, envelope.ContractFacts{})},
+		{"full what-if", whatIf, wireWhatIf(whatIf)},
+		{"empty what-if", contractsapp.WhatIfView{Moves: []contractsapp.WhatIfMove{}, Figures: []contractsapp.WhatIfFigure{}, Choices: []contractsapp.WhatIfChoice{}}, wireWhatIf(contractsapp.WhatIfView{})},
+		{"release plan", plan, ReleasePlanView(plan)},
+		{"lineup player", player, LineupPlayer(player)},
+		{"act request", contractsapp.Act(rawAct), rawAct},
+		{"release request", contractsapp.Release(rawRelease), rawRelease},
+		{"what-if request", contractsapp.WhatIf(rawWhatIf), rawWhatIf},
+		{"acquisition request", contractsapp.Acquisition(rawAcquisition), rawAcquisition},
+	} {
+		want, err := json.Marshal(c.built)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := json.Marshal(c.got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(want, got) {
+			t.Errorf("%s: wire twin encodes differently\n built %s\n wire  %s", c.name, want, got)
+		}
+	}
 }

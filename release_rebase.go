@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -34,9 +34,9 @@ func (a *App) rebaseRelease(ctx context.Context, e envelope.Envelope) error {
 	}
 	s := state.WhatIfSession{Mine: r.Spec.FranchiseID, Snapshot: m, Stamps: stamps, Generation: "release-rebase:" + e.ID() + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: a.rulebook.TaxiCapPercent(), IRPercent: a.rulebook.IRCapPercent()}
 	move := state.WhatIfMove{Kind: kind, Player: old.Player.String(), Name: old.Name}
-	f, err := releaseFacts(s, move)
+	f, err := contractsapp.ReleaseFacts(s, move)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // the service's errors already start "release"
 	}
 	f.Charge, err = a.releaseCharge(ctx, s, move)
 	if err != nil {
@@ -109,23 +109,23 @@ func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
 	if r.State == envelope.Landed {
 		return a.releaseChargeNote(ctx, r, f, m)
 	}
-	if !releaseNeedsValidation(r.State) {
+	if !contractsapp.NeedsValidation(r.State) {
 		return nil
 	}
-	p, onRoster := releasePlayer(m, r.Spec.FranchiseID, f.Player.String())
+	p, onRoster := contractsapp.Player(m, r.Spec.FranchiseID, f.Player.String())
 	stamps, err := a.league.ReleaseStamps(ctx, f.Player.String(), r.Spec.FranchiseID)
 	if err != nil {
 		return fmt.Errorf("release validation stamps: %w", err)
 	}
-	adjustments, err := releaseAdjustments(m, r.Spec.FranchiseID)
+	adjustments, err := contractsapp.Adjustments(m, r.Spec.FranchiseID)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // the service's errors already start "release"
 	}
 	phase, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
 		return fmt.Errorf("release validation phase: %w", err)
 	}
-	contractChanged := releaseContractChanged(p, f) ||
+	contractChanged := contractsapp.ContractChanged(p, f) ||
 		(state.MirrorStamps{Contract: stamps.Contract}).NewerThan(state.MirrorStamps{Contract: f.ContractStamp})
 	adjustmentChanged := adjustments != f.Adjustments || (state.MirrorStamps{DeadCap: stamps.DeadCap}).NewerThan(state.MirrorStamps{DeadCap: f.DeadCapStamp})
 	reason := envelope.ReleaseInvalidation(r.Spec.Intent, r.State != envelope.Ready, onRoster, phase == domain.PhaseOffseason, contractChanged, adjustmentChanged)
@@ -146,35 +146,8 @@ func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
 	a.movesChanged(ctx)
 	return nil
 }
-func releaseObservedCharge(f envelope.ReleaseFacts, mine string, m state.MirrorSnapshot) (domain.Money, bool) {
-	var amount domain.Money
-	matches := 0
-	for _, adj := range m.Adjustments {
-		if adj.FranchiseID != mine {
-			continue
-		}
-		words := strings.FieldsFunc(strings.ToLower(adj.Description), func(r rune) bool { return r < '0' || r > '9' })
-		identified := false
-		for _, word := range words {
-			identified = identified || word == f.Player.String()
-		}
-		dead := strings.Contains(strings.ToLower(adj.Description), "dead cap")
-		if identified && dead {
-			amount = adj.Amount
-			matches++
-		}
-	}
-	return amount, matches == 1
-}
 func (a *App) releaseChargeNote(ctx context.Context, r envelope.Receipt, f envelope.ReleaseFacts, m state.MirrorSnapshot) error {
-	amount, seen := releaseObservedCharge(f, r.Spec.FranchiseID, m)
-	note := "Landed: cannot see a player-linked dead-cap charge in MFL salary adjustments."
-	if seen {
-		note = snapshot.ContractAmountOf(f.Charge).Text + " planned vs " + snapshot.ContractAmountOf(amount).Text + " now (MFL player-labelled dead cap)"
-		if amount == f.Charge {
-			note = "Landed: planned dead cap matches " + snapshot.ContractAmountOf(amount).Text + " now"
-		}
-	}
+	note := contractsapp.ChargeNote(f, r.Spec.FranchiseID, m)
 	if len(r.Audit) > 0 && r.Audit[len(r.Audit)-1].Note == note {
 		return nil
 	}
@@ -191,11 +164,4 @@ func (a *App) releaseChargeNote(ctx context.Context, r envelope.Receipt, f envel
 	}
 	a.movesChanged(ctx)
 	return nil
-}
-
-func releaseNeedsValidation(s envelope.State) bool {
-	return s == envelope.Ready || s == envelope.HandedOff || s == envelope.NotYetDone || s == envelope.NotVerified
-}
-func releaseContractChanged(p state.MirrorPlayer, f envelope.ReleaseFacts) bool {
-	return p.Salary != f.Salary || p.ContractYear != f.Expiration || p.ContractInfo != f.ContractInfo
 }

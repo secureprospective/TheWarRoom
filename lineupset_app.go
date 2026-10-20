@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -16,23 +17,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
-
-type rawLineupSelection struct{ Starters []string }
-
-func (r rawLineupSelection) Validate() ([]playerid.PlayerID, error) {
-	ids := make([]playerid.PlayerID, 0, len(r.Starters))
-	for _, raw := range r.Starters {
-		id, err := playerid.New(raw)
-		if err != nil {
-			return nil, fmt.Errorf("lineup selection: player: %w", err)
-		}
-		if slices.Contains(ids, id) {
-			return nil, fmt.Errorf("lineup selection: duplicate player %s", id)
-		}
-		ids = append(ids, id)
-	}
-	return ids, nil
-}
 
 func (a *App) lineupSelection(
 	franchiseID string, starters []string,
@@ -51,9 +35,9 @@ func (a *App) lineupSelection(
 	}) {
 		return snapshot.Snapshot{}, nil, fmt.Errorf("lineup selection: unknown franchise %q", franchiseID)
 	}
-	ids, err := (rawLineupSelection{Starters: starters}).Validate()
+	ids, err := (contractsapp.Selection{Starters: starters}).Validate()
 	if err != nil {
-		return snapshot.Snapshot{}, nil, err
+		return snapshot.Snapshot{}, nil, err //nolint:wrapcheck // the service's errors already start "lineup selection"
 	}
 	return snap, ids, nil
 }
@@ -165,20 +149,6 @@ func (a *App) supersedeLineups(ctx context.Context, next envelope.Envelope, now 
 	return a.supersedeMoves(ctx, next, now)
 }
 
-func competingMove(left, right envelope.Spec) bool {
-	if left.Intent != right.Intent {
-		return false
-	}
-	switch left.Intent {
-	case "lineup.set":
-		return left.Expected.Lineup.Week == right.Expected.Lineup.Week
-	case "trade.accept", "trade.reject", "trade.revoke":
-		return left.Expected.Trade.TradeID == right.Expected.Trade.TradeID
-	default:
-		return false
-	}
-}
-
 func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now time.Time) error {
 	spec := next.Receipt().Spec
 	receipts, err := a.moves.List(ctx, spec.LeagueID, spec.FranchiseID)
@@ -189,7 +159,7 @@ func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now ti
 	live := []envelope.State{envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified,
 		envelope.DOTReview}
 	for _, r := range receipts {
-		if !competingMove(r.Spec, spec) || !slices.Contains(live, r.State) {
+		if !contractsapp.Competing(r.Spec, spec) || !slices.Contains(live, r.State) {
 			continue
 		}
 		old, err := a.moves.Get(ctx, r.CorrelationID)
