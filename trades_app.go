@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"net/url"
 	"slices"
-	"strings"
 	"time"
 
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -59,71 +59,6 @@ func (a *App) tradeState(franchiseID string) (
 		Value:      append([]leaguefeed.PendingTrade{}, held.value...),
 		Provenance: held.provenance("pendingTrades", "pending trades"),
 	}, nil
-}
-
-func tradeFranchiseName(snap snapshot.Snapshot, id string) string {
-	for _, f := range snap.Franchises.Value {
-		if f.ID == id && f.Name != "" {
-			return f.Name
-		}
-	}
-	return id
-}
-
-func tradeAssets(assets []leaguefeed.Asset, players map[string]snapshot.Player, snap snapshot.Snapshot) []TradeAsset {
-	out := make([]TradeAsset, 0, len(assets))
-	for _, asset := range assets {
-		token := leaguefeed.AssetToken(asset)
-		item := TradeAsset{Token: token, Name: heldTradeAssetName(asset, snap)}
-		if asset.Player != nil {
-			if player, found := players[asset.Player.String()]; found {
-				if player.Name != "" {
-					item.Name = player.Name
-				}
-				item.Position = player.Position
-			}
-		}
-		out = append(out, item)
-	}
-	return out
-}
-
-func (a *App) TargetTrades(franchiseID string) (TradeReading, error) {
-	snap, held, err := a.tradeState(franchiseID)
-	if err != nil {
-		return TradeReading{}, fmt.Errorf("target trades: %w", err)
-	}
-	reading := TradeReading{Offers: []TradeOffer{}, Provenance: held.Provenance}
-	if envelope.TradeFeedReason(held.Provenance) != "" {
-		return reading, nil
-	}
-	players := make(map[string]snapshot.Player, len(snap.Players.Value))
-	for _, player := range snap.Players.Value {
-		players[player.ID.String()] = player
-	}
-	for _, offer := range held.Value {
-		direction, other, give, get := "to_you", offer.Offering, offer.Gets, offer.Gives
-		switch franchiseID {
-		case offer.Offering:
-			direction, other, give, get = "by_you", offer.OfferedTo, offer.Gives, offer.Gets
-		case offer.OfferedTo:
-		default:
-			continue
-		}
-		reading.Offers = append(reading.Offers, TradeOffer{
-			TradeID: offer.ID, Direction: direction, OtherID: other,
-			OtherName: tradeFranchiseName(snap, other),
-			Give:      tradeAssets(give, players, snap), Get: tradeAssets(get, players, snap),
-			Expires: offer.Expires, Comments: offer.Comments,
-		})
-	}
-	slices.SortFunc(reading.Offers, func(a, b TradeOffer) int {
-		if order := a.Expires.Compare(b.Expires); order != 0 {
-			return order
-		}
-		return strings.Compare(a.TradeID, b.TradeID)
-	})
-	return reading, nil
 }
 
 func (a *App) tradeRequest(franchiseID string, offer leaguefeed.PendingTrade) envelope.TradeRequest {
@@ -190,42 +125,82 @@ func (a *App) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Rece
 	return e.Receipt(), nil
 }
 
-func heldTradeAssetName(asset leaguefeed.Asset, snap snapshot.Snapshot) string {
-	switch {
-	case asset.CurrentPick != nil:
-		return fmt.Sprintf("Round %d · pick %d", asset.CurrentPick.Round, asset.CurrentPick.Pick)
-	case asset.FuturePick != nil:
-		pick := asset.FuturePick
-		return futureTradePickName(pick.Year, pick.Round, pick.Franchise, snap)
-	case asset.BlindBidCents != nil:
-		return fmt.Sprintf("Blind-bid cash: %d cents", *asset.BlindBidCents)
-	default:
-		return "Unnamed asset"
+func (a *App) TargetTrades(franchiseID string) (TradeReading, error) {
+	snap, held, err := a.tradeState(franchiseID)
+	if err != nil {
+		return TradeReading{}, fmt.Errorf("target trades: %w", err)
 	}
+	return wireTrades(tradesapp.Read(franchiseID, snap, held)), nil
 }
-
+func tradeFranchiseName(snap snapshot.Snapshot, id string) string {
+	return tradesapp.FranchiseName(snap, id)
+}
 func futureTradePickName(year, round int, original string, snap snapshot.Snapshot) string {
-	name := tradeFranchiseName(snap, original)
-	if name == original {
-		name = "Franchise name unavailable"
-	}
-	return fmt.Sprintf("%d round %d · %s", year, round, name)
+	return tradesapp.FuturePickName(year, round, original, snap)
+}
+func labelTradeReceipts(receipts []envelope.Receipt, snap snapshot.Snapshot) {
+	tradesapp.LabelReceipts(receipts, snap)
 }
 
-func labelTradeReceipts(receipts []envelope.Receipt, snap snapshot.Snapshot) {
-	for i, receipt := range receipts {
-		trade := receipt.Spec.Expected.Trade
-		if trade == nil {
-			continue
+func wireTradeAssets(in []tradesapp.Asset) []TradeAsset {
+	out := make([]TradeAsset, len(in))
+	for i, v := range in {
+		out[i] = TradeAsset{Team: v.Team, Contract: v.Contract, Token: v.Token, Name: v.Name, Position: v.Position}
+		if v.Now != nil {
+			cell := AssetCell(*v.Now)
+			out[i].Now = &cell
 		}
-		tokens := append(slices.Clone(trade.OfferingGives), trade.AcceptingGives...)
-		for _, token := range tokens {
-			assets, err := leaguefeed.ParseAssets(token)
-			name := "Unnamed asset"
-			if err == nil && len(assets) == 1 && assets[0].Player == nil {
-				name = heldTradeAssetName(assets[0], snap)
-			}
-			receipts[i].TradeAssets = append(receipts[i].TradeAssets, envelope.AssetLabel{Token: token, Name: name})
+		if v.Dynasty != nil {
+			cell := AssetCell(*v.Dynasty)
+			out[i].Dynasty = &cell
 		}
 	}
+	return wireSlice(in, out)
+}
+func serviceTradeAssets(in []TradeAsset) []tradesapp.Asset {
+	out := make([]tradesapp.Asset, len(in))
+	for i, v := range in {
+		out[i] = tradesapp.Asset{Team: v.Team, Contract: v.Contract, Token: v.Token, Name: v.Name, Position: v.Position}
+		if v.Now != nil {
+			cell := tradesapp.Cell(*v.Now)
+			out[i].Now = &cell
+		}
+		if v.Dynasty != nil {
+			cell := tradesapp.Cell(*v.Dynasty)
+			out[i].Dynasty = &cell
+		}
+	}
+	return wireSlice(in, out)
+}
+func wireTradeTeams(in []tradesapp.Team) []TradeBuilderTeam {
+	out := make([]TradeBuilderTeam, len(in))
+	for i, v := range in {
+		out[i] = TradeBuilderTeam{ID: v.ID, Name: v.Name, Assets: wireTradeAssets(v.Assets)}
+	}
+	return wireSlice(in, out)
+}
+func serviceTradeTeams(in []TradeBuilderTeam) []tradesapp.Team {
+	out := make([]tradesapp.Team, len(in))
+	for i, v := range in {
+		out[i] = tradesapp.Team{ID: v.ID, Name: v.Name, Assets: serviceTradeAssets(v.Assets)}
+	}
+	return wireSlice(in, out)
+}
+func wireTradeProjection(in tradesapp.Projection) TradeProjection {
+	figures := make([]WhatIfFigure, len(in.Figures))
+	for i, f := range in.Figures {
+		figures[i] = WhatIfFigure(f)
+	}
+	return TradeProjection{Team: in.Team, Figures: wireSlice(in.Figures, figures), Roster: wireTradeAssets(in.Roster)}
+}
+func tradeFigure(label string, before, after domain.Money) tradesapp.Figure {
+	return tradesapp.Figure(whatIfFigure(label, before, after))
+}
+func wireTrades(in tradesapp.Reading) TradeReading {
+	offers := make([]TradeOffer, len(in.Offers))
+	for i, v := range in.Offers {
+		offers[i] = TradeOffer{TradeID: v.TradeID, Direction: v.Direction, OtherID: v.OtherID, OtherName: v.OtherName,
+			Give: wireTradeAssets(v.Give), Get: wireTradeAssets(v.Get), Expires: v.Expires, Comments: v.Comments}
+	}
+	return TradeReading{Offers: wireSlice(in.Offers, offers), Provenance: in.Provenance}
 }

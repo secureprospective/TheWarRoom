@@ -9,10 +9,14 @@ import (
 	"strings"
 	"time"
 
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
+	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
 type RawTradeBuilder struct {
@@ -26,25 +30,7 @@ type RawTradeBuilder struct {
 }
 
 func (r RawTradeBuilder) Validate() error {
-	if err := (snapshot.RawContractScope{Mine: r.Mine, Sort: "name"}).Validate(); err != nil {
-		return fmt.Errorf("trade builder scope: %w", err)
-	}
-	if r.Mine == "" || !slices.Contains([]string{"read", "preview", "save", "reject", "revoke", "handoff", "remove"}, r.Action) {
-		return fmt.Errorf("trade builder: franchise and known action required")
-	}
-	if slices.Contains([]string{"reject", "revoke", "handoff", "remove"}, r.Action) && r.ID == "" {
-		return fmt.Errorf("trade builder: offer or plan required")
-	}
-	if r.Action != "preview" && r.Action != "save" {
-		return nil
-	}
-	if err := (snapshot.RawContractScope{Mine: r.Other, Sort: "name"}).Validate(); err != nil {
-		return fmt.Errorf("trade builder other franchise: %w", err)
-	}
-	if r.Other == "" || r.Other == r.Mine || len(r.Give) == 0 || len(r.Get) == 0 || len(r.Give)+len(r.Get) > 256 {
-		return fmt.Errorf("trade builder: distinct franchises and assets on both sides required")
-	}
-	return validateTradeAssets(r.Give, r.Get)
+	return tradesapp.Input(r).Validate() //nolint:wrapcheck // preserve the boundary's existing error text
 }
 
 type TradeBuilderTeam struct {
@@ -131,45 +117,21 @@ func tradeBuilderReading(v TradeBuilderView, err error) Reading[TradeBuilderView
 	return contractReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), err)
 }
 func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []TradeBuilderTeam {
-	players := map[string]snapshot.Player{}
-	for _, p := range snap.Players.Value {
-		players[p.ID.String()] = p
-	}
 	m, _, _ := a.league.ContractsView()
 	a.seasonMu.Lock()
 	picks := slices.Clone(a.seasonFuturePicks.value)
 	a.seasonMu.Unlock()
 	board, err := a.assetBoard(ctx)
-	values := map[string]AssetValue{}
+	values := map[string]tradesapp.Value{}
 	if err == nil {
 		for _, v := range board.Values {
-			values[v.ID] = v
+			values[v.ID] = tradesapp.Value{ID: v.ID, Now: tradesapp.Cell(v.Now), Dynasty: tradesapp.Cell(v.Dynasty)}
 		}
 	}
-	out := []TradeBuilderTeam{}
-	for _, f := range snap.Franchises.Value {
-		team := TradeBuilderTeam{ID: f.ID, Name: f.Name, Assets: []TradeAsset{}}
-		for _, p := range m.Players {
-			if p.FranchiseID == f.ID {
-				name := players[p.MFLID].Name
-				if name == "" {
-					name = "Name unavailable"
-				}
-				team.Assets = append(team.Assets, builderPlayerAsset(p, players[p.MFLID], name, values[p.MFLID], m.Season))
-			}
-		}
-		for _, pick := range picks {
-			if pick.Owner != f.ID || pick.Year > m.Season+2 {
-				continue
-			}
-			team.Assets = append(team.Assets, TradeAsset{Token: fmt.Sprintf("FP_%s_%d_%d", pick.Original, pick.Year, pick.Round),
-				Name:    futureTradePickName(pick.Year, pick.Round, pick.Original, snap),
-				Dynasty: a.builderPickValue(pick.Year, pick.Round, pick.Original, time.Now())})
-		}
-		slices.SortFunc(team.Assets, func(a, b TradeAsset) int { return strings.Compare(a.Name, b.Name) })
-		out = append(out, team)
-	}
-	return out
+	return wireTradeTeams(tradesapp.Teams(snap, m, picks, values, func(year, round int, original string) *tradesapp.Cell {
+		cell := tradesapp.Cell(*a.builderPickValue(year, round, original, time.Now()))
+		return &cell
+	}))
 }
 func tradeID() (string, error) {
 	var bytes [16]byte
@@ -243,26 +205,6 @@ func (a *App) draftTradeExit(ctx context.Context, r RawTradeBuilder,
 	return e.Receipt(), nil
 }
 
-func validateTradeAssets(give, get []string) error {
-
-	seen := map[string]bool{}
-	for _, token := range append(slices.Clone(give), get...) {
-		assets, err := leaguefeed.ParseAssets(token)
-		if err != nil {
-			return fmt.Errorf("trade builder asset: %w", err)
-		}
-		if len(assets) != 1 || assets[0].BlindBidCents != nil || assets[0].CurrentPick != nil {
-			return fmt.Errorf("trade builder: player or held future pick required")
-		}
-		key := leaguefeed.AssetToken(assets[0])
-		if seen[key] {
-			return fmt.Errorf("trade builder: duplicate asset")
-		}
-		seen[key] = true
-	}
-	return nil
-}
-
 func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Snapshot) ([]TradeBuilderPlan, error) {
 	out := []TradeBuilderPlan{}
 
@@ -290,16 +232,6 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 	return out, nil
 }
 
-func builderPlayerAsset(p state.MirrorPlayer, player snapshot.Player, name string, value AssetValue, season int) TradeAsset {
-	if value.ID == "" {
-		value.Now = AssetCell{Text: "No score", Sub: "This season's points per game"}
-		value.Dynasty = AssetCell{Text: "Not valued"}
-	}
-	return TradeAsset{Token: p.MFLID, Name: name, Position: player.Position, Team: player.Team,
-		Contract: fmt.Sprintf("%s · %d years", snapshot.ContractAmountOf(p.Salary).Text, max(p.ContractYear-season+1, 0)),
-		Now:      &value.Now, Dynasty: &value.Dynasty}
-}
-
 func (a *App) builderPickValue(year, round int, original string, at time.Time) *AssetCell {
 	held := a.assetModel.Load()
 	if held == nil {
@@ -307,22 +239,6 @@ func (a *App) builderPickValue(year, round int, original string, at time.Time) *
 	}
 	cell, _, _ := dynastyValueCells((*held).Pick(year, round, original, at))
 	return &cell
-}
-
-func richTradeRoster(roster []TradeAsset, catalog []TradeBuilderTeam) []TradeAsset {
-	values := map[string]TradeAsset{}
-	for _, team := range catalog {
-		for _, asset := range team.Assets {
-			values[asset.Token] = asset
-		}
-	}
-	for i, player := range roster {
-		if asset, ok := values[player.Token]; ok {
-			asset.Name = player.Name
-			roster[i] = asset
-		}
-	}
-	return roster
 }
 
 func (a *App) removeTradePlan(ctx context.Context, r RawTradeBuilder) error {
@@ -356,4 +272,210 @@ func (a *App) tradeBuilderPlanAction(ctx context.Context, r RawTradeBuilder, sna
 	default:
 		return nil
 	}
+}
+
+type tradeSimulation struct {
+	Sessions []state.WhatIfSession
+	Store    *state.Store
+	Before   map[string]domain.Money
+}
+
+func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradeSimulation, error) {
+	out := tradeSimulation{Before: map[string]domain.Money{}}
+	merged := state.MirrorSnapshot{}
+	for _, fid := range []string{mine, other} {
+		s, store, err := a.whatIfSession(ctx, RawWhatIfRequest{Mine: fid, Action: "read"})
+		if err != nil {
+			return out, err
+		}
+		out.Sessions = append(out.Sessions, s)
+		used, _ := store.CapUsed(fid)
+		out.Before[fid] = s.Used + used - s.SeedUsed
+		merged.Season = s.Snapshot.Season
+		for _, p := range s.Snapshot.Players {
+			if p.FranchiseID != fid {
+				continue
+			}
+			if live, ok := store.Player(p.MFLID); !ok || live.FranchiseID != fid {
+				continue
+			}
+			merged.Players = append(merged.Players, p)
+		}
+		for _, adjust := range s.Snapshot.Adjustments {
+			if adjust.FranchiseID == fid {
+				merged.Adjustments = append(merged.Adjustments, adjust)
+			}
+		}
+	}
+	seed := out.Sessions[0]
+	seed.Generation = "trade-preview:" + fmt.Sprint(time.Now().UnixNano())
+	seed.Snapshot = merged
+	store, err := a.loadWhatIf(ctx, seed)
+	if err != nil {
+		return out, err
+	}
+	out.Store = store
+	return out, nil
+}
+func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snapshot.Snapshot) (TradeBuilderPlan, error) {
+	out := TradeBuilderPlan{Reasons: []string{}, Teams: []TradeProjection{}}
+	sim, err := a.tradeSimulation(ctx, r.Mine, r.Other)
+	if err != nil {
+		return out, err
+	}
+	stamps, err := a.league.Stamps(ctx)
+	if err != nil {
+		return out, fmt.Errorf("trade baseline stamps: %w", err)
+	}
+	for _, s := range sim.Sessions {
+		if stamps.NewerThan(s.Stamps) {
+			name := tradeFranchiseName(snap, s.Mine)
+			out.Reasons = append(out.Reasons, "MFL changed since "+possessive(name)+" what-if started; reset it to "+
+				"check this deal against MFL as it stands.")
+			out.Resets = append(out.Resets, TradeReset{Franchise: s.Mine, Label: "Reset " + possessive(name) + " what-if"})
+		}
+	}
+	out.Reasons = append(out.Reasons, a.tradeClockReasons(ctx)...)
+	if reason := envelope.TradeFeedReason(snap.Rosters.Provenance); reason != "" {
+		out.Reasons = append(out.Reasons, "Roster unavailable: "+reason)
+	}
+	if reason := a.tradePickReason(r); reason != "" {
+		out.Reasons = append(out.Reasons, reason)
+	}
+	catalog := a.tradeBuilderTeams(ctx, snap)
+	moves, blocks := tradesapp.Legs(tradesapp.Input(r), serviceTradeTeams(catalog), sim.Store.Player)
+	out.Reasons = append(out.Reasons, blocks...)
+	before := map[string]domain.Money{}
+	for _, s := range sim.Sessions {
+		before[s.Mine], _ = sim.Store.CapUsed(s.Mine)
+	}
+	if len(blocks) == 0 && len(moves) > 0 {
+		coord, err := transactions.New(sim.Store.Writer(), nil, nil)
+		if err != nil {
+			return out, fmt.Errorf("trade preview coordinator: %w", err)
+		}
+		if _, err := coord.Execute(ctx, transactions.Trade{Moves: moves, Rationale: "Local what-if trade projection"}); err != nil {
+			return out, fmt.Errorf("trade preview: %w", err)
+		}
+	}
+	players := map[string]snapshot.Player{}
+	for _, p := range snap.Players.Value {
+		players[p.ID.String()] = p
+	}
+	for _, s := range sim.Sessions {
+		projected, blocks := tradesapp.ProjectedTeam(tradeProjectionInput(sim, s, before[s.Mine], players, tradeFranchiseName(snap, s.Mine)), tradeFigure)
+		projected.Roster = tradesapp.RichRoster(projected.Roster, serviceTradeTeams(catalog))
+		team := wireTradeProjection(projected)
+		out.Teams, out.Reasons = append(out.Teams, team), append(out.Reasons, blocks...)
+	}
+	out.Post = tradesapp.DealText(tradesapp.Input(r), serviceTradeTeams(catalog), sim.Sessions[0].Snapshot)
+	return out, nil
+}
+func (a *App) tradeBuilderHandOff(ctx context.Context, r RawTradeBuilder, snap snapshot.Snapshot) error {
+	plans, err := state.NewTradePlans(a.whatifPools).List(ctx, r.Mine)
+	if err != nil {
+		return fmt.Errorf("trade hand-off plans: %w", err)
+	}
+	blocks := []string{}
+	for _, p := range plans {
+		if p.ID != r.ID {
+			continue
+		}
+		preview, err := a.tradeProjection(ctx, RawTradeBuilder{Mine: p.Mine, Other: p.Other, Give: p.Give, Get: p.Get, Rationale: p.Rationale}, snap)
+		if err != nil {
+			return err
+		}
+		blocks = preview.Reasons
+	}
+	if len(blocks) > 0 {
+		return fmt.Errorf("trade hand-off blocked: %s", strings.Join(blocks, "; "))
+	}
+	a.movesMu.Lock()
+	defer a.movesMu.Unlock()
+	e, err := a.moves.Get(ctx, r.ID)
+	if err != nil {
+		return fmt.Errorf("trade hand-off load: %w", err)
+	}
+	spec := e.Receipt().Spec
+	if spec.FranchiseID != r.Mine || !envelope.IsTrade(spec.Intent) || spec.Intent == "trade.accept" {
+		return fmt.Errorf("trade hand-off outside scope")
+	}
+	if err := a.checkTradeExitPending(r.Mine, spec); err != nil {
+		return err
+	}
+	if err := validateMoveURL(spec.Target.URL); err != nil {
+		return err
+	}
+	next, err := e.HandOff(a.movesNow())
+	if err != nil {
+		return fmt.Errorf("trade hand-off: %w", err)
+	}
+	if err := a.moves.Save(ctx, next); err != nil {
+		return fmt.Errorf("trade hand-off save: %w", err)
+	}
+	a.openURL(ctx, spec.Target.URL)
+	a.movesChanged(ctx)
+	a.wakeMoves()
+	return nil
+}
+
+func (a *App) checkTradeExitPending(mine string, spec envelope.Spec) error {
+	if spec.Intent == "trade.propose" {
+		return nil
+	}
+	_, held, err := a.tradeState(mine)
+	if err != nil {
+		return err
+	}
+	if envelope.TradeFeedReason(held.Provenance) != "" || !slices.ContainsFunc(held.Value, func(p leaguefeed.PendingTrade) bool {
+		return p.ID == spec.Expected.Trade.TradeID && envelope.MatchesPendingTrade(*spec.Expected.Trade, p)
+	}) {
+		return fmt.Errorf("offer no longer available; refresh the trade desk")
+	}
+	return nil
+}
+
+func (a *App) tradePickReason(r RawTradeBuilder) string {
+	if !slices.ContainsFunc(append(slices.Clone(r.Give), r.Get...), func(token string) bool { return strings.HasPrefix(token, "FP_") }) {
+		return ""
+	}
+	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
+	held := a.seasonFuturePicks
+	if held.fetchedAt.IsZero() {
+		return "Draft-pick ownership unavailable; refresh before handing off."
+	}
+	if held.refreshError != "" {
+		return "Draft-pick ownership unavailable: " + held.refreshError
+	}
+	return ""
+}
+
+func (a *App) tradeClockReasons(ctx context.Context) []string {
+	clock, err := a.targetClock(ctx)
+	if err != nil {
+		return []string{"Trade deadline cannot be checked: " + err.Error()}
+	}
+	return tradeDeadlineReasons(time.Now(), clock.Value.Windows)
+}
+
+func tradeCentsCorrection(p state.MirrorPlayer, afterOwner string, s state.WhatIfSession) domain.Money {
+	return tradesapp.CentsCorrection(p, afterOwner, s)
+}
+func tradeDeadlineReasons(now time.Time, windows []leagueclock.Window) []string {
+	return tradesapp.DeadlineReasons(now, windows, time.Local)
+}
+
+func tradeProjectionInput(sim tradeSimulation, s state.WhatIfSession, seed domain.Money,
+	players map[string]snapshot.Player, name string) tradesapp.ProjectionInput {
+	used, _ := sim.Store.CapUsed(s.Mine)
+	original := tradesapp.SimulationPlayers(sim.Sessions)
+	live := make(map[string]state.PlayerState, len(original))
+	for _, p := range original {
+		if value, ok := sim.Store.Player(p.MFLID); ok {
+			live[p.MFLID] = value
+		}
+	}
+	return tradesapp.ProjectionInput{Session: s, Name: name, Before: sim.Before[s.Mine], Seed: seed,
+		Used: used, Players: original, Live: live, Names: players}
 }

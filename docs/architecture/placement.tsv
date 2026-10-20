@@ -201,7 +201,6 @@ snapshot_app_test.go	platform
 trade_builder_app.go	trades
 trade_builder_app_test.go	trades
 trade_link_guard_test.go	trades
-trade_projection.go	trades
 trades_app.go	trades
 trades_app_test.go	trades
 transactions_app.go	contracts
@@ -315,3 +314,4 @@ internal/app/race	race
 internal/app/race/racetest	race
 control_wire_test.go	control
 internal/app/control	control
+internal/app/trades	trades
