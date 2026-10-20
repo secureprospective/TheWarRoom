@@ -1,8 +1,10 @@
-package main
+package counterparties
 
 import (
 	"fmt"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -84,107 +86,107 @@ type TeamCounterpart struct {
 	SinceTxt     string            `json:"sinceText"`
 }
 
-func (a *App) TargetCounterpartTeam(raw RawCounterpartTeam) Reading[TeamCounterpart] {
+func (svc Service) TargetCounterpartTeam(raw RawCounterpartTeam) report.Reading[TeamCounterpart] {
 	if err := raw.Scope.Validate(); err != nil {
-		return failedTeamCounterpart(err)
+		return svc.failedTeamCounterpart(err)
 	}
-	d, err := a.lab()
+	d, err := svc.Load()
 	if err != nil {
-		return failedTeamCounterpart(err)
+		return svc.failedTeamCounterpart(err)
 	}
 	if _, ok := d.Franchises[raw.Fid]; !ok {
-		return failedTeamCounterpart(fmt.Errorf("counterparties team: unknown franchise %q", raw.Fid))
+		return svc.failedTeamCounterpart(fmt.Errorf("counterparties team: unknown franchise %q", raw.Fid))
 	}
-	s := counterScope(raw.Scope)
+	s := svc.counterScope(raw.Scope)
 	s.Team = ""
 	league := lab.SidesInScope(d, lab.TeamScope{From: s.From, To: s.To})
 	sides := lab.SidesInScope(d, s)
 	profile := lab.TeamProfile(d, sides, league, raw.Fid)
 	b := profile.Behaviour
 	value := TeamCounterpart{
-		PartnersText: countNumber(len(profile.Partners)),
-		FlowScale:    counterFlowScale(profile),
+		PartnersText: svc.CountNumber(len(profile.Partners)),
+		FlowScale:    svc.counterFlowScale(profile),
 		Fid:          raw.Fid,
-		Name:         franchiseName(d, raw.Fid),
+		Name:         svc.franchiseName(d, raw.Fid),
 		AsOf:         "Standings as of the archive cutoff " + strings.Split(d.ArchiveThrough, "T")[0] + ", not today's live standings.",
 		Sides:        len(profile.Sides),
-		Seasons:      seasonCells(profile),
-		SeasonSay:    seasonSay(b),
-		Posture:      postureCells(b),
-		Kinds:        kindFlows(profile),
+		Seasons:      svc.seasonCells(profile),
+		SeasonSay:    svc.seasonSay(b),
+		Posture:      svc.postureCells(b),
+		Kinds:        svc.kindFlows(profile),
 		KindSay:      "Bars are forecast wins sent and taken in for each kind of asset; the figures count the assets.",
-		Partners:     partnerViews(d, profile),
+		Partners:     svc.partnerViews(d, profile),
 		Behaviour:    b,
-		AsTier:       asTierViews(profile),
+		AsTier:       svc.asTierViews(profile),
 		Day:          b.Now,
 		Since:        b.Real,
 	}
-	value.Words, value.CountText = counterWords(), countNumber(len(profile.Sides))
-	applyTeamFilters(&value, s, profile.Sides, lab.FilterSides(league, func(side lab.TeamSide) bool { return side.Fid == raw.Fid }))
+	value.Words, value.CountText = svc.counterWords(), svc.CountNumber(len(profile.Sides))
+	svc.applyTeamFilters(&value, s, profile.Sides, lab.FilterSides(league, func(side lab.TeamSide) bool { return side.Fid == raw.Fid }))
 	if b.Now.Total != nil {
-		value.DayTxt = fmt.Sprintf("%s expected wins on the day, all trades", wins(*b.Now.Total, 2))
+		value.DayTxt = fmt.Sprintf("%s expected wins on the day, all trades", svc.wins(*b.Now.Total, 2))
 	} else {
 		value.DayTxt = "Too few trades for a total on the day"
 	}
 	if b.Real.N > 0 {
-		value.SinceTxt = fmt.Sprintf("%s wins since, over %s with 2+ seasons played", wins(*b.Real.Total, 2), countLabel(b.Real.N, "trade"))
+		value.SinceTxt = fmt.Sprintf("%s wins since, over %s with 2+ seasons played", svc.wins(*b.Real.Total, 2), svc.CountLabel(b.Real.N, "trade"))
 	}
-	r := Reading[TeamCounterpart]{Sourced: snapshot.Sourced[TeamCounterpart]{Value: value, Provenance: counterProvenance(d)}, Status: ReadingOK, Count: len(profile.Sides), Threshold: 1, Baseline: "The league's own posture and window shares in the same seasons; a share is coloured only where it clears chance", Cutoff: d.ArchiveThrough, Method: "this team's sides of the valued trades against the league in the same seasons; 1.96 standard-error ranges", InputSHA: lab.DataSHA, BuildStamp: buildLabel() + " " + buildDate, HowCounted: counterpartHowCounted(d)}
+	r := report.Reading[TeamCounterpart]{Sourced: snapshot.Sourced[TeamCounterpart]{Value: value, Provenance: svc.Provenance(d)}, Status: report.ReadingOK, Count: len(profile.Sides), Threshold: 1, Baseline: "The league's own posture and window shares in the same seasons; a share is coloured only where it clears chance", Cutoff: d.ArchiveThrough, Method: "this team's sides of the valued trades against the league in the same seasons; 1.96 standard-error ranges", InputSHA: lab.DataSHA, BuildStamp: svc.BuildStamp, HowCounted: svc.counterpartHowCounted(d)}
 	if len(profile.Sides) == 0 {
-		return emptyTeamReading(r, value, s, league)
+		return svc.emptyTeamReading(r, value, s, league)
 	}
 	more := len(profile.Partners) - len(value.Partners)
 	if more > 0 {
-		value.PartnersSay = "And " + countLabel(more, "more partner") + " in view."
+		value.PartnersSay = "And " + svc.CountLabel(more, "more partner") + " in view."
 	}
 	r.Value = value
 	return r
 }
-func failedTeamCounterpart(err error) Reading[TeamCounterpart] {
+func (svc Service) failedTeamCounterpart(err error) report.Reading[TeamCounterpart] {
 	reason := err.Error()
-	return Reading[TeamCounterpart]{Status: ReadingFailed, AbsenceReason: &reason, Threshold: 1, Method: "this team's sides of the valued trades against the league", InputSHA: lab.DataSHA}
+	return report.Reading[TeamCounterpart]{Status: report.ReadingFailed, AbsenceReason: &reason, Threshold: 1, Method: "this team's sides of the valued trades against the league", InputSHA: lab.DataSHA}
 }
-func seasonCells(p lab.TeamDetail) []SeasonCellView {
+func (svc Service) seasonCells(p lab.TeamDetail) []SeasonCellView {
 	out := []SeasonCellView{}
 	for _, c := range p.BySeason {
-		cell := SeasonCellView{NowText: countNumber(c.Now), LaterText: countNumber(c.Later), SwapText: countNumber(c.Swap), AgainstText: countNumber(c.Against), Season: c.Season, N: c.N, Now: c.Now, Later: c.Later, Swap: c.Swap, Against: c.Against, Flagged: c.Flagged(), Net: c.Net, Finish: c.Finish, MostlyText: ""}
+		cell := SeasonCellView{NowText: svc.CountNumber(c.Now), LaterText: svc.CountNumber(c.Later), SwapText: svc.CountNumber(c.Swap), AgainstText: svc.CountNumber(c.Against), Season: c.Season, N: c.N, Now: c.Now, Later: c.Later, Swap: c.Swap, Against: c.Against, Flagged: c.Flagged(), Net: c.Net, Finish: c.Finish, MostlyText: ""}
 		if c.Mostly != nil {
-			cell.MostlyText = tierOne(*c.Mostly)
+			cell.MostlyText = svc.tierOne(*c.Mostly)
 		}
 		if c.Finish != nil {
 			cell.Label = fmt.Sprintf("%d · finished %d", c.Season, *c.Finish)
 		} else {
 			cell.Label = fmt.Sprintf("%d", c.Season)
 		}
-		cell.Title = fmt.Sprintf("%d: %s; %s for now, %s for later, %s like for like", c.Season, countLabel(c.N, "trade side"), countNumber(c.Now), countNumber(c.Later), countNumber(c.Swap))
+		cell.Title = fmt.Sprintf("%d: %s; %s for now, %s for later, %s like for like", c.Season, svc.CountLabel(c.N, "trade side"), svc.CountNumber(c.Now), svc.CountNumber(c.Later), svc.CountNumber(c.Swap))
 		if c.Finish != nil {
 			cell.Title += fmt.Sprintf("; finished %d", *c.Finish)
 		}
 		if c.Flagged() {
-			cell.Title += fmt.Sprintf(". %s went against its standing that day.", countNumber(c.Against))
+			cell.Title += fmt.Sprintf(". %s went against its standing that day.", svc.CountNumber(c.Against))
 		}
 		out = append(out, cell)
 	}
 	return out
 }
-func seasonSay(b lab.TeamBehaviour) string {
-	return fmt.Sprintf("%s, %.1f a season. Bars: bought for now, built for later, like for like. An outlined season is one where at least two trades and at least 30%% of its trades went against the team's standing that day: buying for now while rebuilding, or building while contending.", countLabel(b.N, "trade side"), b.PerSeason)
+func (svc Service) seasonSay(b lab.TeamBehaviour) string {
+	return fmt.Sprintf("%s, %.1f a season. Bars: bought for now, built for later, like for like. An outlined season is one where at least two trades and at least 30%% of its trades went against the team's standing that day: buying for now while rebuilding, or building while contending.", svc.CountLabel(b.N, "trade side"), b.PerSeason)
 }
-func postureCells(b lab.TeamBehaviour) []PostureCell {
+func (svc Service) postureCells(b lab.TeamBehaviour) []PostureCell {
 	out := []PostureCell{}
 	for _, p := range lab.TeamPostures() {
-		out = append(out, postureCell(p, b.Posture[p]))
+		out = append(out, svc.postureCell(p, b.Posture[p]))
 	}
 	return out
 }
-func kindFlows(p lab.TeamDetail) []KindFlowView {
+func (svc Service) kindFlows(p lab.TeamDetail) []KindFlowView {
 	out := []KindFlowView{}
 	for _, k := range p.Kinds {
-		out = append(out, KindFlowView{Kind: k.Kind, Name: marketName(k.Kind), InN: k.InN, OutN: k.OutN, InW: k.InW, OutW: k.OutW, Text: fmt.Sprintf("%s out · %s in", countNumber(k.OutN), countNumber(k.InN))})
+		out = append(out, KindFlowView{Kind: k.Kind, Name: svc.MarketName(k.Kind), InN: k.InN, OutN: k.OutN, InW: k.InW, OutW: k.OutW, Text: fmt.Sprintf("%s out · %s in", svc.CountNumber(k.OutN), svc.CountNumber(k.InN))})
 	}
 	return out
 }
-func partnerViews(d *lab.Data, p lab.TeamDetail) []PartnerView {
+func (svc Service) partnerViews(d *lab.Data, p lab.TeamDetail) []PartnerView {
 	out := []PartnerView{}
 	for _, x := range p.Partners {
 		if len(out) == 12 {
@@ -196,21 +198,21 @@ func partnerViews(d *lab.Data, p lab.TeamDetail) []PartnerView {
 			v = x.Net.Mean
 		}
 		if v != nil {
-			net = fmt.Sprintf("%s on the day", wins(*v, 2))
+			net = fmt.Sprintf("%s on the day", svc.wins(*v, 2))
 		}
-		out = append(out, PartnerView{Fid: x.Fid, Name: franchiseName(d, x.Fid), N: x.N, Net: x.Net, TradesTxt: countLabel(x.N, "trade"), NetTxt: net})
+		out = append(out, PartnerView{Fid: x.Fid, Name: svc.franchiseName(d, x.Fid), N: x.N, Net: x.Net, TradesTxt: svc.CountLabel(x.N, "trade"), NetTxt: net})
 	}
 	return out
 }
-func asTierViews(p lab.TeamDetail) []AsTierView {
+func (svc Service) asTierViews(p lab.TeamDetail) []AsTierView {
 	out := []AsTierView{}
 	for _, t := range p.AsTier {
-		out = append(out, AsTierView{Tier: t.Tier, N: t.N, Edge: t.TeamEdge, Label: fmt.Sprintf("As %s (%s)", tierOne(t.Tier), countNumber(t.N)), Text: edgeWords(t.TeamEdge, "expected wins a trade")})
+		out = append(out, AsTierView{Tier: t.Tier, N: t.N, Edge: t.TeamEdge, Label: fmt.Sprintf("As %s (%s)", svc.tierOne(t.Tier), svc.CountNumber(t.N)), Text: svc.edgeWords(t.TeamEdge, "expected wins a trade")})
 	}
 	return out
 }
 
-func counterFlowScale(p lab.TeamDetail) float64 {
+func (svc Service) counterFlowScale(p lab.TeamDetail) float64 {
 	scale := 0.01
 	for _, kind := range p.Kinds {
 		scale = max(scale, kind.InW, kind.OutW)
