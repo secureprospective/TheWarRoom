@@ -5,6 +5,7 @@ path	feature
 acquisitions_app.go	contracts
 admin_app.go	control
 alerts_app.go	control
+alerts_app_test.go	control
 app.go	platform
 app_shutdown_test.go	platform
 archive_app.go	archive
@@ -183,9 +184,9 @@ pool_app_test.go	offers
 pool_landing_test.go	offers
 pool_market_layout_test.go	offers
 pool_values.go	offers
+pool_wire_test.go	offers
 power_rankings_app.go	scoring
 power_rankings_app_test.go	scoring
-pulse_alerts_app_test.go	control
 race_app.go	race
 race_playoffs_reading.go	race
 race_points_reading.go	race
@@ -241,7 +242,6 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
-wire_pool_test.go	offers
 internal/archive	archive
 internal/commissioner	commissioner
 internal/db	platform
