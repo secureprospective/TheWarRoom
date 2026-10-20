@@ -1,0 +1,52 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "revision": 14,
+ "entries": [
+  {
+   "id": "act.044300220b2abd8e57d3cc6d5927c46402c2e26cbd06be9df6fec4fad6dee816",
+   "who": "creator",
+   "what": "Active roster size: 0 to 100 → 0 to 90, in force now",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.e9718df59ab7670c0dde7f531d76210aeb858cd2a69c67fcde5f819e7211f3ee",
+   "who": "creator",
+   "what": "League action windows: Contracts: Start: 1 March; End: 30 April; Opens: Needs a ruling; Dated start: Needs a ruling; Dated end: Needs a ruling; Cut buyout: Start: 25 August; End: 1 September; Opens: Cut; Buyout; Dated start: Needs a ruling; Dated end: Needs a ruling; Lineups: Start: 1 March; End: Needs a ruling; Opens: Lineup; Dated start: Needs a ruling; Dated end: Needs a ruling; Open fa: Start: 19 May; End: Needs a ruling; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Resign: Start: 10 May; End: 15 May; Opens: Resign; Dated start: Needs a ruling; Dated end: Needs a ruling; Rfa tenders: Start: 1 May; End: 3 May; Opens: Rfa tender; Dated start: Needs a ruling; Dated end: Needs a ruling; Rookie draft: Start: 14 July; End: Needs a ruling; Opens: Draft pick; Dated start: Needs a ruling; Dated end: Needs a ruling; Ufa: Start: 3 May; End: 10 May; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Waivers: Start: 1 March; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling → Native: Start: 1 January; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.e9afc7d5971d0ebaf52a877e611388011eb604563d3d588114efd6e5da3f0977",
+   "who": "creator",
+   "what": "Shared date boundary: Needs a ruling → Start of day, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.790fd4630be7f84b5e257c203c1af6c683f6cf015e7d66fff262ca89a1e86c45",
+   "who": "creator",
+   "what": "Salary cap: $125,000,000 → $1,000,000,000, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.8373f6cab5e40bdb471799d92d79236cd24e2c9faea15fffaf107cb6904caeea",
+   "who": "creator",
+   "what": "Active roster size: 18 to 80 → 0 to 100, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  }
+ ]
+}

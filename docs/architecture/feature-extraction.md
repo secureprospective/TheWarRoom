@@ -58,6 +58,33 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   returns `Reading[MarketSurface]` through Market's helpers). It moves after that feature's
   extraction adds the contract; twins written early would be copies the later move must undo.
 
+## Authorization seams
+
+The Commissioner extraction (reorg PR 11) set the rules for a feature that decides who may act and
+writes the league record.
+
+- **Who is calling stays at root.** `commissionerPrincipal` reads the injected session; the
+  adapter reads it, in the same place in the check order, before any service call. A service takes
+  the principal as a plain value and never reads a session or a global to find the caller.
+- **Every check keeps its place.** The scope check, `ready()`, the principal, then the call, in
+  the order the binding had. A pure check may move into the service (`AppLeague`, the request
+  twins' `Validate`) only if the adapter still calls it at the same point. A check that differs
+  between bindings stays different: the people and ledger bindings keep their looser league checks
+  inline rather than sharing the strict one.
+- **Door policy stays at root.** The commissioner door's refusals that send owner acts to their
+  own gated doors (trades, cuts and claims, bids, the starting seed, lineups, rookie picks) are
+  safeguards, not wording, and stay in `TargetCommissionerExecute`.
+- **Writes stay in one transaction.** A store call that authorizes, validates and appends
+  (`ExecuteCommissionerWithFacts`, `PreviewCommissionerWithFacts`, the filtered ledger and
+  digests, each with `commissionerAuthorizer`) stays at root as one call. Splitting it so a
+  service checks and the store writes would open a gap between the check and the append. Only
+  read-only replays (`Records`) and their readings move.
+- **Freeze the denials, not only the wire.** Before the move, a golden of the exact words each
+  refused caller reads: a stranger, an owner and a co-commissioner on commissioner acts, a wrong
+  franchise, a closed or expired window, a stale version, an unreadable session, every bad scope,
+  and every routed act (`testdata/wire/commissioner/denials.json`). Check it with a planted
+  gate-skip mutant, and race two writes at one version to show exactly one lands.
+
 ## Tests
 
 - Root keeps the wire golden and `TestReportWireTwinsMatch`, which fills every field of a

@@ -92,7 +92,7 @@ week edits are G3). Generation takes explicit weeks with the current division al
 pattern uses the in-force rule, and an unset rule refuses to guess. Equal even-sized divisions use
 complete within-division rounds; reciprocal meetings and oriented remaining trails balance home games. Each game has a stable week/slot id. Edits patch one game's home/away
 franchises, validating the complete resulting week. Generated weeks are frozen in the ledger record;
-publication replay never reruns the generator or resolves today's schedule rules. `native_league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
+publication replay never reruns the generator or resolves today's schedule rules. `league_calendar_app.go` also exposes `TargetLeagueSchedule`: only the published
 projection, replayed from local events and compensations. Draft changes never replace that reading.
 `native_schedule_app.go` exposes the franchise season and current-week owner readings over those
 publications. Opponents are native; kickoff and finality come only from locally archived NFL weeks,
@@ -121,8 +121,7 @@ are still pending.
 
 | File | Methods |
 |---|---|
-| `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. |
-| `native_league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
+| `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
 | `native_schedule_app.go` | `TargetNativeWeek(RawNativeWeekScope)`, `TargetNativeFranchiseSchedule(RawNativeScheduleScope)`: validated league/franchise/season/owner-zone scopes and explicit week reading time; published opponents, venue, bye, local first NFL kickoff and next week. Unknown held NFL dates never become guessed weeks. |
 | `lab_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections (`internal/app/market` `lab.go`, `profile.go`) in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `counterparties_app.go`, `counterparties_team_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
@@ -325,6 +324,16 @@ Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
 Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.
+
+`internal/app/commissioner` is the Commissioner service, stateless: `ledger.go` replays one app
+league's commissioner ledger through a small `Ledger` interface over the history store (the
+calendar, the native gate and the schedule read the same replay, each in its own words) and builds
+the calendar and schedule readings from it; `scope.go` holds the request twins (`CalendarScope`,
+`ScheduleScope`) and their checks, the shared app-league check, the blocked preview and the words
+of a refused change. It never decides who may act. The root keeps every binding, the session
+principal (`commissionerPrincipal`), the commissioner door's routing refusals, and each history
+store call with its authorizer, so authorization, validation and the ledger append still share one
+store transaction. `testdata/wire/commissioner` freezes the wire and the exact denial words.
 
 `internal/app/market` is the Market service, stateless: `reports.go` builds the player market
 reports and the pool's market cells from the held feeds the root copies under `seasonMu`;
@@ -930,7 +939,7 @@ advance commands (CM-046/047), are marked built; the rest of F keeps its prior f
 
 ## Commissioner market and competition pickers
 
-`commissioner_market_app.go` exposes `TargetCommissionerMarket(league, command)` over held ledger
+`commissioner_app.go` exposes `TargetCommissionerMarket(league, command)` over held ledger
 records. `commissioner.MarketReading` uses the exact command permission and emits only named target
 choices: unprocessed waiver windows, processed claims, anonymous undecided auction targets, decided
 bids and eligible trade reviews/appeals/overrides. Private claims and undecided bid identities or

@@ -1,0 +1,133 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "revision": 14,
+ "entries": [
+  {
+   "id": "act.044300220b2abd8e57d3cc6d5927c46402c2e26cbd06be9df6fec4fad6dee816",
+   "who": "creator",
+   "what": "Active roster size: 0 to 100 → 0 to 90, in force now",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.f6a4b09d3d2385e1bd4bae7c788bcc79519b9011850ef813c031ce18d43563a1",
+   "who": "owner.two",
+   "what": "Released a roster player to waivers",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Confirmation required",
+   "undo": "league"
+  },
+  {
+   "id": "act.b47230b91542ce749a9769a846c75c83c1b073ded2da7d5fa85e9f91b4642c31",
+   "who": "creator",
+   "what": "Corrected a player's contract",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Confirmation required",
+   "undo": "league"
+  },
+  {
+   "id": "act.923b5a0d68ce2332972d9920a6cfc9e63c340dd00faef91818e476bdbf0fd3fe",
+   "who": "creator",
+   "what": "Corrected a player's contract",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Confirmation required",
+   "undo": "league"
+  },
+  {
+   "id": "act.f56a00e39b3517758ef9b5bdbf9c864b26b06a341149fc912cd153aa5f7590ed",
+   "who": "creator",
+   "what": "Set the waiver priority by hand",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Confirmation required",
+   "undo": "league"
+  },
+  {
+   "id": "act.cd46b999a0d6310e0bf37d6f4e8bd74ce1916814b1cfbe3ba4af521c80d7746f",
+   "who": "creator",
+   "what": "Assigned owner.three to franchise franchise.03",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.cb72f541bf81abb2007a356823c7c75fab146ece48c9b372787c010ca0299fbe",
+   "who": "creator",
+   "what": "Assigned owner.two to franchise franchise.02",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.fbddb151c8f0e5b6443a15bd91d96a681018de196e6d2f807151981fbb30eac9",
+   "who": "creator",
+   "what": "Assigned owner.one to franchise franchise.01",
+   "why": "Our league's recorded change",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.e9718df59ab7670c0dde7f531d76210aeb858cd2a69c67fcde5f819e7211f3ee",
+   "who": "creator",
+   "what": "League action windows: Contracts: Start: 1 March; End: 30 April; Opens: Needs a ruling; Dated start: Needs a ruling; Dated end: Needs a ruling; Cut buyout: Start: 25 August; End: 1 September; Opens: Cut; Buyout; Dated start: Needs a ruling; Dated end: Needs a ruling; Lineups: Start: 1 March; End: Needs a ruling; Opens: Lineup; Dated start: Needs a ruling; Dated end: Needs a ruling; Open fa: Start: 19 May; End: Needs a ruling; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Resign: Start: 10 May; End: 15 May; Opens: Resign; Dated start: Needs a ruling; Dated end: Needs a ruling; Rfa tenders: Start: 1 May; End: 3 May; Opens: Rfa tender; Dated start: Needs a ruling; Dated end: Needs a ruling; Rookie draft: Start: 14 July; End: Needs a ruling; Opens: Draft pick; Dated start: Needs a ruling; Dated end: Needs a ruling; Ufa: Start: 3 May; End: 10 May; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Waivers: Start: 1 March; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling → Native: Start: 1 January; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.e9afc7d5971d0ebaf52a877e611388011eb604563d3d588114efd6e5da3f0977",
+   "who": "creator",
+   "what": "Shared date boundary: Needs a ruling → Start of day, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.790fd4630be7f84b5e257c203c1af6c683f6cf015e7d66fff262ca89a1e86c45",
+   "who": "creator",
+   "what": "Salary cap: $125,000,000 → $1,000,000,000, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.8373f6cab5e40bdb471799d92d79236cd24e2c9faea15fffaf107cb6904caeea",
+   "who": "creator",
+   "what": "Active roster size: 18 to 80 → 0 to 100, in force now",
+   "why": "Our league's ruling",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": "league"
+  },
+  {
+   "id": "act.6b51b56bd2b3b20715f40b11a2e1eca637800471acc1d6d0990c26b656c85b29",
+   "who": "creator",
+   "what": "Recorded the starting rosters, contracts, reserves, franchises and picks from held data",
+   "why": "Start from held data",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": ""
+  },
+  {
+   "id": "act.2851b5e01e5805eb3f8c8ac1ab3c24b1aec46acffe83c43fc9879cfbc0497852",
+   "who": "creator",
+   "what": "Created league “Seed league” with 32 franchises and the Legacy NFL rules",
+   "why": "Create the league",
+   "when": "2026-10-13T12:00:00Z",
+   "gravity": "Recorded reason required",
+   "undo": ""
+  }
+ ]
+}
