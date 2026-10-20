@@ -252,3 +252,7 @@ func TestLoadMarksMissingPaidCellCapInvalid(t *testing.T) {
 		t.Fatalf("drift player CapSalary = %s, want $0 (no PAID cell)", players[0].CapSalary)
 	}
 }
+
+func (s *Store) columnExists(ctx context.Context, table, column string) (bool, error) {
+	return columnExists(ctx, s.pools.Read(), table, column)
+}

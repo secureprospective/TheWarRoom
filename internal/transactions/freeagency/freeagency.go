@@ -18,9 +18,6 @@ const signingSource = "signing"
 
 const signReason = "free-agency signing §6"
 
-// dollars converts whole dollars to cents; the §6 table is in whole dollars.
-func dollars(d int64) domain.Money { return domain.Money(d * 100) }
-
 // MinSalaryFloor is the §6 minimum salary by years of NFL experience (season minus draft year);
 // the table lives in engine/bid, which the free-agent pool and bid plans read too.
 func MinSalaryFloor(experienceYears int) domain.Money { return bid.MinimumSalary(experienceYears) }

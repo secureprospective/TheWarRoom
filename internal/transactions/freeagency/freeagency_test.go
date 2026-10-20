@@ -40,3 +40,6 @@ func TestDollarsIsCents(t *testing.T) {
 		t.Fatalf("dollars(330_000) = %d cents, want 33_000_000", int64(got))
 	}
 }
+
+// dollars converts whole dollars to cents; the §6 table is in whole dollars.
+func dollars(d int64) domain.Money { return domain.Money(d * 100) }
