@@ -1,0 +1,30 @@
+{
+ "values": [
+  {
+   "id": "0042",
+   "now": {
+    "text": "No score",
+    "sub": "this season",
+    "detail": "",
+    "held": false
+   },
+   "dynasty": {
+    "text": "Not valued yet",
+    "sub": "Lab model not compiled",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued yet",
+    "sub": "Lab model not compiled",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 0,
+   "dynastyValue": 0
+  }
+ ],
+ "nowSource": "Source: MFL fantasy points, this league's scoring · no finished week held yet",
+ "dynastySource": "Source: the Lab's value model · not compiled yet",
+ "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. Values only; this app moves nothing."
+}

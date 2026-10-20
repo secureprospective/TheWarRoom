@@ -1,0 +1,214 @@
+{
+ "values": [
+  {
+   "id": "10266",
+   "now": {
+    "text": "11.25 PPG",
+    "sub": "DT 14/182 · top 8%",
+    "detail": "45.00 points in 4 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 11.25,
+   "dynastyValue": 0
+  },
+  {
+   "id": "10267",
+   "now": {
+    "text": "1.00 PPG",
+    "sub": "DE 143/161 · top 89%",
+    "detail": "4.00 points in 4 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 1,
+   "dynastyValue": 0
+  },
+  {
+   "id": "10292",
+   "now": {
+    "text": "2.00 PPG",
+    "sub": "DE 128/161 · top 80%",
+    "detail": "4.00 points in 2 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 2,
+   "dynastyValue": 0
+  },
+  {
+   "id": "10313",
+   "now": {
+    "text": "-0.25 PPG",
+    "sub": "QB 89/89 · top 100%",
+    "detail": "-0.50 points in 2 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": -0.25,
+   "dynastyValue": 0
+  },
+  {
+   "id": "10413",
+   "now": {
+    "text": "0.00 PPG",
+    "sub": "QB 50/89 · top 57%",
+    "detail": "0.00 points in 1 scored week",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 0,
+   "dynastyValue": 0
+  },
+  {
+   "id": "10700",
+   "now": {
+    "text": "25.48 PPG",
+    "sub": "QB 9/89 · top 11%",
+    "detail": "101.90 points in 4 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 25.475,
+   "dynastyValue": 0
+  },
+  {
+   "id": "13589",
+   "now": {
+    "text": "33.70 PPG",
+    "sub": "QB 1/89 · top 2%",
+    "detail": "134.80 points in 4 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "Not valued",
+    "sub": "The player has no known position or birth date",
+    "detail": "",
+    "held": false
+   },
+   "market": {
+    "text": "Not valued",
+    "sub": "The player has no known position or birth date",
+    "detail": "",
+    "held": false
+   },
+   "nowValue": 33.7,
+   "dynastyValue": 0
+  },
+  {
+   "id": "16162",
+   "now": {
+    "text": "32.25 PPG",
+    "sub": "RB 2/125 · top 2%",
+    "detail": "129.00 points in 4 scored weeks",
+    "held": true
+   },
+   "dynasty": {
+    "text": "2.31 wins",
+    "sub": "next 5 seasons",
+    "detail": "Running back, 24 or younger · this season's unplayed weeks and the 4 after, later ones discounted",
+    "held": true
+   },
+   "market": {
+    "text": "3.10",
+    "sub": "win-equivalents · 95% 2.40 to 3.90",
+    "detail": "1.00 is the price of one expected win from a next-draft first-round pick",
+    "held": true
+   },
+   "nowValue": 32.25,
+   "dynastyValue": 2.314
+  },
+  {
+   "id": "99999",
+   "now": {
+    "text": "No score",
+    "sub": "this season",
+    "detail": "",
+    "held": false
+   },
+   "dynasty": {
+    "text": "0.05 wins",
+    "sub": "next 5 seasons",
+    "detail": "Kicker, 28 or older · this season's unplayed weeks and the 4 after, later ones discounted",
+    "held": true
+   },
+   "market": {
+    "text": "−0.03",
+    "sub": "win-equivalents",
+    "detail": "1.00 is the price of one expected win from a next-draft first-round pick. Below zero: in trades the league has valued this kind of player at less than the roster spot he takes",
+    "held": true
+   },
+   "nowValue": 0,
+   "dynastyValue": 0.05
+  }
+ ],
+ "nowSource": "Source: MFL fantasy points, this league's scoring · 4 of 4 finished weeks held · as of Oct 11, 2026, 12:00 PM",
+ "dynastySource": "Source: the Lab's value model, compiled from the checked league facts",
+ "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. Values only; this app moves nothing."
+}

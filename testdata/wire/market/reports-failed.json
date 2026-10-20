@@ -1,0 +1,518 @@
+{
+ "title": "Player market reports",
+ "loading": "Reading player market reports…",
+ "refresh": "Refresh player market reports from MFL",
+ "howLabel": "How this is counted",
+ "mflLabel": "",
+ "mflUrl": "",
+ "reports": [
+  {
+   "sortAscending": "Sort ascending",
+   "sortDescending": "Sort descending",
+   "id": "M-046",
+   "title": "Projected points · NFL week not known",
+   "note": "",
+   "status": "ok",
+   "source": "Source: MFL · this league's scoring · NFL week not known",
+   "asOf": "As of: Oct 11, 2026, 12:00 PM",
+   "how": "MFL's projected fantasy points for this NFL week under this league's scoring, not the app's model. Missing players are not projected as zero.",
+   "columns": [
+    "Player",
+    "Projected points"
+   ],
+   "rows": [
+    {
+     "sort": [
+      0,
+      32.21
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "32.21"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      1,
+      29.96
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "29.96"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      2,
+      29.62
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "29.62"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      3,
+      26.72
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "26.72"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      4,
+      26.58
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "26.58"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      5,
+      26.11
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "26.11"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      6,
+      25.99
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "25.99"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      7,
+      25.83
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "25.83"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      8,
+      25.79
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "25.79"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      9,
+      25.3
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "25.30"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      10,
+      25.3
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "25.30"
+     ],
+     "range": null
+    },
+    {
+     "sort": [
+      11,
+      24.14
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · NFL week 6 · league scoring"
+     ],
+     "cells": [
+      "Player name not held",
+      "24.14"
+     ],
+     "range": null
+    }
+   ],
+   "summary": null,
+   "link": null
+  },
+  {
+   "sortAscending": "Sort ascending",
+   "sortDescending": "Sort descending",
+   "id": "M-047",
+   "title": "MFL player ranks",
+   "note": "Report data unavailable; refresh from MFL to fill this report. Refresh failed. Try refreshing from MFL again.",
+   "status": "failed",
+   "source": "Source: MFL",
+   "asOf": "As of: not fetched",
+   "how": "MFL's player rank, not the app's model. Up means last week's rank minus this week's rank is positive; down means negative. A last-week rank of zero means MFL supplied no previous rank. New this week is MFL's new-entry flag; no earlier rank is shown.",
+   "columns": [
+    "Player",
+    "MFL rank",
+    "Weekly change",
+    "Last week"
+   ],
+   "rows": [],
+   "summary": null,
+   "link": null
+  },
+  {
+   "sortAscending": "Sort ascending",
+   "sortDescending": "Sort descending",
+   "id": "M-067",
+   "title": "Average draft position",
+   "note": "MFL reports no draft picks for all periods; average draft position is unavailable.",
+   "status": "empty",
+   "source": "Source: MFL-wide · many leagues, not this league",
+   "asOf": "As of: Oct 11, 2026, 12:00 PM",
+   "how": "MFL-wide across many leagues, not this league. All draft periods are requested, since the default period can have no picks in season. The bar runs from the lowest to highest pick reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the latest pick any player went.",
+   "columns": [
+    "Player",
+    "ADP · min–max pick"
+   ],
+   "rows": [],
+   "summary": null,
+   "link": null
+  },
+  {
+   "sortAscending": "Sort ascending",
+   "sortDescending": "Sort descending",
+   "id": "M-069",
+   "title": "Average auction value",
+   "note": "111 auctions sampled by MFL.",
+   "status": "ok",
+   "source": "Source: MFL-wide · many leagues, not this league",
+   "asOf": "As of: Oct 11, 2026, 12:00 PM",
+   "how": "MFL-wide across many leagues, not this league's dollars. Every league's auction is scaled to a $1,000 pool across all its teams. No conversion to this league's money is made. The bar runs from the smallest to largest dollar value reported, with the average marked; it is not a confidence interval or a grade. Every bar shares one scale, from zero to the largest dollar value any player drew.",
+   "columns": [
+    "Player",
+    "AAV · min–max dollars on MFL’s $1,000 scale"
+   ],
+   "rows": [
+    {
+     "sort": [
+      0,
+      30.1
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$30.1 of a $1,000 league pool · $3.4–$113.6"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 30.1,
+      "lo": 3.44,
+      "hi": 113.64,
+      "text": "$30.1 of a $1,000 league pool · $3.4–$113.6"
+     }
+    },
+    {
+     "sort": [
+      1,
+      29.16
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$29.2 of a $1,000 league pool · $2.9–$60.4"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 29.16,
+      "lo": 2.94,
+      "hi": 60.43,
+      "text": "$29.2 of a $1,000 league pool · $2.9–$60.4"
+     }
+    },
+    {
+     "sort": [
+      2,
+      28.75
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$28.8 of a $1,000 league pool · $3.3–$94.8"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 28.75,
+      "lo": 3.34,
+      "hi": 94.8,
+      "text": "$28.8 of a $1,000 league pool · $3.3–$94.8"
+     }
+    },
+    {
+     "sort": [
+      3,
+      28.73
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$28.7 of a $1,000 league pool · $2.1–$94.8"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 28.73,
+      "lo": 2.11,
+      "hi": 94.8,
+      "text": "$28.7 of a $1,000 league pool · $2.1–$94.8"
+     }
+    },
+    {
+     "sort": [
+      4,
+      28.44
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$28.4 of a $1,000 league pool · $4.2–$82.3"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 28.44,
+      "lo": 4.18,
+      "hi": 82.29,
+      "text": "$28.4 of a $1,000 league pool · $4.2–$82.3"
+     }
+    },
+    {
+     "sort": [
+      5,
+      25.18
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$25.2 of a $1,000 league pool · $3.5–$82.1"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 25.18,
+      "lo": 3.45,
+      "hi": 82.07,
+      "text": "$25.2 of a $1,000 league pool · $3.5–$82.1"
+     }
+    },
+    {
+     "sort": [
+      6,
+      25.09
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$25.1 of a $1,000 league pool · $0.3–$62.6"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 25.09,
+      "lo": 0.31,
+      "hi": 62.61,
+      "text": "$25.1 of a $1,000 league pool · $0.3–$62.6"
+     }
+    },
+    {
+     "sort": [
+      7,
+      24.45
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$24.4 of a $1,000 league pool · $3.1–$59.6"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 24.45,
+      "lo": 3.13,
+      "hi": 59.57,
+      "text": "$24.4 of a $1,000 league pool · $3.1–$59.6"
+     }
+    },
+    {
+     "sort": [
+      8,
+      23.78
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$23.8 of a $1,000 league pool · $2.2–$63.1"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 23.78,
+      "lo": 2.17,
+      "hi": 63.13,
+      "text": "$23.8 of a $1,000 league pool · $2.2–$63.1"
+     }
+    },
+    {
+     "sort": [
+      9,
+      23.76
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$23.8 of a $1,000 league pool · $2.1–$60.8"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 23.76,
+      "lo": 2.11,
+      "hi": 60.82,
+      "text": "$23.8 of a $1,000 league pool · $2.1–$60.8"
+     }
+    },
+    {
+     "sort": [
+      10,
+      23.6
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$23.6 of a $1,000 league pool · $2.2–$67.5"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 23.6,
+      "lo": 2.22,
+      "hi": 67.49,
+      "text": "$23.6 of a $1,000 league pool · $2.2–$67.5"
+     }
+    },
+    {
+     "sort": [
+      11,
+      23.22
+     ],
+     "titles": [
+      "",
+      "Source: MFL · As of: Oct 11, 2026, 12:00 PM · MFL-wide, not this league"
+     ],
+     "cells": [
+      "Player name not held",
+      "$23.2 of a $1,000 league pool · $3.5–$63.1"
+     ],
+     "range": {
+      "max": 113.64,
+      "value": 23.22,
+      "lo": 3.55,
+      "hi": 63.13,
+      "text": "$23.2 of a $1,000 league pool · $3.5–$63.1"
+     }
+    }
+   ],
+   "summary": null,
+   "link": null
+  }
+ ]
+}
