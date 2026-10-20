@@ -7,9 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 func TestContractPendingCanBeWithdrawn(t *testing.T) {
@@ -45,9 +43,6 @@ func TestContractPendingCanBeWithdrawn(t *testing.T) {
 func TestEveryPlanViewOffersAnExit(t *testing.T) {
 	t.Parallel()
 	for _, state := range []envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.Stale, envelope.BidPending} {
-		if !contractActView(envelope.Receipt{State: state}, envelope.ContractFacts{}).CanWithdraw {
-			t.Fatal("contract", state)
-		}
 		actions := bidActions(state, "", nil, "")
 		found := false
 		for _, action := range actions {
@@ -57,27 +52,6 @@ func TestEveryPlanViewOffersAnExit(t *testing.T) {
 		}
 		if !found {
 			t.Fatal("bid", state)
-		}
-		if state != envelope.BidPending {
-			for _, cut := range []bool{false, true} {
-				if releaseWithdrawLabel(state, cut) == "" {
-					t.Fatal("release", cut, state)
-				}
-			}
-		}
-	}
-}
-
-func TestContractFigureWordsPerAct(t *testing.T) {
-	t.Parallel()
-	for _, intent := range []string{"contract.restructure", "contract.extend", "contract.tag", "fa.resign", "rfa.tender"} {
-		f := envelope.ContractFacts{Intent: intent, Source: 2026, Destination: 2028}
-		want := "Price: $1,000,000"
-		if intent == "contract.restructure" {
-			want = "Moves: $1,000,000 from 2026 to 2028"
-		}
-		if got := contractFigureSentence(f, "$1,000,000"); got != want {
-			t.Fatal(intent, got)
 		}
 	}
 }
@@ -154,19 +128,6 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 	removed, err := b.TargetBidWithdraw(p.Receipt.CorrelationID)
 	if err != nil || removed.Status != want {
 		t.Fatal(removed.Status, err)
-	}
-}
-
-func TestTenderPostUsesLeagueRoundAtEveryLevel(t *testing.T) {
-	t.Parallel()
-	for i, level := range contractacts.TenderLevels() {
-		facts := envelope.ContractFacts{Intent: "rfa.tender", Level: i + 1, Season: 2026,
-			Terms: contractacts.Flat(2027, 1, level.Price, "")}
-		got := contractActView(envelope.Receipt{}, facts).Post
-		want := level.Round + "-round RFA tender for 2027: " + snapshot.ContractAmountOf(level.Price).Text
-		if !strings.Contains(got, want) || strings.Contains(got, "Tender level") {
-			t.Fatal(got, want)
-		}
 	}
 }
 

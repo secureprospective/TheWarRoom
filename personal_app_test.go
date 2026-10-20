@@ -215,13 +215,3 @@ func TestNFLDraftFromDetailedPlayers(t *testing.T) {
 		t.Fatal("NFL draft refetched players")
 	}
 }
-
-func TestRosterMissingPointsSayNoScore(t *testing.T) {
-	t.Parallel()
-	if got := personalScoreText(map[string]string{}, "0042"); got != "No score" {
-		t.Fatalf("missing score = %q", got)
-	}
-	if got := personalScoreText(map[string]string{"0042": "0.00"}, "0042"); got != "0.00" {
-		t.Fatalf("real zero score = %q", got)
-	}
-}

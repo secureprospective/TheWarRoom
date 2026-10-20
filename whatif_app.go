@@ -6,10 +6,10 @@ import (
 	"slices"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
@@ -23,24 +23,7 @@ type RawWhatIfRequest struct {
 }
 
 func (r RawWhatIfRequest) Validate() error {
-	if err := (snapshot.RawContractScope{Mine: r.Mine, Sort: "name"}).Validate(); err != nil {
-		return fmt.Errorf("what-if scope: %w", err)
-	}
-	if r.Mine == "" {
-		return fmt.Errorf("what-if: choose your franchise")
-	}
-	if !slices.Contains([]string{"read", "cut", "buyout", "undo", "reset"}, r.Action) {
-		return fmt.Errorf("what-if: unknown action %q", r.Action)
-	}
-	if r.Action == "cut" || r.Action == "buyout" {
-		if _, err := playerid.New(r.Player); err != nil {
-			return fmt.Errorf("what-if player: %w", err)
-		}
-	}
-	if r.Action == "undo" && r.Move == "" {
-		return fmt.Errorf("what-if: missing move")
-	}
-	return nil
+	return contractsapp.WhatIf(r).Validate() //nolint:wrapcheck // the service's errors already start "what-if"
 }
 
 type WhatIfMoveView struct {
@@ -257,134 +240,56 @@ func (a *App) replayWhatIf(ctx context.Context, s state.WhatIfSession) (state.Wh
 		if len(receipt.CapDeltas) == 1 {
 			s.Moves[i].Charge = receipt.CapDeltas[0].Cents
 		}
-		s.Moves[i].Explanation = whatIfRule(m.Kind, player, s.Snapshot.Season)
+		s.Moves[i].Explanation = contractsapp.Rule(m.Kind, player, s.Snapshot.Season)
 	}
 	if err := state.NewWhatIfSessions(a.whatifPools).Save(ctx, s); err != nil {
 		return s, nil, fmt.Errorf("what-if publish: %w", err)
 	}
 	return s, store, nil
 }
-func whatIfRule(kind string, p state.PlayerState, season int) string {
-	if kind == string(transactions.KindBuyout) {
-		return "Offseason only: can't be done until the offseason. Counts against two buyouts this season."
-	}
-	if p.ExpirationYear <= season {
-		return "Final paid year: no paid cells after this season, so $0 dead cap."
-	}
-	if p.IsRestructured {
-		return "50% of remaining cells: restructured."
-	}
-	return "35% assumed: MFL exports do not establish whether this contract was restructured."
-}
-
 func (a *App) whatIfView(ctx context.Context, s state.WhatIfSession, store *state.Store, stale bool) (WhatIfView, error) {
 	return a.whatIfViewThrough(ctx, s, store, stale, s.Snapshot.Season)
 }
 
 func (a *App) whatIfViewThrough(ctx context.Context, s state.WhatIfSession, store *state.Store, stale bool, horizon int) (WhatIfView, error) {
-	out := WhatIfView{Stale: stale, Moves: []WhatIfMoveView{}, Figures: []WhatIfFigure{}, Choices: []WhatIfChoice{}, Empty: "Model a cut or buyout from your team's contract rows; nothing is sent anywhere."}
-	if stale {
-		out.Banner = "MFL changed since this what-if started"
+	var ledger contractsapp.Ledger
+	if store != nil {
+		ledger = store
 	}
-	if store == nil {
-		return out, fmt.Errorf("what-if: current ledger unavailable")
-	}
-	moves, removed, charge := whatIfMoves(s)
-	out.Moves = moves
-	if err := a.whatIfPlanLabels(ctx, s.Mine, out.Moves); err != nil {
-		return out, err
-	}
-
-	beforeFuture, afterFuture := map[int]domain.Money{}, map[int]domain.Money{}
-	last := max(s.Snapshot.Season, horizon)
-	for _, p := range s.Snapshot.Players {
-		if p.FranchiseID != s.Mine {
-			continue
-		}
-		last = max(last, p.ContractYear)
-		for year := s.Snapshot.Season + 1; year <= p.ContractYear; year++ {
-			beforeFuture[year] += p.Salary
-		}
-		if removed[p.MFLID] {
-			continue
-		}
-		if err := whatIfCommitted(ctx, store, p, s.Snapshot.Season, afterFuture); err != nil {
-			return out, err
-		}
-		out.Choices = append(out.Choices, whatIfChoice(p, s.Snapshot.Season))
-	}
-	used, _ := store.CapUsed(s.Mine)
-	used = s.Used + used - s.SeedUsed
-	capText, roomBefore, roomAfter := "Unavailable", "Unavailable", "Unavailable"
-	if s.Cap != nil {
-		capText = snapshot.ContractAmountOf(*s.Cap).Text
-		roomBefore = snapshot.ContractAmountOf(*s.Cap - s.Used).Text
-		roomAfter = snapshot.ContractAmountOf(*s.Cap - used).Text
-	}
-	out.Figures = append(out.Figures, WhatIfFigure{Label: fmt.Sprintf("%d cap", s.Snapshot.Season), Before: capText, After: capText}, whatIfFigure("Used", s.Used, used), WhatIfFigure{Label: "Room", Before: roomBefore, After: roomAfter}, whatIfFigure("Modelled dead cap this season (MFL adjustments excluded)", 0, charge))
-	if s.Cap != nil {
-		out.Figures[2].Change = whatIfChange(s.Used - used)
-	}
-	for year := s.Snapshot.Season + 1; year <= last; year++ {
-		out.Figures = append(out.Figures, whatIfFigure(fmt.Sprintf("%d commitments at today's salaries", year), beforeFuture[year], afterFuture[year]))
-	}
-	return out, nil
+	v, err := contractsapp.DescribeWhatIf(ctx, s, ledger, stale, horizon, func(moves []contractsapp.WhatIfMove) error {
+		return a.whatIfPlanLabels(ctx, s.Mine, moves)
+	})
+	return wireWhatIf(v), err
 }
 
-// whatIfCommitted adds a player's ledger cells after this season to into, keeping the held salary's sub-$10,000 cents.
-func whatIfCommitted(ctx context.Context, store *state.Store, p state.MirrorPlayer, season int, into map[int]domain.Money) error {
-	cells, err := store.LedgerCells(ctx, p.MFLID)
-	if err != nil {
-		return fmt.Errorf("what-if future cells: %w", err)
+// wireWhatIf converts the service's what-if to its wire twin; TestContractsWireTwinsMatch proves it.
+func wireWhatIf(v contractsapp.WhatIfView) WhatIfView {
+	out := WhatIfView{Stale: v.Stale, Banner: v.Banner, Empty: v.Empty, Moves: make([]WhatIfMoveView, len(v.Moves)),
+		Figures: wireWhatIfFigures(v.Figures), Choices: make([]WhatIfChoice, len(v.Choices)), Notice: v.Notice}
+	for i, m := range v.Moves {
+		out.Moves[i] = WhatIfMoveView(m)
 	}
-	for year, cents := range cells {
-		if year > season {
-			into[year] += cents + p.Salary - domain.RoundToNearest10k(p.Salary)
-		}
+	for i, c := range v.Choices {
+		out.Choices[i] = WhatIfChoice(c)
 	}
-	return nil
+	return out
 }
 
-func whatIfChoice(p state.MirrorPlayer, season int) WhatIfChoice {
-	remaining := p.ContractYear - season
-	allowed := remaining >= 2 && remaining <= 4
-	reason := "Offseason only: can't be done until the offseason."
-	if !allowed {
-		reason = "Buyout not offered: needs 2–4 paid years after this season; a 1-year-left exit uses a cut."
+// wireWhatIfFigures converts the service's figures to their wire twins.
+func wireWhatIfFigures(figures []contractsapp.WhatIfFigure) []WhatIfFigure {
+	out := make([]WhatIfFigure, len(figures))
+	for i, f := range figures {
+		out[i] = WhatIfFigure(f)
 	}
-	return WhatIfChoice{Player: p.MFLID, CutLabel: "What if I cut him", BuyoutLabel: "What if I buy him out", BuyoutAllowed: allowed, Reason: reason}
+	return out
 }
 
-func whatIfMoves(s state.WhatIfSession) ([]WhatIfMoveView, map[string]bool, domain.Money) {
-	moves := []WhatIfMoveView{}
-	removed := map[string]bool{}
-	var charge domain.Money
-	for _, m := range s.Moves {
-		verb, tag, status := "Cut ", "Cut in what-if", "cut "
-		if m.Kind == string(transactions.KindBuyout) {
-			verb, tag, status = "Buy out ", "Bought out in what-if", "buyout "
-		}
-		moves = append(moves, WhatIfMoveView{ID: m.ID, Player: m.Player, Tag: tag, Status: "Modelled: " + status + m.Name + ", " + snapshot.ContractAmountOf(m.Charge).Text + "; see What-if at the top", Label: verb + m.Name, Charge: snapshot.ContractAmountOf(m.Charge), Explanation: m.Explanation})
-		removed[m.Player] = true
-		charge += m.Charge
-	}
-	return moves, removed, charge
-}
-
+// whatIfFigure is a money figure before and after, as its wire type.
 func whatIfFigure(label string, before, after domain.Money) WhatIfFigure {
-	return WhatIfFigure{Label: label, Before: snapshot.ContractAmountOf(before).Text, After: snapshot.ContractAmountOf(after).Text, Change: whatIfChange(after - before)}
-}
-func whatIfChange(delta domain.Money) string {
-	if delta == 0 {
-		return ""
-	}
-	if delta < 0 {
-		return "−" + snapshot.ContractAmountOf(-delta).Text
-	}
-	return "+" + snapshot.ContractAmountOf(delta).Text
+	return WhatIfFigure(contractsapp.Figure(label, before, after))
 }
 
-func (a *App) whatIfPlanLabels(ctx context.Context, mine string, moves []WhatIfMoveView) error {
+func (a *App) whatIfPlanLabels(ctx context.Context, mine string, moves []contractsapp.WhatIfMove) error {
 	if a.moves != nil {
 		receipts, err := a.moves.List(ctx, ingestion.LeagueID, mine)
 		if err != nil {
@@ -393,7 +298,7 @@ func (a *App) whatIfPlanLabels(ctx context.Context, mine string, moves []WhatIfM
 		for i, move := range moves {
 			for _, receipt := range receipts {
 				if envelope.IsRelease(receipt.Spec.Intent) && receipt.Spec.Expected.Player.String() == move.Player && envelope.ReleaseOpen(receipt.State) {
-					moves[i].Plan = "Plan: " + releaseStateLabel(receipt.State)
+					moves[i].Plan = "Plan: " + contractsapp.StateLabel(receipt.State)
 					break
 				}
 			}

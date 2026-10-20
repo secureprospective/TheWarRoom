@@ -6,6 +6,7 @@ import (
 	"slices"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -52,8 +53,8 @@ func (a *App) contractTeamCap(ctx context.Context, mine string, f envelope.Contr
 		out.Figures = append(out.Figures, envelope.ContractFigure{Label: row.Label, Before: row.Before, After: row.After, Change: row.Change})
 	}
 	for _, p := range players {
-		if err := whatIfCommitted(ctx, store, p, m.Season, out.After); err != nil {
-			return contractCap{}, err
+		if err := contractsapp.Committed(ctx, store, p, m.Season, out.After); err != nil {
+			return contractCap{}, err //nolint:wrapcheck // the service's errors already start "what-if"
 		}
 	}
 	projected, _ := store.CapUsed(mine)
@@ -68,22 +69,8 @@ type contractCap struct {
 	After   map[int]domain.Money
 }
 
-// contractCapReason judges each season the Act adds money to by that season's commitments after the Act.
-func contractCapReason(f envelope.ContractFacts, capAmount domain.Money, after map[int]domain.Money) string {
-	held := map[int]domain.Money{}
-	for _, c := range f.Baseline {
-		held[c.Season] = c.Salary
-	}
-	for _, c := range f.Terms.Cells {
-		if c.Salary > held[c.Season] && after[c.Season] > capAmount {
-			return fmt.Sprintf("This move exceeds the team's %d salary cap.", c.Season)
-		}
-	}
-	return ""
-}
-
 func (a *App) contractCapFacts(ctx context.Context, mine string, f *envelope.ContractFacts) error {
-	if len(f.Terms.Cells) == 0 || slices.Contains(f.Reasons, "This contract cannot take this Act.") {
+	if len(f.Terms.Cells) == 0 || slices.Contains(f.Reasons, contractsapp.Ineligible) {
 		return nil
 	}
 	team, err := a.contractTeamCap(ctx, mine, *f)
@@ -98,7 +85,7 @@ func (a *App) contractCapFacts(ctx context.Context, mine string, f *envelope.Con
 	if last := f.Terms.Cells[len(f.Terms.Cells)-1].Season; last > f.Season {
 		f.Reasons = append(f.Reasons, fmt.Sprintf("Not checked: salary caps after %d; later seasons are judged against the held %d cap", f.Season, f.Season))
 	}
-	if reason := contractCapReason(*f, *team.Cap, team.After); reason != "" {
+	if reason := contractsapp.CapReason(*f, *team.Cap, team.After); reason != "" {
 		f.Reasons = append(f.Reasons, reason)
 	}
 	return nil

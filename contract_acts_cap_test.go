@@ -258,7 +258,7 @@ func TestContractOverCapJudgesTheSeasonTheMoneyLandsIn(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if room := contractFigure(t, contractTeamView(f.TeamFigures), "Room"); !strings.HasPrefix(room.Before, "-") {
+		if room := contractFigure(t, contractActView(envelope.Receipt{}, f).TeamFigures, "Room"); !strings.HasPrefix(room.Before, "-") {
 			t.Fatalf("fixture room %+v", room)
 		}
 		return strings.Join(f.Reasons, "\n")

@@ -220,6 +220,7 @@ internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
+internal/app/contracts	contracts
 internal/app/draft	draft
 internal/app/draft/drafttest	draft
 internal/app/market	market
