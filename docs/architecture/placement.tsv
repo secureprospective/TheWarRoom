@@ -182,11 +182,9 @@ release_rebase.go	contracts
 report_reading.go	platform
 research_app.go	research
 research_archive.go	research
-research_context_reading.go	research
 research_finish_test.go	research
 research_news.go	research
 research_news_test.go	research
-research_player_reading.go	research
 research_reading.go	research
 research_test.go	research
 restore_cli.go	platform
@@ -313,3 +311,5 @@ sources_wire_test.go	sources
 internal/app/sources	sources
 scoring_wire_test.go	scoring
 internal/app/scoring	scoring
+internal/app/research	research
+internal/app/research/researchtest	research

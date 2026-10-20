@@ -7,18 +7,18 @@ import (
 	"strconv"
 	"time"
 
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 func researchKinds() []string {
-	return []string{"playerScores", "topAdds", "topDrops", "topStarters", "topOwns", "topTrades", "pointsAllowed"}
+	return researchapp.Kinds()
 }
 func researchFeedLabel(kind string) string {
-	return map[string]string{"playerScores": "fantasy points", "topAdds": "most added players",
-		"topDrops": "most dropped players", "topStarters": "most started players", "topOwns": "most owned players",
-		"topTrades": "most traded players", "pointsAllowed": "points allowed"}[kind]
+	return researchapp.FeedLabel(kind)
 }
 
 func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {

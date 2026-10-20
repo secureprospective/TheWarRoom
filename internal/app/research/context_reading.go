@@ -1,4 +1,4 @@
-package main
+package research
 
 import (
 	"fmt"
@@ -7,23 +7,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 )
 
-func (v researchView) injuryReport(id string, team bool) Report {
+func (v researchView) injuryReport(id string, team bool) report.Report {
 	title := "NFL injuries"
 	if team {
 		title = "Injuries by NFL team"
 	}
-	r := researchShell(id, title, "MFL’s NFL injury report: its status, body part and expected return are preserved as supplied, not medical predictions. The game view includes only NFL teams in this week’s held schedule; byes are excluded.", v.injuries, v.zone, "Player", "Pos", "NFL", "Status", "Body part", "Expected return")
+	r := researchShell(id, title, "MFL’s NFL injury report: its status, body part and expected return are preserved as supplied, not medical predictions. The game view includes only NFL teams in this week’s held schedule; byes are excluded.", v.Injuries, v.Zone, "Player", "Pos", "NFL", "Status", "Body part", "Expected return")
 	r.Source = "Source: MFL injuries"
 	playing, ok := v.injuryGames(&r, team)
 	if !ok {
 		return r
 	}
-	for _, injury := range v.injuries.value {
+	for _, injury := range v.Injuries.Value {
 		p := v.player(injury.ID.String())
 		if v.scope.Team != "" && p.Team != v.scope.Team || v.scope.Position != "" && p.Position != v.scope.Position {
 			continue
@@ -43,7 +45,7 @@ func (v researchView) injuryReport(id string, team bool) Report {
 	researchEmpty(&r)
 	return r
 }
-func depthID(r researchfeeds.RawDepth, links map[string]string) string {
+func DepthID(r researchfeeds.RawDepth, links map[string]string) string {
 	if r.GSIS != nil {
 		if id := links["gsis:"+*r.GSIS]; id != "" {
 			return id
@@ -55,7 +57,7 @@ func depthID(r researchfeeds.RawDepth, links map[string]string) string {
 	return ""
 }
 func (v researchView) depthName(r researchfeeds.RawDepth) (string, bool, bool) {
-	id := depthID(r, v.held.links)
+	id := DepthID(r, v.Held.Links)
 	name := r.Name
 	if name == "" && id != "" {
 		name = v.player(id).Name
@@ -70,40 +72,40 @@ func (v researchView) depthName(r researchfeeds.RawDepth) (string, bool, bool) {
 
 	return name, mine, true
 }
-func (v researchView) depthReport() Report {
-	r := researchShell("M-048", "NFL depth charts", "Only the newest nflverse snapshot is shown. Formation groups follow the source’s formation order, then slot and depth rank. ▸ marks your players. Identity joins use gsis, then ESPN through the held crosswalk; an unmatched player stays visible by nflverse’s name and is labelled. The grid shows rank-one players at each position, including different formations.", v.held.depth, v.zone, "Player", "Position", "Depth")
+func (v researchView) depthReport() report.Report {
+	r := researchShell("M-048", "NFL depth charts", "Only the newest nflverse snapshot is shown. Formation groups follow the source’s formation order, then slot and depth rank. ▸ marks your players. Identity joins use gsis, then ESPN through the held crosswalk; an unmatched player stays visible by nflverse’s name and is labelled. The grid shows rank-one players at each position, including different formations.", v.Held.Depth, v.Zone, "Player", "Position", "Depth")
 	r.Source = "Source: nflverse depth charts · latest snapshot"
-	if v.held.linkError != "" {
-		r.Note += " Crosswalk unavailable: " + v.held.linkError
+	if v.Held.LinkError != "" {
+		r.Note += " Crosswalk unavailable: " + v.Held.LinkError
 	}
-	if len(v.held.depth.value) > 0 {
-		r.Summary = append(r.Summary, ReportRow{Cells: []string{"Snapshot", depthTime(v.held.depth.value[0].DT, v.zone)}})
+	if len(v.Held.Depth.Value) > 0 {
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"Snapshot", depthTime(v.Held.Depth.Value[0].DT, v.Zone)}})
 	}
 	if v.scope.Depth == "grid" {
 		return v.depthGrid(r)
 	}
 	misses := 0
-	for _, d := range v.held.depth.value {
-		if v.scope.Team != "" && researchTeam(d.Team) != v.scope.Team {
+	for _, d := range v.Held.Depth.Value {
+		if v.scope.Team != "" && Team(d.Team) != v.scope.Team {
 			continue
 		}
 		name, mine, matched := v.depthName(d)
 		if !matched {
 			misses++
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, d.Position, fmt.Sprint(d.Rank)}, Mine: mine, Group: researchTeam(d.Team) + " · " + d.Group})
+		r.Rows = append(r.Rows, report.Row{Cells: []string{name, d.Position, fmt.Sprint(d.Rank)}, Mine: mine, Group: Team(d.Team) + " · " + d.Group})
 	}
 	r.Note += fmt.Sprintf(" %d displayed depth slots have no held MFL identity link (not a roster status).", misses)
 	r.Note += v.depthMissNote(false)
 	researchEmpty(&r)
 	return r
 }
-func (v researchView) depthGrid(r Report) Report {
+func (v researchView) depthGrid(r report.Report) report.Report {
 	cells := map[string]map[string][]string{}
 	positions := map[string]bool{}
 	misses := 0
-	for _, d := range v.held.depth.value {
-		if d.Rank != 1 || v.scope.Team != "" && researchTeam(d.Team) != v.scope.Team {
+	for _, d := range v.Held.Depth.Value {
+		if d.Rank != 1 || v.scope.Team != "" && Team(d.Team) != v.scope.Team {
 			continue
 		}
 		name, mine, matched := v.depthName(d)
@@ -113,7 +115,7 @@ func (v researchView) depthGrid(r Report) Report {
 		if !matched {
 			misses++
 		}
-		team := researchTeam(d.Team)
+		team := Team(d.Team)
 		if cells[team] == nil {
 			cells[team] = map[string][]string{}
 		}
@@ -135,7 +137,7 @@ func (v researchView) depthGrid(r Report) Report {
 	}
 	sort.Strings(teams)
 	for _, team := range teams {
-		row := ReportRow{Cells: []string{team}, Titles: []string{team}}
+		row := report.Row{Cells: []string{team}, Titles: []string{team}}
 		for _, p := range cols {
 			names := cells[team][p]
 			text := "—"
@@ -151,13 +153,13 @@ func (v researchView) depthGrid(r Report) Report {
 	researchEmpty(&r)
 	return r
 }
-func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
+func (v researchView) newsReport(mine bool) (report.Report, []Article) {
 	id, title := "M-058", "Rostered players’ news"
 	if mine {
 		id, title = "M-060", "My players’ news"
 	}
-	r := Report{ID: id, Title: title, Source: "Source: MFL player news · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []ReportRow{}, Columns: []string{"Player", "Age", "Headline", "Posted"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted. " + researchNewsHow}
-	articles := []ResearchArticle{}
+	r := report.Report{ID: id, Title: title, Source: "Source: MFL player news · rostered players only", AsOf: "As of: not fetched", Status: "ok", Rows: []report.Row{}, Columns: []string{"Player", "Age", "Headline", "Posted"}, How: "Profiles are fetched only for rostered players, one second apart, and cached per local calendar day. Age is MFL’s bio age. Open article hands off to MFL in your browser; nothing is submitted. " + NewsHow}
+	articles := []Article{}
 	if mine && v.scope.Mine == "" {
 		r.Status = "empty"
 		r.Note = "Choose your franchise to see its news."
@@ -166,17 +168,17 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 	ids := v.newsIDs(mine)
 	health := v.newsHealth(ids)
 	for _, player := range ids {
-		v.appendNews(&r, &articles, player, v.held.news[player].value)
+		v.appendNews(&r, &articles, player, v.Held.News[player].Value)
 	}
 	if !health.oldest.IsZero() {
-		r.AsOf = "held · fetched " + reportTime(health.oldest, v.zone)
+		r.AsOf = "held · fetched " + report.Time(health.oldest, v.Zone)
 	}
 	if health.losses > 0 {
 		at := health.oldest
 		if health.loss == "" {
 			at = time.Time{}
 		}
-		researchLoss(&r, fmt.Sprintf("Player news · %d profiles need refreshing", health.losses), at, health.loss, v.zone)
+		researchLoss(&r, fmt.Sprintf("Player news · %d profiles need refreshing", health.losses), at, health.loss, v.Zone)
 	}
 	sortResearchNews(&r, articles)
 	r.Note = fmt.Sprintf("%d of %d rostered profiles held today or from the last fetch. Posted times are estimates.", health.fetched, len(ids))
@@ -191,7 +193,7 @@ func (v researchView) newsReport(mine bool) (Report, []ResearchArticle) {
 func (v researchView) newsIDs(mine bool) []string {
 	ids := []string{}
 	for player := range v.owners {
-		_, position, _ := v.lookup.DisplayFacts(player)
+		_, position, _ := v.Lookup.DisplayFacts(player)
 		if (!mine || v.mine[player]) && !researchfeeds.TeamUnit(position) {
 			ids = append(ids, player)
 		}
@@ -200,20 +202,20 @@ func (v researchView) newsIDs(mine bool) []string {
 	return ids
 }
 
-func (v researchView) injuryGames(r *Report, team bool) (map[string]bool, bool) {
+func (v researchView) injuryGames(r *report.Report, team bool) (map[string]bool, bool) {
 	playing := map[string]bool{}
 	if !team && v.scope.Injuries == "games" {
-		schedule := v.schedules[v.week]
-		researchLoss(r, "This week’s NFL schedule", schedule.fetchedAt, schedule.refreshError, v.zone)
-		r.Note += fmt.Sprintf(" Week %d games.", v.week)
-		for _, w := range schedule.value {
+		schedule := v.Schedules[v.Week]
+		researchLoss(r, "This week’s NFL schedule", schedule.FetchedAt, schedule.RefreshError, v.Zone)
+		r.Note += fmt.Sprintf(" Week %d games.", v.Week)
+		for _, w := range schedule.Value {
 			for _, m := range w.Matchups {
 				for _, t := range m.Teams {
-					playing[researchTeam(t)] = true
+					playing[Team(t)] = true
 				}
 			}
 		}
-		if schedule.fetchedAt.IsZero() {
+		if schedule.FetchedAt.IsZero() {
 			r.Status = "failed"
 			r.Note += " Game injuries unavailable without this week’s schedule."
 			return playing, false
@@ -222,7 +224,7 @@ func (v researchView) injuryGames(r *Report, team bool) (map[string]bool, bool) 
 	return playing, true
 }
 
-func (v researchView) injuryRow(p ResearchPlayer, injury leaguefeed.Injury, team bool) ReportRow {
+func (v researchView) injuryRow(p PlayerInfo, injury leaguefeed.Injury, team bool) report.Row {
 	body, back := injury.Details, injury.ExpReturn
 	if body == "" {
 		body = "Not supplied"
@@ -230,23 +232,23 @@ func (v researchView) injuryRow(p ResearchPlayer, injury leaguefeed.Injury, team
 	if back == "" {
 		back = "Not supplied"
 	}
-	row := ReportRow{Cells: []string{p.Name, p.Position, p.Team, injury.Status, body, back}, Mine: v.mine[p.ID]}
+	row := report.Row{Cells: []string{p.Name, p.Position, p.Team, injury.Status, body, back}, Mine: v.mine[p.ID]}
 	if team {
 		row.Group = p.Team
 	}
 	return row
 }
 
-func (v researchView) appendNews(r *Report, articles *[]ResearchArticle, player string, rows []researchfeeds.News) {
+func (v researchView) appendNews(r *report.Report, articles *[]Article, player string, rows []researchfeeds.News) {
 	name := v.player(player).Name
 	for _, news := range rows {
 		age := news.Age
-		posted, order := newsPosted(news.Published, v.held.news[player].fetchedAt, v.zone)
+		posted, order := newsPosted(news.Published, v.Held.News[player].FetchedAt, v.Zone)
 		if age == "" {
 			age = "Not supplied"
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{name, age, news.Headline, posted}, Mine: v.mine[player], Sort: []float64{order}})
-		*articles = append(*articles, ResearchArticle{ID: player, Article: news.Article, Name: name, Headline: news.Headline})
+		r.Rows = append(r.Rows, report.Row{Cells: []string{name, age, news.Headline, posted}, Mine: v.mine[player], Sort: []float64{order}})
+		*articles = append(*articles, Article{ID: player, Article: news.Article, Name: name, Headline: news.Headline})
 	}
 }
 
@@ -255,7 +257,7 @@ func depthTime(raw string, zone *time.Location) string {
 	if err != nil {
 		return "Snapshot time unavailable"
 	}
-	return reportTime(at, zone)
+	return report.Time(at, zone)
 }
 
 func shortDepthNames(names []string) string {
