@@ -15,7 +15,7 @@ func (p *Pools) InitializeMain(ctx context.Context) error {
 	return err
 }
 
-func mainMigrations() []Migration { return []Migration{adoptMain} }
+func mainMigrations() []Migration { return []Migration{adoptMain, guardMainJSON} }
 
 func adoptMain(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, mainRulebookDDL+mainParamsDDL+mainMovesDDL+mainBidFactsDDL+mainReleaseFactsDDL+mainContractFactsDDL+mainPersonalDDL+mainOffersDDL+mainMirrorDDL); err != nil {
@@ -176,3 +176,11 @@ CREATE TABLE IF NOT EXISTS league_mirror (
 	snapshot     TEXT NOT NULL,
 	refreshed_at TEXT NOT NULL
 );`
+
+func guardMainJSON(ctx context.Context, tx *sql.Tx) error {
+	return GuardJSON(ctx, tx,
+		JSONColumn{Table: "rulebook_versions", Column: "payload"},
+		JSONColumn{Table: "move_envelopes", Column: "spec"},
+		JSONColumn{Table: "league_mirror", Column: "snapshot"},
+	)
+}

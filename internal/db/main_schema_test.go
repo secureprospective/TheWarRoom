@@ -27,7 +27,7 @@ func TestMainSchemaAdoptsAllStoresOnceWithDataIntact(t *testing.T) {
 	if err := pools.InitializeMain(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	assertVersion(t, pools, 1)
+	assertVersion(t, pools, MainVersion())
 	var raw string
 	if err := pools.Read().QueryRowContext(t.Context(), "SELECT snapshot FROM league_mirror").Scan(&raw); err != nil {
 		t.Fatal(err)

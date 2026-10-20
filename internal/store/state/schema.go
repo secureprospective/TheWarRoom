@@ -29,7 +29,7 @@ func initializeWhatIf(ctx context.Context, pools *db.Pools) error {
 // SchemaVersion is the newest whatif.db file migration this build can read.
 func SchemaVersion() int { return len(whatIfMigrations()) }
 
-func whatIfMigrations() []db.Migration { return []db.Migration{adoptWhatIf} }
+func whatIfMigrations() []db.Migration { return []db.Migration{adoptWhatIf, guardWhatIfJSON} }
 
 func adoptWhatIf(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, baseSchemaDDL+ledgerDDL+seasonPhaseDDL+capReliefDDL+mflAdjustmentsDDL+playerStatusDDL+calendarEventsDDL+tradeNotesDDL+tradePlansDDL+whatIfSessionsDDL+schemaMigrationsDDL); err != nil {
@@ -220,4 +220,16 @@ func columnExists(ctx context.Context, query schemaQuerier, table, column string
 
 func (s *Store) columnExists(ctx context.Context, table, column string) (bool, error) {
 	return columnExists(ctx, s.pools.Read(), table, column)
+}
+
+func guardWhatIfJSON(ctx context.Context, tx *sql.Tx) error {
+	if err := db.GuardJSON(ctx, tx,
+		db.JSONColumn{Table: "calendar_events", Column: "payload"},
+		db.JSONColumn{Table: "trade_plans", Column: "plan"},
+		db.JSONColumn{Table: "whatif_sessions", Column: "session"},
+		db.JSONColumn{Table: "season_phases", Column: "meta", Empty: true},
+	); err != nil {
+		return fmt.Errorf("state: JSON guards: %w", err)
+	}
+	return nil
 }

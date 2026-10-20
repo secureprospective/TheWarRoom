@@ -2,6 +2,7 @@ package history
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -150,5 +151,16 @@ func TestLeagueEventRejectsReplacementAndUpsert(t *testing.T) {
 				t.Fatalf("unchanged events = %d, want 2", count)
 			}
 		})
+	}
+}
+
+func TestLeagueEventPayloadRequiresIntegerVersion(t *testing.T) {
+	t.Parallel()
+	_, _, p := newStore(t)
+	for i, payload := range []string{`{}`, `{"version":null}`, `{"version":"1"}`, `{"version":true}`, `{"version":0}`, `{"version":1.5}`, `null`, `not json`} {
+		_, err := p.Write().ExecContext(t.Context(), `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id) VALUES (?, 'legacy', ?, 1, '', '', 'actor', 'league', 'test', ?, ?, ?)`, fmt.Sprint(i), fmt.Sprint(i), payload, strings.Repeat("a", 64), fmt.Sprint(i))
+		if err == nil {
+			t.Errorf("accepted payload %s", payload)
+		}
 	}
 }

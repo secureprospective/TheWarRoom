@@ -104,7 +104,7 @@ func TestHistoryMigrationQuarantinesOnlyReportedOrphans(t *testing.T) {
 		t.Fatalf("backup lost orphan evidence: %s", got)
 	}
 	var version int
-	if err := pools.Read().QueryRowContext(t.Context(), "PRAGMA user_version").Scan(&version); err != nil || version != 2 {
+	if err := pools.Read().QueryRowContext(t.Context(), "PRAGMA user_version").Scan(&version); err != nil || version != SchemaVersion() {
 		t.Fatalf("version=%d err=%v", version, err)
 	}
 }

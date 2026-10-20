@@ -13,7 +13,7 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON}
 }
 
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {
@@ -133,6 +133,22 @@ func quarantineScore(ctx context.Context, tx *sql.Tx, rowID int64) error {
 	}
 	if _, err := tx.ExecContext(ctx, `DELETE FROM model_scores WHERE rowid=?`, rowID); err != nil {
 		return fmt.Errorf("history: remove orphan score: %w", err)
+	}
+	return nil
+}
+
+func guardHistoryJSON(ctx context.Context, tx *sql.Tx) error {
+	if err := db.GuardJSON(ctx, tx,
+		db.JSONColumn{Table: "league_event", Column: "payload", Versioned: true},
+		db.JSONColumn{Table: "param_sets", Column: "measures"},
+		db.JSONColumn{Table: "param_sets", Column: "params"},
+		db.JSONColumn{Table: "scoring_runs", Column: "missing_measures"},
+		db.JSONColumn{Table: "model_runs", Column: "missing_measures"},
+		db.JSONColumn{Table: "model_scores", Column: "inputs"},
+		db.JSONColumn{Table: "input_manifests", Column: "entries"},
+		db.JSONColumn{Table: "snapshot_checks", Column: "checks"},
+	); err != nil {
+		return fmt.Errorf("history: JSON guards: %w", err)
 	}
 	return nil
 }
