@@ -57,8 +57,6 @@ corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
 counterparties_app.go	counterparties
 counterparties_app_test.go	counterparties
-counterparties_filters.go	counterparties
-counterparties_team_app.go	counterparties
 crosswalk_app.go	sources
 crosswalk_app_test.go	sources
 data_sources_app.go	sources
@@ -240,6 +238,7 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
+internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/report	platform
