@@ -45,7 +45,7 @@ func (s *leagueView) CapUsed(franchiseID string) (domain.Money, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	fs, ok := s.franchises[franchiseID]
-	if !ok {
+	if !ok || fs.CapInvalid {
 		return 0, false
 	}
 	return fs.CapUsed, true

@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -58,12 +57,19 @@ func New(pools *db.Pools, leagueID string, season int, discounts CapDiscounts) *
 	return s
 }
 
-// Err reports that a transaction committed but the memory reload failed, so in-memory reads are
-// stale. Cleared only by a successful Initialize.
+// Err reports stale memory or an invalid cap total. Rosters remain readable for reconciliation.
 func (s *Store) Err() error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.poisoned
+	if s.poisoned != nil {
+		return s.poisoned
+	}
+	for _, fid := range sortedKeys(s.franchises) {
+		if s.franchises[fid].CapInvalid {
+			return fmt.Errorf("state: cap total invalid for franchise %s: rostered players have no PAID salary cell", fid)
+		}
+	}
+	return nil
 }
 
 // poison records the stale-memory condition; the first cause wins.
@@ -201,25 +207,8 @@ ORDER BY r.franchise_id, r.mfl_id`, s.leagueID, s.season)
 		return fmt.Errorf("state: load matched %d of %d roster rows (contract rows missing)", len(idx), want)
 	}
 
-	// Cap usage is derived from the ledger cells, the source of truth, not the legacy salary column.
-	perPlayer, perFranchise, err := loadCellCap(ctx, s.pools.Read(), s.leagueID, s.season, s.discounts)
-	if err != nil {
+	if err := s.applyCellCap(ctx, fr); err != nil {
 		return err
-	}
-	for fid, f := range fr {
-		f.CapUsed = perFranchise[fid]
-		for i := range f.Players {
-			p := &f.Players[i]
-			cs, ok := perPlayer[p.MFLID]
-			// A rostered player with a salary but no PAID current-season cell counts $0: drift. Log it
-			// loudly but don't fail, because load runs on every startup and one bad row must not make the
-			// app unopenable. (A VOID cell can't appear here: only a waiver voids cells, and it de-rosters
-			// the player in the same transaction.)
-			if !ok && p.Salary > 0 {
-				log.Printf("state: load: WARNING rostered player %q has base salary %s but no PAID %d ledger cell (cell drift) — counting $0 cap until reconciled", p.MFLID, p.Salary, s.season)
-			}
-			p.CapSalary = cs
-		}
 	}
 
 	if err := s.applyDeadCap(ctx, fr); err != nil {

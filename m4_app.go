@@ -42,7 +42,7 @@ func (a *App) GetRoster(franchiseID string) RosterResult {
 		return RosterResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
-		return RosterResult{FranchiseID: franchiseID, Detail: "state is stale after a failed reload: " + err.Error()}
+		return RosterResult{FranchiseID: franchiseID, Detail: "state unavailable: " + err.Error()}
 	}
 	fs, ok := a.whatif.Reader().FranchiseState(franchiseID)
 	if !ok {
@@ -85,7 +85,7 @@ func (a *App) GetFreeAgentPool() FreeAgentPoolResult {
 		return FreeAgentPoolResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
-		return FreeAgentPoolResult{Detail: "state is stale after a failed reload: " + err.Error()}
+		return FreeAgentPoolResult{Detail: "state unavailable: " + err.Error()}
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
@@ -129,7 +129,7 @@ func (a *App) GetFranchises() FranchisesResult {
 		return FranchisesResult{Detail: err.Error()}
 	}
 	if err := a.whatif.Err(); err != nil {
-		return FranchisesResult{Detail: "state is stale after a failed reload: " + err.Error()}
+		return FranchisesResult{Detail: "state unavailable: " + err.Error()}
 	}
 	names := map[string]string{}
 	if a.rulebook != nil {

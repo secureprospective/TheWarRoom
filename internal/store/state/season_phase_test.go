@@ -81,8 +81,8 @@ func TestSeasonDerivedFromPhaseLogOnReboot(t *testing.T) {
 	if s2.season != rolled {
 		t.Fatalf("derived season = %d, want %d (from phase log)", s2.season, rolled)
 	}
-	if got := readPhase(t, s2); got != domain.PhaseOffseason {
-		t.Fatalf("post-rollover phase = %q, want OFFSEASON", got)
+	if got, err := s2.CurrentPhase(ctx); err != nil || got != domain.PhaseOffseason {
+		t.Fatalf("post-rollover phase = %q, %v; want OFFSEASON", got, err)
 	}
 	if fs, ok := s2.FranchiseState("0001"); !ok || fs.CapUsed != 10*capUnit {
 		t.Fatalf("post-rollover CapUsed(0001) = %v ok=%v, want %v (cap follows derived season)", fs.CapUsed, ok, 10*capUnit)
