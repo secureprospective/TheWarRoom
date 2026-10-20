@@ -161,7 +161,7 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 	closed, err := f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
 		LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "ufa_bid"})
 	denials["calendar/closed-window"] = errorWords(err) + " " + jsonWords(t, closed.Decision)
-	for _, league := range []string{"legacy", "native.", " native.seed", "native.missing"} {
+	for _, league := range []string{"legacy", "native.", " native.seed", "native.seed ", "native.missing"} {
 		_, err = f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: league})
 		denials["schedule/"+league] = errorWords(err)
 		_, err = f.app.TargetCommissionerLedger(league)
