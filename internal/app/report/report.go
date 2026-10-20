@@ -16,6 +16,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // Row is one table row; it is main.ReportRow.
@@ -163,4 +164,27 @@ func PendingRead(at time.Time, zone *time.Location) string {
 // EngineRun is the one wording for when the engine last valued players, wherever it shows.
 func EngineRun(at time.Time, zone *time.Location) string {
 	return "Engine run: " + at.In(zone).Format("January 2, 2006, 3:04 PM")
+}
+
+type ReadingStatus string
+
+const (
+	ReadingOK       ReadingStatus = "ok"
+	ReadingThin     ReadingStatus = "thin"
+	ReadingFailed   ReadingStatus = "failed"
+	ReadingNotWired ReadingStatus = "not_wired"
+)
+
+type Reading[T any] struct {
+	snapshot.Sourced[T]
+	Status        ReadingStatus `json:"status"`
+	AbsenceReason *string       `json:"absenceReason"`
+	Count         int           `json:"count"`
+	Threshold     int           `json:"threshold"`
+	Baseline      string        `json:"baseline"`
+	Cutoff        string        `json:"cutoff"`
+	Method        string        `json:"method"`
+	InputSHA      string        `json:"inputSHA"`
+	BuildStamp    string        `json:"buildStamp"`
+	HowCounted    string        `json:"howCounted"`
 }

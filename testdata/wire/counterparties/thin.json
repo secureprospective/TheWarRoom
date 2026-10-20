@@ -1,0 +1,208 @@
+{
+ "value": {
+  "words": {
+   "team": "Team",
+   "sides": "Sides",
+   "perSeason": "Per season",
+   "now": "For now",
+   "later": "For later",
+   "picks": "Picks in − out",
+   "age": "Age in − out",
+   "partners": "Partners",
+   "partner": "Most frequent partner",
+   "day": "On the day",
+   "since": "Since",
+   "legend": "Posture shares describe the selected trades, not a finding against chance. Red ranges are losses beyond chance; green ranges are gains beyond chance.",
+   "up": "↑",
+   "down": "↓"
+  },
+  "countText": "22",
+  "summary": "22 trade sides of valued trades, 2017–2017. On the day is expected wins gained at the league's own prices; since is wins actually delivered, for trades with two or more seasons played. Showing only trades that built for later.",
+  "asOf": "Standings as of the archive cutoff 2026-10-06, not today's live standings.",
+  "headline": "",
+  "note": "Each trade has two sides, one per team. A team's tier is its rank that day: live once three games are final, else last season's finish, as the archive recorded it.",
+  "picks": [
+   {
+    "with": "With contenders",
+    "tradingAs": "Contenders",
+    "id": "contender",
+    "label": "Contenders",
+    "hint": "Ranked 1 to 10 on the day of the trade",
+    "count": 9
+   },
+   {
+    "with": "With teams in the hunt",
+    "tradingAs": "In the hunt",
+    "id": "hunt",
+    "label": "In the hunt",
+    "hint": "Ranked 11 to 22 on the day of the trade",
+    "count": 6
+   },
+   {
+    "with": "With rebuilding teams",
+    "tradingAs": "Rebuilding",
+    "id": "rebuild",
+    "label": "Rebuilding",
+    "hint": "Ranked 23 to 32 on the day of the trade",
+    "count": 7
+   }
+  ],
+  "teams": [
+   {
+    "fid": "0025",
+    "name": "Arizona Cardinals"
+   },
+   {
+    "fid": "0017",
+    "name": "Atlanta Falcons"
+   },
+   {
+    "fid": "0013",
+    "name": "Baltimore Ravens"
+   },
+   {
+    "fid": "0001",
+    "name": "Buffalo Bills"
+   },
+   {
+    "fid": "0018",
+    "name": "Carolina Panthers"
+   },
+   {
+    "fid": "0021",
+    "name": "Chicago Bears"
+   },
+   {
+    "fid": "0014",
+    "name": "Cincinnati Bengals"
+   },
+   {
+    "fid": "0015",
+    "name": "Cleveland Browns"
+   },
+   {
+    "fid": "0029",
+    "name": "Dallas Cowboys"
+   },
+   {
+    "fid": "0008",
+    "name": "Denver Broncos"
+   },
+   {
+    "fid": "0022",
+    "name": "Detroit Lions"
+   },
+   {
+    "fid": "0023",
+    "name": "Green Bay Packers"
+   },
+   {
+    "fid": "0009",
+    "name": "Houston Texans"
+   },
+   {
+    "fid": "0010",
+    "name": "Indianapolis Colts"
+   },
+   {
+    "fid": "0011",
+    "name": "Jacksonville Jaguars"
+   },
+   {
+    "fid": "0006",
+    "name": "Kansas City Chiefs"
+   },
+   {
+    "fid": "0007",
+    "name": "Las Vegas Raiders"
+   },
+   {
+    "fid": "0005",
+    "name": "Los Angeles Chargers"
+   },
+   {
+    "fid": "0027",
+    "name": "Los Angeles Rams"
+   },
+   {
+    "fid": "0004",
+    "name": "Miami Dolphins"
+   },
+   {
+    "fid": "0024",
+    "name": "Minnesota Vikings"
+   },
+   {
+    "fid": "0002",
+    "name": "New England Patriots"
+   },
+   {
+    "fid": "0019",
+    "name": "New Orleans Saints"
+   },
+   {
+    "fid": "0030",
+    "name": "New York Giants"
+   },
+   {
+    "fid": "0003",
+    "name": "New York Jets"
+   },
+   {
+    "fid": "0031",
+    "name": "Philadelphia Eagles"
+   },
+   {
+    "fid": "0016",
+    "name": "Pittsburgh Steelers"
+   },
+   {
+    "fid": "0026",
+    "name": "San Francisco 49ers"
+   },
+   {
+    "fid": "0028",
+    "name": "Seattle Seahawks"
+   },
+   {
+    "fid": "0020",
+    "name": "Tampa Bay Buccaneers"
+   },
+   {
+    "fid": "0012",
+    "name": "Tennessee Titans"
+   },
+   {
+    "fid": "0032",
+    "name": "Washington Commanders"
+   }
+  ],
+  "cards": null,
+  "trendSay": [],
+  "trends": {
+   "seasons": null,
+   "tiers": null
+  },
+  "pairs": null,
+  "rows": null
+ },
+ "provenance": {
+  "source": "Lab compiled facts sha256:6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "2026-10-06T15:57:20+00:00",
+   "note": "Frozen historical input; not current league truth"
+  },
+  "kind": "archive"
+ },
+ "status": "thin",
+ "absenceReason": "Fewer than 40 trade sides in view; widen the standing, time of year or what the trades did",
+ "count": 22,
+ "threshold": 40,
+ "baseline": "The league's own posture and window shares in the same seasons; a share is coloured only where it clears chance",
+ "cutoff": "2026-10-06T01:42:57+00:00",
+ "method": "both sides of every valued trade, cut by standing, window and posture; 1.96 standard-error ranges",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "dev ",
+ "howCounted": "A team's tier is its rank on the day of the trade: its live standing once three games were final, otherwise the previous season's finish, exactly as the frozen archive recorded it. Contenders are ranked 1 to 10, teams in the hunt 11 to 22, rebuilding teams 23 to 32; the standings run through the archive cutoff 2026-10-06, never today's live table. What a trade did is read from each side's flow: bought for now when it took in more player value than it sent and sent more pick value than it took, built for later the reverse, like for like otherwise. Value is forecast wins on the day; a flow under 0.05 forecast wins counts as even. On the day is the expected wins a side gained at the league's own prices; since is the wins its assets actually delivered against the other side's, for trades with two or more played seasons. Every range is the 95% likely range of the average per trade; a range touching zero is within chance, not a finding."
+}

@@ -77,3 +77,15 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
 - **Store the held value as before.** `archive.Read` returns the zero `Snapshot` when nothing is
   verified; the adapter only replaces the held copy when the result is a real snapshot, as the
   old code did.
+
+## Counterparties additions
+
+- Evidence-wrapped screens reuse `report.Reading[T]`; the root retains its Wails wire
+  `Reading[T]` and converts the envelope along with the payload. Keep all nested named wire
+  types at root, not only the board. Explicit converters preserve nil versus empty slices.
+- Shared shell vocabulary can be passed as named formatting functions with the data loader and
+  build stamp. This avoids importing another feature or copying its formatting implementation.
+- Move implementation tests with construction; retain unrelated cross-feature assertions at
+  root. A populated wire-twin test complements fixture goldens by exercising nullable fields.
+- Placement and SYSTEM_MAP changes that remove old paths must accompany the move commit:
+  those gates reject references to deleted files. Finish the narrative and root ratchet next.
