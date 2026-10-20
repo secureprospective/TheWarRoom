@@ -41,8 +41,6 @@ commissioner_preview_forms_test.go	commissioner
 commissioner_preview_market_test.go	commissioner
 commissioner_shell_test.go	commissioner
 comms_app.go	comms
-comms_contract_reading.go	comms
-comms_reading.go	comms
 comms_test.go	comms
 contract_acts_app.go	contracts
 contract_acts_app_test.go	contracts
@@ -235,6 +233,8 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
+internal/app/comms	comms
+internal/app/comms/commstest	comms
 internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive

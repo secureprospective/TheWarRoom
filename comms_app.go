@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 	"strconv"
 	"time"
 
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 )
@@ -19,27 +21,40 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 	if err := a.ready(); err != nil {
 		return CommsBoard{}, fmt.Errorf("comms: startup: %w", err)
 	}
+	in := a.commsInput()
+	ctx, cancel := context.WithTimeout(a.fallbackParent(), factsTimeout)
+	defer cancel()
+	src := commsapp.Source{Log: a.fallbackLog}
+	if a.history != nil {
+		src.Archive = a.commsArchive
+	}
+	board, err := commsapp.Read(ctx, src, in, commsapp.RawCommsScope(raw))
+	if err != nil {
+		return CommsBoard{}, err //nolint:wrapcheck // preserve the league feed error
+	}
+	return wireComms(board), nil
+}
+
+func (a *App) commsInput() commsapp.Input {
 	a.seasonMu.Lock()
-	in := commsInput{transactions: a.seasonTransactions, boards: a.commsBoards, zone: time.Local}
+	in := commsapp.Input{Transactions: reportHeld(a.seasonTransactions), Zone: time.Local}
+	for i, feed := range a.commsBoards {
+		in.Boards[i] = reportHeld(feed)
+	}
 	a.seasonMu.Unlock()
 	a.lookupMu.Lock()
-	in.lookup = a.lookup
+	in.Lookup = a.lookup
 	a.lookupMu.Unlock()
-	in.names = a.rulebook.FranchiseNames()
-	in.mirror, _, _ = a.league.ContractsView()
-	if a.history != nil {
-		ctx, cancel := context.WithTimeout(a.fallbackParent(), factsTimeout)
-		defer cancel()
-		a.factsMu.Lock()
-		cache, _, err := a.readArchiveFacts(ctx)
-		a.factsMu.Unlock()
-		if err != nil {
-			in.rosterNote = " Weekly contract history unavailable; dropped salaries may not be held."
-			a.fallbackLog(err.Error())
-		}
-		in.rosters, in.rosterTimes = cache.Facts.RosterWeek, rosterWeekTimes(cache.Facts.NflGame)
-	}
-	return buildComms(in, raw)
+	in.Names = a.rulebook.FranchiseNames()
+	in.Mirror, _, _ = a.league.ContractsView()
+	return in
+}
+
+func (a *App) commsArchive(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
+	a.factsMu.Lock()
+	defer a.factsMu.Unlock()
+	cache, _, err := a.readArchiveFacts(ctx)
+	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
 }
 
 // errCommsNeedsKey is the board's state when no MFL key is held: MFL serves the message board and polls only to
@@ -109,31 +124,13 @@ func (a *App) TargetCommsRefresh(force bool) error {
 	defer cancel()
 	a.refreshMu.Lock()
 	defer a.refreshMu.Unlock()
-	if force || tx.refreshError != "" || time.Since(tx.fetchedAt) >= poolFreshFor {
-		a.refreshSeasonTransactions(ctx)
+	feeds := [2]report.Held[ingestion.RawLeaguePost]{}
+	for i, feed := range boards {
+		feeds[i] = reportHeld(feed)
 	}
-	fresh := true
-	for _, b := range boards {
-		fresh = fresh && b.refreshError == "" && time.Since(b.fetchedAt) < poolFreshFor
-	}
-	if force || !fresh {
-		a.refreshCommsBoards(ctx)
-	}
+	commsapp.Refresh(ctx, commsapp.RefreshSource{Transactions: a.refreshSeasonTransactions,
+		Boards: a.refreshCommsBoards, FreshFor: poolFreshFor}, reportHeld(tx), feeds, force)
 	return nil
-}
-
-func commsURL(destination, host string, season int) (string, error) {
-	if destination == "league-board" {
-		return "https://legacynfl.boards.net/", nil
-	}
-	option := map[string]string{"message-board": "28", "polls": "69"}[destination]
-	if option == "" {
-		return "", fmt.Errorf("comms: invalid hand-off destination")
-	}
-	if host == "" {
-		return "", fmt.Errorf("comms: MFL host not held; refresh from MFL first")
-	}
-	return fmt.Sprintf("https://%s/%d/options?L=%s&O=%s", host, season, url.QueryEscape(ingestion.LeagueID), option), nil
 }
 
 func (a *App) TargetOpenComms(destination string) error {
@@ -144,10 +141,58 @@ func (a *App) TargetOpenComms(destination string) error {
 	if a.mflClient != nil {
 		host = a.mflClient.LeagueHost()
 	}
-	target, err := commsURL(destination, host, a.season)
+	target, err := commsapp.URL(destination, host, a.season)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // the service preserves the comms hand-off error
 	}
 	a.openURL(a.ctx, target)
 	return nil
+}
+
+type RawCommsScope struct {
+	Team string `json:"team"`
+	Kind string `json:"kind"`
+}
+
+func (r RawCommsScope) Validate() error {
+	return commsapp.RawCommsScope(r).Validate() //nolint:wrapcheck // preserve the league feed validation error
+}
+
+type CommsEvent struct {
+	Sentence string `json:"sentence"`
+	Date     string `json:"date"`
+}
+
+type CommsBoard struct {
+	Feed         Report       `json:"feed"`
+	Transactions Report       `json:"transactions"`
+	Events       []CommsEvent `json:"events"`
+	BoardNote    string       `json:"boardNote"`
+	LeagueTalk   string       `json:"leagueTalk"`
+	BoardPosts   []Report     `json:"boardPosts"`
+	Team         string       `json:"team"`
+	Kind         string       `json:"kind"`
+	Teams        []RaceChoice `json:"teams"`
+	Kinds        []RaceChoice `json:"kinds"`
+}
+
+func proseName(name string) string { return report.ProseName(name) }
+
+func wireComms(b commsapp.Board) CommsBoard {
+	out := CommsBoard{Feed: wireReport(b.Feed), Transactions: wireReport(b.Transactions),
+		BoardNote: b.BoardNote, LeagueTalk: b.LeagueTalk, Team: b.Team, Kind: b.Kind,
+		Teams: wireChoices(b.Teams), Kinds: wireChoices(b.Kinds)}
+	if b.Events != nil {
+		out.Events = make([]CommsEvent, len(b.Events))
+		for i, event := range b.Events {
+			out.Events[i] = CommsEvent(event)
+		}
+	}
+	if b.BoardPosts != nil {
+		out.BoardPosts = make([]Report, len(b.BoardPosts))
+		for i, post := range b.BoardPosts {
+			out.BoardPosts[i] = wireReport(post)
+		}
+	}
+	return out
 }

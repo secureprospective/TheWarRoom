@@ -1,10 +1,13 @@
-package main
+// Package comms builds league communications from immutable caller-owned snapshots.
+package comms
 
 import (
 	"fmt"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
@@ -32,72 +35,72 @@ func (r RawCommsScope) Validate() error {
 	return nil
 }
 
-type CommsEvent struct {
+type Event struct {
 	Sentence string `json:"sentence"`
 	Date     string `json:"date"`
 }
 
-type CommsBoard struct {
-	Feed         Report       `json:"feed"`
-	Transactions Report       `json:"transactions"`
-	Events       []CommsEvent `json:"events"`
-	BoardNote    string       `json:"boardNote"`
-	LeagueTalk   string       `json:"leagueTalk"`
-	BoardPosts   []Report     `json:"boardPosts"`
-	Team         string       `json:"team"`
-	Kind         string       `json:"kind"`
-	Teams        []RaceChoice `json:"teams"`
-	Kinds        []RaceChoice `json:"kinds"`
+type Board struct {
+	Feed         report.Report   `json:"feed"`
+	Transactions report.Report   `json:"transactions"`
+	Events       []Event         `json:"events"`
+	BoardNote    string          `json:"boardNote"`
+	LeagueTalk   string          `json:"leagueTalk"`
+	BoardPosts   []report.Report `json:"boardPosts"`
+	Team         string          `json:"team"`
+	Kind         string          `json:"kind"`
+	Teams        []report.Choice `json:"teams"`
+	Kinds        []report.Choice `json:"kinds"`
 }
 
-type commsInput struct {
-	transactions heldSeasonFeed[[]leaguefeed.Transaction]
-	boards       [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
-	names        map[string]string
-	lookup       normalize.Lookup
-	mirror       state.MirrorSnapshot
-	zone         *time.Location
-	rosters      facts.RosterWeekColumns
-	rosterTimes  map[[2]int64]int64
-	rosterNote   string
+type Input struct {
+	Transactions report.Held[leaguefeed.Transaction]
+	Boards       [2]report.Held[ingestion.RawLeaguePost]
+	Names        map[string]string
+	Lookup       normalize.Lookup
+	Mirror       state.MirrorSnapshot
+	Zone         *time.Location
+	Rosters      facts.RosterWeekColumns
+	RosterTimes  map[[2]int64]int64
+	RosterNote   string
 }
 
-func buildComms(in commsInput, scope RawCommsScope) (CommsBoard, error) {
+func Build(in Input, scope RawCommsScope) (Board, error) {
 	if err := scope.Validate(); err != nil {
-		return CommsBoard{}, err
+		return Board{}, err
 	}
-	if scope.Team != "" && in.names[scope.Team] == "" {
-		return CommsBoard{}, fmt.Errorf("league feed: franchise is not in the league")
+	if scope.Team != "" && in.Names[scope.Team] == "" {
+		return Board{}, fmt.Errorf("league feed: franchise is not in the league")
 	}
-	out := CommsBoard{Team: scope.Team, Kind: scope.Kind, LeagueTalk: "The league talks on ProBoards.",
-		Events: []CommsEvent{}, Teams: []RaceChoice{{Value: "", Label: "All franchises"}},
-		Kinds: []RaceChoice{{Value: "", Label: "All moves"}, {Value: "trade", Label: "Trades"},
+	out := Board{Team: scope.Team, Kind: scope.Kind, LeagueTalk: "The league talks on ProBoards.",
+		Events: []Event{}, Teams: []report.Choice{{Value: "", Label: "All franchises"}},
+		Kinds: []report.Choice{{Value: "", Label: "All moves"}, {Value: "trade", Label: "Trades"},
 			{Value: "add-drop", Label: "Adds and drops"}, {Value: "ir", Label: "IR moves"},
 			{Value: "taxi", Label: "Taxi moves"}, {Value: "other", Label: "Other transactions"}}}
-	ids := make([]string, 0, len(in.names))
-	for id := range in.names {
+	ids := make([]string, 0, len(in.Names))
+	for id := range in.Names {
 		ids = append(ids, id)
 	}
 	slices.Sort(ids)
 	for _, id := range ids {
-		out.Teams = append(out.Teams, RaceChoice{Value: id, Label: in.names[id]})
+		out.Teams = append(out.Teams, report.Choice{Value: id, Label: in.Names[id]})
 	}
-	out.Feed = reportShell("C-05", "League feed", "Newest first, from held MFL transactions. Adds show the current MFL contract. Drops show the last held weekly contract before the move; missing salary is labelled. No messages are sent.", in.transactions, in.zone, "Local time", "Move")
-	out.Feed.Note += in.rosterNote
+	out.Feed = report.Shell("C-05", "League feed", "Newest first, from held MFL transactions. Adds show the current MFL contract. Drops show the last held weekly contract before the move; missing salary is labelled. No messages are sent.", in.Transactions.Feed, len(in.Transactions.Value), in.Zone, "Local time", "Move")
+	out.Feed.Note += in.RosterNote
 	out.Transactions = out.Feed
 	out.Transactions.ID, out.Transactions.Title = "M-032", "Transactions"
 	out.Transactions.SortAscending, out.Transactions.SortDescending = "Sort oldest first", "Sort newest first"
-	out.Transactions.Link = &ReportLink{Label: "Read the league feed", Endpoint: "C-05"}
-	rows := slices.Clone(in.transactions.value)
+	out.Transactions.Link = &report.Link{Label: "Read the league feed", Endpoint: "C-05"}
+	rows := slices.Clone(in.Transactions.Value)
 	slices.SortStableFunc(rows, func(a, b leaguefeed.Transaction) int { return b.Time.Compare(a.Time) })
 	for _, tx := range rows {
 		if !commsMatches(tx, scope) {
 			continue
 		}
 		sentence := in.transactionSentence(tx)
-		date := reportTime(tx.Time, in.zone)
-		out.Events = append(out.Events, CommsEvent{Sentence: sentence, Date: date})
-		out.Transactions.Rows = append(out.Transactions.Rows, ReportRow{Cells: []string{date, sentence}, Sort: []float64{float64(tx.Time.Unix()), float64(tx.Time.Unix())}})
+		date := report.Time(tx.Time, in.Zone)
+		out.Events = append(out.Events, Event{Sentence: sentence, Date: date})
+		out.Transactions.Rows = append(out.Transactions.Rows, report.Row{Cells: []string{date, sentence}, Sort: []float64{float64(tx.Time.Unix()), float64(tx.Time.Unix())}})
 	}
 	if len(out.Events) == 0 && out.Feed.Status == "ok" {
 		out.Feed.Status, out.Feed.Note = "empty", "No league moves match these filters."
@@ -127,22 +130,22 @@ func commsMatches(tx leaguefeed.Transaction, scope RawCommsScope) bool {
 	return team && (scope.Kind == "" || commsKind(tx) == scope.Kind)
 }
 
-func (in commsInput) team(id string) string {
-	if name := in.names[id]; name != "" {
+func (in Input) team(id string) string {
+	if name := in.Names[id]; name != "" {
 		return name
 	}
 	return "A franchise whose name is unavailable"
 }
 
-func (in commsInput) asset(a leaguefeed.Asset, contract bool) string {
+func (in Input) asset(a leaguefeed.Asset, contract bool) string {
 	switch {
 	case a.Player != nil:
-		name, ok := in.lookup.Name(a.Player.String())
+		name, ok := in.Lookup.Name(a.Player.String())
 		if !ok {
 			return "a player whose details are unavailable; refresh from MFL"
 		}
-		name = proseName(name)
-		if facts, ok := in.lookup.Facts(a.Player.String()); ok {
+		name = report.ProseName(name)
+		if facts, ok := in.Lookup.Facts(a.Player.String()); ok {
 			name += fmt.Sprintf(" (%s, %s)", facts.Position, facts.Team)
 		}
 		if contract {
@@ -166,12 +169,12 @@ func (in commsInput) asset(a leaguefeed.Asset, contract bool) string {
 	}
 }
 
-func (in commsInput) contract(id string) string {
-	for _, p := range in.mirror.Players {
+func (in Input) contract(id string) string {
+	for _, p := range in.Mirror.Players {
 		if p.MFLID != id {
 			continue
 		}
-		if p.ContractYear < in.mirror.Season {
+		if p.ContractYear < in.Mirror.Season {
 			return " (" + bid.MoneyText(p.Salary) + "; contract end unavailable)"
 		}
 		return fmt.Sprintf(" (%s, contract through %d)", bid.MoneyText(p.Salary), p.ContractYear)
@@ -179,16 +182,7 @@ func (in commsInput) contract(id string) string {
 	return " (salary not held)"
 }
 
-// proseName turns MFL's "Last, First" into the "First Last" a sentence reads.
-func proseName(name string) string {
-	last, first, ok := strings.Cut(name, ", ")
-	if !ok || first == "" || strings.Contains(first, ", ") {
-		return name
-	}
-	return first + " " + last
-}
-
-func (in commsInput) assets(rows []leaguefeed.Asset) string {
+func (in Input) assets(rows []leaguefeed.Asset) string {
 	names := make([]string, 0, len(rows))
 	for _, a := range rows {
 		names = append(names, in.asset(a, false))
@@ -199,7 +193,7 @@ func (in commsInput) assets(rows []leaguefeed.Asset) string {
 	return strings.Join(names, ", ")
 }
 
-func (in commsInput) transactionSentence(tx leaguefeed.Transaction) string {
+func (in Input) transactionSentence(tx leaguefeed.Transaction) string {
 	name := in.team(tx.Franchise)
 	if tx.Trade != nil {
 		return fmt.Sprintf("%s traded %s to %s for %s.", name, in.assets(tx.Trade.Gave), in.team(tx.Trade.Counterparty), in.assets(tx.Trade.CounterpartyGave))
@@ -237,24 +231,24 @@ func (in commsInput) transactionSentence(tx leaguefeed.Transaction) string {
 	return name + " recorded " + label + " on MFL; event details are unavailable in this export."
 }
 
-func commsPosts(in commsInput) ([]Report, string) {
-	reports := []Report{}
+func commsPosts(in Input) ([]report.Report, string) {
+	reports := []report.Report{}
 	unavailable, count := false, 0
-	for i, feed := range in.boards {
+	for i, feed := range in.Boards {
 		id, title := "M-120", "MFL message board"
 		if i == 1 {
 			id, title = "M-123", "MFL polls"
 		}
-		r := reportShell(id, title, "Held MFL exports; discussion and voting open on MFL. The app never posts or votes.", feed, in.zone, "Title", "Author franchise", "Local time")
-		unavailable = unavailable || feed.refreshError != ""
-		if feed.fetchedAt.IsZero() {
+		r := report.Shell(id, title, "Held MFL exports; discussion and voting open on MFL. The app never posts or votes.", feed.Feed, len(feed.Value), in.Zone, "Title", "Author franchise", "Local time")
+		unavailable = unavailable || feed.RefreshError != ""
+		if feed.FetchedAt.IsZero() {
 			unavailable = true
 			r.Note = title + " not available; refresh from MFL. An authentication error is not an empty board."
-			if feed.refreshError != "" {
-				r.Note = title + " not available: " + feed.refreshError + "."
+			if feed.RefreshError != "" {
+				r.Note = title + " not available: " + feed.RefreshError + "."
 			}
 		}
-		rows := slices.Clone(feed.value)
+		rows := slices.Clone(feed.Value)
 		slices.SortStableFunc(rows, func(a, b ingestion.RawLeaguePost) int { return strings.Compare(b.Timestamp, a.Timestamp) })
 		for _, row := range rows {
 			title := row.Title
@@ -266,7 +260,7 @@ func commsPosts(in commsInput) ([]Report, string) {
 				unavailable = true
 				continue
 			}
-			r.Rows = append(r.Rows, ReportRow{Cells: []string{title, in.team(row.Franchise), reportTime(at, in.zone)}})
+			r.Rows = append(r.Rows, report.Row{Cells: []string{title, in.team(row.Franchise), report.Time(at, in.Zone)}})
 		}
 		count += len(r.Rows)
 		reports = append(reports, r)

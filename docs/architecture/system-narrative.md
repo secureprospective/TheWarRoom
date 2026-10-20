@@ -382,8 +382,11 @@ League Pulse › Now: `now_app.go` holds each opened week's NFL schedule, the se
 ## League communications
 
 `comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
-`TargetComms` reads existing season transactions, current mirror contracts and the held directory.
-`comms_reading.go` writes sentences shared by C-05 and M-032 with Go-validated filters.
+`TargetComms` snapshots existing season transactions, current mirror contracts and the held directory.
+`internal/app/comms` reads weekly contract history through an explicit archive reader and builds
+sentences shared by C-05 and M-032 with Go-validated filters. Refresh planning takes explicit
+callbacks; key access, feed publication, archive caching and their shared locks stay on App.
+Wire types remain declared at root and convert the service's shared `internal/app/report` values.
 Drops use the last held weekly roster before the move, dated by the last NFL kickoff.
 `TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
 `internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
