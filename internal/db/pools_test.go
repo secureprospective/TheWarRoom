@@ -1,9 +1,12 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 )
@@ -142,6 +145,48 @@ func TestEveryPooledConnectionEnforcesPragmas(t *testing.T) {
 					if got != pragma.want {
 						t.Errorf("%s = %d, want %d", pragma.query, got, pragma.want)
 					}
+				}
+			}
+		})
+	}
+}
+
+func TestOpenRefusesNewerVersionWithoutWriting(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"thewarroom.db", "history.db", "whatif.db"} {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), name)
+			fixture, err := sql.Open("sqlite", path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := fixture.ExecContext(t.Context(), `PRAGMA user_version=99; CREATE TABLE future_only (id TEXT); INSERT INTO future_only VALUES ('retained')`); err != nil {
+				t.Fatal(err)
+			}
+			if err := fixture.Close(); err != nil {
+				t.Fatal(err)
+			}
+			before, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			pools, err := Open(t.Context(), path)
+			if pools != nil {
+				_ = pools.Close()
+			}
+			if err == nil || !strings.Contains(err.Error(), "NEWER version") {
+				t.Fatalf("Open downgrade refusal = %v", err)
+			}
+			after, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before, after) {
+				t.Fatal("newer database changed on refusal")
+			}
+			for _, suffix := range []string{"-wal", "-shm"} {
+				if _, err := os.Stat(path + suffix); !os.IsNotExist(err) {
+					t.Fatalf("unexpected sidecar %s: %v", suffix, err)
 				}
 			}
 		})

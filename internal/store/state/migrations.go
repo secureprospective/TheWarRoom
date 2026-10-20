@@ -133,6 +133,14 @@ func (s *Store) appliedStateVersions(ctx context.Context) (map[int]bool, error) 
 
 // checkNoDowngrade refuses a DB stamped newer than this binary; the fix is to update the app.
 func (s *Store) checkNoDowngrade(ctx context.Context) error {
+	var exists int
+	if err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'schema_migrations'`).Scan(&exists); err != nil {
+		return fmt.Errorf("state: look for schema_migrations: %w", err)
+	}
+	if exists == 0 {
+		return nil
+	}
 	var maxV int // NULL on a fresh DB
 	if err := s.pools.Read().QueryRowContext(ctx,
 		`SELECT COALESCE(MAX(version), 0) FROM schema_migrations WHERE owner = ?`,

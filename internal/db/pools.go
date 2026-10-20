@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
@@ -28,6 +29,9 @@ type Pools struct {
 // Open opens both pools and checks that WAL mode took effect. The write pool opens first so the
 // file exists before the read-only pool attaches.
 func Open(ctx context.Context, path string) (*Pools, error) {
+	if err := checkUserVersion(ctx, path); err != nil {
+		return nil, err
+	}
 	writeDSN := fmt.Sprintf(
 		"file:%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
 		path, busyTimeoutMS,
@@ -72,6 +76,34 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 	}
 
 	return &Pools{read: read, write: write}, nil
+}
+
+// No file-level migrations have been adopted yet; existing files use version zero.
+const maxUserVersion = 0
+
+func checkUserVersion(ctx context.Context, path string) (err error) {
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("db: stat database: %w", err)
+	}
+	probe, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro", path))
+	if err != nil {
+		return fmt.Errorf("db: open version probe: %w", err)
+	}
+	defer func() {
+		if closeErr := probe.Close(); closeErr != nil {
+			err = errors.Join(err, fmt.Errorf("db: close version probe: %w", closeErr))
+		}
+	}()
+	var version int
+	if err := probe.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
+		return fmt.Errorf("db: read user_version: %w", err)
+	}
+	if version > maxUserVersion {
+		return fmt.Errorf("db: this database was last written by a NEWER version of TheWarRoom (schema v%d; this build understands up to v%d) — update the app to open it", version, maxUserVersion)
+	}
+	return nil
 }
 
 // Read returns the read-only pool.

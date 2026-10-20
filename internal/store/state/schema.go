@@ -11,6 +11,9 @@ import (
 // to an absolute league year, one charge per released player per year, and never negative (§1:
 // no cap rollover).
 func (s *Store) initSchema(ctx context.Context) error {
+	if err := s.checkNoDowngrade(ctx); err != nil {
+		return err
+	}
 	if _, err := s.pools.Write().ExecContext(ctx, baseSchemaDDL); err != nil {
 		return fmt.Errorf("state: init schema: %w", err)
 	}

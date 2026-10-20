@@ -187,3 +187,31 @@ func TestMigrations_DowngradeRefused(t *testing.T) {
 		t.Fatalf("downgrade error = %q, want a plain-language NEWER-version refusal", err)
 	}
 }
+
+func TestMigrations_DowngradeRefusedBeforeDDL(t *testing.T) {
+	ctx := t.Context()
+	pools, err := db.Open(ctx, filepath.Join(t.TempDir(), "future.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	if _, err := pools.Write().ExecContext(ctx, schemaMigrationsDDL); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(ctx,
+		`INSERT INTO schema_migrations (owner, version) VALUES ('state', 99)`); err != nil {
+		t.Fatal(err)
+	}
+	s := New(pools, testLeague, testSeason, nil)
+	if err := s.Initialize(ctx, &fakeSource{}); err == nil || !strings.Contains(err.Error(), "NEWER version") {
+		t.Fatalf("downgrade refusal = %v", err)
+	}
+	var count int
+	if err := pools.Read().QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' AND name <> 'schema_migrations'`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
+	if count != 0 {
+		t.Fatalf("downgrade check created %d schema objects before refusing", count)
+	}
+}
