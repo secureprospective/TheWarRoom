@@ -54,7 +54,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
-| Engine | `internal/engine/l4` | Layer 4: one rubric routine driven by a per-position settings table. The adjustable numbers in the table are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7). Nothing applies the rubric while the layer 1–4 engine is quarantined. |
+| Engine | `internal/engine/l4` | Layer 4's per-position settings table only. Its adjustable numbers are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7) under areas marked "inert, no run reads it": the rubric math that read them is in quarantine with the layer 1–4 engine. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
@@ -223,7 +223,7 @@ Wire it or retire it when its ring comes up; do not count it as landed.
 - **The board run's store side:** `history.WriteRun`, `RunScores`, `RunScore`, `Runs` and the
   `scoring_runs` / `run_scores` tables. Their only writer, `ScoreLeague` and the layer 1–4 engine,
   was quarantined 2026-10-20 (`quarantine/README.md`); existing databases keep their board runs,
-  unread. The `l4` rubric math and `engine.CushionGuard.Slow` are likewise kept but unreached.
+  unread.
 - **The `transaction_corrections` table** stays in existing state databases, empty and unread. Its
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.

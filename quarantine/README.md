@@ -97,7 +97,7 @@ source's row by the engine run, the path it already took when no board run exist
 
 Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`cmd/fit` reads it).
 
-Kept on purpose, unreached: `internal/engine/l4` (its settings table is the `l4.*` params the
+Kept on purpose, unreached (later passes, below): `internal/engine/l4` (its settings table is the `l4.*` params the
 Data and sources parameter editor lists, R7; the rubric math in it is unreached), the engine's types
 (history's `run_scores` rows store `engine.Result`), and history's board-run store side
 (`WriteRun`, `RunScores`, `scoring_runs`, `run_scores`): existing databases keep their board runs.
@@ -106,3 +106,24 @@ To bring the engine back: move the `go/` paths above back (drop the `quarantine/
 `engine.PeakLimit` or point composition at it, restore the deleted functions and the source-health
 board read from `session/purge-harness`, and run `make bindings`. The `rasFetchTimeout` and
 `cfbdEnvVar` constants now live in `signals_app.go`; drop them from the restored `m1_scouting.go`.
+
+## Leftovers (moved 2026-10-20, branch `session/purge-leftovers`)
+
+What the engine pass kept but nothing reached. Under `go/`, original content unless noted.
+
+### Layer 4 rubric math
+
+- `internal/engine/l4/rubric.go` (`Rubric`, `New`, `Rubrics`, `Rubric.Apply`, `breakout`) and
+  `curve.go` (`Component.Apply`, `interp`, `curved`, `given`, `athleticLift`, `NeutralNorm`).
+- Their tests, `golden_test.go` and `rubric_test.go`; the latter less `TestKnobsCoverTheOnMechanics`,
+  which stayed live in `internal/engine/l4/settings_test.go`.
+- The live package keeps `Defaults`, `Knobs` and the types they need (`Settings`, `Component`,
+  `Breakpoint`, `Weights`, `Curves`), now all in `settings.go`. `params/defaults.go` seeds the `l4.*`
+  params from them, and their descriptions now carry "(inert, no run reads it)", which the parameter
+  editor shows in each Scouting adjustment area heading.
+- Deleted from a live file: `engine.CushionGuard.Slow` (`internal/engine/types.go`). Its test,
+  `TestCushionGuardSlow`, is back in `internal/engine/pipeline_test.go` here.
+
+To bring the rubric back: move the two files and their tests back, drop the types they declare from
+`settings.go`, restore `Slow` from `session/purge-engine`, and remove `rubricInert` from
+`params/defaults.go`.
