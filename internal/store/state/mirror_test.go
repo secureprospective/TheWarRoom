@@ -137,3 +137,37 @@ func TestContractsViewIsCoherentAndDetached(t *testing.T) {
 		t.Fatal("caller mutated mirror")
 	}
 }
+
+func TestMirrorWriteFailureKeepsPublishedRevisionAndRetries(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "league.db")
+	m := openMirror(t, path)
+	if _, err := m.Replace(ctx, mirrorSnap()); err != nil {
+		t.Fatal(err)
+	}
+	before, at, used := m.ContractsView()
+	hash := m.hash
+	if _, err := m.pools.Write().ExecContext(ctx, `CREATE TRIGGER reject_mirror BEFORE UPDATE ON league_mirror BEGIN SELECT RAISE(ABORT, 'injected mirror failure'); END`); err != nil {
+		t.Fatal(err)
+	}
+	next := mirrorSnap()
+	next.Season++
+	next.Players[0].Salary += capUnit
+	if changed, err := m.Replace(ctx, next); err == nil || changed {
+		t.Fatalf("failed write = %t, %v", changed, err)
+	}
+	after, afterAt, afterUsed := m.ContractsView()
+	if after.Season != before.Season || afterAt != at || m.hash != hash || afterUsed["0001"] != used["0001"] {
+		t.Errorf("failed write published: season %d, at %s, hash %s, cap %v", after.Season, afterAt, m.hash, afterUsed)
+	}
+	if _, err := m.pools.Write().ExecContext(ctx, `DROP TRIGGER reject_mirror`); err != nil {
+		t.Fatal(err)
+	}
+	if changed, err := m.Replace(ctx, next); err != nil || !changed {
+		t.Fatalf("retry = %t, %v", changed, err)
+	}
+	reopened := openMirror(t, path)
+	if reopened.Season() != next.Season {
+		t.Fatal("retry was not persisted")
+	}
+}

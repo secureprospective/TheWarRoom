@@ -99,26 +99,40 @@ func (m *Mirror) Replace(ctx context.Context, snap MirrorSnapshot) (bool, error)
 	}
 	m.wmu.Lock()
 	defer m.wmu.Unlock()
-	prev := m.hash
-	enc, err := m.install(snap)
-	if err != nil || m.hash == prev {
+	staged := NewMirror(m.pools, m.discounts)
+	enc, err := staged.install(snap)
+	if err != nil {
 		return false, err
+	}
+	if staged.hash == m.hash {
+		m.publish(staged)
+		return false, nil
 	}
 	at := time.Now().UTC().Format(time.RFC3339Nano)
 	if _, err := m.pools.Write().ExecContext(ctx, `
 INSERT INTO league_mirror (id, season, sha256, snapshot, refreshed_at) VALUES (1, ?, ?, ?, ?)
 ON CONFLICT (id) DO UPDATE SET season = excluded.season, sha256 = excluded.sha256,
 	snapshot = excluded.snapshot, refreshed_at = excluded.refreshed_at`,
-		snap.Season, m.hash, string(enc), at); err != nil {
+		snap.Season, staged.hash, string(enc), at); err != nil {
 		return false, fmt.Errorf("state: mirror write: %w", err)
 	}
+	m.publish(staged)
 	m.refreshedAt = at
 	return true, nil
+}
+
+func (m *Mirror) publish(staged *Mirror) {
+	m.mu.Lock()
+	m.franchises, m.byPlayer = staged.franchises, staged.byPlayer
+	m.mu.Unlock()
+	m.snap, m.hash = staged.snap, staged.hash
 }
 
 // install sorts and validates snap, builds its view and swaps it in. It returns the canonical
 // encoding, whose sha256 becomes the mirror's hash. The caller holds wmu.
 func (m *Mirror) install(snap MirrorSnapshot) ([]byte, error) {
+	snap.Players = slices.Clone(snap.Players)
+	snap.Adjustments = slices.Clone(snap.Adjustments)
 	sort.Slice(snap.Players, func(i, j int) bool { return snap.Players[i].MFLID < snap.Players[j].MFLID })
 	sort.Slice(snap.Adjustments, func(i, j int) bool { return snap.Adjustments[i].ID < snap.Adjustments[j].ID })
 	fr := map[string]*FranchiseState{}
