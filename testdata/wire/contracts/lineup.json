@@ -1,0 +1,184 @@
+{
+ "franchise": "0025",
+ "week": 5,
+ "starterCount": 21,
+ "starters": [
+  {
+   "id": "16150",
+   "position": "QB"
+  },
+  {
+   "id": "13133",
+   "position": "RB"
+  },
+  {
+   "id": "16617",
+   "position": "WR"
+  },
+  {
+   "id": "15754",
+   "position": "WR"
+  },
+  {
+   "id": "15761",
+   "position": "WR"
+  },
+  {
+   "id": "16195",
+   "position": "WR"
+  },
+  {
+   "id": "16641",
+   "position": "TE"
+  },
+  {
+   "id": "15798",
+   "position": "TE"
+  },
+  {
+   "id": "16846",
+   "position": "K"
+  },
+  {
+   "id": "16264",
+   "position": "DT"
+  },
+  {
+   "id": "16694",
+   "position": "DT"
+  },
+  {
+   "id": "16734",
+   "position": "DE"
+  },
+  {
+   "id": "16303",
+   "position": "DE"
+  },
+  {
+   "id": "16230",
+   "position": "DE"
+  },
+  {
+   "id": "14892",
+   "position": "LB"
+  },
+  {
+   "id": "13813",
+   "position": "LB"
+  },
+  {
+   "id": "15836",
+   "position": "CB"
+  },
+  {
+   "id": "16267",
+   "position": "CB"
+  },
+  {
+   "id": "13322",
+   "position": "S"
+  },
+  {
+   "id": "16460",
+   "position": "S"
+  },
+  {
+   "id": "15850",
+   "position": "S"
+  }
+ ],
+ "bench": [
+  {
+   "id": "15252",
+   "position": "QB"
+  },
+  {
+   "id": "17041",
+   "position": "QB"
+  },
+  {
+   "id": "16387",
+   "position": "RB"
+  },
+  {
+   "id": "17685",
+   "position": "RB"
+  },
+  {
+   "id": "17274",
+   "position": "RB"
+  },
+  {
+   "id": "14315",
+   "position": "WR"
+  },
+  {
+   "id": "16428",
+   "position": "WR"
+  },
+  {
+   "id": "15941",
+   "position": "WR"
+  },
+  {
+   "id": "15357",
+   "position": "DT"
+  },
+  {
+   "id": "17150",
+   "position": "DE"
+  },
+  {
+   "id": "16923",
+   "position": "DE"
+  },
+  {
+   "id": "16439",
+   "position": "LB"
+  },
+  {
+   "id": "14168",
+   "position": "LB"
+  },
+  {
+   "id": "16793",
+   "position": "LB"
+  },
+  {
+   "id": "16255",
+   "position": "CB"
+  },
+  {
+   "id": "15904",
+   "position": "CB"
+  },
+  {
+   "id": "16880",
+   "position": "S"
+  }
+ ],
+ "check": {
+  "full": true,
+  "legal": true,
+  "problems": []
+ },
+ "provenance": {
+  "source": "liveScoring W=5",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "INSTANT",
+   "note": ""
+  },
+  "kind": "live"
+ },
+ "rulesSource": {
+  "source": "test:real league",
+  "freshness": {
+   "state": "stale",
+   "fetchedAt": "",
+   "note": "stored league settings; not yet checked with MFL this run"
+  },
+  "kind": "live"
+ }
+}

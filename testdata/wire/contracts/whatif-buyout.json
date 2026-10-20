@@ -1,0 +1,116 @@
+{
+ "value": {
+  "stale": false,
+  "banner": "",
+  "empty": "Model a cut or buyout from your team's contract rows; nothing is sent anywhere.",
+  "moves": [
+   {
+    "id": "MOVE",
+    "player": "0046",
+    "tag": "Cut in what-if",
+    "status": "Modelled: cut Player 0046, $0; see What-if at the top",
+    "label": "Cut Player 0046",
+    "charge": {
+     "cents": 0,
+     "text": "$0"
+    },
+    "explanation": "Final paid year: no paid cells after this season, so $0 dead cap.",
+    "plan": ""
+   },
+   {
+    "id": "MOVE",
+    "player": "0042",
+    "tag": "Bought out in what-if",
+    "status": "Modelled: buyout Player 0042, $6,000,000; see What-if at the top",
+    "label": "Buy out Player 0042",
+    "charge": {
+     "cents": 600000000,
+     "text": "$6,000,000"
+    },
+    "explanation": "Offseason only: can't be done until the offseason. Counts against two buyouts this season.",
+    "plan": ""
+   }
+  ],
+  "figures": [
+   {
+    "label": "2026 cap",
+    "before": "Unavailable",
+    "after": "Unavailable",
+    "change": ""
+   },
+   {
+    "label": "Used",
+    "before": "$49,999,876.55",
+    "after": "$35,999,876.55",
+    "change": "−$14,000,000"
+   },
+   {
+    "label": "Room",
+    "before": "Unavailable",
+    "after": "Unavailable",
+    "change": ""
+   },
+   {
+    "label": "Modelled dead cap this season (MFL adjustments excluded)",
+    "before": "$0",
+    "after": "$6,000,000",
+    "change": "+$6,000,000"
+   },
+   {
+    "label": "2027 commitments at today's salaries",
+    "before": "$40,000,000",
+    "after": "$30,000,000",
+    "change": "−$10,000,000"
+   },
+   {
+    "label": "2028 commitments at today's salaries",
+    "before": "$30,000,000",
+    "after": "$20,000,000",
+    "change": "−$10,000,000"
+   }
+  ],
+  "choices": [
+   {
+    "player": "0043",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": true,
+    "reason": "Offseason only: can't be done until the offseason."
+   },
+   {
+    "player": "0044",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": true,
+    "reason": "Offseason only: can't be done until the offseason."
+   },
+   {
+    "player": "0045",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": false,
+    "reason": "Buyout not offered: needs 2–4 paid years after this season; a 1-year-left exit uses a cut."
+   }
+  ],
+  "notice": ""
+ },
+ "provenance": {
+  "source": "Your what-if, started from MFL rosters as of STAMP",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "INSTANT",
+   "note": "Baseline held until Reset; survives restart. The mirror is never written."
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 2,
+ "threshold": 0,
+ "baseline": "INSTANT",
+ "cutoff": "INSTANT",
+ "method": "Coordinator handlers on a generation-scoped whatif.db ledger; integer cents",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Cut = 35% of each paid cell after this season, or 50% for a known restructured contract; claimed and final-year cuts cost $0. Sum exact cents, round half-up once, then snap once to $10,000. Buyout = mean of remaining paid cells times 60% / 75% / 90% for 2 / 3 / 4 years, then one snap; at most two per season. Future salaries carry today’s MFL annual salary through contract expiration; MFL does not report those years separately. The exports do not establish restructure history: seeded contracts assume 35%, not a proven unrestructured verdict. This season's used begins at the mirror total; the engine's ledger delta is applied without changing the original MFL adjustments. MFL adjustments remain literal adjustments, not proven dead cap. The whole modelled charge lands in the cut year; future seasons have no modelled dead cap. Buyouts here model offseason terms without asserting that today's window is open; offseason start is not held. No submission or plan is created. Separate contract-cell update time: not held by this mirror. Separate dead-cap update time: not held by this mirror."
+}

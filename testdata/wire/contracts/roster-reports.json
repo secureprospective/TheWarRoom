@@ -1,0 +1,1024 @@
+[
+ {
+  "id": "M-101",
+  "title": "Roster with stats",
+  "note": " Last-week scores as of STAMP.",
+  "status": "ok",
+  "source": "Source: held MFL playerScores archive",
+  "asOf": "As of: Oct 7, 2026, 10:00 AM",
+  "how": "Season points and last completed week's points come from held playerScores, not estimates. Missing rows remain unavailable.",
+  "columns": [
+   "Player",
+   "Position",
+   "NFL team",
+   "Season points",
+   "Last week points"
+  ],
+  "rows": [
+   {
+    "cells": [
+     "Shakir, Khalil",
+     "WR",
+     "",
+     "134.80",
+     "0.00"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Likely, Isaiah",
+     "TE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Van Ness, Lukas",
+     "DE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Benton, Keeanu",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Stevenson, Tyrique",
+     "CB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bates, Jake",
+     "K",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Coleman, Keon",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bowers, Brock",
+     "TE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hickman, Ronnie",
+     "S",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Diabate, Mohamoud",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Herbig, Nick",
+     "DE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Smith, Xavier",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bland, DaRon",
+     "CB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Brooks, Chris",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Barmore, Christian",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Clark, Chuck",
+     "S",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Stroud, C.J.",
+     "QB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Olave, Chris",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hill, Daxton",
+     "CB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Oluokun, Foyesade",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Mills, Davis",
+     "QB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Williams, James",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Owens, Tyler",
+     "S",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Young, Dareke",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Dulin, Ashton",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "White, Devin",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Tillman, Dondrea",
+     "DE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Rourke, Kurtis",
+     "QB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Booker, Austin",
+     "DE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Banks, Deonte",
+     "CB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Wicks, Dontayvion",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Pitre, Jalen",
+     "S",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Brooks, Jordyn",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Fiske, Braden",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Heidenreich, Eli",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Oladejo, Oluwafemi",
+     "DE",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Kiner, Corey",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Perine, Samaje",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Pearsall, Ricky",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Newton, Jer'Zhan",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hancock, Jordan",
+     "S",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Chenal, Leo",
+     "LB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Donaldson, CJ",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hemby, Roman",
+     "RB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Regis, Albert",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Davis, Tacario",
+     "CB",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Walker, Jahdae",
+     "WR",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Gill-Howard, Skyler",
+     "DT",
+     "",
+     "No score",
+     "No score"
+    ],
+    "range": null
+   }
+  ],
+  "summary": null,
+  "link": null
+ },
+ {
+  "id": "M-154",
+  "title": "Bye weeks",
+  "note": "",
+  "status": "ok",
+  "source": "Source: held MFL nflByeWeeks archive",
+  "asOf": "As of: Oct 7, 2026, 10:00 AM",
+  "how": "Active players left after each NFL bye are compared with the league's minimum starters at that position. IR and taxi do not count. This checks position minima only, not flexible starters, injuries or every legal-lineup constraint.",
+  "columns": [
+   "Player",
+   "Position",
+   "NFL team",
+   "Bye week"
+  ],
+  "rows": [
+   {
+    "cells": [
+     "Shakir, Khalil",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Likely, Isaiah",
+     "TE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Van Ness, Lukas",
+     "DE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Benton, Keeanu",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Stevenson, Tyrique",
+     "CB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bates, Jake",
+     "K",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Coleman, Keon",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bowers, Brock",
+     "TE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hickman, Ronnie",
+     "S",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Diabate, Mohamoud",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Herbig, Nick",
+     "DE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Smith, Xavier",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Bland, DaRon",
+     "CB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Brooks, Chris",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Barmore, Christian",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Clark, Chuck",
+     "S",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Stroud, C.J.",
+     "QB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Olave, Chris",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hill, Daxton",
+     "CB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Oluokun, Foyesade",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Mills, Davis",
+     "QB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Williams, James",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Owens, Tyler",
+     "S",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Young, Dareke",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Dulin, Ashton",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "White, Devin",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Tillman, Dondrea",
+     "DE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Rourke, Kurtis",
+     "QB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Booker, Austin",
+     "DE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Banks, Deonte",
+     "CB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Wicks, Dontayvion",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Pitre, Jalen",
+     "S",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Brooks, Jordyn",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Fiske, Braden",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Heidenreich, Eli",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Oladejo, Oluwafemi",
+     "DE",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Kiner, Corey",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Perine, Samaje",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Pearsall, Ricky",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Newton, Jer'Zhan",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hancock, Jordan",
+     "S",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Chenal, Leo",
+     "LB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Donaldson, CJ",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Hemby, Roman",
+     "RB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Regis, Albert",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Davis, Tacario",
+     "CB",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Walker, Jahdae",
+     "WR",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Gill-Howard, Skyler",
+     "DT",
+     "",
+     "Unavailable"
+    ],
+    "range": null
+   }
+  ],
+  "summary": [
+   {
+    "cells": [
+     "Week 7 · CB",
+     "0 available; needs 2"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · DE",
+     "0 available; needs 2"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · DT",
+     "0 available; needs 2"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · K",
+     "0 available; needs 1"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · LB",
+     "0 available; needs 2"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · QB",
+     "0 available; needs 1"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · RB",
+     "0 available; needs 1"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · S",
+     "0 available; needs 2"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · TE",
+     "0 available; needs 1"
+    ],
+    "range": null
+   },
+   {
+    "cells": [
+     "Week 7 · WR",
+     "0 available; needs 2"
+    ],
+    "range": null
+   }
+  ],
+  "link": null
+ }
+]

@@ -1,0 +1,201 @@
+{
+ "table": {
+  "value": {
+   "directorySource": "",
+   "directoryAsOf": "",
+   "rows": [
+    {
+     "id": "0042",
+     "franchiseId": "0001",
+     "team": "Franchise 0001",
+     "name": "Player 0042",
+     "position": "QB",
+     "salary": {
+      "cents": 1000000000,
+      "text": "$10,000,000"
+     },
+     "expiration": 2028,
+     "status": "",
+     "info": ""
+    },
+    {
+     "id": "0043",
+     "franchiseId": "0001",
+     "team": "Franchise 0001",
+     "name": "Player 0043",
+     "position": "WR",
+     "salary": {
+      "cents": 1000000000,
+      "text": "$10,000,000"
+     },
+     "expiration": 2028,
+     "status": "",
+     "info": ""
+    },
+    {
+     "id": "0044",
+     "franchiseId": "0001",
+     "team": "Franchise 0001",
+     "name": "Player 0044",
+     "position": "RB",
+     "salary": {
+      "cents": 1000000000,
+      "text": "$10,000,000"
+     },
+     "expiration": 2028,
+     "status": "",
+     "info": ""
+    },
+    {
+     "id": "0045",
+     "franchiseId": "0001",
+     "team": "Franchise 0001",
+     "name": "Player 0045",
+     "position": "TE",
+     "salary": {
+      "cents": 1000000000,
+      "text": "$10,000,000"
+     },
+     "expiration": 2027,
+     "status": "",
+     "info": ""
+    },
+    {
+     "id": "0046",
+     "franchiseId": "0001",
+     "team": "Franchise 0001",
+     "name": "Player 0046",
+     "position": "LB",
+     "salary": {
+      "cents": 1000000000,
+      "text": "$10,000,000"
+     },
+     "expiration": 2026,
+     "status": "",
+     "info": ""
+    }
+   ],
+   "teams": [
+    {
+     "id": "0001",
+     "name": "Franchise 0001"
+    }
+   ],
+   "positions": [
+    "LB",
+    "QB",
+    "RB",
+    "TE",
+    "WR"
+   ]
+  },
+  "provenance": {
+   "source": "MFL rosters: salary, contractYear, contractStatus, contractInfo; held players directory",
+   "freshness": {
+    "state": "live",
+    "fetchedAt": "INSTANT",
+    "note": "Held MFL mirror; no network or what-if state"
+   },
+   "kind": "live"
+  },
+  "status": "ok",
+  "absenceReason": null,
+  "count": 5,
+  "threshold": 0,
+  "baseline": "Current MFL mirror revision",
+  "cutoff": "INSTANT",
+  "method": "Integer cents; Go-authored display",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Every rostered MFL contract, including IR and taxi. Go filters by franchise and position and sorts within the my-team-first group. Names and positions come from the held player directory; unknown names show the player ID. No calculated dead cap."
+ },
+ "cap": {
+  "value": {
+   "team": "Franchise 0001",
+   "season": 2026,
+   "cap": null,
+   "used": {
+    "cents": 4999987655,
+    "text": "$49,999,876.55"
+   },
+   "room": null,
+   "capSource": "League salary cap unavailable (MFL league settings)",
+   "future": [
+    {
+     "season": 2027,
+     "cost": {
+      "cents": 4000000000,
+      "text": "$40,000,000"
+     },
+     "inferred": true,
+     "tag": "Inferred",
+     "reason": "Future commitments assume today’s annual salary through each contract’s expiration; MFL does not report those year amounts. No future reserve discounts or adjustments are included."
+    },
+    {
+     "season": 2028,
+     "cost": {
+      "cents": 3000000000,
+      "text": "$30,000,000"
+     },
+     "inferred": true,
+     "tag": "Inferred",
+     "reason": "Future commitments assume today’s annual salary through each contract’s expiration; MFL does not report those year amounts. No future reserve discounts or adjustments are included."
+    }
+   ]
+  },
+  "provenance": {
+   "source": "MFL mirror + active league configuration",
+   "freshness": {
+    "state": "live",
+    "fetchedAt": "INSTANT",
+    "note": "Held MFL mirror; no network or what-if state"
+   },
+   "kind": "live"
+  },
+  "status": "ok",
+  "absenceReason": null,
+  "count": 1,
+  "threshold": 0,
+  "baseline": "Current MFL mirror revision",
+  "cutoff": "INSTANT",
+  "method": "Integer cents; Go-authored display",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Cap comes from active league configuration, not a hardcoded rulebook value. Used is the mirror's current cap total: active salary, configured IR/taxi contribution (snapped to $10k), and signed MFL adjustments. Room = cap minus used, in cents. Future commitments carry today’s annual salary through contract expiration; MFL does not report those years separately. No future discounts, adjustments or dead-cap charges are projected."
+ },
+ "adjustments": {
+  "value": {
+   "rows": [
+    {
+     "id": "a",
+     "team": "Franchise 0001",
+     "franchiseId": "0001",
+     "amount": {
+      "cents": -12345,
+      "text": "-$123.45"
+     },
+     "description": ""
+    }
+   ]
+  },
+  "provenance": {
+   "source": "MFL salaryAdjustments",
+   "freshness": {
+    "state": "live",
+    "fetchedAt": "INSTANT",
+    "note": "Held MFL mirror; no network or what-if state"
+   },
+   "kind": "live"
+  },
+  "status": "ok",
+  "absenceReason": null,
+  "count": 1,
+  "threshold": 0,
+  "baseline": "Current MFL mirror revision",
+  "cutoff": "INSTANT",
+  "method": "Integer cents; Go-authored display",
+  "inputSHA": "",
+  "buildStamp": "dev ",
+  "howCounted": "Signed amounts and descriptions exactly as MFL states them. These are MFL's recorded salary adjustments (drops, retirements and commissioner changes); credits stay negative. No description is interpreted as a computed charge."
+ }
+}
