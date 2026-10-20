@@ -1,0 +1,5 @@
+{
+  "ok": false,
+  "error": "the archive folder must be a full path, not \"relative\"",
+  "summary": ""
+}

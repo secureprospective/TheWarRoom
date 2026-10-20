@@ -1,0 +1,402 @@
+{
+  "databaseChecks": {
+    "id": "database-checks",
+    "title": "Local database checks",
+    "note": "",
+    "status": "empty",
+    "source": "",
+    "asOf": "",
+    "how": "SQLite integrity_check and foreign_key_check run after launch and weekly while open. The last attempt is held for this launch.",
+    "columns": [
+      "File",
+      "Last checked",
+      "Result"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "thewarroom",
+          "Not checked this launch",
+          "Waiting for checks"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "history",
+          "Not checked this launch",
+          "Waiting for checks"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "whatif",
+          "Not checked this launch",
+          "Waiting for checks"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "health": {
+    "id": "C-07",
+    "title": "Source health and freshness",
+    "note": "",
+    "status": "ok",
+    "source": "Source: the app's own fetch and load records",
+    "asOf": "As of: fixture clock",
+    "how": "A source's last good read is its latest load without an error; a failure is shown while it is newer than that. A source is lost when it has failed and had no good load within its window. The board runs reduced when a measure it reads has no source flowing; it is rebalanced only when you approve it. Board use is noted only for sources supplying board measures; other rows are reference or linking inputs.",
+    "columns": [
+      "Source and board use",
+      "Last good and age",
+      "Last failure"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "MyFantasyLeague API (league 14432)\nEngine run not yet available",
+          "Never\nNo good read yet",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "nflverse data releases\nEngine run not yet available",
+          "Never\nNo good read yet",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "DynastyProcess player id crosswalk",
+          "Never\nNo good read yet",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "CollegeFootballData API\nEngine run not yet available",
+          "Never\nNot set up · needs a free CollegeFootballData key in CFBD_API_KEY",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "EA Madden ratings",
+          "Never\nRetired",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "MFL league archive, 2013–2026",
+          "Never\nNo good read yet",
+          "None"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Engine run not yet available",
+          "Never\nNo good read yet",
+          "—"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "signals": {
+    "id": "C-07-files",
+    "title": "Signal files",
+    "note": "",
+    "status": "ok",
+    "source": "Source: history.db",
+    "asOf": "As of: now",
+    "how": "A file is fresh while its last load is within its source's window. Players with data are counted in the latest season holding any; waiting ids are source players not yet matched to an MFL player. Rostered players with data covers every position the league rosters.",
+    "columns": [
+      "Signal and source",
+      "Last load",
+      "Players and matching",
+      "Rostered coverage"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "stats_player_week\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "snap_counts\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "injuries\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "players\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "draft_picks\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "combine\nnflverse",
+          "Never\nFresh: No",
+          "0 (player facts)\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "cfbd\ncfbd",
+          "Never\nFresh: No",
+          "0 across all seasons\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "contracts\nnflverse",
+          "Never\nFresh: No",
+          "0 across all seasons\nWaiting: 0",
+          "None rostered"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "facts": {
+    "id": "L-34",
+    "title": "Checked facts",
+    "note": "No manifest yet: import the league archive under Data refresh to pin the Lab's inputs.",
+    "status": "empty",
+    "source": "Source: the league archive in history.db",
+    "asOf": "As of: now",
+    "how": "The checked facts are compiled from exactly the archived MFL files a manifest pins, by their bytes' sha256, never from the newest copy of a file. Only the five exact frozen login-error pins have named non-data gaps; other missing bytes block compilation. A fresh download never stands in for a pin.",
+    "columns": [
+      "Fact",
+      "Value"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "Inputs",
+          "Legacy NFL 2013–2026 as frozen for the Lab"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Lab data",
+          "Captured through Oct 5, 2026, 8:42 PM; built Oct 6, 2026, 10:57 AM"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "checks": {
+    "id": "L-34-checks",
+    "title": "Checks",
+    "note": "Not run yet: the checks run when the facts compile, after the league archive is imported.",
+    "status": "ok",
+    "source": "Source: the compiled facts and MFL's own figures",
+    "asOf": "As of: now",
+    "how": "Each check compares two records MFL keeps separately. Every difference must be named, by its identity, in the pinned list of explained and reviewed differences; a new one fails the compile, and the last good snapshot is kept, marked stale.",
+    "columns": [
+      "Check",
+      "What it proves",
+      "Result"
+    ],
+    "rows": [
+      {
+        "cells": [
+          "Compiled facts match the Lab's reference",
+          "Row by row against the Lab's own Python build: ids, times, counts and money exact; derived decimals within one part in a billion.",
+          "Proved by the build's tests: 37 tables, no differences"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Win-loss records match MFL standings",
+          "MFL counted playoff games in the 2013 standings; from 2014 its standings count the regular season only.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Points for match MFL standings",
+          "MFL totals points over every week it scored, playoffs included.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Potential points match MFL standings",
+          "Where MFL publishes potential points (2022 on).",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "All-play records match MFL standings",
+          "Counted every week in which all teams scored, playoffs included, as MFL does.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Team scores equal their starters",
+          "MFL added a 3-point home bonus in the 2014-2015 regular season and in playoff games.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Lineup scores equal MFL player scores",
+          "Checked against MFL's own figures.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Roster changes are recorded moves (2018 on)",
+          "Rosters at the last kickoff of each week, compared with the next week.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Draft picks were used by their last owner (2017 on)",
+          "Original owner from MFL's \"Pick traded from\" note, else the team that used it.",
+          "Not run yet"
+        ],
+        "range": null
+      },
+      {
+        "cells": [
+          "Rostered players have an MFL birthdate",
+          "MFL lists no birthdate for these players.",
+          "Not run yet"
+        ],
+        "range": null
+      }
+    ],
+    "summary": null,
+    "link": null
+  },
+  "archiveDir": "",
+  "photosOn": true,
+  "scopes": [
+    {
+      "id": "league",
+      "label": "League from MFL",
+      "note": "Rules, rosters and salary adjustments for the current season.",
+      "action": "Refresh League from MFL",
+      "progress": "Refreshing…"
+    },
+    {
+      "id": "signals",
+      "label": "Signals",
+      "note": "The nflverse, CFBD and contract files that are due.",
+      "action": "Refresh Signals",
+      "progress": "Refreshing…"
+    },
+    {
+      "id": "crosswalk",
+      "label": "Player crosswalk",
+      "note": "DynastyProcess's player ids, linked to the league's players.",
+      "action": "Refresh Player crosswalk",
+      "progress": "Refreshing…"
+    },
+    {
+      "id": "archive",
+      "label": "League archive",
+      "note": "Files new to the 2013–2026 archive, then the Lab's pinned inputs.",
+      "action": "Refresh League archive",
+      "progress": "Refreshing…"
+    }
+  ],
+  "words": {
+    "apply": "Apply",
+    "clear": "Clear the Admin value and follow the shipped default",
+    "crosswalkHow": "How players are linked",
+    "default": "Default",
+    "empty": "No settings match.",
+    "find": "Find a setting",
+    "fitted": "Fitted",
+    "folder": "League archive folder (raw)",
+    "handSet": "Hand-set",
+    "how": "How this is counted",
+    "kept": "The last reading is kept.",
+    "league": "League",
+    "overridden": "Overridden",
+    "override": "Override",
+    "parameters": "Engine parameters",
+    "permission": "Changes require the admin role. Running as GM: values are read-only.",
+    "photos": "Player photos",
+    "photosNote": "From ESPN, then Sleeper, cached on this computer for personal use. Off means no photo is requested.",
+    "photosOff": "Turn photos off",
+    "photosOn": "Turn photos on",
+    "range": "Allowed",
+    "read": "Read held records",
+    "readProgress": "Refreshing…",
+    "readResult": "Held records read; source health, signals, checked facts, player links and engine parameters updated.",
+    "refresh": "Data refresh",
+    "reset": "Reset",
+    "setFolder": "Set folder",
+    "setting": "Setting and position",
+    "title": "Data and sources",
+    "value": "Value"
+  }
+}
