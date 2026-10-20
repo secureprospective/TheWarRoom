@@ -711,20 +711,6 @@ export function createCommands(
       ],
       run: (_args: Record<string, never>) => state.write({ commandbar: true }),
     }),
-    'harness.open': command({
-      ...ambient,
-      id: 'harness.open',
-      label: 'Open harness',
-      aliases: ['harness'],
-      run: (_args: Record<string, never>) => state.write({ harness: true }),
-    }),
-    'target.open': command({
-      ...ambient,
-      id: 'target.open',
-      label: 'Target UI',
-      aliases: ['target'],
-      run: (_args: Record<string, never>) => state.write({ harness: false }),
-    }),
   });
   type Id = keyof typeof registry;
   type Args<K extends Id> = Parameters<(typeof registry)[K]['run']>[0];

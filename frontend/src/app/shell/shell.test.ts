@@ -70,7 +70,7 @@ describe('Shell transitions through dispatch only', () => {
     expect(c.read().inspector).toBe('rest');
     expect(c.read().subject).toBe(null);
   });
-  it('toggles summons, comms, harness, notice and closes overlays', () => {
+  it('toggles summons, comms, notice and closes overlays', () => {
     const c = createCommands();
     c.dispatch('calendar.summon', {});
     expect(c.read().summoned).toBe('calendar');
@@ -80,10 +80,6 @@ describe('Shell transitions through dispatch only', () => {
     expect(c.read().comms).toBe(true);
     c.dispatch('comms.toggle', {});
     expect(c.read().comms).toBe(false);
-    c.dispatch('harness.open', {});
-    expect(c.read().harness).toBe(true);
-    c.dispatch('target.open', {});
-    expect(c.read().harness).toBe(false);
     c.dispatch('commandbar.open', {});
     expect(c.read().commandbar).toBe(true);
     c.dispatch('calendar.summon', {});

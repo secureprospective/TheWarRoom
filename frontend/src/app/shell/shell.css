@@ -257,15 +257,6 @@
   }
 .twr-app .comms-panel { right: 48px; width: 280px; }
 .twr-app .calendar-panel { right: 368px; width: 480px; }
-.twr-app.harness-return {
-  position: fixed;
-  bottom: 12px;
-  left: 12px;
-  z-index: 100;
-  border: 1px solid var(--surface-line-hi);
-  padding: 7px 9px;
-  }
-
 .twr-app .roster-cap {
   display: flex;
   flex-wrap: wrap;
