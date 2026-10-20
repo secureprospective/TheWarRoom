@@ -1,0 +1,107 @@
+{
+ "value": {
+  "partnersText": "",
+  "words": {
+   "team": "",
+   "sides": "",
+   "perSeason": "",
+   "now": "",
+   "later": "",
+   "picks": "",
+   "age": "",
+   "partners": "",
+   "partner": "",
+   "day": "",
+   "since": "",
+   "legend": "",
+   "up": "",
+   "down": ""
+  },
+  "countText": "",
+  "fid": "",
+  "name": "",
+  "asOf": "",
+  "flowScale": 0,
+  "sides": 0,
+  "empty": false,
+  "note": "",
+  "seasons": null,
+  "seasonSay": "",
+  "posture": null,
+  "kinds": null,
+  "kindSay": "",
+  "partners": null,
+  "partnersSay": "",
+  "behaviour": {
+   "n": 0,
+   "perSeason": 0,
+   "posture": null,
+   "partners": null,
+   "windows": null,
+   "now": {
+    "n": 0,
+    "mean": null,
+    "lo": null,
+    "hi": null,
+    "tone": ""
+   },
+   "real": {
+    "n": 0,
+    "mean": null,
+    "lo": null,
+    "hi": null,
+    "tone": ""
+   },
+   "picks": {
+    "n": 0,
+    "mean": null,
+    "lo": null,
+    "hi": null,
+    "tone": ""
+   },
+   "age": {
+    "n": 0,
+    "mean": null,
+    "lo": null,
+    "hi": null,
+    "tone": ""
+   }
+  },
+  "asTier": null,
+  "day": {
+   "n": 0,
+   "mean": null,
+   "lo": null,
+   "hi": null,
+   "tone": ""
+  },
+  "since": {
+   "n": 0,
+   "mean": null,
+   "lo": null,
+   "hi": null,
+   "tone": ""
+  },
+  "dayText": "",
+  "sinceText": ""
+ },
+ "provenance": {
+  "source": "",
+  "freshness": {
+   "state": "",
+   "fetchedAt": "",
+   "note": ""
+  },
+  "kind": ""
+ },
+ "status": "failed",
+ "absenceReason": "counterparties team: unknown franchise \"0099\"",
+ "count": 0,
+ "threshold": 1,
+ "baseline": "",
+ "cutoff": "",
+ "method": "this team's sides of the valued trades against the league",
+ "inputSHA": "6a9995ad26b4e4c5bc63dc1b771f6c38c3af71af7493d70263f332aed3748830",
+ "buildStamp": "",
+ "howCounted": ""
+}
