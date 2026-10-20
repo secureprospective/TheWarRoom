@@ -20,7 +20,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/composition"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -85,7 +84,7 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 		return fmt.Errorf("fit: %w", err)
 	}
 	today := func(pl *model.Player, lastTotal, age float64) float64 {
-		pull, err := engine.ApplyDecay(age, composition.PeakLimit(pl.Position), decay)
+		pull, err := engine.ApplyDecay(age, engine.PeakLimit(pl.Position), decay)
 		if err != nil {
 			return 0
 		}

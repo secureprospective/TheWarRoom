@@ -309,3 +309,16 @@ func TestPipelineConcurrentScore(t *testing.T) {
 
 // IdentityLayer4 returns the no-op Layer 4.
 func IdentityLayer4() Layer4 { return identityLayer4{} }
+
+func TestPeakLimitByPosition(t *testing.T) {
+	want := map[domain.Position]float64{
+		domain.PosQB: 32, domain.PosRB: 25, domain.PosWR: 29, domain.PosTE: 29,
+		domain.PosDE: 30, domain.PosDT: 30, domain.PosLB: 29, domain.PosCB: 28,
+		domain.PosS: 28, domain.PosK: 30, domain.PosFlag: 32,
+	}
+	for pos, w := range want {
+		if got := PeakLimit(pos); got != w {
+			t.Errorf("PeakLimit(%s) = %v, want %v", pos, got, w)
+		}
+	}
+}
