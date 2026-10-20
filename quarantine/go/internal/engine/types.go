@@ -34,10 +34,24 @@ type Calibration struct {
 }
 
 // CushionGuard is the SL-021 Late-Career Cushion Guard (DT_Rubric §1/§3). A measured RAS at
-// or above RASThreshold slows a decline. The zero value is off, which is every position but DT.
+// or above RASThreshold slows a decline: L3 applies it to the age pull, and the DT rubric to
+// its breakout age trajectory. The zero value is off, which is every position but DT.
 type CushionGuard struct {
 	RASThreshold  float64
 	DeclineFactor float64 // 0.90 = 10% slower decline
+}
+
+// Slow scales v's distance below neutral by DeclineFactor. It leaves v unchanged when the
+// guard is off, the RAS is imputed or under the threshold, v is not below neutral, or
+// DeclineFactor is outside [0,1] (where it would amplify the decline instead of slowing it).
+func (g CushionGuard) Slow(v, neutral, ras float64, hasRAS bool) float64 {
+	if g.RASThreshold <= 0 || !hasRAS || ras < g.RASThreshold || v >= neutral {
+		return v
+	}
+	if g.DeclineFactor < 0 || g.DeclineFactor > 1 {
+		return v
+	}
+	return neutral - (neutral-v)*g.DeclineFactor
 }
 
 // ScoutingInput is the raw, position-blind Layer-4 sub-signals (SchoolTierNorm excepted). Each

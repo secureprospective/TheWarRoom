@@ -238,3 +238,23 @@ func TestCushionGuardSlow(t *testing.T) {
 		})
 	}
 }
+
+// --- L6 tiebreaker ordering ---
+
+func TestTiebreakerRanksAbove(t *testing.T) {
+	vet := TiebreakerKey{IsVeteran: true, RAS: 5, ScarcityRank: 1}
+	rookie := TiebreakerKey{IsVeteran: false, RAS: 9, ScarcityRank: 9}
+	if !vet.RanksAbove(rookie) {
+		t.Fatal("veteran must outrank rookie regardless of RAS/scarcity")
+	}
+	hi := TiebreakerKey{IsVeteran: true, RAS: 9, ScarcityRank: 1}
+	lo := TiebreakerKey{IsVeteran: true, RAS: 7, ScarcityRank: 9}
+	if !hi.RanksAbove(lo) {
+		t.Fatal("among veterans, higher RAS wins before scarcity")
+	}
+	scarce := TiebreakerKey{IsVeteran: true, RAS: 7, ScarcityRank: 9}
+	common := TiebreakerKey{IsVeteran: true, RAS: 7, ScarcityRank: 1}
+	if !scarce.RanksAbove(common) {
+		t.Fatal("equal tenure+RAS: higher scarcity rank wins")
+	}
+}

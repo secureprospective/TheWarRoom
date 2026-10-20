@@ -22,7 +22,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -454,66 +453,6 @@ func TestSourceIsLostOnlyAfterFailingPastItsMaxAge(t *testing.T) {
 	}
 }
 
-func score(id string, adjusted float64) Score {
-	return Score{MFLID: id, Result: engine.Result{BasePoints: 100, AgePull: 1, AdjustedScore: adjusted,
-		ScoutingAdjusted: adjusted, CapMultiplier: 1, CapTier: engine.CapTierNeutral}}
-}
-
-func board(params float64, inputs string) NewRun {
-	return NewRun{Kind: RunBoard, Season: 2026, AsOf: t0(), InputsHash: inputs, Engine: "v-test",
-		Params: ParamSet{Params: map[string]float64{"layer3.decay_rate": params}, Measures: []string{"outcome.tackles_solo"}},
-		Scores: []Score{score("13604", 90), score("0042", 95)}}
-}
-
-func TestRunsKeepEveryBoardReadable(t *testing.T) {
-	t.Parallel()
-	s, _, _ := newStore(t)
-	ctx := context.Background()
-	first, written, err := s.WriteRun(ctx, board(0.03, "in-1"))
-	if err != nil || !written {
-		t.Fatalf("first run: %v, written %v", err, written)
-	}
-	if again, written, err := s.WriteRun(ctx, board(0.03, "in-1")); err != nil || written || again.ID != first.ID {
-		t.Fatalf("same params and inputs wrote a new run: %+v %v %v", again, written, err)
-	}
-	rescored := board(0.03, "in-1")
-	rescored.Scores[0].AdjustedScore = 91 // same inputs, new engine code: a new board
-	changed, written, err := s.WriteRun(ctx, rescored)
-	if err != nil || !written || changed.ScoresHash == first.ScoresHash {
-		t.Fatalf("changed scores under the same inputs: %+v %v %v", changed, written, err)
-	}
-	second, written, err := s.WriteRun(ctx, board(0.05, "in-1"))
-	if err != nil || !written || second.ParamSetID == first.ParamSetID {
-		t.Fatalf("changed params: %+v %v %v", second, written, err)
-	}
-	proposal := board(0.04, "in-1")
-	proposal.Kind = RunRebalance
-	if _, _, err := s.WriteRun(ctx, proposal); err != nil {
-		t.Fatal(err)
-	}
-
-	latest, ok, err := s.LatestRun(ctx, 2026, RunBoard)
-	if err != nil || !ok || latest.ID != second.ID {
-		t.Fatalf("board = %+v, want run %d: a rebalance run never becomes the board", latest, second.ID)
-	}
-	prev, ok, err := s.PreviousRun(ctx, latest)
-	if err != nil || !ok || prev.ID != changed.ID {
-		t.Fatalf("previous board = %+v, want run %d", prev, changed.ID)
-	}
-	for _, r := range []Run{first, changed, second} {
-		sc, err := s.RunScores(ctx, r.ID)
-		if err != nil || len(sc) != 2 || sc[0].MFLID != "0042" {
-			t.Errorf("run %d scores = %+v, %v; want 0042 first", r.ID, sc, err)
-		}
-	}
-	if one, ok, err := s.RunScore(ctx, first.ID, "0042"); err != nil || !ok || one.AdjustedScore != 95 {
-		t.Errorf("RunScore = %+v %v %v", one, ok, err)
-	}
-	if runs, err := s.Runs(ctx, 2026); err != nil || len(runs) != 4 {
-		t.Errorf("Runs = %d, %v; want 4", len(runs), err)
-	}
-}
-
 func TestRunRecordsMeasuresThatStoppedFlowing(t *testing.T) {
 	t.Parallel()
 	s, c, _ := newStore(t)
@@ -522,35 +461,35 @@ func TestRunRecordsMeasuresThatStoppedFlowing(t *testing.T) {
 	if err := s.LoadFailed(ctx, "alpha", errors.New("gone")); err != nil {
 		t.Fatal(err)
 	}
-	r, _, err := s.WriteRun(ctx, board(0.03, "in-1"))
+	nr := modelRun(2)
+	nr.Params.Measures = []string{"outcome.tackles_solo"}
+	r, _, err := s.WriteModelRun(ctx, nr)
 	if err != nil || fmt.Sprint(r.MissingMeasures) != "[outcome.tackles_solo]" {
 		t.Fatalf("run = %+v, %v; want outcome.tackles_solo missing", r, err)
 	}
 }
 
-func TestWriteRunRejectsBadScores(t *testing.T) {
+func TestWriteModelRunRejectsBadScores(t *testing.T) {
 	t.Parallel()
-	cases := map[string]func(*NewRun){
-		"no scores":     func(r *NewRun) { r.Scores = nil },
-		"no inputs":     func(r *NewRun) { r.InputsHash = "" },
-		"no engine":     func(r *NewRun) { r.Engine = "" },
-		"unknown kind":  func(r *NewRun) { r.Kind = "draft" },
-		"bad id":        func(r *NewRun) { r.Scores[0].MFLID = "13x" },
-		"repeated id":   func(r *NewRun) { r.Scores[1].MFLID = r.Scores[0].MFLID },
-		"unknown tier":  func(r *NewRun) { r.Scores[0].CapTier = "Warm" },
-		"NaN score":     func(r *NewRun) { r.Scores[0].AdjustedScore = math.NaN() },
-		"NaN parameter": func(r *NewRun) { r.Params.Params["x"] = math.NaN() },
+	cases := map[string]func(*NewModelRun){
+		"no scores":     func(r *NewModelRun) { r.Scores = nil },
+		"no inputs":     func(r *NewModelRun) { r.InputsHash = "" },
+		"no engine":     func(r *NewModelRun) { r.Engine = "" },
+		"bad id":        func(r *NewModelRun) { r.Scores[0].MFLID = "13x" },
+		"repeated id":   func(r *NewModelRun) { r.Scores[1].MFLID = r.Scores[0].MFLID },
+		"NaN score":     func(r *NewModelRun) { r.Scores[0].Dynasty = math.NaN() },
+		"NaN parameter": func(r *NewModelRun) { r.Params.Params["x"] = math.NaN() },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
 			s, _, _ := newStore(t)
-			r := board(0.03, "in-1")
+			r := modelRun(2)
 			mutate(&r)
-			if _, _, err := s.WriteRun(context.Background(), r); err == nil {
-				t.Fatal("WriteRun accepted it")
+			if _, _, err := s.WriteModelRun(context.Background(), r); err == nil {
+				t.Fatal("WriteModelRun accepted it")
 			}
-			if n := count(t, s, "scoring_runs"); n != 0 {
-				t.Errorf("scoring_runs = %d", n)
+			if n := count(t, s, "model_runs"); n != 0 {
+				t.Errorf("model_runs = %d", n)
 			}
 		})
 	}
@@ -597,14 +536,12 @@ func modelRun(knob float64) NewModelRun {
 		Scores: []ModelScore{score("13604", 0.5), score("0042", 0.7)}}
 }
 
-// A model run is kept apart from the boards, deduplicated like them, and every one stays readable.
-func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
+// A model run is deduplicated, a changed param or score makes a new one, and every one stays
+// readable.
+func TestModelRunsKeepEveryRunReadable(t *testing.T) {
 	t.Parallel()
 	s, _, _ := newStore(t)
 	ctx := context.Background()
-	if _, _, err := s.WriteRun(ctx, board(0.03, "in-1")); err != nil {
-		t.Fatal(err)
-	}
 	first, written, err := s.WriteModelRun(ctx, modelRun(2))
 	if err != nil || !written || first.Kind != RunModel {
 		t.Fatalf("first model run: %+v %v %v", first, written, err)
@@ -619,8 +556,13 @@ func TestModelRunsAreKeptBesideTheBoard(t *testing.T) {
 	if latest, ok, err := s.LatestRun(ctx, 2026, RunModel); err != nil || !ok || latest.ID != second.ID {
 		t.Fatalf("latest model run = %+v %v %v", latest, ok, err)
 	}
-	if b, ok, err := s.LatestRun(ctx, 2026, RunBoard); err != nil || !ok || b.Kind != RunBoard {
-		t.Fatalf("the board must be untouched: %+v %v %v", b, ok, err)
+	if prev, ok, err := s.PreviousRun(ctx, second); err != nil || !ok || prev.ID != first.ID {
+		t.Fatalf("previous model run = %+v %v %v, want run %d", prev, ok, err, first.ID)
+	}
+	rescored := modelRun(3)
+	rescored.Scores[0].Dynasty = 0.55 // same params and inputs, new engine code: a new run
+	if changed, written, err := s.WriteModelRun(ctx, rescored); err != nil || !written || changed.ScoresHash == second.ScoresHash {
+		t.Fatalf("changed scores under the same inputs: %+v %v %v", changed, written, err)
 	}
 	old, err := s.ModelScores(ctx, first.ID)
 	if err != nil || len(old) != 2 || old[0].MFLID != "0042" || old[0].DynastyPPG != 14 || old[0].Inputs[1] != "season.2025" {

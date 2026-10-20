@@ -97,7 +97,7 @@ source's row by the engine run, the path it already took when no board run exist
 
 Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`cmd/fit` reads it).
 
-Kept on purpose, unreached (later passes, below): `internal/engine/l4` (its settings table is the `l4.*` params the
+Kept on purpose, unreached (until the leftovers pass, below): `internal/engine/l4` (its settings table is the `l4.*` params the
 Data and sources parameter editor lists, R7; the rubric math in it is unreached), the engine's types
 (history's `run_scores` rows store `engine.Result`), and history's board-run store side
 (`WriteRun`, `RunScores`, `scoring_runs`, `run_scores`): existing databases keep their board runs.
@@ -121,9 +121,32 @@ What the engine pass kept but nothing reached. Under `go/`, original content unl
   `Breakpoint`, `Weights`, `Curves`), now all in `settings.go`. `params/defaults.go` seeds the `l4.*`
   params from them, and their descriptions now carry "(inert, no run reads it)", which the parameter
   editor shows in each Scouting adjustment area heading.
-- Deleted from a live file: `engine.CushionGuard.Slow` (`internal/engine/types.go`). Its test,
-  `TestCushionGuardSlow`, is back in `internal/engine/pipeline_test.go` here.
+- `engine.CushionGuard.Slow`, whose only caller was the rubric: first deleted from `types.go`, then
+  the whole file moved here (below). Its test, `TestCushionGuardSlow`, is back in
+  `internal/engine/pipeline_test.go` here.
 
 To bring the rubric back: move the two files and their tests back, drop the types they declare from
-`settings.go`, restore `Slow` from `session/purge-engine`, and remove `rubricInert` from
+`settings.go`, move `internal/engine/types.go` back (below), and remove `rubricInert` from
 `params/defaults.go`.
+
+### History's board-run store side
+
+Deleted from live files (recover them from git, `session/purge-engine`), not quarantined, since the
+files keep live code: `history.WriteRun`, `prepareRun`, `validScores`, `scoreArgs`, `insertScoreSQL`,
+`scoreCols`, `insertBoardRunSQL`, `runTable`, `Runs`, `RunScores`, `RunScore`, `scores`, the `Score`
+and `NewRun` types and the `RunBoard` / `RunRebalance` kinds (`internal/store/history/runs.go`).
+`writeRun`, `LatestRun` and `PreviousRun` now read and write `model_runs` only, and `NewModelRun`
+feeds `pending` directly. The board-run tests in `history_test.go` were deleted; their validation and
+missing-measure cases now run against `WriteModelRun`.
+
+The schema is unchanged: `scoring_runs` and `run_scores` stay in `history.go`, the append-only
+triggers and the JSON-column migration, and existing databases keep their board-run rows. No
+migration was added and no table dropped.
+
+With `engine.Result` unread, `internal/engine/types.go` had no live code left: it is under
+`go/internal/engine/types.go` as it was on `session/purge-engine` (`CushionGuard.Slow` included), and
+`TestTiebreakerRanksAbove` joined `TestCushionGuardSlow` in the quarantined `pipeline_test.go`. The
+package doc moved to `decay.go`.
+
+To bring the board run's store side back: restore `runs.go`, `modelruns.go` and
+`history_test.go` in `internal/store/history` from `session/purge-engine`, and move `types.go` back.
