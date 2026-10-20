@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
@@ -66,7 +66,7 @@ func Build(in Snapshot) (Board, error) {
 		Weeks: v.WeekChoices(), Teams: v.TeamChoices(),
 		Board: report.Board{Title: "League race reports", Loading: "Reading the league race…",
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []report.Report{}}}
-	board.Board.Reports = append(board.Board.Reports, v.Power(scoring.ViewSeason), v.Power(scoring.ViewFranchise), v.Seeding(),
+	board.Board.Reports = append(board.Board.Reports, v.Power(season.ViewSeason), v.Power(season.ViewFranchise), v.Seeding(),
 		v.Bubble(), v.Tiebreakers(), v.Brackets(), v.AllPlay(), v.WeeklyPoints(), v.PositionPoints(),
 		v.PlayerPoints(), v.ScheduleByWeek(), v.ScheduleByTeam(), v.ScheduleGrid(), v.Lineups(), v.LineupDetail())
 	return board, nil

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -138,7 +137,7 @@ func (v View) Bubble() report.Report {
 			case c.Seed == 0 && c.HalfGamesBack == 0:
 				place = "Level with seed " + strconv.Itoa(len(f.Seeding.Seeds)) + "; behind on the tiebreak order"
 			case c.Seed == 0:
-				place = halfGamesText(c.HalfGamesBack) + " " + sources.PluralNoun(float64(c.HalfGamesBack)/2, "game") + " back"
+				place = halfGamesText(c.HalfGamesBack) + " " + report.PluralNoun(float64(c.HalfGamesBack)/2, "game") + " back"
 			}
 			left, titles := []string{}, []string{}
 			for _, o := range l.Remaining {

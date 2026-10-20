@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
@@ -35,89 +37,8 @@ type Source struct {
 	DeadCap     func() map[string]domain.Money
 }
 
-// PowerRow is one franchise's power-ranking row: the blended score, its two components, and
-// MFL's report columns from the same standings call. Display values only. RankDelta is the move
-// since the board built from the previous model run; DeltaOK is false when there is none.
-type PowerRow struct {
-	Rank        int    `json:"rank"`
-	FranchiseID string `json:"franchiseID"`
-	Name        string `json:"name"`
-	RankDelta   int    `json:"rankDelta"`
-	DeltaOK     bool   `json:"deltaOK"`
-
-	PowerScore float64 `json:"powerScore"` // weighted z-blend, scaled to [0,1]
-	RosterZ    float64 `json:"rosterZ"`    // 0 = league average
-	MFLPerfZ   float64 `json:"mflPerfZ"`
-	AgeZ       float64 `json:"ageZ"`
-
-	RosterValue float64 `json:"rosterValue"`
-	Results     float64 `json:"results"` // what the blend read, in [0,1]; Performance names it
-	Age         float64 `json:"age"`     // the counted players' value-weighted age; 0 when none is known
-
-	// Context columns, display only (m2service.Outlook); each Has* says the column was read.
-	CapRoom float64 `json:"capRoom"`
-	DeadCap float64 `json:"deadCap"`
-	HasCap  bool    `json:"hasCap"`
-	Luck    float64 `json:"luck"`
-	HasLuck bool    `json:"hasLuck"`
-	ProjW   float64 `json:"projW"`
-	ProjL   float64 `json:"projL"`
-	HasProj bool    `json:"hasProj"`
-
-	// MFL report columns, from leagueStandings.
-	H2HW     int     `json:"h2hW"`
-	H2HL     int     `json:"h2hL"`
-	H2HT     int     `json:"h2hT"`
-	AllPlayW int     `json:"allPlayW"`
-	AllPlayL int     `json:"allPlayL"`
-	AllPlayT int     `json:"allPlayT"`
-	PF       float64 `json:"pf"`
-	PA       float64 `json:"pa"`
-	PP       float64 `json:"pp"`
-	Pwr      float64 `json:"pwr"`
-	AltPwr   float64 `json:"altPwr"`
-}
-
-// PowerRankingsResult echoes the view, weights, aggregation mode and N actually applied, so the
-// controls and the rows never disagree. WeightAuto is true when the roster weight came from the
-// weeks played rather than the slider. Zero rows means the league has no model run yet.
-// WeeksScored is how many weeks the MFL standings hold, read from the head-to-head records, and
-// SeasonWeeks the league's last regular-season week: the standings are final when they meet. Phase is separate from
-// Freshness: an offseason board is fresh data about a finished season. An empty Phase means the
-// phase read failed, which affects the label only.
-type PowerRankingsResult struct {
-	OK         bool    `json:"ok"`
-	Error      string  `json:"error"`
-	Label      string  `json:"label"`
-	Season     int     `json:"season"`
-	View       string  `json:"view"`
-	Weight     float64 `json:"weight"`
-	WeightAuto bool    `json:"weightAuto"`
-	AgeWeight  float64 `json:"ageWeight"`
-	// ModelRunID is the model run ranked; PreviousRunID the one the deltas compare with (0: none).
-	ModelRunID    int64            `json:"modelRunID"`
-	PreviousRunID int64            `json:"previousRunID"`
-	AggMode       string           `json:"aggMode"`
-	StarterN      int              `json:"starterN"`
-	Freshness     domain.Freshness `json:"freshness"`
-	Performance   string           `json:"performance"` // which result the blend read: all-play, points for, none
-	WeeksScored   int              `json:"weeksScored"`
-	SeasonWeeks   int              `json:"seasonWeeks"`
-	Rows          []PowerRow       `json:"rows"`
-}
-
-// The two M2 views (plan Stage 8): this season ranks on-field-now blended with the standings;
-// the franchise ranks dynasty and the roster's age, because this season's record says little
-// about the next five. Each view counts the roster its own way by default: this season the
-// lineup the rules allow, the franchise the whole roster, whose young bench grows into starters
-// (docs/modules/M2_Power_Ranking_Factors.md).
-const (
-	ViewSeason    = "season"
-	ViewFranchise = "franchise"
-)
-
-func (a Source) powerFailure(err error, view string, weight float64, auto bool, mode string) PowerRankingsResult {
-	return PowerRankingsResult{Error: err.Error(), Season: a.Season, View: view, Weight: weight,
+func (a Source) powerFailure(err error, view string, weight float64, auto bool, mode string) season.PowerRankingsResult {
+	return season.PowerRankingsResult{Error: err.Error(), Season: a.Season, View: view, Weight: weight,
 		WeightAuto: auto, AggMode: mode, Freshness: domain.Freshness{State: domain.FreshFail, Note: err.Error()}}
 }
 
@@ -126,17 +47,17 @@ func (a Source) powerFailure(err error, view string, weight float64, auto bool, 
 func (a Source) Build(
 	ctx context.Context, standings []leaguestandings.RawStanding, fresh domain.Freshness,
 	schedule func(context.Context) []leagueschedule.RawScheduleWeek, weight float64, autoWeight bool, mode, view string,
-) PowerRankingsResult {
-	fail := func(err error) PowerRankingsResult { return a.powerFailure(err, view, weight, autoWeight, mode) }
+) season.PowerRankingsResult {
+	fail := func(err error) season.PowerRankingsResult { return a.powerFailure(err, view, weight, autoWeight, mode) }
 	runs, err := a.modelRuns(ctx)
 	if err != nil {
 		return fail(err)
 	}
 	played := weeksScored(standings)
 	wt := boardWeights(view, weight, autoWeight, played)
-	res := PowerRankingsResult{OK: true, Season: a.Season, View: view, Weight: wt.Roster,
-		WeightAuto: autoWeight && view == ViewSeason, AgeWeight: wt.Age, AggMode: mode, Freshness: fresh,
-		SeasonWeeks: a.SeasonWeeks(), WeeksScored: played, Rows: []PowerRow{}}
+	res := season.PowerRankingsResult{OK: true, Season: a.Season, View: view, Weight: wt.Roster,
+		WeightAuto: autoWeight && view == season.ViewSeason, AgeWeight: wt.Age, AggMode: mode, Freshness: fresh,
+		SeasonWeeks: a.SeasonWeeks(), WeeksScored: played, Rows: []season.PowerRow{}}
 	if len(runs) == 0 {
 		return res
 	}
@@ -153,7 +74,7 @@ func (a Source) Build(
 			return fail(err)
 		}
 		if i == 0 {
-			now = values[ViewSeason]
+			now = values[season.ViewSeason]
 		}
 		if boards[i], err = svc.BuildBoard(standings, values[view], wt, mode); err != nil {
 			return fail(err)
@@ -171,7 +92,7 @@ func (a Source) Build(
 // DefaultAgg is how a view counts the roster unless the caller chose: this season the lineup the
 // rules allow, the franchise the whole roster.
 func DefaultAgg(view string) string {
-	if view == ViewFranchise {
+	if view == season.ViewFranchise {
 		return m2service.AggSum
 	}
 	return m2service.AggLineup
@@ -182,7 +103,7 @@ func DefaultAgg(view string) string {
 // weight the weeks played give.
 func boardWeights(view string, weight float64, auto bool, played int) powerrankings.Weights {
 	switch {
-	case view == ViewFranchise:
+	case view == season.ViewFranchise:
 		return powerrankings.Weights{Roster: 1, Age: powerrankings.FranchiseAgeWeight}
 	case auto:
 		return powerrankings.Weights{Roster: powerrankings.AutoRosterWeight(played)}
@@ -192,7 +113,7 @@ func boardWeights(view string, weight float64, auto bool, played int) powerranki
 
 // fillBoard puts the latest board in res, each rank's move against the previous one and each
 // franchise's context columns.
-func fillBoard(res *PowerRankingsResult, runs []history.Run, boards []m2service.Board, outlooks map[string]m2service.Outlook) {
+func fillBoard(res *season.PowerRankingsResult, runs []history.Run, boards []m2service.Board, outlooks map[string]m2service.Outlook) {
 	res.Label = fmt.Sprintf("Roster value: model run #%d, league points per game (%s)", runs[0].ID, viewMeasure(res.View))
 	res.ModelRunID, res.Weight, res.AggMode, res.StarterN = runs[0].ID, boards[0].Weight, boards[0].Mode, boards[0].StarterN
 	res.Performance = boards[0].Performance
@@ -207,7 +128,7 @@ func fillBoard(res *PowerRankingsResult, runs []history.Run, boards []m2service.
 }
 
 func viewMeasure(view string) string {
-	if view == ViewFranchise {
+	if view == season.ViewFranchise {
 		return "dynasty"
 	}
 	return "on-field-now"
@@ -243,16 +164,16 @@ func (a Source) playerValues(ctx context.Context, runID int64, age func(string) 
 		dyn[i] = now[i]
 		dyn[i].Value = s.DynastyPPG
 	}
-	return map[string][]m2service.PlayerValue{ViewSeason: now, ViewFranchise: dyn}, nil
+	return map[string][]m2service.PlayerValue{season.ViewSeason: now, season.ViewFranchise: dyn}, nil
 }
 
 // powerRows formats the board, with each rank's move from was (the previous board's ranks) and
 // each franchise's context columns.
-func powerRows(rows []m2service.Row, was map[string]int, outlooks map[string]m2service.Outlook) []PowerRow {
-	out := make([]PowerRow, 0, len(rows))
+func powerRows(rows []m2service.Row, was map[string]int, outlooks map[string]m2service.Outlook) []season.PowerRow {
+	out := make([]season.PowerRow, 0, len(rows))
 	for _, r := range rows {
 		o := outlooks[r.FranchiseID]
-		row := PowerRow{
+		row := season.PowerRow{
 			Rank: r.Rank, FranchiseID: r.FranchiseID, Name: r.Name,
 			PowerScore: r.PowerScore, RosterZ: r.RosterZ, MFLPerfZ: r.MFLPerfZ, AgeZ: r.AgeZ,
 			RosterValue: r.RosterValue, Results: r.Results,

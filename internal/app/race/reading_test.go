@@ -13,7 +13,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/race/racetest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
@@ -420,31 +420,31 @@ func TestRaceWeeklyPointsShareOneScale(t *testing.T) {
 	}
 }
 
-func testPower() scoring.PowerRankingsResult { return racetest.Power() }
+func testPower() season.PowerRankingsResult { return racetest.Power() }
 
 func TestRacePowerRankingsNameTheBlend(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
-	in.Held.Power = map[string]scoring.PowerRankingsResult{scoring.ViewSeason: testPower(),
-		scoring.ViewFranchise: {OK: true, View: scoring.ViewFranchise, AgeWeight: 0.5, ModelRunID: 3, AggMode: "sum", Rows: []scoring.PowerRow{}}}
+	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower(),
+		season.ViewFranchise: {OK: true, View: season.ViewFranchise, AgeWeight: 0.5, ModelRunID: 3, AggMode: "sum", Rows: []season.PowerRow{}}}
 	v, err := NewView(in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	season := v.Power(scoring.ViewSeason)
-	if !slices.Equal(season.Rows[0].Cells, []string{"1", "Washington Commanders", "Up 2", "3-0", "210.4", ".957", "1.00"}) ||
-		!season.Rows[1].Mine || season.Rows[0].Range.Max != 1 || season.Rows[1].Range.Hi != 0.6 {
-		t.Fatal(season.Rows)
+	seasonReport := v.Power(season.ViewSeason)
+	if !slices.Equal(seasonReport.Rows[0].Cells, []string{"1", "Washington Commanders", "Up 2", "3-0", "210.4", ".957", "1.00"}) ||
+		!seasonReport.Rows[1].Mine || seasonReport.Rows[0].Range.Max != 1 || seasonReport.Rows[1].Range.Hi != 0.6 {
+		t.Fatal(seasonReport.Rows)
 	}
-	if !strings.Contains(season.How, "the roster counts 57% and results 43%") || !strings.Contains(season.How, "2022–2025") {
-		t.Fatal(season.How)
+	if !strings.Contains(seasonReport.How, "the roster counts 57% and results 43%") || !strings.Contains(seasonReport.How, "2022–2025") {
+		t.Fatal(seasonReport.How)
 	}
-	if franchise := v.Power(scoring.ViewFranchise); franchise.Status != "empty" || !strings.Contains(franchise.Note, "run the app's model") {
+	if franchise := v.Power(season.ViewFranchise); franchise.Status != "empty" || !strings.Contains(franchise.Note, "run the app's model") {
 		t.Fatal(franchise.Status, franchise.Note)
 	}
 	in.Held.Power = nil
 	v, _ = NewView(in)
-	if r := v.Power(scoring.ViewSeason); r.Status != "failed" {
+	if r := v.Power(season.ViewSeason); r.Status != "failed" {
 		t.Fatal(r.Status)
 	}
 }
@@ -464,7 +464,7 @@ func TestConcurrentBuildPreservesSnapshot(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
 	slices.Reverse(in.Held.Weeks.Value)
-	in.Held.Power = map[string]scoring.PowerRankingsResult{scoring.ViewSeason: testPower()}
+	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower()}
 	before, err := json.Marshal(in)
 	if err != nil {
 		t.Fatal(err)

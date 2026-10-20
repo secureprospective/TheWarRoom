@@ -4,7 +4,7 @@ import (
 	"time"
 
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -45,13 +45,13 @@ type raceInput struct {
 }
 
 func (in raceInput) snapshot() raceapp.Snapshot {
-	power := make(map[string]scoring.PowerRankingsResult, len(in.held.power))
+	power := make(map[string]season.PowerRankingsResult, len(in.held.power))
 	for key, p := range in.held.power {
-		rows := make([]scoring.PowerRow, len(p.Rows))
+		rows := make([]season.PowerRow, len(p.Rows))
 		for i, r := range p.Rows {
-			rows[i] = scoring.PowerRow(r)
+			rows[i] = season.PowerRow(r)
 		}
-		power[key] = scoring.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
+		power[key] = season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
 	}
 	liveWeeks := map[int]leaguefeed.WeekResult{}
 	for _, w := range in.held.weeks.value {

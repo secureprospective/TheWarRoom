@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
@@ -26,7 +26,7 @@ func shareBar(value, scale float64, text string) *report.Range {
 	return &report.Range{Interval: lab.Interval{Value: value, Lo: 0, Hi: value}, Max: math.Max(scale, value), Text: text}
 }
 
-func moveText(r scoring.PowerRow) string {
+func moveText(r season.PowerRow) string {
 	switch {
 	case !r.DeltaOK:
 		return "—"
@@ -38,7 +38,7 @@ func moveText(r scoring.PowerRow) string {
 	return "No change"
 }
 
-func aggText(res scoring.PowerRankingsResult) string {
+func aggText(res season.PowerRankingsResult) string {
 	switch res.AggMode {
 	case m2service.AggLineup:
 		return "the best lineup the league's starter rules allow"
@@ -48,8 +48,8 @@ func aggText(res scoring.PowerRankingsResult) string {
 	return fmt.Sprintf("its top %d players", res.StarterN)
 }
 
-func powerHow(res scoring.PowerRankingsResult) string {
-	if res.View == scoring.ViewFranchise {
+func powerHow(res season.PowerRankingsResult) string {
+	if res.View == season.ViewFranchise {
 		return fmt.Sprintf("Each roster's dynasty value (%s, from the app's model run #%d), with an older roster "+
 			"counting against it: age weighs %.1f against value, both on one scale. That weight was fitted on the "+
 			"league's own 2022–2025 seasons, where older rosters scored worse over the next two seasons than their "+
@@ -73,7 +73,7 @@ func powerHow(res scoring.PowerRankingsResult) string {
 func (v View) Power(view string) report.Report {
 	id, title, columns := "M-008", "Power rankings: this season",
 		[]string{"Rank", "Franchise", "Move", "Record", "Roster value", "Results", "Blend"}
-	if view == scoring.ViewFranchise {
+	if view == season.ViewFranchise {
 		id, title, columns = "C-02", "Power rankings: the franchise",
 			[]string{"Rank", "Franchise", "Move", "Roster value", "Roster age", "Blend"}
 	}
@@ -94,7 +94,7 @@ func (v View) Power(view string) report.Report {
 	for _, p := range res.Rows {
 		value := fmt.Sprintf("%.1f", p.RosterValue)
 		cells := []string{strconv.Itoa(p.Rank), v.Name(p.FranchiseID), moveText(p)}
-		if view == scoring.ViewFranchise {
+		if view == season.ViewFranchise {
 			age := "—"
 			if p.Age > 0 {
 				age = fmt.Sprintf("%.1f", p.Age)

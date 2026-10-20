@@ -227,6 +227,7 @@ internal/app/market	market
 internal/app/market/markettest	market
 internal/app/native	commissioner
 internal/app/report	platform
+internal/app/season	platform
 internal/archive	archive
 internal/commissioner	commissioner
 internal/db	platform

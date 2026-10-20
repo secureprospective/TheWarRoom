@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
@@ -278,7 +279,7 @@ func serviceSignals(in SignalsReport) sourcesapp.SignalsReport {
 }
 
 func countText(n int, noun string) string      { return sourcesapp.CountText(n, noun) }
-func pluralNoun(n float64, noun string) string { return sourcesapp.PluralNoun(n, noun) }
+func pluralNoun(n float64, noun string) string { return report.PluralNoun(n, noun) }
 
 type curatedBodies struct {
 	archive manifest.Bodies

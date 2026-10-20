@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
@@ -23,7 +23,7 @@ type Held struct {
 	Weeks     Feed[[]leaguefeed.WeekResult]
 	Brackets  Feed[[]leaguefeed.Bracket]
 	Standings Feed[[]leaguestandings.RawStanding]
-	Power     map[string]scoring.PowerRankingsResult
+	Power     map[string]season.PowerRankingsResult
 }
 
 func shell[T any](id, title, how string, f Feed[[]T], zone *time.Location, columns ...string) report.Report {

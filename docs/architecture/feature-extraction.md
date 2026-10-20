@@ -3,6 +3,9 @@
 The recipe the Archive extraction followed (reorg PR 3). Wails keeps binding one `App`; a
 feature's root files shrink to adapters and its logic moves to `internal/app/<feature>/`.
 
+Shared view models live in `internal/app/season`, wording in `internal/app/report`. A feature
+never imports a sibling; root adapters compose features through the shared contracts.
+
 ## Steps, one commit each
 
 1. **Freeze the wire first.** Add a root test that JSON-encodes the feature's binding results for

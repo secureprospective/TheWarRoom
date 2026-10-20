@@ -12,7 +12,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -89,9 +89,9 @@ func Load(t *testing.T, year string) Data {
 	}
 	return Data{Weeks: weeks, Brackets: brackets, Standings: standings, Config: cfg, Lookup: lookup}
 }
-func Power() scoring.PowerRankingsResult {
-	return scoring.PowerRankingsResult{OK: true, View: scoring.ViewSeason, Weight: 4.0 / 7, WeeksScored: 3, ModelRunID: 3,
-		AggMode: "lineup", Performance: "all-play", Rows: []scoring.PowerRow{
+func Power() season.PowerRankingsResult {
+	return season.PowerRankingsResult{OK: true, View: season.ViewSeason, Weight: 4.0 / 7, WeeksScored: 3, ModelRunID: 3,
+		AggMode: "lineup", Performance: "all-play", Rows: []season.PowerRow{
 			{Rank: 1, FranchiseID: "0032", PowerScore: 1, RosterValue: 210.4, Results: 89.0 / 93, H2HW: 3, DeltaOK: true, RankDelta: 2},
 			{Rank: 2, FranchiseID: "0001", PowerScore: 0.6, RosterValue: 205.1, Results: 0.7, H2HW: 3},
 		}}
