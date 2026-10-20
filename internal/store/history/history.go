@@ -55,6 +55,8 @@ type Store struct {
 	leagues   nativeLeagueRevision
 	recordsMu sync.Mutex
 	records   map[string]recordRevision
+	weeklyMu  sync.Mutex
+	weekly    map[string]weeklyFile
 	wmu       sync.Mutex
 }
 

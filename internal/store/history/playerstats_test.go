@@ -176,6 +176,27 @@ func TestPlayerWeekStatsScope(t *testing.T) {
 	}
 }
 
+func TestWeeklyFileDecodedOnceByHash(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	body := statBody(t, "244", true)
+	sha := putStatBody(t, s, body, "", t0())
+	first := readStatPort(t, s)
+	first[0].Week.Line.Quantities["passing_yards"] = 999
+	weeks, err := s.decodedWeeks(sha, []byte("not CSV"))
+	if err != nil || len(weeks) != 2 {
+		t.Fatalf("cached body was parsed again: %d, %v", len(weeks), err)
+	}
+	again := readStatPort(t, s)
+	if again[0].Week.Line.Quantities["passing_yards"] != 2440000 {
+		t.Fatal("caller mutated the cached statistics")
+	}
+	putStatBody(t, s, statBody(t, "245", true), "", t0().Add(time.Hour))
+	if got := readStatPort(t, s); len(got) != 2 || got[0].Week.Line.Quantities["passing_yards"] != 2450000 {
+		t.Fatalf("new hash did not invalidate statistics: %+v", got)
+	}
+}
+
 func TestExactArchiveLookupExcludesSimilarURLs(t *testing.T) {
 	t.Parallel()
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
