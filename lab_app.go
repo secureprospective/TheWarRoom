@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -40,26 +40,52 @@ type RawMarketScope struct {
 	ByAge  bool     `json:"byAge"`
 }
 
+// Validate checks a scope that came over IPC, in the service.
 func (r RawMarketScope) Validate() error {
-	if r.From < 1900 || r.To > 2200 || r.From > r.To {
-		return fmt.Errorf("market scope: invalid season range")
-	}
-	allowed := marketPhases()
-	seen := make(map[string]bool)
-	for _, p := range r.Phases {
-		if !slices.Contains(allowed, p) || seen[p] {
-			return fmt.Errorf("market scope: invalid or duplicate phase %q", p)
-		}
-		seen[p] = true
-	}
-	seen = make(map[string]bool)
-	for _, asset := range r.Assets {
-		if !slices.Contains(marketAssets(), asset) || seen[asset] {
-			return fmt.Errorf("market scope: invalid or duplicate asset %q", asset)
-		}
-		seen[asset] = true
-	}
-	return nil
+	return marketapp.Scope(r).Validate() //nolint:wrapcheck // the service's errors already start "market scope:"
+}
+
+type RawMarketAsset struct {
+	Scope RawMarketScope `json:"scope"`
+	Kind  string         `json:"kind"`
+}
+
+// Validate checks an asset profile request that came over IPC, in the service.
+func (r RawMarketAsset) Validate() error {
+	return marketapp.ValidateAsset(marketapp.Scope(r.Scope), r.Kind) //nolint:wrapcheck // the service's errors already start "asset profile:"
+}
+
+// MarketRange, MarketLine, MarketBreakdown, MarketSection and MarketSurface are the wire twins
+// of report.Range and the marketapp surface types; wireSurface converts.
+type MarketRange struct {
+	Max float64 `json:"max,omitempty"`
+	lab.Interval
+	Text string `json:"text"`
+}
+type MarketLine struct {
+	Key    string       `json:"key"`
+	Label  string       `json:"label"`
+	Detail string       `json:"detail"`
+	Count  int          `json:"count"`
+	Range  *MarketRange `json:"range"`
+	Mark   string       `json:"mark"`
+}
+type MarketBreakdown struct {
+	Title string       `json:"title"`
+	Count int          `json:"count"`
+	Rows  []MarketLine `json:"rows"`
+}
+
+type MarketSection struct {
+	Breakdowns []MarketBreakdown `json:"breakdowns,omitempty"`
+	ID         string            `json:"id"`
+	Title      string            `json:"title"`
+	Note       string            `json:"note"`
+	Rows       []MarketLine      `json:"rows"`
+}
+type MarketSurface struct {
+	Summary  string          `json:"summary"`
+	Sections []MarketSection `json:"sections"`
 }
 
 func (a *App) TargetMarket(raw RawMarketScope) Reading[lab.Market] {
@@ -71,6 +97,41 @@ func (a *App) TargetMarket(raw RawMarketScope) Reading[lab.Market] {
 		return failedMarket(err)
 	}
 	return marketReading(d, lab.Scope{From: raw.From, To: raw.To, Phases: slices.Clone(raw.Phases), ByAge: raw.ByAge})
+}
+
+func (a *App) TargetMarketLists(raw RawMarketScope) Reading[MarketSurface] {
+	l, err := a.marketInput(raw)
+	if err != nil {
+		return failedSurface(err)
+	}
+	return wireReading(l.Lists(marketapp.Scope(raw)), wireSurface)
+}
+
+func (a *App) TargetPickClock(raw RawMarketScope) Reading[MarketSurface] {
+	l, err := a.marketInput(raw)
+	if err != nil {
+		return failedSurface(err)
+	}
+	return wireReading(l.PickClock(marketapp.Scope(raw)), wireSurface)
+}
+
+func (a *App) TargetMarketStretches(raw RawMarketScope) Reading[MarketSurface] {
+	l, err := a.marketInput(raw)
+	if err != nil {
+		return failedSurface(err)
+	}
+	return wireReading(l.Stretches(marketapp.Scope(raw)), wireSurface)
+}
+
+func (a *App) TargetAssetProfile(raw RawMarketAsset) Reading[MarketSurface] {
+	if err := raw.Validate(); err != nil {
+		return failedSurface(err)
+	}
+	d, err := a.lab()
+	if err != nil {
+		return failedSurface(err)
+	}
+	return wireReading(marketLab(d).Profile(marketapp.Scope(raw.Scope), raw.Kind), wireSurface)
 }
 
 // lab returns the App's shared decode, or a fresh one for an App built without NewApp.
@@ -85,17 +146,58 @@ func (a *App) lab() (*lab.Data, error) {
 	return a.labData()
 }
 
+// marketInput checks the scope, then reads the Lab the surface is built on.
+func (a *App) marketInput(raw RawMarketScope) (marketapp.Lab, error) {
+	if err := raw.Validate(); err != nil {
+		return marketapp.Lab{}, fmt.Errorf("read Market: %w", err)
+	}
+	d, err := a.lab()
+	return marketLab(d), err
+}
+
+// marketLab is the Lab decode with this build's stamp, as the Market service reads it.
+func marketLab(d *lab.Data) marketapp.Lab {
+	return marketapp.Lab{Data: d, Stamp: buildLabel() + " " + buildDate}
+}
+
 func failedMarket(err error) Reading[lab.Market] {
-	reason := err.Error()
-	return Reading[lab.Market]{Status: ReadingFailed, AbsenceReason: &reason, Threshold: lab.MinWhole, Method: "ridge market fit; frozen compiled facts", InputSHA: lab.DataSHA}
+	return wireReading(marketapp.FailedMarket(err), sameMarket)
 }
 func marketReading(d *lab.Data, s lab.Scope) Reading[lab.Market] {
-	value := lab.LeagueMarket(d, s)
-	r := Reading[lab.Market]{Sourced: snapshot.Sourced[lab.Market]{Value: value, Provenance: snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}}, Status: ReadingOK, Count: value.Trades, Threshold: lab.MinWhole, Baseline: "Median traded position or pick cost per delivered win; age splits keep this yardstick", Cutoff: d.ArchiveThrough, Method: "ridge least-squares with partial-pivot Gauss and sandwich covariance", InputSHA: lab.DataSHA, BuildStamp: buildLabel() + " " + buildDate, HowCounted: "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote."}
-	if value.Rows == nil {
-		reason := "Fewer than 80 valued trades in this scope"
-		r.Status = ReadingThin
-		r.AbsenceReason = &reason
+	return wireReading(marketLab(d).Market(s), sameMarket)
+}
+func sameMarket(m lab.Market) lab.Market { return m }
+func failedSurface(err error) Reading[MarketSurface] {
+	return wireReading(marketapp.FailedSurface(err), wireSurface)
+}
+
+// The Market wordings other features' surfaces share (the Draft Lab, Counterparties, Offers).
+func marketAssets() []string                   { return marketapp.Assets() }
+func marketName(kind string) string            { return marketapp.Name(kind) }
+func percent(v float64) string                 { return marketapp.Percent(v) }
+func marketRange(r *lab.Interval) *MarketRange { return wireRange(marketapp.RangeOf(r)) }
+
+// wireSurface converts a surface built by the Market service to its wire twin. The two type
+// sets are kept identical field for field; TestMarketWireTwinsMatch proves it.
+func wireSurface(s marketapp.Surface) MarketSurface {
+	sections := make([]MarketSection, len(s.Sections))
+	for i, section := range s.Sections {
+		sections[i] = MarketSection{ID: section.ID, Title: section.Title, Note: section.Note, Rows: wireLines(section.Rows)}
+		if section.Breakdowns != nil {
+			breakdowns := make([]MarketBreakdown, len(section.Breakdowns))
+			for j, b := range section.Breakdowns {
+				breakdowns[j] = MarketBreakdown{Title: b.Title, Count: b.Count, Rows: wireLines(b.Rows)}
+			}
+			sections[i].Breakdowns = breakdowns
+		}
 	}
-	return r
+	return MarketSurface{Summary: s.Summary, Sections: wireSlice(s.Sections, sections)}
+}
+
+func wireLines(lines []marketapp.Line) []MarketLine {
+	out := make([]MarketLine, len(lines))
+	for i, l := range lines {
+		out[i] = MarketLine{Key: l.Key, Label: l.Label, Detail: l.Detail, Count: l.Count, Range: wireRange(l.Range), Mark: l.Mark}
+	}
+	return wireSlice(lines, out)
 }

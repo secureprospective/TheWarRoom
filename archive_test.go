@@ -151,6 +151,7 @@ func fillWire(v reflect.Value, n *int) {
 	scalars := map[reflect.Kind]func(){
 		reflect.String:  func() { v.SetString(fmt.Sprint("text ", *n)) },
 		reflect.Float64: func() { v.SetFloat(float64(*n) + 0.25) },
+		reflect.Int:     func() { v.SetInt(int64(*n)) },
 		reflect.Bool:    func() { v.SetBool(true) },
 	}
 	set, ok := scalars[kind]

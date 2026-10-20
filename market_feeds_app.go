@@ -157,10 +157,14 @@ func marketFactsAt(held map[string]heldSeasonFeed[[]marketfeeds.Feed], zone *tim
 	for id, facts := range built {
 		out[id] = make([]MarketFact, len(facts))
 		for i, f := range facts {
-			out[id][i] = MarketFact{value: f.Value, Label: f.Label, Text: f.Text, Reason: f.Reason, Range: wireRange(f.Range)}
+			out[id][i] = wireFact(f)
 		}
 	}
 	return out
+}
+
+func wireFact(f marketapp.Fact) MarketFact {
+	return MarketFact{value: f.Value, Label: f.Label, Text: f.Text, Reason: f.Reason, Range: wireRange(f.Range)}
 }
 
 func marketWeekText(week int) string { return marketapp.WeekText(week) }

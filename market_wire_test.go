@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
@@ -85,4 +90,41 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	broken := &App{labData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}
 	checkGolden(t, "market", "lists-unloaded", broken.TargetMarketLists(full))
 	checkGolden(t, "market", "profile-unloaded", broken.TargetAssetProfile(RawMarketAsset{Scope: full, Kind: "LB"}))
+}
+
+// TestMarketWireTwinsMatch proves wireSurface, wireReading and marketFactsAt lose nothing: a
+// reading and a fact with every field set, and empty ones, encode the same before and after
+// conversion. A field added to one type set and not the other, a renamed JSON tag, or a field a
+// converter skips fails here.
+func TestMarketWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	var full report.Reading[marketapp.Surface]
+	n := 0
+	fillWire(reflect.ValueOf(&full).Elem(), &n)
+	var fact marketapp.Fact
+	fillWire(reflect.ValueOf(&fact).Elem(), &n)
+	for _, c := range []struct {
+		name       string
+		built, got any
+	}{
+		{"full reading", full, wireReading(full, wireSurface)},
+		{"empty reading", report.Reading[marketapp.Surface]{}, wireReading(report.Reading[marketapp.Surface]{}, wireSurface)},
+		{"empty section", marketapp.Surface{Sections: []marketapp.Section{{}}}, wireSurface(marketapp.Surface{Sections: []marketapp.Section{{}}})},
+		{"fact", fact, wireFact(fact)},
+	} {
+		want, err := json.Marshal(c.built)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := json.Marshal(c.got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(want, got) {
+			t.Errorf("%s: wire twin encodes differently\n built %s\n wire  %s", c.name, want, got)
+		}
+	}
+	if wireFact(fact).value != fact.Value {
+		t.Error("fact: the pool's value was dropped")
+	}
 }

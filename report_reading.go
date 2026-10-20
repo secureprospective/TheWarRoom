@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 type ReportRow struct {
@@ -114,6 +115,15 @@ func wireChoices(choices []report.Choice) []RaceChoice {
 		out[i] = RaceChoice(c)
 	}
 	return wireSlice(choices, out)
+}
+
+// wireReading converts a reading built by a feature service to its wire twin, its value through
+// value.
+func wireReading[S, T any](r report.Reading[S], value func(S) T) Reading[T] {
+	return Reading[T]{Sourced: snapshot.Sourced[T]{Value: value(r.Value), Provenance: r.Provenance},
+		Status: ReadingStatus(r.Status), AbsenceReason: r.AbsenceReason, Count: r.Count, Threshold: r.Threshold,
+		Baseline: r.Baseline, Cutoff: r.Cutoff, Method: r.Method, InputSHA: r.InputSHA, BuildStamp: r.BuildStamp,
+		HowCounted: r.HowCounted}
 }
 
 // wireSlice keeps a nil slice nil, so it still encodes as null rather than [].
