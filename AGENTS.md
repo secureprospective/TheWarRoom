@@ -19,7 +19,7 @@
 
 - Split files by responsibility, never by size. `make filelen` reports files over 600 lines; say why in the commit. Function limits (`funlen`, `gocyclo`) still gate.
 - Comments say what the code can't, in the fewest lines. No review history, decision IDs or session notes in code; those belong in commits and docs. `make bloat` fails if comment share, provenance, tiny files or duplication rise.
-- No copy-paste. A second near-copy is the signal to turn it into data. Check `SYSTEM_MAP.md` for existing utilities first.
+- No copy-paste. A second near-copy is the signal to turn it into data. Check `SYSTEM_MAP.md` and `docs/architecture/system-narrative.md` for existing utilities first.
 - Add a dependency only when the alternative is >~15 lines of native code.
 - No commented-out code. Delete; `git` remembers.
 
@@ -61,13 +61,14 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 - Do not edit `.git/`, `node_modules/`, `frontend/dist/`, `build/bin/`, or `frontend/wailsjs/` (generated bindings — regenerate with `wails generate module`).
 - Do not pin third-party CI actions or pre-commit hooks to mutable tags. Pin to commit SHAs (the trivy-action lesson).
-- Do not introduce a new top-level directory or `internal/` package without updating `SYSTEM_MAP.md`.
+- Do not introduce a new top-level directory or `internal/` package without updating `SYSTEM_MAP.md` and adding its row to `docs/architecture/placement.tsv` (`make lint` checks).
 - Do not add a package-level `var`. The only sanctioned globals: sentinel errors (`var ErrFoo = errors.New(...)` with `//nolint:gochecknoglobals` + explanation — `nolintlint` requires it) and `//go:embed` vars (auto-exempt, no nolint). Everything else is the failure mode the linter exists to stop. `nolintlint` rejects any unused or unexplained `//nolint`.
 - Do not generate an architecture-overview section in this file (inflates tokens, does not change behavior).
 
 ## Where to look
 
-- `SYSTEM_MAP.md` — what exists and where it goes. Check before writing.
+- `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
+- `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
 - `docs/build-handoffs/Core_Build_Plan_2026-10.md` — stages, gates and current progress.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.

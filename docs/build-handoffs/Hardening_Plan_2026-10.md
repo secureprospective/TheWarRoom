@@ -158,7 +158,7 @@ The databases are three files in `~/.config/TheWarRoom/`:
 - **Both sides are protected after phase 6.**
 
 ## Backlog (known, not scheduled)
-- **Built but not wired** (`SYSTEM_MAP.md`):
+- **Built but not wired** (`docs/architecture/system-narrative.md`):
   - ~20 native owner readings have no screen
   - the IR/taxi entry checks have no caller
   - three IPC methods are used only by tests

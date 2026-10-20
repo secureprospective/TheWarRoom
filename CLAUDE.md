@@ -13,8 +13,10 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 
 - **Plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
   the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
-- **Latest state:** the newest `docs/build-handoffs/RESUME-*.md`.
-- **What exists:** `SYSTEM_MAP.md`.
+- **Latest state:** `HANDOFF.md`, then the newest `quarantine/docs/build-handoffs/RESUME-*.md` (the
+  purge quarantined every RESUME on 2026-10-20).
+- **What exists:** `SYSTEM_MAP.md`, a one-page feature directory; the long narrative is
+  `docs/architecture/system-narrative.md`.
 - **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
   ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 2 on 2026-10-11).
   Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
@@ -22,8 +24,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, merged 2026-10-11 (PR #17,
   `main` b4b3418): contract Acts, the Lab screens, the free-agent bid pool, held IR/taxi
   eligibility, exact-cents money. Ring 3, breadth and depth, merged 2026-10-13; ring 4, the
-  commissioner side, merged 2026-10-19 (PR #38, PR #39 `main` 5739c5c9). `SYSTEM_MAP.md` § Built but
-  not wired lists what is tested but not yet reachable from a screen.
+  commissioner side, merged 2026-10-19 (PR #38, PR #39 `main` 5739c5c9). `docs/architecture/system-narrative.md`
+  § Built but not wired lists what is tested but not yet reachable from a screen.
 
 ## Session start
 
@@ -122,7 +124,9 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | Build doctrine: load before any build or review | `docs/agent-codex.md` |
 | The plan, rulings and gates | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
-| What exists, and the import rules | `SYSTEM_MAP.md` |
+| Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
+| What exists at length, and the import rules | `docs/architecture/system-narrative.md` |
+| Which feature owns a root file or package | `docs/architecture/placement.tsv` |
 | Engine architecture | `docs/scoring-engine/Engine_Specification.md` |
 | A position's rubric | `docs/scoring-engine/<POSITION>_Rubric.md` |
 | MFL API and scoring | `docs/data-layer/MFL_API_Specification.md`, `MFL_Scoring_Rules_Decode.md` |
@@ -133,7 +137,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
 | Commissioner surface: MFL map, cut, K1–K7 process, rulings | `docs/commissioner/README.md` |
 | Open questions and decisions | `docs/roadmap/Roadmap_and_Open_Questions.md` |
-| The 2026-10 engineering audit | `docs/reviews/engineering-audit-2026-10/` |
+| The 2026-10 engineering audit | `docs/build-handoffs/Deep_Audit_2026-10-19.md` (the Oct 3 audit is in `quarantine/docs/reviews/`) |
 | Deferred: the Commissioner Suite | `docs/build-handoffs/Commissioner_Suite_Plan_DEFERRED.md` |
 | History before the core plan | `docs/build-handoffs/Build_State_Archive_Through_Alpha.md` |
 
