@@ -1,7 +1,9 @@
-# System Map
+# System narrative
 
-What exists in TheWarRoom and where new code belongs. Update it in the same commit as any new
-package, IPC method or external service. Current as of 2026-10-19: ring 4 merged (`main`
+The long account of what exists in TheWarRoom: layers, IPC surface, data, external services and the
+native league. Moved from the root `SYSTEM_MAP.md` on 2026-10-20; that file is now a one-page feature
+directory and `docs/architecture/placement.tsv` assigns every root file and package to a feature.
+Update this narrative in the same commit as any new package, IPC method or external service. Current as of 2026-10-19: ring 4 merged (`main`
 5739c5c9), then the clean sweep checked every path, symbol and IPC method named here against the
 code.
 
