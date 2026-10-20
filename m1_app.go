@@ -4,31 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
-	"github.com/secureprospective/TheWarRoom/internal/modelrun"
-	"github.com/secureprospective/TheWarRoom/internal/rankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// m1Timeout bounds the M1 IPC calls: ScoreLeague fetches two MFL exports and scores ~1,200
-// players.
+// m1Timeout bounds the IPC calls that read history's reports.
 const m1Timeout = 120 * time.Second
-
-// proxyLabel must accompany every score surface while base points are MFL's YTD totals
-// (Christopher's ruling); the UI renders it verbatim.
-func (a *App) proxyLabel() string {
-	if a.season == 0 { // startup failed before the season was parsed
-		return "BasePoints: MFL YTD fantasy points (proxy) — L2 pending"
-	}
-	return fmt.Sprintf("BasePoints: MFL %d YTD fantasy points (proxy) — L2 pending", a.season-1)
-}
 
 // loadSeasonPoints keeps history holding MFL's season totals for every league season: each
 // earlier season once, the last one again (so late stat corrections land), and the current one
@@ -79,84 +65,17 @@ func scoringYear(y, current int) int {
 	return y
 }
 
+// seasonPointsMeasure is the measure MFL's season fantasy-point totals are stored under.
+const seasonPointsMeasure = "outcome.fantasy_points"
+
 // seasonPointsHeld reports whether history already holds MFL's totals for season.
 func (a *App) seasonPointsHeld(ctx context.Context, season int) (bool, error) {
 	feats, err := a.history.Features(ctx, history.FeatureQuery{AsOf: time.Now(), Season: season,
-		Measures: []string{rankings.BaseMeasure}})
+		Measures: []string{seasonPointsMeasure}})
 	if err != nil {
 		return false, fmt.Errorf("app: read %d season points: %w", season, err)
 	}
 	return len(feats) > 0, nil
-}
-
-// ScoreLeagueResult is the board's scoring report (run, scored, zero-base, exclusions with
-// reasons) and the model run's, plus the proxy label. Warning reports a source that failed this
-// pass.
-type ScoreLeagueResult struct {
-	OK      bool            `json:"ok"`
-	Error   string          `json:"error"`
-	Warning string          `json:"warning"`
-	Label   string          `json:"label"`
-	Report  rankings.Report `json:"report"`
-	Model   modelrun.Report `json:"model"`
-}
-
-// ScoreLeague scores all 32 rosters as a board run and a model run in history. A pass that matches the latest
-// board exactly writes nothing and reports unchanged.
-func (a *App) ScoreLeague() ScoreLeagueResult {
-	if err := a.ready(); err != nil {
-		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
-	}
-	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
-	defer cancel()
-	fail := func(err error) ScoreLeagueResult {
-		return ScoreLeagueResult{Error: err.Error(), Label: a.proxyLabel()}
-	}
-
-	lk, err := a.directory(ctx)
-	if err != nil {
-		return fail(err)
-	}
-	warning, err := a.loadSeasonPoints(ctx)
-	if err != nil {
-		return fail(err)
-	}
-	// One crosswalk fetch serves the player directory and every scouting signal. A directory
-	// write failure is logged, not fatal: the board does not read the directory yet.
-	cw, err := a.fetchCrosswalk(ctx)
-	if err != nil {
-		return fail(err)
-	}
-	if _, err := a.linkCrosswalk(ctx, cw, lk); err != nil {
-		log.Printf("the war room: %v", err)
-	}
-	// A scouting fetch failure fails the run, so a signal-less league is visible. The exception
-	// is an unconfigured CFBD key (in buildScoutingDirectory).
-	scout, err := a.buildScoutingDirectory(ctx, lk, cw)
-	if err != nil {
-		return fail(err)
-	}
-	runner, err := rankings.New(a.league.Reader(), lk, scout, a.rulebook, a.history, buildLabel())
-	if err != nil {
-		return fail(err)
-	}
-	set := a.params.Snapshot() // the board and the model score with the same params
-	rep, err := runner.Run(ctx, rankings.RunSpec{
-		Kind: history.RunBoard, Season: a.season, AsOf: time.Now(),
-		Params: set, Measures: rankings.BoardMeasures(),
-	})
-	if err != nil {
-		return fail(err)
-	}
-	modelRep, err := a.runModel(ctx, lk, set)
-	if err != nil {
-		return fail(err)
-	}
-	names := a.rulebook.FranchiseNames()
-	for i := range rep.Excluded {
-		rep.Excluded[i].FranchiseName = domain.FranchiseLabel(names, rep.Excluded[i].FranchiseID)
-	}
-	return ScoreLeagueResult{OK: true, Warning: warning, Label: a.proxyLabel(), Report: rep, Model: modelRep}
 }
 
 // describeMeasures pairs each measure name with its dictionary meaning.

@@ -504,7 +504,7 @@
  },
  "pool": {
   "value": {
-   "engineNote": "Engine points unavailable; use Score League to value players.",
+   "engineNote": "Engine points unavailable until the engine first runs.",
    "ppgNote": "Source: MFL fantasy points, this league's scoring · no finished week held yet",
    "sorts": [
     {

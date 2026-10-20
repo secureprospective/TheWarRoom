@@ -24,6 +24,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
+// rasFetchTimeout bounds the scouting fetches; the combine and crosswalk files come from static
+// CDNs, so a tight budget fails on a cold cache.
+const rasFetchTimeout = 90 * time.Second
+
+// cfbdEnvVar holds the CollegeFootballData token, read at wire time. Unset skips the CFBD signals.
+const cfbdEnvVar = "CFBD_API_KEY"
+
 // scoutProfiles is the in-progress per-player Profile map the assemblers merge into.
 type scoutProfiles = map[playerid.PlayerID]scouting.Profile
 

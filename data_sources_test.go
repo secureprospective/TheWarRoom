@@ -158,21 +158,14 @@ func cell(r Report, key string) string {
 	return ""
 }
 
-func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
+func TestHealthReportSaysWhatFailedAndWhenTheEngineRan(t *testing.T) {
 	t.Parallel()
 	reg, err := measures.Embedded()
 	if err != nil {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 10, 11, 18, 0, 0, 0, time.UTC)
-	var nflverseMeasure string
-	for _, f := range reg.Fields {
-		if f.Source == "nflverse" {
-			nflverseMeasure = f.Measure
-			break
-		}
-	}
-	in := healthInput{reg: reg, now: now, zone: time.UTC, boardRun: true, missing: []string{nflverseMeasure},
+	in := healthInput{reg: reg, now: now, zone: time.UTC,
 		sources: []history.SourceHealth{
 			{Source: "mfl", State: history.SourceActive, LastSuccess: now.Add(-3 * time.Hour)},
 			{Source: "nflverse", State: history.SourceLost, LastSuccess: now.Add(-20 * 24 * time.Hour),
@@ -192,25 +185,28 @@ func TestHealthReportSaysWhatFailedAndWhetherTheBoardRunsReduced(t *testing.T) {
 	}
 	want := map[string][]string{
 		"MFL · rosters": {"MFL · rosters", "Oct 11, 2026, 4:00 PM\n2 hours", "Oct 11, 2026, 5:00 PM: HTTP 503"},
-		"nflverse data releases": {"nflverse data releases\nRunning reduced: 1 of its measures not flowing (" + nflverseMeasure + ")",
+		"nflverse data releases": {"nflverse data releases\nEngine run not yet available",
 			"Sep 21, 2026, 6:00 PM\nLost · 20 days", "Oct 11, 2026, 5:00 PM: HTTP 404"},
-		"CollegeFootballData API": {"CollegeFootballData API\nFeeding the board", "Oct 11, 2026, 5:59 PM\nUnder an hour",
+		"CollegeFootballData API": {"CollegeFootballData API\nEngine run not yet available", "Oct 11, 2026, 5:59 PM\nUnder an hour",
 			"Oct 11, 2026, 5:00 PM (recovered since)"},
 		"EA Madden ratings":             {"EA Madden ratings", "Never\nRetired", "None"},
 		"MFL league archive, 2013–2026": {"MFL league archive, 2013–2026", "Never\nNo good read yet", "None"},
 	}
 	// MFL's own row stands for its exports: the newest export read and failure, never "Never".
 	mfl, _ := reg.Source("mfl")
-	want[mfl.Name] = []string{mfl.Name + "\nFeeding the board", "Oct 11, 2026, 4:00 PM\n2 hours",
+	want[mfl.Name] = []string{mfl.Name + "\nEngine run not yet available", "Oct 11, 2026, 4:00 PM\n2 hours",
 		"Oct 11, 2026, 5:00 PM: HTTP 503"}
 	for name, cells := range want {
 		if strings.Join(rows[name], " | ") != strings.Join(cells, " | ") {
 			t.Errorf("%s:\n got %q\nwant %q", name, rows[name], cells)
 		}
 	}
-	in.boardRun = false
-	if got := boardText("cfbd", in); got != "Engine run not yet available" {
-		t.Errorf("board text without a run = %q", got)
+	in.engineAt = now.Add(-time.Hour)
+	if got := boardText("cfbd", in); got != engineRunText(in.engineAt, in.zone) {
+		t.Errorf("board text after an engine run = %q", got)
+	}
+	if got := boardText(leagueArchiveSource, in); got != "Not read by the board" {
+		t.Errorf("board text for a reference source = %q", got)
 	}
 }
 
@@ -451,8 +447,8 @@ func TestPhotoHealthRowSaysWhatIsHeldAndWhenOff(t *testing.T) {
 	}
 }
 
-// TestSourceStandingAlarmsOnlyForTheBoard is the status strip's reading (S-12): the alarm is the
-// board running reduced or a board source lost or never read; a source the board does not read,
+// TestSourceStandingAlarmsOnlyForTheBoard is the status strip's reading (S-12): the alarm is a
+// board source lost or never read; a source the board does not read,
 // such as the league archive, never raises it.
 func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 	t.Parallel()
@@ -465,7 +461,7 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 		return history.SourceHealth{Source: src, State: history.SourceActive, LastSuccess: now.Add(-time.Hour)}
 	}
 	base := func() healthInput {
-		return healthInput{reg: reg, now: now, zone: time.UTC, boardRun: true, sources: []history.SourceHealth{
+		return healthInput{reg: reg, now: now, zone: time.UTC, sources: []history.SourceHealth{
 			good("mfl"), good("nflverse"), good("cfbd"), {Source: "madden", State: history.SourceRetired},
 			{Source: leagueArchiveSource, State: history.SourceActive}, // never read: not a board source
 		}}
@@ -475,7 +471,6 @@ func TestSourceStandingAlarmsOnlyForTheBoard(t *testing.T) {
 		state  string
 	}{
 		"all flowing, archive never read": {func(*healthInput) {}, "live"},
-		"board ran reduced":               {func(in *healthInput) { in.missing = []string{"x"} }, "fail"},
 		"board source never read":         {func(in *healthInput) { in.sources[1].LastSuccess = time.Time{} }, "fail"},
 		"board source lost":               {func(in *healthInput) { in.sources[2].State = history.SourceLost }, "fail"},
 		"failure not recovered": {func(in *healthInput) {

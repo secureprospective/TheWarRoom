@@ -21,8 +21,6 @@ type healthInput struct {
 	sources  []history.SourceHealth
 	mfl      []history.URLHealth
 	engineAt time.Time
-	boardRun bool
-	missing  []string // measures the latest board run went without
 	now      time.Time
 	zone     *time.Location
 	photos   *photoHealth      // nil before the photo cache starts
@@ -108,13 +106,10 @@ func healthRows(in healthInput) []healthRow {
 	return rows
 }
 
-// sourceStanding is the status strip's reading of C-07 (S-12). The alarm is the board running
-// reduced, or a source the board reads that is lost or has never been read; a failure with no
+// sourceStanding is the status strip's reading of C-07 (S-12). The alarm is a source the board
+// reads that is lost or has never been read; a failure with no
 // newer good read is a warning; a source the board does not read never raises the alarm.
 func sourceStanding(in healthInput) (state, label string) {
-	if in.boardRun && len(in.missing) > 0 {
-		return "fail", fmt.Sprintf("Board running reduced · %s not flowing", countText(len(in.missing), "measure"))
-	}
 	state, label = "live", "Sources flowing"
 	var missing, unset []string
 	for _, row := range healthRows(in) {
@@ -240,32 +235,16 @@ func plainAge(d time.Duration) string {
 	return fmt.Sprintf("%d days", int(d.Hours()/24))
 }
 
-// boardText says whether the board reads a source's measures, and which it went without.
+// boardText says whether the engine reads a source's measures, and when it last ran. The layer 1-4
+// board run that once reported the measures it went without is quarantined; that is not computed.
 func boardText(source string, in healthInput) string {
-	if source == "" {
+	if source == "" || !slices.ContainsFunc(in.reg.Fields, func(f measures.SourceField) bool { return f.Source == source }) {
 		return "Not read by the board"
 	}
-	var feeds, short []string
-	for _, f := range in.reg.Fields {
-		if f.Source == source && !slices.Contains(feeds, f.Measure) {
-			feeds = append(feeds, f.Measure)
-			if slices.Contains(in.missing, f.Measure) {
-				short = append(short, f.Measure)
-			}
-		}
+	if !in.engineAt.IsZero() {
+		return engineRunText(in.engineAt, in.zone)
 	}
-	switch {
-	case len(feeds) == 0:
-		return "Not read by the board"
-	case !in.boardRun:
-		if !in.engineAt.IsZero() {
-			return engineRunText(in.engineAt, in.zone)
-		}
-		return "Engine run not yet available"
-	case len(short) > 0:
-		return fmt.Sprintf("Running reduced: %d of its measures not flowing (%s)", len(short), strings.Join(short, ", "))
-	}
-	return "Feeding the board"
+	return "Engine run not yet available"
 }
 
 // signalFilesReport is the signal files behind C-07: each file's last load and its reach.
