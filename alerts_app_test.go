@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )
 
@@ -72,4 +74,9 @@ func TestTargetAlerts(t *testing.T) {
 	if err != nil || slices.Contains(alerts, "trades") || !slices.Contains(unavailable, "trades") {
 		t.Fatalf("failed pendingTrades: %v %v %v", alerts, unavailable, err)
 	}
+}
+
+func alertUrgency(now, at time.Time) string { return controlapp.AlertUrgency(now, at) }
+func compareAlerts(a, b Alert) int {
+	return controlapp.CompareAlerts(controlapp.Alert(a), controlapp.Alert(b))
 }

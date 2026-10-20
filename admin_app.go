@@ -5,6 +5,8 @@ import (
 	"context"
 	"slices"
 	"time"
+
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 )
 
 // The admin console: every calibration parameter with the value in effect, and admin overrides.
@@ -45,7 +47,7 @@ func (a *App) GetParams() ParamsResult {
 		if err != nil {
 			return ParamsResult{OK: false, Error: err.Error()}
 		}
-		label, group := parameterWords(d.Key, d.Description)
+		label, group := controlapp.ParameterWords(d.Key, d.Description)
 		out[i] = ParamView{Key: d.Key, Label: label, Group: group, Position: d.Position, Description: d.Description,
 			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
 			Overridden: a.params.Overridden(d.Key, d.Position)}

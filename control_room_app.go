@@ -1,14 +1,15 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	_ "embed" // the league's own rulebook ships with the app (M-185)
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
-	"strings"
 	"time"
+
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews"
@@ -35,6 +36,7 @@ func (a *App) TargetLeagueSettings() (Report, error) {
 	defer cancel()
 	a.seasonMu.Lock()
 	held := a.control.ruleNames
+	held.value = maps.Clone(held.value)
 	a.seasonMu.Unlock()
 	if held.value == nil {
 		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[league.RawRuleCode]{
@@ -47,13 +49,14 @@ func (a *App) TargetLeagueSettings() (Report, error) {
 		a.seasonMu.Lock()
 		holdSeasonFeed(&a.control.ruleNames, league.RuleNames(rows), fresh, err)
 		held = a.control.ruleNames
+		held.value = maps.Clone(held.value)
 		a.seasonMu.Unlock()
 	}
 	note := ""
 	if held.value == nil {
 		note = "MFL's names for its scoring codes could not be read, so codes are shown: " + held.refreshError
 	}
-	return leagueSettingsReport(a.rulebook.ActiveConfig(), held.value, note), nil
+	return wireReport(controlapp.LeagueSettingsReport(a.rulebook.ActiveConfig(), held.value, note)), nil
 }
 
 // TargetSiteNews is Control Room › App › What's New (M-141), refreshed when an hour old.
@@ -63,6 +66,7 @@ func (a *App) TargetSiteNews() (Report, error) {
 	}
 	a.seasonMu.Lock()
 	held := a.control.siteNews
+	held.value = slices.Clone(held.value)
 	a.seasonMu.Unlock()
 	if held.refreshError != "" || time.Since(held.fetchedAt) >= siteNewsFreshFor {
 		ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
@@ -77,6 +81,7 @@ func (a *App) TargetSiteNews() (Report, error) {
 		a.seasonMu.Lock()
 		holdSeasonFeed(&a.control.siteNews, rows, fresh, err)
 		held = a.control.siteNews
+		held.value = slices.Clone(held.value)
 		a.seasonMu.Unlock()
 	}
 	items, err := sitenews.Read(held.value)
@@ -87,11 +92,11 @@ func (a *App) TargetSiteNews() (Report, error) {
 	if !held.fetchedAt.IsZero() {
 		asOf = "As of: " + reportTime(held.fetchedAt, time.Local)
 	}
-	return siteNewsReport(items, asOf, held.refreshError, time.Local), nil
+	return wireReport(controlapp.SiteNewsReport(items, asOf, held.refreshError, time.Local)), nil
 }
 
 // TargetAccounting is Control Room › League › Accounting (M-098, M-197).
-func (a *App) TargetAccounting() Report { return accountingReport() }
+func (a *App) TargetAccounting() Report { return wireReport(controlapp.AccountingReport()) }
 
 // TargetOpenMFLAccounting opens MFL's accounting page for the league. The app only opens it.
 func (a *App) TargetOpenMFLAccounting() error {
@@ -102,9 +107,9 @@ func (a *App) TargetOpenMFLAccounting() error {
 	if a.mflClient != nil {
 		host = a.mflClient.LeagueHost()
 	}
-	target, err := accountingURL(host, a.season)
+	target, err := controlapp.AccountingURL(host, a.season)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // preserve the binding error text
 	}
 	a.openURL(a.ctx, target)
 	return nil
@@ -117,51 +122,17 @@ type BylawSection struct {
 }
 
 // TargetBylaws is Control Room › League › By-laws (M-185): the league's own rulebook, by section.
-func (a *App) TargetBylaws() []BylawSection { return bylawSections(rulebookMarkdown) }
+func (a *App) TargetBylaws() []BylawSection {
+	return wireBylaws(controlapp.BylawSections(rulebookMarkdown))
+}
 
-// bylawSections reads the rulebook's markdown: each "## " heading starts a section; "### "
-// headings, bullets, paragraphs and table rows become plain lines; markup is dropped.
-func bylawSections(md []byte) []BylawSection {
-	var out []BylawSection
-	sc := bufio.NewScanner(bytes.NewReader(md))
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		switch {
-		case strings.HasPrefix(line, "## "):
-			out = append(out, BylawSection{Title: plainMarkdown(strings.TrimPrefix(line, "## "))})
-		case len(out) == 0 || line == "" || line == "---" || isTableRule(line):
-			continue
-		default:
-			if text := bylawLine(line); text != "" {
-				out[len(out)-1].Lines = append(out[len(out)-1].Lines, text)
-			}
-		}
+func wireBylaws(sections []controlapp.BylawSection) []BylawSection {
+	if sections == nil {
+		return nil
+	}
+	out := make([]BylawSection, len(sections))
+	for i, s := range sections {
+		out[i] = BylawSection(s)
 	}
 	return out
-}
-
-func bylawLine(line string) string {
-	switch {
-	case strings.HasPrefix(line, "### "):
-		return plainMarkdown(strings.TrimPrefix(line, "### ")) + ":"
-	case strings.HasPrefix(line, "|"):
-		var cells []string
-		for _, c := range strings.Split(strings.Trim(line, "|"), "|") {
-			if c = plainMarkdown(c); c != "" {
-				cells = append(cells, c)
-			}
-		}
-		return strings.Join(cells, " · ")
-	case strings.HasPrefix(line, "- "):
-		return "• " + plainMarkdown(strings.TrimPrefix(line, "- "))
-	}
-	return plainMarkdown(line)
-}
-
-func isTableRule(line string) bool {
-	return strings.HasPrefix(line, "|") && strings.Trim(line, "|-: ") == ""
-}
-
-func plainMarkdown(s string) string {
-	return strings.TrimSpace(strings.NewReplacer("**", "", "`", "").Replace(s))
 }

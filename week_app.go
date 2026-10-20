@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"slices"
 	"strconv"
 	"time"
+
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -169,46 +172,16 @@ func (a *App) deriveWeekPhase(ctx context.Context, w leagueweek.Week, fetched ti
 	}
 }
 
-// weekClock is the clock's lineup lock and provenance from the held week. A missing or failed
-// schedule degrades only the lineup part: the phase and calendar still read, so it never marks
-// the clock failed (the strip would say "Clock unavailable").
-func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
+func (a *App) weekSnapshot() controlapp.WeekSnapshot {
 	a.weekMu.Lock()
 	defer a.weekMu.Unlock()
-	fresh := liveFreshness(now)
-	if !a.weekFetchedAt.IsZero() {
-		fresh = liveFreshness(a.weekFetchedAt)
-	}
-	if a.weekRefreshError != "" {
-		fresh.State = FreshStale
-	}
-	fresh.Note = a.weekNote()
-	if lock, ok := leagueweek.NextLock(now, a.week); ok {
-		return &leagueclock.LineupLock{Week: a.week.Number, At: lock}, fresh
-	}
-	if a.week.Number != 0 && len(a.week.Games) > 0 {
-		return &leagueclock.LineupLock{Week: a.week.Number, At: leagueweek.LastLock(a.week)}, fresh
-	}
-	return nil, fresh
+	w := a.week
+	w.Games = slices.Clone(w.Games)
+	return controlapp.WeekSnapshot{Week: w, FetchedAt: a.weekFetchedAt, RefreshError: a.weekRefreshError}
 }
 
-// weekNote says what the held schedule is, or why there is none. The caller holds weekMu.
-func (a *App) weekNote() string {
-	held := "no lineup week"
-	if a.week.Number != 0 {
-		held = "week " + strconv.Itoa(a.week.Number)
-	}
-	fetched := a.weekFetchedAt.Format(time.RFC3339)
-	switch {
-	case a.weekRefreshError != "" && a.weekFetchedAt.IsZero():
-		return "NFL schedule refresh failed: " + a.weekRefreshError
-	case a.weekRefreshError != "":
-		return fmt.Sprintf("NFL schedule refresh failed: %s; showing %s fetched %s",
-			a.weekRefreshError, held, fetched)
-	case a.weekFetchedAt.IsZero():
-		return "NFL schedule not fetched yet"
-	}
-	return "NFL schedule: " + held + ", fetched " + fetched
+func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
+	return controlapp.WeekClock(a.weekSnapshot(), now)
 }
 
 func (a *App) lastRegularWeek() int {
@@ -219,19 +192,22 @@ func (a *App) lastRegularWeek() int {
 	return last
 }
 
-func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
-	in := leagueclock.WindowInputs{LastRegular: a.lastRegularWeek(), FirstKickoff: map[int]time.Time{}}
+func (a *App) windowSnapshot() controlapp.WindowSnapshot {
+	in := controlapp.WindowSnapshot{LastRegular: a.lastRegularWeek(), Schedules: map[int][]nflschedule.RawWeek{}}
 	a.seasonMu.Lock()
 	defer a.seasonMu.Unlock()
 	for _, rule := range leagueclock.Rules(in.LastRegular) {
-		for _, raw := range a.now.schedules[rule.Week].value {
-			w, err := nflschedule.ToWeek(raw, now)
-			if err == nil && w.Number == rule.Week && len(w.Games) > 0 {
-				in.FirstKickoff[rule.Week] = leagueweek.FirstLock(w)
-			}
+		rows := slices.Clone(a.now.schedules[rule.Week].value)
+		for i := range rows {
+			rows[i].Matchups = slices.Clone(rows[i].Matchups)
 		}
+		in.Schedules[rule.Week] = rows
 	}
 	return in
+}
+
+func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
+	return controlapp.WindowInputs(a.windowSnapshot(), now)
 }
 
 // timeNow is the league clock's current time: the wall clock unless a test pins it.
