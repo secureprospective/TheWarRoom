@@ -17,6 +17,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
+// rasFetchTimeout bounds the static-CDN fetches (crosswalk, research files); a tight budget
+// fails on a cold cache.
+const rasFetchTimeout = 90 * time.Second
+
+// cfbdEnvVar holds the CollegeFootballData token, read at wire time. Unset skips the CFBD signals.
+const cfbdEnvVar = "CFBD_API_KEY"
+
 // signalsTimeout bounds one signals load. The first load on a new history backfills every
 // season, about 100 MB of files.
 const signalsTimeout = 30 * time.Minute

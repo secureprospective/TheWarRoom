@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -111,20 +110,6 @@ func CSVColumns(header []string, names ...string) (map[string]int, error) {
 		pos[name] = idx
 	}
 	return pos, nil
-}
-
-// IntCell parses a counting stat: missing or NA is 0, present but unparseable is an error,
-// since zeroing it would hide corruption. label names the column in the error.
-func IntCell(rec []string, idx int, label string) (int, error) {
-	v := strings.TrimSpace(rec[idx])
-	if IsMissing(v) {
-		return 0, nil
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return 0, fmt.Errorf("ingestion: column %q value %q: %w", label, v, err)
-	}
-	return n, nil
 }
 
 // Get fetches url and returns its body, failing on a status other than 200 and on a body over

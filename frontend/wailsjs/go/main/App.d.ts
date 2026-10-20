@@ -20,8 +20,6 @@ export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
 
 export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
 
-export function ScoreLeague():Promise<main.ScoreLeagueResult>;
-
 export function SetLeagueArchiveDir(arg1:string):Promise<main.DataActResult>;
 
 export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;

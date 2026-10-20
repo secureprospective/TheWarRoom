@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // refreshEngine belongs to the background refresh worker; all inputs finish before the pass.
@@ -35,7 +39,7 @@ func engineDue(now time.Time, last history.Run, exists, changed bool) bool {
 	return changed || !exists || now.Sub(last.AsOf) >= 24*time.Hour
 }
 
-// checkEngine is called with modelMu held, including by the legacy manual scoring path.
+// checkEngine is called with modelMu held.
 func (a *App) checkEngine(ctx context.Context) {
 	last, exists, err := a.history.LatestRun(ctx, a.season, history.RunModel)
 	if err != nil {
@@ -58,7 +62,7 @@ func (a *App) checkEngine(ctx context.Context) {
 	// Changes arriving during the pass must remain pending for the next refresh.
 	dirty := a.modelDirty.Swap(false)
 	started := time.Now()
-	rep, err := a.runModelLocked(ctx, lk, a.params.Snapshot(), true)
+	rep, err := a.runModelLocked(ctx, lk, a.params.Snapshot())
 	if err != nil {
 		if dirty {
 			a.modelDirty.Store(true)
@@ -82,4 +86,29 @@ func (a *App) sourceHealthChanged(ctx context.Context) {
 	if a.seasonChanged != nil {
 		a.seasonChanged(ctx)
 	}
+}
+
+// runModelLocked values the league with the measurables model (plan Stage 7) and writes a model
+// run. The caller holds modelMu.
+func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
+	end, _ := a.rulebook.GetSetting("endWeek")
+	last, err := strconv.Atoi(end)
+	if err != nil || last < 1 {
+		return modelrun.Report{}, fmt.Errorf("app: the league's last scoring week %q is unreadable", end)
+	}
+	runner, err := modelrun.New(a.league.Reader(), lk, a.history, buildLabel())
+	if err != nil {
+		return modelrun.Report{}, fmt.Errorf("app: %w", err)
+	}
+	a.seasonMu.Lock()
+	var free []string
+	for _, id := range a.seasonFreeAgents.value {
+		free = append(free, id.String())
+	}
+	a.seasonMu.Unlock()
+	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.season, AsOf: time.Now(), Params: set, LastWeek: last, FreeAgents: free, Refresh: true})
+	if err != nil {
+		return modelrun.Report{}, fmt.Errorf("app: %w", err)
+	}
+	return rep, nil
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/numeric"
 )
 
@@ -29,4 +30,26 @@ func ApplyDecay(age, peakLimit, decayRate float64) (float64, error) {
 		return 0, fmt.Errorf("engine: decay produced a non-finite pull (decayRate=%v over=%v)", decayRate, over)
 	}
 	return pull, nil
+}
+
+// PeakLimit is the Layer-3 age past which decay applies (Engine_Specification, "Current Peak
+// Limit Defaults"). These are meant to be admin-tunable (SL-017) but are not in the params
+// store yet. An unknown position gets the latest peak, so it is never penalized early.
+func PeakLimit(p domain.Position) float64 {
+	switch p {
+	case domain.PosQB:
+		return 32
+	case domain.PosRB:
+		return 25
+	case domain.PosWR, domain.PosTE, domain.PosLB:
+		return 29
+	case domain.PosDE, domain.PosDT, domain.PosK:
+		return 30
+	case domain.PosCB, domain.PosS:
+		return 28
+	case domain.PosFlag:
+		return 32 // unclassified: most conservative (latest) peak
+	default:
+		return 32
+	}
 }

@@ -229,7 +229,7 @@ func viewMeasure(view string) string {
 }
 
 // modelRuns returns the season's latest model run and the one before it, newest first; none
-// before the first Score League.
+// before the first engine run.
 func (a *App) modelRuns(ctx context.Context) ([]history.Run, error) {
 	latest, ok, err := a.history.LatestRun(ctx, a.season, history.RunModel)
 	if err != nil || !ok {

@@ -106,7 +106,7 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 		return values, "Engine points unavailable: " + err.Error()
 	}
 	if !ok {
-		return values, "Engine points unavailable; use Score League to value players."
+		return values, "Engine points unavailable until the engine first runs."
 	}
 	scores, err := a.history.ModelScores(ctx, run.ID)
 	if err != nil {

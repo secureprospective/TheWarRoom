@@ -26,10 +26,6 @@ export function ResetParam(arg1, arg2) {
   return window['go']['main']['App']['ResetParam'](arg1, arg2);
 }
 
-export function ScoreLeague() {
-  return window['go']['main']['App']['ScoreLeague']();
-}
-
 export function SetLeagueArchiveDir(arg1) {
   return window['go']['main']['App']['SetLeagueArchiveDir'](arg1);
 }

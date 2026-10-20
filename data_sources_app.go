@@ -183,13 +183,6 @@ func (a *App) healthInput(ctx context.Context) (healthInput, error) {
 	if in.mfl, err = a.history.FetchHealth(ctx, "mfl"); err != nil {
 		return in, fmt.Errorf("app: source health: %w", err)
 	}
-	run, ok, err := a.history.LatestRun(ctx, a.season, history.RunBoard)
-	if err != nil {
-		return in, fmt.Errorf("app: source health: %w", err)
-	}
-	if ok {
-		in.boardRun, in.missing = true, run.MissingMeasures
-	}
 	engine, held, err := a.history.LatestRun(ctx, a.season, history.RunModel)
 	if err != nil {
 		return in, fmt.Errorf("app: engine health: %w", err)

@@ -67,8 +67,42 @@ What was left of `m4_app.go` (`m4Timeout`) moved into `m2_app.go`, and of
 `transactions_calendar_app.go` (`calendarEvent`) into `transactions_app.go`, so the bloat ratchet's
 tiny-file count stays at its baseline.
 
-Kept on purpose: `ScoreLeague`, the only writer of the board run; see `SYSTEM_MAP.md`, Built but not wired.
+`ScoreLeague`, kept by this pass, went in the next one (below).
 
 To bring the harness back: move `frontend/src/` and the Go files back to their old paths, restore the
 deleted methods from `session/purge-tom`, run `make bindings`, and restore `TargetMount.tsx`,
 `state.ts` (`harness`), the two registry commands and the buttons from the same branch.
+
+## Layer 1–4 engine (moved 2026-10-20, branch `session/purge-engine`)
+
+`ScoreLeague` was the only writer of the board run, and no screen called it once the harness left.
+Power rankings, Race, the pool, Lab and the draft reports read the model run, which
+`engine_refresh.go` writes on its own, so nothing on a live screen moved. Under `go/`, original
+content:
+
+- `internal/rankings` (M1: the board run), `internal/composition` (engine inputs from the stores),
+  `internal/scouting` and `internal/scouting/assembly` (the Layer 4 profiles), and the fetchers only
+  they used: `internal/ingestion/ras`, `pfrcoverage`, `schooltier`. Tests included; none had testdata.
+- `m1_scouting.go` (`buildScoutingDirectory` and its merges), as it was before this branch.
+- `internal/engine/pipeline.go` (L1 hygiene, the L1–L6 pipeline, the L6 tiebreaker builder) and
+  `capscaling.go` (L5). `internal/engine/pipeline_test.go` here is the original less five tests that
+  stayed live in `internal/engine/decay_test.go` (`approxEq`, decay, cushion, tie order, peak ages).
+
+Deleted from live files (recover them from git, `session/purge-harness`): `ScoreLeague`,
+`ScoreLeagueResult`, `proxyLabel` (`m1_app.go`); `runModel` (`model_app.go`, whose `runModelLocked`
+moved into `engine_refresh.go`); `ingestion.Share`, `ingestion.IntCell`, `model.CollegeMeasures`;
+the board-run read in source health (`healthInput.boardRun`, `missing`, the "Board running reduced"
+alarm and the "Running reduced" / "Feeding the board" row text). Source health now words a measured
+source's row by the engine run, the path it already took when no board run existed.
+
+Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`cmd/fit` reads it).
+
+Kept on purpose, unreached: `internal/engine/l4` (its settings table is the `l4.*` params the
+Data and sources parameter editor lists, R7; the rubric math in it is unreached), the engine's types
+(history's `run_scores` rows store `engine.Result`), and history's board-run store side
+(`WriteRun`, `RunScores`, `scoring_runs`, `run_scores`): existing databases keep their board runs.
+
+To bring the engine back: move the `go/` paths above back (drop the `quarantine/go/` prefix), delete
+`engine.PeakLimit` or point composition at it, restore the deleted functions and the source-health
+board read from `session/purge-harness`, and run `make bindings`. The `rasFetchTimeout` and
+`cfbdEnvVar` constants now live in `signals_app.go`; drop them from the restored `m1_scouting.go`.

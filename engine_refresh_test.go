@@ -108,30 +108,18 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 	}
 }
 
-func TestBackgroundEngineCannotOverlapManualRun(t *testing.T) {
+func TestBackgroundEngineSkipsWhileTheEngineRuns(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	a.params = params.New(a.pools)
 	a.modelMu.Lock()
+	defer a.modelMu.Unlock()
 	done := make(chan struct{})
 	go func() { a.refreshEngine(a.ctx); close(done) }()
 	select {
 	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("background refresh waited on a running engine")
-	}
-	manual := make(chan struct{})
-	go func() { _, _ = a.runModel(a.ctx, normalize.Lookup{}, params.DefaultSet()); close(manual) }()
-	select {
-	case <-manual:
-		t.Fatal("manual run bypassed shared lock")
-	case <-time.After(20 * time.Millisecond):
-	}
-	a.modelMu.Unlock()
-	select {
-	case <-manual:
-	case <-time.After(time.Second):
-		t.Fatal("manual run did not resume")
 	}
 }
 

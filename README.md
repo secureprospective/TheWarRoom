@@ -229,7 +229,7 @@ Sunday gets its own surface. The real NFL games run along the top; pick one to f
 <sub>🎯 **The target, League Pulse › Now:** Arizona against Seattle in the Classic view, every starter's live line, and the scoring plays down the middle. Real rosters; game states and points are illustrative.</sub>
 
 ### ⚡ Go-Powered, Local-First Performance
-Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. Turn a dial in the admin console, press **Score League**, and a fresh board and model run land in under a minute — the old ones still on the record for comparison. Native desktop app; your league never leaves your machine.
+Zero cloud latency. Absolute privacy. Near-instant processing from a clean, compiled backend. Turn a dial in the admin console and the next engine pass values the league with it — the old runs still on the record for comparison. Native desktop app; your league never leaves your machine.
 
 ---
 
