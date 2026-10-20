@@ -2,6 +2,7 @@ package domain
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -61,6 +62,9 @@ func ParseMoneyMillions(raw string) (Money, error) {
 	fracCents, err := atoiOrZero(frac8)
 	if err != nil {
 		return 0, fmt.Errorf("domain: money %q fractional part: %w", raw, err)
+	}
+	if millions > (math.MaxInt64-fracCents)/centsPerMillion {
+		return 0, fmt.Errorf("domain: money %q overflows cents", raw)
 	}
 	return Money(millions*centsPerMillion + fracCents), nil
 }

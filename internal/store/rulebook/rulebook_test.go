@@ -368,3 +368,17 @@ func TestSync_PromotesOnlyWhenMFLChanged(t *testing.T) {
 		t.Errorf("repeat Sync = %t, %v with %d versions; want false, nil, 2", changed, err, len(vers))
 	}
 }
+
+func TestOverrideRejectsInvalidCapAndPercents(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	for _, tc := range []struct{ scope, key, value string }{
+		{"cap", "salaryCapAmount", "NaN"}, {"cap", "salaryCapAmount", "+Inf"}, {"cap", "salaryCapAmount", "92233720368.54775808"},
+		{"setting", "includeTaxiWithSalary", "NaN"}, {"setting", "includeIRWithSalary", "-1"}, {"setting", "includeIRWithSalary", "101"},
+	} {
+		t.Run(tc.scope+tc.key+tc.value, func(t *testing.T) {
+			if err := s.SetOverride(context.Background(), tc.scope, tc.key, tc.value, "test"); err == nil {
+				t.Fatalf("accepted %s", tc.value)
+			}
+		})
+	}
+}

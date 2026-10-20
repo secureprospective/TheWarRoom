@@ -13,12 +13,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 )
 
@@ -180,11 +180,13 @@ func validateOverride(scope, key, value string) error {
 	}
 	switch scope {
 	case scopeCap:
-		if _, err := strconv.ParseFloat(strings.TrimSpace(value), 64); err != nil {
+		if _, err := domain.ParseMoneyMillions(value); err != nil {
 			return fmt.Errorf("rulebook: cap override %q is not numeric: %w", value, err)
 		}
 	case scopeSetting:
-		// any non-empty value is accepted
+		if key == "includeTaxiWithSalary" || key == "includeIRWithSalary" {
+			return validateCapPercent(value)
+		}
 	default:
 		return fmt.Errorf("rulebook: unknown override scope %q", scope)
 	}

@@ -1,6 +1,8 @@
 package rulebook
 
 import (
+	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -83,7 +85,7 @@ func capPercent(raw string) float64 {
 		return 100
 	}
 	pct, err := strconv.ParseFloat(v, 64)
-	if err != nil {
+	if err != nil || math.IsNaN(pct) || math.IsInf(pct, 0) {
 		return 100
 	}
 	switch {
@@ -106,4 +108,15 @@ func (s *Store) TaxiCapPercent() float64 {
 func (s *Store) IRCapPercent() float64 {
 	v, _ := s.GetSetting("includeIRWithSalary")
 	return capPercent(v)
+}
+
+func validateCapPercent(raw string) error {
+	pct, err := strconv.ParseFloat(strings.TrimSpace(raw), 64)
+	if err != nil {
+		return fmt.Errorf("rulebook: cap percent %q: %w", raw, err)
+	}
+	if math.IsNaN(pct) || math.IsInf(pct, 0) || pct < 0 || pct > 100 {
+		return fmt.Errorf("rulebook: cap percent %q must be between 0 and 100", raw)
+	}
+	return nil
 }

@@ -11,6 +11,10 @@ func TestParseMoneyMillions_Exact(t *testing.T) {
 		want    Money // exact cents
 		wantErr bool
 	}{
+		{"92233720368.54775807", Money(9223372036854775807), false},
+		{"92233720368.54775808", 0, true},
+		{"92233720369", 0, true},
+		{"9223372036854775807", 0, true},
 		{"7", 700_000_000, false},
 		{"1.30", 130_000_000, false},
 		{"17.70", 1_770_000_000, false},
