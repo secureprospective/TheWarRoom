@@ -192,3 +192,80 @@ func TestOpenRefusesNewerVersionWithoutWriting(t *testing.T) {
 		})
 	}
 }
+
+// The database, its WAL and shared-memory files, and a pre-migration backup hold the league
+// ledger: other local users must not read them.
+func TestOpenCreatesOwnerOnlyFiles(t *testing.T) {
+	t.Parallel()
+	pools := tempPools(t)
+	ctx := context.Background()
+	if _, err := pools.Write().ExecContext(ctx, "CREATE TABLE t (x INTEGER)"); err != nil {
+		t.Fatalf("create table: %v", err)
+	}
+	backup, err := pools.backupMigration(ctx, 1)
+	if err != nil {
+		t.Fatalf("backup: %v", err)
+	}
+	for _, path := range []string{pools.path, pools.path + "-wal", pools.path + "-shm", backup} {
+		info, err := os.Stat(path)
+		if err != nil {
+			t.Fatalf("stat %s: %v", path, err)
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Errorf("%s mode = %v, want 0600", filepath.Base(path), mode)
+		}
+	}
+}
+
+// A database an older build left 0644, with its sidecars and backups, is tightened on open;
+// a symlink is never followed out of the data dir.
+func TestOpenTightensExistingFiles(t *testing.T) {
+	t.Parallel()
+	dir, outside := t.TempDir(), filepath.Join(t.TempDir(), "elsewhere")
+	path := filepath.Join(dir, "thewarroom.db")
+	fixture, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fixture.ExecContext(t.Context(), "CREATE TABLE t (x INTEGER)"); err != nil {
+		t.Fatal(err)
+	}
+	if err := fixture.Close(); err != nil {
+		t.Fatal(err)
+	}
+	owned := []string{path, path + "-wal", path + "-shm", path + ".premigration-20261001T000000Z", path + ".pre-v0.bak"}
+	for _, p := range append(owned[1:], outside) {
+		if err := os.WriteFile(p, nil, 0o644); err != nil { //nolint:gosec // the older build's mode under test
+			t.Fatal(err)
+		}
+	}
+	for _, p := range append(owned, outside) {
+		if err := os.Chmod(p, 0o644); err != nil { //nolint:gosec // the older build's mode under test
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink(outside, path+".premigration-link"); err != nil {
+		t.Fatal(err)
+	}
+	pools, err := Open(t.Context(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	for _, p := range owned {
+		info, err := os.Stat(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if mode := info.Mode().Perm(); mode != 0o600 {
+			t.Errorf("%s mode = %v, want 0600", filepath.Base(p), mode)
+		}
+	}
+	info, err := os.Stat(outside)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mode := info.Mode().Perm(); mode != 0o644 {
+		t.Errorf("followed a symlink out of the data dir: %v", mode)
+	}
+}

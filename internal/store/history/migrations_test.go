@@ -158,3 +158,28 @@ func TestHistoryAdoptionPreservesCurrentRows(t *testing.T) {
 		t.Fatal("adoption changed scores")
 	}
 }
+
+// An older guard under the v3 name passes `{}` (its verdict is NULL); v3 must replace it.
+func TestHistoryGuardMigrationReplacesOlderPayloadGuard(t *testing.T) {
+	path, _, _ := legacyHistory(t)
+	pools, err := db.Open(t.Context(), path, SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	if _, err := pools.Migrate(t.Context(), adoptHistory, quarantineOrphans); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `CREATE TRIGGER league_event_payload_json_insert BEFORE INSERT ON league_event
+WHEN NOT (json_valid(NEW.payload) AND json_extract(NEW.payload, '$.version') > 0)
+BEGIN SELECT RAISE(ABORT, 'old guard'); END`); err != nil {
+		t.Fatal(err)
+	}
+	if err := New(pools, registry(t, "")).Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	_, err = pools.Write().ExecContext(t.Context(), `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id) VALUES ('e','legacy','s',1,'','','actor','league','test','{}',?, 'c')`, strings.Repeat("a", 64))
+	if err == nil || !strings.Contains(err.Error(), "invalid JSON payload") {
+		t.Fatalf("versionless payload: %v", err)
+	}
+}

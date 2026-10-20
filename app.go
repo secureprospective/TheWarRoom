@@ -428,15 +428,19 @@ func (a *App) startWorker(work func()) {
 	}()
 }
 
-// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it.
+// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it
+// owner-only. A dir left by an older build (0750) is tightened, since it holds the ledger.
 func configDir() (string, error) {
 	cfg, err := os.UserConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("user config dir: %w", err)
 	}
 	dir := filepath.Join(cfg, "TheWarRoom")
-	if err := os.MkdirAll(dir, 0o750); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("create data dir %q: %w", dir, err)
+	}
+	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // a directory needs its x bit; 0700 is owner-only
+		return "", fmt.Errorf("restrict data dir %q: %w", dir, err)
 	}
 	return dir, nil
 }

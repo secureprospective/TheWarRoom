@@ -1,7 +1,10 @@
 package history
 
 import (
+	"bytes"
+	"slices"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -94,5 +97,61 @@ func TestRecordCacheDoesNotEscapeTransactionSnapshot(t *testing.T) {
 	old, err = s.transactionRecords(t.Context(), tx, receipt.League)
 	if err != nil || len(old) != 1 {
 		t.Fatalf("cache escaped the transaction's snapshot: %+v, %v", old, err)
+	}
+}
+
+// Callers own every byte they read: writing through a returned record's nested data must not
+// change the cached ledger the next read returns.
+func TestRecordCacheReturnsDeepCopies(t *testing.T) {
+	t.Parallel()
+	s, _, _ := newStore(t)
+	create := createCommand()
+	create.Args.Preset = commissioner.PresetLegacy
+	receipt, err := s.ExecuteCommissioner(t.Context(), create, "creator", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read := func() []commissioner.Record {
+		t.Helper()
+		tx, err := s.pools.Read().BeginTx(t.Context(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback() }()
+		records, err := s.transactionRecords(t.Context(), tx, receipt.League)
+		if err != nil || len(records) != 1 || len(records[0].Command.Args.Seed) == 0 {
+			t.Fatalf("read: %+v, %v", records, err)
+		}
+		return records
+	}
+	for _, first := range [][]commissioner.Record{read(), read()} { // a miss, then a hit
+		want := first[0].Command.Args.Seed[0]
+		want.Value = slices.Clone(want.Value)
+		first[0].Command.Args.Seed[0].Field = "changed"
+		first[0].Command.Args.Seed[0].Value[0] = '!'
+		if got := read()[0].Command.Args.Seed[0]; got.Field != want.Field || !bytes.Equal(got.Value, want.Value) {
+			t.Fatalf("a caller's write reached the cache: %s %s, want %s %s", got.Field, got.Value, want.Field, want.Value)
+		}
+	}
+}
+
+func TestDeepCloneSharesNothing(t *testing.T) {
+	t.Parallel()
+	type inner struct{ Tags []string }
+	type value struct {
+		At    time.Time
+		Ptr   *inner
+		Map   map[string][]int
+		Any   any
+		Fixed [2]*inner
+	}
+	src := value{At: time.Unix(5, 0), Ptr: &inner{Tags: []string{"a"}}, Map: map[string][]int{"k": {1}},
+		Any: &inner{Tags: []string{"b"}}, Fixed: [2]*inner{{Tags: []string{"c"}}}}
+	out := deepClone(src)
+	out.Ptr.Tags[0], out.Map["k"][0], out.Fixed[0].Tags[0] = "x", 9, "x"
+	out.Any.(*inner).Tags[0] = "x"                                                          //nolint:forcetypeassert // the test built it
+	if src.Ptr.Tags[0] != "a" || src.Map["k"][0] != 1 || src.Any.(*inner).Tags[0] != "b" || //nolint:forcetypeassert // the test built it
+		src.Fixed[0].Tags[0] != "c" || !out.At.Equal(src.At) || out.Fixed[1] != nil {
+		t.Fatalf("clone shared state with its source: %+v", src)
 	}
 }

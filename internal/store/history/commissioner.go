@@ -35,7 +35,7 @@ func commissionerRecords(events []LeagueEvent) ([]commissioner.Record, error) {
 	return records, nil
 }
 
-// Decoded records are shared internally, read-only; each caller owns its outer slice.
+// Decoded records are cached read-only; each caller gets a deep copy it may change freely.
 type recordRevision struct {
 	revision int64
 	records  []commissioner.Record
@@ -53,7 +53,7 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 		hit = recordRevision{}
 	}
 	if hit.revision == revision {
-		return slices.Clone(hit.records), nil
+		return deepClone(hit.records), nil
 	}
 	rows, err := tx.QueryContext(ctx, eventsQuery, league, commissioner.Stream, hit.revision)
 	if err != nil {
@@ -72,7 +72,7 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 		s.records = map[string]recordRevision{}
 	}
 	s.records[league] = recordRevision{revision: revision, records: records}
-	return slices.Clone(records), nil
+	return deepClone(records), nil
 }
 
 // ExecuteCommissioner performs authorization, retry lookup and append in one

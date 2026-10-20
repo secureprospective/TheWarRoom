@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
@@ -46,6 +48,12 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 		maxVersion = versions[0]
 	}
 	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
+		return nil, err
+	}
+	if err := tightenOwned(path); err != nil {
+		return nil, err
+	}
+	if err := createOwnerOnly(path); err != nil {
 		return nil, err
 	}
 	writeDSN := fmt.Sprintf(
@@ -92,6 +100,72 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	}
 
 	return &Pools{read: read, write: write, path: path}, nil
+}
+
+// createOwnerOnly creates a missing file empty and 0600 (an empty file is a valid empty
+// database). SQLite would create it 0644, and it gives the WAL, shared-memory and journal
+// files the main file's mode, so this keeps all of them owner-only. An existing file is
+// left as it is.
+func createOwnerOnly(path string) error {
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	if err := f.Close(); err != nil {
+		return fmt.Errorf("db: create %q: %w", path, err)
+	}
+	return nil
+}
+
+// tightenOwned makes the database, its sidecars and its backups owner-only where an older build
+// left them group- or other-readable. Only regular files under the database's own names are
+// changed; a symlink is never followed, so nothing outside the data dir is touched.
+func tightenOwned(path string) error {
+	base := filepath.Base(path)
+	entries, err := os.ReadDir(filepath.Dir(path))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	} else if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	for _, e := range entries {
+		name := e.Name()
+		owned := name == base || name == base+"-wal" || name == base+"-shm" || name == base+"-journal" ||
+			strings.HasPrefix(name, base+".premigration-") ||
+			(strings.HasPrefix(name, base+".pre-v") && strings.HasSuffix(name, ".bak"))
+		if !owned || !e.Type().IsRegular() {
+			continue
+		}
+		if err := tightenFile(filepath.Join(filepath.Dir(path), name)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// tightenFile changes the mode through the opened file, and only when it is the regular file
+// the directory listed: a file swapped for a symlink after the listing is left alone.
+func tightenFile(path string) error {
+	listed, err := os.Lstat(path)
+	if err != nil || !listed.Mode().IsRegular() || listed.Mode().Perm()&0o077 == 0 {
+		return nil // a file gone or replaced since the listing is not ours to change
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	defer func() { _ = f.Close() }()
+	opened, err := f.Stat()
+	if err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	if !os.SameFile(listed, opened) {
+		return nil
+	}
+	if err := f.Chmod(listed.Mode().Perm() &^ 0o077); err != nil {
+		return fmt.Errorf("db: restrict %q: %w", path, err)
+	}
+	return nil
 }
 
 func checkUserVersion(ctx context.Context, path string, maxVersion int) (err error) {
