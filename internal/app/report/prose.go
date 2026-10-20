@@ -10,3 +10,9 @@ func ProseName(name string) string {
 	}
 	return first + " " + last
 }
+
+// Held is a feed's records as a caller holds them, with their read state.
+type Held[T any] struct {
+	Value []T
+	Feed
+}
