@@ -27,7 +27,7 @@ export function placeRowMenu(popup: HTMLElement, control: Element, work: Element
   Object.assign(popup.style, Object.fromEntries(Object.entries(position)
     .map(([key, value]) => [key, `${value}px`])));
 }
-export function dismissRowMenu(details: HTMLDetailsElement) {
+function dismissRowMenu(details: HTMLDetailsElement) {
   details.open = false;
   details.querySelector<HTMLElement>('summary')?.focus({ preventScroll: true });
 }

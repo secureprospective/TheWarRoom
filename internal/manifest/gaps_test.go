@@ -28,7 +28,7 @@ func TestApprovedGapMatchesBothFileAndHashAndNeverSubstitutes(t *testing.T) {
 			t.Fatalf("different pin authorized a gap: %+v", bad)
 		}
 	}
-	if _, err := m.Resolve(context.Background(), b); err == nil {
+	if _, _, err := m.ResolveWithGaps(context.Background(), b, nil); err == nil {
 		t.Fatal("strict Resolve must still reject missing bytes")
 	}
 }

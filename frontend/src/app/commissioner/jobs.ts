@@ -2,7 +2,7 @@ import { array, choice, integer, object, text, timestamp } from '../data/parseVa
 
 // The Go jobs reading (TargetCommissionerJobs): what the commissioner is working on, worked out in Go
 // from the league's rules. Go also orders it: live jobs first. The strip shows it as it arrives.
-export const jobStates = ['live', 'upcoming', 'blocked', 'unbuilt'] as const;
+const jobStates = ['live', 'upcoming', 'blocked', 'unbuilt'] as const;
 export type JobState = (typeof jobStates)[number];
 export type Job = {
   id: string; name: string; state: JobState; words: string;
@@ -29,7 +29,7 @@ export function parseJobs(v: unknown): Jobs {
   };
 }
 
-export { localTime, viewerZone } from '../clock/localTime';
+export { localTime } from '../clock/localTime';
 
 const unit = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 // How long until an instant, in the two largest units that matter.

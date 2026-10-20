@@ -137,16 +137,6 @@ func weekWins(points, replacement, spread float64) float64 {
 	return (1+math.Erf(x/math.Sqrt2))/2 - 0.5
 }
 
-func (w *winsModel) season(pid string, year int64) float64 {
-	values := []float64{}
-	for _, week := range w.played[year] {
-		if v, ok := w.week[playerYear{pid, year}][week]; ok {
-			values = append(values, v)
-		}
-	}
-	return pythonSum(values)
-}
-
 func (w *winsModel) rate(pid string, year int64, weeks []int64) float64 {
 	played := w.played[year]
 	if weeks != nil {
@@ -175,15 +165,6 @@ func intersectWeeks(played, weeks []int64) []int64 {
 func (w *winsModel) games(pid string, year int64) int {
 	return len(w.scoringGames(playerYear{pid, year}))
 }
-func (w *winsModel) seasonWeeks(year int64) int64 {
-	for key := range w.lab.WeekStart {
-		if key.Year == year && w.lab.Regular[year] != 0 {
-			return w.lab.Regular[year]
-		}
-	}
-	return 13
-}
-
 func (w *winsModel) lastComplete() int64 {
 	last := int64(0)
 	for _, year := range w.years {

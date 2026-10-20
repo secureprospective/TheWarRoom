@@ -19,7 +19,7 @@ export function RangeBar({ range }: { range: MarketRange }) {
     </svg>
   );
 }
-export function HowCounted({ reading, countText, observed = false }: {
+function HowCounted({ reading, countText, observed = false }: {
   reading: ReadingShell; countText?: string; observed?: boolean;
 }) {
   return (

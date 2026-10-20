@@ -142,33 +142,6 @@ func PositionDraft(picks []JudgedPick, group string) DraftPosition {
 	return out
 }
 
-type DraftMapRow struct {
-	Group   string         `json:"group"`
-	Overall *DraftRatio    `json:"overall"`
-	N       int            `json:"n"`
-	When    []DraftCell    `json:"when"`
-	Where   []DraftMapCell `json:"where"`
-}
-type DraftMapCell struct {
-	Segment string      `json:"segment"`
-	Reading *DraftRatio `json:"reading"`
-	N       int         `json:"n"`
-}
-
-func DraftMap(picks []JudgedPick, groups []string) []DraftMapRow {
-	out := []DraftMapRow{}
-	for _, g := range groups {
-		mine := draftSelect(picks, func(p JudgedPick) bool { return *p.Group == g })
-		r := DraftMapRow{Group: g, Overall: VsSlot(mine), N: judgedCount(mine), When: BySeason(mine), Where: []DraftMapCell{}}
-		for _, seg := range DraftSegments() {
-			xs := draftSelect(mine, func(p JudgedPick) bool { return p.Segment == seg })
-			r.Where = append(r.Where, DraftMapCell{seg, VsSlot(xs), judgedCount(xs)})
-		}
-		out = append(out, r)
-	}
-	return out
-}
-
 type DraftBuyReading struct {
 	Rows     []MarketRow `json:"rows"`
 	Cheapest *string     `json:"cheapest"`

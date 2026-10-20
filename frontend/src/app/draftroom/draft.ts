@@ -3,7 +3,7 @@ import { array, choice, integer, object, text, timestamp } from '../data/parseVa
 // The rookie draft as Go reads it (TargetNativeDraft). Go orders the rounds, replays every pick and the
 // clock, and words every refusal; this only parses what it sent and writes it for a GM.
 export type Terms = { salaryCents: number; years: number; rfaAfter: boolean };
-export const hows = ['', 'owner', 'commissioner', 'inserted', 'expired', 'skipped', 'overrode'] as const;
+const hows = ['', 'owner', 'commissioner', 'inserted', 'expired', 'skipped', 'overrode'] as const;
 export type How = (typeof hows)[number];
 export type Slot = { round: number; original: string; owner: string; slot: number };
 export type Pick = Slot & {

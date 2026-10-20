@@ -2,7 +2,7 @@ import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import type { EnvelopeDemo, Receipt } from '../data/contract';
 
-export type MovesState = {
+type MovesState = {
   moves: Receipt[];
   drafting: Record<string, boolean>;
   draftErrors: Record<string, string>;

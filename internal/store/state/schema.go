@@ -218,10 +218,6 @@ func columnExists(ctx context.Context, query schemaQuerier, table, column string
 	return false, nil
 }
 
-func (s *Store) columnExists(ctx context.Context, table, column string) (bool, error) {
-	return columnExists(ctx, s.pools.Read(), table, column)
-}
-
 func guardWhatIfJSON(ctx context.Context, tx *sql.Tx) error {
 	if err := db.GuardJSON(ctx, tx,
 		db.JSONColumn{Table: "calendar_events", Column: "payload"},

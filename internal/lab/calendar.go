@@ -2,7 +2,6 @@ package lab
 
 import (
 	"fmt"
-	"math"
 	"slices"
 	"time"
 )
@@ -111,48 +110,6 @@ func PickClock(d *Data, s Scope) *Clock {
 			}
 		}
 		out.Halves = append(out.Halves, h)
-	}
-	return out
-}
-
-type Contenders struct {
-	N        int      `json:"n"`
-	Mean     *float64 `json:"mean"`
-	Half     *float64 `json:"half"`
-	RealN    int      `json:"realN"`
-	RealMean *float64 `json:"realMean"`
-	RealHalf *float64 `json:"realHalf"`
-}
-
-func ContenderTrades(d *Data, s Scope) Contenders {
-	nets := []float64{}
-	realized := []float64{}
-	keep := InScope(s)
-	for _, t := range d.Trades {
-		if t.ANet == nil || !keep(t) {
-			continue
-		}
-		sign := 0.0
-		if t.ARank <= 10 && t.BRank >= 23 {
-			sign = 1
-		} else if t.BRank <= 10 && t.ARank >= 23 {
-			sign = -1
-		}
-		if sign == 0 {
-			continue
-		}
-		nets = append(nets, sign**t.ANet)
-		if t.ARealNet != nil && t.RealSeasons != nil && *t.RealSeasons >= 2 {
-			realized = append(realized, sign**t.ARealNet)
-		}
-	}
-	m, r := MeanVar(nets), MeanVar(realized)
-	out := Contenders{N: m.N, Mean: m.Mean, RealN: r.N, RealMean: r.Mean}
-	if m.N > 1 {
-		out.Half = ptr(Z * math.Sqrt(*m.Var/float64(m.N)))
-	}
-	if r.N > 1 {
-		out.RealHalf = ptr(Z * math.Sqrt(*r.Var/float64(r.N)))
 	}
 	return out
 }

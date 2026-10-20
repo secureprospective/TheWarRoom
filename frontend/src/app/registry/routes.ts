@@ -1,7 +1,7 @@
 import { isSurface, placementRoute, type Endpoint } from './index';
 import type { IndexedResult } from '../commands/search';
 import { rankResults } from '../commands/search';
-export type EndpointRoute = 'nav' | 'command' | 'merged-into';
+type EndpointRoute = 'nav' | 'command' | 'merged-into';
 
 export function endpointRoutes(rows: readonly Endpoint[], candidates: readonly IndexedResult[]) {
   const routes = new Map<string, Set<EndpointRoute>>();

@@ -45,7 +45,7 @@ export type TierShift = {
   to: [number, number];
   clear: boolean;
 } | null;
-export type TierPick = {
+type TierPick = {
   with: string;
   tradingAs: string;
   id: string;
@@ -53,7 +53,7 @@ export type TierPick = {
   hint: string;
   count: number;
 };
-export type TeamOption = { fid: string; name: string };
+type TeamOption = { fid: string; name: string };
 export type PostureCell = {
   id: string;
   label: string;
@@ -61,8 +61,8 @@ export type PostureCell = {
   tone: string;
   title: string;
 };
-export type CardRow = { label: string; text: string; tone: string; range?: TeamEdge };
-export type TierCard = {
+type CardRow = { label: string; text: string; tone: string; range?: TeamEdge };
+type TierCard = {
   excluded?: boolean;
   id: string;
   label: string;
@@ -73,7 +73,7 @@ export type TierCard = {
   posture: PostureCell[];
   rows: CardRow[];
 };
-export type TrendRow = {
+type TrendRow = {
   nText: string;
   showShares: boolean;
   season: number;
@@ -82,13 +82,13 @@ export type TrendRow = {
   later: TeamShare;
   net: number | null;
 };
-export type TierTrend = {
+type TierTrend = {
   tier: string;
   rows: TrendRow[];
   shift: { now: TierShift; later: TierShift };
 };
-export type TeamTrends = { seasons: number[]; tiers: TierTrend[] };
-export type PairView = {
+type TeamTrends = { seasons: number[]; tiers: TierTrend[] };
+type PairView = {
   other: string;
   excluded?: boolean;
   n: number;

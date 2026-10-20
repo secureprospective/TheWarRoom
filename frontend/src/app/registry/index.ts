@@ -34,7 +34,7 @@ export function endpointById(id: EndpointId): Endpoint {
   if (!row) throw new Error(`Unknown endpoint: ${id}`);
   return row;
 }
-export type Resolution =
+type Resolution =
   | { kind: 'view'; placement: Placement }
   | { kind: 'merged'; into: readonly EndpointId[] }
   | { kind: 'merged'; place: Placement }

@@ -30,7 +30,7 @@ const live: ControlReader = {
   news: async () => report(await bindings().TargetSiteNews(), "What's New"),
   openAccounting: async () => bindings().TargetOpenMFLAccounting(),
 };
-export type ControlAction = 'league' | 'news' | 'search' | 'open-accounting';
+type ControlAction = 'league' | 'news' | 'search' | 'open-accounting';
 type State = { settings?: Report; bylaws?: Bylaw[]; accounting?: Report; news?: Report; search: string;
   pending: boolean; error: string };
 export function createControlState(reader: ControlReader) {

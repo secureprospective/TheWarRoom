@@ -64,7 +64,7 @@ func TestArchiveMeasurement(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("manifest %s: %d files, %d missing: %+v", m.SHA256, len(m.Entries), len(m.Missing()), m.Missing())
-	if _, err := m.Resolve(ctx, store); err != nil {
+	if _, _, err := m.ResolveWithGaps(ctx, store, nil); err != nil {
 		t.Logf("resolution: %v", err)
 	}
 }

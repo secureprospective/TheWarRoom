@@ -84,7 +84,6 @@ func sideAssets(t Trade, fid string, got bool) ([]SideAsset, []float64, float64,
 	}
 	return assets, ages, players, picks, count
 }
-func TradeSides(d *Data) []TeamSide { return tradeSides(d, 2) }
 
 // tradeSides counts a side's realised return once it has played threshold seasons;
 // the mutant gate replays it with threshold 1 to prove the golden catches the flip.

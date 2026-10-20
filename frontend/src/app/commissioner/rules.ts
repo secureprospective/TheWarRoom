@@ -2,7 +2,7 @@ import { array, choice, integer, object, text, timestamp } from '../data/parseVa
 import { parseGoverned, type Governed } from '../governed/governed';
 
 // The Go rules reading (TargetCommissionerRules). The rules screen imports this lazily.
-export const ruleKinds = ['count', 'cents', 'ten_thousandths', 'nanoseconds', 'boolean', 'date', 'string',
+const ruleKinds = ['count', 'cents', 'ten_thousandths', 'nanoseconds', 'boolean', 'date', 'string',
   'record', 'list', 'map'] as const;
 export type RuleKind = (typeof ruleKinds)[number];
 export type RuleChoice = { value: string; label: string };
@@ -33,7 +33,7 @@ function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
 }
-export function parseSchema(v: unknown, path: string): RuleSchema {
+function parseSchema(v: unknown, path: string): RuleSchema {
   const r = object(v, path, ['kind', 'minimum', 'maximum', 'choices', 'fields', 'key', 'element']);
   const schema: RuleSchema = {
     kind: choice(r.kind, `${path}.kind`, ruleKinds),

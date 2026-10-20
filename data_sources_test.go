@@ -93,7 +93,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 		held[1].File != "2013/tradeBait.json" || held[1].League != "51719" || held[1].CapturedAt != "2026-10-05T02:00:00Z" {
 		t.Fatalf("held entries = %+v, want the Lab's 2013 aav and trade bait", held)
 	}
-	if _, err := m.Resolve(ctx, a.history); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
+	if _, _, err := m.ResolveWithGaps(ctx, a.history, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
 		t.Errorf("resolve err = %v, want the missing frozen files named", err)
 	}
 	ds, err := a.TargetDataSources()

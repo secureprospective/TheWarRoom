@@ -20,7 +20,7 @@ export function isTypingTarget(target: EventTarget | null): boolean {
 // the column silently fails to sort AND an unrelated row opens in the Inspector. Enter on a
 // focused control belongs to that control. Board rows carry role="button" and their own
 // Enter handler, so they are covered by the role check and keep working.
-export function ownsEnter(target: EventTarget | null): boolean {
+function ownsEnter(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   if (!el) return false;
   if (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'SELECT') return true;

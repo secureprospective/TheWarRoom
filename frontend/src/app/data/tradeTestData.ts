@@ -1,7 +1,7 @@
 import type { EnvelopeState, Provenance, Receipt, TradeOffer, TradeReading } from './contract';
 import { heldLineup } from './lineupTestData';
 
-export const tradeDesk = 'https://www47.myfantasyleague.com/2026/options?L=14432&O=05';
+const tradeDesk = 'https://www47.myfantasyleague.com/2026/options?L=14432&O=05';
 export const dotNote = "offer left MFL's pending list; awaiting DOT and commissioner (or declined there)";
 
 export function tradeOffer(direction: TradeOffer['direction'] = 'to_you', tradeId = '901'): TradeOffer {

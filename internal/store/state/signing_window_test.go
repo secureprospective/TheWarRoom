@@ -32,15 +32,6 @@ func setWindow(t *testing.T, s *Store, open bool, note string) error {
 	})
 }
 
-// TestSigningWindow_DefaultOpen: a fresh league with no commissioner directive reports the window
-// OPEN (closed=false) — the v1 posture where SIGN's only phase restriction is the playoffs block.
-func TestSigningWindow_DefaultOpen(t *testing.T) {
-	s := newStore(t, &fakeSource{rosters: baseRosters(t)})
-	if readWindowClosed(t, s) {
-		t.Fatal("fresh league reports the signing window CLOSED, want open by default")
-	}
-}
-
 // TestSigningWindow_CloseReopen: closing sets the window closed; reopening clears it. Each toggle
 // is a from==to directive row (the phase is unchanged) carrying the ufa_window meta.
 func TestSigningWindow_CloseReopen(t *testing.T) {

@@ -3,7 +3,7 @@ import type { Position } from '../data/contract';
 export const TIERS = ['contender', 'hunt', 'rebuild'] as const;
 export const POSTURES = ['now', 'later', 'like-for-like'] as const;
 export const PRIVATE_MARKERS = ['watch', 'bait'] as const;
-export type GlyphName =
+type GlyphName =
   | Position
   | (typeof TIERS)[number]
   | (typeof POSTURES)[number]

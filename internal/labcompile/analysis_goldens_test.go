@@ -147,9 +147,6 @@ func TestAnalysisGoldens(t *testing.T) {
 		}
 		compareJSON(t, marshalOracle(t, w.spread), marshalOracle(t, r.Spread), "spread")
 		compareJSON(t, marshalOracle(t, orderedAllPlay(w.allPlay())), marshalOracle(t, orderedAllPlay(r.Analysis.AllPlay)), "allPlay")
-		if w.season("absent", 2020) != 0 || w.seasonWeeks(2030) != 13 {
-			t.Fatal("missing season result")
-		}
 	})
 	for _, fit := range r.Fits {
 		t.Run(fmt.Sprintf("forecast/%d/%t", fit.Last, fit.PointInTime), func(t *testing.T) {

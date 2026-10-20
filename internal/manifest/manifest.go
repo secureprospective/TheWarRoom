@@ -195,13 +195,6 @@ type Resolved struct {
 	Bytes int64
 }
 
-// Resolve reads every entry's pinned body. Every entry whose body is missing or does not match
-// its sha256 is named in the error.
-func (m Manifest) Resolve(ctx context.Context, bodies Bodies) ([]Resolved, error) {
-	out, _, err := m.ResolveWithGaps(ctx, bodies, nil)
-	return out, err
-}
-
 // Gap authorizes absence of one exact pin, never a replacement body.
 type Gap struct {
 	File   string

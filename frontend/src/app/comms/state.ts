@@ -3,7 +3,7 @@ import { useStore } from 'zustand';
 import { parseComms, type Comms } from './contract';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
-export type CommsReader = {
+type CommsReader = {
   read(team: string, kind: string): Promise<Comms>;
   refresh(force: boolean): Promise<void>;
   open(destination: string): Promise<void>;

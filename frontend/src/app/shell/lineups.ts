@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { LineupReading, Snapshot } from '../data/contract';
 import type { Provider } from '../data/provider';
 
-export type ReadingState<T> = { reading?: T; error?: string };
+type ReadingState<T> = { reading?: T; error?: string };
 export function createReadings<T>(provider: Provider, read: (id: string) => Promise<T>) {
   const entries = new Map<string, ReadingState<T>>();
   const requests = new Map<string, number>();

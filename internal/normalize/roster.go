@@ -2,7 +2,6 @@ package normalize
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -10,25 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
-
-// Player turns one raw roster row into a domain.PlayerRecord, joined against the players
-// Lookup. A row naming an unknown or aggregate player fails rather than producing a half-typed
-// record.
-func Player(raw rosters.RawRoster, lookup Lookup) (domain.PlayerRecord, error) {
-	rec, err := Contract(raw)
-	if err != nil {
-		return domain.PlayerRecord{}, err
-	}
-	entry, ok := lookup.entry(rec.MFLID)
-	if !ok {
-		return domain.PlayerRecord{}, fmt.Errorf("normalize: roster player %s (franchise %s) not found in players database", rec.MFLID, raw.FranchiseID)
-	}
-	if entry.isAggregate {
-		return domain.PlayerRecord{}, fmt.Errorf("normalize: roster %s/%s references a team-aggregate player — should have been filtered at ingestion", raw.FranchiseID, rec.MFLID)
-	}
-	rec.Name, rec.Position, rec.NFLTeam, rec.IsRookie = entry.Name, entry.Position, entry.Team, entry.IsRookie
-	return rec, nil
-}
 
 // Contract types one raw roster row's franchise, roster status and contract, without the
 // players directory: who the player is does not change what MFL says he is paid. The id is
@@ -59,37 +39,6 @@ func Contract(raw rosters.RawRoster) (domain.PlayerRecord, error) {
 		RosterStatus:   status,
 		FranchiseID:    raw.FranchiseID,
 	}, nil
-}
-
-// Rosters normalizes a whole rosters feed into per-franchise records in franchise order.
-// One bad row fails the batch: a partly normalized league is worse than an error.
-func Rosters(raws []rosters.RawRoster, lookup Lookup) ([]domain.Roster, error) {
-	byFranchise := make(map[string][]domain.PlayerRecord)
-	order := make([]string, 0)
-
-	for _, raw := range raws {
-		pr, err := Player(raw, lookup)
-		if err != nil {
-			return nil, err
-		}
-		if _, seen := byFranchise[pr.FranchiseID]; !seen {
-			order = append(order, pr.FranchiseID)
-		}
-		byFranchise[pr.FranchiseID] = append(byFranchise[pr.FranchiseID], pr)
-	}
-
-	sort.Strings(order)
-	out := make([]domain.Roster, 0, len(order))
-	for _, fid := range order {
-		recs := byFranchise[fid]
-		// MFL's array order varies between requests; sorting by id keeps downstream writes from
-		// showing false diffs.
-		sort.Slice(recs, func(i, j int) bool {
-			return recs[i].MFLID.String() < recs[j].MFLID.String()
-		})
-		out = append(out, domain.Roster{FranchiseID: fid, Players: recs})
-	}
-	return out, nil
 }
 
 // parseSalary converts salary in millions straight to cents, with no float in between

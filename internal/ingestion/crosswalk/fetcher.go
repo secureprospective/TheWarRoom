@@ -1,16 +1,15 @@
 // Package crosswalk maps MFL player ids to nflverse gsis ids, which every nflverse source keys
 // on. nflverse's players.csv has no mfl_id (verified 2026-06-19), so the source is
-// DynastyProcess db_playerids.csv. One read builds four indexes:
+// DynastyProcess db_playerids.csv. One read builds three indexes:
 //
 //   - MFL -> gsis, the foundation. Keyed by MFL id because gsis -> MFL is one-to-many (MFL
 //     keeps duplicate records: gsis 00-0031320 is mfl 12459 and 12571). One MFL id with two
 //     gsis is corruption and fails the fetch.
-//   - espn -> gsis, for CFBD player ids (CFBD playerId is the espn id).
 //   - pfr -> gsis, for snap counts, combine and PFR advanced defense.
 //
-// The last two read optional columns, so a source dropping one cannot break the MFL map,
-// and they drop any key that resolves to two different gsis (live: 4 of ~7900 espn ids, 3 of
-// ~7800 pfr ids). A clean miss beats a mis-attributed player.
+// The pfr index reads an optional column, so a source dropping it cannot break the MFL map,
+// and it drops any key that resolves to two different gsis (live: 3 of ~7800 pfr ids). A
+// clean miss beats a mis-attributed player.
 package crosswalk
 
 import (
@@ -31,7 +30,6 @@ const SourceURL = "https://raw.githubusercontent.com/dynastyprocess/data/master/
 const (
 	colMFLID = "mfl_id"
 	colGSIS  = "gsis_id"
-	colESPN  = "espn_id"
 	colPFR   = "pfr_id"
 	colName  = "name"
 )
@@ -44,7 +42,6 @@ var errEmpty = errors.New("crosswalk: source resolved zero MFL->gsis entries")
 // is read through the accessors.
 type Map struct {
 	byMFL   map[playerid.PlayerID]string
-	byESPN  map[string]string
 	byPFR   map[string]string
 	entries map[string]Entry // canonical MFL id -> every row naming it, gsis or not
 }
@@ -56,18 +53,6 @@ func (m Map) Lookup(id playerid.PlayerID) (string, bool) {
 	return gsis, ok
 }
 
-// GSISForESPN returns the gsis id for a CFBD/ESPN athlete id. A miss is ordinary.
-func (m Map) GSISForESPN(espnID string) (string, bool) {
-	gsis, ok := m.byESPN[espnID]
-	return gsis, ok
-}
-
-// Len is the number of MFL -> gsis entries.
-func (m Map) Len() int { return len(m.byMFL) }
-
-// LenESPN is the number of espn -> gsis entries.
-func (m Map) LenESPN() int { return len(m.byESPN) }
-
 // PFRMap returns a copy of the pfr -> gsis index for the caller to own.
 func (m Map) PFRMap() map[string]string {
 	out := make(map[string]string, len(m.byPFR))
@@ -76,9 +61,6 @@ func (m Map) PFRMap() map[string]string {
 	}
 	return out
 }
-
-// LenPFR is the number of pfr -> gsis entries.
-func (m Map) LenPFR() int { return len(m.byPFR) }
 
 // Fetch reads the crosswalk CSV and builds the Map. A row missing either id is skipped; a
 // malformed MFL id fails.
@@ -98,12 +80,11 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 	}
 	mflIdx, gsisIdx := cols[colMFLID], cols[colGSIS]
 	idCols := idColumns(records[0])
-	espnIdx := optionalColumn(records[0], colESPN) // -1 if the source omits espn_id
 	pfrIdx := optionalColumn(records[0], colPFR)   // -1 if the source omits pfr_id
 	nameIdx := optionalColumn(records[0], colName) // -1 if the source omits name
 
 	byMFL := make(map[playerid.PlayerID]string)
-	b := newBridges()
+	byPFR, poisonedPFR := map[string]string{}, map[string]bool{}
 	entries := make(map[string]Entry)
 	for _, rec := range records[1:] {
 		if err := addEntry(entries, rec, mflIdx, nameIdx, idCols); err != nil {
@@ -117,34 +98,15 @@ func Fetch(ctx context.Context, client *http.Client, url string) (Map, error) {
 		if err := addMFL(byMFL, strings.TrimSpace(rec[mflIdx]), gsis); err != nil {
 			return Map{}, err
 		}
-		b.add(rec, gsis, espnIdx, pfrIdx)
+		if pfrIdx >= 0 {
+			addBridge(byPFR, poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
+		}
 	}
 
 	if len(byMFL) == 0 {
 		return Map{}, errEmpty
 	}
-	return Map{byMFL: byMFL, byESPN: b.espn, byPFR: b.pfr, entries: entries}, nil
-}
-
-// bridges are the optional indexes onto gsis, with the keys dropped for resolving to two gsis.
-type bridges struct {
-	espn, pfr                 map[string]string
-	poisonedESPN, poisonedPFR map[string]bool
-}
-
-func newBridges() *bridges {
-	return &bridges{espn: map[string]string{}, pfr: map[string]string{},
-		poisonedESPN: map[string]bool{}, poisonedPFR: map[string]bool{}}
-}
-
-// add indexes one row's optional ids onto gsis; a column index of -1 means the source omits it.
-func (b *bridges) add(rec []string, gsis string, espnIdx, pfrIdx int) {
-	if espnIdx >= 0 {
-		addBridge(b.espn, b.poisonedESPN, strings.TrimSpace(rec[espnIdx]), gsis)
-	}
-	if pfrIdx >= 0 {
-		addBridge(b.pfr, b.poisonedPFR, strings.TrimSpace(rec[pfrIdx]), gsis)
-	}
+	return Map{byMFL: byMFL, byPFR: byPFR, entries: entries}, nil
 }
 
 // optionalColumn returns name's index in header, or -1.
