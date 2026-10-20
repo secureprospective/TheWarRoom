@@ -1,0 +1,53 @@
+{
+ "league": "native.seed",
+ "franchise": "franchise.01",
+ "revision": 23,
+ "season": 2026,
+ "players": [
+  {
+   "window": "act.fe88644e6e23300b7a67a165d834457bbb495571f17c29f7441c754a7fc3dfc9",
+   "player": "1001",
+   "name": "Player, 1001",
+   "closesAt": "2026-10-14T05:00:00-07:00",
+   "closes": "Oct 14, 2026 at 5:00 AM PDT",
+   "status": "On waivers"
+  }
+ ],
+ "claims": [],
+ "order": [
+  "franchise.01",
+  "franchise.02",
+  "franchise.03",
+  "franchise.04",
+  "franchise.05",
+  "franchise.06",
+  "franchise.07",
+  "franchise.08",
+  "franchise.09",
+  "franchise.10",
+  "franchise.11",
+  "franchise.12",
+  "franchise.13",
+  "franchise.14",
+  "franchise.15",
+  "franchise.16",
+  "franchise.17",
+  "franchise.18",
+  "franchise.19",
+  "franchise.20",
+  "franchise.21",
+  "franchise.22",
+  "franchise.23",
+  "franchise.24",
+  "franchise.25",
+  "franchise.26",
+  "franchise.27",
+  "franchise.28",
+  "franchise.29",
+  "franchise.30",
+  "franchise.31",
+  "franchise.32"
+ ],
+ "orderSource": "Set by the commissioner",
+ "method": "Reverse standings"
+}

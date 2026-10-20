@@ -1,0 +1,780 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "revision": 7,
+ "season": 2026,
+ "week": 1,
+ "franchise": "franchise.02",
+ "franchiseName": "Held team 2",
+ "zone": "America/Los_Angeles",
+ "set": true,
+ "corrected": false,
+ "words": "Held team 2's week 1 lineup is set. Valid lineup.",
+ "starters": [
+  {
+   "player": "1000",
+   "name": "Player, 1000",
+   "position": "QB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1001",
+   "name": "Player, 1001",
+   "position": "RB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1002",
+   "name": "Player, 1002",
+   "position": "RB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1003",
+   "name": "Player, 1003",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1004",
+   "name": "Player, 1004",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1005",
+   "name": "Player, 1005",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1006",
+   "name": "Player, 1006",
+   "position": "TE",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1007",
+   "name": "Player, 1007",
+   "position": "TE",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1008",
+   "name": "Player, 1008",
+   "position": "PK",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1009",
+   "name": "Player, 1009",
+   "position": "DT",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1010",
+   "name": "Player, 1010",
+   "position": "DT",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1011",
+   "name": "Player, 1011",
+   "position": "DE",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1012",
+   "name": "Player, 1012",
+   "position": "DE",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1013",
+   "name": "Player, 1013",
+   "position": "LB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1014",
+   "name": "Player, 1014",
+   "position": "LB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1015",
+   "name": "Player, 1015",
+   "position": "LB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1016",
+   "name": "Player, 1016",
+   "position": "LB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1017",
+   "name": "Player, 1017",
+   "position": "CB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1018",
+   "name": "Player, 1018",
+   "position": "CB",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1019",
+   "name": "Player, 1019",
+   "position": "S",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1020",
+   "name": "Player, 1020",
+   "position": "S",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  }
+ ],
+ "bench": [
+  {
+   "player": "1021",
+   "name": "Player, 1021",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1022",
+   "name": "Player, 1022",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1023",
+   "name": "Player, 1023",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1024",
+   "name": "Player, 1024",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1025",
+   "name": "Player, 1025",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1026",
+   "name": "Player, 1026",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1027",
+   "name": "Player, 1027",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1028",
+   "name": "Player, 1028",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1029",
+   "name": "Player, 1029",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1030",
+   "name": "Player, 1030",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1031",
+   "name": "Player, 1031",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1032",
+   "name": "Player, 1032",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1033",
+   "name": "Player, 1033",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1034",
+   "name": "Player, 1034",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1035",
+   "name": "Player, 1035",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1036",
+   "name": "Player, 1036",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1037",
+   "name": "Player, 1037",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1038",
+   "name": "Player, 1038",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1039",
+   "name": "Player, 1039",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1040",
+   "name": "Player, 1040",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1041",
+   "name": "Player, 1041",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1042",
+   "name": "Player, 1042",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1043",
+   "name": "Player, 1043",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1044",
+   "name": "Player, 1044",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1045",
+   "name": "Player, 1045",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1046",
+   "name": "Player, 1046",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1047",
+   "name": "Player, 1047",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1048",
+   "name": "Player, 1048",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1049",
+   "name": "Player, 1049",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1050",
+   "name": "Player, 1050",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1051",
+   "name": "Player, 1051",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1052",
+   "name": "Player, 1052",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1053",
+   "name": "Player, 1053",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1054",
+   "name": "Player, 1054",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1055",
+   "name": "Player, 1055",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1056",
+   "name": "Player, 1056",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1057",
+   "name": "Player, 1057",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1058",
+   "name": "Player, 1058",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1059",
+   "name": "Player, 1059",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1060",
+   "name": "Player, 1060",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1061",
+   "name": "Player, 1061",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1062",
+   "name": "Player, 1062",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1063",
+   "name": "Player, 1063",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1064",
+   "name": "Player, 1064",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1065",
+   "name": "Player, 1065",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1066",
+   "name": "Player, 1066",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1067",
+   "name": "Player, 1067",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1068",
+   "name": "Player, 1068",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1069",
+   "name": "Player, 1069",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1070",
+   "name": "Player, 1070",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1071",
+   "name": "Player, 1071",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1072",
+   "name": "Player, 1072",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1073",
+   "name": "Player, 1073",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1074",
+   "name": "Player, 1074",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1075",
+   "name": "Player, 1075",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1076",
+   "name": "Player, 1076",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1077",
+   "name": "Player, 1077",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1078",
+   "name": "Player, 1078",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1079",
+   "name": "Player, 1079",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1080",
+   "name": "Player, 1080",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  },
+  {
+   "player": "1081",
+   "name": "Player, 1081",
+   "position": "WR",
+   "team": "AAA",
+   "locked": false,
+   "locksAt": "2026-10-18T10:00:00-07:00",
+   "words": "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT"
+  }
+ ],
+ "verdict": {
+  "status": "valid",
+  "words": "Valid lineup",
+  "problems": [],
+  "flagged": false,
+  "penalty": ""
+ },
+ "rules": [
+  {
+   "label": "Starting position limits",
+   "words": "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5"
+  },
+  {
+   "label": "Starting group limits",
+   "words": "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21"
+  },
+  {
+   "label": "Invalid lineup penalty",
+   "words": "Zero top starter"
+  },
+  {
+   "label": "Flag missed lineups",
+   "words": "On"
+  }
+ ]
+}

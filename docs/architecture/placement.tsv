@@ -150,6 +150,7 @@ native_waiver_rules_test.go	commissioner
 native_waivers_app.go	commissioner
 native_waivers_orders_test.go	commissioner
 native_waivers_test.go	commissioner
+native_wire_test.go	commissioner
 now_app.go	now
 now_entities.go	now
 now_nfl_reading.go	now

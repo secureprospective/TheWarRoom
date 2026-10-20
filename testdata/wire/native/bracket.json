@@ -1,0 +1,77 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "season": 2026,
+ "revision": 4,
+ "status": "Needs a ruling",
+ "words": "Needs a ruling: which conference the division \"division.1\" is in",
+ "preset": "league_rules",
+ "presets": [],
+ "rules": {
+  "words": "",
+  "perConference": 7,
+  "divisionWinners": 4,
+  "wildCards": 3,
+  "byeSeeds": 1,
+  "seeding": "Division winners first, then wild cards",
+  "reseed": true,
+  "startWeek": 14,
+  "finalWeek": 17,
+  "homeBonus": 30000,
+  "shape": [
+   {
+    "id": "wildcard_2",
+    "week": 14,
+    "homeSeed": 2,
+    "awaySeed": 7
+   },
+   {
+    "id": "wildcard_3",
+    "week": 14,
+    "homeSeed": 3,
+    "awaySeed": 6
+   },
+   {
+    "id": "wildcard_4",
+    "week": 14,
+    "homeSeed": 4,
+    "awaySeed": 5
+   },
+   {
+    "id": "division_1",
+    "week": 15,
+    "homeSeed": 1,
+    "awayFrom": "lowest remaining seed"
+   },
+   {
+    "id": "division_2",
+    "week": 15,
+    "homeFrom": "highest remaining seed",
+    "awayFrom": "other remaining seed"
+   },
+   {
+    "id": "conference",
+    "week": 16,
+    "homeFrom": "division winner",
+    "awayFrom": "division winner"
+   },
+   {
+    "id": "championship",
+    "week": 17,
+    "homeFrom": "conference winner",
+    "awayFrom": "conference winner"
+   }
+  ]
+ },
+ "started": false,
+ "startKnown": false,
+ "fields": [],
+ "rounds": [],
+ "title": {
+  "season": 2026,
+  "label": "2026 League Champion",
+  "default": true
+ },
+ "history": [],
+ "changes": []
+}

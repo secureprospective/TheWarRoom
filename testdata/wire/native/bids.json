@@ -1,0 +1,44 @@
+{
+ "league": "native.seed",
+ "franchise": "franchise.01",
+ "revision": 23,
+ "season": 2026,
+ "mode": "Open",
+ "activeBids": 1,
+ "activeLimit": "30",
+ "players": [
+  {
+   "player": "5004",
+   "name": "Player, 5004",
+   "mode": "open",
+   "modeWords": "Open bidding: everyone sees the leading bid",
+   "leader": {
+    "id": "act.c362a608ce2408d1877fd6ad8862aa172b23c19ab7773245928d53b45935e17e",
+    "franchise": "franchise.01",
+    "team": "Held team 1",
+    "contract": "2 years at $5,000,000 a year",
+    "points": "6.000",
+    "placedAt": "2026-10-13T05:00:00-07:00",
+    "placed": "Oct 13, 2026 at 5:00 AM PDT"
+   },
+   "bids": 1,
+   "yourBid": {
+    "id": "act.c362a608ce2408d1877fd6ad8862aa172b23c19ab7773245928d53b45935e17e",
+    "franchise": "franchise.01",
+    "team": "Held team 1",
+    "contract": "2 years at $5,000,000 a year",
+    "points": "6.000",
+    "placedAt": "2026-10-13T05:00:00-07:00",
+    "placed": "Oct 13, 2026 at 5:00 AM PDT"
+   },
+   "youLead": true,
+   "lateAt": "2026-10-14T01:00:00-07:00",
+   "lateWords": "A bid placed after Oct 14, 2026 at 1:00 AM PDT must beat the leader by 1.000 points.",
+   "lateNow": false,
+   "closesAt": "2026-10-14T05:00:00-07:00",
+   "closes": "Closes Oct 14, 2026 at 5:00 AM PDT"
+  }
+ ],
+ "awards": [],
+ "notes": []
+}

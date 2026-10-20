@@ -1,0 +1,12 @@
+{
+ "command": "commish.score.player",
+ "words": "Adjusted player 1000 by 1 points in season 2026, week 1",
+ "warnings": [
+  "We can't tell yet whether this changes Held team 1 v Held team 32: neither score is complete; Held team 2 v Held team 31: neither score is complete; Held team 30 v Held team 3: neither score is complete; Held team 4 v Held team 29: neither score is complete; Held team 28 v Held team 5: neither score is complete; Held team 6 v Held team 27: neither score is complete; Held team 26 v Held team 7: neither score is complete; Held team 8 v Held team 25: neither score is complete; Held team 24 v Held team 9: neither score is complete; Held team 10 v Held team 23: neither score is complete; Held team 22 v Held team 11: neither score is complete; Held team 12 v Held team 21: neither score is complete; Held team 20 v Held team 13: neither score is complete; Held team 14 v Held team 19: neither score is complete; Held team 18 v Held team 15: neither score is complete; Held team 16 v Held team 17: neither score is complete."
+ ],
+ "flip": {
+  "status": "Not known",
+  "words": "We can't tell yet whether this changes Held team 1 v Held team 32: neither score is complete; Held team 2 v Held team 31: neither score is complete; Held team 30 v Held team 3: neither score is complete; Held team 4 v Held team 29: neither score is complete; Held team 28 v Held team 5: neither score is complete; Held team 6 v Held team 27: neither score is complete; Held team 26 v Held team 7: neither score is complete; Held team 8 v Held team 25: neither score is complete; Held team 24 v Held team 9: neither score is complete; Held team 10 v Held team 23: neither score is complete; Held team 22 v Held team 11: neither score is complete; Held team 12 v Held team 21: neither score is complete; Held team 20 v Held team 13: neither score is complete; Held team 14 v Held team 19: neither score is complete; Held team 18 v Held team 15: neither score is complete; Held team 16 v Held team 17: neither score is complete.",
+  "flips": []
+ }
+}
