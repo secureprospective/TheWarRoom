@@ -1,0 +1,37 @@
+{
+ "league": "native.seed",
+ "revision": 14,
+ "notices": [],
+ "notes": [],
+ "releases": [
+  {
+   "date": "2026-10-14",
+   "title": "Commissioner tools",
+   "words": "Start a league of your own in the app, set its rules, give and take roles, and see every change in the league ledger."
+  },
+  {
+   "date": "2026-10-13",
+   "title": "Trade desk and reports",
+   "words": "The trade desk keeps exit plans, countdowns tick live, reports open in a drawer and news times say when they are estimates."
+  },
+  {
+   "date": "2026-10-12",
+   "title": "Franchise HQ and the home page",
+   "words": "Try a what-if on your roster, use the row menus, and read league dates straight from the rulebook."
+  },
+  {
+   "date": "2026-10-11",
+   "title": "Contracts, the Lab and the bid pool",
+   "words": "Contract moves, the Lab screens and the free-agent bid pool arrive, with money kept to the exact cent."
+  },
+  {
+   "date": "2026-10-10",
+   "title": "The first target screens",
+   "words": "The trade desk, the home seasonal card and alerts, League Pulse Now, and IR and taxi moves arrive."
+  }
+ ],
+ "mail": {
+  "words": "This app sends no email and no messages to anyone. A notice is recorded in the league ledger and shown to owners inside the app. These are the notices it recorded.",
+  "recorded": []
+ }
+}

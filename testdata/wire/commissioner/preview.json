@@ -1,0 +1,30 @@
+{
+ "question": "How small and how large may a roster be? Any position minimums?",
+ "target": {
+  "league": "native.seed",
+  "name": "Seed league",
+  "version": 14
+ },
+ "fields": [
+  {
+   "label": "Active roster size",
+   "before": "0 to 90",
+   "beforeSource": "Changed in the league ledger",
+   "after": "0 to 80",
+   "afterSource": "Your proposed change",
+   "when": "in force now"
+  }
+ ],
+ "affects": {
+  "readings": [
+   "Rosters",
+   "Roster w/Stats",
+   "Submit Lineup",
+   "Drop Players"
+  ],
+  "count": 4,
+  "words": "All 32 franchises affected"
+ },
+ "blockers": [],
+ "safeguard": "reason"
+}
