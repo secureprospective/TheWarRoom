@@ -21,7 +21,7 @@ const html = renderToStaticMarkup;
 describe('Control Room data and sources', () => {
   it('renders Go health, the manifest standing and each check with its differences in words', () => {
     const d = data();
-    for (const r of [d.health, d.facts, d.checks]) {
+    for (const r of [d.health, d.facts, d.checks, d.databaseChecks]) {
       const markup = html(createElement(ReportView, { report: r, howLabel: 'How this is counted' }));
       expect(markup).toContain(r.title);
       expect(markup).toContain(`data-endpoint="${r.id}"`);

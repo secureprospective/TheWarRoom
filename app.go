@@ -99,17 +99,18 @@ type App struct {
 	targetSnapshot    snapshot.Snapshot
 	hasTargetSnapshot bool
 
-	weekMu           sync.Mutex
-	week             leagueweek.Week
-	weekFetchedAt    time.Time
-	weekRefreshError string
-	clockChanged     func(context.Context)
-	weekCancel       context.CancelFunc
-	weekWorkers      sync.WaitGroup
-	workerMu         sync.Mutex
-	stopping         bool
-	shutdownOnce     sync.Once
-	weekStart        sync.Once // domReady fires again on a webview reload; one worker only
+	weekMu             sync.Mutex
+	week               leagueweek.Week
+	weekFetchedAt      time.Time
+	weekRefreshError   string
+	clockChanged       func(context.Context)
+	weekCancel         context.CancelFunc
+	weekWorkers        sync.WaitGroup
+	workerMu           sync.Mutex
+	stopping           bool
+	databaseCheckStart sync.Once
+	shutdownOnce       sync.Once
+	weekStart          sync.Once // domReady fires again on a webview reload; one worker only
 
 	seasonMu            sync.Mutex
 	seasonCalendar      heldSeasonFeed[[]ingestion.RawCalendarEvent]
@@ -269,6 +270,7 @@ func (a *App) startup(ctx context.Context) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
+	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
 }
 

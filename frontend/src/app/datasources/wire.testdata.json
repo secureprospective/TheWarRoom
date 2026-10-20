@@ -1,5 +1,47 @@
 {
   "data": {
+    "databaseChecks": {
+      "id": "database-checks",
+      "title": "Local database checks",
+      "note": "",
+      "status": "empty",
+      "source": "",
+      "asOf": "",
+      "how": "SQLite integrity_check and foreign_key_check run after launch and weekly while open. The last attempt is held for this launch.",
+      "columns": [
+        "File",
+        "Last checked",
+        "Result"
+      ],
+      "rows": [
+        {
+          "cells": [
+            "thewarroom",
+            "Not checked this launch",
+            "Waiting for checks"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "history",
+            "Not checked this launch",
+            "Waiting for checks"
+          ],
+          "range": null
+        },
+        {
+          "cells": [
+            "whatif",
+            "Not checked this launch",
+            "Waiting for checks"
+          ],
+          "range": null
+        }
+      ],
+      "summary": null,
+      "link": null
+    },
     "health": {
       "id": "C-07",
       "title": "Source health and freshness",

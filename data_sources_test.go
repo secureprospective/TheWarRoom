@@ -308,7 +308,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 		Params    ParamsResult  `json:"params"`
 		Result    DataActResult `json:"result"`
 	}{
-		Data: DataSources{Health: healthReport(healthInput{reg: reg, now: at, zone: time.UTC,
+		Data: DataSources{DatabaseChecks: (&App{}).databaseChecksReport(), Health: healthReport(healthInput{reg: reg, now: at, zone: time.UTC,
 			sources: []history.SourceHealth{{Source: leagueArchiveSource, State: history.SourceActive, LastSuccess: at}}}),
 			Signals: signalFilesReport(SignalsView{Feeds: []FeedView{{Feed: "stats_player_week", Source: "nflverse",
 				LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,

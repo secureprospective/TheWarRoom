@@ -112,7 +112,7 @@ export default function DataSources() {
     </>}
     {s.error && <p role="alert">{s.error} {w?.kept}</p>}
     {s.data && <>
-      {[s.data.health, s.data.signals, s.data.facts, s.data.checks].map(report =>
+      {[s.data.health, s.data.signals, s.data.facts, s.data.checks, s.data.databaseChecks].map(report =>
         <ReportView key={report.id} report={report} howLabel={s.data!.words.how} heading="h4" />)}
       <RefreshScopes data={s.data} busy={s.busy} outcomes={s.outcomes} />
       <CacheTools />

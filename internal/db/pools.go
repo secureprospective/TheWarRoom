@@ -26,6 +26,9 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	checkRunMu       sync.Mutex
+	checkMu          sync.Mutex
+	lastCheck        RoutineCheck
 	migrationMu      sync.Mutex
 	findings         Findings
 	checkedVersion   int

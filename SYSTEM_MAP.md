@@ -182,6 +182,10 @@ Every method that takes frontend input validates it before acting. Bindings in
   filled during startup.
 - **Migrations:** `internal/store/state/migrations.go`, forward-only and versioned; a
   `VACUUM INTO` backup is taken before any pending migration runs.
+- **Database checks:** `internal/db/routine_checks.go` retains the last attempted integrity/FK
+  checks per pool. `database_checks_app.go` runs them after the window opens and weekly while
+  open, through a cancellable, joined worker. Data Sources exposes `databaseChecks` using
+  the existing report renderer. Results are process-local; restarting runs checks again.
 - **Logs:** one file per launch in `~/.config/TheWarRoom/logs/`, also on stderr. Startup logs
   each step and its time; a failed startup shows a banner in the app.
 - **Headless check:** `thewarroom -probe` runs the full startup without a window and exits

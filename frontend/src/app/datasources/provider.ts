@@ -5,7 +5,7 @@ import { report, type Report } from '../reports/contract';
 import type { main } from '../../../wailsjs/go/models';
 
 export type Scope = { id: string; label: string; note: string; action: string; progress: string };
-export type Sources = { health: Report; signals: Report; facts: Report; checks: Report;
+export type Sources = { health: Report; signals: Report; facts: Report; checks: Report; databaseChecks: Report;
   archiveDir: string; photosOn: boolean; scopes: Scope[]; words: Record<string, string> };
 export type Outcome = { ok: boolean; error: string; summary: string };
 function flag(v: unknown, p: string): boolean {
@@ -15,7 +15,7 @@ function flag(v: unknown, p: string): boolean {
 export function parseSources(v: unknown): Sources {
   const p = 'Data and sources';
   const r = object(v, p,
-    ['health', 'signals', 'facts', 'checks', 'archiveDir', 'photosOn', 'scopes', 'words']);
+    ['health', 'signals', 'facts', 'checks', 'databaseChecks', 'archiveDir', 'photosOn', 'scopes', 'words']);
   const scopes = array(r.scopes, p, (v, p) => {
     const s = object(v, p, ['id', 'label', 'note', 'action', 'progress']);
     return { id: choice(s.id, p, ['league', 'signals', 'crosswalk', 'archive']),
@@ -31,7 +31,7 @@ export function parseSources(v: unknown): Sources {
   const rawWords = object(r.words, p, keys);
   const words = Object.fromEntries(keys.map(k => [k, text(rawWords[k], `${p}.${k}`)]));
   return { health: report(r.health, p), signals: report(r.signals, p), facts: report(r.facts, p),
-    checks: report(r.checks, p), archiveDir: text(r.archiveDir, p), photosOn: flag(r.photosOn, p),
+    checks: report(r.checks, p), databaseChecks: report(r.databaseChecks, p), archiveDir: text(r.archiveDir, p), photosOn: flag(r.photosOn, p),
     scopes, words };
 }
 export function parseOutcome(v: unknown): Outcome {

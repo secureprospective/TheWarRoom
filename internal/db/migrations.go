@@ -115,9 +115,7 @@ func (p *Pools) MigrationFindings() Findings {
 }
 
 func cloneFindings(result Findings) Findings {
-	result.Before.Integrity = append([]string(nil), result.Before.Integrity...)
-	result.After.Integrity = append([]string(nil), result.After.Integrity...)
-	result.Before.ForeignKeys = append([]ForeignKeyFinding(nil), result.Before.ForeignKeys...)
-	result.After.ForeignKeys = append([]ForeignKeyFinding(nil), result.After.ForeignKeys...)
+	result.Before = cloneCheckFindings(result.Before)
+	result.After = cloneCheckFindings(result.After)
 	return result
 }
