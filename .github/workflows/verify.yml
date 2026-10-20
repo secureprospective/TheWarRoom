@@ -1,11 +1,12 @@
 # The full gate on GitHub: lint, race tests on every package, and the frontend build. It runs on every
-# push and pull request, so the merge (not the push) waits for the full suite. The local pre-push hook
-# runs only what the push touched (scripts/prepush.sh).
+# push (a pull request reuses the push run for the same commit), so the merge (not the push) waits for
+# the full suite. The race suite is split across four runners by scripts/ci-shard.sh; the "verify" job
+# is the one required check and passes only when lint and every shard pass. The local pre-push hook runs
+# only what the push touched (scripts/prepush.sh).
 name: verify
 
 on:
   push:
-  pull_request:
 
 permissions:
   contents: read
@@ -15,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify:
+  checks:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,5 +40,41 @@ jobs:
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
       - name: Frontend install
         run: cd frontend && pnpm install --frozen-lockfile && pnpm build
-      - name: Verify
-        run: make verify
+      - name: Lint, bindings, frontend checks
+        run: |
+          make lint
+          make bindings
+          cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build && node scripts/bundle-budget.mjs
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Frontend build (embedded by package main)
+        run: cd frontend && pnpm install --frozen-lockfile && pnpm build
+      - name: Race tests, shard ${{ matrix.shard }} of 4
+        run: scripts/ci-shard.sh ${{ matrix.shard }} 4
+
+  verify:
+    runs-on: ubuntu-24.04
+    needs: [checks, test]
+    if: always()
+    steps:
+      - name: Every check and shard passed
+        run: test "${{ needs.checks.result }}" = success && test "${{ needs.test.result }}" = success
