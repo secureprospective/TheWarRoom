@@ -97,6 +97,7 @@ setup:
 # so anything reaching a push has already cleared it. govulncheck reports known vulnerabilities
 # in code paths the app calls (stdlib and modules); install it pinned, as the workflow does.
 verify: lint
+	scripts/check-wails-version.sh
 	govulncheck ./...
 	$(MAKE) bindings
 	cd frontend && pnpm tsc --noEmit
