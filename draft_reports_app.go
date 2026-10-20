@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -118,10 +119,8 @@ func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string
 	return values, a.draftValueNote(run)
 }
 
-// engineRunText is the one wording for when the engine last valued players, wherever it shows.
-func engineRunText(at time.Time, zone *time.Location) string {
-	return "Engine run: " + at.In(zone).Format("January 2, 2006, 3:04 PM")
-}
+// engineRunText is report.EngineRun, the one wording for when the engine last valued players.
+func engineRunText(at time.Time, zone *time.Location) string { return report.EngineRun(at, zone) }
 
 func (a *App) draftValueNote(run history.Run) string {
 	note := engineRunText(run.AsOf, time.Local) + "."
