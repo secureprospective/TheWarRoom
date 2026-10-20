@@ -81,8 +81,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 `internal/leagueclock/action_calendar.go` dates commissioner action windows at civil midnight in
 league time, assigns shared dates to the chosen side, and provides one default-deny action decision
 with exact trade cutoff and franchise/time-scoped exceptions. It carries live closes and countdown
-seconds. `Countdown` calculates a bid's late-bid mark from its configured duration; bid-plan wiring
-is still pending. The imported (MFL league) clock keeps Rulebook §14's week 9 first-kickoff deadline.
+seconds. A bid's late-bid mark is `nativecheck.BidPolicy`'s configured duration. The imported (MFL league) clock keeps Rulebook §14's week 9 first-kickoff deadline.
 `internal/commissioner/calendar.go` folds public exception Acts (`commish.calendar.exception`, CM-026,
 G3) and rule compensation into the reading. The existing history transaction authorizes, validates,
 retries and appends the exception. `league_calendar_app.go` exposes `TargetLeagueCalendar` for an

@@ -92,7 +92,7 @@ func TestExceptionIsScopedAndExpires(t *testing.T) {
 	}
 }
 
-func TestExactDeadlineAndBidCountdown(t *testing.T) {
+func TestExactDeadline(t *testing.T) {
 	at := time.Date(2026, 10, 29, 18, 30, 0, 0, time.UTC)
 	rules := testWindows(map[string]leaguerules.Window{"trade": {
 		Start: testDate(3, 1), Opens: leaguerules.Known([]leaguerules.Action{"trade"}),
@@ -105,14 +105,6 @@ func TestExactDeadlineAndBidCountdown(t *testing.T) {
 	if *c.TradeSeconds != 1 || !c.Decide(at, "trade", "one").Open ||
 		c.Decide(at.Add(time.Second), "trade", "one").Open {
 		t.Fatal(c)
-	}
-	countdown := Countdown(at, at.Add(24*time.Hour), 20*time.Hour)
-	if !countdown.SnipeMark.Equal(at.Add(20*time.Hour)) || !countdown.Close.Equal(at.Add(24*time.Hour)) {
-		t.Fatal(countdown)
-	}
-	custom := Countdown(at, at.Add(24*time.Hour), 18*time.Hour)
-	if !custom.SnipeMark.Equal(at.Add(18 * time.Hour)) {
-		t.Fatal("threshold must remain a commissioner setting", custom)
 	}
 }
 

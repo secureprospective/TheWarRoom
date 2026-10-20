@@ -205,15 +205,6 @@ func (c ActionCalendar) nextWindow(at time.Time, action leaguerules.Action) Acti
 	return decision
 }
 
-type BidCountdown struct {
-	SnipeMark time.Time `json:"snipeMark"`
-	Close     time.Time `json:"close"`
-}
-
-func Countdown(start, closeAt time.Time, snipeAfter time.Duration) BidCountdown {
-	return BidCountdown{SnipeMark: start.Add(snipeAfter).UTC(), Close: closeAt.UTC()}
-}
-
 func (c *ActionCalendar) Localize(local *time.Location) {
 	for i := range c.Windows {
 		w := &c.Windows[i]
