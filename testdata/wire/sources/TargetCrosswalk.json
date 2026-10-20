@@ -1,0 +1,43 @@
+{
+  "id": "C-08",
+  "title": "Player crosswalk",
+  "note": "1,000 links; 12 waiting facts resolved.",
+  "status": "ok",
+  "source": "Source: DynastyProcess",
+  "asOf": "Loaded: Oct 11, 2026, 1:00 PM",
+  "how": "DynastyProcess links MFL players to NFL ids. Unmatched rostered players are listed with the reason; their facts wait for a link.",
+  "columns": [
+    "Position",
+    "Rostered matched",
+    "Free agents matched"
+  ],
+  "rows": [
+    {
+      "cells": [
+        "QB",
+        "3 of 4 · 75.0%",
+        "None"
+      ],
+      "range": null
+    },
+    {
+      "cells": [
+        "ALL",
+        "3 of 4 · 75.0%",
+        "None"
+      ],
+      "range": null
+    },
+    {
+      "cells": [
+        "Waiting",
+        "QB · NFL team not held",
+        "no NFL id yet"
+      ],
+      "range": null,
+      "group": "Unmatched rostered players"
+    }
+  ],
+  "summary": null,
+  "link": null
+}

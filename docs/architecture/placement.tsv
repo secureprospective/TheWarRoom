@@ -316,3 +316,4 @@ internal/transactions/acquisitions	contracts
 internal/transactions/contracts	contracts
 internal/transactions/deadcap	contracts
 internal/transactions/freeagency	contracts
+sources_wire_test.go	sources
