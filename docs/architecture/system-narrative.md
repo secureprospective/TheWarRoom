@@ -92,7 +92,7 @@ week edits are G3). Generation takes explicit weeks with the current division al
 pattern uses the in-force rule, and an unset rule refuses to guess. Equal even-sized divisions use
 complete within-division rounds; reciprocal meetings and oriented remaining trails balance home games. Each game has a stable week/slot id. Edits patch one game's home/away
 franchises, validating the complete resulting week. Generated weeks are frozen in the ledger record;
-publication replay never reruns the generator or resolves today's schedule rules. `league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
+publication replay never reruns the generator or resolves today's schedule rules. `native_league_schedule_app.go` exposes `TargetLeagueSchedule`: only the published
 projection, replayed from local events and compensations. Draft changes never replace that reading.
 `native_schedule_app.go` exposes the franchise season and current-week owner readings over those
 publications. Opponents are native; kickoff and finality come only from locally archived NFL weeks,
@@ -122,7 +122,7 @@ are still pending.
 | File | Methods |
 |---|---|
 | `league_calendar_app.go` | `TargetLeagueCalendar(RawLeagueCalendarScope)`: app-owned action windows, live close countdowns, exact chosen trade deadline and public scoped exceptions, replayed from the league ledger and localized for the owner. |
-| `league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
+| `native_league_schedule_app.go` | `TargetLeagueSchedule(RawLeagueScheduleScope)`: published native head-to-head schedule only; draft changes are not owner readings. |
 | `native_schedule_app.go` | `TargetNativeWeek(RawNativeWeekScope)`, `TargetNativeFranchiseSchedule(RawNativeScheduleScope)`: validated league/franchise/season/owner-zone scopes and explicit week reading time; published opponents, venue, bye, local first NFL kickoff and next week. Unknown held NFL dates never become guessed weeks. |
 | `market_surfaces_app.go`, `market_profile_app.go` | `TargetMarketLists`, `TargetPickClock`, `TargetMarketStretches`, `TargetAssetProfile`: validated historical scopes and asset kinds; typed Go-computed display sections in `Reading[MarketSurface]`, fitted ranges and archive disclosure, no spread grade. |
 | `counterparties_app.go`, `counterparties_team_app.go` | `TargetCounterparties`, `TargetCounterpartTeam`: validated historical standing/window/posture scopes; tier cards, trends, pair matrix, sortable team values and season/asset-flow/partner Inspector readings. Lazy frontend in `frontend/src/app/counterparties`, franchise ids resolved against the shared snapshot. |
@@ -138,7 +138,7 @@ are still pending.
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
 | `livegame_app.go`, `livegame_spine.go` | `TargetLiveGame(open, follow, mine)`: demand-driven Now poll on held NFL windows; MFL liveScoring at 30 s, ESPN board at 30 s/details at 15 s with capped backoff; separate held detail time, strict ESPN crosswalk starter matching, cached personal-use photos. Source URLs are data in `livegame_sources.json`. Lazy `frontend/src/app/now/LiveGame.tsx`; `game.follow id=` command. |
 | `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
-| `target_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
+| `snapshot_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
 | `mflkey_app.go` | `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement) |
 | `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
 | `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
@@ -267,7 +267,7 @@ unknown.
 `internal/envelope` owns immutable move states (one transition map), checks, observation predicates
 and per-feed observations, including unmapped IR drafts; `internal/store/moves` owns append-only
 SQLite persistence. Neither core does I/O.
-`snapshot.BuildClock` is the one clock builder: `TargetClock` (in `target_app.go`) passes the what-if store, and
+`snapshot.BuildClock` is the one clock builder: `TargetClock` (in `snapshot_app.go`) passes the what-if store, and
 `cmd/fixtures -whatif` passes a backup of it. Move fixtures stay outside the entry chunk.
 
 `frontend/src/app/clock/` renders the league clock; one DOM ticker owns countdowns and urgency,
@@ -309,7 +309,7 @@ lineup, incoming-offer and current/next-week position-minimum bye alerts from he
 Home seasonal card: `shell/SeasonalCard.tsx` lazily renders the held clock and shared deadline ticker.
 Home alert tray: `shell/AlertTray.tsx` lazily reads ordered franchise alerts and routes to their workspaces.
 
-`target_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
+`snapshot_app.go`: `TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error)` saves a taxi plan.
 `internal/envelope`: `roster.taxi` derives direction from held status and watches post-hand-off rosters.
 IR and taxi open MFL owner pages without submitting; unavailable held taxi rules are labelled unchecked.
 Inspector: `shell/PlayerAct.tsx` drafts IR/taxi by held roster status and hands off inline.

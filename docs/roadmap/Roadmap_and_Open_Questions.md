@@ -60,6 +60,8 @@ League mates report back. Bugs, edge cases, and rule interpretation questions su
 - [ ] MFL write access integration (authenticated transaction submission)
 - [ ] Documentation for league commissioners to onboard
 - [ ] Performance hardening for multi-tenant load
+- [ ] **Release gate (2026-10-20): MFL → native league merge.** Bring an existing MFL league (franchises, rosters, contracts, history, rules) into a native league in one guided step. The MFL harness is complete; this feature is not built yet, and the public release waits on it.
+- [ ] **Distribution (2026-10-20):** ship through Flatpak and the CasaOS app store.
 
 ---
 
