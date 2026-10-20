@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"strconv"
 	"time"
 
+	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -35,10 +34,6 @@ func (a *App) refreshEngine(parent context.Context) {
 	a.checkEngine(ctx)
 }
 
-func engineDue(now time.Time, last history.Run, exists, changed bool) bool {
-	return changed || !exists || now.Sub(last.AsOf) >= 24*time.Hour
-}
-
 // checkEngine is called with modelMu held.
 func (a *App) checkEngine(ctx context.Context) {
 	last, exists, err := a.history.LatestRun(ctx, a.season, history.RunModel)
@@ -51,7 +46,7 @@ func (a *App) checkEngine(ctx context.Context) {
 		log.Printf("engine input changes: %v", err)
 		return
 	}
-	if !engineDue(a.timeNow(), last, exists, changed || a.modelDirty.Load()) {
+	if !scoringapp.EngineDue(a.timeNow(), last, exists, changed || a.modelDirty.Load()) {
 		return
 	}
 	lk, err := a.directory(ctx)
@@ -88,27 +83,20 @@ func (a *App) sourceHealthChanged(ctx context.Context) {
 	}
 }
 
-// runModelLocked values the league with the measurables model (plan Stage 7) and writes a model
-// run. The caller holds modelMu.
+// runModelLocked runs with modelMu held; the season snapshot remains under seasonMu.
 func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
-	end, _ := a.rulebook.GetSetting("endWeek")
-	last, err := strconv.Atoi(end)
-	if err != nil || last < 1 {
-		return modelrun.Report{}, fmt.Errorf("app: the league's last scoring week %q is unreadable", end)
-	}
-	runner, err := modelrun.New(a.league.Reader(), lk, a.history, buildLabel())
-	if err != nil {
-		return modelrun.Report{}, fmt.Errorf("app: %w", err)
-	}
+	src := scoringapp.ModelSource{EndWeek: func() (string, bool) { return a.rulebook.GetSetting("endWeek") },
+		State: a.league.Reader, History: a.history, BuildLabel: buildLabel(), Season: a.season,
+		FreeAgents: a.modelFreeAgents}
+	return src.RunModel(ctx, lk, set) //nolint:wrapcheck // the service preserves the existing app error labels
+}
+
+func (a *App) modelFreeAgents() []string {
 	a.seasonMu.Lock()
+	defer a.seasonMu.Unlock()
 	var free []string
 	for _, id := range a.seasonFreeAgents.value {
 		free = append(free, id.String())
 	}
-	a.seasonMu.Unlock()
-	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.season, AsOf: time.Now(), Params: set, LastWeek: last, FreeAgents: free, Refresh: true})
-	if err != nil {
-		return modelrun.Report{}, fmt.Errorf("app: %w", err)
-	}
-	return rep, nil
+	return free
 }
