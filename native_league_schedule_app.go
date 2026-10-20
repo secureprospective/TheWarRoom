@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"strings"
 
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -13,11 +13,7 @@ type RawLeagueScheduleScope struct {
 }
 
 func (r RawLeagueScheduleScope) Validate() error {
-	if strings.TrimSpace(r.League) != r.League || !strings.HasPrefix(r.League, "native.") ||
-		r.League == "native." {
-		return fmt.Errorf("choose an app league")
-	}
-	return nil
+	return commissionerapp.ScheduleScope(r).Validate() //nolint:wrapcheck // the owner reads the words as they are
 }
 
 func (a *App) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner.Schedule, error) {
@@ -29,27 +25,10 @@ func (a *App) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner.Sch
 	}
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
-	events, err := a.history.Events(ctx, raw.League, commissioner.Stream, 0)
+	records, err := commissionerapp.Records(ctx, a.history, raw.League, "schedule")
 	if err != nil {
-		return commissioner.Schedule{}, fmt.Errorf("read league schedule ledger: %w", err)
+		return commissioner.Schedule{}, err //nolint:wrapcheck // the service's errors already name the league schedule
 	}
-	records := make([]commissioner.Record, 0, len(events))
-	for _, event := range events {
-		if event.Payload.Commissioner == nil {
-			return commissioner.Schedule{}, fmt.Errorf("the league schedule has an unreadable change")
-		}
-		record := *event.Payload.Commissioner
-		if err := record.Validate(); err != nil {
-			return commissioner.Schedule{}, fmt.Errorf("read league schedule change: %w", err)
-		}
-		records = append(records, record)
-	}
-	if len(records) == 0 {
-		return commissioner.Schedule{}, fmt.Errorf("create this app league before reading its schedule")
-	}
-	reading, err := commissioner.ScheduleReading(raw.League, records)
-	if err != nil {
-		return commissioner.Schedule{}, fmt.Errorf("league schedule: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // the service's errors already start "league schedule:"
+	return commissionerapp.Schedule(raw.League, records)
 }

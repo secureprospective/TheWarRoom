@@ -5,10 +5,10 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -19,15 +19,7 @@ var commissionerPreviewRegistry string
 func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, error) {
 	raw, err := a.decodeCommissionerPreview(body)
 	if err != nil {
-		var refusal *commissioner.Refusal
-		err = commissioner.Refused(err)
-		words := err.Error()
-		if errors.As(err, &refusal) {
-			words = refusal.Reason()
-		}
-		return commissioner.Preview{Fields: []commissioner.PreviewField{},
-			Affects:  commissioner.PreviewAffects{Readings: []string{}, Words: "Not known yet"},
-			Blockers: []string{words}}, nil
+		return commissionerapp.Blocked(err), nil
 	}
 	if err := a.ready(); err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview startup: %w", err)

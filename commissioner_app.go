@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -70,12 +70,8 @@ func (a *App) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
 	defer cancel()
 	receipt, err := a.history.ExecuteCommissionerWithFacts(ctx, raw, principal, a.commissionerAuthorizer, a.nativeFacts(), a.ownerZone())
-	var refused *commissioner.Refusal
-	if errors.As(err, &refused) {
-		return commissioner.Receipt{}, errors.New(refused.Reason())
-	}
 	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
+		return commissioner.Receipt{}, commissionerapp.ChangeError(err) //nolint:wrapcheck // worded for the owner
 	}
 	return receipt, nil
 }
@@ -146,8 +142,8 @@ func (a *App) TargetCommissionerLeagues() ([]commissioner.NativeLeague, error) {
 }
 
 func (a *App) TargetCommissionerRules(league string) (commissioner.Rules, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
-		return commissioner.Rules{}, fmt.Errorf("choose an app league")
+	if err := commissionerapp.AppLeague(league); err != nil {
+		return commissioner.Rules{}, err //nolint:wrapcheck // the owner reads the words as they are
 	}
 	if err := a.ready(); err != nil {
 		return commissioner.Rules{}, fmt.Errorf("league rules startup: %w", err)
@@ -162,8 +158,8 @@ func (a *App) TargetCommissionerRules(league string) (commissioner.Rules, error)
 }
 
 func (a *App) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
-		return commissioner.Jobs{}, fmt.Errorf("choose an app league")
+	if err := commissionerapp.AppLeague(league); err != nil {
+		return commissioner.Jobs{}, err //nolint:wrapcheck // the owner reads the words as they are
 	}
 	if err := a.ready(); err != nil {
 		return commissioner.Jobs{}, fmt.Errorf("league jobs startup: %w", err)
@@ -185,8 +181,8 @@ func (a *App) TargetCommissionerControls() commissioner.Controls {
 // TargetCommissionerNotices reads the posted notices, league notes, release notes and the mail log. Every
 // owner may read it.
 func (a *App) TargetCommissionerNotices(league string) (commissioner.LeagueNotes, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
-		return commissioner.LeagueNotes{}, fmt.Errorf("choose an app league")
+	if err := commissionerapp.AppLeague(league); err != nil {
+		return commissioner.LeagueNotes{}, err //nolint:wrapcheck // the owner reads the words as they are
 	}
 	if err := a.ready(); err != nil {
 		return commissioner.LeagueNotes{}, fmt.Errorf("league notices startup: %w", err)
@@ -202,8 +198,8 @@ func (a *App) TargetCommissionerNotices(league string) (commissioner.LeagueNotes
 
 // TargetCommissionerDigests writes a plain sentence for each change that took a hold or a typed reason.
 func (a *App) TargetCommissionerDigests(league string) (commissioner.Digests, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
-		return commissioner.Digests{}, fmt.Errorf("choose an app league")
+	if err := commissionerapp.AppLeague(league); err != nil {
+		return commissioner.Digests{}, err //nolint:wrapcheck // the owner reads the words as they are
 	}
 	if err := a.ready(); err != nil {
 		return commissioner.Digests{}, fmt.Errorf("league digests startup: %w", err)
