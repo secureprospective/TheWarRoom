@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/model"
@@ -54,6 +56,23 @@ func TestScoringWireGolden(t *testing.T) {
 			if string(held) != string(body) {
 				t.Errorf("%s scoring wire changed", name)
 			}
+		}
+	}
+}
+
+func TestScoringWireTwins(t *testing.T) {
+	t.Parallel()
+	row := scoringapp.PowerRow{Rank: 1, FranchiseID: "0001", Name: "Name", RankDelta: 2, DeltaOK: true,
+		PowerScore: .8, RosterZ: .2, MFLPerfZ: .3, AgeZ: .4, RosterValue: 12, Results: .6, Age: 25,
+		CapRoom: 10, DeadCap: 2, HasCap: true, Luck: .1, HasLuck: true, ProjW: 8, ProjL: 5, HasProj: true,
+		H2HW: 3, H2HL: 2, H2HT: 1, AllPlayW: 9, AllPlayL: 8, AllPlayT: 7, PF: 100, PA: 90, PP: 120, Pwr: 4, AltPwr: 5}
+	b := scoringapp.PowerRankingsResult{OK: true, Error: "error", Label: "label", Season: 2026, View: ViewSeason,
+		Weight: .5, WeightAuto: true, AgeWeight: .2, ModelRunID: 2, PreviousRunID: 1, AggMode: "sum", StarterN: 21,
+		Freshness: Freshness{State: FreshStale, FetchedAt: "at", Note: "note"}, Performance: "points for",
+		WeeksScored: 3, SeasonWeeks: 13, Rows: []scoringapp.PowerRow{row}}
+	for _, b := range []scoringapp.PowerRankingsResult{b, {}, {Rows: []scoringapp.PowerRow{}}} {
+		if string(sourcesWire(t, b)) != string(sourcesWire(t, wirePower(b))) {
+			t.Fatal("scoring wire twin lost a field or slice shape")
 		}
 	}
 }

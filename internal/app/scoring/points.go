@@ -1,4 +1,4 @@
-package main
+package scoring
 
 import (
 	"context"
@@ -10,21 +10,33 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-// m1Timeout bounds the IPC calls that read history's reports.
-const m1Timeout = 120 * time.Second
+// PointsHistory records season totals and their source health.
+type PointsHistory interface {
+	Features(context.Context, history.FeatureQuery) ([]history.Feature, error)
+	Ingest(context.Context, measures.Batch) (history.LoadReport, error)
+	LoadFailed(context.Context, string, error) error
+}
 
-// loadSeasonPoints keeps history holding MFL's season totals for every league season: each
+// PointsSource provides the store and season-points reader; Load does not start workers.
+type PointsSource struct {
+	History PointsHistory
+	Season  int
+	Fetch   func(context.Context, string, int) (measures.Batch, error)
+}
+
+// Load keeps history holding MFL's season totals for every league season: each
 // earlier season once, the last one again (so late stat corrections land), and the current one
 // every pass, which is empty before its first game. scoringYear says whose rules apply. A failed fetch is recorded against the
 // source and returned as a warning: scoring runs from what history holds, and source health
 // decides whether the measure counts as lost.
-func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) {
+func (a PointsSource) Load(ctx context.Context) (warning string, err error) {
 	var warnings []string
-	for y := ingestion.LeagueFirstSeason; y <= a.season; y++ {
-		if y < a.season-1 {
+	for y := ingestion.LeagueFirstSeason; y <= a.Season; y++ {
+		if y < a.Season-1 {
 			held, err := a.seasonPointsHeld(ctx, y)
 			if err != nil {
 				return "", err
@@ -33,15 +45,15 @@ func (a *App) loadSeasonPoints(ctx context.Context) (warning string, err error) 
 				continue
 			}
 		}
-		batch, ferr := playerscores.Fetch(ctx, a.mflClient, strconv.Itoa(scoringYear(y, a.season)), ingestion.LeagueID, y)
+		batch, ferr := a.Fetch(ctx, strconv.Itoa(scoringYear(y, a.Season)), y)
 		switch {
 		case ferr == nil:
-			if _, ierr := a.history.Ingest(ctx, batch); ierr != nil {
+			if _, ierr := a.History.Ingest(ctx, batch); ierr != nil {
 				return "", fmt.Errorf("app: store %d season points: %w", y, ierr)
 			}
-		case y == a.season && errors.Is(ferr, playerscores.ErrEmptyScores):
+		case y == a.Season && errors.Is(ferr, playerscores.ErrEmptyScores):
 		default:
-			if lerr := a.history.LoadFailed(ctx, playerscores.Source, ferr); lerr != nil {
+			if lerr := a.History.LoadFailed(ctx, playerscores.Source, ferr); lerr != nil {
 				return "", errors.Join(ferr, lerr)
 			}
 			warnings = append(warnings, strings.TrimRight(fmt.Sprintf("%d: %v", y, ferr), ".; "))
@@ -69,27 +81,11 @@ func scoringYear(y, current int) int {
 const seasonPointsMeasure = "outcome.fantasy_points"
 
 // seasonPointsHeld reports whether history already holds MFL's totals for season.
-func (a *App) seasonPointsHeld(ctx context.Context, season int) (bool, error) {
-	feats, err := a.history.Features(ctx, history.FeatureQuery{AsOf: time.Now(), Season: season,
+func (a PointsSource) seasonPointsHeld(ctx context.Context, season int) (bool, error) {
+	feats, err := a.History.Features(ctx, history.FeatureQuery{AsOf: time.Now(), Season: season,
 		Measures: []string{seasonPointsMeasure}})
 	if err != nil {
 		return false, fmt.Errorf("app: read %d season points: %w", season, err)
 	}
 	return len(feats) > 0, nil
-}
-
-// describeMeasures pairs each measure name with its dictionary meaning.
-func (a *App) describeMeasures(names []string) []MissingMeasure {
-	out := make([]MissingMeasure, len(names))
-	for i, n := range names {
-		m, _ := a.history.Registry().Measure(n)
-		out[i] = MissingMeasure{Name: n, Meaning: m.Meaning}
-	}
-	return out
-}
-
-// MissingMeasure is a measure the board's model reads that no active source fed when it ran.
-type MissingMeasure struct {
-	Name    string `json:"name"`
-	Meaning string `json:"meaning"`
 }
