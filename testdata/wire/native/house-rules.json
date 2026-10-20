@@ -1,0 +1,14 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "revision": 23,
+ "season": 2026,
+ "source": "App league; written by this league's commissioner, never read from MFL",
+ "words": "1 house rule",
+ "rules": [
+  {
+   "id": "legacy-reference",
+   "text": "docs/league-rules/Official_Rulebook.md v2026 (read-only reference)"
+  }
+ ]
+}

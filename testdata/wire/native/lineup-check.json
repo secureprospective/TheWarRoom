@@ -1,0 +1,87 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "revision": 23,
+ "rosterSeason": 2026,
+ "rulesSeason": 2026,
+ "franchise": "franchise.02",
+ "franchiseName": "Held team 2",
+ "source": "App league; judged from the recorded rosters and this league's own rules, never from MFL",
+ "rules": [
+  {
+   "label": "Starting position limits",
+   "words": "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5"
+  },
+  {
+   "label": "Starting group limits",
+   "words": "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21"
+  },
+  {
+   "label": "Invalid lineup penalty",
+   "words": "Zero top starter"
+  },
+  {
+   "label": "Flag missed lineups",
+   "words": "On"
+  }
+ ],
+ "starters": [
+  {
+   "player": "1000",
+   "name": "Player, 1000",
+   "position": "QB"
+  }
+ ],
+ "verdict": {
+  "status": "invalid",
+  "words": "Invalid lineup: RB: 0 starting, needs at least 1; WR: 0 starting, needs at least 2; TE: 0 starting, needs at least 1; PK: 0 starting, needs exactly 1; DT: 0 starting, needs at least 2; DE: 0 starting, needs at least 2; LB: 0 starting, needs at least 2; CB: 0 starting, needs at least 2; S: 0 starting, needs at least 2; Defense: 0 starting, needs exactly 12; Total: 1 starting, needs exactly 21",
+  "problems": [
+   {
+    "subject": "RB",
+    "words": "RB: 0 starting, needs at least 1"
+   },
+   {
+    "subject": "WR",
+    "words": "WR: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "TE",
+    "words": "TE: 0 starting, needs at least 1"
+   },
+   {
+    "subject": "PK",
+    "words": "PK: 0 starting, needs exactly 1"
+   },
+   {
+    "subject": "DT",
+    "words": "DT: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "DE",
+    "words": "DE: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "LB",
+    "words": "LB: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "CB",
+    "words": "CB: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "S",
+    "words": "S: 0 starting, needs at least 2"
+   },
+   {
+    "subject": "Defense",
+    "words": "Defense: 0 starting, needs exactly 12"
+   },
+   {
+    "subject": "Total",
+    "words": "Total: 1 starting, needs exactly 21"
+   }
+  ],
+  "flagged": false,
+  "penalty": "The highest-scoring starter's points are set to zero"
+ }
+}

@@ -1,0 +1,775 @@
+{
+ "league": "native.seed",
+ "season": 2026,
+ "week": 1,
+ "revision": 4,
+ "published": true,
+ "words": "0 of 16 games in week 1 have a result",
+ "games": [
+  {
+   "week": 1,
+   "home": "franchise.01",
+   "away": "franchise.32",
+   "homeName": "Held team 1",
+   "awayName": "Held team 32",
+   "status": "No result yet",
+   "words": "No result yet: Held team 1's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns Held team 32's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "why": [
+    "Held team 1's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+    "Held team 32's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+   ]
+  },
+  {
+   "week": 1,
+   "home": "franchise.02",
+   "away": "franchise.31",
+   "homeName": "Held team 2",
+   "awayName": "Held team 31",
+   "status": "No result yet",
+   "words": "No result yet: Held team 2's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns Held team 31's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "why": [
+    "Held team 2's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+    "Held team 31's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+   ]
+  }
+ ],
+ "scores": [
+  {
+   "franchise": "franchise.01",
+   "name": "Held team 1",
+   "status": "Incomplete",
+   "words": "Held team 1's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.32",
+   "name": "Held team 32",
+   "status": "Incomplete",
+   "words": "Held team 32's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.02",
+   "name": "Held team 2",
+   "status": "Incomplete",
+   "words": "Held team 2's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.31",
+   "name": "Held team 31",
+   "status": "Incomplete",
+   "words": "Held team 31's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.30",
+   "name": "Held team 30",
+   "status": "Incomplete",
+   "words": "Held team 30's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.03",
+   "name": "Held team 3",
+   "status": "Incomplete",
+   "words": "Held team 3's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.04",
+   "name": "Held team 4",
+   "status": "Incomplete",
+   "words": "Held team 4's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.29",
+   "name": "Held team 29",
+   "status": "Incomplete",
+   "words": "Held team 29's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.28",
+   "name": "Held team 28",
+   "status": "Incomplete",
+   "words": "Held team 28's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.05",
+   "name": "Held team 5",
+   "status": "Incomplete",
+   "words": "Held team 5's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.06",
+   "name": "Held team 6",
+   "status": "Incomplete",
+   "words": "Held team 6's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.27",
+   "name": "Held team 27",
+   "status": "Incomplete",
+   "words": "Held team 27's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.26",
+   "name": "Held team 26",
+   "status": "Incomplete",
+   "words": "Held team 26's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.07",
+   "name": "Held team 7",
+   "status": "Incomplete",
+   "words": "Held team 7's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.08",
+   "name": "Held team 8",
+   "status": "Incomplete",
+   "words": "Held team 8's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.25",
+   "name": "Held team 25",
+   "status": "Incomplete",
+   "words": "Held team 25's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.24",
+   "name": "Held team 24",
+   "status": "Incomplete",
+   "words": "Held team 24's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.09",
+   "name": "Held team 9",
+   "status": "Incomplete",
+   "words": "Held team 9's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.10",
+   "name": "Held team 10",
+   "status": "Incomplete",
+   "words": "Held team 10's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.23",
+   "name": "Held team 23",
+   "status": "Incomplete",
+   "words": "Held team 23's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.22",
+   "name": "Held team 22",
+   "status": "Incomplete",
+   "words": "Held team 22's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.11",
+   "name": "Held team 11",
+   "status": "Incomplete",
+   "words": "Held team 11's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.12",
+   "name": "Held team 12",
+   "status": "Incomplete",
+   "words": "Held team 12's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.21",
+   "name": "Held team 21",
+   "status": "Incomplete",
+   "words": "Held team 21's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.20",
+   "name": "Held team 20",
+   "status": "Incomplete",
+   "words": "Held team 20's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.13",
+   "name": "Held team 13",
+   "status": "Incomplete",
+   "words": "Held team 13's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.14",
+   "name": "Held team 14",
+   "status": "Incomplete",
+   "words": "Held team 14's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.19",
+   "name": "Held team 19",
+   "status": "Incomplete",
+   "words": "Held team 19's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.18",
+   "name": "Held team 18",
+   "status": "Incomplete",
+   "words": "Held team 18's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.15",
+   "name": "Held team 15",
+   "status": "Incomplete",
+   "words": "Held team 15's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.16",
+   "name": "Held team 16",
+   "status": "Incomplete",
+   "words": "Held team 16's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  },
+  {
+   "franchise": "franchise.17",
+   "name": "Held team 17",
+   "status": "Incomplete",
+   "words": "Held team 17's score is incomplete: Held starter: 1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns",
+   "starters": [
+    {
+     "player": "1000",
+     "name": "Held starter",
+     "position": "LB",
+     "words": "1.5 points counted so far; incomplete: Held play-by-play is needed for long plays and return touchdowns"
+    }
+   ],
+   "adjustment": 0,
+   "changes": [],
+   "lineup": {
+    "status": "unjudged",
+    "words": "The lineup is judged once every starter's score is complete",
+    "problems": [],
+    "flagged": false,
+    "penalty": ""
+   }
+  }
+ ],
+ "missed": []
+}

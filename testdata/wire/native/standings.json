@@ -1,0 +1,92 @@
+{
+ "league": "native.seed",
+ "name": "Seed league",
+ "season": 2026,
+ "revision": 4,
+ "status": "Ranked",
+ "words": "Standings through week 13: 0 games have a result, 208 do not yet",
+ "through": 13,
+ "decided": 0,
+ "pending": 208,
+ "criteria": [
+  "winning percentage",
+  "head-to-head record",
+  "division record",
+  "conference record",
+  "all-play record",
+  "points scored",
+  "power rank"
+ ],
+ "noData": [
+  "Winning percentage did not apply: Held team 1 has no games yet.",
+  "Head-to-head record did not apply: not every tied team has played every other.",
+  "Division record did not apply: Held team 1 has no games yet.",
+  "Conference record did not apply: the league has not said which conference Held team 1 is in.",
+  "All-play record did not apply: Held team 1 has no games yet.",
+  "Points scored did not apply: Held team 1 has no complete weekly score yet.",
+  "Power rank did not apply: no power rank is held for this league yet."
+ ],
+ "computed": [
+  {
+   "rank": 1,
+   "franchise": "franchise.01",
+   "name": "Held team 1",
+   "division": "division.1",
+   "wins": 0,
+   "losses": 0,
+   "ties": 0,
+   "record": "0-0",
+   "pointsFor": 0,
+   "pointsWords": "0 points scored",
+   "why": [
+    "Winning percentage did not apply: Held team 1 has no games yet. Head-to-head record did not apply: not every tied team has played every other. Division record did not apply: Held team 1 has no games yet. Conference record did not apply: the league has not said which conference Held team 1 is in. All-play record did not apply: Held team 1 has no games yet. Points scored did not apply: Held team 1 has no complete weekly score yet. Power rank did not apply: no power rank is held for this league yet. 32 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+   ]
+  },
+  {
+   "rank": 2,
+   "franchise": "franchise.02",
+   "name": "Held team 2",
+   "division": "division.1",
+   "wins": 0,
+   "losses": 0,
+   "ties": 0,
+   "record": "0-0",
+   "pointsFor": 0,
+   "pointsWords": "0 points scored",
+   "why": [
+    "Winning percentage did not apply: Held team 1 has no games yet. Head-to-head record did not apply: not every tied team has played every other. Division record did not apply: Held team 1 has no games yet. Conference record did not apply: the league has not said which conference Held team 1 is in. All-play record did not apply: Held team 1 has no games yet. Points scored did not apply: Held team 1 has no complete weekly score yet. Power rank did not apply: no power rank is held for this league yet. 32 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+   ]
+  },
+  {
+   "rank": 3,
+   "franchise": "franchise.03",
+   "name": "Held team 3",
+   "division": "division.1",
+   "wins": 0,
+   "losses": 0,
+   "ties": 0,
+   "record": "0-0",
+   "pointsFor": 0,
+   "pointsWords": "0 points scored",
+   "why": [
+    "Winning percentage did not apply: Held team 1 has no games yet. Head-to-head record did not apply: not every tied team has played every other. Division record did not apply: Held team 1 has no games yet. Conference record did not apply: the league has not said which conference Held team 1 is in. All-play record did not apply: Held team 1 has no games yet. Points scored did not apply: Held team 1 has no complete weekly score yet. Power rank did not apply: no power rank is held for this league yet. 32 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+   ]
+  },
+  {
+   "rank": 4,
+   "franchise": "franchise.04",
+   "name": "Held team 4",
+   "division": "division.1",
+   "wins": 0,
+   "losses": 0,
+   "ties": 0,
+   "record": "0-0",
+   "pointsFor": 0,
+   "pointsWords": "0 points scored",
+   "why": [
+    "Winning percentage did not apply: Held team 1 has no games yet. Head-to-head record did not apply: not every tied team has played every other. Division record did not apply: Held team 1 has no games yet. Conference record did not apply: the league has not said which conference Held team 1 is in. All-play record did not apply: Held team 1 has no games yet. Points scored did not apply: Held team 1 has no complete weekly score yet. Power rank did not apply: no power rank is held for this league yet. 32 teams remain level on the available tie-breakers, so they are listed in the league's franchise order."
+   ]
+  }
+ ],
+ "changes": []
+}

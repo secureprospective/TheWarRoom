@@ -1,0 +1,22 @@
+{
+ "league": "native.calendar",
+ "franchise": "franchise.01",
+ "season": 2026,
+ "revision": 8,
+ "games": [
+  {
+   "week": 1,
+   "game": "week.1.game.1",
+   "opponent": "franchise.02",
+   "venue": "Home",
+   "kickoff": "2026-09-10T17:20:00-07:00"
+  },
+  {
+   "week": 2,
+   "game": "week.2.game.1",
+   "opponent": "franchise.02",
+   "venue": "Away",
+   "kickoff": "2026-09-17T17:20:00-07:00"
+  }
+ ]
+}
