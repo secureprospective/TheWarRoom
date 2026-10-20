@@ -3,12 +3,12 @@ package main
 import (
 	"cmp"
 	"fmt"
-	"math"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -170,9 +170,7 @@ func liveWeek(l leaguefeed.Lineups, base leaguefeed.WeekResult) leaguefeed.WeekR
 	return out
 }
 
-func hundredths(points float64) leaguefeed.Points {
-	return leaguefeed.Points(math.Round(points * 100))
-}
+func hundredths(points float64) leaguefeed.Points { return report.Hundredths(points) }
 
 // shownReport is a report on the chosen week as shown; held live scores carry their own time.
 func (v nowView) shownReport(id, title, how string, columns ...string) Report {

@@ -242,6 +242,7 @@ whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
+internal/app/report	platform
 internal/archive	archive
 internal/commissioner	commissioner
 internal/db	platform

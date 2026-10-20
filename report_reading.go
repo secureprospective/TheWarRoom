@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+)
 
 type ReportRow struct {
 	Sort   []float64    `json:"sort,omitempty"`
@@ -84,4 +88,60 @@ func reportTime(at time.Time, zone *time.Location) string {
 
 func pendingShellRead(at time.Time, zone *time.Location) string {
 	return "Last read " + reportTime(at, zone) + "; today's read pending"
+}
+
+// wireBoard converts a board built by a feature service under internal/app to its wire twin.
+// The two type sets are kept identical field for field; TestReportWireTwinsMatch proves it.
+func wireBoard(b report.Board) ReportBoard {
+	reports := make([]Report, len(b.Reports))
+	for i, r := range b.Reports {
+		reports[i] = wireReport(r)
+	}
+	return ReportBoard{Title: b.Title, Loading: b.Loading, Refresh: b.Refresh, HowLabel: b.HowLabel,
+		MFLLabel: b.MFLLabel, MFLURL: b.MFLURL, Reports: wireSlice(b.Reports, reports)}
+}
+
+func wireReport(r report.Report) Report {
+	out := Report{SortAscending: r.SortAscending, SortDescending: r.SortDescending, ID: r.ID, Title: r.Title,
+		Note: r.Note, Status: r.Status, Source: r.Source, AsOf: r.AsOf, How: r.How, Columns: r.Columns,
+		Rows: wireRows(r.Rows), Summary: wireRows(r.Summary), BarMax: r.BarMax, BarLabels: r.BarLabels}
+	if r.Entities != nil {
+		out.Entities = make([]ReportEntity, len(r.Entities))
+		for i, e := range r.Entities {
+			out.Entities[i] = ReportEntity(e)
+		}
+	}
+	if r.Link != nil {
+		link := ReportLink(*r.Link)
+		out.Link = &link
+	}
+	return out
+}
+
+func wireRows(rows []report.Row) []ReportRow {
+	out := make([]ReportRow, len(rows))
+	for i, r := range rows {
+		out[i] = ReportRow{Sort: r.Sort, Titles: r.Titles, Cells: r.Cells, Mine: r.Mine, Bars: r.Bars, Group: r.Group}
+		if r.Range != nil {
+			rng := MarketRange(*r.Range)
+			out[i].Range = &rng
+		}
+	}
+	return wireSlice(rows, out)
+}
+
+func wireChoices(choices []report.Choice) []RaceChoice {
+	out := make([]RaceChoice, len(choices))
+	for i, c := range choices {
+		out[i] = RaceChoice(c)
+	}
+	return wireSlice(choices, out)
+}
+
+// wireSlice keeps a nil slice nil, so it still encodes as null rather than [].
+func wireSlice[S, T any](in []S, out []T) []T {
+	if in == nil {
+		return nil
+	}
+	return out
 }
