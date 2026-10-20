@@ -276,6 +276,13 @@ func (s *Store) initSchema(ctx context.Context) error {
 
 // insertVersion stores cfg as a new immutable version and returns its number.
 func (s *Store) insertVersion(ctx context.Context, cfg league.RawConfig) (int, error) {
+	for _, raw := range []string{cfg.IncludeTaxiWithSalary, cfg.IncludeIRWithSalary} {
+		if strings.TrimSpace(raw) != "" {
+			if err := validateCapPercent(raw); err != nil {
+				return 0, err
+			}
+		}
+	}
 	payload, err := json.Marshal(cfg)
 	if err != nil {
 		return 0, fmt.Errorf("rulebook: marshal config: %w", err)

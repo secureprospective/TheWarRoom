@@ -375,3 +375,14 @@ func TestOverrideRejectsInvalidCapAndPercents(t *testing.T) {
 		})
 	}
 }
+
+func TestSyncRejectsInvalidCapPercentWithoutChangingRules(t *testing.T) {
+	s := newStore(t, &fakeSource{cfg: baseConfig()})
+	for _, value := range []string{"NaN", "+Inf", "-1", "101", "wrong"} {
+		cfg := baseConfig()
+		cfg.IncludeTaxiWithSalary = value
+		if changed, err := s.Sync(context.Background(), cfg); err == nil || changed {
+			t.Errorf("sync percent %s = %t, %v", value, changed, err)
+		}
+	}
+}
