@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 )
@@ -22,14 +23,23 @@ const connectionPragmas = "&_pragma=foreign_keys(ON)&_pragma=recursive_triggers(
 
 // Pools is the read/write pool pair for one database. Construct with Open.
 type Pools struct {
-	read  *sql.DB
-	write *sql.DB
+	read        *sql.DB
+	write       *sql.DB
+	path        string
+	migrationMu sync.Mutex
 }
 
 // Open opens both pools and checks that WAL mode took effect. The write pool opens first so the
 // file exists before the read-only pool attaches.
-func Open(ctx context.Context, path string) (*Pools, error) {
-	if err := checkUserVersion(ctx, path); err != nil {
+func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
+	maxVersion := 0
+	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
+		return nil, fmt.Errorf("db: expected one nonnegative schema version")
+	}
+	if len(versions) == 1 {
+		maxVersion = versions[0]
+	}
+	if err := checkUserVersion(ctx, path, maxVersion); err != nil {
 		return nil, err
 	}
 	writeDSN := fmt.Sprintf(
@@ -75,13 +85,10 @@ func Open(ctx context.Context, path string) (*Pools, error) {
 		return nil, fmt.Errorf("db: ping read pool: %w", err)
 	}
 
-	return &Pools{read: read, write: write}, nil
+	return &Pools{read: read, write: write, path: path}, nil
 }
 
-// No file-level migrations have been adopted yet; existing files use version zero.
-const maxUserVersion = 0
-
-func checkUserVersion(ctx context.Context, path string) (err error) {
+func checkUserVersion(ctx context.Context, path string, maxVersion int) (err error) {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil
 	} else if err != nil {
@@ -100,10 +107,7 @@ func checkUserVersion(ctx context.Context, path string) (err error) {
 	if err := probe.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		return fmt.Errorf("db: read user_version: %w", err)
 	}
-	if version > maxUserVersion {
-		return fmt.Errorf("db: this database was last written by a NEWER version of TheWarRoom (schema v%d; this build understands up to v%d) — update the app to open it", version, maxUserVersion)
-	}
-	return nil
+	return refuseNewer(version, maxVersion)
 }
 
 // Read returns the read-only pool.
