@@ -1,6 +1,47 @@
+// Package l4 holds the Layer 4 scouting settings: one rubric per position, the table its
+// adjustable numbers are stored from as params. The rubric math that read them left with the
+// board run (quarantine/go/internal/engine/l4), so nothing reads these settings now; the params
+// stay so an admin's overrides survive.
+// Spec: docs/scoring-engine/Engine_Specification.md and the per-position rubric documents.
 package l4
 
 import "github.com/secureprospective/TheWarRoom/internal/domain"
+
+// Breakpoint is one (X, Y) anchor of a piecewise-linear curve.
+type Breakpoint struct {
+	X, Y float64
+}
+
+// Component is one capped S-curve: output = 1 + Cap·(2σ(Steepness·(input − 0.5)) − 1), bounded to
+// [1−Cap, 1+Cap]. A Cap of 0 turns the component off.
+type Component struct {
+	Steepness float64
+	Cap       float64
+}
+
+// Weights are the breakout composite's sub-signal weights. They sum to 1, so a profile of
+// neutral sub-signals is neutral.
+type Weights struct {
+	BreakoutAge, SchoolTier, CollegeShare, AgeTrajectory float64
+}
+
+// Curves map the raw breakout sub-signals onto [0,1].
+type Curves struct {
+	BreakoutAge   []Breakpoint // age at the college breakout season
+	CollegeShare  []Breakpoint // final-season share of the team's production
+	AgeTrajectory []Breakpoint // current age, falling past the position's peak
+}
+
+// Settings are one position's rubric. A Component with Cap 0 is off.
+type Settings struct {
+	Film      Component
+	RAS       Component
+	RASWeight float64 // scales RAS's distance from 1; 0 means RAS is not read
+	Breakout  Component
+	Weights   Weights
+	Curves    Curves
+	Lift      float64 // athletic lift strength on breakout age and age trajectory
+}
 
 // Defaults is the shipped rubric for each position. QB and K do not read RAS, and K has no
 // breakout. Positions without the athletic lift have Lift 0; DT is protected by the cushion

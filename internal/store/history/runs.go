@@ -9,31 +9,15 @@ import (
 	"errors"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
-
-	"github.com/secureprospective/TheWarRoom/internal/engine"
-	"github.com/secureprospective/TheWarRoom/internal/numeric"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// RunKind says what a scoring run is for. The board is the latest board run; a rebalance run is
-// a proposal shown beside it and never changes it.
+// RunKind says what a scoring run is for. The model run is the only kind written now; the board
+// and rebalance runs that existing databases hold in scoring_runs are no longer read.
 type RunKind string
 
-const (
-	RunBoard     RunKind = "board"
-	RunRebalance RunKind = "rebalance"
-	RunModel     RunKind = "model" // the measurables (internal/model); kept in model_runs
-)
-
-// runTable is the table a kind's runs are kept in.
-func runTable(kind RunKind) string {
-	if kind == RunModel {
-		return "model_runs"
-	}
-	return "scoring_runs"
-}
+// RunModel is the measurables (internal/model), kept in model_runs.
+const RunModel RunKind = "model"
 
 // ParamSet is the parameters a run scored with, and the measures its model reads.
 type ParamSet struct {
@@ -60,26 +44,8 @@ func (p ParamSet) canonical() (id string, params, measures []byte, err error) {
 	return hex.EncodeToString(sum[:]), params, measures, nil
 }
 
-// Score is one player's engine result in a run.
-type Score struct {
-	MFLID string
-	engine.Result
-}
-
-// NewRun is a scoring run to write. Engine is the build that scored it; InputsHash identifies
-// every engine input the run read.
-type NewRun struct {
-	Kind       RunKind
-	Season     int
-	AsOf       time.Time
-	Params     ParamSet
-	Engine     string
-	InputsHash string
-	Scores     []Score
-}
-
 // Run is a stored scoring run. MissingMeasures are the measures its param set reads that were
-// not flowing when it ran; a board run with any is running on a reduced set.
+// not flowing when it ran.
 type Run struct {
 	ID              int64
 	Kind            RunKind
@@ -93,10 +59,13 @@ type Run struct {
 	CreatedAt       time.Time
 }
 
-// pendingRun is a NewRun checked and reduced to what identifies it.
+// pendingRun is a NewModelRun checked and reduced to what identifies it.
 type pendingRun struct {
-	refresh bool
-	NewRun
+	refresh          bool
+	season           int
+	asOf             time.Time
+	engine           string
+	inputsHash       string
 	paramSetID       string
 	params, measures []byte
 	scoresHash       string
@@ -105,35 +74,16 @@ type pendingRun struct {
 
 // sameAs reports whether prev already holds this run.
 func (p pendingRun) sameAs(prev Run) bool {
-	return !p.refresh && (p.Kind != RunModel || p.AsOf.Sub(prev.AsOf) < 24*time.Hour) && prev.ParamSetID == p.paramSetID && prev.Engine == p.Engine && prev.InputsHash == p.InputsHash &&
+	return !p.refresh && p.asOf.Sub(prev.AsOf) < 24*time.Hour && prev.ParamSetID == p.paramSetID && prev.Engine == p.engine && prev.InputsHash == p.inputsHash &&
 		prev.ScoresHash == p.scoresHash && slices.Equal(prev.MissingMeasures, p.missing)
-}
-
-// WriteRun stores a run and its scores. If the latest run of the same kind and season matches it
-// in param set, engine, inputs, scores and missing measures, nothing is written and that run is
-// returned with written false. The previous board is then always a different board.
-func (s *Store) WriteRun(ctx context.Context, nr NewRun) (run Run, written bool, err error) {
-	p, err := s.prepareRun(ctx, nr)
-	if err != nil {
-		return Run{}, false, err
-	}
-	return s.writeRun(ctx, p, func(tx *sql.Tx, runID int64) error {
-		for _, sc := range nr.Scores {
-			if _, err := tx.ExecContext(ctx, insertScoreSQL, scoreArgs(runID, sc)...); err != nil {
-				return fmt.Errorf("history: write score %s in run %d: %w", sc.MFLID, runID, err)
-			}
-		}
-		return nil
-	})
 }
 
 // writeRun stores p unless the latest run of its kind and season already holds it; scores writes
 // its score rows inside the run's transaction.
 func (s *Store) writeRun(ctx context.Context, p pendingRun, scores func(tx *sql.Tx, runID int64) error) (Run, bool, error) {
-	nr := p.NewRun
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if prev, ok, err := s.LatestRun(ctx, nr.Season, nr.Kind); err != nil {
+	if prev, ok, err := s.LatestRun(ctx, p.season, RunModel); err != nil {
 		return Run{}, false, err
 	} else if ok && p.sameAs(prev) {
 		return prev, false, nil
@@ -142,31 +92,15 @@ func (s *Store) writeRun(ctx context.Context, p pendingRun, scores func(tx *sql.
 	if err != nil {
 		return Run{}, false, err
 	}
-	stored, _, err := s.run(ctx, runTable(nr.Kind), `WHERE run_id = ?`, runID)
+	stored, _, err := s.run(ctx, `WHERE run_id = ?`, runID)
 	return stored, true, err
-}
-
-// prepareRun validates nr and computes its param set, scores hash and missing measures.
-func (s *Store) prepareRun(ctx context.Context, nr NewRun) (pendingRun, error) {
-	switch {
-	case nr.Kind != RunBoard && nr.Kind != RunRebalance:
-		return pendingRun{}, fmt.Errorf("history: unknown run kind %q", nr.Kind)
-	case len(nr.Scores) == 0:
-		return pendingRun{}, fmt.Errorf("history: run for season %d has no scores", nr.Season)
-	case nr.InputsHash == "" || nr.Engine == "":
-		return pendingRun{}, fmt.Errorf("history: run for season %d needs its inputs hash and engine", nr.Season)
-	}
-	hash, err := validScores(nr.Scores)
-	if err != nil {
-		return pendingRun{}, err
-	}
-	return s.pending(ctx, nr, hash)
 }
 
 // pending reduces a checked run to what identifies it: its param set and the measures it reads
 // that are not flowing.
-func (s *Store) pending(ctx context.Context, nr NewRun, scoresHash string) (pendingRun, error) {
-	p := pendingRun{NewRun: nr, scoresHash: scoresHash}
+func (s *Store) pending(ctx context.Context, nr NewModelRun, scoresHash string) (pendingRun, error) {
+	p := pendingRun{refresh: nr.Refresh, season: nr.Season, asOf: nr.AsOf, engine: nr.Engine,
+		inputsHash: nr.InputsHash, scoresHash: scoresHash}
 	var err error
 	if p.paramSetID, p.params, p.measures, err = nr.Params.canonical(); err != nil {
 		return pendingRun{}, err
@@ -200,12 +134,9 @@ INSERT OR IGNORE INTO param_sets (param_set_id, measures, params, created_at) VA
 		p.paramSetID, string(p.measures), string(p.params), now); err != nil {
 		return 0, fmt.Errorf("history: write param set: %w", err)
 	}
-	insert := insertBoardRunSQL
-	if p.Kind == RunModel {
-		insert = insertModelRunSQL
-	}
-	res, err := tx.ExecContext(ctx, insert,
-		string(p.Kind), p.Season, formatTime(p.AsOf), p.paramSetID, p.Engine, p.InputsHash, p.scoresHash,
+	res, err := tx.ExecContext(ctx, `INSERT INTO model_runs (kind, season, as_of, param_set_id, engine,
+	inputs_hash, scores_hash, missing_measures, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		string(RunModel), p.season, formatTime(p.asOf), p.paramSetID, p.engine, p.inputsHash, p.scoresHash,
 		string(missingJSON), now)
 	if err != nil {
 		return 0, fmt.Errorf("history: write run: %w", err)
@@ -223,106 +154,21 @@ INSERT OR IGNORE INTO param_sets (param_set_id, measures, params, created_at) VA
 	return runID, nil
 }
 
-const runInsert = ` (kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
-	missing_measures, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-const (
-	insertBoardRunSQL = `INSERT INTO scoring_runs` + runInsert
-	insertModelRunSQL = `INSERT INTO model_runs` + runInsert
-)
-
-// validScores rejects a malformed or repeated id, an unknown cap tier and any non-finite field,
-// so a NaN never freezes into an append-only row. It returns the sha256 of the scores in id
-// order.
-func validScores(scores []Score) (string, error) {
-	seen := make(map[string]bool, len(scores))
-	for _, sc := range scores {
-		id, err := playerid.New(sc.MFLID)
-		if err != nil || id.String() != sc.MFLID {
-			return "", fmt.Errorf("history: score id %q is not a canonical MFL id", sc.MFLID)
-		}
-		if seen[sc.MFLID] {
-			return "", fmt.Errorf("history: %s is scored twice in one run", sc.MFLID)
-		}
-		seen[sc.MFLID] = true
-		switch sc.CapTier {
-		case engine.CapTierCold, engine.CapTierNeutral, engine.CapTierHot:
-		default:
-			return "", fmt.Errorf("history: %s has unknown cap tier %q", sc.MFLID, sc.CapTier)
-		}
-		l4 := sc.Layer4Output
-		if !numeric.Finite(sc.BasePoints, sc.AgePull, l4.FilmEffective, l4.FilmRaw, l4.RASEffective,
-			l4.BreakoutEffective, l4.Combined, sc.ScoutingAdjusted, sc.CapMultiplier, sc.AdjustedScore,
-			sc.Tiebreaker.RAS) {
-			return "", fmt.Errorf("history: %s has a non-finite score field", sc.MFLID)
-		}
-	}
-	sorted := slices.Clone(scores)
-	slices.SortFunc(sorted, func(a, b Score) int { return strings.Compare(a.MFLID, b.MFLID) })
-	enc, err := json.Marshal(sorted)
-	if err != nil {
-		return "", fmt.Errorf("history: encode scores: %w", err)
-	}
-	sum := sha256.Sum256(enc)
-	return hex.EncodeToString(sum[:]), nil
-}
-
-const scoreCols = `mfl_id, base_points, age_pull,
-	film_effective, film_raw, ras_effective, breakout_effective, combined,
-	scouting_adjusted, cap_multiplier, cap_tier, adjusted_score,
-	tb_is_veteran, tb_ras, tb_scarcity_rank`
-
-const insertScoreSQL = `INSERT INTO run_scores (run_id, ` + scoreCols + `)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-func scoreArgs(runID int64, sc Score) []any {
-	l4 := sc.Layer4Output
-	return []any{runID, sc.MFLID, sc.BasePoints, sc.AgePull,
-		l4.FilmEffective, l4.FilmRaw, l4.RASEffective, l4.BreakoutEffective, l4.Combined,
-		sc.ScoutingAdjusted, sc.CapMultiplier, string(sc.CapTier), sc.AdjustedScore,
-		numeric.BoolToInt(sc.Tiebreaker.IsVeteran), sc.Tiebreaker.RAS, sc.Tiebreaker.ScarcityRank}
-}
-
 // LatestRun returns the newest run of a kind for a season. ok is false when there is none.
 func (s *Store) LatestRun(ctx context.Context, season int, kind RunKind) (Run, bool, error) {
-	return s.run(ctx, runTable(kind), `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
+	return s.run(ctx, `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
 }
 
 // PreviousRun returns the newest run of the same kind and season before r. ok is false when r
 // is the first.
 func (s *Store) PreviousRun(ctx context.Context, r Run) (Run, bool, error) {
-	return s.run(ctx, runTable(r.Kind), `WHERE season = ? AND kind = ? AND run_id < ? ORDER BY run_id DESC LIMIT 1`,
+	return s.run(ctx, `WHERE season = ? AND kind = ? AND run_id < ? ORDER BY run_id DESC LIMIT 1`,
 		r.Season, string(r.Kind), r.ID)
 }
 
-// Runs returns every board and rebalance run for a season, newest first.
-func (s *Store) Runs(ctx context.Context, season int) ([]Run, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, runSelect("scoring_runs")+`WHERE season = ? ORDER BY run_id DESC`, season)
-	if err != nil {
-		return nil, fmt.Errorf("history: runs: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-	var out []Run
-	for rows.Next() {
-		r, err := scanRun(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, r)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("history: runs rows: %w", err)
-	}
-	return out, nil
-}
-
-func runSelect(table string) string {
-	return `SELECT run_id, kind, season, as_of, param_set_id, engine, inputs_hash, scores_hash,
-	missing_measures, created_at FROM ` + table + ` `
-}
-
-func (s *Store) run(ctx context.Context, table, where string, args ...any) (Run, bool, error) {
-	r, err := scanRun(s.pools.Read().QueryRowContext(ctx, runSelect(table)+where, args...))
+func (s *Store) run(ctx context.Context, where string, args ...any) (Run, bool, error) {
+	r, err := scanRun(s.pools.Read().QueryRowContext(ctx, `SELECT run_id, kind, season, as_of, param_set_id, engine,
+	inputs_hash, scores_hash, missing_measures, created_at FROM model_runs `+where, args...))
 	if errors.Is(err, sql.ErrNoRows) {
 		return Run{}, false, nil
 	}
@@ -354,48 +200,4 @@ func scanRun(row interface{ Scan(dest ...any) error }) (Run, error) {
 		return Run{}, fmt.Errorf("history: run %d missing measures: %w", r.ID, err)
 	}
 	return r, nil
-}
-
-// RunScores returns a run's scores in ranking order: the ORDER BY is the L6 tiebreaker
-// (engine.TiebreakerKey.RanksAbove), with mfl_id last so the order is total.
-func (s *Store) RunScores(ctx context.Context, runID int64) ([]Score, error) {
-	return s.scores(ctx, `WHERE run_id = ?
-ORDER BY adjusted_score DESC, tb_is_veteran DESC, tb_ras DESC, tb_scarcity_rank DESC, mfl_id ASC`, runID)
-}
-
-// RunScore returns one player's score in a run. ok is false when the run did not score them.
-func (s *Store) RunScore(ctx context.Context, runID int64, mflID string) (Score, bool, error) {
-	got, err := s.scores(ctx, `WHERE run_id = ? AND mfl_id = ?`, runID, mflID)
-	if err != nil || len(got) == 0 {
-		return Score{}, false, err
-	}
-	return got[0], true, nil
-}
-
-func (s *Store) scores(ctx context.Context, where string, args ...any) ([]Score, error) {
-	rows, err := s.pools.Read().QueryContext(ctx, `SELECT `+scoreCols+` FROM run_scores `+where, args...)
-	if err != nil {
-		return nil, fmt.Errorf("history: scores: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-	var out []Score
-	for rows.Next() {
-		var sc Score
-		var tier string
-		var vet int
-		l4 := &sc.Layer4Output
-		if err := rows.Scan(&sc.MFLID, &sc.BasePoints, &sc.AgePull,
-			&l4.FilmEffective, &l4.FilmRaw, &l4.RASEffective, &l4.BreakoutEffective, &l4.Combined,
-			&sc.ScoutingAdjusted, &sc.CapMultiplier, &tier, &sc.AdjustedScore,
-			&vet, &sc.Tiebreaker.RAS, &sc.Tiebreaker.ScarcityRank); err != nil {
-			return nil, fmt.Errorf("history: scan score: %w", err)
-		}
-		sc.CapTier = engine.CapTier(tier)
-		sc.Tiebreaker.IsVeteran = vet != 0
-		out = append(out, sc)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("history: scores rows: %w", err)
-	}
-	return out, nil
 }

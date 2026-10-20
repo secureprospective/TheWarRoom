@@ -24,7 +24,8 @@ type ModelScore struct {
 	Inputs []string
 }
 
-// NewModelRun is a model run to write; the fields mean what they do on NewRun.
+// NewModelRun is a model run to write. Engine is the build that scored it; InputsHash identifies
+// every input the run read. Refresh writes it even when it matches the latest run.
 type NewModelRun struct {
 	Refresh    bool
 	Season     int
@@ -48,12 +49,10 @@ func (s *Store) WriteModelRun(ctx context.Context, nr NewModelRun) (Run, bool, e
 	if err != nil {
 		return Run{}, false, err
 	}
-	p, err := s.pending(ctx, NewRun{Kind: RunModel, Season: nr.Season, AsOf: nr.AsOf, Params: nr.Params,
-		Engine: nr.Engine, InputsHash: nr.InputsHash}, hash)
+	p, err := s.pending(ctx, nr, hash)
 	if err != nil {
 		return Run{}, false, err
 	}
-	p.refresh = nr.Refresh
 	return s.writeRun(ctx, p, func(tx *sql.Tx, runID int64) error {
 		for _, sc := range nr.Scores {
 			inputs, err := json.Marshal(sc.Inputs)

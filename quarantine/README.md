@@ -97,7 +97,7 @@ source's row by the engine run, the path it already took when no board run exist
 
 Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`cmd/fit` reads it).
 
-Kept on purpose, unreached: `internal/engine/l4` (its settings table is the `l4.*` params the
+Kept on purpose, unreached (until the leftovers pass, below): `internal/engine/l4` (its settings table is the `l4.*` params the
 Data and sources parameter editor lists, R7; the rubric math in it is unreached), the engine's types
 (history's `run_scores` rows store `engine.Result`), and history's board-run store side
 (`WriteRun`, `RunScores`, `scoring_runs`, `run_scores`): existing databases keep their board runs.
@@ -106,3 +106,56 @@ To bring the engine back: move the `go/` paths above back (drop the `quarantine/
 `engine.PeakLimit` or point composition at it, restore the deleted functions and the source-health
 board read from `session/purge-harness`, and run `make bindings`. The `rasFetchTimeout` and
 `cfbdEnvVar` constants now live in `signals_app.go`; drop them from the restored `m1_scouting.go`.
+
+## Leftovers (moved 2026-10-20, branch `session/purge-leftovers`)
+
+What the engine pass kept but nothing reached. Under `go/`, original content unless noted.
+
+### Layer 4 rubric math
+
+- `internal/engine/l4/rubric.go` (`Rubric`, `New`, `Rubrics`, `Rubric.Apply`, `breakout`) and
+  `curve.go` (`Component.Apply`, `interp`, `curved`, `given`, `athleticLift`, `NeutralNorm`).
+- Their tests, `golden_test.go` and `rubric_test.go`; the latter less `TestKnobsCoverTheOnMechanics`,
+  which stayed live in `internal/engine/l4/settings_test.go`.
+- The live package keeps `Defaults`, `Knobs` and the types they need (`Settings`, `Component`,
+  `Breakpoint`, `Weights`, `Curves`), now all in `settings.go`. `params/defaults.go` seeds the `l4.*`
+  params from them, and their descriptions now carry "(inert, no run reads it)", which the parameter
+  editor shows in each Scouting adjustment area heading.
+- `engine.CushionGuard.Slow`, whose only caller was the rubric: first deleted from `types.go`, then
+  the whole file moved here (below). Its test, `TestCushionGuardSlow`, is back in
+  `internal/engine/pipeline_test.go` here.
+
+To bring the rubric back: move the two files and their tests back, drop the types they declare from
+`settings.go`, move `internal/engine/types.go` back (below), and remove `rubricInert` from
+`params/defaults.go`.
+
+### History's board-run store side
+
+Deleted from live files (recover them from git, `session/purge-engine`), not quarantined, since the
+files keep live code: `history.WriteRun`, `prepareRun`, `validScores`, `scoreArgs`, `insertScoreSQL`,
+`scoreCols`, `insertBoardRunSQL`, `runTable`, `Runs`, `RunScores`, `RunScore`, `scores`, the `Score`
+and `NewRun` types and the `RunBoard` / `RunRebalance` kinds (`internal/store/history/runs.go`).
+`writeRun`, `LatestRun` and `PreviousRun` now read and write `model_runs` only, and `NewModelRun`
+feeds `pending` directly. The board-run tests in `history_test.go` were deleted; their validation and
+missing-measure cases now run against `WriteModelRun`.
+
+The schema is unchanged: `scoring_runs` and `run_scores` stay in `history.go`, the append-only
+triggers and the JSON-column migration, and existing databases keep their board-run rows. No
+migration was added and no table dropped.
+
+With `engine.Result` unread, `internal/engine/types.go` had no live code left: it is under
+`go/internal/engine/types.go` as it was on `session/purge-engine` (`CushionGuard.Slow` included), and
+`TestTiebreakerRanksAbove` joined `TestCushionGuardSlow` in the quarantined `pipeline_test.go`. The
+package doc moved to `decay.go`.
+
+To bring the board run's store side back: restore `runs.go`, `modelruns.go` and
+`history_test.go` in `internal/store/history` from `session/purge-engine`, and move `types.go` back.
+
+### Kept on purpose
+
+- `internal/fantasyscore/source/plays.go` (`ReadPlays`, `AttachPlays` and helpers): unreached from
+  the app, but the MFL-score golden test (`golden_test.go`, `TestHeldLegacyWeeks`) attaches
+  `testdata/plays.csv` through them. Without the yardage and touchdown distances its match rate
+  falls from 1775/1783 to 1582/1783, so the file, its tests and `plays.csv` stay live.
+- The native-league foundation for Block C: `FranchiseHistoryReading`, `nativecheck.CanEnterIR` and
+  `CanEnterTaxi`, `ingestion.NewCFBDClient`, the native bindings with no UI, and the pass-1 Kept list.
