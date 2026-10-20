@@ -150,3 +150,12 @@ package doc moved to `decay.go`.
 
 To bring the board run's store side back: restore `runs.go`, `modelruns.go` and
 `history_test.go` in `internal/store/history` from `session/purge-engine`, and move `types.go` back.
+
+### Kept on purpose
+
+- `internal/fantasyscore/source/plays.go` (`ReadPlays`, `AttachPlays` and helpers): unreached from
+  the app, but the MFL-score golden test (`golden_test.go`, `TestHeldLegacyWeeks`) attaches
+  `testdata/plays.csv` through them. Without the yardage and touchdown distances its match rate
+  falls from 1775/1783 to 1582/1783, so the file, its tests and `plays.csv` stay live.
+- The native-league foundation for Block C: `FranchiseHistoryReading`, `nativecheck.CanEnterIR` and
+  `CanEnterTaxi`, `ingestion.NewCFBDClient`, the native bindings with no UI, and the pass-1 Kept list.
