@@ -180,9 +180,7 @@ restore_cli_test.go	platform
 roster_revalidate_test.go	contracts
 rookiedraft_wire_test.go	commissioner
 roster_policy_app.go	contracts
-roster_reports_app.go	contracts
 roster_moves_draft_test.go	contracts
-rosterdraft_app_test.go	contracts
 season_app.go	control
 season_app_test.go	control
 season_rollover_app_test.go	commissioner
