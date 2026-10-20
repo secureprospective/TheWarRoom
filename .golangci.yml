@@ -81,6 +81,150 @@ linters:
 
     depguard:
       rules:
+        internal-no-app-imports:
+          list-mode: lax
+          files:
+            - "**/internal/**"
+            - "!**/internal/app/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app
+              desc: "non-app internals cannot import application services"
+            - pkg: github.com/secureprospective/TheWarRoom$
+              desc: "internals cannot import the root composition package"
+
+        app-no-platform-imports:
+          list-mode: lax
+          files:
+            - "**/internal/app/**"
+          deny:
+            - pkg: github.com/wailsapp/wails
+              desc: "application services cannot import Wails; inject a callback at root"
+            - pkg: github.com/secureprospective/TheWarRoom$
+              desc: "services cannot import the root composition package"
+
+        # Shared set: report only. Unknown features default to shared-only imports;
+        # declare their own subtree below when extracting a feature (including tests).
+        app-new-feature-shared-only:
+          list-mode: lax
+          files:
+            - "**/internal/app/**"
+            - "!**/internal/app/archive/**"
+            - "!**/internal/app/comms/**"
+            - "!**/internal/app/counterparties/**"
+            - "!**/internal/app/draft/**"
+            - "!**/internal/app/scoring/**"
+            - "!**/internal/app/sources/**"
+            - "!**/internal/app/market/**"
+            - "!**/internal/app/report/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-archive-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/archive/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/archive$
+            - github.com/secureprospective/TheWarRoom/internal/app/archive/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-comms-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/comms/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/comms$
+            - github.com/secureprospective/TheWarRoom/internal/app/comms/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-counterparties-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/counterparties/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/counterparties$
+            - github.com/secureprospective/TheWarRoom/internal/app/counterparties/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-scoring-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/scoring/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/scoring$
+            - github.com/secureprospective/TheWarRoom/internal/app/scoring/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-sources-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/sources/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/sources$
+            - github.com/secureprospective/TheWarRoom/internal/app/sources/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-draft-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/draft/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/draft$
+            - github.com/secureprospective/TheWarRoom/internal/app/draft/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-market-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/market/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/market$
+            - github.com/secureprospective/TheWarRoom/internal/app/market/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-report-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/report/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
         # Layer 1 (transport + ingestion + normalization) never imports up into
         # the engine, stores, transactions, or the IPC/API layer
         # (companion plan Section 8A.2 — the three-layer law as a build error).

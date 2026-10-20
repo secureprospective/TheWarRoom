@@ -45,3 +45,20 @@ startup, shutdown, locks, logging and the binding adapters.
   (`scripts/check-placement.sh`, `scripts/check-root-ratchet.sh`).
 - A new `internal/` package needs a manifest row and a mention in this table's row for its feature.
 - A new feature needs a row here before its first file lands.
+
+## Rules CI enforces
+
+| Guard | Failure and fix |
+|---|---|
+| Root-file ratchet (`make placement`) | Root `*.go` count exceeds `docs/architecture/root-go-baseline.txt`: extract logic and tests into their feature; lower the baseline as files leave, never raise it to hide growth. |
+| Placement (`make placement`) | A root file or internal package is missing, duplicated, stale or unindexed in `docs/architecture/placement.tsv`: correct its feature row and this map; remove obsolete paths. |
+| Import boundaries (`make lint`, `.golangci.yml` depguard) | Non-app internals cannot import `internal/app` or root; services cannot import root or any Wails package. Features can import their own subtree (including test helpers) and the explicit shared set **`internal/app/report` only**, not siblings. Inject dependencies at root or move genuinely shared contracts to report. Declare a newly extracted feature's own subtree in depguard; undeclared features default to shared-only imports. Existing engine, transport and store rules still apply. |
+| Binding freshness (`make bindings-fresh`) | `scripts/check-bindings-fresh.sh` regenerates in a private temporary source copy and diffs all of `frontend/wailsjs`, without overwriting local edits. Run `make bindings`, review and commit the generated changes. Both `make verify` and CI's required verify/checks job run this guard. |
+| Wails version (`scripts/check-wails-version.sh`) | CLI differs from `go.mod` (currently v2.13.0): install the Wails CLI at the module's exact version (the script prints the command). CI installs that version before checking bindings. |
+
+Binding generation uses Wails' `bindings` build tag, not the desktop app: no GTK, display,
+frontend install or app startup is required. Its private `TMPDIR` avoids colliding with another
+worktree's fixed-name generator executable; temporary copies live under
+~/logs/TheWarRoom/reorg/ and are cleaned on exit. The normal frontend checks still run in CI.
+Deliberate engine→app, service→runtime, sibling-service imports and a hand-edited TypeScript
+model each failed their guard before being reverted (Codex §M3).

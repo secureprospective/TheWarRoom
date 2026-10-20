@@ -46,7 +46,7 @@ jobs:
           make lint
           scripts/check-wails-version.sh
           govulncheck ./...
-          make bindings
+          make bindings-fresh
           cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs
 
   test:

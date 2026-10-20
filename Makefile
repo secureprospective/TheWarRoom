@@ -99,7 +99,7 @@ setup:
 verify: lint
 	scripts/check-wails-version.sh
 	govulncheck ./...
-	$(MAKE) bindings
+	$(MAKE) bindings-fresh
 	cd frontend && pnpm tsc --noEmit
 	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 	cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs && node scripts/csp-check.mjs
@@ -113,7 +113,10 @@ WAILS_TAGS ?= webkit2_41
 build:
 	wails build -tags "$(WAILS_TAGS)" -ldflags "$(LDFLAGS)"; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
 
-.PHONY: bindings
+.PHONY: bindings bindings-fresh
+bindings-fresh:
+	scripts/check-bindings-fresh.sh
+
 bindings:
 	wails generate module; status=$$?; chmod 0644 frontend/wailsjs/runtime/*; exit $$status
 
