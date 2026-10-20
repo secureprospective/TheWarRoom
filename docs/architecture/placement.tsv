@@ -56,10 +56,10 @@ control_room_reading.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
-counter_filters.go	counterparties
-counterpanel_app.go	counterparties
 counterparties_app.go	counterparties
 counterparties_app_test.go	counterparties
+counterparties_filters.go	counterparties
+counterparties_team_app.go	counterparties
 crosswalk_app.go	sources
 crosswalk_app_test.go	sources
 data_sources_app.go	sources
