@@ -88,8 +88,9 @@ func TestHistoryMigrationQuarantinesOnlyReportedOrphans(t *testing.T) {
 		t.Fatalf("quarantine provenance = %s", got)
 	}
 	for _, query := range []string{"DELETE FROM model_runs", "DELETE FROM model_scores", "DELETE FROM quarantine_model_runs", "DELETE FROM quarantine_model_scores"} {
-		if _, err := pools.Write().ExecContext(t.Context(), query); err == nil {
-			t.Fatalf("append-only protection missing: %s", query)
+		// A foreign-key failure also refuses the delete; only the trigger's own error proves the guard.
+		if _, err := pools.Write().ExecContext(t.Context(), query); err == nil || !strings.Contains(err.Error(), "append-only") {
+			t.Fatalf("append-only protection missing: %s: %v", query, err)
 		}
 	}
 	if err := store.Initialize(t.Context()); err != nil {
