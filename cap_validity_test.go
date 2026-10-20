@@ -11,6 +11,7 @@ import (
 
 func TestMissingPaidCellBlocksWhatIfAndReachesRosterReading(t *testing.T) {
 	a := targetTestApp(t)
+	a.hasLookup = true
 	pools, err := db.Open(a.ctx, filepath.Join(t.TempDir(), "whatif.db"), state.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
