@@ -8,17 +8,24 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
 1. **Freeze the wire first.** Add a root test that JSON-encodes the feature's binding results for
    fixture inputs and compares them byte for byte to `testdata/wire/<feature>/*.json`
    (`TWR_WRITE_WIRE=1` writes them). Call the bound method itself at least once. Commit it passing
-   before anything moves; it must pass unchanged after every later step.
+   before anything moves; it must pass unchanged after every later step. Keep clocks and the
+   time zone out of the goldens: call bound methods on a fresh app and build held states in UTC.
+   A new root test file counts against the root ratchet until the move deletes emptied files.
 2. **Shared types.** Reports are built as `internal/app/report` values (`report.Board`,
    `report.Report`, `report.Row`, `report.Choice`, `report.Cells`, `report.ScoreText`). Add what
-   the feature needs there; never change a field name or JSON tag.
+   the feature needs there; never change a field name or JSON tag. A root helper the service
+   needs (the report shell over a held feed, a shared wording) moves there too and the root copy
+   becomes a one-line delegate (`reportShell` → `report.Shell`, which takes the feed's read state
+   as `report.Feed`), so nothing is duplicated.
 3. **Move the construction.** `git mv` the reading files into `internal/app/<feature>/` so review
    sees renames, then change only the package, the type names and the exported entry point
    (`archive.Build`). Implementation tests move in the same commit, because they call unexported
    helpers that no longer exist at root.
 4. **Move the read.** Data access becomes a function that takes its dependencies explicitly: a
    small interface over the store (`archive.History`), a `Source` struct of names and readers,
-   and the value the caller already holds. No globals, no goroutines, no opening databases.
+   and the value the caller already holds. No globals, no goroutines, no opening databases. What
+   only another feature's root code knows comes in as a function value (`draft.Values` takes the
+   measure meanings `describeMeasures` gives).
 5. **Map and ratchet.** Update `placement.tsv` (each new package gets a row), the `SYSTEM_MAP.md`
    row and the narrative paragraph, and lower `root-go-baseline.txt`.
 
@@ -35,6 +42,9 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   archive snapshot, under `factsMu`). The caller passes it in and stores what comes back.
 - Anything that reads another feature's held state (`archiveOpponent` reads the season feeds
   under `seasonMu`). It moves when that state has one owner, not before.
+- Code built on another feature's wire types that have no shared contract yet (the Draft Lab
+  returns `Reading[MarketSurface]` through Market's helpers). It moves after that feature's
+  extraction adds the contract; twins written early would be copies the later move must undo.
 
 ## Tests
 
@@ -42,8 +52,10 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   `report.Board` and checks the converted wire value encodes identically. A field the converter
   drops, or a tag that drifts between the twins, fails it.
 - Unit tests live beside the code. A fixture both packages need goes in a
-  `<feature>test` package (`archivetest.Facts`), not copied: a copied loader trips the `dupl`
-  count in `make lint`'s bloat ratchet.
+  `<feature>test` package (`archivetest.Facts`, `drafttest.Held`), not copied: a copied loader
+  trips the `dupl` count in `make lint`'s bloat ratchet. The fixture package must not import the
+  service, or the service's own tests form an import cycle: return plain values (`drafttest.Draft`)
+  and let each side wrap them in its own types.
 - Check each new test with a planted mutant.
 
 ## Pitfalls hit
@@ -57,6 +69,9 @@ feature's root files shrink to adapters and its logic moves to `internal/app/<fe
   frontend shows is unchanged. Test helpers may not use package-level `var`s
   (`gochecknoglobals`), and `exhaustive` rejects a `switch` over `reflect.Kind` even with a
   `default`.
+- **Parallel lanes.** The pre-commit hook runs golangci-lint, which refuses to start while
+  another lane's lint holds its lock ("parallel golangci-lint is running"). A private
+  `GOLANGCI_LINT_CACHE` alone did not clear it; a private `TMPDIR` as well did.
 - **Tiny files.** Each new non-test file needs at least 40 lines of code, or it counts against
   the bloat ratchet's `tiny_files` (baseline 22). Put the package doc in a real file.
 - **Store the held value as before.** `archive.Read` returns the zero `Snapshot` when nothing is

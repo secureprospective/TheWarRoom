@@ -53,42 +53,14 @@ type ReportBoard struct {
 	Reports  []Report `json:"reports"`
 }
 
+// reportShell is report.Shell for a held season feed, as its wire type.
 func reportShell[T any](id, title, how string, feed heldSeasonFeed[[]T], zone *time.Location, columns ...string) Report {
-	r := Report{ID: id, Title: title, Source: "Source: MFL", How: how,
-		Columns: columns, Rows: []ReportRow{}, Status: "ok", AsOf: "As of: not fetched"}
-	switch {
-	case feed.fetchedAt.IsZero():
-		r.Status, r.Note = "failed", "Report data unavailable; refresh from MFL to fill this report."
-	case len(feed.value) == 0:
-		r.Status, r.Note = "empty", "MFL lists no records for this report."
-	}
-	if !feed.fetchedAt.IsZero() {
-		r.AsOf = "As of: " + reportTime(feed.fetchedAt, zone)
-	}
-	if feed.readPending {
-		r.Status, r.Note = "stale", pendingShellRead(feed.fetchedAt, zone)
-	}
-	if feed.refreshError != "" {
-		if !feed.fetchedAt.IsZero() {
-			r.Note += " Refresh failed; showing the last known data. Try refreshing from MFL again."
-			r.Status = "stale"
-		} else {
-			r.Note += " Refresh failed. Try refreshing from MFL again."
-		}
-	}
-	return r
+	return wireReport(report.Shell(id, title, how, feed.state(), len(feed.value), zone, columns...))
 }
 
-func reportTime(at time.Time, zone *time.Location) string {
-	if at.IsZero() {
-		return "Time not supplied"
-	}
-	return at.In(zone).Format("Jan 2, 2006, 3:04 PM")
-}
+func reportTime(at time.Time, zone *time.Location) string { return report.Time(at, zone) }
 
-func pendingShellRead(at time.Time, zone *time.Location) string {
-	return "Last read " + reportTime(at, zone) + "; today's read pending"
-}
+func pendingShellRead(at time.Time, zone *time.Location) string { return report.PendingRead(at, zone) }
 
 // wireBoard converts a board built by a feature service under internal/app to its wire twin.
 // The two type sets are kept identical field for field; TestReportWireTwinsMatch proves it.

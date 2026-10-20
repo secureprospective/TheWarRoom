@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
@@ -24,6 +25,11 @@ type heldSeasonFeed[T any] struct {
 	fetchedAt    time.Time
 	refreshError string
 	readPending  bool
+}
+
+// state is the feed's held read state, without its value.
+func (h heldSeasonFeed[T]) state() report.Feed {
+	return report.Feed{FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
 }
 
 func (h heldSeasonFeed[T]) provenance(source, feed string) snapshot.Provenance {

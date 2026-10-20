@@ -1,0 +1,19 @@
+{
+ "id": "M-087",
+ "title": "NFL draft · 2026",
+ "note": "Report data unavailable; refresh from MFL to fill this report. Refresh failed. Try refreshing from MFL again.",
+ "status": "failed",
+ "source": "Source: held MFL players (DETAILS=1) archive",
+ "asOf": "As of: not fetched",
+ "how": "NFL draft year, round and pick are read from the held detailed MFL players export, not the fantasy league's draftResults. Only selections for this season with both round and pick are shown; undrafted and missing selections are not invented.",
+ "columns": [
+  "Player",
+  "Position",
+  "NFL team",
+  "Round",
+  "Pick"
+ ],
+ "rows": [],
+ "summary": null,
+ "link": null
+}

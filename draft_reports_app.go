@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"slices"
 	"strconv"
-	"strings"
 	"time"
 
+	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 )
 
 func (a *App) refreshDraftReports(ctx context.Context) {
@@ -72,14 +73,10 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 	a.lookupMu.Lock()
 	lookup := a.lookup
 	a.lookupMu.Unlock()
-	names := map[string]string{}
-	for _, p := range results.value {
-		if p.Player != nil {
-			if f, ok := lookup.Facts(p.Player.String()); ok {
-				names[p.Player.String()] = f.Name
-			}
-		}
-	}
+	names := draftapp.Names(results.value, func(id string) (string, bool) {
+		f, ok := lookup.Facts(id)
+		return f.Name, ok
+	})
 	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
 	defer cancel()
 	values, valueNote := a.draftReportValues(ctx)
@@ -89,7 +86,7 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 		if err != nil {
 			next = "Next draft date unavailable: " + err.Error()
 		} else {
-			next = nextDraftDate(clock.Value.Windows, time.Now(), time.Local)
+			next = draftapp.NextDate(clock.Value.Windows, time.Now(), time.Local)
 		}
 	}
 	board := buildDraftReports(a.league.Season(), results, future, names, a.rulebook.FranchiseNames(), values, valueNote, next, time.Local)
@@ -99,45 +96,23 @@ func (a *App) TargetDraftReports() (ReportBoard, error) {
 	return board, nil
 }
 
+// draftReportValues reads the engine values the draft and pool screens show, through the service.
 func (a *App) draftReportValues(ctx context.Context) (map[string]float64, string) {
-	values := map[string]float64{}
-	run, ok, err := a.history.LatestRun(ctx, a.season, history.RunModel)
-	if err != nil {
-		return values, "Engine points unavailable: " + err.Error()
-	}
-	if !ok {
-		return values, "Engine points unavailable until the engine first runs."
-	}
-	scores, err := a.history.ModelScores(ctx, run.ID)
-	if err != nil {
-		return values, "Engine points unavailable: " + err.Error()
-	}
-	for _, s := range scores {
-		values[s.MFLID] = s.DynastyPPG
-	}
-	return values, a.draftValueNote(run)
+	return draftapp.Values(ctx, a.history, a.season, a.measureMeanings, time.Local)
 }
 
-// engineRunText is the one wording for when the engine last valued players, wherever it shows.
-func engineRunText(at time.Time, zone *time.Location) string {
-	return "Engine run: " + at.In(zone).Format("January 2, 2006, 3:04 PM")
+// measureMeanings is describeMeasures reduced to each measure's plain meaning.
+func (a *App) measureMeanings(names []string) []string {
+	described := a.describeMeasures(names)
+	out := make([]string, len(described))
+	for i, m := range described {
+		out[i] = m.Meaning
+	}
+	return out
 }
 
-func (a *App) draftValueNote(run history.Run) string {
-	note := engineRunText(run.AsOf, time.Local) + "."
-	missing := []string{}
-	for _, m := range a.describeMeasures(run.MissingMeasures) {
-		if m.Meaning != "" {
-			missing = append(missing, strings.TrimSuffix(m.Meaning, "."))
-		} else {
-			missing = append(missing, "an unknown player measure")
-		}
-	}
-	if len(missing) > 0 {
-		note += " Missing player information: " + strings.Join(missing, "; ") + "."
-	}
-	return note
-}
+// engineRunText is report.EngineRun, the one wording for when the engine last valued players.
+func engineRunText(at time.Time, zone *time.Location) string { return report.EngineRun(at, zone) }
 
 func (a *App) TargetOpenMFLDraftRoom() error {
 	if err := a.ready(); err != nil {
@@ -151,11 +126,38 @@ func (a *App) TargetOpenMFLDraftRoom() error {
 	return nil
 }
 
-func nextDraftDate(windows []leagueclock.Window, now time.Time, zone *time.Location) string {
-	for _, w := range windows {
-		if w.Kind == leagueclock.Draft && w.At != nil && w.At.After(now) {
-			return "Next draft: " + w.At.In(zone).Format("January 2, 2006, 3:04 PM")
-		}
+// TargetNFLDraft reads the held detailed players export; it never fetches.
+func (a *App) TargetNFLDraft() (Report, error) {
+	if err := a.ready(); err != nil {
+		return Report{}, fmt.Errorf("NFL draft: startup: %w", err)
 	}
-	return "Next draft: no date set by the commissioner."
+	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	defer cancel()
+	held := archivedOnly(ctx, a, "players", false, func(body []byte) ([]players.RawPlayer, error) {
+		rows, err := players.Parse(ctx, body)
+		if err != nil {
+			return nil, fmt.Errorf("NFL draft: players: %w", err)
+		}
+		if !slices.ContainsFunc(rows, func(p players.RawPlayer) bool { return p.DraftRound != "" && p.DraftPick != "" }) {
+			return nil, fmt.Errorf("NFL draft: detailed selection fields not held")
+		}
+		return rows, nil
+	})
+	return nflDraftReport(a.season, held), nil
+}
+
+// nflDraftReport builds the NFL draft report in the feature service, as its wire type.
+func nflDraftReport(season int, held heldSeasonFeed[[]players.RawPlayer]) Report {
+	return wireReport(draftapp.NFL(season, draftHeld(held), time.Local))
+}
+
+// buildDraftReports builds the board in the feature service and converts it to its wire type.
+func buildDraftReports(season int, results heldSeasonFeed[[]draftreports.Pick], future heldSeasonFeed[[]draftreports.FuturePick],
+	names, franchises map[string]string, values map[string]float64, valueNote, next string, zone *time.Location) ReportBoard {
+	return wireBoard(draftapp.Build(draftapp.Input{Season: season, Results: draftHeld(results), Future: draftHeld(future),
+		Names: names, Franchises: franchises, Values: values, ValueNote: valueNote, Next: next, Zone: zone}))
+}
+
+func draftHeld[T any](h heldSeasonFeed[[]T]) draftapp.Held[T] {
+	return draftapp.Held[T]{Value: h.value, Feed: h.state()}
 }

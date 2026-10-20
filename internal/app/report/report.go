@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -107,4 +108,59 @@ func ScoreText(p leaguefeed.Points) string {
 // Hundredths rounds a decimal score to exact hundredths of a point.
 func Hundredths(points float64) leaguefeed.Points {
 	return leaguefeed.Points(math.Round(points * 100))
+}
+
+// Feed is the held state of one MFL feed a report reads: when it was last read, whether today's
+// read is still pending, and the last refresh's error.
+type Feed struct {
+	FetchedAt    time.Time
+	RefreshError string
+	ReadPending  bool
+}
+
+// Shell is a report with no rows yet, its status and note set from the feed: failed when never
+// read, empty when the feed held no records, stale when a read is pending or a refresh failed.
+// held is the number of records the feed holds.
+func Shell(id, title, how string, feed Feed, held int, zone *time.Location, columns ...string) Report {
+	r := Report{ID: id, Title: title, Source: "Source: MFL", How: how,
+		Columns: columns, Rows: []Row{}, Status: "ok", AsOf: "As of: not fetched"}
+	switch {
+	case feed.FetchedAt.IsZero():
+		r.Status, r.Note = "failed", "Report data unavailable; refresh from MFL to fill this report."
+	case held == 0:
+		r.Status, r.Note = "empty", "MFL lists no records for this report."
+	}
+	if !feed.FetchedAt.IsZero() {
+		r.AsOf = "As of: " + Time(feed.FetchedAt, zone)
+	}
+	if feed.ReadPending {
+		r.Status, r.Note = "stale", PendingRead(feed.FetchedAt, zone)
+	}
+	if feed.RefreshError != "" {
+		if !feed.FetchedAt.IsZero() {
+			r.Note += " Refresh failed; showing the last known data. Try refreshing from MFL again."
+			r.Status = "stale"
+		} else {
+			r.Note += " Refresh failed. Try refreshing from MFL again."
+		}
+	}
+	return r
+}
+
+// Time is the one wording of a report time: Jan 2, 2006, 3:04 PM in zone.
+func Time(at time.Time, zone *time.Location) string {
+	if at.IsZero() {
+		return "Time not supplied"
+	}
+	return at.In(zone).Format("Jan 2, 2006, 3:04 PM")
+}
+
+// PendingRead notes a feed whose daily read has not happened yet.
+func PendingRead(at time.Time, zone *time.Location) string {
+	return "Last read " + Time(at, zone) + "; today's read pending"
+}
+
+// EngineRun is the one wording for when the engine last valued players, wherever it shows.
+func EngineRun(at time.Time, zone *time.Location) string {
+	return "Engine run: " + at.In(zone).Format("January 2, 2006, 3:04 PM")
 }
