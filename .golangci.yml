@@ -111,8 +111,10 @@ linters:
             - "!**/internal/app/archive/**"
             - "!**/internal/app/comms/**"
             - "!**/internal/app/counterparties/**"
+            - "!**/internal/app/draft/**"
             - "!**/internal/app/scoring/**"
             - "!**/internal/app/sources/**"
+            - "!**/internal/app/market/**"
             - "!**/internal/app/report/**"
           allow:
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -180,6 +182,32 @@ linters:
           allow:
             - github.com/secureprospective/TheWarRoom/internal/app/sources$
             - github.com/secureprospective/TheWarRoom/internal/app/sources/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-draft-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/draft/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/draft$
+            - github.com/secureprospective/TheWarRoom/internal/app/draft/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree and shared report"
+
+        app-market-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/market/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/market$
+            - github.com/secureprospective/TheWarRoom/internal/app/market/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
           deny:
