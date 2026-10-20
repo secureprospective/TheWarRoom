@@ -2,15 +2,64 @@ package draft
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
+
+// History is the part of the history store Values reads: the season's latest engine run and
+// its scores.
+type History interface {
+	LatestRun(ctx context.Context, season int, kind history.RunKind) (history.Run, bool, error)
+	ModelScores(ctx context.Context, runID int64) ([]history.ModelScore, error)
+}
+
+// Values are the latest engine run's points per game by MFL id, and the note saying which run
+// they come from. describe gives the plain meaning of each missing measure, "" when unknown.
+func Values(ctx context.Context, h History, season int, describe func(names []string) []string, zone *time.Location) (map[string]float64, string) {
+	values := map[string]float64{}
+	run, ok, err := h.LatestRun(ctx, season, history.RunModel)
+	if err != nil {
+		return values, "Engine points unavailable: " + err.Error()
+	}
+	if !ok {
+		return values, "Engine points unavailable until the engine first runs."
+	}
+	scores, err := h.ModelScores(ctx, run.ID)
+	if err != nil {
+		return values, "Engine points unavailable: " + err.Error()
+	}
+	for _, s := range scores {
+		values[s.MFLID] = s.DynastyPPG
+	}
+	return values, ValueNote(run, describe(run.MissingMeasures), zone)
+}
+
+// ValueNote names the engine run and, in plain words, the player information it lacked;
+// meanings are the run's missing measures described, "" for one not known.
+func ValueNote(run history.Run, meanings []string, zone *time.Location) string {
+	note := report.EngineRun(run.AsOf, zone) + "."
+	missing := []string{}
+	for _, m := range meanings {
+		if m != "" {
+			missing = append(missing, strings.TrimSuffix(m, "."))
+		} else {
+			missing = append(missing, "an unknown player measure")
+		}
+	}
+	if len(missing) > 0 {
+		note += " Missing player information: " + strings.Join(missing, "; ") + "."
+	}
+	return note
+}
 
 // NFL is the NFL draft report for season, read from the held detailed MFL players export.
 func NFL(season int, held Held[players.RawPlayer], zone *time.Location) report.Report {
