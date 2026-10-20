@@ -73,7 +73,7 @@ func TestBuildPinsTheMatchingCaptureAndResolvesItNotTheNewest(t *testing.T) {
 	if a := m.Entries[2]; a.League != "" || a.Scope != "site" {
 		t.Errorf("adp entry = %+v, want a site export with no league", a)
 	}
-	got, err := m.Resolve(context.Background(), b)
+	got, _, err := m.ResolveWithGaps(context.Background(), b, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,14 +93,14 @@ func TestResolveNamesEveryMissingBodyAndNeverFallsBackToANewerOne(t *testing.T) 
 	}
 	delete(b, sum("old"))
 	delete(b, sum("adp"))
-	_, err = m.Resolve(context.Background(), b)
+	_, _, err = m.ResolveWithGaps(context.Background(), b, nil)
 	if err == nil || !strings.Contains(err.Error(), "2013/weekly/rosters_W01.json (sha256 "+sum("old")) ||
 		!strings.Contains(err.Error(), "2026/adp.json") {
 		t.Fatalf("err = %v, want both missing entries named", err)
 	}
 	b[sum("adp")] = "tampered"
 	b[sum("old")] = "old"
-	if _, err = m.Resolve(context.Background(), b); err == nil || !strings.Contains(err.Error(), "does not match") {
+	if _, _, err = m.ResolveWithGaps(context.Background(), b, nil); err == nil || !strings.Contains(err.Error(), "does not match") {
 		t.Errorf("err = %v, want a body that fails its sha256 refused", err)
 	}
 }
@@ -184,7 +184,7 @@ func TestUnheldEntryCannotResolveThroughAnUnrelatedBody(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := m.Resolve(context.Background(), b); err == nil || !strings.Contains(err.Error(), "no pinned archive row") {
+	if _, _, err := m.ResolveWithGaps(context.Background(), b, nil); err == nil || !strings.Contains(err.Error(), "no pinned archive row") {
 		t.Fatalf("resolution = %v; must refuse the matching bytes captured after the cutoff", err)
 	}
 }
@@ -215,7 +215,7 @@ func TestCuratedInputsArePinnedResolvedAndChangeTheIdentity(t *testing.T) {
 		t.Fatal("a curated input must change the identity and never count as missing from the archive")
 	}
 	b[sum("readings")] = "readings"
-	got, err := withNotes.Resolve(context.Background(), b)
+	got, _, err := withNotes.ResolveWithGaps(context.Background(), b, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestCuratedInputsArePinnedResolvedAndChangeTheIdentity(t *testing.T) {
 		t.Fatalf("curated %d, error body sized %d", curated, login)
 	}
 	delete(b, sum("readings"))
-	if _, err := withNotes.Resolve(context.Background(), b); err == nil || !strings.Contains(err.Error(), "note_readings.csv") {
+	if _, _, err := withNotes.ResolveWithGaps(context.Background(), b, nil); err == nil || !strings.Contains(err.Error(), "note_readings.csv") {
 		t.Fatalf("an unresolvable curated input must fail by name: %v", err)
 	}
 	if _, err := m.WithCurated(manifest.Pin{File: "x.csv", SHA256: "nothex"}); err == nil {
