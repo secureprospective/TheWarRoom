@@ -236,7 +236,7 @@ func plainAge(d time.Duration) string {
 }
 
 // boardText says whether the engine reads a source's measures, and when it last ran. The layer 1-4
-// board run that once reported the measures it went without is quarantined; that is not computed.
+// board run that once reported the measures it went without was removed; that is not computed.
 func boardText(source string, in healthInput) string {
 	if source == "" || !slices.ContainsFunc(in.reg.Fields, func(f measures.SourceField) bool { return f.Source == source }) {
 		return "Not read by the board"

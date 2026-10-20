@@ -1,6 +1,6 @@
 // Package l4 holds the Layer 4 scouting settings: one rubric per position, the table its
 // adjustable numbers are stored from as params. The rubric math that read them left with the
-// board run (quarantine/go/internal/engine/l4), so nothing reads these settings now; the params
+// board run (removed 2026-10-20, docs/architecture/removed-code.md), so nothing reads these settings now; the params
 // stay so an admin's overrides survive.
 // Spec: docs/scoring-engine/Engine_Specification.md and the per-position rubric documents.
 package l4

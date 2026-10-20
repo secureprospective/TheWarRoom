@@ -49,14 +49,14 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Analytics | `internal/labcompile` | Pure facts-to-Lab compiler: calendar, production, contracts, trades/draft, directories, ledger/source proofs and full wins/replacement, five-season forecast, pick curves, market and rolling backtest analysis. `Build` produces the complete document and an immutable `Model` whose `Player`/`Pick` API uses the trade-leg valuer at a supplied moment, with explicit unvalued reasons. Passive Python kernel/method/analysis goldens and reduced conservative smoke run in verify; opt-in full archive parity covers all 18 keys and player API/leg equality, while recorded-analysis document parity remains isolated. The app fits the model after launch (`fitAssetModel`, after `warmArchive`) and C-01 reads `Model.Player` through `labAssets`; the Lab screens still read the frozen document. |
 | Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. Exact missing-input exceptions live in `testdata/missing-inputs.csv`; `facts-reference.py` independently rebuilds the Python facts oracle in a disposable directory, with its source-row proof and provenance under `internal/lab/testdata/facts`. The reduced three-season golden retains every reference relation; full parity is opt-in. Reference relations no screen reads (price list, contender trades, draft map, the evidence grade) live in `reference_test.go`. |
 | Policy | `internal/governance` | Pure typed-event fold for principals, seats, private invites, abilities, role permissions, DOT recusal and succession; standard library only, no I/O or stores. Census permission data, a single co-commissioner seat and explicit activity/ballot evidence; locked all-franchise election majority, timed recorded runoff closure and candidate-recused tie rulings. |
-| Engine | `internal/engine` | L3 age decay (`ApplyDecay`, `PeakLimit`), which `cmd/fit` reads. The L1–L6 pipeline and its types are in quarantine (`quarantine/README.md`). |
+| Engine | `internal/engine` | L3 age decay (`ApplyDecay`, `PeakLimit`), which `cmd/fit` reads. The L1–L6 pipeline and its types were removed (`docs/architecture/removed-code.md`). |
 | Engine | `internal/engine/rookiedraft` | Pure native rookie-draft setup, slot contracts, order/ownership planning, selection preview and fixed-instant clock replay. `FinalStandings.FirstRound` is the typed worst-first standings seam; `MissingFinalStandings` refuses absent results with "The draft order needs the final standings, which are not built yet." Unset later patterns and tie rules never default. Rules, owned picks, accepted selections (each carrying the contract fixed when it was made) and native roster/cap facts arrive as values; a pick is refused only for pushing a roster over a limit, never for a roster still short of its minimum. The ledger, calendar and gate wiring is in `internal/commissioner` (below). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons (including cap coverage by one conditional drop), and the ProBoards post text. |
 | Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `race_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
 | Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
-| Engine | `internal/engine/l4` | Layer 4's per-position settings table only. Its adjustable numbers are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7) under areas marked "inert, no run reads it": the rubric math that read them is in quarantine with the layer 1–4 engine. |
+| Engine | `internal/engine/l4` | Layer 4's per-position settings table only. Its adjustable numbers are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7) under areas marked "inert, no run reads it": the rubric math that read them was removed with the layer 1–4 engine. |
 | Composition | `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
 | Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
@@ -199,7 +199,7 @@ Every method that takes frontend input validates it before acting. Bindings in
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
-Nothing at present. The scouting fetchers listed here went to quarantine with the layer 1–4 engine
+Nothing at present. The scouting fetchers listed here were removed with the layer 1–4 engine
 on 2026-10-20.
 
 ## Built but not wired
@@ -224,7 +224,7 @@ Wire it or retire it when its ring comes up; do not count it as landed.
   plays, so whether distance bonuses reach native scores is unverified.
 - **The `scoring_runs` / `run_scores` tables** stay in existing history databases, holding the
   retired board runs, unread. Their writer and readers were removed 2026-10-20
-  (`quarantine/README.md`); the schema is unchanged, so no migration was needed.
+  (`docs/architecture/removed-code.md`); the schema is unchanged, so no migration was needed.
 - **The `transaction_corrections` table** stays in existing state databases, empty and unread. Its
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.
@@ -247,7 +247,7 @@ only with `?specimen` in a dev build. `snapshot.NewSource` composes the initiali
 The target shell lives in `frontend/src/app/shell/`; its six-node table and hash routes are data.
 `frontend/src/app/commands/` owns the immutable verb registry, sole dispatch path, keyboard
 bindings and in-memory recent-command log. `Act` is the only clickable primitive in the target
-UI. `frontend/src/TargetMount.tsx` mounts the target shell; the Alpha harness UI is in `quarantine/`.
+UI. `frontend/src/TargetMount.tsx` mounts the target shell; the Alpha harness UI was removed (`docs/architecture/removed-code.md`).
 
 `docs/ui/registry/normalize.py` normalizes and validates `docs/ui/endpoint-registry.csv`.
 `frontend/scripts/gen-endpoints.mjs` validates the shared owner/commissioner CSV and generates
