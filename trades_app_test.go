@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -341,5 +345,74 @@ func TestTradeBuilderPopulatedGolden(t *testing.T) {
 	checkGolden(t, "trades", "TargetTradeBuilder-preview", reading)
 	if len(transport.requests) != 0 {
 		t.Fatal("builder fetched")
+	}
+}
+
+func TestTradesWireTwins(t *testing.T) {
+	t.Parallel()
+	cell := tradesapp.Cell{Text: "value", Sub: "qualifier", Detail: "detail", Held: true}
+	asset := tradesapp.Asset{Team: "DAL", Contract: "$1.25 · 3 years", Now: &cell, Dynasty: &cell,
+		Token: "0099", Name: "Player", Position: domain.PosWR}
+	team := tradesapp.Team{ID: "0001", Name: "Team", Assets: []tradesapp.Asset{asset}}
+	projection := tradesapp.Projection{Team: "Team", Roster: []tradesapp.Asset{asset},
+		Figures: []tradesapp.Figure{{Label: "Cap", Before: "$1", After: "$2", Change: "+$1"}}}
+	offer := tradesapp.Offer{TradeID: "77", Direction: "to_you", OtherID: "0001", OtherName: "Team",
+		Give: []tradesapp.Asset{asset}, Get: []tradesapp.Asset{asset}, Expires: time.Date(2026, 10, 7, 16, 0, 0, 0, time.UTC), Comments: "Comment"}
+	reading := tradesapp.Reading{Offers: []tradesapp.Offer{offer}, Provenance: snapshot.Provenance{
+		Source: "pendingTrades", Kind: "live", Freshness: liveFreshness(offer.Expires)}}
+	for _, r := range []tradesapp.Reading{reading, {}, {Offers: []tradesapp.Offer{}}, {Offers: []tradesapp.Offer{{Give: []tradesapp.Asset{}}}}} {
+		if string(sourcesWire(t, r)) != string(sourcesWire(t, wireTrades(r))) {
+			t.Fatal("trade reading twin drift")
+		}
+	}
+	for _, p := range []tradesapp.Projection{projection, {}, {Figures: []tradesapp.Figure{}, Roster: []tradesapp.Asset{}}} {
+		if string(sourcesWire(t, p)) != string(sourcesWire(t, wireTradeProjection(p))) {
+			t.Fatal("projection twin drift")
+		}
+	}
+	for _, teams := range [][]tradesapp.Team{{team}, nil, {}, {{Assets: []tradesapp.Asset{}}}} {
+		wire := wireTradeTeams(teams)
+		if string(sourcesWire(t, teams)) != string(sourcesWire(t, wire)) ||
+			string(sourcesWire(t, teams)) != string(sourcesWire(t, serviceTradeTeams(wire))) {
+			t.Fatal("team twin drift")
+		}
+	}
+	raw := RawTradeBuilder{Mine: "0001", Other: "0025", Action: "save", ID: "id", Give: []string{"0099"}, Get: []string{"12345"}, Rationale: "why"}
+	if string(sourcesWire(t, raw)) != string(sourcesWire(t, tradesapp.Input(raw))) {
+		t.Fatal("request twin drift")
+	}
+}
+
+func TestTradesReadDuringHeldPublication(t *testing.T) {
+	t.Parallel()
+	a, transport, offer := tradeDraftApp(t)
+	start, done := make(chan struct{}), make(chan struct{})
+	go func() {
+		defer close(done)
+		<-start
+		for i := 0; i < 100; i++ {
+			next := offer
+			next.Comments = strconv.Itoa(i)
+			a.seasonMu.Lock()
+			a.seasonPendingTrades.value = []leaguefeed.PendingTrade{next}
+			a.seasonMu.Unlock()
+		}
+	}()
+	close(start)
+	for i := 0; i < 100; i++ {
+		reading, err := a.TargetTrades("0025")
+		if err != nil || len(reading.Offers) != 1 {
+			t.Errorf("held trade publication: %+v %v", reading, err)
+			break
+		}
+		reading.Offers[0].Get[0].Name = "detached result"
+	}
+	<-done
+	reading, err := a.TargetTrades("0025")
+	if err != nil || reading.Offers[0].Comments != "99" || reading.Offers[0].Get[0].Name == "detached result" {
+		t.Fatal(reading, err)
+	}
+	if len(transport.requests) != 0 {
+		t.Fatal("held publication fetched")
 	}
 }
