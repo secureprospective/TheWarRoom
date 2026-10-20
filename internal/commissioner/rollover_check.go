@@ -23,12 +23,8 @@ func CheckRolloverAppend(raw RawCommand, records []Record) error {
 // and a change a rollover captured cannot be reversed once the league has moved past it. It is empty when
 // the reversal is fine.
 func rolloverReversalRefusal(records []Record, entry string) string {
-	target := slices.IndexFunc(records, func(r Record) bool { return r.Receipt.Entry == entry })
-	for target >= 0 && records[target].Command.Command == Revert {
-		next := records[target].Command.Args.Entry
-		target = slices.IndexFunc(records[:target], func(r Record) bool { return r.Receipt.Entry == next })
-	}
-	if target < 0 {
+	target, found := reversalRoots(records)[entry]
+	if !found {
 		return ""
 	}
 	active := Replay(records).Active

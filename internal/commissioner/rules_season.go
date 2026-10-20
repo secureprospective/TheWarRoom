@@ -52,18 +52,18 @@ func rolloverInstants(records []Record) ([]time.Time, error) {
 	}
 	starts := []time.Time{}
 	var pending time.Time
-	for i, r := range records {
+	index := newRolloverIndex()
+	for _, r := range records {
 		if !pending.IsZero() && !r.Receipt.RecordedAt.Before(pending) {
 			starts = append(starts, pending)
 			pending = time.Time{}
 		}
-		if r.Command.Command != Revert && (r.Command.Command != RulesSet ||
-			r.Command.Args.Field != rolloverField) {
-			continue
-		}
-		date, err := activeRollover(records[:i+1])
+		date, err := index.add(r)
 		if err != nil {
 			return nil, err
+		}
+		if r.Command.Command != Revert && (r.Command.Command != RulesSet || r.Command.Args.Field != rolloverField) {
+			continue
 		}
 		pending = time.Time{}
 		if len(starts) == 0 || date.After(starts[len(starts)-1]) {
@@ -76,23 +76,13 @@ func rolloverInstants(records []Record) ([]time.Time, error) {
 	return starts, nil
 }
 
-// activeRollover reads the date held by a ledger prefix; later reversals cannot erase elapsed seasons.
-func activeRollover(records []Record) (time.Time, error) {
-	active := Replay(records).Active
-	for i := len(records) - 1; i >= 0; i-- {
-		r := records[i]
-		if r.Command.Command != RulesSet || !active[r.Receipt.Entry] || r.Command.Effective != "now" ||
-			r.Command.Args.Field != rolloverField {
-			continue
-		}
-		setting, err := leaguerules.DecodeSetting(rolloverField, r.Command.Args.Value)
-		if err != nil {
-			return time.Time{}, fmt.Errorf("read recorded rollover: %w", err)
-		}
-		if date, ok := setting.(leaguerules.Value[time.Time]); ok && date.State == leaguerules.IsKnown {
-			return date.Value, nil
-		}
-		return time.Time{}, nil
+func rolloverDate(r Record) (time.Time, error) {
+	setting, err := leaguerules.DecodeSetting(rolloverField, r.Command.Args.Value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read recorded rollover: %w", err)
+	}
+	if date, ok := setting.(leaguerules.Value[time.Time]); ok && date.State == leaguerules.IsKnown {
+		return date.Value, nil
 	}
 	return time.Time{}, nil
 }
