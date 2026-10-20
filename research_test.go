@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -344,4 +345,37 @@ func researchRow(r Report, label string) ReportRow {
 		}
 	}
 	return ReportRow{}
+}
+
+func TestResearchWireTwinsMatch(t *testing.T) {
+	t.Parallel()
+	var board researchapp.Board
+	var player researchapp.PlayerReading
+	n := 0
+	fillWire(reflect.ValueOf(&board).Elem(), &n)
+	fillWire(reflect.ValueOf(&player).Elem(), &n)
+	for _, tc := range []struct {
+		name        string
+		built, wire any
+	}{
+		{"board", board, wireResearchBoard(board)},
+		{"player", player, wireResearchPlayer(player)},
+		{"nil board", researchapp.Board{}, wireResearchBoard(researchapp.Board{})},
+		{"nil player", researchapp.PlayerReading{}, wireResearchPlayer(researchapp.PlayerReading{})},
+		{"empty articles", []researchapp.Article{}, wireResearchArticles([]researchapp.Article{})},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			want, err := json.Marshal(tc.built)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, err := json.Marshal(tc.wire)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(want, got) {
+				t.Fatalf("wire twin differs:\n%s\n%s", want, got)
+			}
+		})
+	}
 }

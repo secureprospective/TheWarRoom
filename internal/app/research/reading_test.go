@@ -1,6 +1,9 @@
 package research
 
 import (
+	"bytes"
+	"encoding/json"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -60,5 +63,32 @@ func TestNewsAgeValidation(t *testing.T) {
 func TestShortDepthNames(t *testing.T) {
 	if shortDepthNames([]string{"▸ Josh Sweat · MFL identity not linked"}) != "▸ J. Sweat*" {
 		t.Fatal("grid name is not short and labelled")
+	}
+}
+
+func TestConcurrentConstructionLeavesSnapshotUntouched(t *testing.T) {
+	in := realResearch(t)
+	before, err := json.Marshal(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		after, err := json.Marshal(in)
+		if err != nil {
+			t.Error(err)
+		}
+		if !bytes.Equal(before, after) {
+			t.Error("construction mutated the detached snapshot")
+		}
+	})
+	for i := 0; i < 4; i++ {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+			out := Build(in, Scope{Mine: "0001"})
+			player := ReadPlayer(in, "16162", nil, "Counting")
+			if len(out.Board.Reports) != 10 || player.ID != "16162" || len(player.Report.Rows) == 0 {
+				t.Fatal("reading lost held inputs")
+			}
+		})
 	}
 }

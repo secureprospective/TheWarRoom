@@ -183,26 +183,8 @@ func (f blockingNewsTransport) RoundTrip(r *http.Request) (*http.Response, error
 
 func TestResearchNewsDoesNotBlockNowAndRejectsConcurrentNews(t *testing.T) {
 	t.Parallel()
-	a := targetTestApp(t)
-	f := blockingNewsTransport{entered: make(chan struct{}), release: make(chan struct{})}
+	a, f, done := blockedResearchNews(t)
 	defer close(f.release)
-	client, err := mfl.New("api", 10000, mfl.WithTransport(f))
-	if err != nil {
-		t.Fatal(err)
-	}
-	a.mflClient = client
-	a.seasonPause = func(context.Context, time.Duration) error { return nil }
-	a.fallbackLog = func(string) {}
-	at := time.Now()
-	a.race.weeks.fetchedAt, a.race.brackets.fetchedAt, a.race.standings.fetchedAt = at, at, at
-	a.week.Number = 0
-	done := make(chan error, 1)
-	go func() { done <- a.TargetResearchNewsRefresh("") }()
-	select {
-	case <-f.entered:
-	case <-time.After(5 * time.Second):
-		t.Fatal("news transport never entered")
-	}
 	other := make(chan error, 1)
 	go func() { other <- a.TargetResearchNewsRefresh("") }()
 	select {
@@ -253,4 +235,28 @@ func TestOmittedProfilesLogOnceAndSurviveArchive(t *testing.T) {
 	if err != nil || !cached["16162"].fetchedAt.Equal(now) || len(cached["16162"].value) != 0 {
 		t.Fatal(cached, err)
 	}
+}
+
+func blockedResearchNews(t *testing.T) (*App, blockingNewsTransport, <-chan error) {
+	t.Helper()
+	a := targetTestApp(t)
+	f := blockingNewsTransport{entered: make(chan struct{}), release: make(chan struct{})}
+	client, err := mfl.New("api", 10000, mfl.WithTransport(f))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.mflClient = client
+	a.seasonPause = func(context.Context, time.Duration) error { return nil }
+	a.fallbackLog = func(string) {}
+	at := time.Now()
+	a.race.weeks.fetchedAt, a.race.brackets.fetchedAt, a.race.standings.fetchedAt = at, at, at
+	a.week.Number = 0
+	done := make(chan error, 1)
+	go func() { done <- a.TargetResearchNewsRefresh("") }()
+	select {
+	case <-f.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("news transport never entered")
+	}
+	return a, f, done
 }

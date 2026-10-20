@@ -7,6 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
+
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -102,5 +105,75 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	}
 	if a.TargetResearchStatus() != "" {
 		t.Fatal("status retained after failure")
+	}
+}
+
+func TestResearchSnapshotDetachesMutableIndexes(t *testing.T) {
+	t.Parallel()
+	a := targetTestApp(t)
+	fixture := realResearch(t)
+	a.research = fixture.held
+	a.research.links["gsis:fixture"] = "16162"
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{1: {fetchedAt: fixture.now}}
+	in := a.heldResearchInput()
+	a.seasonMu.Lock()
+	a.research.feeds[researchKey("playerScores", "YTD")] = heldSeasonFeed[[]researchfeeds.Feed]{}
+	delete(a.research.news, "16162")
+	a.research.links["gsis:fixture"] = "0042"
+	delete(a.now.schedules, 1)
+	a.seasonMu.Unlock()
+	if len(in.held.feeds[researchKey("playerScores", "YTD")].value) == 0 || len(in.held.news["16162"].value) == 0 || in.held.links["gsis:fixture"] != "16162" || in.schedules[1].fetchedAt.IsZero() {
+		t.Fatal("reading retained a mutable root index")
+	}
+	// Construction must not reacquire App's lock or inspect newly published state.
+	a.seasonMu.Lock()
+	done := make(chan ResearchBoard, 1)
+	go func() { done <- buildResearch(in, RawResearchScope{}) }()
+	select {
+	case board := <-done:
+		a.seasonMu.Unlock()
+		if len(reportByID(t, board.Board, "M-037").Rows) == 0 {
+			t.Fatal("detached scores lost")
+		}
+	case <-time.After(5 * time.Second):
+		a.seasonMu.Unlock()
+		t.Fatal("construction waited on the root season lock")
+	}
+}
+
+func TestResearchConcurrentNewsRefreshAndRead(t *testing.T) {
+	t.Parallel()
+	a, f, refreshed := blockedResearchNews(t)
+	defer close(f.release)
+	reading := make(chan struct{}, 1)
+	readDone := make(chan error, 1)
+	go func() {
+		for i := 0; i < 40; i++ {
+			_, err := a.TargetResearch(RawResearchScope{})
+			if err != nil {
+				readDone <- err
+				return
+			}
+			if i == 0 {
+				reading <- struct{}{}
+			}
+		}
+		readDone <- nil
+	}()
+	select {
+	case <-reading:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Research read blocked behind news refresh")
+	}
+	f.release <- struct{}{}
+	if err := <-refreshed; err != nil {
+		t.Fatal(err)
+	}
+	if err := <-readDone; err != nil {
+		t.Fatal(err)
+	}
+	in := a.heldResearchInput()
+	if in.held.news["0042"].fetchedAt.IsZero() {
+		t.Fatal("completed refresh was not published")
 	}
 }

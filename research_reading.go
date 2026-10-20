@@ -120,7 +120,10 @@ func researchFeeds[K comparable, T any](held map[K]heldSeasonFeed[T]) map[K]rese
 	return out
 }
 func buildResearch(in researchInput, scope RawResearchScope) ResearchBoard {
-	b := researchapp.Build(in.snapshot(), researchapp.Scope(scope))
+	return wireResearchBoard(researchapp.Build(in.snapshot(), researchapp.Scope(scope)))
+}
+
+func wireResearchBoard(b researchapp.Board) ResearchBoard {
 	players := make([]ResearchPlayer, len(b.Players))
 	for i, p := range b.Players {
 		players[i] = ResearchPlayer(p)
