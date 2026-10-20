@@ -1,4 +1,8 @@
-# Quarantine
+# Removed code (the 2026-10-20 purge)
+
+**The quarantine was deleted on 2026-10-20 at Christopher's review ("delete all").** Everything below is gone from the tree. To recover a quarantined file, read it from the commit before the deletion: `git show 6738d82b:quarantine/<path>` (main after PR #47). The "recover from" commits below still apply to code deleted from live files.
+
+What follows is the quarantine's README as it stood, kept as the record of what was removed and why.
 
 Files the purge (2026-10-20, PRs #44–#47) judged stale but did not delete outright.
 Each file keeps its original path under `quarantine/`. Nothing here is built, tested or linked

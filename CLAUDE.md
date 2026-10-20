@@ -13,8 +13,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 
 - **Plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
   the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
-- **Latest state:** `HANDOFF.md`, then the newest `quarantine/docs/build-handoffs/RESUME-*.md` (the
-  purge quarantined every RESUME on 2026-10-20).
+- **Latest state:** `HANDOFF.md`. (The old RESUME files were removed on 2026-10-20; see
+  `docs/architecture/removed-code.md` to recover one from git.)
 - **What exists:** `SYSTEM_MAP.md`, a one-page feature directory; the long narrative is
   `docs/architecture/system-narrative.md`.
 - **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
@@ -137,7 +137,7 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 | Every endpoint and its status | `docs/ui/endpoint-registry.csv` |
 | Commissioner surface: MFL map, cut, K1–K7 process, rulings | `docs/commissioner/README.md` |
 | Open questions and decisions | `docs/roadmap/Roadmap_and_Open_Questions.md` |
-| The 2026-10 engineering audit | `docs/build-handoffs/Deep_Audit_2026-10-19.md` (the Oct 3 audit is in `quarantine/docs/reviews/`) |
+| The 2026-10 engineering audit | `docs/build-handoffs/Deep_Audit_2026-10-19.md` (the Oct 3 audit was removed; see `docs/architecture/removed-code.md`) |
 | Deferred: the Commissioner Suite | `docs/build-handoffs/Commissioner_Suite_Plan_DEFERRED.md` |
 | History before the core plan | `docs/build-handoffs/Build_State_Archive_Through_Alpha.md` |
 
