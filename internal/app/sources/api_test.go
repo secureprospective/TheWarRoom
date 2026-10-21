@@ -32,6 +32,7 @@ type fakeHost struct {
 	changed   func()
 	cleared   []string
 	clearErr  error
+	photosOff bool
 }
 
 func testHost(t *testing.T) *fakeHost {
@@ -78,6 +79,7 @@ func (h *fakeHost) SaveSourcesSettings(dir string, off bool) error {
 	h.dir, h.off = dir, off
 	return nil
 }
+func (h *fakeHost) SetPhotosOff(off bool)                 { h.photosOff = off }
 func (h *fakeHost) SourcesDatabaseChecks() *report.Report { return nil }
 func (h *fakeHost) SourcesPhotos() (headshot.Stats, int, int64, bool, bool) {
 	return headshot.Stats{}, 0, 0, false, false
@@ -174,5 +176,17 @@ func TestCacheClearKeepsItsWordsAndRunsOnlyTheNamedCopy(t *testing.T) {
 	}
 	if strings.Join(h.cleared, ",") != "pool,pool" {
 		t.Fatal(h.cleared)
+	}
+}
+
+func TestSetPhotosKeepsTheArchiveFolderAndPublishesTheSwitch(t *testing.T) {
+	t.Parallel()
+	host := &fakeHost{dir: "/league"}
+	api := sourcesapp.New(host, &sourcesapp.Held{})
+	if got := api.SetPhotos(false); !got.OK || host.dir != "/league" || !host.off || !host.photosOff {
+		t.Fatalf("SetPhotos(false) = %+v, host dir %q off %v published %v", got, host.dir, host.off, host.photosOff)
+	}
+	if got := api.SetPhotos(true); !got.OK || host.off || host.photosOff {
+		t.Fatalf("SetPhotos(true) = %+v, host off %v published %v", got, host.off, host.photosOff)
 	}
 }

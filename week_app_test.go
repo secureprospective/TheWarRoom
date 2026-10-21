@@ -129,7 +129,7 @@ func TestRefreshWeekAndClock(t *testing.T) {
 	// Inside week 5, before its first kickoff: the wall clock passed the fixture's last kickoff on
 	// 2026-10-12, after which no lineup lock is left and the reading has no week.
 	a.core.ClockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
-	before, err := a.TargetClock()
+	before, err := a.platformAPI().TargetClock()
 	if err != nil || before.Value.Week != nil || before.Provenance.Freshness.State != FreshLive ||
 		!strings.Contains(before.Provenance.Freshness.Note, "NFL schedule not fetched yet") {
 		t.Fatalf("before fetch: %+v, %v", before, err)
@@ -153,7 +153,7 @@ func TestRefreshWeekAndClock(t *testing.T) {
 		t.Fatalf("phases %v, events %d", recorder.phases, emitted)
 	}
 	calls := len(transport.requests)
-	clock, err := a.TargetClock()
+	clock, err := a.platformAPI().TargetClock()
 	if err != nil || clock.Value.Week == nil || *clock.Value.Week != 5 {
 		t.Fatalf("after fetch: %+v, %v", clock, err)
 	}
@@ -170,7 +170,7 @@ func TestRefreshWeekAndClock(t *testing.T) {
 	if a.core.Week.Number != 5 || !a.core.WeekFetchedAt.Equal(fetched) || a.core.WeekRefreshError == "" {
 		t.Fatal("failure lost last good week")
 	}
-	clock, err = a.TargetClock()
+	clock, err = a.platformAPI().TargetClock()
 	if err != nil || clock.Provenance.Freshness.State != FreshStale ||
 		!strings.Contains(clock.Provenance.Freshness.Note, "; showing week 5 fetched ") {
 		t.Fatalf("stale: %+v, %v", clock, err)

@@ -113,10 +113,10 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 			Franchise: "Cincinnati Bengals", Reason: "no NFL id yet"}}})
 	c := a.sourcesAPI().TargetCrosswalk()
 	wire := struct {
-		Data      sourcesapp.DataSources  `json:"data"`
-		Crosswalk report.Report           `json:"crosswalk"`
-		Params    controlapp.ParamsResult `json:"params"`
-		Result    DataActResult           `json:"result"`
+		Data      sourcesapp.DataSources   `json:"data"`
+		Crosswalk report.Report            `json:"crosswalk"`
+		Params    controlapp.ParamsResult  `json:"params"`
+		Result    sourcesapp.DataActResult `json:"result"`
 	}{
 		Data: sourcesapp.DataSources{DatabaseChecks: (&App{core: &core.State{}}).databaseChecksReading(), Health: sourcesapp.HealthReport(sourcesapp.HealthInput{Reg: reg, Now: at, Zone: time.UTC,
 			Sources: []history.SourceHealth{{Source: sourcesapp.LeagueArchiveSource, State: history.SourceActive, LastSuccess: at}}}),
@@ -135,7 +135,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 				{Name: "Lineup scores equal MFL player scores", Checked: 202954, Agreed: 202954, Passed: true}}}),
 			ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: sourcesapp.DataScopes(), Words: sourcesapp.DataWords()},
 		Crosswalk: c, Params: controlapp.ParamsResult{OK: true, Params: []controlapp.ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
-		Result: DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
+		Result: sourcesapp.DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
 	}
 	body, err := json.MarshalIndent(wire, "", "  ")
 	if err != nil {

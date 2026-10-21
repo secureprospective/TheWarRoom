@@ -12,7 +12,7 @@ it('checks, drafts and hands off through lazy bindings and strict parsers', asyn
   const draft = vi.fn().mockResolvedValue(lineupReceipt());
   const handOff = vi.fn().mockResolvedValue(lineupReceipt());
   vi.stubGlobal('window', { go: {
-    main: { App: { TargetHandOff: handOff } },
+    platform: { API: { TargetHandOff: handOff } },
     contracts: { API: { TargetCheckLineup: check, TargetDraftLineup: draft } },
   } });
   const provider = new LiveProvider();

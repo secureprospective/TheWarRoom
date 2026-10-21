@@ -107,7 +107,7 @@ func TestContractActsRawBoundaryAndOwnRosterOnly(t *testing.T) {
 	if r := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0002", Action: "withdraw", ID: id}); r.Status != report.ReadingFailed {
 		t.Fatal("cross-franchise mutation")
 	}
-	if _, err := a.TargetHandOff(id); err == nil {
+	if _, err := a.platformAPI().TargetHandOff(id); err == nil {
 		t.Fatal("generic handoff bypassed blocker")
 	}
 	if err := contractsapp.RevalidateContractPlans(context.Background(), contractsHost{State: a.core, app: a}); err != nil {

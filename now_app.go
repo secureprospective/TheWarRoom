@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
@@ -371,7 +372,7 @@ func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]nowapp.
 		if !ok {
 			continue
 		}
-		photo := photoView(id, proseName(facts.Name), a.core.PhotosOff.Load())
+		photo := platformapp.Photo(id, proseName(facts.Name), a.core.PhotosOff.Load())
 		players[espn] = nowapp.SpinePlayer{ID: id, Name: proseName(facts.Name), Team: facts.Team, Mine: ids[id], Photo: nowapp.PhotoView(photo)}
 	}
 	return players, nil

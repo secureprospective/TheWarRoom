@@ -36,9 +36,9 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 			}}
 			var r envelope.Receipt
 			if tc.intent == "roster.ir" {
-				r, err = a.TargetDraftIR("0001", "0042")
+				r, err = a.platformAPI().TargetDraftIR("0001", "0042")
 			} else {
-				r, err = a.TargetDraftTaxi("0001", "0042")
+				r, err = a.platformAPI().TargetDraftTaxi("0001", "0042")
 			}
 			wantURL := "https://www47.myfantasyleague.com/2026/options?L=14432&O=" + tc.option
 			if err != nil || r.State != envelope.Ready || r.Spec.Target.URL != wantURL ||
@@ -63,11 +63,11 @@ func TestRosterDraftUnknownHost(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	down := targetOfflineClient(t, a)
-	if _, err := a.TargetSnapshot(); err != nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
 	calls := down.calls
-	for _, draft := range []func(string, string) (envelope.Receipt, error){a.TargetDraftIR, a.TargetDraftTaxi} {
+	for _, draft := range []func(string, string) (envelope.Receipt, error){a.platformAPI().TargetDraftIR, a.platformAPI().TargetDraftTaxi} {
 		r, err := draft("0001", "0042")
 		if err != nil || r.State != envelope.Blocked || r.Spec.Target.Kind != envelope.Unmapped ||
 			r.Spec.Target.URL != "" || !strings.Contains(r.Audit[0].Note, "MFL host not yet known") {
@@ -90,14 +90,14 @@ func TestTaxiPredicateRegistered(t *testing.T) {
 func TestTargetDraftTaxiValidation(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	if _, err := a.TargetDraftTaxi("0001", "0042"); err == nil {
+	if _, err := a.platformAPI().TargetDraftTaxi("0001", "0042"); err == nil {
 		t.Fatal("draft without snapshot")
 	}
 	targetOfflineClient(t, a)
-	if _, err := a.TargetSnapshot(); err != nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.TargetDraftTaxi("0001", "invalid"); err == nil {
+	if _, err := a.platformAPI().TargetDraftTaxi("0001", "invalid"); err == nil {
 		t.Fatal("invalid player accepted")
 	}
 	for _, mode := range []string{"IR", "absent"} {
@@ -105,7 +105,7 @@ func TestTargetDraftTaxiValidation(t *testing.T) {
 		if mode == "absent" {
 			a.core.TargetSnapshot.Rosters.Value[0].Players = nil
 		}
-		r, err := a.TargetDraftTaxi("0001", "0042")
+		r, err := a.platformAPI().TargetDraftTaxi("0001", "0042")
 		if err != nil || r.State != envelope.Blocked {
 			t.Fatalf("invalid taxi: %+v %v", r, err)
 		}

@@ -88,7 +88,7 @@ func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
 	if err != nil || facts.Evidence != raw.Evidence || facts.Beat == nil || *facts.Beat != 5500 || !facts.Snipe {
 		t.Fatalf("facts = %+v, %v", facts, err)
 	}
-	moves, err := a.TargetMoves("0001")
+	moves, err := a.platformAPI().TargetMoves("0001")
 	if err != nil || len(moves) != 0 {
 		t.Errorf("a bid plan appeared on the move rail: %v, %v", moves, err)
 	}

@@ -197,7 +197,7 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 	got["act-other-franchise-plan"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0002", Action: "withdraw", ID: plan}))
 	got["act-posted-before-handoff"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "posted", ID: plan}))
 	got["act-rebase-fresh-plan"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "rebase", ID: plan}))
-	_, err := a.TargetHandOff(plan)
+	_, err := a.platformAPI().TargetHandOff(plan)
 	got["act-generic-handoff"] = errText(err)
 
 	for name, raw := range map[string]contractsapp.RawReleaseRequest{

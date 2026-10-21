@@ -471,7 +471,7 @@ accepts only real PNG/JPEG bytes, treats 403/404 and known silhouettes as "no ph
 days), and caches files in `<data dir>/headshots/` under a 200 MB least-recently-used cap. Photos are personal
 use only (spec §7): never bundled, never in git, never in `history.db`, so its HTTP client bypasses the
 archiving transport on purpose. The webview loads `/headshot/<mfl id>` through the Wails asset handler
-(`photos_app.go`); `TargetPhoto` gives a card Go's address and alt text, or none when photos are off
+(`platform_host.go`); `platform.API.TargetPhoto` gives a card Go's address and alt text, or none when photos are off
 (`settings.json` `photosOff`, `SetPhotos`). `cards/PlayerPhoto.tsx` reserves the box and shows the NFL team
 when there is no photo.
 

@@ -75,7 +75,7 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 	if len(transport.requests) != 0 {
 		t.Fatal("local binding fetched")
 	}
-	listed, err := a.TargetMoves("0025")
+	listed, err := a.platformAPI().TargetMoves("0025")
 	if err != nil || len(listed) != 0 {
 		t.Fatalf("check saved: %+v %v", listed, err)
 	}
@@ -144,7 +144,7 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 			}
 			handed := a.core.MovesNow().Add(time.Minute)
 			a.core.MovesNow = func() time.Time { return handed }
-			if _, err := a.TargetHandOff(r.CorrelationID); err != nil {
+			if _, err := a.platformAPI().TargetHandOff(r.CorrelationID); err != nil {
 				t.Fatal(err)
 			}
 			if opens != 1 {
@@ -286,7 +286,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 			}
 			if kind == "awaiting" {
 				a.core.OpenURL = func(context.Context, string) {}
-				if _, err := a.TargetHandOff(first.CorrelationID); err != nil {
+				if _, err := a.platformAPI().TargetHandOff(first.CorrelationID); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -331,7 +331,7 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.core.OpenURL = func(context.Context, string) {}
-	if _, err := a.TargetHandOff(r.CorrelationID); err != nil {
+	if _, err := a.platformAPI().TargetHandOff(r.CorrelationID); err != nil {
 		t.Fatal(err)
 	}
 	handed := a.core.MovesNow()

@@ -110,7 +110,7 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 	}
 	handed := a.core.MovesNow().Add(time.Minute)
 	a.core.MovesNow = func() time.Time { return handed }
-	if _, err := a.TargetHandOff(r.CorrelationID); err != nil || opens != 1 {
+	if _, err := a.platformAPI().TargetHandOff(r.CorrelationID); err != nil || opens != 1 {
 		t.Fatal("hand-off", err, opens)
 	}
 	if len(transport.requests) != 0 {
@@ -220,7 +220,7 @@ func TestTradeSupersede(t *testing.T) {
 			}
 			if name == "handed" || name == "dot" {
 				a.core.OpenURL = func(context.Context, string) {}
-				if _, err := a.TargetHandOff(first.CorrelationID); err != nil {
+				if _, err := a.platformAPI().TargetHandOff(first.CorrelationID); err != nil {
 					t.Fatal(err)
 				}
 			}
