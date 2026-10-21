@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 
+	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
+
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 )
 
@@ -34,7 +36,9 @@ func cacheScopes() []cacheScope {
 		{DataScope{"comms", "League board", "The league's message board posts.",
 			"Read the league board again", "Reading…"}, func(a *App, force bool) error { return commsapp.New(a.core).TargetCommsRefresh(force) }},
 		{DataScope{"draft", "Draft reports", "The draft boards and reports.",
-			"Read draft reports again", "Reading…"}, (*App).TargetDraftReportsRefresh},
+			"Read draft reports again", "Reading…"}, func(a *App, force bool) error {
+			return draftapp.New(draftHost{State: a.core, app: a}).TargetDraftReportsRefresh(force)
+		}},
 	}
 }
 

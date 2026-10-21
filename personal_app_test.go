@@ -206,7 +206,7 @@ func TestNFLDraftFromDetailedPlayers(t *testing.T) {
  {"id":"17462","name":"Mendoza, Fernando","position":"QB","team":"LVR","draft_year":"2026","draft_round":"1","draft_pick":"1"},
  {"id":"17463","name":"Simpson, Ty","position":"QB","team":"LAR","draft_year":"2026","draft_round":"1","draft_pick":"13"},
  {"id":"0816","name":"Old rookie","position":"WR","team":"IND","draft_year":"2025","draft_round":"1","draft_pick":"2"}]}}`)
-	r, err := a.TargetNFLDraft()
+	r, err := draftAPI(a).TargetNFLDraft()
 	if err != nil || len(r.Rows) != 2 || r.Rows[0].Cells[0] != "Mendoza, Fernando" ||
 		r.Rows[1].Cells[4] != "13" || r.ID != "M-087" {
 		t.Fatalf("NFL draft: %+v %v", r, err)

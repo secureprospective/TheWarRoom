@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
+	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
 
@@ -145,6 +146,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
 		reflect.TypeFor[*comms.API]():          comms.Commands(),
 		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
+		reflect.TypeFor[*draft.API]():          draft.Commands(),
 		reflect.TypeFor[*sources.API]():        sources.Commands(),
 	}
 	seen := map[reflect.Type]bool{}

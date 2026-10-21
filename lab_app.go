@@ -164,12 +164,6 @@ func failedSurface(err error) Reading[MarketSurface] {
 	return wireReading(marketapp.FailedSurface(err), wireSurface)
 }
 
-// The Market wordings other features' surfaces share (the Draft Lab, Counterparties, Offers).
-func marketAssets() []string                   { return marketapp.Assets() }
-func marketName(kind string) string            { return marketapp.Name(kind) }
-func percent(v float64) string                 { return marketapp.Percent(v) }
-func marketRange(r *lab.Interval) *MarketRange { return wireRange(marketapp.RangeOf(r)) }
-
 // wireSurface converts a surface built by the Market service to its wire twin. The two type
 // sets are kept identical field for field; TestMarketWireTwinsMatch proves it.
 func wireSurface(s marketapp.Surface) MarketSurface {

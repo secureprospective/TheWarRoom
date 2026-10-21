@@ -60,7 +60,7 @@ func (a *App) refreshLeague(
 	if err != nil {
 		return res, err
 	}
-	a.refreshDraftReports(ctx)
+	a.core.RefreshDraftReportsFeeds(ctx)
 	// A mirror refresh changes the eligibility inputs; Ready plans revalidate against them.
 	a.revalidateReadyRosterMoves(ctx)
 	return res, nil

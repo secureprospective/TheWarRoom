@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { TargetDraftLab } from '../../../wailsjs/go/main/App';
-import { parseMarket, unavailable } from './provider';
+import { readDraftLab } from '../draftreports/api';
+import { unavailable } from './provider';
 import type { MarketFilter, SurfaceReading } from './contract';
 import { FILTER_KEYS, keepFilter, restoreFilter, subset } from '../shell/viewFilters';
 
@@ -45,18 +45,8 @@ type DraftReader = (scope: DraftScope) => Promise<SurfaceReading>;
 function absent(reason: string, status: 'failed' | 'not_wired' = 'failed'): SurfaceReading {
   return { ...unavailable(reason, status), threshold: 40 };
 }
-export const readDraft: DraftReader = async (scope) => {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go) {
-    return absent(
-      'Historical Draft needs the desktop app; no browser fixtures are substituted', 'not_wired',
-    );
-  }
-  try {
-    return parseMarket(await TargetDraftLab(scope));
-  } catch (cause) {
-    return absent(`Draft read failed: ${String(cause)}. Retry the held archive reading.`);
-  }
-};
+export const readDraft: DraftReader = readDraftLab;
+
 function toggle(xs: string[], value: string, allowed: readonly string[]) {
   if (!allowed.includes(value)) throw new Error('Draft: invalid filter');
   const next = xs.includes(value) ? xs.filter(x => x !== value) : [...xs, value];

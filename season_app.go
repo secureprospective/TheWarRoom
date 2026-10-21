@@ -102,7 +102,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}
-	a.refreshDraftReports(ctx)
+	a.core.RefreshDraftReportsFeeds(ctx)
 	a.refreshMarketFeeds(ctx, false)
 	if err := pause(ctx, time.Second); err != nil {
 		return

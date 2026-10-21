@@ -4,6 +4,11 @@ comms.API.TargetCommsRefresh
 comms.API.TargetOpenComms
 counterparties.API.TargetCounterpartTeam
 counterparties.API.TargetCounterparties
+draft.API.TargetDraftLab
+draft.API.TargetDraftReports
+draft.API.TargetDraftReportsRefresh
+draft.API.TargetNFLDraft
+draft.API.TargetOpenMFLDraftRoom
 main.App.DeleteMFLKey
 main.App.GetParams
 main.App.MFLKeyStatus
@@ -47,10 +52,7 @@ main.App.TargetContractActs
 main.App.TargetContracts
 main.App.TargetCorrections
 main.App.TargetDraftIR
-main.App.TargetDraftLab
 main.App.TargetDraftLineup
-main.App.TargetDraftReports
-main.App.TargetDraftReportsRefresh
 main.App.TargetDraftTaxi
 main.App.TargetDraftTradeAccept
 main.App.TargetHandOff
@@ -65,7 +67,6 @@ main.App.TargetMarketReports
 main.App.TargetMarketReportsRefresh
 main.App.TargetMarketStretches
 main.App.TargetMoves
-main.App.TargetNFLDraft
 main.App.TargetNativeAssets
 main.App.TargetNativeBidAction
 main.App.TargetNativeBids
@@ -96,7 +97,6 @@ main.App.TargetNow
 main.App.TargetNowRefresh
 main.App.TargetOffers
 main.App.TargetOpenMFLAccounting
-main.App.TargetOpenMFLDraftRoom
 main.App.TargetOpenResearchArticle
 main.App.TargetPersonal
 main.App.TargetPersonalChange
