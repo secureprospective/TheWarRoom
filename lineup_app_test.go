@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -114,7 +116,7 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, false)
 	ids := lineupTestSnapshot(t, a)
-	r, err := a.TargetLineup("0025")
+	r, err := a.contracts().TargetLineup("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +142,7 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	transport.requests = nil
 	// A held refresh lock must not block this read.
 	a.core.RefreshMu.Lock()
-	r, err = a.TargetLineup("0025")
+	r, err = a.contracts().TargetLineup("0025")
 	a.core.RefreshMu.Unlock()
 	if err != nil {
 		t.Fatal(err)
@@ -180,11 +182,11 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	if err != nil || strings.Contains(string(body), ":null") {
 		t.Fatalf("%s %v", body, err)
 	}
-	if _, err := a.TargetLineup("nope"); err == nil {
+	if _, err := a.contracts().TargetLineup("nope"); err == nil {
 		t.Fatal("unknown franchise accepted")
 	}
 	a.core.HasTargetSnapshot = false
-	if _, err := a.TargetLineup("0025"); err == nil {
+	if _, err := a.contracts().TargetLineup("0025"); err == nil {
 		t.Fatal("unloaded snapshot accepted")
 	}
 }
@@ -194,7 +196,7 @@ func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, true)
 	lineupTestSnapshot(t, a)
-	r, err := a.TargetLineup("0025")
+	r, err := a.contracts().TargetLineup("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +208,7 @@ func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
 	a.refreshSeasonLineups(a.core.Ctx)
 	a.core.SeasonLineups.Value.Franchises = nil
 	transport.requests = nil
-	r, err = a.TargetLineup("0025")
+	r, err = a.contracts().TargetLineup("0025")
 	if err != nil || len(r.Starters) != 0 || len(r.Bench) != 38 || r.Provenance.Freshness.State != FreshFail {
 		t.Fatalf("absent: %+v %v", r, err)
 	}
@@ -233,7 +235,7 @@ func TestTargetLineupStaleAndUnknownPosition(t *testing.T) {
 	a.core.TargetSnapshot.Players.Value = slices.DeleteFunc(players, func(p snapshot.Player) bool {
 		return p.ID.String() == "16150"
 	})
-	r, err := a.TargetLineup("0025")
+	r, err := a.contracts().TargetLineup("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,14 +261,14 @@ func TestTargetLineupNotReady(t *testing.T) {
 	a := NewApp()
 	a.core.StartupErr = errors.New("synthetic startup failure")
 	close(a.core.Started)
-	if _, err := a.TargetLineup("0025"); err == nil {
+	if _, err := a.contracts().TargetLineup("0025"); err == nil {
 		t.Fatal("unready app accepted")
 	}
 }
 
-func mustLineup(t *testing.T, a *App) LineupReading {
+func mustLineup(t *testing.T, a *App) contractsapp.LineupReading {
 	t.Helper()
-	r, err := a.TargetLineup("0025")
+	r, err := a.contracts().TargetLineup("0025")
 	if err != nil {
 		t.Fatal(err)
 	}

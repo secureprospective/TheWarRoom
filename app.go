@@ -11,6 +11,7 @@ import (
 	"time"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
@@ -248,7 +249,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		// The coordinator is the only holder of the what-if Writer.
 		{"transaction coordinator", func(context.Context) error {
 			var err error
-			coord, err = transactions.New(whatif.Writer(), &rosterPolicyAdapter{rb: rb, app: a},
+			coord, err = transactions.New(whatif.Writer(), &contractsapp.RosterPolicy{Rulebook: rb, Directory: a.directory},
 				func(c context.Context) (transactions.Directory, error) { return a.directory(c) })
 			return err //nolint:wrapcheck // wrapped below with the step name
 		}},

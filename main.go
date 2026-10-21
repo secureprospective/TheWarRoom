@@ -10,6 +10,7 @@ import (
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
@@ -99,6 +100,7 @@ func bindings(app *App) []interface{} {
 		app,
 		archiveapp.New(app.core),
 		comms.New(app.core),
+		contractsapp.New(contractsHost{State: app.core, app: app}),
 		counterparties.New(app.core),
 		draft.New(draftHost{State: app.core, app: app}),
 		newMarketAPI(app),

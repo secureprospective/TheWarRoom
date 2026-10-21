@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -69,26 +71,26 @@ func TestContractsWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	a := contractsWireApp(t, domain.PhaseOffseason)
 	got := map[string]any{}
-	got["contracts"] = a.TargetContracts(snapshot.RawContractScope{Mine: "0001", Sort: "name"})
-	got["player-contract"] = a.TargetPlayerContract("0042")
-	got["whatif-read"] = a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "read"})
+	got["contracts"] = a.contracts().TargetContracts(snapshot.RawContractScope{Mine: "0001", Sort: "name"})
+	got["player-contract"] = a.contracts().TargetPlayerContract("0042")
+	got["whatif-read"] = a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "read"})
 	cut := whatIfCall(t, a, "cut", "0046", "")
 	got["whatif-cut"] = cut
 	buyout := whatIfCall(t, a, "buyout", "0042", "")
 	got["whatif-buyout"] = buyout
 	moves := buyout.Value.Moves
-	a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "draft", Move: moves[0].ID})
-	got["release-plans"] = a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "draft", Move: moves[1].ID})
-	act := RawContractAct{Mine: "0001", Player: "0043", Action: "preview", Intent: "contract.extend", Level: 1, Years: 2}
-	got["contract-act-preview"] = a.TargetContractActs(act)
-	got["contract-act-options"] = a.TargetContractActs(RawContractAct{Mine: "0001", Player: "0044", Action: "options"})
+	a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "draft", Move: moves[0].ID})
+	got["release-plans"] = a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "draft", Move: moves[1].ID})
+	act := contractsapp.RawContractAct{Mine: "0001", Player: "0043", Action: "preview", Intent: "contract.extend", Level: 1, Years: 2}
+	got["contract-act-preview"] = a.contracts().TargetContractActs(act)
+	got["contract-act-options"] = a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Player: "0044", Action: "options"})
 	act.Action = "draft"
-	plans := a.TargetContractActs(act)
+	plans := a.contracts().TargetContractActs(act)
 	got["contract-act-draft"] = plans
-	if plans.Status != ReadingOK || len(plans.Value) != 1 {
+	if plans.Status != report.ReadingOK || len(plans.Value) != 1 {
 		t.Fatalf("contract draft: %+v", plans)
 	}
-	got["contract-act-handoff"] = a.TargetContractActs(RawContractAct{Mine: "0001", Action: "handoff", ID: plans.Value[0].ID})
+	got["contract-act-handoff"] = a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "handoff", ID: plans.Value[0].ID})
 	for name, v := range got {
 		checkGolden(t, "contracts", name, contractsWire(t, v))
 	}
@@ -100,11 +102,11 @@ func TestLineupAndRosterWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	got := map[string]any{}
-	reading, err := a.TargetLineup("0025")
+	reading, err := a.contracts().TargetLineup("0025")
 	got["lineup"], got["lineup-err"] = reading, errText(err)
-	check, err := a.TargetCheckLineup("0025", changedStarters(ids))
+	check, err := a.contracts().TargetCheckLineup("0025", changedStarters(ids))
 	got["lineup-check"], got["lineup-check-err"] = check, errText(err)
-	draft, err := a.TargetDraftLineup("0025", changedStarters(ids))
+	draft, err := a.contracts().TargetDraftLineup("0025", changedStarters(ids))
 	got["lineup-draft"], got["lineup-draft-err"] = draft, errText(err)
 	for name, v := range got {
 		checkGolden(t, "contracts", name, contractsWire(t, v))
@@ -123,7 +125,7 @@ func TestLineupAndRosterWireMatchesGolden(t *testing.T) {
 	holdPersonalBody(t, reports, "playerScores", `{"playerScores":{"week":"YTD","playerScore":{"id":"`+id+`","score":"134.80"}}}`)
 	holdPersonalBody(t, reports, "playerScores", `{"playerScores":{"week":"4","playerScore":{"id":"`+id+`","score":"0.00"}}}`)
 	holdPersonalBody(t, reports, "nflByeWeeks", `{"nflByeWeeks":{"team":{"id":"BUF","bye_week":"7"}}}`)
-	rosters, err := reports.TargetRosterReports("0025")
+	rosters, err := reports.contracts().TargetRosterReports("0025")
 	got["roster-reports"], got["roster-reports-err"] = rosters, errText(err)
 	for name, v := range got {
 		checkGolden(t, "contracts", name, contractsWire(t, v))
@@ -140,11 +142,13 @@ func errText(err error) string {
 
 // refusal is what a refused caller reads: a failed reading's reason, a binding's error, a what-if
 // notice, or a blocked plan's state and first audit note.
-func refusal[T any](r Reading[T]) string {
-	if r.AbsenceReason == nil {
+// Root and feature readings share the AbsenceReason field but not a type, so it is read by name.
+func refusal(r any) string {
+	reason := reflect.Indirect(reflect.ValueOf(r)).FieldByName("AbsenceReason")
+	if !reason.IsValid() || reason.IsNil() {
 		return "accepted"
 	}
-	return *r.AbsenceReason
+	return reason.Elem().String()
 }
 
 func blockedWords(r envelope.Receipt, err error) string {
@@ -167,7 +171,7 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 	t.Parallel()
 	got := map[string]string{}
 	a := contractsWireApp(t, domain.PhaseOffseason)
-	for name, raw := range map[string]RawContractAct{
+	for name, raw := range map[string]contractsapp.RawContractAct{
 		"act-bad-franchise":    {Mine: "bad", Action: "read"},
 		"act-no-franchise":     {Action: "read"},
 		"act-unknown-action":   {Mine: "0001", Action: "delete"},
@@ -181,22 +185,22 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 		"act-not-my-player":    {Mine: "0002", Action: "preview", Player: "0042", Intent: "rfa.tender", Level: 1, Years: 1},
 		"act-unknown-plan":     {Mine: "0001", Action: "withdraw", ID: "contract-none"},
 	} {
-		got[name] = refusal(a.TargetContractActs(raw))
+		got[name] = refusal(a.contracts().TargetContractActs(raw))
 	}
-	resign := RawContractAct{Mine: "0001", Action: "draft", Player: "0046", Intent: "fa.resign", Level: 1, Years: 2}
-	plans := a.TargetContractActs(resign)
-	if plans.Status != ReadingOK || len(plans.Value) != 1 {
+	resign := contractsapp.RawContractAct{Mine: "0001", Action: "draft", Player: "0046", Intent: "fa.resign", Level: 1, Years: 2}
+	plans := a.contracts().TargetContractActs(resign)
+	if plans.Status != report.ReadingOK || len(plans.Value) != 1 {
 		t.Fatalf("re-sign draft: %+v", plans)
 	}
 	plan := plans.Value[0].ID
-	got["act-second-open-plan"] = refusal(a.TargetContractActs(resign))
-	got["act-other-franchise-plan"] = refusal(a.TargetContractActs(RawContractAct{Mine: "0002", Action: "withdraw", ID: plan}))
-	got["act-posted-before-handoff"] = refusal(a.TargetContractActs(RawContractAct{Mine: "0001", Action: "posted", ID: plan}))
-	got["act-rebase-fresh-plan"] = refusal(a.TargetContractActs(RawContractAct{Mine: "0001", Action: "rebase", ID: plan}))
+	got["act-second-open-plan"] = refusal(a.contracts().TargetContractActs(resign))
+	got["act-other-franchise-plan"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0002", Action: "withdraw", ID: plan}))
+	got["act-posted-before-handoff"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "posted", ID: plan}))
+	got["act-rebase-fresh-plan"] = refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "rebase", ID: plan}))
 	_, err := a.TargetHandOff(plan)
 	got["act-generic-handoff"] = errText(err)
 
-	for name, raw := range map[string]RawReleaseRequest{
+	for name, raw := range map[string]contractsapp.RawReleaseRequest{
 		"release-bad-franchise":  {Mine: "bad", Action: "read"},
 		"release-unknown-action": {Mine: "0001", Action: "submit"},
 		"release-draft-no-move":  {Mine: "0001", Action: "draft"},
@@ -204,21 +208,21 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 		"release-unknown-move":   {Mine: "0001", Action: "draft", Move: "1"},
 		"release-unknown-plan":   {Mine: "0001", Action: "withdraw", ID: "release-none"},
 	} {
-		got[name] = refusal(a.TargetReleasePlans(raw))
+		got[name] = refusal(a.contracts().TargetReleasePlans(raw))
 	}
 	cut := whatIfCall(t, a, "cut", "0045", "")
 	move := cut.Value.Moves[len(cut.Value.Moves)-1].ID
-	got["release-other-franchise-move"] = refusal(a.TargetReleasePlans(RawReleaseRequest{Mine: "0002", Action: "draft", Move: move}))
-	released := a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "draft", Move: move})
-	if released.Status != ReadingOK || len(released.Value) != 1 {
+	got["release-other-franchise-move"] = refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0002", Action: "draft", Move: move}))
+	released := a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "draft", Move: move})
+	if released.Status != report.ReadingOK || len(released.Value) != 1 {
 		t.Fatalf("release draft: %+v", released)
 	}
 	release := released.Value[0].ID
-	got["release-other-franchise-plan"] = refusal(a.TargetReleasePlans(RawReleaseRequest{Mine: "0002", Action: "handoff", ID: release, Confirmed: true}))
-	got["release-unconfirmed"] = refusal(a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "handoff", ID: release}))
-	got["release-rebase-fresh-plan"] = refusal(a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "rebase", ID: release}))
+	got["release-other-franchise-plan"] = refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0002", Action: "handoff", ID: release, Confirmed: true}))
+	got["release-unconfirmed"] = refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "handoff", ID: release}))
+	got["release-rebase-fresh-plan"] = refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "rebase", ID: release}))
 
-	for name, raw := range map[string]RawWhatIfRequest{
+	for name, raw := range map[string]contractsapp.RawWhatIfRequest{
 		"whatif-bad-franchise":     {Mine: "bad", Action: "read"},
 		"whatif-no-franchise":      {Action: "read"},
 		"whatif-unknown-action":    {Mine: "0001", Action: "save"},
@@ -229,7 +233,7 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 		"whatif-cut-twice":         {Mine: "0001", Action: "cut", Player: "0045"},
 		"whatif-undo-unknown-move": {Mine: "0001", Action: "undo", Move: "1"},
 	} {
-		r := a.TargetWhatIf(raw)
+		r := a.contracts().TargetWhatIf(raw)
 		got[name] = refusal(r)
 		if r.AbsenceReason == nil {
 			got[name] = r.Value.Notice
@@ -244,47 +248,47 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 	} {
 		got[name] = refusal(a.TargetAcquisition(raw))
 	}
-	got["contracts-bad-scope"] = refusal(a.TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table)
-	got["contracts-unheld-franchise"] = refusal(a.TargetContracts(snapshot.RawContractScope{Mine: "0002", Sort: "name"}).Cap)
-	got["player-contract-bad-id"] = refusal(a.TargetPlayerContract("bad"))
-	got["player-contract-unrostered"] = refusal(a.TargetPlayerContract("9999"))
+	got["contracts-bad-scope"] = refusal(a.contracts().TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table)
+	got["contracts-unheld-franchise"] = refusal(a.contracts().TargetContracts(snapshot.RawContractScope{Mine: "0002", Sort: "name"}).Cap)
+	got["player-contract-bad-id"] = refusal(a.contracts().TargetPlayerContract("bad"))
+	got["player-contract-unrostered"] = refusal(a.contracts().TargetPlayerContract("9999"))
 
 	season := contractsWireApp(t, domain.PhaseRegularSeason)
-	tender := RawContractAct{Mine: "0001", Action: "draft", Player: "0046", Intent: "rfa.tender", Level: 1, Years: 1}
-	blocked := season.TargetContractActs(tender)
-	if blocked.Status != ReadingOK || len(blocked.Value) != 1 {
+	tender := contractsapp.RawContractAct{Mine: "0001", Action: "draft", Player: "0046", Intent: "rfa.tender", Level: 1, Years: 1}
+	blocked := season.contracts().TargetContractActs(tender)
+	if blocked.Status != report.ReadingOK || len(blocked.Value) != 1 {
 		t.Fatalf("in-season tender: %+v", blocked)
 	}
 	got["act-in-season-tender"] = blockedWords(blocked.Value[0].Receipt, nil)
-	got["act-in-season-tender-handoff"] = refusal(season.TargetContractActs(RawContractAct{Mine: "0001", Action: "handoff", ID: blocked.Value[0].ID}))
+	got["act-in-season-tender-handoff"] = refusal(season.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "handoff", ID: blocked.Value[0].ID}))
 	buyout := whatIfCall(t, season, "buyout", "0042", "")
-	bought := season.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "draft", Move: buyout.Value.Moves[0].ID})
-	if bought.Status != ReadingOK || len(bought.Value) != 1 {
+	bought := season.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "draft", Move: buyout.Value.Moves[0].ID})
+	if bought.Status != report.ReadingOK || len(bought.Value) != 1 {
 		t.Fatalf("in-season buyout: %+v", bought)
 	}
 	got["release-in-season-buyout"] = blockedWords(bought.Value[0].Receipt, nil)
-	got["release-in-season-buyout-handoff"] = refusal(season.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "handoff", ID: bought.Value[0].ID, Confirmed: true}))
+	got["release-in-season-buyout-handoff"] = refusal(season.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "handoff", ID: bought.Value[0].ID, Confirmed: true}))
 	replaceWhatIfMirror(t, season, 9*100_000_000)
 	got["whatif-stale"] = whatIfCall(t, season, "cut", "0043", "").Value.Notice
 
 	lineups, _, ids := lineupDraftApp(t)
-	_, err = lineups.TargetLineup("0002")
+	_, err = lineups.contracts().TargetLineup("0002")
 	got["lineup-unknown-franchise"] = errText(err)
-	_, err = lineups.TargetCheckLineup("0002", ids)
+	_, err = lineups.contracts().TargetCheckLineup("0002", ids)
 	got["lineup-check-unknown-franchise"] = errText(err)
-	_, err = lineups.TargetCheckLineup("0025", []string{"x"})
+	_, err = lineups.contracts().TargetCheckLineup("0025", []string{"x"})
 	got["lineup-check-bad-player"] = errText(err)
-	_, err = lineups.TargetCheckLineup("0025", []string{ids[0], ids[0]})
+	_, err = lineups.contracts().TargetCheckLineup("0025", []string{ids[0], ids[0]})
 	got["lineup-check-duplicate"] = errText(err)
-	_, err = lineups.TargetDraftLineup("0002", ids)
+	_, err = lineups.contracts().TargetDraftLineup("0002", ids)
 	got["lineup-draft-unknown-franchise"] = errText(err)
-	_, err = lineups.TargetRosterReports("0002")
+	_, err = lineups.contracts().TargetRosterReports("0002")
 	got["roster-reports-unknown-franchise"] = errText(err)
 	last := leagueweek.LastLock(lineups.core.Week)
 	lineups.core.MovesNow = func() time.Time { return last }
-	got["lineup-draft-locked"] = blockedWords(lineups.TargetDraftLineup("0025", changedStarters(ids)))
+	got["lineup-draft-locked"] = blockedWords(lineups.contracts().TargetDraftLineup("0025", changedStarters(ids)))
 	lineups.core.Week.Games = nil
-	got["lineup-draft-lock-unknown"] = blockedWords(lineups.TargetDraftLineup("0025", changedStarters(ids)))
+	got["lineup-draft-lock-unknown"] = blockedWords(lineups.contracts().TargetDraftLineup("0025", changedStarters(ids)))
 
 	checkGolden(t, "contracts", "denials", contractsWire(t, got))
 }
@@ -316,11 +320,11 @@ func TestContractsWireTwinsMatch(t *testing.T) {
 	fillTwin(t, &plan, &n)
 	var player contractsapp.LineupPlayer
 	fillTwin(t, &player, &n)
-	var rawAct RawContractAct
+	var rawAct contractsapp.RawContractAct
 	fillTwin(t, &rawAct, &n)
-	var rawRelease RawReleaseRequest
+	var rawRelease contractsapp.RawReleaseRequest
 	fillTwin(t, &rawRelease, &n)
-	var rawWhatIf RawWhatIfRequest
+	var rawWhatIf contractsapp.RawWhatIfRequest
 	fillTwin(t, &rawWhatIf, &n)
 	var rawAcquisition RawAcquisition
 	fillTwin(t, &rawAcquisition, &n)
@@ -328,12 +332,7 @@ func TestContractsWireTwinsMatch(t *testing.T) {
 		name       string
 		built, got any
 	}{
-		{"full act", act, wireContractAct(act)},
-		{"empty act", contractsapp.DescribeAct(envelope.Receipt{}, envelope.ContractFacts{}), contractActView(envelope.Receipt{}, envelope.ContractFacts{})},
-		{"full what-if", whatIf, wireWhatIf(whatIf)},
-		{"empty what-if", contractsapp.WhatIfView{Moves: []contractsapp.WhatIfMove{}, Figures: []contractsapp.WhatIfFigure{}, Choices: []contractsapp.WhatIfChoice{}}, wireWhatIf(contractsapp.WhatIfView{})},
-		{"release plan", plan, ReleasePlanView(plan)},
-		{"lineup player", player, LineupPlayer(player)},
+		{"release plan", plan, contractsapp.ReleasePlanView(plan)},
 		{"act request", contractsapp.Act(rawAct), rawAct},
 		{"release request", contractsapp.Release(rawRelease), rawRelease},
 		{"what-if request", contractsapp.WhatIf(rawWhatIf), rawWhatIf},
@@ -359,20 +358,20 @@ func TestContractsWireTwinsMatch(t *testing.T) {
 func TestContractsSimultaneousPlansLandOnce(t *testing.T) {
 	t.Parallel()
 	a := contractsWireApp(t, domain.PhaseOffseason)
-	act := RawContractAct{Mine: "0001", Action: "draft", Player: "0043", Intent: "contract.extend", Level: 1, Years: 2}
-	cut := RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "0044"}
-	acts := make([]Reading[[]ContractActView], 2)
-	cuts := make([]Reading[WhatIfView], 2)
+	act := contractsapp.RawContractAct{Mine: "0001", Action: "draft", Player: "0043", Intent: "contract.extend", Level: 1, Years: 2}
+	cut := contractsapp.RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "0044"}
+	acts := make([]contractsapp.ContractActsReading, 2)
+	cuts := make([]contractsapp.WhatIfReading, 2)
 	var wg sync.WaitGroup
 	for i := range 2 {
-		wg.Go(func() { acts[i] = a.TargetContractActs(act) })
-		wg.Go(func() { cuts[i] = a.TargetWhatIf(cut) })
+		wg.Go(func() { acts[i] = a.contracts().TargetContractActs(act) })
+		wg.Go(func() { cuts[i] = a.contracts().TargetWhatIf(cut) })
 	}
 	wg.Wait()
 	landed, refused := 0, 0
 	for _, r := range acts {
 		switch {
-		case r.Status == ReadingOK && len(r.Value) == 1:
+		case r.Status == report.ReadingOK && len(r.Value) == 1:
 			landed++
 		case r.AbsenceReason != nil && strings.Contains(*r.AbsenceReason, "is already an open plan in My moves"):
 			refused++
@@ -386,7 +385,7 @@ func TestContractsSimultaneousPlansLandOnce(t *testing.T) {
 	if notices[0] != "" || notices[1] != "what-if: player already removed; Undo first" {
 		t.Fatalf("what-if cuts: %q", notices)
 	}
-	if final := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "read"}); len(final.Value.Moves) != 1 {
+	if final := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "read"}); len(final.Value.Moves) != 1 {
 		t.Fatalf("what-if moves %+v", final.Value.Moves)
 	}
 }

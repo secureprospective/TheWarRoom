@@ -26,7 +26,7 @@ func (a *App) byeAlerts(r *AlertReading, mine string, now time.Time) {
 	byes := archivedOnly(ctx, a, nflschedule.ByeExport, true, nflschedule.ParseByes)
 	rules, err := lineup.ParseRules(a.core.Rulebook.ActiveConfig().Starters)
 	note := byeInputsNote(snap, mine, byes, week)
-	if err != nil || a.rulesFreshness().State == FreshFail {
+	if err != nil || a.core.RulesFreshness().State == FreshFail {
 		note = "Bye-week check unavailable: lineup rules not held."
 	}
 	if failed != "" {

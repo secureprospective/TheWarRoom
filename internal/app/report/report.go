@@ -11,6 +11,7 @@ package report
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -224,6 +225,15 @@ func Number(n int) string {
 		text = text[:i] + "," + text[i:]
 	}
 	return text
+}
+
+// JoinNote joins the non-empty notes with semicolons, each without its own closing punctuation.
+func JoinNote(notes ...string) string {
+	kept := slices.DeleteFunc(notes, func(n string) bool { return n == "" })
+	for i, note := range kept {
+		kept[i] = strings.TrimRight(note, ".; ")
+	}
+	return strings.Join(kept, "; ")
 }
 
 // ProseName turns MFL's "Last, First" into the "First Last" a sentence reads.

@@ -12,3 +12,10 @@ func TestPluralNoun(t *testing.T) {
 		}
 	}
 }
+
+func TestJoinedNotesDoNotDoublePunctuate(t *testing.T) {
+	t.Parallel()
+	if got := JoinNote("First.", "Second."); got != "First; Second" {
+		t.Fatal(got)
+	}
+}

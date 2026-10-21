@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -45,10 +49,10 @@ func replaceWhatIfMirror(t *testing.T, a *App, salary domain.Money) {
 		t.Fatal(err)
 	}
 }
-func whatIfCall(t *testing.T, a *App, action, player, move string) Reading[WhatIfView] {
+func whatIfCall(t *testing.T, a *App, action, player, move string) contractsapp.WhatIfReading {
 	t.Helper()
-	r := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: action, Player: player, Move: move})
-	if r.Status != ReadingOK {
+	r := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: action, Player: player, Move: move})
+	if r.Status != report.ReadingOK {
 		t.Fatalf("%s: %+v", action, r)
 	}
 	return r
@@ -136,11 +140,11 @@ func TestWhatIfRulesFailuresAndValidation(t *testing.T) {
 	if len(third.Value.Moves) != 3 || !strings.Contains(third.Value.Notice, "2 buyouts") {
 		t.Fatalf("third %+v", third)
 	}
-	invalid := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "bad"})
-	if invalid.Status != ReadingFailed {
+	invalid := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "bad"})
+	if invalid.Status != report.ReadingFailed {
 		t.Fatal("invalid id accepted")
 	}
-	if a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "unknown"}).Status != ReadingFailed {
+	if a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "unknown"}).Status != report.ReadingFailed {
 		t.Fatal("invalid action accepted")
 	}
 }

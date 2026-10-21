@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -40,15 +44,15 @@ func releasePhase(t *testing.T, a *App, phase domain.Phase) {
 		t.Fatal(err)
 	}
 }
-func releaseCall(t *testing.T, a *App, action, move, id string, confirmed bool) []ReleasePlanView {
+func releaseCall(t *testing.T, a *App, action, move, id string, confirmed bool) []contractsapp.ReleasePlanView {
 	t.Helper()
-	r := a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: action, Move: move, ID: id, Confirmed: confirmed})
-	if r.Status != ReadingOK {
+	r := a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: action, Move: move, ID: id, Confirmed: confirmed})
+	if r.Status != report.ReadingOK {
 		t.Fatalf("%s failed: %s", action, *r.AbsenceReason)
 	}
 	return r.Value
 }
-func planRelease(t *testing.T, a *App, action, player string) ReleasePlanView {
+func planRelease(t *testing.T, a *App, action, player string) contractsapp.ReleasePlanView {
 	t.Helper()
 	w := whatIfCall(t, a, action, player, "")
 	move := w.Value.Moves[len(w.Value.Moves)-1]
@@ -59,7 +63,7 @@ func planRelease(t *testing.T, a *App, action, player string) ReleasePlanView {
 		}
 	}
 	t.Fatal("new plan not listed")
-	return ReleasePlanView{}
+	return contractsapp.ReleasePlanView{}
 }
 func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	t.Parallel()
@@ -84,8 +88,8 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 			t.Error(url)
 		}
 	}
-	rejected := a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "handoff", ID: plan.ID})
-	if rejected.Status != ReadingFailed || opened != 0 {
+	rejected := a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "handoff", ID: plan.ID})
+	if rejected.Status != report.ReadingFailed || opened != 0 {
 		t.Fatal("unconfirmed cut opened MFL")
 	}
 	if _, err := a.TargetHandOff(plan.ID); err == nil {
@@ -95,8 +99,8 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	if opened != 1 {
 		t.Fatal("MFL page not opened")
 	}
-	duplicate := a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "draft", Move: session.Moves[0].ID})
-	if duplicate.Status != ReadingFailed {
+	duplicate := a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "draft", Move: session.Moves[0].ID})
+	if duplicate.Status != report.ReadingFailed {
 		t.Fatal("second open plan allowed")
 	}
 	labels := whatIfCall(t, a, "read", "", "")
@@ -119,8 +123,8 @@ func TestReleaseBuyoutPhaseAndCountIntegration(t *testing.T) {
 	if first.CanRebase || first.WithdrawLabel != "Remove plan" || !strings.Contains(first.Receipt.Audit[0].Note, "Offseason only: can't be done until the offseason.") {
 		t.Fatal(first)
 	}
-	rejected := a.TargetReleasePlans(RawReleaseRequest{Mine: "0001", Action: "rebase", ID: first.ID})
-	if rejected.Status != ReadingFailed {
+	rejected := a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "rebase", ID: first.ID})
+	if rejected.Status != report.ReadingFailed {
 		t.Fatal("blocked rebase allowed")
 	}
 	releaseCall(t, a, "withdraw", "", first.ID, false)
@@ -140,11 +144,11 @@ func TestReleaseBuyoutPhaseAndCountIntegration(t *testing.T) {
 	if third.Receipt.State != envelope.Blocked || !strings.Contains(third.Receipt.Audit[0].Note, "Two buyouts") {
 		t.Fatal(third)
 	}
-	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", third.ID, 2026)
+	count, err := contractsapp.ReleaseBuyoutCount(a.core.Ctx, contractsapp.StoresOf(a.core), "0001", third.ID, 2026)
 	if err != nil || count != 2 {
 		t.Fatal(count, err)
 	}
-	if count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2027); err != nil || count != 0 {
+	if count, err := contractsapp.ReleaseBuyoutCount(a.core.Ctx, contractsapp.StoresOf(a.core), "0001", "", 2027); err != nil || count != 0 {
 		t.Fatal(count, err)
 	}
 }
@@ -243,7 +247,7 @@ func TestReleaseWatcherLandsAndChargeMismatchIsNote(t *testing.T) {
 	if got := releaseCall(t, a, "read", "", "", false)[0]; !strings.Contains(got.Receipt.Audit[len(got.Receipt.Audit)-1].Note, "cannot see") {
 		t.Fatal(got)
 	}
-	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2026)
+	count, err := contractsapp.ReleaseBuyoutCount(a.core.Ctx, contractsapp.StoresOf(a.core), "0001", "", 2026)
 	if err != nil || count != 0 {
 		t.Fatal(count, err)
 	}
@@ -277,11 +281,11 @@ func TestReleaseCountIncludesLandedBuyoutAndIgnoresOtherSeason(t *testing.T) {
 	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2026)
+	count, err := contractsapp.ReleaseBuyoutCount(a.core.Ctx, contractsapp.StoresOf(a.core), "0001", "", 2026)
 	if err != nil || count != 1 {
 		t.Fatal("landed buyout not counted", count, err)
 	}
-	if count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2027); err != nil || count != 0 {
+	if count, err := contractsapp.ReleaseBuyoutCount(a.core.Ctx, contractsapp.StoresOf(a.core), "0001", "", 2027); err != nil || count != 0 {
 		t.Fatal("wrong season counted", count, err)
 	}
 }
@@ -361,7 +365,7 @@ func TestReleaseViewWordsAndPostKeepIDsOnlyInFacts(t *testing.T) {
 			}
 			stale := plan.Receipt
 			stale.State = envelope.Stale
-			view := releasePlanView(stale, f)
+			view := contractsapp.ReleasePlanView(contractsapp.Plan(stale, f))
 			if !view.CanRebase {
 				t.Fatal(view)
 			}

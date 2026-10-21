@@ -13,6 +13,7 @@ const features = new Set(fs.readdirSync('frontend/wailsjs/go', { withFileTypes: 
 const folders = new Map([
   ['archive', 'archive'],
   ['comms', 'comms'],
+  ['contracts', 'contracts'],
   ['counterparties', 'counterparties'],
   ['draft', 'draftreports'],
   ['market', 'market'],
@@ -25,6 +26,8 @@ const whole = ['archive', 'comms', 'counterparties', 'race'];
 const moved = new Map([
   ['TargetArchive', 'archive'],
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
+  ...['TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
+    'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),
@@ -117,6 +120,13 @@ for (const file of files(path.resolve('frontend/src'))) {
         node.arguments[0] && ts.isStringLiteral(node.arguments[0])) moduleAccess(node.arguments[0].text, node);
     if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal))
       moduleAccess(node.argument.literal.text, node);
+    // A variable holding window.go.main.App is a root alias too: `const go = window.go.main.App`.
+    if (ts.isVariableDeclaration(node) && node.initializer && ts.isIdentifier(node.name)) {
+      const held = chain(node.initializer);
+      const w = held.indexOf('window');
+      if (w >= 0 && held.length === w + 4 && held[w + 1] === 'go' && held[w + 2] === 'main' && held[w + 3] === 'App')
+        rootAliases.add(node.name.text);
+    }
     const parts = chain(node);
     if (rootAliases.has(parts[0]) && moved.has(parts[1]))
       check(moved.get(parts[1]), node, 'moved root binding namespace access', false);

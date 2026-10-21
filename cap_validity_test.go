@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -20,7 +21,7 @@ func TestMissingPaidCellBlocksWhatIf(t *testing.T) {
 	a.core.WhatifPools = pools
 	snap, _, _ := a.core.League.ContractsView()
 	session := state.WhatIfSession{Generation: "invalid-cap", Mine: "0001", Snapshot: snap, TaxiPercent: 100, IRPercent: 100}
-	store, err := a.loadWhatIf(a.core.Ctx, session)
+	store, err := contractsapp.LoadWhatIf(a.core.Ctx, a.core.WhatifPools, session)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +31,7 @@ func TestMissingPaidCellBlocksWhatIf(t *testing.T) {
 	if err := store.Initialize(a.core.Ctx, state.SnapshotSource{Snapshot: snap}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.loadWhatIf(a.core.Ctx, session); err == nil || !strings.Contains(err.Error(), "cap total invalid") {
+	if _, err := contractsapp.LoadWhatIf(a.core.Ctx, a.core.WhatifPools, session); err == nil || !strings.Contains(err.Error(), "cap total invalid") {
 		t.Fatalf("what-if accepted invalid cap: %v", err)
 	}
 }

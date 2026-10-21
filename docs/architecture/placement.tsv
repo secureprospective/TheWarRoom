@@ -24,6 +24,7 @@ cache_app_test.go	platform
 calendar_app.go	control
 cap_validity_test.go	contracts
 contracts_plans_test.go	contracts
+contracts_host.go	contracts
 commissioner_app.go	commissioner
 commissioner_app_test.go	commissioner
 commissioner_jobs_test.go	commissioner
@@ -38,10 +39,8 @@ commissioner_preview_forms_test.go	commissioner
 commissioner_preview_market_test.go	commissioner
 commissioner_shell_test.go	commissioner
 commissioner_wire_test.go	commissioner
-contract_acts_app.go	contracts
 contract_acts_app_test.go	contracts
 contract_acts_cap_test.go	contracts
-contracts_app.go	contracts
 contracts_app_test.go	contracts
 contracts_wire_test.go	contracts
 control_room_app.go	control
@@ -69,7 +68,6 @@ league_calendar_app.go	commissioner
 league_calendar_app_test.go	commissioner
 native_league_schedule_app_test.go	commissioner
 commissioner_window_gates_test.go	commissioner
-lineup_app.go	contracts
 lineup_app_test.go	contracts
 lineupset_app_test.go	contracts
 livegame_app.go	now
@@ -149,7 +147,6 @@ race_app.go	race
 race_test.go	race
 refresh_app.go	control
 refresh_publication_test.go	control
-release_app.go	contracts
 release_app_test.go	contracts
 report_reading.go	platform
 research_app.go	research
@@ -163,7 +160,6 @@ restore_cli.go	platform
 restore_cli_test.go	platform
 roster_revalidate_test.go	contracts
 rookiedraft_wire_test.go	commissioner
-roster_policy_app.go	contracts
 roster_moves_draft_test.go	contracts
 season_app.go	control
 season_app_test.go	control
@@ -178,12 +174,10 @@ snapshot_app_test.go	platform
 trade_builder_app_test.go	trades
 trades_app.go	trades
 trades_app_test.go	trades
-transactions_app.go	contracts
 version.go	platform
 version_test.go	platform
 week_app.go	control
 week_app_test.go	control
-whatif_app.go	contracts
 whatif_app_test.go	contracts
 windows_app.go	control
 windows_app_test.go	control
@@ -194,6 +188,7 @@ internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
 internal/app/contracts	contracts
+internal/app/contracts/contractstest	contracts
 internal/app/draft	draft
 internal/app/draft/drafttest	draft
 internal/app/market	market

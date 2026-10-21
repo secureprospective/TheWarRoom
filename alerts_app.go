@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
@@ -40,7 +42,7 @@ type Unavailable struct {
 
 // TargetAlerts reads held state only; waivers are absent by league rule (gap-closure §8).
 func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
-	saved, err := a.TargetLineup(franchiseID)
+	saved, err := a.contracts().TargetLineup(franchiseID)
 	if err != nil {
 		return AlertReading{}, fmt.Errorf("target alerts: %w", err)
 	}
@@ -58,12 +60,12 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	return r, nil
 }
 
-func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
+func (a *App) lineupAlert(r *AlertReading, saved contractsapp.LineupReading, now time.Time) {
 	a.core.WeekMu.Lock()
 	week, failed := a.core.Week, a.core.WeekRefreshError
 	a.core.WeekMu.Unlock()
 	if failed != "" || len(week.Games) == 0 {
-		note := joinNote("lineup lock unknown", failed)
+		note := report.JoinNote("lineup lock unknown", failed)
 		r.Unavailable = append(r.Unavailable, Unavailable{Kind: "lineup", Note: note})
 		return
 	}

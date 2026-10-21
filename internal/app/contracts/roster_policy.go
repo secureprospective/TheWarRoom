@@ -1,4 +1,4 @@
-package main
+package contracts
 
 import (
 	"context"
@@ -11,29 +11,30 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-// rosterPolicyAdapter implements transactions.RosterPolicy from the rulebook's settings and
-// the players directory. It lives here because the transactions package may not import either
-// store. Every limit is override-aware, and 0 (or an unparseable value) means unlimited.
-type rosterPolicyAdapter struct {
-	rb  *rulebook.Store
-	app *App
+// RosterPolicy implements transactions.RosterPolicy from the rulebook's settings and the players
+// directory. It lives here because the transactions package may not import either store. Every
+// limit is override-aware, and 0 (or an unparseable value) means unlimited. Directory is the
+// composition root's cached players lookup.
+type RosterPolicy struct {
+	Rulebook  *rulebook.Store
+	Directory func(context.Context) (normalize.Lookup, error)
 }
 
-var _ transactions.RosterPolicy = (*rosterPolicyAdapter)(nil)
+var _ transactions.RosterPolicy = (*RosterPolicy)(nil)
 
 // RosterSize is the per-franchise roster cap; 0 means unlimited.
-func (p *rosterPolicyAdapter) RosterSize() int { return settingInt(p.rb, "rosterSize") }
+func (p *RosterPolicy) RosterSize() int { return settingInt(p.Rulebook, "rosterSize") }
 
 // TaxiSquad is the taxi-squad slot cap; 0 means off.
-func (p *rosterPolicyAdapter) TaxiSquad() int { return settingInt(p.rb, "taxiSquad") }
+func (p *RosterPolicy) TaxiSquad() int { return settingInt(p.Rulebook, "taxiSquad") }
 
 // InjuredReserve is the IR slot cap; 0 means off.
-func (p *rosterPolicyAdapter) InjuredReserve() int { return settingInt(p.rb, "injuredReserve") }
+func (p *RosterPolicy) InjuredReserve() int { return settingInt(p.Rulebook, "injuredReserve") }
 
 // PositionLimit is the per-position roster max from the league's rosterLimits (MFL "min-max";
 // "0-0" means unlimited). MFL codes map through normalize.PositionFromMFL. 0 means unlimited.
-func (p *rosterPolicyAdapter) PositionLimit(pos domain.Position) int {
-	cfg := p.rb.ActiveConfig()
+func (p *RosterPolicy) PositionLimit(pos domain.Position) int {
+	cfg := p.Rulebook.ActiveConfig()
 	for _, pl := range cfg.RosterLimits {
 		enginePos, ok := normalize.PositionFromMFL(pl.Name)
 		if !ok || enginePos != pos {
@@ -48,8 +49,8 @@ func (p *rosterPolicyAdapter) PositionLimit(pos domain.Position) int {
 
 // Position resolves a player's engine position from the shared directory. ok=false for an
 // unknown player, whose position check is then skipped.
-func (p *rosterPolicyAdapter) Position(ctx context.Context, mflID string) (domain.Position, bool) {
-	lk, err := p.app.directory(ctx)
+func (p *RosterPolicy) Position(ctx context.Context, mflID string) (domain.Position, bool) {
+	lk, err := p.Directory(ctx)
 	if err != nil {
 		return domain.PosFlag, false
 	}

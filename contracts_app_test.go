@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
@@ -19,15 +20,11 @@ func TestContractReadingStatesAndCantCut(t *testing.T) {
 	if r.Status != ReadingOK || r.Value != 123 || r.HowCounted == "" || r.Cutoff != r.Provenance.Freshness.FetchedAt {
 		t.Fatalf("reading: %+v", r)
 	}
-	failed := failedContracts(fmt.Errorf("mirror unavailable"))
-	if failed.Table.Status != ReadingFailed || failed.Cap.Status != ReadingFailed || failed.Adjustments.Status != ReadingFailed {
-		t.Fatal("failure became figures")
-	}
 	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}
-	if a.TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table.Status != ReadingFailed {
+	if a.contracts().TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table.Status != report.ReadingFailed {
 		t.Fatal("invalid scope accepted")
 	}
-	if a.TargetPlayerContract("bad").Status != ReadingFailed {
+	if a.contracts().TargetPlayerContract("bad").Status != report.ReadingFailed {
 		t.Fatal("invalid player accepted")
 	}
 }
@@ -36,23 +33,23 @@ func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	raw := snapshot.RawContractScope{Mine: "0001", Sort: "salary"}
-	got := a.TargetContracts(raw)
-	if got.Table.Status != ReadingOK || len(got.Table.Value.Rows) != 1 || got.Cap.Status != ReadingOK || got.Cap.Value.Cap != nil || got.Cap.Value.Room != nil || got.Adjustments.Status != ReadingOK {
+	got := a.contracts().TargetContracts(raw)
+	if got.Table.Status != report.ReadingOK || len(got.Table.Value.Rows) != 1 || got.Cap.Status != report.ReadingOK || got.Cap.Value.Cap != nil || got.Cap.Value.Room != nil || got.Adjustments.Status != report.ReadingOK {
 		t.Fatalf("dashboard: %+v", got)
 	}
-	player := a.TargetPlayerContract("0042")
-	if player.Status != ReadingOK || player.Value.Player.ID != "0042" || len(player.Value.Years) != 1 || player.Value.Years[0].Inferred {
+	player := a.contracts().TargetPlayerContract("0042")
+	if player.Status != report.ReadingOK || player.Value.Player.ID != "0042" || len(player.Value.Years) != 1 || player.Value.Years[0].Inferred {
 		t.Fatalf("player: %+v", player)
 	}
-	if a.TargetPlayerContract("9999").Status != ReadingFailed {
+	if a.contracts().TargetPlayerContract("9999").Status != report.ReadingFailed {
 		t.Fatal("unrostered player invented")
 	}
 	raw.Position = "WR"
-	if len(a.TargetContracts(raw).Table.Value.Rows) != 0 {
+	if len(a.contracts().TargetContracts(raw).Table.Value.Rows) != 0 {
 		t.Fatal("filter failed")
 	}
 	raw.Mine = "9999"
-	if a.TargetContracts(raw).Cap.Status != ReadingFailed {
+	if a.contracts().TargetContracts(raw).Cap.Status != report.ReadingFailed {
 		t.Fatal("unknown team cap shown")
 	}
 }
@@ -64,8 +61,8 @@ func TestCapSourceUsesGMSettingsWords(t *testing.T) {
 		t.Fatal(err)
 	}
 	read := func() string {
-		r := a.TargetContracts(snapshot.RawContractScope{Mine: "0001", Sort: "name"})
-		if r.Cap.Status != ReadingOK {
+		r := a.contracts().TargetContracts(snapshot.RawContractScope{Mine: "0001", Sort: "name"})
+		if r.Cap.Status != report.ReadingOK {
 			t.Fatalf("cap reading: %+v", r.Cap)
 		}
 		return r.Cap.Value.CapSource
