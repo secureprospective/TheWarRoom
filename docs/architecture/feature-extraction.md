@@ -120,6 +120,26 @@ The native league extraction (reorg PR 12) added the owner side.
   ending evidence in one store operation. Calendar classification and disclosure are pure;
   transaction coordination and archive/live reads remain root-owned.
 
+### Trades seams
+
+- The local MFL what-if desk has no native principal check; do not add one while extracting
+  presentation. Native trade doors and commissioner overrides belong to Native/Commissioner
+  and stay untouched. Local accept/exit ownership, plan franchise, intent, pending-offer and
+  safe-URL checks stay at root, in their original order.
+- Keep the builder's `whatifMu` → `refreshMu` span and each original `movesMu` span. Simulation
+  construction, coordinator execution, live hand-off revalidation, supersession, plan/receipt
+  saves and notifications remain root-owned; moving them would split the existing lifecycle.
+  `trades.ProjectedTeam` receives detached simulated-player values after execution. It never
+  writes a store. Shared what-if money formatting is an explicit function, not a copied rule.
+- Catalog inputs are read under their existing owners. The pick-value callback preserves the
+  original per-pick model/time read; the leg reader borrows only the local simulation's player
+  lookup. Services neither acquire locks nor discover the caller.
+- Freeze all three local bindings, with a sampled populated projection and fully populated
+  converter twins, plus native non-owner/wrong-seat/override/window/deadline refusals and local
+  accept/revoke refusals. Skipping the local revoke check fails the denial golden; dropping a
+  counterparty name fails both wire guards. Removing `tradeState`'s season lock fails the
+  held-publication race guard. Parallel service reads must leave held inputs unchanged.
+
 ## Tests
 
 - Root keeps the wire golden and `TestReportWireTwinsMatch`, which fills every field of a

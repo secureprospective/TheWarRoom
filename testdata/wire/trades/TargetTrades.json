@@ -1,0 +1,38 @@
+{
+ "offers": [
+  {
+   "tradeId": "77",
+   "direction": "to_you",
+   "otherId": "0001",
+   "otherName": "Other team",
+   "give": [
+    {
+     "token": "15754",
+     "name": "Olave, Chris",
+     "position": "WR"
+    }
+   ],
+   "get": [
+    {
+     "token": "0099",
+     "name": "Unnamed asset"
+    },
+    {
+     "token": "FP_0001_2027_1",
+     "name": "2027 round 1 · Other team"
+    }
+   ],
+   "expires": "2026-10-07T16:00:00Z",
+   "comments": "synthetic offer"
+  }
+ ],
+ "provenance": {
+  "source": "pendingTrades",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "2026-10-07T14:59:00Z",
+   "note": ""
+  },
+  "kind": "live"
+ }
+}
