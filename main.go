@@ -60,6 +60,15 @@ func main() {
 	}
 }
 
+// bindings is the runtime surface also inspected by the binding manifest test.
+func bindings(app *App) []interface{} {
+	return []interface{}{
+		app,
+		archiveapp.New(app.core),
+		comms.New(app.core),
+	}
+}
+
 // runFlag runs a windowless mode and returns the exit code. `-probe` runs the real startup and
 // exits 0 if it came up; the log shows each step's time, so a hang is the last step logged.
 // `-version` prints the build label. `-backups` lists the backup sets and `-restore <set>` restores
