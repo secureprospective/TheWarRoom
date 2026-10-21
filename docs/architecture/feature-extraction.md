@@ -496,3 +496,14 @@ The contracts and roster-action extraction (reorg PR 13) added the plans a GM dr
   and construct while the season lock is held. Service tests build Now and Live snapshots
   concurrently and compare serialized inputs before/after. A planted JSON-tag rename fails
   the root goldens; a planted schedule-index deletion fails the immutability/race guard.
+
+## Research API inventory
+
+The pre-extraction root has 199 Go files. The uncached root selection
+`go test -count=1 -run 'Research|FinishedScore' .` passes in 9.561 s (15.293 s wall).
+Existing canonical Research wire goldens freeze held/unheld boards, players, status and
+refusals; populated converter twins also guard every field. The six live methods are
+`TargetResearch`, `TargetResearchRefresh`, `TargetResearchNewsRefresh`,
+`TargetResearchPlayer`, `TargetResearchStatus` and `TargetOpenResearchArticle`.
+Market/Pool still consume the shared finished-score capture and Research archive hydration;
+Now supplies the schedule side of the joint season capture.
