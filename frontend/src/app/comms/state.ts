@@ -1,23 +1,8 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { parseComms, type Comms } from './contract';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import type { Comms } from './contract';
+import { commsAPI, type CommsReader } from './api';
 
-type CommsReader = {
-  read(team: string, kind: string): Promise<Comms>;
-  refresh(force: boolean): Promise<void>;
-  open(destination: string): Promise<void>;
-};
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Comms requires the desktop app; no browser fixture is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
-const live: CommsReader = {
-  read: async (team, kind) => parseComms(await bindings().TargetComms({ team, kind })),
-  refresh: async force => bindings().TargetCommsRefresh(force),
-  open: async destination => bindings().TargetOpenComms(destination),
-};
 export function createCommsState(reader: CommsReader) {
   type State = { comms?: Comms; pending: boolean; error: string; team: string; kind: string; limit: number };
   const store = createStore<State>(() => ({ pending: false, error: '', team: '', kind: '', limit: 50 }));
@@ -45,4 +30,4 @@ export function createCommsState(reader: CommsReader) {
   }
   return { use: () => useStore(store), peek: store.getState, load, choose };
 }
-export const commsState = createCommsState(live);
+export const commsState = createCommsState(commsAPI);
