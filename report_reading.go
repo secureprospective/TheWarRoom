@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 type RaceChoice struct {
