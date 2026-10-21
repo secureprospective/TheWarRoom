@@ -1,0 +1,139 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/lab"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/personal"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+)
+
+// offersHost is unbound composition over the shared state and other features' readers.
+type offersHost struct {
+	*core.State
+	app *App
+}
+
+func (h offersHost) OffersHistoryContext() context.Context            { return h.app.fallbackParent() }
+func (h offersHost) OffersBuildStamp() string                         { return buildLabel() + " " + buildDate }
+func (h offersHost) OffersLab() (*lab.Data, error)                    { return h.app.lab() }
+func (h offersHost) OffersProvenance(d *lab.Data) snapshot.Provenance { return counterProvenance(d) }
+func (h offersHost) OffersDirectory(ctx context.Context) (normalize.Lookup, error) {
+	return h.app.directory(ctx)
+}
+func (h offersHost) OffersRosterTarget(option string) (envelope.Target, []string) {
+	return h.app.rosterMoveTarget(option)
+}
+func (h offersHost) OffersLog(e envelope.Envelope)      { h.app.logMove(e) }
+func (h offersHost) OffersWake()                        { h.app.wakeMoves() }
+func (h offersHost) RefreshOffersPool(force bool) error { return h.app.refreshOffersPool(force) }
+func (h offersHost) OffersTradeBait(ctx context.Context) report.HeldFeed[[]ingestion.RawTradeBait] {
+	feed := readShellFeed(ctx, h.app, &h.app.core.SeasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
+	feed.Value = slices.Clone(feed.Value)
+	return feed
+}
+func (h offersHost) OffersInjuries() (snapshot.Provenance, map[string]string) {
+	held := h.app.heldInjuries()
+	return held.Provenance, held.Status
+}
+func (h offersHost) OffersMarketFacts() map[string][]report.MarketFact {
+	return offersMarketFacts(marketFacts(h.app.heldMarket()))
+}
+func (h offersHost) OffersEngineValues(ctx context.Context) (map[string]float64, string) {
+	return h.app.draftReportValues(ctx)
+}
+func (h offersHost) OffersAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]offersapp.AssetValue, string) {
+	values, note := h.app.poolAssetValues(ctx, ids, at)
+	out := make(map[string]offersapp.AssetValue, len(values))
+	for id, value := range values {
+		out[id] = offersapp.AssetValue{NowText: value.Now.Text, DynastyText: value.Dynasty.Text,
+			NowHeld: value.Now.Held, DynastyHeld: value.Dynasty.Held, NowValue: value.NowValue, DynastyValue: value.DynastyValue}
+	}
+	return out, note
+}
+
+func offersMarketFacts(facts map[string][]MarketFact) map[string][]report.MarketFact {
+	out := make(map[string][]report.MarketFact, len(facts))
+	for id, rows := range facts {
+		if rows == nil {
+			out[id] = nil
+			continue
+		}
+		out[id] = make([]report.MarketFact, len(rows))
+		for i, fact := range rows {
+			cell := report.MarketFact{Label: fact.Label, Text: fact.Text, Reason: fact.Reason}
+			if fact.value != nil {
+				value := *fact.value
+				cell.Value = &value
+			}
+			if fact.Range != nil {
+				value := report.Range(*fact.Range)
+				cell.Range = &value
+			}
+			out[id][i] = cell
+		}
+	}
+	return out
+}
+
+// Research and roster actions still share this rule and the pool's market wording.
+func heldCutCharge(p state.MirrorPlayer, season int) (domain.Money, bool) {
+	return bidsapp.HeldCutCharge(p, season)
+}
+func poolMarketLines(facts []MarketFact) []string {
+	return offersapp.MarketLines(offersMarketFacts(map[string][]MarketFact{"": facts})[""])
+}
+
+// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
+func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
+	if readErr != nil || a.core.Pools == nil {
+		return readErr
+	}
+	d, err := a.lab()
+	if err != nil {
+		return fmt.Errorf("offers: archive owner: %w", err)
+	}
+	if err := personal.New(a.core.Pools).ObserveOffers(ctx, lab.OfferOwner(d), a.core.Season, pending,
+		a.core.SeasonTransactions.Value, at); err != nil {
+		return fmt.Errorf("offers: save live read: %w", err)
+	}
+	return nil
+}
+
+func counterProvenance(d *lab.Data) snapshot.Provenance {
+	return (counterpartiesapp.Service{}).Provenance(d)
+}
+
+func (a *App) personalSnapshot(mine string) (snapshot.Snapshot, error) {
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
+	if !loaded {
+		return snap, fmt.Errorf("personal: snapshot not loaded")
+	}
+	if !slices.ContainsFunc(snap.Franchises.Value, func(f snapshot.Franchise) bool { return f.ID == mine }) {
+		return snap, fmt.Errorf("personal: unknown franchise")
+	}
+	return snap, nil
+}
+
+// archivedOnly reads already held exports; opening a list or the clock never calls MFL.
+func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,
+	parse func([]byte) ([]T, error)) heldSeasonFeed[[]T] {
+	return core.ArchivedOnly(ctx, a.core, export, leagueless, parse)
+}

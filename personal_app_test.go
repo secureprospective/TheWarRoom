@@ -101,12 +101,12 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 		t.Fatal(err)
 	}
 	player := a.core.TargetSnapshot.Players.Value[0].ID.String()
-	if err := a.TargetPersonalChange(personal.RawChange{Mine: "0025", Kind: "watch", Entity: "player", ID: player, Action: "add"}); err != nil {
+	if err := offersTestAPI(a).TargetPersonalChange(personal.RawChange{Mine: "0025", Kind: "watch", Entity: "player", ID: player, Action: "add"}); err != nil {
 		t.Fatal(err)
 	}
 	holdPersonalBody(t, a, "tradeBait", `{"tradeBaits":{"tradeBait":{"franchise_id":"0025","willGiveUp":"`+player+`","inExchangeFor":"Future picks"}}}`)
 	a.core.SeasonInjuries.FetchedAt = time.Date(2026, 10, 12, 15, 24, 15, 0, time.UTC)
-	r, err := a.TargetPersonal("0025")
+	r, err := offersTestAPI(a).TargetPersonal("0025")
 	if err != nil || len(r.Players) != 1 || !strings.Contains(r.Players[0].Status, " · as of ") ||
 		strings.Contains(r.Players[0].Status, "T15:24:15Z") {
 		t.Fatalf("a watched player's status reads in local time: %+v %v", r.Players, err)
@@ -121,13 +121,13 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.TargetPersonalHandOff("bait"); err != nil || !strings.Contains(opened, "&O=133") {
+	if err := offersTestAPI(a).TargetPersonalHandOff("bait"); err != nil || !strings.Contains(opened, "&O=133") {
 		t.Fatalf("bait handoff: %s %v", opened, err)
 	}
-	if err := a.TargetPersonalHandOff("draft"); err != nil || !strings.Contains(opened, "&O=129") {
+	if err := offersTestAPI(a).TargetPersonalHandOff("draft"); err != nil || !strings.Contains(opened, "&O=129") {
 		t.Fatalf("draft handoff: %s %v", opened, err)
 	}
-	if err := a.TargetPersonalHandOff("submit"); err == nil {
+	if err := offersTestAPI(a).TargetPersonalHandOff("submit"); err == nil {
 		t.Fatal("invalid handoff accepted")
 	}
 	if len(transport.requests) != 0 {

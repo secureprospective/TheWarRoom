@@ -5,27 +5,12 @@ import {snapshot} from '../models';
 import {commissioner} from '../models';
 import {envelope} from '../models';
 import {time} from '../models';
-import {personal} from '../models';
 
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
 export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
-
-export function TargetBidDraft(arg1:main.RawBidInput):Promise<main.BidPlan>;
-
-export function TargetBidHandOff(arg1:string):Promise<main.BidPlan>;
-
-export function TargetBidPlans(arg1:string):Promise<main.Reading_main_BidBoard_>;
-
-export function TargetBidPosted(arg1:string):Promise<main.BidPlan>;
-
-export function TargetBidPreview(arg1:main.RawBidInput):Promise<main.BidPreview>;
-
-export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.BidPlan>;
-
-export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
 
 export function TargetCacheClear(arg1:string):Promise<main.DataActResult>;
 
@@ -129,19 +114,7 @@ export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Prom
 
 export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
-export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
-
-export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
-
-export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
-
-export function TargetPersonalHandOff(arg1:string):Promise<void>;
-
 export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
-
-export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Pool_>;
-
-export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
 

@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
-import { TargetOffers } from '../../../wailsjs/go/main/App';
+import { readOffersWire as TargetOffers } from './api';
 import { commands, createCommands } from '../commands/registry';
 import { FixtureProvider } from '../data/provider';
 import { clockDom, TestElement } from '../clock/testDom';
@@ -12,7 +12,9 @@ import OffersHistory, { OffersScreen } from './Offers';
 import { localDate } from '../clock/labels';
 import { nodes } from '../shell/nodes';
 import wire from './wire.testdata.json';
-vi.mock('../../../wailsjs/go/main/App', () => ({ TargetOffers: vi.fn() }));
+vi.mock('./api', async () => ({
+  ...await vi.importActual<typeof import('./api')>('./api'), readOffersWire: vi.fn(),
+}));
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map(key => ({ key,
   descriptor: Object.getOwnPropertyDescriptor(globalThis, key) }));
   

@@ -47,7 +47,7 @@ it('clears kept notes, acknowledges locally and lists only this player newest fi
   });
   vi.stubGlobal('document', document);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: {
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { offers: { API: {
     TargetPersonal: async () => ({ ...parsePersonal(wire), entries }), TargetPersonalChange: change,
   } } } });
   vi.spyOn(commands, 'use').mockReturnValue({ ...renderState(commands.read()), franchiseId: '0001' });
@@ -98,7 +98,7 @@ it('keeps a franchise note once in the scratchpad, newest first, with its acknow
   });
   vi.stubGlobal('document', document);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: {
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { offers: { API: {
     TargetPersonal: async () => ({ ...parsePersonal(wire), entries }), TargetPersonalChange: change,
   } } } });
   vi.spyOn(commands, 'use').mockReturnValue({ ...renderState(commands.read()), franchiseId: '0001' });

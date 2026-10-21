@@ -40,7 +40,7 @@ func normalizeWire(raw []byte) []byte {
 func TestPoolWireFixtureMatchesGo(t *testing.T) {
 	t.Parallel()
 	a, _ := poolApp(t)
-	if err := a.TargetPoolRefresh(true); err != nil {
+	if err := offersTestAPI(a).TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
 	// Plans list newest first, so each draft gets its own second.
@@ -48,34 +48,34 @@ func TestPoolWireFixtureMatchesGo(t *testing.T) {
 	a.core.MovesNow = func() time.Time { clock = clock.Add(time.Second); return clock }
 	raw := rawBid("5", 3)
 	raw.Snipe, raw.Beat, raw.Evidence = true, "5.500", "https://example.invalid/thread"
-	if _, err := a.TargetBidDraft(raw); err != nil {
+	if _, err := offersTestAPI(a).TargetBidDraft(raw); err != nil {
 		t.Fatal(err)
 	}
 	a.core.Week = leagueweek.Week{Number: 13}
 	blocked := rawBid("2", 1)
 	blocked.Player = "13595"
-	if _, err := a.TargetBidDraft(blocked); err != nil {
+	if _, err := offersTestAPI(a).TargetBidDraft(blocked); err != nil {
 		t.Fatal(err)
 	}
 	a.core.Week = leagueweek.Week{Number: 5}
 	dropped := rawBid("1", 1)
 	dropped.Player = "13594"
-	plan, err := a.TargetBidDraft(dropped)
+	plan, err := offersTestAPI(a).TargetBidDraft(dropped)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.TargetBidHandOff(plan.Receipt.CorrelationID); err != nil {
+	if _, err := offersTestAPI(a).TargetBidHandOff(plan.Receipt.CorrelationID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.TargetBidWithdraw(plan.Receipt.CorrelationID); err != nil {
+	if _, err := offersTestAPI(a).TargetBidWithdraw(plan.Receipt.CorrelationID); err != nil {
 		t.Fatal(err)
 	}
 	wire := map[string]any{
-		"pool":    a.TargetPool(RawPoolScope{FranchiseID: "0001", Sort: "name"}),
-		"empty":   a.TargetPool(RawPoolScope{Sort: "bogus"}),
-		"board":   a.TargetBidPlans("0001"),
-		"preview": a.TargetBidPreview(rawBid("5.004", 3)),
-		"problem": a.TargetBidPreview(rawBid("", 3)),
+		"pool":    offersTestAPI(a).TargetPool(RawPoolScope{FranchiseID: "0001", Sort: "name"}),
+		"empty":   offersTestAPI(a).TargetPool(RawPoolScope{Sort: "bogus"}),
+		"board":   offersTestAPI(a).TargetBidPlans("0001"),
+		"preview": offersTestAPI(a).TargetBidPreview(rawBid("5.004", 3)),
+		"problem": offersTestAPI(a).TargetBidPreview(rawBid("", 3)),
 	}
 	got, err := json.MarshalIndent(wire, "", " ")
 	if err != nil {

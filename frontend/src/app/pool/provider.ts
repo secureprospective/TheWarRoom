@@ -1,9 +1,8 @@
 import { range } from '../reports/contract';
 import { parseRailReceipt } from '../shell/railReceipt';
-import type * as Bindings from '../../../wailsjs/go/main/App';
-import { main } from '../../../wailsjs/go/models';
+import { poolWire } from '../offers/api';
+export { rawBid } from '../offers/api';
 import { provenance } from '../data/parse';
-import { selectProvider } from '../data/provider';
 import { array, choice, integer, object, text } from '../data/parseValues';
 import type {
   Amount,
@@ -149,25 +148,6 @@ export const parseBoard = (v: unknown): BoardReading =>
     return { plans: array(r.plans, p, (plan, pp) => parsePlan(plan, pp)), summary: text(r.summary, p) };
   }, 'Bid plans');
 
-// The pool calls Go through window.go, typed by the generated declarations, instead of importing
-// the generated wrappers: an imported wrapper is placed in the entry chunk even when only a lazy
-// chunk uses it, and nine of them would break the entry budget.
-type Go = typeof Bindings;
-function go(): Go {
-  if (selectProvider().kind !== 'live') throw new Error('The free-agent pool needs the desktop app');
-  return (window as unknown as { go: { main: { App: Go } } }).go.main.App;
-}
-// The form's figures as Go takes them; the window close is local time on screen, UTC on the wire.
-// A date without a time (or the reverse) is no closing time yet, and Go says so.
-export function rawBid(franchiseId: string, form: BidFormState): main.RawBidInput {
-  const closes = form.closesDate && form.closesTime
-    ? new Date(`${form.closesDate}T${form.closesTime}`) : undefined;
-  return main.RawBidInput.createFrom({
-    franchiseId, player: form.playerId, salary: form.salary, years: form.years, snipe: form.snipe,
-    conditionalDrop: form.conditionalDrop ?? '', beat: form.beat, evidence: form.evidence,
-    closes: closes && !Number.isNaN(closes.getTime()) ? closes.toISOString() : '',
-  });
-}
 export type PoolProvider = {
   refresh(force: boolean): Promise<void>;
   pool(franchiseId: string, scope: PoolScope): Promise<PoolReading>;
@@ -180,26 +160,13 @@ export type PoolProvider = {
   withdraw(id: string): Promise<Plan>;
 };
 export const poolProvider: PoolProvider = {
-  refresh: async (force) => {
-    await go().TargetPoolRefresh(force);
-  },
-  pool: async (franchiseId, scope) =>
-    parsePool(
-      await go().TargetPool(
-        main.RawPoolScope.createFrom({
-          franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc,
-          showNoTeam: scope.showNoTeam ?? false,
-        }),
-      ),
-    ),
-  plans: async (franchiseId) => parseBoard(await go().TargetBidPlans(franchiseId)),
-  preview: async (franchiseId, form) =>
-    parsePreview(await go().TargetBidPreview(rawBid(franchiseId, form))),
-  draft: async (franchiseId, form) =>
-    parsePlan(await go().TargetBidDraft(rawBid(franchiseId, form))),
-  revise: async (id, franchiseId, form) =>
-    parsePlan(await go().TargetBidRevise(id, rawBid(franchiseId, form))),
-  handOff: async (id) => parsePlan(await go().TargetBidHandOff(id)),
-  posted: async (id) => parsePlan(await go().TargetBidPosted(id)),
-  withdraw: async (id) => parsePlan(await go().TargetBidWithdraw(id)),
+  refresh: async force => { await poolWire.refresh(force); },
+  pool: async (mine, scope) => parsePool(await poolWire.pool(mine, scope)),
+  plans: async mine => parseBoard(await poolWire.plans(mine)),
+  preview: async (mine, form) => parsePreview(await poolWire.preview(mine, form)),
+  draft: async (mine, form) => parsePlan(await poolWire.draft(mine, form)),
+  revise: async (id, mine, form) => parsePlan(await poolWire.revise(id, mine, form)),
+  handOff: async id => parsePlan(await poolWire.handOff(id)),
+  posted: async id => parsePlan(await poolWire.posted(id)),
+  withdraw: async id => parsePlan(await poolWire.withdraw(id)),
 };

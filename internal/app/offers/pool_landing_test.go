@@ -1,4 +1,4 @@
-package main
+package offers
 
 import (
 	"slices"
@@ -13,12 +13,12 @@ import (
 func TestPoolLandingValuesAndSorting(t *testing.T) {
 	t.Parallel()
 	rows := []PoolRow{{ID: "missing", Name: "A"}, {ID: "zero", Name: "B"}, {ID: "best", Name: "Z"}}
-	assets := map[string]AssetValue{"best": {Now: AssetCell{Text: "4.00 PPG", Held: true}, NowValue: 4,
-		Dynasty: AssetCell{Text: "0.12 wins", Held: true}, DynastyValue: 0.12}}
+	assets := map[string]AssetValue{"best": {NowText: "4.00 PPG", NowHeld: true, NowValue: 4,
+		DynastyText: "0.12 wins", DynastyHeld: true, DynastyValue: 0.12}}
 	for i := range rows {
 		valuePoolRow(&rows[i], map[string]float64{"zero": 0, "best": 12}, assets)
 	}
-	sortPool(rows, RawPoolScope{Sort: "engine", Desc: true})
+	SortPool(rows, RawPoolScope{Sort: "engine", Desc: true})
 	if !slices.Equal([]string{rows[0].ID, rows[1].ID, rows[2].ID}, []string{"best", "zero", "missing"}) {
 		t.Fatal(rows)
 	}
@@ -29,8 +29,8 @@ func TestPoolLandingValuesAndSorting(t *testing.T) {
 		t.Fatal("engine, league PPG and Lab must stay separate", rows[0])
 	}
 	for _, key := range []string{"engine", "ppg", "lab"} {
-		sortPool(rows, RawPoolScope{Sort: key})
-		if poolNumber(rows[len(rows)-1], key) != nil {
+		SortPool(rows, RawPoolScope{Sort: key})
+		if PoolNumber(rows[len(rows)-1], key) != nil {
 			t.Fatal("unvalued must sort last", key, rows)
 		}
 	}
@@ -38,7 +38,7 @@ func TestPoolLandingValuesAndSorting(t *testing.T) {
 
 func TestPoolLandingNoTeamToggle(t *testing.T) {
 	t.Parallel()
-	a, _ := poolApp(t)
+	a := bidTestApp(t)
 	lookup, err := normalize.NewLookup([]players.RawPlayer{
 		{ID: "13593", Name: "A", Position: "WR", Team: "FA"},
 		{ID: "13594", Name: "B", Position: "QB", Team: "DAL"},

@@ -1,3 +1,4 @@
+import { subscribePersonal } from '../offers/api';
 import { useEffect, useRef, useState } from 'react';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
@@ -98,7 +99,7 @@ export default function PersonalLists({ snapshot, draft = false }: { snapshot: S
   useEffect(() => {
     if (!mine) return;
     void personalState.load(mine);
-    return commands.alerts.onSeasonChange(() => personalState.load(mine));
+    return subscribePersonal(() => personalState.load(mine));
   }, [mine, snapshot]);
   if (!mine) return <p>Choose my franchise before keeping private lists.</p>;
   const kinds: ListKind[] = draft ? ['draft'] : ['watch', 'bait', 'note'];

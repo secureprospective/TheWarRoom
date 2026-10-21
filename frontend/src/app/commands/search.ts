@@ -56,7 +56,8 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
   }
   for (const density of ['narrative', 'tactical', 'matrix'] as const) {
     results.push({
-      label: `Density: ${density} · ${['N', 'T', 'M'][['narrative', 'tactical', 'matrix'].indexOf(density)]}`,
+      label: `Density: ${density} · ` +
+        ['N', 'T', 'M'][['narrative', 'tactical', 'matrix'].indexOf(density)],
       aliases: [density],
       kind: 'command',
       invocation: { verb: 'density.set', args: { density } },

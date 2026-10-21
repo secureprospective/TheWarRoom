@@ -1,3 +1,4 @@
+import { subscribePersonal } from '../offers/api';
 import { useEffect, useState } from 'react';
 import { array } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
@@ -21,7 +22,7 @@ export default function RosterReports({ mine, draft = false }: { mine: string; d
       } catch (cause) { if (active) setError(String(cause)); }
     };
     void read();
-    const stop = commands.alerts.onSeasonChange(read);
+    const stop = subscribePersonal(read);
     return () => { active = false; stop(); };
   }, [mine, draft]);
   return <section aria-label={draft ? 'NFL draft' : 'Roster stats and byes'}>

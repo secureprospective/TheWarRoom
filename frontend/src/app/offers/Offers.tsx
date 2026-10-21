@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { selectProvider } from '../data/provider';
+import { subscribeOffers } from './api';
 import { localDate } from '../clock/labels';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
@@ -70,7 +70,7 @@ export function OffersScreen({ reading, scope, pending = false }: {
 export default function OffersHistory() {
   useEffect(() => {
     void offerState.refresh();
-    return selectProvider().onSeasonChange(() => { void offerState.refresh(); });
+    return subscribeOffers(() => { void offerState.refresh(); });
   }, []);
   offerState.first();
   const s = offerState.use();

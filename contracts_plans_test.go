@@ -10,6 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 )
@@ -47,7 +48,7 @@ func TestContractPendingCanBeWithdrawn(t *testing.T) {
 func TestEveryPlanViewOffersAnExit(t *testing.T) {
 	t.Parallel()
 	for _, state := range []envelope.State{envelope.Draft, envelope.Blocked, envelope.Ready, envelope.HandedOff, envelope.NotYetDone, envelope.NotVerified, envelope.Stale, envelope.BidPending} {
-		actions := bidActions(state, "", nil, "")
+		actions := bidsapp.BidActions(state, "", nil, "")
 		found := false
 		for _, action := range actions {
 			if action.ID == "withdraw" || action.ID == "unposted" {
@@ -120,7 +121,7 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 		t.Fatal(gone.Audit)
 	}
 	b := bidTestApp(t)
-	p, err := b.TargetBidDraft(rawBid("5", 3))
+	p, err := offersTestAPI(b).TargetBidDraft(rawBid("5", 3))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +130,7 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 			t.Fatal(action)
 		}
 	}
-	removed, err := b.TargetBidWithdraw(p.Receipt.CorrelationID)
+	removed, err := offersTestAPI(b).TargetBidWithdraw(p.Receipt.CorrelationID)
 	if err != nil || removed.Status != want {
 		t.Fatal(removed.Status, err)
 	}

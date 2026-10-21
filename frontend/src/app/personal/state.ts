@@ -1,24 +1,17 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { parsePersonal, type ListKind, type ListChange, type PersonalReading } from './contract';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { personalWire } from '../offers/api';
 
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Private lists need the desktop app; no sample data is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
 type PersonalProvider = {
   read(mine: string): Promise<PersonalReading>;
   change(mine: string, kind: ListKind, change: ListChange): Promise<void>;
   handoff(kind: ListKind | 'ir'): Promise<void>;
 };
 const live: PersonalProvider = {
-  read: async mine => parsePersonal(await bindings().TargetPersonal(mine)),
-  change: async (mine, kind, change) => bindings().TargetPersonalChange({
-    mine, kind, ...change, text: change.text ?? '',
-  }),
-  handoff: async kind => bindings().TargetPersonalHandOff(kind),
+  read: async mine => parsePersonal(await personalWire.read(mine)),
+  change: async (mine, kind, change) => { await personalWire.change(mine, kind, change); },
+  handoff: async kind => { await personalWire.handoff(kind); },
 };
 export function createPersonalState(provider: PersonalProvider) {
   type Reading = { value?: PersonalReading; pending: boolean; error: string;

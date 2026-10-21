@@ -1,22 +1,15 @@
-package main
+package offers
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
-	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
-
-type TeamOption struct {
-	Fid  string `json:"fid"`
-	Name string `json:"name"`
-}
 
 type RawOfferScope struct {
 	From      int    `json:"from"`
@@ -26,7 +19,7 @@ type RawOfferScope struct {
 	Team      string `json:"team"`
 }
 
-func (r RawOfferScope) Validate() error { return offersapp.Scope(r).Validate() } //nolint:wrapcheck // preserves offer scope error text
+func (r RawOfferScope) Validate() error { return Scope(r).Validate() }
 
 type OfferChoice struct {
 	ID    string `json:"id"`
@@ -57,6 +50,8 @@ type OfferWords struct {
 	Retry     string `json:"retry"`
 	Pending   string `json:"pending"`
 }
+
+//nolint:revive // Preserve the existing exported wire name.
 type OffersView struct {
 	Words      OfferWords         `json:"words"`
 	Disclosure string             `json:"disclosure"`
@@ -70,9 +65,9 @@ type OffersView struct {
 	Stretches  []OfferStretchView `json:"stretches"`
 }
 
-func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
-	r := Reading[OffersView]{Sourced: snapshot.Sourced[OffersView]{Value: offerWords()}, Status: ReadingFailed, Threshold: 10, Method: "owner-scoped offerStretches; 1.96 standard-error comparisons", InputSHA: lab.DataSHA, BuildStamp: buildLabel() + " " + buildDate, HowCounted: "Only offers visible to the archived GM are available. No league-wide offer history is supplied."}
-	d, err := a.lab()
+func (a *API) TargetOffers(raw RawOfferScope) report.Reading[OffersView] {
+	r := report.Reading[OffersView]{Sourced: snapshot.Sourced[OffersView]{Value: offerWords()}, Status: report.ReadingFailed, Threshold: 10, Method: "owner-scoped offerStretches; 1.96 standard-error comparisons", InputSHA: lab.DataSHA, BuildStamp: a.host.OffersBuildStamp(), HowCounted: "Only offers visible to the archived GM are available. No league-wide offer history is supplied."}
+	d, err := a.host.OffersLab()
 	if err != nil {
 		reason := err.Error()
 		r.AbsenceReason = &reason
@@ -87,12 +82,12 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 	}
 	d = merged
 	r.Cutoff = source
-	r.Provenance = counterProvenance(d)
+	r.Provenance = a.host.OffersProvenance(d)
 	r.Provenance.Source = source
 	if !checked.IsZero() {
 		// Live offers are added to the archive, so the reading is as fresh as the last pending-offer read. The
 		// kind stays "archive" (the screen's contract): the history still rests on it.
-		r.Provenance.Freshness = liveFreshness(checked)
+		r.Provenance.Freshness = report.LiveFreshness(checked)
 	}
 	if err := validateOfferTeam(raw, d); err != nil {
 		reason := err.Error()
@@ -104,9 +99,9 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 		s.Windows = []string{raw.Window}
 	}
 	result := lab.OfferStretches(d, s)
-	r.Status = ReadingOK
+	r.Status = report.ReadingOK
 	r.Count = len(result.Offers)
-	r.Value.CountText = countNumber(r.Count)
+	r.Value.CountText = report.Number(r.Count)
 	r.Baseline = "Other stretches with at least 10 known endings in this same scope"
 	r.HowCounted = "Seasons use the league-year season field, not calendar year. Direction is relative to the archive owner (the busiest endpoint, stable first-appearance ties). Team and time-of-year filters apply before counts. Accepted, rejected, withdrawn and expired are known endings; unknown endings are excluded from acceptance. Per-season volume divides by the number of seasons with any recorded offer in the selected years, before direction, team or window filtering (at least one). Rates display only at 5 known endings; a most/least often accepted finding requires at least 10 known endings in each compared stretch, two usable stretches, and a strict difference greater than 1.96 × the combined standard error against every other usable stretch. Unknown endings are never rejections. Open offers are counted separately and excluded from endings and acceptance. Ending not on record means MFL no longer lists the offer and no matching completed trade is held; it is not a rejection. Live coverage contains only offers seen by this app, not all offers since the archive. This is owner coverage, not league-wide activity."
 	r.Value.Summary = offerSummary(d, result, s)
@@ -115,23 +110,23 @@ func (a *App) TargetOffers(raw RawOfferScope) Reading[OffersView] {
 		r.Value.Stretches = append(r.Value.Stretches, offerStretchView(st))
 	}
 	if r.Count < 10 {
-		r.Status = ReadingThin
+		r.Status = report.ReadingThin
 		reason := "Fewer than 10 offers in this scope; individual stretches may have too few known endings to compare"
 		r.AbsenceReason = &reason
 	}
 	return r
 }
 
-func offerWords() OffersView { return wireOffers(offersapp.Empty()) }
+func offerWords() OffersView { return WireOffers(Empty()) }
 func validateOfferTeam(raw RawOfferScope, d *lab.Data) error {
-	return offersapp.ValidateTeam(offersapp.Scope(raw), d) //nolint:wrapcheck // preserves offer scope error text
+	return ValidateTeam(Scope(raw), d)
 }
 func setOfferDisclosure(v *OffersView, d *lab.Data) {
-	service := offersapp.View{Teams: make([]offersapp.Team, len(v.Teams))}
+	service := View{Teams: make([]Team, len(v.Teams))}
 	for i, t := range v.Teams {
-		service.Teams[i] = offersapp.Team(t)
+		service.Teams[i] = Team(t)
 	}
-	offersapp.SetDisclosure(&service, d)
+	SetDisclosure(&service, d)
 	v.Disclosure = service.Disclosure
 	v.Teams = make([]TeamOption, len(service.Teams))
 	for i, t := range service.Teams {
@@ -139,13 +134,13 @@ func setOfferDisclosure(v *OffersView, d *lab.Data) {
 	}
 }
 func offerSummary(d *lab.Data, v lab.OfferResult, s lab.OfferScope) string {
-	return offersapp.Summary(d, v, s)
+	return Summary(d, v, s)
 }
-func offerOpenSummary(v lab.OfferResult) string { return offersapp.OpenSummary(v) }
+func offerOpenSummary(v lab.OfferResult) string { return OpenSummary(v) }
 func offerStretchView(st lab.OfferStretch) OfferStretchView {
-	return wireOfferStretch(offersapp.StretchView(st))
+	return WireStretch(StretchView(st))
 }
-func wireOfferStretch(st offersapp.Stretch) OfferStretchView {
+func WireStretch(st Stretch) OfferStretchView {
 	out := OfferStretchView{ID: st.ID, Label: st.Label, CountText: st.CountText, Acceptance: st.Acceptance, Finding: st.Finding}
 	if st.Outcomes != nil {
 		out.Outcomes = make([]OfferOutcomeView, len(st.Outcomes))
@@ -155,7 +150,7 @@ func wireOfferStretch(st offersapp.Stretch) OfferStretchView {
 	}
 	return out
 }
-func wireOffers(v offersapp.View) OffersView {
+func WireOffers(v View) OffersView {
 	out := OffersView{Words: OfferWords(v.Words), Disclosure: v.Disclosure, Title: v.Title, Summary: v.Summary, CountText: v.CountText}
 	if v.Directions != nil {
 		out.Directions = make([]OfferChoice, len(v.Directions))
@@ -184,47 +179,23 @@ func wireOffers(v offersapp.View) OffersView {
 	if v.Stretches != nil {
 		out.Stretches = make([]OfferStretchView, len(v.Stretches))
 		for i, c := range v.Stretches {
-			out.Stretches[i] = wireOfferStretch(c)
+			out.Stretches[i] = WireStretch(c)
 		}
 	}
 	return out
 }
 
-func liveOffer(d *lab.Data, year int, ts int64, sender, receiver, outcome string) (lab.Offer, error) {
-	return offersapp.LiveOffer(d, year, ts, sender, receiver, outcome) //nolint:wrapcheck // preserves the existing calendar error text
-}
-
-// The caller holds seasonMu, so the ending evidence and the pending read form one observation.
-func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	if readErr != nil || a.core.Pools == nil {
-		return readErr
-	}
-	d, err := a.lab()
-	if err != nil {
-		return fmt.Errorf("offers: archive owner: %w", err)
-	}
-	if err := personal.New(a.core.Pools).ObserveOffers(ctx, lab.OfferOwner(d), a.core.Season, pending,
-		a.core.SeasonTransactions.Value, at); err != nil {
-		return fmt.Errorf("offers: save live read: %w", err)
-	}
-	return nil
-}
-
 // offersWithLive also returns when the app last read MFL's pending offers (zero before the first read).
-func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) {
-	if a.core.Pools == nil {
+func (a *API) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) {
+	if a.host.OffersPools() == nil {
 		return d, d.ArchiveThrough, time.Time{}, nil
 	}
-	ctx, cancel := context.WithTimeout(a.fallbackParent(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(a.host.OffersHistoryContext(), 10*time.Second)
 	defer cancel()
 	owner := lab.OfferOwner(d)
-	rows, checked, err := personal.New(a.core.Pools).Offers(ctx, owner)
+	rows, checked, err := personal.New(a.host.OffersPools()).Offers(ctx, owner)
 	if err != nil {
 		return nil, "", time.Time{}, fmt.Errorf("offers: local history: %w", err)
 	}
-	return offersapp.Merge(d, rows, checked) //nolint:wrapcheck // preserves the existing offer history errors
-}
-
-func counterProvenance(d *lab.Data) snapshot.Provenance {
-	return (counterpartiesapp.Service{}).Provenance(d)
+	return Merge(d, rows, checked)
 }
