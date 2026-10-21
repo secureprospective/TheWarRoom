@@ -170,7 +170,7 @@ func TestEveryDraftControlGovernsSomething(t *testing.T) {
 
 func rootTestSource(t *testing.T) string {
 	t.Helper()
-	files, err := filepath.Glob("../../native_draft*_test.go")
+	files, err := filepath.Glob("../composition/native_draft*_test.go")
 	if err != nil || len(files) == 0 {
 		t.Fatalf("the app tests for the draft are missing: %v", err)
 	}

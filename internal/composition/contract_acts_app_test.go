@@ -1,0 +1,166 @@
+package composition
+
+import (
+	"context"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+)
+
+func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
+	t.Parallel()
+	a := releaseTestApp(t)
+	idPlayer, err := playerid.New("0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: idPlayer, Position: domain.PosQB, Name: "Example"}}
+	before, stamp, _ := a.core.League.ContractsView()
+	raw := contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: "contract.extend", Level: 1, Years: 2}
+	preview := a.contracts().TargetContractActs(raw)
+	if preview.Status != report.ReadingOK || len(preview.Value) != 1 || preview.Value[0].Price != "Price: $15,000,000" || len(preview.Value[0].Figures) != 5 || !strings.HasPrefix(preview.Value[0].Reasons[0], "Not checked:") {
+		t.Fatalf("preview %+v", preview)
+	}
+	raw.Action = "draft"
+	plans := a.contracts().TargetContractActs(raw)
+	if plans.Status != report.ReadingOK || plans.Value[0].Receipt.State != envelope.Ready || !plans.Value[0].CanHandOff {
+		t.Fatalf("draft %+v", plans)
+	}
+	id := plans.Value[0].ID
+	if !strings.Contains(plans.Value[0].Post, "commissioner on ProBoards") || !strings.Contains(plans.Value[0].Post, "2029: $15,000,000") {
+		t.Fatal(plans.Value[0].Post)
+	}
+	after, afterStamp, _ := a.core.League.ContractsView()
+	if !reflect.DeepEqual(before, after) || stamp != afterStamp {
+		t.Fatal("contract draft wrote mirror")
+	}
+	replaceWhatIfMirror(t, a, 9*100_000_000)
+	stale := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "read"})
+	if stale.Status != report.ReadingOK || stale.Value[0].Receipt.State != envelope.Stale || !stale.Value[0].CanRebase {
+		t.Fatalf("stale %+v", stale)
+	}
+	rebased := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "rebase", ID: id})
+	if rebased.Status != report.ReadingOK || rebased.Value[0].Receipt.State != envelope.Ready || rebased.Value[0].Figures[0].Before != "$9,000,000" {
+		t.Fatalf("rebase %+v", rebased)
+	}
+	withdrawn := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "withdraw", ID: id})
+	if withdrawn.Status != report.ReadingOK || withdrawn.Value[0].Receipt.State != envelope.Withdrawn || !strings.Contains(withdrawn.Value[0].Post, "2029:") {
+		t.Fatalf("withdrawn %+v", withdrawn)
+	}
+}
+func TestContractActsWindowsAndHeldEligibility(t *testing.T) {
+	t.Parallel()
+	a := releaseTestApp(t)
+	id, err := playerid.New("0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB}}
+	for _, phase := range []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs} {
+		releasePhase(t, a, phase)
+		for _, intent := range []string{"rfa.tender", "fa.resign", "contract.tag", "contract.extend", "contract.restructure"} {
+			raw := contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: intent, Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
+			r := a.contracts().TargetContractActs(raw)
+			if r.Status != report.ReadingOK {
+				t.Fatalf("%s %s: %+v", phase, intent, r)
+			}
+			result := (envelope.ContractCheck{Reasons: r.Value[0].Reasons}).Evaluate(envelope.Spec{Intent: intent}, snapshot.Snapshot{})
+			wantBlocked := intent != "contract.extend" && intent != "contract.restructure"
+			if result.Blocked != wantBlocked {
+				t.Fatalf("%s %s: %+v", phase, intent, result)
+			}
+		}
+	}
+	options := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "options"})
+	if len(options.Value) != 2 || options.Value[0].Intent != "contract.extend" || options.Value[1].Intent != "contract.restructure" {
+		t.Fatal(options)
+	}
+}
+func TestContractActsRawBoundaryAndOwnRosterOnly(t *testing.T) {
+	t.Parallel()
+	a := releaseTestApp(t)
+	for _, raw := range []contractsapp.RawContractAct{
+		{Mine: "bad", Action: "read"}, {Mine: "0001", Action: "delete"},
+		{Mine: "0001", Action: "preview", Player: "x", Intent: "rfa.tender", Level: 1, Years: 1},
+		{Mine: "0001", Action: "draft", Player: "0042", Intent: "rfa.tender", Level: 7, Years: 1},
+		{Mine: "0001", Action: "draft", Player: "0042", Intent: "contract.extend", Level: 1, Years: 5},
+		{Mine: "0001", Action: "draft", Player: "0042", Intent: "contract.restructure", Level: 1, Years: 1, Move: "4"},
+		{Mine: "0001", Action: "posted"},
+		{Mine: "0002", Action: "preview", Player: "0042", Intent: "rfa.tender", Level: 1, Years: 1},
+	} {
+		if r := a.contracts().TargetContractActs(raw); r.Status != report.ReadingFailed {
+			t.Errorf("bad request accepted %+v", raw)
+		}
+	}
+	raw := contractsapp.RawContractAct{Mine: "0001", Action: "draft", Player: "0042", Intent: "rfa.tender", Level: 1, Years: 1}
+	r := a.contracts().TargetContractActs(raw)
+	id := r.Value[0].ID
+	if r := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0002", Action: "withdraw", ID: id}); r.Status != report.ReadingFailed {
+		t.Fatal("cross-franchise mutation")
+	}
+	if _, err := a.platformAPI().TargetHandOff(id); err == nil {
+		t.Fatal("generic handoff bypassed blocker")
+	}
+	if err := contractsapp.RevalidateContractPlans(context.Background(), contractsHost{State: a.core, app: a}); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestBuyoutCommissionerChannelAndHandOffWords(t *testing.T) {
+	t.Parallel()
+	a := releaseTestApp(t)
+	plan := planRelease(t, a, "buyout", "0042")
+	if plan.Channel != "Post this to the commissioner on ProBoards." {
+		t.Fatal(plan.Channel)
+	}
+	handed := releaseCall(t, a, "handoff", "", plan.ID, false)
+	if handed[0].Receipt.State != envelope.HandedOff || !strings.Contains(handed[0].Receipt.Audit[1].Note, "commissioner on ProBoards") || strings.Contains(handed[0].Receipt.Audit[1].Note, "must be confirmed") {
+		t.Fatal(handed)
+	}
+}
+
+func TestContractActSubjectAndOneOpenPlanPerAct(t *testing.T) {
+	t.Parallel()
+	a := releaseTestApp(t)
+	id, err := playerid.New("0042")
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB, Name: "Example"}}
+	raw := contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: "contract.extend", Level: 1, Years: 1}
+	preview := a.contracts().TargetContractActs(raw)
+	if preview.Status != report.ReadingOK || preview.Value[0].Subject != "Example · QB · $10,000,000 a year through 2028" {
+		t.Fatalf("subject %+v", preview.Value)
+	}
+	raw.Action = "draft"
+	first := a.contracts().TargetContractActs(raw)
+	if first.Status != report.ReadingOK || len(first.Value) != 1 || first.Value[0].Subject != preview.Value[0].Subject {
+		t.Fatalf("first draft %+v", first)
+	}
+	raw.Years = 2
+	second := a.contracts().TargetContractActs(raw)
+	if second.Status == report.ReadingOK || second.AbsenceReason == nil || !strings.Contains(*second.AbsenceReason, "Extend him · Example is already an open plan in My moves") {
+		t.Fatalf("second open plan of the same Act was kept: %+v", second)
+	}
+	raw.Intent, raw.Years, raw.Source, raw.Destination, raw.Move = "contract.restructure", 1, 2026, 2028, "1"
+	if other := a.contracts().TargetContractActs(raw); other.Status != report.ReadingOK || len(other.Value) != 2 {
+		t.Fatalf("a different Act was refused: %+v", other)
+	}
+	a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "withdraw", ID: first.Value[0].ID})
+	raw.Intent, raw.Years = "contract.extend", 2
+	if again := a.contracts().TargetContractActs(raw); again.Status != report.ReadingOK || len(again.Value) != 3 {
+		t.Fatalf("a removed plan still blocked a new one: %+v", again)
+	}
+	raw.Player, raw.Years = "0043", 1
+	if another := a.contracts().TargetContractActs(raw); another.Status != report.ReadingOK || len(another.Value) != 4 {
+		t.Fatalf("the same Act for a different player was refused: %+v", another)
+	}
+}

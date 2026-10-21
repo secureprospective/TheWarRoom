@@ -15,7 +15,7 @@ count=${#files[@]}
 
 if (( count > baseline )); then
   echo "check-root-ratchet: the root holds $count *.go files, over the baseline of $baseline." >&2
-  echo "  New code goes in internal/app/<feature>/ behind a thin root adapter (SYSTEM_MAP.md)." >&2
+  echo "  New code goes in internal/app/<feature>/ behind a thin adapter in internal/composition (SYSTEM_MAP.md)." >&2
   exit 1
 fi
 if (( count < baseline )); then
