@@ -33,7 +33,9 @@ it('routes all five calls through draft.API and parses their wire output', async
   expect((await readNFLDraft()).id).toBe('M-087');
   expect(API.TargetNFLDraft).toHaveBeenCalledOnce();
   API.TargetDraftLab.mockRejectedValueOnce(new Error('offline'));
-  expect((await readDraftLab(scope)).absenceReason).toContain('Draft read failed: Error: offline. Retry the held archive reading.');
+  expect((await readDraftLab(scope)).absenceReason).toContain(
+    'Draft read failed: Error: offline. Retry the held archive reading.',
+  );
 });
 
 it('preserves the plain-browser refusal without substituting fixtures', async () => {

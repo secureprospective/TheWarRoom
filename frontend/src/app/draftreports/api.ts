@@ -30,7 +30,8 @@ export async function readDraftLab(scope: DraftScope): Promise<SurfaceReading> {
   try {
     return parseMarket(await bindings().TargetDraftLab(scope));
   } catch (cause) {
-    return { ...unavailable(`Draft read failed: ${String(cause)}. Retry the held archive reading.`), threshold: 40 };
+    const reason = `Draft read failed: ${String(cause)}. Retry the held archive reading.`;
+    return { ...unavailable(reason), threshold: 40 };
   }
 }
 
