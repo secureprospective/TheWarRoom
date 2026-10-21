@@ -30,7 +30,7 @@ describe('provider selection', () => {
     for (const feed of Object.values(payload.eligibility.feeds) as { kind: string }[])
       feed.kind = 'live';
     const call = vi.fn().mockResolvedValue(payload);
-    vi.stubGlobal('window', { go: { main: { App: { TargetSnapshot: call } } } });
+    vi.stubGlobal('window', { go: { platform: { API: { TargetSnapshot: call } } } });
     const provider = selectProvider();
     expect(provider).toBeInstanceOf(LiveProvider);
     expect((await provider.snapshot()).players.provenance.kind).toBe('live');
@@ -44,7 +44,7 @@ describe('provider selection', () => {
         cause === 'outage'
           ? vi.fn().mockRejectedValue(new Error('MFL offline'))
           : vi.fn().mockResolvedValue({ players: [] });
-      vi.stubGlobal('window', { go: { main: { App: { TargetSnapshot: call } } } });
+      vi.stubGlobal('window', { go: { platform: { API: { TargetSnapshot: call } } } });
       const parsed = await selectProvider().snapshot();
       for (const key of ['league', 'franchises', 'rosters', 'players'] as const) {
         expect(parsed[key].provenance.kind).toBe('live');
@@ -78,7 +78,7 @@ describe('clock provider boundary', () => {
     };
     const clock = vi.fn().mockResolvedValue(payload);
     const snapshot = vi.fn().mockImplementation(() => new Promise(() => undefined));
-    vi.stubGlobal('window', { go: { main: { App: { TargetClock: clock, TargetSnapshot: snapshot } } } });
+    vi.stubGlobal('window', { go: { platform: { API: { TargetClock: clock, TargetSnapshot: snapshot } } } });
     const provider = selectProvider();
     void provider.snapshot();
     expect((await provider.clock()).provenance.kind).toBe('live');
@@ -91,7 +91,7 @@ describe('clock provider boundary', () => {
         ? vi.fn().mockRejectedValue(new Error('clock offline'))
         : vi.fn().mockResolvedValue({ value: { phase: 'SPRING' } });
       vi.stubGlobal('window', cause === 'runtime absent' ? {} : {
-        go: { main: { App: { TargetClock: call } } },
+        go: { platform: { API: { TargetClock: call } } },
       });
       const reading = await new LiveProvider().clock();
       expect(reading.provenance.kind).toBe('live');
@@ -115,7 +115,7 @@ describe.each([
     ))).receipt;
     const draft = vi.fn().mockResolvedValue(receipt);
     const moves = vi.fn().mockResolvedValue([receipt]);
-    vi.stubGlobal('window', { go: { main: { App: { [binding]: draft, TargetMoves: moves } } } });
+    vi.stubGlobal('window', { go: { platform: { API: { [binding]: draft, TargetMoves: moves } } } });
     const provider = new LiveProvider();
     expect(await provider[method]('0001', '11675')).toEqual(receipt);
     expect(await provider.moves('0001')).toEqual([receipt]);
@@ -125,7 +125,7 @@ describe.each([
   it('propagates rejected calls and malformed receipts, never an empty list', async () => {
     const draft = vi.fn().mockRejectedValue(new Error('draft binding down'));
     const moves = vi.fn().mockRejectedValue(new Error('moves binding down'));
-    vi.stubGlobal('window', { go: { main: { App: { [binding]: draft, TargetMoves: moves } } } });
+    vi.stubGlobal('window', { go: { platform: { API: { [binding]: draft, TargetMoves: moves } } } });
     const provider = new LiveProvider();
     await expect(provider[method]('0001', '11675')).rejects.toThrow('draft binding down');
     await expect(provider.moves('0001')).rejects.toThrow('moves binding down');
@@ -145,7 +145,7 @@ describe('parallel parser and binding startup', () => {
     const clock = vi.fn().mockResolvedValue(clockFixture);
     const draft = vi.fn().mockResolvedValue(receipt);
     const moves = vi.fn().mockResolvedValue([receipt]);
-    vi.stubGlobal('window', { go: { main: { App: {
+    vi.stubGlobal('window', { go: { platform: { API: {
       TargetSnapshot: snapshot, TargetClock: clock, TargetDraftIR: draft,
       TargetDraftTaxi: draft, TargetMoves: moves,
     } } } });

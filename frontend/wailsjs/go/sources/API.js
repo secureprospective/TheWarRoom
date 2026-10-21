@@ -14,6 +14,10 @@ export function SetLeagueArchiveDir(arg1) {
   return window['go']['sources']['API']['SetLeagueArchiveDir'](arg1);
 }
 
+export function SetPhotos(arg1) {
+  return window['go']['sources']['API']['SetPhotos'](arg1);
+}
+
 export function TargetCacheClear(arg1) {
   return window['go']['sources']['API']['TargetCacheClear'](arg1);
 }

@@ -1,0 +1,110 @@
+// Package platform binds the app-wide reads every screen leans on: the target snapshot, the
+// league clock, the move rail with its IR, taxi, hand-off and withdraw acts, and player photos.
+package platform
+
+import (
+	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+)
+
+// Host runs the snapshot, clock and move-log work against the shared stores, keeping each
+// binding's original locks, startup check and error text.
+type Host interface {
+	Snapshot() (snapshot.Snapshot, error)
+	Clock() (snapshot.Sourced[leagueclock.Reading], error)
+	// DraftRosterMove drafts an IR ("roster.ir") or taxi ("roster.taxi") plan into the move log.
+	DraftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error)
+	Moves(franchiseID string) ([]envelope.Receipt, error)
+	HandOff(correlationID string) (envelope.Receipt, error)
+	CheckMoves() error
+	WithdrawRoster(correlationID string) (envelope.Receipt, error)
+	// PlayerName is a player's directory name, if the directory has one.
+	PlayerName(mflID string) (string, bool)
+	PhotosOff() bool
+}
+
+// API is the platform binding. It holds no state.
+type API struct{ host Host }
+
+func New(host Host) *API { return &API{host: host} }
+
+// PhotoView is what a player card needs to show a photo: Go decides whether to ask for one and
+// writes its alt text (W1). An empty Src means show the fallback without any request.
+type PhotoView struct {
+	Src string `json:"src"`
+	Alt string `json:"alt"`
+}
+
+// Photo is one player's photo under a prose name, or none when photos are off.
+func Photo(mflID, name string, off bool) PhotoView {
+	if off {
+		return PhotoView{Alt: name}
+	}
+	return PhotoView{Src: "/headshot/" + mflID, Alt: "Photo of " + name}
+}
+
+func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {
+	return a.host.Snapshot() //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetClock reads the phase log and commissioner calendar from the local store; no network.
+func (a *API) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
+	return a.host.Clock() //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+//nolint:wrapcheck // Preserve the binding's existing error text.
+func (a *API) TargetDraftIR(franchiseID, playerID string) (envelope.Receipt, error) {
+	return a.host.DraftRosterMove("roster.ir", franchiseID, playerID)
+}
+
+//nolint:wrapcheck // Preserve the binding's existing error text.
+func (a *API) TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error) {
+	return a.host.DraftRosterMove("roster.taxi", franchiseID, playerID)
+}
+
+func (a *API) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
+	return a.host.Moves(franchiseID) //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetHandOff marks a Ready move handed off, saves it, then opens its MFL page; the owner
+// submits on MFL and the watcher looks for the change. Nothing is saved or opened on an error.
+func (a *API) TargetHandOff(correlationID string) (envelope.Receipt, error) {
+	return a.host.HandOff(correlationID) //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetCheckMoves asks the watcher for a pass now (rate limited to one a minute); it returns at
+// once.
+func (a *API) TargetCheckMoves() error {
+	return a.host.CheckMoves() //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetWithdrawRoster removes an IR/taxi plan without making any MFL change.
+func (a *API) TargetWithdrawRoster(correlationID string) (envelope.Receipt, error) {
+	return a.host.WithdrawRoster(correlationID) //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetPhoto is a player card's photo: its address and alt text, or no address when photos are
+// off or the player has none on file.
+func (a *API) TargetPhoto(mflID string) PhotoView {
+	name, ok := a.host.PlayerName(mflID)
+	if !ok {
+		name = "this player"
+	}
+	return Photo(mflID, report.ProseName(name), a.host.PhotosOff())
+}
+
+// Commands is the platform catalog.
+func Commands() []catalog.Command {
+	c := func(method, availability string) catalog.Command {
+		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: catalog.Unset,
+			Gravity: catalog.Unset, Availability: availability}
+	}
+	return []catalog.Command{
+		c("TargetCheckMoves", "both"), c("TargetClock", "both"), c("TargetDraftIR", "both"),
+		c("TargetDraftTaxi", "both"), c("TargetHandOff", "desktop"), c("TargetMoves", "both"),
+		c("TargetPhoto", "both"), c("TargetSnapshot", "both"), c("TargetWithdrawRoster", "both"),
+	}
+}

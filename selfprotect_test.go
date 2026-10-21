@@ -21,6 +21,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/app/offers"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
@@ -162,6 +163,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
 		reflect.TypeFor[*nowapp.API]():         nowapp.Commands(),
 		reflect.TypeFor[*offers.API]():         offers.Commands(),
+		reflect.TypeFor[*platformapp.API]():    platformapp.Commands(),
 		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
 		reflect.TypeFor[*research.API]():       research.Commands(),
 		reflect.TypeFor[*sources.API]():        sources.Commands(),
@@ -172,7 +174,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 	for _, value := range bound {
 		typ := reflect.TypeOf(value)
 		commands, feature := catalogs[typ]
-		if typ != reflect.TypeFor[*App]() && !feature {
+		if !feature {
 			problems = append(problems, fmt.Sprintf("unexpected bound type %v", typ))
 			continue
 		}
@@ -206,9 +208,6 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		if !seen[typ] {
 			problems = append(problems, fmt.Sprintf("missing bound type %v", typ))
 		}
-	}
-	if !seen[reflect.TypeFor[*App]()] {
-		problems = append(problems, "missing root App")
 	}
 	return got, problems
 }

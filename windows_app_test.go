@@ -27,7 +27,7 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 			if err := a.controlAPI().TargetSetWindow(kind, at); err != nil {
 				t.Fatal(err)
 			}
-			clock, err := a.TargetClock()
+			clock, err := a.platformAPI().TargetClock()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -121,7 +121,7 @@ func TestWindowInputsUsesHeldSchedules(t *testing.T) {
 	if in.LastRegular != 13 || !in.FirstKickoff[9].Equal(leagueweek.FirstLock(week)) {
 		t.Fatal(in)
 	}
-	clock, err := a.TargetClock()
+	clock, err := a.platformAPI().TargetClock()
 	if err != nil {
 		t.Fatal(err)
 	}

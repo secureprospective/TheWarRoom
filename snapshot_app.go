@@ -19,7 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-func (a *App) TargetSnapshot() (snapshot.Snapshot, error) {
+func (a *App) takeSnapshot() (snapshot.Snapshot, error) {
 	if err := a.ready(); err != nil {
 		return snapshot.Snapshot{}, fmt.Errorf("target snapshot: startup: %w", err)
 	}
@@ -96,11 +96,6 @@ func (a *App) injuriesHeld() bool {
 	return !a.core.SeasonInjuries.FetchedAt.IsZero()
 }
 
-// TargetClock reads the phase log and commissioner calendar from the local store; no network.
-func (a *App) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
-	return a.targetClock(a.core.Ctx)
-}
-
 func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.Reading], error) {
 	if err := a.ready(); err != nil {
 		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
@@ -120,14 +115,6 @@ func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.
 	}
 	a.mergeMFLCalendar(ctx, now, &clock)
 	return clock, nil
-}
-
-func (a *App) TargetDraftIR(franchiseID, playerID string) (envelope.Receipt, error) {
-	return a.draftRosterMove("roster.ir", franchiseID, playerID)
-}
-
-func (a *App) TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error) {
-	return a.draftRosterMove("roster.taxi", franchiseID, playerID)
 }
 
 func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
@@ -192,7 +179,7 @@ func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Re
 	return e.Receipt(), nil
 }
 
-func (a *App) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
+func (a *App) listMoves(franchiseID string) ([]envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return nil, fmt.Errorf("target moves: startup: %w", err)
 	}

@@ -21,7 +21,7 @@ describe('Market transport adapter', () => {
       TargetAssetBoard: vi.fn(async () => 'board'), TargetMarketReports: vi.fn(async () => 'reports'),
       TargetMarketReportsRefresh: vi.fn(async () => {}), TargetMarket: vi.fn(),
     };
-    vi.stubGlobal('window', { go: { market: { API: api }, main: { App: {} } } });
+    vi.stubGlobal('window', { go: { market: { API: api } } });
     expect(marketAPI.hasDesktop()).toBe(true);
     expect(await marketAPI.lists(raw)).toBe('lists');
     expect(await marketAPI.clock(raw)).toBe('clock');

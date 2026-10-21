@@ -77,7 +77,7 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 			before, stamp, _ := a.core.League.ContractsView()
 			opens := 0
 			a.core.OpenURL = func(_ context.Context, _ string) { opens++ }
-			gone, err := a.TargetWithdrawRoster(e.ID())
+			gone, err := a.platformAPI().TargetWithdrawRoster(e.ID())
 			if err != nil || gone.State != envelope.Withdrawn {
 				t.Fatal(gone, err)
 			}

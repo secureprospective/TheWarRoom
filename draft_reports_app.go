@@ -23,7 +23,7 @@ func (h draftHost) DraftValues(ctx context.Context) (map[string]float64, string)
 func (h draftHost) DraftNext() string {
 	next := "Next draft: no date set by the commissioner."
 	if h.Whatif != nil {
-		clock, err := h.app.TargetClock()
+		clock, err := h.app.targetClock(h.app.core.Ctx)
 		if err != nil {
 			next = "Next draft date unavailable: " + err.Error()
 		} else {

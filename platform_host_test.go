@@ -11,17 +11,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 )
 
-func TestPhotoViewIsGoWordedAndOffMeansNoAddress(t *testing.T) {
-	t.Parallel()
-	on := photoView("0501", "Kayden McDonald", false)
-	if on.Src != "/headshot/0501" || on.Alt != "Photo of Kayden McDonald" {
-		t.Fatalf("photos on: %+v", on)
-	}
-	if off := photoView("0501", "Kayden McDonald", true); off.Src != "" || off.Alt != "Kayden McDonald" {
-		t.Fatalf("photos off must carry no address: %+v", off)
-	}
-}
-
 func TestPhotoRouteWaitsForStartup(t *testing.T) {
 	t.Parallel()
 	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}

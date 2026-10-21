@@ -12124,41 +12124,6 @@ export namespace livegame {
 
 }
 
-export namespace main {
-	
-	export class DataActResult {
-	    ok: boolean;
-	    error: string;
-	    summary: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new DataActResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.error = source["error"];
-	        this.summary = source["summary"];
-	    }
-	}
-	export class PhotoView {
-	    src: string;
-	    alt: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new PhotoView(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.src = source["src"];
-	        this.alt = source["alt"];
-	    }
-	}
-
-}
-
 export namespace market {
 	
 	export class AssetCell {
@@ -12947,6 +12912,25 @@ export namespace personal {
 	        this.id = source["id"];
 	        this.text = source["text"];
 	        this.action = source["action"];
+	    }
+	}
+
+}
+
+export namespace platform {
+	
+	export class PhotoView {
+	    src: string;
+	    alt: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PhotoView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.src = source["src"];
+	        this.alt = source["alt"];
 	    }
 	}
 

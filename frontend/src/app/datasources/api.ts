@@ -14,6 +14,7 @@ export const sourcesAPI = {
   loadCrosswalk: async () => bindings().LoadCrosswalk(),
   refresh: async (scope: string) => bindings().TargetDataRefresh(scope),
   folder: async (path: string) => bindings().SetLeagueArchiveDir(path),
+  photos: async (on: boolean) => bindings().SetPhotos(on),
   cacheScopes: async () => bindings().TargetCacheScopes(),
   cacheClear: async (scope: string) => bindings().TargetCacheClear(scope),
 };

@@ -48,6 +48,8 @@ type CrosswalkHost interface {
 type SettingsHost interface {
 	SourcesSettings() (string, bool, error)
 	SaveSourcesSettings(string, bool) error
+	// SetPhotosOff publishes the photo switch to the photo route and the player cards.
+	SetPhotosOff(bool)
 }
 
 // ReadingHost supplies detached shared readings at their original capture points.
@@ -159,6 +161,22 @@ func (a *API) SetLeagueArchiveDir(dir string) DataActResult {
 		return DataActResult{Error: err.Error()}
 	}
 	return DataActResult{OK: true, Summary: "League archive folder set to " + dir + "."}
+}
+
+// SetPhotos turns player photos on or off; off means no request reaches a photo host.
+func (a *API) SetPhotos(on bool) DataActResult {
+	dir, _, err := a.host.SourcesSettings()
+	if err != nil {
+		return DataActResult{Error: err.Error()}
+	}
+	if err := a.host.SaveSourcesSettings(dir, !on); err != nil {
+		return DataActResult{Error: err.Error()}
+	}
+	a.host.SetPhotosOff(!on)
+	if on {
+		return DataActResult{OK: true, Summary: "Player photos are on; each shows the first time its card is drawn."}
+	}
+	return DataActResult{OK: true, Summary: "Player photos are off; cards show the NFL team instead."}
 }
 
 func (a *API) refreshScope(scope string) (string, error) {
@@ -277,6 +295,7 @@ func Commands() []catalog.Command {
 		{ID: catalog.Unset, Method: "GetCrosswalkReport", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "LoadCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "SetLeagueArchiveDir", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
+		{ID: catalog.Unset, Method: "SetPhotos", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetCacheClear", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetCacheScopes", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},

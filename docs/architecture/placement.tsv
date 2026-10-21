@@ -110,8 +110,8 @@ now_test.go	now
 offers_app_test.go	offers
 offers_live_app_test.go	offers
 personal_app_test.go	offers
-photos_app.go	platform
-photos_app_test.go	platform
+platform_host.go	platform
+platform_host_test.go	platform
 pool_app.go	offers
 pool_app_test.go	offers
 pool_market_layout_test.go	offers
@@ -267,3 +267,4 @@ offers_reading.go	offers
 offers_fixture_test.go	offers
 commissioner_host.go	commissioner
 internal/app/commissioner/commissionertest	commissioner
+internal/app/platform	platform

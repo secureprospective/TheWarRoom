@@ -3,7 +3,6 @@ import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { dataProvider, type DataProvider, type Sources } from './provider';
 import type { Report } from '../reports/contract';
-import type { main } from '../../../wailsjs/go/models';
 export type ParamAction = { kind: 'parameter'; key: string; position: string; value: number | null };
 export type DataAction = { kind: 'read' } | { kind: 'folder'; path: string } |
   { kind: 'refresh'; scope: string } | { kind: 'photos'; on: boolean };

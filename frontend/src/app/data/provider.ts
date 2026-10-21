@@ -3,9 +3,7 @@ import type {
   AlertReading, WindowKind, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
 import { ruleDatedWindows } from '../clock/labels';
-import {
-  TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
-} from '../../../wailsjs/go/main/App';
+import { targetClock, targetDraftIR, targetDraftTaxi, targetMoves, targetSnapshot } from './api';
 import { deleteMFLKey, readMFLKey, setLeagueWindow, setMFLKey } from '../control/api';
 
 interface ReadingProvider {
@@ -245,19 +243,19 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
   }
   async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([
-      import('./parseEnvelope'), TargetDraftIR(franchiseId, playerId),
+      import('./parseEnvelope'), targetDraftIR(franchiseId, playerId),
     ]);
     return parseReceipt(receipt);
   }
   async draftTaxi(franchiseId: string, playerId: string): Promise<Receipt> {
     const [{ parseReceipt }, receipt] = await Promise.all([
-      import('./parseEnvelope'), TargetDraftTaxi(franchiseId, playerId),
+      import('./parseEnvelope'), targetDraftTaxi(franchiseId, playerId),
     ]);
     return parseReceipt(receipt);
   }
   async moves(franchiseId: string): Promise<Receipt[]> {
     const [{ parseReceipt }, receipts] = await Promise.all([
-      import('./parseEnvelope'), TargetMoves(franchiseId),
+      import('./parseEnvelope'), targetMoves(franchiseId),
     ]);
     if (!Array.isArray(receipts)) throw new Error('TargetMoves: expected array');
     return receipts.map(parseReceipt);
@@ -271,7 +269,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
         const [{ parseClock }, payload] = await Promise.all([
-        import('./parse'), TargetClock(),
+        import('./parse'), targetClock(),
       ]);
       return parseClock(payload);
     } catch (cause) {
@@ -283,7 +281,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     try {
       if (!hasWails()) throw new Error('Wails runtime absent');
         const [{ parseSnapshot }, payload] = await Promise.all([
-        import('./parse'), TargetSnapshot(),
+        import('./parse'), targetSnapshot(),
       ]);
       return parseSnapshot(payload);
     } catch (cause) {

@@ -148,7 +148,7 @@ describe('honest clock surfaces', () => {
     vi.stubGlobal('window', {
       document, HTMLIFrameElement: class {},
       runtime: { EventsOnMultiple: vi.fn(() => () => {}) },
-      go: { main: { App: { TargetSnapshot: snapshot, TargetClock: clock } } },
+      go: { platform: { API: { TargetSnapshot: snapshot, TargetClock: clock } } },
     });
     function Harness() {
       const ref = useRef<HTMLDivElement>(null);

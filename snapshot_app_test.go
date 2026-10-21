@@ -210,20 +210,20 @@ func targetOfflineClient(t *testing.T, a *App) *directoryDown {
 func TestTargetDraftIRAndMoves(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	if _, err := a.TargetDraftIR("0001", "0042"); err == nil ||
+	if _, err := a.platformAPI().TargetDraftIR("0001", "0042"); err == nil ||
 		err.Error() != "target draft: no snapshot loaded" {
 		t.Fatalf("before snapshot: %v", err)
 	}
-	moves, err := a.TargetMoves("0001")
+	moves, err := a.platformAPI().TargetMoves("0001")
 	if err != nil || moves == nil || len(moves) != 0 {
 		t.Fatalf("empty moves: %+v, %v", moves, err)
 	}
 	down := targetOfflineClient(t, a)
-	if _, err := a.TargetSnapshot(); err != nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
 	calls := down.calls
-	r, err := a.TargetDraftIR("0001", "0042")
+	r, err := a.platformAPI().TargetDraftIR("0001", "0042")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +234,7 @@ func TestTargetDraftIRAndMoves(t *testing.T) {
 		t.Fatalf("scope: %+v", r.Spec)
 	}
 	for _, fid := range []string{"0001", "0002"} {
-		moves, err := a.TargetMoves(fid)
+		moves, err := a.platformAPI().TargetMoves(fid)
 		if err != nil || moves == nil {
 			t.Fatalf("moves: %+v, %v", moves, err)
 		}
@@ -247,11 +247,11 @@ func TestTargetDraftIRAndMoves(t *testing.T) {
 		}
 	}
 	for _, bad := range []string{"abc", ""} {
-		if _, err := a.TargetDraftIR("0001", bad); err == nil {
+		if _, err := a.platformAPI().TargetDraftIR("0001", bad); err == nil {
 			t.Fatalf("accepted player %q", bad)
 		}
 	}
-	moves, err = a.TargetMoves("0001")
+	moves, err = a.platformAPI().TargetMoves("0001")
 	if err != nil || len(moves) != 1 || down.calls != calls {
 		t.Fatalf("invalid input changed log or network calls: %+v, %v", moves, err)
 	}
@@ -261,20 +261,20 @@ func TestTargetDraftIRConcurrent(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	down := targetOfflineClient(t, a)
-	if _, err := a.TargetSnapshot(); err != nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
 	calls := down.calls
 	var wg sync.WaitGroup
 	for range 8 {
 		wg.Go(func() {
-			if _, err := a.TargetDraftIR("0001", "0042"); err != nil {
+			if _, err := a.platformAPI().TargetDraftIR("0001", "0042"); err != nil {
 				t.Error(err)
 			}
 		})
 	}
 	wg.Wait()
-	moves, err := a.TargetMoves("0001")
+	moves, err := a.platformAPI().TargetMoves("0001")
 	if err != nil || len(moves) != 8 {
 		t.Fatalf("moves: %+v, %v", moves, err)
 	}
@@ -294,18 +294,18 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
-	if _, err := a.TargetSnapshot(); err != nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	a.core.Ctx = ctx
-	if _, err := a.TargetSnapshot(); err == nil {
+	if _, err := a.platformAPI().TargetSnapshot(); err == nil {
 		t.Fatal("cancelled build succeeded")
 	}
 	// The cancelled context only simulated a failed build; the app itself is still running.
 	a.core.Ctx = context.Background()
-	r, err := a.TargetDraftIR("0001", "0042")
+	r, err := a.platformAPI().TargetDraftIR("0001", "0042")
 	if err != nil || r.State != envelope.Blocked ||
 		r.Audit[0].Note != "Not checked: stale; MFL will decide. "+
 			"MFL host not yet known; MFL target not verified" {
@@ -318,10 +318,10 @@ func TestTargetMovesSurviveRestart(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "league.db")
 	first := targetTestAppAt(t, path)
 	targetOfflineClient(t, first)
-	if _, err := first.TargetSnapshot(); err != nil {
+	if _, err := first.platformAPI().TargetSnapshot(); err != nil {
 		t.Fatal(err)
 	}
-	drafted, err := first.TargetDraftIR("0001", "0042")
+	drafted, err := first.platformAPI().TargetDraftIR("0001", "0042")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,7 +329,7 @@ func TestTargetMovesSurviveRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	second := targetTestAppAt(t, path)
-	listed, err := second.TargetMoves("0001")
+	listed, err := second.platformAPI().TargetMoves("0001")
 	if err != nil || !reflect.DeepEqual(listed, []envelope.Receipt{drafted}) {
 		t.Fatalf("restart: %+v, %v", listed, err)
 	}

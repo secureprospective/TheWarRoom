@@ -16,9 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-// TargetHandOff marks a Ready move handed off, saves it, then opens its MFL page; the owner
-// submits on MFL and the watcher looks for the change. Nothing is saved or opened on an error.
-func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
+func (a *App) handOffMove(correlationID string) (envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: startup: %w", err)
 	}
@@ -67,9 +65,7 @@ func validateMoveURL(target string) error {
 	return nil
 }
 
-// TargetCheckMoves asks the watcher for a pass now (rate limited to one a minute); it returns at
-// once.
-func (a *App) TargetCheckMoves() error {
+func (a *App) requestMovesPass() error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("target check moves: startup: %w", err)
 	}
@@ -447,8 +443,7 @@ func skipMoveRefresh(source envelope.Source, sources map[envelope.Source]bool) b
 	return !sources[source] || (source == envelope.Contracts && sources[envelope.Rosters])
 }
 
-// TargetWithdrawRoster removes an IR/taxi plan without making any MFL change.
-func (a *App) TargetWithdrawRoster(correlationID string) (envelope.Receipt, error) {
+func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: startup: %w", err)
 	}

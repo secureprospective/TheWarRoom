@@ -140,7 +140,7 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 		Teams: [2]string{"BUF", "LAR"}, Kickoff: at.Add(-time.Hour),
 	}}}
 	a.core.WeekFetchedAt = at.Add(-time.Minute)
-	reading, err := a.TargetClock()
+	reading, err := a.platformAPI().TargetClock()
 	if err != nil || reading.Value.Week == nil || *reading.Value.Week != 5 {
 		t.Fatal("last game in progress lost week", reading, err)
 	}
@@ -149,11 +149,11 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 		t.Fatal("lineup lock must be passed", reading.Value.Deadlines)
 	}
 	a.core.Week.Games[0].Final = true
-	if r, err := a.TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 5 {
+	if r, err := a.platformAPI().TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 5 {
 		t.Fatal("do not lose week until next schedule is held", r, err)
 	}
 	a.core.Week = leagueweek.Week{Number: 6, Games: []leagueweek.Game{{Kickoff: at.Add(48 * time.Hour)}}}
-	if r, err := a.TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 6 {
+	if r, err := a.platformAPI().TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 6 {
 		t.Fatal("next held schedule not adopted", r, err)
 	}
 }
@@ -183,7 +183,7 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 	if _, err := a.initStoreFloor(a.core.Ctx, a.core.History); err != nil {
 		t.Fatal(err)
 	}
-	reading, err := a.TargetClock()
+	reading, err := a.platformAPI().TargetClock()
 	if err != nil {
 		t.Fatal(err)
 	}

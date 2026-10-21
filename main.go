@@ -100,7 +100,6 @@ func probe() int {
 // bindings is the runtime surface also inspected by the binding manifest test.
 func bindings(app *App) []interface{} {
 	return []interface{}{
-		app,
 		archiveapp.New(app.core),
 		newCommissionerAPI(app),
 		comms.New(app.core),
@@ -111,6 +110,7 @@ func bindings(app *App) []interface{} {
 		newMarketAPI(app),
 		nowapp.New(nowHost{State: app.core, app: app}, app.nowHeld),
 		offers.New(offersHost{State: app.core, app: app}),
+		app.platformAPI(),
 		raceapp.New(app.core, app.raceHeld),
 		research.New(researchHost{app: app}, app.researchHeld),
 		app.sourcesAPI(),

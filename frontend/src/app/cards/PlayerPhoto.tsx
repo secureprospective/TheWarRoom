@@ -1,17 +1,10 @@
 import { useEffect, useState } from 'react';
+import { photoReader, type PhotoReader } from '../data/api';
 
 // Go's verdict on a player's photo (W1): an empty src means show the fallback, no request.
 type PhotoView = { src: string; alt: string };
-type PhotoReader = (id: string) => Promise<PhotoView>;
 
-type GoWindow = { go?: { main?: { App?: { TargetPhoto?: PhotoReader } } } };
-
-function goReader(): PhotoReader | undefined {
-  if (typeof window === 'undefined') return undefined;
-  return (window as unknown as GoWindow).go?.main?.App?.TargetPhoto;
-}
-
-export function usePhoto(id: string, read = goReader()): PhotoView | undefined {
+export function usePhoto(id: string, read: PhotoReader | undefined = photoReader()): PhotoView | undefined {
   const [view, setView] = useState<PhotoView>();
   useEffect(() => {
     let live = true;

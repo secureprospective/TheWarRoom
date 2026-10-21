@@ -7,7 +7,6 @@ import { ReportView } from '../reports/ReportView';
 import { CacheTools } from './CacheTools';
 import { dataState } from './state';
 import type { Sources } from './provider';
-import type { main } from '../../../wailsjs/go/models';
 import './sources.css';
 
 export function RefreshScopes({ data, busy, outcomes = {} }:

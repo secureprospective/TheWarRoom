@@ -84,7 +84,7 @@ func TestTargetHandOffSaveBeforeOpen(t *testing.T) {
 			t.Fatal("open preceded save or changed URL")
 		}
 	}
-	r, err := a.TargetHandOff(e.ID())
+	r, err := a.platformAPI().TargetHandOff(e.ID())
 	if err != nil || r.State != envelope.HandedOff || opens != 1 || events != 1 || len(logs) != 1 {
 		t.Fatalf("hand-off: %+v, %v, opens %d events %d logs %v", r, err, opens, events, logs)
 	}
@@ -128,7 +128,7 @@ func TestTargetHandOffRefused(t *testing.T) {
 			if name == "unknown" {
 				id = "absent"
 			}
-			_, err := a.TargetHandOff(id)
+			_, err := a.platformAPI().TargetHandOff(id)
 			if err == nil || !reflect.DeepEqual(before, storedMove(t, a).Receipt()) {
 				t.Fatalf("refusal: %v", err)
 			}
@@ -172,10 +172,10 @@ func TestMoveBindingsNotReady(t *testing.T) {
 	a := NewApp()
 	a.core.StartupErr = errors.New("not ready")
 	close(a.core.Started)
-	if _, err := a.TargetHandOff("missing"); err == nil {
+	if _, err := a.platformAPI().TargetHandOff("missing"); err == nil {
 		t.Fatal("hand-off ignored startup failure")
 	}
-	if err := a.TargetCheckMoves(); err == nil {
+	if err := a.platformAPI().TargetCheckMoves(); err == nil {
 		t.Fatal("check ignored startup failure")
 	}
 }
@@ -361,7 +361,7 @@ func TestWatcherFastModeAndCoalescedWakes(t *testing.T) {
 	<-passes
 	timer = receiveMoveTimer(t, clock)
 	for range 10 {
-		if err := a.TargetCheckMoves(); err != nil {
+		if err := a.platformAPI().TargetCheckMoves(); err != nil {
 			t.Fatal(err)
 		}
 		// Waiting for each rearm proves each wake was consumed without running a pass.
@@ -385,7 +385,7 @@ func TestWatcherFastModeAndCoalescedWakes(t *testing.T) {
 	clock.set(at.Add(30 * time.Minute))
 	timer.tick <- clock.read()
 	// Once the fast window ends there is no timer. A season wake rearms it.
-	if err := a.TargetCheckMoves(); err != nil {
+	if err := a.platformAPI().TargetCheckMoves(); err != nil {
 		t.Fatal(err)
 	}
 	timer = receiveMoveTimer(t, clock)
@@ -610,7 +610,7 @@ func TestHandOffDoesNotWaitForWatcherRefresh(t *testing.T) {
 	<-entered
 	handed := make(chan error, 1)
 	go func() {
-		_, err := a.TargetHandOff("move-2")
+		_, err := a.platformAPI().TargetHandOff("move-2")
 		handed <- err
 	}()
 	timer := time.NewTimer(time.Second)

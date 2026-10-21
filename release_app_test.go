@@ -92,7 +92,7 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	if rejected.Status != report.ReadingFailed || opened != 0 {
 		t.Fatal("unconfirmed cut opened MFL")
 	}
-	if _, err := a.TargetHandOff(plan.ID); err == nil {
+	if _, err := a.platformAPI().TargetHandOff(plan.ID); err == nil {
 		t.Fatal("generic hand-off bypassed confirmation")
 	}
 	releaseCall(t, a, "handoff", "", plan.ID, true)

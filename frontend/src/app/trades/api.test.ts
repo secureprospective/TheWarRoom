@@ -26,7 +26,7 @@ it('routes all three calls through trades.API and parses their wire output', asy
     TargetDraftTradeAccept: vi.fn(async () => receipt),
     TargetTradeBuilder: vi.fn(async () => builder),
   };
-  vi.stubGlobal('window', { go: { trades: { API }, main: { App: {} } } });
+  vi.stubGlobal('window', { go: { trades: { API } } });
   expect(await trades('0025')).toEqual(parseTrades(reading));
   expect(API.TargetTrades).toHaveBeenCalledWith('0025');
   expect(await draftTradeAccept('0025', '77')).toEqual(parseReceipt(receipt));

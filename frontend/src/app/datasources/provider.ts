@@ -1,10 +1,8 @@
 import type { ParamsResult } from '../control/api';
-import { SetPhotos } from '../../../wailsjs/go/main/App';
 import { getParams, resetParam, setParam } from '../control/api';
 import { sourcesAPI } from './api';
 import { object, text, array, choice } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
-import type { main } from '../../../wailsjs/go/models';
 
 export type Scope = { id: string; label: string; note: string; action: string; progress: string };
 export type Sources = { health: Report; signals: Report; facts: Report; checks: Report;
@@ -61,7 +59,7 @@ export const dataProvider: DataProvider = {
     return p; },
   refresh: async scope => { return parseOutcome(await sourcesAPI.refresh(scope)); },
   folder: async path => { return parseOutcome(await sourcesAPI.folder(path)); },
-  photos: async on => { desktop(); return parseOutcome(await SetPhotos(on)); },
+  photos: async on => { desktop(); return parseOutcome(await sourcesAPI.photos(on)); },
   parameter: async (key, position, value) => {
     desktop(); const r = value === null ? await resetParam(key, position) : await setParam(key,
       position, value);

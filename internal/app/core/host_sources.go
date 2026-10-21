@@ -22,6 +22,7 @@ func (s *State) SourcesSettings() (string, bool, error) { return s.ReadSourcesSe
 func (s *State) SaveSourcesSettings(dir string, off bool) error {
 	return s.WriteSourcesSettings(dir, off)
 }
+func (s *State) SetPhotosOff(off bool)                 { s.PhotosOff.Store(off) }
 func (s *State) SourcesDatabaseChecks() *report.Report { return s.ReadSourcesDatabaseChecks() }
 func (s *State) SourcesDirectory(ctx context.Context) (normalize.Lookup, error) {
 	return s.ReadSourcesDirectory(ctx)

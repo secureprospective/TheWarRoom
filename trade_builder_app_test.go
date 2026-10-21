@@ -199,7 +199,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if handed.Status != report.ReadingOK || opens != 1 {
 		t.Fatal(handed, opens)
 	}
-	if _, err := a.TargetHandOff(id); err == nil {
+	if _, err := a.platformAPI().TargetHandOff(id); err == nil {
 		t.Fatal("generic handoff bypassed trade pre-flight")
 	}
 	wrong := realDeal()
@@ -549,7 +549,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 	if len(view.Plans) != 0 || view.Preview != nil {
 		t.Fatalf("removed plan still on desk: %+v", view)
 	}
-	receipts, err := a.TargetMoves(r.Mine)
+	receipts, err := a.platformAPI().TargetMoves(r.Mine)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -614,7 +614,7 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			if err := a.removeTradePlan(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
 				t.Fatal(err)
 			}
-			receipts, err := a.TargetMoves(tc.mine)
+			receipts, err := a.platformAPI().TargetMoves(tc.mine)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -665,7 +665,7 @@ func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
 	r.Action = "save"
 	r.Give = []string{"FP_0001_2027_1"}
 	saved := builderCall(t, a, r).Preview
-	receipts, err := a.TargetMoves(r.Mine)
+	receipts, err := a.platformAPI().TargetMoves(r.Mine)
 	if err != nil {
 		t.Fatal(err)
 	}

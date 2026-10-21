@@ -8,6 +8,7 @@ import (
 	"time"
 
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 )
@@ -38,8 +39,8 @@ func liveWire(t *testing.T) nowapp.LiveGameView {
 	for _, p := range plays {
 		if strings.HasPrefix(p.Text, "J.Brissett pass short right to T.Quitoriano for 2 yards, TOUCHDOWN") {
 			view.Spine = []nowapp.SpineEntry{
-				{Player: nowapp.SpinePlayer{ID: "13130", Name: "Jacoby Brissett", Team: "ARI", Mine: true, Photo: nowapp.PhotoView(photoView("13130", "Jacoby Brissett", true))}, Play: p},
-				{Player: nowapp.SpinePlayer{ID: "16001", Name: "Teagan Quitoriano", Team: "ARI", Photo: nowapp.PhotoView(photoView("16001", "Teagan Quitoriano", true))}, Play: p},
+				{Player: nowapp.SpinePlayer{ID: "13130", Name: "Jacoby Brissett", Team: "ARI", Mine: true, Photo: nowapp.PhotoView(platformapp.Photo("13130", "Jacoby Brissett", true))}, Play: p},
+				{Player: nowapp.SpinePlayer{ID: "16001", Name: "Teagan Quitoriano", Team: "ARI", Photo: nowapp.PhotoView(platformapp.Photo("16001", "Teagan Quitoriano", true))}, Play: p},
 			}
 		}
 	}

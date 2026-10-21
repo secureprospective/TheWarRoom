@@ -9,7 +9,6 @@ import { report } from '../reports/contract';
 import { ReportView } from '../reports/ReportView';
 import { endpointById, placementRoute } from '../registry';
 import { commands } from '../commands/registry';
-import type { main } from '../../../wailsjs/go/models';
 import wire from './wire.testdata.json';
 const data = () => parseSources(wire.data);
 const provider = (): DataProvider => ({
