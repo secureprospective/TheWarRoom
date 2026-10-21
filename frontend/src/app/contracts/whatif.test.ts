@@ -9,7 +9,7 @@ import type { Reading } from './contract';
 import type { WhatIf } from './whatif';
 import { commands } from '../commands/registry';
 import * as providers from '../data/provider';
-import * as bindings from '../../../wailsjs/go/main/App';
+import * as bindings from './api';
 
 function reading(): Reading<WhatIf> {
   return {
@@ -67,7 +67,7 @@ describe('What-if', () => {
     vi.spyOn(providers, 'selectProvider').mockReturnValue({
       ...fixture, kind: 'live', onSeasonChange: () => () => {},
     } as unknown as providers.Provider);
-    const binding = vi.spyOn(bindings, 'TargetWhatIf').mockResolvedValue(reading() as never);
+    const binding = vi.spyOn(bindings, 'targetWhatIf').mockResolvedValue(reading() as never);
     const p = whatIfProvider();
     const off = p.onChange(() => { void p.query('0001'); });
     commands.dispatch('contracts.set', {
@@ -76,11 +76,12 @@ describe('What-if', () => {
     await new Promise(resolve => setTimeout(resolve, 30));
     expect(binding).toHaveBeenCalledTimes(2);
     expect(binding.mock.calls[0][0]).toEqual({ mine: '0001', action: 'cut', player: '0042', move: '' });
-    expect(binding.mock.calls[1][0].action).toBe('read');
+    expect((binding.mock.calls[1][0] as { action: string }).action).toBe('read');
     off();
     await p.change({ mine: '0001', action: 'undo', move: '1' });
     await p.change({ mine: '0001', action: 'reset' });
-    expect(binding.mock.calls.map(c => c[0].action)).toEqual(['cut', 'read', 'undo', 'reset']);
+    expect(binding.mock.calls.map(c => (c[0] as { action: string }).action))
+      .toEqual(['cut', 'read', 'undo', 'reset']);
   });
   it('rejects malformed payloads and reports change failures without inventing state', async () => {
     const r = reading();
@@ -89,7 +90,7 @@ describe('What-if', () => {
     vi.spyOn(providers, 'selectProvider').mockReturnValue({
       kind: 'live', onSeasonChange: () => () => {},
     } as unknown as providers.Provider);
-    vi.spyOn(bindings, 'TargetWhatIf').mockResolvedValue({
+    vi.spyOn(bindings, 'targetWhatIf').mockResolvedValue({
       ...reading(), status: 'failed', absenceReason: 'Read failed',
     } as never);
     const p = whatIfProvider();

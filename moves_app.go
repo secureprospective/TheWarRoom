@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -76,12 +77,7 @@ func (a *App) TargetCheckMoves() error {
 	return nil
 }
 
-func (a *App) wakeMoves() {
-	select {
-	case a.core.MovesWake <- struct{}{}:
-	default:
-	}
-}
+func (a *App) wakeMoves() { a.core.WakeMoves() }
 
 func (a *App) logMove(e envelope.Envelope) {
 	r := e.Receipt()
@@ -296,7 +292,7 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 	m, _, _ := a.core.League.ContractsView()
 	contracts := []envelope.ContractEvidence{}
 	for _, p := range m.Players {
-		contracts = append(contracts, mirrorContractEvidence(m, p.FranchiseID, p.MFLID))
+		contracts = append(contracts, contractsapp.Evidence(m, p.FranchiseID, p.MFLID))
 	}
 	return envelope.Observation{
 		Contracts: snapshot.Sourced[[]envelope.ContractEvidence]{Value: contracts, Provenance: rosters.Provenance},
@@ -336,7 +332,7 @@ func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
 	a.revalidateReleaseAfterRefresh(ctx)
 	if a.core.Moves != nil && a.core.Whatif != nil {
 		a.core.MovesMu.Lock()
-		err := a.revalidateContractPlans(ctx)
+		err := contractsapp.RevalidateContractPlans(ctx, a.core)
 		a.core.MovesMu.Unlock()
 		if err != nil {
 			a.core.MovesLog(fmt.Sprintf("contract validation: %v", err))
@@ -435,7 +431,7 @@ func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibi
 func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
 	if a.core.Moves != nil && a.core.Whatif != nil {
 		a.core.MovesMu.Lock()
-		err := a.revalidateReleasePlans(ctx)
+		err := contractsapp.RevalidateReleasePlans(ctx, a.core)
 		a.core.MovesMu.Unlock()
 		if err != nil {
 			a.core.MovesLog(fmt.Sprintf("release validation: %v", err))

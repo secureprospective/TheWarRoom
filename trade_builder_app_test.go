@@ -12,8 +12,10 @@ import (
 	"testing"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -397,8 +399,8 @@ func TestTradeBuilderIRTaxiAndRemovedWhatIfAssets(t *testing.T) {
 	if !found {
 		t.Fatal("taxi status was lost")
 	}
-	cut := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "14167"})
-	if cut.Status != ReadingOK || cut.Value.Notice != "" {
+	cut := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "cut", Player: "14167"})
+	if cut.Status != report.ReadingOK || cut.Value.Notice != "" {
 		t.Fatal(cut)
 	}
 	removed := builderCall(t, a, raw).Preview
@@ -582,7 +584,7 @@ func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
 		!strings.Contains(string(body), "this season’s cap carried forward") {
 		t.Fatalf("trade wording: %s", body)
 	}
-	whatif := a.TargetWhatIf(RawWhatIfRequest{Mine: "0001", Action: "read"})
+	whatif := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "read"})
 	if strings.Contains(strings.ToLower(whatif.HowCounted), "inferred") ||
 		!strings.Contains(whatif.HowCounted, "carry today’s MFL annual salary") {
 		t.Fatal(whatif.HowCounted)

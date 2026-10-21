@@ -82,10 +82,6 @@ export function TargetCacheScopes() {
   return window['go']['main']['App']['TargetCacheScopes']();
 }
 
-export function TargetCheckLineup(arg1, arg2) {
-  return window['go']['main']['App']['TargetCheckLineup'](arg1, arg2);
-}
-
 export function TargetCheckMoves() {
   return window['go']['main']['App']['TargetCheckMoves']();
 }
@@ -150,24 +146,12 @@ export function TargetCommissionerSchedule(arg1) {
   return window['go']['main']['App']['TargetCommissionerSchedule'](arg1);
 }
 
-export function TargetContractActs(arg1) {
-  return window['go']['main']['App']['TargetContractActs'](arg1);
-}
-
-export function TargetContracts(arg1) {
-  return window['go']['main']['App']['TargetContracts'](arg1);
-}
-
 export function TargetCorrections(arg1) {
   return window['go']['main']['App']['TargetCorrections'](arg1);
 }
 
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
-}
-
-export function TargetDraftLineup(arg1, arg2) {
-  return window['go']['main']['App']['TargetDraftLineup'](arg1, arg2);
 }
 
 export function TargetDraftTaxi(arg1, arg2) {
@@ -188,10 +172,6 @@ export function TargetLeagueSchedule(arg1) {
 
 export function TargetLeagueSettings() {
   return window['go']['main']['App']['TargetLeagueSettings']();
-}
-
-export function TargetLineup(arg1) {
-  return window['go']['main']['App']['TargetLineup'](arg1);
 }
 
 export function TargetLiveGame(arg1, arg2, arg3) {
@@ -342,20 +322,12 @@ export function TargetPhoto(arg1) {
   return window['go']['main']['App']['TargetPhoto'](arg1);
 }
 
-export function TargetPlayerContract(arg1) {
-  return window['go']['main']['App']['TargetPlayerContract'](arg1);
-}
-
 export function TargetPool(arg1) {
   return window['go']['main']['App']['TargetPool'](arg1);
 }
 
 export function TargetPoolRefresh(arg1) {
   return window['go']['main']['App']['TargetPoolRefresh'](arg1);
-}
-
-export function TargetReleasePlans(arg1) {
-  return window['go']['main']['App']['TargetReleasePlans'](arg1);
 }
 
 export function TargetResearch(arg1) {
@@ -376,10 +348,6 @@ export function TargetResearchRefresh(arg1) {
 
 export function TargetResearchStatus() {
   return window['go']['main']['App']['TargetResearchStatus']();
-}
-
-export function TargetRosterReports(arg1) {
-  return window['go']['main']['App']['TargetRosterReports'](arg1);
 }
 
 export function TargetSeason() {
@@ -404,10 +372,6 @@ export function TargetSnapshot() {
 
 export function TargetStatQueue(arg1, arg2) {
   return window['go']['main']['App']['TargetStatQueue'](arg1, arg2);
-}
-
-export function TargetWhatIf(arg1) {
-  return window['go']['main']['App']['TargetWhatIf'](arg1);
 }
 
 export function TargetWithdrawRoster(arg1) {

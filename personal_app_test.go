@@ -180,7 +180,7 @@ func TestRosterPointsFromHeldPeriods(t *testing.T) {
 	holdPersonalBody(t, a, "playerScores", `{"playerScores":{"week":"YTD","playerScore":{"id":"`+id+`","score":"134.80"}}}`)
 	holdPersonalBody(t, a, "playerScores", `{"playerScores":{"week":"4","playerScore":{"id":"`+id+`","score":"0.00"}}}`)
 	holdPersonalBody(t, a, "nflByeWeeks", `{"nflByeWeeks":{"team":{"id":"BUF","bye_week":"7"}}}`)
-	reports, err := a.TargetRosterReports("0025")
+	reports, err := a.contracts().TargetRosterReports("0025")
 	if err != nil || len(reports) != 2 {
 		t.Fatalf("reports: %+v %v", reports, err)
 	}

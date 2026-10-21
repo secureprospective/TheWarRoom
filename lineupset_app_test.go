@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -47,27 +49,27 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 	a, transport, ids := lineupDraftApp(t)
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
-	result, err := a.TargetCheckLineup("0025", ids)
+	result, err := a.contracts().TargetCheckLineup("0025", ids)
 	if err != nil || !result.Full || !result.Legal {
 		t.Fatalf("full: %+v %v", result, err)
 	}
-	result, err = a.TargetCheckLineup("0025", append(slices.Clone(ids), "15252"))
+	result, err = a.contracts().TargetCheckLineup("0025", append(slices.Clone(ids), "15252"))
 	if err != nil || result.Legal {
 		t.Fatalf("extra QB: %+v %v", result, err)
 	}
 	// Toggle checks only positions; roster status is blocked at draft, not during editing.
 	ir := slices.Clone(ids)
 	ir[20] = "17211"
-	result, err = a.TargetCheckLineup("0025", ir)
+	result, err = a.contracts().TargetCheckLineup("0025", ir)
 	if err != nil || !result.Legal {
 		t.Fatalf("IR position check: %+v %v", result, err)
 	}
 	for _, bad := range [][]string{{"bad"}, {"99", "0099"}} {
-		if _, err := a.TargetCheckLineup("0025", bad); err == nil {
+		if _, err := a.contracts().TargetCheckLineup("0025", bad); err == nil {
 			t.Fatal("invalid selection accepted")
 		}
 	}
-	if _, err := a.TargetCheckLineup("nope", ids); err == nil {
+	if _, err := a.contracts().TargetCheckLineup("nope", ids); err == nil {
 		t.Fatal("unknown franchise")
 	}
 	if len(transport.requests) != 0 {
@@ -78,7 +80,7 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 		t.Fatalf("check saved: %+v %v", listed, err)
 	}
 	a.core.HasTargetSnapshot = false
-	if _, err := a.TargetCheckLineup("0025", ids); err == nil {
+	if _, err := a.contracts().TargetCheckLineup("0025", ids); err == nil {
 		t.Fatal("no snapshot")
 	}
 }
@@ -87,7 +89,7 @@ func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	a.core.TargetSnapshot.Players.Value = nil
-	result, err := a.TargetCheckLineup("0025", ids)
+	result, err := a.contracts().TargetCheckLineup("0025", ids)
 	if err != nil || result.Legal || result.Problems[0].Kind != "short" {
 		t.Fatalf("unknown: %+v %v", result, err)
 	}
@@ -96,7 +98,7 @@ func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 	if _, err := a.core.Rulebook.Sync(a.core.Ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
-	result, err = a.TargetCheckLineup("0025", ids)
+	result, err = a.contracts().TargetCheckLineup("0025", ids)
 	reading := mustLineup(t, a)
 	if err != nil || len(result.Problems) != 1 || result.Problems[0] != reading.Check.Problems[0] {
 		t.Fatalf("rules: %+v %v", result, err)
@@ -104,7 +106,7 @@ func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 	bad := NewApp()
 	bad.core.StartupErr = errors.New("offline startup")
 	close(bad.core.Started)
-	if _, err := bad.TargetCheckLineup("0025", ids); err == nil {
+	if _, err := bad.contracts().TargetCheckLineup("0025", ids); err == nil {
 		t.Fatal("not ready")
 	}
 }
@@ -121,7 +123,7 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 			t.Parallel()
 			a, transport, ids := lineupDraftApp(t)
 			drafted := changedStarters(ids)
-			r, err := a.TargetDraftLineup("0025", drafted)
+			r, err := a.contracts().TargetDraftLineup("0025", drafted)
 			if err != nil || r.State != envelope.Ready || r.Audit[0].Note != "legal" {
 				t.Fatalf("draft: %+v %v", r, err)
 			}
@@ -251,7 +253,7 @@ func TestTargetDraftLineupBlocks(t *testing.T) {
 				}
 				note = "rules could not be read"
 			}
-			r, err := a.TargetDraftLineup("0025", starters)
+			r, err := a.contracts().TargetDraftLineup("0025", starters)
 			if err != nil || r.State != envelope.Blocked || !strings.Contains(r.Audit[0].Note, note) {
 				t.Fatalf("blocked: %+v %v", r, err)
 			}
@@ -278,7 +280,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 			if kind == "blocked" {
 				starters = ids
 			}
-			first, err := a.TargetDraftLineup("0025", starters)
+			first, err := a.contracts().TargetDraftLineup("0025", starters)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -288,7 +290,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			second, err := a.TargetDraftLineup("0025", changedStarters(ids))
+			second, err := a.contracts().TargetDraftLineup("0025", changedStarters(ids))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -315,7 +317,7 @@ func TestKnownEmptyLineupBaseline(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
 	a.core.SeasonLineups.Value.Franchises = nil
-	r, err := a.TargetDraftLineup("0025", ids)
+	r, err := a.contracts().TargetDraftLineup("0025", ids)
 	if err != nil || r.State != envelope.Ready || len(r.Spec.Expected.Lineup.Baseline) != 0 {
 		t.Fatalf("known empty: %+v %v", r, err)
 	}
@@ -324,7 +326,7 @@ func TestKnownEmptyLineupBaseline(t *testing.T) {
 func TestMoveSeasonFeedSkip(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
-	r, err := a.TargetDraftLineup("0025", changedStarters(ids))
+	r, err := a.contracts().TargetDraftLineup("0025", changedStarters(ids))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -392,18 +394,18 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 func TestSupersedeSavedBeforeNewEnvelope(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
-	first, err := a.TargetDraftLineup("0025", changedStarters(ids))
+	first, err := a.contracts().TargetDraftLineup("0025", changedStarters(ids))
 	if err != nil {
 		t.Fatal(err)
 	}
 	now := a.core.MovesNow()
-	req, check := a.lineupRequest("0025", first.Spec.Subject.Players, now)
+	req, check := contractsapp.LineupPlan(a.contracts(), "0025", first.Spec.Subject.Players, now)
 	next, err := envelope.DraftLineup(now, req, a.core.TargetSnapshot, check, func() string { return "next" })
 	if err != nil {
 		t.Fatal(err)
 	}
 	a.core.MovesMu.Lock()
-	err = a.supersedeLineups(a.core.Ctx, next, now)
+	err = contractsapp.SupersedeMoves(a.core.Ctx, a.core.Moves, next, now)
 	a.core.MovesMu.Unlock()
 	if err != nil {
 		t.Fatal(err)

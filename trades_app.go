@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -55,8 +56,8 @@ func (h tradesHost) DraftTradeAccept(franchiseID string, offer leaguefeed.Pendin
 	}
 	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	if err := a.supersedeMoves(ctx, e, now); err != nil {
-		return envelope.Receipt{}, err
+	if err := contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 	}
 	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: save: %w", err)
@@ -111,7 +112,7 @@ func (a *App) tradeState(franchiseID string) (
 	snapshot.Snapshot, snapshot.Sourced[[]leaguefeed.PendingTrade], error,
 ) {
 	// Reuse the held-snapshot franchise validation, with no player selection to parse.
-	snap, _, err := a.lineupSelection(franchiseID, nil)
+	snap, _, err := contractsapp.LineupSelection(a.core, franchiseID, nil)
 	if err != nil {
 		return snapshot.Snapshot{}, snapshot.Sourced[[]leaguefeed.PendingTrade]{},
 			fmt.Errorf("trade state: %w", err)
@@ -202,8 +203,8 @@ func (a *App) draftTradeExit(ctx context.Context, r tradesapp.RawTradeBuilder,
 	a.core.MovesMu.Lock()
 	defer a.core.MovesMu.Unlock()
 	// One live exit plan per offer, as with accept plans: a new one supersedes the old.
-	if err := a.supersedeMoves(ctx, e, now); err != nil {
-		return envelope.Receipt{}, err
+	if err := contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 	}
 	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade exit save: %w", err)
@@ -291,9 +292,9 @@ func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradeSim
 	out := tradeSimulation{Before: map[string]domain.Money{}}
 	merged := state.MirrorSnapshot{}
 	for _, fid := range []string{mine, other} {
-		s, store, err := a.whatIfSession(ctx, RawWhatIfRequest{Mine: fid, Action: "read"})
+		s, store, err := contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: fid, Action: "read"})
 		if err != nil {
-			return out, err
+			return out, err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 		}
 		out.Sessions = append(out.Sessions, s)
 		used, _ := store.CapUsed(fid)
@@ -317,9 +318,9 @@ func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradeSim
 	seed := out.Sessions[0]
 	seed.Generation = "trade-preview:" + fmt.Sprint(time.Now().UnixNano())
 	seed.Snapshot = merged
-	store, err := a.loadWhatIf(ctx, seed)
+	store, err := contractsapp.LoadWhatIf(ctx, a.core.WhatifPools, seed)
 	if err != nil {
-		return out, err
+		return out, err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 	}
 	out.Store = store
 	return out, nil

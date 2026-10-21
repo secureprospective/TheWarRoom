@@ -7,31 +7,35 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 )
 
 func TestContractPendingCanBeWithdrawn(t *testing.T) {
 	t.Parallel()
 	a := releaseTestApp(t)
-	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "draft", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
-	kept := a.TargetContractActs(raw)
-	if kept.Status != ReadingOK {
+	raw := contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "draft", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
+	kept := a.contracts().TargetContractActs(raw)
+	if kept.Status != report.ReadingOK {
 		t.Fatal(kept)
 	}
 	id := kept.Value[0].ID
 	for _, action := range []string{"handoff", "posted"} {
-		r := a.TargetContractActs(RawContractAct{Mine: "0001", Action: action, ID: id})
-		if r.Status != ReadingOK {
+		r := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: action, ID: id})
+		if r.Status != report.ReadingOK {
 			t.Fatal(r)
 		}
 	}
-	plans := a.TargetContractActs(RawContractAct{Mine: "0001", Action: "read"})
+	plans := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "read"})
 	pending := plans.Value[0]
 	if pending.Receipt.State != envelope.BidPending || !pending.CanWithdraw {
 		t.Fatal("pending has no way out", pending)
 	}
-	gone := a.TargetContractActs(RawContractAct{Mine: "0001", Action: "withdraw", ID: id})
-	if gone.Status != ReadingOK || gone.Value[0].Receipt.State != envelope.Withdrawn {
+	gone := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "withdraw", ID: id})
+	if gone.Status != report.ReadingOK || gone.Value[0].Receipt.State != envelope.Withdrawn {
 		t.Fatal(gone)
 	}
 	audit := gone.Value[0].Receipt.Audit
@@ -106,12 +110,12 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 		}
 	}
 	a := releaseTestApp(t)
-	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "draft", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
-	kept := a.TargetContractActs(raw)
-	if kept.Status != ReadingOK {
+	raw := contractsapp.RawContractAct{Mine: "0001", Player: "0042", Action: "draft", Intent: "contract.restructure", Level: 1, Years: 1, Source: 2026, Destination: 2028, Move: "1"}
+	kept := a.contracts().TargetContractActs(raw)
+	if kept.Status != report.ReadingOK {
 		t.Fatal(kept)
 	}
-	gone := a.TargetContractActs(RawContractAct{Mine: "0001", Action: "withdraw", ID: kept.Value[0].ID}).Value[0].Receipt
+	gone := a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "withdraw", ID: kept.Value[0].ID}).Value[0].Receipt
 	if gone.Audit[len(gone.Audit)-1].Note != want {
 		t.Fatal(gone.Audit)
 	}
@@ -133,7 +137,7 @@ func TestRemovalWordsAgreeAcrossKinds(t *testing.T) {
 
 func TestJoinedNotesDoNotDoublePunctuate(t *testing.T) {
 	t.Parallel()
-	if got := joinNote("First.", "Second."); got != "First; Second" {
+	if got := report.JoinNote("First.", "Second."); got != "First; Second" {
 		t.Fatal(got)
 	}
 }

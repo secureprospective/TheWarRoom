@@ -1,4 +1,4 @@
-package main
+package contracts
 
 import (
 	"context"
@@ -8,7 +8,6 @@ import (
 	"slices"
 	"time"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -33,7 +32,7 @@ type RawContractAct struct {
 }
 
 func (r RawContractAct) Validate() error {
-	return contractsapp.Act(r).Validate() //nolint:wrapcheck // the service's errors already start "contract Act"
+	return Act(r).Validate()
 }
 
 type ContractActFigure struct {
@@ -68,21 +67,27 @@ type ContractActView struct {
 	CanRebase   bool                `json:"canRebase"`
 }
 
-func (a *App) TargetContractActs(raw RawContractAct) Reading[[]ContractActView] {
+func (a *API) TargetContractActs(raw RawContractAct) ContractActsReading {
 	if err := raw.Validate(); err != nil {
-		return contractActsReading(nil, err)
+		return a.contractActsReading(nil, err)
 	}
-	if err := a.ready(); err != nil {
-		return contractActsReading(nil, err)
+	if err := a.host.Ready(); err != nil {
+		return a.contractActsReading(nil, err)
 	}
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	a.core.MovesMu.Lock()
-	defer a.core.MovesMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
-	defer cancel()
-	if err := a.revalidateContractPlans(ctx); err != nil {
-		return contractActsReading(nil, err)
+	var out ContractActsReading
+	a.host.SerializeContractActs(func() {
+		ctx, cancel := context.WithTimeout(a.host.ContractsContext(), timeout)
+		defer cancel()
+		out = a.contractActs(ctx, raw)
+	})
+	return out
+}
+
+// contractActs runs under the refresh and plan-ledger serializers.
+func (a *API) contractActs(ctx context.Context, raw RawContractAct) ContractActsReading {
+	st := a.stores()
+	if err := RevalidateContractPlans(ctx, a.host); err != nil {
+		return a.contractActsReading(nil, err)
 	}
 	if raw.Action == "options" {
 		return a.contractActOptions(ctx, raw)
@@ -90,51 +95,50 @@ func (a *App) TargetContractActs(raw RawContractAct) Reading[[]ContractActView] 
 	if raw.Action == "preview" {
 		f, err := a.contractActFacts(ctx, raw)
 		if err != nil {
-			return contractActsReading(nil, err)
+			return a.contractActsReading(nil, err)
 		}
-		return contractActsReading([]ContractActView{contractActView(envelope.Receipt{}, f)}, nil)
+		return a.contractActsReading([]ContractActView{contractActView(envelope.Receipt{}, f)}, nil)
 	}
 	if err := a.contractActAction(ctx, raw); err != nil {
-		return contractActsReading(nil, err)
+		return a.contractActsReading(nil, err)
 	}
-	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, raw.Mine)
+	receipts, err := st.Moves.List(ctx, ingestion.LeagueID, raw.Mine)
 	if err != nil {
-		return contractActsReading(nil, fmt.Errorf("contract plans: %w", err))
+		return a.contractActsReading(nil, fmt.Errorf("contract plans: %w", err))
 	}
 	out := []ContractActView{}
 	for _, r := range receipts {
 		if !envelope.IsContract(r.Spec.Intent) {
 			continue
 		}
-		f, err := a.core.Moves.ContractFacts(ctx, r.CorrelationID)
+		f, err := st.Moves.ContractFacts(ctx, r.CorrelationID)
 		if err != nil {
-			return contractActsReading(nil, err)
+			return a.contractActsReading(nil, err)
 		}
 		out = append(out, contractActView(r, f))
 	}
-	return contractActsReading(out, nil)
+	return a.contractActsReading(out, nil)
 }
-func contractActsReading(v []ContractActView, err error) Reading[[]ContractActView] {
-	return contractReading(v, "", "local contract plans; MFL mirror", "Rulebook §§7,9–11; Math Rules §§0,3,5–7. All calculations in exact cents, then nearest $10,000. Future baseline cells are flat-filled inferences, not observations. Tag, extension and restructure follow the coordinator phase policy. Tender and re-sign are offseason only. Unknown history is for commissioner verification, not a block. Plans never write MFL or post to ProBoards.", len(v), err)
+func (a *API) contractActsReading(v []ContractActView, err error) ContractActsReading {
+	return ContractActsReading(contractReading(a, v, "", "local contract plans; MFL mirror", "Rulebook §§7,9–11; Math Rules §§0,3,5–7. All calculations in exact cents, then nearest $10,000. Future baseline cells are flat-filled inferences, not observations. Tag, extension and restructure follow the coordinator phase policy. Tender and re-sign are offseason only. Unknown history is for commissioner verification, not a block. Plans never write MFL or post to ProBoards.", len(v), err))
 }
 
-func (a *App) contractActFacts(ctx context.Context, r RawContractAct) (envelope.ContractFacts, error) {
-	m, _, _ := a.core.League.ContractsView()
-	p, found := contractsapp.Player(m, r.Mine, r.Player)
+func (a *API) contractActFacts(ctx context.Context, r RawContractAct) (envelope.ContractFacts, error) {
+	st := a.stores()
+	m, _, _ := st.League.ContractsView()
+	p, found := Player(m, r.Mine, r.Player)
 	if !found {
 		return envelope.ContractFacts{}, fmt.Errorf("contract Act: player is not on my roster")
 	}
-	phase, err := a.core.Whatif.CurrentPhase(ctx)
+	phase, err := st.Whatif.CurrentPhase(ctx)
 	if err != nil {
 		return envelope.ContractFacts{}, fmt.Errorf("contract Act phase: %w", err)
 	}
-	a.core.TargetSnapshotMu.Lock()
-	directory := a.core.TargetSnapshot
-	a.core.TargetSnapshotMu.Unlock()
-	rows := snapshot.ContractRows(m, directory, a.core.Rulebook.FranchiseNames())
-	f, priced, err := contractsapp.ActFacts(m, p, contractsapp.Act(r), envelope.ContractWindow(r.Intent, phase), rows)
+	directory, _ := a.host.ContractsDirectory()
+	rows := snapshot.ContractRows(m, directory, st.Rulebook.FranchiseNames())
+	f, priced, err := ActFacts(m, p, Act(r), envelope.ContractWindow(r.Intent, phase), rows)
 	if err != nil {
-		return f, err //nolint:wrapcheck // the service's errors already start "contract Act"
+		return f, err
 	}
 	if priced {
 		if err := a.contractCapFacts(ctx, r.Mine, &f); err != nil {
@@ -145,18 +149,13 @@ func (a *App) contractActFacts(ctx context.Context, r RawContractAct) (envelope.
 	return f, nil
 }
 
-// mirrorContractEvidence is a held contract as an Act sees it; the moves watcher reads it too.
-func mirrorContractEvidence(m state.MirrorSnapshot, mine, player string) envelope.ContractEvidence {
-	return contractsapp.Evidence(m, mine, player)
-}
-
 // contractActView is an Act as the owner reads it, as its wire type.
 func contractActView(r envelope.Receipt, f envelope.ContractFacts) ContractActView {
-	return wireContractAct(contractsapp.DescribeAct(r, f))
+	return wireContractAct(DescribeAct(r, f))
 }
 
-// wireContractAct converts the service's Act to its wire twin; TestContractsWireTwinsMatch proves it.
-func wireContractAct(v contractsapp.ActView) ContractActView {
+// wireContractAct converts the service's Act to its wire twin; TestWireTwinsMatch proves it.
+func wireContractAct(v ActView) ContractActView {
 	out := ContractActView{ID: v.ID, Intent: v.Intent, Act: v.Act, Levels: make([]ContractActChoice, len(v.Levels)), Years: v.Years,
 		TeamFigures: wireWhatIfFigures(v.TeamFigures), Player: v.Player, Subject: v.Subject, Label: v.Label, Price: v.Price, Post: v.Post,
 		How: v.How, Reasons: v.Reasons, Figures: make([]ContractActFigure, len(v.Figures)), Receipt: v.Receipt, CanHandOff: v.CanHandOff,
@@ -170,7 +169,8 @@ func wireContractAct(v contractsapp.ActView) ContractActView {
 	return out
 }
 
-func (a *App) contractActAction(ctx context.Context, r RawContractAct) error {
+func (a *API) contractActAction(ctx context.Context, r RawContractAct) error {
+	st := a.stores()
 	if r.Action == "read" {
 		return nil
 	}
@@ -179,7 +179,7 @@ func (a *App) contractActAction(ctx context.Context, r RawContractAct) error {
 		if err != nil {
 			return err
 		}
-		if err := a.refuseSecondContractPlan(ctx, r.Mine, f); err != nil {
+		if err := refuseSecondContractPlan(ctx, st, r.Mine, f); err != nil {
 			return err
 		}
 		var bytes [16]byte
@@ -187,24 +187,24 @@ func (a *App) contractActAction(ctx context.Context, r RawContractAct) error {
 			return fmt.Errorf("contract plan id: %w", err)
 		}
 		spec := envelope.Spec{Intent: r.Intent, LeagueID: ingestion.LeagueID, FranchiseID: r.Mine, Subject: envelope.Subject{Players: []playerid.PlayerID{f.Player}}, Expected: envelope.ExpectedChange{Player: f.Player}, Gravity: envelope.G3, Undo: envelope.Irreversible, Target: envelope.Target{Kind: envelope.Manual}}
-		e, err := envelope.DraftContract(a.core.MovesNow(), spec, f, func() string { return "contract-" + hex.EncodeToString(bytes[:]) })
+		e, err := envelope.DraftContract(a.host.ContractsNow(), spec, f, func() string { return "contract-" + hex.EncodeToString(bytes[:]) })
 		if err != nil {
 			return fmt.Errorf("contract draft: %w", err)
 		}
-		if err := a.core.Moves.SaveContract(ctx, e, f); err != nil {
+		if err := st.Moves.SaveContract(ctx, e, f); err != nil {
 			return fmt.Errorf("contract draft save: %w", err)
 		}
-		a.core.MovesChanged(ctx)
+		a.host.NotifyMoves(ctx)
 		return nil
 	}
-	e, err := a.core.Moves.Get(ctx, r.ID)
+	e, err := st.Moves.Get(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("contract plan: %w", err)
 	}
 	if !envelope.IsContract(e.Receipt().Spec.Intent) || e.Receipt().Spec.FranchiseID != r.Mine {
 		return fmt.Errorf("contract plan outside scope")
 	}
-	f, err := a.core.Moves.ContractFacts(ctx, r.ID)
+	f, err := st.Moves.ContractFacts(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("contract facts: %w", err)
 	}
@@ -212,27 +212,27 @@ func (a *App) contractActAction(ctx context.Context, r RawContractAct) error {
 	if err != nil {
 		return err
 	}
-	if err := a.core.Moves.Save(ctx, next); err != nil {
+	if err := st.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("contract action save: %w", err)
 	}
-	a.core.MovesChanged(ctx)
-	a.wakeMoves()
+	a.host.NotifyMoves(ctx)
+	a.host.WakeMoves()
 	return nil
 }
-func (a *App) refuseSecondContractPlan(ctx context.Context, mine string, f envelope.ContractFacts) error {
-	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, mine)
+func refuseSecondContractPlan(ctx context.Context, st Stores, mine string, f envelope.ContractFacts) error {
+	receipts, err := st.Moves.List(ctx, ingestion.LeagueID, mine)
 	if err != nil {
 		return fmt.Errorf("contract plans: %w", err)
 	}
 	for _, r := range receipts {
 		if r.Spec.Intent == f.Intent && r.Spec.Expected.Player == f.Player && envelope.ReleaseOpen(r.State) {
-			return fmt.Errorf("%s · %s is already an open plan in My moves; remove it there before keeping another", contractsapp.IntentLabel(f.Intent), f.Name)
+			return fmt.Errorf("%s · %s is already an open plan in My moves; remove it there before keeping another", IntentLabel(f.Intent), f.Name)
 		}
 	}
 	return nil
 }
-func (a *App) contractActTransition(ctx context.Context, r RawContractAct, e envelope.Envelope, f envelope.ContractFacts) (envelope.Envelope, error) {
-	now := a.core.MovesNow()
+func (a *API) contractActTransition(ctx context.Context, r RawContractAct, e envelope.Envelope, f envelope.ContractFacts) (envelope.Envelope, error) {
+	now := a.host.ContractsNow()
 	switch r.Action {
 	case "handoff":
 		next, err := e.HandOffManual(now, "Contract request copied for the commissioner on ProBoards; nothing posted")
@@ -256,7 +256,7 @@ func (a *App) contractActTransition(ctx context.Context, r RawContractAct, e env
 		if err != nil {
 			return envelope.Envelope{}, fmt.Errorf("contract recheck: %w", err)
 		}
-		if err := a.core.Moves.SaveContract(ctx, checked, fresh); err != nil {
+		if err := a.stores().Moves.SaveContract(ctx, checked, fresh); err != nil {
 			return envelope.Envelope{}, fmt.Errorf("contract rebase save: %w", err)
 		}
 		return checked, nil
@@ -265,13 +265,16 @@ func (a *App) contractActTransition(ctx context.Context, r RawContractAct, e env
 	}
 }
 
-func (a *App) revalidateContractPlans(ctx context.Context) error {
-	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, "")
+// RevalidateContractPlans moves open contract plans whose held evidence changed to Stale. The caller
+// holds the plan-ledger serializer (and the refresh serializer, from a binding or a refresh).
+func RevalidateContractPlans(ctx context.Context, h PlanLedger) error {
+	st := StoresOf(h)
+	receipts, err := st.Moves.List(ctx, ingestion.LeagueID, "")
 	if err != nil {
 		return fmt.Errorf("contract validation list: %w", err)
 	}
-	m, _, _ := a.core.League.ContractsView()
-	phase, err := a.core.Whatif.CurrentPhase(ctx)
+	m, _, _ := st.League.ContractsView()
+	phase, err := st.Whatif.CurrentPhase(ctx)
 	if err != nil {
 		return fmt.Errorf("contract validation phase: %w", err)
 	}
@@ -279,7 +282,7 @@ func (a *App) revalidateContractPlans(ctx context.Context) error {
 		if !envelope.IsContract(r.Spec.Intent) || !envelope.ReleaseOpen(r.State) || r.State == envelope.Stale {
 			continue
 		}
-		f, err := a.core.Moves.ContractFacts(ctx, r.CorrelationID)
+		f, err := st.Moves.ContractFacts(ctx, r.CorrelationID)
 		if err != nil {
 			return fmt.Errorf("contract validation facts: %w", err)
 		}
@@ -287,22 +290,22 @@ func (a *App) revalidateContractPlans(ctx context.Context) error {
 		if r.State == envelope.Ready {
 			window = envelope.ContractWindow(f.Intent, phase)
 		}
-		reason := envelope.ContractInvalidation(f, mirrorContractEvidence(m, r.Spec.FranchiseID, f.Player.String()), window)
-		if !contractsapp.NeedsInvalidation(r.State, reason) {
+		reason := envelope.ContractInvalidation(f, Evidence(m, r.Spec.FranchiseID, f.Player.String()), window)
+		if !NeedsInvalidation(r.State, reason) {
 			continue
 		}
-		e, err := a.core.Moves.Get(ctx, r.CorrelationID)
+		e, err := st.Moves.Get(ctx, r.CorrelationID)
 		if err != nil {
 			return fmt.Errorf("contract validation load: %w", err)
 		}
-		next, err := e.Invalidate(a.core.MovesNow(), reason)
+		next, err := e.Invalidate(h.ContractsNow(), reason)
 		if err != nil {
 			return fmt.Errorf("contract invalidate: %w", err)
 		}
-		if err := a.core.Moves.Save(ctx, next); err != nil {
+		if err := st.Moves.Save(ctx, next); err != nil {
 			return fmt.Errorf("contract invalidate save: %w", err)
 		}
-		a.core.MovesChanged(ctx)
+		h.NotifyMoves(ctx)
 	}
 	return nil
 }
@@ -313,28 +316,29 @@ func contractTransitionResult(next envelope.Envelope, err error) (envelope.Envel
 	}
 	return next, nil
 }
-func (a *App) contractActOptions(ctx context.Context, raw RawContractAct) Reading[[]ContractActView] {
+func (a *API) contractActOptions(ctx context.Context, raw RawContractAct) ContractActsReading {
 	out := []ContractActView{}
 	for _, intent := range []string{"rfa.tender", "fa.resign", "contract.tag", "contract.extend", "contract.restructure"} {
 		request := RawContractAct{Mine: raw.Mine, Player: raw.Player, Intent: intent, Level: 1, Years: 1, Move: "1"}
-		m, _, _ := a.core.League.ContractsView()
+		m, _, _ := a.stores().League.ContractsView()
 		request.Source = m.Season
-		if p, ok := contractsapp.Player(m, raw.Mine, raw.Player); ok {
+		if p, ok := Player(m, raw.Mine, raw.Player); ok {
 			request.Destination = p.ContractYear
 		}
 		f, err := a.contractActFacts(ctx, request)
 		if err != nil {
-			return contractActsReading(nil, err)
+			return a.contractActsReading(nil, err)
 		}
-		if !slices.Contains(f.Reasons, contractsapp.Ineligible) {
+		if !slices.Contains(f.Reasons, Ineligible) {
 			out = append(out, contractActView(envelope.Receipt{}, f))
 		}
 	}
-	return contractActsReading(out, nil)
+	return a.contractActsReading(out, nil)
 }
 
-func (a *App) contractTeamCap(ctx context.Context, mine string, f envelope.ContractFacts) (contractCap, error) {
-	m, _, used := a.core.League.ContractsView()
+func (a *API) contractTeamCap(ctx context.Context, mine string, f envelope.ContractFacts) (contractCap, error) {
+	st := a.stores()
+	m, _, used := st.League.ContractsView()
 	players := []state.MirrorPlayer{}
 	for _, p := range m.Players {
 		if p.FranchiseID == mine {
@@ -342,15 +346,15 @@ func (a *App) contractTeamCap(ctx context.Context, mine string, f envelope.Contr
 		}
 	}
 	m.Players = players
-	s := state.WhatIfSession{Mine: mine, Snapshot: m, Used: used[mine], Generation: "contract-preview:" + mine + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: a.core.Rulebook.TaxiCapPercent(), IRPercent: a.core.Rulebook.IRCapPercent()}
-	if text := a.core.Rulebook.GetSalaryCap(); text != "" {
+	s := state.WhatIfSession{Mine: mine, Snapshot: m, Used: used[mine], Generation: "contract-preview:" + mine + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: st.Rulebook.TaxiCapPercent(), IRPercent: st.Rulebook.IRCapPercent()}
+	if text := st.Rulebook.GetSalaryCap(); text != "" {
 		capAmount, err := domain.ParseMoneyMillions(text)
 		if err != nil {
 			return contractCap{}, fmt.Errorf("contract cap: %w", err)
 		}
 		s.Cap = &capAmount
 	}
-	store, err := a.loadWhatIf(ctx, s)
+	store, err := LoadWhatIf(ctx, st.WhatifPools, s)
 	if err != nil {
 		return contractCap{}, err
 	}
@@ -373,8 +377,8 @@ func (a *App) contractTeamCap(ctx context.Context, mine string, f envelope.Contr
 		out.Figures = append(out.Figures, envelope.ContractFigure{Label: row.Label, Before: row.Before, After: row.After, Change: row.Change})
 	}
 	for _, p := range players {
-		if err := contractsapp.Committed(ctx, store, p, m.Season, out.After); err != nil {
-			return contractCap{}, err //nolint:wrapcheck // the service's errors already start "what-if"
+		if err := Committed(ctx, store, p, m.Season, out.After); err != nil {
+			return contractCap{}, err
 		}
 	}
 	projected, _ := store.CapUsed(mine)
@@ -389,8 +393,8 @@ type contractCap struct {
 	After   map[int]domain.Money
 }
 
-func (a *App) contractCapFacts(ctx context.Context, mine string, f *envelope.ContractFacts) error {
-	if len(f.Terms.Cells) == 0 || slices.Contains(f.Reasons, contractsapp.Ineligible) {
+func (a *API) contractCapFacts(ctx context.Context, mine string, f *envelope.ContractFacts) error {
+	if len(f.Terms.Cells) == 0 || slices.Contains(f.Reasons, Ineligible) {
 		return nil
 	}
 	team, err := a.contractTeamCap(ctx, mine, *f)
@@ -405,7 +409,7 @@ func (a *App) contractCapFacts(ctx context.Context, mine string, f *envelope.Con
 	if last := f.Terms.Cells[len(f.Terms.Cells)-1].Season; last > f.Season {
 		f.Reasons = append(f.Reasons, fmt.Sprintf("Not checked: salary caps after %d; later seasons are judged against the held %d cap", f.Season, f.Season))
 	}
-	if reason := contractsapp.CapReason(*f, *team.Cap, team.After); reason != "" {
+	if reason := CapReason(*f, *team.Cap, team.After); reason != "" {
 		f.Reasons = append(f.Reasons, reason)
 	}
 	return nil

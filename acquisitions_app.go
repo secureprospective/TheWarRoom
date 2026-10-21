@@ -45,6 +45,26 @@ type AcquisitionView struct {
 	Reasons  []string                `json:"reasons"`
 }
 
+// WhatIfFigure is one figure before and after, the wire twin of contractsapp.WhatIfFigure. The
+// acquisition preview and the trade desk, both still at root, return it.
+type WhatIfFigure struct {
+	Label  string `json:"label"`
+	Before string `json:"before"`
+	After  string `json:"after"`
+	Change string `json:"change"`
+}
+
+// whatIfFigure is a money figure before and after, as its wire type.
+func whatIfFigure(label string, before, after domain.Money) WhatIfFigure {
+	return WhatIfFigure(contractsapp.Figure(label, before, after))
+}
+
+// contractReading is the contracts reading shape for the previews still at root.
+func contractReading[T any](value T, at, source, how string, count int, err error) Reading[T] {
+	r := contractsapp.Reading(value, at, source, how, count, err, buildLabel()+" "+buildDate)
+	return wireReading(r, func(v T) T { return v })
+}
+
 func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	out := AcquisitionView{Incoming: []AcquisitionChoice{}, Cuts: []tradesapp.TradeAsset{}, Seasons: []WhatIfFigure{}, Team: []WhatIfFigure{}, Reasons: []string{}}
 	if err := r.Validate(); err != nil {
@@ -68,7 +88,7 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 		return acquisitionReading(out, err)
 	}
 	out.Incoming = choices
-	s, current, err := a.whatIfSession(ctx, RawWhatIfRequest{Mine: r.Mine, Action: "read"})
+	s, current, err := contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: r.Mine, Action: "read"})
 	if err != nil {
 		return acquisitionReading(out, err)
 	}
@@ -186,9 +206,9 @@ func (a *App) acquisitionProjection(ctx context.Context, r RawAcquisition, s sta
 	m.Players = append(m.Players, incoming)
 	s.Generation = "acquisition-preview:" + fmt.Sprint(time.Now().UnixNano())
 	s.Snapshot = m
-	store, err := a.loadWhatIf(ctx, s)
+	store, err := contractsapp.LoadWhatIf(ctx, a.core.WhatifPools, s)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 	}
 	seed, _ := store.CapUsed(r.Mine)
 	if err := acquisitionCut(ctx, r, current, store, incoming.MFLID, out); err != nil {

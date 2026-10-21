@@ -563,7 +563,7 @@ function actPlan(id = ''): ContractActPlan {
 }
 it('names the contract under the heading and holds Kept until the terms differ', async () => {
   const wire = actPlan();
-  const go = { main: { App: { TargetContractActs: vi.fn(async () =>
+  const go = { contracts: { API: { TargetContractActs: vi.fn(async () =>
     ({ ...reading([{ ...wire, receipt: {} }]) })) } } };
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '', error: '' });
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
@@ -613,7 +613,7 @@ it('scrolls the revealed plan card into view in My moves and focuses it, once', 
 it.each(['withdrawn', 'landed', 'failed', 'missing'])
 ('re-enables Keep and clears feedback for %s', async state => {
   const wire = actPlan();
-  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
   const kept = { ...actPlan('contract-1'), receipt: {
@@ -633,7 +633,7 @@ it.each(['withdrawn', 'landed', 'failed', 'missing'])
 it('Close is registered, removes the panel and clears the row opened state', async () => {
   useContractMove.setState({ mine: '0001', player: '0042' });
   const wire = actPlan();
-  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
   const close = nodes(test.root, 'BUTTON').find(node => node.textContent === 'Close')!;
   await act(async () => { (props(close).onClick as () => void)(); });
@@ -652,7 +652,7 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
   });
   const wire = actPlan();
   let live: ContractActPlan[] = [];
-  const go = { main: { App: { TargetContractActs: vi.fn(async (raw: { action: string }) =>
+  const go = { contracts: { API: { TargetContractActs: vi.fn(async (raw: { action: string }) =>
     reading(raw.action === 'read' ? live : [wire])) } } };
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
   const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
@@ -661,9 +661,9 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
   } };
   await act(async () => { useContractMove.setState({ kept, keptTerms: 'terms' }); });
   expect(test.element.textContent).toContain('Plan: Ready');
-  const before = go.main.App.TargetContractActs.mock.calls.length;
+  const before = go.contracts.API.TargetContractActs.mock.calls.length;
   await act(async () => { changed(); });
-  expect(go.main.App.TargetContractActs.mock.calls.length).toBeGreaterThan(before);
+  expect(go.contracts.API.TargetContractActs.mock.calls.length).toBeGreaterThan(before);
   expect(test.element.textContent).not.toContain('Plan:');
   expect(useContractMove.getState().kept).toBeUndefined();
 });
@@ -671,7 +671,7 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
 it('Contract Acts menu click renders the row form, scrolls to it and focuses it', async () => {
   shell(); useContractMove.setState({ mine: '', player: '' });
   const wire = actPlan();
-  const go = { main: { App: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
   const scroll = { scrollTop: 0, clientTop: 0, clientHeight: 700,
     getBoundingClientRect: () => ({ top: 0 }) };
   const focus = vi.spyOn(TestElement.prototype, 'focus');
@@ -696,7 +696,7 @@ it('Contract Acts menu click renders the row form, scrolls to it and focuses it'
   expect(panel?.getAttribute('tabindex')).toBe('-1');
   expect(scroll.scrollTop).toBe(-300);
   expect(focus).toHaveBeenCalledWith({ preventScroll: true });
-  expect(go.main.App.TargetContractActs.mock.calls.length).toBeGreaterThan(0);
+  expect(go.contracts.API.TargetContractActs.mock.calls.length).toBeGreaterThan(0);
   await act(async () => { useContractMove.setState({ mine: '', player: '' }); });
 });
 
