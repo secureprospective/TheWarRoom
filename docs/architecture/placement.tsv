@@ -313,3 +313,4 @@ internal/app/now/nowtest	now
 internal/app/trades	trades
 internal/app/core	core
 internal/app/core/coretest	core
+internal/app/catalog	core

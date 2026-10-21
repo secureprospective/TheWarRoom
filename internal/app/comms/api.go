@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -115,4 +117,13 @@ func Read(ctx context.Context, src Source, in Input, scope RawCommsScope) (Board
 		in.Rosters, in.RosterTimes = rosters, RosterWeekTimes(games)
 	}
 	return Build(in, scope)
+}
+
+// Commands is data, not an API method: Wails must not bind the catalog itself.
+func Commands() []catalog.Command {
+	return []catalog.Command{
+		{ID: "comms.read", Method: "TargetComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "comms.open", Method: "TargetOpenComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
+	}
 }

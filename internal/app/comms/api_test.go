@@ -181,3 +181,27 @@ func checkCommsGolden[T any](t *testing.T, name string, value T) {
 		t.Fatalf("%s: Comms binding contract changed", path)
 	}
 }
+
+func TestCommandCatalog(t *testing.T) {
+	commands := commsapp.Commands()
+	ids := map[string]bool{}
+	for _, command := range commands {
+		if command.ID == "" || ids[command.ID] || command.Method == "" || command.Version == "" || command.Role == "" || command.Gravity == "" {
+			t.Fatal(command)
+		}
+		ids[command.ID] = true
+		if command.Availability != "both" && command.Availability != "server" && command.Availability != "desktop" {
+			t.Fatal(command)
+		}
+		if command.Method == "TargetOpenComms" && command.Availability != "desktop" {
+			t.Fatal("browser handoff is desktop-only")
+		}
+	}
+	if len(commands) != 3 || !ids["comms.read"] || !ids["comms.refresh"] || !ids["comms.open"] {
+		t.Fatal(commands)
+	}
+	commands[0].ID = "changed"
+	if commsapp.Commands()[0].ID != "comms.read" {
+		t.Fatal("catalog storage leaked")
+	}
+}
