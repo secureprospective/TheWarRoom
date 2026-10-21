@@ -198,11 +198,11 @@ func TestMarketFeedCancelledDoesNotFetch(t *testing.T) {
 func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 	t.Parallel()
 	a, _ := poolApp(t)
-	if err := a.TargetPoolRefresh(true); err != nil {
+	if err := offersTestAPI(a).TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
 	a.marketHeld = &marketapp.Held{} // as if no market report was ever read
-	reading := a.TargetPool(RawPoolScope{Sort: "name"})
+	reading := offersTestAPI(a).TargetPool(RawPoolScope{Sort: "name"})
 	if reading.Status != ReadingOK || len(reading.Value.Rows) != 3 {
 		t.Fatal("missing feed blocked pool")
 	}

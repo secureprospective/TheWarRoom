@@ -14,34 +14,6 @@ export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
 
-export function TargetBidDraft(arg1) {
-  return window['go']['main']['App']['TargetBidDraft'](arg1);
-}
-
-export function TargetBidHandOff(arg1) {
-  return window['go']['main']['App']['TargetBidHandOff'](arg1);
-}
-
-export function TargetBidPlans(arg1) {
-  return window['go']['main']['App']['TargetBidPlans'](arg1);
-}
-
-export function TargetBidPosted(arg1) {
-  return window['go']['main']['App']['TargetBidPosted'](arg1);
-}
-
-export function TargetBidPreview(arg1) {
-  return window['go']['main']['App']['TargetBidPreview'](arg1);
-}
-
-export function TargetBidRevise(arg1, arg2) {
-  return window['go']['main']['App']['TargetBidRevise'](arg1, arg2);
-}
-
-export function TargetBidWithdraw(arg1) {
-  return window['go']['main']['App']['TargetBidWithdraw'](arg1);
-}
-
 export function TargetCacheClear(arg1) {
   return window['go']['main']['App']['TargetCacheClear'](arg1);
 }
@@ -246,32 +218,8 @@ export function TargetNativeWeek(arg1) {
   return window['go']['main']['App']['TargetNativeWeek'](arg1);
 }
 
-export function TargetOffers(arg1) {
-  return window['go']['main']['App']['TargetOffers'](arg1);
-}
-
-export function TargetPersonal(arg1) {
-  return window['go']['main']['App']['TargetPersonal'](arg1);
-}
-
-export function TargetPersonalChange(arg1) {
-  return window['go']['main']['App']['TargetPersonalChange'](arg1);
-}
-
-export function TargetPersonalHandOff(arg1) {
-  return window['go']['main']['App']['TargetPersonalHandOff'](arg1);
-}
-
 export function TargetPhoto(arg1) {
   return window['go']['main']['App']['TargetPhoto'](arg1);
-}
-
-export function TargetPool(arg1) {
-  return window['go']['main']['App']['TargetPool'](arg1);
-}
-
-export function TargetPoolRefresh(arg1) {
-  return window['go']['main']['App']['TargetPoolRefresh'](arg1);
 }
 
 export function TargetSeason() {

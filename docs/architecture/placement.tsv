@@ -11,10 +11,7 @@ archive_app.go	archive
 archive_test.go	archive
 asset_board.go	market
 backup_restore_drill_test.go	platform
-bids_app.go	offers
 bids_app_test.go	offers
-bids_conditional_test.go	offers
-bids_plans_app.go	offers
 bids_withdraw_test.go	offers
 bye_alerts_app.go	control
 bye_alerts_app_test.go	control
@@ -124,16 +121,13 @@ native_waivers_test.go	commissioner
 native_wire_test.go	commissioner
 now_app.go	now
 now_test.go	now
-offers_app.go	offers
 offers_app_test.go	offers
 offers_live_app_test.go	offers
-personal_app.go	offers
 personal_app_test.go	offers
 photos_app.go	platform
 photos_app_test.go	platform
 pool_app.go	offers
 pool_app_test.go	offers
-pool_landing_test.go	offers
 pool_market_layout_test.go	offers
 pool_wire_test.go	offers
 power_rankings_app.go	scoring
@@ -271,9 +265,9 @@ internal/app/scoring	scoring
 internal/app/research	research
 internal/app/research/researchtest	research
 internal/app/offers	offers
-internal/app/personal	offers
-internal/app/pool	offers
-internal/app/bids	offers
+internal/app/offers/personal	offers
+internal/app/offers/pool	offers
+internal/app/offers/bids	offers
 internal/app/race	race
 control_wire_test.go	control
 internal/app/control	control
@@ -285,3 +279,6 @@ internal/app/core	core
 internal/app/core/coretest	core
 internal/app/catalog	core
 sources_runtime.go	sources
+internal/app/offers/offerstest	offers
+offers_reading.go	offers
+offers_fixture_test.go	offers

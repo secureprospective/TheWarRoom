@@ -118,16 +118,17 @@ contract and paying its price are built. The waiver append transaction rechecks 
 seat, including callers below the IPC door. Now/Race integration and the remaining census owner-edge wiring
 are still pending.
 
-Offers, Personal, Pool and Bids use separate stateless services under
-`internal/app/{offers,personal,pool,bids}`. Offers owns archive-calendar classification and
-presentation; Personal owns held-name, trade-bait and private-player presentation; Pool owns
-player age, experience, minimum and position ordering; Bids owns typed figure parsing, flat-held
-cut pricing and plan/action wording. Root retains Wails declarations, shared-state snapshots,
-refresh scheduling, cross-feature value/market joins and store calls. Local bid changes keep
-`movesMu` across load, validation, save and notification; offer observations keep the caller's
-`seasonMu` across pending/ending evidence and history writes. Native owner/commissioner doors,
-calendar gates, principal resolution and override paths are unchanged. No service opens a database,
-starts a worker, takes a lock or decides who may act.
+Offers, Personal, Pool and Bids share the bound `internal/app/offers.API`. Its pure helpers
+live in its own `bids`, `personal` and `pool` subtrees, not sibling features. The API owns
+wire declarations, request checks, local store calls and presentation. Its Host composes
+shared-state reads from `core/host_offers.go` with the unbound root `offersHost` over Market,
+Research, archive hydration and refresh scheduling. Free-agent/trade-bait feeds are shared,
+so they stay in core; there is no feature-private Held. Core's move serializer retains the
+whole load/check/save/log/notify/wake span, including live hand-off checks and reopen/rebase
+order. The root's offer observer still holds SeasonMu across pending/ending evidence and
+history writes. Native owner/commissioner doors, principal checks and overrides do not move.
+The single frontend adapter `app/offers/api.ts` owns transport and event subscriptions for
+Offers, Personal and Pool. No API opens a database or starts a worker.
 
 ## IPC surface
 
@@ -143,8 +144,8 @@ starts a worker, takes a lock or decides who may act.
 | `native_seed_app.go` | `TargetNativeSeed(RawNativeSeedRequest)` records one held Legacy NFL starting snapshot in the commissioner event stream: rosters, contract terms, reserve status, franchises (with each division's conference, `heldConferences`), current/future picks and salary adjustments. Go captures the inputs without network or client-supplied assets; retries retain the original receipt after mirror refresh. `TargetNativeAssets` replays that app-owned snapshot, separate from MFL and what-if. `TargetNativeDirectory` reads the native franchise directory: recorded seed names/abbreviations, later active identity edits, current governance seats, and season-resolved alignment (held seed divisions carried into the shared rules resolver). `TargetCommissionerPeople` shares this directory projection; pending alignment changes do not apply, and compensation restores the recorded basis. No MFL directory or hand-off is changed. Empty leagues have no seed. |
 | `contracts_app.go` | `TargetContracts` validates team/position/sort scopes and returns separate typed `Reading` shells for league contracts, my-franchise cap, literal MFL salary adjustments. `TargetPlayerContract` validates player IDs and returns observed current salary / explicitly flat-filled inferred future years. Both read a coherent `Mirror.ContractsView`, never the what-if ledger. Lazy frontend in `frontend/src/app/contracts`; every player Inspector includes contract years. |
 | `market_feeds_app.go`, `report_reading.go` | `TargetMarketReportsRefresh(force)` and `TargetMarketReports`: held week-scoped projections and daily MFL-wide market feeds, archive fallback; reports and facts built in `internal/app/market` (`reports.go`); shared Go Report and lazy React ReportView used by draft and player-market reports; Go-written pool and Inspector market facts. |
-| `pool_app.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
-| `bids_app.go`, `bids_plans_app.go` | Bid plans (intent `bid.submit`): `TargetBidPreview(RawBidInput)` checks typed figures against the rules without saving; `TargetBidDraft`, `TargetBidRevise`, `TargetBidHandOff` (records the copied ProBoards post; refused if the rules no longer pass), `TargetBidPosted` (the owner says it is up), `TargetBidWithdraw` (all nonterminal local plans; never removes a ProBoards post); `TargetBidPlans(franchiseID)` lists the owner's plans with Go's words, live rules and the actions on offer. The landing watcher looks for the player on the owner's roster with the planned contract. `TargetMoves` leaves bid plans out. |
+| `internal/app/offers/pool_api.go` | `TargetPoolRefresh(force bool)` fetches MFL's free-agent list (skipped when fresh); `TargetPool(RawPoolScope)` reads the held list with no network: name, position, team, age, experience and the §6 minimum per row, filtered and sorted in Go, in a `Reading[Pool]` that is failed before the first fetch, empty (thin) when MFL lists nobody, stale when a refresh fails. |
+| `internal/app/offers/bids_api.go`, `bids_plans_api.go` | Bid plans (intent `bid.submit`): `TargetBidPreview(RawBidInput)` checks typed figures against the rules without saving; `TargetBidDraft`, `TargetBidRevise`, `TargetBidHandOff` (records the copied ProBoards post; refused if the rules no longer pass), `TargetBidPosted` (the owner says it is up), `TargetBidWithdraw` (all nonterminal local plans; never removes a ProBoards post); `TargetBidPlans(franchiseID)` lists the owner's plans with Go's words, live rules and the actions on offer. The landing watcher looks for the player on the owner's roster with the planned contract. `TargetMoves` leaves bid plans out. |
 | `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetWithdrawRoster(correlationID)` ends a local IR/taxi plan without changing MFL; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
 | `livegame_app.go`, `livegame_spine.go` | `TargetLiveGame(open, follow, mine)`: demand-driven Now poll on held NFL windows; MFL liveScoring at 30 s, ESPN board at 30 s/details at 15 s with capped backoff; separate held detail time, strict ESPN crosswalk starter matching, cached personal-use photos. Source URLs are data in `livegame_sources.json`. Lazy `frontend/src/app/now/LiveGame.tsx`; `game.follow id=` command. |
@@ -395,7 +396,7 @@ or L-15–L-22. `draftState.ts` retains prior scopes during reads and rejects st
 assets reuse the Inspector for historical round cohorts. Draft goldens additionally stamp
 `draftlab.js`; Node remains offline reference tooling only.
 
-`offers_app.go`: `TargetOffers` validates season/direction/window/team scope and returns Go-authored owner disclosure, counts, eight stretch outcomes and acceptance comparisons in `Reading[OffersView]`. `internal/lab/offers.go` ports the reference offerStretches with exhaustive offline scope goldens; lazy `frontend/src/app/offers` lives above the pending trade desk, independent of the selected live franchise.
+`internal/app/offers/offers_api.go`: `TargetOffers` validates season/direction/window/team scope and returns Go-authored owner disclosure, counts, eight stretch outcomes and acceptance comparisons in `Reading[OffersView]`. `internal/lab/offers.go` ports the reference offerStretches with exhaustive offline scope goldens; lazy `frontend/src/app/offers` lives above the pending trade desk, independent of the selected live franchise.
 
 Bid plans (War Room › Valuations and pool): `frontend/src/app/pool/` is one lazy chunk reached from the
 Market component. `state.ts` re-queries `TargetBidPreview` after each form change and keeps the last answer
@@ -489,7 +490,7 @@ and withdrawal plans share local removal before hand-off; accept plans are uncha
 release the old table anchor, reveal within the work column and focus the salary field after mounting.
 
 `internal/store/personal` owns watch, bait, dated plain-text notes and ordered draft entries in
- the app's main SQLite pool (the existing dev/prod split). `personal_app.go` exposes validated
+ the app's main SQLite pool (the existing dev/prod split). `internal/app/offers/personal_api.go` exposes validated
 `TargetPersonal`, `TargetPersonalChange` and read-only `TargetPersonalHandOff`; no MFL submission.
 `internal/ingestion/shellfeeds.go` validates calendar, trade bait and player-score exports.
 `lineup_app.go` exposes `TargetRosterReports` from held exports (built by `internal/app/contracts`); `draft_reports_app.go`
@@ -558,7 +559,7 @@ Bid conditional drops: `bids_conditional.go` prices held roster choices through 
 shared with the research Inspector. `bid_conditions` versions the named drop and its post label atomically
 with envelope history; no change after hand-off. The lazy bid form reveals the choice only over cap room.
 
-Offers history freshness: `offers_live_app.go` merges the archive owner's proposals with persisted
+Offers history freshness: `internal/app/offers/offers_api.go` merges the archive owner's proposals with persisted
 `personal_offers` and `personal_offer_checks` in the existing GM store (`internal/store/personal`).
 Successful pendingTrades refreshes capture proposal/first/last-seen times; held completed transactions
 prove acceptance inside the proposal-to-first-miss interval. Other disappearances remain unknown.

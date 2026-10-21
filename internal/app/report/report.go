@@ -284,3 +284,29 @@ type ArchiveSnapshot struct {
 	Cutoff  string
 	Through time.Time
 }
+
+// MarketFact carries a market cell and its private sorting number between feature ports.
+type MarketFact struct {
+	Value  *float64 `json:"-"`
+	Label  string   `json:"label"`
+	Text   string   `json:"text"`
+	Reason string   `json:"reason"`
+	Range  *Range   `json:"range"`
+}
+
+func FeedTime(feed Feed, zone *time.Location) string {
+	if feed.FetchedAt.IsZero() {
+		return "unavailable · no held copy"
+	}
+	kind := "live"
+	if feed.RefreshError != "" || feed.ReadPending {
+		kind = "archived copy"
+	}
+	text := kind + " · fetched " + Time(feed.FetchedAt, zone)
+	if feed.ReadPending {
+		text += " · " + PendingRead(feed.FetchedAt, zone)
+	} else if feed.RefreshError != "" {
+		text += " · Refresh failed"
+	}
+	return text
+}

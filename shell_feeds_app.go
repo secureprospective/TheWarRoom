@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 )
 
@@ -32,20 +33,7 @@ func dailyShellReading[T any](feed heldSeasonFeed[[]T], now time.Time) heldSeaso
 }
 
 func shellFeedTime[T any](feed heldSeasonFeed[[]T], zone *time.Location) string {
-	if feed.FetchedAt.IsZero() {
-		return "unavailable · no held copy"
-	}
-	kind := "live"
-	if feed.RefreshError != "" || feed.ReadPending {
-		kind = "archived copy"
-	}
-	text := kind + " · fetched " + reportTime(feed.FetchedAt, zone)
-	if feed.ReadPending {
-		text += " · " + pendingShellRead(feed.FetchedAt, zone)
-	} else if feed.RefreshError != "" {
-		text += " · Refresh failed"
-	}
-	return text
+	return report.FeedTime(feed.FeedState(), zone)
 }
 
 func refreshDailyShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T], now time.Time,

@@ -66,8 +66,6 @@ func reportShell[T any](id, title, how string, feed heldSeasonFeed[[]T], zone *t
 
 func reportTime(at time.Time, zone *time.Location) string { return report.Time(at, zone) }
 
-func pendingShellRead(at time.Time, zone *time.Location) string { return report.PendingRead(at, zone) }
-
 // wireBoard converts a board built by a feature service under internal/app to its wire twin.
 // The two type sets are kept identical field for field; TestReportWireTwinsMatch proves it.
 func wireBoard(b report.Board) ReportBoard {

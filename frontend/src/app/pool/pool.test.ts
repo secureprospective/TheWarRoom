@@ -284,8 +284,8 @@ describe('My moves and the Inspector', () => {
     expect(view(undefined)).toContain('Reading your bid plans…');
   });
   it('calls Go through window.go, so no generated wrapper is added to the entry chunk', () => {
-    const source = readFileSync('src/app/pool/provider.ts', 'utf8');
-    expect(source).toContain("import type * as Bindings from '../../../wailsjs/go/main/App'");
+    const source = readFileSync('src/app/offers/api.ts', 'utf8');
+    expect(source).toContain("import type * as Bindings from '../../../wailsjs/go/offers/API'");
     expect(source).not.toMatch(/import \{[^}]*\} from '[./]*wailsjs\/go\/main\/App'/);
   });
   it('loads the plans into My moves lazily, so the entry bundle does not carry them', () => {

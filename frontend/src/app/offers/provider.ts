@@ -1,6 +1,5 @@
 import fallback from './fallback.gen.json';
-import { TargetOffers } from '../../../wailsjs/go/main/App';
-import { main } from '../../../wailsjs/go/models';
+import { readOffersWire } from './api';
 import { object, text, integer, choice, array } from '../data/parseValues';
 import { freshness } from '../data/parse';
 import type { Reading } from '../market/contract';
@@ -132,7 +131,7 @@ function unavailable(reason: string): OfferReading {
 }
 export async function readOffers(scope: Scope): Promise<OfferReading> {
     try {
-        return parseOffers(await TargetOffers(main.RawOfferScope.createFrom(scope)));
+        return parseOffers(await readOffersWire(scope));
     }
     catch (cause) {
         return unavailable(String(cause));

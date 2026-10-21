@@ -19,6 +19,7 @@ const folders = new Map([
   ['draft', 'draftreports'],
   ['market', 'market'],
   ['now', 'now'],
+  ['offers', 'offers'],
   ['race', 'race'],
   ['research', 'research'],
   ['sources', 'datasources'],
@@ -39,6 +40,9 @@ const moved = new Map([
   ...['TargetAssetBoard', 'TargetAssetProfile', 'TargetMarket', 'TargetMarketLists', 'TargetMarketReports',
     'TargetMarketReportsRefresh', 'TargetMarketStretches', 'TargetPickClock'].map(name => [name, 'market']),
   ['TargetLiveGame', 'now'], ['TargetNow', 'now'], ['TargetNowRefresh', 'now'],
+  ...['TargetBidDraft', 'TargetBidHandOff', 'TargetBidPlans', 'TargetBidPosted', 'TargetBidPreview',
+    'TargetBidRevise', 'TargetBidWithdraw', 'TargetOffers', 'TargetPersonal', 'TargetPersonalChange',
+    'TargetPersonalHandOff', 'TargetPool', 'TargetPoolRefresh'].map(name => [name, 'offers']),
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['TargetOpenResearchArticle', 'TargetResearch', 'TargetResearchNewsRefresh', 'TargetResearchPlayer',
     'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),
@@ -103,6 +107,9 @@ for (const file of files(path.resolve('frontend/src'))) {
       }
       // Other features retain their legacy namespace/dynamic root imports.
     }
+    if (['offers', 'personal', 'pool'].some(folder => file.startsWith(path.join(root, folder) + path.sep)) &&
+        /wailsjs\/runtime\//.test(spec))
+      check('offers', node, 'Offers cluster event transport outside its adapter');
     if (file.startsWith(path.join(root, 'research') + path.sep) && /wailsjs\/runtime\//.test(spec))
       check('research', node, 'Research event transport outside its feature adapter');
     const match = spec.match(/wailsjs\/go\/([^/]+)\//);

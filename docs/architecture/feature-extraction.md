@@ -581,3 +581,71 @@ cluster. No new golden bytes are needed. Free-agent and trade-bait feeds remain
 shared: model refresh and Control read them too. This cluster has no private
 held report or short data mutex to extract. Its whole-operation MovesMu and
 RefreshMu serializers remain with shared state.
+
+## Offers cluster API
+
+All thirteen inventoried methods move one-for-one from App to `offers.API`, with
+package-level Commands and one `bindings(app)` entry. The cluster is stateless:
+free agents feed engine/model refresh, and trade bait feeds Control as well as
+Personal. Both feeds and every serializer stay in core. No private Held, new
+App field or artificial joint lock is needed. Existing manifest rejection of
+bound holders remains active. The Host follows Sources' capability composition;
+its local plan callback preserves MovesMu through save, log, event, wake and the
+final live reading. Hand-off validation and revision's reopen/rebase order stay
+inside that callback. The archive fallback still uses fallbackParent, separately
+from the original bounded app-context operations.
+
+The old `internal/app/{bids,personal,pool}` packages belong to this same placement
+feature. They move under `internal/app/offers/` so the new API imports only its
+own subtree, report/season and catalog. `report.MarketFact` is the detached shared
+cell contract (including a JSON-hidden sorting value), not a Market-feature import.
+Shared held-feed time wording moves to report with a root delegate. Local plans
+keep their existing request-franchise scoping; native permissions are untouched.
+The registry's bid.submit metadata applies to TargetBidDraft; bindings without
+registry verbs retain Unset. This adds no enforcement or server permission.
+
+The root drops from 198 to 195 Go files. Files with remaining composition stay:
+- `personal_app.go`: archivedOnly is shared by calendar/clock/reports; Lineup still
+  uses personalSnapshot. All three Personal bindings and their presentation move.
+- `pool_app.go`: shared free-agent refresh/restoration, RefreshMu scheduling,
+  Market refresh and the Research/asset-board join. Both Pool bindings move.
+- `offers_reading.go`: unbound Host over shared state and other feature readers,
+  caller-held SeasonMu offer observation, shared cut-charge and market-wording
+  delegates. No bound method remains here. It replaces offers_app.go.
+- `bids_app_test.go`, `bids_withdraw_test.go`: shared root fixtures, the move-rail
+  exclusion and watcher/refresh integration. Isolated bid and conditional tests move.
+- `offers_app_test.go`, `offers_live_app_test.go`: native denial and canonical
+  wire/converter goldens, persistent-history restart and pending-refresh integration.
+  Isolated offer reads/presentation move beside the API.
+- `personal_app_test.go`: IR/eligibility, calendar, roster reports, NFL draft and
+  held-feed/hand-off integration; isolated Personal API coverage is added locally.
+- `pool_app_test.go`, `pool_wire_test.go`, `pool_market_layout_test.go`: actual
+  refresh/fallback/model/Market composition and canonical frontend fixtures.
+  Pool landing and numeric/market sorting assertions move beside the API.
+- `offers_fixture_test.go`: test-only API facade for those cross-feature scenarios;
+  no production App wrapper restores the moved surface.
+
+Core tests use coretest.New(t).Build(); feature tests use an offline fake Host and
+shared offerstest fixtures, never core imports. Proof covers detached nested names
+and free-agent slices (including nil/empty), publication/read races, reads during
+blocked real refresh, same-player draft serialization and original event order.
+There is no private/shared joint critical section to split in this stateless cluster.
+
+Frontend transport for all three folders lives in `app/offers/api.ts`. It retains
+the existing shared event buses (including Personal's alert bus), error wording and
+no-desktop behavior. Tests cover all thirteen calls, cleanup and disposal before
+runtime import resolution. Generated bindings are regenerated, not edited. The
+only unrelated source change wraps a pre-existing 111-character Commands search
+line to clear the repo-wide 110-character gate; its label is unchanged.
+
+Codex §M3 bite tests reject compiling core/sibling imports, an extra exported API
+helper without catalog metadata, a missing free-agent clone, a missing move
+serializer and a compiling frontend transport import outside the adapter. All
+mutants are restored before final checks. Canonical testdata/wire bytes do not change.
+
+Final local checks: go build, make lint, feature/core race tests, root Wire/Manifest/Denial,
+scoped root race tests, regenerated binding freshness, transport guard, frontend typecheck,
+110 feature/controls tests, frontend build and bundle budget all pass. The entry bundle is
+311,512 bytes against 321,818. A separately catalogued extra API helper also fails the manifest
+surface golden; an uncatalogued helper fails catalog coverage. The existing directly-bound-Held
+rejection test passes. Full root tests and make verify are left to CI as scoped by the brief.

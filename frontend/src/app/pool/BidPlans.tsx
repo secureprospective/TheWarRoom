@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { selectProvider } from '../data/provider';
+import { subscribePool } from '../offers/api';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { localDate } from '../clock/labels';
@@ -156,9 +156,7 @@ export function usePoolData(withPool: boolean): PoolState {
   useEffect(() => {
     void (withPool ? poolState.open() : poolState.loadBoard());
     const reload = () => void (withPool ? poolState.reload() : poolState.loadBoard());
-    const moves = commands.onMovesChange(reload);
-    const season = selectProvider().onSeasonChange(reload);
-    return () => { moves(); season(); };
+    return subscribePool(reload);
   }, [franchiseId, withPool]);
   return poolState.use();
 }

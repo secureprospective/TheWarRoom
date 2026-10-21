@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -57,11 +59,11 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 	ts := time.Date(2026, 10, 12, 13, 0, 0, 0, time.UTC)
 	at := ts.Add(time.Hour)
 	p := leaguefeed.PendingTrade{ID: "9001", Offering: "0025", OfferedTo: "0001", Proposed: ts}
-	before := a.TargetOffers(offerTestScope())
+	before := offersTestAPI(a).TargetOffers(offerTestScope())
 	if err := a.recordOffers(ctx, []leaguefeed.PendingTrade{p}, at, nil); err != nil {
 		t.Fatal(err)
 	}
-	r := a.TargetOffers(offerTestScope())
+	r := offersTestAPI(a).TargetOffers(offerTestScope())
 	if r.Count != before.Count+1 || offerOutcomeCount(r, "pending") != 1 ||
 		!strings.Contains(r.Value.Summary, "1 open offer") ||
 		!strings.Contains(r.Cutoff, at.Format(time.RFC3339)) || r.Provenance.Source != r.Cutoff ||
@@ -87,12 +89,12 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 	if err != nil || len(rows) != 1 || rows[0].FirstSeen != at.Unix() || rows[0].LastSeen != at.Add(time.Hour).Unix() {
 		t.Fatalf("repeat observation lost first/last seen: %+v %v", rows, err)
 	}
-	r = a.TargetOffers(offerTestScope())
+	r = offersTestAPI(a).TargetOffers(offerTestScope())
 	if err := a.core.Pools.Close(); err != nil {
 		t.Fatal(err)
 	}
 	restarted := liveOffersTestApp(t, path)
-	after := restarted.TargetOffers(offerTestScope())
+	after := offersTestAPI(restarted).TargetOffers(offerTestScope())
 	if after.Count != r.Count || offerOutcomeCount(after, "pending") != 1 || after.Cutoff != r.Cutoff {
 		t.Fatalf("restart lost history: %+v", after)
 	}
@@ -102,13 +104,13 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 	}
 	merged := *d
 	merged.Offers = slices.Clone(d.Offers)
-	duplicate, err := liveOffer(d, 2026, ts.Unix(), "0025", "0001", "accepted")
+	duplicate, err := offersapp.LiveOffer(d, 2026, ts.Unix(), "0025", "0001", "accepted")
 	if err != nil {
 		t.Fatal(err)
 	}
 	merged.Offers = append(merged.Offers, duplicate)
 	restarted.core.LabData = func() (*lab.Data, error) { return &merged, nil }
-	dedup := restarted.TargetOffers(offerTestScope())
+	dedup := offersTestAPI(restarted).TargetOffers(offerTestScope())
 	if dedup.Count != r.Count || offerOutcomeCount(dedup, "pending") != 0 {
 		t.Fatalf("archive/live overlap counted twice: %+v", dedup)
 	}
@@ -135,14 +137,14 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 			ctx := context.Background()
 			ts := time.Date(2026, 10, 12, 13, 0, 0, 0, time.UTC)
 			p := leaguefeed.PendingTrade{ID: "9001", Offering: "0025", OfferedTo: "0001", Proposed: ts}
-			before := a.TargetOffers(offerTestScope())
+			before := offersTestAPI(a).TargetOffers(offerTestScope())
 			if err := a.recordOffers(ctx, []leaguefeed.PendingTrade{p}, ts.Add(time.Hour), nil); err != nil {
 				t.Fatal(err)
 			}
 			if err := a.recordOffers(ctx, nil, ts.Add(90*time.Minute), fmt.Errorf("offline")); err == nil {
 				t.Fatal("failed read lost error")
 			}
-			failed := a.TargetOffers(offerTestScope())
+			failed := offersTestAPI(a).TargetOffers(offerTestScope())
 			if offerOutcomeCount(failed, "pending") != 1 || strings.Contains(failed.Cutoff, "14:30:00") {
 				t.Fatal("failed read changed pending offer or check time")
 			}
@@ -151,7 +153,7 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 			if err := a.recordOffers(ctx, nil, ts.Add(2*time.Hour), nil); err != nil {
 				t.Fatal(err)
 			}
-			ended := a.TargetOffers(offerTestScope())
+			ended := offersTestAPI(a).TargetOffers(offerTestScope())
 			if offerOutcomeCount(ended, "pending") != 0 ||
 				offerOutcomeCount(ended, tc.want) != offerOutcomeCount(before, tc.want)+1 {
 				t.Fatalf("ending should be %s: %+v", tc.want, ended)
@@ -179,14 +181,14 @@ func TestPendingRefreshRecordsHistory(t *testing.T) {
  "trade_id":"9001","offeringteam":"0025","offeredto":"0001","timestamp":"1791810000",
  "expires":"1791982800","will_give_up":"0042,","will_receive":"0816,"}}}`
 	a.refreshPendingTrades(a.core.Ctx)
-	r := a.TargetOffers(offerTestScope())
+	r := offersTestAPI(a).TargetOffers(offerTestScope())
 	if offerOutcomeCount(r, "pending") != 1 || !strings.Contains(r.Cutoff, at.Format(time.RFC3339)) {
 		t.Fatalf("refresh did not save history: %+v, feed error %s", r, a.core.SeasonPendingTrades.RefreshError)
 	}
 	transport.failure = "pendingTrades"
 	at = at.Add(time.Hour)
 	a.refreshPendingTrades(a.core.Ctx)
-	if offerOutcomeCount(a.TargetOffers(offerTestScope()), "pending") != 1 {
+	if offerOutcomeCount(offersTestAPI(a).TargetOffers(offerTestScope()), "pending") != 1 {
 		t.Fatal("failed fetch ended offer")
 	}
 }
@@ -202,7 +204,7 @@ func TestLiveOfferCutoffAndOwnerScope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	before := a.TargetOffers(offerTestScope())
+	before := offersTestAPI(a).TargetOffers(offerTestScope())
 	pending := []leaguefeed.PendingTrade{
 		{ID: "1", Offering: "0025", OfferedTo: "0001", Proposed: cutoff},
 		{ID: "2", Offering: "0025", OfferedTo: "0001", Proposed: cutoff.Add(-time.Second)},
@@ -212,21 +214,21 @@ func TestLiveOfferCutoffAndOwnerScope(t *testing.T) {
 	if err := a.recordOffers(context.Background(), pending, cutoff.Add(2*time.Hour), nil); err != nil {
 		t.Fatal(err)
 	}
-	r := a.TargetOffers(offerTestScope())
+	r := offersTestAPI(a).TargetOffers(offerTestScope())
 	if r.Count != before.Count+1 || offerOutcomeCount(r, "pending") != 1 {
 		t.Fatal("cutoff or owner leak", r)
 	}
 	scope := offerTestScope()
 	scope.Direction = "sent"
-	if offerOutcomeCount(a.TargetOffers(scope), "pending") != 0 {
+	if offerOutcomeCount(offersTestAPI(a).TargetOffers(scope), "pending") != 0 {
 		t.Fatal("received offer counted as sent")
 	}
 	scope.Direction = "received"
-	if offerOutcomeCount(a.TargetOffers(scope), "pending") != 1 {
+	if offerOutcomeCount(offersTestAPI(a).TargetOffers(scope), "pending") != 1 {
 		t.Fatal("received offer missing")
 	}
 	scope.Team = "0002"
-	if offerOutcomeCount(a.TargetOffers(scope), "pending") != 0 {
+	if offerOutcomeCount(offersTestAPI(a).TargetOffers(scope), "pending") != 0 {
 		t.Fatal("counterparty filter ignored")
 	}
 	rows, _, err := personal.New(a.core.Pools).Offers(context.Background(), "0025")
@@ -243,7 +245,7 @@ func TestLiveOfferAfterDeadlineRemainsVisible(t *testing.T) {
 	if err := a.recordOffers(context.Background(), []leaguefeed.PendingTrade{p}, at, nil); err != nil {
 		t.Fatal(err)
 	}
-	r := a.TargetOffers(offerTestScope())
+	r := offersTestAPI(a).TargetOffers(offerTestScope())
 	if offerOutcomeCount(r, "pending") != 1 {
 		t.Fatal("post-deadline offer vanished", r)
 	}
@@ -264,7 +266,7 @@ func TestLiveOfferFromUnheldYearKeepsHistoryOnScreen(t *testing.T) {
 		ts.Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	r := a.TargetOffers(offerTestScope())
+	r := offersTestAPI(a).TargetOffers(offerTestScope())
 	if r.Status != ReadingOK || r.AbsenceReason != nil ||
 		!strings.Contains(r.Cutoff, "1 offer from a league year without held dates not placed in a stretch yet") {
 		t.Fatalf("an offer from a year without held dates must not fail the history: %+v", r)
