@@ -42,6 +42,11 @@ type State struct {
 	// ArchiveOpponentFallback runs under SeasonMu, after the current lineup lookup.
 	ArchiveOpponentFallback func(int, string) string
 
+	ReadSourcesDatabaseChecks func() *report.Report
+	ReadSourcesDirectory      func(context.Context) (normalize.Lookup, error)
+	ReadSourcesSettings       func() (string, bool, error)
+	RunSourcesLeagueRefresh   func(context.Context) (int, bool, bool, error)
+	WriteSourcesSettings      func(string, bool) error
 	// ReadCommsArchive runs under FactsMu; its cache remains with the archive feature.
 	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
 	RefreshTransactions    func(context.Context)
@@ -143,10 +148,7 @@ type State struct {
 	RulesCheckedAt   atomic.Int64 // unix seconds of the last rules sync, 0 if none; read lock-free
 	LaunchRefreshDue bool         // startup did not refresh, so domReady does
 
-	CrosswalkMu sync.Mutex
-
 	LoadingSignals sync.Mutex // one signals load at a time
-	SignalsMu      sync.Mutex // guards signals
 }
 
 type Paths struct {

@@ -23,14 +23,16 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    paths go through `core.Paths`. Update all direct `App{...}` test fixtures with initialized core
    state, including zero-state refusal fixtures, in the same compiling commit.
 3. **Declare the port in the feature.** Add `type Host interface` in `<feature>/api.go`, listing
-   only the reads/effects this API needs. `API` has named, unexported `host Host` and (for stateful features) `held *Held`
+   only the reads/effects this API needs. `API` has named, unexported `host Host` and
+   (for stateful features) `held *Held`
    fields. Stateless APIs use `New(Host)`; stateful APIs use `New(Host, *Held)`. Neither
    imports core. Create exactly one unbound holder per App in common `NewApp` construction,
    store it on a named unexported field and bind `sources.New(app.core, app.sourcesHeld)`.
    Update direct App fixtures too. Never embed or bind Held. Shared state stays in core;
    feature-private reports and their short data mutexes move to Held. Its Publish and Snapshot
    methods lock and deep-clone on both ingress and egress, preserving nil versus empty at
-   every depth (including each signals load's Missing slice). Port signatures use lower-level value types or shared report/season
+   every depth (including each signals load's Missing slice). Port signatures use lower-level
+   value types or shared report/season
    contracts. Do not return a feature-owned Input from core: return lower-level pieces and
    assemble the Input in the API. A lower, genuinely shared type can move to report/season; a
    feature-only cache should stay with its feature instead of creating a core→feature cycle.
@@ -95,14 +97,28 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    scoped extraction brief excludes the full root suite.
 
 **Comms ownership and metadata.** Core holds transactions/boards and their locks, key access and
-refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now`, `liveGame`,
-`crosswalk` and `signals` remain on App: their types belong to other feature packages or to the
-still-root feature adapters. Core's archive callback accesses archiveCache under FactsMu; the
+refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now` and `liveGame`
+remain on App: their types belong to other feature packages or still-root feature adapters.
+Sources now owns `crosswalk` and `signals` through the named `App.sourcesHeld` pointer. Core's archive callback accesses archiveCache under FactsMu; the
 transaction callback publishes through the existing root fetcher under RefreshMu. No feature
 imports core. The catalog records the current compound desktop `comms.read` command's ambient
 roles (`gm,commish,admin`) and gravity (`G0`) for its read/refresh/open actions. The registry's social
 page gravity is not a newly enforced binding policy. No wire/API version was previously declared,
 so Version is Unset. This does not grant server publication or alter any permission check.
+
+**Sources stateful API.** Six methods move from App to `sources.API`; the source settings
+and startup workers stay unbound in `sources_runtime.go` because Photos, Archive and the status
+strip still consume them. `sources_wire_test.go` retains canonical binding goldens and the
+cross-feature Params/database-checks contract; archive/facts and isolated API tests live beside
+Sources, while `coretest.New(t).Build()` drives the core port/serializer tests. The pre-move
+root count was 205 and the uncached Sources-focused root selection took 7.482 s; the move leaves
+199 root Go files. `DataScope` and `DataActResult` remain declared root wire twins for Cache and
+Photos, not extra Sources bindings. No existing critical section jointly captured Sources'
+private reports with core state: Research's independent crosswalk-version read stays an unbound
+root adapter, with its original separate capture order. Thus no artificial joint lock is added.
+The load still publishes before releasing LoadingSignals, then emits the deferred health event.
+The catalog uses `refresh.run` for TargetDataRefresh; methods without registry verbs use Unset,
+and unspecified roles/versions remain Unset rather than inventing authorization.
 
 **Request scope — recorded, not built.** Commissioner still reads the session and the app-lifetime
 context from shared state; this pilot does not change that. Server reuse needs a per-call scope

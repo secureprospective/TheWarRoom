@@ -6,6 +6,14 @@ import (
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 )
 
+type DataScope struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Note     string `json:"note"`
+	Action   string `json:"action"`
+	Progress string `json:"progress"`
+}
+
 // cacheScope is one copy the app holds that can be read afresh from its source, with the app's own
 // forced refresh that does it.
 type cacheScope struct {

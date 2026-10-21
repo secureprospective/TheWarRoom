@@ -74,6 +74,12 @@ func photoView(mflID, name string, off bool) PhotoView {
 	return PhotoView{Src: "/headshot/" + mflID, Alt: "Photo of " + name}
 }
 
+type DataActResult struct {
+	OK      bool   `json:"ok"`
+	Error   string `json:"error"`
+	Summary string `json:"summary"`
+}
+
 // SetPhotos turns player photos on or off; off means no request reaches a photo host.
 func (a *App) SetPhotos(on bool) DataActResult {
 	s, err := a.readSettings()

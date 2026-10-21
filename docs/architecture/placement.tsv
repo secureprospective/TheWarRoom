@@ -49,9 +49,6 @@ control_room_app.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
-crosswalk_app.go	sources
-data_sources_app.go	sources
-data_sources_test.go	sources
 database_checks_app.go	platform
 database_checks_app_test.go	platform
 dirmode_test.go	platform
@@ -61,8 +58,6 @@ draft_reports_app.go	draft
 draft_wire_test.go	draft
 engine_refresh.go	scoring
 engine_refresh_test.go	scoring
-facts_app.go	sources
-facts_app_test.go	sources
 finished_scores.go	research
 finished_scores_test.go	research
 freshness.go	platform
@@ -74,7 +69,6 @@ landing_test.go	now
 landing_home_test.go	now
 now_pulse_test.go	now
 inspector_shell_test.go	now
-league_archive_app.go	sources
 league_calendar_app.go	commissioner
 league_calendar_app_test.go	commissioner
 native_league_schedule_app_test.go	commissioner
@@ -184,7 +178,6 @@ selfprotect_test.go	platform
 shell_feeds_app.go	control
 shell_feeds_app_test.go	control
 shell_status_app.go	control
-signals_app.go	sources
 suite_test.go	platform
 snapshot_app.go	platform
 snapshot_app_test.go	platform
@@ -305,10 +298,10 @@ internal/app/race	race
 control_wire_test.go	control
 internal/app/control	control
 internal/app/season/seasontest	platform
-
 internal/app/now	now
 internal/app/now/nowtest	now
 internal/app/trades	trades
 internal/app/core	core
 internal/app/core/coretest	core
 internal/app/catalog	core
+sources_runtime.go	sources

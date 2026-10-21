@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
@@ -28,7 +30,7 @@ func (a *App) archiveOpponentFallback(week int, team string) string {
 // The caller holds factsMu, which guards archiveCache.
 func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, error) {
 	notes := lab.NoteReadings()
-	src := archiveapp.Source{History: a.core.History, Bodies: curatedBodies{archive: a.core.History, curated: map[string][]byte{notes.SHA256: notes.Body}},
+	src := archiveapp.Source{History: a.core.History, Bodies: sourcesapp.CuratedBodies{Archive: a.core.History, Curated: map[string][]byte{notes.SHA256: notes.Body}},
 		Manifest: labFrozenInputs, Compiler: factsCompiler}
 	cache, stale, err := archiveapp.Read(ctx, src, a.archiveCache)
 	if err != nil {

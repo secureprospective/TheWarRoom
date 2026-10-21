@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
 
 // Not parallel: it writes the package-global commit, which parallel tests read via buildLabel.
@@ -26,8 +28,8 @@ func TestBuildLabel(t *testing.T) { //nolint:paralleltest // see above
 func TestIPCWaitsForStartup(t *testing.T) {
 	t.Parallel()
 	a := NewApp()
-	got := make(chan DataActResult, 1)
-	go func() { got <- a.TargetDataRefresh("league") }()
+	got := make(chan sourcesapp.DataActResult, 1)
+	go func() { got <- sourcesapp.New(a.core, a.sourcesHeld).TargetDataRefresh("league") }()
 	select {
 	case r := <-got:
 		t.Fatalf("TargetDataRefresh answered before startup finished: %+v", r)

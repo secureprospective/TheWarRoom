@@ -134,9 +134,7 @@ func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSea
 	a.core.SeasonMu.Lock()
 	links, version := a.research.links, a.research.linkVersion
 	a.core.SeasonMu.Unlock()
-	a.core.CrosswalkMu.Lock()
-	loaded := a.crosswalk.LoadedAt
-	a.core.CrosswalkMu.Unlock()
+	loaded := a.researchCrosswalkVersion()
 	var err error
 	if links == nil || version != loaded {
 		links, err = a.researchLinks(ctx, lookup)

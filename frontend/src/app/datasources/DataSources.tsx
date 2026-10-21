@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { selectProvider } from '../data/provider';
+import { subscribeSources } from './api';
 import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { ReportView } from '../reports/ReportView';
@@ -102,7 +102,7 @@ export default function DataSources() {
   useEffect(() => {
     const read = () => { void dataState.run({ kind: 'read' }); };
     read();
-    return selectProvider().onSeasonChange(read);
+    return subscribeSources(read);
   }, []);
   const w = s.data?.words;
   return <div className="data-sources draft-reports">

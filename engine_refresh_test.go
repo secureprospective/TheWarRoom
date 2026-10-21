@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -162,7 +164,7 @@ func TestSourceHealthEventOnFailedManualRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.TargetDataRefresh("league")
+	sourcesapp.New(a.core, a.sourcesHeld).TargetDataRefresh("league")
 	if events != 1 {
 		t.Fatal("failed refresh did not notify source health", events)
 	}

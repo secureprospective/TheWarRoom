@@ -24,7 +24,7 @@ type DataScope struct {
 }
 
 func (a Service) FactsInput(ctx context.Context) (FactsInput, error) {
-	in := FactsInput{Zone: time.Local}
+	in := FactsInput{Zone: a.zone()}
 	data, err := a.LabData()
 	if err != nil {
 		return in, fmt.Errorf("app: lab data: %w", err)
@@ -122,7 +122,7 @@ func DataScopes() []DataScope {
 }
 
 func (a Service) HealthInput(ctx context.Context, photos *PhotoHealth) (HealthInput, error) {
-	in := HealthInput{Reg: a.Health.Registry(), Now: time.Now(), Zone: time.Local}
+	in := HealthInput{Reg: a.Health.Registry(), Now: time.Now(), Zone: a.zone()}
 	if a.CollegeKey == "" {
 		in.Unset = map[string]string{college.Source: "needs a free CollegeFootballData key in " + CFBDEnvVar}
 	}
@@ -177,5 +177,5 @@ func (a Service) Read(ctx context.Context, photos *PhotoHealth, positions func()
 		return View{}, err
 	}
 	held := last()
-	return View{Health: HealthReport(health), Signals: SignalFilesReport(signals, held, time.Local), Facts: FactsReport(facts), Checks: ChecksReport(facts), Scopes: DataScopes(), Words: DataWords()}, nil
+	return View{Health: HealthReport(health), Signals: SignalFilesReport(signals, held, a.zone()), Facts: FactsReport(facts), Checks: ChecksReport(facts), Scopes: DataScopes(), Words: DataWords()}, nil
 }

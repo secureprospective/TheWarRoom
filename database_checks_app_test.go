@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -48,7 +50,7 @@ func TestDatabaseChecksReportAllFilesAndFailures(t *testing.T) {
 	if r.Status != "failed" || !strings.Contains(r.Rows[1].Cells[2], "closed") || r.Rows[2].Cells[2] != "OK" {
 		t.Fatalf("failure hidden or skipped another file: %+v", r)
 	}
-	body, err := json.Marshal(DataSources{DatabaseChecks: r})
+	body, err := json.Marshal(sourcesapp.DataSources{DatabaseChecks: a.databaseChecksReading()})
 	if err != nil || !strings.Contains(string(body), `"databaseChecks":`) {
 		t.Fatalf("reading field missing: %s %v", body, err)
 	}
@@ -73,7 +75,7 @@ func TestDatabaseChecksWorkerJoinsOnShutdown(t *testing.T) {
 
 func TestDataSourcesIncludesLocalDatabaseChecks(t *testing.T) {
 	a := targetTestApp(t)
-	data, err := a.TargetDataSources()
+	data, err := sourcesapp.New(a.core, a.sourcesHeld).TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}

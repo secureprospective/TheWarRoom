@@ -6,16 +6,8 @@ export function DeleteMFLKey() {
   return window['go']['main']['App']['DeleteMFLKey']();
 }
 
-export function GetCrosswalkReport() {
-  return window['go']['main']['App']['GetCrosswalkReport']();
-}
-
 export function GetParams() {
   return window['go']['main']['App']['GetParams']();
-}
-
-export function LoadCrosswalk() {
-  return window['go']['main']['App']['LoadCrosswalk']();
 }
 
 export function MFLKeyStatus() {
@@ -24,10 +16,6 @@ export function MFLKeyStatus() {
 
 export function ResetParam(arg1, arg2) {
   return window['go']['main']['App']['ResetParam'](arg1, arg2);
-}
-
-export function SetLeagueArchiveDir(arg1) {
-  return window['go']['main']['App']['SetLeagueArchiveDir'](arg1);
 }
 
 export function SetMFLKey(arg1) {
@@ -180,18 +168,6 @@ export function TargetContracts(arg1) {
 
 export function TargetCorrections(arg1) {
   return window['go']['main']['App']['TargetCorrections'](arg1);
-}
-
-export function TargetCrosswalk() {
-  return window['go']['main']['App']['TargetCrosswalk']();
-}
-
-export function TargetDataRefresh(arg1) {
-  return window['go']['main']['App']['TargetDataRefresh'](arg1);
-}
-
-export function TargetDataSources() {
-  return window['go']['main']['App']['TargetDataSources']();
 }
 
 export function TargetDraftIR(arg1, arg2) {

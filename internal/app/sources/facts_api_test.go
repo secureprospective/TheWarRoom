@@ -1,4 +1,4 @@
-package main
+package sources_test
 
 import (
 	"context"
@@ -10,13 +10,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 )
 
 // publishTinyManifest archives one season's league, standings and weekly results and publishes them, with the
 // curated readings, as the Lab's manifest.
-func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curated) {
+func publishTinyManifest(t *testing.T, a *fakeHost, bills string, readings lab.Curated) {
 	t.Helper()
 	ctx := context.Background()
 	dir := t.TempDir()
@@ -39,10 +42,10 @@ func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curate
 		sum := sha256.Sum256([]byte(body))
 		pins = append(pins, manifest.Pin{File: rel, SHA256: hex.EncodeToString(sum[:])})
 	}
-	if _, err := a.importArchiveFrom(ctx, dir); err != nil {
+	if _, err := sourcesapp.ServiceFor(a).ImportArchiveFrom(ctx, dir); err != nil {
 		t.Fatal(err)
 	}
-	fetches, err := a.core.History.SourceFetches(ctx, leagueArchiveSource)
+	fetches, err := a.hist.SourceFetches(ctx, sourcesapp.LeagueArchiveSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +53,7 @@ func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curate
 	for i, f := range fetches {
 		held[i] = manifest.Fetch{ID: f.ID, URL: f.URL, SHA256: f.SHA256, FetchedAt: f.FetchedAt}
 	}
-	m, err := manifest.Build(labFrozenInputs, pins, held, 2020, time.Now().Add(time.Hour))
+	m, err := manifest.Build(sourcesapp.LabFrozenInputs, pins, held, 2020, time.Now().Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +64,7 @@ func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curate
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.core.History.PublishManifest(ctx, historyManifest(m, enc)); err != nil {
+	if _, err := a.hist.PublishManifest(ctx, sourcesapp.HistoryManifest(m, enc)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -77,15 +80,15 @@ func weekResults(bills string) string {
 // failure keeps the good snapshot, marked stale.
 func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Paths.DataDir = t.TempDir()
+	a := testHost(t)
+
 	ctx := context.Background()
 	// No trade notes in a one-week archive: the curated readings are the header alone.
 	readings := lab.Curated{File: "note_readings.csv",
 		Body: []byte("txn_id,from_fid,to_fid,kind,pick_year,pick_round,pick_slot,pick_orig,cap_m,cap_seasons,player,clarity,reading\n")}
 	sum := sha256.Sum256(readings.Body)
 	readings.SHA256 = hex.EncodeToString(sum[:])
-	compile := func() (string, error) { return a.compileFactsWith(ctx, readings) }
+	compile := func() (string, error) { return sourcesapp.CompileFacts(ctx, a, readings) }
 	publishTinyManifest(t, a, "117", readings)
 	msg, err := compile()
 	if err != nil || !strings.Contains(msg, "did not compile") || !strings.Contains(msg, "Buffalo Bills: team score 117.00") {
@@ -94,7 +97,7 @@ func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 	if msg, _ := compile(); !strings.Contains(msg, "already compiled") {
 		t.Fatalf("the same inputs compiled twice: %q", msg)
 	}
-	ds, err := a.TargetDataSources()
+	ds, err := a.api().TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +108,7 @@ func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 	if msg, err := compile(); err != nil || msg != "The checked facts compiled and every check passed." {
 		t.Fatalf("good compile: %q, %v", msg, err)
 	}
-	ds, _ = a.TargetDataSources()
+	ds, _ = a.api().TargetDataSources()
 	if got := cell(ds.Facts, "Compiled snapshot"); !strings.HasPrefix(got, "Current, built") || ds.Checks.Status != "ok" ||
 		!strings.HasPrefix(checkResult(ds.Checks, "Team scores equal their starters"), "Passed: 2 compared, 2 agree") {
 		t.Fatalf("snapshot %q, checks %s", got, ds.Checks.Status)
@@ -114,7 +117,7 @@ func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 	if _, err := compile(); err != nil {
 		t.Fatal(err)
 	}
-	ds, _ = a.TargetDataSources()
+	ds, _ = a.api().TargetDataSources()
 	if got := cell(ds.Facts, "Compiled snapshot"); !strings.HasPrefix(got, "Stale, built") || !strings.Contains(got, "latest build failed") {
 		t.Fatalf("a failed build must keep the good snapshot, stale: %q", got)
 	}
@@ -124,7 +127,7 @@ func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 }
 
 // checkResult is a check's Result cell in the checks report.
-func checkResult(r Report, name string) string {
+func checkResult(r report.Report, name string) string {
 	for _, row := range r.Rows {
 		if row.Group == "" && len(row.Cells) == 3 && row.Cells[0] == name {
 			return row.Cells[2]

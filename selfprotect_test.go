@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
+	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
 
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
@@ -125,39 +126,9 @@ func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
 // Wails reflects the pointer method set without a signature filter; no exemptions are configured.
 func TestBindingManifest(t *testing.T) {
 	t.Parallel()
-	catalogs := map[reflect.Type][]catalog.Command{
-		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
-		reflect.TypeFor[*comms.API]():          comms.Commands(),
-		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
-	}
-	var got []string
-	for _, typ := range []reflect.Type{
-		reflect.TypeFor[*App](),
-		reflect.TypeFor[*archiveapp.API](),
-		reflect.TypeFor[*comms.API](),
-		reflect.TypeFor[*counterparties.API](),
-	} {
-		methods := map[string]bool{}
-		for _, command := range catalogs[typ] {
-			if methods[command.Method] {
-				t.Fatalf("duplicate catalog method %s", command.Method)
-			}
-			methods[command.Method] = true
-		}
-		prefix := typ.Elem().String() + "."
-		for i := range typ.NumMethod() {
-			name := typ.Method(i).Name
-			got = append(got, prefix+name)
-			if typ != reflect.TypeFor[*App]() {
-				if !methods[name] {
-					t.Errorf("bound method %s%s has no catalog entry", prefix, name)
-				}
-				delete(methods, name)
-			}
-		}
-		for name := range methods {
-			t.Errorf("catalog method %s is not bound", name)
-		}
+	got, problems := bindingManifest(bindings(NewApp()))
+	if len(problems) > 0 {
+		t.Fatal(strings.Join(problems, "\n"))
 	}
 	slices.Sort(got)
 	want, err := os.ReadFile("testdata/bindings/manifest.txt")
@@ -166,5 +137,66 @@ func TestBindingManifest(t *testing.T) {
 	}
 	if actual := strings.Join(got, "\n") + "\n"; actual != string(want) {
 		t.Fatalf("binding manifest changed; review the surface before updating the golden\ngot:\n%s", actual)
+	}
+}
+
+func bindingManifest(bound []interface{}) ([]string, []string) {
+	catalogs := map[reflect.Type][]catalog.Command{
+		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
+		reflect.TypeFor[*comms.API]():          comms.Commands(),
+		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
+		reflect.TypeFor[*sources.API]():        sources.Commands(),
+	}
+	seen := map[reflect.Type]bool{}
+	var got, problems []string
+	for _, value := range bound {
+		typ := reflect.TypeOf(value)
+		commands, feature := catalogs[typ]
+		if typ != reflect.TypeFor[*App]() && !feature {
+			problems = append(problems, fmt.Sprintf("unexpected bound type %v", typ))
+			continue
+		}
+		if seen[typ] {
+			problems = append(problems, fmt.Sprintf("duplicate bound type %v", typ))
+		}
+		seen[typ] = true
+		methods := map[string]bool{}
+		for _, command := range commands {
+			if methods[command.Method] {
+				problems = append(problems, "duplicate catalog method "+command.Method)
+			}
+			methods[command.Method] = true
+		}
+		prefix := typ.Elem().String() + "."
+		for i := range typ.NumMethod() {
+			name := typ.Method(i).Name
+			got = append(got, prefix+name)
+			if feature {
+				if !methods[name] {
+					problems = append(problems, "bound method "+prefix+name+" has no catalog entry")
+				}
+				delete(methods, name)
+			}
+		}
+		for name := range methods {
+			problems = append(problems, "catalog method "+name+" is not bound")
+		}
+	}
+	for typ := range catalogs {
+		if !seen[typ] {
+			problems = append(problems, fmt.Sprintf("missing bound type %v", typ))
+		}
+	}
+	if !seen[reflect.TypeFor[*App]()] {
+		problems = append(problems, "missing root App")
+	}
+	return got, problems
+}
+
+func TestBindingManifestRejectsHeld(t *testing.T) {
+	bound := append(bindings(NewApp()), &sources.Held{})
+	_, problems := bindingManifest(bound)
+	if len(problems) != 1 || problems[0] != "unexpected bound type *sources.Held" {
+		t.Fatalf("directly bound holder accepted: %v", problems)
 	}
 }
