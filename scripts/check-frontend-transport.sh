@@ -14,6 +14,7 @@ const folders = new Map([
   ['archive', 'archive'],
   ['comms', 'comms'],
   ['contracts', 'contracts'],
+  ['control', 'control'],
   ['counterparties', 'counterparties'],
   ['draft', 'draftreports'],
   ['market', 'market'],
@@ -27,6 +28,8 @@ const whole = ['archive', 'comms', 'counterparties', 'race'];
 const moved = new Map([
   ['TargetArchive', 'archive'],
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
+  ...['DeleteMFLKey', 'GetParams', 'MFLKeyStatus', 'ResetParam', 'SetMFLKey', 'SetParam', 'TargetAccounting',
+    'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSiteNews'].map(name => [name, 'control']),
   ...['TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
     'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],

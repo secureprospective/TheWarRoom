@@ -1,3 +1,4 @@
+import type { ParamsResult } from '../control/api';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { dataProvider, type DataProvider, type Sources } from './provider';
@@ -8,7 +9,7 @@ export type DataAction = { kind: 'read' } | { kind: 'folder'; path: string } |
   { kind: 'refresh'; scope: string } | { kind: 'photos'; on: boolean };
 export type Action = DataAction | ParamAction;
 export function createDataState(provider: DataProvider) {
-  const store = createStore<{ data?: Sources; crosswalk?: Report; params?: main.ParamsResult;
+  const store = createStore<{ data?: Sources; crosswalk?: Report; params?: ParamsResult;
     busy: string; error: string; result: string; outcomes: Record<string, string> }>(() =>
       ({ busy: '', error: '', result: '', outcomes: {} }));
   async function read() {

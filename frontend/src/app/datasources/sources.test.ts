@@ -1,3 +1,4 @@
+import type { ParamsResult } from '../control/api';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
@@ -13,7 +14,7 @@ import wire from './wire.testdata.json';
 const data = () => parseSources(wire.data);
 const provider = (): DataProvider => ({
   read: async () => data(), crosswalk: async () => report(wire.crosswalk, 'Crosswalk'),
-  params: async () => wire.params as main.ParamsResult,
+  params: async () => wire.params as ParamsResult,
   refresh: async () => parseOutcome(wire.result), folder: async () => parseOutcome(wire.result),
   photos: async () => parseOutcome(wire.result), parameter: async () => {},
 });
@@ -46,7 +47,7 @@ describe('Control Room data and sources', () => {
     expect(unset).toContain('disabled=""');
   });
   it('keeps every parameter, default and reset, but gates changes to Admin', () => {
-    const markup = html(createElement(Parameters, { params: wire.params as main.ParamsResult,
+    const markup = html(createElement(Parameters, { params: wire.params as ParamsResult,
       busy: '', words: data().words }));
     expect(markup).toContain('Test weight');
     expect(markup).not.toContain('test.weight');
@@ -129,7 +130,7 @@ it('fits every table in the 680px panel without hidden or nested scrolling', asy
       expect(markup.match(/scope="col"/g)).toHaveLength(r.columns.length);
     }
   }
-  const parameters = html(createElement(Parameters, { params: wire.params as main.ParamsResult,
+  const parameters = html(createElement(Parameters, { params: wire.params as ParamsResult,
     busy: '', words: d.words }));
   expect(parameters.match(/scope="col"/g)).toHaveLength(4);
   const widths = [1, 2, 3, 4].map(i => Number(css.match(new RegExp(

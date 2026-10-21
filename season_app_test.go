@@ -19,6 +19,7 @@ import (
 
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -440,7 +441,7 @@ func TestSeasonBindingDoesNotWaitForRefresh(t *testing.T) {
 
 func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a, transport, _, events := seasonTestApp(t)
-	status, err := a.SetMFLKey("synthetic-stored-key")
+	status, err := a.controlAPI().SetMFLKey("synthetic-stored-key")
 	if err != nil || status.State != "connected" {
 		t.Fatal(status, err)
 	}
@@ -451,7 +452,7 @@ func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
 	// Holding refreshMu proves deletion returns and clears without waiting for the worker.
 	a.core.RefreshMu.Lock()
-	status, err = a.DeleteMFLKey()
+	status, err = a.controlAPI().DeleteMFLKey()
 	r := seasonReading(t, a)
 	a.core.RefreshMu.Unlock()
 	a.core.WeekWorkers.Wait()
@@ -580,9 +581,9 @@ func TestSeasonDeleteDoesNotWaitForPendingFetch(t *testing.T) {
 	}
 	a.refreshPendingTradesInBackground()
 	<-entered
-	deleted := make(chan MFLKeyStatus, 1)
+	deleted := make(chan controlapp.MFLKeyStatus, 1)
 	go func() {
-		status, err := a.DeleteMFLKey()
+		status, err := a.controlAPI().DeleteMFLKey()
 		if err != nil {
 			status.State = err.Error()
 		}

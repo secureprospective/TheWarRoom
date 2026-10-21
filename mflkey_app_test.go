@@ -36,7 +36,7 @@ func hasKey(text, key string) bool { return strings.Contains(text, key) }
 func TestSetMFLKeyPanicNeverReachesWails(t *testing.T) {
 	app := NewApp()
 	close(app.core.Started)
-	status, err := app.SetMFLKey("panic-probe-" + strings.Repeat("x", 16))
+	status, err := app.controlAPI().SetMFLKey("panic-probe-" + strings.Repeat("x", 16))
 	if err != nil || status.State != "unavailable" {
 		t.Fatalf("state %q, err %v", status.State, err)
 	}
@@ -133,7 +133,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				"error": "rejected", "redirect": "rejected", "refused": "unreachable",
 			}[scenario]
 			good := want == "connected"
-			status, setErr := app.SetMFLKey(sentinel)
+			status, setErr := app.controlAPI().SetMFLKey(sentinel)
 			app.core.WeekWorkers.Wait()
 			if setErr != nil || status.State != want {
 				t.Fatalf("verification: state %q, want %q, err %v", status.State, want, setErr)
@@ -152,7 +152,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				t.Fatal(err)
 			}
 			assertAbsent(string(body))
-			state, err := app.MFLKeyStatus()
+			state, err := app.controlAPI().MFLKeyStatus()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -166,7 +166,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 			}
 			// Failed replacement must not remove a previously stored key.
 			if !good {
-				replaced, err := app.SetMFLKey(sentinel)
+				replaced, err := app.controlAPI().SetMFLKey(sentinel)
 				if err != nil || replaced.State != want {
 					t.Fatalf("replacement: state %q, err %v", replaced.State, err)
 				}
@@ -180,7 +180,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 					t.Fatal("stored key changed")
 				}
 			}
-			deleted, err := app.DeleteMFLKey()
+			deleted, err := app.controlAPI().DeleteMFLKey()
 			app.core.WeekWorkers.Wait()
 			if err != nil || deleted.State != "absent" {
 				t.Fatalf("delete: %v %v", deleted, err)

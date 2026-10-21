@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -112,10 +113,10 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 			Franchise: "Cincinnati Bengals", Reason: "no NFL id yet"}}})
 	c := sourcesapp.New(a.core, a.sourcesHeld).TargetCrosswalk()
 	wire := struct {
-		Data      sourcesapp.DataSources `json:"data"`
-		Crosswalk report.Report          `json:"crosswalk"`
-		Params    ParamsResult           `json:"params"`
-		Result    DataActResult          `json:"result"`
+		Data      sourcesapp.DataSources  `json:"data"`
+		Crosswalk report.Report           `json:"crosswalk"`
+		Params    controlapp.ParamsResult `json:"params"`
+		Result    DataActResult           `json:"result"`
 	}{
 		Data: sourcesapp.DataSources{DatabaseChecks: (&App{core: &core.State{}}).databaseChecksReading(), Health: sourcesapp.HealthReport(sourcesapp.HealthInput{Reg: reg, Now: at, Zone: time.UTC,
 			Sources: []history.SourceHealth{{Source: sourcesapp.LeagueArchiveSource, State: history.SourceActive, LastSuccess: at}}}),
@@ -133,7 +134,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 							Class: facts.ClassReview, Reason: "Possibly a commissioner adjustment."}}},
 				{Name: "Lineup scores equal MFL player scores", Checked: 202954, Agreed: 202954, Passed: true}}}),
 			ArchiveDir: "/fixture/raw", PhotosOn: true, Scopes: sourcesapp.DataScopes(), Words: sourcesapp.DataWords()},
-		Crosswalk: c, Params: ParamsResult{OK: true, Params: []ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
+		Crosswalk: c, Params: controlapp.ParamsResult{OK: true, Params: []controlapp.ParamView{{Key: "test.weight", Label: "Test weight", Group: "Other settings", Position: "WR", Value: 0.5, Default: 0.5, Min: 0, Max: 1, Description: "Test weight", Overridden: true}}},
 		Result: DataActResult{OK: true, Summary: "Looked at 8 files: 0 new, 8 already held."},
 	}
 	body, err := json.MarshalIndent(wire, "", "  ")
@@ -163,7 +164,7 @@ func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
 	if err := a.core.Params.Initialize(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	result := a.GetParams()
+	result := a.controlAPI().GetParams()
 	if !result.OK || len(result.Params) < 100 {
 		t.Fatalf("params = %+v", result)
 	}

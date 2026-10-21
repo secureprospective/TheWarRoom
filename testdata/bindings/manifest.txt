@@ -11,6 +11,17 @@ contracts.API.TargetPlayerContract
 contracts.API.TargetReleasePlans
 contracts.API.TargetRosterReports
 contracts.API.TargetWhatIf
+control.API.DeleteMFLKey
+control.API.GetParams
+control.API.MFLKeyStatus
+control.API.ResetParam
+control.API.SetMFLKey
+control.API.SetParam
+control.API.TargetAccounting
+control.API.TargetBylaws
+control.API.TargetLeagueSettings
+control.API.TargetOpenMFLAccounting
+control.API.TargetSiteNews
 counterparties.API.TargetCounterpartTeam
 counterparties.API.TargetCounterparties
 draft.API.TargetDraftLab
@@ -18,14 +29,7 @@ draft.API.TargetDraftReports
 draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft
 draft.API.TargetOpenMFLDraftRoom
-main.App.DeleteMFLKey
-main.App.GetParams
-main.App.MFLKeyStatus
-main.App.ResetParam
-main.App.SetMFLKey
-main.App.SetParam
 main.App.SetPhotos
-main.App.TargetAccounting
 main.App.TargetAcquisition
 main.App.TargetAlerts
 main.App.TargetBidDraft
@@ -35,7 +39,6 @@ main.App.TargetBidPosted
 main.App.TargetBidPreview
 main.App.TargetBidRevise
 main.App.TargetBidWithdraw
-main.App.TargetBylaws
 main.App.TargetCacheClear
 main.App.TargetCacheScopes
 main.App.TargetCheckMoves
@@ -60,7 +63,6 @@ main.App.TargetDraftTaxi
 main.App.TargetHandOff
 main.App.TargetLeagueCalendar
 main.App.TargetLeagueSchedule
-main.App.TargetLeagueSettings
 main.App.TargetMoves
 main.App.TargetNativeAssets
 main.App.TargetNativeBidAction
@@ -89,7 +91,6 @@ main.App.TargetNativeWaiverAction
 main.App.TargetNativeWaivers
 main.App.TargetNativeWeek
 main.App.TargetOffers
-main.App.TargetOpenMFLAccounting
 main.App.TargetOpenResearchArticle
 main.App.TargetPersonal
 main.App.TargetPersonalChange
@@ -105,7 +106,6 @@ main.App.TargetResearchStatus
 main.App.TargetSeason
 main.App.TargetSetWindow
 main.App.TargetShellStatus
-main.App.TargetSiteNews
 main.App.TargetSnapshot
 main.App.TargetStatQueue
 main.App.TargetWithdrawRoster

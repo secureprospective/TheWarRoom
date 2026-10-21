@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -150,6 +151,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 	catalogs := map[reflect.Type][]catalog.Command{
 		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
 		reflect.TypeFor[*comms.API]():          comms.Commands(),
+		reflect.TypeFor[*controlapp.API]():     controlapp.Commands(),
 		reflect.TypeFor[*contractsapp.API]():   contractsapp.Commands(),
 		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
 		reflect.TypeFor[*draft.API]():          draft.Commands(),

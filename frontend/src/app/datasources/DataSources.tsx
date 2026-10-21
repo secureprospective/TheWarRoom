@@ -1,3 +1,4 @@
+import type { ParamsResult } from '../control/api';
 import { Fragment, useEffect, useState } from 'react';
 import { subscribeSources } from './api';
 import { commands } from '../commands/registry';
@@ -47,7 +48,7 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
   </section>;
 }
 export function Parameters({ params, busy, words: w }:
-  { params: main.ParamsResult; busy: string; words: Record<string, string> }) {
+  { params: ParamsResult; busy: string; words: Record<string, string> }) {
   const canEdit = commands.registry['data.parameter'].roles.includes('gm');
   const [filter, setFilter] = useState('');
   const [edits, setEdits] = useState<Record<string, string>>({});

@@ -1,5 +1,6 @@
-import { SetPhotos,
-  GetParams, SetParam, ResetParam } from '../../../wailsjs/go/main/App';
+import type { ParamsResult } from '../control/api';
+import { SetPhotos } from '../../../wailsjs/go/main/App';
+import { getParams, resetParam, setParam } from '../control/api';
 import { sourcesAPI } from './api';
 import { object, text, array, choice } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
@@ -44,7 +45,7 @@ export function parseOutcome(v: unknown): Outcome {
   return result;
 }
 export type DataProvider = {
-  read: () => Promise<Sources>; crosswalk: () => Promise<Report>; params: () => Promise<main.ParamsResult>;
+  read: () => Promise<Sources>; crosswalk: () => Promise<Report>; params: () => Promise<ParamsResult>;
   refresh: (scope: string) => Promise<Outcome>; folder: (path: string) => Promise<Outcome>;
   photos: (on: boolean) => Promise<Outcome>;
   parameter: (key: string, position: string, value: number | null) => Promise<void>;
@@ -56,13 +57,13 @@ function desktop() {
 export const dataProvider: DataProvider = {
   read: async () => { return parseSources(await sourcesAPI.read()); },
   crosswalk: async () => { return report(await sourcesAPI.crosswalk(), 'Crosswalk'); },
-  params: async () => { desktop(); const p = await GetParams(); if (!p.ok) throw new Error(p.error);
+  params: async () => { desktop(); const p = await getParams(); if (!p.ok) throw new Error(p.error);
     return p; },
   refresh: async scope => { return parseOutcome(await sourcesAPI.refresh(scope)); },
   folder: async path => { return parseOutcome(await sourcesAPI.folder(path)); },
   photos: async on => { desktop(); return parseOutcome(await SetPhotos(on)); },
   parameter: async (key, position, value) => {
-    desktop(); const r = value === null ? await ResetParam(key, position) : await SetParam(key,
+    desktop(); const r = value === null ? await resetParam(key, position) : await setParam(key,
       position, value);
     if (!r.ok) throw new Error(r.error);
   },
