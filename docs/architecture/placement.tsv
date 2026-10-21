@@ -70,9 +70,6 @@ native_league_schedule_app_test.go	commissioner
 commissioner_window_gates_test.go	commissioner
 lineup_app_test.go	contracts
 lineupset_app_test.go	contracts
-livegame_app.go	now
-livegame_finals.go	now
-livegame_spine.go	now
 livegame_test.go	now
 livegame_week_test.go	now
 logging.go	platform
@@ -128,7 +125,6 @@ native_waivers_orders_test.go	commissioner
 native_waivers_test.go	commissioner
 native_wire_test.go	commissioner
 now_app.go	now
-now_reading.go	now
 now_test.go	now
 offers_app.go	offers
 offers_app_test.go	offers

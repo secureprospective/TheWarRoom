@@ -61,7 +61,6 @@ main.App.TargetHandOff
 main.App.TargetLeagueCalendar
 main.App.TargetLeagueSchedule
 main.App.TargetLeagueSettings
-main.App.TargetLiveGame
 main.App.TargetMoves
 main.App.TargetNativeAssets
 main.App.TargetNativeBidAction
@@ -89,8 +88,6 @@ main.App.TargetNativeTrades
 main.App.TargetNativeWaiverAction
 main.App.TargetNativeWaivers
 main.App.TargetNativeWeek
-main.App.TargetNow
-main.App.TargetNowRefresh
 main.App.TargetOffers
 main.App.TargetOpenMFLAccounting
 main.App.TargetOpenResearchArticle
@@ -120,6 +117,9 @@ market.API.TargetMarketReports
 market.API.TargetMarketReportsRefresh
 market.API.TargetMarketStretches
 market.API.TargetPickClock
+now.API.TargetLiveGame
+now.API.TargetNow
+now.API.TargetNowRefresh
 race.API.TargetRace
 race.API.TargetRaceRefresh
 sources.API.GetCrosswalkReport

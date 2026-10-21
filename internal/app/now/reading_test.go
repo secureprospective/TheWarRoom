@@ -659,7 +659,7 @@ func realRace(t *testing.T, year string) season.Snapshot {
 }
 func realNow(t *testing.T, week int) Snapshot {
 	d := nowtest.Load(t)
-	return Snapshot{Race: realRace(t, "2025"), Week: week, Current: 5, At: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Held: Held{Schedules: map[int]Feed[[]nflschedule.RawWeek]{5: held([]nflschedule.RawWeek{d.Schedule})}, Byes: held(d.Byes)}, Projections: held([]marketfeeds.Feed{d.Projections})}
+	return Snapshot{Race: realRace(t, "2025"), Week: week, Current: 5, At: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Held: Feeds{Schedules: map[int]Feed[[]nflschedule.RawWeek]{5: held([]nflschedule.RawWeek{d.Schedule})}, Byes: held(d.Byes)}, Projections: held([]marketfeeds.Feed{d.Projections})}
 }
 
 func TestSnapshotParallelConstructionDoesNotMutateInputs(t *testing.T) {

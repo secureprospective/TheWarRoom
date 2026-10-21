@@ -195,7 +195,7 @@ func TestResearchNewsDoesNotBlockNowAndRejectsConcurrentNews(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("second news refresh waited")
 	}
-	go func() { other <- a.TargetNowRefresh(0, false) }()
+	go func() { other <- a.nowAPI().TargetNowRefresh(0, false) }()
 	select {
 	case err := <-other:
 		if err != nil {

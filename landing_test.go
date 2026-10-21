@@ -61,7 +61,7 @@ func TestLandingOfferHeadlines(t *testing.T) {
 func TestLandingFutureReports(t *testing.T) {
 	t.Parallel()
 	in := nowInput{race: realRace(t, "2026"), current: 5, at: raceHeldAt,
-		held: nowHeld{schedules: map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}}}
+		held: nowTestHeld{schedules: map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}}}
 	in.current, in.reportWeek = 5, 9
 	raw, err := nflschedule.Parse([]byte(weekFixture(t, "nflSchedule-w5.json")))
 	if err != nil {
@@ -149,7 +149,7 @@ func TestLandingRefusedProfileLoggedOnce(t *testing.T) {
 func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
 	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
-	board, err := a.TargetNow(0, 0, "")
+	board, err := a.nowAPI().TargetNow(0, 0, "")
 	if err != nil || board.Waiting != "Reading the league's weeks from MFL…" {
 		t.Fatalf("cold Now must wait for the league's weeks: %q %v", board.Waiting, err)
 	}
@@ -158,14 +158,14 @@ func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
 	h.RefreshError = "MFL refused the schedule"
 	a.raceHeld.PublishWeeks(h)
 	a.core.SeasonMu.Unlock()
-	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
+	if board, err = a.nowAPI().TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("a failed read is not waiting: %q %v", board.Waiting, err)
 	}
 	a.core.SeasonMu.Lock()
 	h.RefreshError, h.FetchedAt = "", time.Now()
 	a.raceHeld.PublishWeeks(h)
 	a.core.SeasonMu.Unlock()
-	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
+	if board, err = a.nowAPI().TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("held weeks are not waiting: %q %v", board.Waiting, err)
 	}
 }

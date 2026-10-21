@@ -15,6 +15,9 @@ import (
 // answer. A body is matched by the exact members of its P list, never a substring. The pass ends when every wanted
 // player is answered or when more says the remaining bodies are too old, so the cost is one scan per refresh, not
 // one per player.
+// archivedBodies is the history store's ArchivedBodies, as a seam for tests.
+type archivedBodies func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error)
+
 func archivedNews(ctx context.Context, bodies archivedBodies, season int, want []string,
 	more func(time.Time) bool) (map[string]heldSeasonFeed[[]researchfeeds.News], error) {
 	out := map[string]heldSeasonFeed[[]researchfeeds.News]{}

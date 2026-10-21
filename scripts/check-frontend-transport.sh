@@ -17,6 +17,7 @@ const folders = new Map([
   ['counterparties', 'counterparties'],
   ['draft', 'draftreports'],
   ['market', 'market'],
+  ['now', 'now'],
   ['race', 'race'],
   ['sources', 'datasources'],
   ['trades', 'trades'],
@@ -33,6 +34,7 @@ const moved = new Map([
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),
   ...['TargetAssetBoard', 'TargetAssetProfile', 'TargetMarket', 'TargetMarketLists', 'TargetMarketReports',
     'TargetMarketReportsRefresh', 'TargetMarketStretches', 'TargetPickClock'].map(name => [name, 'market']),
+  ['TargetLiveGame', 'now'], ['TargetNow', 'now'], ['TargetNowRefresh', 'now'],
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
@@ -64,6 +66,7 @@ for (const file of files(path.resolve('frontend/src'))) {
   const source = ts.createSourceFile(file, fs.readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
   const modelAliases = new Set();
   const rootAliases = new Set();
+  const rootFunctions = new Set();
   const reported = new Set();
   function check(feature, node, reason, allowAdapter = true) {
     if (allowAdapter && file === path.join(root, folders.get(feature) || feature, 'api.ts')) return;
@@ -120,6 +123,21 @@ for (const file of files(path.resolve('frontend/src'))) {
         node.arguments[0] && ts.isStringLiteral(node.arguments[0])) moduleAccess(node.arguments[0].text, node);
     if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument) && ts.isStringLiteral(node.argument.literal))
       moduleAccess(node.argument.literal.text, node);
+    // So is a function returning it: `function bindings() { return window.go.main.App; }`.
+    if (ts.isReturnStatement(node) && node.expression) {
+      const held = chain(node.expression);
+      const w = held.indexOf('window');
+      let fn = node.parent;
+      while (fn && !ts.isFunctionDeclaration(fn) && !ts.isFunctionExpression(fn) && !ts.isArrowFunction(fn)) fn = fn.parent;
+      const name = fn && ts.isFunctionDeclaration(fn) ? fn.name : fn && ts.isVariableDeclaration(fn.parent) ? fn.parent.name : undefined;
+      if (name && ts.isIdentifier(name) && w >= 0 && held.length === w + 4 && held[w + 1] === 'go' &&
+          held[w + 2] === 'main' && held[w + 3] === 'App')
+        rootFunctions.add(name.text);
+    }
+    if (ts.isPropertyAccessExpression(node) && ts.isCallExpression(node.expression) &&
+        ts.isIdentifier(node.expression.expression) && rootFunctions.has(node.expression.expression.text) &&
+        moved.has(node.name.text))
+      check(moved.get(node.name.text), node, 'moved root binding access through a root-returning function', false);
     // A variable holding window.go.main.App is a root alias too: `const go = window.go.main.App`.
     if (ts.isVariableDeclaration(node) && node.initializer && ts.isIdentifier(node.name)) {
       const held = chain(node.initializer);
