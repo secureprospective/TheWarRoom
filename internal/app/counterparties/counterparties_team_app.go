@@ -10,13 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-// RawCounterpartTeam opens one franchise's panel; Scope.Team is ignored because
-// the panel itself is the team view.
-type RawCounterpartTeam struct {
-	Scope RawCounterpartiesScope `json:"scope"`
-	Fid   string                 `json:"fid"`
-}
-
 type SeasonCellView struct {
 	NowText     string   `json:"nowText"`
 	LaterText   string   `json:"laterText"`

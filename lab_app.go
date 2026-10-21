@@ -134,16 +134,9 @@ func (a *App) TargetAssetProfile(raw RawMarketAsset) Reading[MarketSurface] {
 	return wireReading(marketLab(d).Profile(marketapp.Scope(raw.Scope), raw.Kind), wireSurface)
 }
 
-// lab returns the App's shared decode, or a fresh one for an App built without NewApp.
+// lab returns the shared decode, preserving the zero-state fallback.
 func (a *App) lab() (*lab.Data, error) {
-	if a.core.LabData == nil {
-		d, err := lab.Load()
-		if err != nil {
-			return nil, fmt.Errorf("load lab facts: %w", err)
-		}
-		return d, nil
-	}
-	return a.core.LabData() //nolint:wrapcheck // Preserve the frozen Lab loader error text.
+	return a.core.Lab() //nolint:wrapcheck // Preserve the frozen Lab loader error text.
 }
 
 // marketInput checks the scope, then reads the Lab the surface is built on.

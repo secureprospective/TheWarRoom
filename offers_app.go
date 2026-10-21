@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"time"
 
+	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
+
+type TeamOption struct {
+	Fid  string `json:"fid"`
+	Name string `json:"name"`
+}
 
 type RawOfferScope struct {
 	From      int    `json:"from"`
@@ -217,4 +223,8 @@ func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) 
 		return nil, "", time.Time{}, fmt.Errorf("offers: local history: %w", err)
 	}
 	return offersapp.Merge(d, rows, checked) //nolint:wrapcheck // preserves the existing offer history errors
+}
+
+func counterProvenance(d *lab.Data) snapshot.Provenance {
+	return (counterpartiesapp.Service{}).Provenance(d)
 }

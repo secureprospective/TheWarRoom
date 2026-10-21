@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft/drafttest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -220,5 +221,23 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 	got := draftapp.ValueNote(run, a.measureMeanings(run.MissingMeasures), time.Local)
 	if !strings.Contains(got, "Missing player information:") || strings.Contains(got, "context.birth_date") || strings.Contains(got, "secret-version") || !strings.Contains(got, "Date of birth") || got == want {
 		t.Fatal(got)
+	}
+}
+
+func TestCounterpartiesWireMatchesGolden(t *testing.T) {
+	a := counterpartiesapp.New(NewApp().core)
+	for _, c := range []struct {
+		name  string
+		scope counterpartiesapp.RawCounterpartiesScope
+		fid   string
+	}{
+		{"league", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026}, "0001"},
+		{"filtered", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026, Tiers: []string{"contender"}, Postures: []string{"now"}}, "0014"},
+		{"thin", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2017, Windows: []string{"summer"}, Postures: []string{"later"}}, "0002"},
+		{"invalid", counterpartiesapp.RawCounterpartiesScope{From: 2026, To: 2017}, "0099"},
+		{"unknown", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026, Team: "0099"}, "0099"},
+	} {
+		checkGolden(t, "counterparties", c.name, a.TargetCounterparties(c.scope))
+		checkGolden(t, "counterparties", c.name+"-team", a.TargetCounterpartTeam(counterpartiesapp.RawCounterpartTeam{Scope: c.scope, Fid: c.fid}))
 	}
 }

@@ -110,23 +110,11 @@ func LabScope(raw Scope) lab.Scope {
 	return s
 }
 
-// Name is an asset kind's plain name: "Linebackers, 25 to 27", "Next-draft 1sts".
-func Name(kind string) string {
-	names := map[string]string{"QB": "Quarterbacks", "RB": "Running backs", "WR": "Wide receivers", "TE": "Tight ends", "PK": "Kickers", "DL": "Defensive linemen", "LB": "Linebackers", "DB": "Defensive backs"}
-	parts := strings.Split(kind, ":")
-	if strings.HasPrefix(parts[0], "pick") && len(parts) == 2 {
-		round := map[string]string{"pick1": "1sts", "pick2": "2nds", "pick3": "3rds and later"}[parts[0]]
-		return strings.ToUpper(parts[1][:1]) + parts[1][1:] + "-draft " + round
-	}
-	label := names[parts[0]]
-	if len(parts) == 2 {
-		label += ", " + map[string]string{"young": "24 or younger", "prime": "25 to 27", "older": "28 or older"}[parts[1]]
-	}
-	return label
-}
+// Name is the shared asset kind wording.
+func Name(kind string) string { return report.AssetName(kind) }
 
 // Percent writes a ratio as a percentage to one decimal.
-func Percent(v float64) string { return fmt.Sprintf("%.1f%%", v*100) }
+func Percent(v float64) string { return report.Percent(v) }
 
 // RangeOf words a ratio's interval as a range; nil stays nil.
 func RangeOf(r *lab.Interval) *report.Range {

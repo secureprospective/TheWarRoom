@@ -186,14 +186,6 @@ export function TargetCorrections(arg1) {
   return window['go']['main']['App']['TargetCorrections'](arg1);
 }
 
-export function TargetCounterpartTeam(arg1) {
-  return window['go']['main']['App']['TargetCounterpartTeam'](arg1);
-}
-
-export function TargetCounterparties(arg1) {
-  return window['go']['main']['App']['TargetCounterparties'](arg1);
-}
-
 export function TargetCrosswalk() {
   return window['go']['main']['App']['TargetCrosswalk']();
 }

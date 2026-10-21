@@ -56,6 +56,7 @@ type State struct {
 	Pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
 	HistPools   *db.Pools // history.db: everything that cannot be rebuilt
 	WhatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
+	BuildStamp  string
 	LabData     func() (*lab.Data, error)
 	Params      *params.Store
 	Rulebook    *rulebook.Store
