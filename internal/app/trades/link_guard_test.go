@@ -1,4 +1,4 @@
-package main
+package trades
 
 import (
 	"io/fs"
@@ -15,7 +15,8 @@ func TestNoSourceBuildsMFLsTradeActionLink(t *testing.T) {
 	t.Parallel()
 	needle := "trade_" + "response"
 	var hits []string
-	for _, root := range []string{".", "frontend/src"} {
+	repo := filepath.Join("..", "..", "..")
+	for _, root := range []string{repo, filepath.Join(repo, "frontend", "src")} {
 		fsys := os.DirFS(root)
 		err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 			if err != nil {

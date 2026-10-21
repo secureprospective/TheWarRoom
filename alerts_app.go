@@ -7,6 +7,7 @@ import (
 	"time"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -43,7 +44,7 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	if err != nil {
 		return AlertReading{}, fmt.Errorf("target alerts: %w", err)
 	}
-	trades, err := a.TargetTrades(franchiseID)
+	trades, err := a.tradesAPI().TargetTrades(franchiseID)
 	if err != nil {
 		return AlertReading{}, fmt.Errorf("target alerts: %w", err)
 	}
@@ -95,7 +96,7 @@ func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
 	})
 }
 
-func (r *AlertReading) tradeAlert(trades TradeReading, now time.Time) {
+func (r *AlertReading) tradeAlert(trades tradesapp.TradeReading, now time.Time) {
 	if reason := envelope.TradeFeedReason(trades.Provenance); reason != "" {
 		r.Unavailable = append(r.Unavailable, Unavailable{Kind: "trades", Note: reason})
 		return

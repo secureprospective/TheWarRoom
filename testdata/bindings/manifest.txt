@@ -52,7 +52,6 @@ main.App.TargetCorrections
 main.App.TargetDraftIR
 main.App.TargetDraftLineup
 main.App.TargetDraftTaxi
-main.App.TargetDraftTradeAccept
 main.App.TargetHandOff
 main.App.TargetLeagueCalendar
 main.App.TargetLeagueSchedule
@@ -111,8 +110,6 @@ main.App.TargetShellStatus
 main.App.TargetSiteNews
 main.App.TargetSnapshot
 main.App.TargetStatQueue
-main.App.TargetTradeBuilder
-main.App.TargetTrades
 main.App.TargetWhatIf
 main.App.TargetWithdrawRoster
 market.API.TargetAssetBoard
@@ -131,3 +128,6 @@ sources.API.SetLeagueArchiveDir
 sources.API.TargetCrosswalk
 sources.API.TargetDataRefresh
 sources.API.TargetDataSources
+trades.API.TargetDraftTradeAccept
+trades.API.TargetTradeBuilder
+trades.API.TargetTrades

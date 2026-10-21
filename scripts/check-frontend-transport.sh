@@ -18,6 +18,7 @@ const folders = new Map([
   ['market', 'market'],
   ['race', 'race'],
   ['sources', 'datasources'],
+  ['trades', 'trades'],
 ]);
 // Folders whose feature has no root App bindings left: nothing in them may touch main/App or runtime.
 const whole = ['archive', 'comms', 'counterparties', 'race'];
@@ -32,6 +33,7 @@ const moved = new Map([
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
+  ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTrades'].map(name => [name, 'trades']),
 ]);
 let failures = 0;
 for (const feature of features) {

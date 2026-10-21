@@ -18,6 +18,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
+	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 )
 
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
@@ -152,6 +153,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
 		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
 		reflect.TypeFor[*sources.API]():        sources.Commands(),
+		reflect.TypeFor[*trades.API]():         trades.Commands(),
 	}
 	seen := map[reflect.Type]bool{}
 	var got, problems []string

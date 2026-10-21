@@ -121,6 +121,15 @@ func wireChoices(choices []report.Choice) []RaceChoice {
 	return wireSlice(choices, out)
 }
 
+// wireReading converts a reading built by a feature service to its wire twin, its value through
+// value.
+func wireReading[S, T any](r report.Reading[S], value func(S) T) Reading[T] {
+	return Reading[T]{Sourced: snapshot.Sourced[T]{Value: value(r.Value), Provenance: r.Provenance},
+		Status: ReadingStatus(r.Status), AbsenceReason: r.AbsenceReason, Count: r.Count, Threshold: r.Threshold,
+		Baseline: r.Baseline, Cutoff: r.Cutoff, Method: r.Method, InputSHA: r.InputSHA, BuildStamp: r.BuildStamp,
+		HowCounted: r.HowCounted}
+}
+
 // wireSlice keeps a nil slice nil, so it still encodes as null rather than [].
 func wireSlice[S, T any](in []S, out []T) []T {
 	if in == nil {

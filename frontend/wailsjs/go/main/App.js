@@ -174,10 +174,6 @@ export function TargetDraftTaxi(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftTaxi'](arg1, arg2);
 }
 
-export function TargetDraftTradeAccept(arg1, arg2) {
-  return window['go']['main']['App']['TargetDraftTradeAccept'](arg1, arg2);
-}
-
 export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
@@ -408,14 +404,6 @@ export function TargetSnapshot() {
 
 export function TargetStatQueue(arg1, arg2) {
   return window['go']['main']['App']['TargetStatQueue'](arg1, arg2);
-}
-
-export function TargetTradeBuilder(arg1) {
-  return window['go']['main']['App']['TargetTradeBuilder'](arg1);
-}
-
-export function TargetTrades(arg1) {
-  return window['go']['main']['App']['TargetTrades'](arg1);
 }
 
 export function TargetWhatIf(arg1) {

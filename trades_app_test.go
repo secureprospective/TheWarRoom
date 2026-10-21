@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -52,7 +52,7 @@ func TestTargetTradesLocalReading(t *testing.T) {
 	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{later, offer, other, outgoing}
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
-	r, err := a.TargetTrades("0025")
+	r, err := a.tradesAPI().TargetTrades("0025")
 	if err != nil || len(r.Offers) != 3 || r.Offers[0].TradeID != "66" ||
 		r.Offers[1].TradeID != "77" || r.Offers[2].TradeID != "1" {
 		t.Fatalf("reading: %+v %v", r, err)
@@ -70,14 +70,14 @@ func TestTargetTradesLocalReading(t *testing.T) {
 		t.Fatal("reading fetched")
 	}
 	r.Offers[0].Give[0].Name = "mutated"
-	again, err := a.TargetTrades("0025")
+	again, err := a.tradesAPI().TargetTrades("0025")
 	if err != nil || again.Offers[0].Give[0].Name == "mutated" {
 		t.Fatal("aliased reading", err)
 	}
 	for _, fetched := range []time.Time{{}, a.core.MovesNow()} {
 		a.core.SeasonPendingTrades.FetchedAt = fetched
 		a.core.SeasonPendingTrades.RefreshError = "offline"
-		failed, err := a.TargetTrades("0025")
+		failed, err := a.tradesAPI().TargetTrades("0025")
 		if err != nil || len(failed.Offers) != 0 || failed.Provenance.Freshness.Note != "offline" {
 			t.Fatalf("failed offers: %+v %v", failed, err)
 		}
@@ -86,7 +86,7 @@ func TestTargetTradesLocalReading(t *testing.T) {
 			t.Fatalf("JSON: %s %v", body, err)
 		}
 	}
-	if _, err := a.TargetTrades("unknown"); err == nil {
+	if _, err := a.tradesAPI().TargetTrades("unknown"); err == nil {
 		t.Fatal("unknown franchise passed")
 	}
 }
@@ -94,7 +94,7 @@ func TestTargetTradesLocalReading(t *testing.T) {
 func TestTradeDraftHandOffWatcher(t *testing.T) {
 	t.Parallel()
 	a, transport, offer := tradeDraftApp(t)
-	r, err := a.TargetDraftTradeAccept("0025", offer.ID)
+	r, err := a.tradesAPI().TargetDraftTradeAccept("0025", offer.ID)
 	if err != nil || r.State != envelope.Ready || r.Spec.Deadline == nil ||
 		!r.Spec.Deadline.Equal(offer.Expires) || r.Audit[0].Note != "offer 77 from Other team" {
 		t.Fatalf("draft: %+v %v", r, err)
@@ -190,7 +190,7 @@ func TestTradeBindingBlocks(t *testing.T) {
 				a.core.SeasonPendingTrades.Value = nil
 				note = "offer 77 is no longer pending"
 			}
-			r, err := a.TargetDraftTradeAccept("0025", offer.ID)
+			r, err := a.tradesAPI().TargetDraftTradeAccept("0025", offer.ID)
 			if name == "offerer" || name == "gone" {
 				if err == nil || !strings.Contains(err.Error(), note) {
 					t.Fatal("scope refusal", r, err)
@@ -214,7 +214,7 @@ func TestTradeSupersede(t *testing.T) {
 			if name == "blocked" {
 				a.core.MFLClient = nil
 			}
-			first, err := a.TargetDraftTradeAccept("0025", offer.ID)
+			first, err := a.tradesAPI().TargetDraftTradeAccept("0025", offer.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -244,11 +244,11 @@ func TestTradeSupersede(t *testing.T) {
 			other.ID = "88"
 			other.Expires = offer.Expires.Add(time.Hour)
 			a.core.SeasonPendingTrades.Value = append(a.core.SeasonPendingTrades.Value, other)
-			unrelated, err := a.TargetDraftTradeAccept("0025", other.ID)
+			unrelated, err := a.tradesAPI().TargetDraftTradeAccept("0025", other.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			second, err := a.TargetDraftTradeAccept("0025", offer.ID)
+			second, err := a.tradesAPI().TargetDraftTradeAccept("0025", offer.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -275,18 +275,18 @@ func TestTradeSupersede(t *testing.T) {
 func TestTradesBindingGoldens(t *testing.T) {
 	t.Parallel()
 	a, transport, offer := tradeDraftApp(t)
-	reading, err := a.TargetTrades("0025")
+	reading, err := a.tradesAPI().TargetTrades("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
 	checkGolden(t, "trades", "TargetTrades", reading)
-	receipt, err := a.TargetDraftTradeAccept("0025", offer.ID)
+	receipt, err := a.tradesAPI().TargetDraftTradeAccept("0025", offer.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	receipt.CorrelationID = "fixture-correlation"
 	checkGolden(t, "trades", "TargetDraftTradeAccept", receipt)
-	builder := a.TargetTradeBuilder(RawTradeBuilder{Mine: "invalid", Action: "read"})
+	builder := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: "invalid", Action: "read"})
 	checkGolden(t, "trades", "TargetTradeBuilder-invalid", builder)
 	if len(transport.requests) != 0 {
 		t.Fatal("binding fetched")
@@ -314,13 +314,13 @@ func TestTradesDenialGoldens(t *testing.T) {
 	_, err = f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer())
 	denials["deadline/offer"] = errorWords(err)
 	a, transport, offer := tradeDraftApp(t)
-	_, err = a.TargetDraftTradeAccept("0001", offer.ID)
+	_, err = a.tradesAPI().TargetDraftTradeAccept("0001", offer.ID)
 	denials["local/offerer-accept"] = errorWords(err)
 	_, held, err := a.tradeState("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: "0025", ID: offer.ID, Action: "revoke"}, held)
+	_, err = a.draftTradeExit(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: "0025", ID: offer.ID, Action: "revoke"}, held)
 	denials["local/wrong-revoke"] = errorWords(err)
 	checkGolden(t, "trades", "denials", denials)
 	if len(transport.requests) != 0 {
@@ -331,8 +331,8 @@ func TestTradesDenialGoldens(t *testing.T) {
 func TestTradeBuilderPopulatedGolden(t *testing.T) {
 	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
-	reading := a.TargetTradeBuilder(realDeal())
-	if reading.Status != ReadingOK || reading.Value.Preview == nil {
+	reading := a.tradesAPI().TargetTradeBuilder(realDeal())
+	if reading.Status != report.ReadingOK || reading.Value.Preview == nil {
 		t.Fatal(reading)
 	}
 	reading.Value.Teams = reading.Value.Teams[:2]
@@ -345,41 +345,6 @@ func TestTradeBuilderPopulatedGolden(t *testing.T) {
 	checkGolden(t, "trades", "TargetTradeBuilder-preview", reading)
 	if len(transport.requests) != 0 {
 		t.Fatal("builder fetched")
-	}
-}
-
-func TestTradesWireTwins(t *testing.T) {
-	t.Parallel()
-	cell := tradesapp.Cell{Text: "value", Sub: "qualifier", Detail: "detail", Held: true}
-	asset := tradesapp.Asset{Team: "DAL", Contract: "$1.25 · 3 years", Now: &cell, Dynasty: &cell,
-		Token: "0099", Name: "Player", Position: domain.PosWR}
-	team := tradesapp.Team{ID: "0001", Name: "Team", Assets: []tradesapp.Asset{asset}}
-	projection := tradesapp.Projection{Team: "Team", Roster: []tradesapp.Asset{asset},
-		Figures: []tradesapp.Figure{{Label: "Cap", Before: "$1", After: "$2", Change: "+$1"}}}
-	offer := tradesapp.Offer{TradeID: "77", Direction: "to_you", OtherID: "0001", OtherName: "Team",
-		Give: []tradesapp.Asset{asset}, Get: []tradesapp.Asset{asset}, Expires: time.Date(2026, 10, 7, 16, 0, 0, 0, time.UTC), Comments: "Comment"}
-	reading := tradesapp.Reading{Offers: []tradesapp.Offer{offer}, Provenance: snapshot.Provenance{
-		Source: "pendingTrades", Kind: "live", Freshness: liveFreshness(offer.Expires)}}
-	for _, r := range []tradesapp.Reading{reading, {}, {Offers: []tradesapp.Offer{}}, {Offers: []tradesapp.Offer{{Give: []tradesapp.Asset{}}}}} {
-		if string(sourcesWire(t, r)) != string(sourcesWire(t, wireTrades(r))) {
-			t.Fatal("trade reading twin drift")
-		}
-	}
-	for _, p := range []tradesapp.Projection{projection, {}, {Figures: []tradesapp.Figure{}, Roster: []tradesapp.Asset{}}} {
-		if string(sourcesWire(t, p)) != string(sourcesWire(t, wireTradeProjection(p))) {
-			t.Fatal("projection twin drift")
-		}
-	}
-	for _, teams := range [][]tradesapp.Team{{team}, nil, {}, {{Assets: []tradesapp.Asset{}}}} {
-		wire := wireTradeTeams(teams)
-		if string(sourcesWire(t, teams)) != string(sourcesWire(t, wire)) ||
-			string(sourcesWire(t, teams)) != string(sourcesWire(t, serviceTradeTeams(wire))) {
-			t.Fatal("team twin drift")
-		}
-	}
-	raw := RawTradeBuilder{Mine: "0001", Other: "0025", Action: "save", ID: "id", Give: []string{"0099"}, Get: []string{"12345"}, Rationale: "why"}
-	if string(sourcesWire(t, raw)) != string(sourcesWire(t, tradesapp.Input(raw))) {
-		t.Fatal("request twin drift")
 	}
 }
 
@@ -400,7 +365,7 @@ func TestTradesReadDuringHeldPublication(t *testing.T) {
 	}()
 	close(start)
 	for i := 0; i < 100; i++ {
-		reading, err := a.TargetTrades("0025")
+		reading, err := a.tradesAPI().TargetTrades("0025")
 		if err != nil || len(reading.Offers) != 1 {
 			t.Errorf("held trade publication: %+v %v", reading, err)
 			break
@@ -408,7 +373,7 @@ func TestTradesReadDuringHeldPublication(t *testing.T) {
 		reading.Offers[0].Get[0].Name = "detached result"
 	}
 	<-done
-	reading, err := a.TargetTrades("0025")
+	reading, err := a.tradesAPI().TargetTrades("0025")
 	if err != nil || reading.Offers[0].Comments != "99" || reading.Offers[0].Get[0].Name == "detached result" {
 		t.Fatal(reading, err)
 	}
