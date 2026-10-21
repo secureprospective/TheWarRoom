@@ -7,6 +7,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
+type RaceChoice struct {
+	Value string `json:"value"`
+	Label string `json:"label"`
+}
+
 type ReportRow struct {
 	Sort   []float64    `json:"sort,omitempty"`
 	Titles []string     `json:"titles,omitempty"`

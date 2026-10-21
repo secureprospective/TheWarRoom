@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	seasonapp "github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
@@ -70,7 +73,7 @@ func readScoreFirsts(ctx context.Context, prev scoreFirsts, season int, bodies a
 			next.through = at
 		}
 		for _, w := range last {
-			if _, held := prev.weeks[w.Week]; !held && weekScored(w) {
+			if _, held := prev.weeks[w.Week]; !held && seasonapp.WeekScored(w) {
 				next.weeks[w.Week] = firstScores{at: at, week: w}
 			}
 		}
@@ -197,7 +200,7 @@ func feedFresh(at time.Time, refreshError string) bool {
 // TargetNowRefresh refreshes the league's weekly results, then the chosen week's NFL schedule
 // (0: the current week), unless fresh; force always refreshes. Go checks the week is listed.
 func (a *App) TargetNowRefresh(week int, force bool) error {
-	if err := a.TargetRaceRefresh(force); err != nil {
+	if err := raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(force); err != nil {
 		return fmt.Errorf("now refresh: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
@@ -210,7 +213,7 @@ func (a *App) TargetNowRefresh(week int, force bool) error {
 	}
 	a.core.SeasonMu.Lock()
 	listed := false
-	for _, w := range a.race.weeks.Value {
+	for _, w := range a.raceHeld.Snapshot().Weeks.Value {
 		listed = listed || w.Week == week
 	}
 	a.core.SeasonMu.Unlock()

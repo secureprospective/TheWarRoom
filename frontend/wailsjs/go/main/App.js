@@ -390,14 +390,6 @@ export function TargetPoolRefresh(arg1) {
   return window['go']['main']['App']['TargetPoolRefresh'](arg1);
 }
 
-export function TargetRace(arg1, arg2, arg3) {
-  return window['go']['main']['App']['TargetRace'](arg1, arg2, arg3);
-}
-
-export function TargetRaceRefresh(arg1) {
-  return window['go']['main']['App']['TargetRaceRefresh'](arg1);
-}
-
 export function TargetReleasePlans(arg1) {
   return window['go']['main']['App']['TargetReleasePlans'](arg1);
 }

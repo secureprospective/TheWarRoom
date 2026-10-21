@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -163,7 +165,7 @@ func (f *legalityFixture) reopen(t *testing.T) {
 	}
 	store, pools := openDirectoryHistory(t, f.path)
 	f.pools = pools
-	restarted := &App{core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+	restarted := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
 		CommissionerSession: testCommissionerSession{"creator"}}}
 	close(restarted.core.Started)
 	restarted.core.Lookup, restarted.core.HasLookup, restarted.core.SeasonInjuries = old.core.Lookup, old.core.HasLookup, old.core.SeasonInjuries

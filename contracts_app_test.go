@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -20,7 +22,7 @@ func TestContractReadingStatesAndCantCut(t *testing.T) {
 	if failed.Table.Status != ReadingFailed || failed.Cap.Status != ReadingFailed || failed.Adjustments.Status != ReadingFailed {
 		t.Fatal("failure became figures")
 	}
-	a := &App{core: &core.State{}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{}}
 	if a.TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table.Status != ReadingFailed {
 		t.Fatal("invalid scope accepted")
 	}

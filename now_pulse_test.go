@@ -124,7 +124,7 @@ func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 	if got := a.archiveOpponent(match.Away); got != match.Home {
 		t.Fatal("away default", got, match.Home)
 	}
-	a.race.weeks = realRace(t, "2026").held.weeks
+	a.raceHeld.PublishWeeks(raceFeed(realRace(t, "2026").held.weeks))
 	a.core.SeasonLineups.Value.Week = 4
 	if got := a.archiveOpponent(match.Home); got != match.Away {
 		t.Fatal("weekly schedule default", got, match.Away)

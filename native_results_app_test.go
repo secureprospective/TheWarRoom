@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -68,7 +70,7 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 
 func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 	t.Parallel()
-	a := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
 	close(a.core.Started)
 	for _, scope := range []RawNativeResultsScope{
 		{League: "native.", Season: 2026, Week: 1}, {League: "imported", Season: 2026, Week: 1},
@@ -125,7 +127,7 @@ func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 
 func TestNativeBracketIPCScopeAndStartup(t *testing.T) {
 	t.Parallel()
-	a := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
 	close(a.core.Started)
 	for _, scope := range []RawNativeResultsScope{{League: "native.", Season: 2026}, {League: "imported", Season: 2026},
 		{League: "native.test", Season: 0}, {League: "native.test", Season: 10000}} {

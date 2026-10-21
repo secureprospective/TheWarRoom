@@ -12098,46 +12098,6 @@ export namespace main {
 		}
 	}
 	
-	export class RaceBoard {
-	    standings: Report;
-	    board: ReportBoard;
-	    week: number;
-	    weeks: RaceChoice[];
-	    team: string;
-	    teams: RaceChoice[];
-	
-	    static createFrom(source: any = {}) {
-	        return new RaceBoard(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.standings = this.convertValues(source["standings"], Report);
-	        this.board = this.convertValues(source["board"], ReportBoard);
-	        this.week = source["week"];
-	        this.weeks = this.convertValues(source["weeks"], RaceChoice);
-	        this.team = source["team"];
-	        this.teams = this.convertValues(source["teams"], RaceChoice);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	
 	export class RawAcquisition {
 	    mine: string;
@@ -14550,6 +14510,51 @@ export namespace personal {
 	        this.text = source["text"];
 	        this.action = source["action"];
 	    }
+	}
+
+}
+
+export namespace race {
+	
+	export class RaceBoard {
+	    standings: report.Report;
+	    board: report.Board;
+	    week: number;
+	    weeks: report.Choice[];
+	    team: string;
+	    teams: report.Choice[];
+	
+	    static createFrom(source: any = {}) {
+	        return new RaceBoard(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.standings = this.convertValues(source["standings"], report.Report);
+	        this.board = this.convertValues(source["board"], report.Board);
+	        this.week = source["week"];
+	        this.weeks = this.convertValues(source["weeks"], report.Choice);
+	        this.team = source["team"];
+	        this.teams = this.convertValues(source["teams"], report.Choice);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 
 }

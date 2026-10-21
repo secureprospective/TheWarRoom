@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/wailsapp/wails/v2"
@@ -91,6 +92,7 @@ func probe() int {
 	return 0
 }
 
+// bindings is the runtime surface also inspected by the binding manifest test.
 func bindings(app *App) []interface{} {
 	return []interface{}{
 		app,
@@ -98,6 +100,7 @@ func bindings(app *App) []interface{} {
 		comms.New(app.core),
 		counterparties.New(app.core),
 		draft.New(draftHost{State: app.core, app: app}),
+		raceapp.New(app.core, app.raceHeld),
 		sources.New(app.core, app.sourcesHeld),
 	}
 }

@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"maps"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
@@ -17,15 +18,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
-
-// raceHeld is League Pulse › Race's held MFL data: the season's weekly results, the playoff
-// brackets, MFL's standings (its power rating and the M2 board read them) and the two M2 boards.
-type raceHeld struct {
-	weeks     heldSeasonFeed[[]leaguefeed.WeekResult]
-	brackets  heldSeasonFeed[[]leaguefeed.Bracket]
-	standings heldSeasonFeed[[]leaguestandings.RawStanding]
-	power     map[string]PowerRankingsResult
-}
 
 func (a *App) refreshRace(ctx context.Context) {
 	pause := a.core.SeasonPause
@@ -41,14 +33,18 @@ func (a *App) refreshRace(ctx context.Context) {
 		Bodies: a.scopedBodies("W", "YTD"),
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
-	holdSeasonFeed(&a.race.weeks, weeks, wf, werr)
+	feed := heldSeasonFeed[[]leaguefeed.WeekResult](a.raceHeld.Snapshot().Weeks)
+	holdSeasonFeed(&feed, weeks, wf, werr)
+	a.raceHeld.PublishWeeks(raceFeed(feed))
 	a.core.SeasonMu.Unlock()
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}
 	brackets, bf, berr := a.bracketsOrArchive(ctx, pause)
 	a.core.SeasonMu.Lock()
-	holdSeasonFeed(&a.race.brackets, brackets, bf, berr)
+	bracketFeed := heldSeasonFeed[[]leaguefeed.Bracket](a.raceHeld.Snapshot().Brackets)
+	holdSeasonFeed(&bracketFeed, brackets, bf, berr)
+	a.raceHeld.PublishBrackets(raceFeed(bracketFeed))
 	a.core.SeasonMu.Unlock()
 	if err := pause(ctx, time.Second); err != nil {
 		return
@@ -65,10 +61,9 @@ func (a *App) refreshRace(ctx context.Context) {
 	}
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	holdSeasonFeed(&a.race.standings, standings, sf, serr)
-	if serr == nil {
-		a.race.power = power
-	}
+	standingFeed := heldSeasonFeed[[]leaguestandings.RawStanding](a.raceHeld.Snapshot().Standings)
+	holdSeasonFeed(&standingFeed, standings, sf, serr)
+	a.raceHeld.PublishStandings(raceFeed(standingFeed), racePower(power), serr == nil)
 }
 
 // scopedBodies offers only archived bodies whose URL carries param=value, so a one-week or
@@ -124,54 +119,35 @@ func (a *App) bracketsOrArchive(
 	return list, fresh, nil
 }
 
-// TargetRaceRefresh refreshes the race's feeds unless they are fresh; force always refreshes.
-func (a *App) TargetRaceRefresh(force bool) error {
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("race refresh: startup: %w", err)
-	}
+// raceSnapshot is the joint capture; its callback only snapshots the private holder.
+func (a *App) raceSnapshot(snapshot func() season.Held) season.Snapshot {
 	a.core.SeasonMu.Lock()
-	held := a.race
+	held := snapshot()
+	live := a.core.SeasonLineups
+	live.Value = core.CloneLineups(live.Value)
+	unplayed := liveWeekUnplayed(live, a.now.schedules, time.Now())
 	a.core.SeasonMu.Unlock()
-	fresh := true
-	for _, f := range []struct {
-		at  time.Time
-		err string
-	}{{held.weeks.FetchedAt, held.weeks.RefreshError}, {held.brackets.FetchedAt, held.brackets.RefreshError},
-		{held.standings.FetchedAt, held.standings.RefreshError}} {
-		fresh = fresh && f.err == "" && time.Since(f.at) < poolFreshFor
+	overlays := map[int]leaguefeed.WeekResult{}
+	for _, w := range held.Weeks.Value {
+		if w.Week == live.Value.Week {
+			overlays[w.Week] = liveWeek(live.Value, w)
+		}
 	}
-	if !force && fresh {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-	defer cancel()
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	a.refreshRace(ctx)
-	return nil
+	return season.Snapshot{Held: held, Live: raceFeed(live), LiveUnplayed: unplayed, LiveWeeks: overlays}
 }
 
-// TargetRace reads held data only. week picks the lineups shown (0: the latest scored week), team
-// the franchise the one-team reports follow and mine the GM's own ("": none chosen); Go checks all three.
-func (a *App) TargetRace(week int, team, mine string) (RaceBoard, error) {
-	if err := a.ready(); err != nil {
-		return RaceBoard{}, fmt.Errorf("race: startup: %w", err)
-	}
-	in := a.raceReadInput()
-	a.core.LookupMu.Lock()
-	lookup, hasLookup := a.core.Lookup, a.core.HasLookup
-	a.core.LookupMu.Unlock()
-	in.config, in.lookup, in.hasLookup = a.core.Rulebook.ActiveConfig(), lookup, hasLookup
-	in.week, in.team, in.mine, in.zone = week, team, mine, time.Local
-	return buildRace(in)
+func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
+	return season.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
 }
 
-// raceReadInput detaches the mutable index while holding its owner's lock. Feed payloads
-// and power rows are published immutably: refresh replaces them, never edits them.
-func (a *App) raceReadInput() raceInput {
-	a.core.SeasonMu.Lock()
-	defer a.core.SeasonMu.Unlock()
-	held, live := a.race, a.core.SeasonLineups
-	held.power = maps.Clone(held.power)
-	return raceInput{held: held, live: live, liveUnplayed: liveWeekUnplayed(live, a.now.schedules, time.Now())}
+func racePower(in map[string]PowerRankingsResult) map[string]season.PowerRankingsResult {
+	out := make(map[string]season.PowerRankingsResult, len(in))
+	for key, p := range in {
+		rows := make([]season.PowerRow, len(p.Rows))
+		for i, row := range p.Rows {
+			rows[i] = season.PowerRow(row)
+		}
+		out[key] = season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
+	}
+	return out
 }
