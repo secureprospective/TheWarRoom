@@ -1,7 +1,7 @@
 import type { AlertReading } from './contract';
 import { parseAlerts } from './parseAlerts';
-import { TargetAlerts } from '../../../wailsjs/go/main/App';
+import { readAlerts } from '../control/api';
 
 export async function alerts(franchiseId: string): Promise<AlertReading> {
-  return parseAlerts(await TargetAlerts(franchiseId));
+  return parseAlerts(await readAlerts(franchiseId));
 }

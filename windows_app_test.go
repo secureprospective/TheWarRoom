@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -19,11 +20,11 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 	a.core.ClockChanged = func(context.Context) { emitted++ }
 	date := "2026-11-01T18:00:00Z"
 	for _, kind := range []string{"trade_deadline", "cut_day"} {
-		if err := a.TargetSetWindow(kind, ""); err == nil || !strings.Contains(err.Error(), "nothing to reset") {
+		if err := a.controlAPI().TargetSetWindow(kind, ""); err == nil || !strings.Contains(err.Error(), "nothing to reset") {
 			t.Fatal("reset wording", err)
 		}
 		for _, at := range []string{date, "2026-11-02T18:00:00Z", ""} {
-			if err := a.TargetSetWindow(kind, at); err != nil {
+			if err := a.controlAPI().TargetSetWindow(kind, at); err != nil {
 				t.Fatal(err)
 			}
 			clock, err := a.TargetClock()
@@ -45,7 +46,7 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 				}
 			}
 		}
-		if err := a.TargetSetWindow(kind, ""); err == nil || !strings.Contains(err.Error(), "nothing to reset") {
+		if err := a.controlAPI().TargetSetWindow(kind, ""); err == nil || !strings.Contains(err.Error(), "nothing to reset") {
 			t.Fatal("repeated reset wording", err)
 		}
 	}
@@ -61,8 +62,8 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 	if emitted != 6 || len(transport.requests) != 0 {
 		t.Fatal("events or network", emitted, transport.requests)
 	}
-	for _, raw := range []RawWindowDate{{Kind: "nope", At: date}, {Kind: "draft", At: "tomorrow"}} {
-		if err := a.TargetSetWindow(raw.Kind, raw.At); err == nil {
+	for _, raw := range []controlapp.RawWindowDate{{Kind: "nope", At: date}, {Kind: "draft", At: "tomorrow"}} {
+		if err := a.controlAPI().TargetSetWindow(raw.Kind, raw.At); err == nil {
 			t.Fatal("accepted", raw)
 		}
 	}

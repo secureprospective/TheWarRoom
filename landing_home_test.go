@@ -12,6 +12,7 @@ import (
 
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 
 	"github.com/secureprospective/TheWarRoom/internal/facts"
@@ -249,13 +250,13 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 
 func TestLandingAlertOrderUrgencyGravityID(t *testing.T) {
 	t.Parallel()
-	alerts := []Alert{
+	alerts := []controlapp.Alert{
 		{Kind: "lineup", Urgency: "U2", At: time.Unix(10, 0)},
 		{Kind: "ir", Urgency: "U2", PlayerID: "16162", At: time.Unix(1, 0)},
 		{Kind: "ir", Urgency: "U2", PlayerID: "13589", At: time.Unix(100, 0)},
 		{Kind: "trades", Urgency: "U3"},
 	}
-	slices.SortFunc(alerts, compareAlerts)
+	slices.SortFunc(alerts, controlapp.CompareAlerts)
 	if alerts[0].Kind != "trades" || alerts[1].PlayerID != "13589" ||
 		alerts[2].PlayerID != "16162" || alerts[3].Kind != "lineup" {
 		t.Fatal(alerts)

@@ -6317,6 +6317,100 @@ export namespace contracts {
 
 export namespace control {
 	
+	export class Alert {
+	    kind: string;
+	    urgency: string;
+	    title: string;
+	    detail: string;
+	    node: string;
+	    workspace: string;
+	    at: time.Time;
+	    provenance: snapshot.Provenance;
+	    playerId?: string;
+	    mflUrl?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Alert(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.urgency = source["urgency"];
+	        this.title = source["title"];
+	        this.detail = source["detail"];
+	        this.node = source["node"];
+	        this.workspace = source["workspace"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
+	        this.playerId = source["playerId"];
+	        this.mflUrl = source["mflUrl"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Unavailable {
+	    kind: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Unavailable(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.note = source["note"];
+	    }
+	}
+	export class AlertReading {
+	    alerts: Alert[];
+	    unavailable: Unavailable[];
+	
+	    static createFrom(source: any = {}) {
+	        return new AlertReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.alerts = this.convertValues(source["alerts"], Alert);
+	        this.unavailable = this.convertValues(source["unavailable"], Unavailable);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class BylawSection {
 	    title: string;
 	    lines: string[];
@@ -6417,6 +6511,42 @@ export namespace control {
 		    return a;
 		}
 	}
+	export class SeasonReading {
+	    // Go type: snapshot
+	    transactions: any;
+	    lineups: snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leaguefeed_Lineups_;
+	    // Go type: snapshot
+	    pendingTrades: any;
+	
+	    static createFrom(source: any = {}) {
+	        return new SeasonReading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.transactions = this.convertValues(source["transactions"], null);
+	        this.lineups = this.convertValues(source["lineups"], snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leaguefeed_Lineups_);
+	        this.pendingTrades = this.convertValues(source["pendingTrades"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class SetParamResult {
 	    ok: boolean;
 	    error: string;
@@ -6429,6 +6559,22 @@ export namespace control {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.ok = source["ok"];
 	        this.error = source["error"];
+	    }
+	}
+	export class ShellStatus {
+	    health: string;
+	    state: string;
+	    gameday: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ShellStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.health = source["health"];
+	        this.state = source["state"];
+	        this.gameday = source["gameday"];
 	    }
 	}
 
@@ -11874,100 +12020,6 @@ export namespace livegame {
 
 export namespace main {
 	
-	export class Alert {
-	    kind: string;
-	    urgency: string;
-	    title: string;
-	    detail: string;
-	    node: string;
-	    workspace: string;
-	    at: time.Time;
-	    provenance: snapshot.Provenance;
-	    playerId?: string;
-	    mflUrl?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Alert(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.kind = source["kind"];
-	        this.urgency = source["urgency"];
-	        this.title = source["title"];
-	        this.detail = source["detail"];
-	        this.node = source["node"];
-	        this.workspace = source["workspace"];
-	        this.at = this.convertValues(source["at"], time.Time);
-	        this.provenance = this.convertValues(source["provenance"], snapshot.Provenance);
-	        this.playerId = source["playerId"];
-	        this.mflUrl = source["mflUrl"];
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class Unavailable {
-	    kind: string;
-	    note: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new Unavailable(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.kind = source["kind"];
-	        this.note = source["note"];
-	    }
-	}
-	export class AlertReading {
-	    alerts: Alert[];
-	    unavailable: Unavailable[];
-	
-	    static createFrom(source: any = {}) {
-	        return new AlertReading(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.alerts = this.convertValues(source["alerts"], Alert);
-	        this.unavailable = this.convertValues(source["unavailable"], Unavailable);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
 	export class DataActResult {
 	    ok: boolean;
 	    error: string;
@@ -12103,58 +12155,6 @@ export namespace main {
 		    }
 		    return a;
 		}
-	}
-	export class SeasonReading {
-	    // Go type: snapshot
-	    transactions: any;
-	    lineups: snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leaguefeed_Lineups_;
-	    // Go type: snapshot
-	    pendingTrades: any;
-	
-	    static createFrom(source: any = {}) {
-	        return new SeasonReading(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.transactions = this.convertValues(source["transactions"], null);
-	        this.lineups = this.convertValues(source["lineups"], snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leaguefeed_Lineups_);
-	        this.pendingTrades = this.convertValues(source["pendingTrades"], null);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
-	}
-	export class ShellStatus {
-	    health: string;
-	    state: string;
-	    gameday: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new ShellStatus(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.health = source["health"];
-	        this.state = source["state"];
-	        this.gameday = source["gameday"];
-	    }
 	}
 
 }

@@ -1,7 +1,8 @@
 import type { control } from '../../../wailsjs/go/models';
 import type * as Bindings from '../../../wailsjs/go/control/API';
 import {
-  DeleteMFLKey, GetParams, MFLKeyStatus, ResetParam, SetMFLKey, SetParam,
+  DeleteMFLKey, GetParams, MFLKeyStatus, ResetParam, SetMFLKey, SetParam, TargetAlerts, TargetSetWindow,
+  TargetShellStatus,
 } from '../../../wailsjs/go/control/API';
 
 // The only file that touches the control bindings. The Control Room reads say when the desktop
@@ -26,6 +27,10 @@ export const deleteMFLKey = DeleteMFLKey;
 export const getParams = GetParams;
 export const setParam = SetParam;
 export const resetParam = ResetParam;
+// The alert tray, the status strip and league dates; their callers keep their own desktop checks.
+export const readAlerts = TargetAlerts;
+export const readShellStatus = TargetShellStatus;
+export const setLeagueWindow = TargetSetWindow;
 
 // ParamsResult is the admin parameters payload, as the Data and sources screen reads it.
 export type ParamsResult = control.ParamsResult;

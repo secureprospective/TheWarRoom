@@ -2,8 +2,6 @@
 # feature from the SYSTEM_MAP.md feature table. One row per path: <path><TAB><feature>.
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
-alerts_app.go	control
-alerts_app_test.go	control
 app.go	platform
 app_shutdown_test.go	platform
 archive_app.go	archive
@@ -12,11 +10,8 @@ asset_board.go	market
 backup_restore_drill_test.go	platform
 bids_app_test.go	offers
 bids_withdraw_test.go	offers
-bye_alerts_app.go	control
-bye_alerts_app_test.go	control
 cache_app.go	platform
 cache_app_test.go	platform
-calendar_app.go	control
 cap_validity_test.go	contracts
 contracts_plans_test.go	contracts
 contracts_host.go	contracts
@@ -38,8 +33,9 @@ contract_acts_app_test.go	contracts
 contract_acts_cap_test.go	contracts
 contracts_app_test.go	contracts
 contracts_wire_test.go	contracts
+control_alerts.go	control
+control_alerts_test.go	control
 control_host.go	control
-control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
 database_checks_app.go	platform
@@ -73,7 +69,6 @@ market_feeds_app.go	market
 market_feeds_test.go	market
 market_wire_test.go	market
 mfl_feed_cache.go	control
-mfl_feed_cache_test.go	control
 mflkey_app_test.go	control
 moves_app.go	platform
 moves_app_test.go	platform
@@ -153,7 +148,6 @@ season_rollover_app_test.go	commissioner
 selfprotect_test.go	platform
 shell_feeds_app.go	control
 shell_feeds_app_test.go	control
-shell_status_app.go	control
 suite_test.go	platform
 snapshot_app.go	platform
 snapshot_app_test.go	platform
@@ -165,7 +159,6 @@ version_test.go	platform
 week_app.go	control
 week_app_test.go	control
 whatif_app_test.go	contracts
-windows_app.go	control
 windows_app_test.go	control
 internal/app/comms	comms
 internal/app/comms/commstest	comms

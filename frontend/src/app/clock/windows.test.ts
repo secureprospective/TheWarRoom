@@ -119,7 +119,7 @@ describe('league window editing and destinations', () => {
   it('live setWindow calls the Wails binding', async () => {
     const save = vi.fn().mockResolvedValue(undefined);
     const before = Object.getOwnPropertyDescriptor(globalThis, 'window');
-    vi.stubGlobal('window', { go: { main: { App: { TargetSetWindow: save } } } });
+    vi.stubGlobal('window', { go: { control: { API: { TargetSetWindow: save } } } });
     try {
       await new LiveProvider().setWindow('trade_deadline', at);
       expect(save).toHaveBeenCalledWith('trade_deadline', at);

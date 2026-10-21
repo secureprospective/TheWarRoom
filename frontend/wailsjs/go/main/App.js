@@ -6,10 +6,6 @@ export function SetPhotos(arg1) {
   return window['go']['main']['App']['SetPhotos'](arg1);
 }
 
-export function TargetAlerts(arg1) {
-  return window['go']['main']['App']['TargetAlerts'](arg1);
-}
-
 export function TargetCheckMoves() {
   return window['go']['main']['App']['TargetCheckMoves']();
 }
@@ -208,18 +204,6 @@ export function TargetNativeWeek(arg1) {
 
 export function TargetPhoto(arg1) {
   return window['go']['main']['App']['TargetPhoto'](arg1);
-}
-
-export function TargetSeason() {
-  return window['go']['main']['App']['TargetSeason']();
-}
-
-export function TargetSetWindow(arg1, arg2) {
-  return window['go']['main']['App']['TargetSetWindow'](arg1, arg2);
-}
-
-export function TargetShellStatus() {
-  return window['go']['main']['App']['TargetShellStatus']();
 }
 
 export function TargetSnapshot() {

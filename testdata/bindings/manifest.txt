@@ -19,9 +19,13 @@ control.API.ResetParam
 control.API.SetMFLKey
 control.API.SetParam
 control.API.TargetAccounting
+control.API.TargetAlerts
 control.API.TargetBylaws
 control.API.TargetLeagueSettings
 control.API.TargetOpenMFLAccounting
+control.API.TargetSeason
+control.API.TargetSetWindow
+control.API.TargetShellStatus
 control.API.TargetSiteNews
 counterparties.API.TargetCounterpartTeam
 counterparties.API.TargetCounterparties
@@ -31,7 +35,6 @@ draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft
 draft.API.TargetOpenMFLDraftRoom
 main.App.SetPhotos
-main.App.TargetAlerts
 main.App.TargetCheckMoves
 main.App.TargetClock
 main.App.TargetCommissionerActor
@@ -82,9 +85,6 @@ main.App.TargetNativeWaiverAction
 main.App.TargetNativeWaivers
 main.App.TargetNativeWeek
 main.App.TargetPhoto
-main.App.TargetSeason
-main.App.TargetSetWindow
-main.App.TargetShellStatus
 main.App.TargetSnapshot
 main.App.TargetStatQueue
 main.App.TargetWithdrawRoster

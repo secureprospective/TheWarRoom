@@ -5,7 +5,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -33,7 +32,7 @@ func controlResult[T any](value T, err error) controlWireResult[T] {
 }
 
 func TestControlBindingGolden(t *testing.T) {
-	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
+	a := &App{controlHeld: &controlapp.Held{}, marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
 	close(a.core.Started)
 	values := map[string][]byte{
 		"GetParams":               sourcesWire(t, a.controlAPI().GetParams()),
@@ -44,10 +43,10 @@ func TestControlBindingGolden(t *testing.T) {
 		"TargetAccounting":        sourcesWire(t, a.controlAPI().TargetAccounting()),
 		"TargetBylaws":            sourcesWire(t, a.controlAPI().TargetBylaws()),
 		"TargetOpenMFLAccounting": sourcesWire(t, controlResult(struct{}{}, a.controlAPI().TargetOpenMFLAccounting())),
-		"TargetAlerts":            sourcesWire(t, controlResult(a.TargetAlerts("0001"))),
-		"TargetSeason":            sourcesWire(t, controlResult(a.TargetSeason())),
-		"TargetShellStatus":       sourcesWire(t, controlResult(a.TargetShellStatus())),
-		"TargetSetWindow":         sourcesWire(t, controlResult(struct{}{}, a.TargetSetWindow("unknown", ""))),
+		"TargetAlerts":            sourcesWire(t, controlResult(a.controlAPI().TargetAlerts("0001"))),
+		"TargetSeason":            sourcesWire(t, controlResult(a.controlAPI().TargetSeason())),
+		"TargetShellStatus":       sourcesWire(t, controlResult(a.controlAPI().TargetShellStatus())),
+		"TargetSetWindow":         sourcesWire(t, controlResult(struct{}{}, a.controlAPI().TargetSetWindow("unknown", ""))),
 		"MFLKeyStatus":            sourcesWire(t, controlResult(a.controlAPI().MFLKeyStatus())),
 		"SetMFLKey":               sourcesWire(t, controlResult(a.controlAPI().SetMFLKey(""))),
 		"DeleteMFLKey":            sourcesWire(t, controlResult(a.controlAPI().DeleteMFLKey())),
@@ -154,15 +153,5 @@ func TestControlConcurrentRefreshAndRead(t *testing.T) {
 	wg.Wait()
 	if a.core.Week.Number != 5 || len(a.now.schedules[9].Value) != 1 || a.now.schedules[9].RefreshError != "" {
 		t.Fatal("refresh did not publish both snapshots")
-	}
-}
-
-func TestControlWireTwins(t *testing.T) {
-	t.Parallel()
-	in := controlapp.Alert{Kind: "bye", Urgency: "U1", Title: "Title", Detail: "Detail", Node: "hq", Workspace: "lineup-and-roster", At: time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC), PlayerID: "0042", MFLURL: "https://example.invalid"}
-	n := 0
-	fillWire(reflect.ValueOf(&in.Provenance).Elem(), &n)
-	if string(sourcesWire(t, in)) != string(sourcesWire(t, Alert(in))) {
-		t.Fatal("alert wire twin drifted")
 	}
 }

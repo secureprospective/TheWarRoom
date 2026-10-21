@@ -20,7 +20,6 @@ import (
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -140,9 +139,9 @@ func isolatedSeasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Durati
 	return a, transport, &pauses, &events
 }
 
-func seasonReading(t *testing.T, a *App) SeasonReading {
+func seasonReading(t *testing.T, a *App) controlapp.SeasonReading {
 	t.Helper()
-	reading, err := a.TargetSeason()
+	reading, err := a.controlAPI().TargetSeason()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -424,7 +423,7 @@ func TestSeasonBindingDoesNotWaitForRefresh(t *testing.T) {
 	defer a.core.RefreshMu.Unlock()
 	done := make(chan error, 1)
 	go func() {
-		_, err := a.TargetSeason()
+		_, err := a.controlAPI().TargetSeason()
 		done <- err
 	}()
 	timer := time.NewTimer(time.Second)
@@ -472,7 +471,7 @@ func TestSeasonPauseCancellationAndNotReady(t *testing.T) {
 	a := NewApp()
 	a.core.StartupErr = errors.New("not ready")
 	close(a.core.Started)
-	if _, err := a.TargetSeason(); !errors.Is(err, a.core.StartupErr) {
+	if _, err := a.controlAPI().TargetSeason(); !errors.Is(err, a.core.StartupErr) {
 		t.Fatal(err)
 	}
 }

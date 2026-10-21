@@ -8,8 +8,6 @@ import {time} from '../models';
 
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
-export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
-
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;
@@ -109,12 +107,6 @@ export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Prom
 export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
 
 export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
-
-export function TargetSeason():Promise<main.SeasonReading>;
-
-export function TargetSetWindow(arg1:string,arg2:string):Promise<void>;
-
-export function TargetShellStatus():Promise<main.ShellStatus>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 

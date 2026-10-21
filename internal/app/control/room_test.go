@@ -1,4 +1,4 @@
-package main
+package control
 
 import (
 	"encoding/json"
@@ -8,13 +8,12 @@ import (
 	"testing"
 	"time"
 
-	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews"
 )
 
-func rows(r Report) map[string]string {
+func rows(r report.Report) map[string]string {
 	out := map[string]string{}
 	for _, row := range r.Rows {
 		out[row.Group+" / "+row.Cells[0]] = row.Cells[1]
@@ -22,9 +21,10 @@ func rows(r Report) map[string]string {
 	return out
 }
 
+// readTestdata reads a fixture or golden at its canonical repository path.
 func readTestdata(t *testing.T, path string) []byte {
 	t.Helper()
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(repoPath(path))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +32,7 @@ func readTestdata(t *testing.T, path string) []byte {
 }
 
 // realSettingsReport is League settings from the real 2026 league, rules and scoring-dictionary exports.
-func realSettingsReport(t *testing.T) Report {
+func realSettingsReport(t *testing.T) report.Report {
 	t.Helper()
 	read := func(f string) []byte { return readTestdata(t, "internal/ingestion/league/testdata/"+f) }
 	cfg, err := league.Parse(read("league-2026.json"), read("rules-2026.json"))
@@ -43,7 +43,7 @@ func realSettingsReport(t *testing.T) Report {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return leagueSettingsReport(cfg, league.RuleNames(codes), "")
+	return LeagueSettingsReport(cfg, league.RuleNames(codes), "")
 }
 
 func TestLeagueSettingsReadTheReal2026ExportsInPlainWords(t *testing.T) {
@@ -79,7 +79,7 @@ func TestLeagueSettingsReadTheReal2026ExportsInPlainWords(t *testing.T) {
 			t.Errorf("a code or MFL's points syntax reached the GM: %s = %s", k, v)
 		}
 	}
-	if empty := leagueSettingsReport(league.RawConfig{}, nil, ""); empty.Status != "empty" {
+	if empty := LeagueSettingsReport(league.RawConfig{}, nil, ""); empty.Status != "empty" {
 		t.Fatal("no held settings must say so")
 	}
 }
@@ -87,21 +87,21 @@ func TestLeagueSettingsReadTheReal2026ExportsInPlainWords(t *testing.T) {
 func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 	t.Parallel()
 	at := time.Date(2026, 10, 8, 3, 32, 0, 0, time.UTC)
-	r := siteNewsReport([]sitenews.Item{{Headline: "Week 4 Strange Plays", Published: at, Lines: []string{"One.", "Two."}}},
+	r := SiteNewsReport([]sitenews.Item{{Headline: "Week 4 Strange Plays", Published: at, Lines: []string{"One.", "Two."}}},
 		"As of: now", "", time.UTC)
 	if r.Status != "ok" || r.Rows[0].Group != "Week 4 Strange Plays" || r.Rows[0].Cells[0] != "Oct 8, 2026" ||
 		r.Rows[0].Cells[1] != "One.\nTwo." {
 		t.Fatalf("site news = %+v", r.Rows)
 	}
-	if e := siteNewsReport(nil, "As of: now", "MFL down", time.UTC); e.Status != "empty" || !strings.Contains(e.Note, "MFL down") {
+	if e := SiteNewsReport(nil, "As of: now", "MFL down", time.UTC); e.Status != "empty" || !strings.Contains(e.Note, "MFL down") {
 		t.Fatalf("empty news = %+v", e)
 	}
-	u, err := accountingURL("www47", 2026)
+	u, err := AccountingURL("www47", 2026)
 	if err != nil || u != "https://www47.myfantasyleague.com/2026/accounting_report?L=14432" {
 		t.Fatalf("accounting url = %q, %v", u, err)
 	}
 	for _, bad := range []string{"", "evil.example.com", "www47.evil"} {
-		if _, err := accountingURL(bad, 2026); err == nil {
+		if _, err := AccountingURL(bad, 2026); err == nil {
 			t.Errorf("host %q accepted", bad)
 		}
 	}
@@ -109,7 +109,7 @@ func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 
 func TestBylawsReadTheRulebookBySection(t *testing.T) {
 	t.Parallel()
-	sections := bylawSections(rulebookMarkdown)
+	sections := BylawSections(readTestdata(t, "docs/league-rules/Official_Rulebook.md"))
 	if len(sections) < 13 || sections[0].Title != "1. SALARY CAP" {
 		t.Fatalf("%d sections, first %q", len(sections), sections[0].Title)
 	}
@@ -144,15 +144,16 @@ func TestControlRoomWire(t *testing.T) {
 	settings := realSettingsReport(t)
 	settings.Rows = settings.Rows[:12:12]
 	body, err := json.MarshalIndent(map[string]any{
-		"settings": settings, "bylaws": bylawSections(rulebookMarkdown)[:3], "accounting": accountingReport(),
-		"news": siteNewsReport(items[:2:2], "As of: Oct 12, 2026, 8:00 AM", "", time.UTC),
+		"settings": settings, "accounting": AccountingReport(),
+		"bylaws": BylawSections(readTestdata(t, "docs/league-rules/Official_Rulebook.md"))[:3],
+		"news":   SiteNewsReport(items[:2:2], "As of: Oct 12, 2026, 8:00 AM", "", time.UTC),
 	}, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}
 	path := filepath.Join("frontend", "src", "app", "control", "wire.testdata.json")
 	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.WriteFile(path, append(body, '\n'), 0o600); err != nil {
+		if err := os.WriteFile(repoPath(path), append(body, '\n'), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -161,14 +162,4 @@ func TestControlRoomWire(t *testing.T) {
 	}
 }
 
-func leagueSettingsReport(cfg league.RawConfig, names map[string]string, note string) Report {
-	return wireReport(controlapp.LeagueSettingsReport(cfg, names, note))
-}
-func siteNewsReport(items []sitenews.Item, fresh, failed string, zone *time.Location) Report {
-	return wireReport(controlapp.SiteNewsReport(items, fresh, failed, zone))
-}
-func accountingReport() Report { return wireReport(controlapp.AccountingReport()) }
-func accountingURL(host string, season int) (string, error) {
-	return controlapp.AccountingURL(host, season)
-}
-func bylawSections(md []byte) []controlapp.BylawSection { return controlapp.BylawSections(md) }
+func repoPath(path string) string { return filepath.Join("..", "..", "..", path) }

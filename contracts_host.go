@@ -31,8 +31,8 @@ func (a *App) contracts() *contractsapp.API {
 }
 
 func (h contractsHost) ContractsSeason() (snapshot.Sourced[leaguefeed.Lineups], error) {
-	season, err := h.app.TargetSeason()
-	return season.Lineups, err
+	season, err := h.app.controlAPI().TargetSeason()
+	return season.Lineups, err //nolint:wrapcheck // keeps the season binding's refusal text
 }
 
 func (h contractsHost) RosterSnapshot(mine string) (snapshot.Snapshot, error) {

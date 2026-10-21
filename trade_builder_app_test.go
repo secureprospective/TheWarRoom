@@ -48,7 +48,7 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 		t.Fatal(err)
 	}
 	a.core.ClockChanged = func(context.Context) {}
-	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
+	if err := a.controlAPI().TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
 	body, err := os.ReadFile("frontend/src/app/data/fixtures/snapshot.json")
@@ -181,7 +181,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 			t.Fatal(target)
 		}
 	}
-	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)); err != nil {
+	if err := a.controlAPI().TargetSetWindow("trade_deadline", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
 	failed := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
@@ -192,7 +192,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if blocked.Receipt.State != envelope.Blocked || !strings.Contains(strings.Join(blocked.Reasons, " "), "deadline") {
 		t.Fatal(blocked)
 	}
-	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
+	if err := a.controlAPI().TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
 	handed := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})

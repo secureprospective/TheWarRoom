@@ -17,10 +17,18 @@ export function SetParam(arg1:string,arg2:string,arg3:number):Promise<control.Se
 
 export function TargetAccounting():Promise<report.Report>;
 
+export function TargetAlerts(arg1:string):Promise<control.AlertReading>;
+
 export function TargetBylaws():Promise<Array<control.BylawSection>>;
 
 export function TargetLeagueSettings():Promise<report.Report>;
 
 export function TargetOpenMFLAccounting():Promise<void>;
+
+export function TargetSeason():Promise<control.SeasonReading>;
+
+export function TargetSetWindow(arg1:string,arg2:string):Promise<void>;
+
+export function TargetShellStatus():Promise<control.ShellStatus>;
 
 export function TargetSiteNews():Promise<report.Report>;
