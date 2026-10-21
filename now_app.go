@@ -1,102 +1,55 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"maps"
-	"net/url"
+	"net/http"
+	"slices"
 	"strconv"
 	"time"
 
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	seasonapp "github.com/secureprospective/TheWarRoom/internal/app/season"
-
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
-// nowHeld is League Pulse › Now's own held data: the NFL schedule of each week opened, the
-// season's bye weeks, and each week's first held scores, which official stat changes compare with.
-type nowHeld struct {
+// nowSchedules is the NFL schedule of each week opened. It stays on App under SeasonMu because
+// Race, Week, Research and the finished-scores check read it too; Now's private byes, first scores
+// and live-game poller are in app.nowHeld.
+type nowSchedules struct {
 	schedules map[int]heldSeasonFeed[[]nflschedule.RawWeek]
-	byes      heldSeasonFeed[[]nflschedule.RawBye]
-	firsts    scoreFirsts
 }
 
-// scoreFirsts is, per week, the oldest archived weekly results that had the week scored. through
-// is the newest copy already read, so a later read only looks at newer copies.
-type scoreFirsts struct {
-	weeks   map[int]firstScores
-	through time.Time
-	copies  int
+// nowHost is the Now API's Host. It is never bound: only now.API exposes methods to Wails. The
+// refresh and the live-game poll stay here because they span the refresh, season and live-game
+// locks and call the race, week, market and photo features' root code.
+type nowHost struct {
+	*core.State
+	app *App
 }
 
-type firstScores struct {
-	at   time.Time
-	week leaguefeed.WeekResult
-}
-
-// archivedBodies is the history store's ArchivedBodies, as a seam for tests.
-type archivedBodies func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error)
-
-// readScoreFirsts reads archived season results newer than prev.through, newest first, and keeps
-// for each week not already held the oldest copy that had it scored.
-func readScoreFirsts(ctx context.Context, prev scoreFirsts, season int, bodies archivedBodies) (scoreFirsts, error) {
-	next := scoreFirsts{weeks: maps.Clone(prev.weeks), through: prev.through, copies: prev.copies}
-	if next.weeks == nil {
-		next.weeks = map[int]firstScores{}
-	}
-	var lastSum [sha256.Size]byte
-	var last []leaguefeed.WeekResult
-	_, err := bodies(ctx, "TYPE="+weeklyresults.Export, func(src string, body []byte, at time.Time) bool {
-		if !at.After(prev.through) {
-			return true
-		}
-		u, err := url.Parse(src)
-		if err != nil || u.Query().Get("W") != "YTD" || !sameExport(src, weeklyresults.Export, season, false) {
-			return false
-		}
-		if sum := sha256.Sum256(body); last == nil || !bytes.Equal(sum[:], lastSum[:]) {
-			weeks, perr := weeklyresults.Parse(body)
-			if perr != nil {
-				return false
-			}
-			last, lastSum = weeks, sum
-		}
-		next.copies++
-		if at.After(next.through) {
-			next.through = at
-		}
-		for _, w := range last {
-			if _, held := prev.weeks[w.Week]; !held && seasonapp.WeekScored(w) {
-				next.weeks[w.Week] = firstScores{at: at, week: w}
-			}
-		}
-		return false
-	})
-	if err != nil {
-		return prev, fmt.Errorf("official stat changes: %w", err)
-	}
-	return next, nil
-}
+func (a *App) nowAPI() *nowapp.API { return nowapp.New(nowHost{State: a.core, app: a}, a.nowHeld) }
 
 func (a *App) refreshScoreFirsts(ctx context.Context) {
 	a.core.SeasonMu.Lock()
-	prev := a.now.firsts
+	prev := a.nowHeld.SnapshotFirsts()
 	a.core.SeasonMu.Unlock()
-	next, err := readScoreFirsts(ctx, prev, a.core.Season, a.core.History.ArchivedBodies)
+	next, err := nowapp.ReadFirsts(ctx, prev, a.core.Season, a.core.History.ArchivedBodies)
 	if err != nil {
 		a.core.FallbackLog("the war room: " + err.Error())
 		return
 	}
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	a.now.firsts = next
+	a.nowHeld.PublishFirsts(next)
 }
 
 // refreshNowWeek reads the chosen week's NFL schedule and the season's byes, each live or from
@@ -108,7 +61,7 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 	}
 	year := strconv.Itoa(a.core.Season)
 	a.core.SeasonMu.Lock()
-	held, byes := a.now.schedules[week], a.now.byes
+	held, byes := a.now.schedules[week], a.nowHeld.SnapshotByes()
 	a.core.SeasonMu.Unlock()
 	if force || !feedFresh(held.FetchedAt, held.RefreshError) {
 		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, a.scheduleFeed(week), a.core.FallbackLog)
@@ -138,7 +91,9 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	holdSeasonFeed(&a.now.byes, rows, fresh, err)
+	next := heldFeed(a.nowHeld.SnapshotByes())
+	holdSeasonFeed(&next, rows, fresh, err)
+	a.nowHeld.PublishByes(nowFeed(next))
 }
 
 func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
@@ -197,9 +152,27 @@ func feedFresh(at time.Time, refreshError string) bool {
 	return refreshError == "" && time.Since(at) < poolFreshFor
 }
 
-// TargetNowRefresh refreshes the league's weekly results, then the chosen week's NFL schedule
-// (0: the current week), unless fresh; force always refreshes. Go checks the week is listed.
-func (a *App) TargetNowRefresh(week int, force bool) error {
+// KnownFranchise reports whether id is one of the rulebook's franchises.
+func (h nowHost) KnownFranchise(id string) bool {
+	_, ok := h.Rulebook.FranchiseNames()[id]
+	return ok
+}
+
+// liveGameWindows copies the held week's NFL game windows under the week lock.
+func (h nowHost) liveGameWindows() []livegame.Window {
+	h.WeekMu.Lock()
+	defer h.WeekMu.Unlock()
+	out := make([]livegame.Window, 0, len(h.Week.Games))
+	for _, g := range h.Week.Games {
+		out = append(out, livegame.Window{Teams: g.Teams, Kickoff: g.Kickoff, Final: g.Final})
+	}
+	return out
+}
+
+// NowRefresh keeps the binding's original order: the race refresh, then the refresh lock over the
+// first scores, the week check and the week's schedule.
+func (h nowHost) NowRefresh(week int, force bool) error {
+	a := h.app
 	if err := raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(force); err != nil {
 		return fmt.Errorf("now refresh: %w", err)
 	}
@@ -230,30 +203,221 @@ func (a *App) TargetNowRefresh(week int, force bool) error {
 	return nil
 }
 
-// TargetNow reads held data only; refresh and scheduling remain owned by App.
-func (a *App) TargetNow(week, reportWeek int, mine string) (NowBoard, error) {
-	if err := a.ready(); err != nil {
-		return NowBoard{}, fmt.Errorf("now: startup: %w", err)
+// NowInput is the joint capture: under SeasonMu it snapshots Now's holder, then copies the shared
+// race, schedule and lineup feeds, so both come from one section.
+func (h nowHost) NowInput(week, reportWeek int, mine string) nowapp.Snapshot {
+	a := h.app
+	current := a.marketWeek()
+	projections := a.heldMarketForWeek(current)[marketfeeds.Projections]
+	a.core.SeasonMu.Lock()
+	byes, firsts := a.nowHeld.SnapshotByes(), a.nowHeld.SnapshotFirsts()
+	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(a.now.schedules))
+	for k, v := range a.now.schedules {
+		schedules[k] = nowFeed(v)
 	}
-	in := a.nowReadInput(week, reportWeek, mine)
-	board, err := nowapp.Build(in)
-	out := wireNow(board)
-	if err == nil && in.Race.Held.Weeks.FetchedAt.IsZero() && in.Race.Held.Weeks.RefreshError == "" {
-		out.Waiting = "Reading the league's weeks from MFL…"
-	}
-	return out, err //nolint:wrapcheck // preserve binding validation text
+	rh := a.raceHeld.Snapshot()
+	race := season.Held{Weeks: rh.Weeks, Brackets: rh.Brackets, Standings: rh.Standings}
+	in := nowapp.Snapshot{Race: season.Snapshot{Held: race}, Held: nowapp.Feeds{Schedules: schedules, Byes: byes, Firsts: firsts},
+		Live: nowFeed(a.core.SeasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week,
+		ReportWeek: reportWeek}
+	a.core.SeasonMu.Unlock()
+	a.core.LookupMu.Lock()
+	in.Race.Lookup, in.Race.HasLookup = a.core.Lookup, a.core.HasLookup
+	a.core.LookupMu.Unlock()
+	in.Race.Config, in.Race.Mine, in.Race.Zone = a.core.Rulebook.ActiveConfig(), mine, time.Local
+	return in
 }
 
-// NowBoard is League Pulse › Now: the week shown, the GM's own matchup first, then the week's
-// reports. Week is the week Go accepted.
-type NowBoard struct {
-	ReportWeek  int          `json:"reportWeek"`
-	ReportWeeks []RaceChoice `json:"reportWeeks"`
-	Week        int          `json:"week"`
-	Weeks       []RaceChoice `json:"weeks"`
-	Matchup     Report       `json:"matchup"`
-	Board       ReportBoard  `json:"board"`
-	// Waiting is set while the league's weeks have not been read yet (just after launch): the screen says so
-	// instead of drawing an empty week. The season event re-reads the board when they arrive.
-	Waiting string `json:"waiting"`
+// LiveGame runs after the API's readiness, follow and franchise checks, in their original order.
+// The poller's held state is taken from the holder under the live-game lock and published back
+// before that lock is released, so the lock keeps its original span.
+func (h nowHost) LiveGame(open bool, follow, mine string) (nowapp.LiveGameView, error) {
+	a := h.app
+	ctx, cancel := context.WithTimeout(a.core.Ctx, 35*time.Second)
+	defer cancel()
+	a.core.LiveGameMu.Lock()
+	defer a.core.LiveGameMu.Unlock()
+	live := a.nowHeld.SnapshotLive()
+	defer func() { a.nowHeld.PublishLive(live) }()
+	if err := a.startLiveGame(&live.Adapter); err != nil {
+		return nowapp.LiveGameView{}, err
+	}
+	now := time.Now()
+	windows := h.liveGameWindows()
+	week := a.marketWeek()
+	if live.Week != week {
+		fetch, finals := live.Adapter.Fetch, live.Adapter.Finals
+		live = nowapp.LiveGame{Week: week, Adapter: livegame.Adapter{Fetch: fetch, Finals: finals}}
+	}
+	adapter := &live.Adapter
+	if len(adapter.Board.Games) == 0 {
+		adapter.Board = a.seedLiveGames(now)
+	}
+	if follow != "" {
+		if _, ok := adapter.Followed(follow); !ok {
+			return nowapp.LiveGameView{}, fmt.Errorf("game.follow id: not in the held week")
+		}
+	}
+	adapter.Refresh(ctx, now, open, windows, follow)
+	adapter.Final(ctx, now, follow)
+	active := livegame.Live(now, adapter.EffectiveWindows(windows))
+	a.pollLiveMFL(ctx, &live, now, open && active)
+	view := liveGameReading(*adapter, follow, active)
+	if err := a.liveGameSpines(ctx, &view, *adapter, mine); err != nil {
+		view.DetailFailure += " " + err.Error()
+	}
+	return view, nil
 }
+
+func (a *App) startLiveGame(adapter *livegame.Adapter) error {
+	if adapter.Fetch != nil {
+		return nil
+	}
+	endpoints, err := nowapp.LiveEndpoints()
+	if err != nil {
+		return err //nolint:wrapcheck // LiveEndpoints keeps the original "live game sources" text.
+	}
+	adapter.Fetch = livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second}, endpoints)
+	if a.core.History != nil {
+		adapter.Finals = nowapp.HeldFinals{Store: a.core.History, Endpoints: endpoints}
+	}
+	return nil
+}
+
+func (a *App) pollLiveMFL(ctx context.Context, live *nowapp.LiveGame, now time.Time, active bool) {
+	if active && !now.Before(live.NextMFL) {
+		a.core.RefreshMu.Lock()
+		a.refreshSeasonLineups(ctx)
+		a.core.RefreshMu.Unlock()
+		a.core.SeasonMu.Lock()
+		failed := a.core.SeasonLineups.RefreshError != ""
+		a.core.SeasonMu.Unlock()
+		if failed {
+			live.MFLFailures++
+		} else {
+			live.MFLFailures = 0
+		}
+		live.NextMFL = now.Add(30 * time.Second * time.Duration(1<<min(live.MFLFailures, 4)))
+	}
+}
+
+func (a *App) seedLiveGames(at time.Time) livegame.Held {
+	week := a.marketWeek()
+	a.core.SeasonMu.Lock()
+	held := a.now.schedules[week]
+	a.core.SeasonMu.Unlock()
+	return nowapp.SeedLiveGames(nowFeed(held), at)
+}
+
+func liveGameReading(a livegame.Adapter, follow string, active bool) nowapp.LiveGameView {
+	return nowapp.LiveReading(nowapp.LiveSnapshot{Board: a.Board, Details: maps.Clone(a.Details), Follow: follow, Active: active, Zone: time.Local})
+}
+
+func (a *App) heldMatchupStarters(mine string) map[string]bool {
+	week := a.marketWeek()
+	a.core.SeasonMu.Lock()
+	live, weeks := a.core.SeasonLineups.Value, a.raceHeld.Snapshot().Weeks.Value
+	a.core.SeasonMu.Unlock()
+	return nowapp.HeldMatchupStarters(live, weeks, week, mine)
+}
+
+// liveGameSpines fills the followed game's spine and the week's: every held play (followed
+// games and finals already read) with a starter from my matchup. Nothing is fetched here.
+func (a *App) liveGameSpines(ctx context.Context, v *nowapp.LiveGameView, adapter livegame.Adapter, mine string) error {
+	held := nowapp.HeldWeekGames(nowapp.LiveSnapshot{Details: maps.Clone(adapter.Details)})
+	v.WeekHeld = len(held)
+	if v.Followed == nil && len(held) == 0 {
+		return nil
+	}
+	if a.core.History == nil {
+		return fmt.Errorf("crosswalk directory unavailable")
+	}
+	known, err := a.core.History.KnownIDs(ctx, "espn")
+	if err != nil {
+		return fmt.Errorf("live game crosswalk: %w", err)
+	}
+	if v.Followed != nil {
+		if err := a.inspectLiveBox(ctx, v); err != nil {
+			return err
+		}
+	}
+	players, err := a.spinePlayers(ctx, mine)
+	if err != nil {
+		return err
+	}
+	if v.Followed != nil {
+		v.Spine, v.Unmatched = nowapp.MatchSpine([]livegame.Game{*v.Followed}, known, players)
+	}
+	v.WeekSpine, _ = nowapp.MatchSpine(held, known, players)
+	return nil
+}
+
+func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]nowapp.SpinePlayer, error) {
+	ids := a.heldMatchupStarters(mine)
+	players := map[string]nowapp.SpinePlayer{}
+	espnIDs, err := a.core.History.SourceIDs(ctx, "espn")
+	if err != nil {
+		return nil, fmt.Errorf("live game player crosswalk: %w", err)
+	}
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
+	for _, id := range slices.Sorted(maps.Keys(ids)) {
+		espn := espnIDs[id]
+		if espn == "" {
+			continue
+		}
+		facts, ok := lookup.Facts(id)
+		if !ok {
+			continue
+		}
+		photo := photoView(id, proseName(facts.Name), a.core.PhotosOff.Load())
+		players[espn] = nowapp.SpinePlayer{ID: id, Name: proseName(facts.Name), Team: facts.Team, Mine: ids[id], Photo: nowapp.PhotoView(photo)}
+	}
+	return players, nil
+}
+
+func (a *App) inspectLiveBox(ctx context.Context, v *nowapp.LiveGameView) error {
+	ids, err := a.core.History.SourceIDs(ctx, "espn")
+	if err != nil {
+		return fmt.Errorf("box score crosswalk: %w", err)
+	}
+	bySource := map[string]string{}
+	for id, source := range ids {
+		bySource[source] = id
+	}
+	entities := map[string]report.Entity{}
+	for _, box := range v.Followed.Box {
+		for _, p := range box.Rows {
+			if id := bySource[p.ID]; id != "" {
+				entities[id] = report.Entity{Text: p.Name, Kind: "player", ID: id}
+			}
+		}
+	}
+	nowapp.AttachReportEntities(&v.Box, slices.Collect(maps.Values(entities)))
+	return nil
+}
+
+func nowFeed[T any](f heldSeasonFeed[T]) nowapp.Feed[T] {
+	return nowapp.Feed[T]{Value: f.Value, FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}
+}
+func heldFeed[T any](f nowapp.Feed[T]) heldSeasonFeed[T] {
+	return heldSeasonFeed[T]{Value: f.Value, FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}
+}
+func liveWeek(l leaguefeed.Lineups, base leaguefeed.WeekResult) leaguefeed.WeekResult {
+	return nowapp.LiveWeek(l, base)
+}
+func nflGames(w []nflschedule.RawWeek, at time.Time) map[string]nowapp.NFLGame {
+	return nowapp.NFLGames(w, at)
+}
+func weekKickedOff(g map[string]nowapp.NFLGame, at time.Time) bool {
+	return nowapp.WeekKickedOff(g, at)
+}
+func liveWeekUnplayed(l heldSeasonFeed[leaguefeed.Lineups], s map[int]heldSeasonFeed[[]nflschedule.RawWeek], at time.Time) bool {
+	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(s))
+	for k, v := range s {
+		schedules[k] = nowFeed(v)
+	}
+	return nowapp.LiveWeekUnplayed(nowFeed(l), schedules, at)
+}
+func possessive(s string) string { return nowapp.Possessive(s) }

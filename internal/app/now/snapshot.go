@@ -21,15 +21,19 @@ type Feed[T any] struct {
 	ReadPending  bool
 }
 
-// Held owns detached indexes; refresh may replace payloads, never mutate them.
-type Held struct {
+// Feeds are Now's detached held feeds; refresh may replace payloads, never mutate them.
+type Feeds struct {
 	Schedules map[int]Feed[[]nflschedule.RawWeek]
 	Byes      Feed[[]nflschedule.RawBye]
 	Firsts    FirstScores
 }
+
+// FirstScores is, per week, the oldest archived weekly results that had the week scored.
+// Through is the newest copy already read, so a later read only looks at newer copies.
 type FirstScores struct {
-	Weeks  map[int]FirstScore
-	Copies int
+	Weeks   map[int]FirstScore
+	Through time.Time
+	Copies  int
 }
 type FirstScore struct {
 	At   time.Time
@@ -39,7 +43,7 @@ type FirstScore struct {
 // Snapshot has no references to root locks, refreshers or scheduling state.
 type Snapshot struct {
 	Race        season.Snapshot
-	Held        Held
+	Held        Feeds
 	Live        Feed[leaguefeed.Lineups]
 	Projections Feed[[]marketfeeds.Feed]
 	At          time.Time

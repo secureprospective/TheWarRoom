@@ -2,21 +2,21 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 )
 
 func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	var endpoints livegame.Endpoints
-	if err := json.Unmarshal(liveGameSources, &endpoints); err != nil {
+	endpoints, err := nowapp.LiveEndpoints()
+	if err != nil {
 		t.Fatal(err)
 	}
-	finals := heldFinals{store: a.core.History, endpoints: endpoints}
+	finals := nowapp.HeldFinals{Store: a.core.History, Endpoints: endpoints}
 	ctx := context.Background()
 	at := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
 	summary := liveFixture(t, "espn-summary-401872991")

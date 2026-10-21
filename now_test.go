@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -32,9 +32,9 @@ import (
 func realNow(t *testing.T, week int) nowInput {
 	t.Helper()
 	d := nowtest.Load(t)
-	return nowInput{race: raceInput{held: raceHeld{weeks: held(d.Race.Weeks), brackets: held(d.Race.Brackets), standings: held(d.Race.Standings)}, config: d.Race.Config, lookup: d.Race.Lookup, hasLookup: true, team: "0001", mine: "0001", zone: time.UTC}, week: week, current: 5, at: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), held: nowHeld{schedules: map[int]heldSeasonFeed[[]nflschedule.RawWeek]{5: held([]nflschedule.RawWeek{d.Schedule})}, byes: held(d.Byes)}, projections: held([]marketfeeds.Feed{d.Projections})}
+	return nowInput{race: raceInput{held: raceHeld{weeks: held(d.Race.Weeks), brackets: held(d.Race.Brackets), standings: held(d.Race.Standings)}, config: d.Race.Config, lookup: d.Race.Lookup, hasLookup: true, team: "0001", mine: "0001", zone: time.UTC}, week: week, current: 5, at: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), held: nowTestHeld{schedules: map[int]heldSeasonFeed[[]nflschedule.RawWeek]{5: held([]nflschedule.RawWeek{d.Schedule})}, byes: held(d.Byes)}, projections: held([]marketfeeds.Feed{d.Projections})}
 }
-func nowBoard(t *testing.T, in nowInput) NowBoard {
+func nowBoard(t *testing.T, in nowInput) nowapp.Board {
 	t.Helper()
 	board, err := buildNow(in)
 	if err != nil {
@@ -43,7 +43,7 @@ func nowBoard(t *testing.T, in nowInput) NowBoard {
 	return board
 }
 
-func nowReport(t *testing.T, board NowBoard, id string) Report {
+func nowReport(t *testing.T, board nowapp.Board, id string) report.Report {
 	t.Helper()
 	for _, r := range append(board.Board.Reports, board.Matchup) {
 		if r.ID == id {
@@ -51,7 +51,7 @@ func nowReport(t *testing.T, board NowBoard, id string) Report {
 		}
 	}
 	t.Fatalf("no report %s", id)
-	return Report{}
+	return report.Report{}
 }
 
 func archivedCopies(copies ...struct {
@@ -90,16 +90,16 @@ func TestNowStatChangesCompareTheFirstHeldCopy(t *testing.T) {
 	bodies := archivedCopies(copyOf{ytd, body, day(2)}, copyOf{ytd, body, day(3)},
 		copyOf{"/2025/export?TYPE=weeklyResults&L=14432&W=5", body, day(4)},
 		copyOf{"/2024/export?TYPE=weeklyResults&L=14432&W=YTD", body, day(5)})
-	firsts, err := readScoreFirsts(context.Background(), scoreFirsts{}, 2025, bodies)
+	firsts, err := nowapp.ReadFirsts(context.Background(), nowapp.FirstScores{}, 2025, nowapp.Bodies(bodies))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if firsts.copies != 2 || !firsts.through.Equal(day(3)) || len(firsts.weeks) != 17 || !firsts.weeks[5].at.Equal(day(2)) {
-		t.Fatal("the oldest copy of each scored week is the first", firsts.copies, firsts.through, len(firsts.weeks))
+	if firsts.Copies != 2 || !firsts.Through.Equal(day(3)) || len(firsts.Weeks) != 17 || !firsts.Weeks[5].At.Equal(day(2)) {
+		t.Fatal("the oldest copy of each scored week is the first", firsts.Copies, firsts.Through, len(firsts.Weeks))
 	}
-	again, err := readScoreFirsts(context.Background(), firsts, 2025, bodies)
-	if err != nil || again.copies != 2 {
-		t.Fatal("a second read reads only newer copies", again.copies, err)
+	again, err := nowapp.ReadFirsts(context.Background(), firsts, 2025, nowapp.Bodies(bodies))
+	if err != nil || again.Copies != 2 {
+		t.Fatal("a second read reads only newer copies", again.Copies, err)
 	}
 	in := realNow(t, 5)
 	in.held.firsts = firsts
@@ -147,14 +147,14 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	a.core.WeekMu.Lock()
 	a.core.Week.Number = 5
 	a.core.WeekMu.Unlock()
-	board, err := a.TargetNow(0, 0, "")
+	board, err := a.nowAPI().TargetNow(0, 0, "")
 	if err != nil || len(transport.requests) != 0 || board.Week != 0 || board.Matchup.Status != "failed" {
 		t.Fatal("reading fetched or invented a week", err, transport.requests, board.Week)
 	}
-	if _, err := a.TargetNow(3, 0, ""); err == nil {
+	if _, err := a.nowAPI().TargetNow(3, 0, ""); err == nil {
 		t.Fatal("accepted a week no held schedule lists")
 	}
-	if err := a.TargetNowRefresh(0, false); err != nil {
+	if err := a.nowAPI().TargetNowRefresh(0, false); err != nil {
 		t.Fatal(err)
 	}
 	asked := map[string]string{}
@@ -168,9 +168,9 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 		t.Fatal("refresh must read the bye weeks", asked)
 	}
 	// The test app's rulebook holds no league, so the held feeds are read with the real 2026 league.
-	read := func(week int) NowBoard {
+	read := func(week int) nowapp.Board {
 		a.core.SeasonMu.Lock()
-		in := nowInput{race: realRace(t, "2026"), held: a.now, current: 5, week: week, at: raceHeldAt}
+		in := nowInput{race: realRace(t, "2026"), held: nowTestHeld{schedules: a.now.schedules, byes: heldFeed(a.nowHeld.SnapshotByes()), firsts: a.nowHeld.SnapshotFirsts()}, current: 5, week: week, at: raceHeldAt}
 		in.race.held = raceHeld{weeks: heldSeasonFeed[[]leaguefeed.WeekResult](a.raceHeld.Snapshot().Weeks), brackets: heldSeasonFeed[[]leaguefeed.Bracket](a.raceHeld.Snapshot().Brackets), standings: heldSeasonFeed[[]leaguestandings.RawStanding](a.raceHeld.Snapshot().Standings)}
 		a.core.SeasonMu.Unlock()
 		return nowBoard(t, in)
@@ -181,10 +181,10 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 		t.Fatal(board.Week, nfl.Status, nfl.Note, len(nfl.Rows))
 	}
 	requests := len(transport.requests)
-	if err := a.TargetNowRefresh(5, false); err != nil || slices.Contains(transport.requests[requests:], "nflSchedule") {
+	if err := a.nowAPI().TargetNowRefresh(5, false); err != nil || slices.Contains(transport.requests[requests:], "nflSchedule") {
 		t.Fatal("a fresh week refetched", err, transport.requests[requests:])
 	}
-	if err := a.TargetNowRefresh(6, false); err != nil {
+	if err := a.nowAPI().TargetNowRefresh(6, false); err != nil {
 		t.Fatal(err)
 	}
 	if r := nowReport(t, read(6), "M-015"); r.Status != "failed" || !strings.Contains(r.Note, "refresh from MFL") {
@@ -194,13 +194,13 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	recordSeasonArchiveForm(t, a, "nflSchedule", "7", week7, raceHeldAt, true)
 	recordSeasonArchiveForm(t, a, "nflSchedule", "8", week7, raceHeldAt.Add(time.Hour), true)
 	transport.failure = "nflSchedule"
-	if err := a.TargetNowRefresh(7, false); err != nil {
+	if err := a.nowAPI().TargetNowRefresh(7, false); err != nil {
 		t.Fatal(err)
 	}
 	if r := nowReport(t, read(7), "M-015"); r.Status != "stale" || len(r.Rows) != 15 {
 		t.Fatal("an offline week must fall back to its own archived copy", r.Status, r.Note)
 	}
-	if err := a.TargetNowRefresh(99, false); err == nil {
+	if err := a.nowAPI().TargetNowRefresh(99, false); err == nil {
 		t.Fatal("accepted a week the league's schedule does not list")
 	}
 }
@@ -217,13 +217,13 @@ func TestNowRefreshFetchesTheCurrentWeekBeforeLeagueWeeksAreHeld(t *testing.T) {
 	a.core.WeekMu.Lock()
 	a.core.Week.Number = 5
 	a.core.WeekMu.Unlock()
-	if err := a.TargetNowRefresh(0, false); err != nil {
+	if err := a.nowAPI().TargetNowRefresh(0, false); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Contains(transport.requests, "nflSchedule") {
 		t.Fatal("the current week's NFL schedule was skipped", transport.requests)
 	}
-	if err := a.TargetNowRefresh(9, false); err == nil {
+	if err := a.nowAPI().TargetNowRefresh(9, false); err == nil {
 		t.Fatal("accepted an unlisted week that is not the current one")
 	}
 }
@@ -237,7 +237,7 @@ func TestNowWireMatchesGo(t *testing.T) {
 		r.Rows = r.Rows[:min(len(r.Rows), 3)]
 	}
 	body, err := json.MarshalIndent(struct {
-		Now NowBoard `json:"now"`
+		Now nowapp.Board `json:"now"`
 	}{board}, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -261,7 +261,7 @@ func TestNowWireMatchesGo(t *testing.T) {
 
 func TestNowBindingsGolden(t *testing.T) {
 	a := targetTestApp(t)
-	board, err := a.TargetNow(0, 0, "")
+	board, err := a.nowAPI().TargetNow(0, 0, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -275,17 +275,17 @@ func TestNowBindingsGolden(t *testing.T) {
 	checkGolden(t, "now", "held", populated)
 	stopped := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
 	close(stopped.core.Started)
-	checkGolden(t, "now", "TargetNowRefresh", stopped.TargetNowRefresh(0, false).Error())
-	if _, err := a.TargetLiveGame(false, "invalid!", ""); err == nil {
+	checkGolden(t, "now", "TargetNowRefresh", stopped.nowAPI().TargetNowRefresh(0, false).Error())
+	if _, err := a.nowAPI().TargetLiveGame(false, "invalid!", ""); err == nil {
 		t.Fatal("invalid follow accepted")
 	} else {
 		checkGolden(t, "now", "TargetLiveGame-invalid", err.Error())
 	}
-	a.liveGame.adapter = livegame.Adapter{Fetch: func(context.Context, string, string) ([]byte, error) {
+	a.nowHeld.PublishLive(nowapp.LiveGame{Week: a.marketWeek(), Adapter: livegame.Adapter{Fetch: func(context.Context, string, string) ([]byte, error) {
 		t.Fatal("closed binding fetched")
 		return nil, nil
-	}}
-	view, err := a.TargetLiveGame(false, "", "")
+	}}})
+	view, err := a.nowAPI().TargetLiveGame(false, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,8 +299,8 @@ func TestNowParsesOnlyValidWeeklyResults(t *testing.T) {
 		body string
 		at   time.Time
 	}{"/2025/export?TYPE=weeklyResults&L=14432&W=YTD", `{"allWeeklyResults":{"weeklyResults":[]}}`, raceHeldAt})
-	firsts, err := readScoreFirsts(context.Background(), scoreFirsts{}, 2025, bodies)
-	if err != nil || firsts.copies != 0 || len(firsts.weeks) != 0 {
+	firsts, err := nowapp.ReadFirsts(context.Background(), nowapp.FirstScores{}, 2025, nowapp.Bodies(bodies))
+	if err != nil || firsts.Copies != 0 || len(firsts.Weeks) != 0 {
 		t.Fatal("a body that does not parse is passed over", firsts, err)
 	}
 	if _, err := weeklyresults.Parse([]byte(`{}`)); err == nil {
@@ -308,9 +308,16 @@ func TestNowParsesOnlyValidWeeklyResults(t *testing.T) {
 	}
 }
 
+// nowTestHeld is the fixture's Now feeds: the schedules App holds and the holder's byes and first scores.
+type nowTestHeld struct {
+	schedules map[int]heldSeasonFeed[[]nflschedule.RawWeek]
+	byes      heldSeasonFeed[[]nflschedule.RawBye]
+	firsts    nowapp.FirstScores
+}
+
 type nowInput struct {
 	race        raceInput
-	held        nowHeld
+	held        nowTestHeld
 	live        heldSeasonFeed[leaguefeed.Lineups]
 	projections heldSeasonFeed[[]marketfeeds.Feed]
 	at          time.Time
@@ -324,39 +331,10 @@ func (in nowInput) snapshot() nowapp.Snapshot {
 	for k, v := range in.held.schedules {
 		schedules[k] = nowFeed(v)
 	}
-	firsts := make(map[int]nowapp.FirstScore, len(in.held.firsts.weeks))
-	for k, v := range in.held.firsts.weeks {
-		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
-	}
-	return nowapp.Snapshot{Race: in.race.snapshot(), Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(in.held.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: in.held.firsts.copies}}, Live: nowFeed(in.live), Projections: nowFeed(in.projections), At: in.at, ReportWeek: in.reportWeek, Current: in.current, Week: in.week}
+	return nowapp.Snapshot{Race: in.race.snapshot(), Held: nowapp.Feeds{Schedules: schedules, Byes: nowFeed(in.held.byes), Firsts: in.held.firsts}, Live: nowFeed(in.live), Projections: nowFeed(in.projections), At: in.at, ReportWeek: in.reportWeek, Current: in.current, Week: in.week}
 }
-func buildNow(in nowInput) (NowBoard, error) {
-	b, e := nowapp.Build(in.snapshot())
-	return wireNow(b), e
-}
-
-func TestNowWireTwins(t *testing.T) {
-	t.Parallel()
-	var board nowapp.Board
-	n := 0
-	fillWire(reflect.ValueOf(&board).Elem(), &n)
-	if string(sourcesWire(t, board)) != string(sourcesWire(t, wireNow(board))) {
-		t.Fatal("Now converter lost a field")
-	}
-	var live nowapp.LiveGameView
-	// Game payloads are shared transport types; populate each root-owned envelope twin.
-	fillWire(reflect.ValueOf(&live).Elem().FieldByName("Box"), &n)
-	var player nowapp.SpinePlayer
-	fillWire(reflect.ValueOf(&player).Elem(), &n)
-	live.Spine = []nowapp.SpineEntry{{Player: player, Game: "BUF at LAR", Play: livegame.Play{ID: "play", At: raceHeldAt}}}
-	live.WeekSpine = live.Spine
-	live.Source, live.AsOf, live.Failure, live.DetailAsOf, live.DetailFailure = "source", "at", "failure", "detail at", "detail failure"
-	live.Unmatched, live.WeekHeld, live.WeekGames, live.Active = 3, 4, 5, true
-	for _, v := range []nowapp.LiveGameView{live, {}, {Spine: []nowapp.SpineEntry{}, WeekSpine: []nowapp.SpineEntry{}}} {
-		if string(sourcesWire(t, v)) != string(sourcesWire(t, wireLive(v))) {
-			t.Fatal("Live game converter lost a field or slice shape")
-		}
-	}
+func buildNow(in nowInput) (nowapp.Board, error) {
+	return nowapp.Build(in.snapshot())
 }
 
 func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
@@ -367,13 +345,18 @@ func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 		t.Fatal(err)
 	}
 	publishRaceFixture(a, fixture.race.held)
-	a.now, a.core.SeasonLineups = fixture.held, fixture.live
-	a.now.firsts = scoreFirsts{weeks: map[int]firstScores{5: {at: raceHeldAt, week: fixture.race.held.weeks.Value[4]}}, copies: 1}
-	in := a.nowReadInput(5, 0, "")
+	a.now, a.core.SeasonLineups = nowSchedules{schedules: fixture.held.schedules}, fixture.live
+	a.nowHeld.PublishByes(nowFeed(fixture.held.byes))
+	a.nowHeld.PublishFirsts(nowapp.FirstScores{Weeks: map[int]nowapp.FirstScore{5: {At: raceHeldAt, Week: fixture.race.held.weeks.Value[4]}}, Copies: 1})
+	in := nowHost{State: a.core, app: a}.NowInput(5, 0, "")
 	a.core.SeasonMu.Lock()
 	delete(a.now.schedules, 5)
-	delete(a.now.firsts.weeks, 5)
-	a.now.byes.RefreshError = "replaced"
+	firsts := a.nowHeld.SnapshotFirsts()
+	delete(firsts.Weeks, 5)
+	a.nowHeld.PublishFirsts(firsts)
+	byes := a.nowHeld.SnapshotByes()
+	byes.RefreshError = "replaced"
+	a.nowHeld.PublishByes(byes)
 	a.core.SeasonMu.Unlock()
 	if len(in.Held.Schedules) != 1 || len(in.Held.Firsts.Weeks) != 1 || in.Held.Byes.RefreshError != "" {
 		t.Fatal("snapshot retained mutable root state")
@@ -415,7 +398,7 @@ func TestNowConcurrentRefreshAndRead(t *testing.T) {
 	}
 	defer close(release)
 	refreshed := make(chan error, 1)
-	go func() { refreshed <- a.TargetNowRefresh(5, true) }()
+	go func() { refreshed <- a.nowAPI().TargetNowRefresh(5, true) }()
 	select {
 	case <-published:
 	case <-time.After(5 * time.Second):
@@ -424,7 +407,7 @@ func TestNowConcurrentRefreshAndRead(t *testing.T) {
 	firstRead, readDone := make(chan struct{}, 1), make(chan error, 1)
 	go func() {
 		for i := 0; i < 12; i++ {
-			if _, err := a.TargetNow(0, 0, ""); err != nil {
+			if _, err := a.nowAPI().TargetNow(0, 0, ""); err != nil {
 				readDone <- err
 				return
 			}
@@ -448,7 +431,7 @@ func TestNowConcurrentRefreshAndRead(t *testing.T) {
 	if err := <-readDone; err != nil {
 		t.Fatal(err)
 	}
-	in := a.nowReadInput(5, 0, "")
+	in := nowHost{State: a.core, app: a}.NowInput(5, 0, "")
 	if in.Held.Schedules[5].FetchedAt.IsZero() || in.Held.Byes.FetchedAt.IsZero() || in.Race.Held.Weeks.FetchedAt.IsZero() {
 		t.Fatal("refresh failed to publish feeds")
 	}

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -74,7 +75,7 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{5: {FetchedAt: now, Value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
 		{Teams: [2]string{"BUF", "NYJ"}, Kickoff: fmt.Sprint(now.Add(-5 * time.Hour).Unix()), Scores: [2]string{"20", "10"}, GameSecondsRemaining: "0"},
 	}}}}}
-	a.now.byes.FetchedAt = now
+	a.nowHeld.PublishByes(nowapp.Feed[[]nflschedule.RawBye]{FetchedAt: now})
 	a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{researchKey("playerScores", "5"): {FetchedAt: now.Add(-3 * time.Hour)}}
 	requests, pauses := []string{}, 0
 	var err error

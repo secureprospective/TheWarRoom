@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
 )
 
@@ -19,7 +21,7 @@ func liveFixture(t *testing.T, name string) []byte {
 	return b
 }
 
-func liveWire(t *testing.T) LiveGameView {
+func liveWire(t *testing.T) nowapp.LiveGameView {
 	t.Helper()
 	g, e := livegame.ParseSummary(liveFixture(t, "espn-summary-401872991"))
 	if e != nil {
@@ -35,9 +37,9 @@ func liveWire(t *testing.T) LiveGameView {
 	view := liveGameReading(a, g.ID, false)
 	for _, p := range plays {
 		if strings.HasPrefix(p.Text, "J.Brissett pass short right to T.Quitoriano for 2 yards, TOUCHDOWN") {
-			view.Spine = []SpineEntry{
-				{Player: SpinePlayer{ID: "13130", Name: "Jacoby Brissett", Team: "ARI", Mine: true, Photo: photoView("13130", "Jacoby Brissett", true)}, Play: p},
-				{Player: SpinePlayer{ID: "16001", Name: "Teagan Quitoriano", Team: "ARI", Photo: photoView("16001", "Teagan Quitoriano", true)}, Play: p},
+			view.Spine = []nowapp.SpineEntry{
+				{Player: nowapp.SpinePlayer{ID: "13130", Name: "Jacoby Brissett", Team: "ARI", Mine: true, Photo: nowapp.PhotoView(photoView("13130", "Jacoby Brissett", true))}, Play: p},
+				{Player: nowapp.SpinePlayer{ID: "16001", Name: "Teagan Quitoriano", Team: "ARI", Photo: nowapp.PhotoView(photoView("16001", "Teagan Quitoriano", true))}, Play: p},
 			}
 		}
 	}
@@ -130,29 +132,30 @@ func TestMFLDemandPollingAndBackoff(t *testing.T) {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 11, 21, 0, 0, 0, time.UTC)
-	a.pollLiveMFL(a.core.Ctx, at, false)
+	live := &nowapp.LiveGame{}
+	a.pollLiveMFL(a.core.Ctx, live, at, false)
 	if len(transport.requests) != 0 {
 		t.Fatal("inactive MFL poll fetched")
 	}
-	a.pollLiveMFL(a.core.Ctx, at, true)
+	a.pollLiveMFL(a.core.Ctx, live, at, true)
 	if len(transport.requests) != 1 || transport.requests[0] != "liveScoring" || transport.weeks[0] != "5" {
 		t.Fatal(transport.requests)
 	}
-	a.pollLiveMFL(a.core.Ctx, at.Add(29*time.Second), true)
+	a.pollLiveMFL(a.core.Ctx, live, at.Add(29*time.Second), true)
 	if len(transport.requests) != 1 {
 		t.Fatal("MFL polled early")
 	}
 	heldAt := a.core.SeasonLineups.FetchedAt
 	transport.failure = "liveScoring"
-	a.pollLiveMFL(a.core.Ctx, at.Add(30*time.Second), true)
+	a.pollLiveMFL(a.core.Ctx, live, at.Add(30*time.Second), true)
 	if len(transport.requests) != 2 || !a.core.SeasonLineups.FetchedAt.Equal(heldAt) || a.core.SeasonLineups.RefreshError == "" {
 		t.Fatal("MFL lost held time/failure")
 	}
-	a.pollLiveMFL(a.core.Ctx, at.Add(89*time.Second), true)
+	a.pollLiveMFL(a.core.Ctx, live, at.Add(89*time.Second), true)
 	if len(transport.requests) != 2 {
 		t.Fatal("MFL did not back off")
 	}
-	a.pollLiveMFL(a.core.Ctx, at.Add(90*time.Second), false)
+	a.pollLiveMFL(a.core.Ctx, live, at.Add(90*time.Second), false)
 	if len(transport.requests) != 2 {
 		t.Fatal("closed or off-game MFL refreshed")
 	}

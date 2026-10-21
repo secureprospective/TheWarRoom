@@ -2,14 +2,9 @@ import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { nowState } from './state';
 import { parseLive, type LiveView } from './liveContract';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { targetLiveGame } from './api';
 
 type LiveReader = (open: boolean, follow: string, mine: string) => Promise<LiveView>;
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Live games need the desktop app; no fixture is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
 export function createLiveState(reader: LiveReader) {
   const store = createStore<{ view?: LiveView; follow: string; error: string; pending: boolean }>(() =>
     ({ follow: '', error: '', pending: false }));
@@ -31,7 +26,7 @@ export function createLiveState(reader: LiveReader) {
   return { use: () => useStore(store), peek: store.getState, load, follow };
 }
 export const liveState = createLiveState(async (open, follow, mine) =>
-  parseLive(await bindings().TargetLiveGame(open, follow, mine)));
+  parseLive(await targetLiveGame(open, follow, mine)));
 
 export function startLivePolling(mine: string,
   load = liveState.load, update = () => nowState.load(false)) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/parquet-go/parquet-go"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -182,7 +183,7 @@ func TestLiveBoxKeepsCrosswalkIdentity(t *testing.T) {
 	if err := a.inspectLiveBox(a.core.Ctx, &v); err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Contains(v.Box.Entities, ReportEntity{Text: name, Kind: "player", ID: "13130"}) {
+	if !slices.Contains(v.Box.Entities, report.Entity{Text: name, Kind: "player", ID: "13130"}) {
 		t.Fatal("box score did not expose its held MFL identity", v.Box.Entities)
 	}
 }

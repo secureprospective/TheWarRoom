@@ -142,3 +142,10 @@ func wireSlice[S, T any](in []S, out []T) []T {
 // reportHeld copies a held season feed into the shape feature services read.
 
 func proseName(name string) string { return report.ProseName(name) }
+
+// ReportEntity ties a literal display name to its held identity, including names in prose.
+type ReportEntity struct {
+	Text string `json:"text"`
+	Kind string `json:"kind"`
+	ID   string `json:"id"`
+}
