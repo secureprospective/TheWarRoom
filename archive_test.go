@@ -2,15 +2,18 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
 	"testing"
+	"time"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/archive/archivetest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
 
 // Only serial tests call this helper. The on-disk snapshot is immutable after its first compile.
@@ -38,60 +41,17 @@ func reducedArchive(t *testing.T) archiveapp.Snapshot {
 	return fixture
 }
 
-// TestArchiveWireMatchesGolden freezes the Archive wire contract in testdata/wire/archive: what
-// the frontend receives, field for field. The bound method opens on a fresh history (no compiled
-// snapshot); the rest build on the reduced archive, before and after a franchise is chosen.
-// Regenerate with TWR_WRITE_WIRE=1 go test -run TestArchiveWireMatchesGolden . and review the diff.
-func TestArchiveWireMatchesGolden(t *testing.T) {
+// Root retains a small composition golden; feature cases live beside the API.
+func TestArchiveCompositionWireMatchesGolden(t *testing.T) {
 	a := targetTestApp(t)
-	bound, err := a.TargetArchive(0, "", "")
+	bound, err := archiveapp.New(a.core).TargetArchive(0, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	checkArchiveWire(t, "unimported", bound)
-	cache := reducedArchive(t)
-	for _, c := range []struct {
-		name, team, other string
-		season            int
-		stale             bool
-	}{
-		{name: "league"},
-		{name: "season-stale", season: 2015, stale: true},
-		{name: "franchise", team: "0001", other: "0002"},
-	} {
-		b, err := buildArchive(cache, c.stale, c.season, c.team, c.other)
-		if err != nil {
-			t.Fatal(c.name, err)
-		}
-		checkArchiveWire(t, c.name, b)
-	}
+	checkGolden(t, "archive", "unimported", bound)
 }
 
-func checkArchiveWire(t *testing.T, name string, b ArchiveBoard) {
-	t.Helper()
-	got, err := json.MarshalIndent(b, "", " ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	got = append(got, '\n')
-	path := "testdata/wire/archive/" + name + ".json"
-	if os.Getenv("TWR_WRITE_WIRE") == "1" {
-		if err := os.MkdirAll("testdata/wire/archive", 0o750); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, got, 0o644); err != nil { //nolint:gosec // a test fixture
-			t.Fatal(err)
-		}
-		return
-	}
-	want, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(want, got) {
-		t.Errorf("%s differs from the Archive binding's output; the wire contract changed", path)
-	}
-}
+func (a *App) archiveOpponent(team string) string { return a.core.ArchiveOpponent(team) }
 
 // TestReportWireTwinsMatch proves wireBoard and wireChoices lose nothing: a board with every
 // field set, and one left empty, encode the same before and after conversion. A field added to
@@ -160,4 +120,52 @@ func fillWire(v reflect.Value, n *int) {
 		panic("fillWire: add a case for " + kind.String())
 	}
 	set()
+}
+
+func TestArchiveWireDuringRefreshPublication(t *testing.T) {
+	a, transport, _, _ := seasonTestApp(t)
+	a.core.Week.Number = 5
+	if err := a.core.KeyStore.Set(a.core.Ctx, "fixture-key"); err != nil {
+		t.Fatal(err)
+	}
+	entered, release := make(chan struct{}), make(chan struct{})
+	var err error
+	a.core.MFLClient, err = mfl.New("api", 10000,
+		mfl.WithTransport(blockedSeasonTrade{base: transport, entered: entered, release: release}),
+		mfl.WithKeySource(a.core.KeyStore.Get))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(a.core.Ctx)
+	defer cancel()
+	done := make(chan struct{})
+	go func() { a.refreshSeason(ctx); close(done) }()
+	defer func() { cancel(); close(release); <-done }()
+	select {
+	case <-entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("refresh did not reach fixture I/O")
+	}
+	// The real refresh has published lineups and holds RefreshMu during pending-trade I/O.
+	read := make(chan error, 1)
+	go func() { _, err := archiveapp.New(a.core).TargetArchive(0, "0001", ""); read <- err }()
+	select {
+	case err := <-read:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("archive read blocked behind refresh I/O")
+	}
+	a.core.SeasonMu.Lock()
+	published := a.core.SeasonLineups
+	a.core.SeasonMu.Unlock()
+	if published.FetchedAt.IsZero() || len(published.Value.Matchups) == 0 {
+		t.Fatal("lineups were not published")
+	}
+	match := published.Value.Matchups[0]
+	b, err := archiveapp.New(a.core).TargetArchive(0, match.Home, "")
+	if err != nil || b.Other != match.Away {
+		t.Fatal(b.Other, err)
+	}
 }

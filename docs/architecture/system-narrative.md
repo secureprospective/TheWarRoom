@@ -538,10 +538,13 @@ league/list changes or a 24-hour-old run make it due. `target:season` refreshes 
 C-07 lists the engine run and its age; completed background checks append their run timestamp
 without changing any scoring formula or using ownership to find points.
 
-League Pulse › Archive: `archive_app.go` is the binding and keeps the checked archive snapshot on
-`App`; `internal/app/archive` reads that snapshot (`read.go`) and authors the historical reports
-(`board.go`, `records.go`), built as `internal/app/report` values the root converts to its wire
-types (see `docs/architecture/feature-extraction.md`). The lazy
+League Pulse › Archive: `internal/app/archive/api.go` owns `TargetArchive` and its wire contract.
+`internal/app/core/host_archive.go` resolves the live opponent and detaches the verified facts
+under their existing locks before report construction. `archive_app.go` retains the shared
+checked-cache reader and Race fallback callbacks on `App`; Comms and background compilation
+still consume that cache. `internal/app/archive` reads snapshots (`read.go`) and authors the
+historical reports (`board.go`, `records.go`), using the shared `report.ArchiveSnapshot` contract.
+Only `frontend/src/app/archive/api.ts` touches its generated bindings or runtime events. The lazy
 `frontend/src/app/archive/Archive.tsx` has no MFL Pools report. MFL pool exports remain accepted
 by the offline importer and preserved in the raw archive; native pools and mini games are deferred.
 The shared shell route resolver reads legacy `pools-archive` links as `archive`.

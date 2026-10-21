@@ -1,29 +1,12 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { array, integer, object, text } from '../data/parseValues';
-import { parseBoard, type Board } from '../reports/contract';
-import { choice, type Choice } from '../race/contract';
 import { commands } from '../commands/registry';
-import type * as Bindings from '../../../wailsjs/go/main/App';
-
-export type Archive = { board: Board; season: number; seasons: Choice[]; team: string; other: string;
-  teams: Choice[] };
-function parseArchive(value: unknown): Archive {
-  const p = 'League archive';
-  const r = object(value, p, ['board', 'season', 'seasons', 'team', 'other', 'teams']);
-  const a = { board: parseBoard(r.board), season: integer(r.season, p),
-    seasons: array(r.seasons, p, choice), team: text(r.team, p), other: text(r.other, p),
-    teams: array(r.teams, p, choice) };
-  if (a.seasons.length && !a.seasons.some(s => s.value === String(a.season)))
-    throw new Error(`${p}: season outside choices`);
-  if (a.teams.length && [a.team, a.other].some(t => t && !a.teams.some(c => c.value === t)))
-    throw new Error(`${p}: franchise outside choices`);
-  if (!a.board.reports.length) throw new Error(`${p}: missing reports`);
-  return a;
-}
+import { archiveAPI } from './api';
+import type { Archive } from './contract';
+export type { Archive } from './contract';
 type ArchiveState = { archive?: Archive; pending: boolean; error: string; season: number;
   team: string | null; other: string };
-function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>,
+export function createArchiveState(read: (season: number, team: string, other: string) => Promise<Archive>,
   mine: () => string) {
   const store = createStore<ArchiveState>(() =>
     ({ pending: false, error: '', season: 0, team: null, other: '' }));
@@ -54,9 +37,4 @@ function createArchiveState(read: (season: number, team: string, other: string) 
   }
   return { use: () => useStore(store), peek: store.getState, load, choose };
 }
-export const archiveState = createArchiveState(async (season, team, other) => {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('League archive reports require the desktop app; no browser fixture is substituted.');
-  const bindings = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-  return parseArchive(await bindings.TargetArchive(season, team, other));
-}, () => commands.read().franchiseId ?? '');
+export const archiveState = createArchiveState(archiveAPI.read, () => commands.read().franchiseId ?? '');

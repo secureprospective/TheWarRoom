@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 
@@ -51,6 +52,7 @@ func main() {
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app,
+			archiveapp.New(app.core),
 			comms.New(app.core),
 			counterparties.New(app.core),
 		},

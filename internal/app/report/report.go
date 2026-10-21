@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -251,3 +252,12 @@ func AssetName(kind string) string {
 
 // Percent writes a ratio as a percentage to one decimal.
 func Percent(v float64) string { return fmt.Sprintf("%.1f%%", v*100) }
+
+// ArchiveSnapshot is the verified compile shared by archive readers and held-cache hosts.
+// The zero value means no verified snapshot is held.
+type ArchiveSnapshot struct {
+	SHA     string
+	Facts   facts.Facts
+	Cutoff  string
+	Through time.Time
+}

@@ -6,9 +6,22 @@ const fs = require('node:fs');
 const path = require('node:path');
 const ts = require('./frontend/node_modules/typescript');
 const root = path.resolve('frontend/src/app');
+// Go package -> frontend/src/app folder holding that feature's only adapter (api.ts).
+// One line per moved feature, alphabetical, so parallel split lanes merge cleanly.
+const ADAPTERS = {
+  archive: 'archive',
+  comms: 'comms',
+  counterparties: 'counterparties',
+};
 const features = new Set(fs.readdirSync('frontend/wailsjs/go', { withFileTypes: true })
   .filter(entry => entry.isDirectory() && entry.name !== 'main').map(entry => entry.name));
 let failures = 0;
+for (const feature of features) {
+  if (!(feature in ADAPTERS)) {
+    console.error(`check-frontend-transport: generated package ${feature} has no ADAPTERS entry`);
+    failures++;
+  }
+}
 function files(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
     const file = path.join(dir, entry.name);
@@ -29,21 +42,21 @@ for (const file of files(path.resolve('frontend/src'))) {
   const modelAliases = new Set();
   const reported = new Set();
   function check(feature, node, reason, allowAdapter = true) {
-    if (allowAdapter && file === path.join(root, feature, 'api.ts')) return;
+    if (allowAdapter && file === path.join(root, ADAPTERS[feature] ?? feature, 'api.ts')) return;
     const { line } = source.getLineAndCharacterOfPosition(node.getStart(source));
     const key = `${feature}:${line}`;
     if (reported.has(key)) return;
     reported.add(key);
-    console.error(`check-frontend-transport: ${path.relative(process.cwd(), file)}:${line + 1}: ${reason}; use ${feature}/api.ts`);
+    console.error(`check-frontend-transport: ${path.relative(process.cwd(), file)}:${line + 1}: ${reason}; use ${ADAPTERS[feature] ?? feature}/api.ts`);
     failures++;
   }
+  const ownFeature = Object.keys(ADAPTERS).find(feature => file.startsWith(path.join(root, ADAPTERS[feature]) + path.sep));
   function moduleAccess(spec, node) {
     const match = spec.match(/wailsjs\/go\/([^/]+)\//);
     if (match && match[1] !== 'main') check(match[1], node, 'generated feature transport outside its adapter');
-    const feature = ['comms', 'counterparties'].find(name => file.startsWith(path.join(root, name) + path.sep));
-    if (feature &&
+    if (ownFeature &&
         /wailsjs\/(?:go\/main\/App|runtime\/)/.test(spec))
-      check(feature, node, 'backend access outside its feature adapter', !/go\/main\/App/.test(spec));
+      check(ownFeature, node, 'Backend access outside its feature adapter', !/go\/main\/App/.test(spec));
   }
   // Discover model namespace aliases before inspecting accesses, including multiline imports.
   for (const statement of source.statements) {
@@ -70,9 +83,7 @@ for (const file of files(path.resolve('frontend/src'))) {
     if (at >= 0 && parts[at + 1] === 'go' && parts[at + 2]) {
       const feature = parts[at + 2];
       if (feature !== 'main') check(feature, node, 'window.go feature access outside its adapter');
-      else for (const name of ['comms', 'counterparties']) {
-        if (file.startsWith(path.join(root, name) + path.sep)) check(name, node, 'feature still accesses the root App', false);
-      }
+      else if (ownFeature) check(ownFeature, node, 'Feature still accesses the root App', false);
     }
     if (modelAliases.has(parts[0]) && features.has(parts[1])) check(parts[1], node, 'generated feature models outside its adapter');
     ts.forEachChild(node, visit);

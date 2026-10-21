@@ -1,7 +1,7 @@
 // Package archive builds League Pulse › Archive: the league's history, champions, franchise
 // records and oddities, read from a verified compile of the imported MFL league archive.
 //
-// It is the feature service behind the root binding App.TargetArchive. It holds no state and
+// Its API owns the TargetArchive binding. It holds no state and
 // starts nothing: the caller passes the snapshot in and keeps it. Not to be confused with
 // internal/archive, the low-level HTTP response recorder that stores every fetch's raw bytes;
 // this package reads the league facts compiled from those bytes.
@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
@@ -22,12 +21,7 @@ import (
 
 // Snapshot is a verified compile of the league archive: the facts, the SHA the compiler recorded
 // for them, and the newest capture they include. The zero Snapshot means none is held yet.
-type Snapshot struct {
-	SHA     string
-	Facts   facts.Facts
-	Cutoff  string
-	Through time.Time
-}
+type Snapshot = report.ArchiveSnapshot
 
 // Board is the Archive screen: its reports and the season and franchise pickers.
 type Board struct {

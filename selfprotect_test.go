@@ -10,6 +10,8 @@ import (
 	"strings"
 	"testing"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 )
@@ -123,22 +125,25 @@ func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
 // Wails reflects the pointer method set without a signature filter; no exemptions are configured.
 func TestBindingManifest(t *testing.T) {
 	t.Parallel()
-	methods := map[string]bool{}
-	for _, command := range slices.Concat(
-		comms.Commands(),
-		counterparties.Commands(),
-	) {
-		if methods[command.Method] {
-			t.Fatalf("duplicate catalog method %s", command.Method)
-		}
-		methods[command.Method] = true
+	catalogs := map[reflect.Type][]catalog.Command{
+		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
+		reflect.TypeFor[*comms.API]():          comms.Commands(),
+		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
 	}
 	var got []string
 	for _, typ := range []reflect.Type{
 		reflect.TypeFor[*App](),
+		reflect.TypeFor[*archiveapp.API](),
 		reflect.TypeFor[*comms.API](),
 		reflect.TypeFor[*counterparties.API](),
 	} {
+		methods := map[string]bool{}
+		for _, command := range catalogs[typ] {
+			if methods[command.Method] {
+				t.Fatalf("duplicate catalog method %s", command.Method)
+			}
+			methods[command.Method] = true
+		}
 		prefix := typ.Elem().String() + "."
 		for i := range typ.NumMethod() {
 			name := typ.Method(i).Name
@@ -150,9 +155,9 @@ func TestBindingManifest(t *testing.T) {
 				delete(methods, name)
 			}
 		}
-	}
-	for name := range methods {
-		t.Errorf("catalog method %s is not bound", name)
+		for name := range methods {
+			t.Errorf("catalog method %s is not bound", name)
+		}
 	}
 	slices.Sort(got)
 	want, err := os.ReadFile("testdata/bindings/manifest.txt")

@@ -37,6 +37,11 @@ import (
 )
 
 type State struct {
+	// ReadArchive runs under FactsMu; its feature-owned cache stays at the composition root.
+	ReadArchive func(context.Context) (report.ArchiveSnapshot, bool, error)
+	// ArchiveOpponentFallback runs under SeasonMu, after the current lineup lookup.
+	ArchiveOpponentFallback func(int, string) string
+
 	// ReadCommsArchive runs under FactsMu; its cache remains with the archive feature.
 	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
 	RefreshTransactions    func(context.Context)

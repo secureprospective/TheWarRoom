@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { commands } from '../commands/registry';
 import { ReportsView } from '../draftreports/Reports';
 import { archiveState, type Archive as ArchiveBoard } from './state';
+import { subscribeArchive } from './api';
 
 const franchiseReports = ['M-104', 'M-105', 'M-023', 'M-110', 'M-019'];
 const seasonReports = ['M-079', 'M-089'];
@@ -39,13 +40,7 @@ export default function Archive() {
   const selected = commands.use().endpointIds;
   useEffect(() => {
     void archiveState.load();
-    let disposed = false;
-    let stop: (() => void) | undefined;
-    void import('../../../wailsjs/runtime/runtime').then(m => {
-      if (!disposed && typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-        stop = m.EventsOn('target:season', () => { void archiveState.load(); });
-    });
-    return () => { disposed = true; stop?.(); };
+    return subscribeArchive(() => { void archiveState.load(); });
   }, []);
   return <section aria-label="League archive">
     {state.pending && <p role="status">{state.archive?.board.loading ?? 'Reading the league archive…'}</p>}

@@ -11,8 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/facts"
-
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
@@ -86,11 +84,8 @@ func NewApp() *App {
 		ClockChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:clock") },
 		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
+	a.configureArchive()
 	a.core.RefreshTransactions = a.refreshSeasonTransactions
-	a.core.ReadCommsArchive = func(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
-		cache, _, err := a.readArchiveFacts(ctx)
-		return cache.Facts.RosterWeek, cache.Facts.NflGame, err
-	}
 	return a
 }
 

@@ -86,3 +86,12 @@ func notes(t testing.TB, path string) []facts.RawNoteReading {
 	}
 	return parsed
 }
+
+// RepoPath keeps shared wire goldens in their canonical repository home.
+func RepoPath(parts ...string) string {
+	_, here, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("archivetest: no source path")
+	}
+	return filepath.Join(append([]string{filepath.Dir(here), "..", "..", "..", ".."}, parts...)...)
+}
