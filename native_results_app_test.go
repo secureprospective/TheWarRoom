@@ -3,14 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"strings"
 	"testing"
 
-	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-
-	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -32,7 +27,7 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
 	executeCommissionerTest(t, f.app, raw)
 	for range 2 {
-		results, err := f.app.TargetNativeResults(legalityLeague, 2026, 1)
+		results, err := newCommissionerAPI(f.app).TargetNativeResults(legalityLeague, 2026, 1)
 		if err != nil || len(results.Games) != 16 {
 			t.Fatalf("results: %+v %v", results, err)
 		}
@@ -40,7 +35,7 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 			!strings.Contains(results.Games[0].Words, "long plays and return touchdowns") {
 			t.Fatal(results.Games[0])
 		}
-		standings, err := f.app.TargetNativeStandings(legalityLeague, 2026)
+		standings, err := newCommissionerAPI(f.app).TargetNativeStandings(legalityLeague, 2026)
 		if err != nil || standings.Decided != 0 || standings.Pending != 208 || len(standings.Computed) != 32 {
 			t.Fatal(standings, err)
 		}
@@ -51,11 +46,11 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		preview, err := f.app.TargetNativeScorePreview(string(body))
+		preview, err := newCommissionerAPI(f.app).TargetNativeScorePreview(string(body))
 		if err != nil || preview.Flip.Status != commissioner.FlipUnknown || len(preview.Warnings) != 1 {
 			t.Fatal(preview, err)
 		}
-		after, err := f.app.TargetNativeResults(legalityLeague, 2026, 1)
+		after, err := newCommissionerAPI(f.app).TargetNativeResults(legalityLeague, 2026, 1)
 		if err != nil || after.Revision != 4 {
 			t.Fatal("preview recorded a change", err)
 		}
@@ -63,40 +58,9 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 		f.app.core.History.SetNativeLineups(nativeResultLineups{})
 	}
 	f.app.core.History.SetNativeLineups(nil)
-	results, err := f.app.TargetNativeResults(legalityLeague, 2026, 1)
+	results, err := newCommissionerAPI(f.app).TargetNativeResults(legalityLeague, 2026, 1)
 	if err != nil || !strings.Contains(results.Games[0].Words, "no lineup set") {
 		t.Fatal(results, err)
-	}
-}
-
-func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
-	t.Parallel()
-	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
-	close(a.core.Started)
-	for _, scope := range []RawNativeResultsScope{
-		{League: "native.", Season: 2026, Week: 1}, {League: "imported", Season: 2026, Week: 1},
-		{League: " native.test", Season: 2026, Week: 1}, {League: "native.test", Season: 0, Week: 1},
-		{League: "native.test", Season: 10000, Week: 1}, {League: "native.test", Season: 2026, Week: 0},
-		{League: "native.test", Season: 2026, Week: 23},
-	} {
-		if err := scope.Validate(); err == nil {
-			t.Fatalf("scope validation accepted %+v", scope)
-		}
-		if _, err := a.TargetNativeResults(scope.League, scope.Season, scope.Week); err == nil {
-			t.Fatalf("accepted %+v", scope)
-		}
-	}
-	if _, err := a.TargetNativeStandings("native.test", 0); err == nil {
-		t.Fatal("invalid standings season")
-	}
-	if _, err := a.TargetNativeResults("native.test", 2026, 1); err == nil {
-		t.Fatal("results ignored startup")
-	}
-	if _, err := a.TargetNativeStandings("native.test", 2026); err == nil {
-		t.Fatal("standings ignored startup")
-	}
-	if _, err := a.TargetNativeScorePreview(`{"command":"bad"}`); err == nil {
-		t.Fatal("invalid preview")
 	}
 }
 
@@ -112,7 +76,7 @@ func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
 	executeCommissionerTest(t, f.app, raw)
 	for range 2 {
-		bracket, err := f.app.TargetNativeBracket(legalityLeague, 2026)
+		bracket, err := newCommissionerAPI(f.app).TargetNativeBracket(legalityLeague, 2026)
 		if err != nil || len(bracket.Rounds) != 0 || bracket.Champion != nil || bracket.Title.Label != "2026 League Champion" ||
 			!strings.HasPrefix(bracket.Status, "Needs a ruling") && !strings.HasPrefix(bracket.Status, "Waiting") {
 			t.Fatalf("a bracket without results must say why: %+v %v", bracket, err)
@@ -123,20 +87,5 @@ func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 		}
 		f.reopen(t)
 		f.app.core.History.SetNativeLineups(nativeResultLineups{})
-	}
-}
-
-func TestNativeBracketIPCScopeAndStartup(t *testing.T) {
-	t.Parallel()
-	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
-	close(a.core.Started)
-	for _, scope := range []RawNativeResultsScope{{League: "native.", Season: 2026}, {League: "imported", Season: 2026},
-		{League: "native.test", Season: 0}, {League: "native.test", Season: 10000}} {
-		if _, err := a.TargetNativeBracket(scope.League, scope.Season); err == nil {
-			t.Fatalf("accepted %+v", scope)
-		}
-	}
-	if _, err := a.TargetNativeBracket("native.test", 2026); err == nil || !strings.Contains(err.Error(), "startup") {
-		t.Fatalf("the bracket ignored a failed startup: %v", err)
 	}
 }

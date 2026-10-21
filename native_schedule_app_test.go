@@ -32,11 +32,11 @@ func heldNativeWeek(t *testing.T, app *App, week int, kickoff time.Time, final b
 
 func nativeOwnerRead(t *testing.T, app *App, at time.Time) (commissioner.NativeWeek, commissioner.FranchiseSchedule) {
 	t.Helper()
-	week, err := app.TargetNativeWeek(RawNativeWeekScope{RawNativeScheduleScope: nativeOwnerScope(), At: at})
+	week, err := newCommissionerAPI(app).TargetNativeWeek(RawNativeWeekScope{RawNativeScheduleScope: nativeOwnerScope(), At: at})
 	if err != nil {
 		t.Fatal(err)
 	}
-	season, err := app.TargetNativeFranchiseSchedule(nativeOwnerScope())
+	season, err := newCommissionerAPI(app).TargetNativeFranchiseSchedule(nativeOwnerScope())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,11 +151,11 @@ func TestNativeScheduleMissingDatesAndScope(t *testing.T) {
 	} {
 		scope := nativeOwnerScope()
 		change(&scope)
-		if _, err := app.TargetNativeFranchiseSchedule(scope); err == nil {
+		if _, err := newCommissionerAPI(app).TargetNativeFranchiseSchedule(scope); err == nil {
 			t.Fatal("accepted invalid native owner scope", scope)
 		}
 	}
-	if _, err := app.TargetNativeWeek(RawNativeWeekScope{RawNativeScheduleScope: nativeOwnerScope()}); err == nil {
+	if _, err := newCommissionerAPI(app).TargetNativeWeek(RawNativeWeekScope{RawNativeScheduleScope: nativeOwnerScope()}); err == nil {
 		t.Fatal("accepted zero reading time")
 	}
 }
@@ -192,10 +192,10 @@ func TestNativeScheduleRegenerationChangesOwnerOpponentRevertRestart(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("accepted duplicate participation and an idle franchise")
 	}
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil || ledger.Revision != 4 {
 		t.Fatal("refused edit appended an event", ledger, err)
 	}

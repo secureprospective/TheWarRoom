@@ -156,7 +156,7 @@ func TestNativeBidJobsShowBuiltQueues(t *testing.T) {
 	f := bidApp(t)
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.cut(t, "1000")
-	jobs, err := f.app.TargetCommissionerJobs(legalityLeague)
+	jobs, err := newCommissionerAPI(f.app).TargetCommissionerJobs(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestNativeBidJobsDoNotRevealBlindAuctionCountsOrTimes(t *testing.T) {
 	f.set(t, "bids.ufa", `"blind"`, "now")
 	read := func() commissioner.Job {
 		t.Helper()
-		jobs, err := f.app.TargetCommissionerJobs(legalityLeague)
+		jobs, err := newCommissionerAPI(f.app).TargetCommissionerJobs(legalityLeague)
 		if err != nil {
 			t.Fatal(err)
 		}

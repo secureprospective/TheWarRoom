@@ -14,66 +14,6 @@ export function TargetClock() {
   return window['go']['main']['App']['TargetClock']();
 }
 
-export function TargetCommissionerActor() {
-  return window['go']['main']['App']['TargetCommissionerActor']();
-}
-
-export function TargetCommissionerControls() {
-  return window['go']['main']['App']['TargetCommissionerControls']();
-}
-
-export function TargetCommissionerDigests(arg1) {
-  return window['go']['main']['App']['TargetCommissionerDigests'](arg1);
-}
-
-export function TargetCommissionerExecute(arg1) {
-  return window['go']['main']['App']['TargetCommissionerExecute'](arg1);
-}
-
-export function TargetCommissionerJobs(arg1) {
-  return window['go']['main']['App']['TargetCommissionerJobs'](arg1);
-}
-
-export function TargetCommissionerLeagues() {
-  return window['go']['main']['App']['TargetCommissionerLeagues']();
-}
-
-export function TargetCommissionerLedger(arg1) {
-  return window['go']['main']['App']['TargetCommissionerLedger'](arg1);
-}
-
-export function TargetCommissionerLedgerFiltered(arg1, arg2) {
-  return window['go']['main']['App']['TargetCommissionerLedgerFiltered'](arg1, arg2);
-}
-
-export function TargetCommissionerMarket(arg1, arg2) {
-  return window['go']['main']['App']['TargetCommissionerMarket'](arg1, arg2);
-}
-
-export function TargetCommissionerNotices(arg1) {
-  return window['go']['main']['App']['TargetCommissionerNotices'](arg1);
-}
-
-export function TargetCommissionerPeople(arg1) {
-  return window['go']['main']['App']['TargetCommissionerPeople'](arg1);
-}
-
-export function TargetCommissionerPreview(arg1) {
-  return window['go']['main']['App']['TargetCommissionerPreview'](arg1);
-}
-
-export function TargetCommissionerRules(arg1) {
-  return window['go']['main']['App']['TargetCommissionerRules'](arg1);
-}
-
-export function TargetCommissionerSchedule(arg1) {
-  return window['go']['main']['App']['TargetCommissionerSchedule'](arg1);
-}
-
-export function TargetCorrections(arg1) {
-  return window['go']['main']['App']['TargetCorrections'](arg1);
-}
-
 export function TargetDraftIR(arg1, arg2) {
   return window['go']['main']['App']['TargetDraftIR'](arg1, arg2);
 }
@@ -86,120 +26,8 @@ export function TargetHandOff(arg1) {
   return window['go']['main']['App']['TargetHandOff'](arg1);
 }
 
-export function TargetLeagueCalendar(arg1) {
-  return window['go']['main']['App']['TargetLeagueCalendar'](arg1);
-}
-
-export function TargetLeagueSchedule(arg1) {
-  return window['go']['main']['App']['TargetLeagueSchedule'](arg1);
-}
-
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
-}
-
-export function TargetNativeAssets(arg1) {
-  return window['go']['main']['App']['TargetNativeAssets'](arg1);
-}
-
-export function TargetNativeBidAction(arg1) {
-  return window['go']['main']['App']['TargetNativeBidAction'](arg1);
-}
-
-export function TargetNativeBids(arg1, arg2) {
-  return window['go']['main']['App']['TargetNativeBids'](arg1, arg2);
-}
-
-export function TargetNativeBracket(arg1, arg2) {
-  return window['go']['main']['App']['TargetNativeBracket'](arg1, arg2);
-}
-
-export function TargetNativeCapCheck(arg1, arg2) {
-  return window['go']['main']['App']['TargetNativeCapCheck'](arg1, arg2);
-}
-
-export function TargetNativeContractQuote(arg1) {
-  return window['go']['main']['App']['TargetNativeContractQuote'](arg1);
-}
-
-export function TargetNativeDirectory(arg1) {
-  return window['go']['main']['App']['TargetNativeDirectory'](arg1);
-}
-
-export function TargetNativeDraft(arg1) {
-  return window['go']['main']['App']['TargetNativeDraft'](arg1);
-}
-
-export function TargetNativeDraftPick(arg1) {
-  return window['go']['main']['App']['TargetNativeDraftPick'](arg1);
-}
-
-export function TargetNativeFranchiseSchedule(arg1) {
-  return window['go']['main']['App']['TargetNativeFranchiseSchedule'](arg1);
-}
-
-export function TargetNativeHouseRules(arg1) {
-  return window['go']['main']['App']['TargetNativeHouseRules'](arg1);
-}
-
-export function TargetNativeLineup(arg1, arg2, arg3, arg4) {
-  return window['go']['main']['App']['TargetNativeLineup'](arg1, arg2, arg3, arg4);
-}
-
-export function TargetNativeLineupCheck(arg1) {
-  return window['go']['main']['App']['TargetNativeLineupCheck'](arg1);
-}
-
-export function TargetNativeLineupSet(arg1) {
-  return window['go']['main']['App']['TargetNativeLineupSet'](arg1);
-}
-
-export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
-  return window['go']['main']['App']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
-}
-
-export function TargetNativeReserveCheck(arg1) {
-  return window['go']['main']['App']['TargetNativeReserveCheck'](arg1);
-}
-
-export function TargetNativeResults(arg1, arg2, arg3) {
-  return window['go']['main']['App']['TargetNativeResults'](arg1, arg2, arg3);
-}
-
-export function TargetNativeRosterCheck(arg1) {
-  return window['go']['main']['App']['TargetNativeRosterCheck'](arg1);
-}
-
-export function TargetNativeScorePreview(arg1) {
-  return window['go']['main']['App']['TargetNativeScorePreview'](arg1);
-}
-
-export function TargetNativeSeed(arg1) {
-  return window['go']['main']['App']['TargetNativeSeed'](arg1);
-}
-
-export function TargetNativeStandings(arg1, arg2) {
-  return window['go']['main']['App']['TargetNativeStandings'](arg1, arg2);
-}
-
-export function TargetNativeTradeAction(arg1) {
-  return window['go']['main']['App']['TargetNativeTradeAction'](arg1);
-}
-
-export function TargetNativeTrades(arg1, arg2) {
-  return window['go']['main']['App']['TargetNativeTrades'](arg1, arg2);
-}
-
-export function TargetNativeWaiverAction(arg1) {
-  return window['go']['main']['App']['TargetNativeWaiverAction'](arg1);
-}
-
-export function TargetNativeWaivers(arg1, arg2, arg3) {
-  return window['go']['main']['App']['TargetNativeWaivers'](arg1, arg2, arg3);
-}
-
-export function TargetNativeWeek(arg1) {
-  return window['go']['main']['App']['TargetNativeWeek'](arg1);
 }
 
 export function TargetPhoto(arg1) {
@@ -208,10 +36,6 @@ export function TargetPhoto(arg1) {
 
 export function TargetSnapshot() {
   return window['go']['main']['App']['TargetSnapshot']();
-}
-
-export function TargetStatQueue(arg1, arg2) {
-  return window['go']['main']['App']['TargetStatQueue'](arg1, arg2);
 }
 
 export function TargetWithdrawRoster(arg1) {

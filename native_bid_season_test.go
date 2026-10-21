@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"

@@ -154,7 +154,7 @@ func TestDraftOrderAutoAsksForTheFinalStandings(t *testing.T) {
 // calendarDraftStart reads the draft window's opening as the league calendar shows it.
 func calendarDraftStart(t *testing.T, f *draftFixture) string {
 	t.Helper()
-	reading, err := f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: draftLeague, Season: draftSeason,
+	reading, err := newCommissionerAPI(f.app).TargetLeagueCalendar(RawLeagueCalendarScope{League: draftLeague, Season: draftSeason,
 		LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "draft_pick"})
 	if err != nil {
 		t.Fatal(err)

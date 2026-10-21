@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -22,7 +23,7 @@ func proveActPreview(t *testing.T, app *App, raw commissioner.RawCommand) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil {
 		t.Fatalf("%s preview: %v", raw.Command, err)
 	}
@@ -51,11 +52,11 @@ func proveActPreview(t *testing.T, app *App, raw commissioner.RawCommand) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	blocked, err := app.TargetCommissionerPreview(string(bad))
+	blocked, err := newCommissionerAPI(app).TargetCommissionerPreview(string(bad))
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, executeErr := app.TargetCommissionerExecute(string(bad))
+	_, executeErr := newCommissionerAPI(app).TargetCommissionerExecute(string(bad))
 	if executeErr == nil || len(blocked.Blockers) != 1 || blocked.Blockers[0] != previewExecuteReason(executeErr) {
 		t.Fatalf("%s refusal differs: %+v / %v", raw.Command, blocked.Blockers, executeErr)
 	}
@@ -75,7 +76,7 @@ func TestStartingAssetsPreviewUsesTheSeedRequestAndRecordsNothing(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil || len(preview.Blockers) != 0 {
 		t.Fatalf("starting assets: %+v %v", preview, err)
 	}
@@ -90,7 +91,7 @@ func TestStartingAssetsPreviewUsesTheSeedRequestAndRecordsNothing(t *testing.T) 
 	if receipt.Revision != input.Expected+1 {
 		t.Fatal("preview reserved the seed request")
 	}
-	blocked, err := app.TargetCommissionerPreview(string(body))
+	blocked, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil || len(blocked.Blockers) != 0 {
 		t.Fatalf("seed retry: %+v %v", blocked, err)
 	}
@@ -107,7 +108,7 @@ func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +121,7 @@ func TestStartingAssetsPreviewShowsBeforeTheReasonIsTyped(t *testing.T) {
 	if len(preview.Blockers) != 1 || preview.Blockers[0] != "Give a reason for this change" {
 		t.Fatalf("blockers %q, want only the reason", preview.Blockers)
 	}
-	if _, err := app.TargetNativeSeed(input); err == nil {
+	if _, err := newCommissionerAPI(app).TargetNativeSeed(input); err == nil {
 		t.Fatal("recorded starting assets without a reason")
 	}
 }
@@ -135,7 +136,7 @@ func TestStartingAssetsPreviewSumsUpEachFranchise(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil || len(preview.Blockers) != 0 {
 		t.Fatalf("starting assets: %+v %v", preview, err)
 	}
@@ -249,7 +250,7 @@ func TestCommissionerPreviewRefusalsUseTheAppendPreparation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			_, executeErr := app.TargetCommissionerExecute(string(body))
+			_, executeErr := newCommissionerAPI(app).TargetCommissionerExecute(string(body))
 			if executeErr == nil || len(preview.Blockers) != 1 || preview.Blockers[0] != executeErr.Error() {
 				t.Fatalf("real refusal differs: %+v / %v", preview.Blockers, executeErr)
 			}
@@ -308,7 +309,7 @@ func proveRefusedAct(t *testing.T, app *App, raw commissioner.RawCommand) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, executeErr := app.TargetCommissionerExecute(string(body))
+	_, executeErr := newCommissionerAPI(app).TargetCommissionerExecute(string(body))
 	if executeErr == nil || len(preview.Blockers) != 1 || preview.Blockers[0] != executeErr.Error() {
 		t.Fatalf("%s real refusal differs: %+v / %v", raw.Command, preview.Blockers, executeErr)
 	}
@@ -327,7 +328,7 @@ func TestStartingAssetsPreviewRejectsClientSuppliedAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(app).TargetCommissionerPreview(string(body))
 	if err != nil || len(preview.Blockers) != 1 || preview.Blockers[0] != "Preview starting assets through the held-data request" {
 		t.Fatalf("client starting assets accepted: %+v %v", preview, err)
 	}
@@ -336,8 +337,8 @@ func TestStartingAssetsPreviewRejectsClientSuppliedAssets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err = app.TargetCommissionerPreview(string(body))
-	_, executeErr := app.TargetNativeSeed(input)
+	preview, err = newCommissionerAPI(app).TargetCommissionerPreview(string(body))
+	_, executeErr := newCommissionerAPI(app).TargetNativeSeed(input)
 	if err != nil || executeErr == nil || len(preview.Blockers) != 1 ||
 		preview.Blockers[0] != previewExecuteReason(executeErr) {
 		t.Fatalf("seed validation differs: %+v %v %v", preview, err, executeErr)
@@ -361,4 +362,9 @@ func TestPreviewUsesTheCurrentFranchiseName(t *testing.T) {
 		t.Fatalf("old franchise name in effects: %+v", preview.Affects)
 	}
 	previewAndExecute(t, f.app, raw)
+}
+
+func mustPreview(t *testing.T, app *App, raw commissioner.RawCommand) commissioner.Preview {
+	t.Helper()
+	return commissionertest.Preview(t, newCommissionerAPI(app).TargetCommissionerPreview, raw)
 }

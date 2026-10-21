@@ -216,7 +216,7 @@ func TestNativeBidOverrideRefusals(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = f.app.TargetCommissionerExecute(body)
+		_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(body)
 		return err
 	}
 	if err := try(one, "franchise.01"); err == nil || !strings.Contains(err.Error(), "newest decision") {
@@ -273,7 +273,7 @@ func (f *bidFixture) tryRevert(t *testing.T, principal string, receipt commissio
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.app.TargetCommissionerExecute(body)
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(body)
 	return err
 }
 

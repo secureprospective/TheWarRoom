@@ -44,7 +44,7 @@ func TestRestoreFlagRestoresASetWithTheAppClosed(t *testing.T) {
 	if code := runFlag([]string{"-restore", filepath.Base(set)}, &out, &errOut); code != 0 || !strings.Contains(out.String(), "pre-restore") {
 		t.Fatalf("-restore = %d, %q %q", code, out.String(), errOut.String())
 	}
-	leagues, err := restoreDrillApp(t, dir).TargetCommissionerLeagues()
+	leagues, err := newCommissionerAPI(restoreDrillApp(t, dir)).TargetCommissionerLeagues()
 	if err != nil || len(leagues) != 1 || leagues[0].ID != "native.kept" {
 		t.Fatalf("after restore leagues = %+v %v; want only the league held when the set was captured", leagues, err)
 	}

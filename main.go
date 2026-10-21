@@ -102,6 +102,7 @@ func bindings(app *App) []interface{} {
 	return []interface{}{
 		app,
 		archiveapp.New(app.core),
+		newCommissionerAPI(app),
 		comms.New(app.core),
 		controlapp.New(controlHost{State: app.core, app: app}, app.controlHeld),
 		contractsapp.New(contractsHost{State: app.core, app: app}),

@@ -49,43 +49,43 @@ func TestCommissionerWireMatchesGolden(t *testing.T) {
 		}
 		readings[name] = v
 	}
-	ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 	add("ledger", ledger, err)
-	filtered, err := f.app.TargetCommissionerLedgerFiltered(legalityLeague, `{"kind":"rules"}`)
+	filtered, err := newCommissionerAPI(f.app).TargetCommissionerLedgerFiltered(legalityLeague, `{"kind":"rules"}`)
 	add("ledger-filtered", filtered, err)
-	people, err := f.app.TargetCommissionerPeople(legalityLeague)
+	people, err := newCommissionerAPI(f.app).TargetCommissionerPeople(legalityLeague)
 	add("people", people, err)
-	leagues, err := f.app.TargetCommissionerLeagues()
+	leagues, err := newCommissionerAPI(f.app).TargetCommissionerLeagues()
 	add("leagues", leagues, err)
-	ruleBook, err := f.app.TargetCommissionerRules(legalityLeague)
+	ruleBook, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	add("rules", ruleBook, err)
-	jobs, err := f.app.TargetCommissionerJobs(legalityLeague)
+	jobs, err := newCommissionerAPI(f.app).TargetCommissionerJobs(legalityLeague)
 	add("jobs", jobs, err)
-	readings["controls"] = f.app.TargetCommissionerControls()
-	notices, err := f.app.TargetCommissionerNotices(legalityLeague)
+	readings["controls"] = newCommissionerAPI(f.app).TargetCommissionerControls()
+	notices, err := newCommissionerAPI(f.app).TargetCommissionerNotices(legalityLeague)
 	add("notices", notices, err)
-	digests, err := f.app.TargetCommissionerDigests(legalityLeague)
+	digests, err := newCommissionerAPI(f.app).TargetCommissionerDigests(legalityLeague)
 	add("digests", digests, err)
-	corrections, err := f.app.TargetCorrections(legalityLeague)
+	corrections, err := newCommissionerAPI(f.app).TargetCorrections(legalityLeague)
 	add("corrections", corrections, err)
-	market, err := f.app.TargetCommissionerMarket(legalityLeague, commissioner.WaiverProcess)
+	market, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, commissioner.WaiverProcess)
 	add("market", market, err)
-	actor, err := f.app.TargetCommissionerActor()
+	actor, err := newCommissionerAPI(f.app).TargetCommissionerActor()
 	add("actor", actor, err)
-	managed, err := f.app.TargetCommissionerSchedule(legalityLeague)
+	managed, err := newCommissionerAPI(f.app).TargetCommissionerSchedule(legalityLeague)
 	add("managed-schedule", managed, err)
-	preview, err := f.app.TargetCommissionerPreview(encodedCommand(t, f.raw(t, commissioner.RulesSet,
+	preview, err := newCommissionerAPI(f.app).TargetCommissionerPreview(encodedCommand(t, f.raw(t, commissioner.RulesSet,
 		commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":0,"max":80}`)}, "league")))
 	add("preview", preview, err)
-	calendar, err := f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
+	calendar, err := newCommissionerAPI(f.app).TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
 		LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "waiver_claim"})
 	add("calendar", calendar, err)
-	schedule, err := f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
+	schedule, err := newCommissionerAPI(f.app).TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
 	add("schedule", schedule, err)
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	ownerLedger, err := f.app.TargetCommissionerLedger(legalityLeague)
+	ownerLedger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 	add("ledger-owner", ownerLedger, err)
-	ownerPeople, err := f.app.TargetCommissionerPeople(legalityLeague)
+	ownerPeople, err := newCommissionerAPI(f.app).TargetCommissionerPeople(legalityLeague)
 	add("people-owner", ownerPeople, err)
 	for name, v := range readings {
 		checkGolden(t, "commissioner", name, v)
@@ -111,43 +111,43 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 	for _, who := range []string{"stranger", "owner.one", "cc"} {
 		f.app.core.CommissionerSession = testCommissionerSession{who}
 		if who != "cc" {
-			_, err := f.app.TargetCommissionerExecute(encodedCommand(t, rulesSet))
+			_, err := newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, rulesSet))
 			denials[who+"/execute-rules"] = errorWords(err)
-			_, err = f.app.TargetCommissionerExecute(encodedCommand(t, seat))
+			_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, seat))
 			denials[who+"/execute-seat"] = errorWords(err)
 		}
-		_, err := f.app.TargetCommissionerExecute(encodedCommand(t, grant))
+		_, err := newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, grant))
 		denials[who+"/execute-grant"] = errorWords(err)
 		for _, command := range []string{commissioner.WaiverProcess, commissioner.BidsOverride, commissioner.TradeOverride} {
-			_, err = f.app.TargetCommissionerMarket(legalityLeague, command)
+			_, err = newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, command)
 			denials[who+"/market-"+command] = errorWords(err)
 		}
-		_, err = f.app.TargetCommissionerSchedule(legalityLeague)
+		_, err = newCommissionerAPI(f.app).TargetCommissionerSchedule(legalityLeague)
 		denials[who+"/managed-schedule"] = errorWords(err)
-		_, err = f.app.TargetCommissionerDigests(legalityLeague)
+		_, err = newCommissionerAPI(f.app).TargetCommissionerDigests(legalityLeague)
 		denials[who+"/digests"] = errorWords(err)
-		preview, err := f.app.TargetCommissionerPreview(encodedCommand(t, rulesSet))
+		preview, err := newCommissionerAPI(f.app).TargetCommissionerPreview(encodedCommand(t, rulesSet))
 		denials[who+"/preview-rules"] = errorWords(err) + " " + jsonWords(t, preview.Blockers)
-		preview, err = f.app.TargetCommissionerPreview(encodedCommand(t, grant))
+		preview, err = newCommissionerAPI(f.app).TargetCommissionerPreview(encodedCommand(t, grant))
 		denials[who+"/preview-grant"] = errorWords(err) + " " + jsonWords(t, preview.Blockers)
-		ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+		ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 		denials[who+"/ledger-entries"] = errorWords(err) + " " + jsonWords(t, len(ledger.Entries))
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	exception := f.raw(t, commissioner.CalendarException, commissioner.RawArgs{Exception: &commissioner.RawWindowException{
 		Franchise: "franchise.99", Action: "waiver_claim", Until: f.now.AddDate(0, 0, 1)}}, "league")
 	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-	_, err := f.app.TargetCommissionerExecute(encodedCommand(t, exception))
+	_, err := newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, exception))
 	denials["creator/exception-wrong-franchise"] = errorWords(err)
 	exception.Args.Exception.Franchise, exception.Args.Exception.Until = "franchise.01", f.now.AddDate(0, 0, -1)
-	_, err = f.app.TargetCommissionerExecute(encodedCommand(t, exception))
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, exception))
 	denials["creator/exception-expired"] = errorWords(err)
 	stale := rulesSet
 	stale.Expected, stale.Request = stale.Expected-1, "denied.stale"
-	_, err = f.app.TargetCommissionerExecute(encodedCommand(t, stale))
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, stale))
 	denials["creator/execute-stale"] = errorWords(err)
 	for _, routed := range routedCommands(t, f) {
-		_, err = f.app.TargetCommissionerExecute(encodedCommand(t, routed))
+		_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, routed))
 		denials["creator/execute-routed-"+routed.Command] = errorWords(err)
 	}
 	for _, scope := range []RawLeagueCalendarScope{
@@ -155,38 +155,38 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 		{League: legalityLeague, Season: 2026, LocalZone: "Local", Franchise: "franchise.01", Action: "waiver_claim"},
 		{League: "native.", Season: 2026, LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "waiver_claim"},
 	} {
-		_, err = f.app.TargetLeagueCalendar(scope)
+		_, err = newCommissionerAPI(f.app).TargetLeagueCalendar(scope)
 		denials["calendar/"+scope.League+"/"+scope.Franchise+"/"+scope.LocalZone] = errorWords(err)
 	}
-	closed, err := f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
+	closed, err := newCommissionerAPI(f.app).TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
 		LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "ufa_bid"})
 	denials["calendar/closed-window"] = errorWords(err) + " " + jsonWords(t, closed.Decision)
 	for _, league := range []string{"legacy", "native.", " native.seed", "native.seed ", "native.missing"} {
-		_, err = f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: league})
+		_, err = newCommissionerAPI(f.app).TargetLeagueSchedule(RawLeagueScheduleScope{League: league})
 		denials["schedule/"+league] = errorWords(err)
-		_, err = f.app.TargetCommissionerLedger(league)
+		_, err = newCommissionerAPI(f.app).TargetCommissionerLedger(league)
 		denials["ledger/"+league] = errorWords(err)
-		_, err = f.app.TargetCommissionerPeople(league)
+		_, err = newCommissionerAPI(f.app).TargetCommissionerPeople(league)
 		denials["people/"+league] = errorWords(err)
 		for name, read := range map[string]func(string) error{
-			"rules":   func(l string) error { _, err := f.app.TargetCommissionerRules(l); return err },
-			"jobs":    func(l string) error { _, err := f.app.TargetCommissionerJobs(l); return err },
-			"notices": func(l string) error { _, err := f.app.TargetCommissionerNotices(l); return err },
-			"digests": func(l string) error { _, err := f.app.TargetCommissionerDigests(l); return err },
+			"rules":   func(l string) error { _, err := newCommissionerAPI(f.app).TargetCommissionerRules(l); return err },
+			"jobs":    func(l string) error { _, err := newCommissionerAPI(f.app).TargetCommissionerJobs(l); return err },
+			"notices": func(l string) error { _, err := newCommissionerAPI(f.app).TargetCommissionerNotices(l); return err },
+			"digests": func(l string) error { _, err := newCommissionerAPI(f.app).TargetCommissionerDigests(l); return err },
 		} {
 			denials[name+"/"+league] = errorWords(read(league))
 		}
 	}
-	_, err = f.app.TargetCommissionerMarket(legalityLeague, commissioner.RulesSet)
+	_, err = newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, commissioner.RulesSet)
 	denials["creator/market-not-a-market-act"] = errorWords(err)
 	f.app.core.CommissionerSession = failingCommissionerSession{}
-	_, err = f.app.TargetCommissionerExecute(encodedCommand(t, rulesSet))
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, rulesSet))
 	denials["no-session/execute"] = errorWords(err)
-	_, err = f.app.TargetCommissionerActor()
+	_, err = newCommissionerAPI(f.app).TargetCommissionerActor()
 	denials["no-session/actor"] = errorWords(err)
-	_, err = f.app.TargetCommissionerMarket(legalityLeague, commissioner.WaiverProcess)
+	_, err = newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, commissioner.WaiverProcess)
 	denials["no-session/market"] = errorWords(err)
-	_, err = f.app.TargetCommissionerPreview(encodedCommand(t, rulesSet))
+	_, err = newCommissionerAPI(f.app).TargetCommissionerPreview(encodedCommand(t, rulesSet))
 	denials["no-session/preview"] = errorWords(err)
 	checkGolden(t, "commissioner", "denials", denials)
 }
@@ -250,14 +250,14 @@ func TestCommissionerSimultaneousChangesLandOnce(t *testing.T) {
 	var wg sync.WaitGroup
 	errs := make([]error, 2)
 	for i, raw := range []commissioner.RawCommand{first, second} {
-		wg.Go(func() { _, errs[i] = f.app.TargetCommissionerExecute(encodedCommand(t, raw)) })
+		wg.Go(func() { _, errs[i] = newCommissionerAPI(f.app).TargetCommissionerExecute(encodedCommand(t, raw)) })
 	}
 	for range 4 {
 		wg.Go(func() {
-			_, _ = f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
-			_, _ = f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
+			_, _ = newCommissionerAPI(f.app).TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
+			_, _ = newCommissionerAPI(f.app).TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: 2026,
 				LocalZone: "UTC", Franchise: "franchise.01", Action: "cut"})
-			_, _ = f.app.TargetCommissionerLedger(legalityLeague)
+			_, _ = newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 		})
 	}
 	wg.Wait()

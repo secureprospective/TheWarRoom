@@ -1,14 +1,11 @@
-import type { commissioner } from '../../../wailsjs/go/models';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+export { nativeBindings } from './api';
+import { nativeBindings } from './api';
+import type { commissioner } from './api';
 import type { FieldKind } from './actTable';
 import { readCompetitionOptions } from './competitionReadings';
 import { leagueState } from './proxy';
 
-export const nativeBindings = () => {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('League changes require the desktop app.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-};
+
 export type Option = { value: string; label: string };
 export type ActReadings = {
   league: string; revision: number; season: number; options: Partial<Record<FieldKind, Option[]>>;

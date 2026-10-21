@@ -1,9 +1,10 @@
+import { draftBindings as bindings } from '../commissioner/api';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { newKey } from '../commissioner/forms';
 import { parseReceipt, refusalText, staleWords } from '../commissioner/proxy';
 import { parseDraft, type Draft } from './draft';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import type * as Bindings from '../commissioner/api';
 
 // Season 0 asks Go for the draft that is next; a time of zero asks it to read at its own now.
 type Scope = { league: string; season: number; franchise: string; at: string };
@@ -11,11 +12,7 @@ type Choice = { league: string; season: number; franchise: string; player: strin
   expected: number };
 type Port = { read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown> };
 
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('The draft room requires the desktop app.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
+
 // The generated classes only add a converter to plain data; Wails sends the data as JSON.
 type Arg<F> = F extends (arg: infer A) => unknown ? A : never;
 const asArg = <F>(value: object) => value as unknown as Arg<F>;

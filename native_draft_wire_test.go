@@ -26,7 +26,7 @@ func (f *draftFixture) previewOf(t *testing.T, command string, act commissioner.
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := f.app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(f.app).TargetCommissionerPreview(string(body))
 	if err != nil {
 		t.Fatalf("preview %s: %v", command, err)
 	}
@@ -108,7 +108,7 @@ func TestTheDraftRoomWireIsWhatGoSends(t *testing.T) {
 // seasonOfRoom is the season the Draft room opens on when it is not told one.
 func (f *draftFixture) seasonOfRoom(t *testing.T) int {
 	t.Helper()
-	reading, err := f.app.TargetNativeDraft(commissioner.RawNativeDraftScope{League: draftLeague,
+	reading, err := newCommissionerAPI(f.app).TargetNativeDraft(commissioner.RawNativeDraftScope{League: draftLeague,
 		Franchise: "franchise.01", At: f.now})
 	if err != nil {
 		t.Fatal(err)

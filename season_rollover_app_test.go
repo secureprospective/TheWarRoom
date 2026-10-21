@@ -48,15 +48,15 @@ func rolloverAppFixture(t *testing.T) *legalityFixture {
 
 func (f *legalityFixture) rolloverView(t *testing.T) rolloverView {
 	t.Helper()
-	check, err := f.app.TargetNativeRosterCheck(legalityLeague)
+	check, err := newCommissionerAPI(f.app).TargetNativeRosterCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	rules, err := f.app.TargetCommissionerRules(legalityLeague)
+	rules, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	directory, err := f.app.TargetNativeDirectory(legalityLeague)
+	directory, err := newCommissionerAPI(f.app).TargetNativeDirectory(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func (f *legalityFixture) rolloverView(t *testing.T) rolloverView {
 		}
 	}
 	view.Season[4] = view.Season[3]
-	calendar, err := f.app.TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: view.Season[3],
+	calendar, err := newCommissionerAPI(f.app).TargetLeagueCalendar(RawLeagueCalendarScope{League: legalityLeague, Season: view.Season[3],
 		LocalZone: "America/Chicago", Franchise: "franchise.02", Action: "trade"})
 	if err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func (f *legalityFixture) rolloverView(t *testing.T) rolloverView {
 
 func (f *legalityFixture) rolloverCommand(t *testing.T, to int, dry bool) commissioner.RawCommand {
 	t.Helper()
-	houses, err := f.app.TargetNativeHouseRules(legalityLeague)
+	houses, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func TestSeasonRolloverRefusalsThroughTheApp(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil ||
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil ||
 			!strings.Contains(err.Error(), "Move only from season 2026 to season 2027") {
 			t.Fatalf("to %d: %v", to, err)
 		}
@@ -201,7 +201,7 @@ func TestSeasonRolloverRefusalsThroughTheApp(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("an owner rolled the league over")
 	}
 	if got := f.rolloverView(t).Season; got != [5]int{2026, 2026, 2026, 2026, 2026} {

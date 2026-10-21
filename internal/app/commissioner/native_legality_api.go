@@ -1,69 +1,51 @@
-package main
+package commissioner
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
-	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// nativeFacts reads the football facts the app already holds, with no network: positions and draft years
-// from the held players directory under its lock, NFL listings from the held injuries feed.
-func (a *App) nativeFacts() nativecheck.Facts {
-	facts := nativecheck.Facts{}
-	a.core.LookupMu.Lock()
-	if a.core.HasLookup {
-		facts = nativeapp.PlayerFacts(a.core.Lookup)
-	}
-	a.core.LookupMu.Unlock()
-	if !a.injuriesHeld() {
-		return facts
-	}
-	nativeapp.Designate(facts, a.heldInjuries().Status)
-	return facts
-}
-
-func (a *App) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
+func (a *API) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
 	scope := commissioner.RawNativeCapScope{League: leagueID, ViewerZone: viewerZone}
 	if err := scope.Validate(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap input: %w", err)
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeCapCheck(ctx, scope)
+	reading, err := a.host.NativeCapCheck(ctx, scope)
 	if err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check: %w", err)
 	}
 	return reading, nil
 }
 
-func (a *App) TargetNativeRosterCheck(leagueID string) (commissioner.NativeRosterCheck, error) {
-	if err := a.ready(); err != nil {
+func (a *API) TargetNativeRosterCheck(leagueID string) (commissioner.NativeRosterCheck, error) {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeRosterCheck{}, fmt.Errorf("native roster check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeRosterCheck(ctx, leagueID, a.nativeFacts())
+	reading, err := a.host.NativeRosterCheck(ctx, leagueID, a.host.NativeFacts())
 	if err != nil {
 		return commissioner.NativeRosterCheck{}, fmt.Errorf("native roster check: %w", err)
 	}
 	return reading, nil
 }
 
-func (a *App) TargetNativeReserveCheck(leagueID string) (commissioner.NativeReserveCheck, error) {
-	if err := a.ready(); err != nil {
+func (a *API) TargetNativeReserveCheck(leagueID string) (commissioner.NativeReserveCheck, error) {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeReserveCheck{}, fmt.Errorf("native reserve check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeReserveCheck(ctx, leagueID, a.nativeFacts())
+	reading, err := a.host.NativeReserveCheck(ctx, leagueID, a.host.NativeFacts())
 	if err != nil {
 		return commissioner.NativeReserveCheck{}, fmt.Errorf("native reserve check: %w", err)
 	}
@@ -71,29 +53,31 @@ func (a *App) TargetNativeReserveCheck(leagueID string) (commissioner.NativeRese
 }
 
 // TargetNativeLineupCheck judges a lineup of one native franchise's active players; it records nothing.
-func (a *App) TargetNativeLineupCheck(input commissioner.RawNativeLineup) (commissioner.NativeLineupCheck, error) {
+func (a *API) TargetNativeLineupCheck(
+	input commissioner.RawNativeLineup,
+) (commissioner.NativeLineupCheck, error) {
 	if err := input.Validate(); err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("native lineup input: %w", err)
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("native lineup check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeLineupCheck(ctx, input, a.nativeFacts())
+	reading, err := a.host.NativeLineupCheck(ctx, input, a.host.NativeFacts())
 	if err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("native lineup check: %w", err)
 	}
 	return reading, nil
 }
 
-func (a *App) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseRules, error) {
-	if err := a.ready(); err != nil {
+func (a *API) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseRules, error) {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeHouseRules(ctx, leagueID)
+	reading, err := a.host.NativeHouseRules(ctx, leagueID)
 	if err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules: %w", err)
 	}
@@ -101,17 +85,18 @@ func (a *App) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseR
 }
 
 // TargetNativePlayerScore reads only held NFL evidence and the app league's recorded decisions.
-func (a *App) TargetNativePlayerScore(league, player string, season, week int) (commissioner.NativePlayerScore, error) {
+func (a *API) TargetNativePlayerScore(league, player string, season,
+	week int) (commissioner.NativePlayerScore, error) {
 	scope := source.RawNativeScope{Player: player, Season: season, Week: week}
 	if err := scope.Validate(); err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("player score input: %w", err)
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("player score startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativePlayerScore(ctx, league, scope)
+	reading, err := a.host.NativePlayerScore(ctx, league, scope)
 	if err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("player score: %w", err)
 	}
@@ -122,22 +107,24 @@ func (a *App) TargetNativePlayerScore(league, player string, season, week int) (
 // refused with the plain reason, the new salary and years, the dead money by season and the cap effect.
 // It reads the app league's ledger only and records nothing; the owner action that follows runs the same
 // check.
-func (a *App) TargetNativeContractQuote(raw commissioner.RawContractQuote) (commissioner.ContractQuote, error) {
+func (a *API) TargetNativeContractQuote(raw commissioner.RawContractQuote) (commissioner.ContractQuote,
+	error) {
 	if err := raw.Validate(); err != nil {
 		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote input: %w", err)
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote startup: %w", err)
 	}
 	zone, err := time.LoadLocation(raw.ViewerZone)
 	if err != nil {
 		return commissioner.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
 	}
-	records, err := a.leagueRecords(a.core.Ctx, raw.League)
+	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), raw.League)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.ContractQuote{}, err
 	}
-	quote, err := commissioner.QuoteContract(raw, records, a.timeNow(), zone, a.nativeFacts())
+	quote, err := commissioner.QuoteContract(raw, records, a.host.CommissionerNow(), zone, a.host.NativeFacts())
 	if err != nil {
 		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
 	}
@@ -162,16 +149,16 @@ func (r RawNativeResultsScope) Validate() error {
 
 // TargetNativeResults scores one week of the app league's published schedule from its lineups and held
 // NFL evidence. A game missing a score has no result yet.
-func (a *App) TargetNativeResults(league string, season, week int) (commissioner.NativeResults, error) {
+func (a *API) TargetNativeResults(league string, season, week int) (commissioner.NativeResults, error) {
 	if err := (RawNativeResultsScope{League: league, Season: season, Week: week}).Validate(); err != nil {
 		return commissioner.NativeResults{}, err
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("native results startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeResults(ctx, league, season, week)
+	reading, err := a.host.NativeResults(ctx, league, season, week)
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("native results: %w", err)
 	}
@@ -180,16 +167,16 @@ func (a *App) TargetNativeResults(league string, season, week int) (commissioner
 
 // TargetNativeStandings ranks a season's regular-season results under the league's tie-breakers, with any
 // commissioner override beside the computed standings.
-func (a *App) TargetNativeStandings(league string, season int) (commissioner.NativeStandings, error) {
+func (a *API) TargetNativeStandings(league string, season int) (commissioner.NativeStandings, error) {
 	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
 		return commissioner.NativeStandings{}, err
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("native standings startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeStandings(ctx, league, season)
+	reading, err := a.host.NativeStandings(ctx, league, season)
 	if err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("native standings: %w", err)
 	}
@@ -198,17 +185,17 @@ func (a *App) TargetNativeStandings(league string, season int) (commissioner.Nat
 
 // TargetNativeScorePreview reads a score adjustment, in the form it would be sent, and warns when it
 // would turn over a game's result. It records nothing.
-func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, error) {
+func (a *API) TargetNativeScorePreview(body string) (commissioner.ScorePreview, error) {
 	raw, err := commissioner.Decode(body)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("score preview input: %w", err)
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("score preview startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	preview, err := a.core.History.NativeScorePreview(ctx, raw)
+	preview, err := a.host.NativeScorePreview(ctx, raw)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("score preview: %w", err)
 	}
@@ -217,16 +204,16 @@ func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, 
 
 // TargetNativeBracket reads a season's playoffs: the seeds, each round's games, anything the commissioner set
 // by hand, and the champion with the season's title once the final is decided.
-func (a *App) TargetNativeBracket(league string, season int) (commissioner.NativeBracket, error) {
+func (a *API) TargetNativeBracket(league string, season int) (commissioner.NativeBracket, error) {
 	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
 		return commissioner.NativeBracket{}, err
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("native bracket startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.NativeBracket(ctx, league, season)
+	reading, err := a.host.NativeBracket(ctx, league, season)
 	if err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("native bracket: %w", err)
 	}
@@ -235,16 +222,16 @@ func (a *App) TargetNativeBracket(league string, season int) (commissioner.Nativ
 
 // TargetStatQueue lists the statistics the NFL changed after the league counted them, newest first, with the
 // decisions already made. Nothing in the queue moves a score until it is approved.
-func (a *App) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
+func (a *API) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
 	if err := (RawNativeResultsScope{League: league, Season: season, Week: 1}).Validate(); err != nil {
 		return commissioner.StatQueue{}, err
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("statistics queue startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.core.History.StatQueue(ctx, league, season)
+	reading, err := a.host.StatQueue(ctx, league, season)
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("statistics queue: %w", err)
 	}

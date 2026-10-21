@@ -19,11 +19,11 @@ import (
 
 func readDirectoryTest(t *testing.T, a *App) commissioner.NativeDirectory {
 	t.Helper()
-	directory, err := a.TargetNativeDirectory("native.seed")
+	directory, err := newCommissionerAPI(a).TargetNativeDirectory("native.seed")
 	if err != nil {
 		t.Fatal(err)
 	}
-	people, err := a.TargetCommissionerPeople("native.seed")
+	people, err := newCommissionerAPI(a).TargetCommissionerPeople("native.seed")
 	if err != nil {
 		t.Fatal(err)
 	}

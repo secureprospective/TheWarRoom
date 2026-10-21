@@ -65,7 +65,7 @@ func quoteApp(t *testing.T) *legalityFixture {
 // openWindow gives the league a window that is open at quoteClock for the actions named.
 func (f *legalityFixture) openWindow(t *testing.T, id string, opens []leaguerules.Action) {
 	t.Helper()
-	houses, err := f.app.TargetNativeHouseRules(legalityLeague)
+	houses, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func (f *legalityFixture) quote(t *testing.T, player, action string, ask func(*c
 	if ask != nil {
 		ask(&raw)
 	}
-	q, err := f.app.TargetNativeContractQuote(raw)
+	q, err := newCommissionerAPI(f.app).TargetNativeContractQuote(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -312,7 +312,7 @@ func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
 		t.Fatalf("buyout inside its window: %+v", open)
 	}
 	f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
-	shut, err := f.app.TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
+	shut, err := newCommissionerAPI(f.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
 		Player: "0099", Action: "buyout", ViewerZone: "UTC"})
 	if err != nil {
 		t.Fatal(err)
@@ -379,7 +379,7 @@ func TestNativeQuoteRefusesWhatItCannotPrice(t *testing.T) {
 		{League: legalityLeague, Player: "0001", Action: "buyout", ViewerZone: "UTC"},
 		{League: "native.unmade", Player: "0099", Action: "buyout", ViewerZone: "UTC"},
 	} {
-		if _, err := f.app.TargetNativeContractQuote(bad); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetNativeContractQuote(bad); err == nil {
 			t.Fatalf("quoted %+v", bad)
 		}
 	}
@@ -419,7 +419,7 @@ func TestNativeContractQuoteWire(t *testing.T) {
 		"extensionOff": f.quote(t, "0099", "extension", nil),
 		"cutAtGate": func() commissioner.ContractQuote {
 			f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
-			q, err := f.app.TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
+			q, err := newCommissionerAPI(f.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
 				Player: "0099", Action: "cut", ViewerZone: "America/Los_Angeles"})
 			if err != nil {
 				t.Fatal(err)

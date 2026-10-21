@@ -1,21 +1,18 @@
-package main
+package commissioner
 
 import (
 	"encoding/json"
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 func previewCommandBody(t *testing.T, raw commissioner.RawCommand) string {
 	t.Helper()
-	body, err := json.Marshal(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return string(body)
+	return commissionertest.Body(t, raw)
 }
 
 func roleCommand(command, person string, role governance.Role, reason string) commissioner.RawCommand {
@@ -31,17 +28,14 @@ func atVersion(raw commissioner.RawCommand, version int64) commissioner.RawComma
 
 func createCommand(reason string) commissioner.RawCommand {
 	return commissioner.RawCommand{League: "native.fresh", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Fresh league", Preset: commissioner.PresetLegacy, FranchiseCount: 12, Season: 2026},
+		Args: commissioner.RawArgs{Name: "Fresh league", Preset: commissioner.PresetLegacy,
+			FranchiseCount: 12, Season: 2026},
 		Reason: reason, Request: "create.request", Effective: "now", Visibility: "league"}
 }
 
-func mustPreview(t *testing.T, app *App, raw commissioner.RawCommand) commissioner.Preview {
+func mustPreview(t *testing.T, app *ledgerFixture, raw commissioner.RawCommand) commissioner.Preview {
 	t.Helper()
-	preview, err := app.TargetCommissionerPreview(previewCommandBody(t, raw))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return preview
+	return commissionertest.Preview(t, app.TargetCommissionerPreview, raw)
 }
 
 func TestCommissionerPreviewDescribesStartingALeague(t *testing.T) {
@@ -51,7 +45,8 @@ func TestCommissionerPreviewDescribesStartingALeague(t *testing.T) {
 	if len(preview.Blockers) != 0 || preview.Safeguard != "reason" || preview.Target.Version != 0 ||
 		preview.Target.Name != "Fresh league" || preview.Target.League != "native.fresh" ||
 		preview.Question == "" || len(preview.Fields) != 3 || preview.Fields[1].After != "12 franchises" ||
-		preview.Fields[2].After != "Legacy NFL rules" || preview.Affects.Count == nil || *preview.Affects.Count != 0 {
+		preview.Fields[2].After != "Legacy NFL rules" || preview.Affects.Count == nil ||
+		*preview.Affects.Count != 0 {
 		t.Fatalf("start a league: %+v", preview)
 	}
 	ledger, err := app.TargetCommissionerLeagues()
@@ -88,8 +83,10 @@ func TestCommissionerPreviewDescribesARoleChangeAndRefusesOneThatChangesNothing(
 		t.Fatalf("grant preview: %+v", preview)
 	}
 	for _, tc := range []struct{ name, command, person, want string }{
-		{"already holds", "commish.role.grant", "creator", "This person already holds that role. Nothing would change"},
-		{"does not hold", "commish.role.revoke", "owner-two", "This person does not hold that role. Nothing would change"},
+		{"already holds", "commish.role.grant", "creator",
+			"This person already holds that role. Nothing would change"},
+		{"does not hold", "commish.role.revoke", "owner-two",
+			"This person does not hold that role. Nothing would change"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			role := governance.CoCommissioner
@@ -134,7 +131,7 @@ func TestCommissionerPreviewDescribesUndoingAChange(t *testing.T) {
 }
 
 func previewNotice(command, text string, pin bool) commissioner.RawCommand {
-	raw := noticeCommand(command, 2, "notice.request", text, pin)
+	raw := commissionertest.NoticeCommand("native.ops", command, 2, "notice.request", text, pin)
 	raw.League = "native.preview"
 	return raw
 }

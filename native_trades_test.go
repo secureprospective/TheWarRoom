@@ -224,7 +224,7 @@ func TestCapCorrectionWaitsForAPendingTrade(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-		_, err = f.app.TargetCommissionerExecute(string(body))
+		_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 		return err
 	}
 	if err := correct(); err == nil || !strings.Contains(err.Error(), "settle the trade first") {

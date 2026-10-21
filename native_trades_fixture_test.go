@@ -39,13 +39,13 @@ func (f *tradeFixture) action(t *testing.T, who, command string, args commission
 	f.app.core.CommissionerSession = testCommissionerSession{who}
 	raw := f.raw(t, command, commissioner.RawArgs{Trade: &args}, "league")
 	if commissioner.OwnerTradeAction(command) != "" {
-		return f.app.TargetNativeTradeAction(raw)
+		return newCommissionerAPI(f.app).TargetNativeTradeAction(raw)
 	}
 	body, err := json.Marshal(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return f.app.TargetCommissionerExecute(string(body))
+	return newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 }
 
 func (f *tradeFixture) mustAction(t *testing.T, who, command string, args commissioner.RawTradeArgs) commissioner.Receipt {
@@ -82,7 +82,7 @@ func (f *tradeFixture) veto(t *testing.T, offer commissioner.Receipt) {
 func (f *tradeFixture) trades(t *testing.T, who, team string) commissioner.NativeTrades {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{who}
-	reading, err := f.app.TargetNativeTrades(legalityLeague, team)
+	reading, err := newCommissionerAPI(f.app).TargetNativeTrades(legalityLeague, team)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func (f *tradeFixture) only(t *testing.T) commissioner.NativeTradeOffer {
 
 func (f *tradeFixture) ownerOf(t *testing.T, player string) string {
 	t.Helper()
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

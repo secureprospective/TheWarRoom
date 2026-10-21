@@ -1,3 +1,4 @@
+import { ledgerBindings as bindings } from './api';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
@@ -7,7 +8,6 @@ import { parseDigests, parseNotes, type Digests, type LeagueNotes } from './note
 import { parsePeople, type People } from './people';
 import { parseRules, type Rules } from './rules';
 import { parsePreview } from './preview';
-import type * as Bindings from '../../../wailsjs/go/main/App';
 
 type Receipt = {
   entry: string; league: string; revision: number; recordedAt: string; message: string;
@@ -32,11 +32,7 @@ export type Port = {
   digests(league: string): Promise<unknown>;
 };
 
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('The league ledger requires the desktop app.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
+
 const live: Port = {
   execute: body => bindings().TargetCommissionerExecute(body),
   preview: body => bindings().TargetCommissionerPreview(body),

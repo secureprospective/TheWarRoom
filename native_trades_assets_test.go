@@ -19,7 +19,7 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 	f.set(t, "trades.review", `"none"`, "now")
 	read := func() string {
 		t.Helper()
-		d, err := f.app.TargetNativeDraft(commissioner.RawNativeDraftScope{League: legalityLeague, Season: 2027, Franchise: "franchise.01", At: f.now})
+		d, err := newCommissionerAPI(f.app).TargetNativeDraft(commissioner.RawNativeDraftScope{League: legalityLeague, Season: 2027, Franchise: "franchise.01", At: f.now})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,11 +52,11 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.app.TargetNativeDraftPick(commissioner.DraftPickInput{League: legalityLeague, Season: 2027, Franchise: "franchise.01", Player: "5001", Request: "traded-pick", Expected: int64(len(records))})
+	_, err = newCommissionerAPI(f.app).TargetNativeDraftPick(commissioner.DraftPickInput{League: legalityLeague, Season: 2027, Franchise: "franchise.01", Player: "5001", Request: "traded-pick", Expected: int64(len(records))})
 	if err != nil {
 		t.Fatal(err)
 	}
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("compensation stranded a made draft pick")
 	}
 	f.restart(t)
@@ -103,29 +103,29 @@ func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
 	offer := f.offer(t)
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	raw := f.raw(t, commissioner.TradeAccept, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.01"}}, "league")
-	first, err := f.app.TargetNativeTradeAction(raw)
+	first, err := newCommissionerAPI(f.app).TargetNativeTradeAction(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.now = f.now.Add(8 * 24 * time.Hour)
-	retry, err := f.app.TargetNativeTradeAction(raw)
+	retry, err := newCommissionerAPI(f.app).TargetNativeTradeAction(raw)
 	if err != nil || retry != first {
 		t.Fatalf("retry changed: %+v %v", retry, err)
 	}
 	raw.Request = "stale.version"
-	if _, err := f.app.TargetNativeTradeAction(raw); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeTradeAction(raw); err == nil {
 		t.Fatal("stale version accepted")
 	}
 	raw = f.raw(t, commissioner.TradeWithdraw, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.02"}}, "league")
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
-	if _, err := f.app.TargetNativeTradeAction(raw); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeTradeAction(raw); err == nil {
 		t.Fatal("accepted trade was withdrawn")
 	}
 	body, err := json.Marshal(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "native trade") {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "native trade") {
 		t.Fatalf("commissioner door allowed owner action: %v", err)
 	}
 	// Separate offers retain distinct decline and withdrawal outcomes.
@@ -173,7 +173,7 @@ func TestTradeMovesContractSalaryIntoNativeCap(t *testing.T) {
 	f.set(t, "trades.review", `"none"`, "now")
 	committed := func(team string) int64 {
 		t.Helper()
-		r, err := f.app.TargetNativeCapCheck(legalityLeague, "America/Los_Angeles")
+		r, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, "America/Los_Angeles")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -186,7 +186,7 @@ func TestTradeMovesContractSalaryIntoNativeCap(t *testing.T) {
 		return 0
 	}
 	before := committed("franchise.01")
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,7 +289,7 @@ func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
 			} else {
 				copyRaw.Request = "concurrent.accept.b"
 			}
-			_, err := f.app.TargetNativeTradeAction(copyRaw)
+			_, err := newCommissionerAPI(f.app).TargetNativeTradeAction(copyRaw)
 			outcomes <- err
 		})
 	}
@@ -305,7 +305,7 @@ func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
 		t.Fatalf("concurrent acceptance wins: %d", wins)
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.three"}
-	if _, err := f.app.TargetNativeTrades(legalityLeague, "franchise.01"); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeTrades(legalityLeague, "franchise.01"); err == nil {
 		t.Fatal("viewer impersonated another seated owner")
 	}
 }
@@ -324,7 +324,7 @@ func TestTradeCompensationCannotEraseEarlierVoteOrOffer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("compensation erased a trade action on which a later action depends")
 		}
 	}

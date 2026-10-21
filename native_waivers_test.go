@@ -85,7 +85,7 @@ func (f *waiverFixture) owner(t *testing.T, principal, command string, args comm
 		visibility = "private"
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
-	return f.app.TargetNativeWaiverAction(f.raw(t, command, commissioner.RawArgs{Waiver: &args}, visibility))
+	return newCommissionerAPI(f.app).TargetNativeWaiverAction(f.raw(t, command, commissioner.RawArgs{Waiver: &args}, visibility))
 }
 
 func (f *waiverFixture) cut(t *testing.T, player string) commissioner.Receipt {
@@ -111,7 +111,7 @@ func (f *waiverFixture) claim(t *testing.T, window, principal, franchise string)
 func (f *waiverFixture) reading(t *testing.T, principal, franchise string) commissioner.NativeWaivers {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
-	reading, err := f.app.TargetNativeWaivers(legalityLeague, franchise, f.now)
+	reading, err := newCommissionerAPI(f.app).TargetNativeWaivers(legalityLeague, franchise, f.now)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,7 +134,7 @@ func TestNativeCutOpensWaiversAndCountsDeadMoney(t *testing.T) {
 			reading.Players[0].Closes != "Oct 14, 2026 at 5:00 AM PDT" {
 			t.Fatalf("waiver close: %+v", reading)
 		}
-		assets, err := f.app.TargetNativeAssets(legalityLeague)
+		assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +201,7 @@ func TestNativeClaimsArePrivateAcrossReadingsAndLedger(t *testing.T) {
 		}
 		for _, principal := range []string{"creator", "owner.two", "owner.three"} {
 			f.app.core.CommissionerSession = testCommissionerSession{principal}
-			ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+			ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -239,7 +239,7 @@ func TestNativeWaiverPriorityAndRollingThroughProcessing(t *testing.T) {
 				if !slices.Equal(reading.Order, expected) {
 					t.Fatalf("waiver order did not update correctly: %v", reading.Order)
 				}
-				assets, err := f.app.TargetNativeAssets(legalityLeague)
+				assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -286,7 +286,7 @@ func TestNativeOwnerActionsCannotSkipGateOrIdentity(t *testing.T) {
 		}
 		f.app.core.CommissionerSession = testCommissionerSession{action.principal}
 		raw := f.raw(t, action.command, commissioner.RawArgs{Waiver: &action.args}, visibility)
-		if _, err := f.app.TargetNativeWaiverAction(raw); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetNativeWaiverAction(raw); err == nil {
 			t.Fatalf("%s skipped native gate", action.command)
 		}
 		if _, err := f.app.core.History.ExecuteCommissionerWithFacts(t.Context(), raw, action.principal, nil,
@@ -297,7 +297,7 @@ func TestNativeOwnerActionsCannotSkipGateOrIdentity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("owner action used commissioner door")
 		}
 	}
@@ -470,7 +470,7 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("owner processed waivers")
 	}
 	f.command(t, "commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{
@@ -482,11 +482,11 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.three"}
-	receipt, err := f.app.TargetCommissionerExecute(string(body))
+	receipt, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := f.app.TargetCommissionerExecute(string(body))
+	again, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 	if err != nil || !reflect.DeepEqual(receipt, again) {
 		t.Fatal("processing retry changed receipt", again, err)
 	}
@@ -495,7 +495,7 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("stale version accepted")
 	}
 }
@@ -539,7 +539,7 @@ func TestNativeWaiverStandingsSeamDoesNotInventPriority(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("automatic order invented standings")
 	}
 	records, err := f.app.leagueRecords(context.Background(), legalityLeague)
@@ -576,7 +576,7 @@ func (f *waiverFixture) revert(t *testing.T, receipt commissioner.Receipt) {
 
 func assertWaiverRule(t *testing.T, f *waiverFixture, field, words string) {
 	t.Helper()
-	reading, err := f.app.TargetCommissionerRules(legalityLeague)
+	reading, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

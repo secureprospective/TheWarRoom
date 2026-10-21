@@ -139,7 +139,7 @@ func (f *draftFixture) actAs(principal string) {
 }
 
 func (f *draftFixture) revisionOf() (int64, error) {
-	assets, err := f.app.TargetNativeAssets(draftLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(draftLeague)
 	if err != nil {
 		return 0, fmt.Errorf("read league version: %w", err)
 	}
@@ -168,7 +168,7 @@ func (f *draftFixture) tryCommand(command string, args commissioner.RawArgs,
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("encode test command: %w", err)
 	}
-	return f.app.TargetCommissionerExecute(string(body))
+	return newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 }
 
 func (f *draftFixture) command(t *testing.T, command string, args commissioner.RawArgs,
@@ -209,7 +209,7 @@ func (f *draftFixture) seat(t *testing.T, franchise, principal string) {
 
 func (f *draftFixture) read(t *testing.T, franchise string) commissioner.NativeDraft {
 	t.Helper()
-	reading, err := f.app.TargetNativeDraft(commissioner.RawNativeDraftScope{League: draftLeague,
+	reading, err := newCommissionerAPI(f.app).TargetNativeDraft(commissioner.RawNativeDraftScope{League: draftLeague,
 		Season: draftSeason, Franchise: franchise, At: f.now})
 	if err != nil {
 		t.Fatal(err)
@@ -218,7 +218,7 @@ func (f *draftFixture) read(t *testing.T, franchise string) commissioner.NativeD
 }
 
 func (f *draftFixture) tryPick(franchise, player, request string, expected int64) (commissioner.Receipt, error) {
-	return f.app.TargetNativeDraftPick(commissioner.DraftPickInput{League: draftLeague, Season: draftSeason,
+	return newCommissionerAPI(f.app).TargetNativeDraftPick(commissioner.DraftPickInput{League: draftLeague, Season: draftSeason,
 		Franchise: franchise, Player: player, Request: request, Expected: expected})
 }
 

@@ -15,7 +15,7 @@ import (
 func marketOf(t *testing.T, f *waiverFixture, command, who string) commissioner.Market {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{who}
-	reading, err := f.app.TargetCommissionerMarket(legalityLeague, command)
+	reading, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, command)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -29,7 +29,7 @@ func marketPreview(t *testing.T, f *waiverFixture, command string, args commissi
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := f.app.TargetCommissionerPreview(string(body))
+	preview, err := newCommissionerAPI(f.app).TargetCommissionerPreview(string(body))
 	if err != nil || len(preview.Blockers) != 0 || len(preview.Fields) == 0 {
 		t.Fatalf("market target rejected by %s: %+v %v", command, preview, err)
 	}
@@ -42,7 +42,7 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 	for _, command := range []string{commissioner.WaiverProcess, commissioner.WaiverOverride,
 		commissioner.BidsProcess, commissioner.BidsOverride, commissioner.TradeReview,
 		commissioner.TradeAppealRule, commissioner.TradeOverride} {
-		_, err := f.app.TargetCommissionerMarket(legalityLeague, command)
+		_, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, command)
 		records, readErr := f.app.leagueRecords(t.Context(), legalityLeague)
 		if readErr != nil {
 			t.Fatal(readErr)
@@ -52,12 +52,12 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 			t.Fatalf("permission words changed: %s: %v / %v", command, err, want)
 		}
 	}
-	actor, err := f.app.TargetCommissionerActor()
+	actor, err := newCommissionerAPI(f.app).TargetCommissionerActor()
 	if err != nil || actor != "owner.one" {
 		t.Fatalf("actor: %q %v", actor, err)
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-	people, err := f.app.TargetCommissionerPeople(legalityLeague)
+	people, err := newCommissionerAPI(f.app).TargetCommissionerPeople(legalityLeague)
 	if err != nil || people.YourFranchise != "" {
 		t.Fatal("commissioner unexpectedly owns a franchise", err)
 	}
@@ -68,7 +68,7 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 		Principal: "cc", Role: governance.CoCommissioner}}, "private")
 	marketOf(t, f, commissioner.WaiverOverride, "cc")
 	f.app.core.CommissionerSession = testCommissionerSession{"cc"}
-	if _, err := f.app.TargetCommissionerMarket(legalityLeague, commissioner.TradeOverride); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, commissioner.TradeOverride); err == nil {
 		t.Fatal("co-commissioner got commissioner-only override targets")
 	}
 }
@@ -273,11 +273,11 @@ func TestCommissionerScheduleDraftAndPublishedRoundTrip(t *testing.T) {
 	f := waiverApp(t)
 	f.command(t, commissioner.ScheduleGenerate, commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 2}}, "league")
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if _, err := f.app.TargetCommissionerSchedule(legalityLeague); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerSchedule(legalityLeague); err == nil {
 		t.Fatal("owner read unpublished games")
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-	draft, err := f.app.TargetCommissionerSchedule(legalityLeague)
+	draft, err := newCommissionerAPI(f.app).TargetCommissionerSchedule(legalityLeague)
 	if err != nil || len(draft.Draft) != 2 || len(draft.Published) != 0 {
 		t.Fatal(draft, err)
 	}
@@ -290,7 +290,7 @@ func TestCommissionerScheduleDraftAndPublishedRoundTrip(t *testing.T) {
 	}
 	f.command(t, commissioner.SchedulePublish, commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}, "league")
 	f.command(t, commissioner.ScheduleGenerate, commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 3}}, "league")
-	held, err := f.app.TargetCommissionerSchedule(legalityLeague)
+	held, err := newCommissionerAPI(f.app).TargetCommissionerSchedule(legalityLeague)
 	if err != nil || len(held.Draft) != 3 || len(held.Published) != 2 {
 		t.Fatal(held, err)
 	}

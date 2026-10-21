@@ -74,7 +74,7 @@ func createNativeSeedLeague(t *testing.T, a *App, preset string) RawNativeSeedRe
 
 func seedNativeTest(t *testing.T, a *App, input RawNativeSeedRequest) commissioner.Receipt {
 	t.Helper()
-	receipt, err := a.TargetNativeSeed(input)
+	receipt, err := newCommissionerAPI(a).TargetNativeSeed(input)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func seedNativeTest(t *testing.T, a *App, input RawNativeSeedRequest) commission
 
 func readNativeTest(t *testing.T, a *App, leagueID string) commissioner.NativeAssets {
 	t.Helper()
-	assets, err := a.TargetNativeAssets(leagueID)
+	assets, err := newCommissionerAPI(a).TargetNativeAssets(leagueID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,7 +148,7 @@ func TestNativeSeedCapturesHeldAssetsWithoutChangingMirror(t *testing.T) {
 	if after, ok := replayed.FranchiseState("0002"); !ok || !reflect.DeepEqual(simulation, after) {
 		t.Fatal("seeding changed the persisted what-if state")
 	}
-	ledger, err := a.TargetCommissionerLedger(input.League)
+	ledger, err := newCommissionerAPI(a).TargetCommissionerLedger(input.League)
 	if err != nil || len(ledger.Entries) != 2 || ledger.Entries[0].Undo != "" ||
 		ledger.Entries[0].What != "Recorded the starting rosters, contracts, reserves, franchises and picks from held data" {
 		t.Fatalf("seed act is missing or labelled as a reversal: %+v %v", ledger, err)
@@ -172,16 +172,16 @@ func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
 	}
 	second := input
 	second.Request, second.Expected = "second.seed", 2
-	if _, err := a.TargetNativeSeed(second); err == nil {
+	if _, err := newCommissionerAPI(a).TargetNativeSeed(second); err == nil {
 		t.Fatal("seed accepted twice")
 	}
 	second = input
 	second.Reason = "different body"
-	if _, err := a.TargetNativeSeed(second); err == nil {
+	if _, err := newCommissionerAPI(a).TargetNativeSeed(second); err == nil {
 		t.Fatal("same request with changed reason accepted")
 	}
 	a.core.CommissionerSession = testCommissionerSession{"owner"}
-	if _, err := a.TargetNativeSeed(input); err == nil {
+	if _, err := newCommissionerAPI(a).TargetNativeSeed(input); err == nil {
 		t.Fatal("unauthorized retry returned a receipt")
 	}
 	after := readNativeTest(t, a, input.League)
@@ -204,7 +204,7 @@ func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
 			a := nativeSeedTestApp(t)
 			input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 			breakInput(a)
-			if _, err := a.TargetNativeSeed(input); err == nil {
+			if _, err := newCommissionerAPI(a).TargetNativeSeed(input); err == nil {
 				t.Fatal("incomplete or mixed snapshot accepted")
 			}
 			if assets := readNativeTest(t, a, input.League); assets.Seeded || assets.Revision != 1 {
@@ -218,7 +218,7 @@ func TestEmptyNativeLeagueHasNoSeed(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetEmpty)
-	if _, err := a.TargetNativeSeed(input); err == nil {
+	if _, err := newCommissionerAPI(a).TargetNativeSeed(input); err == nil {
 		t.Fatal("empty league accepted a Legacy snapshot")
 	}
 	if assets := readNativeTest(t, a, input.League); assets.Seeded || assets.Snapshot != nil || assets.Revision != 1 {
@@ -238,7 +238,7 @@ func TestNativeSeedCannotBeSuppliedByGenericIPC(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(a).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("caller-supplied starting assets accepted through generic IPC")
 	}
 	if assets := readNativeTest(t, a, input.League); assets.Seeded {

@@ -1,0 +1,86 @@
+package commissioner
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+)
+
+type RawNativeSeedRequest struct {
+	League   string `json:"league"`
+	Expected int64  `json:"expected"`
+	Request  string `json:"request"`
+	Reason   string `json:"reason"`
+}
+
+func (r RawNativeSeedRequest) Validate() error { return r.validate(true) }
+
+// ValidatePreview is Validate without the typed reason, so the tray can show the starting assets before
+// the reason is written; the preview then owes the reason as its blocker.
+func (r RawNativeSeedRequest) ValidatePreview() error { return r.validate(false) }
+
+func (r RawNativeSeedRequest) validate(requireReason bool) error {
+	if !strings.HasPrefix(r.League,
+		"native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League ||
+		r.Expected < 1 || strings.TrimSpace(r.Request) == "" ||
+		(requireReason && strings.TrimSpace(r.Reason) == "") {
+		return fmt.Errorf("choose an app league, its version, a request and a reason " +
+			"for recording its starting snapshot")
+	}
+	return nil
+}
+
+// TargetNativeSeed captures held data only. It cannot accept client-provided rosters or fetch missing inputs.
+func (a *API) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt, error) {
+	if err := input.Validate(); err != nil {
+		return commissioner.Receipt{}, err
+	}
+	if err := a.host.Ready(); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("starting snapshot startup: %w", err)
+	}
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
+		return commissioner.Receipt{}, err
+	}
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
+	defer cancel()
+	raw, err := a.host.NativeSeedCommand(ctx, input)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
+		return commissioner.Receipt{}, err
+	}
+	receipt, err := a.host.ExecuteCommissioner(ctx, raw, principal, a.host.CommissionerAuthorization())
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("record starting snapshot: %w", err)
+	}
+	return receipt, nil
+}
+
+func (a *API) TargetNativeDirectory(leagueID string) (commissioner.NativeDirectory, error) {
+	if err := a.host.Ready(); err != nil {
+		return commissioner.NativeDirectory{}, fmt.Errorf("native directory startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
+	defer cancel()
+	directory, err := a.host.NativeDirectory(ctx, leagueID)
+	if err != nil {
+		return commissioner.NativeDirectory{}, fmt.Errorf("native league directory: %w", err)
+	}
+	return directory, nil
+}
+
+func (a *API) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, error) {
+	if err := a.host.Ready(); err != nil {
+		return commissioner.NativeAssets{}, fmt.Errorf("native assets startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
+	defer cancel()
+	assets, err := a.host.NativeAssets(ctx, leagueID)
+	if err != nil {
+		return commissioner.NativeAssets{}, fmt.Errorf("native league assets: %w", err)
+	}
+	return assets, nil
+}

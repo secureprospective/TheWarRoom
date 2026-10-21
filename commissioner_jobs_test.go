@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
-	"os"
-	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +31,7 @@ func setRule(t *testing.T, app *App, raw commissioner.RawCommand, field, value s
 // datedWindows is the league's own windows reading with exact dates added to the spring windows.
 func datedWindows(t *testing.T, app *App, league string) string {
 	t.Helper()
-	rules, err := app.TargetCommissionerRules(league)
+	rules, err := newCommissionerAPI(app).TargetCommissionerRules(league)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +72,7 @@ func TestCommissionerJobsWire(t *testing.T) {
 	}
 	views := map[string]commissioner.Jobs{}
 	read := func(name, league string) commissioner.Jobs {
-		reading, err := app.TargetCommissionerJobs(league)
+		reading, err := newCommissionerAPI(app).TargetCommissionerJobs(league)
 		if err != nil {
 			t.Fatalf("%s: %v", name, err)
 		}
@@ -124,10 +121,10 @@ func TestCommissionerJobsWire(t *testing.T) {
 	if j := state(live, "rollover"); j.State != commissioner.JobLive {
 		t.Fatalf("a rollover whose date has passed is the commissioner's to run: %+v", j)
 	}
-	if _, err := app.TargetCommissionerJobs("mfl.123"); err == nil || !strings.Contains(err.Error(), "choose an app league") {
+	if _, err := newCommissionerAPI(app).TargetCommissionerJobs("mfl.123"); err == nil || !strings.Contains(err.Error(), "choose an app league") {
 		t.Fatalf("an imported league has no commissioner jobs: %v", err)
 	}
-	if _, err := app.TargetCommissionerJobs("native.missing"); err == nil {
+	if _, err := newCommissionerAPI(app).TargetCommissionerJobs("native.missing"); err == nil {
 		t.Fatal("a league that was never created has no jobs")
 	}
 	body, err := json.MarshalIndent(views, "", "  ")
@@ -135,45 +132,4 @@ func TestCommissionerJobsWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkWire(t, "frontend/src/app/commissioner/jobs.wire.testdata.json", body, "jobs")
-}
-
-func TestCommissionerControlsWire(t *testing.T) {
-	t.Parallel()
-	app := commissionerTestApp(t)
-	reading := app.TargetCommissionerControls()
-	body, err := json.MarshalIndent(reading, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkWire(t, "frontend/src/app/commissioner/controls.wire.testdata.json", body, "controls")
-	// The landing asks the registry, generated from the census, for each row's question and name.
-	file, err := os.Open("docs/ui/endpoint-registry.csv")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = file.Close() }()
-	table, err := csv.NewReader(file).ReadAll()
-	if err != nil {
-		t.Fatal(err)
-	}
-	question := slices.Index(table[0], "gm_question")
-	name := slices.Index(table[0], "name")
-	asked := map[string]bool{}
-	for _, row := range table[1:] {
-		if strings.HasPrefix(row[0], "CM-") && strings.TrimSpace(row[question]) != "" && row[name] != "" {
-			asked[row[0]] = true
-		}
-	}
-	count := 0
-	for _, group := range reading.Groups {
-		for _, entry := range group.Controls {
-			count++
-			if !asked[entry.ID] {
-				t.Fatalf("%s has no question in the registry", entry.ID)
-			}
-		}
-	}
-	if count != 56 || len(asked) != 56 {
-		t.Fatalf("the landing lists %d rows against %d in the registry", count, len(asked))
-	}
 }

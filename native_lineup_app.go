@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
-	"time"
 
-	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/native"
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -34,7 +31,8 @@ func runLineupSet(ctx context.Context, a *App, permit commissioner.Permit,
 	input json.RawMessage) (commissioner.Receipt, error) {
 	in, err := nativeapp.DecodeLineupSet(input)
 	if err != nil {
-		return commissioner.Receipt{}, err //nolint:wrapcheck // the lineup's own words, unchanged from before the move
+		//nolint:wrapcheck // the lineup's own words, unchanged from before the move
+		return commissioner.Receipt{}, err
 	}
 	if permit.League() != in.League || permit.Franchise() != in.Franchise || permit.Action() != lineupWindow {
 		return commissioner.Receipt{}, fmt.Errorf("this lineup was not cleared by the league calendar")
@@ -54,51 +52,6 @@ func runLineupSet(ctx context.Context, a *App, permit commissioner.Permit,
 		return commissioner.Receipt{}, fmt.Errorf("record the lineup: %w", err)
 	}
 	return receipt, nil
-}
-
-// TargetNativeLineupSet sets an owner's lineup through the native action gate and the league ledger. The
-// lineup must be legal under the league's lineup check, and no player whose game has started can move.
-func (a *App) TargetNativeLineupSet(body string) (commissioner.Receipt, error) {
-	in, err := nativeapp.DecodeLineupSet([]byte(body))
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("lineup input: %w", err)
-	}
-	receipt, err := a.runNativeAction(nativeOwnerActions(), in.League, in.Franchise, "lineup.set", json.RawMessage(body))
-	var refused *commissioner.Refusal
-	if errors.As(err, &refused) {
-		return commissioner.Receipt{}, errors.New(refused.Reason())
-	}
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("set lineup: %w", err)
-	}
-	return receipt, nil
-}
-
-// TargetNativeLineup reads a franchise's lineup for a week: starters and bench, who is locked and when it
-// locks in the owner's time, and the league's verdict. at is an RFC 3339 instant, or empty for now.
-func (a *App) TargetNativeLineup(league, franchise string, week int, at string) (commissioner.NativeLineup, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league ||
-		strings.TrimSpace(franchise) == "" || week < 1 || week > 22 {
-		return commissioner.NativeLineup{}, fmt.Errorf("choose an app league, a franchise and a week")
-	}
-	instant := a.timeNow()
-	if at != "" {
-		parsed, err := time.Parse(time.RFC3339, at)
-		if err != nil {
-			return commissioner.NativeLineup{}, fmt.Errorf("choose when to read the lineup: %w", err)
-		}
-		instant = parsed
-	}
-	if err := a.ready(); err != nil {
-		return commissioner.NativeLineup{}, fmt.Errorf("native lineup startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-	defer cancel()
-	reading, err := a.core.History.NativeLineup(ctx, league, franchise, week, instant)
-	if err != nil {
-		return commissioner.NativeLineup{}, fmt.Errorf("native lineup: %w", err)
-	}
-	return reading, nil
 }
 
 // appLineupEnv gives lineups the football facts the app already holds: players from the held directory and

@@ -1,4 +1,4 @@
-package main
+package commissioner
 
 import (
 	"encoding/json"
@@ -21,12 +21,13 @@ func previewRuleBody(t *testing.T, field, value, effective, reason string, expec
 	return string(body)
 }
 
-func previewApp(t *testing.T) *App {
+func previewApp(t *testing.T) *ledgerFixture {
 	t.Helper()
 	app := commissionerTestApp(t)
-	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Preview league", Preset: commissioner.PresetLegacy, Season: 2026},
-		Reason: "Start our league", Request: "create.preview", Effective: "now", Visibility: "league"})
+	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.preview",
+		Command: commissioner.Create,
+		Args:    commissioner.RawArgs{Name: "Preview league", Preset: commissioner.PresetLegacy, Season: 2026},
+		Reason:  "Start our league", Request: "create.preview", Effective: "now", Visibility: "league"})
 	return app
 }
 
@@ -72,7 +73,7 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			app := previewApp(t)
-			app.core.CommissionerSession = testCommissionerSession{tc.principal}
+			app.session = tc.principal
 			body := previewRuleBody(t, tc.field, tc.value, tc.effective, tc.reason, tc.expected)
 			preview, err := app.TargetCommissionerPreview(body)
 			if err != nil || len(preview.Blockers) != 1 {
