@@ -4,11 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"slices"
-	"strings"
+	"time"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -27,19 +27,7 @@ type RawReleaseRequest struct {
 }
 
 func (r RawReleaseRequest) Validate() error {
-	if err := (snapshot.RawContractScope{Mine: r.Mine, Sort: "name"}).Validate(); err != nil {
-		return fmt.Errorf("release scope: %w", err)
-	}
-	if r.Mine == "" || !slices.Contains([]string{"read", "draft", "handoff", "rebase", "withdraw"}, r.Action) {
-		return fmt.Errorf("release: franchise and known action required")
-	}
-	if r.Action == "draft" && r.Move == "" {
-		return fmt.Errorf("release: what-if move required")
-	}
-	if (r.Action == "handoff" || r.Action == "rebase" || r.Action == "withdraw") && r.ID == "" {
-		return fmt.Errorf("release: plan id required")
-	}
-	return nil
+	return contractsapp.Release(r).Validate() //nolint:wrapcheck // the service's errors already start "release"
 }
 
 type ReleasePlanView struct {
@@ -99,42 +87,10 @@ func (a *App) TargetReleasePlans(raw RawReleaseRequest) Reading[[]ReleasePlanVie
 func releaseReading(v []ReleasePlanView, err error) Reading[[]ReleasePlanView] {
 	return contractReading(v, "", "local envelopes; MFL mirror", "Plans are drafted from a pinned what-if move, with the engine charge in cents and its baseline stamps. Ready is not accepted. Buyouts require offseason, 2–4 years left and fewer than two other landed/open plans this season. MFL is never submitted to or written. Only explicitly player-labelled dead-cap adjustments can verify a charge; franchise totals cannot.", len(v), err)
 }
-func releasePlanView(r envelope.Receipt, f envelope.ReleaseFacts) ReleasePlanView {
-	cut := r.Spec.Intent == envelope.CutIntent
-	verb, channel := "Buy out ", "Post this to the commissioner on ProBoards."
-	if cut {
-		verb, channel = "Cut ", "Release on MFL; post player, contract and cap hit on ProBoards (§8)."
-	}
-	cost := snapshot.ContractAmountOf(f.Charge).Text
-	return ReleasePlanView{ID: r.CorrelationID, Player: f.Name, Label: verb + f.Name, Charge: cost,
-		Confirmation: fmt.Sprintf("This releases %s; %s dead cap this season. It cannot be undone.", f.Name, cost),
-		Post:         fmt.Sprintf("%s\n%s: annual salary %s; contract expires %d; %d paid years after %d.\nPlanned dead cap this season: %s. Please process this %s request.\nCannot %s this player for the rest of %s.", verb+f.Name, f.Name, snapshot.ContractAmountOf(f.Salary).Text, f.Expiration, max(0, f.Expiration-f.Season), f.Season, cost, strings.TrimSpace(verb), releaseLockVerb(cut), releaseLockSeason(cut)),
-		Channel:      channel, Receipt: r, CanHandOff: r.State == envelope.Ready, CanRebase: r.State == envelope.Stale, RebaseLabel: "Reprice from today's MFL rosters", WithdrawLabel: releaseWithdrawLabel(r.State, cut), Cut: cut}
-}
-func releaseWithdrawLabel(s envelope.State, cut bool) string {
-	if s == envelope.Draft || s == envelope.Ready || s == envelope.Blocked || s == envelope.Stale {
-		return "Remove plan"
-	}
-	if s == envelope.HandedOff || s == envelope.NotYetDone || s == envelope.NotVerified {
-		if cut {
-			return "I didn't drop him"
-		}
-		return "I didn't post it"
-	}
-	return ""
-}
 
-func releaseLockVerb(cut bool) string {
-	if cut {
-		return "re-sign"
-	}
-	return "bid on"
-}
-func releaseLockSeason(cut bool) string {
-	if cut {
-		return "this season"
-	}
-	return "this season; eligible again the following offseason"
+// releasePlanView is a release plan as the owner reads it, as its wire type.
+func releasePlanView(r envelope.Receipt, f envelope.ReleaseFacts) ReleasePlanView {
+	return ReleasePlanView(contractsapp.Plan(r, f))
 }
 
 func (a *App) releaseAction(ctx context.Context, r RawReleaseRequest) error {
@@ -194,9 +150,9 @@ func (a *App) draftRelease(ctx context.Context, r RawReleaseRequest) error {
 		return fmt.Errorf("release: what-if move no longer exists")
 	}
 	m := s.Moves[index]
-	f, err := releaseFacts(s, m)
+	f, err := contractsapp.ReleaseFacts(s, m)
 	if err != nil {
-		return err
+		return err //nolint:wrapcheck // the service's errors already start "release"
 	}
 	intent, target := envelope.CutIntent, envelope.Target{Kind: envelope.Manual}
 	if m.Kind == string(transactions.KindBuyout) {
@@ -225,46 +181,9 @@ func (a *App) draftRelease(ctx context.Context, r RawReleaseRequest) error {
 	a.movesChanged(ctx)
 	return nil
 }
-func releaseFacts(s state.WhatIfSession, m state.WhatIfMove) (envelope.ReleaseFacts, error) {
-	pid, err := playerid.New(m.Player)
-	if err != nil {
-		return envelope.ReleaseFacts{}, fmt.Errorf("release player: %w", err)
-	}
-	p, found := releasePlayer(s.Snapshot, s.Mine, m.Player)
-	if !found {
-		return envelope.ReleaseFacts{}, fmt.Errorf("release: player not in what-if baseline")
-	}
-	adjustments, err := releaseAdjustments(s.Snapshot, s.Mine)
-	if err != nil {
-		return envelope.ReleaseFacts{}, err
-	}
-	return envelope.ReleaseFacts{Player: pid, Name: m.Name, Season: s.Snapshot.Season, Charge: m.Charge, Salary: p.Salary, Expiration: p.ContractYear, ContractInfo: p.ContractInfo,
-		RostersStamp: s.Stamps.Rosters, ContractStamp: s.Stamps.Contract, DeadCapStamp: s.Stamps.DeadCap, Adjustments: adjustments}, nil
-}
-func releasePlayer(m state.MirrorSnapshot, mine, player string) (state.MirrorPlayer, bool) {
-	for _, p := range m.Players {
-		if p.MFLID == player && p.FranchiseID == mine {
-			return p, true
-		}
-	}
-	return state.MirrorPlayer{}, false
-}
-func releaseAdjustments(m state.MirrorSnapshot, mine string) (string, error) {
-	rows := []state.Adjustment{}
-	for _, r := range m.Adjustments {
-		if r.FranchiseID == mine {
-			rows = append(rows, r)
-		}
-	}
-	body, err := json.Marshal(rows)
-	if err != nil {
-		return "", fmt.Errorf("release adjustments: %w", err)
-	}
-	return string(body), nil
-}
 func (a *App) releaseCheck(ctx context.Context, mine, _, id string, f envelope.ReleaseFacts) (envelope.ReleaseCheck, error) {
 	m, _, _ := a.league.ContractsView()
-	p, found := releasePlayer(m, mine, f.Player.String())
+	p, found := contractsapp.Player(m, mine, f.Player.String())
 	phase, err := a.whatif.CurrentPhase(ctx)
 	if err != nil {
 		return envelope.ReleaseCheck{}, fmt.Errorf("release phase: %w", err)
@@ -296,28 +215,166 @@ func (a *App) releaseBuyoutCount(ctx context.Context, mine, except string, seaso
 	return n, nil
 }
 
-func releaseStateLabel(s envelope.State) string {
-	labels := map[envelope.State]string{envelope.Ready: "Ready", envelope.Blocked: "Blocked", envelope.Stale: "Stale", envelope.HandedOff: "Handed off", envelope.NotYetDone: "Not yet done", envelope.NotVerified: "Not verified", envelope.Draft: "Draft"}
-	return labels[s]
-}
-
 func (a *App) withdrawRelease(ctx context.Context, e envelope.Envelope) error {
-	note := envelope.RemovePlanNote
-	for _, entry := range e.Receipt().Audit {
-		if entry.To != envelope.HandedOff {
-			continue
-		}
-		note = "You said you did not post it, so the plan is withdrawn."
-		if e.Receipt().Spec.Intent == envelope.CutIntent {
-			note = "You said you did not drop him, so the plan is withdrawn."
-		}
-	}
+	note := contractsapp.WithdrawNote(e.Receipt())
 	next, err := e.WithdrawRelease(a.movesNow(), note)
 	if err != nil {
 		return fmt.Errorf("release withdraw: %w", err)
 	}
 	if err := a.moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("release withdraw save: %w", err)
+	}
+	a.movesChanged(ctx)
+	return nil
+}
+
+func (a *App) rebaseRelease(ctx context.Context, e envelope.Envelope) error {
+	if e.State() != envelope.Stale {
+		return fmt.Errorf("release rebase: only a stale plan can be repriced")
+	}
+	r := e.Receipt()
+	old, err := a.moves.ReleaseFacts(ctx, e.ID())
+	if err != nil {
+		return fmt.Errorf("release facts: %w", err)
+	}
+	m, _, _ := a.league.ContractsView()
+	stamps, err := a.league.Stamps(ctx)
+	if err != nil {
+		return fmt.Errorf("release rebase stamps: %w", err)
+	}
+	kind := string(transactions.KindWaiver)
+	if r.Spec.Intent == envelope.BuyoutIntent {
+		kind = string(transactions.KindBuyout)
+	}
+	s := state.WhatIfSession{Mine: r.Spec.FranchiseID, Snapshot: m, Stamps: stamps, Generation: "release-rebase:" + e.ID() + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: a.rulebook.TaxiCapPercent(), IRPercent: a.rulebook.IRCapPercent()}
+	move := state.WhatIfMove{Kind: kind, Player: old.Player.String(), Name: old.Name}
+	f, err := contractsapp.ReleaseFacts(s, move)
+	if err != nil {
+		return err //nolint:wrapcheck // the service's errors already start "release"
+	}
+	f.Charge, err = a.releaseCharge(ctx, s, move)
+	if err != nil {
+		return err
+	}
+	check, err := a.releaseCheck(ctx, r.Spec.FranchiseID, r.Spec.Intent, e.ID(), f)
+	if err != nil {
+		return err
+	}
+	note := snapshot.ContractAmountOf(old.Charge).Text + " → " + snapshot.ContractAmountOf(f.Charge).Text + " dead cap on current mirror"
+	check.ChargeText = note
+	e, err = e.Rebase(a.movesNow(), note)
+	if err == nil {
+		e, err = e.Check(a.movesNow(), snapshot.Snapshot{}, check)
+	}
+	if err != nil {
+		return fmt.Errorf("release rebase: %w", err)
+	}
+	if err := a.moves.SaveRelease(ctx, e, f); err != nil {
+		return fmt.Errorf("release rebase save: %w", err)
+	}
+	a.movesChanged(ctx)
+	return nil
+}
+func (a *App) releaseCharge(ctx context.Context, s state.WhatIfSession, m state.WhatIfMove) (domain.Money, error) {
+	store, err := a.loadWhatIf(ctx, s)
+	if err != nil {
+		return 0, err
+	}
+	coord, err := transactions.New(store.Writer(), nil, nil)
+	if err != nil {
+		return 0, fmt.Errorf("release rebase coordinator: %w", err)
+	}
+	req, err := buildRequest(TransactionRequest{Kind: m.Kind, MFLID: m.Player})
+	if err != nil {
+		return 0, fmt.Errorf("release rebase request: %w", err)
+	}
+	receipt, err := coord.Execute(ctx, req)
+	if err != nil {
+		return 0, fmt.Errorf("release rebase engine: %w", err)
+	}
+	if len(receipt.CapDeltas) != 1 {
+		return 0, fmt.Errorf("release rebase: engine charge missing")
+	}
+	return receipt.CapDeltas[0].Cents, nil
+}
+
+// Caller holds refreshMu and movesMu; this touches only the local plan ledger.
+func (a *App) revalidateReleasePlans(ctx context.Context) error {
+	receipts, err := a.moves.List(ctx, ingestion.LeagueID, "")
+	if err != nil {
+		return fmt.Errorf("release validation list: %w", err)
+	}
+	for _, r := range receipts {
+		if !envelope.IsRelease(r.Spec.Intent) {
+			continue
+		}
+		if err := a.revalidateRelease(ctx, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
+	f, err := a.moves.ReleaseFacts(ctx, r.CorrelationID)
+	if err != nil {
+		return fmt.Errorf("release facts: %w", err)
+	}
+	m, _, _ := a.league.ContractsView()
+	if r.State == envelope.Landed {
+		return a.releaseChargeNote(ctx, r, f, m)
+	}
+	if !contractsapp.NeedsValidation(r.State) {
+		return nil
+	}
+	p, onRoster := contractsapp.Player(m, r.Spec.FranchiseID, f.Player.String())
+	stamps, err := a.league.ReleaseStamps(ctx, f.Player.String(), r.Spec.FranchiseID)
+	if err != nil {
+		return fmt.Errorf("release validation stamps: %w", err)
+	}
+	adjustments, err := contractsapp.Adjustments(m, r.Spec.FranchiseID)
+	if err != nil {
+		return err //nolint:wrapcheck // the service's errors already start "release"
+	}
+	phase, err := a.whatif.CurrentPhase(ctx)
+	if err != nil {
+		return fmt.Errorf("release validation phase: %w", err)
+	}
+	contractChanged := contractsapp.ContractChanged(p, f) ||
+		(state.MirrorStamps{Contract: stamps.Contract}).NewerThan(state.MirrorStamps{Contract: f.ContractStamp})
+	adjustmentChanged := adjustments != f.Adjustments || (state.MirrorStamps{DeadCap: stamps.DeadCap}).NewerThan(state.MirrorStamps{DeadCap: f.DeadCapStamp})
+	reason := envelope.ReleaseInvalidation(r.Spec.Intent, r.State != envelope.Ready, onRoster, phase == domain.PhaseOffseason, contractChanged, adjustmentChanged)
+	if reason == "" {
+		return nil
+	}
+	e, err := a.moves.Get(ctx, r.CorrelationID)
+	if err != nil {
+		return fmt.Errorf("release invalidate load: %w", err)
+	}
+	next, err := e.Invalidate(a.movesNow(), reason)
+	if err != nil {
+		return fmt.Errorf("release invalidate: %w", err)
+	}
+	if err := a.moves.Save(ctx, next); err != nil {
+		return fmt.Errorf("release invalidate save: %w", err)
+	}
+	a.movesChanged(ctx)
+	return nil
+}
+func (a *App) releaseChargeNote(ctx context.Context, r envelope.Receipt, f envelope.ReleaseFacts, m state.MirrorSnapshot) error {
+	note := contractsapp.ChargeNote(f, r.Spec.FranchiseID, m)
+	if len(r.Audit) > 0 && r.Audit[len(r.Audit)-1].Note == note {
+		return nil
+	}
+	e, err := a.moves.Get(ctx, r.CorrelationID)
+	if err != nil {
+		return fmt.Errorf("release charge note load: %w", err)
+	}
+	next, err := e.Invalidate(a.movesNow(), note)
+	if err != nil {
+		return fmt.Errorf("release charge note: %w", err)
+	}
+	if err := a.moves.Save(ctx, next); err != nil {
+		return fmt.Errorf("release charge note save: %w", err)
 	}
 	a.movesChanged(ctx)
 	return nil

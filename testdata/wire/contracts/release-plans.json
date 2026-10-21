@@ -1,0 +1,116 @@
+{
+ "value": [
+  {
+   "id": "release-ID",
+   "player": "Player 0042",
+   "label": "Buy out Player 0042",
+   "charge": "$6,000,000",
+   "confirmation": "This releases Player 0042; $6,000,000 dead cap this season. It cannot be undone.",
+   "post": "Buy out Player 0042\nPlayer 0042: annual salary $10,000,000; contract expires 2028; 2 paid years after 2026.\nPlanned dead cap this season: $6,000,000. Please process this Buy out request.\nCannot bid on this player for the rest of this season; eligible again the following offseason.",
+   "channel": "Post this to the commissioner on ProBoards.",
+   "receipt": {
+    "correlationId": "release-ID",
+    "spec": {
+     "intent": "roster.buyout",
+     "leagueId": "14432",
+     "franchiseId": "0001",
+     "subject": {
+      "players": [
+       "0042"
+      ],
+      "picks": []
+     },
+     "expected": {
+      "player": "0042"
+     },
+     "gravity": "G3",
+     "undo": "irreversible",
+     "target": {
+      "kind": "manual"
+     }
+    },
+    "state": "ready",
+    "audit": [
+     {
+      "at": "INSTANT",
+      "from": "draft",
+      "event": "checks_pass",
+      "to": "ready",
+      "note": "Roster checked; planned dead cap this season: $6,000,000"
+     }
+    ]
+   },
+   "canHandOff": true,
+   "canRebase": false,
+   "rebaseLabel": "Reprice from today's MFL rosters",
+   "withdrawLabel": "Remove plan",
+   "cut": false
+  },
+  {
+   "id": "release-ID",
+   "player": "Player 0046",
+   "label": "Cut Player 0046",
+   "charge": "$0",
+   "confirmation": "This releases Player 0046; $0 dead cap this season. It cannot be undone.",
+   "post": "Cut Player 0046\nPlayer 0046: annual salary $10,000,000; contract expires 2026; 0 paid years after 2026.\nPlanned dead cap this season: $0. Please process this Cut request.\nCannot re-sign this player for the rest of this season.",
+   "channel": "Release on MFL; post player, contract and cap hit on ProBoards (§8).",
+   "receipt": {
+    "correlationId": "release-ID",
+    "spec": {
+     "intent": "roster.drop",
+     "leagueId": "14432",
+     "franchiseId": "0001",
+     "subject": {
+      "players": [
+       "0046"
+      ],
+      "picks": []
+     },
+     "expected": {
+      "player": "0046"
+     },
+     "gravity": "G3",
+     "undo": "irreversible",
+     "target": {
+      "kind": "mapped",
+      "url": "https://www47.myfantasyleague.com/2026/options?L=14432\u0026O=257"
+     }
+    },
+    "state": "ready",
+    "audit": [
+     {
+      "at": "INSTANT",
+      "from": "draft",
+      "event": "checks_pass",
+      "to": "ready",
+      "note": "Roster checked; planned dead cap this season: $0"
+     }
+    ]
+   },
+   "canHandOff": true,
+   "canRebase": false,
+   "rebaseLabel": "Reprice from today's MFL rosters",
+   "withdrawLabel": "Remove plan",
+   "cut": true
+  }
+ ],
+ "provenance": {
+  "source": "local envelopes; MFL mirror",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "",
+   "note": "Held MFL mirror; no network or what-if state"
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 2,
+ "threshold": 0,
+ "baseline": "Current MFL mirror revision",
+ "cutoff": "",
+ "method": "Integer cents; Go-authored display",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Plans are drafted from a pinned what-if move, with the engine charge in cents and its baseline stamps. Ready is not accepted. Buyouts require offseason, 2–4 years left and fewer than two other landed/open plans this season. MFL is never submitted to or written. Only explicitly player-labelled dead-cap adjustments can verify a charge; franchise totals cannot."
+}

@@ -1,0 +1,103 @@
+{
+ "value": {
+  "stale": false,
+  "banner": "",
+  "empty": "Model a cut or buyout from your team's contract rows; nothing is sent anywhere.",
+  "moves": [],
+  "figures": [
+   {
+    "label": "2026 cap",
+    "before": "Unavailable",
+    "after": "Unavailable",
+    "change": ""
+   },
+   {
+    "label": "Used",
+    "before": "$49,999,876.55",
+    "after": "$49,999,876.55",
+    "change": ""
+   },
+   {
+    "label": "Room",
+    "before": "Unavailable",
+    "after": "Unavailable",
+    "change": ""
+   },
+   {
+    "label": "Modelled dead cap this season (MFL adjustments excluded)",
+    "before": "$0",
+    "after": "$0",
+    "change": ""
+   },
+   {
+    "label": "2027 commitments at today's salaries",
+    "before": "$40,000,000",
+    "after": "$40,000,000",
+    "change": ""
+   },
+   {
+    "label": "2028 commitments at today's salaries",
+    "before": "$30,000,000",
+    "after": "$30,000,000",
+    "change": ""
+   }
+  ],
+  "choices": [
+   {
+    "player": "0042",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": true,
+    "reason": "Offseason only: can't be done until the offseason."
+   },
+   {
+    "player": "0043",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": true,
+    "reason": "Offseason only: can't be done until the offseason."
+   },
+   {
+    "player": "0044",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": true,
+    "reason": "Offseason only: can't be done until the offseason."
+   },
+   {
+    "player": "0045",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": false,
+    "reason": "Buyout not offered: needs 2–4 paid years after this season; a 1-year-left exit uses a cut."
+   },
+   {
+    "player": "0046",
+    "cutLabel": "What if I cut him",
+    "buyoutLabel": "What if I buy him out",
+    "buyoutAllowed": false,
+    "reason": "Buyout not offered: needs 2–4 paid years after this season; a 1-year-left exit uses a cut."
+   }
+  ],
+  "notice": ""
+ },
+ "provenance": {
+  "source": "Your what-if, started from MFL rosters as of STAMP",
+  "freshness": {
+   "state": "live",
+   "fetchedAt": "INSTANT",
+   "note": "Baseline held until Reset; survives restart. The mirror is never written."
+  },
+  "kind": "live"
+ },
+ "status": "ok",
+ "absenceReason": null,
+ "count": 0,
+ "threshold": 0,
+ "baseline": "INSTANT",
+ "cutoff": "INSTANT",
+ "method": "Coordinator handlers on a generation-scoped whatif.db ledger; integer cents",
+ "inputSHA": "",
+ "buildStamp": "dev ",
+ "howCounted": "Cut = 35% of each paid cell after this season, or 50% for a known restructured contract; claimed and final-year cuts cost $0. Sum exact cents, round half-up once, then snap once to $10,000. Buyout = mean of remaining paid cells times 60% / 75% / 90% for 2 / 3 / 4 years, then one snap; at most two per season. Future salaries carry today’s MFL annual salary through contract expiration; MFL does not report those years separately. The exports do not establish restructure history: seeded contracts assume 35%, not a proven unrestructured verdict. This season's used begins at the mirror total; the engine's ledger delta is applied without changing the original MFL adjustments. MFL adjustments remain literal adjustments, not proven dead cap. The whole modelled charge lands in the cut year; future seasons have no modelled dead cap. Buyouts here model offseason terms without asserting that today's window is open; offseason start is not held. No submission or plan is created. Separate contract-cell update time: not held by this mirror. Separate dead-cap update time: not held by this mirror."
+}
