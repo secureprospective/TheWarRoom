@@ -50,7 +50,7 @@ func (f *lineupApp) wire(t *testing.T) {
 
 func (f *lineupApp) version(t *testing.T) int64 {
 	t.Helper()
-	houses, err := f.app.TargetNativeHouseRules(legalityLeague)
+	houses, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 	f.execute(t, commissioner.RawCommand{Command: commissioner.WindowRemove,
 		Args: commissioner.RawArgs{Window: &commissioner.RawWindowArgs{ID: "lineups"}}})
 	version := f.version(t)
-	_, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal))
+	_, err := newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal))
 	if err == nil || err.Error() != "No league window opens this action now." || f.version(t) != version {
 		t.Fatalf("a lineup went through a shut window, or the sentence is wrong: %v", err)
 	}
@@ -121,21 +121,21 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(generic)); err == nil || f.version(t) != version {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(generic)); err == nil || f.version(t) != version {
 		t.Fatalf("a lineup went through the generic commissioner door, past the calendar: %v", err)
 	}
 	f.openLineupWindow(t)
 	short := fixtureStarters(0, 20)
-	if _, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, short)); err == nil ||
+	if _, err := newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, short)); err == nil ||
 		!strings.HasPrefix(err.Error(), "Invalid lineup: ") || !strings.Contains(err.Error(), "Total: 20 starting, needs exactly 21") {
 		t.Fatalf("an illegal lineup was set: %v", err)
 	}
-	receipt, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal))
+	receipt, err := newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal))
 	if err != nil || receipt.Revision != f.version(t) {
 		t.Fatalf("a legal lineup was not recorded: %+v %v", receipt, err)
 	}
 	for range 2 {
-		reading, err := f.app.TargetNativeLineup(legalityLeague, "franchise.02", 1, "")
+		reading, err := newCommissionerAPI(f.app).TargetNativeLineup(legalityLeague, "franchise.02", 1, "")
 		if err != nil || !reading.Set || len(reading.Starters) != 21 || reading.Verdict.Words != "Valid lineup" ||
 			reading.Starters[0].Words != "Locks at kickoff, Oct 18, 2026 at 10:00 AM PDT" ||
 			reading.Starters[0].LocksAt == nil || reading.Zone != "America/Los_Angeles" {
@@ -147,13 +147,13 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 	f.at = f.kickoff
 	swapped := append([]string{}, legal...)
 	swapped[3] = legalityID(1000, 21) // a wide receiver for a wide receiver: legal, but the first is locked
-	_, err = f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, swapped))
+	_, err = newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, swapped))
 	want := "Player, 1021 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); " +
 		"Player, 1003 locked at kickoff (Oct 18, 2026 at 10:00 AM PDT); a lineup can't add or drop a player once that player's game has started"
 	if err == nil || err.Error() != want {
 		t.Fatalf("a locked player moved, or the refusal is wrong:\n got %v\nwant %s", err, want)
 	}
-	if _, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.01", 1, legal)); err == nil ||
+	if _, err := newCommissionerAPI(f.app).TargetNativeLineupSet(f.setBody(t, "franchise.01", 1, legal)); err == nil ||
 		err.Error() != "You may set a lineup only for your own franchise" {
 		t.Fatalf("a lineup was set for a franchise the owner does not hold: %v", err)
 	}
@@ -176,7 +176,7 @@ func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T)
 		t.Fatal(err)
 	}
 	version := f.version(t)
-	preview, err := f.app.TargetNativeScorePreview(string(body))
+	preview, err := newCommissionerAPI(f.app).TargetNativeScorePreview(string(body))
 	wantWords := "We can't tell yet whether this changes Held team 1 v Held team 32: " +
 		"Held team 1's score is not complete and Held team 32 has no lineup set."
 	if err != nil || preview.Flip.Words != wantWords || len(preview.Warnings) < 1 || preview.Warnings[0] != wantWords ||
@@ -184,11 +184,11 @@ func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T)
 		t.Fatalf("the preview must name the one game it cannot call, and record nothing: %+v %v", preview, err)
 	}
 	receipt := executeCommissionerTest(t, f.app, correction)
-	reading, err := f.app.TargetNativeLineup(legalityLeague, "franchise.01", 1, "")
+	reading, err := newCommissionerAPI(f.app).TargetNativeLineup(legalityLeague, "franchise.01", 1, "")
 	if err != nil || !reading.Set || !reading.Corrected || reading.Reason != correction.Reason {
 		t.Fatalf("the correction is not read back: %+v %v", reading, err)
 	}
-	results, err := f.app.TargetNativeResults(legalityLeague, 2026, 1)
+	results, err := newCommissionerAPI(f.app).TargetNativeResults(legalityLeague, 2026, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T)
 	f.wire(t)
 	f.execute(t, commissioner.RawCommand{Command: commissioner.Revert, Visibility: "league",
 		Args: commissioner.RawArgs{Entry: receipt.Entry}})
-	reading, err = f.app.TargetNativeLineup(legalityLeague, "franchise.01", 1, "")
+	reading, err = newCommissionerAPI(f.app).TargetNativeLineup(legalityLeague, "franchise.01", 1, "")
 	if err != nil || reading.Set {
 		t.Fatalf("compensation did not remove the correction: %+v %v", reading, err)
 	}

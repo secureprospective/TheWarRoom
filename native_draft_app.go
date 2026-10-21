@@ -28,7 +28,8 @@ func runDraftPick(ctx context.Context, a *App, permit commissioner.Permit,
 	body json.RawMessage) (commissioner.Receipt, error) {
 	var input commissioner.DraftPickInput
 	if err := json.Unmarshal(body, &input); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w", commissioner.Refused(errors.New("choose a rookie for your pick")))
+		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w",
+			commissioner.Refused(errors.New("choose a rookie for your pick")))
 	}
 	if err := input.Validate(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", commissioner.Refused(err))
@@ -44,52 +45,6 @@ func runDraftPick(ctx context.Context, a *App, permit commissioner.Permit,
 		return commissioner.Receipt{}, fmt.Errorf("record rookie pick: %w", err)
 	}
 	return receipt, nil
-}
-
-// TargetNativeDraftPick makes the owner's pick for the franchise on the clock. It asks the calendar first:
-// a closed draft window refuses the pick in the calendar's own words.
-func (a *App) TargetNativeDraftPick(input commissioner.DraftPickInput) (commissioner.Receipt, error) {
-	if err := input.Validate(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", err)
-	}
-	if err := a.ready(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick startup: %w", err)
-	}
-	body, err := json.Marshal(input)
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", err)
-	}
-	receipt, err := a.runNativeAction(nativeOwnerActions(), input.League, input.Franchise, draftPickName, body)
-	var refused *commissioner.Refusal
-	if errors.As(err, &refused) {
-		return commissioner.Receipt{}, errors.New(refused.Reason())
-	}
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w", err)
-	}
-	a.closeFinishedDrafts(input.League)
-	return receipt, nil
-}
-
-// TargetNativeDraft reads the rookie draft for a franchise: the order and its owners, the picks made, who is
-// on the clock until when in the viewer's time, and the franchise's own next pick.
-func (a *App) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commissioner.NativeDraft, error) {
-	if scope.At.IsZero() {
-		scope.At = a.timeNow()
-	}
-	if err := scope.Validate(); err != nil {
-		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft input: %w", err)
-	}
-	if err := a.ready(); err != nil {
-		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-	defer cancel()
-	reading, err := a.core.History.NativeDraft(ctx, scope, a.ownerZone(), a.nativeFacts())
-	if err != nil {
-		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft: %w", err)
-	}
-	return reading, nil
 }
 
 // closeFinishedDrafts closes a draft whose last pick has just been used, so it does not wait for the clock's

@@ -27,7 +27,8 @@ export async function mount(node: ReactElement, app: Partial<App> = {},
   const document = new KeyDocument();
   const host = document.createElement('div');
   vi.stubGlobal('document', document);
-  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: app }, ...features } });
+  const go = { commissioner: { API: app }, ...features };
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go });
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   root = createRoot(host as unknown as HTMLElement);
   await act(async () => root?.render(node));

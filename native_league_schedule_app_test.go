@@ -15,7 +15,7 @@ import (
 
 func scheduleRead(t *testing.T, app *App) commissioner.Schedule {
 	t.Helper()
-	reading, err := app.TargetLeagueSchedule(RawLeagueScheduleScope{League: "native.calendar"})
+	reading, err := newCommissionerAPI(app).TargetLeagueSchedule(RawLeagueScheduleScope{League: "native.calendar"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,13 +101,13 @@ func TestScheduleEditOwnerRevertRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outcome, err := app.TargetCommissionerExecute(string(body))
+	outcome, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body))
 	if err == nil {
 		t.Fatal("published edit accepted without reason", outcome, err)
 	}
 	raw.Reason = "Correct home field"
 	receipt := executeCommissionerTest(t, app, raw)
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +164,7 @@ func TestScheduleCommandSafety(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("accepted invalid schedule change", command)
 		}
 	}
@@ -193,7 +193,7 @@ func TestScheduleCommandSafety(t *testing.T) {
 		raw.Args = commissioner.RawArgs{Schedule: &patch}
 		refuse(raw)
 	}
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil || ledger.Revision != 7 {
 		t.Fatal("refusal appended an event", ledger, err)
 	}
@@ -204,7 +204,7 @@ func TestSmallerScheduleRequiresCommissionerPattern(t *testing.T) {
 	app, _ := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: ""}
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -218,7 +218,7 @@ func TestSmallerScheduleRequiresCommissionerPattern(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(body)); err == nil ||
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil ||
 		!strings.Contains(err.Error(), "Choose how often teams meet in this smaller league.") {
 		t.Fatal("wrong unset-pattern consequence", err)
 	}
@@ -237,7 +237,7 @@ func TestScheduleGenerationArgumentsSurviveRuleReversal(t *testing.T) {
 	t.Parallel()
 	app, restart := calendarTestApp(t, time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC))
 	raw := seedScheduleTest(t, app)
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}

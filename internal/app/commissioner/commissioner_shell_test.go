@@ -1,4 +1,4 @@
-package main
+package commissioner
 
 import (
 	"encoding/json"
@@ -10,23 +10,24 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
-func shellLedgerApp(t *testing.T) (*App, string) {
+func shellLedgerApp(t *testing.T) (*ledgerFixture, string) {
 	t.Helper()
 	app := commissionerTestApp(t)
 	raw := commissioner.RawCommand{League: "native.shell", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 4, Season: 2026},
+		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 4,
+			Season: 2026},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, app, raw)
-	app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, 13, 0, 0, 0, time.UTC) })
+	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, 13, 0, 0, 0, time.UTC) })
 	raw.Command, raw.Expected, raw.Request, raw.Visibility = "commish.role.grant", 1, "grant", "private"
 	raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{
 		Principal: "secret-deputy", Role: governance.CoCommissioner}}
 	executeCommissionerTest(t, app, raw)
-	app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, 14, 0, 0, 0, time.UTC) })
+	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, 14, 0, 0, 0, time.UTC) })
 	raw.Command, raw.Expected, raw.Request, raw.Visibility = commissioner.RulesSet, 2, "rule", "league"
 	raw.Args = commissioner.RawArgs{Field: "calendar.timezone", Value: json.RawMessage(`"Europe/London"`)}
 	changed := executeCommissionerTest(t, app, raw)
-	app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, 15, 0, 0, 0, time.UTC) })
+	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, 15, 0, 0, 0, time.UTC) })
 	raw.Command, raw.Expected, raw.Request = commissioner.Revert, 3, "undo"
 	raw.Args = commissioner.RawArgs{Entry: changed.Entry}
 	executeCommissionerTest(t, app, raw)
@@ -49,7 +50,8 @@ func TestCommissionerLedgerFiltersWire(t *testing.T) {
 		{"person", `{"person":" CrEaToR "}`, 4},
 		{"absent", `{"person":"nobody"}`, 0},
 		{"dates", `{"from":"2026-10-13T09:00:00-04:00","before":"2026-10-13T10:00:00-04:00"}`, 1},
-		{"combined", `{"kind":"rules","person":"creator","from":"2026-10-13T13:00:00Z","before":"2026-10-13T15:00:00Z"}`, 1},
+		{"combined",
+			`{"kind":"rules","person":"creator","from":"2026-10-13T13:00:00Z","before":"2026-10-13T15:00:00Z"}`, 1},
 	} {
 		reading, err := app.TargetCommissionerLedgerFiltered(league, test.body)
 		if err != nil || len(reading.Entries) != test.count || reading.Revision != 4 {
@@ -57,7 +59,7 @@ func TestCommissionerLedgerFiltersWire(t *testing.T) {
 		}
 		views[test.name] = reading
 	}
-	app.core.CommissionerSession = testCommissionerSession{"owner"}
+	app.session = "owner"
 	owner, err := app.TargetCommissionerLedgerFiltered(league, `{"kind":"people"}`)
 	if err != nil || len(owner.Entries) != 0 || owner.Revision != 4 {
 		t.Fatalf("owner received private role rows: %+v %v", owner, err)

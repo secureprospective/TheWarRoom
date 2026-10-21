@@ -39,7 +39,7 @@ func capApp(t *testing.T) *legalityFixture {
 
 func readCap(t *testing.T, f *legalityFixture) commissioner.NativeCapCheck {
 	t.Helper()
-	reading, err := f.app.TargetNativeCapCheck(legalityLeague, "UTC")
+	reading, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, "UTC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -162,7 +162,7 @@ func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetEmpty)
-	reading, err := a.TargetNativeCapCheck(legalityLeague, "UTC")
+	reading, err := newCommissionerAPI(a).TargetNativeCapCheck(legalityLeague, "UTC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestNativeCapUnseededAndInvalidScope(t *testing.T) {
 		t.Fatalf("unseeded cap invented rosters: %+v", reading)
 	}
 	for _, scope := range []string{"", "14432", "native.missing", " native.seed"} {
-		if _, err := a.TargetNativeCapCheck(scope, "UTC"); err == nil {
+		if _, err := newCommissionerAPI(a).TargetNativeCapCheck(scope, "UTC"); err == nil {
 			t.Fatalf("invalid scope accepted: %q", scope)
 		}
 	}
@@ -190,7 +190,7 @@ func TestNativeCapWire(t *testing.T) {
 
 func capDeadlineInZone(t *testing.T, f *legalityFixture, zone string) string {
 	t.Helper()
-	reading, err := f.app.TargetNativeCapCheck(legalityLeague, zone)
+	reading, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, zone)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,7 +252,7 @@ func TestNativeCapViewerZoneAndDaylightSaving(t *testing.T) {
 		f.revert(t, receipt)
 	}
 	for _, zone := range []string{"", "Local", "bad/zone", " UTC"} {
-		if _, err := f.app.TargetNativeCapCheck(legalityLeague, zone); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, zone); err == nil {
 			t.Fatalf("invalid viewer timezone accepted: %q", zone)
 		}
 	}
@@ -264,7 +264,7 @@ func TestNativeCapLocalDeadlineWire(t *testing.T) {
 	f.set(t, "cap.amount", `2000000000`, "now")
 	f.set(t, "cap.enforcement", `"soft"`, "now")
 	f.set(t, "cap.complianceDeadline", `"2026-10-20T00:00:00Z"`, "now")
-	reading, err := f.app.TargetNativeCapCheck(legalityLeague, "America/Los_Angeles")
+	reading, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, "America/Los_Angeles")
 	if err != nil {
 		t.Fatal(err)
 	}

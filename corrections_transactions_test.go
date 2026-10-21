@@ -26,12 +26,12 @@ func TestTransactionCorrectionReversesNativeCutAndAward(t *testing.T) {
 				if pass == 1 {
 					f.restart(t)
 				}
-				before, err := f.app.TargetNativeAssets(legalityLeague)
+				before, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 				if err != nil {
 					t.Fatal(err)
 				}
 				fix := f.command(t, commissioner.CorrectTransaction, commissioner.RawArgs{Correction: &commissioner.RawCorrection{Entry: target.Entry}}, "league")
-				after, err := f.app.TargetNativeAssets(legalityLeague)
+				after, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -50,12 +50,12 @@ func TestTransactionCorrectionReversesNativeCutAndAward(t *testing.T) {
 					t.Fatal("waivers still shows the old transaction")
 				}
 				f.restart(t)
-				replayed, err := f.app.TargetNativeAssets(legalityLeague)
+				replayed, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 				if err != nil || !reflect.DeepEqual(after.Snapshot, replayed.Snapshot) {
 					t.Fatal("correction lost on replay", err)
 				}
 				f.command(t, commissioner.Revert, commissioner.RawArgs{Entry: fix.Entry}, "league")
-				restored, err := f.app.TargetNativeAssets(legalityLeague)
+				restored, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 				if err != nil || !reflect.DeepEqual(before.Snapshot, restored.Snapshot) {
 					t.Fatal("transaction compensation did not restore", err)
 				}
@@ -164,7 +164,7 @@ func TestRuleExceptionPlayerScopeExpiresInReserveRule(t *testing.T) {
 		before := f.now
 		f.now = until
 		assertReserveException(t, f, false)
-		corrections, err := f.app.TargetCorrections(legalityLeague)
+		corrections, err := newCommissionerAPI(f.app).TargetCorrections(legalityLeague)
 		if err != nil || len(corrections.Items) != 0 {
 			t.Fatal("expired exception still in force", err)
 		}

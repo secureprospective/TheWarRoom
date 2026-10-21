@@ -4785,6 +4785,38 @@ export namespace commissioner {
 	
 	
 	
+	export class RawLeagueCalendarScope {
+	    league: string;
+	    season: number;
+	    localZone: string;
+	    franchise: string;
+	    action: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawLeagueCalendarScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	        this.franchise = source["franchise"];
+	        this.action = source["action"];
+	    }
+	}
+	export class RawLeagueScheduleScope {
+	    league: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawLeagueScheduleScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	    }
+	}
 	
 	export class RawNativeDraftScope {
 	    league: string;
@@ -4841,7 +4873,81 @@ export namespace commissioner {
 	    }
 	}
 	
+	export class RawNativeScheduleScope {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	    localZone: string;
 	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeScheduleScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	    }
+	}
+	export class RawNativeSeedRequest {
+	    league: string;
+	    expected: number;
+	    request: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeSeedRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.expected = source["expected"];
+	        this.request = source["request"];
+	        this.reason = source["reason"];
+	    }
+	}
+	
+	export class RawNativeWeekScope {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	    localZone: string;
+	    at: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawNativeWeekScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
+	        this.localZone = source["localZone"];
+	        this.at = this.convertValues(source["at"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	
 	
@@ -12049,112 +12155,6 @@ export namespace main {
 	        this.src = source["src"];
 	        this.alt = source["alt"];
 	    }
-	}
-	export class RawLeagueCalendarScope {
-	    league: string;
-	    season: number;
-	    localZone: string;
-	    franchise: string;
-	    action: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RawLeagueCalendarScope(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	        this.season = source["season"];
-	        this.localZone = source["localZone"];
-	        this.franchise = source["franchise"];
-	        this.action = source["action"];
-	    }
-	}
-	export class RawLeagueScheduleScope {
-	    league: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RawLeagueScheduleScope(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	    }
-	}
-	export class RawNativeScheduleScope {
-	    league: string;
-	    franchise: string;
-	    season: number;
-	    localZone: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RawNativeScheduleScope(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	        this.franchise = source["franchise"];
-	        this.season = source["season"];
-	        this.localZone = source["localZone"];
-	    }
-	}
-	export class RawNativeSeedRequest {
-	    league: string;
-	    expected: number;
-	    request: string;
-	    reason: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new RawNativeSeedRequest(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	        this.expected = source["expected"];
-	        this.request = source["request"];
-	        this.reason = source["reason"];
-	    }
-	}
-	export class RawNativeWeekScope {
-	    league: string;
-	    franchise: string;
-	    season: number;
-	    localZone: string;
-	    at: time.Time;
-	
-	    static createFrom(source: any = {}) {
-	        return new RawNativeWeekScope(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.league = source["league"];
-	        this.franchise = source["franchise"];
-	        this.season = source["season"];
-	        this.localZone = source["localZone"];
-	        this.at = this.convertValues(source["at"], time.Time);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 
 }

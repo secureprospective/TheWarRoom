@@ -19,7 +19,7 @@ func TestOffersClusterDenialsGolden(t *testing.T) {
 		denials[who] = errorWords(f.tryPlace(t, who, "franchise.01", "5002", 5*million, 1))
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	_, err := f.app.TargetCommissionerMarket(legalityLeague, "bids.award.override")
+	_, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, "bids.award.override")
 	denials["non-commissioner"] = errorWords(err)
 	f.set(t, "calendar.windows", `{}`, "now")
 	denials["closed"] = errorWords(f.tryPlace(t, "owner.one", "franchise.01", "5002", 5*million, 1))

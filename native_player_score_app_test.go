@@ -106,7 +106,7 @@ func holdNativeStats(t *testing.T, f *legalityFixture, include bool, position, t
 
 func readNativeScore(t *testing.T, f *legalityFixture) commissioner.NativePlayerScore {
 	t.Helper()
-	out, err := f.app.TargetNativePlayerScore(legalityLeague, "1000", 2026, 1)
+	out, err := newCommissionerAPI(f.app).TargetNativePlayerScore(legalityLeague, "1000", 2026, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +232,7 @@ func TestNativeScoreHonestAbsenceAndNeedsRuling(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
 	assertNativePoints(t, f, 15000)
-	out, err := f.app.TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
+	out, err := newCommissionerAPI(f.app).TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
 	if err != nil || out.Status != "Unavailable" || out.Points != nil || out.PartialPoints != nil ||
 		!strings.Contains(out.Words, "no NFL statistics identity") {
 		t.Fatalf("missing identity became zero: %+v %v", out, err)
@@ -273,7 +273,7 @@ func TestNativeScoreScopeAndStartingSnapshot(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	out, err := a.TargetNativePlayerScore(legalityLeague, "1000", 2026, 1)
+	out, err := newCommissionerAPI(a).TargetNativePlayerScore(legalityLeague, "1000", 2026, 1)
 	if err != nil || out.Words != "Record the starting snapshot first" || out.Points != nil || out.PartialPoints != nil {
 		t.Fatalf("unbound season scored: %+v %v", out, err)
 	}
@@ -284,7 +284,7 @@ func TestNativeScoreScopeAndStartingSnapshot(t *testing.T) {
 		{"native.", "1000", 2026, 1}, {"native.missing", "1000", 2026, 1},
 		{legalityLeague, "99", 2026, 1}, {legalityLeague, "1000", 1919, 1}, {legalityLeague, "1000", 2026, 23},
 	} {
-		if _, err := a.TargetNativePlayerScore(scope.league, scope.player, scope.season, scope.week); err == nil {
+		if _, err := newCommissionerAPI(a).TargetNativePlayerScore(scope.league, scope.player, scope.season, scope.week); err == nil {
 			t.Fatalf("invalid scope accepted: %+v", scope)
 		}
 	}
@@ -294,7 +294,7 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
 	readings := []commissioner.NativePlayerScore{readNativeScore(t, f)}
-	missing, err := f.app.TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
+	missing, err := newCommissionerAPI(f.app).TargetNativePlayerScore(legalityLeague, "1001", 2026, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,7 +313,7 @@ func TestNativeScoreWireFixtureMatchesGo(t *testing.T) {
 	readings = append(readings, readNativeScore(t, f))
 	holdNativeScore(t, f, false, "LB", 2)
 	readings = append(readings, readNativeScore(t, f))
-	notReported, err := f.app.TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
+	notReported, err := newCommissionerAPI(f.app).TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -348,7 +348,7 @@ func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *tes
 		t.Fatalf("a feed revision moved the score without approval: %+v", out)
 	}
 	assertNativePoints(t, f, 15000)
-	missing, err := f.app.TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
+	missing, err := newCommissionerAPI(f.app).TargetNativePlayerScore(legalityLeague, "1000", 2026, 2)
 	if err != nil || missing.Status != "Unavailable" || missing.Points != nil || missing.PartialPoints != nil ||
 		!strings.Contains(missing.Words, "not reported this week") {
 		t.Fatalf("absent week scored: %+v %v", missing, err)
@@ -375,7 +375,7 @@ func TestNativeScoreNoHeldFilesAndUnboundIdentity(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	out, err := a.TargetNativePlayerScore(legalityLeague, "1000", 1920, 1)
+	out, err := newCommissionerAPI(a).TargetNativePlayerScore(legalityLeague, "1000", 1920, 1)
 	if err != nil || out.Words != "Record the starting snapshot first" {
 		t.Fatalf("unbound season consulted the stats port: %+v %v", out, err)
 	}

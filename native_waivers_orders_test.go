@@ -190,16 +190,16 @@ func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
 			t.Fatal(err)
 		}
 		f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatalf("owner ran %s", command.command)
 		}
 		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-		receipt, err := f.app.TargetCommissionerExecute(string(body))
+		receipt, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 		if err != nil {
 			t.Fatal(err)
 		}
 		f.restart(t)
-		again, err := f.app.TargetCommissionerExecute(string(body))
+		again, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 		if err != nil || !reflect.DeepEqual(receipt, again) {
 			t.Fatalf("%s changed on replay: %+v %v", command.command, again, err)
 		}
@@ -208,7 +208,7 @@ func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "reread") {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "reread") {
 			t.Fatalf("%s accepted a stale version: %v", command.command, err)
 		}
 	}
@@ -220,14 +220,14 @@ func TestNativeWaiverOwnerRetriesAfterCalendarCloses(t *testing.T) {
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 	raw := f.raw(t, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
 		Player: "1000", Franchise: "franchise.02"}}, "league")
-	receipt, err := f.app.TargetNativeWaiverAction(raw)
+	receipt, err := newCommissionerAPI(f.app).TargetNativeWaiverAction(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.set(t, "calendar.windows", `{}`, "now")
 	for range 2 {
 		f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
-		again, err := f.app.TargetNativeWaiverAction(raw)
+		again, err := newCommissionerAPI(f.app).TargetNativeWaiverAction(raw)
 		if err != nil || !reflect.DeepEqual(receipt, again) {
 			t.Fatal("closed calendar lost original cut receipt", again, err)
 		}
@@ -263,7 +263,7 @@ func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
 			t.Fatal("clock did not award by rolling priority", r)
 		}
 		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
-		ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+		ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -298,7 +298,7 @@ func TestNativeWaiverCompensationCannotStrandWinningClaimOrCut(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("compensation stranded live award", target.Entry)
 		}
 	}

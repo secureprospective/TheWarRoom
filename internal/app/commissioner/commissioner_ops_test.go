@@ -1,4 +1,4 @@
-package main
+package commissioner
 
 import (
 	"encoding/json"
@@ -6,23 +6,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 const opsLeague = "native.ops"
 
-func opsClock(app *App, hour int) {
-	app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 14, hour, 0, 0, 0, time.UTC) })
+func opsClock(app *ledgerFixture, hour int) {
+	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 14, hour, 0, 0, 0, time.UTC) })
 }
 
-func opsCommand(command string, expected int64, request string, args commissioner.RawArgs) commissioner.RawCommand {
+func opsCommand(command string, expected int64, request string,
+	args commissioner.RawArgs) commissioner.RawCommand {
 	return commissioner.RawCommand{League: opsLeague, Command: command, Args: args, Expected: expected,
 		Request: request, Effective: "now", Visibility: "league"}
-}
-
-func noticeCommand(command string, expected int64, request, text string, pin bool) commissioner.RawCommand {
-	return opsCommand(command, expected, request, commissioner.RawArgs{Note: &commissioner.RawNote{Text: text, Pin: pin}})
 }
 
 func ruleCommand(expected int64, request, field, value, effective, reason string) commissioner.RawCommand {
@@ -33,7 +31,7 @@ func ruleCommand(expected int64, request, field, value, effective, reason string
 }
 
 // opsApp starts a Legacy league as "creator" with every owner reading as "owner".
-func opsApp(t *testing.T) *App {
+func opsApp(t *testing.T) *ledgerFixture {
 	t.Helper()
 	app := commissionerTestApp(t)
 	opsClock(app, 9)
@@ -44,21 +42,24 @@ func opsApp(t *testing.T) *App {
 	return app
 }
 
-func readAs(app *App, principal string) func() {
-	was := app.core.CommissionerSession
-	app.core.CommissionerSession = testCommissionerSession{principal}
-	return func() { app.core.CommissionerSession = was }
+func readAs(app *ledgerFixture, principal string) func() {
+	was := app.session
+	app.session = principal
+	return func() { app.session = was }
 }
 
 func TestCommissionerNoticesWire(t *testing.T) {
 	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
-	plain := executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", false))
+	plain := executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops",
+		commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", false))
 	opsClock(app, 11)
-	pinned := executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 2, "n2", "Rookie draft is Saturday", true))
+	pinned := executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops",
+		commissioner.NoticePublish, 2, "n2", "Rookie draft is Saturday", true))
 	opsClock(app, 12)
-	executeCommissionerTest(t, app, noticeCommand(commissioner.NotePost, 3, "n3", "House rule: no trades in week 18", true))
+	executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops", commissioner.NotePost, 3,
+		"n3", "House rule: no trades in week 18", true))
 	views := map[string]commissioner.LeagueNotes{}
 	read := func(name, principal string) commissioner.LeagueNotes {
 		defer readAs(app, principal)()
@@ -102,7 +103,8 @@ func TestCommissionerNoticesWire(t *testing.T) {
 func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 	t.Parallel()
 	app := opsApp(t)
-	raw := noticeCommand(commissioner.NoticePublish, 1, "p1", "Draft moved to Sunday", true)
+	raw := commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish, 1, "p1",
+		"Draft moved to Sunday", true)
 	preview := mustPreview(t, app, raw)
 	if len(preview.Blockers) != 0 || preview.Safeguard != "confirm" || len(preview.Fields) != 1 ||
 		preview.Fields[0].After != "Draft moved to Sunday" || preview.Fields[0].Before != "Not posted" ||
@@ -113,15 +115,17 @@ func TestAPreviewPostsNothingAndOwnersCannotPost(t *testing.T) {
 	if err != nil || len(reading.Notices) != 0 || len(reading.Mail.Recorded) != 0 || reading.Revision != 1 {
 		t.Fatalf("a dry run posted a notice owners can see: %+v %v", reading, err)
 	}
-	blank := noticeCommand(commissioner.NoticePublish, 1, "p2", "", false)
-	if got := mustPreview(t, app, blank); len(got.Blockers) != 1 || got.Blockers[0] != "Write the notice before posting it" {
+	blank := commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish, 1, "p2", "", false)
+	if got := mustPreview(t, app,
+		blank); len(got.Blockers) != 1 || got.Blockers[0] != "Write the notice before posting it" {
 		t.Fatalf("an empty notice must be refused in Go's words: %+v", got)
 	}
 	seat := opsCommand("commish.seat.replace", 1, "seat", commissioner.RawArgs{People: &commissioner.RawPeople{
 		Franchise: "franchise.01", Principal: "owner"}})
 	seat.Reason = "Seat the owner"
 	executeCommissionerTest(t, app, seat)
-	raw = noticeCommand(commissioner.NoticePublish, 2, "p3", "Draft moved to Sunday", true)
+	raw = commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish, 2, "p3",
+		"Draft moved to Sunday", true)
 	defer readAs(app, "owner")()
 	preview = mustPreview(t, app, raw)
 	if len(preview.Blockers) == 0 {
@@ -139,12 +143,15 @@ func TestCommissionerDigestsWire(t *testing.T) {
 	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
-	executeCommissionerTest(t, app, ruleCommand(1, "r1", "roster.limits", `{"min":20,"max":70}`, "next_rollover", ""))
+	executeCommissionerTest(t, app, ruleCommand(1, "r1", "roster.limits", `{"min":20,"max":70}`,
+		"next_rollover", ""))
 	opsClock(app, 11)
-	executeCommissionerTest(t, app, ruleCommand(2, "r2", "bids.ufa", `"blind"`, "now", "Agreed at the owners meeting"))
+	executeCommissionerTest(t, app, ruleCommand(2, "r2", "bids.ufa", `"blind"`, "now",
+		"Agreed at the owners meeting"))
 	opsClock(app, 12)
 	executeCommissionerTest(t, app, ruleCommand(3, "r3", "notify.reminders", `false`, "now", ""))
-	executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 4, "n1", "Welcome", false))
+	executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish,
+		4, "n1", "Welcome", false))
 	opsClock(app, 13)
 	grant := opsCommand("commish.role.grant", 5, "g1", commissioner.RawArgs{People: &commissioner.RawPeople{
 		Principal: "secret-deputy", Role: governance.CoCommissioner}})
@@ -169,7 +176,8 @@ func TestCommissionerDigestsWire(t *testing.T) {
 	}
 	owner := strings.Join(got(views["owner"]), "\n")
 	for _, want := range []string{"Active roster size: 18 to 80 → 20 to 70, from the next rollover",
-		"Unrestricted free agent bidding: Open → Blind", "The reason given: Agreed at the owners meeting.", "Created league “Ops league”"} {
+		"Unrestricted free agent bidding: Open → Blind", "The reason given: Agreed at the owners meeting.",
+		"Created league “Ops league”"} {
 		if !strings.Contains(owner, want) && !strings.Contains(strings.Join(got(views["creator"]), "\n"), want) {
 			t.Errorf("no digest says %q:\n%s", want, owner)
 		}
@@ -278,7 +286,8 @@ func TestPostedNoticesAreFindableInTheLedgerByKind(t *testing.T) {
 	t.Parallel()
 	app := opsApp(t)
 	opsClock(app, 10)
-	executeCommissionerTest(t, app, noticeCommand(commissioner.NoticePublish, 1, "n1", "Waivers run Tuesday", true))
+	executeCommissionerTest(t, app, commissionertest.NoticeCommand("native.ops", commissioner.NoticePublish,
+		1, "n1", "Waivers run Tuesday", true))
 	reading, err := app.TargetCommissionerLedgerFiltered(opsLeague, `{"kind":"notices"}`)
 	if err != nil || len(reading.Entries) != 1 ||
 		reading.Entries[0].What != "Posted an official notice, pinned: “Waivers run Tuesday”" {

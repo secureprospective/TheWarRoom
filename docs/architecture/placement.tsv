@@ -15,19 +15,13 @@ cache_app_test.go	platform
 cap_validity_test.go	contracts
 contracts_plans_test.go	contracts
 contracts_host.go	contracts
-commissioner_app.go	commissioner
 commissioner_app_test.go	commissioner
 commissioner_jobs_test.go	commissioner
 commissioner_market_app_test.go	commissioner
-commissioner_ops_test.go	commissioner
 commissioner_preview_acts_test.go	commissioner
-commissioner_preview_app.go	commissioner
-commissioner_preview_app_test.go	commissioner
 commissioner_preview_assets_test.go	commissioner
 commissioner_preview_draft_test.go	commissioner
-commissioner_preview_forms_test.go	commissioner
 commissioner_preview_market_test.go	commissioner
-commissioner_shell_test.go	commissioner
 commissioner_wire_test.go	commissioner
 contract_acts_app_test.go	contracts
 contract_acts_cap_test.go	contracts
@@ -55,7 +49,6 @@ landing_test.go	now
 landing_home_test.go	now
 now_pulse_test.go	now
 inspector_shell_test.go	now
-league_calendar_app.go	commissioner
 league_calendar_app_test.go	commissioner
 native_league_schedule_app_test.go	commissioner
 commissioner_window_gates_test.go	commissioner
@@ -92,7 +85,6 @@ native_draft_tray_test.go	commissioner
 native_draft_wire_test.go	commissioner
 native_gate.go	commissioner
 native_gate_test.go	commissioner
-native_legality_app.go	commissioner
 native_legality_app_test.go	commissioner
 native_lineup_app.go	commissioner
 native_lineup_app_test.go	commissioner
@@ -140,7 +132,6 @@ research_test.go	research
 restore_cli.go	platform
 restore_cli_test.go	platform
 roster_revalidate_test.go	contracts
-rookiedraft_wire_test.go	commissioner
 roster_moves_draft_test.go	contracts
 season_app.go	control
 season_app_test.go	control
@@ -172,7 +163,7 @@ internal/app/draft	draft
 internal/app/draft/drafttest	draft
 internal/app/market	market
 internal/app/market/markettest	market
-internal/app/native	commissioner
+internal/app/commissioner/native	commissioner
 internal/app/report	platform
 internal/app/season	platform
 internal/archive	archive
@@ -274,3 +265,5 @@ sources_runtime.go	sources
 internal/app/offers/offerstest	offers
 offers_reading.go	offers
 offers_fixture_test.go	offers
+commissioner_host.go	commissioner
+internal/app/commissioner/commissionertest	commissioner

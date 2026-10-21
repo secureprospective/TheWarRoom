@@ -723,3 +723,134 @@ durable history ledger. Shared player, roster, injury, draft and calendar state 
 with its existing owners. The native gate's Permit, transaction reauthorization, retry
 handling and session reads must retain their existing order. Long-lived clock workers
 and cross-feature football-fact composition remain unbound root adapters.
+
+## Commissioner Feature API
+
+All 44 inventoried bindings move one-for-one from App to `commissioner.API`.
+One API is sufficient; its Host embeds six named capabilities, each with at most
+10 methods. The existing pure Native service moves below the same feature at
+`internal/app/commissioner/native`; it is not a second bound API. Neither the
+feature nor its test fixtures import core or a sibling feature. Runtime and
+manifest reuse `bindings(app)` and the unbound `newCommissionerAPI` constructor.
+The manifest changes exactly 44 `main.App.X` lines to `commissioner.API.X`.
+
+This feature is stateless in memory: the history ledger owns its durable values.
+No private Held, App field or new lock is introduced. Core's host forwards each
+existing store operation intact; the store returns independently decoded values
+and owns its transaction and replay locks. It never splits authorization from
+append. The root adapter supplies the existing session, context, clock, zone,
+registry and detached football facts. Native snapshot capture retains RefreshMu
+and its original later SeasonMu and TargetSnapshotMu spans. The gate, owner seat,
+permit/command match and transactional reauthorization remain root-owned. No
+request principal is written onto shared state. Server publication still needs
+the per-call scope described above.
+
+`commish.ledger.read` supplies the two ledger catalog entries (G0), and
+`lineup.set` supplies the native lineup write (G3). Other bindings have no single
+matching registry verb: execute/preview multiplex many different census commands,
+so their IDs/gravity remain Unset rather than claiming a single command policy.
+Roles and versions remain Unset. Catalog metadata changes no desktop enforcement.
+
+The root count falls from 172 to 164. Wire declarations and all bound bodies move
+into the feature's responsibility-specific `*_api.go` files. Removed root files:
+`commissioner_app.go`, `commissioner_preview_app.go`, `league_calendar_app.go`,
+`native_legality_app.go`. Their unbound pieces consolidate in `commissioner_host.go`.
+Root names still needed by composition/tests are type aliases, not bound wrappers.
+
+Five complete test files move beside the API: `commissioner_ops_test.go`,
+`commissioner_shell_test.go`, `commissioner_preview_app_test.go`,
+`commissioner_preview_forms_test.go` and `rookiedraft_wire_test.go`. Controls wire
+coverage leaves `commissioner_jobs_test.go`; results/bracket scope/startup tests
+leave `native_results_app_test.go`. Offline fake-Host fixtures drive the moved API
+scenarios against an isolated ledger. `commissionertest` supplies the shared
+history setup, requests and canonical repository paths, also used by root tests.
+Core's port tests use `coretest.New(t).Build()`, test simultaneous creation at one
+version and mutate returned league, seat and nested event values before rereading.
+
+### Commissioner root exceptions
+
+These are unbound composition, not retained App bindings:
+- `commissioner_host.go`: injected/local identity, embedded census CSV, shared
+  football-fact capture, stream replay and the unbound Host bridge.
+- `native_gate.go`: the registry, Permit door, clock/zone and contract-action gate.
+- `native_owner_app.go`: family/seat selection, permit-match checks, retry and the
+  one authorized owner transaction. The three public owner doors move.
+- `native_lineup_app.go`: the registered permit-matched lineup transaction and the
+  app-lineup environment that joins archived NFL dates and held player facts.
+- `native_draft_app.go`: the registered permit-matched pick transaction, close-after-
+  pick effect and background close worker. Both public draft doors move.
+- `native_schedule_app.go`: local archived NFL reads, bidding environment, due bid/
+  waiver workers and the app-lifetime clock. Both public owner readings move.
+- `native_seed_app.go`: idempotent seed preparation and the cross-feature held
+  roster/draft/settings capture under its existing serializer. All bindings move.
+
+Root tests retained for real wiring, shared fixtures and canonical goldens:
+- `commissioner_app_test.go`: shared App/session fixture and session identity,
+  append/replay and canonical people/rules wire contracts.
+- `commissioner_jobs_test.go`: root calendar/window fixture and jobs golden;
+  independent Controls coverage moved.
+- `commissioner_market_app_test.go`: owner/commissioner market privacy and
+  schedule/waiver/bid/trade fixture joins and their actual preview/append round trips.
+- `commissioner_preview_acts_test.go`, `commissioner_preview_assets_test.go`,
+  `commissioner_preview_draft_test.go`, `commissioner_preview_market_test.go`:
+  held seed, reserve, cap, draft, correction and owner-family integration; the
+  shared root preview facade is now a test-only delegate to commissionertest.
+- `commissioner_wire_test.go`, `native_wire_test.go`: canonical binding/denial
+  goldens and simultaneous writes through the real root gate and history adapter.
+- `corrections_app_test.go`, `corrections_transactions_test.go`: cross-family
+  corrections, calendar/reserve exceptions, actual gated claims and pick compensation.
+- `league_calendar_app_test.go`, `native_league_schedule_app_test.go`,
+  `commissioner_window_gates_test.go`, `native_gate_test.go`: real registry Permit,
+  calendar/version/restart/compensation and published-schedule composition.
+- `native_bid_clock_test.go`, `native_bid_season_test.go`: root due-worker and
+  native bracket/archived-NFL environment composition, exact transaction rechecks.
+- `native_bids_fixture_test.go`, `native_bids_governs_test.go`,
+  `native_bids_process_test.go`, `native_bids_test.go`: shared root owner-gate,
+  football-fact/roster/cap fixture, permission/privacy and award/retry/restart paths.
+- `native_cap_app_test.go`, `native_contract_actions_app_test.go`,
+  `native_contract_quote_app_test.go`, `native_contract_quote_gate_test.go`:
+  shared held-seed legality fixture, root contract registry and live calendar gate,
+  compensation and viewer-zone effects on the same ledger.
+- `native_directory_app_test.go`, `native_seed_app_test.go`: actual mirror/settings/
+  draft-to-native seed, no-imported-mutation and reopen-without-mirror contracts.
+- `native_draft_app_test.go`, `native_draft_fixture_test.go`,
+  `native_draft_pick_test.go`, `native_draft_tray_test.go`,
+  `native_draft_wire_test.go`: shared real held rookie/seed fixture, root registered
+  pick, clock/close worker, roster/cap refusal and canonical room wire integration.
+- `native_legality_app_test.go`, `native_override_app_test.go`: shared held directory,
+  injuries, mirror and settings fixture; real season-effective override composition.
+- `native_lineup_app_test.go`: root registered action and archived NFL kickoff/
+  lineup environment, owner identity and restart/compensation wiring.
+- `native_player_score_app_test.go`, `native_results_app_test.go`,
+  `native_stat_queue_app_test.go`: real held NFL archive, lineup/scoring/approval and
+  published-schedule integration. Independent results/bracket refusal tests moved.
+- `native_schedule_app_test.go`: real local NFL reference archive and native owner
+  opponent/restart composition, including missing dates and season regeneration.
+- `native_trades_assets_test.go`, `native_trades_fixture_test.go`,
+  `native_trades_governs_test.go`, `native_trades_test.go`: shared root trade/waiver
+  fixture, permit door, DOT/privacy, draft-pick and roster/cap atomicity integration.
+- `native_waiver_rules_test.go`, `native_waivers_orders_test.go`,
+  `native_waivers_test.go`: real root gate, held starting assets, restart, due-worker,
+  standings priority, compensation and owner retries after calendar closure.
+- `season_rollover_app_test.go`: actual cross-reading rollover over the shared
+  legality/seed fixture and transactionally refused season changes.
+
+All retained tests invoke the feature API explicitly; no test adds methods back
+onto App. The root exceptions are deliberately visible rather than hiding the
+native action gate or operation serializers behind a copied fake implementation.
+Frontend transport for Commissioner and Draft room is solely
+`app/commissioner/api.ts`; the adapter retains each caller's no-desktop wording,
+fixture stubs and generated call signatures. There is no runtime event
+subscription or async-runtime-import lifecycle in these callers to migrate.
+
+Commissioner local proof: build and make lint pass; feature/core race tests pass;
+root Wire/Manifest/Denial goldens pass without modifying `testdata/wire`. The
+additional root race selection covers simultaneous commissioner/owner writes,
+every registered native gate and both manifest tests. Binding generation and
+freshness pass (freshness requires staging removed paths before its git-file
+inventory is taken). Frontend transport, typecheck, build and 447 Commissioner,
+Draft room and repo-wide Controls tests pass. Five deliberate violations fail and
+are restored: core import, sibling import (the new Commissioner depguard rule),
+an extra exported API helper without catalog metadata, a skipped native gate and
+a generated frontend import outside api.ts. No full root suite, live app or MFL
+request is run. Existing generic-model Wails diagnostics remain nonfatal.

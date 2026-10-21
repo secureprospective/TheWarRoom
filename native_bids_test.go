@@ -16,7 +16,7 @@ import (
 func ledgerHas(t *testing.T, f *bidFixture, principal, entry string) bool {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
-	ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -332,7 +332,7 @@ func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
 	args := commissioner.RawBidArgs{Player: "5002", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}
 	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &args}, "private")
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if _, err := f.app.TargetNativeBidAction(raw); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeBidAction(raw); err == nil {
 		t.Fatal("a bid skipped the native gate")
 	}
 	if _, err := f.app.core.History.ExecuteCommissionerWithFacts(t.Context(), raw, "owner.one", nil,
@@ -343,7 +343,7 @@ func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(body); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(body); err == nil {
 		t.Fatal("an owner bid used the commissioner door")
 	}
 	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["cut","waiver_claim","ufa_bid"]}}`, "now")
@@ -360,11 +360,11 @@ func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
 		t.Fatal("an owner raised another owner's bid")
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if _, err := f.app.TargetNativeBids(legalityLeague, "franchise.01"); err != nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeBids(legalityLeague, "franchise.01"); err != nil {
 		t.Fatal(err)
 	}
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
-	if _, err := f.app.TargetNativeBids(legalityLeague, "franchise.01"); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeBids(legalityLeague, "franchise.01"); err == nil {
 		t.Fatal("an owner read another franchise's bids")
 	}
 }
@@ -376,14 +376,14 @@ func TestNativeBidDecisionsCannotBeSuppliedByTheRequest(t *testing.T) {
 	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &args,
 		BidOutcome: &commissioner.BidOutcome{Points: 1}}, "private")
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if _, err := f.app.TargetNativeBidAction(raw); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeBidAction(raw); err == nil {
 		t.Fatal("a request carried its own bid decision")
 	}
 	body, err := jsonOf(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(body); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(body); err == nil {
 		t.Fatal("the commissioner door took a bid decision")
 	}
 }
@@ -394,17 +394,17 @@ func TestNativeBidRetryReturnsTheRecordedReceipt(t *testing.T) {
 	args := commissioner.RawBidArgs{Player: "5001", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}
 	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &args}, "private")
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	first, err := f.app.TargetNativeBidAction(raw)
+	first, err := newCommissionerAPI(f.app).TargetNativeBidAction(raw)
 	if err != nil {
 		t.Fatal(err)
 	}
-	again, err := f.app.TargetNativeBidAction(raw)
+	again, err := newCommissionerAPI(f.app).TargetNativeBidAction(raw)
 	if err != nil || again.Entry != first.Entry {
 		t.Fatalf("a retried bid recorded twice: %v %v", again, err)
 	}
 	f.restart(t)
 	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
-	if again, err = f.app.TargetNativeBidAction(raw); err != nil || again.Entry != first.Entry {
+	if again, err = newCommissionerAPI(f.app).TargetNativeBidAction(raw); err != nil || again.Entry != first.Entry {
 		t.Fatalf("a retry after a restart recorded twice: %v %v", again, err)
 	}
 	if reading := f.bids(t, "owner.one", "franchise.01"); reading.ActiveBids != 1 {
@@ -412,7 +412,7 @@ func TestNativeBidRetryReturnsTheRecordedReceipt(t *testing.T) {
 	}
 	stale := raw
 	stale.Request = "stale"
-	if _, err := f.app.TargetNativeBidAction(stale); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetNativeBidAction(stale); err == nil {
 		t.Fatal("a stale league version was accepted")
 	}
 }

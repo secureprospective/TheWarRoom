@@ -26,7 +26,7 @@ func contractActionApp(t *testing.T) *legalityFixture {
 
 func contractActionRow(t *testing.T, f *legalityFixture, field string) commissioner.RuleRow {
 	t.Helper()
-	rules, err := f.app.TargetCommissionerRules(legalityLeague)
+	rules, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func contractActionRow(t *testing.T, f *legalityFixture, field string) commissio
 func nativeActionCommand(t *testing.T, f *legalityFixture, action, params, effective string,
 	on bool) commissioner.RawCommand {
 	t.Helper()
-	rules, err := f.app.TargetCommissionerRules(legalityLeague)
+	rules, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,11 +165,11 @@ func TestNativeContractActionRefusalsAreAtomic(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatalf("invalid contract action appended: %s", body)
 		}
 	}
-	rules, err := f.app.TargetCommissionerRules(legalityLeague)
+	rules, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil || rules.Revision != receipt.Revision {
 		t.Fatalf("refused action changed revision: %+v %v", rules, err)
 	}
@@ -194,7 +194,7 @@ func TestNativeContractActionPendingHistoryAndWire(t *testing.T) {
 	if len(row.Pending) != 0 {
 		t.Fatal("applied action still waiting")
 	}
-	ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

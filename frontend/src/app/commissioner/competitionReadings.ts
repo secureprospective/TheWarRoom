@@ -1,8 +1,8 @@
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import type { CommissionerBindings } from './api';
 import type { ActReadings, Option } from './actReadings';
 import type { FieldKind } from './actTable';
 
-export async function readCompetitionOptions(app: typeof Bindings, league: string,
+export async function readCompetitionOptions(app: CommissionerBindings, league: string,
   kinds: readonly FieldKind[], season: number, revision: number, options: ActReadings['options']) {
   if (kinds.includes('scheduleGame')) {
     const schedule = await app.TargetCommissionerSchedule(league);

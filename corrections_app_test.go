@@ -21,7 +21,7 @@ func assetCorrection(t *testing.T, f *draftFixture, command string, c commission
 
 func correctionAssets(t *testing.T, f *draftFixture) commissioner.NativeAssets {
 	t.Helper()
-	a, err := f.app.TargetNativeAssets(draftLeague)
+	a, err := newCommissionerAPI(f.app).TargetNativeAssets(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,11 +97,11 @@ func TestAssetCorrectionsGovernRevertAndReopen(t *testing.T) {
 
 func checkCorrectionReadings(t *testing.T, f *draftFixture, count int) {
 	t.Helper()
-	roster, err := f.app.TargetNativeRosterCheck(draftLeague)
+	roster, err := newCommissionerAPI(f.app).TargetNativeRosterCheck(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	capCheck, err := f.app.TargetNativeCapCheck(draftLeague, "UTC")
+	capCheck, err := newCommissionerAPI(f.app).TargetNativeCapCheck(draftLeague, "UTC")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestCorrectionsWireMatchesGo(t *testing.T) {
 	assetCorrection(t, f, commissioner.CorrectProvenance, commissioner.RawCorrection{Player: p.ID, Via: "waiver"})
 	assetCorrection(t, f, commissioner.RuleException, commissioner.RawCorrection{Rule: "calendar.lineup",
 		Scope: &commissioner.ExceptionScope{Franchise: draftTeam(1)}})
-	reading, err := f.app.TargetCorrections(draftLeague)
+	reading, err := newCommissionerAPI(f.app).TargetCorrections(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +285,7 @@ func TestCorrectionUsesSharedVersionRetryAndCoPermission(t *testing.T) {
 		if err != nil {
 			return commissioner.Receipt{}, err
 		}
-		return f.app.TargetCommissionerExecute(string(body))
+		return newCommissionerAPI(f.app).TargetCommissionerExecute(string(body))
 	}
 	receipt, err := send(raw)
 	if err != nil {

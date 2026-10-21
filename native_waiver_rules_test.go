@@ -26,7 +26,7 @@ func createWaiverPolicyLeague(t *testing.T, app *App, preset string) commissione
 
 func readWaiverPolicy(t *testing.T, app *App) (nativecheck.WaiverPolicy, []commissioner.RuleRow) {
 	t.Helper()
-	reading, err := app.TargetCommissionerRules(waiverPolicyLeague)
+	reading, err := newCommissionerAPI(app).TargetCommissionerRules(waiverPolicyLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

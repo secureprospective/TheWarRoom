@@ -264,7 +264,7 @@ func TestTheTrayRefusesWhatItShouldNotAndNeedsARoleAndAReasonCM043(t *testing.T)
 // ledgerWhats lists what the ledger says each entry did, newest first, keyed by entry.
 func (f *draftFixture) ledgerWhats(t *testing.T) map[string]string {
 	t.Helper()
-	ledger, err := f.app.TargetCommissionerLedger(draftLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -382,7 +382,7 @@ func (f *draftFixture) draftEnds() { f.now = f.now.Add(160*6*time.Hour + time.Ho
 func (f *draftFixture) closedWords(t *testing.T) string {
 	t.Helper()
 	d := f.read(t, "franchise.01")
-	assets, err := f.app.TargetNativeAssets(draftLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

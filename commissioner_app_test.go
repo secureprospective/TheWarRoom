@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -13,12 +12,10 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
-	"github.com/secureprospective/TheWarRoom/internal/measures"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 type testCommissionerSession struct{ principal string }
@@ -27,20 +24,7 @@ func (s testCommissionerSession) Principal() (string, error) { return s.principa
 
 func commissionerTestApp(t *testing.T) *App {
 	t.Helper()
-	p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "history.db"), history.SchemaVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = p.Close() })
-	reg, err := measures.Embedded()
-	if err != nil {
-		t.Fatal(err)
-	}
-	store := history.New(p, reg)
-	store.SetClock(func() time.Time { return time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC) })
-	if err := store.Initialize(t.Context()); err != nil {
-		t.Fatal(err)
-	}
+	store := commissionertest.History(t)
 	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
 		CommissionerSession: testCommissionerSession{"creator"}}}
 	close(app.core.Started)
@@ -49,15 +33,7 @@ func commissionerTestApp(t *testing.T) *App {
 
 func executeCommissionerTest(t *testing.T, app *App, raw commissioner.RawCommand) commissioner.Receipt {
 	t.Helper()
-	body, err := json.Marshal(raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	receipt, err := app.TargetCommissionerExecute(string(body))
-	if err != nil {
-		t.Fatal(err)
-	}
-	return receipt
+	return commissionertest.Execute(t, newCommissionerAPI(app).TargetCommissionerExecute, raw)
 }
 
 func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
@@ -102,7 +78,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 	views := map[string]commissioner.People{}
 	for _, principal := range []string{"creator", "private-deputy", "owner-one", "stranger"} {
 		app.core.CommissionerSession = testCommissionerSession{principal}
-		people, err := app.TargetCommissionerPeople(raw.League)
+		people, err := newCommissionerAPI(app).TargetCommissionerPeople(raw.League)
 		if err != nil || people.Revision != 7 || people.Seats[0].Owner != "owner-one" {
 			t.Fatalf("IPC reading: %+v %v", people, err)
 		}
@@ -134,7 +110,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, refusal := app.TargetCommissionerExecute(string(encoded))
+	_, refusal := newCommissionerAPI(app).TargetCommissionerExecute(string(encoded))
 	// The owner reads the reason alone, without the context each layer adds for the log.
 	if refusal == nil || refusal.Error() != "This league already has a co-commissioner: revoke them first" {
 		t.Fatalf("a second co-commissioner must be refused in the owner's words: %v", refusal)
@@ -145,7 +121,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkWire(t, "frontend/src/app/commissioner/people.wire.testdata.json", body, "people")
-	if _, err := app.TargetCommissionerPeople("legacy"); err == nil {
+	if _, err := newCommissionerAPI(app).TargetCommissionerPeople("legacy"); err == nil {
 		t.Fatal("imported league admitted to native people reading")
 	}
 }
@@ -178,7 +154,7 @@ func TestCommissionerStaleVersionIsRefusedWithTheWordsTheFormWatchesFor(t *testi
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(body)); err == nil ||
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil ||
 		!strings.HasPrefix(err.Error(), "League version is ") ||
 		!strings.Contains(err.Error(), "reread before changing it") {
 		t.Fatalf("a stale version must say the league changed: %v", err)
@@ -195,12 +171,12 @@ func TestCommissionerWire(t *testing.T) {
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: first.Entry}
 	raw.Expected, raw.Request, raw.Reason, raw.Visibility = 1, "private", "Private correction", "private"
 	private := executeCommissionerTest(t, app, raw)
-	commish, err := app.TargetCommissionerLedger(raw.League)
+	commish, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil || len(commish.Entries) != 2 || commish.Entries[0].ID != private.Entry {
 		t.Fatalf("commissioner newest first: %+v %v", commish, err)
 	}
 	app.core.CommissionerSession = testCommissionerSession{"owner"}
-	owner, err := app.TargetCommissionerLedger(raw.League)
+	owner, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,14 +206,14 @@ func TestCommissionerWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(encoded)); err == nil {
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(encoded)); err == nil {
 		t.Fatal("owner acted as creator through IPC")
 	}
-	if _, err := app.TargetCommissionerExecute(strings.Replace(string(encoded), `"expected":2`,
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(strings.Replace(string(encoded), `"expected":2`,
 		`"principal":"creator","expected":2`, 1)); err == nil {
 		t.Fatal("frontend switched principal")
 	}
-	leagues, err := app.TargetCommissionerLeagues()
+	leagues, err := newCommissionerAPI(app).TargetCommissionerLeagues()
 	if err != nil || len(leagues) != 1 || leagues[0].Name != "Our league" {
 		t.Fatalf("leagues: %+v %v", leagues, err)
 	}
@@ -279,12 +255,12 @@ func TestCommissionerRulesWire(t *testing.T) {
 	raw.Args = commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`12500000000`)}
 	raw.Expected, raw.Request, raw.Effective, raw.Reason = 2, "cap", "next_rollover", ""
 	executeCommissionerTest(t, app, raw)
-	creator, err := app.TargetCommissionerRules(raw.League)
+	creator, err := newCommissionerAPI(app).TargetCommissionerRules(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
 	app.core.CommissionerSession = testCommissionerSession{"owner"}
-	owner, err := app.TargetCommissionerRules(raw.League)
+	owner, err := newCommissionerAPI(app).TargetCommissionerRules(raw.League)
 	if err != nil || !reflect.DeepEqual(creator, owner) {
 		t.Fatalf("owners read the same public rules: %v", err)
 	}
@@ -314,7 +290,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 		t.Fatal("commissioner rules wire is stale")
 	}
 	for _, league := range []string{"legacy", "native.", " native.rules", "native.missing"} {
-		if _, err := app.TargetCommissionerRules(league); err == nil {
+		if _, err := newCommissionerAPI(app).TargetCommissionerRules(league); err == nil {
 			t.Fatalf("%q admitted to the app league rules reading", league)
 		}
 	}
@@ -326,7 +302,7 @@ func TestCommissionerLegacyRulesWire(t *testing.T) {
 	executeCommissionerTest(t, app, commissioner.RawCommand{League: "native.legacy", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Legacy league", Preset: commissioner.PresetLegacy, Season: 2026},
 		Reason: "Start from the Legacy NFL rules", Request: "create", Effective: "now", Visibility: "league"})
-	reading, err := app.TargetCommissionerRules("native.legacy")
+	reading, err := newCommissionerAPI(app).TargetCommissionerRules("native.legacy")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,11 +328,11 @@ func TestCommissionerReplacedRulesWire(t *testing.T) {
 		raw.Expected, raw.Request = int64(i+1), fmt.Sprintf("waiting.%d", i)
 		executeCommissionerTest(t, app, raw)
 	}
-	rules, err := app.TargetCommissionerRules(raw.League)
+	rules, err := newCommissionerAPI(app).TargetCommissionerRules(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ledger, err := app.TargetCommissionerLedger(raw.League)
+	ledger, err := newCommissionerAPI(app).TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}

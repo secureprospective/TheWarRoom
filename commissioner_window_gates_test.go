@@ -142,7 +142,7 @@ func TestWindowSetAndRemoveGateAnAction(t *testing.T) {
 
 func rulesWindows(t *testing.T, app *App, league string) json.RawMessage {
 	t.Helper()
-	rules, err := app.TargetCommissionerRules(league)
+	rules, err := newCommissionerAPI(app).TargetCommissionerRules(league)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +182,7 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 		commissioner.RawWindowArgs{ID: "ufa", Start: date(5, 3), End: date(5, 10),
 			Opens: []leaguerules.Action{"ufa_bid"}}))
 	read := func(league string) commissioner.Calendar {
-		got, err := app.TargetLeagueCalendar(RawLeagueCalendarScope{League: league, Season: 2026,
+		got, err := newCommissionerAPI(app).TargetLeagueCalendar(RawLeagueCalendarScope{League: league, Season: 2026,
 			LocalZone: "UTC", Franchise: "franchise.01", Action: "ufa_bid"})
 		if err != nil {
 			t.Fatal(err)
@@ -244,7 +244,7 @@ func TestWindowCommandAuthorityAndSafety(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = app.TargetCommissionerExecute(string(body))
+		_, err = newCommissionerAPI(app).TargetCommissionerExecute(string(body))
 		return err
 	}
 	for _, who := range []string{"owner", "outsider"} {
@@ -301,7 +301,7 @@ func TestReversalCannotOrphanALaterWindowChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(body)); err == nil ||
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil ||
 		!strings.Contains(err.Error(), "extra window does not exist") {
 		t.Fatal("reversing the window a later move depends on must be refused", err)
 	}

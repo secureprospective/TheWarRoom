@@ -79,7 +79,7 @@ func seedCalendarTest(t *testing.T, app *App) commissioner.RawCommand {
 
 func calendarOwnerRead(t *testing.T, app *App) commissioner.Calendar {
 	t.Helper()
-	reading, err := app.TargetLeagueCalendar(RawLeagueCalendarScope{League: "native.calendar", Season: 2026,
+	reading, err := newCommissionerAPI(app).TargetLeagueCalendar(RawLeagueCalendarScope{League: "native.calendar", Season: 2026,
 		LocalZone: "America/Los_Angeles", Franchise: "franchise.01", Action: "ufa_bid"})
 	if err != nil {
 		t.Fatal(err)
@@ -136,7 +136,7 @@ func TestCalendarExceptionCommandOwnerExpiryRevertRestart(t *testing.T) {
 	if !calendarOwnerRead(t, app).Decision.Open {
 		t.Fatal("exception lost on restart")
 	}
-	other, err := app.TargetLeagueCalendar(RawLeagueCalendarScope{League: raw.League, Season: 2026,
+	other, err := newCommissionerAPI(app).TargetLeagueCalendar(RawLeagueCalendarScope{League: raw.League, Season: 2026,
 		LocalZone: "UTC", Franchise: "franchise.02", Action: "ufa_bid"})
 	if err != nil || other.Decision.Open {
 		t.Fatal(other, err)
@@ -178,7 +178,7 @@ func TestCalendarExceptionSafety(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("accepted unsafe exception", string(body))
 		}
 	}
@@ -190,7 +190,7 @@ func TestCalendarExceptionSafety(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("owner bypassed commissioner permission")
 	}
 }

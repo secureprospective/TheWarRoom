@@ -1,4 +1,4 @@
-package main
+package commissioner
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	"github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -44,7 +45,7 @@ func TestNativeDraftEngineWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	body = append(body, '\n')
-	path := filepath.Join("internal", "engine", "rookiedraft", "testdata", "draft-engine.wire.json")
+	path := commissionertest.RepoPath("internal", "engine", "rookiedraft", "testdata", "draft-engine.wire.json")
 	if os.Getenv("TWR_WRITE_WIRE") == "1" {
 		if err := os.MkdirAll(filepath.Dir(path), 0o750); err != nil {
 			t.Fatal(err)

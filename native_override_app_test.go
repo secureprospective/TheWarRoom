@@ -15,7 +15,7 @@ import (
 
 func overrideCommand(t *testing.T, f *legalityFixture, command, value string) commissioner.RawCommand {
 	t.Helper()
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -33,7 +33,7 @@ func overrideCommand(t *testing.T, f *legalityFixture, command, value string) co
 
 func nativeContract(t *testing.T, f *legalityFixture, id string) commissioner.NativePlayer {
 	t.Helper()
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,11 +194,11 @@ func TestNativeOverridesLedgerOrderAndCompensatedCompensation(t *testing.T) {
 	if got := nativeContract(t, f, "0099"); got.Salary != 1000000000 {
 		t.Fatalf("earlier correction lost: %+v", got)
 	}
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,7 +226,7 @@ func TestNativeOverrideWire(t *testing.T) {
 	reserves := legalityApp(t)
 	executeCommissionerTest(t, reserves.app, overrideCommand(t, reserves, commissioner.ReserveException,
 		`{"player":"2002","bucket":"ir","until":"2026-10-14T12:00:00Z"}`))
-	reserveReading, err := reserves.app.TargetNativeReserveCheck(legalityLeague)
+	reserveReading, err := newCommissionerAPI(reserves.app).TargetNativeReserveCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -255,7 +255,7 @@ func TestNativeOverrideRefusalsLeaveAssetsUntouched(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+		if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatal("invalid target accepted")
 		}
 		if after := readCap(t, f); !reflect.DeepEqual(before, after) {
@@ -268,7 +268,7 @@ func TestNativeOverrideRefusalsLeaveAssetsUntouched(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("stale correction accepted")
 	}
 	raw.Expected++
@@ -281,7 +281,7 @@ func TestNativeOverrideRefusalsLeaveAssetsUntouched(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("request key reused")
 	}
 	f.revert(t, receipt)

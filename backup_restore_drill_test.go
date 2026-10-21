@@ -46,11 +46,11 @@ func TestBackupSnapshotDifferentHomeCommissionerRightsFinding(t *testing.T) {
 		Args:   commissioner.RawArgs{Name: "Restore drill", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
 		Reason: "Start the restore drill", Request: "create", Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, source, raw)
-	before, err := source.TargetCommissionerRules(raw.League)
+	before, err := newCommissionerAPI(source).TargetCommissionerRules(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
-	people, err := source.TargetCommissionerPeople(raw.League)
+	people, err := newCommissionerAPI(source).TargetCommissionerPeople(raw.League)
 	if err != nil || !people.MayChangeRules {
 		t.Fatalf("source commissioner missing: %+v %v", people, err)
 	}
@@ -61,15 +61,15 @@ func TestBackupSnapshotDifferentHomeCommissionerRightsFinding(t *testing.T) {
 		}
 	}
 	restored := restoreDrillApp(t, home)
-	after, err := restored.TargetCommissionerRules(raw.League)
+	after, err := newCommissionerAPI(restored).TargetCommissionerRules(raw.League)
 	if err != nil || !reflect.DeepEqual(before, after) {
 		t.Fatalf("native rules changed after snapshot restore: %v", err)
 	}
-	leagues, err := restored.TargetCommissionerLeagues()
+	leagues, err := newCommissionerAPI(restored).TargetCommissionerLeagues()
 	if err != nil || len(leagues) != 1 || leagues[0].ID != raw.League {
 		t.Fatalf("native league missing: %+v %v", leagues, err)
 	}
-	people, err = restored.TargetCommissionerPeople(raw.League)
+	people, err = newCommissionerAPI(restored).TargetCommissionerPeople(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,7 +113,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 	if before.Snapshot == nil || len(before.Snapshot.Players) == 0 {
 		t.Fatal("fixture has no roster")
 	}
-	rules, err := a.TargetCommissionerRules(raw.League)
+	rules, err := newCommissionerAPI(a).TargetCommissionerRules(raw.League)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,15 +134,15 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 	if !reflect.DeepEqual(before, after) {
 		t.Fatal("native roster changed after same-home restore")
 	}
-	afterRules, err := restored.TargetCommissionerRules("native.restore")
+	afterRules, err := newCommissionerAPI(restored).TargetCommissionerRules("native.restore")
 	if err != nil || !reflect.DeepEqual(rules, afterRules) {
 		t.Fatalf("rules changed: %v", err)
 	}
-	people, err := restored.TargetCommissionerPeople("native.restore")
+	people, err := newCommissionerAPI(restored).TargetCommissionerPeople("native.restore")
 	if err != nil || !people.MayChangeRules || people.YourRole == "Visitor" {
 		t.Fatalf("same-home commissioner lost rights: %+v %v", people, err)
 	}
-	leagues, err := restored.TargetCommissionerLeagues()
+	leagues, err := newCommissionerAPI(restored).TargetCommissionerLeagues()
 	if err != nil || len(leagues) != 1 || leagues[0].ID != "native.restore" {
 		t.Fatalf("restore did not rewind native leagues: %+v %v", leagues, err)
 	}

@@ -16,7 +16,7 @@ import (
 
 func readStatQueue(t *testing.T, f *legalityFixture) commissioner.StatQueue {
 	t.Helper()
-	out, err := f.app.TargetStatQueue(legalityLeague, 2026)
+	out, err := newCommissionerAPI(f.app).TargetStatQueue(legalityLeague, 2026)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestNativeStatPreviewStatesPointsAndFlipBeforeItFires(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	preview, err := f.app.TargetNativeScorePreview(string(body))
+	preview, err := newCommissionerAPI(f.app).TargetNativeScorePreview(string(body))
 	if err != nil || !strings.Contains(preview.Words, "tackle 1 → 3, +3 points") ||
 		preview.Flip.Status != commissioner.FlipUnknown || len(preview.Warnings) != 1 {
 		t.Fatalf("preview: %+v %v", preview, err)
@@ -173,7 +173,7 @@ func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	q, err := a.TargetStatQueue(legalityLeague, 2026)
+	q, err := newCommissionerAPI(a).TargetStatQueue(legalityLeague, 2026)
 	if err != nil || q.Words != "Record the starting snapshot first" || len(q.Open) != 0 || len(q.Decided) != 0 {
 		t.Fatalf("an unseeded league queued: %+v %v", q, err)
 	}
@@ -181,7 +181,7 @@ func TestNativeStatQueueScopeAndStartingSnapshot(t *testing.T) {
 		league string
 		season int
 	}{{"native.", 2026}, {"native.missing", 2026}, {legalityLeague, 1919}} {
-		if _, err := a.TargetStatQueue(scope.league, scope.season); err == nil {
+		if _, err := newCommissionerAPI(a).TargetStatQueue(scope.league, scope.season); err == nil {
 			t.Fatalf("invalid scope accepted: %+v", scope)
 		}
 	}

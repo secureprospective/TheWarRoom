@@ -26,7 +26,7 @@ func (f *draftFixture) asOwner(n int) { f.actAs(fmt.Sprintf("owner%d", n)) }
 
 func (f *draftFixture) player(t *testing.T, id string) commissioner.NativePlayer {
 	t.Helper()
-	assets, err := f.app.TargetNativeAssets(draftLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,7 +40,7 @@ func (f *draftFixture) player(t *testing.T, id string) commissioner.NativePlayer
 
 func (f *draftFixture) committed(t *testing.T, franchise string) int64 {
 	t.Helper()
-	check, err := f.app.TargetNativeCapCheck(draftLeague, "America/Los_Angeles")
+	check, err := newCommissionerAPI(f.app).TargetNativeCapCheck(draftLeague, "America/Los_Angeles")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,7 +356,7 @@ func TestDraftReadingSurvivesReopeningAndFixesTheWire(t *testing.T) {
 	if running.Draft.Picks[1].Skipped != true || running.Next == nil || running.Next.Slot != 3 {
 		t.Fatalf("the skip and the viewer's next pick: %+v", running.Draft.Picks[1])
 	}
-	ledger, err := f.app.TargetCommissionerLedger(draftLeague)
+	ledger, err := newCommissionerAPI(f.app).TargetCommissionerLedger(draftLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

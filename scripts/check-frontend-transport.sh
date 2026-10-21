@@ -12,6 +12,7 @@ const features = new Set(fs.readdirSync('frontend/wailsjs/go', { withFileTypes: 
 // One line per moved feature, alphabetical, so parallel split lanes merge cleanly.
 const folders = new Map([
   ['archive', 'archive'],
+  ['commissioner', 'commissioner'],
   ['comms', 'comms'],
   ['contracts', 'contracts'],
   ['control', 'control'],
@@ -26,15 +27,30 @@ const folders = new Map([
   ['trades', 'trades'],
 ]);
 // Folders whose feature has no root App bindings left: nothing in them may touch main/App or runtime.
-const whole = ['archive', 'comms', 'control', 'counterparties', 'race'];
+const whole = ['archive', 'commissioner', 'comms', 'control', 'counterparties', 'race'];
 const moved = new Map([
   ['TargetArchive', 'archive'],
+  ...['TargetCommissionerActor', 'TargetCommissionerControls', 'TargetCommissionerDigests',
+    'TargetCommissionerExecute', 'TargetCommissionerJobs', 'TargetCommissionerLeagues',
+    'TargetCommissionerLedger', 'TargetCommissionerLedgerFiltered', 'TargetCommissionerMarket',
+    'TargetCommissionerNotices', 'TargetCommissionerPeople', 'TargetCommissionerPreview',
+    'TargetCommissionerRules', 'TargetCommissionerSchedule', 'TargetCorrections',
+    'TargetLeagueCalendar', 'TargetLeagueSchedule', 'TargetNativeAssets', 'TargetNativeBidAction',
+    'TargetNativeBids', 'TargetNativeBracket', 'TargetNativeCapCheck', 'TargetNativeContractQuote',
+    'TargetNativeDirectory', 'TargetNativeDraft', 'TargetNativeDraftPick',
+    'TargetNativeFranchiseSchedule', 'TargetNativeHouseRules', 'TargetNativeLineup',
+    'TargetNativeLineupCheck', 'TargetNativeLineupSet', 'TargetNativePlayerScore',
+    'TargetNativeReserveCheck', 'TargetNativeResults', 'TargetNativeRosterCheck',
+    'TargetNativeScorePreview', 'TargetNativeSeed', 'TargetNativeStandings', 'TargetNativeTradeAction',
+    'TargetNativeTrades', 'TargetNativeWaiverAction', 'TargetNativeWaivers', 'TargetNativeWeek',
+    'TargetStatQueue'].map(name => [name, 'commissioner']),
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
   ...['DeleteMFLKey', 'GetParams', 'MFLKeyStatus', 'ResetParam', 'SetMFLKey', 'SetParam', 'TargetAccounting',
     'TargetAlerts', 'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSeason',
     'TargetSetWindow', 'TargetShellStatus', 'TargetSiteNews'].map(name => [name, 'control']),
   ...['TargetAcquisition', 'TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup',
-    'TargetLineup', 'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
+    'TargetLineup', 'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports',
+    'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),

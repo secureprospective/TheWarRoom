@@ -1,41 +1,37 @@
-package main
+package commissioner
 
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
 
-	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
-//go:embed docs/ui/endpoint-registry.csv
-var commissionerPreviewRegistry string
-
 // TargetCommissionerPreview checks the execute body without recording the change.
-func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, error) {
+func (a *API) TargetCommissionerPreview(body string) (commissioner.Preview, error) {
 	raw, err := a.decodeCommissionerPreview(body)
 	if err != nil {
-		return commissionerapp.Blocked(err), nil
+		return Blocked(err), nil
 	}
-	if err := a.ready(); err != nil {
+	if err := a.host.Ready(); err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview startup: %w", err)
 	}
-	principal, err := a.commissionerPrincipal()
+	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
+		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Preview{}, err
 	}
-	catalogue, err := commissioner.ReadPreviewCatalogue(commissionerPreviewRegistry)
+	catalogue, err := commissioner.ReadPreviewCatalogue(a.host.CommissionerPreviewRegistry())
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview catalogue: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	preview, err := a.core.History.PreviewCommissionerWithFacts(ctx, raw, principal, a.core.CommissionerAuthorizer,
-		catalogue, a.nativeFacts(), a.ownerZone())
+	preview, err := a.host.PreviewCommissionerWithFacts(ctx, raw, principal, a.host.CommissionerAuthorization(),
+		catalogue, a.host.NativeFacts(), a.host.CommissionerZone())
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview: %w", err)
 	}
@@ -43,7 +39,7 @@ func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, erro
 }
 
 // A seed preview accepts the exact TargetNativeSeed request, never client-supplied starting assets.
-func (a *App) decodeCommissionerPreview(body string) (commissioner.RawCommand, error) {
+func (a *API) decodeCommissionerPreview(body string) (commissioner.RawCommand, error) {
 	raw, err := commissioner.DecodePreview(body)
 	if err == nil {
 		if raw.Command == commissioner.NativeSeed {
@@ -66,10 +62,11 @@ func (a *App) decodeCommissionerPreview(body string) (commissioner.RawCommand, e
 	if validateErr := input.ValidatePreview(); validateErr != nil {
 		return raw, validateErr
 	}
-	if readyErr := a.ready(); readyErr != nil {
-		return raw, readyErr
+	if readyErr := a.host.Ready(); readyErr != nil {
+		return raw, readyErr //nolint:wrapcheck // Preserve the existing refusal text and error identity.
 	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	return a.nativeSeedCommand(ctx, input)
+	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
+	return a.host.NativeSeedCommand(ctx, input)
 }

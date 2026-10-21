@@ -176,7 +176,7 @@ func (f *legalityFixture) reopen(t *testing.T) {
 // set records a rule change through the real command and returns its receipt.
 func (f *legalityFixture) set(t *testing.T, field, value, effective string) commissioner.Receipt {
 	t.Helper()
-	houses, err := f.app.TargetNativeHouseRules(legalityLeague)
+	houses, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func (f *legalityFixture) set(t *testing.T, field, value, effective string) comm
 
 func (f *legalityFixture) revert(t *testing.T, receipt commissioner.Receipt) {
 	t.Helper()
-	houses, err := f.app.TargetNativeHouseRules(legalityLeague)
+	houses, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,7 +199,7 @@ func (f *legalityFixture) revert(t *testing.T, receipt commissioner.Receipt) {
 
 func (f *legalityFixture) roster(t *testing.T, franchise string) commissioner.NativeRosterFranchise {
 	t.Helper()
-	check, err := f.app.TargetNativeRosterCheck(legalityLeague)
+	check, err := newCommissionerAPI(f.app).TargetNativeRosterCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +214,7 @@ func (f *legalityFixture) roster(t *testing.T, franchise string) commissioner.Na
 
 func (f *legalityFixture) reserves(t *testing.T) commissioner.NativeReserveFranchise {
 	t.Helper()
-	check, err := f.app.TargetNativeReserveCheck(legalityLeague)
+	check, err := newCommissionerAPI(f.app).TargetNativeReserveCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -229,7 +229,7 @@ func (f *legalityFixture) reserves(t *testing.T) commissioner.NativeReserveFranc
 
 func (f *legalityFixture) lineup(t *testing.T, starters []string) commissioner.NativeLineupCheck {
 	t.Helper()
-	check, err := f.app.TargetNativeLineupCheck(commissioner.RawNativeLineup{League: legalityLeague,
+	check, err := newCommissionerAPI(f.app).TargetNativeLineupCheck(commissioner.RawNativeLineup{League: legalityLeague,
 		Franchise: "franchise.02", Submitted: starters != nil, Starters: starters})
 	if err != nil {
 		t.Fatal(err)
@@ -376,7 +376,7 @@ func TestHouseRulesAreReadOnlyTextTheCommissionerWrites(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
 	read := func(t *testing.T, f *legalityFixture) string {
-		h, err := f.app.TargetNativeHouseRules(legalityLeague)
+		h, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -390,15 +390,15 @@ func TestHouseRulesAreReadOnlyTextTheCommissionerWrites(t *testing.T) {
 func TestNativeLegalityWire(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
-	roster, err := f.app.TargetNativeRosterCheck(legalityLeague)
+	roster, err := newCommissionerAPI(f.app).TargetNativeRosterCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reserves, err := f.app.TargetNativeReserveCheck(legalityLeague)
+	reserves, err := newCommissionerAPI(f.app).TargetNativeReserveCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	house, err := f.app.TargetNativeHouseRules(legalityLeague)
+	house, err := newCommissionerAPI(f.app).TargetNativeHouseRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +430,7 @@ func TestNativeLineupRefusesForeignReserveAndDuplicateStarters(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
 	for _, ids := range [][]string{{"4000"}, {"2001"}, {"3001"}, {"1000", "1000"}, {"missing"}} {
-		_, err := f.app.TargetNativeLineupCheck(commissioner.RawNativeLineup{League: legalityLeague,
+		_, err := newCommissionerAPI(f.app).TargetNativeLineupCheck(commissioner.RawNativeLineup{League: legalityLeague,
 			Franchise: "franchise.02", Submitted: true, Starters: ids})
 		if err == nil {
 			t.Fatalf("invalid starters accepted: %v", ids)
@@ -458,11 +458,11 @@ func TestNativeRosterWaitsForRolloverAndRulesShareSeedAlignment(t *testing.T) {
 	if got := f.roster(t, "franchise.02").Words; got != "Active roster 82 of 80: 2 over" {
 		t.Fatalf("compensation did not restore rule: %q", got)
 	}
-	rules, err := f.app.TargetCommissionerRules(legalityLeague)
+	rules, err := newCommissionerAPI(f.app).TargetCommissionerRules(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	directory, err := f.app.TargetNativeDirectory(legalityLeague)
+	directory, err := newCommissionerAPI(f.app).TargetNativeDirectory(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -489,11 +489,11 @@ func TestNativeRosterWaitsForRolloverAndRulesShareSeedAlignment(t *testing.T) {
 func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
-	roster, err := f.app.TargetNativeRosterCheck(legalityLeague)
+	roster, err := newCommissionerAPI(f.app).TargetNativeRosterCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
-	reserves, err := f.app.TargetNativeReserveCheck(legalityLeague)
+	reserves, err := newCommissionerAPI(f.app).TargetNativeReserveCheck(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}

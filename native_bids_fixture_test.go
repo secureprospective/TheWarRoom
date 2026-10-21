@@ -50,7 +50,7 @@ func (f *bidFixture) restart(t *testing.T) {
 func (f *bidFixture) ownerBid(t *testing.T, principal, command string, args commissioner.RawBidArgs) (commissioner.Receipt, error) {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
-	return f.app.TargetNativeBidAction(f.raw(t, command, commissioner.RawArgs{Bid: &args}, "private"))
+	return newCommissionerAPI(f.app).TargetNativeBidAction(f.raw(t, command, commissioner.RawArgs{Bid: &args}, "private"))
 }
 
 func (f *bidFixture) place(t *testing.T, principal, franchise, player string, salary int64, years int) commissioner.Receipt {
@@ -85,7 +85,7 @@ func (f *bidFixture) withdraw(t *testing.T, principal, franchise string, bid com
 func (f *bidFixture) bids(t *testing.T, principal, franchise string) commissioner.NativeBids {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
-	reading, err := f.app.TargetNativeBids(legalityLeague, franchise)
+	reading, err := newCommissionerAPI(f.app).TargetNativeBids(legalityLeague, franchise)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func (f *bidFixture) tryDecide(t *testing.T, principal, player string) error {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.app.TargetCommissionerExecute(body)
+	_, err = newCommissionerAPI(f.app).TargetCommissionerExecute(body)
 	return err
 }
 
@@ -116,7 +116,7 @@ func (f *bidFixture) override(t *testing.T, bid commissioner.Receipt, winner str
 
 func (f *bidFixture) roster(t *testing.T, player string) (commissioner.NativePlayer, bool) {
 	t.Helper()
-	assets, err := f.app.TargetNativeAssets(legalityLeague)
+	assets, err := newCommissionerAPI(f.app).TargetNativeAssets(legalityLeague)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +130,7 @@ func (f *bidFixture) roster(t *testing.T, player string) (commissioner.NativePla
 
 func (f *bidFixture) capOf(t *testing.T, franchise string) commissioner.NativeCapFranchise {
 	t.Helper()
-	check, err := f.app.TargetNativeCapCheck(legalityLeague, "America/New_York")
+	check, err := newCommissionerAPI(f.app).TargetNativeCapCheck(legalityLeague, "America/New_York")
 	if err != nil {
 		t.Fatal(err)
 	}
