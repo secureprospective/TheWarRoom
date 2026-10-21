@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
-
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"

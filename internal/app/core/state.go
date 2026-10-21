@@ -9,15 +9,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/facts"
-
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
-
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
@@ -39,6 +37,7 @@ import (
 )
 
 type State struct {
+	// ReadCommsArchive runs under FactsMu; its cache remains with the archive feature.
 	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
 	RefreshTransactions    func(context.Context)
 	CommissionerSession    commissioner.Session
