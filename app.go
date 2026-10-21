@@ -16,6 +16,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -43,7 +44,7 @@ type App struct {
 	core         *core.State
 	archiveCache archiveapp.Snapshot
 	control      controlFeeds
-	research     researchHeld
+	researchHeld *researchapp.Held
 	raceHeld     *raceapp.Held
 	now          nowSchedules
 	nowHeld      *nowapp.Held
@@ -73,7 +74,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	a := &App{marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
+	a := &App{researchHeld: &researchapp.Held{}, marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),

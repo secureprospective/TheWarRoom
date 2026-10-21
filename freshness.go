@@ -24,5 +24,4 @@ const (
 	FreshFail  = domain.FreshFail
 )
 
-func liveFreshness(t time.Time) Freshness               { return core.LiveFreshness(t) }
-func staleFreshness(t time.Time, cause error) Freshness { return core.StaleFreshness(t, cause) }
+func liveFreshness(t time.Time) Freshness { return core.LiveFreshness(t) }

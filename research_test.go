@@ -86,29 +86,29 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 	if err := a.core.Rulebook.Initialize(a.core.Ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "My franchise"}, {ID: "0002", Name: "Other franchise"}}}}); err != nil {
 		t.Fatal(err)
 	}
-	a.research = in.held
+	a.publishResearch(in.held)
 	a.core.Lookup = in.lookup
 	a.core.HasLookup = true
 	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
-	out, err := a.TargetResearch(RawResearchScope{Mine: "0001", Search: "Gibbs"})
+	out, err := researchAPI(a).TargetResearch(RawResearchScope{Mine: "0001", Search: "Gibbs"})
 	if err != nil || len(out.Players) != 1 || out.Players[0].FranchiseID != "0001" {
 		t.Fatal(out.Players, err)
 	}
-	if _, err := a.TargetResearch(RawResearchScope{Mine: "9999"}); err == nil {
+	if _, err := researchAPI(a).TargetResearch(RawResearchScope{Mine: "9999"}); err == nil {
 		t.Fatal("unknown franchise accepted")
 	}
-	p, err := a.TargetResearchPlayer("16162")
+	p, err := researchAPI(a).TargetResearchPlayer("16162")
 	if err != nil || p.Name != "Gibbs, Jahmyr" {
 		t.Fatal(p, err)
 	}
-	if _, err := a.TargetResearchPlayer("bad"); err == nil {
+	if _, err := researchAPI(a).TargetResearchPlayer("bad"); err == nil {
 		t.Fatal("bad player accepted")
 	}
 	opened := ""
 	a.core.OpenURL = func(_ context.Context, target string) { opened = target }
-	if err := a.TargetOpenResearchArticle("16162", "forged"); err == nil {
+	if err := researchAPI(a).TargetOpenResearchArticle("16162", "forged"); err == nil {
 		t.Fatal("forged article accepted")
 	}
 	// Host is held by the fixture client, never discovered by a hand-off.
@@ -117,7 +117,7 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.core.MFLClient = client
-	if err := a.TargetOpenResearchArticle("16162", "rotowire640841"); err != nil {
+	if err := researchAPI(a).TargetOpenResearchArticle("16162", "rotowire640841"); err != nil {
 		t.Fatal(err)
 	}
 	if opened != "https://www99.myfantasyleague.com/2026/view_news_article?ID=rotowire640841" {
@@ -188,6 +188,7 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	}
 	events := []string{}
 	stages := []string{}
+	refreshing := true
 	a.core.Fetches = &archive.Transport{Sink: a.core.History, Base: researchFixtureTransport{t: t, events: &events, depth: parquetBody.Bytes()}}
 	client, err := mfl.New("api", 10000, mfl.WithTransport(a.core.Fetches))
 	if err != nil {
@@ -196,66 +197,80 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	a.core.MFLClient = client
 	a.core.FallbackLog = func(string) {}
 	a.core.SeasonPause = func(_ context.Context, d time.Duration) error {
+		serializer := &a.core.NewsMu
+		if refreshing {
+			serializer = &a.core.RefreshMu
+		}
+		if serializer.TryLock() {
+			serializer.Unlock()
+			t.Error("refresh lost its whole-operation serializer")
+		}
+		if !a.core.SeasonMu.TryLock() {
+			t.Error("season lock held across I/O pause")
+		} else {
+			a.core.SeasonMu.Unlock()
+		}
 		if d != time.Second {
 			t.Fatal(d)
 		}
 		events = append(events, "pause")
-		if status := a.TargetResearchStatus(); status != "" {
+		if status := researchAPI(a).TargetResearchStatus(); status != "" {
 			stages = append(stages, status)
 		}
 		return nil
 	}
-	if err := a.TargetResearchRefresh(false); err != nil {
+	if err := researchAPI(a).TargetResearchRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Contains(stages, "Reading week 3 of 5") || !slices.Contains(stages, "Reading fantasy points") {
 		t.Fatal(stages)
 	}
-	if a.TargetResearchStatus() != "" {
+	if researchAPI(a).TargetResearchStatus() != "" {
 		t.Fatal("refresh status not cleared")
 	}
-	if len(a.research.depth.Value) != 2333 || len(researchRows(a.research.feeds[researchKey("playerScores", "YTD")])) == 0 {
+	if len(a.snapshotResearch().depth.Value) != 2333 || len(researchRows(a.snapshotResearch().feeds[researchKey("playerScores", "YTD")])) == 0 {
 		t.Fatal("refresh lost real fixtures")
 	}
-	out, err := a.TargetResearch(RawResearchScope{Mine: "0001"})
+	out, err := researchAPI(a).TargetResearch(RawResearchScope{Mine: "0001"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(reportByID(t, out.Board, "M-038").Rows) != 1 {
+	if len(reportByID(t, wireBoard(out.Board), "M-038").Rows) != 1 {
 		t.Fatal("mine report not wired")
 	}
+	refreshing = false
 	events = nil
-	if err := a.TargetResearchNewsRefresh(""); err != nil {
+	if err := researchAPI(a).TargetResearchNewsRefresh(""); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Equal(events, []string{"pause", "playerProfile::13589,16162"}) {
 		t.Fatal("profile scope or spacing", events)
 	}
 	events = nil
-	if err := a.TargetResearchNewsRefresh(""); err != nil {
+	if err := researchAPI(a).TargetResearchNewsRefresh(""); err != nil {
 		t.Fatal(err)
 	}
 	if len(events) != 0 {
 		t.Fatal("same-day news fetched again", events)
 	}
 	// A cleared in-memory cache reloads today's archived profiles without another request.
-	a.research.news = nil
-	if err := a.TargetResearchNewsRefresh("0001"); err != nil {
+	editResearch(a, func(value *researchHeld) { value.news = nil })
+	if err := researchAPI(a).TargetResearchNewsRefresh("0001"); err != nil {
 		t.Fatal(err)
 	}
-	if len(events) != 0 || len(a.research.news["16162"].Value) != 1 {
+	if len(events) != 0 || len(a.snapshotResearch().news["16162"].Value) != 1 {
 		t.Fatal("persisted daily cache failed", events)
 	}
-	a.research = researchHeld{}
+	a.publishResearch(researchHeld{})
 	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
 	a.core.RefreshMu.Lock()
-	cold, cerr := a.TargetResearch(RawResearchScope{Mine: "0001"})
+	cold, cerr := researchAPI(a).TargetResearch(RawResearchScope{Mine: "0001"})
 	a.core.RefreshMu.Unlock()
-	if cerr != nil || len(a.research.depth.Value) != 2333 || len(cold.Articles) != 1 || len(events) != 0 {
+	if cerr != nil || len(a.snapshotResearch().depth.Value) != 2333 || len(cold.Articles) != 1 || len(events) != 0 {
 		t.Fatal("cold read did not serve archived depth/news without fetching", cerr, len(events))
 	}
 	// The depth fallback reads the exact season URL and preserves stale provenance.
-	rows, fresh, err := readResearchDepthArchive(a.core.Ctx, 2026, a.core.History.ArchivedBodies, errors.New("fixture offline"))
+	rows, fresh, err := researchapp.ReadDepthArchive(a.core.Ctx, 2026, a.core.History.ArchivedBodies, errors.New("fixture offline"))
 	if err != nil || len(rows) != 2333 || fresh.State != FreshStale {
 		t.Fatal(len(rows), fresh, err)
 	}
@@ -280,13 +295,13 @@ func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
 	mirror, _, _ := a.core.League.ContractsView()
 	v.mirror = mirror
 	probe := v.playerReading("0042", nil, "Counting").Report
-	if !strings.Contains(researchRow(probe, "Dead cap if cut today").Cells[1], cut.Value.Moves[0].Charge.Text) {
+	if !strings.Contains(researchRow(wireReport(probe), "Dead cap if cut today").Cells[1], cut.Value.Moves[0].Charge.Text) {
 		t.Fatal(probe, cut)
 	}
 	delete(v.held.feeds, researchKey("playerScores", "3"))
 	delete(v.held.feeds, researchKey("playerScores", "4"))
 	probe = v.playerReading("16162", nil, "Counting").Report
-	if !strings.Contains(researchRow(probe, "Form").Cells[1], "1 of the last 3") {
+	if !strings.Contains(researchRow(wireReport(probe), "Form").Cells[1], "1 of the last 3") {
 		t.Fatal(probe)
 	}
 }
@@ -294,7 +309,7 @@ func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
 func TestResearchWireGoldens(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	board, err := a.TargetResearch(RawResearchScope{})
+	board, err := researchAPI(a).TargetResearch(RawResearchScope{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -309,22 +324,22 @@ func TestResearchWireGoldens(t *testing.T) {
 	checkGolden(t, "research", "held", held)
 	checkGolden(t, "research", "player-held", (researchView{researchInput: in}).playerReading("16162", map[string]string{"0001": "Mine"}, "How this is counted"))
 	a.core.Lookup, a.core.HasLookup = in.lookup, true
-	player, err := a.TargetResearchPlayer("16162")
+	player, err := researchAPI(a).TargetResearchPlayer("16162")
 	if err != nil {
 		t.Fatal(err)
 	}
 	checkGolden(t, "research", "player-unheld", player)
 	a.researchStatus("Reading fantasy points")
-	checkGolden(t, "research", "status", a.TargetResearchStatus())
+	checkGolden(t, "research", "status", researchAPI(a).TargetResearchStatus())
 	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
 	errors := map[string]string{}
-	if err := a.TargetResearchRefresh(false); err != nil {
+	if err := researchAPI(a).TargetResearchRefresh(false); err != nil {
 		errors["refresh"] = err.Error()
 	}
-	if err := a.TargetResearchNewsRefresh("9999"); err != nil {
+	if err := researchAPI(a).TargetResearchNewsRefresh("9999"); err != nil {
 		errors["newsRefresh"] = err.Error()
 	}
-	if err := a.TargetOpenResearchArticle("16162", "forged"); err != nil {
+	if err := researchAPI(a).TargetOpenResearchArticle("16162", "forged"); err != nil {
 		errors["openArticle"] = err.Error()
 	}
 	checkGolden(t, "research", "errors", errors)
@@ -378,4 +393,40 @@ func TestResearchWireTwinsMatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Root scenarios keep the real composition and canonical wire paths.
+func researchAPI(a *App) *researchapp.API {
+	return researchapp.New(researchHost{app: a}, a.researchHeld)
+}
+
+type RawResearchScope = researchapp.RawResearchScope
+type ResearchBoard = researchapp.ResearchBoard
+type ResearchPlayerReading = researchapp.ResearchPlayerReading
+
+func buildResearch(in researchInput, scope RawResearchScope) ResearchBoard {
+	return researchapp.WireBoard(researchapp.Build(in.snapshot(), researchapp.Scope(scope)))
+}
+func wireResearchBoard(in researchapp.Board) ResearchBoard { return researchapp.WireBoard(in) }
+func wireResearchPlayer(in researchapp.PlayerReading) ResearchPlayerReading {
+	return researchapp.WirePlayer(in)
+}
+func wireResearchArticles(in []researchapp.Article) []researchapp.ResearchArticle {
+	return researchapp.WireArticles(in)
+}
+
+func editResearch(a *App, edit func(*researchHeld)) {
+	value := a.snapshotResearch()
+	edit(&value)
+	a.publishResearch(value)
+}
+
+func noNewsArchive(context.Context, string, func(string, []byte, time.Time) bool) (bool, error) {
+	return false, nil
+}
+
+func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int, ids []string, now time.Time,
+	bodies researchapp.ArchivedBodies, pause func(context.Context, time.Duration) error,
+	fetch func(context.Context, []string) (map[string][]researchfeeds.News, error), log func(string)) error {
+	return researchapp.ReadNewsBatches(ctx, held, season, ids, now, bodies, pause, fetch, log)
 }

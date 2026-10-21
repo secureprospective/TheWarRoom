@@ -1,26 +1,29 @@
-package main
+package research
 
 import (
 	"context"
 	"fmt"
 	"net/url"
 	"slices"
+	"sort"
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // archivedNews reads the archived playerProfile bodies once, newest first, and keeps each wanted player's newest
 // answer. A body is matched by the exact members of its P list, never a substring. The pass ends when every wanted
 // player is answered or when more says the remaining bodies are too old, so the cost is one scan per refresh, not
 // one per player.
-// archivedBodies is the history store's ArchivedBodies, as a seam for tests.
-type archivedBodies func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error)
-
-func archivedNews(ctx context.Context, bodies archivedBodies, season int, want []string,
-	more func(time.Time) bool) (map[string]heldSeasonFeed[[]researchfeeds.News], error) {
-	out := map[string]heldSeasonFeed[[]researchfeeds.News]{}
+func ArchivedNews(ctx context.Context, bodies ArchivedBodies, season int, want []string,
+	more func(time.Time) bool) (map[string]Feed[[]researchfeeds.News], error) {
+	out := map[string]Feed[[]researchfeeds.News]{}
 	open := map[string]bool{}
 	for _, id := range want {
 		open[id] = true
@@ -33,7 +36,7 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 			return true
 		}
 		u, err := url.Parse(src)
-		if err != nil || !sameExport(src, "playerProfile", season, true) {
+		if err != nil || !ingestion.SameLeaguelessExport(src, "playerProfile", season) {
 			return false
 		}
 		asked := strings.Split(u.Query().Get("P"), ",")
@@ -46,7 +49,7 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 		}
 		for _, id := range asked {
 			if news := rows[id]; open[id] {
-				out[id] = heldSeasonFeed[[]researchfeeds.News]{Value: news, FetchedAt: at}
+				out[id] = Feed[[]researchfeeds.News]{Value: news, FetchedAt: at}
 				delete(open, id)
 			}
 		}
@@ -60,8 +63,8 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 
 // readResearchNewsBatches serves today's reads from memory or the archive, then asks MFL for the rest in batches
 // of 100 with one pause per request. Omitted profiles are held as no news for the day.
-func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int, ids []string, now time.Time,
-	bodies archivedBodies, pause func(context.Context, time.Duration) error,
+func ReadNewsBatches(ctx context.Context, held map[string]Feed[[]researchfeeds.News], season int, ids []string, now time.Time,
+	bodies ArchivedBodies, pause func(context.Context, time.Duration) error,
 	fetch func(context.Context, []string) (map[string][]researchfeeds.News, error), logLine func(string)) error {
 	day := now.In(time.Local).Format("2006-01-02")
 	today := func(at time.Time) bool { return at.In(time.Local).Format("2006-01-02") == day }
@@ -71,7 +74,7 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 			need = append(need, id)
 		}
 	}
-	cached, err := archivedNews(ctx, bodies, season, need, today)
+	cached, err := ArchivedNews(ctx, bodies, season, need, today)
 	if err != nil {
 		return fmt.Errorf("news daily cache: %w", err)
 	}
@@ -101,7 +104,7 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 					news = []researchfeeds.News{}
 				}
 				next := held[id]
-				holdSeasonFeed(&next, news, liveFreshness(now), nil)
+				report.HoldFeed(&next, news, report.LiveFreshness(now), nil)
 				held[id] = next
 			}
 		}
@@ -118,24 +121,24 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 
 // fallbackResearchNews holds each lost player's newest archived news, marked stale with the loss, in one archive
 // pass for the whole batch. A player with no archived news keeps the loss and nothing invented.
-func fallbackResearchNews(ctx context.Context, held map[string]heldSeasonFeed[[]researchfeeds.News], season int,
-	batch []string, losses map[string]error, bodies archivedBodies) {
+func fallbackResearchNews(ctx context.Context, held map[string]Feed[[]researchfeeds.News], season int,
+	batch []string, losses map[string]error, bodies ArchivedBodies) {
 	if len(losses) == 0 {
 		return
 	}
 	lost := slices.DeleteFunc(slices.Clone(batch), func(id string) bool { return losses[id] == nil })
-	rctx, cancel := context.WithTimeout(ctx, fallbackTimeout)
+	rctx, cancel := context.WithTimeout(ctx, report.FallbackTimeout)
 	defer cancel()
-	found, err := archivedNews(rctx, bodies, season, lost, func(time.Time) bool { return true })
+	found, err := ArchivedNews(rctx, bodies, season, lost, func(time.Time) bool { return true })
 	for _, id := range lost {
 		next, loss := held[id], losses[id]
 		switch h, ok := found[id]; {
 		case ok:
-			holdSeasonFeed(&next, h.Value, staleFreshness(h.FetchedAt, loss), nil)
+			report.HoldFeed(&next, h.Value, report.StaleFreshness(h.FetchedAt, loss), nil)
 		case err != nil:
-			holdSeasonFeed(&next, nil, Freshness{}, fmt.Errorf("news player %s archive: %w (live: %v)", id, err, loss))
+			report.HoldFeed(&next, nil, domain.Freshness{}, fmt.Errorf("news player %s archive: %w (live: %v)", id, err, loss))
 		default:
-			holdSeasonFeed(&next, nil, Freshness{}, loss)
+			report.HoldFeed(&next, nil, domain.Freshness{}, loss)
 		}
 		held[id] = next
 	}
@@ -176,4 +179,29 @@ func isolatedNews(ctx context.Context, ids []string, pause func(context.Context,
 		}
 	}
 	return out, losses
+}
+
+// ArchivedBodies offers recorded responses newest first until accept takes one.
+type ArchivedBodies = func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error)
+
+func RosterIDs(mirror state.MirrorSnapshot, mine string) []string {
+	ids := map[string]bool{}
+	for _, p := range mirror.Players {
+		if mine == "" || p.FranchiseID == mine {
+			ids[p.MFLID] = true
+		}
+	}
+	ordered := make([]string, 0, len(ids))
+	for id := range ids {
+		ordered = append(ordered, id)
+	}
+	sort.Strings(ordered)
+	return ordered
+}
+
+func PlayerIDs(ids []string, lookup normalize.Lookup) []string {
+	return slices.DeleteFunc(slices.Clone(ids), func(id string) bool {
+		_, position, _ := lookup.DisplayFacts(id)
+		return researchfeeds.TeamUnit(position)
+	})
 }

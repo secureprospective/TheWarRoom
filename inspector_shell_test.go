@@ -57,7 +57,7 @@ func TestInspectorOpenReadsDepthThroughFixtureClient(t *testing.T) {
 	in := realResearch(t)
 	a := targetTestApp(t)
 	a.core.Lookup, a.core.HasLookup, a.core.Week = in.lookup, true, leagueweek.Week{Number: 5}
-	a.research.feeds = in.held.feeds
+	editResearch(a, func(value *researchHeld) { value.feeds = in.held.feeds })
 	a.core.FallbackLog = func(string) {}
 	var body bytes.Buffer
 	if err := parquet.Write(&body, in.held.depth.Value); err != nil {
@@ -66,19 +66,19 @@ func TestInspectorOpenReadsDepthThroughFixtureClient(t *testing.T) {
 	events := []string{}
 	a.core.Fetches = &archive.Transport{Sink: a.core.History,
 		Base: researchFixtureTransport{t: t, events: &events, depth: body.Bytes()}}
-	p, err := a.TargetResearchPlayer("16162")
+	p, err := researchAPI(a).TargetResearchPlayer("16162")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.research.depth.FetchedAt.IsZero() || len(events) != 1 {
-		t.Fatal("opening did not read depth", events, a.research.depth)
+	if a.snapshotResearch().depth.FetchedAt.IsZero() || len(events) != 1 {
+		t.Fatal("opening did not read depth", events, a.snapshotResearch().depth)
 	}
 	for _, row := range p.Report.Rows {
 		if row.Cells[0] == "NFL depth" && strings.Contains(row.Cells[2], "not read yet") {
 			t.Fatal(row)
 		}
 	}
-	if _, err := a.TargetResearchPlayer("16162"); err != nil {
+	if _, err := researchAPI(a).TargetResearchPlayer("16162"); err != nil {
 		t.Fatal(err)
 	}
 	if len(events) != 1 {
@@ -128,7 +128,7 @@ func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
 	result := make(chan ResearchPlayerReading, 1)
 	failed := make(chan error, 1)
 	go func() {
-		p, err := a.TargetResearchPlayer("16162")
+		p, err := researchAPI(a).TargetResearchPlayer("16162")
 		if err != nil {
 			failed <- err
 			return
@@ -143,13 +143,13 @@ func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
 	case <-time.After(50 * time.Millisecond):
 	}
 	a.core.SeasonMu.Lock()
-	a.research.feeds = in.held.feeds
+	editResearch(a, func(value *researchHeld) { value.feeds = in.held.feeds })
 	a.core.SeasonMu.Unlock()
 	a.core.ResearchArchiveMu.Unlock()
 	locked = false
 	select {
 	case p := <-result:
-		if !slices.ContainsFunc(p.Report.Rows, func(row ReportRow) bool {
+		if !slices.ContainsFunc(wireReport(p.Report).Rows, func(row ReportRow) bool {
 			return row.Cells[0] == "Points per game" && strings.HasPrefix(row.Cells[1], "32.25")
 		}) {
 			t.Fatal("published weekly scores were not read", p.Report.Rows)

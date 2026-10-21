@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { commands } from '../commands/registry';
-import { parsePlayerReading, type PlayerReading } from './contract';
+import { type PlayerReading } from './contract';
 import { NewsList } from './Research';
 import './research.css';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { researchAPI, researchAvailable, subscribeResearchPlayer } from './api';
 
 export default function ResearchPlayerInspector({ id, identity = true }: { id: string; identity?: boolean }) {
   const [player, setPlayer] = useState<PlayerReading>();
@@ -12,17 +11,16 @@ export default function ResearchPlayerInspector({ id, identity = true }: { id: s
     let disposed = false;
     setPlayer(undefined);
     setError('');
-    const app = (window as unknown as { go?: { main: { App: typeof Bindings } } }).go?.main.App;
-    if (!app) { setError('Player research requires the desktop app.'); return; }
+    if (!researchAvailable()) { setError('Player research requires the desktop app.'); return; }
     let revision = 0;
     const read = () => {
       const request = ++revision;
-      void app.TargetResearchPlayer(id).then(value => {
-      if (!disposed && request === revision) setPlayer(parsePlayerReading(value));
+      void researchAPI.player!(id).then(value => {
+      if (!disposed && request === revision) setPlayer(value);
       }).catch(cause => { if (!disposed && request === revision) setError(String(cause)); });
     };
     read();
-    const stop = commands.alerts.onSeasonChange(read);
+    const stop = subscribeResearchPlayer(read);
     return () => { disposed = true; stop(); };
   }, [id]);
   return <section aria-label="Research player Inspector">

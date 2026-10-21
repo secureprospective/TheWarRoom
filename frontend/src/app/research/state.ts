@@ -1,27 +1,10 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { commands } from '../commands/registry';
-import { parseResearch, type Research, type Scope, parsePlayerReading, type PlayerReading } from './contract';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import type { Research, Scope } from './contract';
+import { researchAPI, type ResearchReader } from './api';
+export type { ResearchReader } from './api';
 
-export type ResearchReader = {
-  read(scope: Scope): Promise<Research>; refresh(force: boolean): Promise<void>;
-  status?(): Promise<string>; player?(id: string): Promise<PlayerReading>;
-  news(mine: string): Promise<void>; open(id: string, article: string): Promise<void>;
-};
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Player research requires the desktop app; no browser fixture is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
-const live: ResearchReader = {
-  player: async id => parsePlayerReading(await bindings().TargetResearchPlayer(id)),
-  status: async () => bindings().TargetResearchStatus(),
-  read: async scope => parseResearch(await bindings().TargetResearch(scope)),
-  refresh: async force => bindings().TargetResearchRefresh(force),
-  news: async mine => bindings().TargetResearchNewsRefresh(mine),
-  open: async (id, article) => bindings().TargetOpenResearchArticle(id, article),
-};
 export function createResearchState(reader: ResearchReader, mine: () => string) {
   const initial: Scope = { mine: '', search: '', team: '', position: '', group: 'QB',
     trend: 'topAdds', depth: 'team', injuries: 'all' };
@@ -84,4 +67,4 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
   }
   return { use: () => useStore(store), peek: store.getState, load, choose };
 }
-export const researchState = createResearchState(live, () => commands.read().franchiseId ?? '');
+export const researchState = createResearchState(researchAPI, () => commands.read().franchiseId ?? '');

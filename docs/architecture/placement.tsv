@@ -143,12 +143,11 @@ refresh_app.go	control
 refresh_publication_test.go	control
 release_app_test.go	contracts
 report_reading.go	platform
-research_app.go	research
 research_archive.go	research
 research_finish_test.go	research
-research_news.go	research
 research_news_test.go	research
 research_reading.go	research
+research_runtime.go	research
 research_test.go	research
 restore_cli.go	platform
 restore_cli_test.go	platform

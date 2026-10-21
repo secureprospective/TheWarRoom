@@ -63,17 +63,17 @@ func TestLandingNewsTodayCacheNormalOldCacheOneNotice(t *testing.T) {
 			a := targetTestApp(t)
 			a.core.Lookup = in.lookup
 			a.core.FallbackLog = func(string) {}
-			a.research.links = map[string]string{}
+			editResearch(a, func(value *researchHeld) { value.links = map[string]string{} })
 			at := time.Now().AddDate(0, 0, -days).Truncate(time.Second)
 			news := map[string]heldSeasonFeed[[]researchfeeds.News]{
 				"16162": {FetchedAt: at, Value: in.held.news["16162"].Value},
 				"13589": {FetchedAt: at, Value: []researchfeeds.News{}},
 			}
 			a.mergeResearchArchive(context.Background(), nil, in.held.depth, in.injuries, news)
-			in.held.news, in.now = a.research.news, time.Now()
+			in.held.news, in.now = a.snapshotResearch().news, time.Now()
 			out := buildResearch(in, RawResearchScope{Mine: "0001"})
 			if days == 0 {
-				if len(out.News.Summary) != 0 || out.News.Status != "ok" || a.research.news["16162"].RefreshError != "" {
+				if len(out.News.Summary) != 0 || out.News.Status != "ok" || a.snapshotResearch().news["16162"].RefreshError != "" {
 					t.Fatal(out.News)
 				}
 				if !strings.Contains(out.News.AsOf, "held · fetched "+reportTime(at, time.UTC)) {
@@ -157,7 +157,7 @@ func TestLandingTeamPositionsNeverEnterNewsBatch(t *testing.T) {
 	}
 	a.core.SeasonPause = func(context.Context, time.Duration) error { return nil }
 	a.core.FallbackLog = func(string) {}
-	if err := a.TargetResearchNewsRefresh(""); err != nil {
+	if err := researchAPI(a).TargetResearchNewsRefresh(""); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Equal(transport.asked, ids[:1]) {

@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 )
 
 // FallbackTimeout bounds a fallback read of the fetch archive.
-const FallbackTimeout = 10 * time.Second
+const FallbackTimeout = report.FallbackTimeout
 
 // ArchivedFeed is an MFL export served live, or from its newest good body in the fetch archive
 // when the fetch fails. Every live fetch is archived by the transport, so nothing is cached here.
@@ -83,19 +84,11 @@ func SameExport(raw, export string, season int, leagueless bool) bool {
 	return ingestion.SameExport(raw, export, season)
 }
 
-// LiveFreshness marks a result as served from a successful fetch at time t.
-func LiveFreshness(t time.Time) domain.Freshness {
-	return domain.Freshness{State: domain.FreshLive, FetchedAt: t.UTC().Format(time.RFC3339)}
-}
+// LiveFreshness marks a successful fetch without changing its wire provenance.
+func LiveFreshness(t time.Time) domain.Freshness { return report.LiveFreshness(t) }
 
-// StaleFreshness marks a cached result after a failed fetch. The cause is shown so an MFL
-// outage reads differently from a local network fault.
-func StaleFreshness(fetchedAt time.Time, cause error) domain.Freshness {
-	return domain.Freshness{
-		State:     domain.FreshStale,
-		FetchedAt: fetchedAt.UTC().Format(time.RFC3339),
-		Note:      fmt.Sprintf("live fetch failed, showing last known data: %v", cause),
-	}
+func StaleFreshness(at time.Time, cause error) domain.Freshness {
+	return report.StaleFreshness(at, cause)
 }
 
 // ArchivedOnly reads held reference exports without contacting MFL.

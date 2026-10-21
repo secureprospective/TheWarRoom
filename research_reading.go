@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
@@ -13,44 +14,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
-type RawResearchScope struct {
-	Mine     string `json:"mine"`
-	Search   string `json:"search"`
-	Position string `json:"position"`
-	Team     string `json:"team"`
-	Group    string `json:"group"`
-	Trend    string `json:"trend"`
-	Depth    string `json:"depth"`
-	Injuries string `json:"injuries"`
-}
-
-func (r RawResearchScope) Validate() error {
-	return researchapp.Scope(r).Validate() //nolint:wrapcheck // preserve the binding validation error text
-}
-
-type ResearchPlayer struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Position    string `json:"position"`
-	Team        string `json:"team"`
-	FranchiseID string `json:"franchiseId"`
-	Owner       string `json:"owner"`
-}
-type ResearchArticle struct {
-	ID       string `json:"id"`
-	Article  string `json:"article"`
-	Name     string `json:"name"`
-	Headline string `json:"headline"`
-}
-type ResearchBoard struct {
-	Board     ReportBoard       `json:"board"`
-	News      Report            `json:"news"`
-	Articles  []ResearchArticle `json:"articles"`
-	Players   []ResearchPlayer  `json:"players"`
-	Teams     []string          `json:"teams"`
-	Positions []string          `json:"positions"`
-	Scope     RawResearchScope  `json:"scope"`
-}
 type researchInput struct {
 	held      researchHeld
 	lookup    normalize.Lookup
@@ -73,15 +36,8 @@ func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Ent
 	}
 	return feed.Value[0].Players
 }
-func (v researchView) player(id string) ResearchPlayer {
-	return ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
-}
-
-type ResearchPlayerReading struct {
-	ResearchPlayer
-	Report   Report            `json:"report"`
-	Articles []ResearchArticle `json:"articles"`
-	HowLabel string            `json:"howLabel"`
+func (v researchView) player(id string) researchapp.ResearchPlayer {
+	return researchapp.ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
 }
 
 // snapshot detaches mutable indexes. Feed payloads, directory lookups, roster views and
@@ -102,41 +58,50 @@ func (in researchInput) snapshot() researchapp.Snapshot {
 			charges[p.MFLID] = charge
 		}
 	}
-	return researchapp.Snapshot{Held: researchapp.Held{Feeds: researchFeeds(in.held.feeds), Depth: researchFeed(in.held.depth), Links: in.held.links, LinkError: in.held.linkError, News: researchFeeds(in.held.news)},
-		Lookup: in.lookup, Mirror: in.mirror, Injuries: researchFeed(in.injuries), Schedules: researchFeeds(in.schedules), Config: in.config, Week: in.week, Zone: in.zone, Now: in.now,
+	return researchapp.Snapshot{Held: researchapp.Values{Feeds: in.held.feeds, Depth: in.held.depth, Links: in.held.links, LinkError: in.held.linkError, News: in.held.news},
+		Lookup: in.lookup, Mirror: in.mirror, Injuries: in.injuries, Schedules: in.schedules, Config: in.config, Week: in.week, Zone: in.zone, Now: in.now,
 		Finished: scores, Latest: latest, CutCharges: charges}
 }
-func researchFeed[T any](h heldSeasonFeed[T]) researchapp.Feed[T] {
-	return researchapp.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
-}
-func researchFeeds[K comparable, T any](held map[K]heldSeasonFeed[T]) map[K]researchapp.Feed[T] {
-	if held == nil {
-		return nil
-	}
-	out := make(map[K]researchapp.Feed[T], len(held))
-	for key, h := range held {
-		out[key] = researchFeed(h)
-	}
-	return out
-}
-func buildResearch(in researchInput, scope RawResearchScope) ResearchBoard {
-	return wireResearchBoard(researchapp.Build(in.snapshot(), researchapp.Scope(scope)))
-}
 
-func wireResearchBoard(b researchapp.Board) ResearchBoard {
-	players := make([]ResearchPlayer, len(b.Players))
-	for i, p := range b.Players {
-		players[i] = ResearchPlayer(p)
+// researchHost composes private Research state with Market and Now's shared capture.
+// No holder lock spans these callbacks; SeasonMu remains the outer joint lock.
+type researchHost struct{ app *App }
+
+func (h researchHost) Ready() error                     { return h.app.ready() }
+func (h researchHost) ResearchNames() map[string]string { return h.app.core.ResearchNames() }
+func (h researchHost) HydrateResearch(ids ...string)    { h.app.hydrateResearch(ids...) }
+func (h researchHost) PrepareResearchDepth() {
+	if h.app.core.Fetches == nil {
+		return
 	}
-	return ResearchBoard{Board: wireBoard(b.Board), News: wireReport(b.News), Articles: wireResearchArticles(b.Articles), Players: wireSlice(b.Players, players), Teams: b.Teams, Positions: b.Positions, Scope: RawResearchScope(b.Scope)}
+	ctx, cancel := context.WithTimeout(h.app.fallbackParent(), rasFetchTimeout)
+	defer cancel()
+	h.app.refreshResearchDepth(ctx, false)
 }
-func wireResearchArticles(in []researchapp.Article) []ResearchArticle {
-	out := make([]ResearchArticle, len(in))
-	for i, a := range in {
-		out[i] = ResearchArticle(a)
-	}
-	return wireSlice(in, out)
+func (h researchHost) ResearchSnapshot() researchapp.Snapshot {
+	return h.app.heldResearchInput().snapshot()
 }
-func wireResearchPlayer(p researchapp.PlayerReading) ResearchPlayerReading {
-	return ResearchPlayerReading{ResearchPlayer: ResearchPlayer(p.PlayerInfo), Report: wireReport(p.Report), Articles: wireResearchArticles(p.Articles), HowLabel: p.HowLabel}
+func (h researchHost) RefreshResearch(force bool) error      { return h.app.refreshResearch(force) }
+func (h researchHost) RefreshResearchNews(mine string) error { return h.app.refreshResearchNews(mine) }
+func (h researchHost) ResearchNews(id string) researchapp.Feed[[]researchfeeds.News] {
+	h.app.core.SeasonMu.Lock()
+	held := h.app.researchHeld.Snapshot().News[id]
+	h.app.core.SeasonMu.Unlock()
+	return held
+}
+func (h researchHost) ResearchDestination() (string, int) { return h.app.core.ResearchDestination() }
+func (h researchHost) OpenBrowser(target string)          { h.app.core.OpenBrowser(target) }
+
+// snapshotResearch and publishResearch require SeasonMu: the same lock also guards
+// injuries and Now's schedules. The detached compatibility value is still read by Market.
+func (a *App) snapshotResearch() researchHeld {
+	value := a.researchHeld.Snapshot()
+	return researchHeld{feeds: value.Feeds, depth: value.Depth,
+		links: value.Links, linkError: value.LinkError, linkVersion: value.LinkVersion,
+		finishedAt: value.FinishedAt, status: value.Status, news: value.News, archiveRead: value.ArchiveRead}
+}
+func (a *App) publishResearch(value researchHeld) {
+	a.researchHeld.Publish(researchapp.Values{Feeds: value.feeds, Depth: value.depth,
+		Links: value.links, LinkError: value.linkError, LinkVersion: value.linkVersion,
+		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead})
 }

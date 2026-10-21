@@ -95,7 +95,7 @@ type Snapshot struct {
 	Finished   map[string]*Score
 	Latest     time.Time
 	CutCharges map[string]domain.Money
-	Held       Held
+	Held       Values
 	Lookup     normalize.Lookup
 	Mirror     state.MirrorSnapshot
 	Injuries   Feed[[]leaguefeed.Injury]

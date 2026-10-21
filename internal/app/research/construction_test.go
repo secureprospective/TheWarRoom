@@ -425,7 +425,7 @@ func realResearch(t *testing.T) Snapshot {
 	t.Helper()
 	d := researchtest.Load(t)
 	in := Snapshot{Week: 5, Zone: time.UTC, Now: d.At, Lookup: d.Lookup, Mirror: d.Mirror,
-		Held:     Held{Feeds: map[string]Feed[[]researchfeeds.Feed]{}, News: map[string]Feed[[]researchfeeds.News]{}, Links: map[string]string{}},
+		Held:     Values{Feeds: map[string]Feed[[]researchfeeds.Feed]{}, News: map[string]Feed[[]researchfeeds.News]{}, Links: map[string]string{}},
 		Injuries: Feed[[]leaguefeed.Injury]{Value: d.Injuries, FetchedAt: d.At}, Finished: map[string]*Score{}, Latest: d.At}
 	for key, f := range d.Feeds {
 		in.Held.Feeds[key] = Feed[[]researchfeeds.Feed]{Value: []researchfeeds.Feed{f}, FetchedAt: d.At}

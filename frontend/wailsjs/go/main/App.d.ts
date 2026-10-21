@@ -131,8 +131,6 @@ export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissio
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 
-export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
-
 export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
 
 export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
@@ -144,16 +142,6 @@ export function TargetPhoto(arg1:string):Promise<main.PhotoView>;
 export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Pool_>;
 
 export function TargetPoolRefresh(arg1:boolean):Promise<void>;
-
-export function TargetResearch(arg1:main.RawResearchScope):Promise<main.ResearchBoard>;
-
-export function TargetResearchNewsRefresh(arg1:string):Promise<void>;
-
-export function TargetResearchPlayer(arg1:string):Promise<main.ResearchPlayerReading>;
-
-export function TargetResearchRefresh(arg1:boolean):Promise<void>;
-
-export function TargetResearchStatus():Promise<string>;
 
 export function TargetSeason():Promise<main.SeasonReading>;
 

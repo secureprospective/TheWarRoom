@@ -42,7 +42,8 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    refresh serialization, freshness capture before the refresh lock, key checks, last-good
    retention/clearing, archive fallback and event order. A callback into a remaining root-owned
    cache must document its caller-held lock; never lock the same mutex twice. Shared fallback
-   and held-feed primitives already live in core; reuse them instead of cloning them.
+   primitives live in core; reuse them instead of cloning them. The held-feed value contract
+   lives in report, with a core alias, so feature holders can reuse it without importing core.
    Operation serializers (LoadingSignals, RefreshMu) remain core/root with their original
    spans, lock order and deferred notifications after release. No holder data lock spans a
    Host call, callback, I/O, event or another holder lock. Where an existing critical section
@@ -507,3 +508,62 @@ refusals; populated converter twins also guard every field. The six live methods
 `TargetResearchPlayer`, `TargetResearchStatus` and `TargetOpenResearchArticle`.
 Market/Pool still consume the shared finished-score capture and Research archive hydration;
 Now supplies the schedule side of the joint season capture.
+
+
+## Research stateful API
+
+Research's six bindings and wire declarations now live in `internal/app/research/api.go`.
+`NewApp` constructs one `research.Held` on its named `researchHeld` field. Runtime bindings
+and the manifest use the same `bindings(app)` function, including
+`research.New(researchHost{app: app}, app.researchHeld)`. The unbound composition adapter is
+necessary: core must not import Research or Now, and a joint capture includes both features.
+`Held` is never embedded or bound; the manifest explicitly rejects its pointer type.
+
+The holder owns feeds (including nested Players/Allowed), depth (including optional ID
+pointers), links, news, finish timestamps, archive-read bookkeeping and status. Publication
+and snapshots clone both directions and preserve nil/empty values at every depth. The
+previous detached construction input named Held is now Values; scheduling still lives at
+root. The genuinely shared HeldFeed value and freshness helpers moved from core to report,
+with core aliases/delegates rather than parallel implementations.
+
+All joint readers and publishers retain SeasonMu outside the short holder lock. The root
+capture takes SeasonMu, snapshots the holder, copies injuries and Now's nested schedule
+slices, then unlocks. Directory, roster, week and config keep their original later capture
+order through core's lock-owning/store-owned detached readers. No holder lock spans a Host
+call, another holder, archive/network I/O, pause or event. RefreshMu, NewsMu and
+ResearchArchiveMu retain their operation spans. Research status clears before RefreshMu
+is released; finished-score health notification still runs before that serializer releases,
+as it did before this move. Do not "correct" that order during extraction.
+
+Remaining root files are composition, not bindings:
+- `research_runtime.go`: network refresh and operation serializers, shared injuries/Now
+  refresh, depth/crosswalk acquisition, and the joint season capture.
+- `research_archive.go`: archive hydration serialization, scoped-body selection and joint
+  merge with core injuries; Sources crosswalk version is still read through the unbound
+  composition adapter in its original separate order. Archive decoding is now Research's
+  `ReadArchivedFeed`, `ReadDepthArchive`, and `ArchivedNews`, not duplicated root code.
+- `research_reading.go`: the unbound Host and detached compatibility view consumed by Market
+  and Pool; finished scores and cut charges still come from their existing shared owners.
+- `finished_scores.go`: shared Now/Market finish detection, schedule refresh and publication.
+  Its Now game helpers cannot be imported into a sibling feature.
+- `finished_scores_test.go`, `research_finish_test.go`, `research_news_test.go`,
+  `research_test.go`: shared finish/Now and blocked-I/O composition scenarios, refresh wiring,
+  canonical wire goldens and populated converter twins. News batching/archive tests moved
+  beside Research, alongside fake-Host API, holder and archive-decoding tests. Core port
+  tests use `coretest.New(t).Build()`.
+
+The original root count was 199; it is now 198 (the interrupted worktree already had 198).
+`research_app.go` splits into the feature API and unbound runtime; `research_news.go` moves
+into the feature. All six App methods move one-for-one to research.API; no other manifest
+methods change, and testdata/wire is byte-identical. The endpoint CSV has no Research-specific
+binding verbs; catalog IDs remain Unset instead of borrowing the navigation verb endpoint.open.
+Article opening retains the known G0 desktop-only metadata. No authorization is added.
+
+Proof includes holder ingress/egress and nested nil/empty tests, publish/read races,
+reads during blocked news I/O, joint-capture revision consistency, serializer/status and
+finished-score event order, plus the frontend adapter's six calls, event cleanup and disposal
+before runtime import. Planted core/sibling imports, an extra exported API method, missing
+ingress clone, split joint capture and frontend transport access were all rejected and
+restored. Frontend's existing alert bus is retained for the player Inspector through api.ts.
+A pre-existing 119-character Sources test line was wrapped only to clear the repo-wide
+110-character frontend source gate; no Sources behavior or ownership row changed.

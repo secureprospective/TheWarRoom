@@ -20,6 +20,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 )
@@ -158,6 +159,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
 		reflect.TypeFor[*nowapp.API]():         nowapp.Commands(),
 		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
+		reflect.TypeFor[*research.API]():       research.Commands(),
 		reflect.TypeFor[*sources.API]():        sources.Commands(),
 		reflect.TypeFor[*trades.API]():         trades.Commands(),
 	}
@@ -208,9 +210,12 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 }
 
 func TestBindingManifestRejectsHeld(t *testing.T) {
-	bound := append(bindings(NewApp()), &sources.Held{})
-	_, problems := bindingManifest(bound)
-	if len(problems) != 1 || problems[0] != "unexpected bound type *sources.Held" {
-		t.Fatalf("directly bound holder accepted: %v", problems)
+	for _, held := range []interface{}{&research.Held{}, &sources.Held{}} {
+		bound := append(bindings(NewApp()), held)
+		_, problems := bindingManifest(bound)
+		want := fmt.Sprintf("unexpected bound type %T", held)
+		if len(problems) != 1 || problems[0] != want {
+			t.Fatalf("directly bound holder accepted: %v", problems)
+		}
 	}
 }

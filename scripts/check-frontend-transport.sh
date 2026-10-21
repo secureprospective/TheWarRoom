@@ -20,6 +20,7 @@ const folders = new Map([
   ['market', 'market'],
   ['now', 'now'],
   ['race', 'race'],
+  ['research', 'research'],
   ['sources', 'datasources'],
   ['trades', 'trades'],
 ]);
@@ -39,6 +40,8 @@ const moved = new Map([
     'TargetMarketReportsRefresh', 'TargetMarketStretches', 'TargetPickClock'].map(name => [name, 'market']),
   ['TargetLiveGame', 'now'], ['TargetNow', 'now'], ['TargetNowRefresh', 'now'],
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
+  ...['TargetOpenResearchArticle', 'TargetResearch', 'TargetResearchNewsRefresh', 'TargetResearchPlayer',
+    'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
   ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTrades'].map(name => [name, 'trades']),
@@ -100,6 +103,8 @@ for (const file of files(path.resolve('frontend/src'))) {
       }
       // Other features retain their legacy namespace/dynamic root imports.
     }
+    if (file.startsWith(path.join(root, 'research') + path.sep) && /wailsjs\/runtime\//.test(spec))
+      check('research', node, 'Research event transport outside its feature adapter');
     const match = spec.match(/wailsjs\/go\/([^/]+)\//);
     if (match && match[1] !== 'main') check(match[1], node, 'generated feature transport outside its adapter');
     if (ownFeature &&
