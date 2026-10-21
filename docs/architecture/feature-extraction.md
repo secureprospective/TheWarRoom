@@ -708,3 +708,18 @@ season-feed detachment, nil preservation, SeasonMu and a publication race. Plant
 (core and sibling imports, a bound Held, an extra exported API method, missing holder and
 season clones, a missing SeasonMu, a moved binding and window.go access in the shell) all
 failed and were restored. `testdata/wire` is byte-identical.
+
+## Commissioner API inventory
+
+The split starts with 172 root Go files and 44 live bindings (the earlier estimate of
+41 predates the actor, managed-schedule and preview additions). Canonical Commissioner,
+Native, corrections and rookie-draft wire/denial fixtures already freeze this surface;
+`testdata/wire` must remain byte-identical. The broad uncached pre-move selection
+`Commissioner|Native|Corrections|Rollover|RookieDraft` exceeded the 200-second local
+budget without reporting a result; it is not recorded as a passing baseline.
+
+There is no Commissioner-private held report: native assets and commands live in the
+durable history ledger. Shared player, roster, injury, draft and calendar state remains
+with its existing owners. The native gate's Permit, transaction reauthorization, retry
+handling and session reads must retain their existing order. Long-lived clock workers
+and cross-feature football-fact composition remain unbound root adapters.
