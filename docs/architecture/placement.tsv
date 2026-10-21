@@ -2,7 +2,6 @@
 # feature from the SYSTEM_MAP.md feature table. One row per path: <path><TAB><feature>.
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
-acquisitions_app.go	contracts
 alerts_app.go	control
 alerts_app_test.go	control
 app.go	platform

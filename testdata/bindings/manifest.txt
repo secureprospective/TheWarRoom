@@ -2,6 +2,7 @@ archive.API.TargetArchive
 comms.API.TargetComms
 comms.API.TargetCommsRefresh
 comms.API.TargetOpenComms
+contracts.API.TargetAcquisition
 contracts.API.TargetCheckLineup
 contracts.API.TargetContractActs
 contracts.API.TargetContracts
@@ -30,7 +31,6 @@ draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft
 draft.API.TargetOpenMFLDraftRoom
 main.App.SetPhotos
-main.App.TargetAcquisition
 main.App.TargetAlerts
 main.App.TargetCheckMoves
 main.App.TargetClock

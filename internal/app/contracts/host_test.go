@@ -133,4 +133,12 @@ func (h *fakeHost) ValidateMoveURL(target string) error {
 	return nil
 }
 
+func (h *fakeHost) AcquisitionSnapshot(string) (snapshot.Snapshot, error) {
+	return snapshot.Snapshot{}, fmt.Errorf("trade state: personal: snapshot not loaded")
+}
+func (h *fakeHost) AcquisitionTeams(context.Context, snapshot.Snapshot) []AcquisitionTeam { return nil }
+func (h *fakeHost) AcquisitionCorrection(state.MirrorPlayer, state.WhatIfSession) domain.Money {
+	return 0
+}
+
 var _ Host = (*fakeHost)(nil)

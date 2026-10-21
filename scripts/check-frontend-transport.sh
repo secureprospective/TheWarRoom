@@ -32,7 +32,7 @@ const moved = new Map([
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
   ...['DeleteMFLKey', 'GetParams', 'MFLKeyStatus', 'ResetParam', 'SetMFLKey', 'SetParam', 'TargetAccounting',
     'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSiteNews'].map(name => [name, 'control']),
-  ...['TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
+  ...['TargetAcquisition', 'TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
     'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',

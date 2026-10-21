@@ -113,7 +113,7 @@ func TestLineupAndRosterWireMatchesGolden(t *testing.T) {
 	}
 
 	trade, _ := realTradeBuilderApp(t)
-	acquisition := trade.TargetAcquisition(RawAcquisition{Mine: "0001", Player: "15761", Cut: "14109"})
+	acquisition := trade.contracts().TargetAcquisition(contractsapp.RawAcquisition{Mine: "0001", Player: "15761", Cut: "14109"})
 	if len(acquisition.Value.Incoming) < 12 || len(acquisition.Value.Cuts) < 12 {
 		t.Fatalf("acquisition: %+v", acquisition)
 	}
@@ -240,13 +240,13 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 		}
 	}
 
-	for name, raw := range map[string]RawAcquisition{
+	for name, raw := range map[string]contractsapp.RawAcquisition{
 		"acquisition-bad-franchise": {Mine: "bad"},
 		"acquisition-two-sources":   {Mine: "0001", Player: "0042", Bid: "b"},
 		"acquisition-bad-player":    {Mine: "0001", Player: "x"},
 		"acquisition-bad-cut":       {Mine: "0001", Cut: "x"},
 	} {
-		got[name] = refusal(a.TargetAcquisition(raw))
+		got[name] = refusal(a.contracts().TargetAcquisition(raw))
 	}
 	got["contracts-bad-scope"] = refusal(a.contracts().TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table)
 	got["contracts-unheld-franchise"] = refusal(a.contracts().TargetContracts(snapshot.RawContractScope{Mine: "0002", Sort: "name"}).Cap)
@@ -326,7 +326,7 @@ func TestContractsWireTwinsMatch(t *testing.T) {
 	fillTwin(t, &rawRelease, &n)
 	var rawWhatIf contractsapp.RawWhatIfRequest
 	fillTwin(t, &rawWhatIf, &n)
-	var rawAcquisition RawAcquisition
+	var rawAcquisition contractsapp.RawAcquisition
 	fillTwin(t, &rawAcquisition, &n)
 	for _, c := range []struct {
 		name       string

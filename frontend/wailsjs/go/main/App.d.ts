@@ -8,8 +8,6 @@ import {time} from '../models';
 
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
 
-export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
-
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
 export function TargetCheckMoves():Promise<void>;

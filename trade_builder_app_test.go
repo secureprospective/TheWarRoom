@@ -230,14 +230,14 @@ func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	raw := RawAcquisition{Mine: "0001", Player: "15761"}
-	noCut := a.TargetAcquisition(raw)
-	if noCut.Status != ReadingOK || !strings.Contains(strings.Join(noCut.Value.Reasons, " "), "does not fit") || !strings.HasPrefix(noCut.Value.Spot, "One active roster spot") {
+	raw := contractsapp.RawAcquisition{Mine: "0001", Player: "15761"}
+	noCut := a.contracts().TargetAcquisition(raw)
+	if noCut.Status != report.ReadingOK || !strings.Contains(strings.Join(noCut.Value.Reasons, " "), "does not fit") || !strings.HasPrefix(noCut.Value.Spot, "One active roster spot") {
 		t.Fatal(noCut)
 	}
 	raw.Cut = "14109"
-	cut := a.TargetAcquisition(raw)
-	if cut.Status != ReadingOK || cut.Value.DeadCap.Cents != 945_000_000 || len(cut.Value.Seasons) != 3 {
+	cut := a.contracts().TargetAcquisition(raw)
+	if cut.Status != report.ReadingOK || cut.Value.DeadCap.Cents != 945_000_000 || len(cut.Value.Seasons) != 3 {
 		t.Fatal(cut)
 	}
 	if cut.Value.Team[0].After != "$129,380,000" {
@@ -248,8 +248,8 @@ func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	}
 	// A lower incoming held salary fits after the same cut; no automatic cheapest-cut guess.
 	raw.Player = "16387"
-	fit := a.TargetAcquisition(raw)
-	if fit.Status != ReadingOK {
+	fit := a.contracts().TargetAcquisition(raw)
+	if fit.Status != report.ReadingOK {
 		t.Fatal(fit)
 	}
 	if strings.Contains(strings.Join(fit.Value.Reasons, " "), "does not fit") {
