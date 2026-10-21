@@ -649,3 +649,14 @@ scoped root race tests, regenerated binding freshness, transport guard, frontend
 311,512 bytes against 321,818. A separately catalogued extra API helper also fails the manifest
 surface golden; an uncatalogued helper fails catalog coverage. The existing directly-bound-Held
 rejection test passes. Full root tests and make verify are left to CI as scoped by the brief.
+
+## Control API inventory
+
+Control B starts with 172 root Go files. The uncached root selection
+`go test -count=1 -run 'Alert|Bye|Season|Week|Window|Control|MFLKey|RefreshFailure|LiveOrArchive|DailyShell|ShellStatus' .`
+passes in 13.883 s (19.26 s wall). Control A (#90) already moved eleven bindings to
+`control.API`; the four left on App are TargetAlerts, TargetSeason, TargetShellStatus and
+TargetSetWindow. The canonical `testdata/wire/control` goldens already freeze all fifteen,
+including the startup refusals, so no new golden bytes are needed. Control's private held
+values are the MFL rule names and site news (`App.control`, read and written only by the
+Control Room under SeasonMu); no other critical section reads them with shared state.
