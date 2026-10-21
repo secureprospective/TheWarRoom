@@ -169,10 +169,10 @@ func wireFact(f marketapp.Fact) MarketFact {
 
 func marketWeekText(week int) string { return marketapp.WeekText(week) }
 
-func marketHeld(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string]marketapp.Held {
-	out := make(map[string]marketapp.Held, len(held))
+func marketHeld(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string]marketapp.HeldFeed {
+	out := make(map[string]marketapp.HeldFeed, len(held))
 	for kind, feed := range held {
-		out[kind] = marketapp.Held{Value: feed.Value, Feed: feed.FeedState()}
+		out[kind] = marketapp.HeldFeed{Value: feed.Value, Feed: feed.FeedState()}
 	}
 	return out
 }

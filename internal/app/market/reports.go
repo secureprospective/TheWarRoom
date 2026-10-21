@@ -25,9 +25,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
-// Held is one market report kind as the caller holds it: the parsed feed (one, or none before
+// HeldFeed is one market report kind as the caller holds it: the parsed feed (one, or none before
 // the first read) and the feed's read state.
-type Held struct {
+type HeldFeed struct {
 	Value []marketfeeds.Feed
 	Feed  report.Feed
 }
@@ -67,7 +67,7 @@ func ArchiveScope(src, kind string, week int) bool {
 
 // Names labels every player the held reports list: name, position and team for a player,
 // and the name alone for a team unit (a defense, a kicking unit) that MFL-wide reports price.
-func Names(held map[string]Held, lookup normalize.Lookup) map[string]string {
+func Names(held map[string]HeldFeed, lookup normalize.Lookup) map[string]string {
 	names := map[string]string{}
 	for _, feed := range held {
 		if len(feed.Value) != 1 {
@@ -110,13 +110,13 @@ func rankChange(p marketfeeds.Player) string {
 		return "No change"
 	}
 }
-func fact(spec reportSpec, feed Held, p *marketfeeds.Player, zone *time.Location) Fact {
+func fact(spec reportSpec, feed HeldFeed, p *marketfeeds.Player, zone *time.Location) Fact {
 	return factOn(spec, feed, p, scale(feed), zone)
 }
 
 // scale is one axis for a whole report, so every player's bar reads against the same
 // ends: the largest pick or auction value any player reached.
-func scale(feed Held) float64 {
+func scale(feed HeldFeed) float64 {
 	scale := 1.0
 	if len(feed.Value) == 1 {
 		for _, p := range feed.Value[0].Players {
@@ -126,7 +126,7 @@ func scale(feed Held) float64 {
 	return scale
 }
 
-func factOn(spec reportSpec, feed Held, p *marketfeeds.Player, scale float64, zone *time.Location) Fact {
+func factOn(spec reportSpec, feed HeldFeed, p *marketfeeds.Player, scale float64, zone *time.Location) Fact {
 	fact := Fact{Label: spec.label, Text: "—", Reason: "MFL does not list this player in this report."}
 	if feed.Feed.FetchedAt.IsZero() {
 		fact.Reason = spec.title + " unavailable; refresh from MFL to check."
@@ -167,7 +167,7 @@ func factOn(spec reportSpec, feed Held, p *marketfeeds.Player, scale float64, zo
 
 // Facts are every listed player's four market cells, by MFL id, in report order; the "" entry
 // is the cells of a player no report lists.
-func Facts(held map[string]Held, zone *time.Location) map[string][]Fact {
+func Facts(held map[string]HeldFeed, zone *time.Location) map[string][]Fact {
 	indexed := map[string]map[string]marketfeeds.Player{}
 	ids := map[string]bool{}
 	for kind, feed := range held {
@@ -203,7 +203,7 @@ func Facts(held map[string]Held, zone *time.Location) map[string][]Fact {
 
 // Reports is the player market reports board: one report per kind, its rows the held feed's
 // players labelled by names, the projections titled with this NFL week.
-func Reports(held map[string]Held, names map[string]string, week int, zone *time.Location) report.Board {
+func Reports(held map[string]HeldFeed, names map[string]string, week int, zone *time.Location) report.Board {
 	board := report.Board{Title: "Player market reports", Loading: "Reading player market reports…", Refresh: "Refresh player market reports from MFL", HowLabel: "How this is counted", Reports: []report.Report{}}
 	for _, spec := range reportSpecs() {
 		feed := held[spec.kind]
@@ -249,7 +249,7 @@ func sampleUnit(kind string) string {
 	}
 	return "drafts"
 }
-func reportRows(spec reportSpec, feed Held, names map[string]string, zone *time.Location) []report.Row {
+func reportRows(spec reportSpec, feed HeldFeed, names map[string]string, zone *time.Location) []report.Row {
 	players := slices.Clone(feed.Value[0].Players)
 	slices.SortFunc(players, func(a, b marketfeeds.Player) int {
 		if spec.kind == marketfeeds.Ranks {
