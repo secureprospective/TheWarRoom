@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -93,8 +95,13 @@ func (a *App) backupDatabases(ctx context.Context, now time.Time) {
 }
 
 func (a *App) databaseChecksReport() *Report {
-	r := &Report{ID: "database-checks", Title: "Local database checks", Status: "ok",
-		Columns: []string{"File", "Last checked", "Result"}, Rows: []ReportRow{},
+	r := wireReport(*a.databaseChecksReading())
+	return &r
+}
+
+func (a *App) databaseChecksReading() *report.Report {
+	r := &report.Report{ID: "database-checks", Title: "Local database checks", Status: "ok",
+		Columns: []string{"File", "Last checked", "Result"}, Rows: []report.Row{},
 		How: "SQLite integrity_check and foreign_key_check run after launch and weekly while open. The last attempt is held for this launch."}
 	for _, file := range a.databaseFiles() {
 		at, words := "Not checked this launch", "Waiting for checks"
@@ -112,7 +119,7 @@ func (a *App) databaseChecksReport() *Report {
 		} else if r.Status == "ok" {
 			r.Status = "empty"
 		}
-		r.Rows = append(r.Rows, ReportRow{Cells: []string{file.name, at, words}})
+		r.Rows = append(r.Rows, report.Row{Cells: []string{file.name, at, words}})
 	}
 	return r
 }

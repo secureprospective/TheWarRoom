@@ -11,6 +11,7 @@ import (
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
+	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -50,12 +51,7 @@ func main() {
 		OnStartup:        app.startup,
 		OnDomReady:       app.domReady,
 		OnShutdown:       app.shutdown,
-		Bind: []interface{}{
-			app,
-			archiveapp.New(app.core),
-			comms.New(app.core),
-			counterparties.New(app.core),
-		},
+		Bind:             bindings(app),
 	})
 
 	if err != nil {
@@ -92,4 +88,14 @@ func probe() int {
 		return 1
 	}
 	return 0
+}
+
+func bindings(app *App) []interface{} {
+	return []interface{}{
+		app,
+		archiveapp.New(app.core),
+		comms.New(app.core),
+		counterparties.New(app.core),
+		sources.New(app.core, app.sourcesHeld),
+	}
 }

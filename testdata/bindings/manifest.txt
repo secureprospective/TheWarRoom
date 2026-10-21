@@ -5,12 +5,9 @@ comms.API.TargetOpenComms
 counterparties.API.TargetCounterpartTeam
 counterparties.API.TargetCounterparties
 main.App.DeleteMFLKey
-main.App.GetCrosswalkReport
 main.App.GetParams
-main.App.LoadCrosswalk
 main.App.MFLKeyStatus
 main.App.ResetParam
-main.App.SetLeagueArchiveDir
 main.App.SetMFLKey
 main.App.SetParam
 main.App.SetPhotos
@@ -49,9 +46,6 @@ main.App.TargetCommissionerSchedule
 main.App.TargetContractActs
 main.App.TargetContracts
 main.App.TargetCorrections
-main.App.TargetCrosswalk
-main.App.TargetDataRefresh
-main.App.TargetDataSources
 main.App.TargetDraftIR
 main.App.TargetDraftLab
 main.App.TargetDraftLineup
@@ -131,3 +125,9 @@ main.App.TargetTradeBuilder
 main.App.TargetTrades
 main.App.TargetWhatIf
 main.App.TargetWithdrawRoster
+sources.API.GetCrosswalkReport
+sources.API.LoadCrosswalk
+sources.API.SetLeagueArchiveDir
+sources.API.TargetCrosswalk
+sources.API.TargetDataRefresh
+sources.API.TargetDataSources

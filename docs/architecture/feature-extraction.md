@@ -23,8 +23,16 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    paths go through `core.Paths`. Update all direct `App{...}` test fixtures with initialized core
    state, including zero-state refusal fixtures, in the same compiling commit.
 3. **Declare the port in the feature.** Add `type Host interface` in `<feature>/api.go`, listing
-   only the reads/effects this API needs. `type API struct { host Host }` and `New(Host) *API` have
-   no core dependency. Port signatures use lower-level value types or shared report/season
+   only the reads/effects this API needs. `API` has named, unexported `host Host` and
+   (for stateful features) `held *Held`
+   fields. Stateless APIs use `New(Host)`; stateful APIs use `New(Host, *Held)`. Neither
+   imports core. Create exactly one unbound holder per App in common `NewApp` construction,
+   store it on a named unexported field and bind `sources.New(app.core, app.sourcesHeld)`.
+   Update direct App fixtures too. Never embed or bind Held. Shared state stays in core;
+   feature-private reports and their short data mutexes move to Held. Its Publish and Snapshot
+   methods lock and deep-clone on both ingress and egress, preserving nil versus empty at
+   every depth (including each signals load's Missing slice). Port signatures use lower-level
+   value types or shared report/season
    contracts. Do not return a feature-owned Input from core: return lower-level pieces and
    assemble the Input in the API. A lower, genuinely shared type can move to report/season; a
    feature-only cache should stay with its feature instead of creating a core→feature cycle.
@@ -35,6 +43,14 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    retention/clearing, archive fallback and event order. A callback into a remaining root-owned
    cache must document its caller-held lock; never lock the same mutex twice. Shared fallback
    and held-feed primitives already live in core; reuse them instead of cloning them.
+   Operation serializers (LoadingSignals, RefreshMu) remain core/root with their original
+   spans, lock order and deferred notifications after release. No holder data lock spans a
+   Host call, callback, I/O, event or another holder lock. Where an existing critical section
+   jointly captures shared and private state, retain its outer shared lock for every reader
+   and writer. Capture through an unbound root composition adapter: core lock → holder
+   snapshot → shared copy → unlock. Do not replace this with independent snapshots or call
+   a core method that re-locks that mutex. Cross-feature reads use the reader's Host port,
+   implemented by an unbound root adapter over the other feature's holder; never a sibling import.
 5. **Move the wire boundary.** Move the public methods, Raw request validation, exported wire
    declarations and converters into `<feature>/api.go`, with the exact method names, arguments,
    JSON tags and nil behavior. Remove emptied root files. Compose only in `main.go` by adding
@@ -48,7 +64,9 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    publication; it changes no desktop authorization now. Add the bound pointer and its Commands
    to `TestBindingManifest` in `selfprotect_test.go`, then update
    `testdata/bindings/manifest.txt`: the old App list minus exactly the moved methods, plus the
-   feature API methods. Remaining App methods are temporarily catalog-exempt. Plant an extra
+   feature API methods. Runtime and TestBindingManifest use one `bindings(app)` function;
+   reject unexpected bound types as well as methods, including a directly bound Held.
+   Remaining App methods are temporarily catalog-exempt. Plant an extra
    exported helper and prove the test rejects both its surface and missing catalog entry.
 7. **Frontend adapter and generation.** Run `make bindings` with the pinned Wails CLI. Generated
    model namespaces may change; review those diffs, never hand-edit the generated files. Only
@@ -60,26 +78,47 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
 8. **Guards, placement and proof.** Extend depguard with the feature's own subtree, report,
    season and catalog. Core may import no feature and no Wails; no feature may import core,
    including tests. `scripts/check-frontend-transport.sh` runs in `make lint` and checks generated
-   feature imports, feature models and direct/bracket window.go accesses. Bite-test each new
+   feature imports, feature models and direct/bracket window.go accesses. Map generated Go
+   packages explicitly to frontend folders (`comms→comms`, `sources→datasources`), rejecting
+   unmapped packages. Reject moved main/App bindings outside the adapter, without migrating
+   other features' legacy imports. Bite-test each new
    boundary with a compiling forbidden import/access, then restore it. Update SYSTEM_MAP,
    placement.tsv and the actual root-go-baseline in the move commit. Move fast unit/API tests
    beside the feature using a fake Host. Test core separately with `coretest.New(t).Build()`;
    it supplies isolated stores and a memory keyring, and `coretest.NewTransport` never opens a
    socket. Keep root cross-feature scenarios and a small composition/refresh golden where they
    still prove real wiring. Race an actual refresh publication against reads, show reads can
-   complete during refresh I/O, and mutate captured data to prove detachment. Plant a missing
+   complete during refresh I/O, and mutate inputs and snapshots to prove ingress/egress
+   detachment. Exercise nested nil/empty slices, publication/read races, serializer/event order
+   and joint-capture consistency. Sources' stateful example holds crosswalk and signals reports
+   in `sources.Held`; shared season/lookup state and the whole-load serializer stay in core. Plant a missing
    clone/lock and prove the guards fail. Run build, lint, focused race tests, root Wire/Manifest,
-   frontend tests/typecheck/build and binding freshness; finish with one full make verify.
+   frontend tests/typecheck/build and binding freshness; CI runs the full make verify when a
+   scoped extraction brief excludes the full root suite.
 
 **Comms ownership and metadata.** Core holds transactions/boards and their locks, key access and
-refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now`, `liveGame`,
-`crosswalk` and `signals` remain on App: their types belong to other feature packages or to the
-still-root feature adapters. Core's archive callback accesses archiveCache under FactsMu; the
+refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now` and `liveGame`
+remain on App: their types belong to other feature packages or still-root feature adapters.
+Sources now owns `crosswalk` and `signals` through the named `App.sourcesHeld` pointer. Core's archive callback accesses archiveCache under FactsMu; the
 transaction callback publishes through the existing root fetcher under RefreshMu. No feature
 imports core. The catalog records the current compound desktop `comms.read` command's ambient
 roles (`gm,commish,admin`) and gravity (`G0`) for its read/refresh/open actions. The registry's social
 page gravity is not a newly enforced binding policy. No wire/API version was previously declared,
 so Version is Unset. This does not grant server publication or alter any permission check.
+
+**Sources stateful API.** Six methods move from App to `sources.API`; the source settings
+and startup workers stay unbound in `sources_runtime.go` because Photos, Archive and the status
+strip still consume them. `sources_wire_test.go` retains canonical binding goldens and the
+cross-feature Params/database-checks contract; archive/facts and isolated API tests live beside
+Sources, while `coretest.New(t).Build()` drives the core port/serializer tests. The pre-move
+root count was 205 and the uncached Sources-focused root selection took 7.482 s; the move leaves
+199 root Go files. `DataScope` and `DataActResult` remain declared root wire twins for Cache and
+Photos, not extra Sources bindings. No existing critical section jointly captured Sources'
+private reports with core state: Research's independent crosswalk-version read stays an unbound
+root adapter, with its original separate capture order. Thus no artificial joint lock is added.
+The load still publishes before releasing LoadingSignals, then emits the deferred health event.
+The catalog uses `refresh.run` for TargetDataRefresh; methods without registry verbs use Unset,
+and unspecified roles/versions remain Unset rather than inventing authorization.
 
 **Request scope — recorded, not built.** Commissioner still reads the session and the app-lifetime
 context from shared state; this pilot does not change that. Server reuse needs a per-call scope

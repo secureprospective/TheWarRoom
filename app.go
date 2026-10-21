@@ -13,6 +13,7 @@ import (
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -44,8 +45,7 @@ type App struct {
 	race         raceHeld
 	now          nowHeld
 	liveGame     liveGameHeld
-	crosswalk    CrosswalkReport
-	signals      SignalsReport
+	sourcesHeld  *sourcesapp.Held
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.
@@ -70,7 +70,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	a := &App{core: &core.State{Started: make(chan struct{}),
+	a := &App{sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
@@ -86,6 +86,7 @@ func NewApp() *App {
 	}
 	a.configureArchive()
 	a.core.RefreshTransactions = a.refreshSeasonTransactions
+	a.wireSources()
 	return a
 }
 

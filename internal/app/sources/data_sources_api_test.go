@@ -1,4 +1,4 @@
-package main
+package sources_test
 
 import (
 	"context"
@@ -8,10 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
-	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // Two bodies byte for byte as the frozen Lab read them (2013/aav.json, 2013/tradeBait.json).
@@ -56,27 +57,27 @@ func archiveTree(t *testing.T) string {
 
 func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Paths.DataDir = t.TempDir()
+	a := testHost(t)
+
 	dir := archiveTree(t)
-	if r := a.SetLeagueArchiveDir(dir); !r.OK {
+	if r := a.api().SetLeagueArchiveDir(dir); !r.OK {
 		t.Fatal(r.Error)
 	}
-	first := a.TargetDataRefresh("archive")
+	first := a.api().TargetDataRefresh("archive")
 	if !first.OK || !strings.Contains(first.Summary, "Looked at 8 files: 8 new, 0 already held. MFL error bodies, kept as errors: 1.") ||
 		!strings.Contains(first.Summary, "1,482 files pinned, 1,480 not in the archive") {
 		t.Fatalf("first import = %+v", first)
 	}
-	again := a.TargetDataRefresh("archive")
+	again := a.api().TargetDataRefresh("archive")
 	if !again.OK || !strings.Contains(again.Summary, "8 files: 0 new, 8 already held") {
 		t.Fatalf("second import = %+v, want nothing new", again)
 	}
 	ctx := context.Background()
-	fetches, err := a.core.History.SourceFetches(ctx, leagueArchiveSource)
+	fetches, err := a.hist.SourceFetches(ctx, sourcesapp.LeagueArchiveSource)
 	if err != nil || len(fetches) != 8 {
 		t.Fatalf("archive fetches = %d, %v; want 8 after two runs", len(fetches), err)
 	}
-	m, published, err := a.publishLabManifest(ctx)
+	m, published, err := sourcesapp.ServiceFor(a).PublishLabManifest(ctx)
 	if err != nil || published {
 		t.Fatalf("republish = %v, %v; want the same manifest already held", published, err)
 	}
@@ -90,10 +91,10 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 		held[1].File != "2013/tradeBait.json" || held[1].League != "51719" || held[1].CapturedAt != "2026-10-05T02:00:00Z" {
 		t.Fatalf("held entries = %+v, want the Lab's 2013 aav and trade bait", held)
 	}
-	if _, _, err := m.ResolveWithGaps(ctx, a.core.History, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
+	if _, _, err := m.ResolveWithGaps(ctx, a.hist, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
 		t.Errorf("resolve err = %v, want the missing frozen files named", err)
 	}
-	ds, err := a.TargetDataSources()
+	ds, err := a.api().TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,43 +111,43 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 
 func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Paths.DataDir = t.TempDir()
+	a := testHost(t)
+
 	dir := archiveTree(t)
 	if err := os.WriteFile(filepath.Join(dir, "2014/rules.json"), []byte(`{"rules":`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if r := a.SetLeagueArchiveDir(dir); !r.OK {
+	if r := a.api().SetLeagueArchiveDir(dir); !r.OK {
 		t.Fatal(r.Error)
 	}
-	r := a.TargetDataRefresh("archive")
+	r := a.api().TargetDataRefresh("archive")
 	if r.OK || !strings.Contains(r.Error, "2014/rules.json: not an MFL export") {
 		t.Fatalf("import = %+v, want the malformed file named", r)
 	}
 	ctx := context.Background()
-	if fetches, _ := a.core.History.SourceFetches(ctx, leagueArchiveSource); len(fetches) != 0 {
+	if fetches, _ := a.hist.SourceFetches(ctx, sourcesapp.LeagueArchiveSource); len(fetches) != 0 {
 		t.Errorf("%d fetches recorded from a malformed archive", len(fetches))
 	}
-	health, err := a.core.History.SourceHealth(ctx)
+	health, err := a.hist.SourceHealth(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, h := range health {
-		if h.Source == leagueArchiveSource && !strings.Contains(h.LastError, "2014/rules.json") {
+		if h.Source == sourcesapp.LeagueArchiveSource && !strings.Contains(h.LastError, "2014/rules.json") {
 			t.Errorf("archive health = %+v, want the failure recorded", h)
 		}
 	}
 	for _, bad := range []string{"relative/raw", t.TempDir()} {
-		if r := a.SetLeagueArchiveDir(bad); r.OK {
+		if r := a.api().SetLeagueArchiveDir(bad); r.OK {
 			t.Errorf("archive folder %q accepted", bad)
 		}
 	}
-	if r := a.TargetDataRefresh("everything"); r.OK || !strings.Contains(r.Error, `unknown data scope "everything"`) {
+	if r := a.api().TargetDataRefresh("everything"); r.OK || !strings.Contains(r.Error, `unknown data scope "everything"`) {
 		t.Errorf("unknown scope = %+v", r)
 	}
 }
 
-func cell(r Report, key string) string {
+func cell(r report.Report, key string) string {
 	for _, row := range r.Rows {
 		if row.Cells[0] == key {
 			return row.Cells[1]
@@ -157,12 +158,12 @@ func cell(r Report, key string) string {
 
 func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 	t.Parallel()
-	r := SignalsReport{Loads: []SignalLoad{{Status: loadDone, Added: 1200}, {Status: loadCurrent}, {Status: loadFailed},
-		{Status: loadSkipped}, {Status: loadDone, Added: 34}}}
-	if got := signalsSummary(r); got != "Looked at 5 files: 2 loaded, 1 already current, 1 skipped, 1 failed; 1,234 new values." {
+	r := sourcesapp.SignalsReport{Loads: []sourcesapp.SignalLoad{{Status: sourcesapp.LoadDone, Added: 1200}, {Status: sourcesapp.LoadCurrent}, {Status: sourcesapp.LoadFailed},
+		{Status: sourcesapp.LoadSkipped}, {Status: sourcesapp.LoadDone, Added: 34}}}
+	if got := sourcesapp.SignalsSummary(r); got != "Looked at 5 files: 2 loaded, 1 already current, 1 skipped, 1 failed; 1,234 new values." {
 		t.Errorf("signals summary = %q", got)
 	}
-	if got := leagueRefreshSummary(RefreshResult{Season: 2026, Changed: true}); got !=
+	if got := sourcesapp.LeagueRefreshSummary(2026, true, false); got !=
 		"Season 2026: rosters and salary adjustments updated; rules unchanged." {
 		t.Errorf("league summary = %q", got)
 	}
@@ -180,19 +181,19 @@ func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 
 func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Paths.DataDir = t.TempDir()
-	if r := a.SetLeagueArchiveDir(archiveTree(t)); !r.OK {
+	a := testHost(t)
+
+	if r := a.api().SetLeagueArchiveDir(archiveTree(t)); !r.OK {
 		t.Fatal(r.Error)
 	}
-	if r := a.TargetDataRefresh("archive"); !r.OK {
+	if r := a.api().TargetDataRefresh("archive"); !r.OK {
 		t.Fatal(r.Error)
 	}
-	in, err := a.factsInput(context.Background())
+	in, err := sourcesapp.ServiceFor(a).FactsInput(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
-	r := wireReport(sourcesapp.FactsReport(in))
+	r := sourcesapp.FactsReport(in)
 	for _, gap := range in.Gaps {
 		if got := cell(r, "Named gap: "+gap.File); got != gap.Reason || !strings.Contains(got, "fed no fact") {
 			t.Errorf("gap %s = %q", gap.File, got)
@@ -203,42 +204,7 @@ func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 			in.Manifest.Entries[i].SHA256 = strings.Repeat("0", 64)
 		}
 	}
-	if got := cell(wireReport(sourcesapp.FactsReport(in)), "Named gap: "+in.Gaps[0].File); got != "" {
+	if got := cell(sourcesapp.FactsReport(in), "Named gap: "+in.Gaps[0].File); got != "" {
 		t.Errorf("changed pin incorrectly received exception: %q", got)
 	}
 }
-
-func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
-	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Params = params.New(a.core.Pools)
-	if err := a.core.Params.Initialize(a.core.Ctx); err != nil {
-		t.Fatal(err)
-	}
-	result := a.GetParams()
-	if !result.OK || len(result.Params) < 100 {
-		t.Fatalf("params = %+v", result)
-	}
-	previous := ""
-	for _, p := range result.Params {
-		if p.Label == "" || p.Group == "" || p.Group == "Other settings" ||
-			strings.ContainsAny(p.Label, "._") || strings.Contains(p.Label, "model") {
-			t.Errorf("parameter %s has no plain label and area: %q / %q", p.Key, p.Label, p.Group)
-		}
-		if p.Group < previous {
-			t.Errorf("areas not grouped: %q after %q", p.Group, previous)
-		}
-		previous = p.Group
-		if p.Key == "captier.cold_ceiling_pct" && p.Label != "Cold salary tier ceiling (% of cap)" {
-			t.Errorf("cold ceiling = %q", p.Label)
-		}
-		if p.Key == "l4.breakout.athletic_lift" && (p.Label != "how far athletic rating lifts breakout age and age trajectory" ||
-			p.Group != "Scouting adjustment · Breakout (inert, no run reads it)") {
-			t.Errorf("breakout words = %q / %q", p.Label, p.Group)
-		}
-	}
-}
-
-// TestSourceStandingAlarmsOnlyForTheBoard is the status strip's reading (S-12): the alarm is a
-// board source lost or never read; a source the board does not read,
-// such as the league archive, never raises it.

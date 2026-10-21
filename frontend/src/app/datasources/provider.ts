@@ -1,5 +1,6 @@
-import { TargetDataSources, TargetDataRefresh, SetLeagueArchiveDir, SetPhotos, TargetCrosswalk,
+import { SetPhotos,
   GetParams, SetParam, ResetParam } from '../../../wailsjs/go/main/App';
+import { sourcesAPI } from './api';
 import { object, text, array, choice } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
 import type { main } from '../../../wailsjs/go/models';
@@ -53,12 +54,12 @@ function desktop() {
     throw new Error('Data and sources needs the desktop app. No sample data is substituted.');
 }
 export const dataProvider: DataProvider = {
-  read: async () => { desktop(); return parseSources(await TargetDataSources()); },
-  crosswalk: async () => { desktop(); return report(await TargetCrosswalk(), 'Crosswalk'); },
+  read: async () => { return parseSources(await sourcesAPI.read()); },
+  crosswalk: async () => { return report(await sourcesAPI.crosswalk(), 'Crosswalk'); },
   params: async () => { desktop(); const p = await GetParams(); if (!p.ok) throw new Error(p.error);
     return p; },
-  refresh: async scope => { desktop(); return parseOutcome(await TargetDataRefresh(scope)); },
-  folder: async path => { desktop(); return parseOutcome(await SetLeagueArchiveDir(path)); },
+  refresh: async scope => { return parseOutcome(await sourcesAPI.refresh(scope)); },
+  folder: async path => { return parseOutcome(await sourcesAPI.folder(path)); },
   photos: async on => { desktop(); return parseOutcome(await SetPhotos(on)); },
   parameter: async (key, position, value) => {
     desktop(); const r = value === null ? await ResetParam(key, position) : await SetParam(key,

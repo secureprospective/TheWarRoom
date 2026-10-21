@@ -10,17 +10,11 @@ import {personal} from '../models';
 
 export function DeleteMFLKey():Promise<main.MFLKeyStatus>;
 
-export function GetCrosswalkReport():Promise<main.CrosswalkReport>;
-
 export function GetParams():Promise<main.ParamsResult>;
-
-export function LoadCrosswalk():Promise<main.CrosswalkReport>;
 
 export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
 
 export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
-
-export function SetLeagueArchiveDir(arg1:string):Promise<main.DataActResult>;
 
 export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
 
@@ -97,12 +91,6 @@ export function TargetContractActs(arg1:main.RawContractAct):Promise<main.Readin
 export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.ContractsReadings>;
 
 export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>;
-
-export function TargetCrosswalk():Promise<main.Report>;
-
-export function TargetDataRefresh(arg1:string):Promise<main.DataActResult>;
-
-export function TargetDataSources():Promise<main.DataSources>;
 
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 

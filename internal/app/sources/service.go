@@ -1,5 +1,5 @@
 // Package sources builds Sources readings and runs synchronous imports with explicit dependencies.
-// The caller owns held values, locking, scheduling and database lifetimes.
+// Held owns private reports; the Host owns shared state, scheduling and database lifetimes.
 package sources
 
 import (
@@ -61,6 +61,7 @@ type SignalsHistory interface {
 
 // Service borrows stores and immutable inputs; it never owns App state.
 type Service struct {
+	Zone       *time.Location
 	Health     HealthHistory
 	Facts      FactsHistory
 	Archive    ArchiveHistory
@@ -70,4 +71,11 @@ type Service struct {
 	CollegeKey string
 	Transport  http.RoundTripper
 	LabData    func() (*lab.Data, error)
+}
+
+func (a Service) zone() *time.Location {
+	if a.Zone != nil {
+		return a.Zone
+	}
+	return time.Local
 }
