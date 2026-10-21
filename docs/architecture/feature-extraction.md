@@ -567,3 +567,17 @@ ingress clone, split joint capture and frontend transport access were all reject
 restored. Frontend's existing alert bus is retained for the player Inspector through api.ts.
 A pre-existing 119-character Sources test line was wrapped only to clear the repo-wide
 110-character frontend source gate; no Sources behavior or ownership row changed.
+
+## Offers API inventory
+
+The Offers cluster starts with 198 root Go files. The uncached root selection
+`go test -count=1 -run '^(TestBid|TestOffers|TestOffer|TestPersonal|TestPool)' .`
+passes in 28.256 s (40.103 s wall). Its thirteen bindings are TargetOffers,
+TargetPersonal, TargetPersonalChange, TargetPersonalHandOff, TargetPool,
+TargetPoolRefresh, TargetBidPreview, TargetBidDraft, TargetBidPlans,
+TargetBidHandOff, TargetBidPosted, TargetBidWithdraw and TargetBidRevise.
+Existing canonical Offers/Pool wire, denial and frontend-fixture tests freeze the
+cluster. No new golden bytes are needed. Free-agent and trade-bait feeds remain
+shared: model refresh and Control read them too. This cluster has no private
+held report or short data mutex to extract. Its whole-operation MovesMu and
+RefreshMu serializers remain with shared state.
