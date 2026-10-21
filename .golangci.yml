@@ -113,6 +113,7 @@ linters:
           files:
             - "**/internal/**"
             - "!**/internal/app/**"
+            - "!**/internal/composition/**"
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app
               desc: "non-app internals cannot import application services"

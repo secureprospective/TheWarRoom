@@ -4,6 +4,9 @@ The earlier pure-service recipe remains below for existing adapters. New feature
 **Feature API template**, which moves bindings as well as construction out of package main.
 Shared report/season contracts and a feature-owned Host keep transport and state separate.
 
+Since Split 17 the root holds only `main.go`. Every "root adapter" below now lives in
+`internal/composition` (package `composition`); its tests run from the repo root (`TestMain`).
+
 ## Feature API template
 
 This is the current extraction pattern. The older sections below describe the earlier pure-service

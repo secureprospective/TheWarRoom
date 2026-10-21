@@ -9,13 +9,14 @@
 # it (or a bare short SHA before the first), matching only release tags so an
 # archive/* tag never becomes a version. `--dirty` marks an uncommitted
 # tree so an unreleased build can never masquerade as a clean tag. These flow
-# into the `main.version/commit/buildDate` vars via `-ldflags -X` (version.go).
+# into the `composition.version/commit/buildDate` vars via `-ldflags -X` (version.go).
 # A plain `go build` / `wails dev` leaves the vars at their "dev" defaults —
 # deliberately visibly distinct from a stamped release.
 VERSION    := $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
 COMMIT     := $(shell git rev-parse --short HEAD 2>/dev/null)
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
-LDFLAGS    := -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildDate=$(BUILD_DATE)
+PKG        := github.com/secureprospective/TheWarRoom/internal/composition
+LDFLAGS    := -X $(PKG).version=$(VERSION) -X $(PKG).commit=$(COMMIT) -X $(PKG).buildDate=$(BUILD_DATE)
 
 # ifaceguard — custom go/analysis vettool flagging empty-interface
 # (interface{}/any) escapes in EXPORTED signatures — the one gap no enabled
