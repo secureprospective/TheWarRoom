@@ -26,48 +26,6 @@ func holdSeasonFeed[T any](h *heldSeasonFeed[T], value T, fresh Freshness, err e
 	core.HoldFeed(h, value, fresh, err)
 }
 
-// SeasonReading is the three season feeds as held, each with its own provenance.
-type SeasonReading struct {
-	Transactions  snapshot.Sourced[[]leaguefeed.Transaction]  `json:"transactions"`
-	Lineups       snapshot.Sourced[leaguefeed.Lineups]        `json:"lineups"`
-	PendingTrades snapshot.Sourced[[]leaguefeed.PendingTrade] `json:"pendingTrades"`
-}
-
-// TargetSeason reads held state only: no network and never refreshMu, so it answers while a
-// refresh runs. Its only error is "not ready".
-func (a *App) TargetSeason() (SeasonReading, error) {
-	if err := a.ready(); err != nil {
-		return SeasonReading{}, fmt.Errorf("target season: startup: %w", err)
-	}
-	a.core.SeasonMu.Lock()
-	defer a.core.SeasonMu.Unlock()
-	source := "liveScoring default week"
-	if a.core.LineupsWeek != 0 {
-		source = "liveScoring W=" + strconv.Itoa(a.core.LineupsWeek)
-	}
-	// Copies serialize as [] rather than null before the first fetch.
-	txs := append([]leaguefeed.Transaction{}, a.core.SeasonTransactions.Value...)
-	trades := append([]leaguefeed.PendingTrade{}, a.core.SeasonPendingTrades.Value...)
-	lineups := a.core.SeasonLineups.Value
-	lineups.Franchises = append([]leaguefeed.Lineup{}, lineups.Franchises...)
-	lineups.Matchups = append([]leaguefeed.Matchup{}, lineups.Matchups...)
-	for i := range lineups.Franchises {
-		row := &lineups.Franchises[i]
-		row.Players = append([]leaguefeed.PlayerScore{}, row.Players...)
-	}
-	return SeasonReading{
-		Transactions: snapshot.Sourced[[]leaguefeed.Transaction]{
-			Value: txs, Provenance: a.core.SeasonTransactions.Provenance("transactions", "transactions"),
-		},
-		Lineups: snapshot.Sourced[leaguefeed.Lineups]{
-			Value: lineups, Provenance: a.core.SeasonLineups.Provenance(source, "live scores"),
-		},
-		PendingTrades: snapshot.Sourced[[]leaguefeed.PendingTrade]{
-			Value: trades, Provenance: a.core.SeasonPendingTrades.Provenance("pendingTrades", "pending trades"),
-		},
-	}, nil
-}
-
 func seasonPause(ctx context.Context, duration time.Duration) error { return core.Pause(ctx, duration) } //nolint:wrapcheck // Preserve the shared pause error.
 
 func (a *App) refreshSeason(ctx context.Context) {

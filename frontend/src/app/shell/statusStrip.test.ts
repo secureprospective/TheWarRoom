@@ -29,7 +29,7 @@ it('rereads health after refresh completion and rejects an older response', asyn
   vi.stubGlobal('document', dom.document);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('window', { document: dom.document, HTMLIFrameElement: class {},
-    go: { main: { App: { TargetShellStatus: read } } } });
+    go: { control: { API: { TargetShellStatus: read } } } });
   const root = createRoot(dom.element);
   try {
     await act(async () => { root.render(createElement(StatusStrip)); });

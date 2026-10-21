@@ -26,14 +26,15 @@ const folders = new Map([
   ['trades', 'trades'],
 ]);
 // Folders whose feature has no root App bindings left: nothing in them may touch main/App or runtime.
-const whole = ['archive', 'comms', 'counterparties', 'race'];
+const whole = ['archive', 'comms', 'control', 'counterparties', 'race'];
 const moved = new Map([
   ['TargetArchive', 'archive'],
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
   ...['DeleteMFLKey', 'GetParams', 'MFLKeyStatus', 'ResetParam', 'SetMFLKey', 'SetParam', 'TargetAccounting',
-    'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSiteNews'].map(name => [name, 'control']),
-  ...['TargetAcquisition', 'TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
-    'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
+    'TargetAlerts', 'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSeason',
+    'TargetSetWindow', 'TargetShellStatus', 'TargetSiteNews'].map(name => [name, 'control']),
+  ...['TargetAcquisition', 'TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup',
+    'TargetLineup', 'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),

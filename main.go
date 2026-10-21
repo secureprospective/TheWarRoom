@@ -103,7 +103,7 @@ func bindings(app *App) []interface{} {
 		app,
 		archiveapp.New(app.core),
 		comms.New(app.core),
-		controlapp.New(controlHost{app: app}),
+		controlapp.New(controlHost{State: app.core, app: app}, app.controlHeld),
 		contractsapp.New(contractsHost{State: app.core, app: app}),
 		counterparties.New(app.core),
 		draft.New(draftHost{State: app.core, app: app}),

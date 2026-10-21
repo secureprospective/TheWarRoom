@@ -264,7 +264,7 @@ func TestMFLKeySeasonLeakGate(t *testing.T) {
 	for range 2 {
 		app.refreshPendingTradesInBackground()
 		app.core.WeekWorkers.Wait()
-		reading, err := app.TargetSeason()
+		reading, err := app.controlAPI().TargetSeason()
 		if err != nil {
 			t.Fatal(err)
 		}

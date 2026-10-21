@@ -1,4 +1,4 @@
-package main
+package core_test
 
 import (
 	"context"
@@ -6,6 +6,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 // archiveOf serves bodies newest first, as history.ArchivedBodies does.
@@ -36,8 +39,8 @@ func TestLiveOrArchive(t *testing.T) {
 		return strings.Split(string(b), ","), nil
 	}
 	const here = "https://www47.myfantasyleague.com/2026/export?JSON=1&L=14432&TYPE=leagueStandings"
-	feed := func(fetchErr error, bodies ...archived) archivedFeed[string] {
-		return archivedFeed[string]{
+	feed := func(fetchErr error, bodies ...archived) core.ArchivedFeed[string] {
+		return core.ArchivedFeed[string]{
 			Export: "leagueStandings",
 			Fetch:  func(context.Context) ([]string, error) { return []string{"live"}, fetchErr },
 			Parse:  parse,
@@ -50,19 +53,19 @@ func TestLiveOrArchive(t *testing.T) {
 	var lines []string
 	logLine := func(line string) { lines = append(lines, line) }
 
-	rows, fresh, err := liveOrArchive(ctx, ctx, 2026, feed(nil), logLine)
-	if err != nil || rows[0] != "live" || fresh.State != FreshLive {
+	rows, fresh, err := core.LiveOrArchive(ctx, ctx, 2026, feed(nil), logLine)
+	if err != nil || rows[0] != "live" || fresh.State != domain.FreshLive {
 		t.Fatalf("live: %v %+v %v", rows, fresh, err)
 	}
 	if len(lines) != 0 {
 		t.Fatalf("live fetch logged %v", lines)
 	}
-	rows, fresh, err = liveOrArchive(ctx, ctx, 2026, feed(down,
+	rows, fresh, err = core.LiveOrArchive(ctx, ctx, 2026, feed(down,
 		archived{here, "bad", old.Add(time.Hour)},
 		archived{strings.Replace(here, "/2026/", "/2025/", 1), "last,season", old.Add(time.Minute)},
 		archived{strings.Replace(here, "14432", "99999", 1), "other,league", old.Add(time.Minute)},
 		archived{here, "a,b", old}), logLine)
-	if err != nil || strings.Join(rows, ",") != "a,b" || fresh.State != FreshStale || !strings.Contains(fresh.Note, "mfl down") {
+	if err != nil || strings.Join(rows, ",") != "a,b" || fresh.State != domain.FreshStale || !strings.Contains(fresh.Note, "mfl down") {
 		t.Fatalf("fallback skipping a bad body, another season and another league: %v %+v %v", rows, fresh, err)
 	}
 	if len(lines) != 1 || !strings.Contains(lines[0], "leagueStandings") ||
@@ -70,7 +73,8 @@ func TestLiveOrArchive(t *testing.T) {
 		t.Fatalf("fallback log = %v, want one line naming the feed and the error", lines)
 	}
 	lines = nil
-	if _, _, err := liveOrArchive(ctx, ctx, 2026, feed(down, archived{here, "bad", old}), logLine); !errors.Is(err, down) ||
+	if _, _, err := core.LiveOrArchive(ctx, ctx, 2026, feed(down, archived{here, "bad", old}),
+		logLine); !errors.Is(err, down) ||
 		!strings.Contains(err.Error(), "no archived copy") {
 		t.Fatalf("nothing usable archived: %v", err)
 	}
@@ -90,7 +94,7 @@ func TestLiveOrArchiveLeaguelessFallback(t *testing.T) {
 	const bare = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&JSON=1"
 	const other = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&L=99999&JSON=1"
 	at := time.Unix(1_700_000_000, 0)
-	feed := archivedFeed[string]{
+	feed := core.ArchivedFeed[string]{
 		Export:     "injuries",
 		Leagueless: true,
 		Fetch:      func(context.Context) ([]string, error) { return nil, down },
@@ -99,8 +103,8 @@ func TestLiveOrArchiveLeaguelessFallback(t *testing.T) {
 			archived{other, "other,league", at.Add(time.Minute)},
 			archived{bare, "api,copy", at}),
 	}
-	rows, fresh, err := liveOrArchive(ctx, ctx, 2026, feed, func(string) {})
-	if err != nil || strings.Join(rows, ",") != "api,copy" || fresh.State != FreshStale {
+	rows, fresh, err := core.LiveOrArchive(ctx, ctx, 2026, feed, func(string) {})
+	if err != nil || strings.Join(rows, ",") != "api,copy" || fresh.State != domain.FreshStale {
 		t.Fatalf("leagueless fallback: %v %+v %v", rows, fresh, err)
 	}
 }

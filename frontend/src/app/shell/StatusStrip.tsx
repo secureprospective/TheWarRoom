@@ -4,7 +4,7 @@ import { object, text, choice } from '../data/parseValues';
 import { commands } from '../commands/registry';
 import { SignalChip } from '../look/Slots';
 import { Act } from '../commands/Act';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { readShellStatus } from '../control/api';
 
 type Status = { health: string; state: 'live' | 'stale' | 'fail'; gameday: string };
 export function parseShellStatus(v: unknown): Status {
@@ -23,8 +23,7 @@ export default function StatusStrip() {
       try {
         if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
           throw new Error('Source health needs the desktop app');
-        const app = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-        const result = parseShellStatus(await app.TargetShellStatus());
+        const result = parseShellStatus(await readShellStatus());
         if (active && revision === request) { setStatus(result); setError(''); }
       } catch (cause) { if (active && revision === request) setError(String(cause)); }
     };

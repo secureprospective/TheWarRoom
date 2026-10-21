@@ -30,6 +30,10 @@ export function TargetAccounting() {
   return window['go']['control']['API']['TargetAccounting']();
 }
 
+export function TargetAlerts(arg1) {
+  return window['go']['control']['API']['TargetAlerts'](arg1);
+}
+
 export function TargetBylaws() {
   return window['go']['control']['API']['TargetBylaws']();
 }
@@ -40,6 +44,18 @@ export function TargetLeagueSettings() {
 
 export function TargetOpenMFLAccounting() {
   return window['go']['control']['API']['TargetOpenMFLAccounting']();
+}
+
+export function TargetSeason() {
+  return window['go']['control']['API']['TargetSeason']();
+}
+
+export function TargetSetWindow(arg1, arg2) {
+  return window['go']['control']['API']['TargetSetWindow'](arg1, arg2);
+}
+
+export function TargetShellStatus() {
+  return window['go']['control']['API']['TargetShellStatus']();
 }
 
 export function TargetSiteNews() {

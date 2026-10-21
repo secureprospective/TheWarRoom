@@ -54,14 +54,14 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 			a.core.SeasonInjuries.Value = append(a.core.SeasonInjuries.Value, leaguefeed.Injury{ID: p.ID, Status: "IR-PUP"})
 		}
 	}
-	r, err := a.TargetAlerts("0025")
+	r, err := a.controlAPI().TargetAlerts("0025")
 	_, unavailable := alertKinds(r)
 	if err != nil || strings.Contains(strings.Join(unavailable, ","), "ir") {
 		t.Fatalf("held eligibility unavailable: %+v %v", r, err)
 	}
 	a.core.SeasonInjuries.Value[0].Status = "Questionable"
 	a.core.SeasonInjuries.Value[1].Status = "Suspended"
-	r, err = a.TargetAlerts("0025")
+	r, err = a.controlAPI().TargetAlerts("0025")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -79,7 +79,7 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 		t.Fatalf("one per player, activation eligibility is not classification: %+v", r)
 	}
 	a.core.SeasonInjuries.RefreshError = "offline"
-	r, err = a.TargetAlerts("0025")
+	r, err = a.controlAPI().TargetAlerts("0025")
 	if err != nil {
 		t.Fatal(err)
 	}

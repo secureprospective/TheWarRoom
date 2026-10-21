@@ -6,14 +6,13 @@ import (
 	_ "embed" // the league's own rulebook ships with the app (M-185)
 	"errors"
 	"fmt"
-	"maps"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
@@ -24,21 +23,18 @@ import (
 //go:embed docs/league-rules/Official_Rulebook.md
 var rulebookMarkdown []byte
 
-// siteNewsFreshFor is how long a held site-news read serves before the next open refreshes it.
-const siteNewsFreshFor = time.Hour
-
-// controlFeeds are the Control Room's held MFL feeds, guarded by seasonMu.
-type controlFeeds struct {
-	siteNews  heldSeasonFeed[[]sitenews.RawItem]
-	ruleNames heldSeasonFeed[map[string]string]
+// controlHost is the Control Room API's Host. It is never bound: only control.API exposes methods
+// to Wails. Its reads keep their SeasonMu, WeekMu, KeyMu and params-store spans exactly as the
+// bindings had; the rule names and site news are held in control.Held, not here.
+type controlHost struct {
+	*core.State
+	app *App
 }
 
-// controlHost is the Control Room API's Host. It is never bound: only control.API exposes methods
-// to Wails. Its reads keep their SeasonMu, KeyMu and params-store spans exactly as the bindings had.
-type controlHost struct{ app *App }
-
 // controlAPI is the Control Room API over this App; root callers use it, never an App wrapper.
-func (a *App) controlAPI() *controlapp.API { return controlapp.New(controlHost{app: a}) }
+func (a *App) controlAPI() *controlapp.API {
+	return controlapp.New(controlHost{State: a.core, app: a}, a.controlHeld)
+}
 
 func (h controlHost) RulebookMarkdown() []byte { return rulebookMarkdown }
 
@@ -46,72 +42,59 @@ func (h controlHost) KeyUnavailable(detail string) controlapp.MFLKeyStatus {
 	return h.app.keyStatus("unavailable", detail)
 }
 
-func (h controlHost) LeagueSettings() (report.Report, error) {
+func (h controlHost) ScoringConfig() league.RawConfig { return h.app.core.Rulebook.ActiveConfig() }
+
+func (h controlHost) Zone() *time.Location { return time.Local }
+
+func (h controlHost) FetchRuleNames() (map[string]string, Freshness, error) {
 	a := h.app
-	if err := a.ready(); err != nil {
-		return report.Report{}, fmt.Errorf("league settings: startup: %w", err)
-	}
 	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.core.SeasonMu.Lock()
-	held := a.control.ruleNames
-	held.Value = maps.Clone(held.Value)
-	a.core.SeasonMu.Unlock()
-	if held.Value == nil {
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[league.RawRuleCode]{
-			Export: league.RuleDictionaryExport, Leagueless: true,
-			Fetch: func(ctx context.Context) ([]league.RawRuleCode, error) {
-				return league.FetchRuleDictionary(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
-			},
-			Parse: league.ParseRuleDictionary, Bodies: a.core.History.ArchivedBodies,
-		}, a.core.FallbackLog)
-		a.core.SeasonMu.Lock()
-		holdSeasonFeed(&a.control.ruleNames, league.RuleNames(rows), fresh, err)
-		held = a.control.ruleNames
-		held.Value = maps.Clone(held.Value)
-		a.core.SeasonMu.Unlock()
-	}
-	note := ""
-	if held.Value == nil {
-		note = "MFL's names for its scoring codes could not be read, so codes are shown: " + held.RefreshError
-	}
-	return controlapp.LeagueSettingsReport(a.core.Rulebook.ActiveConfig(), held.Value, note), nil
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[league.RawRuleCode]{
+		Export: league.RuleDictionaryExport, Leagueless: true,
+		Fetch: func(ctx context.Context) ([]league.RawRuleCode, error) {
+			return league.FetchRuleDictionary(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
+		},
+		Parse: league.ParseRuleDictionary, Bodies: a.core.History.ArchivedBodies,
+	}, a.core.FallbackLog)
+	return league.RuleNames(rows), fresh, err
 }
 
-func (h controlHost) SiteNews() (report.Report, error) {
+func (h controlHost) FetchSiteNews() ([]sitenews.RawItem, Freshness, error) {
 	a := h.app
-	if err := a.ready(); err != nil {
-		return report.Report{}, fmt.Errorf("site news: startup: %w", err)
-	}
-	a.core.SeasonMu.Lock()
-	held := a.control.siteNews
-	held.Value = slices.Clone(held.Value)
-	a.core.SeasonMu.Unlock()
-	if held.RefreshError != "" || time.Since(held.FetchedAt) >= siteNewsFreshFor {
-		ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-		defer cancel()
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[sitenews.RawItem]{
-			Export: sitenews.Export, Leagueless: true,
-			Fetch: func(ctx context.Context) ([]sitenews.RawItem, error) {
-				return sitenews.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
-			},
-			Parse: sitenews.Parse, Bodies: a.core.History.ArchivedBodies,
-		}, a.core.FallbackLog)
-		a.core.SeasonMu.Lock()
-		holdSeasonFeed(&a.control.siteNews, rows, fresh, err)
-		held = a.control.siteNews
-		held.Value = slices.Clone(held.Value)
-		a.core.SeasonMu.Unlock()
-	}
-	items, err := sitenews.Read(held.Value)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+	defer cancel()
+	return liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[sitenews.RawItem]{
+		Export: sitenews.Export, Leagueless: true,
+		Fetch: func(ctx context.Context) ([]sitenews.RawItem, error) {
+			return sitenews.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
+		},
+		Parse: sitenews.Parse, Bodies: a.core.History.ArchivedBodies,
+	}, a.core.FallbackLog)
+}
+
+// SourceHealth runs after the binding's startup check, under the status strip's own timeout.
+func (h controlHost) SourceHealth() (string, string, error) {
+	a := h.app
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m1Timeout)
+	defer cancel()
+	health, err := a.healthInput(ctx)
 	if err != nil {
-		return report.Report{}, err //nolint:wrapcheck // names the item
+		return "", "", err
 	}
-	asOf := "As of: not fetched yet"
-	if !held.FetchedAt.IsZero() {
-		asOf = "As of: " + reportTime(held.FetchedAt, time.Local)
-	}
-	return controlapp.SiteNewsReport(items, asOf, held.RefreshError, time.Local), nil
+	state, label := sourceStanding(health)
+	return state, label, nil
+}
+
+func (h controlHost) Week() controlapp.WeekSnapshot { return h.app.weekSnapshot() }
+
+func (h controlHost) Now() time.Time { return h.app.timeNow() }
+
+// SetWindow runs after the binding's validation and startup check, under the window timeout.
+func (h controlHost) SetWindow(kind, at string) error {
+	ctx, cancel := context.WithTimeout(h.app.core.Ctx, m2Timeout)
+	defer cancel()
+	return h.app.core.SetLeagueWindow(ctx, kind, at) //nolint:wrapcheck // keeps the binding's refusal text
 }
 
 func (h controlHost) OpenMFLAccounting() error {

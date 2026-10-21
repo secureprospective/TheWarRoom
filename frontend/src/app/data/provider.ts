@@ -4,9 +4,9 @@ import type {
 } from './contract';
 import { ruleDatedWindows } from '../clock/labels';
 import {
-  TargetSetWindow, TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
+  TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
 } from '../../../wailsjs/go/main/App';
-import { deleteMFLKey, readMFLKey, setMFLKey } from '../control/api';
+import { deleteMFLKey, readMFLKey, setLeagueWindow, setMFLKey } from '../control/api';
 
 interface ReadingProvider {
   alerts(franchiseId: string): Promise<AlertReading>;
@@ -265,7 +265,7 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
 
   async setWindow(kind: WindowKind, at: string): Promise<void> {
     if (!hasWails()) throw new Error('League date changes need the desktop app');
-    await TargetSetWindow(kind, at);
+    await setLeagueWindow(kind, at);
   }
   async clock(): Promise<Sourced<ClockReading>> {
     try {

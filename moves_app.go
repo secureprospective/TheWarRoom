@@ -276,7 +276,7 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 	if err != nil {
 		return envelope.Observation{}, fmt.Errorf("watch moves: roster snapshot: %w", err)
 	}
-	season, err := a.TargetSeason()
+	season, err := a.controlAPI().TargetSeason()
 	if err != nil {
 		return envelope.Observation{}, fmt.Errorf("watch moves: held season: %w", err)
 	}

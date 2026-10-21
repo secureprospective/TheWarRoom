@@ -1,62 +1,54 @@
-package main
+package core
 
 import (
 	"context"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
-type RawWindowDate struct{ Kind, At string }
-
-func (r RawWindowDate) Validate() error {
-	for _, rule := range leagueclock.Rules(0) {
-		if string(rule.Kind) != r.Kind {
-			continue
-		}
-		if r.At == "" {
-			return nil
-		}
-		if _, err := time.Parse(time.RFC3339, r.At); err != nil {
-			return fmt.Errorf("set a date and time with a timezone: %w", err)
-		}
-		return nil
-	}
-	return fmt.Errorf("unknown league window %q", r.Kind)
+// SeasonFeeds copies the held transactions, lineups (with the week they were asked for) and
+// pending trades under SeasonMu. The slices, each lineup row's players and starters are copied
+// and nil stays nil; a refresh replaces the published rows, never edits them in place.
+func (s *State) SeasonFeeds() (HeldFeed[[]leaguefeed.Transaction], HeldFeed[leaguefeed.Lineups], int,
+	HeldFeed[[]leaguefeed.PendingTrade]) {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	txs, lineups, trades := s.SeasonTransactions, s.SeasonLineups, s.SeasonPendingTrades
+	txs.Value = slices.Clone(txs.Value)
+	trades.Value = slices.Clone(trades.Value)
+	lineups.Value = CloneLineups(lineups.Value)
+	return txs, lineups, s.LineupsWeek, trades
 }
 
-func (a *App) TargetSetWindow(kind, at string) error {
-	if err := (RawWindowDate{Kind: kind, At: at}).Validate(); err != nil {
-		return err
-	}
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("set league date: startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
-	defer cancel()
-	if err := a.core.Whatif.Err(); err != nil {
+// SetLeagueWindow writes one league date through the coordinator, then tells the views the clock
+// changed. The caller has validated the request and waited for startup.
+func (s *State) SetLeagueWindow(ctx context.Context, kind, at string) error {
+	if err := s.Whatif.Err(); err != nil {
 		return fmt.Errorf("set league date: state: %w", err)
 	}
 	var err error
 	if kind == string(leagueclock.TradeDeadline) {
-		err = a.setTradeWindow(ctx, at)
+		err = s.setTradeWindow(ctx, at)
 	} else {
-		err = a.setCalendarWindow(ctx, kind, at)
+		err = s.setCalendarWindow(ctx, kind, at)
 	}
 	if err != nil {
 		return err
 	}
-	a.core.ClockChanged(ctx)
+	s.ClockChanged(ctx)
 	return nil
 }
 
-func (a *App) setTradeWindow(ctx context.Context, at string) error {
+func (s *State) setTradeWindow(ctx context.Context, at string) error {
 	deadline := time.Time{}
 	if at == "" {
-		current, err := a.core.Whatif.TradeDeadline(ctx)
+		current, err := s.Whatif.TradeDeadline(ctx)
 		if err != nil {
 			return fmt.Errorf("read trade date: %w", err)
 		}
@@ -70,7 +62,7 @@ func (a *App) setTradeWindow(ctx context.Context, at string) error {
 			return fmt.Errorf("trade date: %w", err)
 		}
 	}
-	if _, err := a.core.Coordinator.Execute(ctx, transactions.SetTradeDeadline{
+	if _, err := s.Coordinator.Execute(ctx, transactions.SetTradeDeadline{
 		Deadline: deadline, Note: "commissioner set trade_deadline",
 	}); err != nil {
 		return fmt.Errorf("set trade date: %w", err)
@@ -78,12 +70,12 @@ func (a *App) setTradeWindow(ctx context.Context, at string) error {
 	return nil
 }
 
-func (a *App) setCalendarWindow(ctx context.Context, kind, at string) error {
-	heads, err := a.core.Whatif.CalendarEvents(ctx)
+func (s *State) setCalendarWindow(ctx context.Context, kind, at string) error {
+	heads, err := s.Whatif.CalendarEvents(ctx)
 	if err != nil {
 		return fmt.Errorf("read league dates: %w", err)
 	}
-	id := fmt.Sprintf("window:%d:%s", a.core.League.Season(), kind)
+	id := fmt.Sprintf("window:%d:%s", s.League.Season(), kind)
 	var head *state.CalendarEvent
 	for i := range heads {
 		if heads[i].EventID == id {
@@ -103,7 +95,7 @@ func (a *App) setCalendarWindow(ctx context.Context, kind, at string) error {
 	} else if head != nil {
 		request = transactions.RescheduleEvent{Event: event}
 	}
-	if _, err := a.core.Coordinator.Execute(ctx, request); err != nil {
+	if _, err := s.Coordinator.Execute(ctx, request); err != nil {
 		return fmt.Errorf("set league date: %w", err)
 	}
 	return nil

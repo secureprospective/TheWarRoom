@@ -76,7 +76,7 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 	at := raceHeldAt
 	a.core.ClockNow = func() time.Time { return at }
 	a.core.Week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: at.Add(-time.Hour)}}}
-	status, err := a.TargetShellStatus()
+	status, err := a.controlAPI().TargetShellStatus()
 	if err != nil || !strings.Contains(status.Gameday, "1 NFL game in progress") {
 		t.Fatal("status strip plural", status, err)
 	}
