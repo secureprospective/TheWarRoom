@@ -64,9 +64,10 @@ func (f *fakeHost) KeyStatus() (MFLKeyStatus, error)                { return MFL
 func (f *fakeHost) SetKey(string) (MFLKeyStatus, error)             { return MFLKeyStatus{}, nil }
 func (f *fakeHost) DeleteKey() (MFLKeyStatus, error)                { return MFLKeyStatus{}, nil }
 func (f *fakeHost) KeyUnavailable(string) MFLKeyStatus              { return MFLKeyStatus{} }
-func (f *fakeHost) SeasonFeeds() (report.HeldFeed[[]leaguefeed.Transaction], report.HeldFeed[leaguefeed.Lineups],
-	int, report.HeldFeed[[]leaguefeed.PendingTrade]) {
-	return f.txs, report.HeldFeed[leaguefeed.Lineups]{}, f.lineupWeek, report.HeldFeed[[]leaguefeed.PendingTrade]{}
+func (f *fakeHost) SeasonFeeds() (report.HeldFeed[[]leaguefeed.Transaction],
+	report.HeldFeed[leaguefeed.Lineups], int, report.HeldFeed[[]leaguefeed.PendingTrade]) {
+	var lineups report.HeldFeed[leaguefeed.Lineups]
+	return f.txs, lineups, f.lineupWeek, report.HeldFeed[[]leaguefeed.PendingTrade]{}
 }
 func (f *fakeHost) Alerts(string) (AlertReading, error) { return f.alerts, f.alertsErr }
 func (f *fakeHost) SourceHealth() (string, string, error) {
@@ -172,11 +173,12 @@ func TestShellStatusAndWindowRefusalOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The request is checked before startup, so a bad date never waits on it.
-	if err := api.TargetSetWindow("nope", ""); err == nil || !strings.Contains(err.Error(), "unknown league window") ||
-		host.readyCalls.Load() != 1 {
+	err := api.TargetSetWindow("nope", "")
+	if err == nil || !strings.Contains(err.Error(), "unknown league window") || host.readyCalls.Load() != 1 {
 		t.Fatalf("bad kind: %v after %d ready calls", err, host.readyCalls.Load())
 	}
-	if err := api.TargetSetWindow("draft", "tomorrow"); err == nil || !strings.HasPrefix(err.Error(), "set a date") {
+	if err := api.TargetSetWindow("draft", "tomorrow"); err == nil ||
+		!strings.HasPrefix(err.Error(), "set a date") {
 		t.Fatal(err)
 	}
 	if err := api.TargetSetWindow("draft", ""); err == nil || err.Error() != "set league date: startup: no db" ||
@@ -189,7 +191,8 @@ func TestShellStatusAndWindowRefusalOrder(t *testing.T) {
 		t.Fatal(err, host.windows)
 	}
 	host.windowErr = errors.New("this window already follows the rulebook")
-	if err := api.TargetSetWindow("cut_day", ""); !errors.Is(err, host.windowErr) || err.Error() != host.windowErr.Error() {
+	err = api.TargetSetWindow("cut_day", "")
+	if !errors.Is(err, host.windowErr) || err.Error() != host.windowErr.Error() {
 		t.Fatal("the host's refusal must reach the GM unwrapped:", err)
 	}
 	s, err := api.TargetShellStatus()

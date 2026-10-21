@@ -36,8 +36,9 @@ func TestControlSeasonFeedsDetachAndKeepNil(t *testing.T) {
 	lineups.Value.Franchises[0].Franchise = "changed"
 	lineups.Value.Franchises[0].Players[0].Score = 9
 	want := controlLineups()
-	if s.SeasonTransactions.Value[0].Kind != "TRADE" || s.SeasonLineups.Value.Matchups[0] != want.Matchups[0] ||
-		s.SeasonLineups.Value.Franchises[0].Franchise != "0001" || s.SeasonLineups.Value.Franchises[0].Players[0].Score != 1 {
+	held := s.SeasonLineups.Value
+	if s.SeasonTransactions.Value[0].Kind != "TRADE" || held.Matchups[0] != want.Matchups[0] ||
+		held.Franchises[0].Franchise != "0001" || held.Franchises[0].Players[0].Score != 1 {
 		t.Fatal("season feeds alias the held copies")
 	}
 }
