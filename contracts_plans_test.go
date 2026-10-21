@@ -66,12 +66,12 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 			spec := moveSpec(t)
 			spec.Intent = intent
 			e := constructedMove(t, at, spec, false)
-			if err := a.moves.Save(a.ctx, e); err != nil {
+			if err := a.core.Moves.Save(a.core.Ctx, e); err != nil {
 				t.Fatal(err)
 			}
-			before, stamp, _ := a.league.ContractsView()
+			before, stamp, _ := a.core.League.ContractsView()
 			opens := 0
-			a.openURL = func(_ context.Context, _ string) { opens++ }
+			a.core.OpenURL = func(_ context.Context, _ string) { opens++ }
 			gone, err := a.TargetWithdrawRoster(e.ID())
 			if err != nil || gone.State != envelope.Withdrawn {
 				t.Fatal(gone, err)
@@ -79,11 +79,11 @@ func TestRosterPlanWithdrawalIsLocalAndPersisted(t *testing.T) {
 			if !strings.Contains(gone.Audit[len(gone.Audit)-1].Note, "Removed by you before") {
 				t.Fatal(gone.Audit)
 			}
-			held, err := a.moves.Get(a.ctx, e.ID())
+			held, err := a.core.Moves.Get(a.core.Ctx, e.ID())
 			if err != nil || held.State() != envelope.Withdrawn {
 				t.Fatal(held.State(), err)
 			}
-			after, afterStamp, _ := a.league.ContractsView()
+			after, afterStamp, _ := a.core.League.ContractsView()
 			if opens != 0 || stamp != afterStamp || !reflect.DeepEqual(before, after) {
 				t.Fatal("withdraw wrote MFL facts or opened browser")
 			}

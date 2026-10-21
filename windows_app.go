@@ -35,9 +35,9 @@ func (a *App) TargetSetWindow(kind, at string) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("set league date: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	if err := a.whatif.Err(); err != nil {
+	if err := a.core.Whatif.Err(); err != nil {
 		return fmt.Errorf("set league date: state: %w", err)
 	}
 	var err error
@@ -49,14 +49,14 @@ func (a *App) TargetSetWindow(kind, at string) error {
 	if err != nil {
 		return err
 	}
-	a.clockChanged(ctx)
+	a.core.ClockChanged(ctx)
 	return nil
 }
 
 func (a *App) setTradeWindow(ctx context.Context, at string) error {
 	deadline := time.Time{}
 	if at == "" {
-		current, err := a.whatif.TradeDeadline(ctx)
+		current, err := a.core.Whatif.TradeDeadline(ctx)
 		if err != nil {
 			return fmt.Errorf("read trade date: %w", err)
 		}
@@ -70,7 +70,7 @@ func (a *App) setTradeWindow(ctx context.Context, at string) error {
 			return fmt.Errorf("trade date: %w", err)
 		}
 	}
-	if _, err := a.coordinator.Execute(ctx, transactions.SetTradeDeadline{
+	if _, err := a.core.Coordinator.Execute(ctx, transactions.SetTradeDeadline{
 		Deadline: deadline, Note: "commissioner set trade_deadline",
 	}); err != nil {
 		return fmt.Errorf("set trade date: %w", err)
@@ -79,11 +79,11 @@ func (a *App) setTradeWindow(ctx context.Context, at string) error {
 }
 
 func (a *App) setCalendarWindow(ctx context.Context, kind, at string) error {
-	heads, err := a.whatif.CalendarEvents(ctx)
+	heads, err := a.core.Whatif.CalendarEvents(ctx)
 	if err != nil {
 		return fmt.Errorf("read league dates: %w", err)
 	}
-	id := fmt.Sprintf("window:%d:%s", a.league.Season(), kind)
+	id := fmt.Sprintf("window:%d:%s", a.core.League.Season(), kind)
 	var head *state.CalendarEvent
 	for i := range heads {
 		if heads[i].EventID == id {
@@ -103,7 +103,7 @@ func (a *App) setCalendarWindow(ctx context.Context, kind, at string) error {
 	} else if head != nil {
 		request = transactions.RescheduleEvent{Event: event}
 	}
-	if _, err := a.coordinator.Execute(ctx, request); err != nil {
+	if _, err := a.core.Coordinator.Execute(ctx, request); err != nil {
 		return fmt.Errorf("set league date: %w", err)
 	}
 	return nil

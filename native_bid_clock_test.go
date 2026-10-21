@@ -11,7 +11,7 @@ import (
 
 func (f *bidFixture) tickBids(t *testing.T) {
 	t.Helper()
-	if err := f.app.history.ProcessDueBids(context.Background(), legalityLeague, f.app.nativeFacts()); err != nil {
+	if err := f.app.core.History.ProcessDueBids(context.Background(), legalityLeague, f.app.nativeFacts()); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -187,7 +187,7 @@ func TestNativeBidClockRechecksDueInsideTransaction(t *testing.T) {
 	try := func(want string) {
 		t.Helper()
 		raw := f.raw(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5004"}}, "league")
-		_, err := f.app.history.ExecuteCommissionerWithFacts(t.Context(), raw, "native.bid.clock", clockTestAuthority{}, f.app.nativeFacts(), time.UTC)
+		_, err := f.app.core.History.ExecuteCommissionerWithFacts(t.Context(), raw, "native.bid.clock", clockTestAuthority{}, f.app.nativeFacts(), time.UTC)
 		if err == nil || !strings.Contains(err.Error(), want) {
 			t.Fatalf("transaction bypass: %v", err)
 		}

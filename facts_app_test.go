@@ -42,7 +42,7 @@ func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curate
 	if _, err := a.importArchiveFrom(ctx, dir); err != nil {
 		t.Fatal(err)
 	}
-	fetches, err := a.history.SourceFetches(ctx, leagueArchiveSource)
+	fetches, err := a.core.History.SourceFetches(ctx, leagueArchiveSource)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func publishTinyManifest(t *testing.T, a *App, bills string, readings lab.Curate
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.history.PublishManifest(ctx, historyManifest(m, enc)); err != nil {
+	if _, err := a.core.History.PublishManifest(ctx, historyManifest(m, enc)); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -78,7 +78,7 @@ func weekResults(bills string) string {
 func TestCheckedFactsCompileFailKeepAndCache(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.dataDir = t.TempDir()
+	a.core.Paths.DataDir = t.TempDir()
 	ctx := context.Background()
 	// No trade notes in a one-week archive: the curated readings are the header alone.
 	readings := lab.Curated{File: "note_readings.csv",

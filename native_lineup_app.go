@@ -49,7 +49,7 @@ func runLineupSet(ctx context.Context, a *App, permit commissioner.Permit,
 			Week: in.Week, Starters: in.Starters}}}
 	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
 	defer cancel()
-	receipt, err := a.history.ExecuteCommissioner(ctx, raw, principal, a.commissionerAuthorizer)
+	receipt, err := a.core.History.ExecuteCommissioner(ctx, raw, principal, a.core.CommissionerAuthorizer)
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record the lineup: %w", err)
 	}
@@ -92,9 +92,9 @@ func (a *App) TargetNativeLineup(league, franchise string, week int, at string) 
 	if err := a.ready(); err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("native lineup startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeLineup(ctx, league, franchise, week, instant)
+	reading, err := a.core.History.NativeLineup(ctx, league, franchise, week, instant)
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("native lineup: %w", err)
 	}

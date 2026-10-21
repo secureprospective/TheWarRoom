@@ -66,12 +66,12 @@ func (v researchView) finishedScores() (map[string]*onFieldRow, int, time.Time) 
 	held, latest := 0, time.Time{}
 	for w := 1; w <= last; w++ {
 		feed := v.feed("playerScores", strconv.Itoa(w))
-		if len(feed.value) == 0 {
+		if len(feed.Value) == 0 {
 			continue
 		}
 		held++
-		if feed.fetchedAt.After(latest) {
-			latest = feed.fetchedAt
+		if feed.FetchedAt.After(latest) {
+			latest = feed.FetchedAt
 		}
 		for _, e := range researchRows(feed) {
 			id := e.ID.String()
@@ -130,7 +130,7 @@ func (a *App) TargetAssetBoard() (AssetBoard, error) {
 	if err := a.ready(); err != nil {
 		return AssetBoard{}, fmt.Errorf("asset board: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
 	return a.assetBoard(ctx)
 }
@@ -154,9 +154,9 @@ func (a *App) assetBoard(ctx context.Context) (AssetBoard, error) {
 // says the model is not compiled; when it lands the board reloads.
 func (a *App) fitAssetModel(ctx context.Context) {
 	began := time.Now()
-	a.factsMu.Lock()
+	a.core.FactsMu.Lock()
 	cache := a.archiveCache
-	a.factsMu.Unlock()
+	a.core.FactsMu.Unlock()
 	if cache.SHA == "" {
 		return
 	}
@@ -168,5 +168,5 @@ func (a *App) fitAssetModel(ctx context.Context) {
 	var model assetModel = marketapp.LabModel{Model: m}
 	a.assetModel.Store(&model)
 	log.Printf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond))
-	a.seasonChanged(ctx)
+	a.core.SeasonChanged(ctx)
 }

@@ -41,7 +41,7 @@ func recordOwnerAction(family ownerFamily) func(context.Context, *App, commissio
 		}
 		ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
 		defer cancel()
-		receipt, err := a.history.ExecuteCommissionerWithFacts(ctx, raw, principal, nil, a.nativeFacts(), a.ownerZone())
+		receipt, err := a.core.History.ExecuteCommissionerWithFacts(ctx, raw, principal, nil, a.nativeFacts(), a.ownerZone())
 		if err != nil {
 			return commissioner.Receipt{}, fmt.Errorf("record %s: %w", family.label, err)
 		}
@@ -111,7 +111,7 @@ func (a *App) TargetNativeTrades(league, viewer string) (commissioner.NativeTrad
 	if err != nil {
 		return commissioner.NativeTrades{}, err
 	}
-	records, err := a.leagueRecords(a.ctx, league)
+	records, err := a.leagueRecords(a.core.Ctx, league)
 	if err != nil {
 		return commissioner.NativeTrades{}, err
 	}
@@ -160,7 +160,7 @@ func (a *App) TargetNativeWaivers(league, franchise string, at time.Time) (commi
 	if err != nil {
 		return commissioner.NativeWaivers{}, err
 	}
-	reading, err := a.history.NativeWaivers(a.ctx, league, franchise, principal, at, a.ownerZone(), a.nativeFacts())
+	reading, err := a.core.History.NativeWaivers(a.core.Ctx, league, franchise, principal, at, a.ownerZone(), a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeWaivers{}, fmt.Errorf("native waivers: %w", err)
 	}
@@ -170,14 +170,14 @@ func (a *App) TargetNativeWaivers(league, franchise string, at time.Time) (commi
 // draftLookEvery is how often the clock looks for a rookie draft that has used its last pick.
 
 func (a *App) nativeActionRetry(raw commissioner.RawCommand, principal string) (commissioner.Receipt, bool, error) {
-	_, found, err := a.history.NativeSeedRetry(a.ctx, raw.League, raw.Request)
+	_, found, err := a.core.History.NativeSeedRetry(a.core.Ctx, raw.League, raw.Request)
 	if err != nil {
 		return commissioner.Receipt{}, false, fmt.Errorf("read native action retry: %w", err)
 	}
 	if !found {
 		return commissioner.Receipt{}, false, nil
 	}
-	receipt, err := a.history.ExecuteCommissionerWithFacts(a.ctx, raw, principal, nil, a.nativeFacts(), a.ownerZone())
+	receipt, err := a.core.History.ExecuteCommissionerWithFacts(a.core.Ctx, raw, principal, nil, a.nativeFacts(), a.ownerZone())
 	if err != nil {
 		return commissioner.Receipt{}, true, fmt.Errorf("retry native action: %w", err)
 	}
@@ -222,7 +222,7 @@ func (a *App) TargetNativeBids(league, franchise string) (commissioner.NativeBid
 	if err != nil {
 		return commissioner.NativeBids{}, err
 	}
-	reading, err := a.history.NativeBids(a.ctx, league, franchise, principal, a.timeNow(), a.ownerZone(), a.nativeFacts())
+	reading, err := a.core.History.NativeBids(a.core.Ctx, league, franchise, principal, a.timeNow(), a.ownerZone(), a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeBids{}, fmt.Errorf("native bids: %w", err)
 	}

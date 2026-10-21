@@ -81,7 +81,7 @@ func (a *App) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) 
 	if err := a.ready(); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("native schedule startup: %w", err)
 	}
-	records, err := a.leagueRecords(a.ctx, raw.League)
+	records, err := a.leagueRecords(a.core.Ctx, raw.League)
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}
@@ -89,7 +89,7 @@ func (a *App) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) 
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("read owner time zone: %w", err)
 	}
-	weeks, err := a.nativeScheduleDates(a.ctx, raw.Season, at)
+	weeks, err := a.nativeScheduleDates(a.core.Ctx, raw.Season, at)
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}
@@ -107,7 +107,7 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 	defer cancel()
 	var weeks []leagueweek.Week
 	seen := make(map[int]bool)
-	_, err := a.history.ReferenceBodies(ctx, "TYPE="+nflschedule.Export,
+	_, err := a.core.History.ReferenceBodies(ctx, "TYPE="+nflschedule.Export,
 		func(src string, body []byte, _ time.Time) bool {
 			if !sameExport(src, nflschedule.Export, season, true) {
 				return false
@@ -153,7 +153,7 @@ func (e appBidEnv) BidEnvironment(ctx context.Context, league string, at time.Ti
 	}
 	field := map[string]nativecheck.PlayoffStanding{}
 	if phase.WeekKnown {
-		bracket, err := e.app.history.NativeBracket(ctx, league, season)
+		bracket, err := e.app.core.History.NativeBracket(ctx, league, season)
 		if err != nil {
 			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
 		}
@@ -167,14 +167,14 @@ func (e appBidEnv) BidEnvironment(ctx context.Context, league string, at time.Ti
 }
 
 func (a *App) processNativeBidsDue(ctx context.Context) {
-	leagues, err := a.history.NativeLeagues(ctx)
+	leagues, err := a.core.History.NativeLeagues(ctx)
 	if err != nil {
 		log.Printf("the war room: read native bid leagues: %v", err)
 		return
 	}
 	facts := a.nativeFacts()
 	for _, league := range leagues {
-		if err := a.history.ProcessDueBids(ctx, league.ID, facts); err != nil {
+		if err := a.core.History.ProcessDueBids(ctx, league.ID, facts); err != nil {
 			log.Printf("the war room: award native bids for %s: %v", league.ID, err)
 		}
 	}
@@ -205,14 +205,14 @@ func (a *App) nativeWaiverClock(ctx context.Context) {
 }
 
 func (a *App) processNativeWaiversDue(ctx context.Context) {
-	leagues, err := a.history.NativeLeagues(ctx)
+	leagues, err := a.core.History.NativeLeagues(ctx)
 	if err != nil {
 		log.Printf("the war room: read native waiver leagues: %v", err)
 		return
 	}
 	facts := a.nativeFacts()
 	for _, league := range leagues {
-		if err := a.history.ProcessDueWaivers(ctx, league.ID, facts); err != nil {
+		if err := a.core.History.ProcessDueWaivers(ctx, league.ID, facts); err != nil {
 			log.Printf("the war room: process native waivers for %s: %v", league.ID, err)
 		}
 	}

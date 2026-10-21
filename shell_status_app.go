@@ -17,7 +17,7 @@ func (a *App) TargetShellStatus() (ShellStatus, error) {
 	if err := a.ready(); err != nil {
 		return ShellStatus{}, fmt.Errorf("shell status: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m1Timeout)
 	defer cancel()
 	health, err := a.healthInput(ctx)
 	if err != nil {

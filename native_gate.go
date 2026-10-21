@@ -68,8 +68,8 @@ func (a *App) startContractAction(ctx context.Context, permit commissioner.Permi
 
 // ownerZone is where the owner reads times: the desktop's own zone unless a test pins another.
 func (a *App) ownerZone() *time.Location {
-	if a.localZone != nil {
-		return a.localZone
+	if a.core.LocalZone != nil {
+		return a.core.LocalZone
 	}
 	return time.Local
 }
@@ -78,7 +78,7 @@ func (a *App) ownerZone() *time.Location {
 // the gate at the current time and runs the action only on a yes. A closed gate returns its sentence.
 func (a *App) runNativeAction(registry []NativeOwnerAction, league, franchise, name string,
 	input json.RawMessage) (commissioner.Receipt, error) {
-	ctx := a.ctx
+	ctx := a.core.Ctx
 	index := slices.IndexFunc(registry, func(r NativeOwnerAction) bool { return r.Name == name })
 	if index < 0 {
 		return commissioner.Receipt{}, fmt.Errorf("this league action is not available")

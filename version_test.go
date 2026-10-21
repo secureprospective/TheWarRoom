@@ -33,8 +33,8 @@ func TestIPCWaitsForStartup(t *testing.T) {
 		t.Fatalf("TargetDataRefresh answered before startup finished: %+v", r)
 	case <-time.After(50 * time.Millisecond):
 	}
-	a.startupErr = errors.New("startup: lock held")
-	close(a.started)
+	a.core.StartupErr = errors.New("startup: lock held")
+	close(a.core.Started)
 	if r := <-got; r.Error != "startup: lock held" {
 		t.Errorf("TargetDataRefresh after startup = %+v, want the startup failure", r)
 	}

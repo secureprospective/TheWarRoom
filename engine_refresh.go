@@ -14,10 +14,10 @@ import (
 
 // refreshEngine belongs to the background refresh worker; all inputs finish before the pass.
 func (a *App) refreshEngine(parent context.Context) {
-	if a.params == nil || !a.modelMu.TryLock() {
+	if a.core.Params == nil || !a.core.ModelMu.TryLock() {
 		return
 	}
-	defer a.modelMu.Unlock()
+	defer a.core.ModelMu.Unlock()
 	defer a.sourceHealthChanged(parent)
 	ctx, cancel := context.WithTimeout(parent, signalsTimeout)
 	defer cancel()
@@ -28,25 +28,25 @@ func (a *App) refreshEngine(parent context.Context) {
 	} else if warning != "" {
 		log.Printf("engine inputs: %s", warning)
 	}
-	a.refreshMu.Lock()
+	a.core.RefreshMu.Lock()
 	a.refreshFreeAgents(ctx)
-	a.refreshMu.Unlock()
+	a.core.RefreshMu.Unlock()
 	a.checkEngine(ctx)
 }
 
 // checkEngine is called with modelMu held.
 func (a *App) checkEngine(ctx context.Context) {
-	last, exists, err := a.history.LatestRun(ctx, a.season, history.RunModel)
+	last, exists, err := a.core.History.LatestRun(ctx, a.core.Season, history.RunModel)
 	if err != nil {
 		log.Printf("engine latest run: %v", err)
 		return
 	}
-	changed, err := a.history.ModelInputsChanged(ctx, last.AsOf)
+	changed, err := a.core.History.ModelInputsChanged(ctx, last.AsOf)
 	if err != nil {
 		log.Printf("engine input changes: %v", err)
 		return
 	}
-	if !scoringapp.EngineDue(a.timeNow(), last, exists, changed || a.modelDirty.Load()) {
+	if !scoringapp.EngineDue(a.timeNow(), last, exists, changed || a.core.ModelDirty.Load()) {
 		return
 	}
 	lk, err := a.directory(ctx)
@@ -55,12 +55,12 @@ func (a *App) checkEngine(ctx context.Context) {
 		return
 	}
 	// Changes arriving during the pass must remain pending for the next refresh.
-	dirty := a.modelDirty.Swap(false)
+	dirty := a.core.ModelDirty.Swap(false)
 	started := time.Now()
-	rep, err := a.runModelLocked(ctx, lk, a.params.Snapshot())
+	rep, err := a.runModelLocked(ctx, lk, a.core.Params.Snapshot())
 	if err != nil {
 		if dirty {
-			a.modelDirty.Store(true)
+			a.core.ModelDirty.Store(true)
 		}
 		log.Printf("engine run failed: %v", err)
 		return
@@ -72,30 +72,30 @@ func (a *App) engineFinished(ctx context.Context, started time.Time, rep modelru
 	log.Printf("Engine run %s: %d players valued (%d rostered, %d free agents), %s",
 		started.Local().Format(time.RFC3339), rep.Scored, rep.RosteredScored, rep.FreeAgentScored,
 		time.Since(started).Round(time.Millisecond))
-	if a.seasonChanged != nil {
-		a.seasonChanged(ctx)
+	if a.core.SeasonChanged != nil {
+		a.core.SeasonChanged(ctx)
 	}
 }
 
 func (a *App) sourceHealthChanged(ctx context.Context) {
-	if a.seasonChanged != nil {
-		a.seasonChanged(ctx)
+	if a.core.SeasonChanged != nil {
+		a.core.SeasonChanged(ctx)
 	}
 }
 
 // runModelLocked runs with modelMu held; the season snapshot remains under seasonMu.
 func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
-	src := scoringapp.ModelSource{EndWeek: func() (string, bool) { return a.rulebook.GetSetting("endWeek") },
-		State: a.league.Reader, History: a.history, BuildLabel: buildLabel(), Season: a.season,
+	src := scoringapp.ModelSource{EndWeek: func() (string, bool) { return a.core.Rulebook.GetSetting("endWeek") },
+		State: a.core.League.Reader, History: a.core.History, BuildLabel: buildLabel(), Season: a.core.Season,
 		FreeAgents: a.modelFreeAgents}
 	return src.RunModel(ctx, lk, set) //nolint:wrapcheck // the service preserves the existing app error labels
 }
 
 func (a *App) modelFreeAgents() []string {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	var free []string
-	for _, id := range a.seasonFreeAgents.value {
+	for _, id := range a.core.SeasonFreeAgents.Value {
 		free = append(free, id.String())
 	}
 	return free

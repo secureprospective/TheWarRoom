@@ -47,7 +47,7 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 	if err != nil {
 		return AlertReading{}, fmt.Errorf("target alerts: %w", err)
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	r := AlertReading{Alerts: []Alert{}, Unavailable: []Unavailable{}}
 	a.irAlerts(&r, franchiseID)
 	a.lineupAlert(&r, saved, now)
@@ -58,9 +58,9 @@ func (a *App) TargetAlerts(franchiseID string) (AlertReading, error) {
 }
 
 func (a *App) lineupAlert(r *AlertReading, saved LineupReading, now time.Time) {
-	a.weekMu.Lock()
-	week, failed := a.week, a.weekRefreshError
-	a.weekMu.Unlock()
+	a.core.WeekMu.Lock()
+	week, failed := a.core.Week, a.core.WeekRefreshError
+	a.core.WeekMu.Unlock()
 	if failed != "" || len(week.Games) == 0 {
 		note := joinNote("lineup lock unknown", failed)
 		r.Unavailable = append(r.Unavailable, Unavailable{Kind: "lineup", Note: note})
@@ -122,9 +122,9 @@ func (r *AlertReading) tradeAlert(trades TradeReading, now time.Time) {
 }
 
 func (a *App) irAlerts(r *AlertReading, franchiseID string) {
-	a.targetSnapshotMu.Lock()
-	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
-	a.targetSnapshotMu.Unlock()
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
 	injuries := a.heldInjuries()
 	if !loaded || snap.Rosters.Provenance.Freshness.State == domain.FreshFail ||
 		snap.Rosters.Provenance.Freshness.State == domain.FreshStale || injuries.Provenance.Freshness.State != domain.FreshLive {

@@ -24,8 +24,8 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 	in := a.commsInput()
 	ctx, cancel := context.WithTimeout(a.fallbackParent(), factsTimeout)
 	defer cancel()
-	src := commsapp.Source{Log: a.fallbackLog}
-	if a.history != nil {
+	src := commsapp.Source{Log: a.core.FallbackLog}
+	if a.core.History != nil {
 		src.Archive = a.commsArchive
 	}
 	board, err := commsapp.Read(ctx, src, in, commsapp.RawCommsScope(raw))
@@ -36,23 +36,23 @@ func (a *App) TargetComms(raw RawCommsScope) (CommsBoard, error) {
 }
 
 func (a *App) commsInput() commsapp.Input {
-	a.seasonMu.Lock()
-	in := commsapp.Input{Transactions: reportHeld(a.seasonTransactions), Zone: time.Local}
-	for i, feed := range a.commsBoards {
+	a.core.SeasonMu.Lock()
+	in := commsapp.Input{Transactions: reportHeld(a.core.SeasonTransactions), Zone: time.Local}
+	for i, feed := range a.core.CommsBoards {
 		in.Boards[i] = reportHeld(feed)
 	}
-	a.seasonMu.Unlock()
-	a.lookupMu.Lock()
-	in.Lookup = a.lookup
-	a.lookupMu.Unlock()
-	in.Names = a.rulebook.FranchiseNames()
-	in.Mirror, _, _ = a.league.ContractsView()
+	a.core.SeasonMu.Unlock()
+	a.core.LookupMu.Lock()
+	in.Lookup = a.core.Lookup
+	a.core.LookupMu.Unlock()
+	in.Names = a.core.Rulebook.FranchiseNames()
+	in.Mirror, _, _ = a.core.League.ContractsView()
 	return in
 }
 
 func (a *App) commsArchive(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
-	a.factsMu.Lock()
-	defer a.factsMu.Unlock()
+	a.core.FactsMu.Lock()
+	defer a.core.FactsMu.Unlock()
 	cache, _, err := a.readArchiveFacts(ctx)
 	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
 }
@@ -63,12 +63,12 @@ var errCommsNeedsKey = errors.New("MFL serves the message board and polls only t
 
 // commsKey reports whether a keyed board read can go out, reading the keyring first like pending trades.
 func (a *App) commsKey(ctx context.Context) error {
-	a.keyMu.Lock()
-	defer a.keyMu.Unlock()
-	if a.keyStore == nil {
+	a.core.KeyMu.Lock()
+	defer a.core.KeyMu.Unlock()
+	if a.core.KeyStore == nil {
 		return errors.New("MFL keyring is locked or unavailable")
 	}
-	_, err := a.keyStore.Get(ctx)
+	_, err := a.core.KeyStore.Get(ctx)
 	switch {
 	case errors.Is(err, mflkey.ErrNoKey):
 		return errCommsNeedsKey
@@ -80,35 +80,35 @@ func (a *App) commsKey(ctx context.Context) error {
 
 func (a *App) refreshCommsBoards(ctx context.Context) {
 	if err := a.commsKey(ctx); err != nil {
-		a.seasonMu.Lock()
-		for i := range a.commsBoards {
+		a.core.SeasonMu.Lock()
+		for i := range a.core.CommsBoards {
 			if errors.Is(err, errCommsNeedsKey) {
-				a.commsBoards[i] = heldSeasonFeed[[]ingestion.RawLeaguePost]{}
+				a.core.CommsBoards[i] = heldSeasonFeed[[]ingestion.RawLeaguePost]{}
 			}
-			a.commsBoards[i].refreshError = err.Error()
+			a.core.CommsBoards[i].RefreshError = err.Error()
 		}
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Unlock()
 		return
 	}
 	for i, export := range []string{"messageBoard", "polls"} {
-		pause := a.seasonPause
+		pause := a.core.SeasonPause
 		if pause == nil {
 			pause = seasonPause
 		}
 		if err := pause(ctx, time.Second); err != nil {
 			return
 		}
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[ingestion.RawLeaguePost]{
+		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[ingestion.RawLeaguePost]{
 			export: export,
 			fetch: func(ctx context.Context) ([]ingestion.RawLeaguePost, error) {
-				return ingestion.FetchLeagueBoard(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID, export)
+				return ingestion.FetchLeagueBoard(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID, export)
 			},
 			parse:  func(body []byte) ([]ingestion.RawLeaguePost, error) { return ingestion.ParseLeagueBoard(body, export) },
-			bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
-		a.seasonMu.Lock()
-		holdSeasonFeed(&a.commsBoards[i], rows, fresh, err)
-		a.seasonMu.Unlock()
+			bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
+		a.core.SeasonMu.Lock()
+		holdSeasonFeed(&a.core.CommsBoards[i], rows, fresh, err)
+		a.core.SeasonMu.Unlock()
 	}
 }
 
@@ -116,14 +116,14 @@ func (a *App) TargetCommsRefresh(force bool) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("comms refresh: %w", err)
 	}
-	a.seasonMu.Lock()
-	tx := a.seasonTransactions
-	boards := a.commsBoards
-	a.seasonMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	a.core.SeasonMu.Lock()
+	tx := a.core.SeasonTransactions
+	boards := a.core.CommsBoards
+	a.core.SeasonMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	feeds := [2]report.Held[ingestion.RawLeaguePost]{}
 	for i, feed := range boards {
 		feeds[i] = reportHeld(feed)
@@ -138,14 +138,14 @@ func (a *App) TargetOpenComms(destination string) error {
 		return fmt.Errorf("open comms: %w", err)
 	}
 	host := ""
-	if a.mflClient != nil {
-		host = a.mflClient.LeagueHost()
+	if a.core.MFLClient != nil {
+		host = a.core.MFLClient.LeagueHost()
 	}
-	target, err := commsapp.URL(destination, host, a.season)
+	target, err := commsapp.URL(destination, host, a.core.Season)
 	if err != nil {
 		return err //nolint:wrapcheck // the service preserves the comms hand-off error
 	}
-	a.openURL(a.ctx, target)
+	a.core.OpenURL(a.core.Ctx, target)
 	return nil
 }
 

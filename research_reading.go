@@ -68,10 +68,10 @@ func (v researchView) feed(kind, week string) heldSeasonFeed[[]researchfeeds.Fee
 	return v.held.feeds[researchKey(kind, week)]
 }
 func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Entry {
-	if len(feed.value) == 0 {
+	if len(feed.Value) == 0 {
 		return nil
 	}
-	return feed.value[0].Players
+	return feed.Value[0].Players
 }
 func (v researchView) player(id string) ResearchPlayer {
 	return ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
@@ -107,7 +107,7 @@ func (in researchInput) snapshot() researchapp.Snapshot {
 		Finished: scores, Latest: latest, CutCharges: charges}
 }
 func researchFeed[T any](h heldSeasonFeed[T]) researchapp.Feed[T] {
-	return researchapp.Feed[T]{Value: h.value, FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
+	return researchapp.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
 }
 func researchFeeds[K comparable, T any](held map[K]heldSeasonFeed[T]) map[K]researchapp.Feed[T] {
 	if held == nil {

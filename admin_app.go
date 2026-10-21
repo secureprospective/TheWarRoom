@@ -39,8 +39,8 @@ func (a *App) GetParams() ParamsResult {
 	if err := a.ready(); err != nil {
 		return ParamsResult{OK: false, Error: err.Error()}
 	}
-	values := a.params.Snapshot()
-	defs := a.params.Definitions()
+	values := a.core.Params.Snapshot()
+	defs := a.core.Params.Definitions()
 	out := make([]ParamView, len(defs))
 	for i, d := range defs {
 		v, err := values.GetPosition(d.Key, d.Position)
@@ -50,7 +50,7 @@ func (a *App) GetParams() ParamsResult {
 		label, group := controlapp.ParameterWords(d.Key, d.Description)
 		out[i] = ParamView{Key: d.Key, Label: label, Group: group, Position: d.Position, Description: d.Description,
 			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
-			Overridden: a.params.Overridden(d.Key, d.Position)}
+			Overridden: a.core.Params.Overridden(d.Key, d.Position)}
 	}
 	slices.SortFunc(out, func(a, b ParamView) int {
 		if n := cmp.Compare(a.Group, b.Group); n != 0 {
@@ -76,9 +76,9 @@ func (a *App) SetParam(key, position string, value float64) SetParamResult {
 	if err := a.ready(); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
 	defer cancel()
-	if err := a.params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
+	if err := a.core.Params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	return SetParamResult{OK: true}
@@ -89,9 +89,9 @@ func (a *App) ResetParam(key, position string) SetParamResult {
 	if err := a.ready(); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
 	defer cancel()
-	if err := a.params.ClearOverride(ctx, key, position); err != nil {
+	if err := a.core.Params.ClearOverride(ctx, key, position); err != nil {
 		return SetParamResult{OK: false, Error: err.Error()}
 	}
 	return SetParamResult{OK: true}

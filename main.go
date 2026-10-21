@@ -81,7 +81,7 @@ func probe() int {
 	app := NewApp()
 	app.startup(context.Background())
 	defer app.shutdown(context.Background())
-	if app.startupErr != nil {
+	if app.core.StartupErr != nil {
 		return 1
 	}
 	return 0

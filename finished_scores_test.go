@@ -19,7 +19,7 @@ func TestFinishedScoresDue(t *testing.T) {
 	t.Parallel()
 	kickoff := time.Now().Add(-5 * time.Hour).Truncate(time.Second)
 	end := kickoff.Add(finishedGameAllowance)
-	h := heldSeasonFeed[[]nflschedule.RawWeek]{fetchedAt: end, value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
+	h := heldSeasonFeed[[]nflschedule.RawWeek]{FetchedAt: end, Value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
 		{Teams: [2]string{"BUF", "NYJ"}, Kickoff: fmt.Sprint(kickoff.Unix()), Scores: [2]string{"20", "10"}, GameSecondsRemaining: "0"},
 	}}}}
 	for _, tc := range []struct {
@@ -36,7 +36,7 @@ func TestFinishedScoresDue(t *testing.T) {
 		{"not kicked off", kickoff, kickoff.Add(-time.Minute), "", false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h.value[0].Matchups[0].GameSecondsRemaining = tc.seconds
+			h.Value[0].Matchups[0].GameSecondsRemaining = tc.seconds
 			if got := finishedScoresDue(tc.fetched, h, tc.now); got != tc.want {
 				t.Fatalf("due %t want %t", got, tc.want)
 			}
@@ -67,33 +67,33 @@ func (f finishedScoresTransport) RoundTrip(r *http.Request) (*http.Response, err
 func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.seasonChanged = func(context.Context) {}
+	a.core.SeasonChanged = func(context.Context) {}
 	now := time.Now().Truncate(time.Second)
-	a.clockNow = func() time.Time { return now }
-	a.week = leagueweek.Week{Number: 6}
-	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{5: {fetchedAt: now, value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
+	a.core.ClockNow = func() time.Time { return now }
+	a.core.Week = leagueweek.Week{Number: 6}
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{5: {FetchedAt: now, Value: []nflschedule.RawWeek{{Week: "5", Matchups: []nflschedule.RawMatchup{
 		{Teams: [2]string{"BUF", "NYJ"}, Kickoff: fmt.Sprint(now.Add(-5 * time.Hour).Unix()), Scores: [2]string{"20", "10"}, GameSecondsRemaining: "0"},
 	}}}}}
-	a.now.byes.fetchedAt = now
-	a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{researchKey("playerScores", "5"): {fetchedAt: now.Add(-3 * time.Hour)}}
+	a.now.byes.FetchedAt = now
+	a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{researchKey("playerScores", "5"): {FetchedAt: now.Add(-3 * time.Hour)}}
 	requests, pauses := []string{}, 0
 	var err error
-	a.mflClient, err = mfl.New("", 1000, mfl.WithTransport(finishedScoresTransport{t, &requests}))
+	a.core.MFLClient, err = mfl.New("", 1000, mfl.WithTransport(finishedScoresTransport{t, &requests}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonPause = func(context.Context, time.Duration) error { pauses++; return nil }
-	a.refreshFinishedScores(a.ctx)
+	a.core.SeasonPause = func(context.Context, time.Duration) error { pauses++; return nil }
+	a.refreshFinishedScores(a.core.Ctx)
 	next := a.now.schedules[5]
-	next.fetchedAt = now.Add(time.Hour)
+	next.FetchedAt = now.Add(time.Hour)
 	a.now.schedules[5] = next
-	a.clockNow = func() time.Time { return now.Add(time.Hour) }
-	a.refreshFinishedScores(a.ctx)
+	a.core.ClockNow = func() time.Time { return now.Add(time.Hour) }
+	a.refreshFinishedScores(a.core.Ctx)
 	if strings.Join(requests, ",") != "5,YTD" || pauses != 2 {
 		t.Fatal(requests, pauses)
 	}
 	held := a.research.feeds[researchKey("playerScores", "5")]
-	if len(held.value) != 1 || !held.fetchedAt.Equal(now) || held.refreshError != "" {
+	if len(held.Value) != 1 || !held.FetchedAt.Equal(now) || held.RefreshError != "" {
 		t.Fatal(held)
 	}
 }

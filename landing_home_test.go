@@ -57,19 +57,19 @@ func TestLandingNewsTodayCacheNormalOldCacheOneNotice(t *testing.T) {
 		t.Run(strconv.Itoa(days), func(t *testing.T) {
 			in := realResearch(t)
 			a := targetTestApp(t)
-			a.lookup = in.lookup
-			a.fallbackLog = func(string) {}
+			a.core.Lookup = in.lookup
+			a.core.FallbackLog = func(string) {}
 			a.research.links = map[string]string{}
 			at := time.Now().AddDate(0, 0, -days).Truncate(time.Second)
 			news := map[string]heldSeasonFeed[[]researchfeeds.News]{
-				"16162": {fetchedAt: at, value: in.held.news["16162"].value},
-				"13589": {fetchedAt: at, value: []researchfeeds.News{}},
+				"16162": {FetchedAt: at, Value: in.held.news["16162"].Value},
+				"13589": {FetchedAt: at, Value: []researchfeeds.News{}},
 			}
 			a.mergeResearchArchive(context.Background(), nil, in.held.depth, in.injuries, news)
 			in.held.news, in.now = a.research.news, time.Now()
 			out := buildResearch(in, RawResearchScope{Mine: "0001"})
 			if days == 0 {
-				if len(out.News.Summary) != 0 || out.News.Status != "ok" || a.research.news["16162"].refreshError != "" {
+				if len(out.News.Summary) != 0 || out.News.Status != "ok" || a.research.news["16162"].RefreshError != "" {
 					t.Fatal(out.News)
 				}
 				if !strings.Contains(out.News.AsOf, "held · fetched "+reportTime(at, time.UTC)) {
@@ -87,7 +87,7 @@ func TestLandingNewsRefreshFailureOneNotice(t *testing.T) {
 	in := realResearch(t)
 	for _, id := range []string{"16162", "13589"} {
 		h := in.held.news[id]
-		h.fetchedAt, h.refreshError = in.now, "fixture offline"
+		h.FetchedAt, h.RefreshError = in.now, "fixture offline"
 		in.held.news[id] = h
 	}
 	out := buildResearch(in, RawResearchScope{})
@@ -99,10 +99,10 @@ func TestLandingNewsRefreshFailureOneNotice(t *testing.T) {
 func TestLandingNewsOrderUsesFetchTimeRegardlessOfOwner(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
-	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: in.now.AddDate(0, 0, -2),
-		value: []researchfeeds.News{{Article: "older", Headline: "older", Published: "1 hour"}}}
-	in.held.news["13589"] = heldSeasonFeed[[]researchfeeds.News]{fetchedAt: in.now,
-		value: []researchfeeds.News{{Article: "newer", Headline: "newer", Published: "1 day"}}}
+	in.held.news["16162"] = heldSeasonFeed[[]researchfeeds.News]{FetchedAt: in.now.AddDate(0, 0, -2),
+		Value: []researchfeeds.News{{Article: "older", Headline: "older", Published: "1 hour"}}}
+	in.held.news["13589"] = heldSeasonFeed[[]researchfeeds.News]{FetchedAt: in.now,
+		Value: []researchfeeds.News{{Article: "newer", Headline: "newer", Published: "1 day"}}}
 	out := buildResearch(in, RawResearchScope{})
 	if out.Articles[0].Article != "newer" {
 		t.Fatal(out.Articles)
@@ -134,8 +134,8 @@ func TestLandingTeamPositionsNeverEnterNewsBatch(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.lookup = lookup
-	mirror, _, _ := a.league.ContractsView()
+	a.core.Lookup = lookup
+	mirror, _, _ := a.core.League.ContractsView()
 	mirror.Players = slices.Clone(mirror.Players[:1])
 	mirror.Players[0].MFLID = ids[0]
 	for _, id := range ids[1:] {
@@ -143,16 +143,16 @@ func TestLandingTeamPositionsNeverEnterNewsBatch(t *testing.T) {
 		p.MFLID = id
 		mirror.Players = append(mirror.Players, p)
 	}
-	if _, err := a.league.Replace(a.ctx, mirror); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, mirror); err != nil {
 		t.Fatal(err)
 	}
 	transport := &landingNewsTransport{}
-	a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport))
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(transport))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonPause = func(context.Context, time.Duration) error { return nil }
-	a.fallbackLog = func(string) {}
+	a.core.SeasonPause = func(context.Context, time.Duration) error { return nil }
+	a.core.FallbackLog = func(string) {}
 	if err := a.TargetResearchNewsRefresh(""); err != nil {
 		t.Fatal(err)
 	}
@@ -181,11 +181,11 @@ func TestLandingRejectedNewsIDCannotLoseGoodPlayers(t *testing.T) {
 	if err := readResearchNewsBatches(context.Background(), held, 2026, ids, time.Now(), noNewsArchive, pause, fetch, func(string) {}); err != nil {
 		t.Fatal(err)
 	}
-	if len(held["16162"].value) != 1 || len(held["13589"].value) != 1 || calls != pauses {
+	if len(held["16162"].Value) != 1 || len(held["13589"].Value) != 1 || calls != pauses {
 		t.Fatal(held, calls, pauses)
 	}
 	// MFL holds no profile for 17400: that is its answer (no news), held for the day, not a lost read.
-	if h := held["17400"]; h.refreshError != "" || h.value == nil || len(h.value) != 0 || h.fetchedAt.IsZero() {
+	if h := held["17400"]; h.RefreshError != "" || h.Value == nil || len(h.Value) != 0 || h.FetchedAt.IsZero() {
 		t.Fatalf("player with no MFL profile: %+v", h)
 	}
 	before := calls
@@ -207,21 +207,21 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 		}}
 		var err error
 		// MFL serves the calendar only to a keyed request; trade bait stays unkeyed.
-		a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport), mfl.WithKeySource(
+		a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(transport), mfl.WithKeySource(
 			func(context.Context) (mflkey.Key, error) { return "owner-key", nil }))
 		if err != nil {
 			t.Fatal(err)
 		}
-		a.seasonPause = func(context.Context, time.Duration) error { return nil }
-		a.fallbackLog = func(string) {}
+		a.core.SeasonPause = func(context.Context, time.Duration) error { return nil }
+		a.core.FallbackLog = func(string) {}
 		at := time.Now().AddDate(0, 0, -2).Truncate(time.Second)
 		recordSeasonArchive(t, a, "calendar", "", `{"calendar":{"event":{"id":"old","type":"TRADE","title":"Held event"}}}`, at)
 		recordSeasonArchive(t, a, "tradeBait", "", `{"tradeBaits":{"tradeBait":{"franchise_id":"0025","inExchangeFor":"Held bait"}}}`, at)
 		if offline {
 			transport.bodies["calendar"], transport.bodies["tradeBait"] = `{"error":"offline"}`, `{"error":"offline"}`
 		}
-		a.refreshShellFeeds(a.ctx)
-		a.refreshShellFeeds(a.ctx)
+		a.refreshShellFeeds(a.core.Ctx)
+		a.refreshShellFeeds(a.core.Ctx)
 		if !slices.Equal(transport.requests, []string{"calendar", "tradeBait"}) ||
 			!slices.Equal(transport.keyed, []string{"calendar"}) {
 			t.Fatal(transport.requests, transport.keyed)
@@ -230,9 +230,9 @@ func TestLandingShellFeedsDailyLiveOrArchive(t *testing.T) {
 		if offline {
 			wantEvent, wantBait, kind = "Held event", "Held bait", "archived copy · fetched "
 		}
-		calendar := readShellFeed(a.ctx, a, &a.seasonCalendar, "calendar", ingestion.ParseCalendar)
-		bait := readShellFeed(a.ctx, a, &a.seasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
-		if len(calendar.value) != 1 || calendar.value[0].Title != wantEvent || len(bait.value) != 1 || bait.value[0].Want != wantBait {
+		calendar := readShellFeed(a.core.Ctx, a, &a.core.SeasonCalendar, "calendar", ingestion.ParseCalendar)
+		bait := readShellFeed(a.core.Ctx, a, &a.core.SeasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
+		if len(calendar.Value) != 1 || calendar.Value[0].Title != wantEvent || len(bait.Value) != 1 || bait.Value[0].Want != wantBait {
 			t.Fatal(calendar, bait)
 		}
 		for _, source := range []string{shellFeedTime(calendar, time.Local), shellFeedTime(bait, time.Local)} {

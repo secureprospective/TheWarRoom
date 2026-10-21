@@ -60,11 +60,11 @@ func TestNativeMarketWireMatchesGolden(t *testing.T) {
 	bid, err := f.ownerBid(t, "owner.one", commissioner.BidPlace, commissioner.RawBidArgs{Player: "5004",
 		Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 2})
 	readings.add(t, "bid-action", bid, err)
-	f.app.commissionerSession = testCommissionerSession{"owner.two"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 	offer, err := f.app.TargetNativeTradeAction(f.raw(t, commissioner.TradeOffer,
 		commissioner.RawArgs{Trade: new(tradePlayerOffer())}, "league"))
 	readings.add(t, "trade-action", offer, err)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	waivers, err := f.app.TargetNativeWaivers(legalityLeague, "franchise.01", f.now)
 	readings.add(t, "waivers", waivers, err)
 	bids, err := f.app.TargetNativeBids(legalityLeague, "franchise.01")
@@ -104,7 +104,7 @@ func TestNativeLeagueWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	readings := wireReadings{}
 	scores := scoreApp(t)
-	scores.app.history.SetNativeLineups(nativeResultLineups{})
+	scores.app.core.History.SetNativeLineups(nativeResultLineups{})
 	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
 		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 13}}, Expected: 2,
 		Request: "generate-results", Effective: "now", Visibility: "league"}
@@ -174,7 +174,7 @@ func TestNativeLeagueWireMatchesGolden(t *testing.T) {
 	readings.add(t, "seed", seed, err)
 
 	quotes := quoteApp(t)
-	quotes.app.clockNow = quoteClock
+	quotes.app.core.ClockNow = quoteClock
 	quote, err := quotes.app.TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
 		Player: "0099", Action: "cut", ViewerZone: "UTC"})
 	readings.add(t, "contract-quote", quote, err)
@@ -190,7 +190,7 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 	denials := map[string]string{}
 	f := nativeMarketApp(t)
 	bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 2)
-	f.app.commissionerSession = testCommissionerSession{"owner.two"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 	offer, err := f.app.TargetNativeTradeAction(f.raw(t, commissioner.TradeOffer,
 		commissioner.RawArgs{Trade: new(tradePlayerOffer())}, "league"))
 	if err != nil {
@@ -226,7 +226,7 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 		denials[prefix+"/trades-franchise.02"] = errorWords(err) + " " + jsonWords(t, len(trades.Offers))
 	}
 	for _, who := range []string{"stranger", "owner.three"} {
-		f.app.commissionerSession = testCommissionerSession{who}
+		f.app.core.CommissionerSession = testCommissionerSession{who}
 		ownerActs(who)
 		for name, raw := range map[string]commissioner.RawCommand{
 			"bids-override":  f.raw(t, commissioner.BidsOverride, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Bid: bid.Entry, Franchise: "franchise.03"}}, "league"),
@@ -237,7 +237,7 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 			denials[who+"/"+name] = errorWords(err)
 		}
 	}
-	f.app.commissionerSession = failingCommissionerSession{}
+	f.app.core.CommissionerSession = failingCommissionerSession{}
 	ownerActs("no-session")
 	malformed := map[string]func() error{
 		"waiver-outcome": func() error {
@@ -350,13 +350,13 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 			return err
 		},
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	for name, read := range malformed {
 		denials["malformed/"+name] = errorWords(read())
 	}
 	// A shut window: the league keeps only cuts open, and the rightful owners ask for the rest.
 	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["cut"]}}`, "now")
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	place := commissioner.RawBidArgs{Player: "5005", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}
 	_, err = f.app.TargetNativeBidAction(f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &place}, "private"))
 	denials["closed-window/bid-place"] = errorWords(err)
@@ -368,7 +368,7 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 	denials["closed-window/trade-accept"] = errorWords(err)
 	f.set(t, "calendar.windows", nativeLeagueWindows, "now")
 	f.now = time.Date(2026, 12, 2, 12, 0, 0, 0, time.UTC)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	_, err = f.app.TargetNativeTradeAction(f.raw(t, commissioner.TradeAccept, commissioner.RawArgs{Trade: &accept}, "league"))
 	denials["past-deadline/trade-accept"] = errorWords(err)
 
@@ -377,11 +377,11 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 	seed := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, seed, commissioner.PresetLegacy)
 	for _, who := range []string{"stranger", "owner.one"} {
-		seed.commissionerSession = testCommissionerSession{who}
+		seed.core.CommissionerSession = testCommissionerSession{who}
 		_, err := seed.TargetNativeSeed(input)
 		denials[who+"/seed"] = errorWords(err)
 	}
-	seed.commissionerSession = failingCommissionerSession{}
+	seed.core.CommissionerSession = failingCommissionerSession{}
 	_, err = seed.TargetNativeSeed(input)
 	denials["no-session/seed"] = errorWords(err)
 	checkGolden(t, "native", "denials", denials)
@@ -396,14 +396,14 @@ func lineupDenials(t *testing.T, denials map[string]string) {
 	f.execute(t, commissioner.RawCommand{Command: commissioner.RulesSet,
 		Args: commissioner.RawArgs{Field: "calendar.boundary", Value: json.RawMessage(`"start_of_day"`)}})
 	for who, franchise := range map[string]string{"stranger": "franchise.02", "creator": "franchise.03"} {
-		f.app.commissionerSession = testCommissionerSession{who}
+		f.app.core.CommissionerSession = testCommissionerSession{who}
 		_, err := f.app.TargetNativeLineupSet(f.setBody(t, franchise, 1, legal))
 		denials[who+"/lineup-set-"+franchise] = errorWords(err)
 	}
-	f.app.commissionerSession = failingCommissionerSession{}
+	f.app.core.CommissionerSession = failingCommissionerSession{}
 	_, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal))
 	denials["no-session/lineup-set"] = errorWords(err)
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	if _, err := f.app.TargetNativeLineupSet(f.setBody(t, "franchise.02", 1, legal)); err != nil {
 		t.Fatal(err)
 	}
@@ -438,7 +438,7 @@ func draftDenials(t *testing.T, denials map[string]string) {
 	f.asOwner(1)
 	try("owner1/draft-pick-franchise.03", "franchise.03")
 	try("owner1/draft-pick-out-of-turn", "franchise.01")
-	f.app.commissionerSession = failingCommissionerSession{}
+	f.app.core.CommissionerSession = failingCommissionerSession{}
 	try("no-session/draft-pick", "franchise.03")
 }
 
@@ -453,7 +453,7 @@ func TestNativeSimultaneousOwnerActsLandOnce(t *testing.T) {
 	second := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5005",
 		Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 2}}, "private")
 	second.Request = "race.second"
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	var wg sync.WaitGroup
 	errs := make([]error, 2)
 	for i, raw := range []commissioner.RawCommand{first, second} {

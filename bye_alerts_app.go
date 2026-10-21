@@ -15,16 +15,16 @@ import (
 )
 
 func (a *App) byeAlerts(r *AlertReading, mine string, now time.Time) {
-	a.targetSnapshotMu.Lock()
-	snap := a.targetSnapshot
-	a.targetSnapshotMu.Unlock()
-	a.weekMu.Lock()
-	week, failed := a.week, a.weekRefreshError
-	a.weekMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	a.core.TargetSnapshotMu.Lock()
+	snap := a.core.TargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
+	a.core.WeekMu.Lock()
+	week, failed := a.core.Week, a.core.WeekRefreshError
+	a.core.WeekMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
 	byes := archivedOnly(ctx, a, nflschedule.ByeExport, true, nflschedule.ParseByes)
-	rules, err := lineup.ParseRules(a.rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.core.Rulebook.ActiveConfig().Starters)
 	note := byeInputsNote(snap, mine, byes, week)
 	if err != nil || a.rulesFreshness().State == FreshFail {
 		note = "Bye-week check unavailable: lineup rules not held."
@@ -36,7 +36,7 @@ func (a *App) byeAlerts(r *AlertReading, mine string, now time.Time) {
 		r.Unavailable = append(r.Unavailable, Unavailable{Kind: "bye", Note: note})
 		return
 	}
-	players, names, byeMap := byeRoster(snap, mine, byes.value)
+	players, names, byeMap := byeRoster(snap, mine, byes.Value)
 	for _, p := range players {
 		_, known := byeMap[p.Team]
 		if p.Active && (!known || p.Position == "" || p.Position == domain.PosFlag) {
@@ -55,13 +55,13 @@ func (a *App) byeAlerts(r *AlertReading, mine string, now time.Time) {
 				Note: fmt.Sprintf("Week %d lineup lock unavailable; check Franchise HQ for bye shortfalls.", short.Week)})
 		}
 		r.Alerts = append(r.Alerts, Alert(controlapp.ByeAlert(short, players, names, byeMap, now, lock,
-			byes.provenance("MFL nflByeWeeks", "Bye weeks"))))
+			byes.Provenance("MFL nflByeWeeks", "Bye weeks"))))
 	}
 }
 
 func byeInputsNote(snap snapshot.Snapshot, mine string, byes heldSeasonFeed[[]nflschedule.RawBye],
 	week leagueweek.Week) string {
-	if byes.fetchedAt.IsZero() || len(byes.value) == 0 || byes.refreshError != "" {
+	if byes.FetchedAt.IsZero() || len(byes.Value) == 0 || byes.RefreshError != "" {
 		return "Bye-week check unavailable: NFL bye weeks not held."
 	}
 	if week.Number == 0 {
@@ -103,8 +103,8 @@ func byeRoster(snap snapshot.Snapshot, mine string, byes []nflschedule.RawBye) (
 func (a *App) byeWeekLock(ctx context.Context, current leagueweek.Week, week int, now time.Time) time.Time {
 	if week != current.Number {
 		feed := a.scheduleFeed(week)
-		feed.bodies = a.history.ReferenceBodies
-		rows, _, found, err := readArchivedFeed(ctx, a.season, feed)
+		feed.bodies = a.core.History.ReferenceBodies
+		rows, _, found, err := readArchivedFeed(ctx, a.core.Season, feed)
 		if err != nil || !found || len(rows) == 0 {
 			return time.Time{}
 		}

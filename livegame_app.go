@@ -43,10 +43,10 @@ type LiveGameView struct {
 }
 
 func (a *App) liveGameWindows() []livegame.Window {
-	a.weekMu.Lock()
-	defer a.weekMu.Unlock()
-	out := make([]livegame.Window, 0, len(a.week.Games))
-	for _, g := range a.week.Games {
+	a.core.WeekMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	out := make([]livegame.Window, 0, len(a.core.Week.Games))
+	for _, g := range a.core.Week.Games {
 		out = append(out, livegame.Window{Teams: g.Teams, Kickoff: g.Kickoff, Final: g.Final})
 	}
 	return out
@@ -63,8 +63,8 @@ func (a *App) startLiveGame() error {
 		return fmt.Errorf("live game sources: %w", err)
 	}
 	a.liveGame.adapter.Fetch = livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second}, endpoints)
-	if a.history != nil {
-		a.liveGame.adapter.Finals = heldFinals{store: a.history, endpoints: endpoints}
+	if a.core.History != nil {
+		a.liveGame.adapter.Finals = heldFinals{store: a.core.History, endpoints: endpoints}
 	}
 	return nil
 }
@@ -78,14 +78,14 @@ func (a *App) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 		return LiveGameView{}, fmt.Errorf("game.follow id: invalid")
 	}
 	if mine != "" {
-		if _, ok := a.rulebook.FranchiseNames()[mine]; !ok {
+		if _, ok := a.core.Rulebook.FranchiseNames()[mine]; !ok {
 			return LiveGameView{}, fmt.Errorf("live game: unknown franchise")
 		}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, 35*time.Second)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, 35*time.Second)
 	defer cancel()
-	a.liveGameMu.Lock()
-	defer a.liveGameMu.Unlock()
+	a.core.LiveGameMu.Lock()
+	defer a.core.LiveGameMu.Unlock()
 	if err := a.startLiveGame(); err != nil {
 		return LiveGameView{}, err
 	}
@@ -118,12 +118,12 @@ func (a *App) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 }
 func (a *App) pollLiveMFL(ctx context.Context, now time.Time, active bool) {
 	if active && !now.Before(a.liveGame.nextMFL) {
-		a.refreshMu.Lock()
+		a.core.RefreshMu.Lock()
 		a.refreshSeasonLineups(ctx)
-		a.refreshMu.Unlock()
-		a.seasonMu.Lock()
-		failed := a.seasonLineups.refreshError != ""
-		a.seasonMu.Unlock()
+		a.core.RefreshMu.Unlock()
+		a.core.SeasonMu.Lock()
+		failed := a.core.SeasonLineups.RefreshError != ""
+		a.core.SeasonMu.Unlock()
 		if failed {
 			a.liveGame.mflFailures++
 		} else {
@@ -135,9 +135,9 @@ func (a *App) pollLiveMFL(ctx context.Context, now time.Time, active bool) {
 
 func (a *App) seedLiveGames(at time.Time) livegame.Held {
 	week := a.marketWeek()
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.now.schedules[week]
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	return nowapp.SeedLiveGames(nowFeed(held), at)
 }
 func liveGameReading(a livegame.Adapter, follow string, active bool) LiveGameView {

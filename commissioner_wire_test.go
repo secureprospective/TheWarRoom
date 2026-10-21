@@ -40,7 +40,7 @@ func TestCommissionerWireMatchesGolden(t *testing.T) {
 	f.cut(t, "1000")
 	rules := f.command(t, commissioner.RulesSet, commissioner.RawArgs{Field: "roster.limits",
 		Value: json.RawMessage(`{"min":0,"max":90}`)}, "league")
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	readings := map[string]any{"execute": rules}
 	add := func(name string, v any, err error) {
 		t.Helper()
@@ -82,7 +82,7 @@ func TestCommissionerWireMatchesGolden(t *testing.T) {
 	add("calendar", calendar, err)
 	schedule, err := f.app.TargetLeagueSchedule(RawLeagueScheduleScope{League: legalityLeague})
 	add("schedule", schedule, err)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	ownerLedger, err := f.app.TargetCommissionerLedger(legalityLeague)
 	add("ledger-owner", ownerLedger, err)
 	ownerPeople, err := f.app.TargetCommissionerPeople(legalityLeague)
@@ -109,7 +109,7 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 		Principal: "owner.two", Role: governance.CoCommissioner}}, "private")
 	grant.Request = "denied.grant"
 	for _, who := range []string{"stranger", "owner.one", "cc"} {
-		f.app.commissionerSession = testCommissionerSession{who}
+		f.app.core.CommissionerSession = testCommissionerSession{who}
 		if who != "cc" {
 			_, err := f.app.TargetCommissionerExecute(encodedCommand(t, rulesSet))
 			denials[who+"/execute-rules"] = errorWords(err)
@@ -133,10 +133,10 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 		ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
 		denials[who+"/ledger-entries"] = errorWords(err) + " " + jsonWords(t, len(ledger.Entries))
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	exception := f.raw(t, commissioner.CalendarException, commissioner.RawArgs{Exception: &commissioner.RawWindowException{
 		Franchise: "franchise.99", Action: "waiver_claim", Until: f.now.AddDate(0, 0, 1)}}, "league")
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	_, err := f.app.TargetCommissionerExecute(encodedCommand(t, exception))
 	denials["creator/exception-wrong-franchise"] = errorWords(err)
 	exception.Args.Exception.Franchise, exception.Args.Exception.Until = "franchise.01", f.now.AddDate(0, 0, -1)
@@ -179,7 +179,7 @@ func TestCommissionerDenialsMatchGolden(t *testing.T) {
 	}
 	_, err = f.app.TargetCommissionerMarket(legalityLeague, commissioner.RulesSet)
 	denials["creator/market-not-a-market-act"] = errorWords(err)
-	f.app.commissionerSession = failingCommissionerSession{}
+	f.app.core.CommissionerSession = failingCommissionerSession{}
 	_, err = f.app.TargetCommissionerExecute(encodedCommand(t, rulesSet))
 	denials["no-session/execute"] = errorWords(err)
 	_, err = f.app.TargetCommissionerActor()

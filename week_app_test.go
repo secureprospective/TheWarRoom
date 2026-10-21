@@ -92,10 +92,10 @@ func weekFixture(t *testing.T, name string) string {
 func weekTestApp(t *testing.T, end string, bodies ...string) (*App, *weekTransport, *phaseRecorder) {
 	t.Helper()
 	a := targetTestApp(t)
-	if err := a.rulebook.Initialize(a.ctx, weekRules{end: end}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, weekRules{end: end}); err != nil {
 		t.Fatal(err)
 	}
-	p, err := db.Open(a.ctx, filepath.Join(t.TempDir(), "whatif.db"))
+	p, err := db.Open(a.core.Ctx, filepath.Join(t.TempDir(), "whatif.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,22 +104,22 @@ func weekTestApp(t *testing.T, end string, bodies ...string) (*App, *weekTranspo
 			t.Error(err)
 		}
 	})
-	a.whatif = state.New(p, ingestion.LeagueID, 2026, a.rulebook)
-	if err := a.whatif.Initialize(a.ctx, a.league); err != nil {
+	a.core.Whatif = state.New(p, ingestion.LeagueID, 2026, a.core.Rulebook)
+	if err := a.core.Whatif.Initialize(a.core.Ctx, a.core.League); err != nil {
 		t.Fatal(err)
 	}
-	recorder := &phaseRecorder{Writer: a.whatif.Writer()}
-	a.coordinator, err = transactions.New(recorder, nil, nil)
+	recorder := &phaseRecorder{Writer: a.core.Whatif.Writer()}
+	a.core.Coordinator, err = transactions.New(recorder, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	transport := &weekTransport{bodies: bodies}
-	a.mflClient, err = mfl.New("", 1000, mfl.WithTransport(transport))
+	a.core.MFLClient, err = mfl.New("", 1000, mfl.WithTransport(transport))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.clockChanged = func(context.Context) {}
-	a.seasonChanged = func(context.Context) {}
+	a.core.ClockChanged = func(context.Context) {}
+	a.core.SeasonChanged = func(context.Context) {}
 	return a, transport, recorder
 }
 
@@ -128,7 +128,7 @@ func TestRefreshWeekAndClock(t *testing.T) {
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	// Inside week 5, before its first kickoff: the wall clock passed the fixture's last kickoff on
 	// 2026-10-12, after which no lineup lock is left and the reading has no week.
-	a.clockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
+	a.core.ClockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
 	before, err := a.TargetClock()
 	if err != nil || before.Value.Week != nil || before.Provenance.Freshness.State != FreshLive ||
 		!strings.Contains(before.Provenance.Freshness.Note, "NFL schedule not fetched yet") {
@@ -138,17 +138,17 @@ func TestRefreshWeekAndClock(t *testing.T) {
 		t.Fatal("clock fetched")
 	}
 	emitted := 0
-	a.clockChanged = func(context.Context) { emitted++ }
-	a.refreshWeek(a.ctx)
-	if a.week.Number != 5 || len(recorder.phases) != 1 || recorder.phases[0] != domain.PhaseRegularSeason {
-		t.Fatalf("week %+v, phases %v", a.week, recorder.phases)
+	a.core.ClockChanged = func(context.Context) { emitted++ }
+	a.refreshWeek(a.core.Ctx)
+	if a.core.Week.Number != 5 || len(recorder.phases) != 1 || recorder.phases[0] != domain.PhaseRegularSeason {
+		t.Fatalf("week %+v, phases %v", a.core.Week, recorder.phases)
 	}
 	wantNote := "derived from NFL week 5 (bounds 1/13/17), schedule fetched " +
-		a.weekFetchedAt.Format(time.RFC3339)
+		a.core.WeekFetchedAt.Format(time.RFC3339)
 	if recorder.notes[0] != wantNote {
 		t.Fatalf("note %q, want %q", recorder.notes[0], wantNote)
 	}
-	a.refreshWeek(a.ctx)
+	a.refreshWeek(a.core.Ctx)
 	if len(recorder.phases) != 1 || emitted != 2 {
 		t.Fatalf("phases %v, events %d", recorder.phases, emitted)
 	}
@@ -161,13 +161,13 @@ func TestRefreshWeekAndClock(t *testing.T) {
 		t.Fatal(clock.Value.Deadlines)
 	}
 	if len(transport.requests) != calls ||
-		clock.Provenance.Freshness.FetchedAt != a.weekFetchedAt.Format(time.RFC3339) {
+		clock.Provenance.Freshness.FetchedAt != a.core.WeekFetchedAt.Format(time.RFC3339) {
 		t.Fatal("clock fetched or replaced fetch time")
 	}
 	transport.err = errors.New("schedule offline")
-	fetched := a.weekFetchedAt
-	a.refreshWeek(a.ctx)
-	if a.week.Number != 5 || !a.weekFetchedAt.Equal(fetched) || a.weekRefreshError == "" {
+	fetched := a.core.WeekFetchedAt
+	a.refreshWeek(a.core.Ctx)
+	if a.core.Week.Number != 5 || !a.core.WeekFetchedAt.Equal(fetched) || a.core.WeekRefreshError == "" {
 		t.Fatal("failure lost last good week")
 	}
 	clock, err = a.TargetClock()
@@ -184,23 +184,23 @@ func TestRefreshWeekAdvancesPastFinalDefault(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17",
 		weekFixture(t, "nflSchedule.json"), weekFixture(t, "nflSchedule-w5.json"))
-	a.refreshWeek(a.ctx)
-	if a.week.Number != 5 || len(transport.requests) != 2 ||
+	a.refreshWeek(a.core.Ctx)
+	if a.core.Week.Number != 5 || len(transport.requests) != 2 ||
 		transport.requests[0] != "" || transport.requests[1] != "5" {
-		t.Fatalf("week %+v, requests %v", a.week, transport.requests)
+		t.Fatalf("week %+v, requests %v", a.core.Week, transport.requests)
 	}
 }
 
 func TestRefreshWeekDoesNotAppendBeyondBounds(t *testing.T) {
 	t.Parallel()
 	a, _, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
-	cfg := a.rulebook.ActiveConfig()
+	cfg := a.core.Rulebook.ActiveConfig()
 	cfg.LastRegularSeasonWeek, cfg.EndWeek = "3", "4"
-	if _, err := a.rulebook.Sync(a.ctx, cfg); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
-	a.refreshWeek(a.ctx)
-	phase, err := a.whatif.CurrentPhase(a.ctx)
+	a.refreshWeek(a.core.Ctx)
+	phase, err := a.core.Whatif.CurrentPhase(a.core.Ctx)
 	if err != nil || phase != domain.PhaseOffseason || len(recorder.phases) != 0 {
 		t.Fatalf("phase %s, appends %v, error %v", phase, recorder.phases, err)
 	}
@@ -210,18 +210,18 @@ func TestRefreshWeekNoLineupAndBadBounds(t *testing.T) {
 	t.Parallel()
 	body := strings.Replace(weekFixture(t, "nflSchedule.json"), `"week":"4"`, `"week":"18"`, 1)
 	a, transport, recorder := weekTestApp(t, "17", body)
-	a.refreshWeek(a.ctx)
-	if a.week.Number != 0 || a.weekRefreshError != "" || len(transport.requests) != 1 {
-		t.Fatalf("final week 18: %+v, %q, %v", a.week, a.weekRefreshError, transport.requests)
+	a.refreshWeek(a.core.Ctx)
+	if a.core.Week.Number != 0 || a.core.WeekRefreshError != "" || len(transport.requests) != 1 {
+		t.Fatalf("final week 18: %+v, %q, %v", a.core.Week, a.core.WeekRefreshError, transport.requests)
 	}
-	cfg := a.rulebook.ActiveConfig()
+	cfg := a.core.Rulebook.ActiveConfig()
 	cfg.StartWeek = "unknown"
-	if _, err := a.rulebook.Sync(a.ctx, cfg); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
 	transport.bodies = []string{weekFixture(t, "nflSchedule-w5.json")}
-	a.refreshWeek(a.ctx)
-	if a.week.Number != 5 || len(recorder.phases) != 0 {
+	a.refreshWeek(a.core.Ctx)
+	if a.core.Week.Number != 5 || len(recorder.phases) != 0 {
 		t.Fatal("bad bounds appended or discarded schedule")
 	}
 }
@@ -231,13 +231,13 @@ func TestRefreshWeekSerializesAndCancels(t *testing.T) {
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	var wg sync.WaitGroup
 	for range 4 {
-		wg.Go(func() { a.refreshWeek(a.ctx) })
+		wg.Go(func() { a.refreshWeek(a.core.Ctx) })
 	}
 	wg.Wait()
 	if len(recorder.phases) != 1 || len(transport.requests) != 4 {
 		t.Fatal("concurrent refresh did not serialize")
 	}
-	ctx, cancel := context.WithCancel(a.ctx)
+	ctx, cancel := context.WithCancel(a.core.Ctx)
 	cancel()
 	a.refreshWeeksInBackground(ctx)
 	if len(transport.requests) != 4 {
@@ -249,9 +249,9 @@ func TestWeekWorkerStopsOnShutdown(t *testing.T) {
 	t.Parallel()
 	a, transport, recorder := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	refreshed := make(chan struct{}, 1)
-	a.clockChanged = func(context.Context) { refreshed <- struct{}{} }
-	a.refreshInBackground(a.ctx)
-	t.Cleanup(func() { a.shutdown(a.ctx) })
+	a.core.ClockChanged = func(context.Context) { refreshed <- struct{}{} }
+	a.refreshInBackground(a.core.Ctx)
+	t.Cleanup(func() { a.shutdown(a.core.Ctx) })
 	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
 	select {
@@ -259,7 +259,7 @@ func TestWeekWorkerStopsOnShutdown(t *testing.T) {
 	case <-timer.C:
 		t.Fatal("worker did not fetch when no launch league refresh was due")
 	}
-	a.shutdown(a.ctx)
+	a.shutdown(a.core.Ctx)
 	if len(transport.requests) != 1 || len(recorder.phases) != 1 {
 		t.Fatalf("requests %v, phases %v", transport.requests, recorder.phases)
 	}

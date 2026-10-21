@@ -16,7 +16,7 @@ func TestHeldFinalsSurviveRestartThroughHistory(t *testing.T) {
 	if err := json.Unmarshal(liveGameSources, &endpoints); err != nil {
 		t.Fatal(err)
 	}
-	finals := heldFinals{store: a.history, endpoints: endpoints}
+	finals := heldFinals{store: a.core.History, endpoints: endpoints}
 	ctx := context.Background()
 	at := time.Date(2026, 10, 12, 9, 0, 0, 0, time.UTC)
 	summary := liveFixture(t, "espn-summary-401872991")

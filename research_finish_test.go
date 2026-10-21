@@ -17,8 +17,8 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
-	a.lookup, a.hasLookup = in.lookup, true
-	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
+	a.core.Lookup, a.core.HasLookup = in.lookup, true
+	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 11, 10, 0, 0, 0, time.UTC)
@@ -27,8 +27,8 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	recordSeasonBareArchive(t, a, "injuries", string(researchSample(t, "injuries.json")), at)
 	recordSeasonArchiveForm(t, a, "playerProfile", "", string(researchSample(t, "playerProfile.json")), at, false)
 	// Profiles require the exact P member; this helper's URL has no P, so it must not answer.
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	type answer struct {
 		board ResearchBoard
 		err   error
@@ -49,13 +49,13 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	if len(r.Rows) == 0 || !strings.Contains(r.Note, "Archived copy") || !strings.Contains(r.AsOf, reportTime(at, time.Local)) {
 		t.Fatal(r.Note, r.AsOf, len(r.Rows))
 	}
-	if len(a.seasonInjuries.value) == 0 {
+	if len(a.core.SeasonInjuries.Value) == 0 {
 		t.Fatal("cold injury archive not served")
 	}
-	if !a.research.feeds[researchKey("playerScores", "YTD")].fetchedAt.Equal(at) {
+	if !a.research.feeds[researchKey("playerScores", "YTD")].FetchedAt.Equal(at) {
 		t.Fatal("archive time replaced")
 	}
-	if len(a.research.news["16162"].value) != 0 {
+	if len(a.research.news["16162"].Value) != 0 {
 		t.Fatal("profile URL without exact player accepted")
 	}
 	recordSeasonArchive(t, a, "playerProfile&P=16162", "", string(researchSample(t, "playerProfile.json")), at)
@@ -63,18 +63,18 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	if _, err := a.TargetResearch(RawResearchScope{}); err != nil {
 		t.Fatal(err)
 	}
-	if len(a.research.news["16162"].value) != 0 || !a.research.archiveRead["news:16162"] {
+	if len(a.research.news["16162"].Value) != 0 || !a.research.archiveRead["news:16162"] {
 		t.Fatal("archive looked up again on a second read")
 	}
 	a.research.archiveRead = nil // the next launch looks again
 	if _, err := a.TargetResearch(RawResearchScope{}); err != nil {
 		t.Fatal(err)
 	}
-	if len(a.research.news["16162"].value) != 1 {
+	if len(a.research.news["16162"].Value) != 1 {
 		t.Fatal("cold archived news not served")
 	}
 	in.mirror.Players = slices.DeleteFunc(slices.Clone(in.mirror.Players), func(p state.MirrorPlayer) bool { return p.MFLID == "16162" })
-	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
 	a.research.news, a.research.archiveRead = nil, nil
@@ -87,8 +87,8 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.seasonPause = func(context.Context, time.Duration) error { return context.Canceled }
-	a.refreshMu.Lock()
+	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
+	a.core.RefreshMu.Lock()
 	done := make(chan error, 1)
 	go func() { done <- a.TargetResearchRefresh(false) }()
 	deadline := time.Now().Add(time.Second)
@@ -96,7 +96,7 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	status := a.TargetResearchStatus()
-	a.refreshMu.Unlock()
+	a.core.RefreshMu.Unlock()
 	if err := <-done; err == nil {
 		t.Fatal("cancelled fixture refresh passed")
 	}
@@ -114,29 +114,29 @@ func TestResearchSnapshotDetachesMutableIndexes(t *testing.T) {
 	fixture := realResearch(t)
 	a.research = fixture.held
 	a.research.links["gsis:fixture"] = "16162"
-	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{1: {fetchedAt: fixture.now}}
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{1: {FetchedAt: fixture.now}}
 	in := a.heldResearchInput()
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	a.research.feeds[researchKey("playerScores", "YTD")] = heldSeasonFeed[[]researchfeeds.Feed]{}
 	delete(a.research.news, "16162")
 	a.research.links["gsis:fixture"] = "0042"
 	delete(a.now.schedules, 1)
-	a.seasonMu.Unlock()
-	if len(in.held.feeds[researchKey("playerScores", "YTD")].value) == 0 || len(in.held.news["16162"].value) == 0 || in.held.links["gsis:fixture"] != "16162" || in.schedules[1].fetchedAt.IsZero() {
+	a.core.SeasonMu.Unlock()
+	if len(in.held.feeds[researchKey("playerScores", "YTD")].Value) == 0 || len(in.held.news["16162"].Value) == 0 || in.held.links["gsis:fixture"] != "16162" || in.schedules[1].FetchedAt.IsZero() {
 		t.Fatal("reading retained a mutable root index")
 	}
 	// Construction must not reacquire App's lock or inspect newly published state.
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	done := make(chan ResearchBoard, 1)
 	go func() { done <- buildResearch(in, RawResearchScope{}) }()
 	select {
 	case board := <-done:
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Unlock()
 		if len(reportByID(t, board.Board, "M-037").Rows) == 0 {
 			t.Fatal("detached scores lost")
 		}
 	case <-time.After(5 * time.Second):
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Unlock()
 		t.Fatal("construction waited on the root season lock")
 	}
 }
@@ -173,7 +173,7 @@ func TestResearchConcurrentNewsRefreshAndRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	in := a.heldResearchInput()
-	if in.held.news["0042"].fetchedAt.IsZero() {
+	if in.held.news["0042"].FetchedAt.IsZero() {
 		t.Fatal("completed refresh was not published")
 	}
 }

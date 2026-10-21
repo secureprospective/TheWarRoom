@@ -72,12 +72,12 @@ func TestLandingFutureReports(t *testing.T) {
 	for i := range raw.Matchups {
 		raw.Matchups[i].Kickoff = fmt.Sprint(kickoff.Unix())
 	}
-	in.held.schedules[9] = heldSeasonFeed[[]nflschedule.RawWeek]{value: []nflschedule.RawWeek{raw}, fetchedAt: in.at}
+	in.held.schedules[9] = heldSeasonFeed[[]nflschedule.RawWeek]{Value: []nflschedule.RawWeek{raw}, FetchedAt: in.at}
 	board, err := buildNow(in)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if board.ReportWeek != 9 || len(board.ReportWeeks) != len(in.race.held.weeks.value) {
+	if board.ReportWeek != 9 || len(board.ReportWeeks) != len(in.race.held.weeks.Value) {
 		t.Fatal(board.ReportWeeks)
 	}
 	for _, id := range []string{"M-003", "M-007", "M-021", "M-022"} {
@@ -97,11 +97,11 @@ func TestLandingColdWeekMatchesRefresh(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
 	at := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
-	a.clockNow = func() time.Time { return at }
+	a.core.ClockNow = func() time.Time { return at }
 	recordSeasonArchiveForm(t, a, "nflSchedule", "", weekFixture(t, "nflSchedule.json"), at.Add(-time.Hour), true)
 	recordSeasonArchiveForm(t, a, "nflSchedule", "5", weekFixture(t, "nflSchedule-w5.json"), at, true)
 	recordSeasonArchive(t, a, "playerScores", "1", string(researchSample(t, "playerScores_W01.json")), at)
-	a.seedClockSchedules(a.ctx)
+	a.seedClockSchedules(a.core.Ctx)
 	a.hydrateResearch()
 	source := func() string {
 		v := researchView{researchInput: researchInput{held: a.research, week: a.marketWeek(), zone: time.UTC}}
@@ -111,7 +111,7 @@ func TestLandingColdWeekMatchesRefresh(t *testing.T) {
 	if a.marketWeek() != 5 || !strings.Contains(before, "1 of 4 finished weeks held") || len(transport.requests) != 0 {
 		t.Fatal(a.marketWeek(), before, transport.requests)
 	}
-	a.refreshWeek(a.ctx)
+	a.refreshWeek(a.core.Ctx)
 	a.hydrateResearch()
 	if after := source(); before != after {
 		t.Fatal(before, after)
@@ -139,7 +139,7 @@ func TestLandingRefusedProfileLoggedOnce(t *testing.T) {
 		}
 	}
 	if asked != 1 || len(lines) != 1 || lines[0] != "MFL has no profile for: 0042" ||
-		!held["0042"].fetchedAt.Equal(now) || held["0042"].refreshError != "" {
+		!held["0042"].FetchedAt.Equal(now) || held["0042"].RefreshError != "" {
 		t.Fatal(asked, lines, held)
 	}
 }
@@ -153,15 +153,15 @@ func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
 	if err != nil || board.Waiting != "Reading the league's weeks from MFL…" {
 		t.Fatalf("cold Now must wait for the league's weeks: %q %v", board.Waiting, err)
 	}
-	a.seasonMu.Lock()
-	a.race.weeks.refreshError = "MFL refused the schedule"
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.race.weeks.RefreshError = "MFL refused the schedule"
+	a.core.SeasonMu.Unlock()
 	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("a failed read is not waiting: %q %v", board.Waiting, err)
 	}
-	a.seasonMu.Lock()
-	a.race.weeks.refreshError, a.race.weeks.fetchedAt = "", time.Now()
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.race.weeks.RefreshError, a.race.weeks.FetchedAt = "", time.Now()
+	a.core.SeasonMu.Unlock()
 	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("held weeks are not waiting: %q %v", board.Waiting, err)
 	}

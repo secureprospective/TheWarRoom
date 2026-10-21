@@ -229,13 +229,13 @@ func TestCommissionerPreviewRefusalsUseTheAppendPreparation(t *testing.T) {
 			f := tradeApp(t)
 			offer := f.offer(t)
 			f.accept(t, offer)
-			f.app.commissionerSession = testCommissionerSession{"creator"}
+			f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 			return f.app, f.raw(t, commissioner.TradeOverride, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Decision: "approve"}}, "league")
 		}},
 		{"pending trade", func(t *testing.T) (*App, commissioner.RawCommand) {
 			f := tradeApp(t)
 			f.offer(t)
-			f.app.commissionerSession = testCommissionerSession{"creator"}
+			f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 			salary, years := domain.Money(200000000), 2
 			return f.app, f.raw(t, commissioner.ContractEdit, commissioner.RawArgs{Override: &commissioner.RawNativeOverride{
 				Player: "1000", Salary: &salary, Years: &years}}, "league")

@@ -19,8 +19,8 @@ func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.targetSnapshot.Players.Value = []snapshot.Player{{ID: idPlayer, Position: domain.PosQB, Name: "Example"}}
-	before, stamp, _ := a.league.ContractsView()
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: idPlayer, Position: domain.PosQB, Name: "Example"}}
+	before, stamp, _ := a.core.League.ContractsView()
 	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: "contract.extend", Level: 1, Years: 2}
 	preview := a.TargetContractActs(raw)
 	if preview.Status != ReadingOK || len(preview.Value) != 1 || preview.Value[0].Price != "Price: $15,000,000" || len(preview.Value[0].Figures) != 5 || !strings.HasPrefix(preview.Value[0].Reasons[0], "Not checked:") {
@@ -35,7 +35,7 @@ func TestContractActsPreviewDraftStaleRebaseAndMirrorIsolation(t *testing.T) {
 	if !strings.Contains(plans.Value[0].Post, "commissioner on ProBoards") || !strings.Contains(plans.Value[0].Post, "2029: $15,000,000") {
 		t.Fatal(plans.Value[0].Post)
 	}
-	after, afterStamp, _ := a.league.ContractsView()
+	after, afterStamp, _ := a.core.League.ContractsView()
 	if !reflect.DeepEqual(before, after) || stamp != afterStamp {
 		t.Fatal("contract draft wrote mirror")
 	}
@@ -60,7 +60,7 @@ func TestContractActsWindowsAndHeldEligibility(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.targetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB}}
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB}}
 	for _, phase := range []domain.Phase{domain.PhaseOffseason, domain.PhaseRegularSeason, domain.PhasePlayoffs} {
 		releasePhase(t, a, phase)
 		for _, intent := range []string{"rfa.tender", "fa.resign", "contract.tag", "contract.extend", "contract.restructure"} {
@@ -130,7 +130,7 @@ func TestContractActSubjectAndOneOpenPlanPerAct(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.targetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB, Name: "Example"}}
+	a.core.TargetSnapshot.Players.Value = []snapshot.Player{{ID: id, Position: domain.PosQB, Name: "Example"}}
 	raw := RawContractAct{Mine: "0001", Player: "0042", Action: "preview", Intent: "contract.extend", Level: 1, Years: 1}
 	preview := a.TargetContractActs(raw)
 	if preview.Status != ReadingOK || preview.Value[0].Subject != "Example · QB · $10,000,000 a year through 2028" {

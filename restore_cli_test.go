@@ -27,7 +27,7 @@ func TestRestoreFlagRestoresASetWithTheAppClosed(t *testing.T) {
 	}
 	a := restoreDrillApp(t, dir)
 	executeCommissionerTest(t, a, restoreCLILeague("native.kept"))
-	set, err := a.backups.Capture(t.Context(), [3]*db.Pools{a.pools, a.histPools, a.whatifPools}, "daily", time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
+	set, err := a.core.Backups.Capture(t.Context(), [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, "daily", time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC))
 	if err != nil {
 		t.Fatal(err)
 	}

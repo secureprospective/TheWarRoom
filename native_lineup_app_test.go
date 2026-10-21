@@ -43,9 +43,9 @@ func lineupAppTest(t *testing.T) *lineupApp {
 func (f *lineupApp) wire(t *testing.T) {
 	t.Helper()
 	clock := func() time.Time { return f.at }
-	f.app.clockNow, f.app.localZone = clock, westCoast(t)
-	f.app.history.SetClock(clock)
-	f.app.history.SetLineupEnvironment(appLineupEnv{app: f.app})
+	f.app.core.ClockNow, f.app.core.LocalZone = clock, westCoast(t)
+	f.app.core.History.SetClock(clock)
+	f.app.core.History.SetLineupEnvironment(appLineupEnv{app: f.app})
 }
 
 func (f *lineupApp) version(t *testing.T) int64 {

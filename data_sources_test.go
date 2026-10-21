@@ -57,7 +57,7 @@ func archiveTree(t *testing.T) string {
 func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.dataDir = t.TempDir()
+	a.core.Paths.DataDir = t.TempDir()
 	dir := archiveTree(t)
 	if r := a.SetLeagueArchiveDir(dir); !r.OK {
 		t.Fatal(r.Error)
@@ -72,7 +72,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 		t.Fatalf("second import = %+v, want nothing new", again)
 	}
 	ctx := context.Background()
-	fetches, err := a.history.SourceFetches(ctx, leagueArchiveSource)
+	fetches, err := a.core.History.SourceFetches(ctx, leagueArchiveSource)
 	if err != nil || len(fetches) != 8 {
 		t.Fatalf("archive fetches = %d, %v; want 8 after two runs", len(fetches), err)
 	}
@@ -90,7 +90,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 		held[1].File != "2013/tradeBait.json" || held[1].League != "51719" || held[1].CapturedAt != "2026-10-05T02:00:00Z" {
 		t.Fatalf("held entries = %+v, want the Lab's 2013 aav and trade bait", held)
 	}
-	if _, _, err := m.ResolveWithGaps(ctx, a.history, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
+	if _, _, err := m.ResolveWithGaps(ctx, a.core.History, nil); err == nil || !strings.Contains(err.Error(), "2013/assets.json") {
 		t.Errorf("resolve err = %v, want the missing frozen files named", err)
 	}
 	ds, err := a.TargetDataSources()
@@ -111,7 +111,7 @@ func TestArchiveImportIsIdempotentAndPinsTheLabsInputs(t *testing.T) {
 func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.dataDir = t.TempDir()
+	a.core.Paths.DataDir = t.TempDir()
 	dir := archiveTree(t)
 	if err := os.WriteFile(filepath.Join(dir, "2014/rules.json"), []byte(`{"rules":`), 0o600); err != nil {
 		t.Fatal(err)
@@ -124,10 +124,10 @@ func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 		t.Fatalf("import = %+v, want the malformed file named", r)
 	}
 	ctx := context.Background()
-	if fetches, _ := a.history.SourceFetches(ctx, leagueArchiveSource); len(fetches) != 0 {
+	if fetches, _ := a.core.History.SourceFetches(ctx, leagueArchiveSource); len(fetches) != 0 {
 		t.Errorf("%d fetches recorded from a malformed archive", len(fetches))
 	}
-	health, err := a.history.SourceHealth(ctx)
+	health, err := a.core.History.SourceHealth(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +181,7 @@ func TestRefreshSummariesSayWhatHappened(t *testing.T) {
 func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.dataDir = t.TempDir()
+	a.core.Paths.DataDir = t.TempDir()
 	if r := a.SetLeagueArchiveDir(archiveTree(t)); !r.OK {
 		t.Fatal(r.Error)
 	}
@@ -211,8 +211,8 @@ func TestCheckedFactsNamesOnlyExactApprovedGaps(t *testing.T) {
 func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.params = params.New(a.pools)
-	if err := a.params.Initialize(a.ctx); err != nil {
+	a.core.Params = params.New(a.core.Pools)
+	if err := a.core.Params.Initialize(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	result := a.GetParams()

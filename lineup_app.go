@@ -49,9 +49,9 @@ func (a *App) TargetLineup(franchiseID string) (LineupReading, error) {
 	if err != nil {
 		return LineupReading{}, fmt.Errorf("target lineup: %w", err)
 	}
-	a.targetSnapshotMu.Lock()
-	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
-	a.targetSnapshotMu.Unlock()
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
 	if !loaded {
 		return LineupReading{}, fmt.Errorf("target lineup: no snapshot loaded")
 	}
@@ -61,7 +61,7 @@ func (a *App) TargetLineup(franchiseID string) (LineupReading, error) {
 	if !known {
 		return LineupReading{}, fmt.Errorf("target lineup: unknown franchise %q", franchiseID)
 	}
-	cfg := a.rulebook.ActiveConfig()
+	cfg := a.core.Rulebook.ActiveConfig()
 	rules, rulesErr := lineup.ParseRules(cfg.Starters)
 	r := LineupReading{
 		Franchise: franchiseID, Week: season.Lineups.Value.Week, StarterCount: rules.StarterCount,
@@ -114,7 +114,7 @@ func joinNote(notes ...string) string {
 // rulesFreshness is live from the last successful rules sync; before one, the stored rulebook
 // is the last good copy and says so.
 func (a *App) rulesFreshness() Freshness {
-	checked := a.rulesCheckedAt.Load()
+	checked := a.core.RulesCheckedAt.Load()
 	if checked == 0 {
 		return Freshness{State: FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
 	}
@@ -129,9 +129,9 @@ func (a *App) lineupSelection(
 	if err := a.ready(); err != nil {
 		return snapshot.Snapshot{}, nil, fmt.Errorf("lineup selection: startup: %w", err)
 	}
-	a.targetSnapshotMu.Lock()
-	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
-	a.targetSnapshotMu.Unlock()
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
 	if !loaded {
 		return snapshot.Snapshot{}, nil, fmt.Errorf("lineup selection: no snapshot loaded")
 	}
@@ -154,7 +154,7 @@ func (a *App) TargetCheckLineup(franchiseID string, starters []string) (lineup.R
 	if err != nil {
 		return lineup.Result{}, fmt.Errorf("target check lineup: %w", err)
 	}
-	rules, err := lineup.ParseRules(a.rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.core.Rulebook.ActiveConfig().Starters)
 	if err != nil {
 		return unreadableLineupRules(err), nil
 	}
@@ -164,25 +164,25 @@ func (a *App) TargetCheckLineup(franchiseID string, starters []string) (lineup.R
 func (a *App) lineupRequest(
 	franchiseID string, ids []playerid.PlayerID, now time.Time,
 ) (envelope.LineupRequest, envelope.LineupCheck) {
-	a.seasonMu.Lock()
-	held := a.seasonLineups
-	a.seasonMu.Unlock()
-	a.weekMu.Lock()
-	week := a.week
-	a.weekMu.Unlock()
+	a.core.SeasonMu.Lock()
+	held := a.core.SeasonLineups
+	a.core.SeasonMu.Unlock()
+	a.core.WeekMu.Lock()
+	week := a.core.Week
+	a.core.WeekMu.Unlock()
 	req := envelope.LineupRequest{
-		LeagueID: ingestion.LeagueID, FranchiseID: franchiseID, Week: held.value.Week,
+		LeagueID: ingestion.LeagueID, FranchiseID: franchiseID, Week: held.Value.Week,
 		Starters: ids, Target: envelope.Target{Kind: envelope.Unmapped},
 	}
-	c := envelope.LineupCheck{BaselineKnown: !held.fetchedAt.IsZero() && held.refreshError == ""}
+	c := envelope.LineupCheck{BaselineKnown: !held.FetchedAt.IsZero() && held.RefreshError == ""}
 	if c.BaselineKnown {
-		for _, saved := range held.value.Franchises {
+		for _, saved := range held.Value.Franchises {
 			if saved.Franchise == franchiseID {
 				req.Baseline = saved.Starters
 			}
 		}
 	}
-	rules, err := lineup.ParseRules(a.rulebook.ActiveConfig().Starters)
+	rules, err := lineup.ParseRules(a.core.Rulebook.ActiveConfig().Starters)
 	if err != nil {
 		c.Blocks = append(c.Blocks, unreadableLineupRules(err).Problems[0].Message)
 	}
@@ -206,14 +206,14 @@ func (a *App) lineupRequest(
 		req.Deadline = &last
 	}
 	host := ""
-	if a.mflClient != nil {
-		host = a.mflClient.LeagueHost()
+	if a.core.MFLClient != nil {
+		host = a.core.MFLClient.LeagueHost()
 	}
 	if host == "" {
 		c.Blocks = append(c.Blocks, "MFL host not yet known")
 	} else {
 		req.Target = envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
-			"https://%s/%d/lineup?L=%s&WEEK=%d&F=%s", host, a.season,
+			"https://%s/%d/lineup?L=%s&WEEK=%d&F=%s", host, a.core.Season,
 			url.QueryEscape(req.LeagueID), req.Week, url.QueryEscape(franchiseID))}
 	}
 	return req, c
@@ -230,21 +230,21 @@ func (a *App) TargetDraftLineup(franchiseID string, starters []string) (envelope
 	if _, err := rand.Read(random[:]); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft lineup: correlation ID: %w", err)
 	}
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	now := a.movesNow()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	now := a.core.MovesNow()
 	req, check := a.lineupRequest(franchiseID, ids, now)
 	id := "lineup-" + hex.EncodeToString(random[:])
 	e, err := envelope.DraftLineup(now, req, snap, check, func() string { return id })
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft lineup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	if err := a.supersedeLineups(ctx, e, now); err != nil {
 		return envelope.Receipt{}, err
 	}
-	if err := a.moves.Save(ctx, e); err != nil {
+	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft lineup: save: %w", err)
 	}
 	return e.Receipt(), nil
@@ -256,7 +256,7 @@ func (a *App) supersedeLineups(ctx context.Context, next envelope.Envelope, now 
 
 func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now time.Time) error {
 	spec := next.Receipt().Spec
-	receipts, err := a.moves.List(ctx, spec.LeagueID, spec.FranchiseID)
+	receipts, err := a.core.Moves.List(ctx, spec.LeagueID, spec.FranchiseID)
 	if err != nil {
 		return fmt.Errorf("supersede move: list: %w", err)
 	}
@@ -267,7 +267,7 @@ func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now ti
 		if !contractsapp.Competing(r.Spec, spec) || !slices.Contains(live, r.State) {
 			continue
 		}
-		old, err := a.moves.Get(ctx, r.CorrelationID)
+		old, err := a.core.Moves.Get(ctx, r.CorrelationID)
 		if err != nil {
 			return fmt.Errorf("supersede move: load: %w", err)
 		}
@@ -275,7 +275,7 @@ func (a *App) supersedeMoves(ctx context.Context, next envelope.Envelope, now ti
 		if err != nil {
 			return fmt.Errorf("supersede move: invalidate: %w", err)
 		}
-		if err := a.moves.Save(ctx, stale); err != nil {
+		if err := a.core.Moves.Save(ctx, stale); err != nil {
 			return fmt.Errorf("supersede move: save: %w", err)
 		}
 	}
@@ -290,17 +290,17 @@ func (a *App) TargetRosterReports(mine string) ([]Report, error) {
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
-	a.weekMu.Lock()
-	lastWeek := a.week.Number - 1
-	a.weekMu.Unlock()
+	a.core.WeekMu.Lock()
+	lastWeek := a.core.Week.Number - 1
+	a.core.WeekMu.Unlock()
 	season := scorePeriod(ctx, a, "YTD")
 	week := scorePeriod(ctx, a, strconv.Itoa(lastWeek))
 	byes := archivedOnly(ctx, a, nflschedule.ByeExport, true, nflschedule.ParseByes)
-	rules, err := lineup.ParseRules(a.rulebook.ActiveConfig().Starters)
-	stats, bye := contractsapp.RosterReports(snap, mine, contractsapp.Scores{Feed: season.state(), Rows: season.value},
-		contractsapp.Scores{Feed: week.state(), Rows: week.value}, contractsapp.Byes{Feed: byes.state(), Rows: byes.value}, rules, time.Local)
+	rules, err := lineup.ParseRules(a.core.Rulebook.ActiveConfig().Starters)
+	stats, bye := contractsapp.RosterReports(snap, mine, contractsapp.Scores{Feed: season.FeedState(), Rows: season.Value},
+		contractsapp.Scores{Feed: week.FeedState(), Rows: week.Value}, contractsapp.Byes{Feed: byes.FeedState(), Rows: byes.Value}, rules, time.Local)
 	if err != nil {
 		bye.Note += " Starter bounds unavailable: " + err.Error()
 	}

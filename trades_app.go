@@ -52,12 +52,12 @@ func (a *App) tradeState(franchiseID string) (
 		return snapshot.Snapshot{}, snapshot.Sourced[[]leaguefeed.PendingTrade]{},
 			fmt.Errorf("trade state: %w", err)
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	held := a.seasonPendingTrades
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	held := a.core.SeasonPendingTrades
 	return snap, snapshot.Sourced[[]leaguefeed.PendingTrade]{
-		Value:      append([]leaguefeed.PendingTrade{}, held.value...),
-		Provenance: held.provenance("pendingTrades", "pending trades"),
+		Value:      append([]leaguefeed.PendingTrade{}, held.Value...),
+		Provenance: held.Provenance("pendingTrades", "pending trades"),
 	}, nil
 }
 
@@ -73,9 +73,9 @@ func (a *App) tradeRequest(franchiseID string, offer leaguefeed.PendingTrade) en
 	if !offer.Expires.IsZero() {
 		req.Deadline = &offer.Expires
 	}
-	if a.mflClient != nil && a.mflClient.LeagueHost() != "" {
+	if a.core.MFLClient != nil && a.core.MFLClient.LeagueHost() != "" {
 		req.Target = envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
-			"https://%s/%d/options?L=%s&O=05", a.mflClient.LeagueHost(), a.season,
+			"https://%s/%d/options?L=%s&O=05", a.core.MFLClient.LeagueHost(), a.core.Season,
 			url.QueryEscape(req.LeagueID))}
 	}
 	return req
@@ -101,9 +101,9 @@ func (a *App) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Rece
 	if _, err := rand.Read(random[:]); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: correlation ID: %w", err)
 	}
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	now := a.movesNow()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	now := a.core.MovesNow()
 	req := a.tradeRequest(franchiseID, offer)
 	check := envelope.TradeCheck{PendingTrades: held, OfferingName: tradeFranchiseName(snap, offer.Offering)}
 	if req.Target.Kind == envelope.Unmapped {
@@ -114,12 +114,12 @@ func (a *App) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Rece
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	if err := a.supersedeMoves(ctx, e, now); err != nil {
 		return envelope.Receipt{}, err
 	}
-	if err := a.moves.Save(ctx, e); err != nil {
+	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: save: %w", err)
 	}
 	return e.Receipt(), nil

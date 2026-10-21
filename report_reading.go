@@ -56,7 +56,7 @@ type ReportBoard struct {
 
 // reportShell is report.Shell for a held season feed, as its wire type.
 func reportShell[T any](id, title, how string, feed heldSeasonFeed[[]T], zone *time.Location, columns ...string) Report {
-	return wireReport(report.Shell(id, title, how, feed.state(), len(feed.value), zone, columns...))
+	return wireReport(report.Shell(id, title, how, feed.FeedState(), len(feed.Value), zone, columns...))
 }
 
 func reportTime(at time.Time, zone *time.Location) string { return report.Time(at, zone) }
@@ -136,5 +136,5 @@ func wireSlice[S, T any](in []S, out []T) []T {
 
 // reportHeld copies a held season feed into the shape feature services read.
 func reportHeld[T any](feed heldSeasonFeed[[]T]) report.Held[T] {
-	return report.Held[T]{Value: feed.value, Feed: feed.state()}
+	return report.Held[T]{Value: feed.Value, Feed: feed.FeedState()}
 }

@@ -18,10 +18,10 @@ const fallbackTimeout = 10 * time.Second
 // one. A fetch usually fails by timing out, which kills the per-call context, and a fallback
 // derived from it would fail too.
 func (a *App) fallbackParent() context.Context {
-	if a.ctx == nil {
+	if a.core.Ctx == nil {
 		return context.Background()
 	}
-	return a.ctx
+	return a.core.Ctx
 }
 
 // archivedFeed is an MFL export served live, or from its newest good body in the fetch archive
@@ -96,23 +96,23 @@ func sameExport(raw, export string, season int, leagueless bool) bool {
 }
 
 func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {
-	return liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[leaguestandings.RawStanding]{
+	return liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguestandings.RawStanding]{
 		export: leaguestandings.Export,
 		fetch: func(ctx context.Context) ([]leaguestandings.RawStanding, error) {
-			return leaguestandings.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+			return leaguestandings.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 		},
 		parse:  leaguestandings.Parse,
-		bodies: a.history.ArchivedBodies,
-	}, a.fallbackLog)
+		bodies: a.core.History.ArchivedBodies,
+	}, a.core.FallbackLog)
 }
 
 func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.RawScheduleWeek, Freshness, error) {
-	return liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[leagueschedule.RawScheduleWeek]{
+	return liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leagueschedule.RawScheduleWeek]{
 		export: leagueschedule.Export,
 		fetch: func(ctx context.Context) ([]leagueschedule.RawScheduleWeek, error) {
-			return leagueschedule.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+			return leagueschedule.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 		},
 		parse:  leagueschedule.Parse,
-		bodies: a.history.ArchivedBodies,
-	}, a.fallbackLog)
+		bodies: a.core.History.ArchivedBodies,
+	}, a.core.FallbackLog)
 }

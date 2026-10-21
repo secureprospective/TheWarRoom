@@ -48,7 +48,7 @@ func contractsWireApp(t *testing.T, phase domain.Phase) *App {
 	// Each reading of the plan clock is a second later, so plans list in the order they were made.
 	var ticks atomic.Int64
 	start := time.Date(2026, 10, 7, 15, 0, 0, 0, time.UTC)
-	a.movesNow = func() time.Time { return start.Add(time.Duration(ticks.Add(1)) * time.Second) }
+	a.core.MovesNow = func() time.Time { return start.Add(time.Duration(ticks.Add(1)) * time.Second) }
 	players := []snapshot.Player{}
 	for i, id := range []string{"0042", "0043", "0044", "0045", "0046"} {
 		pid, err := playerid.New(id)
@@ -57,7 +57,7 @@ func contractsWireApp(t *testing.T, phase domain.Phase) *App {
 		}
 		players = append(players, snapshot.Player{ID: pid, Position: []domain.Position{domain.PosQB, domain.PosWR, domain.PosRB, domain.PosTE, domain.PosLB}[i], Name: "Player " + id})
 	}
-	a.targetSnapshot.Players.Value = players
+	a.core.TargetSnapshot.Players.Value = players
 	releasePhase(t, a, phase)
 	return a
 }
@@ -119,7 +119,7 @@ func TestLineupAndRosterWireMatchesGolden(t *testing.T) {
 	acquisition.Value.Incoming, acquisition.Value.Cuts = acquisition.Value.Incoming[:12], acquisition.Value.Cuts[:12]
 	got = map[string]any{"acquisition": acquisition}
 	reports, _, _ := tradeDraftApp(t)
-	id := reports.targetSnapshot.Players.Value[0].ID.String()
+	id := reports.core.TargetSnapshot.Players.Value[0].ID.String()
 	holdPersonalBody(t, reports, "playerScores", `{"playerScores":{"week":"YTD","playerScore":{"id":"`+id+`","score":"134.80"}}}`)
 	holdPersonalBody(t, reports, "playerScores", `{"playerScores":{"week":"4","playerScore":{"id":"`+id+`","score":"0.00"}}}`)
 	holdPersonalBody(t, reports, "nflByeWeeks", `{"nflByeWeeks":{"team":{"id":"BUF","bye_week":"7"}}}`)
@@ -280,10 +280,10 @@ func TestContractsDenialsMatchGolden(t *testing.T) {
 	got["lineup-draft-unknown-franchise"] = errText(err)
 	_, err = lineups.TargetRosterReports("0002")
 	got["roster-reports-unknown-franchise"] = errText(err)
-	last := leagueweek.LastLock(lineups.week)
-	lineups.movesNow = func() time.Time { return last }
+	last := leagueweek.LastLock(lineups.core.Week)
+	lineups.core.MovesNow = func() time.Time { return last }
 	got["lineup-draft-locked"] = blockedWords(lineups.TargetDraftLineup("0025", changedStarters(ids)))
-	lineups.week.Games = nil
+	lineups.core.Week.Games = nil
 	got["lineup-draft-lock-unknown"] = blockedWords(lineups.TargetDraftLineup("0025", changedStarters(ids)))
 
 	checkGolden(t, "contracts", "denials", contractsWire(t, got))

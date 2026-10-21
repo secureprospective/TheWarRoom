@@ -33,7 +33,7 @@ type RefreshResult struct {
 type discoverSource struct{ app *App }
 
 func (s discoverSource) Fetch(ctx context.Context) (league.RawConfig, error) {
-	cfg, err := league.Discover(ctx, s.app.mflClient, ingestion.LeagueID, s.app.seasonGuess())
+	cfg, err := league.Discover(ctx, s.app.core.MFLClient, ingestion.LeagueID, s.app.seasonGuess())
 	if err != nil {
 		return league.RawConfig{}, fmt.Errorf("app: %w", err)
 	}
@@ -42,8 +42,8 @@ func (s discoverSource) Fetch(ctx context.Context) (league.RawConfig, error) {
 
 // seasonGuess is where season discovery starts: the season held, else the calendar year.
 func (a *App) seasonGuess() int {
-	if a.season != 0 {
-		return a.season
+	if a.core.Season != 0 {
+		return a.core.Season
 	}
 	return time.Now().Year()
 }
@@ -53,9 +53,9 @@ func (a *App) seasonGuess() int {
 func (a *App) refreshLeague(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
 ) (RefreshResult, error) {
-	a.refreshMu.Lock()
+	a.core.RefreshMu.Lock()
 	defer a.sourceHealthChanged(ctx)
-	defer a.refreshMu.Unlock()
+	defer a.core.RefreshMu.Unlock()
 	res, err := a.refreshLeagueLocked(ctx, rb, mirror)
 	if err != nil {
 		return res, err
@@ -70,7 +70,7 @@ func (a *App) refreshLeague(
 func (a *App) refreshLeagueLocked(
 	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
 ) (RefreshResult, error) {
-	cfg, err := league.Discover(ctx, a.mflClient, ingestion.LeagueID, a.seasonGuess())
+	cfg, err := league.Discover(ctx, a.core.MFLClient, ingestion.LeagueID, a.seasonGuess())
 	if err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
@@ -87,14 +87,14 @@ func (a *App) refreshLeagueLocked(
 		rulesWrite.Release()
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
-	if err := a.pools.CommitPrepared(ctx, rulesWrite, mirrorWrite); err != nil {
+	if err := a.core.Pools.CommitPrepared(ctx, rulesWrite, mirrorWrite); err != nil {
 		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
 	}
-	a.rulesCheckedAt.Store(time.Now().Unix())
+	a.core.RulesCheckedAt.Store(time.Now().Unix())
 	if changed || rulesChanged {
-		a.modelDirty.Store(true)
+		a.core.ModelDirty.Store(true)
 	}
-	a.rostersCheckedAt = time.Now().UTC()
+	a.core.RostersCheckedAt = time.Now().UTC()
 	return RefreshResult{Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
 		Players: len(snap.Players)}, nil
 }
@@ -103,7 +103,7 @@ func (a *App) refreshLeagueLocked(
 // players directory, so MFL's once-a-day players limit never blocks a refresh.
 func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot, error) {
 	year := strconv.Itoa(season)
-	raws, err := rosters.Fetch(ctx, a.mflClient, year, ingestion.LeagueID)
+	raws, err := rosters.Fetch(ctx, a.core.MFLClient, year, ingestion.LeagueID)
 	if err != nil {
 		return state.MirrorSnapshot{}, fmt.Errorf("refresh: rosters: %w", err)
 	}
@@ -119,7 +119,7 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 			ContractInfo: p.ContractInfo,
 		})
 	}
-	adjs, err := salaryadjustments.Fetch(ctx, a.mflClient, year, ingestion.LeagueID)
+	adjs, err := salaryadjustments.Fetch(ctx, a.core.MFLClient, year, ingestion.LeagueID)
 	if err != nil {
 		return state.MirrorSnapshot{}, fmt.Errorf("refresh: salary adjustments: %w", err)
 	}
@@ -139,14 +139,14 @@ func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot
 // message loop, and skips the refresh when startup failed or already refreshed. The result goes
 // to the log.
 func (a *App) refreshInBackground(parent context.Context) {
-	a.weekStart.Do(func() {
-		a.workerMu.Lock()
-		if a.stopping {
-			a.workerMu.Unlock()
+	a.core.WeekStart.Do(func() {
+		a.core.WorkerMu.Lock()
+		if a.core.Stopping {
+			a.core.WorkerMu.Unlock()
 			return
 		}
-		parent, a.weekCancel = context.WithCancel(parent)
-		a.workerMu.Unlock()
+		parent, a.core.WeekCancel = context.WithCancel(parent)
+		a.core.WorkerMu.Unlock()
 		a.startWorker(func() {
 			if a.ready() == nil {
 				a.nativeWaiverClock(parent)
@@ -161,7 +161,7 @@ func (a *App) refreshInBackground(parent context.Context) {
 			if a.ready() != nil {
 				return
 			}
-			if a.launchRefreshDue {
+			if a.core.LaunchRefreshDue {
 				a.launchRefresh(parent)
 			}
 			a.refreshWeeksInBackground(parent)
@@ -172,13 +172,13 @@ func (a *App) refreshInBackground(parent context.Context) {
 func (a *App) launchRefresh(parent context.Context) {
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
-	res, err := a.refreshLeague(ctx, a.rulebook, a.league)
+	res, err := a.refreshLeague(ctx, a.core.Rulebook, a.core.League)
 	if err != nil {
 		log.Printf("the war room: launch refresh failed (the league held is kept): %v", err)
 		return
 	}
 	if res.Changed || res.RulesChanged {
-		a.modelDirty.Store(true)
+		a.core.ModelDirty.Store(true)
 	}
 	log.Printf("the war room: launch refresh: season %d, %d players, league changed %t, rules changed %t",
 		res.Season, res.Players, res.Changed, res.RulesChanged)

@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -83,21 +84,21 @@ func legalityMirrorEnding(t *testing.T, a *App, ends map[string]int) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = p.Close() })
-	a.rulebook = rulebook.New(p)
+	a.core.Rulebook = rulebook.New(p)
 	cfg := league.RawConfig{CurrentSeason: 2026}
 	for i := 32; i >= 1; i-- {
 		cfg.Franchises = append(cfg.Franchises, league.Franchise{ID: fmt.Sprintf("%04d", i),
 			Name: fmt.Sprintf("Held team %d", i), Abbrev: fmt.Sprintf("H%d", i), Division: "division.1"})
 	}
-	if err := a.rulebook.Initialize(t.Context(), lineupRulesSource{cfg: cfg}); err != nil {
+	if err := a.core.Rulebook.Initialize(t.Context(), lineupRulesSource{cfg: cfg}); err != nil {
 		t.Fatal(err)
 	}
-	a.league = state.NewMirror(p, a.rulebook)
-	if err := a.league.Initialize(t.Context()); err != nil {
+	a.core.League = state.NewMirror(p, a.core.Rulebook)
+	if err := a.core.League.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	a.season = 2026
-	snap := state.MirrorSnapshot{Season: a.season}
+	a.core.Season = 2026
+	snap := state.MirrorSnapshot{Season: a.core.Season}
 	add := func(id, franchise string, status domain.RosterStatus) {
 		year := 2028
 		if end, ok := ends[id]; ok {
@@ -117,7 +118,7 @@ func legalityMirrorEnding(t *testing.T, a *App, ends map[string]int) {
 	for _, id := range []string{"3001", "3002", "3003"} {
 		add(id, "0002", domain.RosterTaxi)
 	}
-	if _, err := a.league.Replace(t.Context(), snap); err != nil {
+	if _, err := a.core.League.Replace(t.Context(), snap); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -133,21 +134,21 @@ func legalityAppWith(t *testing.T, ends map[string]int, named []snapshot.Player)
 	a := commissionerTestApp(t)
 	path := filepath.Join(t.TempDir(), "legality.db")
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
+	a.core.History = store
 	legalityMirrorEnding(t, a, ends)
-	a.targetSnapshotMu.Lock()
-	a.targetSnapshot.Players.Value = named
-	a.targetSnapshotMu.Unlock()
-	a.lookup, a.hasLookup = legalityLookup(t), true
+	a.core.TargetSnapshotMu.Lock()
+	a.core.TargetSnapshot.Players.Value = named
+	a.core.TargetSnapshotMu.Unlock()
+	a.core.Lookup, a.core.HasLookup = legalityLookup(t), true
 	at := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
 	out, err := playerid.New("2001")
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{fetchedAt: at,
-		value: []leaguefeed.Injury{{ID: out, Status: "Out"}}}
-	a.seasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{fetchedAt: at, value: []draftreports.Pick{}}
-	a.seasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: at, value: []draftreports.FuturePick{}}
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{FetchedAt: at,
+		Value: []leaguefeed.Injury{{ID: out, Status: "Out"}}}
+	a.core.SeasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{FetchedAt: at, Value: []draftreports.Pick{}}
+	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{FetchedAt: at, Value: []draftreports.FuturePick{}}
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	seedNativeTest(t, a, input)
 	return &legalityFixture{app: a, path: path, pools: pools}
@@ -162,10 +163,10 @@ func (f *legalityFixture) reopen(t *testing.T) {
 	}
 	store, pools := openDirectoryHistory(t, f.path)
 	f.pools = pools
-	restarted := &App{ctx: t.Context(), history: store, started: make(chan struct{}),
-		commissionerSession: testCommissionerSession{"creator"}}
-	close(restarted.started)
-	restarted.lookup, restarted.hasLookup, restarted.seasonInjuries = old.lookup, old.hasLookup, old.seasonInjuries
+	restarted := &App{core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+		CommissionerSession: testCommissionerSession{"creator"}}}
+	close(restarted.core.Started)
+	restarted.core.Lookup, restarted.core.HasLookup, restarted.core.SeasonInjuries = old.core.Lookup, old.core.HasLookup, old.core.SeasonInjuries
 	f.app = restarted
 }
 
@@ -446,7 +447,7 @@ func TestNativeRosterWaitsForRolloverAndRulesShareSeedAlignment(t *testing.T) {
 	if got := f.roster(t, "franchise.02").Words; got != "Active roster 82 of 80: 2 over" {
 		t.Fatalf("waiting rule counted early after replay: %q", got)
 	}
-	f.app.history.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
+	f.app.core.History.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
 	if got := f.roster(t, "franchise.02").Words; got != "Within 18 to 90" {
 		t.Fatalf("rollover did not activate rule: %q", got)
 	}

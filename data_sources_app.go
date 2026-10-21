@@ -59,15 +59,15 @@ func (a *App) TargetDataRefresh(scope string) DataActResult {
 func (a *App) refreshScope(scope string) (string, error) {
 	switch scope {
 	case "league":
-		ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+		ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 		defer cancel()
-		r, err := a.refreshLeague(ctx, a.rulebook, a.league)
+		r, err := a.refreshLeague(ctx, a.core.Rulebook, a.core.League)
 		if err != nil {
 			return "", fmt.Errorf("league refresh failed: %w", err)
 		}
 		return leagueRefreshSummary(r), nil
 	case "signals":
-		ctx, cancel := context.WithTimeout(a.ctx, signalsTimeout)
+		ctx, cancel := context.WithTimeout(a.core.Ctx, signalsTimeout)
 		defer cancel()
 		r := a.loadSignals(ctx)
 		if r.Error != "" {
@@ -88,7 +88,7 @@ func (a *App) refreshScope(scope string) (string, error) {
 			thousands(r.Total.RosteredMatched), thousands(r.Total.Rostered), thousands(r.Total.FreeAgentsMatched),
 			thousands(r.Total.FreeAgents)), nil
 	case "archive":
-		ctx, cancel := context.WithTimeout(a.ctx, archiveImportTimeout)
+		ctx, cancel := context.WithTimeout(a.core.Ctx, archiveImportTimeout)
 		defer cancel()
 		return a.importLeagueArchive(ctx)
 	}
@@ -111,7 +111,7 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	if err := a.ready(); err != nil {
 		return DataSources{}, fmt.Errorf("data and sources: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m1Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m1Timeout)
 	defer cancel()
 	settings, err := a.readSettings()
 	if err != nil {
@@ -124,14 +124,14 @@ func (a *App) TargetDataSources() (DataSources, error) {
 	return DataSources{DatabaseChecks: a.databaseChecksReport(), Health: wireReport(view.Health), Signals: wireReport(view.Signals), Facts: wireReport(view.Facts), Checks: wireReport(view.Checks), ArchiveDir: settings.LeagueArchiveDir, PhotosOn: !settings.PhotosOff, Scopes: wireScopes(view.Scopes), Words: view.Words}, nil
 }
 func (a *App) lastSignals() sourcesapp.SignalsReport {
-	a.signalsMu.Lock()
-	defer a.signalsMu.Unlock()
+	a.core.SignalsMu.Lock()
+	defer a.core.SignalsMu.Unlock()
 	return serviceSignals(a.signals)
 }
 func (a *App) photoHealth() *sourcesapp.PhotoHealth {
-	if photos := a.headshots.Load(); photos != nil {
+	if photos := a.core.Headshots.Load(); photos != nil {
 		st, held, size := photos.Stats()
-		return &sourcesapp.PhotoHealth{Off: a.photosOff.Load(), Held: held, Bytes: size, Fetched: st.Fetched, Missing: st.Missing, LastFail: st.LastFailure, LastError: st.LastError}
+		return &sourcesapp.PhotoHealth{Off: a.core.PhotosOff.Load(), Held: held, Bytes: size, Fetched: st.Fetched, Missing: st.Missing, LastFail: st.LastFailure, LastError: st.LastError}
 	}
 	return nil
 }
@@ -159,7 +159,7 @@ type sourcesHealthInput struct {
 }
 
 func (a *App) sourcesService() sourcesapp.Service {
-	return sourcesapp.Service{Health: a.history, Facts: a.history, Archive: a.history, Crosswalk: a.history, Signals: a.history, Season: a.season, CollegeKey: strings.TrimSpace(os.Getenv(cfbdEnvVar)), Transport: a.fetches, LabData: a.labData}
+	return sourcesapp.Service{Health: a.core.History, Facts: a.core.History, Archive: a.core.History, Crosswalk: a.core.History, Signals: a.core.History, Season: a.core.Season, CollegeKey: strings.TrimSpace(os.Getenv(cfbdEnvVar)), Transport: a.core.Fetches, LabData: a.core.LabData}
 }
 func wireScopes(in []sourcesapp.DataScope) []DataScope {
 	if in == nil {

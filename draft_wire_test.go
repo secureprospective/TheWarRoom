@@ -34,13 +34,13 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 	checkDraftWire(t, "reports-held", testDraftBoard(t))
 	checkDraftWire(t, "reports-stale", draftFixtureBoard(drafttest.Stale(t)))
 	checkDraftWire(t, "reports-empty", buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{},
-		heldSeasonFeed[[]draftreports.FuturePick]{refreshError: "down"}, nil, nil, nil, "", "", time.UTC))
+		heldSeasonFeed[[]draftreports.FuturePick]{RefreshError: "down"}, nil, nil, nil, "", "", time.UTC))
 	nfl, err := a.TargetNFLDraft()
 	if err != nil {
 		t.Fatal(err)
 	}
 	checkDraftWire(t, "nfl-unheld", nfl)
-	checkDraftWire(t, "nfl-held", nflDraftReport(2026, heldSeasonFeed[[]players.RawPlayer]{value: []players.RawPlayer{
+	checkDraftWire(t, "nfl-held", nflDraftReport(2026, heldSeasonFeed[[]players.RawPlayer]{Value: []players.RawPlayer{
 		{ID: "17463", Name: "Simpson, Ty", Position: "QB", Team: "LAR", DraftYear: "2026", DraftRound: "1", DraftPick: "13"},
 		{ID: "17462", Name: "Mendoza, Fernando", Position: "QB", Team: "LVR", DraftYear: "2026", DraftRound: "1", DraftPick: "1"},
 		{ID: "0816", Name: "Old rookie", Position: "WR", Team: "IND", DraftYear: "2025", DraftRound: "1", DraftPick: "2"},
@@ -64,10 +64,10 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 // draftFixtureBoard is the draft reports board of a drafttest fixture, through the root converter.
 func draftFixtureBoard(d drafttest.Draft) ReportBoard {
 	held := func(f report.Feed) (time.Time, string, bool) { return f.FetchedAt, f.RefreshError, f.ReadPending }
-	results := heldSeasonFeed[[]draftreports.Pick]{value: d.Picks}
-	results.fetchedAt, results.refreshError, results.readPending = held(d.Read)
-	future := heldSeasonFeed[[]draftreports.FuturePick]{value: d.Future}
-	future.fetchedAt, future.refreshError, future.readPending = held(d.FutureRead)
+	results := heldSeasonFeed[[]draftreports.Pick]{Value: d.Picks}
+	results.FetchedAt, results.RefreshError, results.ReadPending = held(d.Read)
+	future := heldSeasonFeed[[]draftreports.FuturePick]{Value: d.Future}
+	future.FetchedAt, future.RefreshError, future.ReadPending = held(d.FutureRead)
 	return buildDraftReports(2026, results, future, d.Names, d.Franchises, d.Values, d.ValueNote, d.Next, time.UTC)
 }
 
@@ -124,13 +124,13 @@ func checkGolden(t *testing.T, feature, name string, v any) {
 func TestDraftRefreshKeepsEachLastGoodCopy(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	a.refreshDraftReports(a.ctx)
-	if len(a.seasonDraftResults.value) != 160 || len(a.seasonFuturePicks.value) != 320 {
+	a.refreshDraftReports(a.core.Ctx)
+	if len(a.core.SeasonDraftResults.Value) != 160 || len(a.core.SeasonFuturePicks.Value) != 320 {
 		t.Fatal("feeds not filled")
 	}
 	transport.failure = "draftResults"
-	a.refreshDraftReports(a.ctx)
-	if len(a.seasonDraftResults.value) != 160 || a.seasonDraftResults.refreshError == "" || a.seasonFuturePicks.refreshError != "" {
+	a.refreshDraftReports(a.core.Ctx)
+	if len(a.core.SeasonDraftResults.Value) != 160 || a.core.SeasonDraftResults.RefreshError == "" || a.core.SeasonFuturePicks.RefreshError != "" {
 		t.Fatal("last good copy not retained independently")
 	}
 }
@@ -180,7 +180,7 @@ func TestDraftHeldReadingRefreshCacheAndMFLLink(t *testing.T) {
 		t.Fatal("fresh copy refetched", err)
 	}
 	opened := ""
-	a.openURL = func(_ context.Context, url string) { opened = url }
+	a.core.OpenURL = func(_ context.Context, url string) { opened = url }
 	if err := a.TargetOpenMFLDraftRoom(); err != nil || opened != board.MFLURL || len(transport.requests) != 2 {
 		t.Fatal("link submitted or fetched", opened, err)
 	}
@@ -195,7 +195,7 @@ func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
 	at := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	recordSeasonArchive(t, a, "draftResults", "", transport.bodies["draftResults"], at)
 	transport.failure = "draftResults"
-	a.refreshDraftReports(a.ctx)
+	a.refreshDraftReports(a.core.Ctx)
 	board, err := a.TargetDraftReports()
 	if err != nil {
 		t.Fatal(err)

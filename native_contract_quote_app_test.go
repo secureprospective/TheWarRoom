@@ -28,7 +28,7 @@ func quoteApp(t *testing.T) *legalityFixture {
 	a := nativeSeedTestApp(t)
 	path := filepath.Join(t.TempDir(), "quote.db")
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
+	a.core.History = store
 	snap := state.MirrorSnapshot{Season: 2026}
 	for _, p := range []struct {
 		id, franchise string
@@ -41,7 +41,7 @@ func quoteApp(t *testing.T) *legalityFixture {
 		snap.Players = append(snap.Players, state.MirrorPlayer{MFLID: p.id, FranchiseID: p.franchise,
 			RosterStatus: domain.RosterActive, Salary: p.salary, ContractYear: p.year, ContractStatus: p.status})
 	}
-	if _, err := a.league.Replace(t.Context(), snap); err != nil {
+	if _, err := a.core.League.Replace(t.Context(), snap); err != nil {
 		t.Fatal(err)
 	}
 	var raws []players.RawPlayer
@@ -53,7 +53,7 @@ func quoteApp(t *testing.T) *legalityFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.lookup, a.hasLookup = lookup, true
+	a.core.Lookup, a.core.HasLookup = lookup, true
 	seedNativeTest(t, a, createNativeSeedLeague(t, a, commissioner.PresetLegacy))
 	f := &legalityFixture{app: a, path: path, pools: pools}
 	f.set(t, "calendar.boundary", `"start_of_day"`, "now")
@@ -80,7 +80,7 @@ func (f *legalityFixture) openWindow(t *testing.T, id string, opens []leaguerule
 // quote reads the actual quote at the fixed clock, for player and action, asking whatever ask sets.
 func (f *legalityFixture) quote(t *testing.T, player, action string, ask func(*commissioner.RawContractQuote)) commissioner.ContractQuote {
 	t.Helper()
-	f.app.clockNow = quoteClock
+	f.app.core.ClockNow = quoteClock
 	raw := commissioner.RawContractQuote{League: legalityLeague, Player: player, Action: action, ViewerZone: "UTC"}
 	if ask != nil {
 		ask(&raw)
@@ -311,7 +311,7 @@ func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
 	if !open.Allowed || deadCents(open) != "750000000" {
 		t.Fatalf("buyout inside its window: %+v", open)
 	}
-	f.app.clockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
+	f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
 	shut, err := f.app.TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
 		Player: "0099", Action: "buyout", ViewerZone: "UTC"})
 	if err != nil {
@@ -332,8 +332,8 @@ func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
 func TestNativeOwnerStartFollowsTheSameSwitch(t *testing.T) {
 	t.Parallel()
 	f := quoteApp(t)
-	f.app.clockNow = quoteClock
-	f.app.localZone = time.UTC
+	f.app.core.ClockNow = quoteClock
+	f.app.core.LocalZone = time.UTC
 	registry := nativeOwnerActions()
 	start := func() error {
 		_, err := f.app.runNativeAction(registry, legalityLeague, "franchise.02", "contract.buyout", nil)
@@ -418,7 +418,7 @@ func TestNativeContractQuoteWire(t *testing.T) {
 		"resign":       f.quote(t, "0097", "resign", func(r *commissioner.RawContractQuote) { r.Level, r.Years = 1, 3 }),
 		"extensionOff": f.quote(t, "0099", "extension", nil),
 		"cutAtGate": func() commissioner.ContractQuote {
-			f.app.clockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
+			f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
 			q, err := f.app.TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
 				Player: "0099", Action: "cut", ViewerZone: "America/Los_Angeles"})
 			if err != nil {

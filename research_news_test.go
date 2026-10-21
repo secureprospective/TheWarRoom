@@ -64,7 +64,7 @@ func TestResearchNewsBatchDailyArchiveAndExactMembership(t *testing.T) {
 		return accept("/2026/export?TYPE=playerProfile&P=13116,15761", body, at), nil
 	}
 	got, err := archivedNews(context.Background(), archive, 2026, []string{"13116", "15761", "3116"}, always)
-	if err != nil || len(got) != 2 || len(got["15761"].value) != 1 || !got["13116"].fetchedAt.Equal(at) {
+	if err != nil || len(got) != 2 || len(got["15761"].Value) != 1 || !got["13116"].FetchedAt.Equal(at) {
 		t.Fatal(got, err)
 	}
 	if _, ok := got["3116"]; ok {
@@ -112,7 +112,7 @@ func TestResearchNewsDailyCacheIsOneArchivePass(t *testing.T) {
 	}
 	err := readResearchNewsBatches(context.Background(), held, 2026, ids, now, archive,
 		func(context.Context, time.Duration) error { return nil }, fetch, func(string) {})
-	if err != nil || scans != 1 || read != 2 || asked != len(ids)-2 || len(held["15761"].value) != 1 {
+	if err != nil || scans != 1 || read != 2 || asked != len(ids)-2 || len(held["15761"].Value) != 1 {
 		t.Fatal(err, scans, read, asked)
 	}
 }
@@ -124,12 +124,12 @@ func TestResearchNewsMissingPlayerIsHeldNoNews(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	held := map[string]heldSeasonFeed[[]researchfeeds.News]{"16162": {value: []researchfeeds.News{{Headline: "held article"}}, fetchedAt: at.AddDate(0, 0, -1)}}
+	held := map[string]heldSeasonFeed[[]researchfeeds.News]{"16162": {Value: []researchfeeds.News{{Headline: "held article"}}, FetchedAt: at.AddDate(0, 0, -1)}}
 	lines := []string{}
 	fetch := func(context.Context, []string) (map[string][]researchfeeds.News, error) { return parsed, nil }
 	err = readResearchNewsBatches(context.Background(), held, 2026, []string{"13116", "15761", "16162"}, at, noNewsArchive,
 		func(context.Context, time.Duration) error { return nil }, fetch, func(s string) { lines = append(lines, s) })
-	if err != nil || len(held["15761"].value) != 1 || held["13116"].fetchedAt.IsZero() || len(held["16162"].value) != 0 || held["16162"].refreshError != "" || !held["16162"].fetchedAt.Equal(at) || len(lines) != 1 || !strings.Contains(lines[0], "16162") {
+	if err != nil || len(held["15761"].Value) != 1 || held["13116"].FetchedAt.IsZero() || len(held["16162"].Value) != 0 || held["16162"].RefreshError != "" || !held["16162"].FetchedAt.Equal(at) || len(lines) != 1 || !strings.Contains(lines[0], "16162") {
 		t.Fatal(held, lines, err)
 	}
 	asked := false
@@ -157,7 +157,7 @@ func TestResearchNewsBatchArchiveFallbackPreservesProvenance(t *testing.T) {
 	}
 	err := readResearchNewsBatches(context.Background(), held, 2026, []string{"15761"}, time.Now(), archive,
 		func(context.Context, time.Duration) error { return nil }, fetch, func(string) {})
-	if err != nil || len(held["15761"].value) != 1 || !held["15761"].fetchedAt.Equal(at) || held["15761"].refreshError == "" {
+	if err != nil || len(held["15761"].Value) != 1 || !held["15761"].FetchedAt.Equal(at) || held["15761"].RefreshError == "" {
 		t.Fatal(held, err)
 	}
 }
@@ -232,7 +232,7 @@ func TestOmittedProfilesLogOnceAndSurviveArchive(t *testing.T) {
 		return accept("/2026/export?TYPE=playerProfile&P=13116,15761,16162", researchSample(t, "playerProfile-batch2.json"), now), nil
 	}
 	cached, err := archivedNews(context.Background(), bodies, 2026, []string{"16162"}, func(time.Time) bool { return true })
-	if err != nil || !cached["16162"].fetchedAt.Equal(now) || len(cached["16162"].value) != 0 {
+	if err != nil || !cached["16162"].FetchedAt.Equal(now) || len(cached["16162"].Value) != 0 {
 		t.Fatal(cached, err)
 	}
 }
@@ -245,12 +245,12 @@ func blockedResearchNews(t *testing.T) (*App, blockingNewsTransport, <-chan erro
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.mflClient = client
-	a.seasonPause = func(context.Context, time.Duration) error { return nil }
-	a.fallbackLog = func(string) {}
+	a.core.MFLClient = client
+	a.core.SeasonPause = func(context.Context, time.Duration) error { return nil }
+	a.core.FallbackLog = func(string) {}
 	at := time.Now()
-	a.race.weeks.fetchedAt, a.race.brackets.fetchedAt, a.race.standings.fetchedAt = at, at, at
-	a.week.Number = 0
+	a.race.weeks.FetchedAt, a.race.brackets.FetchedAt, a.race.standings.FetchedAt = at, at, at
+	a.core.Week.Number = 0
 	done := make(chan error, 1)
 	go func() { done <- a.TargetResearchNewsRefresh("") }()
 	select {

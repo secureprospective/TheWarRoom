@@ -14,12 +14,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
 
 func TestSourcesBindingGolden(t *testing.T) {
 	a := targetTestApp(t)
-	a.dataDir = t.TempDir()
+	a.core.Paths.DataDir = t.TempDir()
 	a.crosswalk = CrosswalkReport{OK: true, LoadedAt: "2026-10-11T18:00:00Z", Links: 1000, Promoted: 12,
 		Rates: []CrosswalkRate{{Position: "QB", Rostered: 4, RosteredMatched: 3}}, Total: CrosswalkRate{Position: "ALL", Rostered: 4, RosteredMatched: 3},
 		Unmatched: []CrosswalkMiss{{MFLID: "0042", Name: "Waiting", Position: "QB", Reason: "no NFL id yet"}}}
@@ -29,8 +30,8 @@ func TestSourcesBindingGolden(t *testing.T) {
 	}
 	ds.Health.AsOf = "As of: fixture clock"
 	// The not-ready load exercises the binding without a network request.
-	stopped := &App{started: make(chan struct{}), startupErr: errors.New("fixture startup failed")}
-	close(stopped.started)
+	stopped := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
+	close(stopped.core.Started)
 	values := map[string][]byte{
 		"LoadCrosswalk":       sourcesWire(t, stopped.LoadCrosswalk()),
 		"GetCrosswalkReport":  sourcesWire(t, a.GetCrosswalkReport()),
@@ -103,8 +104,8 @@ func TestSourcesWireTwins(t *testing.T) {
 
 func TestSourcesCompileRetainsRootLock(t *testing.T) {
 	a := targetTestApp(t)
-	a.factsMu.Lock()
-	defer a.factsMu.Unlock()
+	a.core.FactsMu.Lock()
+	defer a.core.FactsMu.Unlock()
 	msg, err := a.compileFacts(context.Background())
 	if err != nil || msg != "The checked facts are already compiling." {
 		t.Fatalf("compile while held = %q, %v", msg, err)
@@ -131,7 +132,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 		Params    ParamsResult  `json:"params"`
 		Result    DataActResult `json:"result"`
 	}{
-		Data: DataSources{DatabaseChecks: (&App{}).databaseChecksReport(), Health: wireReport(sourcesapp.HealthReport(sourcesapp.HealthInput{Reg: reg, Now: at, Zone: time.UTC,
+		Data: DataSources{DatabaseChecks: (&App{core: &core.State{}}).databaseChecksReport(), Health: wireReport(sourcesapp.HealthReport(sourcesapp.HealthInput{Reg: reg, Now: at, Zone: time.UTC,
 			Sources: []history.SourceHealth{{Source: leagueArchiveSource, State: history.SourceActive, LastSuccess: at}}})),
 			Signals: wireReport(sourcesapp.SignalFilesReport(sourcesapp.SignalsView{Feeds: []sourcesapp.FeedView{{Feed: "stats_player_week", Source: "nflverse",
 				LastLoaded: "2026-10-11T18:00:00Z", Fresh: true, CoverageSeason: 2026,

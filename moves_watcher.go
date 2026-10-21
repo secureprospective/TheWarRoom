@@ -18,35 +18,35 @@ func (a *App) watchMoves(parent context.Context) {
 	var last, fastUntil time.Time
 	pending := true
 	for parent.Err() == nil {
-		now := a.movesNow()
+		now := a.core.MovesNow()
 		var tick <-chan time.Time
 		stop := func() {}
 		if pending || now.Before(fastUntil) {
 			delay := max(time.Duration(0), last.Add(time.Minute).Sub(now))
-			tick, stop = a.movesTimer(delay)
+			tick, stop = a.core.MovesTimer(delay)
 		}
 		select {
 		case <-parent.Done():
 			stop()
 			return
-		case <-a.movesWake:
+		case <-a.core.MovesWake:
 			stop()
 			pending = true
 		case <-tick:
 			stop()
-			now = a.movesNow()
+			now = a.core.MovesNow()
 			if !pending && !now.Before(fastUntil) {
 				continue
 			}
 			// A queued wake belongs to this pass, not to another pass a minute later.
 			select {
-			case <-a.movesWake:
+			case <-a.core.MovesWake:
 			default:
 			}
 			last, pending = now, false
 			ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 			if err := a.checkMoves(ctx); err != nil && parent.Err() == nil {
-				a.movesLog(err.Error())
+				a.core.MovesLog(err.Error())
 			}
 			fastUntil = a.movesFastUntil(ctx)
 			cancel()
@@ -55,12 +55,12 @@ func (a *App) watchMoves(parent context.Context) {
 }
 
 func (a *App) movesFastUntil(ctx context.Context) time.Time {
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	entries, err := a.moves.Awaiting(ctx)
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	entries, err := a.core.Moves.Awaiting(ctx)
 	if err != nil {
 		if ctx.Err() == nil {
-			a.movesLog(fmt.Sprintf("watch moves: fast mode: %v", err))
+			a.core.MovesLog(fmt.Sprintf("watch moves: fast mode: %v", err))
 		}
 		return time.Time{}
 	}

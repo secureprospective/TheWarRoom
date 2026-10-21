@@ -210,7 +210,7 @@ func TestNativeBidOverrideRefusals(t *testing.T) {
 	one := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	f.place(t, "owner.three", "franchise.03", "5004", 6*million, 1)
 	try := func(bid commissioner.Receipt, winner string) error {
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		body, err := jsonOf(f.raw(t, commissioner.BidsOverride, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{
 			Bid: bid.Entry, Franchise: winner}}, "league"))
 		if err != nil {
@@ -268,7 +268,7 @@ func TestNativeBidProcessGovernsDecisionCompensationAndReplay(t *testing.T) {
 
 func (f *bidFixture) tryRevert(t *testing.T, principal string, receipt commissioner.Receipt, visibility string) error {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	body, err := jsonOf(f.raw(t, commissioner.Revert, commissioner.RawArgs{Entry: receipt.Entry}, visibility))
 	if err != nil {
 		t.Fatal(err)

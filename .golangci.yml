@@ -108,6 +108,7 @@ linters:
           list-mode: lax
           files:
             - "**/internal/app/**"
+            - "!**/internal/app/core/**"
             - "!**/internal/app/archive/**"
             - "!**/internal/app/comms/**"
             - "!**/internal/app/counterparties/**"

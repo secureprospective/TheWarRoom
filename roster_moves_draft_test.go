@@ -31,7 +31,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			a.targetSnapshot.Rosters.Value = []snapshot.Roster{{
+			a.core.TargetSnapshot.Rosters.Value = []snapshot.Roster{{
 				FranchiseID: "0001", Players: []snapshot.RosterPlayer{{ID: player, RosterStatus: tc.status}},
 			}}
 			var r envelope.Receipt
@@ -48,7 +48,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 			if err := validateMoveURL(r.Spec.Target.URL); err != nil {
 				t.Fatal(err)
 			}
-			stored, err := a.moves.Get(a.ctx, r.CorrelationID)
+			stored, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
 			if err != nil || !reflect.DeepEqual(stored.Receipt(), r) {
 				t.Fatalf("saved: %+v %v", stored.Receipt(), err)
 			}
@@ -101,9 +101,9 @@ func TestTargetDraftTaxiValidation(t *testing.T) {
 		t.Fatal("invalid player accepted")
 	}
 	for _, mode := range []string{"IR", "absent"} {
-		a.targetSnapshot.Rosters.Value[0].Players[0].RosterStatus = domain.RosterIR
+		a.core.TargetSnapshot.Rosters.Value[0].Players[0].RosterStatus = domain.RosterIR
 		if mode == "absent" {
-			a.targetSnapshot.Rosters.Value[0].Players = nil
+			a.core.TargetSnapshot.Rosters.Value[0].Players = nil
 		}
 		r, err := a.TargetDraftTaxi("0001", "0042")
 		if err != nil || r.State != envelope.Blocked {

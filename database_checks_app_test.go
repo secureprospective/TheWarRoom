@@ -8,15 +8,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
 func TestDatabaseChecksReportAllFilesAndFailures(t *testing.T) {
-	a := &App{}
+	a := &App{core: &core.State{}}
 	for _, file := range []struct {
 		dest **db.Pools
 		name string
-	}{{&a.pools, "main"}, {&a.histPools, "history"}, {&a.whatifPools, "whatif"}} {
+	}{{&a.core.Pools, "main"}, {&a.core.HistPools, "history"}, {&a.core.WhatifPools, "whatif"}} {
 		p, err := db.Open(t.Context(), filepath.Join(t.TempDir(), file.name+".db"))
 		if err != nil {
 			t.Fatal(err)
@@ -38,7 +40,7 @@ func TestDatabaseChecksReportAllFilesAndFailures(t *testing.T) {
 			t.Fatalf("unchecked file: %+v", row)
 		}
 	}
-	if err := a.histPools.Close(); err != nil {
+	if err := a.core.HistPools.Close(); err != nil {
 		t.Fatal(err)
 	}
 	a.checkDatabases(t.Context(), at.Add(7*24*time.Hour))
@@ -55,9 +57,9 @@ func TestDatabaseChecksReportAllFilesAndFailures(t *testing.T) {
 func TestDatabaseChecksWorkerJoinsOnShutdown(t *testing.T) {
 	a := NewApp()
 	ctx, cancel := context.WithCancel(t.Context())
-	a.workCtx, a.workCancel = ctx, cancel
-	a.ctx, a.started = ctx, make(chan struct{})
-	close(a.started)
+	a.core.WorkCtx, a.core.WorkCancel = ctx, cancel
+	a.core.Ctx, a.core.Started = ctx, make(chan struct{})
+	close(a.core.Started)
 	a.startDatabaseChecks()
 	a.startDatabaseChecks()
 	done := make(chan struct{})

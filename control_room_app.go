@@ -32,31 +32,31 @@ func (a *App) TargetLeagueSettings() (Report, error) {
 	if err := a.ready(); err != nil {
 		return Report{}, fmt.Errorf("league settings: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.control.ruleNames
-	held.value = maps.Clone(held.value)
-	a.seasonMu.Unlock()
-	if held.value == nil {
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[league.RawRuleCode]{
+	held.Value = maps.Clone(held.Value)
+	a.core.SeasonMu.Unlock()
+	if held.Value == nil {
+		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[league.RawRuleCode]{
 			export: league.RuleDictionaryExport, leagueless: true,
 			fetch: func(ctx context.Context) ([]league.RawRuleCode, error) {
-				return league.FetchRuleDictionary(ctx, a.mflClient, strconv.Itoa(a.season))
+				return league.FetchRuleDictionary(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 			},
-			parse: league.ParseRuleDictionary, bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
-		a.seasonMu.Lock()
+			parse: league.ParseRuleDictionary, bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
+		a.core.SeasonMu.Lock()
 		holdSeasonFeed(&a.control.ruleNames, league.RuleNames(rows), fresh, err)
 		held = a.control.ruleNames
-		held.value = maps.Clone(held.value)
-		a.seasonMu.Unlock()
+		held.Value = maps.Clone(held.Value)
+		a.core.SeasonMu.Unlock()
 	}
 	note := ""
-	if held.value == nil {
-		note = "MFL's names for its scoring codes could not be read, so codes are shown: " + held.refreshError
+	if held.Value == nil {
+		note = "MFL's names for its scoring codes could not be read, so codes are shown: " + held.RefreshError
 	}
-	return wireReport(controlapp.LeagueSettingsReport(a.rulebook.ActiveConfig(), held.value, note)), nil
+	return wireReport(controlapp.LeagueSettingsReport(a.core.Rulebook.ActiveConfig(), held.Value, note)), nil
 }
 
 // TargetSiteNews is Control Room › App › What's New (M-141), refreshed when an hour old.
@@ -64,35 +64,35 @@ func (a *App) TargetSiteNews() (Report, error) {
 	if err := a.ready(); err != nil {
 		return Report{}, fmt.Errorf("site news: startup: %w", err)
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.control.siteNews
-	held.value = slices.Clone(held.value)
-	a.seasonMu.Unlock()
-	if held.refreshError != "" || time.Since(held.fetchedAt) >= siteNewsFreshFor {
-		ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	held.Value = slices.Clone(held.Value)
+	a.core.SeasonMu.Unlock()
+	if held.RefreshError != "" || time.Since(held.FetchedAt) >= siteNewsFreshFor {
+		ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 		defer cancel()
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[sitenews.RawItem]{
+		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[sitenews.RawItem]{
 			export: sitenews.Export, leagueless: true,
 			fetch: func(ctx context.Context) ([]sitenews.RawItem, error) {
-				return sitenews.Fetch(ctx, a.mflClient, strconv.Itoa(a.season))
+				return sitenews.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 			},
-			parse: sitenews.Parse, bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
-		a.seasonMu.Lock()
+			parse: sitenews.Parse, bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
+		a.core.SeasonMu.Lock()
 		holdSeasonFeed(&a.control.siteNews, rows, fresh, err)
 		held = a.control.siteNews
-		held.value = slices.Clone(held.value)
-		a.seasonMu.Unlock()
+		held.Value = slices.Clone(held.Value)
+		a.core.SeasonMu.Unlock()
 	}
-	items, err := sitenews.Read(held.value)
+	items, err := sitenews.Read(held.Value)
 	if err != nil {
 		return Report{}, err //nolint:wrapcheck // names the item
 	}
 	asOf := "As of: not fetched yet"
-	if !held.fetchedAt.IsZero() {
-		asOf = "As of: " + reportTime(held.fetchedAt, time.Local)
+	if !held.FetchedAt.IsZero() {
+		asOf = "As of: " + reportTime(held.FetchedAt, time.Local)
 	}
-	return wireReport(controlapp.SiteNewsReport(items, asOf, held.refreshError, time.Local)), nil
+	return wireReport(controlapp.SiteNewsReport(items, asOf, held.RefreshError, time.Local)), nil
 }
 
 // TargetAccounting is Control Room › League › Accounting (M-098, M-197).
@@ -104,14 +104,14 @@ func (a *App) TargetOpenMFLAccounting() error {
 		return fmt.Errorf("open accounting: %w", err)
 	}
 	host := ""
-	if a.mflClient != nil {
-		host = a.mflClient.LeagueHost()
+	if a.core.MFLClient != nil {
+		host = a.core.MFLClient.LeagueHost()
 	}
-	target, err := controlapp.AccountingURL(host, a.season)
+	target, err := controlapp.AccountingURL(host, a.core.Season)
 	if err != nil {
 		return err //nolint:wrapcheck // preserve the binding error text
 	}
-	a.openURL(a.ctx, target)
+	a.core.OpenURL(a.core.Ctx, target)
 	return nil
 }
 

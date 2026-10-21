@@ -33,9 +33,9 @@ func holdPersonalBody(t *testing.T, a *App, export, body string) {
 		t.Fatal(err)
 	}
 	hash := sha256.Sum256([]byte(body))
-	if err := a.history.Record(a.ctx, archive.Fetch{Source: "league_archive", Status: 200,
+	if err := a.core.History.Record(a.core.Ctx, archive.Fetch{Source: "league_archive", Status: 200,
 		URL:    "https://fixture.invalid/2026/export?L=14432&TYPE=" + export,
-		SHA256: hex.EncodeToString(hash[:]), Size: int64(len(body)), Gzip: gz.Bytes(), FetchedAt: a.movesNow()}); err != nil {
+		SHA256: hex.EncodeToString(hash[:]), Size: int64(len(body)), Gzip: gz.Bytes(), FetchedAt: a.core.MovesNow()}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -43,15 +43,15 @@ func holdPersonalBody(t *testing.T, a *App, export, body string) {
 func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
-	a.targetSnapshot.Rosters.Provenance.Freshness.State = domain.FreshLive
-	a.seasonInjuries.fetchedAt = a.movesNow()
+	a.core.TargetSnapshot.Rosters.Provenance.Freshness.State = domain.FreshLive
+	a.core.SeasonInjuries.FetchedAt = a.core.MovesNow()
 
-	for i := range a.targetSnapshot.Rosters.Value[0].Players {
-		p := &a.targetSnapshot.Rosters.Value[0].Players[i]
+	for i := range a.core.TargetSnapshot.Rosters.Value[0].Players {
+		p := &a.core.TargetSnapshot.Rosters.Value[0].Players[i]
 		p.RosterStatus = domain.RosterActive
 		if i < 2 {
 			p.RosterStatus = domain.RosterIR
-			a.seasonInjuries.value = append(a.seasonInjuries.value, leaguefeed.Injury{ID: p.ID, Status: "IR-PUP"})
+			a.core.SeasonInjuries.Value = append(a.core.SeasonInjuries.Value, leaguefeed.Injury{ID: p.ID, Status: "IR-PUP"})
 		}
 	}
 	r, err := a.TargetAlerts("0025")
@@ -59,8 +59,8 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 	if err != nil || strings.Contains(strings.Join(unavailable, ","), "ir") {
 		t.Fatalf("held eligibility unavailable: %+v %v", r, err)
 	}
-	a.seasonInjuries.value[0].Status = "Questionable"
-	a.seasonInjuries.value[1].Status = "Suspended"
+	a.core.SeasonInjuries.Value[0].Status = "Questionable"
+	a.core.SeasonInjuries.Value[1].Status = "Suspended"
 	r, err = a.TargetAlerts("0025")
 	if err != nil {
 		t.Fatal(err)
@@ -78,7 +78,7 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 	if violations != 2 {
 		t.Fatalf("one per player, activation eligibility is not classification: %+v", r)
 	}
-	a.seasonInjuries.refreshError = "offline"
+	a.core.SeasonInjuries.RefreshError = "offline"
 	r, err = a.TargetAlerts("0025")
 	if err != nil {
 		t.Fatal(err)
@@ -96,16 +96,16 @@ func TestIRViolationAndHeldEligibilityBacklog(t *testing.T) {
 func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
-	a.targetSnapshot.Franchises.Value[0].Name = "My franchise"
-	if err := personal.New(a.pools).Initialize(a.ctx); err != nil {
+	a.core.TargetSnapshot.Franchises.Value[0].Name = "My franchise"
+	if err := personal.New(a.core.Pools).Initialize(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	player := a.targetSnapshot.Players.Value[0].ID.String()
+	player := a.core.TargetSnapshot.Players.Value[0].ID.String()
 	if err := a.TargetPersonalChange(personal.RawChange{Mine: "0025", Kind: "watch", Entity: "player", ID: player, Action: "add"}); err != nil {
 		t.Fatal(err)
 	}
 	holdPersonalBody(t, a, "tradeBait", `{"tradeBaits":{"tradeBait":{"franchise_id":"0025","willGiveUp":"`+player+`","inExchangeFor":"Future picks"}}}`)
-	a.seasonInjuries.fetchedAt = time.Date(2026, 10, 12, 15, 24, 15, 0, time.UTC)
+	a.core.SeasonInjuries.FetchedAt = time.Date(2026, 10, 12, 15, 24, 15, 0, time.UTC)
 	r, err := a.TargetPersonal("0025")
 	if err != nil || len(r.Players) != 1 || !strings.Contains(r.Players[0].Status, " · as of ") ||
 		strings.Contains(r.Players[0].Status, "T15:24:15Z") {
@@ -116,8 +116,8 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 		t.Fatalf("held personal reading: %+v %v", r, err)
 	}
 	var opened string
-	a.openURL = func(_ context.Context, url string) { opened = url }
-	a.mflClient, err = mfl.New("fixture.invalid", 10000, mfl.WithTransport(transport))
+	a.core.OpenURL = func(_ context.Context, url string) { opened = url }
+	a.core.MFLClient, err = mfl.New("fixture.invalid", 10000, mfl.WithTransport(transport))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,7 +145,7 @@ func TestPersonalHeldReportsAndReadOnlyHandOff(t *testing.T) {
 func TestCalendarMergeHeldImport(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	next := strconv.FormatInt(now.Add(72*time.Hour).Unix(), 10)
 	holdPersonalBody(t, a, "calendar", `{"calendar":{"event":[`+
 		`{"end_time":"","type":"DRAFT_START","title":"Rookie draft","id":"8352818","start_time":"`+
@@ -153,7 +153,7 @@ func TestCalendarMergeHeldImport(t *testing.T) {
 		`{"end_time":"","type":"TRADE_DEADLINE","title":"Trade deadline","id":"8352819","start_time":"`+next+`"}]}}`)
 	clock := snapshot.Sourced[leagueclock.Reading]{Value: leagueclock.Clock(now, leagueclock.Inputs{
 		Events: []leagueclock.Event{{ID: "local", Kind: "LINEUP_LOCK", Status: "PLANNED", At: now.Add(time.Hour)}}})}
-	a.mergeMFLCalendar(a.ctx, now, &clock)
+	a.mergeMFLCalendar(a.core.Ctx, now, &clock)
 	ids := []string{}
 	for _, d := range clock.Value.Deadlines {
 		ids = append(ids, d.ID)
@@ -176,7 +176,7 @@ func TestCalendarMergeHeldImport(t *testing.T) {
 func TestRosterPointsFromHeldPeriods(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := tradeDraftApp(t)
-	id := a.targetSnapshot.Players.Value[0].ID.String()
+	id := a.core.TargetSnapshot.Players.Value[0].ID.String()
 	holdPersonalBody(t, a, "playerScores", `{"playerScores":{"week":"YTD","playerScore":{"id":"`+id+`","score":"134.80"}}}`)
 	holdPersonalBody(t, a, "playerScores", `{"playerScores":{"week":"4","playerScore":{"id":"`+id+`","score":"0.00"}}}`)
 	holdPersonalBody(t, a, "nflByeWeeks", `{"nflByeWeeks":{"team":{"id":"BUF","bye_week":"7"}}}`)
@@ -184,7 +184,7 @@ func TestRosterPointsFromHeldPeriods(t *testing.T) {
 	if err != nil || len(reports) != 2 {
 		t.Fatalf("reports: %+v %v", reports, err)
 	}
-	name := a.targetSnapshot.Players.Value[0].Name
+	name := a.core.TargetSnapshot.Players.Value[0].Name
 	found := false
 	for _, row := range reports[0].Rows {
 		if row.Cells[0] == name {

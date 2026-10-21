@@ -54,14 +54,14 @@ func moveSpec(t *testing.T) envelope.Spec {
 
 func saveMove(t *testing.T, a *App, e envelope.Envelope) {
 	t.Helper()
-	if err := a.moves.Save(a.ctx, e); err != nil {
+	if err := a.core.Moves.Save(a.core.Ctx, e); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func storedMove(t *testing.T, a *App) envelope.Envelope {
 	t.Helper()
-	e, err := a.moves.Get(a.ctx, "move-1")
+	e, err := a.core.Moves.Get(a.core.Ctx, "move-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,9 +76,9 @@ func TestTargetHandOffSaveBeforeOpen(t *testing.T) {
 	saveMove(t, a, e)
 	events, opens := 0, 0
 	var logs []string
-	a.movesChanged = func(context.Context) { events++ }
-	a.movesLog = func(line string) { logs = append(logs, line) }
-	a.openURL = func(_ context.Context, target string) {
+	a.core.MovesChanged = func(context.Context) { events++ }
+	a.core.MovesLog = func(line string) { logs = append(logs, line) }
+	a.core.OpenURL = func(_ context.Context, target string) {
 		opens++
 		if storedMove(t, a).State() != envelope.HandedOff || target != e.Receipt().Spec.Target.URL {
 			t.Fatal("open preceded save or changed URL")
@@ -89,7 +89,7 @@ func TestTargetHandOffSaveBeforeOpen(t *testing.T) {
 		t.Fatalf("hand-off: %+v, %v, opens %d events %d logs %v", r, err, opens, events, logs)
 	}
 	select {
-	case <-a.movesWake:
+	case <-a.core.MovesWake:
 	default:
 		t.Fatal("watcher not woken")
 	}
@@ -122,8 +122,8 @@ func TestTargetHandOffRefused(t *testing.T) {
 			}
 			saveMove(t, a, e)
 			before := storedMove(t, a).Receipt()
-			a.openURL = func(context.Context, string) { t.Fatal("opened refused move") }
-			a.movesChanged = func(context.Context) { t.Fatal("event for refused move") }
+			a.core.OpenURL = func(context.Context, string) { t.Fatal("opened refused move") }
+			a.core.MovesChanged = func(context.Context) { t.Fatal("event for refused move") }
 			id := e.ID()
 			if name == "unknown" {
 				id = "absent"
@@ -170,8 +170,8 @@ func TestMoveURLSecondLock(t *testing.T) {
 func TestMoveBindingsNotReady(t *testing.T) {
 	t.Parallel()
 	a := NewApp()
-	a.startupErr = errors.New("not ready")
-	close(a.started)
+	a.core.StartupErr = errors.New("not ready")
+	close(a.core.Started)
 	if _, err := a.TargetHandOff("missing"); err == nil {
 		t.Fatal("hand-off ignored startup failure")
 	}
@@ -193,7 +193,7 @@ func awaitingMove(t *testing.T, a *App, at time.Time) envelope.Envelope {
 
 func irMirror(t *testing.T, a *App) {
 	t.Helper()
-	_, err := a.league.Replace(a.ctx, state.MirrorSnapshot{
+	_, err := a.core.League.Replace(a.core.Ctx, state.MirrorSnapshot{
 		Season:  2026,
 		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterIR}},
 	})
@@ -213,18 +213,18 @@ func TestWatcherIRFreshnessAndDeclaredSources(t *testing.T) {
 				at = time.Now().Add(time.Minute)
 			}
 			awaitingMove(t, a, at)
-			a.movesNow = func() time.Time { return at.Add(2 * time.Minute) }
+			a.core.MovesNow = func() time.Time { return at.Add(2 * time.Minute) }
 			var sources []envelope.Source
-			a.movesRefresh = func(_ context.Context, source envelope.Source) error {
+			a.core.MovesRefresh = func(_ context.Context, source envelope.Source) error {
 				sources = append(sources, source)
 				irMirror(t, a)
 				return nil
 			}
 			events := 0
 			var logs []string
-			a.movesChanged = func(context.Context) { events++ }
-			a.movesLog = func(line string) { logs = append(logs, line) }
-			if err := a.checkMoves(a.ctx); err != nil {
+			a.core.MovesChanged = func(context.Context) { events++ }
+			a.core.MovesLog = func(line string) { logs = append(logs, line) }
+			if err := a.checkMoves(a.core.Ctx); err != nil {
 				t.Fatal(err)
 			}
 			want, count := envelope.Landed, 1
@@ -245,13 +245,13 @@ func TestWatcherIRFreshnessAndDeclaredSources(t *testing.T) {
 func TestWatcherEmptyMakesNoRequests(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.movesRefresh = func(context.Context, envelope.Source) error {
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error {
 		t.Fatal("idle refresh")
 		return nil
 	}
-	a.movesChanged = func(context.Context) { t.Fatal("idle event") }
-	a.movesLog = func(string) { t.Fatal("idle log") }
-	if err := a.checkMoves(a.ctx); err != nil {
+	a.core.MovesChanged = func(context.Context) { t.Fatal("idle event") }
+	a.core.MovesLog = func(string) { t.Fatal("idle log") }
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -263,13 +263,13 @@ func TestWatcherRestart(t *testing.T) {
 	awaitingMove(t, first, time.Now().Add(-time.Minute))
 	second := targetTestAppAt(t, path)
 	landed := make(chan struct{}, 1)
-	second.movesChanged = func(context.Context) { landed <- struct{}{} }
-	second.movesLog = func(string) {}
-	second.movesRefresh = func(context.Context, envelope.Source) error {
+	second.core.MovesChanged = func(context.Context) { landed <- struct{}{} }
+	second.core.MovesLog = func(string) {}
+	second.core.MovesRefresh = func(context.Context, envelope.Source) error {
 		irMirror(t, second)
 		return nil
 	}
-	ctx, cancel := context.WithCancel(second.ctx)
+	ctx, cancel := context.WithCancel(second.core.Ctx)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -335,15 +335,15 @@ func TestWatcherFastModeAndCoalescedWakes(t *testing.T) {
 	at := time.Now().Add(time.Minute)
 	awaitingMove(t, a, at)
 	clock := &manualMoveClock{now: at, timers: make(chan manualMoveTimer, 20)}
-	a.movesNow, a.movesTimer = clock.read, clock.timer
+	a.core.MovesNow, a.core.MovesTimer = clock.read, clock.timer
 	passes := make(chan time.Time, 40)
-	a.movesRefresh = func(context.Context, envelope.Source) error {
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error {
 		passes <- clock.read()
 		return nil
 	}
-	a.movesChanged = func(context.Context) {}
-	a.movesLog = func(string) {}
-	ctx, cancel := context.WithCancel(a.ctx)
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.MovesLog = func(string) {}
+	ctx, cancel := context.WithCancel(a.core.Ctx)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -403,27 +403,27 @@ func TestWatcherCancellationStopsBlockedRefresh(t *testing.T) {
 	a := targetTestApp(t)
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
 	entered := make(chan struct{})
-	a.movesRefresh = func(ctx context.Context, _ envelope.Source) error {
+	a.core.MovesRefresh = func(ctx context.Context, _ envelope.Source) error {
 		close(entered)
 		<-ctx.Done()
 		return ctx.Err()
 	}
-	a.movesLog = func(string) {}
-	a.workCtx, a.workCancel = context.WithCancel(a.ctx)
-	a.weekWorkers.Add(1)
+	a.core.MovesLog = func(string) {}
+	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(a.core.Ctx)
+	a.core.WeekWorkers.Add(1)
 	go func() {
-		defer a.weekWorkers.Done()
-		a.watchMoves(a.workCtx)
+		defer a.core.WeekWorkers.Done()
+		a.watchMoves(a.core.WorkCtx)
 	}()
 	select {
 	case <-entered:
 	case <-time.After(5 * time.Second):
 		t.Fatal("refresh never started")
 	}
-	a.workCancel()
+	a.core.WorkCancel()
 	done := make(chan struct{})
 	go func() {
-		a.weekWorkers.Wait()
+		a.core.WeekWorkers.Wait()
 		close(done)
 	}()
 	select {
@@ -449,13 +449,13 @@ func TestWatcherUnknownIntentLoggedOnce(t *testing.T) {
 	}
 	saveMove(t, a, e)
 	logs := 0
-	a.movesLog = func(string) { logs++ }
-	a.movesRefresh = func(context.Context, envelope.Source) error {
+	a.core.MovesLog = func(string) { logs++ }
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error {
 		t.Fatal("unknown refresh")
 		return nil
 	}
 	for range 2 {
-		if err := a.checkMoves(a.ctx); err != nil {
+		if err := a.checkMoves(a.core.Ctx); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -491,27 +491,27 @@ func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
 	a := targetTestApp(t)
 	transport := &moveFeedTransport{}
 	var err error
-	a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport))
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(transport))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.rulebook.Initialize(a.ctx, discoverSource{app: a}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, discoverSource{app: a}); err != nil {
 		t.Fatal(err)
 	}
 	transport.requests = nil
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
 	events := 0
-	a.movesChanged = func(context.Context) { events++ }
-	a.movesLog = func(line string) {
+	a.core.MovesChanged = func(context.Context) { events++ }
+	a.core.MovesLog = func(line string) {
 		if !strings.Contains(line, "→ landed") {
 			t.Error(line)
 		}
 	}
-	if err := a.checkMoves(a.ctx); err != nil {
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	if storedMove(t, a).State() != envelope.Landed || events != 1 ||
-		a.rostersCheckedAt.IsZero() || a.rulesCheckedAt.Load() == 0 ||
+		a.core.RostersCheckedAt.IsZero() || a.core.RulesCheckedAt.Load() == 0 ||
 		!reflect.DeepEqual(transport.requests, []string{"league", "rules", "rosters", "salaryAdjustments"}) {
 		t.Fatalf("state %s events %d requests %v", storedMove(t, a).State(), events, transport.requests)
 	}
@@ -520,9 +520,9 @@ func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
 func TestSeasonRefreshWakesMoves(t *testing.T) {
 	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
-	a.refreshSeason(a.ctx)
+	a.refreshSeason(a.core.Ctx)
 	select {
-	case <-a.movesWake:
+	case <-a.core.MovesWake:
 	default:
 		t.Fatal("season refresh did not wake landing watcher")
 	}
@@ -532,22 +532,22 @@ func TestWatcherUnchangedStateDoesNotAppendIdleAudit(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	awaitingMove(t, a, time.Now().Add(-time.Minute))
-	_, err := a.league.Replace(a.ctx, state.MirrorSnapshot{
+	_, err := a.core.League.Replace(a.core.Ctx, state.MirrorSnapshot{
 		Season:  2026,
 		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterActive}},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.movesRefresh = func(context.Context, envelope.Source) error { return nil }
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error { return nil }
 	events, logs := 0, 0
-	a.movesChanged = func(context.Context) { events++ }
-	a.movesLog = func(string) { logs++ }
-	if err := a.checkMoves(a.ctx); err != nil {
+	a.core.MovesChanged = func(context.Context) { events++ }
+	a.core.MovesLog = func(string) { logs++ }
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	before := storedMove(t, a).Receipt()
-	if err := a.checkMoves(a.ctx); err != nil {
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	if before.State != envelope.NotYetDone || events != 1 || logs != 1 ||
@@ -560,7 +560,7 @@ func TestWatcherUnchangedRosterCountsAsObserved(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	// The roster content dates from before the hand-off; a later successful refresh confirms it.
-	_, err := a.league.Replace(a.ctx, state.MirrorSnapshot{
+	_, err := a.core.League.Replace(a.core.Ctx, state.MirrorSnapshot{
 		Season:  2026,
 		Players: []state.MirrorPlayer{{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterActive}},
 	})
@@ -569,14 +569,14 @@ func TestWatcherUnchangedRosterCountsAsObserved(t *testing.T) {
 	}
 	handed := time.Now().Add(time.Minute)
 	awaitingMove(t, a, handed)
-	a.movesNow = func() time.Time { return handed.Add(2 * time.Minute) }
-	a.movesRefresh = func(context.Context, envelope.Source) error {
-		a.rostersCheckedAt = handed.Add(time.Minute)
+	a.core.MovesNow = func() time.Time { return handed.Add(2 * time.Minute) }
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error {
+		a.core.RostersCheckedAt = handed.Add(time.Minute)
 		return nil
 	}
-	a.movesChanged = func(context.Context) {}
-	a.movesLog = func(string) {}
-	if err := a.checkMoves(a.ctx); err != nil {
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.MovesLog = func(string) {}
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	if got := storedMove(t, a).State(); got != envelope.NotYetDone {
@@ -597,16 +597,16 @@ func TestHandOffDoesNotWaitForWatcherRefresh(t *testing.T) {
 	}
 	saveMove(t, a, second)
 	entered, release := make(chan struct{}), make(chan struct{})
-	a.movesRefresh = func(context.Context, envelope.Source) error {
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error {
 		close(entered)
 		<-release
 		return nil
 	}
-	a.movesLog = func(string) {}
-	a.movesChanged = func(context.Context) {}
-	a.openURL = func(context.Context, string) {}
+	a.core.MovesLog = func(string) {}
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.OpenURL = func(context.Context, string) {}
 	checked := make(chan error, 1)
-	go func() { checked <- a.checkMoves(a.ctx) }()
+	go func() { checked <- a.checkMoves(a.core.Ctx) }()
 	<-entered
 	handed := make(chan error, 1)
 	go func() {

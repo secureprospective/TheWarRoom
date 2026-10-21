@@ -25,7 +25,7 @@ import (
 func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	t.Helper()
 	a, transport, _ := lineupDraftApp(t)
-	pools, err := db.Open(a.ctx, filepath.Join(t.TempDir(), "whatif.db"))
+	pools, err := db.Open(a.core.Ctx, filepath.Join(t.TempDir(), "whatif.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -34,16 +34,16 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 			t.Error(err)
 		}
 	})
-	a.whatifPools = pools
-	a.whatif = state.New(pools, ingestion.LeagueID, 2026, a.rulebook)
-	if err := a.whatif.Initialize(a.ctx, a.league); err != nil {
+	a.core.WhatifPools = pools
+	a.core.Whatif = state.New(pools, ingestion.LeagueID, 2026, a.core.Rulebook)
+	if err := a.core.Whatif.Initialize(a.core.Ctx, a.core.League); err != nil {
 		t.Fatal(err)
 	}
-	a.coordinator, err = transactions.New(a.whatif.Writer(), nil, nil)
+	a.core.Coordinator, err = transactions.New(a.core.Whatif.Writer(), nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.clockChanged = func(context.Context) {}
+	a.core.ClockChanged = func(context.Context) {}
 	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
@@ -55,8 +55,8 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	if err := json.Unmarshal(body, &snap); err != nil {
 		t.Fatal(err)
 	}
-	a.targetSnapshot = snap
-	a.hasTargetSnapshot = true
+	a.core.TargetSnapshot = snap
+	a.core.HasTargetSnapshot = true
 	m := state.MirrorSnapshot{Season: 2026}
 	for _, roster := range snap.Rosters.Value {
 		for _, p := range roster.Players {
@@ -68,18 +68,18 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 				RosterStatus: p.RosterStatus, Salary: p.Salary, ContractYear: last, ContractStatus: p.ContractStatus})
 		}
 	}
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "125", "fixture rulebook"); err != nil {
+	if err := a.core.Rulebook.SetOverride(a.core.Ctx, "cap", "salaryCapAmount", "125", "fixture rulebook"); err != nil {
 		t.Fatal(err)
 	}
 	picks, err := draftreports.ParseFuture([]byte(seasonFixture(t, "draftreports", "future-2026.json")))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{value: picks, fetchedAt: a.movesNow()}
-	a.openURL = func(context.Context, string) {}
+	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{Value: picks, FetchedAt: a.core.MovesNow()}
+	a.core.OpenURL = func(context.Context, string) {}
 	transport.requests = nil
 	return a, transport
 }
@@ -97,7 +97,7 @@ func realDeal() RawTradeBuilder {
 func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	// Sub-dollar cents on two observed contracts expose ledger rounding mistakes.
 	for i := range m.Players {
 		switch m.Players[i].MFLID {
@@ -107,10 +107,10 @@ func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 			m.Players[i].Salary += 83
 		}
 	}
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	m, stamp, used := a.league.ContractsView()
+	m, stamp, used := a.core.League.ContractsView()
 	preview := builderCall(t, a, realDeal()).Preview
 	if len(preview.Teams) != 2 {
 		t.Fatal(preview)
@@ -138,7 +138,7 @@ func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 			}
 		}
 	}
-	after, nextStamp, _ := a.league.ContractsView()
+	after, nextStamp, _ := a.core.League.ContractsView()
 	if !reflect.DeepEqual(m, after) || stamp != nextStamp || len(transport.requests) != 0 {
 		t.Fatal("projection changed mirror or fetched")
 	}
@@ -166,12 +166,12 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 		t.Fatalf("not ready: %+v", saved)
 	}
 	id := saved.ID
-	plans, err := state.NewTradePlans(a.whatifPools).List(a.ctx, r.Mine)
+	plans, err := state.NewTradePlans(a.core.WhatifPools).List(a.core.Ctx, r.Mine)
 	if err != nil || len(plans) != 1 || plans[0].ID != id {
 		t.Fatal(plans, err)
 	}
 	opens := 0
-	a.openURL = func(_ context.Context, target string) {
+	a.core.OpenURL = func(_ context.Context, target string) {
 		opens++
 		if target != "https://www47.myfantasyleague.com/2026/options?L=14432&O=05" {
 			t.Fatal(target)
@@ -220,10 +220,10 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
-	m, _, used := a.league.ContractsView()
+	m, _, used := a.core.League.ContractsView()
 	capAmount := domain.Money(125_0000_0000)
 	m.Adjustments = append(m.Adjustments, state.Adjustment{ID: "forced-cap-fixture", FranchiseID: "0001", Amount: capAmount - used["0001"] - 100_000_000})
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
 	raw := RawAcquisition{Mine: "0001", Player: "15761"}
@@ -254,7 +254,7 @@ func TestAcquisitionForcedCutUsesExistingCharge(t *testing.T) {
 	if len(transport.requests) != 0 {
 		t.Fatal("acquisition fetched")
 	}
-	after, _, _ := a.league.ContractsView()
+	after, _, _ := a.core.League.ContractsView()
 	if !reflect.DeepEqual(m, after) {
 		t.Fatal("acquisition changed mirror")
 	}
@@ -313,7 +313,7 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		receipt, err := a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+		receipt, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 		_ = snap
 		if err != nil || receipt.State != envelope.Ready || receipt.Spec.Gravity != envelope.G3 {
 			t.Fatal(receipt, err)
@@ -328,7 +328,7 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: "0025", Action: "revoke", ID: offer.ID}, held); err == nil {
+	if _, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: "0025", Action: "revoke", ID: offer.ID}, held); err == nil {
 		t.Fatal("other owner's revoke allowed")
 	}
 }
@@ -342,15 +342,15 @@ func TestTradeExitPlanSupersedesTheLastForTheSameOffer(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw := RawTradeBuilder{Mine: "0001", Action: "revoke", ID: offer.ID}
-	first, err := a.draftTradeExit(a.ctx, raw, held)
+	first, err := a.draftTradeExit(a.core.Ctx, raw, held)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := a.draftTradeExit(a.ctx, raw, held)
+	second, err := a.draftTradeExit(a.core.Ctx, raw, held)
 	if err != nil || second.State != envelope.Ready {
 		t.Fatal(second, err)
 	}
-	receipts, err := a.moves.List(a.ctx, second.Spec.LeagueID, "0001")
+	receipts, err := a.core.Moves.List(a.core.Ctx, second.Spec.LeagueID, "0001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -433,45 +433,45 @@ func TestTradeBuilderNextSeasonToTheCentAndPickOnly(t *testing.T) {
 func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
 	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
-	a.seasonPendingTrades.value = nil
+	a.core.SeasonPendingTrades.Value = nil
 	req := a.tradeRequest("0001", offer)
 	req.Trade.TradeID = "local"
-	e, err := envelope.DraftTradeAct(a.movesNow(), "trade.propose", req, nil, func() string { return "watch-propose" })
+	e, err := envelope.DraftTradeAct(a.core.MovesNow(), "trade.propose", req, nil, func() string { return "watch-propose" })
 	if err != nil {
 		t.Fatal(err)
 	}
-	handed := a.movesNow().Add(time.Minute)
+	handed := a.core.MovesNow().Add(time.Minute)
 	e, err = e.HandOff(handed)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.moves.Save(a.ctx, e); err != nil {
+	if err := a.core.Moves.Save(a.core.Ctx, e); err != nil {
 		t.Fatal(err)
 	}
 	for step, want := range []envelope.State{envelope.NotYetDone, envelope.NotYetDone, envelope.DOTReview} {
 		now := handed.Add(time.Duration(step+1) * time.Minute)
-		a.movesNow = func() time.Time { return now }
-		a.movesRefresh = func(_ context.Context, source envelope.Source) error {
+		a.core.MovesNow = func() time.Time { return now }
+		a.core.MovesRefresh = func(_ context.Context, source envelope.Source) error {
 			switch source {
 			case envelope.PendingTrades:
-				a.seasonPendingTrades.fetchedAt = now
-				a.seasonPendingTrades.value = nil
+				a.core.SeasonPendingTrades.FetchedAt = now
+				a.core.SeasonPendingTrades.Value = nil
 				if step == 1 {
 					offer.Proposed = handed.Add(time.Second)
-					a.seasonPendingTrades.value = append(a.seasonPendingTrades.value, offer)
+					a.core.SeasonPendingTrades.Value = append(a.core.SeasonPendingTrades.Value, offer)
 				}
 			case envelope.Transactions:
-				a.seasonTransactions.fetchedAt = now
-				a.seasonTransactions.value = nil
+				a.core.SeasonTransactions.FetchedAt = now
+				a.core.SeasonTransactions.Value = nil
 			case envelope.Rosters, envelope.Contracts, envelope.Lineups:
 				t.Fatalf("unexpected feed %s", source)
 			}
 			return nil
 		}
-		if err := a.checkMoves(a.ctx); err != nil {
+		if err := a.checkMoves(a.core.Ctx); err != nil {
 			t.Fatal(err)
 		}
-		saved, err := a.moves.Get(a.ctx, e.ID())
+		saved, err := a.core.Moves.Get(a.core.Ctx, e.ID())
 		if err != nil || saved.State() != want {
 			t.Fatal(saved.Receipt(), err)
 		}
@@ -536,8 +536,8 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 	r.Action = "save"
 	saved := builderCall(t, a, r).Preview
 	opened := 0
-	a.openURL = func(context.Context, string) { opened++ }
-	m, stamp, _ := a.league.ContractsView()
+	a.core.OpenURL = func(context.Context, string) { opened++ }
+	m, stamp, _ := a.core.League.ContractsView()
 	wrong := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Other, Action: "remove", ID: saved.ID})
 	if wrong.Status == ReadingOK {
 		t.Fatal("another owner removed plan")
@@ -560,7 +560,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 	if !found {
 		t.Fatal("My moves lost the removed receipt")
 	}
-	after, nextStamp, _ := a.league.ContractsView()
+	after, nextStamp, _ := a.core.League.ContractsView()
 	if opened != 0 || len(transport.requests) != 0 || !reflect.DeepEqual(m, after) || stamp != nextStamp {
 		t.Fatal("local removal opened MFL, fetched or changed mirror")
 	}
@@ -595,20 +595,20 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			t.Parallel()
 			a, transport, offer := tradeDraftApp(t)
 			opened := 0
-			a.openURL = func(context.Context, string) { opened++ }
+			a.core.OpenURL = func(context.Context, string) { opened++ }
 			_, held, err := a.tradeState(tc.mine)
 			if err != nil {
 				t.Fatal(err)
 			}
-			r, err := a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			r, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 			if err != nil || r.State != envelope.Ready {
 				t.Fatal(r, err)
 			}
-			before, stamp, _ := a.league.ContractsView()
-			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: "9999", ID: r.CorrelationID}); err == nil {
+			before, stamp, _ := a.core.League.ContractsView()
+			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: "9999", ID: r.CorrelationID}); err == nil {
 				t.Fatal("another franchise removed plan")
 			}
-			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
+			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
 				t.Fatal(err)
 			}
 			receipts, err := a.TargetMoves(tc.mine)
@@ -625,29 +625,29 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			if !found {
 				t.Fatal("removed receipt missing")
 			}
-			r, err = a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			r, err = a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 			if err != nil {
 				t.Fatal(err)
 			}
-			e, err := a.moves.Get(a.ctx, r.CorrelationID)
+			e, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			handed, err := e.HandOff(a.movesNow())
+			handed, err := e.HandOff(a.core.MovesNow())
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := a.moves.Save(a.ctx, handed); err != nil {
+			if err := a.core.Moves.Save(a.core.Ctx, handed); err != nil {
 				t.Fatal(err)
 			}
-			if err := a.removeTradePlan(a.ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err == nil {
+			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err == nil {
 				t.Fatal("removed plan after hand-off")
 			}
-			kept, err := a.moves.Get(a.ctx, r.CorrelationID)
+			kept, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
 			if err != nil || kept.State() != envelope.HandedOff {
 				t.Fatal(kept.Receipt(), err)
 			}
-			after, next, _ := a.league.ContractsView()
+			after, next, _ := a.core.League.ContractsView()
 			if opened != 0 || len(transport.requests) != 0 || stamp != next || !reflect.DeepEqual(before, after) {
 				t.Fatal("removal touched MFL or mirror")
 			}
@@ -666,7 +666,7 @@ func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := futureTradePickName(2027, 1, "0001", a.targetSnapshot)
+	want := futureTradePickName(2027, 1, "0001", a.core.TargetSnapshot)
 	found := false
 	for _, receipt := range receipts {
 		if receipt.CorrelationID != saved.ID {

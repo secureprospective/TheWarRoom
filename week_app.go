@@ -42,7 +42,7 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 		a.refreshFinishedScores(ctx)
 		cancel()
 		a.refreshEngine(parent)
-		a.clockChanged(parent)
+		a.core.ClockChanged(parent)
 		select {
 		case <-parent.Done():
 			return
@@ -53,31 +53,31 @@ func (a *App) refreshWeeksInBackground(parent context.Context) {
 }
 
 func (a *App) refreshWeek(ctx context.Context) {
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	now := a.timeNow().UTC()
 	w, err := a.fetchLineupWeek(ctx, now)
 	fetched := time.Now().UTC()
-	a.weekMu.Lock()
+	a.core.WeekMu.Lock()
 	if err != nil {
-		a.weekRefreshError = err.Error()
+		a.core.WeekRefreshError = err.Error()
 	} else {
-		a.week, a.weekFetchedAt, a.weekRefreshError = w, fetched, ""
+		a.core.Week, a.core.WeekFetchedAt, a.core.WeekRefreshError = w, fetched, ""
 	}
-	a.weekMu.Unlock()
+	a.core.WeekMu.Unlock()
 	if err != nil {
 		log.Printf("the war room: NFL schedule refresh failed: %v", err)
 	} else if w.Number != 0 {
 		a.deriveWeekPhase(ctx, w, fetched)
 	}
 	a.revalidateReleaseAfterRefresh(ctx)
-	a.clockChanged(ctx)
+	a.core.ClockChanged(ctx)
 }
 
 func (a *App) fetchLineupWeek(ctx context.Context, now time.Time) (leagueweek.Week, error) {
-	year := strconv.Itoa(a.league.Season())
+	year := strconv.Itoa(a.core.League.Season())
 	return lineupWeekFrom(now, func(requested int) (nflschedule.RawWeek, error) {
-		return nflschedule.Fetch(ctx, a.mflClient, year, requested)
+		return nflschedule.Fetch(ctx, a.core.MFLClient, year, requested)
 	})
 }
 
@@ -112,7 +112,7 @@ func (a *App) seedCurrentWeek(ctx context.Context) {
 		if requested != 0 {
 			week = strconv.Itoa(requested)
 		}
-		rows, at, found, err := readArchivedFeed(ctx, a.season, archivedFeed[nflschedule.RawWeek]{
+		rows, at, found, err := readArchivedFeed(ctx, a.core.Season, archivedFeed[nflschedule.RawWeek]{
 			export: nflschedule.Export, leagueless: true,
 			parse: func(body []byte) ([]nflschedule.RawWeek, error) {
 				raw, err := nflschedule.Parse(body)
@@ -133,16 +133,16 @@ func (a *App) seedCurrentWeek(ctx context.Context) {
 		return rows[0], nil
 	})
 	if err != nil {
-		a.fallbackLog(err.Error())
+		a.core.FallbackLog(err.Error())
 		return
 	}
-	a.weekMu.Lock()
-	defer a.weekMu.Unlock()
-	a.week, a.weekFetchedAt, a.weekRefreshError = w, fetched, ""
+	a.core.WeekMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	a.core.Week, a.core.WeekFetchedAt, a.core.WeekRefreshError = w, fetched, ""
 }
 
 func (a *App) deriveWeekPhase(ctx context.Context, w leagueweek.Week, fetched time.Time) {
-	cfg := a.rulebook.ActiveConfig()
+	cfg := a.core.Rulebook.ActiveConfig()
 	bounds, err := leagueweek.ParseBounds(cfg.StartWeek, cfg.LastRegularSeasonWeek, cfg.EndWeek)
 	if err != nil {
 		log.Printf("the war room: derive phase: %v", err)
@@ -157,7 +157,7 @@ func (a *App) deriveWeekPhase(ctx context.Context, w leagueweek.Week, fetched ti
 		log.Printf("the war room: derive phase: %v", err)
 		return
 	}
-	current, err := a.whatif.CurrentPhase(ctx)
+	current, err := a.core.Whatif.CurrentPhase(ctx)
 	if err != nil {
 		log.Printf("the war room: derive phase: read current: %v", err)
 		return
@@ -167,17 +167,17 @@ func (a *App) deriveWeekPhase(ctx context.Context, w leagueweek.Week, fetched ti
 	}
 	note := fmt.Sprintf("derived from NFL week %d (bounds %d/%d/%d), schedule fetched %s",
 		w.Number, bounds.Start, bounds.LastRegular, bounds.End, fetched.Format(time.RFC3339))
-	if _, err := a.coordinator.Execute(ctx, transactions.AdvancePhase{To: phase, Note: note}); err != nil {
+	if _, err := a.core.Coordinator.Execute(ctx, transactions.AdvancePhase{To: phase, Note: note}); err != nil {
 		log.Printf("the war room: derive phase: advance: %v", err)
 	}
 }
 
 func (a *App) weekSnapshot() controlapp.WeekSnapshot {
-	a.weekMu.Lock()
-	defer a.weekMu.Unlock()
-	w := a.week
+	a.core.WeekMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	w := a.core.Week
 	w.Games = slices.Clone(w.Games)
-	return controlapp.WeekSnapshot{Week: w, FetchedAt: a.weekFetchedAt, RefreshError: a.weekRefreshError}
+	return controlapp.WeekSnapshot{Week: w, FetchedAt: a.core.WeekFetchedAt, RefreshError: a.core.WeekRefreshError}
 }
 
 func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
@@ -185,7 +185,7 @@ func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
 }
 
 func (a *App) lastRegularWeek() int {
-	last, err := strconv.Atoi(a.rulebook.ActiveConfig().LastRegularSeasonWeek)
+	last, err := strconv.Atoi(a.core.Rulebook.ActiveConfig().LastRegularSeasonWeek)
 	if err != nil || last < 2 || last > 18 {
 		return 0
 	}
@@ -194,10 +194,10 @@ func (a *App) lastRegularWeek() int {
 
 func (a *App) windowSnapshot() controlapp.WindowSnapshot {
 	in := controlapp.WindowSnapshot{LastRegular: a.lastRegularWeek(), Schedules: map[int][]nflschedule.RawWeek{}}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	for _, rule := range leagueclock.Rules(in.LastRegular) {
-		rows := slices.Clone(a.now.schedules[rule.Week].value)
+		rows := slices.Clone(a.now.schedules[rule.Week].Value)
 		for i := range rows {
 			rows[i].Matchups = slices.Clone(rows[i].Matchups)
 		}
@@ -212,8 +212,8 @@ func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
 
 // timeNow is the league clock's current time: the wall clock unless a test pins it.
 func (a *App) timeNow() time.Time {
-	if a.clockNow != nil {
-		return a.clockNow()
+	if a.core.ClockNow != nil {
+		return a.core.ClockNow()
 	}
 	return time.Now()
 }

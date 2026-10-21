@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 
@@ -102,7 +103,7 @@ func TestNowStatChangesCompareTheFirstHeldCopy(t *testing.T) {
 		!strings.Contains(r.Note, "No score has changed since the first held copy.") {
 		t.Fatal(r.Status, r.Note)
 	}
-	weeks := in.race.held.weeks.value
+	weeks := in.race.held.weeks.Value
 	for i, w := range weeks {
 		if w.Week != 3 {
 			continue
@@ -139,9 +140,9 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
 	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
-	a.weekMu.Lock()
-	a.week.Number = 5
-	a.weekMu.Unlock()
+	a.core.WeekMu.Lock()
+	a.core.Week.Number = 5
+	a.core.WeekMu.Unlock()
 	board, err := a.TargetNow(0, 0, "")
 	if err != nil || len(transport.requests) != 0 || board.Week != 0 || board.Matchup.Status != "failed" {
 		t.Fatal("reading fetched or invented a week", err, transport.requests, board.Week)
@@ -164,10 +165,10 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	}
 	// The test app's rulebook holds no league, so the held feeds are read with the real 2026 league.
 	read := func(week int) NowBoard {
-		a.seasonMu.Lock()
+		a.core.SeasonMu.Lock()
 		in := nowInput{race: realRace(t, "2026"), held: a.now, current: 5, week: week, at: raceHeldAt}
 		in.race.held = a.race
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Unlock()
 		return nowBoard(t, in)
 	}
 	board = read(0)
@@ -209,9 +210,9 @@ func TestNowRefreshFetchesTheCurrentWeekBeforeLeagueWeeksAreHeld(t *testing.T) {
 	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
 	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
 	transport.failure = "weeklyResults"
-	a.weekMu.Lock()
-	a.week.Number = 5
-	a.weekMu.Unlock()
+	a.core.WeekMu.Lock()
+	a.core.Week.Number = 5
+	a.core.WeekMu.Unlock()
 	if err := a.TargetNowRefresh(0, false); err != nil {
 		t.Fatal(err)
 	}
@@ -268,8 +269,8 @@ func TestNowBindingsGolden(t *testing.T) {
 		r.Rows = r.Rows[:min(3, len(r.Rows))]
 	}
 	checkGolden(t, "now", "held", populated)
-	stopped := &App{started: make(chan struct{}), startupErr: fmt.Errorf("fixture startup failed")}
-	close(stopped.started)
+	stopped := &App{core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
+	close(stopped.core.Started)
 	checkGolden(t, "now", "TargetNowRefresh", stopped.TargetNowRefresh(0, false).Error())
 	if _, err := a.TargetLiveGame(false, "invalid!", ""); err == nil {
 		t.Fatal("invalid follow accepted")
@@ -358,22 +359,22 @@ func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	fixture := realNow(t, 5)
-	if _, err := a.rulebook.Sync(a.ctx, fixture.race.config); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, fixture.race.config); err != nil {
 		t.Fatal(err)
 	}
-	a.race, a.now, a.seasonLineups = fixture.race.held, fixture.held, fixture.live
-	a.now.firsts = scoreFirsts{weeks: map[int]firstScores{5: {at: raceHeldAt, week: fixture.race.held.weeks.value[4]}}, copies: 1}
+	a.race, a.now, a.core.SeasonLineups = fixture.race.held, fixture.held, fixture.live
+	a.now.firsts = scoreFirsts{weeks: map[int]firstScores{5: {at: raceHeldAt, week: fixture.race.held.weeks.Value[4]}}, copies: 1}
 	in := a.nowReadInput(5, 0, "")
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	delete(a.now.schedules, 5)
 	delete(a.now.firsts.weeks, 5)
-	a.now.byes.refreshError = "replaced"
-	a.seasonMu.Unlock()
+	a.now.byes.RefreshError = "replaced"
+	a.core.SeasonMu.Unlock()
 	if len(in.Held.Schedules) != 1 || len(in.Held.Firsts.Weeks) != 1 || in.Held.Byes.RefreshError != "" {
 		t.Fatal("snapshot retained mutable root state")
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	done := make(chan error, 1)
 	go func() { _, err := nowapp.Build(in); done <- err }()
 	select {
@@ -389,15 +390,15 @@ func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 func TestNowConcurrentRefreshAndRead(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	if _, err := a.rulebook.Sync(a.ctx, realRace(t, "2026").config); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, realRace(t, "2026").config); err != nil {
 		t.Fatal(err)
 	}
-	a.week.Number = 5
+	a.core.Week.Number = 5
 	transport.bodies["nflSchedule"] = seasonFixture(t, "nflschedule", "nflSchedule-w5.json")
 	transport.bodies["nflByeWeeks"] = seasonFixture(t, "nflschedule", "nflByeWeeks-2025.json")
 	published, release := make(chan struct{}), make(chan struct{})
 	var once sync.Once
-	a.seasonPause = func(ctx context.Context, _ time.Duration) error {
+	a.core.SeasonPause = func(ctx context.Context, _ time.Duration) error {
 		once.Do(func() {
 			close(published)
 			select {

@@ -79,7 +79,7 @@ func (a *App) TargetBidPreview(raw RawBidInput) BidPreview {
 	if err != nil {
 		return BidPreview{Problem: sentence(err), Rules: []bid.Result{}}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	in, line, err := a.bidInput(ctx, entry, "")
 	if err != nil {
@@ -125,7 +125,7 @@ func (a *App) bidInput(ctx context.Context, e bidEntry, exclude string) (bid.Inp
 	if err != nil {
 		return bid.Input{}, "", err
 	}
-	exp := bid.ExperienceFrom(a.league.Season(), facts.DraftYear, facts.HasDraftYear)
+	exp := bid.ExperienceFrom(a.core.League.Season(), facts.DraftYear, facts.HasDraftYear)
 	week, weekKnown := a.heldWeek()
 	return bid.Input{Salary: e.facts.Salary, Years: e.facts.Years, Minimum: bid.MinimumSalary(exp.Years),
 		Conditional: conditional, Experience: exp, Snipe: e.facts.Snipe, Beat: e.facts.Beat, Active: active, Room: a.capRoom(e.franchise),
@@ -133,19 +133,19 @@ func (a *App) bidInput(ctx context.Context, e bidEntry, exclude string) (bid.Inp
 }
 
 func (a *App) heldWeek() (int, bool) {
-	a.weekMu.Lock()
-	defer a.weekMu.Unlock()
-	return a.week.Number, !a.weekFetchedAt.IsZero()
+	a.core.WeekMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	return a.core.Week.Number, !a.core.WeekFetchedAt.IsZero()
 }
 
 // capRoom is the league cap less the franchise's cap used, from the held mirror and rules.
 func (a *App) capRoom(franchise string) *domain.Money {
-	raw := strings.TrimSpace(a.rulebook.GetSalaryCap())
+	raw := strings.TrimSpace(a.core.Rulebook.GetSalaryCap())
 	if raw == "" {
 		return nil
 	}
 	limit, err := domain.ParseMoneyMillions(raw)
-	used, ok := a.league.CapUsed(franchise)
+	used, ok := a.core.League.CapUsed(franchise)
 	if err != nil || !ok {
 		return nil
 	}
@@ -154,7 +154,7 @@ func (a *App) capRoom(franchise string) *domain.Money {
 }
 
 func (a *App) activeBids(ctx context.Context, franchise, exclude string) (int, error) {
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, franchise)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, franchise)
 	if err != nil {
 		return 0, fmt.Errorf("bid plans: list: %w", err)
 	}
@@ -179,10 +179,10 @@ func (a *App) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	in, line, err := a.bidInput(ctx, entry, "")
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: %w", err)
@@ -197,17 +197,17 @@ func (a *App) TargetBidDraft(raw RawBidInput) (BidPlan, error) {
 		return BidPlan{}, fmt.Errorf("bid draft: correlation ID: %w", err)
 	}
 	id := "bid-" + hex.EncodeToString(random[:])
-	e, err := envelope.DraftBid(a.movesNow().UTC(), envelope.BidRequest{
+	e, err := envelope.DraftBid(a.core.MovesNow().UTC(), envelope.BidRequest{
 		LeagueID: ingestion.LeagueID, FranchiseID: entry.franchise, Facts: entry.facts,
 	}, envelope.BidCheck{Input: in}, func() string { return id })
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: %w", err)
 	}
-	if err := a.moves.SaveBid(ctx, e, entry.facts); err != nil {
+	if err := a.core.Moves.SaveBid(ctx, e, entry.facts); err != nil {
 		return BidPlan{}, fmt.Errorf("bid draft: save: %w", err)
 	}
 	a.logMove(e)
-	a.movesChanged(a.ctx)
+	a.core.MovesChanged(a.core.Ctx)
 	return a.bidPlan(ctx, e.Receipt(), entry.facts), nil
 }
 
@@ -229,10 +229,10 @@ type BidDropOption struct {
 // Held future salaries are flat; MFL does not provide restructure history here.
 
 func (a *App) bidDropOptions(mine string, salary domain.Money) []BidDropOption {
-	a.lookupMu.Lock()
-	lk := a.lookup
-	a.lookupMu.Unlock()
-	m, _, _ := a.league.ContractsView()
+	a.core.LookupMu.Lock()
+	lk := a.core.Lookup
+	a.core.LookupMu.Unlock()
+	m, _, _ := a.core.League.ContractsView()
 	room := a.capRoom(mine)
 	out := []BidDropOption{}
 	for _, p := range m.Players {

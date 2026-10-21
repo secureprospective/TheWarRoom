@@ -35,7 +35,7 @@ func hasKey(text, key string) bool { return strings.Contains(text, key) }
 // Wails would log the raw IPC message carrying the key.
 func TestSetMFLKeyPanicNeverReachesWails(t *testing.T) {
 	app := NewApp()
-	close(app.started)
+	close(app.core.Started)
 	status, err := app.SetMFLKey("panic-probe-" + strings.Repeat("x", 16))
 	if err != nil || status.State != "unavailable" {
 		t.Fatalf("state %q, err %v", status.State, err)
@@ -124,17 +124,17 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				server.Close()
 			}
 			app := NewApp()
-			app.ctx, app.season, app.mflClient = ctx, 2026, client
-			app.keyStore = store
-			app.seasonChanged = func(context.Context) {}
-			close(app.started)
+			app.core.Ctx, app.core.Season, app.core.MFLClient = ctx, 2026, client
+			app.core.KeyStore = store
+			app.core.SeasonChanged = func(context.Context) {}
+			close(app.core.Started)
 			want := map[string]string{
 				"success": "connected", "retry": "connected", "echo": "connected",
 				"error": "rejected", "redirect": "rejected", "refused": "unreachable",
 			}[scenario]
 			good := want == "connected"
 			status, setErr := app.SetMFLKey(sentinel)
-			app.weekWorkers.Wait()
+			app.core.WeekWorkers.Wait()
 			if setErr != nil || status.State != want {
 				t.Fatalf("verification: state %q, want %q, err %v", status.State, want, setErr)
 			}
@@ -161,7 +161,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				t.Fatal(err)
 			}
 			assertAbsent(string(body))
-			if err := app.keyStore.Set(ctx, mflkey.Key(sentinel)); err != nil {
+			if err := app.core.KeyStore.Set(ctx, mflkey.Key(sentinel)); err != nil {
 				t.Fatal(err)
 			}
 			// Failed replacement must not remove a previously stored key.
@@ -175,13 +175,13 @@ func TestMFLKeyLeakGate(t *testing.T) {
 					t.Fatal(err)
 				}
 				assertAbsent(string(body))
-				kept, err := app.keyStore.Get(ctx)
+				kept, err := app.core.KeyStore.Get(ctx)
 				if err != nil || kept != mflkey.Key(sentinel) {
 					t.Fatal("stored key changed")
 				}
 			}
 			deleted, err := app.DeleteMFLKey()
-			app.weekWorkers.Wait()
+			app.core.WeekWorkers.Wait()
 			if err != nil || deleted.State != "absent" {
 				t.Fatalf("delete: %v %v", deleted, err)
 			}
@@ -254,16 +254,16 @@ func TestMFLKeySeasonLeakGate(t *testing.T) {
 		t.Fatal(err)
 	}
 	app := NewApp()
-	app.ctx, app.season, app.mflClient, app.keyStore = context.Background(), 2026, client, store
-	app.seasonChanged = func(context.Context) {}
-	close(app.started)
+	app.core.Ctx, app.core.Season, app.core.MFLClient, app.core.KeyStore = context.Background(), 2026, client, store
+	app.core.SeasonChanged = func(context.Context) {}
+	close(app.core.Started)
 	var logs bytes.Buffer
 	previous := log.Writer()
 	log.SetOutput(&logs)
 	defer log.SetOutput(previous)
 	for range 2 {
 		app.refreshPendingTradesInBackground()
-		app.weekWorkers.Wait()
+		app.core.WeekWorkers.Wait()
 		reading, err := app.TargetSeason()
 		if err != nil {
 			t.Fatal(err)

@@ -13,9 +13,9 @@ import (
 )
 
 func (a *App) mergeMFLCalendar(ctx context.Context, now time.Time, clock *snapshot.Sourced[leagueclock.Reading]) {
-	held := readShellFeed(ctx, a, &a.seasonCalendar, "calendar", ingestion.ParseCalendar)
-	events := make([]leagueclock.Event, 0, len(held.value))
-	for _, r := range held.value {
+	held := readShellFeed(ctx, a, &a.core.SeasonCalendar, "calendar", ingestion.ParseCalendar)
+	events := make([]leagueclock.Event, 0, len(held.Value))
+	for _, r := range held.Value {
 		var at time.Time
 		if r.Start != "" {
 			seconds, _ := strconv.ParseInt(r.Start, 10, 64)
@@ -50,7 +50,7 @@ func (a *App) mergeMFLCalendar(ctx context.Context, now time.Time, clock *snapsh
 		return 0
 	})
 	clock.Provenance.Source += "+held-mfl-calendar"
-	if held.fetchedAt.IsZero() {
+	if held.FetchedAt.IsZero() {
 		clock.Provenance.Freshness.Note += "; MFL calendar unavailable; showing app clocks only"
 	} else {
 		clock.Provenance.Freshness.Note += "; MFL calendar " + shellFeedTime(held, time.Local)

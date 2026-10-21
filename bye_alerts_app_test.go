@@ -14,9 +14,9 @@ import (
 func byeFixtureApp(t *testing.T) (*App, *seasonTransport) {
 	t.Helper()
 	a, transport, _ := tradeDraftApp(t)
-	a.targetSnapshot.Rosters.Provenance.Freshness.State = domain.FreshLive
-	for i := range a.targetSnapshot.Players.Value {
-		p := &a.targetSnapshot.Players.Value[i]
+	a.core.TargetSnapshot.Rosters.Provenance.Freshness.State = domain.FreshLive
+	for i := range a.core.TargetSnapshot.Players.Value {
+		p := &a.core.TargetSnapshot.Players.Value[i]
 		p.Team = "NYJ"
 		if p.Position == domain.PosK {
 			p.Team, p.Name = "DET", "Bates"
@@ -25,7 +25,7 @@ func byeFixtureApp(t *testing.T) (*App, *seasonTransport) {
 			p.Team = "PIT"
 		}
 	}
-	a.week.Number = 6
+	a.core.Week.Number = 6
 	holdPersonalBody(t, a, "nflByeWeeks", `{"nflByeWeeks":{"team":[
 		{"id":"DET","bye_week":"6"},{"id":"PIT","bye_week":"8"},{"id":"NYJ","bye_week":"9"}]}}`)
 	return a, transport
@@ -43,17 +43,17 @@ func TestByeAlertsHeldWeekSixAndUnavailable(t *testing.T) {
 		t.Fatal(err)
 	}
 	byes := onlyByeAlerts(r)
-	lock := a.movesNow().Add(24 * time.Hour)
+	lock := a.core.MovesNow().Add(24 * time.Hour)
 	if len(byes) != 1 || byes[0].Title != "Week 6: no kicker available" ||
 		!strings.Contains(byes[0].Detail, "Bates") || !strings.Contains(byes[0].Detail, "0 available; needs 1") ||
-		byes[0].At != lock || byes[0].Urgency != alertUrgency(a.movesNow(), lock) ||
+		byes[0].At != lock || byes[0].Urgency != alertUrgency(a.core.MovesNow(), lock) ||
 		byes[0].Node != "hq" || byes[0].Workspace != "lineup-and-roster" {
 		t.Fatalf("week six shortfall: %+v", byes)
 	}
 	if len(transport.requests) != 0 {
 		t.Fatal("bye alerts fetched from MFL")
 	}
-	a.history = nil
+	a.core.History = nil
 	r, err = a.TargetAlerts("0025")
 	_, unavailable := alertKinds(r)
 	if err != nil || len(onlyByeAlerts(r)) != 0 || !slices.Contains(unavailable, "bye") {
@@ -65,7 +65,7 @@ func TestByeAlertsHorizonAndMissingRoster(t *testing.T) {
 	t.Parallel()
 	a, _ := byeFixtureApp(t)
 	for _, week := range []int{5, 7, 8, 10} {
-		a.week.Number = week
+		a.core.Week.Number = week
 		r, err := a.TargetAlerts("0025")
 		if err != nil {
 			t.Fatal(err)
@@ -85,8 +85,8 @@ func TestByeAlertsHorizonAndMissingRoster(t *testing.T) {
 			}
 		}
 	}
-	a.week.Number = 6
-	a.targetSnapshot.Rosters.Value = nil
+	a.core.Week.Number = 6
+	a.core.TargetSnapshot.Rosters.Value = nil
 	r, err := a.TargetAlerts("0025")
 	_, unavailable := alertKinds(r)
 	if err != nil || len(onlyByeAlerts(r)) != 0 || !slices.Contains(unavailable, "bye") {
@@ -97,7 +97,7 @@ func TestByeAlertsHorizonAndMissingRoster(t *testing.T) {
 func TestByeAlertsMissingIdentityAndLock(t *testing.T) {
 	t.Parallel()
 	a, _ := byeFixtureApp(t)
-	a.week = leagueweek.Week{Number: 6}
+	a.core.Week = leagueweek.Week{Number: 6}
 	r, err := a.TargetAlerts("0025")
 	_, unavailable := alertKinds(r)
 	byes := onlyByeAlerts(r)
@@ -105,7 +105,7 @@ func TestByeAlertsMissingIdentityAndLock(t *testing.T) {
 		!slices.Contains(unavailable, "bye") {
 		t.Fatalf("unknown lock: %+v %v", r, err)
 	}
-	a.targetSnapshot.Players.Value = nil
+	a.core.TargetSnapshot.Players.Value = nil
 	r, err = a.TargetAlerts("0025")
 	_, unavailable = alertKinds(r)
 	if err != nil || len(onlyByeAlerts(r)) != 0 || !slices.Contains(unavailable, "bye") {
@@ -116,14 +116,14 @@ func TestByeAlertsMissingIdentityAndLock(t *testing.T) {
 func TestByeAlertNextWeekHeldLock(t *testing.T) {
 	t.Parallel()
 	a, _ := byeFixtureApp(t)
-	a.week.Number = 5
-	lock := a.movesNow().Add(48 * time.Hour)
+	a.core.Week.Number = 5
+	lock := a.core.MovesNow().Add(48 * time.Hour)
 	holdPersonalBody(t, a, "nflSchedule&W=6", fmt.Sprintf(`{"nflSchedule":{"week":"6","matchup":{
 		"kickoff":"%d","gameSecondsRemaining":"3600","team":[{"id":"NYJ"},{"id":"PIT"}]}}}`, lock.Unix()))
 	r, err := a.TargetAlerts("0025")
 	byes := onlyByeAlerts(r)
 	if err != nil || len(byes) != 1 || byes[0].At != lock ||
-		byes[0].Urgency != alertUrgency(a.movesNow(), lock) {
+		byes[0].Urgency != alertUrgency(a.core.MovesNow(), lock) {
 		t.Fatalf("next week's held lock: %+v %v", byes, err)
 	}
 }

@@ -25,7 +25,7 @@ import (
 func TestCommsOpenBinding(t *testing.T) {
 	a := targetTestApp(t)
 	opened := ""
-	a.openURL = func(_ context.Context, url string) { opened = url }
+	a.core.OpenURL = func(_ context.Context, url string) { opened = url }
 	if err := a.TargetOpenComms("league-board"); err != nil || opened != "https://legacynfl.boards.net/" {
 		t.Fatal(opened, err)
 	}
@@ -35,7 +35,7 @@ func TestCommsHeldBindingAndWire(t *testing.T) {
 	in := commstest.Real(t)
 	a := targetTestApp(t)
 	installCommsFixture(a, in)
-	if _, err := a.league.Replace(a.ctx, in.Mirror); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, in.Mirror); err != nil {
 		t.Fatal(err)
 	}
 	out, err := a.TargetComms(RawCommsScope{})
@@ -77,16 +77,16 @@ func TestCommsHeldBindingAndWire(t *testing.T) {
 func TestCommsBoardWithoutKeyAsksNothingAndSaysHowToConnect(t *testing.T) {
 	keyring.MockInit()
 	a, transport, _, _ := seasonTestApp(t)
-	a.seasonTransactions.fetchedAt = time.Now()
-	a.commsBoards[0] = heldSeasonFeed[[]ingestion.RawLeaguePost]{value: []ingestion.RawLeaguePost{{Title: "kept"}},
-		fetchedAt: time.Now()}
+	a.core.SeasonTransactions.FetchedAt = time.Now()
+	a.core.CommsBoards[0] = heldSeasonFeed[[]ingestion.RawLeaguePost]{Value: []ingestion.RawLeaguePost{{Title: "kept"}},
+		FetchedAt: time.Now()}
 	if err := a.TargetCommsRefresh(true); err != nil {
 		t.Fatal(err)
 	}
 	if slices.Contains(transport.requests, "messageBoard") || slices.Contains(transport.requests, "polls") {
 		t.Fatal("board requested without a key", transport.requests)
 	}
-	if a.commsBoards[0].value != nil {
+	if a.core.CommsBoards[0].Value != nil {
 		t.Fatal("a member-only board outlived the key")
 	}
 	built, err := a.TargetComms(RawCommsScope{})
@@ -102,13 +102,13 @@ func TestCommsBoardWithoutKeyAsksNothingAndSaysHowToConnect(t *testing.T) {
 func TestCommsRefreshUsesExistingTransactionFetcher(t *testing.T) {
 	keyring.MockInit()
 	a, transport, pauses, _ := seasonTestApp(t)
-	if err := a.keyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+	if err := a.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
 		t.Fatal(err)
 	}
 	now := time.Now()
-	a.seasonTransactions.fetchedAt = now
-	for i := range a.commsBoards {
-		a.commsBoards[i].fetchedAt = now
+	a.core.SeasonTransactions.FetchedAt = now
+	for i := range a.core.CommsBoards {
+		a.core.CommsBoards[i].FetchedAt = now
 	}
 	if err := a.TargetCommsRefresh(false); err != nil {
 		t.Fatal(err)
@@ -129,7 +129,7 @@ func TestCommsRefreshUsesExistingTransactionFetcher(t *testing.T) {
 	if err := a.TargetCommsRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	if a.commsBoards[0].fetchedAt.IsZero() || a.commsBoards[0].refreshError == "" {
+	if a.core.CommsBoards[0].FetchedAt.IsZero() || a.core.CommsBoards[0].RefreshError == "" {
 		t.Fatal("failed refresh lost last good board")
 	}
 }
@@ -141,7 +141,7 @@ func TestCommsBindingGoldens(t *testing.T) {
 	in := commstest.Real(t)
 	a := targetTestApp(t)
 	installCommsFixture(a, in)
-	if _, err := a.league.Replace(a.ctx, in.Mirror); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, in.Mirror); err != nil {
 		t.Fatal(err)
 	}
 	for _, tc := range []struct {
@@ -158,7 +158,7 @@ func TestCommsBindingGoldens(t *testing.T) {
 		}{board, commsError(err)})
 	}
 	opened := ""
-	a.openURL = func(_ context.Context, url string) { opened = url }
+	a.core.OpenURL = func(_ context.Context, url string) { opened = url }
 	for _, destination := range []string{"league-board", "polls", "invalid"} {
 		opened = ""
 		err := a.TargetOpenComms(destination)
@@ -166,7 +166,7 @@ func TestCommsBindingGoldens(t *testing.T) {
 	}
 	keyring.MockInit()
 	fresh, transport, pauses, _ := seasonTestApp(t)
-	if err := fresh.keyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+	if err := fresh.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
 		t.Fatal(err)
 	}
 	err := fresh.TargetCommsRefresh(true)
@@ -179,11 +179,11 @@ func TestCommsBindingGoldens(t *testing.T) {
 }
 
 func installCommsFixture(a *App, in commsapp.Input) {
-	a.seasonTransactions = heldSeasonFeed[[]leaguefeed.Transaction]{value: in.Transactions.Value, fetchedAt: in.Transactions.FetchedAt}
+	a.core.SeasonTransactions = heldSeasonFeed[[]leaguefeed.Transaction]{Value: in.Transactions.Value, FetchedAt: in.Transactions.FetchedAt}
 	for i, feed := range in.Boards {
-		a.commsBoards[i] = heldSeasonFeed[[]ingestion.RawLeaguePost]{value: feed.Value, fetchedAt: feed.FetchedAt}
+		a.core.CommsBoards[i] = heldSeasonFeed[[]ingestion.RawLeaguePost]{Value: feed.Value, FetchedAt: feed.FetchedAt}
 	}
-	a.lookup = in.Lookup
+	a.core.Lookup = in.Lookup
 }
 
 func TestCommsWireTwinsMatch(t *testing.T) {

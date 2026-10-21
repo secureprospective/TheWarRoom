@@ -51,7 +51,7 @@ func lineupTestRules(t *testing.T, a *App, bad bool) {
 	if bad {
 		cfg.Starters.Count = "unreadable"
 	}
-	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: cfg}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, lineupRulesSource{cfg: cfg}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -105,7 +105,7 @@ func lineupTestSnapshot(t *testing.T, a *App) []string {
 	}
 
 	snap.Rosters.Value = []snapshot.Roster{roster}
-	a.targetSnapshot, a.hasTargetSnapshot = snap, true
+	a.core.TargetSnapshot, a.core.HasTargetSnapshot = snap, true
 	return ids
 }
 
@@ -128,20 +128,20 @@ func TestTargetLineupHeldReading(t *testing.T) {
 		t.Fatalf("rules before any sync: %+v", r.RulesSource)
 	}
 	synced := time.Date(2026, 10, 7, 18, 21, 22, 0, time.UTC)
-	a.rulesCheckedAt.Store(synced.Unix())
+	a.core.RulesCheckedAt.Store(synced.Unix())
 	if got := mustLineup(t, a).RulesSource.Freshness; got != liveFreshness(synced) {
 		t.Fatalf("rules after a sync: %+v", got)
 	}
 	if len(transport.requests) != 0 {
 		t.Fatal("binding requested network")
 	}
-	a.week.Number = 5
-	a.refreshSeasonLineups(a.ctx)
+	a.core.Week.Number = 5
+	a.refreshSeasonLineups(a.core.Ctx)
 	transport.requests = nil
 	// A held refresh lock must not block this read.
-	a.refreshMu.Lock()
+	a.core.RefreshMu.Lock()
 	r, err = a.TargetLineup("0025")
-	a.refreshMu.Unlock()
+	a.core.RefreshMu.Unlock()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -150,9 +150,9 @@ func TestTargetLineupHeldReading(t *testing.T) {
 		got = append(got, p.ID)
 	}
 	// MFL reorders starters between fetches; the reading must not.
-	for i, saved := range a.seasonLineups.value.Franchises {
+	for i, saved := range a.core.SeasonLineups.Value.Franchises {
 		if saved.Franchise == "0025" {
-			slices.Reverse(a.seasonLineups.value.Franchises[i].Starters)
+			slices.Reverse(a.core.SeasonLineups.Value.Franchises[i].Starters)
 		}
 	}
 	if again := mustLineup(t, a); !reflect.DeepEqual(again.Starters, r.Starters) {
@@ -183,7 +183,7 @@ func TestTargetLineupHeldReading(t *testing.T) {
 	if _, err := a.TargetLineup("nope"); err == nil {
 		t.Fatal("unknown franchise accepted")
 	}
-	a.hasTargetSnapshot = false
+	a.core.HasTargetSnapshot = false
 	if _, err := a.TargetLineup("0025"); err == nil {
 		t.Fatal("unloaded snapshot accepted")
 	}
@@ -202,9 +202,9 @@ func TestTargetLineupBadRulesAndAbsentFeed(t *testing.T) {
 		r.RulesSource.Freshness.State != FreshFail {
 		t.Fatalf("bad rules: %+v", r)
 	}
-	a.week.Number = 5
-	a.refreshSeasonLineups(a.ctx)
-	a.seasonLineups.value.Franchises = nil
+	a.core.Week.Number = 5
+	a.refreshSeasonLineups(a.core.Ctx)
+	a.core.SeasonLineups.Value.Franchises = nil
 	transport.requests = nil
 	r, err = a.TargetLineup("0025")
 	if err != nil || len(r.Starters) != 0 || len(r.Bench) != 38 || r.Provenance.Freshness.State != FreshFail {
@@ -223,14 +223,14 @@ func TestTargetLineupStaleAndUnknownPosition(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	lineupTestRules(t, a, false)
 	lineupTestSnapshot(t, a)
-	a.week.Number = 5
-	a.refreshSeasonLineups(a.ctx)
+	a.core.Week.Number = 5
+	a.refreshSeasonLineups(a.core.Ctx)
 	transport.failure = "liveScoring"
-	a.refreshSeasonLineups(a.ctx)
+	a.refreshSeasonLineups(a.core.Ctx)
 	transport.requests = nil
 	// The saved starter remains visible even when the directory lacks its facts.
-	players := a.targetSnapshot.Players.Value
-	a.targetSnapshot.Players.Value = slices.DeleteFunc(players, func(p snapshot.Player) bool {
+	players := a.core.TargetSnapshot.Players.Value
+	a.core.TargetSnapshot.Players.Value = slices.DeleteFunc(players, func(p snapshot.Player) bool {
 		return p.ID.String() == "16150"
 	})
 	r, err := a.TargetLineup("0025")
@@ -257,8 +257,8 @@ func TestTargetLineupStaleAndUnknownPosition(t *testing.T) {
 func TestTargetLineupNotReady(t *testing.T) {
 	t.Parallel()
 	a := NewApp()
-	a.startupErr = errors.New("synthetic startup failure")
-	close(a.started)
+	a.core.StartupErr = errors.New("synthetic startup failure")
+	close(a.core.Started)
 	if _, err := a.TargetLineup("0025"); err == nil {
 		t.Fatal("unready app accepted")
 	}

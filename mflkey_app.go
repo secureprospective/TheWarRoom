@@ -26,8 +26,8 @@ type MFLKeyStatus struct {
 
 func (a *App) keyStatus(state, detail string) MFLKeyStatus {
 	return MFLKeyStatus{
-		State: state, League: ingestion.LeagueID, Season: a.season,
-		VerifiedAt: a.keyVerifiedAt, Detail: detail,
+		State: state, League: ingestion.LeagueID, Season: a.core.Season,
+		VerifiedAt: a.core.KeyVerifiedAt, Detail: detail,
 	}
 }
 
@@ -35,9 +35,9 @@ func (a *App) MFLKeyStatus() (MFLKeyStatus, error) {
 	if err := a.ready(); err != nil {
 		return MFLKeyStatus{}, err
 	}
-	a.keyMu.Lock()
-	defer a.keyMu.Unlock()
-	_, err := a.keyStore.Get(a.ctx)
+	a.core.KeyMu.Lock()
+	defer a.core.KeyMu.Unlock()
+	_, err := a.core.KeyStore.Get(a.core.Ctx)
 	if errors.Is(err, mflkey.ErrNoKey) {
 		return a.keyStatus("absent", ""), nil
 	}
@@ -60,28 +60,28 @@ func (a *App) SetMFLKey(key string) (status MFLKeyStatus, err error) {
 	if err := a.ready(); err != nil {
 		return MFLKeyStatus{}, err
 	}
-	a.keyMu.Lock()
-	defer a.keyMu.Unlock()
+	a.core.KeyMu.Lock()
+	defer a.core.KeyMu.Unlock()
 	// Bounds are plausibility checks, not a claim about MFL's key encoding.
 	if len(candidate) < 16 || len(candidate) > 256 {
 		detail := "key must contain 16 to 256 bytes after trimming whitespace"
 		return a.keyStatus("rejected", detail), nil
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, time.Minute)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, time.Minute)
 	defer cancel()
-	c := a.mflClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
-	verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.season), ingestion.LeagueID)
+	c := a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
+	verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 	if errors.Is(err, pendingtrades.ErrRejected) {
 		return a.keyStatus("rejected", err.Error()), nil
 	}
 	if err != nil {
 		return a.keyStatus("unreachable", err.Error()+"; nothing was stored"), nil
 	}
-	if err := a.keyStore.Set(ctx, candidate); err != nil {
+	if err := a.core.KeyStore.Set(ctx, candidate); err != nil {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
-	a.keyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
-	a.keyGeneration++
+	a.core.KeyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
+	a.core.KeyGeneration++
 	a.refreshPendingTradesInBackground()
 	return a.keyStatus("connected", verified.Detail), nil
 }
@@ -90,16 +90,16 @@ func (a *App) DeleteMFLKey() (MFLKeyStatus, error) {
 	if err := a.ready(); err != nil {
 		return MFLKeyStatus{}, err
 	}
-	a.keyMu.Lock()
-	defer a.keyMu.Unlock()
-	if err := a.keyStore.Delete(a.ctx); err != nil {
+	a.core.KeyMu.Lock()
+	defer a.core.KeyMu.Unlock()
+	if err := a.core.KeyStore.Delete(a.core.Ctx); err != nil {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
-	a.keyVerifiedAt = ""
-	a.keyGeneration++
-	a.seasonMu.Lock()
+	a.core.KeyVerifiedAt = ""
+	a.core.KeyGeneration++
+	a.core.SeasonMu.Lock()
 	a.clearPendingTrades()
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	a.refreshPendingTradesInBackground()
 	return a.keyStatus("absent", ""), nil
 }

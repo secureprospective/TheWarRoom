@@ -17,7 +17,7 @@ func contractActionApp(t *testing.T) *legalityFixture {
 	a := commissionerTestApp(t)
 	path := filepath.Join(t.TempDir(), "contract-actions.db")
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
+	a.core.History = store
 	executeCommissionerTest(t, a, commissioner.RawCommand{League: legalityLeague, Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Native contracts", Preset: commissioner.PresetLegacy, Season: 2026},
 		Reason: "Start this league", Request: "create", Effective: "now", Visibility: "league"})
@@ -189,7 +189,7 @@ func TestNativeContractActionPendingHistoryAndWire(t *testing.T) {
 		t.Fatalf("named command missing from waiting history: %+v", row)
 	}
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
-	f.app.history.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
+	f.app.core.History.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
 	row = assertActionCurrent(t, f, "contracts.buyout", `{"Enabled":false,"AnnualLimit":4}`)
 	if len(row.Pending) != 0 {
 		t.Fatal("applied action still waiting")

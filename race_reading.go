@@ -52,15 +52,15 @@ func (in raceInput) snapshot() season.Snapshot {
 		power[key] = season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
 	}
 	liveWeeks := map[int]leaguefeed.WeekResult{}
-	for _, w := range in.held.weeks.value {
-		if w.Week == in.live.value.Week {
-			liveWeeks[w.Week] = liveWeek(in.live.value, w)
+	for _, w := range in.held.weeks.Value {
+		if w.Week == in.live.Value.Week {
+			liveWeeks[w.Week] = liveWeek(in.live.Value, w)
 		}
 	}
 	return season.Snapshot{LiveWeeks: liveWeeks, Held: season.Held{Weeks: raceFeed(in.held.weeks), Brackets: raceFeed(in.held.brackets), Standings: raceFeed(in.held.standings), Power: power}, Live: raceFeed(in.live), LiveUnplayed: in.liveUnplayed, Config: in.config, Lookup: in.lookup, HasLookup: in.hasLookup, Week: in.week, Team: in.team, Mine: in.mine, Zone: in.zone}
 }
 func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
-	return season.Feed[T]{Value: h.value, FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
+	return season.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
 }
 func buildRace(in raceInput) (RaceBoard, error) {
 	b, err := raceapp.Build(in.snapshot())

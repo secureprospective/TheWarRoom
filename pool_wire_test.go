@@ -45,19 +45,19 @@ func TestPoolWireFixtureMatchesGo(t *testing.T) {
 	}
 	// Plans list newest first, so each draft gets its own second.
 	clock := time.Now().Add(-time.Hour)
-	a.movesNow = func() time.Time { clock = clock.Add(time.Second); return clock }
+	a.core.MovesNow = func() time.Time { clock = clock.Add(time.Second); return clock }
 	raw := rawBid("5", 3)
 	raw.Snipe, raw.Beat, raw.Evidence = true, "5.500", "https://example.invalid/thread"
 	if _, err := a.TargetBidDraft(raw); err != nil {
 		t.Fatal(err)
 	}
-	a.week = leagueweek.Week{Number: 13}
+	a.core.Week = leagueweek.Week{Number: 13}
 	blocked := rawBid("2", 1)
 	blocked.Player = "13595"
 	if _, err := a.TargetBidDraft(blocked); err != nil {
 		t.Fatal(err)
 	}
-	a.week = leagueweek.Week{Number: 5}
+	a.core.Week = leagueweek.Week{Number: 5}
 	dropped := rawBid("1", 1)
 	dropped.Player = "13594"
 	plan, err := a.TargetBidDraft(dropped)

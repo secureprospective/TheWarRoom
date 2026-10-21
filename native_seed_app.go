@@ -43,13 +43,13 @@ func (a *App) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
 	raw, err := a.nativeSeedCommand(ctx, input)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	receipt, err := a.history.ExecuteCommissioner(ctx, raw, principal, a.commissionerAuthorizer)
+	receipt, err := a.core.History.ExecuteCommissioner(ctx, raw, principal, a.core.CommissionerAuthorizer)
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record starting snapshot: %w", err)
 	}
@@ -57,7 +57,7 @@ func (a *App) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt
 }
 
 func (a *App) nativeSeedCommand(ctx context.Context, input RawNativeSeedRequest) (commissioner.RawCommand, error) {
-	raw, found, err := a.history.NativeSeedRetry(ctx, input.League, input.Request)
+	raw, found, err := a.core.History.NativeSeedRetry(ctx, input.League, input.Request)
 	if err != nil {
 		return raw, fmt.Errorf("read starting snapshot request: %w", err)
 	}
@@ -77,33 +77,33 @@ func (a *App) nativeSeedCommand(ctx context.Context, input RawNativeSeedRequest)
 }
 
 func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	if a.league == nil || a.rulebook == nil {
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	if a.core.League == nil || a.core.Rulebook == nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("hold the league rosters and settings before seeding")
 	}
-	snap, at, _ := a.league.ContractsView()
-	if snap.Season != a.season {
+	snap, at, _ := a.core.League.ContractsView()
+	if snap.Season != a.core.Season {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("the held rosters and draft reports must be from the same season")
 	}
 	rosterAt, err := time.Parse(time.RFC3339Nano, at)
 	if err != nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("read held roster date: %w", err)
 	}
-	a.seasonMu.Lock()
-	results, future := a.seasonDraftResults, a.seasonFuturePicks
-	a.seasonMu.Unlock()
-	seed := commissioner.RawNativeSnapshot{Season: snap.Season, RosterAt: rosterAt, DraftAt: results.fetchedAt,
-		FutureAt: future.fetchedAt, Players: []commissioner.NativePlayer{}, Picks: []commissioner.NativePick{},
+	a.core.SeasonMu.Lock()
+	results, future := a.core.SeasonDraftResults, a.core.SeasonFuturePicks
+	a.core.SeasonMu.Unlock()
+	seed := commissioner.RawNativeSnapshot{Season: snap.Season, RosterAt: rosterAt, DraftAt: results.FetchedAt,
+		FutureAt: future.FetchedAt, Players: []commissioner.NativePlayer{}, Picks: []commissioner.NativePick{},
 		Adjustments: []commissioner.NativeCharge{}}
-	config := a.rulebook.ActiveConfig()
+	config := a.core.Rulebook.ActiveConfig()
 	franchises, mapping := nativeapp.Franchises(config.Franchises)
 	seed.Franchises, seed.Conferences = franchises, nativeapp.Conferences(config)
-	a.targetSnapshotMu.Lock()
-	directory := a.targetSnapshot.Players.Value
-	a.targetSnapshotMu.Unlock()
+	a.core.TargetSnapshotMu.Lock()
+	directory := a.core.TargetSnapshot.Players.Value
+	a.core.TargetSnapshotMu.Unlock()
 	nativeapp.SeedPlayers(&seed, snap, mapping, directory)
-	nativeapp.SeedPicks(&seed, results.value, future.value, mapping)
+	nativeapp.SeedPicks(&seed, results.Value, future.Value, mapping)
 	if err := seed.Validate(); err != nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
 	}
@@ -114,9 +114,9 @@ func (a *App) TargetNativeDirectory(leagueID string) (commissioner.NativeDirecto
 	if err := a.ready(); err != nil {
 		return commissioner.NativeDirectory{}, fmt.Errorf("native directory startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	directory, err := a.history.NativeDirectory(ctx, leagueID)
+	directory, err := a.core.History.NativeDirectory(ctx, leagueID)
 	if err != nil {
 		return commissioner.NativeDirectory{}, fmt.Errorf("native league directory: %w", err)
 	}
@@ -127,9 +127,9 @@ func (a *App) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, er
 	if err := a.ready(); err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("native assets startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	assets, err := a.history.NativeAssets(ctx, leagueID)
+	assets, err := a.core.History.NativeAssets(ctx, leagueID)
 	if err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("native league assets: %w", err)
 	}

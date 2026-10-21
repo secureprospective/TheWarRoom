@@ -56,7 +56,7 @@ func readyIRPlan(t *testing.T, a *App, at time.Time) envelope.Envelope {
 	if err != nil || ready.State() != envelope.Ready {
 		t.Fatalf("plan did not draft ready: %+v %v", ready.Receipt(), err)
 	}
-	if err := a.moves.Save(a.ctx, ready); err != nil {
+	if err := a.core.Moves.Save(a.core.Ctx, ready); err != nil {
 		t.Fatal(err)
 	}
 	return ready
@@ -67,9 +67,9 @@ func TestRevalidateReadyRosterMovesOnIneligibility(t *testing.T) {
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
 	events := 0
-	a.movesChanged = func(context.Context) { events++ }
+	a.core.MovesChanged = func(context.Context) { events++ }
 	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
-	a.movesNow = func() time.Time { return now }
+	a.core.MovesNow = func() time.Time { return now }
 
 	// The held injuries feed is live but no longer designates the player, so the fresh
 	// verdict is ineligible and the Ready plan returns to Draft through Invalidate and Rebase.
@@ -78,13 +78,13 @@ func TestRevalidateReadyRosterMovesOnIneligibility(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonMu.Lock()
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{
-		value: []leaguefeed.Injury{{ID: other, Status: "Out"}}, fetchedAt: now.Add(-time.Minute),
+	a.core.SeasonMu.Lock()
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{
+		Value: []leaguefeed.Injury{{ID: other, Status: "Out"}}, FetchedAt: now.Add(-time.Minute),
 	}
-	a.seasonMu.Unlock()
-	a.revalidateReadyRosterMoves(a.ctx)
-	stored, err := a.moves.Get(a.ctx, ready.ID())
+	a.core.SeasonMu.Unlock()
+	a.revalidateReadyRosterMoves(a.core.Ctx)
+	stored, err := a.core.Moves.Get(a.core.Ctx, ready.ID())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,19 +107,19 @@ func TestRevalidateKeepsPlansWhenEligibilityUnknown(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	targetOfflineClient(t, a)
-	a.movesChanged = func(context.Context) { t.Fatal("no event expected") }
+	a.core.MovesChanged = func(context.Context) { t.Fatal("no event expected") }
 	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
-	a.movesNow = func() time.Time { return now }
+	a.core.MovesNow = func() time.Time { return now }
 	ready := readyIRPlan(t, a, now)
 
 	// A stale injuries feed reads unknown; unknown never yanks a plan — MFL decides.
-	a.seasonMu.Lock()
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{
-		fetchedAt: now.Add(-time.Hour), refreshError: "live fetch failed, showing last known data: offline",
+	a.core.SeasonMu.Lock()
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{
+		FetchedAt: now.Add(-time.Hour), RefreshError: "live fetch failed, showing last known data: offline",
 	}
-	a.seasonMu.Unlock()
-	a.revalidateReadyRosterMoves(a.ctx)
-	stored, err := a.moves.Get(a.ctx, ready.ID())
+	a.core.SeasonMu.Unlock()
+	a.revalidateReadyRosterMoves(a.core.Ctx)
+	stored, err := a.core.Moves.Get(a.core.Ctx, ready.ID())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,9 +132,9 @@ func TestRevalidateKeepsPlansWhenEligibilityUnknown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonMu.Lock()
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
+	a.core.SeasonMu.Unlock()
 	taxiSpec := envelope.Spec{
 		Intent: "roster.taxi", LeagueID: ingestion.LeagueID, FranchiseID: "0001",
 		Subject:  envelope.Subject{Players: []playerid.PlayerID{id}},
@@ -147,12 +147,12 @@ func TestRevalidateKeepsPlansWhenEligibilityUnknown(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := a.moves.Save(a.ctx, e); err != nil {
+	if err := a.core.Moves.Save(a.core.Ctx, e); err != nil {
 		t.Fatal(err)
 	}
 	// An empty players directory leaves the taxi verdict unknown, so the plan stays Ready.
-	a.revalidateReadyRosterMoves(a.ctx)
-	storedTaxi, err := a.moves.Get(a.ctx, e.ID())
+	a.revalidateReadyRosterMoves(a.core.Ctx)
+	storedTaxi, err := a.core.Moves.Get(a.core.Ctx, e.ID())
 	if err != nil {
 		t.Fatal(err)
 	}

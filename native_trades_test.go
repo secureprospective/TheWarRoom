@@ -90,7 +90,7 @@ func TestTradeOverridePublicMovesAssetsAndCompensates(t *testing.T) {
 		assert()
 		f.restart(t)
 		assert()
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, override)
 		if f.only(t).Status != "vetoed" || f.ownerOf(t, "1000") != "franchise.02" {
 			t.Fatal("compensation did not restore assets and veto")
@@ -223,7 +223,7 @@ func TestCapCorrectionWaitsForAPendingTrade(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		_, err = f.app.TargetCommissionerExecute(string(body))
 		return err
 	}

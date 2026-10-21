@@ -73,8 +73,8 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 	}
 	a := targetTestApp(t)
 	at := raceHeldAt
-	a.clockNow = func() time.Time { return at }
-	a.week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: at.Add(-time.Hour)}}}
+	a.core.ClockNow = func() time.Time { return at }
+	a.core.Week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: at.Add(-time.Hour)}}}
 	status, err := a.TargetShellStatus()
 	if err != nil || !strings.Contains(status.Gameday, "1 NFL game in progress") {
 		t.Fatal("status strip plural", status, err)
@@ -110,9 +110,9 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.week.Number = 5
-	a.seasonLineups = held(pulseLive(t))
-	match := a.seasonLineups.value.Matchups[0]
+	a.core.Week.Number = 5
+	a.core.SeasonLineups = held(pulseLive(t))
+	match := a.core.SeasonLineups.Value.Matchups[0]
 	board, err := a.TargetArchive(0, match.Home, "")
 	if err != nil || board.Other != match.Away {
 		t.Fatal("series did not open on current opponent", board.Other, err)
@@ -124,7 +124,7 @@ func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 		t.Fatal("away default", got, match.Home)
 	}
 	a.race.weeks = realRace(t, "2026").held.weeks
-	a.seasonLineups.value.Week = 4
+	a.core.SeasonLineups.Value.Week = 4
 	if got := a.archiveOpponent(match.Home); got != match.Away {
 		t.Fatal("weekly schedule default", got, match.Away)
 	}
@@ -134,11 +134,11 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 	t.Parallel()
 	a, _, _ := weekTestApp(t, "17")
 	at := time.Date(2026, 10, 13, 1, 0, 0, 0, time.UTC)
-	a.clockNow = func() time.Time { return at }
-	a.week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{
+	a.core.ClockNow = func() time.Time { return at }
+	a.core.Week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{
 		Teams: [2]string{"BUF", "LAR"}, Kickoff: at.Add(-time.Hour),
 	}}}
-	a.weekFetchedAt = at.Add(-time.Minute)
+	a.core.WeekFetchedAt = at.Add(-time.Minute)
 	reading, err := a.TargetClock()
 	if err != nil || reading.Value.Week == nil || *reading.Value.Week != 5 {
 		t.Fatal("last game in progress lost week", reading, err)
@@ -147,11 +147,11 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 		!reading.Value.Deadlines[0].At.Before(at) {
 		t.Fatal("lineup lock must be passed", reading.Value.Deadlines)
 	}
-	a.week.Games[0].Final = true
+	a.core.Week.Games[0].Final = true
 	if r, err := a.TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 5 {
 		t.Fatal("do not lose week until next schedule is held", r, err)
 	}
-	a.week = leagueweek.Week{Number: 6, Games: []leagueweek.Game{{Kickoff: at.Add(48 * time.Hour)}}}
+	a.core.Week = leagueweek.Week{Number: 6, Games: []leagueweek.Game{{Kickoff: at.Add(48 * time.Hour)}}}
 	if r, err := a.TargetClock(); err != nil || r.Value.Week == nil || *r.Value.Week != 6 {
 		t.Fatal("next held schedule not adopted", r, err)
 	}
@@ -160,7 +160,7 @@ func TestPulseClockKeepsWeekAfterLastKickoff(t *testing.T) {
 func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17")
-	a.clockNow = func() time.Time { return time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) }
+	a.core.ClockNow = func() time.Time { return time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) }
 	body := weekFixture(t, "nflSchedule-w5.json")
 	for _, week := range []int{9, 13, 14} {
 		scheduleBody := strings.Replace(body, `"week":"5"`, fmt.Sprintf(`"week":"%d"`, week), 1)
@@ -169,7 +169,7 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 		}
 		recordSeasonArchiveForm(t, a, "nflSchedule", strconv.Itoa(week), scheduleBody, raceHeldAt, true)
 	}
-	pools, err := db.Open(a.ctx, filepath.Join(t.TempDir(), "startup-whatif.db"))
+	pools, err := db.Open(a.core.Ctx, filepath.Join(t.TempDir(), "startup-whatif.db"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,8 +178,8 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	a.whatifPools = pools
-	if _, err := a.initStoreFloor(a.ctx, a.history); err != nil {
+	a.core.WhatifPools = pools
+	if _, err := a.initStoreFloor(a.core.Ctx, a.core.History); err != nil {
 		t.Fatal(err)
 	}
 	reading, err := a.TargetClock()

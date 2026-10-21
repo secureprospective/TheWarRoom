@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -123,7 +124,7 @@ func TestNativeDirectoryReopenWithoutMirror(t *testing.T) {
 	a := nativeSeedTestApp(t)
 	path := filepath.Join(t.TempDir(), "directory.db")
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
+	a.core.History = store
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	seedNativeTest(t, a, input)
 	owner := directoryCommand(t, a, "commish.seat.replace", "owner",
@@ -138,9 +139,9 @@ func TestNativeDirectoryReopenWithoutMirror(t *testing.T) {
 		t.Fatal(err)
 	}
 	store, _ = openDirectoryHistory(t, path)
-	restarted := &App{ctx: t.Context(), history: store, started: make(chan struct{}),
-		commissionerSession: testCommissionerSession{"creator"}}
-	close(restarted.started)
+	restarted := &App{core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+		CommissionerSession: testCommissionerSession{"creator"}}}
+	close(restarted.core.Started)
 	if after := readDirectoryTest(t, restarted); !reflect.DeepEqual(before, after) {
 		t.Fatalf("directory changed after physical reopen: %+v / %+v", before, after)
 	}

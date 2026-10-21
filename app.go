@@ -12,25 +12,17 @@ import (
 	"time"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
-	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
-	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -44,139 +36,26 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	commissionerSession    commissioner.Session
-	commissionerAuthorizer commissioner.Authorizer
-	whatifMu               sync.Mutex
-	keyMu                  sync.Mutex
-	keyStore               *mflkey.Store
-	keyVerifiedAt          string
-	keyGeneration          uint64
-	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
-	workCtx    context.Context
-	workCancel context.CancelFunc
-	//nolint:containedctx // Wails supplies an app-lifetime context; bindings derive bounded contexts.
-	ctx         context.Context
-	dataDir     string    // the app's data directory: its databases and settings.json
-	pools       *db.Pools // thewarroom.db: the MFL mirror and app settings
-	histPools   *db.Pools // history.db: everything that cannot be rebuilt
-	whatifPools *db.Pools // whatif.db: moves made in the app, apart from MFL truth (R2)
-	// labData decodes the frozen Lab facts once per App; callers share the immutable result.
-	labData     func() (*lab.Data, error)
-	params      *params.Store
-	rulebook    *rulebook.Store
-	league      *state.Mirror // the league as MFL states it; every score surface reads it
-	whatif      *state.Store  // the what-if league the transaction screens work on
-	moves       *moves.Store
-	history     *history.Store
-	coordinator *transactions.Coordinator // the only holder of the what-if Writer
-	mflClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
-	fetches     *archive.Transport        // every outbound HTTP request goes through it
-	season      int                       // mirror season at startup; rollover is picked up next launch
-	startupErr  error                     // startup failure; shown in the shell through AppInfo
-	started     chan struct{}             // closed when startup returns; read the fields above through ready
-	lockFile    *os.File                  // single-instance lock, held until shutdown
-	// headshots caches player photos in the data directory. Its client bypasses fetches on purpose:
-	// photos are images, not facts, and never enter history.db (spec §7).
-	headshots atomic.Pointer[headshot.Service]
-	// assetModel is the Lab's value model for C-01, set once the Lab compiles from the facts.
-	assetModel atomic.Pointer[assetModel]
-	// factsMu lets one checked-facts compile run at a time.
-	factsMu      sync.Mutex
+	core         *core.State
 	archiveCache archiveapp.Snapshot
-	photosOff    atomic.Bool
-	// control holds Control Room's MFL feeds (site news, scoring-event names); guarded by seasonMu.
-	control controlFeeds
-
-	// The players directory is fetched at most once per process (MFL allows the endpoint once a
-	// day). Wails runs IPC calls concurrently, hence the mutex.
-	modelMu    sync.Mutex
-	modelDirty atomic.Bool
-	lookupMu   sync.Mutex
-	lookup     normalize.Lookup
-	hasLookup  bool
-	lookupAt   time.Time
-
-	// Drafts check against the last good TargetSnapshot build, so a draft never refetches.
-	targetSnapshotMu  sync.Mutex
-	targetSnapshot    snapshot.Snapshot
-	hasTargetSnapshot bool
-
-	weekMu             sync.Mutex
-	week               leagueweek.Week
-	weekFetchedAt      time.Time
-	weekRefreshError   string
-	clockChanged       func(context.Context)
-	weekCancel         context.CancelFunc
-	weekWorkers        sync.WaitGroup
-	workerMu           sync.Mutex
-	stopping           bool
-	backups            *db.Backups
-	databaseCheckStart sync.Once
-	shutdownOnce       sync.Once
-	weekStart          sync.Once // domReady fires again on a webview reload; one worker only
-
-	seasonMu            sync.Mutex
-	seasonCalendar      heldSeasonFeed[[]ingestion.RawCalendarEvent]
-	seasonTradeBait     heldSeasonFeed[[]ingestion.RawTradeBait]
-	shellFeedDays       map[string]string
-	seasonTransactions  heldSeasonFeed[[]leaguefeed.Transaction]
-	commsBoards         [2]heldSeasonFeed[[]ingestion.RawLeaguePost]
-	seasonLineups       heldSeasonFeed[leaguefeed.Lineups]
-	seasonPendingTrades heldSeasonFeed[[]leaguefeed.PendingTrade]
-	seasonInjuries      heldSeasonFeed[[]leaguefeed.Injury]
-	seasonFreeAgents    heldSeasonFeed[[]playerid.PlayerID]
-	seasonMarket        map[string]heldSeasonFeed[[]marketfeeds.Feed]
-	seasonDraftResults  heldSeasonFeed[[]draftreports.Pick]
-	seasonFuturePicks   heldSeasonFeed[[]draftreports.FuturePick]
-	research            researchHeld
-	researchArchiveMu   sync.Mutex
-	race                raceHeld
-	now                 nowHeld
-	liveGameMu          sync.Mutex
-	liveGame            liveGameHeld
-	lineupsWeek         int
-	seasonChanged       func(context.Context)
-	seasonPause         func(context.Context, time.Duration) error
-	// clockNow is the league clock's "now"; nil is the wall clock. Tests pin it inside a held week.
-	clockNow func() time.Time
-	// localZone is the owner's zone for reading times; nil is the desktop's own. Tests pin it.
-	localZone *time.Location
-
-	movesMu      sync.Mutex
-	movesWake    chan struct{}
-	movesChanged func(context.Context)
-	openURL      func(context.Context, string)
-	movesNow     func() time.Time
-	movesTimer   func(time.Duration) (<-chan time.Time, func())
-	movesRefresh func(context.Context, envelope.Source) error
-	movesLog     func(string)
-	// fallbackLog writes the one run.log line each live-feed fallback emits; a test swaps it
-	// to capture the line. log.Print in production, like movesLog.
-	fallbackLog  func(string)
-	movesUnknown map[string]bool
-
-	newsMu           sync.Mutex
-	refreshMu        sync.Mutex   // one MFL refresh at a time
-	rostersCheckedAt time.Time    // last successful roster refresh; refreshMu guards it
-	rulesCheckedAt   atomic.Int64 // unix seconds of the last rules sync, 0 if none; read lock-free
-	launchRefreshDue bool         // startup did not refresh, so domReady does
-
-	crosswalkMu sync.Mutex
-	crosswalk   CrosswalkReport // the latest crosswalk load's report, held since launch
-
-	loadingSignals sync.Mutex    // one signals load at a time
-	signalsMu      sync.Mutex    // guards signals
-	signals        SignalsReport // the latest signals load, held since launch
+	assetModel   atomic.Pointer[assetModel]
+	control      controlFeeds
+	research     researchHeld
+	race         raceHeld
+	now          nowHeld
+	liveGame     liveGameHeld
+	crosswalk    CrosswalkReport
+	signals      SignalsReport
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
-	a.lookupMu.Lock()
-	defer a.lookupMu.Unlock()
-	if a.hasLookup {
-		return a.lookup, nil
+	a.core.LookupMu.Lock()
+	defer a.core.LookupMu.Unlock()
+	if a.core.HasLookup {
+		return a.core.Lookup, nil
 	}
-	raws, err := players.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+	raws, err := players.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 	if err != nil {
 		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
 	}
@@ -184,44 +63,44 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	if err != nil {
 		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
 	}
-	a.lookup, a.hasLookup, a.lookupAt = lk, true, time.Now().UTC()
+	a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lk, true, time.Now().UTC()
 	return lk, nil
 }
 
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
-	return &App{
-		started:       make(chan struct{}),
-		labData:       sync.OnceValues(lab.Load),
-		movesWake:     make(chan struct{}, 1),
-		movesChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:moves") },
-		openURL:       runtime.BrowserOpenURL,
-		movesNow:      time.Now,
-		movesTimer:    newMovesTimer,
-		movesLog:      func(line string) { log.Print(line) },
-		fallbackLog:   func(line string) { log.Print(line) },
-		movesUnknown:  make(map[string]bool),
-		clockChanged:  func(ctx context.Context) { runtime.EventsEmit(ctx, "target:clock") },
-		seasonChanged: func(ctx context.Context) { runtime.EventsEmit(ctx, "target:season") },
+	var desktop core.Runtime = desktopRuntime{}
+	return &App{core: &core.State{Started: make(chan struct{}),
+		LabData:       sync.OnceValues(lab.Load),
+		MovesWake:     make(chan struct{}, 1),
+		MovesChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:moves") },
+		OpenURL:       desktop.BrowserOpenURL,
+		MovesNow:      time.Now,
+		MovesTimer:    newMovesTimer,
+		MovesLog:      func(line string) { log.Print(line) },
+		FallbackLog:   func(line string) { log.Print(line) },
+		MovesUnknown:  make(map[string]bool),
+		ClockChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:clock") },
+		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
 }
 
 // ready waits for startup to finish and returns its failure, if any. On Linux, Wails runs startup
 // alongside the page load, so every IPC method calls ready before it reads a store.
 func (a *App) ready() error {
-	<-a.started
-	return a.startupErr
+	<-a.core.Started
+	return a.core.StartupErr
 }
 
 // startup is the Wails OnStartup hook. OnStartup cannot return an error, so a failure is
 // kept in startupErr, logged, and shown by the shell's banner through AppInfo.
 func (a *App) startup(ctx context.Context) {
-	defer close(a.started)
-	a.ctx = ctx
-	a.workCtx, a.workCancel = context.WithCancel(ctx)
+	defer close(a.core.Started)
+	a.core.Ctx = ctx
+	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer func() {
-		if a.startupErr != nil {
-			log.Printf("the war room: startup failed: %v", a.startupErr)
+		if a.core.StartupErr != nil {
+			log.Printf("the war room: startup failed: %v", a.core.StartupErr)
 		}
 	}()
 
@@ -229,44 +108,44 @@ func (a *App) startup(ctx context.Context) {
 	// failure is not fatal.
 	dir, err := configDir()
 	if err != nil {
-		a.startupErr = fmt.Errorf("startup: resolve config dir: %w", err)
+		a.core.StartupErr = fmt.Errorf("startup: resolve config dir: %w", err)
 		return
 	}
-	a.dataDir = dir
+	a.core.Paths.DataDir = dir
 	if lerr := setupLogging(dir); lerr != nil {
 		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
 	}
 
 	path, hist, err := a.openDatabases(ctx, dir)
 	if err != nil {
-		a.startupErr = fmt.Errorf("startup: %w", err)
+		a.core.StartupErr = fmt.Errorf("startup: %w", err)
 		return
 	}
 
-	client, err := mfl.New("api", 2, mfl.WithTransport(a.fetches),
+	client, err := mfl.New("api", 2, mfl.WithTransport(a.core.Fetches),
 		mfl.WithKeySource(func(ctx context.Context) (mflkey.Key, error) {
-			if a.keyStore == nil {
+			if a.core.KeyStore == nil {
 				return "", mflkey.ErrUnavailable
 			}
-			return a.keyStore.Get(ctx)
+			return a.core.KeyStore.Get(ctx)
 		}))
 	if err != nil {
-		a.startupErr = fmt.Errorf("startup: mfl client: %w", err)
+		a.core.StartupErr = fmt.Errorf("startup: mfl client: %w", err)
 		return
 	}
-	a.mflClient = client
+	a.core.MFLClient = client
 	a.startHeadshots()
 
 	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
 	began := time.Now()
 	refreshed, err := a.initStoreFloor(ctx, hist)
 	if err != nil {
-		a.startupErr = err
+		a.core.StartupErr = err
 		return
 	}
-	log.Printf("the war room: season %d ready in %s", a.season, time.Since(began).Round(time.Millisecond))
-	a.keyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.season))
-	a.launchRefreshDue = !refreshed
+	log.Printf("the war room: season %d ready in %s", a.core.Season, time.Since(began).Round(time.Millisecond))
+	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
+	a.core.LaunchRefreshDue = !refreshed
 }
 
 // domReady is the Wails OnDomReady hook: the window is up, so the launch refresh and the signals
@@ -286,31 +165,31 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	if err != nil {
 		return "", nil, err
 	}
-	a.lockFile = lock
-	if a.backups, err = newDatabaseBackups(dir); err != nil {
+	a.core.LockFile = lock
+	if a.core.Backups, err = newDatabaseBackups(dir); err != nil {
 		return "", nil, err
 	}
-	if err := a.backups.Recover(ctx); err != nil {
+	if err := a.core.Backups.Recover(ctx); err != nil {
 		return "", nil, fmt.Errorf("recover databases: %w", err)
 	}
-	if _, err := a.backups.BeforeMigrations(ctx, time.Now().UTC()); err != nil {
+	if _, err := a.core.Backups.BeforeMigrations(ctx, time.Now().UTC()); err != nil {
 		return "", nil, fmt.Errorf("capture before migrations: %w", err)
 	}
-	if a.pools, err = db.Open(ctx, path); err != nil {
+	if a.core.Pools, err = db.Open(ctx, path); err != nil {
 		return "", nil, fmt.Errorf("open database: %w", err)
 	}
 	reg, err := measures.Embedded()
 	if err != nil {
 		return "", nil, err //nolint:wrapcheck // the registry's errors name the CSV line
 	}
-	if a.histPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild())), history.SchemaVersion()); err != nil {
+	if a.core.HistPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild())), history.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open history database: %w", err)
 	}
-	if a.whatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild())), state.SchemaVersion()); err != nil {
+	if a.core.WhatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild())), state.SchemaVersion()); err != nil {
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
-	hist := history.New(a.histPools, reg)
-	a.fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
+	hist := history.New(a.core.HistPools, reg)
+	a.core.Fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
 
@@ -328,10 +207,10 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	ctx, cancel := context.WithTimeout(parent, startupBudget)
 	defer cancel()
 
-	moveStore := moves.New(a.pools)
-	pstore := params.New(a.pools)
-	rb := rulebook.New(a.pools)
-	mirror := state.NewMirror(a.pools, rb)
+	moveStore := moves.New(a.core.Pools)
+	pstore := params.New(a.core.Pools)
+	rb := rulebook.New(a.core.Pools)
+	mirror := state.NewMirror(a.core.Pools, rb)
 	var whatif *state.Store
 	var coord *transactions.Coordinator
 	steps := []struct {
@@ -341,7 +220,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		{"history", hist.Initialize},
 		{"params", pstore.Initialize},
 		{"moves", moveStore.Initialize},
-		{"personal lists", personal.New(a.pools).Initialize},
+		{"personal lists", personal.New(a.core.Pools).Initialize},
 		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
 		{"league mirror", mirror.Initialize},
 		{"first MFL refresh", func(c context.Context) error {
@@ -353,8 +232,8 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 			return err
 		}},
 		{"what-if league", func(c context.Context) error {
-			a.season = mirror.Season()
-			whatif = state.New(a.whatifPools, ingestion.LeagueID, a.season, rb)
+			a.core.Season = mirror.Season()
+			whatif = state.New(a.core.WhatifPools, ingestion.LeagueID, a.core.Season, rb)
 			return whatif.Initialize(c, mirror)
 		}},
 		// The coordinator is the only holder of the what-if Writer.
@@ -373,8 +252,8 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
 	}
 	a.logMigrationFindings()
-	a.params, a.rulebook, a.league, a.whatif, a.coordinator, a.history = pstore, rb, mirror, whatif, coord, hist
-	a.moves = moveStore
+	a.core.Params, a.core.Rulebook, a.core.League, a.core.Whatif, a.core.Coordinator, a.core.History = pstore, rb, mirror, whatif, coord, hist
+	a.core.Moves = moveStore
 	hist.SetLineupEnvironment(appLineupEnv{app: a})
 	hist.SetBidEnvironment(appBidEnv{app: a})
 	a.seedClockSchedules(ctx)
@@ -386,7 +265,7 @@ func (a *App) logMigrationFindings() {
 		name  string
 		pools *db.Pools
 	}{
-		{"thewarroom", a.pools}, {"history", a.histPools}, {"whatif", a.whatifPools},
+		{"thewarroom", a.core.Pools}, {"history", a.core.HistPools}, {"whatif", a.core.WhatifPools},
 	} {
 		if file.pools != nil {
 			findings := file.pools.MigrationFindings()
@@ -397,35 +276,35 @@ func (a *App) logMigrationFindings() {
 
 // shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
-	a.shutdownOnce.Do(func() {
-		a.workerMu.Lock()
-		a.stopping = true
-		if a.weekCancel != nil {
-			a.weekCancel()
+	a.core.ShutdownOnce.Do(func() {
+		a.core.WorkerMu.Lock()
+		a.core.Stopping = true
+		if a.core.WeekCancel != nil {
+			a.core.WeekCancel()
 		}
-		if a.workCancel != nil {
-			a.workCancel()
+		if a.core.WorkCancel != nil {
+			a.core.WorkCancel()
 		}
-		a.workerMu.Unlock()
-		a.weekWorkers.Wait()
-		for _, p := range []*db.Pools{a.pools, a.histPools, a.whatifPools} {
+		a.core.WorkerMu.Unlock()
+		a.core.WeekWorkers.Wait()
+		for _, p := range []*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools} {
 			if p != nil {
 				_ = p.Close()
 			}
 		}
-		releaseInstanceLock(a.lockFile)
+		releaseInstanceLock(a.core.LockFile)
 	})
 }
 
 func (a *App) startWorker(work func()) {
-	a.workerMu.Lock()
-	defer a.workerMu.Unlock()
-	if a.stopping {
+	a.core.WorkerMu.Lock()
+	defer a.core.WorkerMu.Unlock()
+	if a.core.Stopping {
 		return
 	}
-	a.weekWorkers.Add(1)
+	a.core.WeekWorkers.Add(1)
 	go func() {
-		defer a.weekWorkers.Done()
+		defer a.core.WeekWorkers.Done()
 		work()
 	}()
 }
@@ -457,4 +336,11 @@ func dbFileName(base string, devBuild bool) string {
 		return base + "-dev.db"
 	}
 	return base + ".db"
+}
+
+type desktopRuntime struct{}
+
+func (desktopRuntime) EventsEmit(ctx context.Context, event string) { runtime.EventsEmit(ctx, event) }
+func (desktopRuntime) BrowserOpenURL(ctx context.Context, target string) {
+	runtime.BrowserOpenURL(ctx, target)
 }

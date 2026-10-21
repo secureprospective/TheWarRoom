@@ -39,7 +39,7 @@ func runDraftPick(ctx context.Context, a *App, permit commissioner.Permit,
 	}
 	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
 	defer cancel()
-	receipt, err := a.history.RecordDraftPick(ctx, permit, input, principal, a.nativeFacts(), a.ownerZone())
+	receipt, err := a.core.History.RecordDraftPick(ctx, permit, input, principal, a.nativeFacts(), a.ownerZone())
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record rookie pick: %w", err)
 	}
@@ -83,9 +83,9 @@ func (a *App) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commiss
 	if err := a.ready(); err != nil {
 		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeDraft(ctx, scope, a.ownerZone(), a.nativeFacts())
+	reading, err := a.core.History.NativeDraft(ctx, scope, a.ownerZone(), a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft: %w", err)
 	}
@@ -95,9 +95,9 @@ func (a *App) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commiss
 // closeFinishedDrafts closes a draft whose last pick has just been used, so it does not wait for the clock's
 // next look. A failure is logged and the pick that led to it stands.
 func (a *App) closeFinishedDrafts(league string) {
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	if err := a.history.CloseFinishedDrafts(ctx, league, a.nativeFacts()); err != nil {
+	if err := a.core.History.CloseFinishedDrafts(ctx, league, a.nativeFacts()); err != nil {
 		log.Printf("the war room: close finished rookie drafts for %s: %v", league, err)
 	}
 }
@@ -105,14 +105,14 @@ func (a *App) closeFinishedDrafts(league string) {
 // processNativeDraftsDue closes every league's finished drafts: the last pick can be used up by the pick
 // clock running out, which no one records.
 func (a *App) processNativeDraftsDue(ctx context.Context) {
-	leagues, err := a.history.NativeLeagues(ctx)
+	leagues, err := a.core.History.NativeLeagues(ctx)
 	if err != nil {
 		log.Printf("the war room: read native draft leagues: %v", err)
 		return
 	}
 	facts := a.nativeFacts()
 	for _, league := range leagues {
-		if err := a.history.CloseFinishedDrafts(ctx, league.ID, facts); err != nil {
+		if err := a.core.History.CloseFinishedDrafts(ctx, league.ID, facts); err != nil {
 			log.Printf("the war room: close native drafts for %s: %v", league.ID, err)
 		}
 	}

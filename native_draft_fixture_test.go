@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
@@ -92,19 +93,19 @@ func draftApp(t *testing.T) *draftFixture {
 	f := &draftFixture{path: filepath.Join(t.TempDir(), "draft.db"), session: "creator",
 		now: time.Date(2027, 6, 1, 12, 0, 0, 0, time.UTC)}
 	a := commissionerTestApp(t)
-	a.history, f.pools = openClockedHistory(t, f.path, func() time.Time { return f.now })
-	a.clockNow, a.localZone = func() time.Time { return f.now }, westCoast(t)
+	a.core.History, f.pools = openClockedHistory(t, f.path, func() time.Time { return f.now })
+	a.core.ClockNow, a.core.LocalZone = func() time.Time { return f.now }, westCoast(t)
 	legalityMirrorEnding(t, a, nil)
-	a.lookup, a.hasLookup = legalityLookup(t), true
+	a.core.Lookup, a.core.HasLookup = legalityLookup(t), true
 	held := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
 	out, err := playerid.New("2001")
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{fetchedAt: held,
-		value: []leaguefeed.Injury{{ID: out, Status: "Out"}}}
-	a.seasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{fetchedAt: held, value: []draftreports.Pick{}}
-	a.seasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: held, value: draftPicks()}
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{FetchedAt: held,
+		Value: []leaguefeed.Injury{{ID: out, Status: "Out"}}}
+	a.core.SeasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{FetchedAt: held, Value: []draftreports.Pick{}}
+	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{FetchedAt: held, Value: draftPicks()}
 	seedNativeTest(t, a, createNativeSeedLeague(t, a, commissioner.PresetLegacy))
 	f.app = a
 	f.setRule(t, "calendar.boundary", `"start_of_day"`)
@@ -121,17 +122,17 @@ func (f *draftFixture) reopen(t *testing.T) {
 	}
 	store, pools := openClockedHistory(t, f.path, func() time.Time { return f.now })
 	f.pools = pools
-	restarted := &App{ctx: t.Context(), history: store, started: make(chan struct{}),
-		clockNow: func() time.Time { return f.now }, localZone: old.localZone}
-	close(restarted.started)
-	restarted.lookup, restarted.hasLookup, restarted.seasonInjuries = old.lookup, old.hasLookup, old.seasonInjuries
+	restarted := &App{core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+		ClockNow: func() time.Time { return f.now }, LocalZone: old.core.LocalZone}}
+	close(restarted.core.Started)
+	restarted.core.Lookup, restarted.core.HasLookup, restarted.core.SeasonInjuries = old.core.Lookup, old.core.HasLookup, old.core.SeasonInjuries
 	f.app = restarted
 	f.actAs(f.session)
 }
 
 func (f *draftFixture) actAs(principal string) {
 	f.session = principal
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 }
 
 func (f *draftFixture) revisionOf() (int64, error) {

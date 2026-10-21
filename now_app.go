@@ -83,33 +83,33 @@ func readScoreFirsts(ctx context.Context, prev scoreFirsts, season int, bodies a
 }
 
 func (a *App) refreshScoreFirsts(ctx context.Context) {
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	prev := a.now.firsts
-	a.seasonMu.Unlock()
-	next, err := readScoreFirsts(ctx, prev, a.season, a.history.ArchivedBodies)
+	a.core.SeasonMu.Unlock()
+	next, err := readScoreFirsts(ctx, prev, a.core.Season, a.core.History.ArchivedBodies)
 	if err != nil {
-		a.fallbackLog("the war room: " + err.Error())
+		a.core.FallbackLog("the war room: " + err.Error())
 		return
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	a.now.firsts = next
 }
 
 // refreshNowWeek reads the chosen week's NFL schedule and the season's byes, each live or from
 // the archive, unless held and fresh; force always reads them.
 func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
-	pause := a.seasonPause
+	pause := a.core.SeasonPause
 	if pause == nil {
 		pause = seasonPause
 	}
-	year := strconv.Itoa(a.season)
-	a.seasonMu.Lock()
+	year := strconv.Itoa(a.core.Season)
+	a.core.SeasonMu.Lock()
 	held, byes := a.now.schedules[week], a.now.byes
-	a.seasonMu.Unlock()
-	if force || !feedFresh(held.fetchedAt, held.refreshError) {
-		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, a.scheduleFeed(week), a.fallbackLog)
-		a.seasonMu.Lock()
+	a.core.SeasonMu.Unlock()
+	if force || !feedFresh(held.FetchedAt, held.RefreshError) {
+		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, a.scheduleFeed(week), a.core.FallbackLog)
+		a.core.SeasonMu.Lock()
 		schedules := maps.Clone(a.now.schedules)
 		if schedules == nil {
 			schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}
@@ -118,32 +118,32 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 		holdSeasonFeed(&h, rows, fresh, err)
 		schedules[week] = h
 		a.now.schedules = schedules
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Unlock()
 		if err := pause(ctx, time.Second); err != nil {
 			return
 		}
 	}
-	if !force && byes.refreshError == "" && time.Since(byes.fetchedAt) < 24*time.Hour {
+	if !force && byes.RefreshError == "" && time.Since(byes.FetchedAt) < 24*time.Hour {
 		return
 	}
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[nflschedule.RawBye]{
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[nflschedule.RawBye]{
 		export: nflschedule.ByeExport, leagueless: true,
 		fetch: func(ctx context.Context) ([]nflschedule.RawBye, error) {
-			return nflschedule.FetchByes(ctx, a.mflClient, year)
+			return nflschedule.FetchByes(ctx, a.core.MFLClient, year)
 		},
-		parse: nflschedule.ParseByes, bodies: a.history.ArchivedBodies,
-	}, a.fallbackLog)
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+		parse: nflschedule.ParseByes, bodies: a.core.History.ArchivedBodies,
+	}, a.core.FallbackLog)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	holdSeasonFeed(&a.now.byes, rows, fresh, err)
 }
 
 func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
-	year := strconv.Itoa(a.season)
+	year := strconv.Itoa(a.core.Season)
 	return archivedFeed[nflschedule.RawWeek]{
 		export: nflschedule.Export, leagueless: true,
 		fetch: func(ctx context.Context) ([]nflschedule.RawWeek, error) {
-			raw, ferr := nflschedule.Fetch(ctx, a.mflClient, year, week)
+			raw, ferr := nflschedule.Fetch(ctx, a.core.MFLClient, year, week)
 			if ferr != nil {
 				return nil, fmt.Errorf("NFL schedule: %w", ferr)
 			}
@@ -166,20 +166,20 @@ func (a *App) seedClockSchedules(ctx context.Context) {
 		if rule.Week == 0 {
 			continue
 		}
-		rows, at, found, err := readArchivedFeed(ctx, a.season, a.scheduleFeed(rule.Week))
+		rows, at, found, err := readArchivedFeed(ctx, a.core.Season, a.scheduleFeed(rule.Week))
 		if err != nil {
-			a.fallbackLog(err.Error())
+			a.core.FallbackLog(err.Error())
 			continue
 		}
 		if !found {
 			continue
 		}
-		a.seasonMu.Lock()
+		a.core.SeasonMu.Lock()
 		if a.now.schedules == nil {
 			a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{}
 		}
-		a.now.schedules[rule.Week] = heldSeasonFeed[[]nflschedule.RawWeek]{value: rows, fetchedAt: at}
-		a.seasonMu.Unlock()
+		a.now.schedules[rule.Week] = heldSeasonFeed[[]nflschedule.RawWeek]{Value: rows, FetchedAt: at}
+		a.core.SeasonMu.Unlock()
 	}
 }
 
@@ -200,20 +200,20 @@ func (a *App) TargetNowRefresh(week int, force bool) error {
 	if err := a.TargetRaceRefresh(force); err != nil {
 		return fmt.Errorf("now refresh: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	a.refreshScoreFirsts(ctx)
 	if week == 0 {
 		week = a.marketWeek()
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	listed := false
-	for _, w := range a.race.weeks.value {
+	for _, w := range a.race.weeks.Value {
 		listed = listed || w.Week == week
 	}
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	// The current NFL week is always fetched: its schedule does not depend on the league's weeks being
 	// held yet (just after launch they may not be). Any other week must be on the league's schedule.
 	current := week == a.marketWeek()

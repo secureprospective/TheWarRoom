@@ -96,7 +96,7 @@ func TestNativeBidOffseasonAndMissingInSeasonWeek(t *testing.T) {
 	// The first recorded rollover starts 2027; absent schedules are not permission to bid in October.
 	f.set(t, "calendar.rollover", `"2027-03-01T00:00:00Z"`, "now")
 	f.now = time.Date(2027, 5, 1, 12, 0, 0, 0, time.UTC)
-	f.app.history.SetBidEnvironment(appBidEnv{f.app})
+	f.app.core.History.SetBidEnvironment(appBidEnv{f.app})
 	env, err := (appBidEnv{f.app}).BidEnvironment(t.Context(), legalityLeague, f.now)
 	if err != nil || !env.Season.Offseason {
 		t.Fatalf("May with no schedule: %+v %v", env, err)
@@ -134,7 +134,7 @@ func TestNativeBidOffseasonBeforeHeldKickoffAndUnknownPlayoffField(t *testing.T)
 	f := bidApp(t)
 	kickoff := f.now.Add(time.Hour)
 	heldNativeWeek(t, f.app, 14, kickoff, false)
-	f.app.history.SetBidEnvironment(appBidEnv{f.app})
+	f.app.core.History.SetBidEnvironment(appBidEnv{f.app})
 	f.accepted(t, "franchise.01", "5004", 5*million, 2)
 	f.now = kickoff
 	env, err := (appBidEnv{f.app}).BidEnvironment(t.Context(), legalityLeague, f.now)

@@ -22,27 +22,27 @@ func researchFeedLabel(kind string) string {
 }
 
 func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {
-	bodies := a.history.ArchivedBodies
+	bodies := a.core.History.ArchivedBodies
 	if week != "" {
 		bodies = a.scopedBodies("W", week)
 	}
 	h := heldSeasonFeed[[]researchfeeds.Feed]{}
 	found, err := bodies(ctx, "TYPE="+kind, func(src string, body []byte, at time.Time) bool {
-		if !sameExport(src, kind, a.season, researchfeeds.IsTrend(kind)) {
+		if !sameExport(src, kind, a.core.Season, researchfeeds.IsTrend(kind)) {
 			return false
 		}
 		feed, err := researchfeeds.Parse(body, kind, week)
 		if err != nil {
 			return false
 		}
-		h.value, h.fetchedAt, h.refreshError = []researchfeeds.Feed{feed}, at, "Archived copy; refresh pending"
+		h.Value, h.FetchedAt, h.RefreshError = []researchfeeds.Feed{feed}, at, "Archived copy; refresh pending"
 		return true
 	})
 	if err != nil {
-		h.refreshError = "Archive unreadable: " + err.Error()
+		h.RefreshError = "Archive unreadable: " + err.Error()
 	}
 	if !found && err == nil {
-		h.refreshError = "No archived copy held"
+		h.RefreshError = "No archived copy held"
 	}
 	return h
 }
@@ -57,16 +57,16 @@ func (a *App) hydrateResearch(extraIDs ...string) {
 // hydrateResearchContext publishes archived research; one hydration at a time, so a reader
 // never sees lookups marked done before their results are held.
 func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
-	a.researchArchiveMu.Lock()
-	defer a.researchArchiveMu.Unlock()
-	if a.history == nil {
+	a.core.ResearchArchiveMu.Lock()
+	defer a.core.ResearchArchiveMu.Unlock()
+	if a.core.History == nil {
 		return
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	feeds := maps.Clone(a.research.feeds)
-	depth, injury := a.research.depth, a.seasonInjuries
+	depth, injury := a.research.depth, a.core.SeasonInjuries
 	news := maps.Clone(a.research.news)
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	if feeds == nil {
 		feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{}
 	}
@@ -80,36 +80,36 @@ func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
 	for w := 1; w <= a.marketWeek(); w++ {
 		a.hydrateResearchFeed(ctx, feeds, "playerScores", strconv.Itoa(w))
 	}
-	if depth.fetchedAt.IsZero() && a.firstArchiveRead("depth") {
-		rows, fresh, err := readResearchDepthArchive(ctx, a.season, a.history.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
+	if depth.FetchedAt.IsZero() && a.firstArchiveRead("depth") {
+		rows, fresh, err := readResearchDepthArchive(ctx, a.core.Season, a.core.History.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
 		holdSeasonFeed(&depth, rows, fresh, err)
 	}
-	if injury.fetchedAt.IsZero() && a.firstArchiveRead("injuries") {
+	if injury.FetchedAt.IsZero() && a.firstArchiveRead("injuries") {
 		injury = archivedOnly(ctx, a, "injuries", true, func(body []byte) ([]leaguefeed.Injury, error) {
 			return injuries.ParseToInjuries(ctx, body)
 		})
-		if !injury.fetchedAt.IsZero() {
-			injury.refreshError = "Archived copy; refresh pending"
+		if !injury.FetchedAt.IsZero() {
+			injury.RefreshError = "Archived copy; refresh pending"
 		}
 	}
-	mirror, _, _ := a.league.ContractsView()
+	mirror, _, _ := a.core.League.ContractsView()
 	missing := []string{}
 	for _, id := range append(researchRosterIDs(mirror, ""), extraIDs...) {
-		if news[id].fetchedAt.IsZero() && a.firstArchiveRead("news:"+id) {
+		if news[id].FetchedAt.IsZero() && a.firstArchiveRead("news:"+id) {
 			missing = append(missing, id)
 		}
 	}
-	cached, err := archivedNews(ctx, a.history.ArchivedBodies, a.season, missing, func(time.Time) bool { return true })
+	cached, err := archivedNews(ctx, a.core.History.ArchivedBodies, a.core.Season, missing, func(time.Time) bool { return true })
 	if err != nil {
-		a.fallbackLog(err.Error())
+		a.core.FallbackLog(err.Error())
 	}
 	a.mergeResearchArchive(ctx, feeds, depth, injury, cached)
 }
 
 // firstArchiveRead reports whether key has not been looked up in the archive yet, and marks it.
 func (a *App) firstArchiveRead(key string) bool {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	if a.research.archiveRead[key] {
 		return false
 	}
@@ -121,49 +121,49 @@ func (a *App) firstArchiveRead(key string) bool {
 }
 func (a *App) hydrateResearchFeed(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed], kind, week string) {
 	key := researchKey(kind, week)
-	if feeds[key].fetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
+	if feeds[key].FetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
 		feeds[key] = a.archivedResearchFeed(ctx, kind, week)
 	}
 }
 func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed],
 	depth heldSeasonFeed[[]researchfeeds.RawDepth], injury heldSeasonFeed[[]leaguefeed.Injury],
 	news map[string]heldSeasonFeed[[]researchfeeds.News]) {
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
-	a.seasonMu.Lock()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
+	a.core.SeasonMu.Lock()
 	links, version := a.research.links, a.research.linkVersion
-	a.seasonMu.Unlock()
-	a.crosswalkMu.Lock()
+	a.core.SeasonMu.Unlock()
+	a.core.CrosswalkMu.Lock()
 	loaded := a.crosswalk.LoadedAt
-	a.crosswalkMu.Unlock()
+	a.core.CrosswalkMu.Unlock()
 	var err error
 	if links == nil || version != loaded {
 		links, err = a.researchLinks(ctx, lookup)
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	if a.research.feeds == nil {
 		a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{}
 	}
 	for key, h := range feeds {
-		if a.research.feeds[key].fetchedAt.IsZero() {
+		if a.research.feeds[key].FetchedAt.IsZero() {
 			a.research.feeds[key] = h
 		}
 	}
-	if a.research.depth.fetchedAt.IsZero() {
+	if a.research.depth.FetchedAt.IsZero() {
 		a.research.depth = depth
 	}
-	if a.seasonInjuries.fetchedAt.IsZero() {
-		a.seasonInjuries = injury
+	if a.core.SeasonInjuries.FetchedAt.IsZero() {
+		a.core.SeasonInjuries = injury
 	}
 	if a.research.news == nil {
 		a.research.news = map[string]heldSeasonFeed[[]researchfeeds.News]{}
 	}
 	for id, h := range news {
-		if a.research.news[id].fetchedAt.IsZero() {
-			if h.fetchedAt.In(time.Local).Format("2006-01-02") != time.Now().In(time.Local).Format("2006-01-02") {
-				h.refreshError = "Archived copy; refresh pending"
+		if a.research.news[id].FetchedAt.IsZero() {
+			if h.FetchedAt.In(time.Local).Format("2006-01-02") != time.Now().In(time.Local).Format("2006-01-02") {
+				h.RefreshError = "Archived copy; refresh pending"
 			}
 			a.research.news[id] = h
 		}

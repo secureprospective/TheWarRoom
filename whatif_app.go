@@ -67,17 +67,17 @@ func (a *App) TargetWhatIf(raw RawWhatIfRequest) Reading[WhatIfView] {
 	if err := a.ready(); err != nil {
 		return whatIfReading(WhatIfView{}, state.WhatIfSession{}, err)
 	}
-	a.whatifMu.Lock()
-	defer a.whatifMu.Unlock()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	a.core.WhatifMu.Lock()
+	defer a.core.WhatifMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	session, store, err := a.whatIfSession(ctx, raw)
 	if err != nil {
 		return whatIfReading(WhatIfView{}, session, err)
 	}
-	stamps, err := a.league.Stamps(ctx)
+	stamps, err := a.core.League.Stamps(ctx)
 	if err != nil {
 		return whatIfReading(WhatIfView{}, session, fmt.Errorf("what-if current stamps: %w", err))
 	}
@@ -127,23 +127,23 @@ func stampText(s string) string {
 }
 
 func (a *App) whatIfSession(ctx context.Context, raw RawWhatIfRequest) (state.WhatIfSession, *state.Store, error) {
-	sessions := state.NewWhatIfSessions(a.whatifPools)
+	sessions := state.NewWhatIfSessions(a.core.WhatifPools)
 	session, found, err := sessions.Load(ctx, raw.Mine)
 	if err != nil {
 		return session, nil, fmt.Errorf("what-if session: %w", err)
 	}
 	if !found || raw.Action == "reset" {
-		m, _, used := a.league.ContractsView()
+		m, _, used := a.core.League.ContractsView()
 		amount, ok := used[raw.Mine]
 		if !ok {
 			return session, nil, fmt.Errorf("what-if: franchise %s is not in the mirror", raw.Mine)
 		}
-		stamps, err := a.league.Stamps(ctx)
+		stamps, err := a.core.League.Stamps(ctx)
 		if err != nil {
 			return session, nil, fmt.Errorf("what-if baseline: %w", err)
 		}
-		session = state.WhatIfSession{Mine: raw.Mine, Snapshot: m, Stamps: stamps, Used: amount, Moves: []state.WhatIfMove{}, TaxiPercent: a.rulebook.TaxiCapPercent(), IRPercent: a.rulebook.IRCapPercent()}
-		if capText := a.rulebook.GetSalaryCap(); capText != "" {
+		session = state.WhatIfSession{Mine: raw.Mine, Snapshot: m, Stamps: stamps, Used: amount, Moves: []state.WhatIfMove{}, TaxiPercent: a.core.Rulebook.TaxiCapPercent(), IRPercent: a.core.Rulebook.IRCapPercent()}
+		if capText := a.core.Rulebook.GetSalaryCap(); capText != "" {
 			capAmount, err := domain.ParseMoneyMillions(capText)
 			if err != nil {
 				return session, nil, fmt.Errorf("what-if cap: %w", err)
@@ -156,7 +156,7 @@ func (a *App) whatIfSession(ctx context.Context, raw RawWhatIfRequest) (state.Wh
 	return session, store, err
 }
 func (a *App) loadWhatIf(ctx context.Context, s state.WhatIfSession) (*state.Store, error) {
-	store := state.New(a.whatifPools, s.Generation, s.Snapshot.Season, s)
+	store := state.New(a.core.WhatifPools, s.Generation, s.Snapshot.Season, s)
 	if err := store.Initialize(ctx, state.SnapshotSource{Snapshot: s.Snapshot}); err != nil {
 		return nil, fmt.Errorf("what-if ledger: %w", err)
 	}
@@ -193,13 +193,13 @@ func (a *App) changeWhatIf(ctx context.Context, s state.WhatIfSession, raw RawWh
 		if !found {
 			return previous, nil, fmt.Errorf("what-if: only your baseline roster can be modelled")
 		}
-		a.targetSnapshotMu.Lock()
-		for _, p := range a.targetSnapshot.Players.Value {
+		a.core.TargetSnapshotMu.Lock()
+		for _, p := range a.core.TargetSnapshot.Players.Value {
 			if p.ID.String() == raw.Player && p.Name != "" {
 				name = p.Name
 			}
 		}
-		a.targetSnapshotMu.Unlock()
+		a.core.TargetSnapshotMu.Unlock()
 		s.Moves = append(s.Moves, state.WhatIfMove{ID: fmt.Sprint(time.Now().UnixNano()), Kind: kind, Player: raw.Player, Name: name})
 	}
 	next, store, err := a.replayWhatIf(ctx, s)
@@ -242,7 +242,7 @@ func (a *App) replayWhatIf(ctx context.Context, s state.WhatIfSession) (state.Wh
 		}
 		s.Moves[i].Explanation = contractsapp.Rule(m.Kind, player, s.Snapshot.Season)
 	}
-	if err := state.NewWhatIfSessions(a.whatifPools).Save(ctx, s); err != nil {
+	if err := state.NewWhatIfSessions(a.core.WhatifPools).Save(ctx, s); err != nil {
 		return s, nil, fmt.Errorf("what-if publish: %w", err)
 	}
 	return s, store, nil
@@ -290,8 +290,8 @@ func whatIfFigure(label string, before, after domain.Money) WhatIfFigure {
 }
 
 func (a *App) whatIfPlanLabels(ctx context.Context, mine string, moves []contractsapp.WhatIfMove) error {
-	if a.moves != nil {
-		receipts, err := a.moves.List(ctx, ingestion.LeagueID, mine)
+	if a.core.Moves != nil {
+		receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, mine)
 		if err != nil {
 			return fmt.Errorf("what-if plans: %w", err)
 		}

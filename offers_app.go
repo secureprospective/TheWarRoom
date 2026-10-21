@@ -190,15 +190,15 @@ func liveOffer(d *lab.Data, year int, ts int64, sender, receiver, outcome string
 
 // The caller holds seasonMu, so the ending evidence and the pending read form one observation.
 func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	if readErr != nil || a.pools == nil {
+	if readErr != nil || a.core.Pools == nil {
 		return readErr
 	}
 	d, err := a.lab()
 	if err != nil {
 		return fmt.Errorf("offers: archive owner: %w", err)
 	}
-	if err := personal.New(a.pools).ObserveOffers(ctx, lab.OfferOwner(d), a.season, pending,
-		a.seasonTransactions.value, at); err != nil {
+	if err := personal.New(a.core.Pools).ObserveOffers(ctx, lab.OfferOwner(d), a.core.Season, pending,
+		a.core.SeasonTransactions.Value, at); err != nil {
 		return fmt.Errorf("offers: save live read: %w", err)
 	}
 	return nil
@@ -206,13 +206,13 @@ func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrad
 
 // offersWithLive also returns when the app last read MFL's pending offers (zero before the first read).
 func (a *App) offersWithLive(d *lab.Data) (*lab.Data, string, time.Time, error) {
-	if a.pools == nil {
+	if a.core.Pools == nil {
 		return d, d.ArchiveThrough, time.Time{}, nil
 	}
 	ctx, cancel := context.WithTimeout(a.fallbackParent(), 10*time.Second)
 	defer cancel()
 	owner := lab.OfferOwner(d)
-	rows, checked, err := personal.New(a.pools).Offers(ctx, owner)
+	rows, checked, err := personal.New(a.core.Pools).Offers(ctx, owner)
 	if err != nil {
 		return nil, "", time.Time{}, fmt.Errorf("offers: local history: %w", err)
 	}

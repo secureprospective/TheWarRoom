@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
@@ -58,7 +60,7 @@ func TestTargetOffers(t *testing.T) {
 	if a.TargetOffers(raw).Status != ReadingFailed {
 		t.Fatal("invalid direction accepted")
 	}
-	a.labData = func() (*lab.Data, error) { return nil, fmt.Errorf("seeded archive failure") }
+	a.core.LabData = func() (*lab.Data, error) { return nil, fmt.Errorf("seeded archive failure") }
 	failed = a.TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	if failed.Status != ReadingFailed || !strings.Contains(failed.Value.Disclosure, "cannot be verified") {
 		t.Fatal("source failure invented owner")
@@ -91,7 +93,7 @@ func TestOffersWireFixture(t *testing.T) {
 	if os.Getenv("TWR_WRITE_OFFERS_WIRE") != "1" {
 		t.Skip("opt-in frontend IPC fixture generation")
 	}
-	r := (&App{}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
+	r := (&App{core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	b, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -110,7 +112,7 @@ func TestOffersWireFixture(t *testing.T) {
 
 func TestOfferStackWidthsAndCounts(t *testing.T) {
 	t.Parallel()
-	r := (&App{}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
+	r := (&App{core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	for _, st := range r.Value.Stretches {
 		if len(st.Outcomes) != 6 {
 			t.Fatal("stack requires five endings and open offers")
@@ -135,7 +137,7 @@ func TestOffersClusterDenialsGolden(t *testing.T) {
 	for _, who := range []string{"stranger", "owner.two", "creator"} {
 		denials[who] = errorWords(f.tryPlace(t, who, "franchise.01", "5002", 5*million, 1))
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	_, err := f.app.TargetCommissionerMarket(legalityLeague, "bids.award.override")
 	denials["non-commissioner"] = errorWords(err)
 	f.set(t, "calendar.windows", `{}`, "now")
@@ -153,7 +155,7 @@ func TestOffersClusterWireGolden(t *testing.T) {
 	checkGolden(t, "offers", "personal-change", errorWords(a.TargetPersonalChange(personalstore.RawChange{})))
 	checkGolden(t, "offers", "personal-handoff", errorWords(a.TargetPersonalHandOff("invalid")))
 	checkGolden(t, "offers", "pool", a.TargetPool(RawPoolScope{Sort: "name"}))
-	a.startupErr = fmt.Errorf("fixture startup failure")
+	a.core.StartupErr = fmt.Errorf("fixture startup failure")
 	checkGolden(t, "offers", "pool-refresh", errorWords(a.TargetPoolRefresh(false)))
 	checkGolden(t, "offers", "preview", a.TargetBidPreview(rawBid("5", 1)))
 	plan, err := a.TargetBidDraft(rawBid("5", 1))

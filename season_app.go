@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
@@ -19,47 +20,19 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-// heldSeasonFeed is a feed's last good copy and why the latest refresh failed, if it did.
-type heldSeasonFeed[T any] struct {
-	value        T
-	fetchedAt    time.Time
-	refreshError string
-	readPending  bool
-}
-
-// state is the feed's held read state, without its value.
-func (h heldSeasonFeed[T]) state() report.Feed {
-	return report.Feed{FetchedAt: h.fetchedAt, RefreshError: h.refreshError, ReadPending: h.readPending}
-}
-
-func (h heldSeasonFeed[T]) provenance(source, feed string) snapshot.Provenance {
-	fresh := Freshness{State: FreshFail, Note: feed + " not fetched yet"}
-	if !h.fetchedAt.IsZero() {
-		fresh = liveFreshness(h.fetchedAt)
-	}
-	if h.readPending {
-		fresh.State, fresh.Note = FreshStale, pendingShellRead(h.fetchedAt, time.Local)
-	}
-	if h.refreshError != "" {
-		fresh.Note = h.refreshError
-		if !h.fetchedAt.IsZero() {
-			fresh.State = FreshStale
-		}
-	}
-	return snapshot.Provenance{Kind: "live", Source: source, Freshness: fresh}
-}
+type heldSeasonFeed[T any] = core.HeldFeed[T]
 
 func holdSeasonFeed[T any](h *heldSeasonFeed[T], value T, fresh Freshness, err error) {
 	if err != nil {
-		h.refreshError = err.Error()
+		h.RefreshError = err.Error()
 		return
 	}
 	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
 	if parseErr != nil {
-		h.refreshError = "season refresh time: " + parseErr.Error()
+		h.RefreshError = "season refresh time: " + parseErr.Error()
 		return
 	}
-	h.value, h.fetchedAt, h.refreshError, h.readPending = value, at, fresh.Note, false
+	h.Value, h.FetchedAt, h.RefreshError, h.ReadPending = value, at, fresh.Note, false
 }
 
 // SeasonReading is the three season feeds as held, each with its own provenance.
@@ -75,16 +48,16 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 	if err := a.ready(); err != nil {
 		return SeasonReading{}, fmt.Errorf("target season: startup: %w", err)
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	source := "liveScoring default week"
-	if a.lineupsWeek != 0 {
-		source = "liveScoring W=" + strconv.Itoa(a.lineupsWeek)
+	if a.core.LineupsWeek != 0 {
+		source = "liveScoring W=" + strconv.Itoa(a.core.LineupsWeek)
 	}
 	// Copies serialize as [] rather than null before the first fetch.
-	txs := append([]leaguefeed.Transaction{}, a.seasonTransactions.value...)
-	trades := append([]leaguefeed.PendingTrade{}, a.seasonPendingTrades.value...)
-	lineups := a.seasonLineups.value
+	txs := append([]leaguefeed.Transaction{}, a.core.SeasonTransactions.Value...)
+	trades := append([]leaguefeed.PendingTrade{}, a.core.SeasonPendingTrades.Value...)
+	lineups := a.core.SeasonLineups.Value
 	lineups.Franchises = append([]leaguefeed.Lineup{}, lineups.Franchises...)
 	lineups.Matchups = append([]leaguefeed.Matchup{}, lineups.Matchups...)
 	for i := range lineups.Franchises {
@@ -93,13 +66,13 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 	}
 	return SeasonReading{
 		Transactions: snapshot.Sourced[[]leaguefeed.Transaction]{
-			Value: txs, Provenance: a.seasonTransactions.provenance("transactions", "transactions"),
+			Value: txs, Provenance: a.core.SeasonTransactions.Provenance("transactions", "transactions"),
 		},
 		Lineups: snapshot.Sourced[leaguefeed.Lineups]{
-			Value: lineups, Provenance: a.seasonLineups.provenance(source, "live scores"),
+			Value: lineups, Provenance: a.core.SeasonLineups.Provenance(source, "live scores"),
 		},
 		PendingTrades: snapshot.Sourced[[]leaguefeed.PendingTrade]{
-			Value: trades, Provenance: a.seasonPendingTrades.provenance("pendingTrades", "pending trades"),
+			Value: trades, Provenance: a.core.SeasonPendingTrades.Provenance("pendingTrades", "pending trades"),
 		},
 	}, nil
 }
@@ -117,16 +90,16 @@ func seasonPause(ctx context.Context, duration time.Duration) error {
 
 func (a *App) refreshSeason(ctx context.Context) {
 	defer a.wakeMoves()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	if ctx.Err() != nil {
 		return
 	}
-	defer a.seasonChanged(ctx)
+	defer a.core.SeasonChanged(ctx)
 	a.refreshSeasonTransactions(ctx)
 	a.refreshCommsBoards(ctx)
 	a.refreshShellFeeds(ctx)
-	pause := a.seasonPause
+	pause := a.core.SeasonPause
 	if pause == nil {
 		pause = seasonPause
 	}
@@ -135,7 +108,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 	}
 	a.refreshSeasonLineups(ctx)
 	// Lineups are what Franchise HQ opens on: tell the views now, not after the whole refresh.
-	a.seasonChanged(ctx)
+	a.core.SeasonChanged(ctx)
 	if err := pause(ctx, time.Second); err != nil {
 		return
 	}
@@ -168,14 +141,14 @@ func (a *App) refreshSeason(ctx context.Context) {
 // refreshInjuries pulls MFL's NFL injury designations for the IR rules, live with the archive
 // as fallback, and holds the last good copy like the other season feeds.
 func (a *App) refreshInjuries(ctx context.Context) {
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season,
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[injuries.RawInjury]{
 			export: injuries.Export,
 			// The injuries export is league-less: fetched without L from the api host, so its
 			// archived copies match with or without the league id.
 			leagueless: true,
 			fetch: func(ctx context.Context) ([]injuries.RawInjury, error) {
-				raw, ferr := injuries.Fetch(ctx, a.mflClient, strconv.Itoa(a.season))
+				raw, ferr := injuries.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 				if ferr != nil {
 					return nil, fmt.Errorf("injuries refresh: %w", ferr)
 				}
@@ -188,37 +161,37 @@ func (a *App) refreshInjuries(ctx context.Context) {
 				}
 				return raw, nil
 			},
-			bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
+			bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
 	var value []leaguefeed.Injury
 	if err == nil {
 		value, err = injuries.ToInjuries(rows)
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	holdSeasonFeed(&a.seasonInjuries, value, fresh, err)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	holdSeasonFeed(&a.core.SeasonInjuries, value, fresh, err)
 }
 
 // heldInjuries returns the held injuries feed as the snapshot's eligibility input.
 func (a *App) heldInjuries() snapshot.Injuries {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	statuses := make(map[string]string, len(a.seasonInjuries.value))
-	for _, row := range a.seasonInjuries.value {
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	statuses := make(map[string]string, len(a.core.SeasonInjuries.Value))
+	for _, row := range a.core.SeasonInjuries.Value {
 		statuses[row.ID.String()] = row.Status
 	}
 	return snapshot.Injuries{
 		Status:     statuses,
-		Provenance: a.seasonInjuries.provenance("injuries", "injuries"),
+		Provenance: a.core.SeasonInjuries.Provenance("injuries", "injuries"),
 	}
 }
 
 func (a *App) refreshSeasonTransactions(ctx context.Context) {
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season,
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[feedtransactions.RawTransactions]{
 			export: feedtransactions.Export,
 			fetch: func(ctx context.Context) ([]feedtransactions.RawTransactions, error) {
-				raw, err := feedtransactions.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+				raw, err := feedtransactions.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 				if err != nil {
 					return nil, fmt.Errorf("season transactions: %w", err)
 				}
@@ -231,25 +204,25 @@ func (a *App) refreshSeasonTransactions(ctx context.Context) {
 				}
 				return []feedtransactions.RawTransactions{raw}, nil
 			},
-			bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
+			bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
 	var value []leaguefeed.Transaction
 	if err == nil {
 		value, err = feedtransactions.ToTransactions(rows[0])
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	holdSeasonFeed(&a.seasonTransactions, value, fresh, err)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	holdSeasonFeed(&a.core.SeasonTransactions, value, fresh, err)
 }
 
 func (a *App) refreshSeasonLineups(ctx context.Context) {
-	a.weekMu.Lock()
-	week := a.week.Number
-	a.weekMu.Unlock()
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[livescoring.RawLineups]{
+	a.core.WeekMu.Lock()
+	week := a.core.Week.Number
+	a.core.WeekMu.Unlock()
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[livescoring.RawLineups]{
 		export: livescoring.Export,
 		fetch: func(ctx context.Context) ([]livescoring.RawLineups, error) {
-			raw, err := livescoring.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID, week)
+			raw, err := livescoring.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
 			if err != nil {
 				return nil, fmt.Errorf("season lineups: %w", err)
 			}
@@ -269,7 +242,7 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 			return []livescoring.RawLineups{raw}, nil
 		},
 		bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
-			return a.history.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
+			return a.core.History.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
 				u, err := url.Parse(src)
 				if err != nil || u.Query().Get("W") != lineupWeekParam(week) {
 					return false
@@ -277,19 +250,19 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 				return accept(src, body, at)
 			})
 		},
-	}, a.fallbackLog)
+	}, a.core.FallbackLog)
 	var value leaguefeed.Lineups
 	if err == nil {
 		value, err = livescoring.ToLineups(rows[0])
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	// A kept copy must not masquerade as the newly requested week's lineups either.
-	if a.lineupsWeek != week {
-		a.seasonLineups = heldSeasonFeed[leaguefeed.Lineups]{}
+	if a.core.LineupsWeek != week {
+		a.core.SeasonLineups = heldSeasonFeed[leaguefeed.Lineups]{}
 	}
-	a.lineupsWeek = week
-	holdSeasonFeed(&a.seasonLineups, value, fresh, err)
+	a.core.LineupsWeek = week
+	holdSeasonFeed(&a.core.SeasonLineups, value, fresh, err)
 }
 
 func lineupWeekParam(week int) string {
@@ -301,64 +274,64 @@ func lineupWeekParam(week int) string {
 
 func (a *App) refreshPendingTrades(ctx context.Context) {
 	// Read the keyring first: with no key, not even the unkeyed host discovery goes out.
-	a.keyMu.Lock()
-	generation := a.keyGeneration
+	a.core.KeyMu.Lock()
+	generation := a.core.KeyGeneration
 	var err error
-	if a.keyStore == nil {
+	if a.core.KeyStore == nil {
 		err = mflkey.ErrUnavailable
 	} else {
-		_, err = a.keyStore.Get(ctx)
+		_, err = a.core.KeyStore.Get(ctx)
 	}
-	a.keyMu.Unlock()
+	a.core.KeyMu.Unlock()
 	var value []leaguefeed.PendingTrade
 	if err == nil {
-		raw, ferr := pendingtrades.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+		raw, ferr := pendingtrades.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 		err = ferr
 		if err == nil {
 			value, err = pendingtrades.ToPendingTrades(raw)
 		}
 	}
-	a.keyMu.Lock()
-	defer a.keyMu.Unlock()
-	if generation != a.keyGeneration {
+	a.core.KeyMu.Lock()
+	defer a.core.KeyMu.Unlock()
+	if generation != a.core.KeyGeneration {
 		return
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	switch {
 	case errors.Is(err, mflkey.ErrNoKey):
 		a.clearPendingTrades()
 	case errors.Is(err, mflkey.ErrUnavailable), errors.Is(err, mflkey.ErrTimeout):
-		a.seasonPendingTrades.refreshError = "MFL keyring is locked or unavailable"
+		a.core.SeasonPendingTrades.RefreshError = "MFL keyring is locked or unavailable"
 	default:
 		at := a.timeNow()
 		// The desk's read stands on its own: failing to save it into Offers history is logged, never
 		// reported as an MFL failure.
 		if rerr := a.recordOffers(ctx, value, at, err); rerr != nil && err == nil {
-			a.fallbackLog(rerr.Error())
+			a.core.FallbackLog(rerr.Error())
 		}
-		holdSeasonFeed(&a.seasonPendingTrades, value, liveFreshness(at), err)
+		holdSeasonFeed(&a.core.SeasonPendingTrades, value, liveFreshness(at), err)
 	}
 }
 
 // The caller holds seasonMu; keyGeneration prevents an older fetch from republishing after deletion.
 func (a *App) clearPendingTrades() {
-	a.seasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{refreshError: "MFL not connected"}
+	a.core.SeasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{RefreshError: "MFL not connected"}
 }
 
 // refreshPendingTradesInBackground follows a key change. Shutdown cancels workCtx, so it never
 // waits out a slow fetch; tests that skip startup run it under the app context.
 func (a *App) refreshPendingTradesInBackground() {
-	parent := a.workCtx
+	parent := a.core.WorkCtx
 	if parent == nil {
 		parent = a.fallbackParent()
 	}
 	a.startWorker(func() {
 		ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 		defer cancel()
-		a.refreshMu.Lock()
-		defer a.refreshMu.Unlock()
+		a.core.RefreshMu.Lock()
+		defer a.core.RefreshMu.Unlock()
 		a.refreshPendingTrades(ctx)
-		a.seasonChanged(ctx)
+		a.core.SeasonChanged(ctx)
 	})
 }

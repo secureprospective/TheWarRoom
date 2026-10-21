@@ -30,25 +30,25 @@ func (a *App) contractsInput() (contractsInput, error) {
 	if err := a.ready(); err != nil {
 		return contractsInput{}, fmt.Errorf("contracts: startup: %w", err)
 	}
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	m, at, used := a.league.ContractsView()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	m, at, used := a.core.League.ContractsView()
 	if at == "" || m.Season == 0 {
 		return contractsInput{}, fmt.Errorf("contracts: MFL mirror unavailable; refresh from MFL")
 	}
-	a.targetSnapshotMu.Lock()
-	directory := a.targetSnapshot
-	a.targetSnapshotMu.Unlock()
-	names := a.rulebook.FranchiseNames()
+	a.core.TargetSnapshotMu.Lock()
+	directory := a.core.TargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
+	names := a.core.Rulebook.FranchiseNames()
 	var capAmount *domain.Money
-	if raw := a.rulebook.GetSalaryCap(); raw != "" {
+	if raw := a.core.Rulebook.GetSalaryCap(); raw != "" {
 		parsed, err := domain.ParseMoneyMillions(raw)
 		if err != nil {
 			return contractsInput{}, fmt.Errorf("contracts: salary cap configuration: %w", err)
 		}
 		capAmount = &parsed
 	}
-	return contractsInput{directory: directory.Players.Provenance, mirror: m, asOf: at, used: used, rows: snapshot.ContractRows(m, directory, names), names: names, cap: capAmount, capOverride: a.rulebook.SalaryCapOverridden()}, nil
+	return contractsInput{directory: directory.Players.Provenance, mirror: m, asOf: at, used: used, rows: snapshot.ContractRows(m, directory, names), names: names, cap: capAmount, capOverride: a.core.Rulebook.SalaryCapOverridden()}, nil
 }
 
 func contractReading[T any](value T, at, source, how string, count int, err error) Reading[T] {

@@ -27,7 +27,7 @@ func TestDailyShellArchiveReadStatus(t *testing.T) {
 			t.Run(export+"/"+test.name, func(t *testing.T) {
 				t.Parallel()
 				a, transport, _, _ := seasonTestApp(t)
-				a.clockNow = func() time.Time { return now }
+				a.core.ClockNow = func() time.Time { return now }
 				body := `{"calendar":{"event":{"id":"one","type":"TRADE","title":"Event"}}}`
 				if export == "tradeBait" {
 					body = `{"tradeBaits":{"tradeBait":{"franchise_id":"0001","inExchangeFor":"Bait"}}}`
@@ -36,21 +36,21 @@ func TestDailyShellArchiveReadStatus(t *testing.T) {
 				var at time.Time
 				var note, status, source, provenance string
 				if export == "calendar" {
-					feed := readShellFeed(a.ctx, a, &a.seasonCalendar, export, ingestion.ParseCalendar)
+					feed := readShellFeed(a.core.Ctx, a, &a.core.SeasonCalendar, export, ingestion.ParseCalendar)
 					if test.loss != "" {
 						holdSeasonFeed(&feed, nil, Freshness{}, errors.New(test.loss))
 					}
 					r := reportShell("C-04", "Calendar", "", feed, time.Local)
-					at, note, status = feed.fetchedAt, r.Note, r.Status
-					source, provenance = shellFeedTime(feed, time.Local), feed.provenance("MFL", export).Freshness.Note
+					at, note, status = feed.FetchedAt, r.Note, r.Status
+					source, provenance = shellFeedTime(feed, time.Local), feed.Provenance("MFL", export).Freshness.Note
 				} else {
-					feed := readShellFeed(a.ctx, a, &a.seasonTradeBait, export, ingestion.ParseTradeBait)
+					feed := readShellFeed(a.core.Ctx, a, &a.core.SeasonTradeBait, export, ingestion.ParseTradeBait)
 					if test.loss != "" {
 						holdSeasonFeed(&feed, nil, Freshness{}, errors.New(test.loss))
 					}
 					r := reportShell("M-116", "Trade bait", "", feed, time.Local)
-					at, note, status = feed.fetchedAt, r.Note, r.Status
-					source, provenance = shellFeedTime(feed, time.Local), feed.provenance("MFL", export).Freshness.Note
+					at, note, status = feed.FetchedAt, r.Note, r.Status
+					source, provenance = shellFeedTime(feed, time.Local), feed.Provenance("MFL", export).Freshness.Note
 				}
 				if !at.Equal(test.at) || status != test.status {
 					t.Fatal(at, status, note)

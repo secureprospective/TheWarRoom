@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
@@ -52,7 +53,7 @@ func TestMarketInputValidationAndLoadFailure(t *testing.T) {
 			t.Fatal("invalid asset selection accepted")
 		}
 	}
-	a := &App{labData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}
+	a := &App{core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
 	for _, r := range []Reading[MarketSurface]{a.TargetMarketLists(RawMarketScope{From: 2017, To: 2026}), a.TargetPickClock(RawMarketScope{From: 2017, To: 2026}), a.TargetMarketStretches(RawMarketScope{From: 2017, To: 2026}), a.TargetAssetProfile(RawMarketAsset{Scope: RawMarketScope{From: 2017, To: 2026}, Kind: "LB"})} {
 		if r.Status != ReadingFailed || r.AbsenceReason == nil || !strings.Contains(*r.AbsenceReason, "fingerprint mismatch") {
 			t.Fatal("load failure hidden")

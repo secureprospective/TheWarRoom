@@ -20,7 +20,7 @@ import (
 func tradeDraftApp(t *testing.T) (*App, *seasonTransport, leaguefeed.PendingTrade) {
 	t.Helper()
 	a, transport, _ := lineupDraftApp(t)
-	a.targetSnapshot.Franchises.Value = append(a.targetSnapshot.Franchises.Value,
+	a.core.TargetSnapshot.Franchises.Value = append(a.core.TargetSnapshot.Franchises.Value,
 		snapshot.Franchise{ID: "0001", Name: "Other team"})
 	assets := func(tokens string) []leaguefeed.Asset {
 		out, err := leaguefeed.ParseAssets(tokens)
@@ -32,10 +32,10 @@ func tradeDraftApp(t *testing.T) (*App, *seasonTransport, leaguefeed.PendingTrad
 	offer := leaguefeed.PendingTrade{
 		ID: "77", Offering: "0001", OfferedTo: "0025",
 		Gives: assets("99,FP_0001_2027_1"), Gets: assets("15754"),
-		Expires: a.movesNow().Add(time.Hour), Comments: "synthetic offer",
+		Expires: a.core.MovesNow().Add(time.Hour), Comments: "synthetic offer",
 	}
-	a.seasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{
-		value: []leaguefeed.PendingTrade{offer}, fetchedAt: a.movesNow().Add(-time.Minute),
+	a.core.SeasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{
+		Value: []leaguefeed.PendingTrade{offer}, FetchedAt: a.core.MovesNow().Add(-time.Minute),
 	}
 	return a, transport, offer
 }
@@ -49,9 +49,9 @@ func TestTargetTradesLocalReading(t *testing.T) {
 	outgoing.ID, outgoing.Offering, outgoing.OfferedTo = "66", "0025", "0001"
 	later := offer
 	later.ID, later.Expires = "1", offer.Expires.Add(time.Minute)
-	a.seasonPendingTrades.value = []leaguefeed.PendingTrade{later, offer, other, outgoing}
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{later, offer, other, outgoing}
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	r, err := a.TargetTrades("0025")
 	if err != nil || len(r.Offers) != 3 || r.Offers[0].TradeID != "66" ||
 		r.Offers[1].TradeID != "77" || r.Offers[2].TradeID != "1" {
@@ -74,9 +74,9 @@ func TestTargetTradesLocalReading(t *testing.T) {
 	if err != nil || again.Offers[0].Give[0].Name == "mutated" {
 		t.Fatal("aliased reading", err)
 	}
-	for _, fetched := range []time.Time{{}, a.movesNow()} {
-		a.seasonPendingTrades.fetchedAt = fetched
-		a.seasonPendingTrades.refreshError = "offline"
+	for _, fetched := range []time.Time{{}, a.core.MovesNow()} {
+		a.core.SeasonPendingTrades.FetchedAt = fetched
+		a.core.SeasonPendingTrades.RefreshError = "offline"
 		failed, err := a.TargetTrades("0025")
 		if err != nil || len(failed.Offers) != 0 || failed.Provenance.Freshness.Note != "offline" {
 			t.Fatalf("failed offers: %+v %v", failed, err)
@@ -101,15 +101,15 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 	}
 	const target = "https://www47.myfantasyleague.com/2026/options?L=14432&O=05"
 	opens := 0
-	a.openURL = func(ctx context.Context, got string) {
+	a.core.OpenURL = func(ctx context.Context, got string) {
 		opens++
-		stored, err := a.moves.Get(ctx, r.CorrelationID)
+		stored, err := a.core.Moves.Get(ctx, r.CorrelationID)
 		if got != target || err != nil || stored.State() != envelope.HandedOff {
 			t.Fatalf("hand-off: %s %s %v", got, stored.State(), err)
 		}
 	}
-	handed := a.movesNow().Add(time.Minute)
-	a.movesNow = func() time.Time { return handed }
+	handed := a.core.MovesNow().Add(time.Minute)
+	a.core.MovesNow = func() time.Time { return handed }
 	if _, err := a.TargetHandOff(r.CorrelationID); err != nil || opens != 1 {
 		t.Fatal("hand-off", err, opens)
 	}
@@ -120,23 +120,23 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 		envelope.NotYetDone, envelope.DOTReview, envelope.DOTReview, envelope.Landed,
 	} {
 		now := handed.Add(time.Duration(i+1) * time.Minute)
-		a.movesNow = func() time.Time { return now }
+		a.core.MovesNow = func() time.Time { return now }
 		requested := []envelope.Source{}
-		a.movesRefresh = func(_ context.Context, source envelope.Source) error {
+		a.core.MovesRefresh = func(_ context.Context, source envelope.Source) error {
 			requested = append(requested, source)
 			switch source {
 			case envelope.PendingTrades:
-				a.seasonPendingTrades.fetchedAt = now
+				a.core.SeasonPendingTrades.FetchedAt = now
 				if i > 0 {
-					a.seasonPendingTrades.value = nil
+					a.core.SeasonPendingTrades.Value = nil
 				}
 			case envelope.Transactions:
-				a.seasonTransactions.fetchedAt = now
+				a.core.SeasonTransactions.FetchedAt = now
 				when := handed.Add(-time.Second)
 				if i == 3 {
 					when = handed.Add(time.Second)
 				}
-				a.seasonTransactions.value = []leaguefeed.Transaction{{
+				a.core.SeasonTransactions.Value = []leaguefeed.Transaction{{
 					Kind: "TRADE", Time: when, Franchise: offer.Offering,
 					Trade: &leaguefeed.Trade{
 						Counterparty: offer.OfferedTo, Gave: offer.Gives, CounterpartyGave: offer.Gets,
@@ -147,10 +147,10 @@ func TestTradeDraftHandOffWatcher(t *testing.T) {
 			}
 			return nil
 		}
-		if err := a.checkMoves(a.ctx); err != nil {
+		if err := a.checkMoves(a.core.Ctx); err != nil {
 			t.Fatal(err)
 		}
-		stored, err := a.moves.Get(a.ctx, r.CorrelationID)
+		stored, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
 		if err != nil || stored.State() != want || len(requested) != 2 {
 			t.Fatalf("step %d: %s %v feeds %v", i, stored.State(), err, requested)
 		}
@@ -169,25 +169,25 @@ func TestTradeBindingBlocks(t *testing.T) {
 			note := ""
 			switch name {
 			case "failed", "stale failed":
-				a.seasonPendingTrades.refreshError = "offline"
+				a.core.SeasonPendingTrades.RefreshError = "offline"
 				if name == "failed" {
-					a.seasonPendingTrades.fetchedAt = time.Time{}
+					a.core.SeasonPendingTrades.FetchedAt = time.Time{}
 				}
 				note = "pending trades unavailable: offline"
 			case "unowned":
-				a.targetSnapshot.Rosters.Value = nil
+				a.core.TargetSnapshot.Rosters.Value = nil
 				note = "not on this franchise's roster"
 			case "expired":
-				a.movesNow = func() time.Time { return offer.Expires.Add(time.Second) }
+				a.core.MovesNow = func() time.Time { return offer.Expires.Add(time.Second) }
 				note = "deadline passed"
 			case "host":
-				a.mflClient = nil
+				a.core.MFLClient = nil
 				note = "MFL host not yet known"
 			case "offerer":
-				a.seasonPendingTrades.value[0].Offering = "0025"
+				a.core.SeasonPendingTrades.Value[0].Offering = "0025"
 				note = "you made this offer; accept is the other owner's"
 			case "gone":
-				a.seasonPendingTrades.value = nil
+				a.core.SeasonPendingTrades.Value = nil
 				note = "offer 77 is no longer pending"
 			}
 			r, err := a.TargetDraftTradeAccept("0025", offer.ID)
@@ -212,24 +212,24 @@ func TestTradeSupersede(t *testing.T) {
 			t.Parallel()
 			a, _, offer := tradeDraftApp(t)
 			if name == "blocked" {
-				a.mflClient = nil
+				a.core.MFLClient = nil
 			}
 			first, err := a.TargetDraftTradeAccept("0025", offer.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if name == "handed" || name == "dot" {
-				a.openURL = func(context.Context, string) {}
+				a.core.OpenURL = func(context.Context, string) {}
 				if _, err := a.TargetHandOff(first.CorrelationID); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if name == "dot" {
-				e, err := a.moves.Get(a.ctx, first.CorrelationID)
+				e, err := a.core.Moves.Get(a.core.Ctx, first.CorrelationID)
 				if err != nil {
 					t.Fatal(err)
 				}
-				now := a.movesNow().Add(time.Minute)
+				now := a.core.MovesNow().Add(time.Minute)
 				fresh := snapshot.Provenance{Freshness: liveFreshness(now)}
 				obs := envelope.Observation{LeagueID: "14432"}
 				obs.Transactions.Provenance, obs.PendingTrades.Provenance = fresh, fresh
@@ -238,12 +238,12 @@ func TestTradeSupersede(t *testing.T) {
 					t.Fatal(err)
 				}
 				saveMove(t, a, e)
-				a.movesNow = func() time.Time { return now }
+				a.core.MovesNow = func() time.Time { return now }
 			}
 			other := offer
 			other.ID = "88"
 			other.Expires = offer.Expires.Add(time.Hour)
-			a.seasonPendingTrades.value = append(a.seasonPendingTrades.value, other)
+			a.core.SeasonPendingTrades.Value = append(a.core.SeasonPendingTrades.Value, other)
 			unrelated, err := a.TargetDraftTradeAccept("0025", other.ID)
 			if err != nil {
 				t.Fatal(err)
@@ -252,7 +252,7 @@ func TestTradeSupersede(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			old, err := a.moves.Get(a.ctx, first.CorrelationID)
+			old, err := a.core.Moves.Get(a.core.Ctx, first.CorrelationID)
 			want := envelope.Stale
 			if name == "blocked" {
 				want = envelope.Blocked
@@ -264,7 +264,7 @@ func TestTradeSupersede(t *testing.T) {
 				old.Receipt().Audit[len(old.Receipt().Audit)-1].Note != "superseded by "+second.CorrelationID {
 				t.Fatal("missing successor ID")
 			}
-			kept, err := a.moves.Get(a.ctx, unrelated.CorrelationID)
+			kept, err := a.core.Moves.Get(a.core.Ctx, unrelated.CorrelationID)
 			if err != nil || kept.State() == envelope.Stale {
 				t.Fatal("other trade superseded", err)
 			}
@@ -296,7 +296,7 @@ func TestTradesBindingGoldens(t *testing.T) {
 func TestTradesDenialGoldens(t *testing.T) {
 	t.Parallel()
 	f := tradeApp(t)
-	f.app.localZone = time.UTC
+	f.app.core.LocalZone = time.UTC
 	denials := map[string]string{}
 	for _, who := range []string{"stranger", "owner.one"} {
 		_, err := f.action(t, who, commissioner.TradeOffer, tradePlayerOffer())
@@ -304,11 +304,11 @@ func TestTradesDenialGoldens(t *testing.T) {
 		_, err = f.action(t, who, commissioner.TradeOverride, commissioner.RawTradeArgs{ID: "absent", Decision: "veto"})
 		denials[who+"/override"] = errorWords(err)
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.set(t, "calendar.windows", `{"closed":{"start":{"month":1,"day":1},"opens":[]}}`, "now")
 	_, err := f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer())
 	denials["closed/offer"] = errorWords(err)
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["trade"]}}`, "now")
 	f.set(t, "calendar.tradeDeadline", `"2026-01-01T00:00:00Z"`, "now")
 	_, err = f.action(t, "owner.two", commissioner.TradeOffer, tradePlayerOffer())
@@ -320,7 +320,7 @@ func TestTradesDenialGoldens(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = a.draftTradeExit(a.ctx, RawTradeBuilder{Mine: "0025", ID: offer.ID, Action: "revoke"}, held)
+	_, err = a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: "0025", ID: offer.ID, Action: "revoke"}, held)
 	denials["local/wrong-revoke"] = errorWords(err)
 	checkGolden(t, "trades", "denials", denials)
 	if len(transport.requests) != 0 {
@@ -393,9 +393,9 @@ func TestTradesReadDuringHeldPublication(t *testing.T) {
 		for i := 0; i < 100; i++ {
 			next := offer
 			next.Comments = strconv.Itoa(i)
-			a.seasonMu.Lock()
-			a.seasonPendingTrades.value = []leaguefeed.PendingTrade{next}
-			a.seasonMu.Unlock()
+			a.core.SeasonMu.Lock()
+			a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{next}
+			a.core.SeasonMu.Unlock()
 		}
 	}()
 	close(start)

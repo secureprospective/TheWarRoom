@@ -25,8 +25,8 @@ func alertKinds(r AlertReading) (alerts, unavailable []string) {
 func TestTargetAlerts(t *testing.T) {
 	t.Parallel()
 	a, _, _ := tradeDraftApp(t)
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	r, err := a.TargetAlerts("0025")
 	if err != nil {
 		t.Fatal(err)
@@ -37,7 +37,7 @@ func TestTargetAlerts(t *testing.T) {
 	}
 	trade := r.Alerts[0]
 	if trade.Title != "1 offer to you" || trade.Node != "trade" || trade.Workspace != "trade-desk" ||
-		!trade.At.Equal(a.movesNow().Add(time.Hour)) {
+		!trade.At.Equal(a.core.MovesNow().Add(time.Hour)) {
 		t.Fatalf("trade alert: %+v", trade)
 	}
 	body, _ := json.Marshal(r)
@@ -45,7 +45,7 @@ func TestTargetAlerts(t *testing.T) {
 		t.Fatalf("waivers are absent by league rule: %s", body)
 	}
 
-	rows := a.seasonLineups.value.Franchises
+	rows := a.core.SeasonLineups.Value.Franchises
 	for i := range rows {
 		if rows[i].Franchise == "0025" {
 			rows[i].Starters = rows[i].Starters[:20]
@@ -56,19 +56,19 @@ func TestTargetAlerts(t *testing.T) {
 		t.Fatalf("partial lineup: %v %v", alerts, err)
 	}
 	lineup := r.Alerts[0]
-	lock := a.movesNow().Add(24 * time.Hour)
+	lock := a.core.MovesNow().Add(24 * time.Hour)
 	if lineup.Title != "Check your lineup" || lineup.Node != "hq" || !lineup.At.Equal(lock) ||
 		lineup.Detail == "" || r.Alerts[1].Urgency > lineup.Urgency {
 		t.Fatalf("lineup alert: %+v", r.Alerts)
 	}
 
-	a.week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: a.movesNow().Add(-time.Hour)}}}
+	a.core.Week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: a.core.MovesNow().Add(-time.Hour)}}}
 	r, err = a.TargetAlerts("0025")
 	if alerts, _ = alertKinds(r); err != nil || slices.Contains(alerts, "lineup") {
 		t.Fatalf("locked week still alerts: %v %v", alerts, err)
 	}
 
-	a.seasonPendingTrades.refreshError = "offline"
+	a.core.SeasonPendingTrades.RefreshError = "offline"
 	r, err = a.TargetAlerts("0025")
 	alerts, unavailable = alertKinds(r)
 	if err != nil || slices.Contains(alerts, "trades") || !slices.Contains(unavailable, "trades") {

@@ -40,7 +40,7 @@ func TestTheDraftRoomWireIsWhatGoSends(t *testing.T) {
 	t.Parallel()
 	f := draftApp(t)
 	// The running app names rookies in previews from the same facts the draft reading uses.
-	f.app.history.SetLineupEnvironment(appLineupEnv{app: f.app})
+	f.app.core.History.SetLineupEnvironment(appLineupEnv{app: f.app})
 	waiting := f.read(t, "franchise.01")
 	f.scheduled(t, 3, 2, 1)
 	f.seated(t, 1, 3)

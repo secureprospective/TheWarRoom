@@ -71,7 +71,7 @@ func TestCommissionerJobsWire(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		app.history.SetClock(func() time.Time { return parsed })
+		app.core.History.SetClock(func() time.Time { return parsed })
 	}
 	views := map[string]commissioner.Jobs{}
 	read := func(name, league string) commissioner.Jobs {
