@@ -174,10 +174,6 @@ export function TargetLeagueSettings() {
   return window['go']['main']['App']['TargetLeagueSettings']();
 }
 
-export function TargetLiveGame(arg1, arg2, arg3) {
-  return window['go']['main']['App']['TargetLiveGame'](arg1, arg2, arg3);
-}
-
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
@@ -284,14 +280,6 @@ export function TargetNativeWaivers(arg1, arg2, arg3) {
 
 export function TargetNativeWeek(arg1) {
   return window['go']['main']['App']['TargetNativeWeek'](arg1);
-}
-
-export function TargetNow(arg1, arg2, arg3) {
-  return window['go']['main']['App']['TargetNow'](arg1, arg2, arg3);
-}
-
-export function TargetNowRefresh(arg1, arg2) {
-  return window['go']['main']['App']['TargetNowRefresh'](arg1, arg2);
 }
 
 export function TargetOffers(arg1) {

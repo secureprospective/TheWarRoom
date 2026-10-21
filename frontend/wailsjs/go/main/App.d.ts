@@ -93,8 +93,6 @@ export function TargetLeagueSchedule(arg1:main.RawLeagueScheduleScope):Promise<c
 
 export function TargetLeagueSettings():Promise<main.Report>;
 
-export function TargetLiveGame(arg1:boolean,arg2:string,arg3:string):Promise<main.LiveGameView>;
-
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
@@ -148,10 +146,6 @@ export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<c
 export function TargetNativeWaivers(arg1:string,arg2:string,arg3:time.Time):Promise<commissioner.NativeWaivers>;
 
 export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissioner.NativeWeek>;
-
-export function TargetNow(arg1:number,arg2:number,arg3:string):Promise<main.NowBoard>;
-
-export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 

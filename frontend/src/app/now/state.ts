@@ -2,20 +2,15 @@ import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { commands } from '../commands/registry';
 import { parseNow, type Now } from './contract';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { targetNow, targetNowRefresh } from './api';
 
 export type NowReader = {
   read(week: number, reportWeek: number, mine: string): Promise<Now>;
   refresh(week: number, force: boolean): Promise<void>;
 };
-function bindings(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('League Pulse needs the desktop app; no browser fixture is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
 const live: NowReader = {
-  read: async (week, reportWeek, mine) => parseNow(await bindings().TargetNow(week, reportWeek, mine)),
-  refresh: async (week, force) => bindings().TargetNowRefresh(week, force),
+  read: async (week, reportWeek, mine) => parseNow(await targetNow(week, reportWeek, mine)),
+  refresh: async (week, force) => targetNowRefresh(week, force),
 };
 
 // The week is a request; Go validates it and the board echoes the week it shows.
