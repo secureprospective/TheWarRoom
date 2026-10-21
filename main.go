@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 
@@ -109,6 +110,7 @@ func bindings(app *App) []interface{} {
 		newMarketAPI(app),
 		nowapp.New(nowHost{State: app.core, app: app}, app.nowHeld),
 		raceapp.New(app.core, app.raceHeld),
+		research.New(researchHost{app: app}, app.researchHeld),
 		sources.New(app.core, app.sourcesHeld),
 		trades.New(tradesHost{State: app.core, app: app}),
 	}

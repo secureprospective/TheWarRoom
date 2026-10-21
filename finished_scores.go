@@ -47,7 +47,8 @@ func (a *App) refreshFinishedScores(ctx context.Context) {
 	}
 	a.refreshNowWeek(ctx, week, false)
 	a.core.SeasonMu.Lock()
-	held := a.research.feeds[researchKey("playerScores", strconv.Itoa(week))]
+	research := a.snapshotResearch()
+	held := research.feeds[researchKey("playerScores", strconv.Itoa(week))]
 	schedule := a.now.schedules[week]
 	a.core.SeasonMu.Unlock()
 	if held.FetchedAt.IsZero() {
@@ -58,14 +59,16 @@ func (a *App) refreshFinishedScores(ctx context.Context) {
 		return
 	}
 	a.core.SeasonMu.Lock()
-	if a.research.finishedAt == nil {
-		a.research.finishedAt = map[int]time.Time{}
+	research = a.snapshotResearch()
+	if research.finishedAt == nil {
+		research.finishedAt = map[int]time.Time{}
 	}
-	if first := a.research.finishedAt[week]; !first.IsZero() {
+	if first := research.finishedAt[week]; !first.IsZero() {
 		end = first
 	} else {
-		a.research.finishedAt[week] = end
+		research.finishedAt[week] = end
 	}
+	a.publishResearch(research)
 	a.core.SeasonMu.Unlock()
 	if !held.FetchedAt.Before(end) {
 		return

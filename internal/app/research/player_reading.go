@@ -310,21 +310,7 @@ func (v researchView) playerForm(r *report.Report, p PlayerInfo) {
 }
 
 // Feed is a published immutable payload plus its held read state, not a cache owner.
-type Feed[T any] struct {
-	Value        T
-	FetchedAt    time.Time
-	RefreshError string
-	ReadPending  bool
-}
-
-// Held contains only Research's reading inputs; scheduling and archive bookkeeping stay root.
-type Held struct {
-	Feeds     map[string]Feed[[]researchfeeds.Feed]
-	Depth     Feed[[]researchfeeds.RawDepth]
-	Links     map[string]string
-	LinkError string
-	News      map[string]Feed[[]researchfeeds.News]
-}
+type Feed[T any] = report.HeldFeed[T]
 
 // Score is the shared finished-week calculation supplied by its root owner.
 type Score struct {

@@ -1,3 +1,4 @@
+import { subscribeResearch } from './api';
 import { useEffect, useState } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -108,7 +109,6 @@ export default function Research({ newsOnly = false }: { newsOnly?: boolean }) {
   const myNews = selected.includes('M-060') || selected.includes('M-059');
   useEffect(() => {
     let disposed = false;
-    let stop: (() => void) | undefined;
     const load = async () => {
       await researchState.load();
       if (disposed) return;
@@ -117,11 +117,8 @@ export default function Research({ newsOnly = false }: { newsOnly?: boolean }) {
       else if (!myNews) await researchState.load(true);
     };
     void load();
-    void import('../../../wailsjs/runtime/runtime').then(m => {
-      if (!disposed && typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-        stop = m.EventsOn('target:season', () => { void load(); });
-    });
-    return () => { disposed = true; stop?.(); };
+    const stop = subscribeResearch(() => { void load(); });
+    return () => { disposed = true; stop(); };
   }, [mine, newsOnly, myNews]);
   return <>
     {state.pending && <p role="status">

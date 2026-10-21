@@ -167,35 +167,8 @@ type Runtime interface {
 	BrowserOpenURL(context.Context, string)
 }
 
-// HeldFeed is a feed's last good copy and why the latest refresh failed, if it did.
-type HeldFeed[T any] struct {
-	Value        T
-	FetchedAt    time.Time
-	RefreshError string
-	ReadPending  bool
-}
-
-// state is the feed's held read state, without its value.
-func (h HeldFeed[T]) FeedState() report.Feed {
-	return report.Feed{FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
-}
-
-func (h HeldFeed[T]) Provenance(source, feed string) snapshot.Provenance {
-	fresh := domain.Freshness{State: domain.FreshFail, Note: feed + " not fetched yet"}
-	if !h.FetchedAt.IsZero() {
-		fresh = domain.Freshness{State: domain.FreshLive, FetchedAt: h.FetchedAt.UTC().Format(time.RFC3339)}
-	}
-	if h.ReadPending {
-		fresh.State, fresh.Note = domain.FreshStale, report.PendingRead(h.FetchedAt, time.Local)
-	}
-	if h.RefreshError != "" {
-		fresh.Note = h.RefreshError
-		if !h.FetchedAt.IsZero() {
-			fresh.State = domain.FreshStale
-		}
-	}
-	return snapshot.Provenance{Kind: "live", Source: source, Freshness: fresh}
-}
+// HeldFeed is the shared held-value contract; synchronization remains with State.
+type HeldFeed[T any] = report.HeldFeed[T]
 
 func Pause(ctx context.Context, duration time.Duration) error {
 	timer := time.NewTimer(duration)
@@ -209,14 +182,5 @@ func Pause(ctx context.Context, duration time.Duration) error {
 }
 
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
-	if err != nil {
-		h.RefreshError = err.Error()
-		return
-	}
-	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
-	if parseErr != nil {
-		h.RefreshError = "season refresh time: " + parseErr.Error()
-		return
-	}
-	h.Value, h.FetchedAt, h.RefreshError, h.ReadPending = value, at, fresh.Note, false
+	report.HoldFeed(h, value, fresh, err)
 }

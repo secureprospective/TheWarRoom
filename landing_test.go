@@ -104,7 +104,7 @@ func TestLandingColdWeekMatchesRefresh(t *testing.T) {
 	a.seedClockSchedules(a.core.Ctx)
 	a.hydrateResearch()
 	source := func() string {
-		v := researchView{researchInput: researchInput{held: a.research, week: a.marketWeek(), zone: time.UTC}}
+		v := researchView{researchInput: researchInput{held: a.snapshotResearch(), week: a.marketWeek(), zone: time.UTC}}
 		return buildAssetBoard(v, nil, at, nil).NowSource
 	}
 	before := source()

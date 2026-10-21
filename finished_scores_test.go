@@ -68,7 +68,15 @@ func (f finishedScoresTransport) RoundTrip(r *http.Request) (*http.Response, err
 func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.core.SeasonChanged = func(context.Context) {}
+	a.core.SeasonChanged = func(context.Context) {
+		if a.core.RefreshMu.TryLock() {
+			a.core.RefreshMu.Unlock()
+			t.Error("health event moved outside the existing refresh span")
+		}
+		if a.researchHeld.Snapshot().Feeds[researchKey("playerScores", "5")].FetchedAt.IsZero() {
+			t.Error("health event ran before publication")
+		}
+	}
 	now := time.Now().Truncate(time.Second)
 	a.core.ClockNow = func() time.Time { return now }
 	a.core.Week = leagueweek.Week{Number: 6}
@@ -76,7 +84,9 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 		{Teams: [2]string{"BUF", "NYJ"}, Kickoff: fmt.Sprint(now.Add(-5 * time.Hour).Unix()), Scores: [2]string{"20", "10"}, GameSecondsRemaining: "0"},
 	}}}}}
 	a.nowHeld.PublishByes(nowapp.Feed[[]nflschedule.RawBye]{FetchedAt: now})
-	a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{researchKey("playerScores", "5"): {FetchedAt: now.Add(-3 * time.Hour)}}
+	editResearch(a, func(value *researchHeld) {
+		value.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{researchKey("playerScores", "5"): {FetchedAt: now.Add(-3 * time.Hour)}}
+	})
 	requests, pauses := []string{}, 0
 	var err error
 	a.core.MFLClient, err = mfl.New("", 1000, mfl.WithTransport(finishedScoresTransport{t, &requests}))
@@ -93,7 +103,7 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 	if strings.Join(requests, ",") != "5,YTD" || pauses != 2 {
 		t.Fatal(requests, pauses)
 	}
-	held := a.research.feeds[researchKey("playerScores", "5")]
+	held := a.snapshotResearch().feeds[researchKey("playerScores", "5")]
 	if len(held.Value) != 1 || !held.FetchedAt.Equal(now) || held.RefreshError != "" {
 		t.Fatal(held)
 	}

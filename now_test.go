@@ -14,6 +14,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -58,7 +59,7 @@ func archivedCopies(copies ...struct {
 	src  string
 	body string
 	at   time.Time
-}) archivedBodies {
+}) researchapp.ArchivedBodies {
 	return func(_ context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
 		sorted := slices.Clone(copies)
 		slices.SortFunc(sorted, func(a, b struct {
