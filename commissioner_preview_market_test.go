@@ -12,7 +12,7 @@ func TestEveryBuiltWaiverAndBidCommandHasARealPreview(t *testing.T) {
 	f := recordedStandingsApp(t)
 	apply := func(command string, args commissioner.RawWaiverArgs) {
 		t.Helper()
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		previewAndExecute(t, f.app, f.raw(t, command, commissioner.RawArgs{Waiver: &args}, "league"))
 	}
 	apply(commissioner.WaiverOrderSet, commissioner.RawWaiverArgs{Order: waiverOrder()})
@@ -26,7 +26,7 @@ func TestEveryBuiltWaiverAndBidCommandHasARealPreview(t *testing.T) {
 	b := bidApp(t)
 	one := b.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	b.place(t, "owner.three", "franchise.03", "5004", 6*million, 2)
-	b.app.commissionerSession = testCommissionerSession{"creator"}
+	b.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	previewAndExecute(t, b.app, b.raw(t, commissioner.BidsProcess,
 		commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5004"}}, "league"))
 	previewAndExecute(t, b.app, b.raw(t, commissioner.BidsOverride,
@@ -35,7 +35,7 @@ func TestEveryBuiltWaiverAndBidCommandHasARealPreview(t *testing.T) {
 
 func previewTrade(t *testing.T, f *tradeFixture, who, command string, args commissioner.RawTradeArgs) commissioner.Receipt {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{who}
+	f.app.core.CommissionerSession = testCommissionerSession{who}
 	return previewAndExecute(t, f.app, f.raw(t, command, commissioner.RawArgs{Trade: &args}, "league"))
 }
 
@@ -56,7 +56,7 @@ func TestEveryBuiltTradeCommandHasARealPreview(t *testing.T) {
 	g := tradeApp(t)
 	pending := g.offer(t)
 	g.accept(t, pending)
-	g.app.commissionerSession = testCommissionerSession{"dot.a"}
+	g.app.core.CommissionerSession = testCommissionerSession{"dot.a"}
 	raw := g.raw(t, commissioner.TradeRecuse, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: pending.Entry}}, "league")
 	proveRefusedAct(t, g.app, raw)
 }

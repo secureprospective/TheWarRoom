@@ -29,11 +29,11 @@ func contractMirrorFixture(t *testing.T) *App {
 	if err := json.Unmarshal(data, &s); err != nil {
 		t.Fatal(err)
 	}
-	a.targetSnapshot = s
-	if err := a.rulebook.Initialize(a.ctx, capSource{}); err != nil {
+	a.core.TargetSnapshot = s
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, capSource{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "125", "fixture"); err != nil {
+	if err := a.core.Rulebook.SetOverride(a.core.Ctx, "cap", "salaryCapAmount", "125", "fixture"); err != nil {
 		t.Fatal(err)
 	}
 	m := state.MirrorSnapshot{Season: s.League.Value.Season}
@@ -42,16 +42,16 @@ func contractMirrorFixture(t *testing.T) *App {
 			m.Players = append(m.Players, state.MirrorPlayer{MFLID: p.ID.String(), FranchiseID: roster.FranchiseID, Salary: p.Salary, ContractYear: m.Season + *p.YearsRemaining - 1, ContractStatus: p.ContractStatus, RosterStatus: p.RosterStatus})
 		}
 	}
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	_, _, used := a.league.ContractsView()
+	_, _, used := a.core.League.ContractsView()
 	for _, team := range s.Franchises.Value {
 		if team.CapUsed != nil {
 			m.Adjustments = append(m.Adjustments, state.Adjustment{ID: team.ID, FranchiseID: team.ID, Amount: *team.CapUsed - used[team.ID]})
 		}
 	}
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
 	return a
@@ -60,7 +60,7 @@ func contractMirrorFixture(t *testing.T) *App {
 func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 	t.Parallel()
 	a := contractMirrorFixture(t)
-	before, stamp, _ := a.league.ContractsView()
+	before, stamp, _ := a.core.League.ContractsView()
 	for _, tc := range []struct {
 		intent, player string
 		phase          domain.Phase
@@ -106,7 +106,7 @@ func TestContractActsArizonaHeldMirrorPricesAndReadiness(t *testing.T) {
 	if len(options.Value) != 2 || options.Value[0].Intent != "contract.extend" || options.Value[1].Intent != "contract.restructure" {
 		t.Fatal(options)
 	}
-	after, afterStamp, _ := a.league.ContractsView()
+	after, afterStamp, _ := a.core.League.ContractsView()
 	if stamp != afterStamp || !reflect.DeepEqual(before, after) {
 		t.Fatal("mirror changed")
 	}
@@ -120,11 +120,11 @@ func TestContractTeamCapMatchesCoordinatorForSameRestructure(t *testing.T) {
 	if plan.Status != ReadingOK {
 		t.Fatal(plan)
 	}
-	m, _, used := a.league.ContractsView()
-	s := state.WhatIfSession{Mine: raw.Mine, Snapshot: m, Used: used[raw.Mine], Generation: "comparison", TaxiPercent: a.rulebook.TaxiCapPercent(), IRPercent: a.rulebook.IRCapPercent()}
+	m, _, used := a.core.League.ContractsView()
+	s := state.WhatIfSession{Mine: raw.Mine, Snapshot: m, Used: used[raw.Mine], Generation: "comparison", TaxiPercent: a.core.Rulebook.TaxiCapPercent(), IRPercent: a.core.Rulebook.IRCapPercent()}
 	capAmount := domain.Money(12500000000)
 	s.Cap = &capAmount
-	store, err := a.loadWhatIf(a.ctx, s)
+	store, err := a.loadWhatIf(a.core.Ctx, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,17 +133,17 @@ func TestContractTeamCapMatchesCoordinatorForSameRestructure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := coord.Execute(a.ctx, transactions.Restructure{MFLID: raw.Player, Move: 100000000}); err != nil {
+	if _, err := coord.Execute(a.core.Ctx, transactions.Restructure{MFLID: raw.Player, Move: 100000000}); err != nil {
 		t.Fatal(err)
 	}
-	view, err := a.whatIfView(a.ctx, s, store, false)
+	view, err := a.whatIfView(a.core.Ctx, s, store, false)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(plan.Value[0].TeamFigures, view.Figures) {
 		t.Fatalf("plan=%+v engine=%+v", plan.Value[0].TeamFigures, view.Figures)
 	}
-	if _, found, err := state.NewWhatIfSessions(a.whatifPools).Load(context.Background(), raw.Mine); err != nil || found {
+	if _, found, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(context.Background(), raw.Mine); err != nil || found {
 		t.Fatal("contract preview published a what-if session", err)
 	}
 }
@@ -152,8 +152,8 @@ func TestContractTagPoolUsesLeagueMirrorBASE(t *testing.T) {
 	t.Parallel()
 	a := contractMirrorFixture(t)
 	releasePhase(t, a, domain.PhaseRegularSeason)
-	m, _, _ := a.league.ContractsView()
-	f, err := a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: "13322", Intent: "contract.tag", Level: 1, Years: 1})
+	m, _, _ := a.core.League.ContractsView()
+	f, err := a.contractActFacts(a.core.Ctx, RawContractAct{Mine: "0025", Player: "13322", Intent: "contract.tag", Level: 1, Years: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,10 +166,10 @@ func TestContractTagPoolUsesLeagueMirrorBASE(t *testing.T) {
 			m.Players[i].ContractStatus = domain.CStatusFT2
 		}
 	}
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
-	f, err = a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: "13322", Intent: "contract.tag", Level: 1, Years: 1})
+	f, err = a.contractActFacts(a.core.Ctx, RawContractAct{Mine: "0025", Player: "13322", Intent: "contract.tag", Level: 1, Years: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,7 +216,7 @@ func TestContractNewContractStartsTheSeasonAfterExpiry(t *testing.T) {
 			if r.Status != ReadingOK {
 				t.Fatal(r)
 			}
-			f, err := a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: tc.player, Intent: tc.intent, Level: 1, Years: tc.years})
+			f, err := a.contractActFacts(a.core.Ctx, RawContractAct{Mine: "0025", Player: tc.player, Intent: tc.intent, Level: 1, Years: tc.years})
 			if err != nil || !reflect.DeepEqual(f.Terms.Cells, tc.cells) {
 				t.Fatalf("cells %+v %v", f.Terms.Cells, err)
 			}
@@ -250,11 +250,11 @@ func TestContractOverCapJudgesTheSeasonTheMoneyLandsIn(t *testing.T) {
 	a := contractMirrorFixture(t)
 	releasePhase(t, a, domain.PhaseOffseason)
 	// $110M: this season is already over the cap; 2027 holds $104.67M before any Act.
-	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "110", "fixture"); err != nil {
+	if err := a.core.Rulebook.SetOverride(a.core.Ctx, "cap", "salaryCapAmount", "110", "fixture"); err != nil {
 		t.Fatal(err)
 	}
 	reasons := func(intent, player string) string {
-		f, err := a.contractActFacts(a.ctx, RawContractAct{Mine: "0025", Player: player, Intent: intent, Level: 1, Years: 1})
+		f, err := a.contractActFacts(a.core.Ctx, RawContractAct{Mine: "0025", Player: player, Intent: intent, Level: 1, Years: 1})
 		if err != nil {
 			t.Fatal(err)
 		}

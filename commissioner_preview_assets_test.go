@@ -28,7 +28,7 @@ func TestEveryBuiltAssetCorrectionHasARealPreview(t *testing.T) {
 	}
 	w := waiverApp(t)
 	cut := w.cut(t, "1000")
-	w.app.commissionerSession = testCommissionerSession{"creator"}
+	w.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	previewAndExecute(t, w.app, w.raw(t, commissioner.CorrectTransaction,
 		commissioner.RawArgs{Correction: &commissioner.RawCorrection{Entry: cut.Entry}}, "league"))
 	previewAndExecute(t, w.app, w.raw(t, commissioner.CalendarException,

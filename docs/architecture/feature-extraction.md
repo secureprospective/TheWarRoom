@@ -1,10 +1,99 @@
 # Feature extraction: moving a feature out of `package main`
 
-The recipe the Archive extraction followed (reorg PR 3). Wails keeps binding one `App`; a
-feature's root files shrink to adapters and its logic moves to `internal/app/<feature>/`.
+The earlier pure-service recipe remains below for existing adapters. New feature-bound APIs use
+**Feature API template**, which moves bindings as well as construction out of package main.
+Shared report/season contracts and a feature-owned Host keep transport and state separate.
 
-Shared season snapshot/view lives in `internal/app/season`, and Race and Now both read it; wording lives in `internal/app/report`. A feature
-never imports a sibling; root adapters compose features through the shared contracts.
+## Feature API template
+
+This is the current extraction pattern. The older sections below describe the earlier pure-service
+stage; their root-owned binding/wire/state instructions do **not** apply to a feature API move.
+Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/host_comms.go` and
+`frontend/src/app/comms/api.ts`. Keep behavior, refusal order, wording and JSON unchanged.
+
+1. **Inventory and freeze.** Record the root-file count, the feature tests' uncached runtime and
+   every exported method on the bound pointer. Freeze reads, refreshes, hand-offs and denials as
+   byte-comparison goldens in `testdata/wire/<feature>`. Call the public API in the tests; include
+   populated and zero/nil/empty converter twins. Keep canonical fixtures in place and use a path
+   helper (`commstest.RepoPath`), never copied goldens. Pin the zone through the port, not `time.Local`.
+2. **Separate ownership before moving.** `App` has a **named** `core *core.State`, never an
+   embedded State. Wails reflects every exported pointer method, including promoted helpers;
+   embedding would publish lock/state helpers. Shared state and every shared mutex live in core.
+   Root adapters temporarily use exported fields; feature packages never do. Data-directory
+   paths go through `core.Paths`. Update all direct `App{...}` test fixtures with initialized core
+   state, including zero-state refusal fixtures, in the same compiling commit.
+3. **Declare the port in the feature.** Add `type Host interface` in `<feature>/api.go`, listing
+   only the reads/effects this API needs. `type API struct { host Host }` and `New(Host) *API` have
+   no core dependency. Port signatures use lower-level value types or shared report/season
+   contracts. Do not return a feature-owned Input from core: return lower-level pieces and
+   assemble the Input in the API. A lower, genuinely shared type can move to report/season; a
+   feature-only cache should stay with its feature instead of creating a core→feature cycle.
+4. **Implement the host in `core/host_<feature>.go`.** Methods on `*State` take the owning lock,
+   copy nested mutable slices/maps/pointers, unlock and return detached data. An opaque immutable
+   lookup can be shared if its public API exposes no mutation. Preserve the existing lock order,
+   refresh serialization, freshness capture before the refresh lock, key checks, last-good
+   retention/clearing, archive fallback and event order. A callback into a remaining root-owned
+   cache must document its caller-held lock; never lock the same mutex twice. Shared fallback
+   and held-feed primitives already live in core; reuse them instead of cloning them.
+5. **Move the wire boundary.** Move the public methods, Raw request validation, exported wire
+   declarations and converters into `<feature>/api.go`, with the exact method names, arguments,
+   JSON tags and nil behavior. Remove emptied root files. Compose only in `main.go` by adding
+   `<feature>.New(app.core)` to Wails' Bind list. Update root callers such as cache refresh routing
+   to call that API rather than restoring an App wrapper. The assignment checks the Host
+   structurally. Do not expose helper methods on API: Wails will bind them too.
+6. **Catalog and manifest.** Expose package-level `Commands() []catalog.Command`, **not an API
+   method**, with stable registry-style IDs and each bound method name. Availability is desktop,
+   server or both; browser-opening commands are desktop-only. Copy known role/gravity/version
+   metadata; use `catalog.Unset` for genuinely unknown values. Unset must block future server
+   publication; it changes no desktop authorization now. Add the bound pointer and its Commands
+   to `TestBindingManifest` in `selfprotect_test.go`, then update
+   `testdata/bindings/manifest.txt`: the old App list minus exactly the moved methods, plus the
+   feature API methods. Remaining App methods are temporarily catalog-exempt. Plant an extra
+   exported helper and prove the test rejects both its surface and missing catalog entry.
+7. **Frontend adapter and generation.** Run `make bindings` with the pinned Wails CLI. Generated
+   model namespaces may change; review those diffs, never hand-edit the generated files. Only
+   `frontend/src/app/<feature>/api.ts` imports that feature's generated bindings/models or touches
+   `window.go.<feature>`. It owns event subscribe/unsubscribe too; state and components call it.
+   Keep the no-window/no-go browser path honest and unchanged. Test all calls, event delivery,
+   cleanup and disposal before an async runtime import resolves. Do not migrate other features'
+   legacy main/App imports as part of this move.
+8. **Guards, placement and proof.** Extend depguard with the feature's own subtree, report,
+   season and catalog. Core may import no feature and no Wails; no feature may import core,
+   including tests. `scripts/check-frontend-transport.sh` runs in `make lint` and checks generated
+   feature imports, feature models and direct/bracket window.go accesses. Bite-test each new
+   boundary with a compiling forbidden import/access, then restore it. Update SYSTEM_MAP,
+   placement.tsv and the actual root-go-baseline in the move commit. Move fast unit/API tests
+   beside the feature using a fake Host. Test core separately with `coretest.New(t).Build()`;
+   it supplies isolated stores and a memory keyring, and `coretest.NewTransport` never opens a
+   socket. Keep root cross-feature scenarios and a small composition/refresh golden where they
+   still prove real wiring. Race an actual refresh publication against reads, show reads can
+   complete during refresh I/O, and mutate captured data to prove detachment. Plant a missing
+   clone/lock and prove the guards fail. Run build, lint, focused race tests, root Wire/Manifest,
+   frontend tests/typecheck/build and binding freshness; finish with one full make verify.
+
+**Comms ownership and metadata.** Core holds transactions/boards and their locks, key access and
+refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now`, `liveGame`,
+`crosswalk` and `signals` remain on App: their types belong to other feature packages or to the
+still-root feature adapters. Core's archive callback accesses archiveCache under FactsMu; the
+transaction callback publishes through the existing root fetcher under RefreshMu. No feature
+imports core. The catalog records the current compound desktop `comms.read` command's ambient
+roles (`gm,commish,admin`) and gravity (`G0`) for its read/refresh/open actions. The registry's social
+page gravity is not a newly enforced binding policy. No wire/API version was previously declared,
+so Version is Unset. This does not grant server publication or alter any permission check.
+
+**Request scope — recorded, not built.** Commissioner still reads the session and the app-lifetime
+context from shared state; this pilot does not change that. Server reuse needs a per-call scope
+containing context, principal and league, passed explicitly into the operation. Never swap a
+request's identity, league or context onto shared State: concurrent callers would overwrite each
+other. Resolve that seam before publishing Commissioner or any identity-sensitive server route.
+
+**Next-feature traps.** Shared wire envelopes still declared at root cannot be imported by a
+feature. Move a genuinely shared contract lower without inventing a new JSON shape; otherwise
+report the blocker. Feature-specific held types/caches remain root-owned until their own turn.
+Callbacks must retain original transaction/lock spans. Existing direct App literals need core
+initialization. Catalog Unset versions need a publication decision, not a guessed default. Wails
+currently emits generic-model "Not found" diagnostics even on a successful generation; compare
+fresh output and typecheck rather than hand-fixing its output.
 
 ## Steps, one commit each
 

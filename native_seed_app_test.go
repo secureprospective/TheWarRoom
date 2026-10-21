@@ -26,28 +26,28 @@ func nativeSeedTestApp(t *testing.T) *App {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = p.Close() })
-	a.rulebook = rulebook.New(p)
+	a.core.Rulebook = rulebook.New(p)
 	cfg := league.RawConfig{CurrentSeason: 2026}
 	for i := 32; i >= 1; i-- {
 		cfg.Franchises = append(cfg.Franchises, league.Franchise{ID: fmt.Sprintf("%04d", i),
 			Name: fmt.Sprintf("Held team %d", i), Abbrev: fmt.Sprintf("H%d", i), Division: "division.1"})
 	}
-	if err := a.rulebook.Initialize(t.Context(), lineupRulesSource{cfg: cfg}); err != nil {
+	if err := a.core.Rulebook.Initialize(t.Context(), lineupRulesSource{cfg: cfg}); err != nil {
 		t.Fatal(err)
 	}
-	a.league = state.NewMirror(p, a.rulebook)
-	if err := a.league.Initialize(t.Context()); err != nil {
+	a.core.League = state.NewMirror(p, a.core.Rulebook)
+	if err := a.core.League.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	a.season = 2026
-	snap := state.MirrorSnapshot{Season: a.season, Adjustments: []state.Adjustment{
+	a.core.Season = 2026
+	snap := state.MirrorSnapshot{Season: a.core.Season, Adjustments: []state.Adjustment{
 		{ID: "held-credit", FranchiseID: "0002", Amount: -12345, Description: "Held cap credit"}}}
 	for i, status := range []domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi} {
 		snap.Players = append(snap.Players, state.MirrorPlayer{MFLID: fmt.Sprintf("%04d", 99+i),
 			FranchiseID: "0002", RosterStatus: status, Salary: domain.Money(12345600 + i),
 			ContractYear: 2028 + i, ContractStatus: domain.CStatusUFA, ContractInfo: "Held contract"})
 	}
-	if _, err := a.league.Replace(t.Context(), snap); err != nil {
+	if _, err := a.core.League.Replace(t.Context(), snap); err != nil {
 		t.Fatal(err)
 	}
 	id, err := playerid.New("0099")
@@ -55,11 +55,11 @@ func nativeSeedTestApp(t *testing.T) *App {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 13, 10, 0, 0, 0, time.UTC)
-	a.seasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{fetchedAt: at,
-		value: []draftreports.Pick{{Round: 1, Slot: 1, Franchise: "0002", Player: &id},
+	a.core.SeasonDraftResults = heldSeasonFeed[[]draftreports.Pick]{FetchedAt: at,
+		Value: []draftreports.Pick{{Round: 1, Slot: 1, Franchise: "0002", Player: &id},
 			{Round: 1, Slot: 2, Franchise: "0001", Skipped: true}}}
-	a.seasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{fetchedAt: at,
-		value: []draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}}
+	a.core.SeasonFuturePicks = heldSeasonFeed[[]draftreports.FuturePick]{FetchedAt: at,
+		Value: []draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}}
 	return a
 }
 
@@ -97,8 +97,8 @@ func nativeSeedWhatIf(t *testing.T, a *App) *db.Pools {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = p.Close() })
-	a.whatif = state.New(p, "held-test", a.season, a.rulebook)
-	if err := a.whatif.Initialize(t.Context(), a.league); err != nil {
+	a.core.Whatif = state.New(p, "held-test", a.core.Season, a.core.Rulebook)
+	if err := a.core.Whatif.Initialize(t.Context(), a.core.League); err != nil {
 		t.Fatal(err)
 	}
 	return p
@@ -108,9 +108,9 @@ func TestNativeSeedCapturesHeldAssetsWithoutChangingMirror(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	before, stamp, used := a.league.ContractsView()
+	before, stamp, used := a.core.League.ContractsView()
 	whatIfPools := nativeSeedWhatIf(t, a)
-	simulation, ok := a.whatif.FranchiseState("0002")
+	simulation, ok := a.core.Whatif.FranchiseState("0002")
 	if !ok {
 		t.Fatal("test has no what-if roster")
 	}
@@ -137,12 +137,12 @@ func TestNativeSeedCapturesHeldAssetsWithoutChangingMirror(t *testing.T) {
 		seed.Picks[2].Owner != "franchise.02" || seed.Adjustments[0].Amount != -12345 {
 		t.Fatalf("picks or cap adjustments lost: %+v", seed)
 	}
-	after, afterStamp, afterUsed := a.league.ContractsView()
+	after, afterStamp, afterUsed := a.core.League.ContractsView()
 	if !reflect.DeepEqual(before, after) || stamp != afterStamp || !reflect.DeepEqual(used, afterUsed) {
 		t.Fatal("seeding wrote the MFL mirror")
 	}
-	replayed := state.New(whatIfPools, "held-test", a.season, a.rulebook)
-	if err := replayed.Initialize(t.Context(), a.league); err != nil {
+	replayed := state.New(whatIfPools, "held-test", a.core.Season, a.core.Rulebook)
+	if err := replayed.Initialize(t.Context(), a.core.League); err != nil {
 		t.Fatal(err)
 	}
 	if after, ok := replayed.FranchiseState("0002"); !ok || !reflect.DeepEqual(simulation, after) {
@@ -161,10 +161,10 @@ func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
 	input := createNativeSeedLeague(t, a, commissioner.PresetLegacy)
 	first := seedNativeTest(t, a, input)
 	original := readNativeTest(t, a, input.League)
-	fresh, _, _ := a.league.ContractsView()
+	fresh, _, _ := a.core.League.ContractsView()
 	fresh.Players[0].Salary = 999999999
 	fresh.Players[1].RosterStatus = domain.RosterActive
-	if _, err := a.league.Replace(t.Context(), fresh); err != nil {
+	if _, err := a.core.League.Replace(t.Context(), fresh); err != nil {
 		t.Fatal(err)
 	}
 	if retry := seedNativeTest(t, a, input); retry != first {
@@ -180,7 +180,7 @@ func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
 	if _, err := a.TargetNativeSeed(second); err == nil {
 		t.Fatal("same request with changed reason accepted")
 	}
-	a.commissionerSession = testCommissionerSession{"owner"}
+	a.core.CommissionerSession = testCommissionerSession{"owner"}
 	if _, err := a.TargetNativeSeed(input); err == nil {
 		t.Fatal("unauthorized retry returned a receipt")
 	}
@@ -193,11 +193,11 @@ func TestNativeSeedOnceAndRetryAfterMirrorRefresh(t *testing.T) {
 func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
 	t.Parallel()
 	for name, breakInput := range map[string]func(*App){
-		"rosters": func(a *App) { a.league = nil },
-		"results": func(a *App) { a.seasonDraftResults.fetchedAt = time.Time{} },
-		"future":  func(a *App) { a.seasonFuturePicks.fetchedAt = time.Time{} },
-		"season":  func(a *App) { a.season++ },
-		"owner":   func(a *App) { a.seasonFuturePicks.value[0].Owner = "missing" },
+		"rosters": func(a *App) { a.core.League = nil },
+		"results": func(a *App) { a.core.SeasonDraftResults.FetchedAt = time.Time{} },
+		"future":  func(a *App) { a.core.SeasonFuturePicks.FetchedAt = time.Time{} },
+		"season":  func(a *App) { a.core.Season++ },
+		"owner":   func(a *App) { a.core.SeasonFuturePicks.Value[0].Owner = "missing" },
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

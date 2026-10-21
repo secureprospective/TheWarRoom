@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
@@ -209,4 +210,26 @@ func Number(n int) string {
 		text = text[:i] + "," + text[i:]
 	}
 	return text
+}
+
+// ProseName turns MFL's "Last, First" into the "First Last" a sentence reads.
+func ProseName(name string) string {
+	last, first, ok := strings.Cut(name, ", ")
+	if !ok || first == "" || strings.Contains(first, ", ") {
+		return name
+	}
+	return first + " " + last
+}
+
+// Held is a feed's records as a caller holds them, with their read state.
+type Held[T any] struct {
+	Value []T
+	Feed
+}
+
+func PluralNoun(n float64, noun string) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
 }

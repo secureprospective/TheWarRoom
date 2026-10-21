@@ -13,7 +13,7 @@ import (
 const opsLeague = "native.ops"
 
 func opsClock(app *App, hour int) {
-	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 14, hour, 0, 0, 0, time.UTC) })
+	app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 14, hour, 0, 0, 0, time.UTC) })
 }
 
 func opsCommand(command string, expected int64, request string, args commissioner.RawArgs) commissioner.RawCommand {
@@ -45,9 +45,9 @@ func opsApp(t *testing.T) *App {
 }
 
 func readAs(app *App, principal string) func() {
-	was := app.commissionerSession
-	app.commissionerSession = testCommissionerSession{principal}
-	return func() { app.commissionerSession = was }
+	was := app.core.CommissionerSession
+	app.core.CommissionerSession = testCommissionerSession{principal}
+	return func() { app.core.CommissionerSession = was }
 }
 
 func TestCommissionerNoticesWire(t *testing.T) {

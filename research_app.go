@@ -36,31 +36,31 @@ type researchHeld struct {
 func researchKey(kind, week string) string { return kind + ":" + week }
 func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force bool) {
 	key := researchKey(kind, week)
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.research.feeds[key]
-	a.seasonMu.Unlock()
-	if !force && held.refreshError == "" && time.Since(held.fetchedAt) < poolFreshFor {
+	a.core.SeasonMu.Unlock()
+	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < poolFreshFor {
 		return
 	}
-	bodies := a.history.ArchivedBodies
+	bodies := a.core.History.ArchivedBodies
 	if week != "" {
 		bodies = a.scopedBodies("W", week)
 	}
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[researchfeeds.Feed]{
-		export: kind, leagueless: researchfeeds.IsTrend(kind),
-		fetch: func(ctx context.Context) ([]researchfeeds.Feed, error) {
-			return researchfeeds.Fetch(ctx, a.mflClient, a.season, kind, week)
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[researchfeeds.Feed]{
+		Export: kind, Leagueless: researchfeeds.IsTrend(kind),
+		Fetch: func(ctx context.Context) ([]researchfeeds.Feed, error) {
+			return researchfeeds.Fetch(ctx, a.core.MFLClient, a.core.Season, kind, week)
 		},
-		parse: func(body []byte) ([]researchfeeds.Feed, error) {
+		Parse: func(body []byte) ([]researchfeeds.Feed, error) {
 			feed, err := researchfeeds.Parse(body, kind, week)
 			if err != nil {
 				return nil, fmt.Errorf("research archive: %w", err)
 			}
 			return []researchfeeds.Feed{feed}, nil
-		}, bodies: bodies,
-	}, a.fallbackLog)
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+		}, Bodies: bodies,
+	}, a.core.FallbackLog)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	if a.research.feeds == nil {
 		a.research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{}
 	}
@@ -70,7 +70,7 @@ func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force 
 func (a *App) researchLinks(ctx context.Context, lookup normalize.Lookup) (map[string]string, error) {
 	out := map[string]string{}
 	for _, kind := range []string{"gsis", "espn"} {
-		sources, err := a.history.SourceIDs(ctx, kind)
+		sources, err := a.core.History.SourceIDs(ctx, kind)
 		if err != nil {
 			return nil, fmt.Errorf("depth crosswalk: %w", err)
 		}
@@ -83,19 +83,19 @@ func (a *App) researchLinks(ctx context.Context, lookup normalize.Lookup) (map[s
 	return out, nil
 }
 func (a *App) refreshResearchDepth(ctx context.Context, force bool) {
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.research.depth
-	a.seasonMu.Unlock()
-	if !force && held.refreshError == "" && time.Since(held.fetchedAt) < 24*time.Hour {
+	a.core.SeasonMu.Unlock()
+	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < 24*time.Hour {
 		return
 	}
 	rows, fresh, err := a.researchDepthOrArchive(ctx, a.fallbackParent())
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
 	links, lerr := a.researchLinks(ctx, lookup)
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	holdSeasonFeed(&held, rows, fresh, err)
 	a.research.depth = held
 	if lerr != nil {
@@ -110,13 +110,13 @@ func (a *App) TargetResearchRefresh(force bool) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("research refresh: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
 	a.researchStatus("Waiting for the MFL refresh to finish")
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	defer a.researchStatus("")
-	pause := a.seasonPause
+	pause := a.core.SeasonPause
 	if pause == nil {
 		pause = seasonPause
 	}
@@ -157,7 +157,7 @@ func (a *App) TargetResearch(raw RawResearchScope) (ResearchBoard, error) {
 	if err := a.ready(); err != nil {
 		return ResearchBoard{}, fmt.Errorf("research: %w", err)
 	}
-	if raw.Mine != "" && a.rulebook.FranchiseNames()[raw.Mine] == "" {
+	if raw.Mine != "" && a.core.Rulebook.FranchiseNames()[raw.Mine] == "" {
 		return ResearchBoard{}, fmt.Errorf("research: unknown franchise")
 	}
 	a.hydrateResearch()
@@ -165,19 +165,19 @@ func (a *App) TargetResearch(raw RawResearchScope) (ResearchBoard, error) {
 }
 
 func (a *App) heldResearchInput() researchInput {
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := a.research
 	held.feeds, held.news = maps.Clone(held.feeds), maps.Clone(held.news)
 	held.links = maps.Clone(held.links)
-	injuries := a.seasonInjuries
+	injuries := a.core.SeasonInjuries
 	schedules := maps.Clone(a.now.schedules)
-	a.seasonMu.Unlock()
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
-	mirror, _, _ := a.league.ContractsView()
+	a.core.SeasonMu.Unlock()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
+	mirror, _, _ := a.core.League.ContractsView()
 	return researchInput{held: held, lookup: lookup, mirror: mirror, injuries: injuries, schedules: schedules,
-		week: a.marketWeek(), zone: time.Local, config: a.rulebook.ActiveConfig()}
+		week: a.marketWeek(), zone: time.Local, config: a.core.Rulebook.ActiveConfig()}
 }
 
 func (a *App) TargetResearchNewsRefresh(mine string) error {
@@ -189,37 +189,37 @@ func (a *App) TargetResearchNewsRefresh(mine string) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("news refresh: %w", err)
 	}
-	if mine != "" && a.rulebook.FranchiseNames()[mine] == "" {
+	if mine != "" && a.core.Rulebook.FranchiseNames()[mine] == "" {
 		return fmt.Errorf("news: unknown franchise")
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, 30*time.Minute)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, 30*time.Minute)
 	defer cancel()
-	if !a.newsMu.TryLock() {
+	if !a.core.NewsMu.TryLock() {
 		return fmt.Errorf("news: already refreshing")
 	}
-	defer a.newsMu.Unlock()
-	mirror, _, _ := a.league.ContractsView()
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
+	defer a.core.NewsMu.Unlock()
+	mirror, _, _ := a.core.League.ContractsView()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
 	ordered := researchPlayerIDs(researchRosterIDs(mirror, mine), lookup)
-	pause := a.seasonPause
+	pause := a.core.SeasonPause
 	if pause == nil {
 		pause = seasonPause
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	held := maps.Clone(a.research.news)
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	if held == nil {
 		held = map[string]heldSeasonFeed[[]researchfeeds.News]{}
 	}
-	err := readResearchNewsBatches(ctx, held, a.season, ordered, time.Now(), a.history.ArchivedBodies, pause,
+	err := readResearchNewsBatches(ctx, held, a.core.Season, ordered, time.Now(), a.core.History.ArchivedBodies, pause,
 		func(ctx context.Context, ids []string) (map[string][]researchfeeds.News, error) {
-			return researchfeeds.FetchNews(ctx, a.mflClient, a.season, ids)
-		}, a.fallbackLog)
-	a.seasonMu.Lock()
+			return researchfeeds.FetchNews(ctx, a.core.MFLClient, a.core.Season, ids)
+		}, a.core.FallbackLog)
+	a.core.SeasonMu.Lock()
 	a.research.news = held
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	return err
 }
 func (a *App) TargetOpenResearchArticle(id, article string) error {
@@ -230,22 +230,22 @@ func (a *App) TargetOpenResearchArticle(id, article string) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("news hand-off: %w", err)
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	news := a.research.news[pid.String()]
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	found := false
-	for _, n := range news.value {
+	for _, n := range news.Value {
 		found = found || n.Article == article
 	}
 	if !found {
 		return fmt.Errorf("news: article is not held for this player")
 	}
-	host := a.mflClient.LeagueHost()
+	host := a.core.MFLClient.LeagueHost()
 	if host == "" {
 		return fmt.Errorf("news: MFL host not held; refresh from MFL first")
 	}
-	target := fmt.Sprintf("https://%s/%d/view_news_article?ID=%s", host, a.season, url.QueryEscape(article))
-	a.openURL(a.ctx, target)
+	target := fmt.Sprintf("https://%s/%d/view_news_article?ID=%s", host, a.core.Season, url.QueryEscape(article))
+	a.core.OpenURL(a.core.Ctx, target)
 	return nil
 }
 
@@ -258,7 +258,7 @@ func (a *App) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 		return ResearchPlayerReading{}, fmt.Errorf("research player: %w", err)
 	}
 	a.hydrateResearch(pid.String())
-	if a.fetches != nil {
+	if a.core.Fetches != nil {
 		ctx, cancel := context.WithTimeout(a.fallbackParent(), rasFetchTimeout)
 		defer cancel()
 		a.refreshResearchDepth(ctx, false)
@@ -267,17 +267,17 @@ func (a *App) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 	if _, _, ok := in.lookup.DisplayFacts(pid.String()); !ok {
 		return ResearchPlayerReading{}, fmt.Errorf("research: player not in the held directory")
 	}
-	return wireResearchPlayer(researchapp.ReadPlayer(in.snapshot(), pid.String(), a.rulebook.FranchiseNames(), "How this is counted")), nil
+	return wireResearchPlayer(researchapp.ReadPlayer(in.snapshot(), pid.String(), a.core.Rulebook.FranchiseNames(), "How this is counted")), nil
 }
 
 func (a *App) researchStatus(text string) {
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	a.research.status = text
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 }
 func (a *App) TargetResearchStatus() string {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	return a.research.status
 }
 
@@ -304,12 +304,12 @@ func researchPlayerIDs(ids []string, lookup normalize.Lookup) []string {
 }
 
 func (a *App) researchDepthOrArchive(ctx, fallback context.Context) ([]researchfeeds.RawDepth, Freshness, error) {
-	rows, err := researchfeeds.FetchDepth(ctx, &http.Client{Transport: a.fetches, Timeout: rasFetchTimeout}, a.season)
+	rows, err := researchfeeds.FetchDepth(ctx, &http.Client{Transport: a.core.Fetches, Timeout: rasFetchTimeout}, a.core.Season)
 	if err == nil {
 		return rows, liveFreshness(time.Now()), nil
 	}
-	a.fallbackLog(fmt.Sprintf("the war room: depth charts: live fetch failed: %v", err))
-	return readResearchDepthArchive(fallback, a.season, a.history.ArchivedBodies, err)
+	a.core.FallbackLog(fmt.Sprintf("the war room: depth charts: live fetch failed: %v", err))
+	return readResearchDepthArchive(fallback, a.core.Season, a.core.History.ArchivedBodies, err)
 }
 func readResearchDepthArchive(ctx context.Context, season int, bodies archivedBodies, fetchErr error) ([]researchfeeds.RawDepth, Freshness, error) {
 	rctx, cancel := context.WithTimeout(ctx, fallbackTimeout)

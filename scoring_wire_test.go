@@ -20,12 +20,12 @@ import (
 // The retired M1/M2 bindings have no live methods; Race consumes this root entry point.
 func TestScoringWireGolden(t *testing.T) {
 	a := targetTestApp(t)
-	a.lookup, a.hasLookup = normalize.Lookup{}, true
+	a.core.Lookup, a.core.HasLookup = normalize.Lookup{}, true
 	schedule := func(context.Context) []leagueschedule.RawScheduleWeek { return nil }
 	standings := []leaguestandings.RawStanding{{FranchiseID: "0001", H2HW: "2", H2HL: "1"}}
 	for _, populated := range []bool{false, true} {
 		if populated {
-			_, _, err := a.history.WriteModelRun(a.ctx, history.NewModelRun{Season: a.season, AsOf: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), Engine: "fixture", InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()}, Scores: []history.ModelScore{{MFLID: "0042", Position: "WR", Value: model.Value{NowPPG: 12, DynastyPPG: 15}}}})
+			_, _, err := a.core.History.WriteModelRun(a.core.Ctx, history.NewModelRun{Season: a.core.Season, AsOf: time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC), Engine: "fixture", InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()}, Scores: []history.ModelScore{{MFLID: "0042", Position: "WR", Value: model.Value{NowPPG: 12, DynastyPPG: 15}}}})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -35,7 +35,7 @@ func TestScoringWireGolden(t *testing.T) {
 			if populated {
 				name += "-populated"
 			}
-			result := a.powerRankings(a.ctx, standings, Freshness{}, schedule, .4, true, defaultAgg(view), view)
+			result := a.powerRankings(a.core.Ctx, standings, Freshness{}, schedule, .4, true, defaultAgg(view), view)
 			if !result.OK {
 				t.Fatal(result.Error)
 			}

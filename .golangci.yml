@@ -81,6 +81,33 @@ linters:
 
     depguard:
       rules:
+        core-no-features:
+          list-mode: lax
+          files:
+            - "**/internal/app/core/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/core$
+            - github.com/secureprospective/TheWarRoom/internal/app/core/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+            - github.com/secureprospective/TheWarRoom/internal/app/season$
+            - github.com/secureprospective/TheWarRoom/internal/app/season/
+            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "core cannot import features; compose feature ports in main"
+            - pkg: github.com/wailsapp/wails
+              desc: "core cannot import Wails; inject the runtime port"
+
+        app-boundary-no-core-imports:
+          list-mode: lax
+          files:
+            - "**/internal/app/**"
+            - "!**/internal/app/core/**"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/core
+              desc: "features cannot import core; own a narrow Host port instead"
+
         internal-no-app-imports:
           list-mode: lax
           files:
@@ -108,6 +135,7 @@ linters:
           list-mode: lax
           files:
             - "**/internal/app/**"
+            - "!**/internal/app/core/**"
             - "!**/internal/app/archive/**"
             - "!**/internal/app/comms/**"
             - "!**/internal/app/counterparties/**"
@@ -149,6 +177,7 @@ linters:
           files:
             - "**/internal/app/comms/**"
           allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
             - github.com/secureprospective/TheWarRoom/internal/app/comms$
             - github.com/secureprospective/TheWarRoom/internal/app/comms/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -157,7 +186,7 @@ linters:
             - github.com/secureprospective/TheWarRoom/internal/app/season/
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
-              desc: "feature services may import only their own subtree and shared report/season"
+              desc: "feature services may import only their own subtree, shared report/season and catalog"
 
         app-counterparties-no-siblings:
           list-mode: lax

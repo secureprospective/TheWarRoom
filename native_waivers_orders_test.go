@@ -66,8 +66,8 @@ func recordedStandingsApp(t *testing.T) *waiverFixture {
 	a := commissionerTestApp(t)
 	path := held.path + ".standings"
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
-	a.lookup, a.hasLookup = held.app.lookup, held.app.hasLookup
+	a.core.History = store
+	a.core.Lookup, a.core.HasLookup = held.app.core.Lookup, held.app.core.HasLookup
 	f := &waiverFixture{legalityFixture: &legalityFixture{app: a, path: path, pools: pools}, now: held.now}
 	f.clock()
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
@@ -105,7 +105,7 @@ func TestNativeWaiverAutomaticOrderGovernsRevertAndReopen(t *testing.T) {
 		if r.Players[0].Winner != winner || !slices.Equal(r.Order, expected) || r.OrderSource != source {
 			t.Fatal("automatic order consequence", r)
 		}
-		standings, err := f.app.history.StandingsOrder(t.Context(), legalityLeague, 2026, f.now)
+		standings, err := f.app.core.History.StandingsOrder(t.Context(), legalityLeague, 2026, f.now)
 		if err != nil || !slices.Equal(standings, waiverOrder()) {
 			t.Fatal("durable standings seam", standings, err)
 		}
@@ -189,11 +189,11 @@ func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		f.app.commissionerSession = testCommissionerSession{"owner.one"}
+		f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 		if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
 			t.Fatalf("owner ran %s", command.command)
 		}
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		receipt, err := f.app.TargetCommissionerExecute(string(body))
 		if err != nil {
 			t.Fatal(err)
@@ -217,7 +217,7 @@ func TestNativeWaiverAllCommissionerCommandsRetryAfterReopen(t *testing.T) {
 func TestNativeWaiverOwnerRetriesAfterCalendarCloses(t *testing.T) {
 	t.Parallel()
 	f := waiverApp(t)
-	f.app.commissionerSession = testCommissionerSession{"owner.two"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 	raw := f.raw(t, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
 		Player: "1000", Franchise: "franchise.02"}}, "league")
 	receipt, err := f.app.TargetNativeWaiverAction(raw)
@@ -226,7 +226,7 @@ func TestNativeWaiverOwnerRetriesAfterCalendarCloses(t *testing.T) {
 	}
 	f.set(t, "calendar.windows", `{}`, "now")
 	for range 2 {
-		f.app.commissionerSession = testCommissionerSession{"owner.two"}
+		f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 		again, err := f.app.TargetNativeWaiverAction(raw)
 		if err != nil || !reflect.DeepEqual(receipt, again) {
 			t.Fatal("closed calendar lost original cut receipt", again, err)
@@ -243,7 +243,7 @@ func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
 	f.claim(t, cut.Entry, "owner.three", "franchise.03")
 	f.claim(t, cut.Entry, "owner.one", "franchise.01")
 	f.now = f.now.Add(24*time.Hour - time.Nanosecond)
-	if err := f.app.history.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
+	if err := f.app.core.History.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
 		t.Fatal(err)
 	}
 	if r := f.reading(t, "owner.one", "franchise.01"); r.Players[0].Winner != "" {
@@ -254,7 +254,7 @@ func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
 		commissioner.RawWaiverArgs{Window: cut.Entry, Franchise: "franchise.03"}); err == nil {
 		t.Fatal("claim accepted at close")
 	}
-	if err := f.app.history.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
+	if err := f.app.core.History.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
@@ -262,7 +262,7 @@ func TestNativeWaiverClockAwardsClaimsAtExactClose(t *testing.T) {
 		if r.Players[0].Winner != "franchise.01" || r.Order[len(r.Order)-1] != "franchise.01" {
 			t.Fatal("clock did not award by rolling priority", r)
 		}
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
 		if err != nil {
 			t.Fatal(err)
@@ -288,7 +288,7 @@ func TestNativeWaiverCompensationCannotStrandWinningClaimOrCut(t *testing.T) {
 	f.now = f.now.Add(24 * time.Hour)
 	processed := f.process(t, cut.Entry)
 	for _, target := range []commissioner.Receipt{cut, claim} {
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		visibility := "league"
 		if target.Entry == claim.Entry {
 			visibility = "private"
@@ -303,7 +303,7 @@ func TestNativeWaiverCompensationCannotStrandWinningClaimOrCut(t *testing.T) {
 		}
 	}
 	f.revert(t, processed)
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.command(t, commissioner.Revert, commissioner.RawArgs{Entry: claim.Entry}, "private")
 	f.revert(t, cut)
 	f.restart(t)

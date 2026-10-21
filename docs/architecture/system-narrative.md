@@ -14,6 +14,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Layer | Package | Job |
 |---|---|---|
 | App | repo root (`package main`) | Wails entrypoint (`main.go`), the `App` composition root (`app.go`) and the IPC adapters (`*_app.go`). Adapters validate, route and format; no business logic, no SQL. |
+| Shared app state | `internal/app/core`, `internal/app/catalog` | State and shared locks, paths and runtime port; transport-neutral command metadata. Core imports no feature or Wails; features own Host ports and cannot import core (depguard). |
 | Composition | `internal/commissioner` | Typed app-native command validation, session/authorization ports, receipts, compensation replay and privacy-filtered ledger/people readings. Imports the pure governance policy; the production authorizer replays the transaction's existing records and uses census permissions, without I/O or re-entry. `history.ExecuteCommissioner` trial-folds the proposed change and appends once in `history.db`'s `league_event`; no what-if or MFL writes. Creation takes `{name, preset: legacy_nfl|empty, franchiseCount}`; Go expands `franchise.01`..`NN` (named "Franchise N") and, for Legacy NFL, the whole typed preset seed into the durable record, so replay never depends on later preset code; the creator becomes commissioner. `commish.rules.set` changes one `internal/leaguerules` catalogue field: `rules.go` maps every field to exactly one census row (authorization and gravity; apply-now on a competitive field is G3), `rules_season.go` resolves rules by season and instant; `next_rollover` changes stay pending until the recorded rollover instant arrives, and ended-season reads ignore later compensation, and the trial resolve refuses incoherent rule sets before append. `rules_reading.go` is the public sectioned rules reading. CM-018..021 people changes, rule changes and correction reversal share the one append path; reversal also requires the target's original permission. Root `commissioner_app.go` exposes execute/ledger/people/rules/native-leagues IPC, using only the injected local session. Rule rows also carry the in-force value as plain JSON (`leaguerules.Current`), a percent unit and the safeguard Go applies for each timing; the people reading says what this principal's role may start (`yourRole`, `mayChangeRules`, `mayGrantRoles`); a ledger entry says where this principal may undo it (`undo`: league or private). The frontend lives in `frontend/src/app/commissioner/`, all lazy under Control Room › League: one shared state (`proxy.ts`, `leagueState`) holds the league picker, the ledger/rules/people readings and the outcome of the last form, and reloads all three on a receipt; typed parsers `rules.ts`, `people.ts`; screens `LeagueRules`, `LeaguePeople`, `LeagueLedger` (with `UndoEntry`) and `LeaguePicker` and the tray forms `StartLeagueForm`, `RuleChangeForm`, `RoleForm`. Forms only build the typed body and send it through the `commissioner.execute` verb, with a request key that repeats on a retry of the same submit (`ChangeBar`, `forms.ts`); G2 confirms by `HoldToFire` (a self-contained hold timer, the one reviewed keyboard exception besides the command bar). Rule values are edited through `ruleDraft.ts` (drafts to and from Go's plain JSON) and `RuleInput.tsx`; list and map add/remove go through the `commissioner.draft` verb. Go stays the authority. Succession forms and ballots are not built. CM-022 succession, inactivity, elections and vote commands (`succession.go`) use recorded ledger times and the same append path: CM-022 is a composite census row, so each command names its gate (commissioner only for the inactivity and voting periods and the activity check-in; co-commissioner or DOT to open votes; a vote's target may not close it) and the governance trial fold decides the rest. Every recorded change counts as its author's activity; an inactivity takeover waits out the longer of the two periods while season dates need a ruling. People readings show public vote counts and succession status, with voter participation private to C/CC; ballot ledger entries are private, tie rulings public. |
 | Credentials | `internal/mflkey` | OS keyring store; redacted credential type, bounded operations. |
 | Layer 1 | `internal/ingestion/pendingtrades` | Keyed pending-trade feed and candidate-key verification; no franchise inference. |
@@ -161,7 +162,8 @@ starts a worker, takes a lock or decides who may act.
 | `data_sources_app.go`, `league_archive_app.go` | `TargetDataSources` (what history holds about every source and the checked facts), `TargetDataRefresh(scope)` (renews one scope and says what it did), `TargetCrosswalk` (C-08 match rates), `SetLeagueArchiveDir(dir)` (the archive's `raw/` folder, one folder per season). `internal/app/sources` owns synchronous source-health, signal coverage/loading, crosswalk construction/linking, archive import, manifest publication and checked-facts compilation behind narrow history interfaces. Root adapters retain declared wire types, settings shared with photos, directory/roster snapshots, shared locks, held-result publication and background scheduling. |
 | `archive_app.go`, `asset_board.go` | `TargetArchive(season, team, other)` (the league-history board), `TargetAssetBoard` (C-01 from held weekly scores and, once compiled, the Lab value model; never fetches) |
 | `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom`, `TargetNFLDraft` (held detailed players only) |
-| `comms_app.go`, `research_app.go` | `TargetCommsRefresh(force)`, `TargetResearchStatus` |
+| `internal/app/comms/api.go` | `TargetComms`, `TargetCommsRefresh(force)`, `TargetOpenComms` on the feature API |
+| `research_app.go` | `TargetResearchStatus` |
 | `acquisitions_app.go`, `contract_acts_app.go`, `release_app.go`, `trade_builder_app.go` | `TargetAcquisition(RawAcquisition)`, `TargetContractActs(RawContractAct)`, `TargetReleasePlans(RawReleaseRequest)`, `TargetTradeBuilder(RawTradeBuilder)`: validated what-if readings in the `Reading` shell |
 | `commissioner_app.go` | `TargetCommissionerLeagues`, `TargetCommissionerLedger(league)`, `TargetCommissionerRules(league)` (see the Composition row) |
 | `windows_app.go` | `TargetSetWindow(kind, at)` sets one league window |
@@ -447,16 +449,21 @@ League Pulse › Now: `now_app.go` owns each opened week's NFL schedule, the sea
 
 ## League communications
 
-`comms_app.go` holds authenticated messageBoard/polls exports with archive fallback.
-`TargetComms` snapshots existing season transactions, current mirror contracts and the held directory.
-`internal/app/comms` reads weekly contract history through an explicit archive reader and builds
-sentences shared by C-05 and M-032 with Go-validated filters. Refresh planning takes explicit
-callbacks; key access, feed publication, archive caching and their shared locks stay on App.
-Wire types remain declared at root and convert the service's shared `internal/app/report` values.
-Drops use the last held weekly roster before the move, dated by the last NFL kickoff.
-`TargetOpenComms` opens ProBoards or the discovered MFL board/polls pages only.
-`internal/ingestion/comms.go` validates posts. Lazy `frontend/src/app/comms` serves
-Comms and Home › Digests through the shared Report shell.
+`internal/app/comms.API` directly binds TargetComms, TargetCommsRefresh and TargetOpenComms.
+It owns validation, wire declarations/conversion and report construction, depending only on its
+narrow Host port. main.go composes it with app.core; App's named field prevents State helpers
+from being promoted into Wails. Core snapshots detached transactions, boards, contracts and
+directory readings, serializes refresh/key access and keeps archive fallback. The feature-only
+archive snapshot remains at root; core invokes its reader under FactsMu and detaches its columns.
+Drops still use the last held weekly roster before the move, dated by the last NFL kickoff.
+Opening remains a desktop-only ProBoards/discovered MFL board/polls hand-off. Commands() is
+package-level metadata, not another bound method. The root reflection manifest freezes App's
+remaining 130 methods plus the three Comms methods and requires their catalog coverage.
+`internal/ingestion/comms.go` validates posts. Lazy frontend Comms/Digests use comms/api.ts as
+the only backend gateway, including events and cleanup; the frontend transport gate enforces it.
+Read/open goldens stay in testdata/wire/comms and are exercised with a fake Host; the root keeps
+the refresh composition golden. Core tests use coretest's isolated stores/fixture transport and
+race real board publication against detached reads. See the Feature API template for the next move.
 
 ## Player photos (ring 3, p3k)
 

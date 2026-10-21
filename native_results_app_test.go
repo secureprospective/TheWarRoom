@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -19,7 +20,7 @@ func (nativeResultLineups) WeekLineup(context.Context, []commissioner.Record, st
 func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
-	f.app.history.SetNativeLineups(nativeResultLineups{})
+	f.app.core.History.SetNativeLineups(nativeResultLineups{})
 	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
 		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 13}}, Expected: 2, Request: "generate-results",
 		Effective: "now", Visibility: "league"}
@@ -56,9 +57,9 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 			t.Fatal("preview recorded a change", err)
 		}
 		f.reopen(t)
-		f.app.history.SetNativeLineups(nativeResultLineups{})
+		f.app.core.History.SetNativeLineups(nativeResultLineups{})
 	}
-	f.app.history.SetNativeLineups(nil)
+	f.app.core.History.SetNativeLineups(nil)
 	results, err := f.app.TargetNativeResults(legalityLeague, 2026, 1)
 	if err != nil || !strings.Contains(results.Games[0].Words, "no lineup set") {
 		t.Fatal(results, err)
@@ -67,8 +68,8 @@ func TestNativeResultsIPCUsesHeldIncompleteScores(t *testing.T) {
 
 func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 	t.Parallel()
-	a := &App{started: make(chan struct{}), startupErr: errors.New("startup failed")}
-	close(a.started)
+	a := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
+	close(a.core.Started)
 	for _, scope := range []RawNativeResultsScope{
 		{League: "native.", Season: 2026, Week: 1}, {League: "imported", Season: 2026, Week: 1},
 		{League: " native.test", Season: 2026, Week: 1}, {League: "native.test", Season: 0, Week: 1},
@@ -99,7 +100,7 @@ func TestNativeResultsIPCScopeAndStartup(t *testing.T) {
 func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
-	f.app.history.SetNativeLineups(nativeResultLineups{})
+	f.app.core.History.SetNativeLineups(nativeResultLineups{})
 	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.ScheduleGenerate,
 		Args: commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 13}}, Expected: 2, Request: "generate-bracket",
 		Effective: "now", Visibility: "league"}
@@ -118,14 +119,14 @@ func TestNativeBracketIPCSaysWhyTheBracketIsNotBuiltYet(t *testing.T) {
 			t.Fatal("a missing bracket owes a sentence")
 		}
 		f.reopen(t)
-		f.app.history.SetNativeLineups(nativeResultLineups{})
+		f.app.core.History.SetNativeLineups(nativeResultLineups{})
 	}
 }
 
 func TestNativeBracketIPCScopeAndStartup(t *testing.T) {
 	t.Parallel()
-	a := &App{started: make(chan struct{}), startupErr: errors.New("startup failed")}
-	close(a.started)
+	a := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("startup failed")}}
+	close(a.core.Started)
 	for _, scope := range []RawNativeResultsScope{{League: "native.", Season: 2026}, {League: "imported", Season: 2026},
 		{League: "native.test", Season: 0}, {League: "native.test", Season: 10000}} {
 		if _, err := a.TargetNativeBracket(scope.League, scope.Season); err == nil {

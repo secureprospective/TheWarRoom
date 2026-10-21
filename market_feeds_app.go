@@ -28,11 +28,11 @@ func (a *App) heldMarket() map[string]heldSeasonFeed[[]marketfeeds.Feed] {
 	return a.heldMarketForWeek(a.marketWeek())
 }
 func (a *App) heldMarketForWeek(week int) map[string]heldSeasonFeed[[]marketfeeds.Feed] {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	held := map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
-	for kind, feed := range a.seasonMarket {
-		if kind == marketfeeds.Projections && len(feed.value) == 1 && feed.value[0].Week != week {
+	for kind, feed := range a.core.SeasonMarket {
+		if kind == marketfeeds.Projections && len(feed.Value) == 1 && feed.Value[0].Week != week {
 			feed = heldSeasonFeed[[]marketfeeds.Feed]{}
 		}
 		held[kind] = feed
@@ -41,9 +41,9 @@ func (a *App) heldMarketForWeek(week int) map[string]heldSeasonFeed[[]marketfeed
 }
 
 func (a *App) marketWeek() int {
-	a.weekMu.Lock()
-	defer a.weekMu.Unlock()
-	return a.week.Number
+	a.core.WeekMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	return a.core.Week.Number
 }
 
 func (a *App) refreshMarketFeeds(ctx context.Context, force bool) {
@@ -51,11 +51,11 @@ func (a *App) refreshMarketFeeds(ctx context.Context, force bool) {
 	held := a.heldMarketForWeek(week)
 	for _, kind := range marketKinds() {
 		feed := held[kind]
-		sameWeek := kind != marketfeeds.Projections || (len(feed.value) == 1 && feed.value[0].Week == week)
-		if !force && sameWeek && feed.refreshError == "" && time.Since(feed.fetchedAt) < 24*time.Hour {
+		sameWeek := kind != marketfeeds.Projections || (len(feed.Value) == 1 && feed.Value[0].Week == week)
+		if !force && sameWeek && feed.RefreshError == "" && time.Since(feed.FetchedAt) < 24*time.Hour {
 			continue
 		}
-		pause := a.seasonPause
+		pause := a.core.SeasonPause
 		if pause == nil {
 			pause = seasonPause
 		}
@@ -77,35 +77,35 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 		}
 		return []marketfeeds.Feed{feed}, nil
 	}
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season, archivedFeed[marketfeeds.Feed]{
-		export: kind, leagueless: kind != marketfeeds.Projections,
-		fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
-			feed, ferr := marketfeeds.Fetch(ctx, a.mflClient, kind, strconv.Itoa(a.season), ingestion.LeagueID, week)
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[marketfeeds.Feed]{
+		Export: kind, Leagueless: kind != marketfeeds.Projections,
+		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
+			feed, ferr := marketfeeds.Fetch(ctx, a.core.MFLClient, kind, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
 			if ferr != nil {
 				return nil, fmt.Errorf("market refresh: %w", ferr)
 			}
 			return []marketfeeds.Feed{feed}, nil
-		}, parse: parse,
-		bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
-			return a.history.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
+		}, Parse: parse,
+		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+			return a.core.History.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
 				if !marketArchiveScope(src, kind, week) {
 					return false
 				}
 				return accept(src, body, at)
 			})
 		},
-	}, a.fallbackLog)
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	if a.seasonMarket == nil {
-		a.seasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
+	}, a.core.FallbackLog)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	if a.core.SeasonMarket == nil {
+		a.core.SeasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	}
-	held := a.seasonMarket[kind]
-	if kind == marketfeeds.Projections && len(held.value) == 1 && held.value[0].Week != week {
+	held := a.core.SeasonMarket[kind]
+	if kind == marketfeeds.Projections && len(held.Value) == 1 && held.Value[0].Week != week {
 		held = heldSeasonFeed[[]marketfeeds.Feed]{}
 	}
 	holdSeasonFeed(&held, rows, fresh, err)
-	a.seasonMarket[kind] = held
+	a.core.SeasonMarket[kind] = held
 }
 
 func marketArchiveScope(src, kind string, week int) bool {
@@ -116,10 +116,10 @@ func (a *App) TargetMarketReportsRefresh(force bool) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("market refresh: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	a.refreshMarketFeeds(ctx, force)
 	return nil
 }
@@ -130,9 +130,9 @@ func (a *App) TargetMarketReports() (ReportBoard, error) {
 	}
 	week := a.marketWeek()
 	held := a.heldMarketForWeek(week)
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
 	return buildMarketReports(held, marketNames(held, lookup), week, time.Local), nil
 }
 
@@ -172,7 +172,7 @@ func marketWeekText(week int) string { return marketapp.WeekText(week) }
 func marketHeld(held map[string]heldSeasonFeed[[]marketfeeds.Feed]) map[string]marketapp.Held {
 	out := make(map[string]marketapp.Held, len(held))
 	for kind, feed := range held {
-		out[kind] = marketapp.Held{Value: feed.value, Feed: feed.state()}
+		out[kind] = marketapp.Held{Value: feed.Value, Feed: feed.FeedState()}
 	}
 	return out
 }

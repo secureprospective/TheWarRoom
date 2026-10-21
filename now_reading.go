@@ -16,7 +16,7 @@ import (
 func (a *App) nowReadInput(week, reportWeek int, mine string) nowapp.Snapshot {
 	current := a.marketWeek()
 	projections := a.heldMarketForWeek(current)[marketfeeds.Projections]
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(a.now.schedules))
 	for k, v := range a.now.schedules {
 		schedules[k] = nowFeed(v)
@@ -25,16 +25,16 @@ func (a *App) nowReadInput(week, reportWeek int, mine string) nowapp.Snapshot {
 	for k, v := range a.now.firsts.weeks {
 		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
 	}
-	in := nowapp.Snapshot{Race: season.Snapshot{Held: season.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.seasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
-	a.seasonMu.Unlock()
-	a.lookupMu.Lock()
-	in.Race.Lookup, in.Race.HasLookup = a.lookup, a.hasLookup
-	a.lookupMu.Unlock()
-	in.Race.Config, in.Race.Mine, in.Race.Zone = a.rulebook.ActiveConfig(), mine, time.Local
+	in := nowapp.Snapshot{Race: season.Snapshot{Held: season.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.core.SeasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
+	a.core.SeasonMu.Unlock()
+	a.core.LookupMu.Lock()
+	in.Race.Lookup, in.Race.HasLookup = a.core.Lookup, a.core.HasLookup
+	a.core.LookupMu.Unlock()
+	in.Race.Config, in.Race.Mine, in.Race.Zone = a.core.Rulebook.ActiveConfig(), mine, time.Local
 	return in
 }
 func nowFeed[T any](f heldSeasonFeed[T]) nowapp.Feed[T] {
-	return nowapp.Feed[T]{Value: f.value, FetchedAt: f.fetchedAt, RefreshError: f.refreshError, ReadPending: f.readPending}
+	return nowapp.Feed[T]{Value: f.Value, FetchedAt: f.FetchedAt, RefreshError: f.RefreshError, ReadPending: f.ReadPending}
 }
 func wireNow(b nowapp.Board) NowBoard {
 	return NowBoard{ReportWeek: b.ReportWeek, ReportWeeks: wireChoices(b.ReportWeeks), Week: b.Week, Weeks: wireChoices(b.Weeks), Matchup: wireReport(b.Matchup), Board: wireBoard(b.Board), Waiting: b.Waiting}

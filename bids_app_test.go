@@ -51,14 +51,14 @@ func bidTestApp(t *testing.T) *App {
 
 func bidSetup(t *testing.T, a *App) {
 	t.Helper()
-	if err := a.rulebook.Initialize(a.ctx, capSource{}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, capSource{}); err != nil {
 		t.Fatal(err)
 	}
 	setRosters(t, a)
-	a.lookup, a.hasLookup, a.lookupAt = poolLookup(t), true, time.Now()
-	a.week, a.weekFetchedAt = leagueweek.Week{Number: 5}, time.Now()
-	a.movesChanged = func(context.Context) {}
-	a.movesLog = func(string) {}
+	a.core.Lookup, a.core.HasLookup, a.core.LookupAt = poolLookup(t), true, time.Now()
+	a.core.Week, a.core.WeekFetchedAt = leagueweek.Week{Number: 5}, time.Now()
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.MovesLog = func(string) {}
 }
 
 // setRosters replaces the mirror: franchise 0001 holds 0042 ($20M) and extra players on top.
@@ -66,7 +66,7 @@ func setRosters(t *testing.T, a *App, extra ...state.MirrorPlayer) {
 	t.Helper()
 	mine := state.MirrorPlayer{MFLID: "0042", FranchiseID: "0001", RosterStatus: domain.RosterActive,
 		Salary: 2_000_000_000, ContractYear: 2027}
-	if _, err := a.league.Replace(a.ctx, state.MirrorSnapshot{Season: 2026,
+	if _, err := a.core.League.Replace(a.core.Ctx, state.MirrorSnapshot{Season: 2026,
 		Players: append([]state.MirrorPlayer{mine}, extra...)}); err != nil {
 		t.Fatal(err)
 	}
@@ -144,7 +144,7 @@ func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
 	events := 0
-	a.movesChanged = func(context.Context) { events++ }
+	a.core.MovesChanged = func(context.Context) { events++ }
 	raw := rawBid("5", 3)
 	raw.Snipe, raw.Beat, raw.Evidence = true, "5.500", "https://example.invalid/thread"
 	plan, err := a.TargetBidDraft(raw)
@@ -165,7 +165,7 @@ func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
 	if !ids["hand-off"] || !ids["revise"] || !ids["withdraw"] || ids["posted"] {
 		t.Errorf("actions = %+v", plan.Actions)
 	}
-	facts, err := a.moves.BidFacts(a.ctx, plan.Receipt.CorrelationID)
+	facts, err := a.core.Moves.BidFacts(a.core.Ctx, plan.Receipt.CorrelationID)
 	if err != nil || facts.Evidence != raw.Evidence || facts.Beat == nil || *facts.Beat != 5500 || !facts.Snipe {
 		t.Fatalf("facts = %+v, %v", facts, err)
 	}
@@ -188,7 +188,7 @@ func TestBidDraftSavesPlanAndFactsAndLeavesTheMoveRailAlone(t *testing.T) {
 func TestBidBlockedByPlayoffStatusKeepsTheActOff(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
-	a.week = leagueweek.Week{Number: 13}
+	a.core.Week = leagueweek.Week{Number: 13}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))
 	if err != nil || plan.Receipt.State != envelope.Blocked {
 		t.Fatalf("draft = %v, %v", plan.Receipt.State, err)
@@ -216,7 +216,7 @@ func TestBidBlockedByPlayoffStatusKeepsTheActOff(t *testing.T) {
 func TestBidWithoutAHeldScheduleCannotCheckTheWeekLimits(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
-	a.weekFetchedAt = time.Time{}
+	a.core.WeekFetchedAt = time.Time{}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))
 	if err != nil || plan.Receipt.State != envelope.Blocked || !strings.Contains(plan.Status, "holds no NFL week") {
 		t.Fatalf("plan = %v %q, %v", plan.Receipt.State, plan.Status, err)
@@ -231,7 +231,7 @@ func TestBidActiveLimitOfThirty(t *testing.T) {
 		extra = append(extra, players.RawPlayer{ID: fmt.Sprint(20000 + i), Name: fmt.Sprintf("Player, N%d", i),
 			Position: "WR", Team: "DAL", DraftYear: "2015"})
 	}
-	a.lookup = poolLookup(t, extra...)
+	a.core.Lookup = poolLookup(t, extra...)
 	on := func(i int) RawBidInput { r := rawBid("1", 1); r.Player = fmt.Sprint(20000 + i); return r }
 	var first string
 	for i := range 30 {
@@ -325,7 +325,7 @@ func TestBidFactsFreezeOnceHandedOff(t *testing.T) {
 		t.Fatalf("posted = %v, %v", posted.Receipt.State, err)
 	}
 	select {
-	case <-a.movesWake:
+	case <-a.core.MovesWake:
 	default:
 		t.Error("the watcher was not woken")
 	}
@@ -337,7 +337,7 @@ func landedBid(t *testing.T, closes string, extra ...state.MirrorPlayer) BidPlan
 	t.Helper()
 	a := bidTestApp(t)
 	past := time.Now().Add(-time.Hour)
-	a.movesNow = func() time.Time { return past }
+	a.core.MovesNow = func() time.Time { return past }
 	raw := rawBid("5", 3)
 	raw.Closes = closes
 	plan, err := a.TargetBidDraft(raw)
@@ -351,9 +351,9 @@ func landedBid(t *testing.T, closes string, extra ...state.MirrorPlayer) BidPlan
 	if _, err := a.TargetBidPosted(id); err != nil {
 		t.Fatal(err)
 	}
-	a.movesNow = func() time.Time { return time.Now().Add(time.Minute) }
-	a.movesRefresh = func(context.Context, envelope.Source) error { setRosters(t, a, extra...); return nil }
-	if err := a.checkMoves(a.ctx); err != nil {
+	a.core.MovesNow = func() time.Time { return time.Now().Add(time.Minute) }
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error { setRosters(t, a, extra...); return nil }
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	board := a.TargetBidPlans("0001")
@@ -409,12 +409,12 @@ func TestBidWatcherAwardedOffAppWhenTheWindowClosesAndNothingLanded(t *testing.T
 func TestBlockedPlanThatWouldPassNowStillExplainsItself(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
-	a.week = leagueweek.Week{Number: 13}
+	a.core.Week = leagueweek.Week{Number: 13}
 	plan, err := a.TargetBidDraft(rawBid("5", 1))
 	if err != nil || plan.Receipt.State != envelope.Blocked {
 		t.Fatalf("plan = %v, %v", plan.Receipt.State, err)
 	}
-	a.week = leagueweek.Week{Number: 5}
+	a.core.Week = leagueweek.Week{Number: 5}
 	board := a.TargetBidPlans("0001").Value.Plans[0]
 	var handOff BidAction
 	for _, action := range board.Actions {

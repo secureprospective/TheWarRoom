@@ -62,7 +62,7 @@ func TestNativeOverrideCommandsGovernCapAndReplay(t *testing.T) {
 			t.Parallel()
 			f := capApp(t)
 			baseline := *capTeam(t, f).CommittedCents
-			mirror, stamp, used := f.app.league.ContractsView()
+			mirror, stamp, used := f.app.core.League.ContractsView()
 			for pass := 0; pass < 2; pass++ {
 				raw := overrideCommand(t, f, tc.command, tc.value)
 				receipt := executeCommissionerTest(t, f.app, raw)
@@ -71,7 +71,7 @@ func TestNativeOverrideCommandsGovernCapAndReplay(t *testing.T) {
 				}
 				assertOverrideCap(t, f, tc.command, tc.committed)
 				if pass == 0 {
-					after, afterStamp, afterUsed := f.app.league.ContractsView()
+					after, afterStamp, afterUsed := f.app.core.League.ContractsView()
 					if !reflect.DeepEqual(mirror, after) || stamp != afterStamp || !reflect.DeepEqual(used, afterUsed) {
 						t.Fatal("native correction wrote the MFL mirror")
 					}
@@ -167,7 +167,7 @@ func TestNativeReserveExceptionExpiryAndScope(t *testing.T) {
 		}
 	}
 	f.reopen(t)
-	f.app.history.SetClock(func() time.Time { return time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC) })
+	f.app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 14, 12, 0, 0, 0, time.UTC) })
 	if got := f.reserves(t).Players; !reflect.DeepEqual(got, baseline.Players) {
 		t.Fatalf("exception outlived until: %+v", got)
 	}
@@ -298,7 +298,7 @@ func TestNativeCapAdjustmentSeasonGovernsActualReading(t *testing.T) {
 		t.Fatal("future adjustment counted now")
 	}
 	f.reopen(t)
-	f.app.history.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
+	f.app.core.History.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
 	if got := *capTeam(t, f).CommittedCents; got != before-200000000 {
 		t.Fatalf("future adjustment missing: %d", got)
 	}

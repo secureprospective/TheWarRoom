@@ -16,7 +16,7 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 	t.Parallel()
 	a, transport, _ := weekTestApp(t, "17")
 	emitted := 0
-	a.clockChanged = func(context.Context) { emitted++ }
+	a.core.ClockChanged = func(context.Context) { emitted++ }
 	date := "2026-11-01T18:00:00Z"
 	for _, kind := range []string{"trade_deadline", "cut_day"} {
 		if err := a.TargetSetWindow(kind, ""); err == nil || !strings.Contains(err.Error(), "nothing to reset") {
@@ -49,7 +49,7 @@ func TestTargetSetWindowRoundTrip(t *testing.T) {
 			t.Fatal("repeated reset wording", err)
 		}
 	}
-	heads, err := a.whatif.CalendarEvents(a.ctx)
+	heads, err := a.core.Whatif.CalendarEvents(a.core.Ctx)
 	if err != nil || len(heads) != 1 {
 		t.Fatal(heads, err)
 	}
@@ -110,7 +110,7 @@ func TestWindowInputsUsesHeldSchedules(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw.Week = "9"
-	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{9: {value: []nflschedule.RawWeek{raw}}}
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{9: {Value: []nflschedule.RawWeek{raw}}}
 	now := time.Now()
 	week, err := nflschedule.ToWeek(raw, now)
 	if err != nil {

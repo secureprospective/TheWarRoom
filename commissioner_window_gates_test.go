@@ -73,7 +73,7 @@ func TestWindowMoveRedatesTheGateRevertRestart(t *testing.T) {
 	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	probe := newGateProbe("ufa_bid")
 	if ran, why := probe.try(t, app, raw.League, "franchise.01"); !ran {
@@ -106,7 +106,7 @@ func TestWindowSetAndRemoveGateAnAction(t *testing.T) {
 	t.Parallel()
 	at := time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	probe := newGateProbe("cut")
 	if ran, _ := probe.try(t, app, raw.League, "franchise.01"); ran {
@@ -248,12 +248,12 @@ func TestWindowCommandAuthorityAndSafety(t *testing.T) {
 		return err
 	}
 	for _, who := range []string{"owner", "outsider"} {
-		app.commissionerSession = testCommissionerSession{who}
+		app.core.CommissionerSession = testCommissionerSession{who}
 		if send(move) == nil {
 			t.Fatalf("%s changed a league window", who)
 		}
 	}
-	app.commissionerSession = testCommissionerSession{"deputy"}
+	app.core.CommissionerSession = testCommissionerSession{"deputy"}
 	for name, bad := range map[string]func(*commissioner.RawCommand){
 		"unknown window":  func(c *commissioner.RawCommand) { c.Args.Window.ID = "nothing" },
 		"impossible day":  func(c *commissioner.RawCommand) { c.Args.Window.Start = date(2, 30) },
@@ -333,7 +333,7 @@ func TestWindowMoveKeepsNoStaleDatedStart(t *testing.T) {
 	t.Parallel()
 	at := time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, at)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	raw.Args = commissioner.RawArgs{Field: "calendar.windows", Value: json.RawMessage(`{
 		"ufa":{"Start":{"Month":5,"Day":3},"DatedStart":"2026-05-03T04:00:00Z","End":{"Month":5,"Day":10},

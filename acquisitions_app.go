@@ -52,11 +52,11 @@ func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
 	if err := a.ready(); err != nil {
 		return acquisitionReading(out, err)
 	}
-	a.whatifMu.Lock()
-	defer a.whatifMu.Unlock()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	a.core.WhatifMu.Lock()
+	defer a.core.WhatifMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	snap, _, err := a.tradeState(r.Mine)
 	if err != nil {
@@ -114,7 +114,7 @@ func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot
 			}
 		}
 	}
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, mine)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, mine)
 	if err != nil {
 		return nil, fmt.Errorf("acquisition bids: %w", err)
 	}
@@ -122,7 +122,7 @@ func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot
 		if r.Spec.Intent != envelope.BidIntent {
 			continue
 		}
-		f, err := a.moves.BidFacts(ctx, r.CorrelationID)
+		f, err := a.core.Moves.BidFacts(ctx, r.CorrelationID)
 		if err != nil {
 			return nil, fmt.Errorf("acquisition bid terms: %w", err)
 		}
@@ -131,16 +131,16 @@ func (a *App) acquisitionChoices(ctx context.Context, mine string, snap snapshot
 	return out, nil
 }
 func (a *App) acquisitionPlayer(ctx context.Context, r RawAcquisition, snap snapshot.Snapshot) (state.MirrorPlayer, string, error) {
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	if r.Bid != "" {
-		e, err := a.moves.Get(ctx, r.Bid)
+		e, err := a.core.Moves.Get(ctx, r.Bid)
 		if err != nil {
 			return state.MirrorPlayer{}, "", fmt.Errorf("acquisition bid: %w", err)
 		}
 		if e.Receipt().Spec.FranchiseID != r.Mine || e.Receipt().Spec.Intent != envelope.BidIntent {
 			return state.MirrorPlayer{}, "", fmt.Errorf("acquisition bid outside scope")
 		}
-		f, err := a.moves.BidFacts(ctx, r.Bid)
+		f, err := a.core.Moves.BidFacts(ctx, r.Bid)
 		if err != nil {
 			return state.MirrorPlayer{}, "", fmt.Errorf("acquisition bid facts: %w", err)
 		}
@@ -160,7 +160,7 @@ func (a *App) acquisitionPlayer(ctx context.Context, r RawAcquisition, snap snap
 }
 func (a *App) acquisitionProjection(ctx context.Context, r RawAcquisition, s state.WhatIfSession, current *state.Store,
 	incoming state.MirrorPlayer, out *AcquisitionView) error {
-	stamps, err := a.league.Stamps(ctx)
+	stamps, err := a.core.League.Stamps(ctx)
 	if err != nil {
 		return fmt.Errorf("acquisition stamps: %w", err)
 	}

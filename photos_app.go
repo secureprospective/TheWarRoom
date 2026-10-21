@@ -24,47 +24,47 @@ type PhotoView struct {
 // (spec §7): never bundled, never in history.db.
 func (a *App) startHeadshots() {
 	ids := func(ctx context.Context, mflID string) (string, string, error) {
-		if a.history == nil {
+		if a.core.History == nil {
 			return "", "", fmt.Errorf("history unavailable")
 		}
-		espn, err := a.history.SourceID(ctx, mflID, "espn")
+		espn, err := a.core.History.SourceID(ctx, mflID, "espn")
 		if err != nil {
 			return "", "", fmt.Errorf("app: photo ids: %w", err)
 		}
-		sleeper, err := a.history.SourceID(ctx, mflID, "sleeper")
+		sleeper, err := a.core.History.SourceID(ctx, mflID, "sleeper")
 		if err != nil {
 			return "", "", fmt.Errorf("app: photo ids: %w", err)
 		}
 		return espn, sleeper, nil
 	}
-	a.headshots.Store(headshot.New(filepath.Join(a.dataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout}))
+	a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout}))
 	if s, err := a.readSettings(); err == nil {
-		a.photosOff.Store(s.PhotosOff)
+		a.core.PhotosOff.Store(s.PhotosOff)
 	}
 }
 
 // photoHandler serves /headshot/<mfl id> to the webview from the cache, fetching on first use.
 func (a *App) photoHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		photos := a.headshots.Load()
+		photos := a.core.Headshots.Load()
 		if photos == nil {
 			http.Error(w, "photos are not ready", http.StatusServiceUnavailable)
 			return
 		}
-		photos.Handler(func() bool { return !a.photosOff.Load() }).ServeHTTP(w, r)
+		photos.Handler(func() bool { return !a.core.PhotosOff.Load() }).ServeHTTP(w, r)
 	})
 }
 
 // TargetPhoto is a player card's photo: its address and alt text, or no address when photos are
 // off or the player has none on file.
 func (a *App) TargetPhoto(mflID string) PhotoView {
-	a.lookupMu.Lock()
-	name, ok := a.lookup.Name(mflID)
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Lock()
+	name, ok := a.core.Lookup.Name(mflID)
+	a.core.LookupMu.Unlock()
 	if !ok {
 		name = "this player"
 	}
-	return photoView(mflID, proseName(name), a.photosOff.Load())
+	return photoView(mflID, proseName(name), a.core.PhotosOff.Load())
 }
 
 func photoView(mflID, name string, off bool) PhotoView {
@@ -84,7 +84,7 @@ func (a *App) SetPhotos(on bool) DataActResult {
 	if err := a.writeSettings(s); err != nil {
 		return DataActResult{Error: err.Error()}
 	}
-	a.photosOff.Store(!on)
+	a.core.PhotosOff.Store(!on)
 	if on {
 		return DataActResult{OK: true, Summary: "Player photos are on; each shows the first time its card is drawn."}
 	}

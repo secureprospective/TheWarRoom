@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 scripts/check-wails-version.sh
 # A private copy preserves hand edits and isolates Wails' fixed-name temporary executable
 # from generators in sibling worktrees. The bindings build tag needs no display or GTK.
-scratch_root="$HOME/logs/TheWarRoom/reorg"
+scratch_root="${TMPDIR:-/tmp}/twr-bindings"
 mkdir -p "$scratch_root"
 scratch=$(mktemp -d "$scratch_root/bindings-fresh.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT

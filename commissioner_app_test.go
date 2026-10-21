@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -37,9 +38,9 @@ func commissionerTestApp(t *testing.T) *App {
 	if err := store.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	app := &App{ctx: t.Context(), history: store, started: make(chan struct{}),
-		commissionerSession: testCommissionerSession{"creator"}}
-	close(app.started)
+	app := &App{core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+		CommissionerSession: testCommissionerSession{"creator"}}}
+	close(app.core.Started)
 	return app
 }
 
@@ -77,7 +78,7 @@ func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
 	raw.Visibility = "league"
 	for i, step := range []struct{ who, command, choice string }{
 		{"private-deputy", "commish.succession.voteout.open", ""}, {"owner-two", "commish.vote.cast", "yes"}} {
-		app.commissionerSession = testCommissionerSession{step.who}
+		app.core.CommissionerSession = testCommissionerSession{step.who}
 		raw.Command, raw.Expected, raw.Request = step.command, int64(5+i), fmt.Sprintf("vote.%d", i)
 		raw.Visibility = map[bool]string{true: "private", false: "league"}[step.choice != ""]
 		raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{ID: "removal", Principal: step.who,
@@ -87,7 +88,7 @@ func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
 		}
 		executeCommissionerTest(t, app, raw)
 	}
-	app.commissionerSession = testCommissionerSession{"creator"}
+	app.core.CommissionerSession = testCommissionerSession{"creator"}
 	return raw
 }
 
@@ -97,7 +98,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 	raw := peopleWireLeague(t, app)
 	views := map[string]commissioner.People{}
 	for _, principal := range []string{"creator", "private-deputy", "owner-one", "stranger"} {
-		app.commissionerSession = testCommissionerSession{principal}
+		app.core.CommissionerSession = testCommissionerSession{principal}
 		people, err := app.TargetCommissionerPeople(raw.League)
 		if err != nil || people.Revision != 7 || people.Seats[0].Owner != "owner-one" {
 			t.Fatalf("IPC reading: %+v %v", people, err)
@@ -121,7 +122,7 @@ func TestCommissionerPeopleWire(t *testing.T) {
 		views["stranger"].YourFranchise != "" {
 		t.Fatalf("the reading does not say what each principal may start: %+v", views)
 	}
-	app.commissionerSession = testCommissionerSession{"creator"}
+	app.core.CommissionerSession = testCommissionerSession{"creator"}
 	raw.Command, raw.Expected, raw.Request = "commish.role.grant", 7, "second.cc"
 	raw.Visibility = "private"
 	raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{
@@ -195,7 +196,7 @@ func TestCommissionerWire(t *testing.T) {
 	if err != nil || len(commish.Entries) != 2 || commish.Entries[0].ID != private.Entry {
 		t.Fatalf("commissioner newest first: %+v %v", commish, err)
 	}
-	app.commissionerSession = testCommissionerSession{"owner"}
+	app.core.CommissionerSession = testCommissionerSession{"owner"}
 	owner, err := app.TargetCommissionerLedger(raw.League)
 	if err != nil {
 		t.Fatal(err)
@@ -249,12 +250,12 @@ func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 	if err != nil || first != second || !strings.HasPrefix(first, "local.") {
 		t.Fatalf("local identity: %s %v", second, err)
 	}
-	app := &App{dataDir: "installation"}
+	app := &App{core: &core.State{Paths: core.Paths{DataDir: "installation"}}}
 	principal, err := app.commissionerPrincipal()
 	if err != nil || principal != first {
 		t.Fatalf("production port: %s %v", principal, err)
 	}
-	if _, err := (&App{}).commissionerPrincipal(); err == nil {
+	if _, err := (&App{core: &core.State{}}).commissionerPrincipal(); err == nil {
 		t.Fatal("missing installation fabricated identity")
 	}
 }
@@ -270,7 +271,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 	raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":20,"max":70}`)}
 	raw.Expected, raw.Request, raw.Effective = 1, "limits", "now"
 	recorded := time.Date(2026, 10, 14, 4, 17, 3, 0, time.UTC)
-	app.history.SetClock(func() time.Time { return recorded })
+	app.core.History.SetClock(func() time.Time { return recorded })
 	receipt := executeCommissionerTest(t, app, raw)
 	raw.Args = commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`12500000000`)}
 	raw.Expected, raw.Request, raw.Effective, raw.Reason = 2, "cap", "next_rollover", ""
@@ -279,7 +280,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app.commissionerSession = testCommissionerSession{"owner"}
+	app.core.CommissionerSession = testCommissionerSession{"owner"}
 	owner, err := app.TargetCommissionerRules(raw.League)
 	if err != nil || !reflect.DeepEqual(creator, owner) {
 		t.Fatalf("owners read the same public rules: %v", err)
@@ -343,7 +344,7 @@ func TestCommissionerReplacedRulesWire(t *testing.T) {
 	raw.Command, raw.Effective, raw.Reason = commissioner.RulesSet, "next_rollover", ""
 	for i, value := range []string{`{"min":20,"max":70}`, `{"min":22,"max":75}`, `{"min":24,"max":78}`} {
 		at := time.Date(2026, 10, 14, 4, 17+i, 3, 0, time.UTC)
-		app.history.SetClock(func() time.Time { return at })
+		app.core.History.SetClock(func() time.Time { return at })
 		raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(value)}
 		raw.Expected, raw.Request = int64(i+1), fmt.Sprintf("waiting.%d", i)
 		executeCommissionerTest(t, app, raw)

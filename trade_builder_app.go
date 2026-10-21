@@ -72,11 +72,11 @@ func (a *App) TargetTradeBuilder(r RawTradeBuilder) Reading[TradeBuilderView] {
 	if err := a.ready(); err != nil {
 		return tradeBuilderReading(out, err)
 	}
-	a.whatifMu.Lock()
-	defer a.whatifMu.Unlock()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	a.core.WhatifMu.Lock()
+	defer a.core.WhatifMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	snap, held, err := a.tradeState(r.Mine)
 	if err != nil {
@@ -117,10 +117,10 @@ func tradeBuilderReading(v TradeBuilderView, err error) Reading[TradeBuilderView
 	return contractReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), err)
 }
 func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []TradeBuilderTeam {
-	m, _, _ := a.league.ContractsView()
-	a.seasonMu.Lock()
-	picks := slices.Clone(a.seasonFuturePicks.value)
-	a.seasonMu.Unlock()
+	m, _, _ := a.core.League.ContractsView()
+	a.core.SeasonMu.Lock()
+	picks := slices.Clone(a.core.SeasonFuturePicks.Value)
+	a.core.SeasonMu.Unlock()
 	board, err := a.assetBoard(ctx)
 	values := map[string]tradesapp.Value{}
 	if err == nil {
@@ -141,8 +141,8 @@ func tradeID() (string, error) {
 	return "trade-" + hex.EncodeToString(bytes[:]), nil
 }
 func (a *App) keepTradePlan(ctx context.Context, r RawTradeBuilder, blocks []string) (envelope.Receipt, error) {
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	id, err := tradeID()
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
@@ -152,17 +152,17 @@ func (a *App) keepTradePlan(ctx context.Context, r RawTradeBuilder, blocks []str
 	if req.Target.Kind == envelope.Unmapped {
 		blocks = append(blocks, "MFL host not yet known")
 	}
-	e, err := envelope.DraftTradeAct(a.movesNow(), "trade.propose", req, blocks, func() string { return id })
+	e, err := envelope.DraftTradeAct(a.core.MovesNow(), "trade.propose", req, blocks, func() string { return id })
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	if err := state.NewTradePlans(a.whatifPools).Save(ctx, state.TradePlan{ID: id, Mine: r.Mine, Other: r.Other, Give: r.Give, Get: r.Get, Rationale: r.Rationale}); err != nil {
+	if err := state.NewTradePlans(a.core.WhatifPools).Save(ctx, state.TradePlan{ID: id, Mine: r.Mine, Other: r.Other, Give: r.Give, Get: r.Get, Rationale: r.Rationale}); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	if err := a.moves.Save(ctx, e); err != nil {
+	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade plan receipt save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return e.Receipt(), nil
 }
 func (a *App) draftTradeExit(ctx context.Context, r RawTradeBuilder,
@@ -187,33 +187,33 @@ func (a *App) draftTradeExit(ctx context.Context, r RawTradeBuilder,
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	e, err := envelope.DraftTradeAct(now, "trade."+r.Action, req, blocks, func() string { return id })
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	// One live exit plan per offer, as with accept plans: a new one supersedes the old.
 	if err := a.supersedeMoves(ctx, e, now); err != nil {
 		return envelope.Receipt{}, err
 	}
-	if err := a.moves.Save(ctx, e); err != nil {
+	if err := a.core.Moves.Save(ctx, e); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade exit save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return e.Receipt(), nil
 }
 
 func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Snapshot) ([]TradeBuilderPlan, error) {
 	out := []TradeBuilderPlan{}
 
-	plans, err := state.NewTradePlans(a.whatifPools).List(ctx, mine)
+	plans, err := state.NewTradePlans(a.core.WhatifPools).List(ctx, mine)
 	if err != nil {
 		return nil, fmt.Errorf("saved trade plans: %w", err)
 	}
 	for _, plan := range plans {
-		e, err := a.moves.Get(ctx, plan.ID)
+		e, err := a.core.Moves.Get(ctx, plan.ID)
 		if err != nil {
 			return nil, fmt.Errorf("saved trade receipt: %w", err)
 		}
@@ -242,24 +242,24 @@ func (a *App) builderPickValue(year, round int, original string, at time.Time) *
 }
 
 func (a *App) removeTradePlan(ctx context.Context, r RawTradeBuilder) error {
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	e, err := a.moves.Get(ctx, r.ID)
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	e, err := a.core.Moves.Get(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("remove trade plan: %w", err)
 	}
 	if e.Receipt().Spec.FranchiseID != r.Mine {
 		return fmt.Errorf("remove trade plan: belongs to another franchise")
 	}
-	next, err := e.WithdrawTrade(a.movesNow())
+	next, err := e.WithdrawTrade(a.core.MovesNow())
 	if err != nil {
 		return fmt.Errorf("remove trade plan: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("remove trade plan: save: %w", err)
 	}
 	a.logMove(next)
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
 
@@ -323,7 +323,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	if err != nil {
 		return out, err
 	}
-	stamps, err := a.league.Stamps(ctx)
+	stamps, err := a.core.League.Stamps(ctx)
 	if err != nil {
 		return out, fmt.Errorf("trade baseline stamps: %w", err)
 	}
@@ -372,7 +372,7 @@ func (a *App) tradeProjection(ctx context.Context, r RawTradeBuilder, snap snaps
 	return out, nil
 }
 func (a *App) tradeBuilderHandOff(ctx context.Context, r RawTradeBuilder, snap snapshot.Snapshot) error {
-	plans, err := state.NewTradePlans(a.whatifPools).List(ctx, r.Mine)
+	plans, err := state.NewTradePlans(a.core.WhatifPools).List(ctx, r.Mine)
 	if err != nil {
 		return fmt.Errorf("trade hand-off plans: %w", err)
 	}
@@ -390,9 +390,9 @@ func (a *App) tradeBuilderHandOff(ctx context.Context, r RawTradeBuilder, snap s
 	if len(blocks) > 0 {
 		return fmt.Errorf("trade hand-off blocked: %s", strings.Join(blocks, "; "))
 	}
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	e, err := a.moves.Get(ctx, r.ID)
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	e, err := a.core.Moves.Get(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("trade hand-off load: %w", err)
 	}
@@ -406,15 +406,15 @@ func (a *App) tradeBuilderHandOff(ctx context.Context, r RawTradeBuilder, snap s
 	if err := validateMoveURL(spec.Target.URL); err != nil {
 		return err
 	}
-	next, err := e.HandOff(a.movesNow())
+	next, err := e.HandOff(a.core.MovesNow())
 	if err != nil {
 		return fmt.Errorf("trade hand-off: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("trade hand-off save: %w", err)
 	}
-	a.openURL(ctx, spec.Target.URL)
-	a.movesChanged(ctx)
+	a.core.OpenURL(ctx, spec.Target.URL)
+	a.core.MovesChanged(ctx)
 	a.wakeMoves()
 	return nil
 }
@@ -439,14 +439,14 @@ func (a *App) tradePickReason(r RawTradeBuilder) string {
 	if !slices.ContainsFunc(append(slices.Clone(r.Give), r.Get...), func(token string) bool { return strings.HasPrefix(token, "FP_") }) {
 		return ""
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	held := a.seasonFuturePicks
-	if held.fetchedAt.IsZero() {
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	held := a.core.SeasonFuturePicks
+	if held.FetchedAt.IsZero() {
 		return "Draft-pick ownership unavailable; refresh before handing off."
 	}
-	if held.refreshError != "" {
-		return "Draft-pick ownership unavailable: " + held.refreshError
+	if held.RefreshError != "" {
+		return "Draft-pick ownership unavailable: " + held.RefreshError
 	}
 	return ""
 }

@@ -18,7 +18,7 @@ func realMarketHeld(t *testing.T) map[string]heldSeasonFeed[[]marketfeeds.Feed] 
 	t.Helper()
 	held := map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	for kind, value := range markettest.Feeds(t) {
-		held[kind] = heldSeasonFeed[[]marketfeeds.Feed]{value: []marketfeeds.Feed{value}, fetchedAt: markettest.Read()}
+		held[kind] = heldSeasonFeed[[]marketfeeds.Feed]{Value: []marketfeeds.Feed{value}, FetchedAt: markettest.Read()}
 	}
 	return held
 }
@@ -26,7 +26,7 @@ func realMarketHeld(t *testing.T) map[string]heldSeasonFeed[[]marketfeeds.Feed] 
 func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	a.week = leagueweek.Week{Number: 6}
+	a.core.Week = leagueweek.Week{Number: 6}
 	transport.bodies[marketfeeds.Projections] = seasonFixture(t, "marketfeeds", "projectedScores.json")
 	if err := a.TargetMarketReportsRefresh(false); err != nil {
 		t.Fatal(err)
@@ -45,8 +45,8 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 	if len(transport.requests) != 4 {
 		t.Fatal("held read or fresh refresh fetched")
 	}
-	a.week.Number = 7
-	if a.heldMarket()[marketfeeds.Projections].fetchedAt != (time.Time{}) {
+	a.core.Week.Number = 7
+	if a.heldMarket()[marketfeeds.Projections].FetchedAt != (time.Time{}) {
 		t.Fatal("old projection masquerades as this week")
 	}
 	transport.bodies[marketfeeds.Projections] = strings.Replace(transport.bodies[marketfeeds.Projections], `"week":"6"`, `"week":"7"`, 1)
@@ -56,11 +56,11 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 	if len(transport.requests) != 5 || transport.requests[4] != marketfeeds.Projections || transport.weeks[4] != "7" {
 		t.Fatal(transport.requests)
 	}
-	a.seasonMu.Lock()
-	h := a.seasonMarket[marketfeeds.ADP]
-	h.fetchedAt = time.Now().Add(-25 * time.Hour)
-	a.seasonMarket[marketfeeds.ADP] = h
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	h := a.core.SeasonMarket[marketfeeds.ADP]
+	h.FetchedAt = time.Now().Add(-25 * time.Hour)
+	a.core.SeasonMarket[marketfeeds.ADP] = h
+	a.core.SeasonMu.Unlock()
 	if err := a.TargetMarketReportsRefresh(false); err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 func TestMarketArchiveScopeAndFallback(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	a.week.Number = 6
+	a.core.Week.Number = 6
 	at := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 	for _, kind := range marketKinds() {
 		query := ""
@@ -90,20 +90,20 @@ func TestMarketArchiveScopeAndFallback(t *testing.T) {
 		}
 		recordSeasonBareArchive(t, a, kind+query, seasonFixture(t, "marketfeeds", kind+".json"), at)
 		transport.failure = kind
-		a.refreshMarketFeed(a.ctx, kind, 6)
+		a.refreshMarketFeed(a.core.Ctx, kind, 6)
 		h := a.heldMarket()[kind]
-		if len(h.value) != 1 || !h.fetchedAt.Equal(at) || h.refreshError == "" {
+		if len(h.Value) != 1 || !h.FetchedAt.Equal(at) || h.RefreshError == "" {
 			t.Fatalf("%s fallback: %+v", kind, h)
 		}
 	}
 	before := a.heldMarket()[marketfeeds.Projections]
 	transport.failure = marketfeeds.Projections
-	a.week.Number = 7
-	a.refreshMarketFeed(a.ctx, marketfeeds.Projections, 7)
-	if !a.heldMarket()[marketfeeds.Projections].fetchedAt.IsZero() {
+	a.core.Week.Number = 7
+	a.refreshMarketFeed(a.core.Ctx, marketfeeds.Projections, 7)
+	if !a.heldMarket()[marketfeeds.Projections].FetchedAt.IsZero() {
 		t.Fatal("wrong-week fallback accepted")
 	}
-	if before.value[0].Week != 6 {
+	if before.Value[0].Week != 6 {
 		t.Fatal("held copy mutated")
 	}
 }
@@ -112,7 +112,7 @@ func TestMarketReportWireMatchesGo(t *testing.T) {
 	t.Parallel()
 	held := realMarketHeld(t)
 	for kind, feed := range held {
-		feed.value[0].Players = feed.value[0].Players[:3]
+		feed.Value[0].Players = feed.Value[0].Players[:3]
 		held[kind] = feed
 	}
 	wire := struct {
@@ -144,7 +144,7 @@ func TestMarketReportWireMatchesGo(t *testing.T) {
 func TestMarketFeedCancelledDoesNotFetch(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	ctx, cancel := context.WithCancel(a.ctx)
+	ctx, cancel := context.WithCancel(a.core.Ctx)
 	cancel()
 	a.refreshMarketFeeds(ctx, true)
 	if len(transport.requests) != 0 {
@@ -158,9 +158,9 @@ func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	a.seasonMu.Lock()
-	a.seasonMarket = nil
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.core.SeasonMarket = nil
+	a.core.SeasonMu.Unlock()
 	reading := a.TargetPool(RawPoolScope{Sort: "name"})
 	if reading.Status != ReadingOK || len(reading.Value.Rows) != 3 {
 		t.Fatal("missing feed blocked pool")

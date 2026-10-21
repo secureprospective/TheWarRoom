@@ -39,13 +39,13 @@ func realResearch(t *testing.T) researchInput {
 	d := researchtest.Load(t)
 	in := researchInput{week: 5, zone: time.UTC, now: d.At, lookup: d.Lookup, mirror: d.Mirror,
 		held:     researchHeld{feeds: map[string]heldSeasonFeed[[]researchfeeds.Feed]{}, news: map[string]heldSeasonFeed[[]researchfeeds.News]{}, links: map[string]string{}},
-		injuries: heldSeasonFeed[[]leaguefeed.Injury]{value: d.Injuries, fetchedAt: d.At}}
+		injuries: heldSeasonFeed[[]leaguefeed.Injury]{Value: d.Injuries, FetchedAt: d.At}}
 	for key, f := range d.Feeds {
-		in.held.feeds[key] = heldSeasonFeed[[]researchfeeds.Feed]{value: []researchfeeds.Feed{f}, fetchedAt: d.At}
+		in.held.feeds[key] = heldSeasonFeed[[]researchfeeds.Feed]{Value: []researchfeeds.Feed{f}, FetchedAt: d.At}
 	}
-	in.held.depth = heldSeasonFeed[[]researchfeeds.RawDepth]{value: d.Depth, fetchedAt: d.At}
+	in.held.depth = heldSeasonFeed[[]researchfeeds.RawDepth]{Value: d.Depth, FetchedAt: d.At}
 	for id, n := range d.News {
-		in.held.news[id] = heldSeasonFeed[[]researchfeeds.News]{value: n, fetchedAt: d.At}
+		in.held.news[id] = heldSeasonFeed[[]researchfeeds.News]{Value: n, FetchedAt: d.At}
 	}
 	return in
 }
@@ -83,13 +83,13 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
-	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "My franchise"}, {ID: "0002", Name: "Other franchise"}}}}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "My franchise"}, {ID: "0002", Name: "Other franchise"}}}}); err != nil {
 		t.Fatal(err)
 	}
 	a.research = in.held
-	a.lookup = in.lookup
-	a.hasLookup = true
-	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
+	a.core.Lookup = in.lookup
+	a.core.HasLookup = true
+	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
 	out, err := a.TargetResearch(RawResearchScope{Mine: "0001", Search: "Gibbs"})
@@ -107,7 +107,7 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 		t.Fatal("bad player accepted")
 	}
 	opened := ""
-	a.openURL = func(_ context.Context, target string) { opened = target }
+	a.core.OpenURL = func(_ context.Context, target string) { opened = target }
 	if err := a.TargetOpenResearchArticle("16162", "forged"); err == nil {
 		t.Fatal("forged article accepted")
 	}
@@ -116,7 +116,7 @@ func TestResearchHeldIPCAndArticleHandOff(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.mflClient = client
+	a.core.MFLClient = client
 	if err := a.TargetOpenResearchArticle("16162", "rotowire640841"); err != nil {
 		t.Fatal(err)
 	}
@@ -173,29 +173,29 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
-	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "Mine"}, {ID: "0002", Name: "Other"}}}}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, lineupRulesSource{cfg: league.RawConfig{Source: "research fixture", Franchises: []league.Franchise{{ID: "0001", Name: "Mine"}, {ID: "0002", Name: "Other"}}}}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.league.Replace(a.ctx, in.mirror); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
-	a.lookup = in.lookup
-	a.hasLookup = true
-	a.week = leagueweek.Week{Number: 5}
+	a.core.Lookup = in.lookup
+	a.core.HasLookup = true
+	a.core.Week = leagueweek.Week{Number: 5}
 	var parquetBody bytes.Buffer
-	if err := parquet.Write(&parquetBody, in.held.depth.value); err != nil {
+	if err := parquet.Write(&parquetBody, in.held.depth.Value); err != nil {
 		t.Fatal(err)
 	}
 	events := []string{}
 	stages := []string{}
-	a.fetches = &archive.Transport{Sink: a.history, Base: researchFixtureTransport{t: t, events: &events, depth: parquetBody.Bytes()}}
-	client, err := mfl.New("api", 10000, mfl.WithTransport(a.fetches))
+	a.core.Fetches = &archive.Transport{Sink: a.core.History, Base: researchFixtureTransport{t: t, events: &events, depth: parquetBody.Bytes()}}
+	client, err := mfl.New("api", 10000, mfl.WithTransport(a.core.Fetches))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.mflClient = client
-	a.fallbackLog = func(string) {}
-	a.seasonPause = func(_ context.Context, d time.Duration) error {
+	a.core.MFLClient = client
+	a.core.FallbackLog = func(string) {}
+	a.core.SeasonPause = func(_ context.Context, d time.Duration) error {
 		if d != time.Second {
 			t.Fatal(d)
 		}
@@ -214,7 +214,7 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	if a.TargetResearchStatus() != "" {
 		t.Fatal("refresh status not cleared")
 	}
-	if len(a.research.depth.value) != 2333 || len(researchRows(a.research.feeds[researchKey("playerScores", "YTD")])) == 0 {
+	if len(a.research.depth.Value) != 2333 || len(researchRows(a.research.feeds[researchKey("playerScores", "YTD")])) == 0 {
 		t.Fatal("refresh lost real fixtures")
 	}
 	out, err := a.TargetResearch(RawResearchScope{Mine: "0001"})
@@ -243,19 +243,19 @@ func TestResearchRefreshArchiveAndRosteredNewsEndToEnd(t *testing.T) {
 	if err := a.TargetResearchNewsRefresh("0001"); err != nil {
 		t.Fatal(err)
 	}
-	if len(events) != 0 || len(a.research.news["16162"].value) != 1 {
+	if len(events) != 0 || len(a.research.news["16162"].Value) != 1 {
 		t.Fatal("persisted daily cache failed", events)
 	}
 	a.research = researchHeld{}
-	a.seasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
-	a.refreshMu.Lock()
+	a.core.SeasonInjuries = heldSeasonFeed[[]leaguefeed.Injury]{}
+	a.core.RefreshMu.Lock()
 	cold, cerr := a.TargetResearch(RawResearchScope{Mine: "0001"})
-	a.refreshMu.Unlock()
-	if cerr != nil || len(a.research.depth.value) != 2333 || len(cold.Articles) != 1 || len(events) != 0 {
+	a.core.RefreshMu.Unlock()
+	if cerr != nil || len(a.research.depth.Value) != 2333 || len(cold.Articles) != 1 || len(events) != 0 {
 		t.Fatal("cold read did not serve archived depth/news without fetching", cerr, len(events))
 	}
 	// The depth fallback reads the exact season URL and preserves stale provenance.
-	rows, fresh, err := readResearchDepthArchive(a.ctx, 2026, a.history.ArchivedBodies, errors.New("fixture offline"))
+	rows, fresh, err := readResearchDepthArchive(a.core.Ctx, 2026, a.core.History.ArchivedBodies, errors.New("fixture offline"))
 	if err != nil || len(rows) != 2333 || fresh.State != FreshStale {
 		t.Fatal(len(rows), fresh, err)
 	}
@@ -277,7 +277,7 @@ func TestPlayerFormAndCutUseHeldWeeksAndSharedRule(t *testing.T) {
 	}
 	a := whatIfTestApp(t)
 	cut := whatIfCall(t, a, "cut", "0042", "")
-	mirror, _, _ := a.league.ContractsView()
+	mirror, _, _ := a.core.League.ContractsView()
 	v.mirror = mirror
 	probe := v.playerReading("0042", nil, "Counting").Report
 	if !strings.Contains(researchRow(probe, "Dead cap if cut today").Cells[1], cut.Value.Moves[0].Charge.Text) {
@@ -308,7 +308,7 @@ func TestResearchWireGoldens(t *testing.T) {
 	}
 	checkGolden(t, "research", "held", held)
 	checkGolden(t, "research", "player-held", (researchView{researchInput: in}).playerReading("16162", map[string]string{"0001": "Mine"}, "How this is counted"))
-	a.lookup, a.hasLookup = in.lookup, true
+	a.core.Lookup, a.core.HasLookup = in.lookup, true
 	player, err := a.TargetResearchPlayer("16162")
 	if err != nil {
 		t.Fatal(err)
@@ -316,7 +316,7 @@ func TestResearchWireGoldens(t *testing.T) {
 	checkGolden(t, "research", "player-unheld", player)
 	a.researchStatus("Reading fantasy points")
 	checkGolden(t, "research", "status", a.TargetResearchStatus())
-	a.seasonPause = func(context.Context, time.Duration) error { return context.Canceled }
+	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
 	errors := map[string]string{}
 	if err := a.TargetResearchRefresh(false); err != nil {
 		errors["refresh"] = err.Error()

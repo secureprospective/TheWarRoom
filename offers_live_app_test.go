@@ -27,7 +27,7 @@ func liveOffersTestApp(t *testing.T, path string) *App {
 		}
 	})
 	a := NewApp()
-	a.pools, a.season = p, 2026
+	a.core.Pools, a.core.Season = p, 2026
 	if err := personal.New(p).Initialize(context.Background()); err != nil {
 		t.Fatal(err)
 	}
@@ -75,7 +75,7 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 			t.Fatalf("proposal placed in wrong stretch: %+v", st)
 		}
 	}
-	rows, _, err := personal.New(a.pools).Offers(ctx, "0025")
+	rows, _, err := personal.New(a.core.Pools).Offers(ctx, "0025")
 	if err != nil || len(rows) != 1 || rows[0].Timestamp != ts.Unix() || rows[0].FirstSeen != at.Unix() {
 		t.Fatalf("proposal time/first seen: %+v %v", rows, err)
 	}
@@ -83,12 +83,12 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 	if err := a.recordOffers(ctx, []leaguefeed.PendingTrade{p}, at.Add(time.Hour), nil); err != nil {
 		t.Fatal(err)
 	}
-	rows, _, err = personal.New(a.pools).Offers(ctx, "0025")
+	rows, _, err = personal.New(a.core.Pools).Offers(ctx, "0025")
 	if err != nil || len(rows) != 1 || rows[0].FirstSeen != at.Unix() || rows[0].LastSeen != at.Add(time.Hour).Unix() {
 		t.Fatalf("repeat observation lost first/last seen: %+v %v", rows, err)
 	}
 	r = a.TargetOffers(offerTestScope())
-	if err := a.pools.Close(); err != nil {
+	if err := a.core.Pools.Close(); err != nil {
 		t.Fatal(err)
 	}
 	restarted := liveOffersTestApp(t, path)
@@ -107,7 +107,7 @@ func TestLiveOfferHistoryRestartAndDedup(t *testing.T) {
 		t.Fatal(err)
 	}
 	merged.Offers = append(merged.Offers, duplicate)
-	restarted.labData = func() (*lab.Data, error) { return &merged, nil }
+	restarted.core.LabData = func() (*lab.Data, error) { return &merged, nil }
 	dedup := restarted.TargetOffers(offerTestScope())
 	if dedup.Count != r.Count || offerOutcomeCount(dedup, "pending") != 0 {
 		t.Fatalf("archive/live overlap counted twice: %+v", dedup)
@@ -146,7 +146,7 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 			if offerOutcomeCount(failed, "pending") != 1 || strings.Contains(failed.Cutoff, "14:30:00") {
 				t.Fatal("failed read changed pending offer or check time")
 			}
-			a.seasonTransactions.value = []leaguefeed.Transaction{{Kind: tc.kind, Franchise: tc.sender,
+			a.core.SeasonTransactions.Value = []leaguefeed.Transaction{{Kind: tc.kind, Franchise: tc.sender,
 				Time: ts.Add(tc.delta), Trade: &leaguefeed.Trade{Counterparty: tc.receiver}}}
 			if err := a.recordOffers(ctx, nil, ts.Add(2*time.Hour), nil); err != nil {
 				t.Fatal(err)
@@ -156,7 +156,7 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 				offerOutcomeCount(ended, tc.want) != offerOutcomeCount(before, tc.want)+1 {
 				t.Fatalf("ending should be %s: %+v", tc.want, ended)
 			}
-			rows, _, err := personal.New(a.pools).Offers(ctx, "0025")
+			rows, _, err := personal.New(a.core.Pools).Offers(ctx, "0025")
 			if err != nil || rows[0].FirstMissed != ts.Add(2*time.Hour).Unix() {
 				t.Fatal("first miss not saved", err)
 			}
@@ -167,25 +167,25 @@ func TestLiveOfferEndingEvidenceAndFailedRead(t *testing.T) {
 func TestPendingRefreshRecordsHistory(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	if err := personal.New(a.pools).Initialize(a.ctx); err != nil {
+	if err := personal.New(a.core.Pools).Initialize(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 13, 14, 9, 0, 0, time.UTC)
-	a.clockNow = func() time.Time { return at }
+	a.core.ClockNow = func() time.Time { return at }
 	transport.bodies["pendingTrades"] = `{"pendingTrades":{"pendingTrade":{
  "trade_id":"9001","offeringteam":"0025","offeredto":"0001","timestamp":"1791810000",
  "expires":"1791982800","will_give_up":"0042,","will_receive":"0816,"}}}`
-	a.refreshPendingTrades(a.ctx)
+	a.refreshPendingTrades(a.core.Ctx)
 	r := a.TargetOffers(offerTestScope())
 	if offerOutcomeCount(r, "pending") != 1 || !strings.Contains(r.Cutoff, at.Format(time.RFC3339)) {
-		t.Fatalf("refresh did not save history: %+v, feed error %s", r, a.seasonPendingTrades.refreshError)
+		t.Fatalf("refresh did not save history: %+v, feed error %s", r, a.core.SeasonPendingTrades.RefreshError)
 	}
 	transport.failure = "pendingTrades"
 	at = at.Add(time.Hour)
-	a.refreshPendingTrades(a.ctx)
+	a.refreshPendingTrades(a.core.Ctx)
 	if offerOutcomeCount(a.TargetOffers(offerTestScope()), "pending") != 1 {
 		t.Fatal("failed fetch ended offer")
 	}
@@ -229,7 +229,7 @@ func TestLiveOfferCutoffAndOwnerScope(t *testing.T) {
 	if offerOutcomeCount(a.TargetOffers(scope), "pending") != 0 {
 		t.Fatal("counterparty filter ignored")
 	}
-	rows, _, err := personal.New(a.pools).Offers(context.Background(), "0025")
+	rows, _, err := personal.New(a.core.Pools).Offers(context.Background(), "0025")
 	if err != nil || len(rows) != 3 {
 		t.Fatal("recorded someone else's private offer", rows, err)
 	}
@@ -260,7 +260,7 @@ func TestLiveOfferFromUnheldYearKeepsHistoryOnScreen(t *testing.T) {
 	ctx := context.Background()
 	ts := time.Date(2027, 3, 2, 15, 0, 0, 0, time.UTC)
 	p := leaguefeed.PendingTrade{ID: "9101", Offering: "0025", OfferedTo: "0001", Proposed: ts}
-	if err := personal.New(a.pools).ObserveOffers(ctx, "0025", 2027, []leaguefeed.PendingTrade{p}, nil,
+	if err := personal.New(a.core.Pools).ObserveOffers(ctx, "0025", 2027, []leaguefeed.PendingTrade{p}, nil,
 		ts.Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
@@ -274,19 +274,19 @@ func TestLiveOfferFromUnheldYearKeepsHistoryOnScreen(t *testing.T) {
 func TestOfferHistorySaveFailureLeavesDeskRead(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	var logged []string
-	a.fallbackLog = func(line string) { logged = append(logged, line) }
-	a.labData = func() (*lab.Data, error) { return nil, fmt.Errorf("lab unavailable") }
+	a.core.FallbackLog = func(line string) { logged = append(logged, line) }
+	a.core.LabData = func() (*lab.Data, error) { return nil, fmt.Errorf("lab unavailable") }
 	transport.bodies["pendingTrades"] = `{"pendingTrades":{"pendingTrade":{
  "trade_id":"9001","offeringteam":"0025","offeredto":"0001","timestamp":"1791810000",
  "expires":"1791982800","will_give_up":"0042,","will_receive":"0816,"}}}`
-	a.refreshPendingTrades(a.ctx)
-	if a.seasonPendingTrades.refreshError != "" || len(a.seasonPendingTrades.value) != 1 {
+	a.refreshPendingTrades(a.core.Ctx)
+	if a.core.SeasonPendingTrades.RefreshError != "" || len(a.core.SeasonPendingTrades.Value) != 1 {
 		t.Fatalf("a failed history save marked the desk's MFL read failed: %q %+v",
-			a.seasonPendingTrades.refreshError, a.seasonPendingTrades.value)
+			a.core.SeasonPendingTrades.RefreshError, a.core.SeasonPendingTrades.Value)
 	}
 	if len(logged) != 1 || !strings.Contains(logged[0], "offers: archive owner") {
 		t.Fatalf("history save failure not logged once: %q", logged)

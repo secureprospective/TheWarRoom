@@ -1,6 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+)
 
 // cacheScope is one copy the app holds that can be read afresh from its source, with the app's own
 // forced refresh that does it.
@@ -20,7 +24,7 @@ func cacheScopes() []cacheScope {
 		{DataScope{"race", "League race", "The standings and the race for the playoffs.",
 			"Read the league race again", "Reading…"}, (*App).TargetRaceRefresh},
 		{DataScope{"comms", "League board", "The league's message board posts.",
-			"Read the league board again", "Reading…"}, (*App).TargetCommsRefresh},
+			"Read the league board again", "Reading…"}, func(a *App, force bool) error { return commsapp.New(a.core).TargetCommsRefresh(force) }},
 		{DataScope{"draft", "Draft reports", "The draft boards and reports.",
 			"Read draft reports again", "Reading…"}, (*App).TargetDraftReportsRefresh},
 	}

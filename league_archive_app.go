@@ -31,7 +31,7 @@ type appSettings struct {
 	PhotosOff        bool   `json:"photosOff,omitempty"`
 }
 
-func (a *App) settingsPath() string { return filepath.Join(a.dataDir, "settings.json") }
+func (a *App) settingsPath() string { return filepath.Join(a.core.Paths.DataDir, "settings.json") }
 
 func (a *App) readSettings() (appSettings, error) {
 	var s appSettings

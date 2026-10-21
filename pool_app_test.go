@@ -168,7 +168,7 @@ func TestPoolWithoutNamesIsFailed(t *testing.T) {
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	a.lookup, a.hasLookup = normalize.Lookup{}, false
+	a.core.Lookup, a.core.HasLookup = normalize.Lookup{}, false
 	transport.failure = "players"
 	r := a.TargetPool(RawPoolScope{Sort: "name"})
 	if r.Status != ReadingFailed || r.AbsenceReason == nil || !strings.Contains(*r.AbsenceReason, "Player names unavailable") {
@@ -209,28 +209,28 @@ func TestFreeAgentChangesAreHonestAcrossLaunches(t *testing.T) {
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	if a.modelDirty.Load() {
+	if a.core.ModelDirty.Load() {
 		t.Fatal("identical archived pool was marked changed on launch")
 	}
 	transport.bodies["freeAgents"] = `{"freeAgents":{"leagueUnit":{"player":[{"id":"13594"},{"id":"13593"},{"id":"99999"},{"id":"13595"}]}}}`
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	if a.modelDirty.Load() {
+	if a.core.ModelDirty.Load() {
 		t.Fatal("only list order changed")
 	}
-	a.seasonFreeAgents = heldSeasonFeed[[]playerid.PlayerID]{}
+	a.core.SeasonFreeAgents = heldSeasonFeed[[]playerid.PlayerID]{}
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	if a.modelDirty.Load() {
+	if a.core.ModelDirty.Load() {
 		t.Fatal("restoring the held pool on launch looked like new inputs")
 	}
 	transport.bodies["freeAgents"] = `{"freeAgents":{"leagueUnit":{"player":{"id":"13594"}}}}`
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	if !a.modelDirty.Load() {
+	if !a.core.ModelDirty.Load() {
 		t.Fatal("changed pool did not mark engine inputs changed")
 	}
 }
@@ -242,7 +242,7 @@ func TestPoolNamesEngineRunInLocalTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 11, 12, 34, 0, 0, time.Local)
-	if _, _, err := a.history.WriteModelRun(a.ctx, history.NewModelRun{Season: a.season, AsOf: at,
+	if _, _, err := a.core.History.WriteModelRun(a.core.Ctx, history.NewModelRun{Season: a.core.Season, AsOf: at,
 		Engine: "fixture", InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()},
 		Scores: []history.ModelScore{{MFLID: "13594", Position: "WR"}}}); err != nil {
 		t.Fatal(err)

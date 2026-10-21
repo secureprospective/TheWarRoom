@@ -67,14 +67,14 @@ func (a *App) linkDirectory(ctx context.Context) error {
 }
 
 func (a *App) rosteredPositions() map[string]string {
-	a.lookupMu.Lock()
-	lk, ok := a.lookup, a.hasLookup
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Lock()
+	lk, ok := a.core.Lookup, a.core.HasLookup
+	a.core.LookupMu.Unlock()
 	if !ok {
 		return map[string]string{}
 	}
 	out := map[string]string{}
-	for id := range rosteredBy(a.league.Reader()) {
+	for id := range rosteredBy(a.core.League.Reader()) {
 		if f, ok := lk.Facts(id); ok {
 			out[id] = string(f.Position)
 		}
@@ -84,12 +84,12 @@ func (a *App) rosteredPositions() map[string]string {
 
 func (a *App) loadSignals(ctx context.Context) SignalsReport {
 	defer a.sourceHealthChanged(ctx)
-	a.loadingSignals.Lock()
-	defer a.loadingSignals.Unlock()
+	a.core.LoadingSignals.Lock()
+	defer a.core.LoadingSignals.Unlock()
 	rep := wireSignals(a.sourcesService().LoadSignals(ctx, a.linkDirectory))
-	a.signalsMu.Lock()
+	a.core.SignalsMu.Lock()
 	a.signals = rep
-	a.signalsMu.Unlock()
+	a.core.SignalsMu.Unlock()
 	return rep
 }
 

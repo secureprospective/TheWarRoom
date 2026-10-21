@@ -175,9 +175,9 @@ func TestScheduleCommandSafety(t *testing.T) {
 	stale := raw
 	stale.Expected = 5
 	refuse(stale)
-	app.commissionerSession = testCommissionerSession{"outsider"}
+	app.core.CommissionerSession = testCommissionerSession{"outsider"}
 	refuse(raw)
-	app.commissionerSession = testCommissionerSession{"creator"}
+	app.core.CommissionerSession = testCommissionerSession{"creator"}
 	executeCommissionerTest(t, app, raw)
 	raw.Command, raw.Expected = commissioner.ScheduleEdit, 7
 	for i, patch := range []commissioner.RawScheduleArgs{

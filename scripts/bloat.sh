@@ -13,7 +13,7 @@ baseline=.bloat-baseline
 provenance_re='(GLM|DeepSeek|Gemini|Ornith|agy)|[Rr]eview (m|lead |finding |round )?[0-9#]|Round-[0-9]|Ship-[0-9]|Friction #[0-9]'
 
 mapfile -t files < <(find . -name '*.go' ! -name '*_test.go' \
-  -not -path './vendor/*' -not -path './tools/*' -not -path '*/node_modules/*' -not -path './frontend/*' | sort)
+  -not -path './.phase-tmp/*' -not -path './.tmp/*' -not -path './.cache/*' -not -path './vendor/*' -not -path './tools/*' -not -path '*/node_modules/*' -not -path './frontend/*' | sort)
 
 read -r total comments provenance tiny < <(awk -v re="$provenance_re" '
   FNR == 1 { if (NR > 1 && code < 40) tiny++; code = 0 }

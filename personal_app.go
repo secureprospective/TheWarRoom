@@ -21,9 +21,9 @@ type PersonalReading struct {
 }
 
 func (a *App) personalSnapshot(mine string) (snapshot.Snapshot, error) {
-	a.targetSnapshotMu.Lock()
-	snap, loaded := a.targetSnapshot, a.hasTargetSnapshot
-	a.targetSnapshotMu.Unlock()
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
 	if !loaded {
 		return snap, fmt.Errorf("personal: snapshot not loaded")
 	}
@@ -41,19 +41,19 @@ func (a *App) TargetPersonal(mine string) (PersonalReading, error) {
 	if err != nil {
 		return PersonalReading{}, err
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
-	entries, err := personal.New(a.pools).Read(ctx, mine)
+	entries, err := personal.New(a.core.Pools).Read(ctx, mine)
 	if err != nil {
 		return PersonalReading{}, fmt.Errorf("personal: %w", err)
 	}
-	feed := readShellFeed(ctx, a, &a.seasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
+	feed := readShellFeed(ctx, a, &a.core.SeasonTradeBait, "tradeBait", ingestion.ParseTradeBait)
 	report := reportShell("M-116", "League trade bait",
 		"MFL's held tradeBait export, beside your private list. The app never submits either list to MFL.",
 		feed, time.Local, "Franchise", "Offering", "Looking for")
 	report.Source = "Source: MFL trade bait · " + shellFeedTime(feed, time.Local)
 	names, franchises := snapshotNames(snap)
-	report.Rows = append(report.Rows, wireRows(personalapp.BaitRows(feed.value, names, franchises))...)
+	report.Rows = append(report.Rows, wireRows(personalapp.BaitRows(feed.Value, names, franchises))...)
 
 	return PersonalReading{Entries: entries, Players: a.personalPlayers(entries), Bait: report}, nil
 }
@@ -73,9 +73,9 @@ func (a *App) TargetPersonalChange(raw personal.RawChange) error {
 	if raw.Entity == "player" && names[raw.ID] == "" || raw.Entity == "franchise" && franchises[raw.ID] == "" {
 		return fmt.Errorf("personal: unknown entity")
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
-	if err := personal.New(a.pools).Change(ctx, raw, time.Now()); err != nil {
+	if err := personal.New(a.core.Pools).Change(ctx, raw, time.Now()); err != nil {
 		return fmt.Errorf("personal: change: %w", err)
 	}
 	return nil
@@ -94,7 +94,7 @@ func (a *App) TargetPersonalHandOff(kind string) error {
 	if target.URL == "" {
 		return fmt.Errorf("personal: %s", strings.Join(notes, "; "))
 	}
-	a.openURL(a.ctx, target.URL)
+	a.core.OpenURL(a.core.Ctx, target.URL)
 	return nil
 }
 
@@ -102,25 +102,25 @@ func (a *App) TargetPersonalHandOff(kind string) error {
 func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,
 	parse func([]byte) ([]T, error)) heldSeasonFeed[[]T] {
 	feed := heldSeasonFeed[[]T]{}
-	if a.history == nil {
-		feed.refreshError = "No held archive"
+	if a.core.History == nil {
+		feed.RefreshError = "No held archive"
 		return feed
 	}
-	found, err := a.history.ReferenceBodies(ctx, "TYPE="+export, func(src string, body []byte, at time.Time) bool {
-		if !sameExport(src, export, a.season, leagueless) {
+	found, err := a.core.History.ReferenceBodies(ctx, "TYPE="+export, func(src string, body []byte, at time.Time) bool {
+		if !sameExport(src, export, a.core.Season, leagueless) {
 			return false
 		}
 		rows, err := parse(body)
 		if err != nil {
 			return false
 		}
-		feed.value, feed.fetchedAt = rows, at
+		feed.Value, feed.FetchedAt = rows, at
 		return true
 	})
 	if err != nil {
-		feed.refreshError = "Held archive unreadable: " + err.Error()
+		feed.RefreshError = "Held archive unreadable: " + err.Error()
 	} else if !found {
-		feed.refreshError = "No usable held " + export + " export"
+		feed.RefreshError = "No usable held " + export + " export"
 	}
 	return feed
 }

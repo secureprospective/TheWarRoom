@@ -20,7 +20,7 @@ func capApp(t *testing.T) *legalityFixture {
 	a := nativeSeedTestApp(t)
 	path := filepath.Join(t.TempDir(), "cap.db")
 	store, pools := openDirectoryHistory(t, path)
-	a.history = store
+	a.core.History = store
 	snap := state.MirrorSnapshot{Season: 2026, Adjustments: []state.Adjustment{
 		{ID: "dead-player", FranchiseID: "0002", Amount: 2_500_00000, Description: "Held dead money"},
 		{ID: "credit", FranchiseID: "0002", Amount: -1_200_00000, Description: "Held cap credit"}}}
@@ -30,7 +30,7 @@ func capApp(t *testing.T) *legalityFixture {
 			FranchiseID: "0002", RosterStatus: status, Salary: salaries[i], ContractYear: 2028,
 			ContractStatus: domain.CStatusUFA})
 	}
-	if _, err := a.league.Replace(t.Context(), snap); err != nil {
+	if _, err := a.core.League.Replace(t.Context(), snap); err != nil {
 		t.Fatal(err)
 	}
 	seedNativeTest(t, a, createNativeSeedLeague(t, a, commissioner.PresetLegacy))
@@ -78,7 +78,7 @@ func TestNativeCapReadingUsesRecordedAssetsAndSignedDeadMoney(t *testing.T) {
 	}
 	refresh := state.MirrorSnapshot{Season: 2027, Players: []state.MirrorPlayer{
 		{MFLID: "0099", FranchiseID: "0001", RosterStatus: domain.RosterActive, Salary: 999_000_00000}}}
-	if _, err := f.app.league.Replace(t.Context(), refresh); err != nil {
+	if _, err := f.app.core.League.Replace(t.Context(), refresh); err != nil {
 		t.Fatal(err)
 	}
 	if got := readCap(t, f); !reflect.DeepEqual(got, before) {
@@ -151,7 +151,7 @@ func TestNativeCapWaitsForSeasonEffectiveRules(t *testing.T) {
 	if team := capTeam(t, f); *team.CapCents != 125_000_00000 {
 		t.Fatal("pending cap counted early")
 	}
-	f.app.history.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
+	f.app.core.History.SetClock(func() time.Time { return time.Date(2027, 3, 1, 5, 0, 0, 0, time.UTC) })
 	reading := readCap(t, f)
 	if reading.RulesSeason != 2027 || reading.RosterSeason != 2026 || *capTeam(t, f).CapCents != 20_000_00000 {
 		t.Fatal("cap did not use season-effective rules")

@@ -21,11 +21,11 @@ func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	e, err := a.moves.Get(ctx, correlationID)
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	e, err := a.core.Moves.Get(ctx, correlationID)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: load: %w", err)
 	}
@@ -35,7 +35,7 @@ func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
 	if envelope.IsRelease(e.Receipt().Spec.Intent) {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: release needs its confirmation and checks")
 	}
-	next, err := e.HandOff(a.movesNow())
+	next, err := e.HandOff(a.core.MovesNow())
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: %w", err)
 	}
@@ -43,12 +43,12 @@ func (a *App) TargetHandOff(correlationID string) (envelope.Receipt, error) {
 	if err := validateMoveURL(target); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off from %s: %w", e.State(), err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: save: %w", err)
 	}
-	a.openURL(a.ctx, target)
+	a.core.OpenURL(a.core.Ctx, target)
 	a.logMove(next)
-	a.movesChanged(a.ctx)
+	a.core.MovesChanged(a.core.Ctx)
 	a.wakeMoves()
 	return next.Receipt(), nil
 }
@@ -78,7 +78,7 @@ func (a *App) TargetCheckMoves() error {
 
 func (a *App) wakeMoves() {
 	select {
-	case a.movesWake <- struct{}{}:
+	case a.core.MovesWake <- struct{}{}:
 	default:
 	}
 }
@@ -86,7 +86,7 @@ func (a *App) wakeMoves() {
 func (a *App) logMove(e envelope.Envelope) {
 	r := e.Receipt()
 	entry := r.Audit[len(r.Audit)-1]
-	a.movesLog(fmt.Sprintf("move %s %s → %s: %s", e.ID(), entry.From, entry.To, entry.Note))
+	a.core.MovesLog(fmt.Sprintf("move %s %s → %s: %s", e.ID(), entry.From, entry.To, entry.Note))
 }
 
 func movePredicate(intent string) envelope.Predicate {
@@ -107,7 +107,7 @@ func movePredicate(intent string) envelope.Predicate {
 // withBidFacts gives a bid plan's predicate the contract it looks for, which lives in bid_facts.
 func (a *App) withBidFacts(ctx context.Context, id string, p envelope.Predicate) (envelope.Predicate, error) {
 	if _, ok := p.(envelope.ContractPredicate); ok {
-		facts, err := a.moves.ContractFacts(ctx, id)
+		facts, err := a.core.Moves.ContractFacts(ctx, id)
 		if err != nil {
 			return nil, fmt.Errorf("watch moves: contract facts: %w", err)
 		}
@@ -116,7 +116,7 @@ func (a *App) withBidFacts(ctx context.Context, id string, p envelope.Predicate)
 	if _, ok := p.(envelope.BidPredicate); !ok {
 		return p, nil
 	}
-	facts, err := a.moves.BidFacts(ctx, id)
+	facts, err := a.core.Moves.BidFacts(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("watch moves: bid facts %s: %w", id, err)
 	}
@@ -129,9 +129,9 @@ func (a *App) moveSources(entries []envelope.Envelope) map[envelope.Source]bool 
 		intent := e.Receipt().Spec.Intent
 		predicate := movePredicate(intent)
 		if predicate == nil {
-			if !a.movesUnknown[intent] {
-				a.movesUnknown[intent] = true
-				a.movesLog(fmt.Sprintf("move intent %s: no landing predicate", intent))
+			if !a.core.MovesUnknown[intent] {
+				a.core.MovesUnknown[intent] = true
+				a.core.MovesLog(fmt.Sprintf("move intent %s: no landing predicate", intent))
 			}
 			continue
 		}
@@ -143,7 +143,7 @@ func (a *App) moveSources(entries []envelope.Envelope) map[envelope.Source]bool 
 }
 
 func (a *App) checkMoves(ctx context.Context) error {
-	entries, err := a.moves.Awaiting(ctx)
+	entries, err := a.core.Moves.Awaiting(ctx)
 	if err != nil {
 		return fmt.Errorf("watch moves: awaiting: %w", err)
 	}
@@ -159,12 +159,12 @@ func (a *App) checkMoves(ctx context.Context) error {
 		return err
 	}
 	// Bindings take movesMu too, so it covers the local observe-and-save only, never MFL.
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	changed := false
 	defer func() {
 		if changed {
-			a.movesChanged(ctx)
+			a.core.MovesChanged(ctx)
 		}
 	}()
 	for _, listed := range entries {
@@ -173,7 +173,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 			continue
 		}
 		// Re-read: a binding may have moved it while MFL was being fetched.
-		e, err := a.moves.Get(ctx, listed.ID())
+		e, err := a.core.Moves.Get(ctx, listed.ID())
 		if err != nil {
 			return fmt.Errorf("watch moves: reload %s: %w", listed.ID(), err)
 		}
@@ -183,7 +183,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if !watchableMove(e, listed.State()) {
 			continue
 		}
-		next, err := e.Observe(a.movesNow(), obs, predicate)
+		next, err := e.Observe(a.core.MovesNow(), obs, predicate)
 		if errors.Is(err, envelope.ErrStaleObservation) {
 			continue
 		}
@@ -193,7 +193,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if !saveMoveEvidence(e, next) {
 			continue
 		}
-		if err := a.moves.Save(ctx, next); err != nil {
+		if err := a.core.Moves.Save(ctx, next); err != nil {
 			return fmt.Errorf("watch moves: save %s: %w", e.ID(), err)
 		}
 		changed = true
@@ -205,8 +205,8 @@ func (a *App) checkMoves(ctx context.Context) error {
 func (a *App) refreshedObservation(
 	ctx context.Context, sources map[envelope.Source]bool,
 ) (envelope.Observation, error) {
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	if err := a.refreshMoveSources(ctx, sources); err != nil {
 		return envelope.Observation{}, err
 	}
@@ -214,11 +214,11 @@ func (a *App) refreshedObservation(
 }
 
 func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Source]bool) error {
-	pause := a.seasonPause
+	pause := a.core.SeasonPause
 	if pause == nil {
 		pause = seasonPause
 	}
-	entries, err := a.moves.Awaiting(ctx)
+	entries, err := a.core.Moves.Awaiting(ctx)
 	if err != nil {
 		return fmt.Errorf("watch moves: latest hand-off: %w", err)
 	}
@@ -254,16 +254,16 @@ func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Sourc
 }
 
 func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) error {
-	if a.movesRefresh != nil {
-		if err := a.movesRefresh(ctx, source); err != nil {
+	if a.core.MovesRefresh != nil {
+		if err := a.core.MovesRefresh(ctx, source); err != nil {
 			return fmt.Errorf("watch moves: refresh %s: %w", source, err)
 		}
 		return nil
 	}
 	switch source {
 	case envelope.Rosters, envelope.Contracts:
-		if _, err := a.refreshLeagueLocked(ctx, a.rulebook, a.league); err != nil {
-			a.movesLog(fmt.Sprintf("watch moves: roster refresh: %v", err))
+		if _, err := a.refreshLeagueLocked(ctx, a.core.Rulebook, a.core.League); err != nil {
+			a.core.MovesLog(fmt.Sprintf("watch moves: roster refresh: %v", err))
 		}
 	case envelope.Transactions:
 		a.refreshSeasonTransactions(ctx)
@@ -276,7 +276,7 @@ func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) err
 }
 
 func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error) {
-	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.league, a.rulebook), snapshot.Directory{}, snapshot.Injuries{})
+	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.core.League, a.core.Rulebook), snapshot.Directory{}, snapshot.Injuries{})
 	if err != nil {
 		return envelope.Observation{}, fmt.Errorf("watch moves: roster snapshot: %w", err)
 	}
@@ -290,10 +290,10 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 	rosters := snap.Rosters
 	fresh := &rosters.Provenance.Freshness
 	if changed, err := time.Parse(time.RFC3339, fresh.FetchedAt); err == nil &&
-		fresh.State != domain.FreshFail && a.rostersCheckedAt.After(changed) {
-		fresh.FetchedAt = a.rostersCheckedAt.UTC().Format(time.RFC3339)
+		fresh.State != domain.FreshFail && a.core.RostersCheckedAt.After(changed) {
+		fresh.FetchedAt = a.core.RostersCheckedAt.UTC().Format(time.RFC3339)
 	}
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	contracts := []envelope.ContractEvidence{}
 	for _, p := range m.Players {
 		contracts = append(contracts, mirrorContractEvidence(m, p.FranchiseID, p.MFLID))
@@ -308,23 +308,23 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 // recentMoveSource: a season feed fetched successfully within the last minute and after the
 // latest hand-off is already the evidence a pass needs (the hourly season refresh wakes the watcher).
 func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	var at time.Time
 	var failure string
 	switch source {
 	case envelope.Transactions:
-		at, failure = a.seasonTransactions.fetchedAt, a.seasonTransactions.refreshError
+		at, failure = a.core.SeasonTransactions.FetchedAt, a.core.SeasonTransactions.RefreshError
 	case envelope.Lineups:
-		at, failure = a.seasonLineups.fetchedAt, a.seasonLineups.refreshError
+		at, failure = a.core.SeasonLineups.FetchedAt, a.core.SeasonLineups.RefreshError
 	case envelope.PendingTrades:
-		at, failure = a.seasonPendingTrades.fetchedAt, a.seasonPendingTrades.refreshError
+		at, failure = a.core.SeasonPendingTrades.FetchedAt, a.core.SeasonPendingTrades.RefreshError
 	case envelope.Rosters, envelope.Contracts: // not a season feed
 		return false
 	default:
 		return false
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	return failure == "" && at.After(handed) && !at.After(now) && now.Sub(at) < time.Minute
 }
 
@@ -334,20 +334,20 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 // it does at hand-off. The caller holds refreshMu.
 func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
 	a.revalidateReleaseAfterRefresh(ctx)
-	if a.moves != nil && a.whatif != nil {
-		a.movesMu.Lock()
+	if a.core.Moves != nil && a.core.Whatif != nil {
+		a.core.MovesMu.Lock()
 		err := a.revalidateContractPlans(ctx)
-		a.movesMu.Unlock()
+		a.core.MovesMu.Unlock()
 		if err != nil {
-			a.movesLog(fmt.Sprintf("contract validation: %v", err))
+			a.core.MovesLog(fmt.Sprintf("contract validation: %v", err))
 		}
 	}
 	if err := a.ready(); err != nil {
 		return
 	}
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, "")
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, "")
 	if err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: list: %v", err))
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: list: %v", err))
 		return
 	}
 	candidates := []string{}
@@ -361,13 +361,13 @@ func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
 		return
 	}
 	dir := a.targetDirectory(ctx)
-	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.league, a.rulebook), dir, a.heldInjuries())
+	snap, err := snapshot.Build(ctx, snapshot.NewSource(a.core.League, a.core.Rulebook), dir, a.heldInjuries())
 	if err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: build: %v", err))
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: build: %v", err))
 		return
 	}
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	changed := false
 	for _, id := range candidates {
 		decision, found := a.planDecision(ctx, snap, id)
@@ -376,14 +376,14 @@ func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
 		}
 	}
 	if changed {
-		a.movesChanged(ctx)
+		a.core.MovesChanged(ctx)
 	}
 }
 
 // planDecision reads the held verdict for one plan's move slot: the IR plan watches the IR
 // slot, the taxi plan the taxi slot. The caller holds refreshMu.
 func (a *App) planDecision(ctx context.Context, snap snapshot.Snapshot, id string) (eligibility.Decision, bool) {
-	e, err := a.moves.Get(ctx, id)
+	e, err := a.core.Moves.Get(ctx, id)
 	if err != nil || e.State() != envelope.Ready {
 		return eligibility.Decision{}, false
 	}
@@ -404,28 +404,28 @@ func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibi
 	if !found || decision.Verdict != eligibility.Ineligible {
 		return false
 	}
-	e, err := a.moves.Get(ctx, id)
+	e, err := a.core.Moves.Get(ctx, id)
 	if err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: load %s: %v", id, err))
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: load %s: %v", id, err))
 		return false
 	}
 	if e.State() != envelope.Ready {
 		return false
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	reason := "player no longer eligible: " + decision.Reason
 	invalidated, err := e.Invalidate(now, reason)
 	if err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: invalidate %s: %v", id, err))
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: invalidate %s: %v", id, err))
 		return false
 	}
 	drafted, err := invalidated.Rebase(now, reason)
 	if err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: rebase %s: %v", id, err))
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: rebase %s: %v", id, err))
 		return false
 	}
-	if err := a.moves.Save(ctx, drafted); err != nil {
-		a.movesLog(fmt.Sprintf("revalidate moves: save %s: %v", id, err))
+	if err := a.core.Moves.Save(ctx, drafted); err != nil {
+		a.core.MovesLog(fmt.Sprintf("revalidate moves: save %s: %v", id, err))
 		return false
 	}
 	a.logMove(drafted)
@@ -433,12 +433,12 @@ func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibi
 }
 
 func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
-	if a.moves != nil && a.whatif != nil {
-		a.movesMu.Lock()
+	if a.core.Moves != nil && a.core.Whatif != nil {
+		a.core.MovesMu.Lock()
 		err := a.revalidateReleasePlans(ctx)
-		a.movesMu.Unlock()
+		a.core.MovesMu.Unlock()
 		if err != nil {
-			a.movesLog(fmt.Sprintf("release validation: %v", err))
+			a.core.MovesLog(fmt.Sprintf("release validation: %v", err))
 		}
 	}
 }
@@ -456,23 +456,23 @@ func (a *App) TargetWithdrawRoster(correlationID string) (envelope.Receipt, erro
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	e, err := a.moves.Get(ctx, correlationID)
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	e, err := a.core.Moves.Get(ctx, correlationID)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: load: %w", err)
 	}
-	next, err := e.WithdrawRoster(a.movesNow())
+	next, err := e.WithdrawRoster(a.core.MovesNow())
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: save: %w", err)
 	}
 	a.logMove(next)
-	a.movesChanged(a.ctx)
+	a.core.MovesChanged(a.core.Ctx)
 	return next.Receipt(), nil
 }
 

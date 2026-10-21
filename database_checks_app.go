@@ -19,7 +19,7 @@ func (a *App) databaseFiles() []struct {
 		name  string
 		pools *db.Pools
 	}{
-		{"thewarroom", a.pools}, {"history", a.histPools}, {"whatif", a.whatifPools},
+		{"thewarroom", a.core.Pools}, {"history", a.core.HistPools}, {"whatif", a.core.WhatifPools},
 	}
 }
 
@@ -36,8 +36,8 @@ func (a *App) checkDatabases(ctx context.Context, now time.Time) {
 }
 
 func (a *App) startDatabaseChecks() {
-	a.databaseCheckStart.Do(func() {
-		parent := a.workCtx
+	a.core.DatabaseCheckStart.Do(func() {
+		parent := a.core.WorkCtx
 		if parent == nil {
 			parent = a.fallbackParent()
 		}
@@ -76,14 +76,14 @@ func newDatabaseBackups(dir string) (*db.Backups, error) {
 }
 
 func (a *App) backupDatabases(ctx context.Context, now time.Time) {
-	if a.backups == nil {
+	if a.core.Backups == nil {
 		return
 	}
-	if _, err := a.backups.Capture(ctx, [3]*db.Pools{a.pools, a.histPools, a.whatifPools}, "daily", now); err != nil {
+	if _, err := a.core.Backups.Capture(ctx, [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, "daily", now); err != nil {
 		log.Printf("the war room: daily backup: %s", err)
 		return
 	}
-	reports, err := a.backups.Prune(ctx, "")
+	reports, err := a.core.Backups.Prune(ctx, "")
 	for _, report := range reports {
 		log.Printf("the war room: backup retention: %s", report)
 	}

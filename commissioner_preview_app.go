@@ -32,9 +32,9 @@ func (a *App) TargetCommissionerPreview(body string) (commissioner.Preview, erro
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview catalogue: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	preview, err := a.history.PreviewCommissionerWithFacts(ctx, raw, principal, a.commissionerAuthorizer,
+	preview, err := a.core.History.PreviewCommissionerWithFacts(ctx, raw, principal, a.core.CommissionerAuthorizer,
 		catalogue, a.nativeFacts(), a.ownerZone())
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview: %w", err)
@@ -69,7 +69,7 @@ func (a *App) decodeCommissionerPreview(body string) (commissioner.RawCommand, e
 	if readyErr := a.ready(); readyErr != nil {
 		return raw, readyErr
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
 	return a.nativeSeedCommand(ctx, input)
 }

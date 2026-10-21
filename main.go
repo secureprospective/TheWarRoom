@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/comms"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -48,6 +50,7 @@ func main() {
 		OnShutdown:       app.shutdown,
 		Bind: []interface{}{
 			app,
+			comms.New(app.core),
 		},
 	})
 
@@ -81,7 +84,7 @@ func probe() int {
 	app := NewApp()
 	app.startup(context.Background())
 	defer app.shutdown(context.Background())
-	if app.startupErr != nil {
+	if app.core.StartupErr != nil {
 		return 1
 	}
 	return 0

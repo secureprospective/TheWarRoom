@@ -50,7 +50,7 @@ func (a *App) LoadCrosswalk() CrosswalkReport {
 	if err := a.ready(); err != nil {
 		return CrosswalkReport{Error: err.Error()}
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, rasFetchTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, rasFetchTimeout)
 	defer cancel()
 	lk, err := a.directory(ctx)
 	if err != nil {
@@ -72,8 +72,8 @@ func (a *App) GetCrosswalkReport() CrosswalkReport {
 	if err := a.ready(); err != nil {
 		return CrosswalkReport{Error: err.Error()}
 	}
-	a.crosswalkMu.Lock()
-	defer a.crosswalkMu.Unlock()
+	a.core.CrosswalkMu.Lock()
+	defer a.core.CrosswalkMu.Unlock()
 	return a.crosswalk
 }
 
@@ -85,14 +85,14 @@ func (a *App) fetchCrosswalk(ctx context.Context) (crosswalk.Map, error) {
 
 // linkCrosswalk writes the crosswalk's links to the player directory and holds the report.
 func (a *App) linkCrosswalk(ctx context.Context, cw crosswalk.Map, lk normalize.Lookup) (CrosswalkReport, error) {
-	rep, err := a.sourcesService().LinkCrosswalk(ctx, cw, lk, func() map[string]string { return rosteredBy(a.league.Reader()) }, a.rulebook.FranchiseNames)
+	rep, err := a.sourcesService().LinkCrosswalk(ctx, cw, lk, func() map[string]string { return rosteredBy(a.core.League.Reader()) }, a.core.Rulebook.FranchiseNames)
 	if err != nil {
 		return CrosswalkReport{}, err //nolint:wrapcheck // preserve the existing contextual error shown by the binding
 	}
 	out := wireCrosswalk(rep)
-	a.crosswalkMu.Lock()
+	a.core.CrosswalkMu.Lock()
 	a.crosswalk = out
-	a.crosswalkMu.Unlock()
+	a.core.CrosswalkMu.Unlock()
 	return out, nil
 }
 

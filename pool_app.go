@@ -88,48 +88,48 @@ func (r RawPoolScope) Validate() error {
 // the last good copy like the other season feeds. The caller holds refreshMu.
 func (a *App) refreshFreeAgents(ctx context.Context) {
 	a.restoreFreeAgents(ctx)
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.season,
+	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[freeagents.RawFreeAgent]{
-			export: freeagents.Export,
-			fetch: func(ctx context.Context) ([]freeagents.RawFreeAgent, error) {
-				raw, ferr := freeagents.Fetch(ctx, a.mflClient, strconv.Itoa(a.season), ingestion.LeagueID)
+			Export: freeagents.Export,
+			Fetch: func(ctx context.Context) ([]freeagents.RawFreeAgent, error) {
+				raw, ferr := freeagents.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 				if ferr != nil {
 					return nil, fmt.Errorf("free agents refresh: %w", ferr)
 				}
 				return raw, nil
 			},
-			parse: func(body []byte) ([]freeagents.RawFreeAgent, error) {
+			Parse: func(body []byte) ([]freeagents.RawFreeAgent, error) {
 				raw, perr := freeagents.Parse(body)
 				if perr != nil {
 					return nil, fmt.Errorf("free agents refresh: %w", perr)
 				}
 				return raw, nil
 			},
-			bodies: a.history.ArchivedBodies,
-		}, a.fallbackLog)
+			Bodies: a.core.History.ArchivedBodies,
+		}, a.core.FallbackLog)
 	var value []playerid.PlayerID
 	if err == nil {
 		value, err = freeagents.ToPlayerIDs(rows)
 		sortFreeAgentIDs(value)
 	}
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	if err == nil && !slices.Equal(a.seasonFreeAgents.value, value) {
-		a.modelDirty.Store(true)
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	if err == nil && !slices.Equal(a.core.SeasonFreeAgents.Value, value) {
+		a.core.ModelDirty.Store(true)
 	}
-	holdSeasonFeed(&a.seasonFreeAgents, value, fresh, err)
+	holdSeasonFeed(&a.core.SeasonFreeAgents, value, fresh, err)
 }
 
 // restoreFreeAgents makes the first refresh compare with the last held list across launches.
 func (a *App) restoreFreeAgents(ctx context.Context) {
-	a.seasonMu.Lock()
-	held := !a.seasonFreeAgents.fetchedAt.IsZero()
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	held := !a.core.SeasonFreeAgents.FetchedAt.IsZero()
+	a.core.SeasonMu.Unlock()
 	if held {
 		return
 	}
-	_, err := a.history.ArchivedBodies(ctx, "TYPE="+freeagents.Export, func(src string, body []byte, at time.Time) bool {
-		if !sameExport(src, freeagents.Export, a.season, false) {
+	_, err := a.core.History.ArchivedBodies(ctx, "TYPE="+freeagents.Export, func(src string, body []byte, at time.Time) bool {
+		if !sameExport(src, freeagents.Export, a.core.Season, false) {
 			return false
 		}
 		rows, err := freeagents.Parse(body)
@@ -141,13 +141,13 @@ func (a *App) restoreFreeAgents(ctx context.Context) {
 			return false
 		}
 		sortFreeAgentIDs(ids)
-		a.seasonMu.Lock()
-		holdSeasonFeed(&a.seasonFreeAgents, ids, liveFreshness(at), nil)
-		a.seasonMu.Unlock()
+		a.core.SeasonMu.Lock()
+		holdSeasonFeed(&a.core.SeasonFreeAgents, ids, liveFreshness(at), nil)
+		a.core.SeasonMu.Unlock()
 		return true
 	})
 	if err != nil {
-		a.fallbackLog("engine: previous free-agent list unavailable: " + err.Error())
+		a.core.FallbackLog("engine: previous free-agent list unavailable: " + err.Error())
 	}
 }
 
@@ -157,16 +157,16 @@ func (a *App) TargetPoolRefresh(force bool) error {
 	if err := a.ready(); err != nil {
 		return fmt.Errorf("target pool refresh: startup: %w", err)
 	}
-	a.seasonMu.Lock()
-	held := a.seasonFreeAgents
-	a.seasonMu.Unlock()
-	if !force && held.refreshError == "" && time.Since(held.fetchedAt) < poolFreshFor {
+	a.core.SeasonMu.Lock()
+	held := a.core.SeasonFreeAgents
+	a.core.SeasonMu.Unlock()
+	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < poolFreshFor {
 		return a.TargetMarketReportsRefresh(false)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	a.refreshFreeAgents(ctx)
 	a.refreshMarketFeeds(ctx, force)
 	return nil
@@ -203,26 +203,26 @@ func (a *App) TargetPool(raw RawPoolScope) Reading[Pool] {
 	if err := a.ready(); err != nil {
 		return poolReading(empty, snapshot.Provenance{}, ReadingFailed, err.Error(), poolHow)
 	}
-	a.seasonMu.Lock()
-	feed := a.seasonFreeAgents
-	feed.value = slices.Clone(feed.value)
-	a.seasonMu.Unlock()
-	p := feed.provenance("MFL freeAgents", "free agents")
-	if feed.fetchedAt.IsZero() {
+	a.core.SeasonMu.Lock()
+	feed := a.core.SeasonFreeAgents
+	feed.Value = slices.Clone(feed.Value)
+	a.core.SeasonMu.Unlock()
+	p := feed.Provenance("MFL freeAgents", "free agents")
+	if feed.FetchedAt.IsZero() {
 		reason := "Free agents have not been fetched from MFL yet"
-		if feed.refreshError != "" {
-			reason = "MFL free agents unavailable: " + feed.refreshError
+		if feed.RefreshError != "" {
+			reason = "MFL free agents unavailable: " + feed.RefreshError
 		}
 		return poolReading(empty, p, ReadingFailed, reason, poolHow)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m4Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
 	lk, err := a.directory(ctx)
 	if err != nil {
 		return poolReading(empty, p, ReadingFailed, "Player names unavailable: "+err.Error(), poolHow)
 	}
-	value, left := a.poolRows(ctx, feed.value, lk, raw)
-	if len(feed.value) == 0 {
+	value, left := a.poolRows(ctx, feed.Value, lk, raw)
+	if len(feed.Value) == 0 {
 		return poolReading(value, p, ReadingThin, "MFL lists no free agents right now", poolHow)
 	}
 	how := poolHow
@@ -235,7 +235,7 @@ func (a *App) TargetPool(raw RawPoolScope) Reading[Pool] {
 // poolRows builds, filters and sorts the rows, and counts the ids the directory does not know.
 func (a *App) poolRows(ctx context.Context, ids []playerid.PlayerID, lk normalize.Lookup, raw RawPoolScope) (Pool, int) {
 	plans := a.openBidPlansByPlayer(ctx, raw.FranchiseID)
-	season, now := a.league.Season(), time.Now()
+	season, now := a.core.League.Season(), time.Now()
 	all, seen, left := []PoolRow{}, map[string]bool{}, 0
 	facts := marketFacts(a.heldMarket())
 	values, engineNote := a.draftReportValues(ctx)

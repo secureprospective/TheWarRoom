@@ -54,9 +54,9 @@ func waiverOrder() []string {
 }
 
 func (f *waiverFixture) clock() {
-	f.app.clockNow = func() time.Time { return f.now }
-	f.app.history.SetClock(func() time.Time { return f.now })
-	f.app.localZone = time.FixedZone("PDT", -7*60*60)
+	f.app.core.ClockNow = func() time.Time { return f.now }
+	f.app.core.History.SetClock(func() time.Time { return f.now })
+	f.app.core.LocalZone = time.FixedZone("PDT", -7*60*60)
 }
 
 func (f *waiverFixture) restart(t *testing.T) { t.Helper(); f.reopen(t); f.clock() }
@@ -74,7 +74,7 @@ func (f *waiverFixture) raw(t *testing.T, command string, args commissioner.RawA
 
 func (f *waiverFixture) command(t *testing.T, command string, args commissioner.RawArgs, visibility string) commissioner.Receipt {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	return executeCommissionerTest(t, f.app, f.raw(t, command, args, visibility))
 }
 
@@ -84,7 +84,7 @@ func (f *waiverFixture) owner(t *testing.T, principal, command string, args comm
 	if command == commissioner.WaiverClaim {
 		visibility = "private"
 	}
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	return f.app.TargetNativeWaiverAction(f.raw(t, command, commissioner.RawArgs{Waiver: &args}, visibility))
 }
 
@@ -110,7 +110,7 @@ func (f *waiverFixture) claim(t *testing.T, window, principal, franchise string)
 
 func (f *waiverFixture) reading(t *testing.T, principal, franchise string) commissioner.NativeWaivers {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	reading, err := f.app.TargetNativeWaivers(legalityLeague, franchise, f.now)
 	if err != nil {
 		t.Fatal(err)
@@ -200,7 +200,7 @@ func TestNativeClaimsArePrivateAcrossReadingsAndLedger(t *testing.T) {
 			t.Fatal("another owner's claim visible before processing")
 		}
 		for _, principal := range []string{"creator", "owner.two", "owner.three"} {
-			f.app.commissionerSession = testCommissionerSession{principal}
+			f.app.core.CommissionerSession = testCommissionerSession{principal}
 			ledger, err := f.app.TargetCommissionerLedger(legalityLeague)
 			if err != nil {
 				t.Fatal(err)
@@ -255,7 +255,7 @@ func TestNativeWaiverPriorityAndRollingThroughProcessing(t *testing.T) {
 				}
 				f.restart(t)
 			}
-			f.app.commissionerSession = testCommissionerSession{"creator"}
+			f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 			f.revert(t, processed)
 			reading := f.reading(t, "owner.one", "franchise.01")
 			if reading.Players[0].Winner != "" || reading.Players[0].Status != "Closed; awaiting processing" ||
@@ -284,12 +284,12 @@ func TestNativeOwnerActionsCannotSkipGateOrIdentity(t *testing.T) {
 		if action.command == commissioner.WaiverClaim {
 			visibility = "private"
 		}
-		f.app.commissionerSession = testCommissionerSession{action.principal}
+		f.app.core.CommissionerSession = testCommissionerSession{action.principal}
 		raw := f.raw(t, action.command, commissioner.RawArgs{Waiver: &action.args}, visibility)
 		if _, err := f.app.TargetNativeWaiverAction(raw); err == nil {
 			t.Fatalf("%s skipped native gate", action.command)
 		}
-		if _, err := f.app.history.ExecuteCommissionerWithFacts(t.Context(), raw, action.principal, nil,
+		if _, err := f.app.core.History.ExecuteCommissionerWithFacts(t.Context(), raw, action.principal, nil,
 			f.app.nativeFacts(), f.app.ownerZone()); err == nil {
 			t.Fatalf("%s skipped transactional gate", action.command)
 		}
@@ -411,7 +411,7 @@ func TestNativeWaiverClockProcessesUnclaimedAtClose(t *testing.T) {
 	t.Parallel()
 	f := waiverApp(t)
 	cut := f.cut(t, "1000")
-	if err := f.app.history.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
+	if err := f.app.core.History.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
 		t.Fatal(err)
 	}
 	if r := f.reading(t, "owner.one", "franchise.01"); r.Players[0].Status != "On waivers" {
@@ -419,7 +419,7 @@ func TestNativeWaiverClockProcessesUnclaimedAtClose(t *testing.T) {
 	}
 	f.now = f.now.Add(24 * time.Hour)
 	for range 2 {
-		if err := f.app.history.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
+		if err := f.app.core.History.ProcessDueWaivers(t.Context(), legalityLeague, f.app.nativeFacts()); err != nil {
 			t.Fatal(err)
 		}
 		r := f.reading(t, "owner.one", "franchise.01")
@@ -469,7 +469,7 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	if _, err := f.app.TargetCommissionerExecute(string(body)); err == nil {
 		t.Fatal("owner processed waivers")
 	}
@@ -481,7 +481,7 @@ func TestNativeWaiverCommandsPermissionVersionRetry(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.three"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.three"}
 	receipt, err := f.app.TargetCommissionerExecute(string(body))
 	if err != nil {
 		t.Fatal(err)
@@ -529,12 +529,12 @@ func TestNativeWaiversWire(t *testing.T) {
 func TestNativeWaiverStandingsSeamDoesNotInventPriority(t *testing.T) {
 	t.Parallel()
 	f := waiverApp(t)
-	if _, err := f.app.history.StandingsOrder(t.Context(), legalityLeague, 2026, f.now); err == nil ||
+	if _, err := f.app.core.History.StandingsOrder(t.Context(), legalityLeague, 2026, f.now); err == nil ||
 		!strings.Contains(err.Error(), "Waiver order needs the standings, which are not built yet.") {
 		t.Fatal("standings seam invented priority", err)
 	}
 	raw := f.raw(t, commissioner.WaiverOrderAuto, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{}}, "league")
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	body, err := json.Marshal(raw)
 	if err != nil {
 		t.Fatal(err)
@@ -564,13 +564,13 @@ func TestNativeWaiverStandingsSeamDoesNotInventPriority(t *testing.T) {
 
 func (f *waiverFixture) set(t *testing.T, field, value, effective string) commissioner.Receipt {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	return f.legalityFixture.set(t, field, value, effective)
 }
 
 func (f *waiverFixture) revert(t *testing.T, receipt commissioner.Receipt) {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.legalityFixture.revert(t, receipt)
 }
 

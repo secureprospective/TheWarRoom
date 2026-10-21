@@ -19,11 +19,11 @@ import (
 func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	if err := a.rulebook.Initialize(a.ctx, weekRules{end: "17"}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, weekRules{end: "17"}); err != nil {
 		t.Fatal(err)
 	}
-	a.params = params.New(a.pools)
-	if err := a.params.Initialize(a.ctx); err != nil {
+	a.core.Params = params.New(a.core.Pools)
+	if err := a.core.Params.Initialize(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	lk, err := normalize.NewLookup([]players.RawPlayer{
@@ -33,7 +33,7 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.lookup, a.hasLookup = lk, true
+	a.core.Lookup, a.core.HasLookup = lk, true
 	free, err := playerid.New("0043")
 	if err != nil {
 		t.Fatal(err)
@@ -42,13 +42,13 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonFreeAgents.value = []playerid.PlayerID{free, free, rostered}
+	a.core.SeasonFreeAgents.Value = []playerid.PlayerID{free, free, rostered}
 	for _, batch := range []measures.Batch{
 		{Source: "nflverse", Facts: []measures.Fact{{IDType: "mfl", ID: "0042", Field: "players.position", Raw: "WR"}}},
 		{Source: "mfl", Facts: []measures.Fact{{IDType: "mfl", ID: "0042", Season: 2024,
 			Field: "playerScores.score", Raw: "100"}}},
 	} {
-		if _, err := a.history.Ingest(a.ctx, batch); err != nil {
+		if _, err := a.core.History.Ingest(a.core.Ctx, batch); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -57,30 +57,30 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 		snaps = append(snaps, measures.Fact{IDType: "mfl", ID: "0042",
 			Season: 2024, Week: week, Field: "snap_counts.offense_snaps", Raw: "40"})
 	}
-	if _, err := a.history.Ingest(a.ctx, measures.Batch{Source: "nflverse", Facts: snaps}); err != nil {
+	if _, err := a.core.History.Ingest(a.core.Ctx, measures.Batch{Source: "nflverse", Facts: snaps}); err != nil {
 		t.Fatal(err)
 	}
 
 	emitted := 0
-	a.seasonChanged = func(context.Context) { emitted++ }
-	a.modelMu.Lock()
-	defer a.modelMu.Unlock()
-	a.checkEngine(a.ctx)
-	first, held, err := a.history.LatestRun(a.ctx, a.season, history.RunModel)
+	a.core.SeasonChanged = func(context.Context) { emitted++ }
+	a.core.ModelMu.Lock()
+	defer a.core.ModelMu.Unlock()
+	a.checkEngine(a.core.Ctx)
+	first, held, err := a.core.History.LatestRun(a.core.Ctx, a.core.Season, history.RunModel)
 	if err != nil || !held || emitted != 1 {
 		t.Fatalf("first: %+v %t %v events %d", first, held, err, emitted)
 	}
-	scores, err := a.history.ModelScores(a.ctx, first.ID)
+	scores, err := a.core.History.ModelScores(a.core.Ctx, first.ID)
 	if err != nil || len(scores) != 2 || scores[0].MFLID != "0042" || scores[1].MFLID != "0043" {
 		t.Fatalf("scores: %+v %v", scores, err)
 	}
-	a.checkEngine(a.ctx)
+	a.checkEngine(a.core.Ctx)
 	if emitted != 1 {
 		t.Fatal("fresh unchanged inputs scored")
 	}
-	a.modelDirty.Store(true)
-	a.checkEngine(a.ctx)
-	next, held, err := a.history.LatestRun(a.ctx, a.season, history.RunModel)
+	a.core.ModelDirty.Store(true)
+	a.checkEngine(a.core.Ctx)
+	next, held, err := a.core.History.LatestRun(a.core.Ctx, a.core.Season, history.RunModel)
 	if err != nil || !held || emitted != 2 || next.ID == first.ID {
 		t.Fatalf("changed: %+v %v events %d", next, err, emitted)
 	}
@@ -89,11 +89,11 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 func TestBackgroundEngineSkipsWhileTheEngineRuns(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.params = params.New(a.pools)
-	a.modelMu.Lock()
-	defer a.modelMu.Unlock()
+	a.core.Params = params.New(a.core.Pools)
+	a.core.ModelMu.Lock()
+	defer a.core.ModelMu.Unlock()
 	done := make(chan struct{})
-	go func() { a.refreshEngine(a.ctx); close(done) }()
+	go func() { a.refreshEngine(a.core.Ctx); close(done) }()
 	select {
 	case <-done:
 	case <-time.After(time.Second):
@@ -104,13 +104,13 @@ func TestBackgroundEngineSkipsWhileTheEngineRuns(t *testing.T) {
 func TestC07ListsEngineRunAndAge(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	nr := history.NewModelRun{Season: a.season, AsOf: time.Now().Add(-2 * time.Hour), Engine: "fixture",
+	nr := history.NewModelRun{Season: a.core.Season, AsOf: time.Now().Add(-2 * time.Hour), Engine: "fixture",
 		InputsHash: "fixture", Params: history.ParamSet{Params: params.DefaultSet().Model()},
 		Scores: []history.ModelScore{{MFLID: "0042", Position: "WR"}}}
-	if _, _, err := a.history.WriteModelRun(a.ctx, nr); err != nil {
+	if _, _, err := a.core.History.WriteModelRun(a.core.Ctx, nr); err != nil {
 		t.Fatal(err)
 	}
-	in, err := a.healthInput(a.ctx)
+	in, err := a.healthInput(a.core.Ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -156,9 +156,9 @@ func TestSourceHealthEventOnFailedManualRefresh(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	events := 0
-	a.seasonChanged = func(context.Context) { events++ }
+	a.core.SeasonChanged = func(context.Context) { events++ }
 	var err error
-	a.mflClient, err = mfl.New("", 1000, mfl.WithTransport(&directoryDown{}))
+	a.core.MFLClient, err = mfl.New("", 1000, mfl.WithTransport(&directoryDown{}))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -26,9 +26,9 @@ type SpineEntry struct {
 
 func (a *App) heldMatchupStarters(mine string) map[string]bool {
 	week := a.marketWeek()
-	a.seasonMu.Lock()
-	live, weeks := a.seasonLineups.value, a.race.weeks.value
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	live, weeks := a.core.SeasonLineups.Value, a.race.weeks.Value
+	a.core.SeasonMu.Unlock()
 	return nowapp.HeldMatchupStarters(live, weeks, week, mine)
 }
 
@@ -40,10 +40,10 @@ func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter liveg
 	if v.Followed == nil && len(held) == 0 {
 		return nil
 	}
-	if a.history == nil {
+	if a.core.History == nil {
 		return fmt.Errorf("crosswalk directory unavailable")
 	}
-	known, err := a.history.KnownIDs(ctx, "espn")
+	known, err := a.core.History.KnownIDs(ctx, "espn")
 	if err != nil {
 		return fmt.Errorf("live game crosswalk: %w", err)
 	}
@@ -68,13 +68,13 @@ func (a *App) liveGameSpines(ctx context.Context, v *LiveGameView, adapter liveg
 func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]SpinePlayer, error) {
 	ids := a.heldMatchupStarters(mine)
 	players := map[string]SpinePlayer{}
-	espnIDs, err := a.history.SourceIDs(ctx, "espn")
+	espnIDs, err := a.core.History.SourceIDs(ctx, "espn")
 	if err != nil {
 		return nil, fmt.Errorf("live game player crosswalk: %w", err)
 	}
-	a.lookupMu.Lock()
-	lookup := a.lookup
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Lock()
+	lookup := a.core.Lookup
+	a.core.LookupMu.Unlock()
 	for _, id := range slices.Sorted(maps.Keys(ids)) {
 		espn := espnIDs[id]
 		if espn == "" {
@@ -84,13 +84,13 @@ func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]SpinePl
 		if !ok {
 			continue
 		}
-		players[espn] = SpinePlayer{ID: id, Name: proseName(facts.Name), Team: facts.Team, Mine: ids[id], Photo: photoView(id, proseName(facts.Name), a.photosOff.Load())}
+		players[espn] = SpinePlayer{ID: id, Name: proseName(facts.Name), Team: facts.Team, Mine: ids[id], Photo: photoView(id, proseName(facts.Name), a.core.PhotosOff.Load())}
 	}
 	return players, nil
 }
 
 func (a *App) inspectLiveBox(ctx context.Context, v *LiveGameView) error {
-	ids, err := a.history.SourceIDs(ctx, "espn")
+	ids, err := a.core.History.SourceIDs(ctx, "espn")
 	if err != nil {
 		return fmt.Errorf("box score crosswalk: %w", err)
 	}

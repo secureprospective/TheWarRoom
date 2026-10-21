@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 )
 
 func TestPhotoViewIsGoWordedAndOffMeansNoAddress(t *testing.T) {
@@ -19,7 +21,7 @@ func TestPhotoViewIsGoWordedAndOffMeansNoAddress(t *testing.T) {
 
 func TestPhotoRouteWaitsForStartup(t *testing.T) {
 	t.Parallel()
-	a := &App{}
+	a := &App{core: &core.State{}}
 	rec := httptest.NewRecorder()
 	a.photoHandler().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/headshot/0501", nil))
 	if rec.Code != http.StatusServiceUnavailable {

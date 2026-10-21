@@ -40,14 +40,14 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 	if read() != "franchise.01" {
 		t.Fatal("traded pick did not replay")
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.revert(t, accept)
 	if read() != "franchise.02" {
 		t.Fatal("draft ownership compensation failed")
 	}
 	f.accept(t, offer)
 	f.now = draftStartAt().Add(time.Minute)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	records, err := f.app.leagueRecords(t.Context(), legalityLeague)
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +68,7 @@ func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
 	if f.ownerOf(t, "5001") != "franchise.01" {
 		t.Fatal("new owner did not receive the rookie")
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	// Undoing the new acceptance would make the made selection belong to the wrong team.
 	records, err = f.app.leagueRecords(t.Context(), legalityLeague)
 	if err != nil {
@@ -101,7 +101,7 @@ func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
 		t.Fatal("foreign owner offered assets")
 	}
 	offer := f.offer(t)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	raw := f.raw(t, commissioner.TradeAccept, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.01"}}, "league")
 	first, err := f.app.TargetNativeTradeAction(raw)
 	if err != nil {
@@ -117,7 +117,7 @@ func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
 		t.Fatal("stale version accepted")
 	}
 	raw = f.raw(t, commissioner.TradeWithdraw, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.02"}}, "league")
-	f.app.commissionerSession = testCommissionerSession{"owner.two"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.two"}
 	if _, err := f.app.TargetNativeTradeAction(raw); err == nil {
 		t.Fatal("accepted trade was withdrawn")
 	}
@@ -211,7 +211,7 @@ func TestTradeMovesContractSalaryIntoNativeCap(t *testing.T) {
 	if committed("franchise.01") != before+delta {
 		t.Fatal("traded cap did not replay")
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	f.revert(t, accept)
 	if committed("franchise.01") != before {
 		t.Fatal("cap compensation failed")
@@ -277,7 +277,7 @@ func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
 	t.Parallel()
 	f := tradeApp(t)
 	offer := f.offer(t)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	raw := f.raw(t, commissioner.TradeAccept, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.01"}}, "league")
 	outcomes := make(chan error, 2)
 	var wait sync.WaitGroup
@@ -304,7 +304,7 @@ func TestTradeConcurrentAcceptanceAppendsExactlyOnce(t *testing.T) {
 	if wins != 1 || f.only(t).Status != "review" {
 		t.Fatalf("concurrent acceptance wins: %d", wins)
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner.three"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.three"}
 	if _, err := f.app.TargetNativeTrades(legalityLeague, "franchise.01"); err == nil {
 		t.Fatal("viewer impersonated another seated owner")
 	}
@@ -318,7 +318,7 @@ func TestTradeCompensationCannotEraseEarlierVoteOrOffer(t *testing.T) {
 	first := f.vote(t, offer, "dot.a", "approve")
 	f.vote(t, offer, "dot.b", "approve")
 	for _, target := range []commissioner.Receipt{first, offer} {
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		raw := f.raw(t, commissioner.Revert, commissioner.RawArgs{Entry: target.Entry}, "league")
 		body, err := json.Marshal(raw)
 		if err != nil {

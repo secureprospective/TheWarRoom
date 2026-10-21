@@ -108,8 +108,8 @@ const (
 func (a *App) powerRankings(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness,
 	schedule func(context.Context) []leagueschedule.RawScheduleWeek, weight float64, autoWeight bool, mode, view string,
 ) PowerRankingsResult {
-	src := scoringapp.Source{History: a.history, Season: a.season, State: a.league.Reader, Rules: a.rulebook,
-		Ages: a.ages, SeasonWeeks: a.seasonWeeks, DeadCap: a.league.DeadCap}
+	src := scoringapp.Source{History: a.core.History, Season: a.core.Season, State: a.core.League.Reader, Rules: a.core.Rulebook,
+		Ages: a.ages, SeasonWeeks: a.seasonWeeks, DeadCap: a.core.League.DeadCap}
 	return wirePower(src.Build(ctx, standings, fresh, schedule, weight, autoWeight, mode, view))
 }
 
@@ -144,7 +144,7 @@ func (a *App) ages(ctx context.Context) func(mflID string) float64 {
 
 // seasonWeeks is the league's last regular-season week, 0 when unreadable.
 func (a *App) seasonWeeks() int {
-	last, _ := a.rulebook.GetSetting("lastRegularSeasonWeek")
+	last, _ := a.core.Rulebook.GetSetting("lastRegularSeasonWeek")
 	n, err := strconv.Atoi(last)
 	if err != nil {
 		return 0
@@ -176,9 +176,9 @@ func wirePower(b season.PowerRankingsResult) PowerRankingsResult {
 const m1Timeout = 120 * time.Second
 
 func (a *App) loadSeasonPoints(ctx context.Context) (string, error) {
-	src := scoringapp.PointsSource{History: a.history, Season: a.season,
+	src := scoringapp.PointsSource{History: a.core.History, Season: a.core.Season,
 		Fetch: func(ctx context.Context, year string, season int) (measures.Batch, error) {
-			return playerscores.Fetch(ctx, a.mflClient, year, ingestion.LeagueID, season)
+			return playerscores.Fetch(ctx, a.core.MFLClient, year, ingestion.LeagueID, season)
 		}}
 	return src.Load(ctx) //nolint:wrapcheck // the service preserves the existing app error labels
 }
@@ -187,7 +187,7 @@ func (a *App) loadSeasonPoints(ctx context.Context) (string, error) {
 func (a *App) describeMeasures(names []string) []MissingMeasure {
 	out := make([]MissingMeasure, len(names))
 	for i, n := range names {
-		m, _ := a.history.Registry().Measure(n)
+		m, _ := a.core.History.Registry().Measure(n)
 		out[i] = MissingMeasure{Name: n, Meaning: m.Meaning}
 	}
 	return out

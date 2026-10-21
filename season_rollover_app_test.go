@@ -196,7 +196,7 @@ func TestSeasonRolloverRefusalsThroughTheApp(t *testing.T) {
 			t.Fatalf("to %d: %v", to, err)
 		}
 	}
-	f.app.commissionerSession = testCommissionerSession{"owner"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner"}
 	body, err := json.Marshal(f.rolloverCommand(t, 2027, false))
 	if err != nil {
 		t.Fatal(err)

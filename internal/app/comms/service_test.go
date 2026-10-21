@@ -10,9 +10,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
@@ -66,37 +64,4 @@ func TestReadArchiveColumnsReachConstruction(t *testing.T) {
 		return
 	}
 	t.Fatal("fixture has no drop")
-}
-
-func TestRefreshUsesCapturedFreshnessAndPreservesOrder(t *testing.T) {
-	for _, tc := range []struct {
-		name                       string
-		force, txStale, boardStale bool
-		want                       []string
-	}{
-		{"fresh", false, false, false, nil},
-		{"force", true, false, false, []string{"transactions", "boards"}},
-		{"transactions", false, true, false, []string{"transactions"}},
-		{"boards", false, false, true, []string{"boards"}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			var called []string
-			src := comms.RefreshSource{FreshFor: time.Hour,
-				Transactions: func(context.Context) { called = append(called, "transactions") },
-				Boards:       func(context.Context) { called = append(called, "boards") },
-			}
-			tx := report.Held[leaguefeed.Transaction]{Feed: report.Feed{FetchedAt: time.Now()}}
-			boards := [2]report.Held[ingestion.RawLeaguePost]{{Feed: report.Feed{FetchedAt: time.Now()}}, {Feed: report.Feed{FetchedAt: time.Now()}}}
-			if tc.txStale {
-				tx.RefreshError = "offline"
-			}
-			if tc.boardStale {
-				boards[1].FetchedAt = time.Time{}
-			}
-			comms.Refresh(context.Background(), src, tx, boards, tc.force)
-			if !reflect.DeepEqual(called, tc.want) {
-				t.Fatal(called, tc.want)
-			}
-		})
-	}
 }

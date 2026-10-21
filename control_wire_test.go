@@ -12,6 +12,7 @@ import (
 	"time"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 )
 
@@ -29,8 +30,8 @@ func controlResult[T any](value T, err error) controlWireResult[T] {
 }
 
 func TestControlBindingGolden(t *testing.T) {
-	a := &App{started: make(chan struct{}), startupErr: errors.New("fixture startup failed")}
-	close(a.started)
+	a := &App{core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
+	close(a.core.Started)
 	values := map[string][]byte{
 		"GetParams":               sourcesWire(t, a.GetParams()),
 		"SetParam":                sourcesWire(t, a.SetParam("model.k_now", "", 4)),
@@ -70,13 +71,13 @@ func TestControlBindingGolden(t *testing.T) {
 
 func TestControlSnapshotsDetachHeldInputs(t *testing.T) {
 	a, _, _ := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
-	a.refreshWeek(a.ctx)
+	a.refreshWeek(a.core.Ctx)
 	now := time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)
 	week := a.weekSnapshot()
 	original := week.Week.Games[0].Kickoff
-	a.weekMu.Lock()
-	a.week.Games[0].Kickoff = original.Add(time.Hour)
-	a.weekMu.Unlock()
+	a.core.WeekMu.Lock()
+	a.core.Week.Games[0].Kickoff = original.Add(time.Hour)
+	a.core.WeekMu.Unlock()
 	if !week.Week.Games[0].Kickoff.Equal(original) {
 		t.Fatal("week snapshot aliases held games")
 	}
@@ -84,25 +85,25 @@ func TestControlSnapshotsDetachHeldInputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.seasonMu.Lock()
-	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{9: {value: []nflschedule.RawWeek{raw}}}
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{9: {Value: []nflschedule.RawWeek{raw}}}
+	a.core.SeasonMu.Unlock()
 	windows := a.windowSnapshot()
 	want := controlapp.WindowInputs(windows, now).FirstKickoff[9]
 	if want.IsZero() {
 		t.Fatal("missing trade window")
 	}
-	a.seasonMu.Lock()
-	a.now.schedules[9].value[0].Matchups[0].Kickoff = "0"
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	a.now.schedules[9].Value[0].Matchups[0].Kickoff = "0"
+	a.core.SeasonMu.Unlock()
 	if got := controlapp.WindowInputs(windows, now).FirstKickoff[9]; !got.Equal(want) {
 		t.Fatal("window snapshot aliases held matchups")
 	}
 	// A value snapshot can be evaluated while both root locks are held.
-	a.weekMu.Lock()
-	a.seasonMu.Lock()
-	defer a.weekMu.Unlock()
-	defer a.seasonMu.Unlock()
+	a.core.WeekMu.Lock()
+	a.core.SeasonMu.Lock()
+	defer a.core.WeekMu.Unlock()
+	defer a.core.SeasonMu.Unlock()
 	done := make(chan struct{})
 	go func() { controlapp.WeekClock(week, now); controlapp.WindowInputs(windows, now); close(done) }()
 	select {
@@ -119,15 +120,15 @@ func TestControlConcurrentRefreshAndRead(t *testing.T) {
 		bodies = append(bodies, body, strings.Replace(body, `"week":"5"`, `"week":"9"`, 1))
 	}
 	a, _, _ := weekTestApp(t, "17", bodies...)
-	a.clockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
-	a.seasonPause = func(context.Context, time.Duration) error { return context.Canceled }
+	a.core.ClockNow = func() time.Time { return time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC) }
+	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
 	var wg sync.WaitGroup
 	start := make(chan struct{})
 	wg.Go(func() {
 		<-start
 		for range 8 {
-			a.refreshWeek(a.ctx)
-			a.refreshNowWeek(a.ctx, 9, true)
+			a.refreshWeek(a.core.Ctx)
+			a.refreshNowWeek(a.core.Ctx, 9, true)
 		}
 	})
 	for range 4 {
@@ -148,7 +149,7 @@ func TestControlConcurrentRefreshAndRead(t *testing.T) {
 	}
 	close(start)
 	wg.Wait()
-	if a.week.Number != 5 || len(a.now.schedules[9].value) != 1 || a.now.schedules[9].refreshError != "" {
+	if a.core.Week.Number != 5 || len(a.now.schedules[9].Value) != 1 || a.now.schedules[9].RefreshError != "" {
 		t.Fatal("refresh did not publish both snapshots")
 	}
 }

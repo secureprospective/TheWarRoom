@@ -191,7 +191,7 @@ func TestNativeStatQueueWireFixtureMatchesGo(t *testing.T) {
 	t.Parallel()
 	f := scoreApp(t)
 	at := func(hour int) {
-		f.app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, hour, 0, 0, 0, time.UTC) })
+		f.app.core.History.SetClock(func() time.Time { return time.Date(2026, 10, 13, hour, 0, 0, 0, time.UTC) })
 	}
 	readings := []commissioner.StatQueue{readStatQueue(t, f)}
 	holdNativeStats(t, f, true, "LB", "3", 2)

@@ -22,12 +22,12 @@ func lineupDraftApp(t *testing.T) (*App, *seasonTransport, []string) {
 	lineupTestRules(t, a, false)
 	ids := lineupTestSnapshot(t, a)
 	now := time.Date(2026, 10, 7, 15, 0, 0, 0, time.UTC)
-	a.movesNow = func() time.Time { return now }
-	a.movesLog = func(string) {}
-	a.movesChanged = func(context.Context) {}
-	a.week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: now.Add(24 * time.Hour)}}}
-	a.refreshSeasonLineups(a.ctx)
-	a.seasonLineups.fetchedAt = now.Add(-time.Minute)
+	a.core.MovesNow = func() time.Time { return now }
+	a.core.MovesLog = func(string) {}
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.Week = leagueweek.Week{Number: 5, Games: []leagueweek.Game{{Kickoff: now.Add(24 * time.Hour)}}}
+	a.refreshSeasonLineups(a.core.Ctx)
+	a.core.SeasonLineups.FetchedAt = now.Add(-time.Minute)
 	transport.requests = nil
 	return a, transport, ids
 }
@@ -45,8 +45,8 @@ func changedStarters(ids []string) []string {
 func TestTargetCheckLineupLocal(t *testing.T) {
 	t.Parallel()
 	a, transport, ids := lineupDraftApp(t)
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	result, err := a.TargetCheckLineup("0025", ids)
 	if err != nil || !result.Full || !result.Legal {
 		t.Fatalf("full: %+v %v", result, err)
@@ -77,7 +77,7 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 	if err != nil || len(listed) != 0 {
 		t.Fatalf("check saved: %+v %v", listed, err)
 	}
-	a.hasTargetSnapshot = false
+	a.core.HasTargetSnapshot = false
 	if _, err := a.TargetCheckLineup("0025", ids); err == nil {
 		t.Fatal("no snapshot")
 	}
@@ -86,14 +86,14 @@ func TestTargetCheckLineupLocal(t *testing.T) {
 func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
-	a.targetSnapshot.Players.Value = nil
+	a.core.TargetSnapshot.Players.Value = nil
 	result, err := a.TargetCheckLineup("0025", ids)
 	if err != nil || result.Legal || result.Problems[0].Kind != "short" {
 		t.Fatalf("unknown: %+v %v", result, err)
 	}
-	cfg := a.rulebook.ActiveConfig()
+	cfg := a.core.Rulebook.ActiveConfig()
 	cfg.Starters.Count = "unreadable"
-	if _, err := a.rulebook.Sync(a.ctx, cfg); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, cfg); err != nil {
 		t.Fatal(err)
 	}
 	result, err = a.TargetCheckLineup("0025", ids)
@@ -102,8 +102,8 @@ func TestTargetCheckLineupRulesAndUnknown(t *testing.T) {
 		t.Fatalf("rules: %+v %v", result, err)
 	}
 	bad := NewApp()
-	bad.startupErr = errors.New("offline startup")
-	close(bad.started)
+	bad.core.StartupErr = errors.New("offline startup")
+	close(bad.core.Started)
 	if _, err := bad.TargetCheckLineup("0025", ids); err == nil {
 		t.Fatal("not ready")
 	}
@@ -130,18 +130,18 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 				t.Fatal(err)
 			}
 			opens := 0
-			a.openURL = func(ctx context.Context, got string) {
+			a.core.OpenURL = func(ctx context.Context, got string) {
 				opens++
 				if got != target {
 					t.Fatalf("URL: %s", got)
 				}
-				stored, err := a.moves.Get(ctx, r.CorrelationID)
+				stored, err := a.core.Moves.Get(ctx, r.CorrelationID)
 				if err != nil || stored.State() != envelope.HandedOff {
 					t.Fatal("open before save", err)
 				}
 			}
-			handed := a.movesNow().Add(time.Minute)
-			a.movesNow = func() time.Time { return handed }
+			handed := a.core.MovesNow().Add(time.Minute)
+			a.core.MovesNow = func() time.Time { return handed }
 			if _, err := a.TargetHandOff(r.CorrelationID); err != nil {
 				t.Fatal(err)
 			}
@@ -157,21 +157,21 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 			}
 			transport.bodies["liveScoring"] = lineupFeedBody(t, saved)
 			observed := handed.Add(time.Minute)
-			a.movesNow = func() time.Time { return observed }
-			a.movesRefresh = func(ctx context.Context, source envelope.Source) error {
+			a.core.MovesNow = func() time.Time { return observed }
+			a.core.MovesRefresh = func(ctx context.Context, source envelope.Source) error {
 				if source != envelope.Lineups {
 					t.Fatalf("wrong feed: %s", source)
 				}
 				a.refreshSeasonLineups(ctx)
-				a.seasonMu.Lock()
-				a.seasonLineups.fetchedAt = observed
-				a.seasonMu.Unlock()
+				a.core.SeasonMu.Lock()
+				a.core.SeasonLineups.FetchedAt = observed
+				a.core.SeasonMu.Unlock()
 				return nil
 			}
-			if err := a.checkMoves(a.ctx); err != nil {
+			if err := a.checkMoves(a.core.Ctx); err != nil {
 				t.Fatal(err)
 			}
-			stored, err := a.moves.Get(a.ctx, r.CorrelationID)
+			stored, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
 			if err != nil || stored.State() != outcome.state {
 				t.Fatalf("observed: %s %v", stored.State(), err)
 			}
@@ -222,31 +222,31 @@ func TestTargetDraftLineupBlocks(t *testing.T) {
 			case "same":
 				starters, note = ids, "already your saved week 5 lineup"
 			case "week":
-				a.seasonLineups.value.Week = 4
+				a.core.SeasonLineups.Value.Week = 4
 				note = "MFL's saved lineups are for week 4, the league is in week 5"
 			case "baseline":
-				a.seasonLineups.refreshError = "failed feed"
+				a.core.SeasonLineups.RefreshError = "failed feed"
 				note = "saved lineup is unknown"
 			case "absent feed":
-				a.seasonLineups = heldSeasonFeed[leaguefeed.Lineups]{}
+				a.core.SeasonLineups = heldSeasonFeed[leaguefeed.Lineups]{}
 				note = "saved lineup is unknown"
 			case "lock":
-				a.week.Games = nil
+				a.core.Week.Games = nil
 				note = "lineup lock unknown"
 			case "locked":
-				last := leagueweek.LastLock(a.week)
-				a.movesNow = func() time.Time { return last }
+				last := leagueweek.LastLock(a.core.Week)
+				a.core.MovesNow = func() time.Time { return last }
 				note = "week 5 lineups are locked"
 			case "host":
-				a.mflClient = nil
+				a.core.MFLClient = nil
 				note = "MFL host not yet known"
 			case "IR":
 				starters[7] = "17211"
 				note = "ROSTER-status"
 			case "rules":
-				cfg := a.rulebook.ActiveConfig()
+				cfg := a.core.Rulebook.ActiveConfig()
 				cfg.Starters.Count = "unreadable"
-				if _, err := a.rulebook.Sync(a.ctx, cfg); err != nil {
+				if _, err := a.core.Rulebook.Sync(a.core.Ctx, cfg); err != nil {
 					t.Fatal(err)
 				}
 				note = "rules could not be read"
@@ -272,7 +272,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 			t.Parallel()
 			a, _, ids := lineupDraftApp(t)
 			if kind == "unmapped" {
-				a.mflClient = nil
+				a.core.MFLClient = nil
 			}
 			starters := changedStarters(ids)
 			if kind == "blocked" {
@@ -283,7 +283,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 				t.Fatal(err)
 			}
 			if kind == "awaiting" {
-				a.openURL = func(context.Context, string) {}
+				a.core.OpenURL = func(context.Context, string) {}
 				if _, err := a.TargetHandOff(first.CorrelationID); err != nil {
 					t.Fatal(err)
 				}
@@ -292,7 +292,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			old, err := a.moves.Get(a.ctx, first.CorrelationID)
+			old, err := a.core.Moves.Get(a.core.Ctx, first.CorrelationID)
 			if kind == "blocked" || kind == "unmapped" {
 				// Blocked plans cannot be handed off or land; they stay as drafted.
 				if err != nil || old.State() != envelope.Blocked {
@@ -314,7 +314,7 @@ func TestLineupSupersedeLivePlansOnly(t *testing.T) {
 func TestKnownEmptyLineupBaseline(t *testing.T) {
 	t.Parallel()
 	a, _, ids := lineupDraftApp(t)
-	a.seasonLineups.value.Franchises = nil
+	a.core.SeasonLineups.Value.Franchises = nil
 	r, err := a.TargetDraftLineup("0025", ids)
 	if err != nil || r.State != envelope.Ready || len(r.Spec.Expected.Lineup.Baseline) != 0 {
 		t.Fatalf("known empty: %+v %v", r, err)
@@ -328,18 +328,18 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.openURL = func(context.Context, string) {}
+	a.core.OpenURL = func(context.Context, string) {}
 	if _, err := a.TargetHandOff(r.CorrelationID); err != nil {
 		t.Fatal(err)
 	}
-	handed := a.movesNow()
+	handed := a.core.MovesNow()
 	now := handed.Add(30 * time.Second)
-	a.movesNow = func() time.Time { return now }
+	a.core.MovesNow = func() time.Time { return now }
 	sources := map[envelope.Source]bool{
 		envelope.Transactions: true, envelope.Lineups: true, envelope.PendingTrades: true, envelope.Rosters: true,
 	}
 	requests := []envelope.Source{}
-	a.movesRefresh = func(_ context.Context, s envelope.Source) error {
+	a.core.MovesRefresh = func(_ context.Context, s envelope.Source) error {
 		requests = append(requests, s)
 		return nil
 	}
@@ -354,11 +354,11 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 		if name == "old" {
 			at = now.Add(-time.Minute)
 		}
-		a.seasonTransactions.fetchedAt, a.seasonTransactions.refreshError = at, failure
-		a.seasonLineups.fetchedAt, a.seasonLineups.refreshError = at, failure
-		a.seasonPendingTrades.fetchedAt, a.seasonPendingTrades.refreshError = at, failure
+		a.core.SeasonTransactions.FetchedAt, a.core.SeasonTransactions.RefreshError = at, failure
+		a.core.SeasonLineups.FetchedAt, a.core.SeasonLineups.RefreshError = at, failure
+		a.core.SeasonPendingTrades.FetchedAt, a.core.SeasonPendingTrades.RefreshError = at, failure
 		requests = nil
-		if err := a.refreshMoveSources(a.ctx, sources); err != nil {
+		if err := a.refreshMoveSources(a.core.Ctx, sources); err != nil {
 			t.Fatal(err)
 		}
 		want := 4
@@ -376,11 +376,11 @@ func TestMoveSeasonFeedSkip(t *testing.T) {
 	}
 	saveMove(t, a, later)
 	at := handed.Add(10 * time.Second)
-	a.seasonTransactions.fetchedAt, a.seasonTransactions.refreshError = at, ""
-	a.seasonLineups.fetchedAt, a.seasonLineups.refreshError = at, ""
-	a.seasonPendingTrades.fetchedAt, a.seasonPendingTrades.refreshError = at, ""
+	a.core.SeasonTransactions.FetchedAt, a.core.SeasonTransactions.RefreshError = at, ""
+	a.core.SeasonLineups.FetchedAt, a.core.SeasonLineups.RefreshError = at, ""
+	a.core.SeasonPendingTrades.FetchedAt, a.core.SeasonPendingTrades.RefreshError = at, ""
 	requests = nil
-	if err := a.refreshMoveSources(a.ctx, sources); err != nil {
+	if err := a.refreshMoveSources(a.core.Ctx, sources); err != nil {
 		t.Fatal(err)
 	}
 	if len(requests) != 4 {
@@ -396,23 +396,23 @@ func TestSupersedeSavedBeforeNewEnvelope(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	req, check := a.lineupRequest("0025", first.Spec.Subject.Players, now)
-	next, err := envelope.DraftLineup(now, req, a.targetSnapshot, check, func() string { return "next" })
+	next, err := envelope.DraftLineup(now, req, a.core.TargetSnapshot, check, func() string { return "next" })
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.movesMu.Lock()
-	err = a.supersedeLineups(a.ctx, next, now)
-	a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	err = a.supersedeLineups(a.core.Ctx, next, now)
+	a.core.MovesMu.Unlock()
 	if err != nil {
 		t.Fatal(err)
 	}
-	previous, err := a.moves.Get(a.ctx, first.CorrelationID)
+	previous, err := a.core.Moves.Get(a.core.Ctx, first.CorrelationID)
 	if err != nil || previous.State() != envelope.Stale {
 		t.Fatalf("old: %s %v", previous.State(), err)
 	}
-	if _, err := a.moves.Get(a.ctx, next.ID()); !errors.Is(err, moves.ErrNotFound) {
+	if _, err := a.core.Moves.Get(a.core.Ctx, next.ID()); !errors.Is(err, moves.ErrNotFound) {
 		t.Fatalf("new exists before old saved: %v", err)
 	}
 }

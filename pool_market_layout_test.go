@@ -17,13 +17,13 @@ func TestPoolMarketLines(t *testing.T) {
 	}
 	held := map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	for _, kind := range marketKinds() {
-		held[kind] = heldSeasonFeed[[]marketfeeds.Feed]{fetchedAt: time.Now(), value: []marketfeeds.Feed{{Week: 6, Players: []marketfeeds.Player{{ID: id, Value: 12.4, Low: 88, High: 140, Rank: 45, Last: 48, Change: 3}}}}}
+		held[kind] = heldSeasonFeed[[]marketfeeds.Feed]{FetchedAt: time.Now(), Value: []marketfeeds.Feed{{Week: 6, Players: []marketfeeds.Player{{ID: id, Value: 12.4, Low: 88, High: 140, Rank: 45, Last: 48, Change: 3}}}}}
 	}
 	adp := held[marketfeeds.ADP]
-	adp.value[0].Players[0].Value = 112
+	adp.Value[0].Players[0].Value = 112
 	held[marketfeeds.ADP] = adp
 	aav := held[marketfeeds.AAV]
-	aav.value[0].Players[0].Value = 1.2
+	aav.Value[0].Players[0].Value = 1.2
 	held[marketfeeds.AAV] = aav
 	facts := marketFacts(held)
 	want := []string{"Proj 12.4 · Rank 45, Up 3", "ADP 112 (88–140) · AAV $1.2 on MFL’s $1,000 scale"}
@@ -80,9 +80,9 @@ func TestMarketReportPlayerContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	a, _ := poolApp(t)
-	a.seasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
+	a.core.SeasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	for _, kind := range marketKinds() {
-		a.seasonMarket[kind] = heldSeasonFeed[[]marketfeeds.Feed]{fetchedAt: time.Now(), value: []marketfeeds.Feed{{Week: a.marketWeek(), Players: []marketfeeds.Player{{ID: id, Value: 12, Low: 1, High: 20, Rank: 1}}}}}
+		a.core.SeasonMarket[kind] = heldSeasonFeed[[]marketfeeds.Feed]{FetchedAt: time.Now(), Value: []marketfeeds.Feed{{Week: a.marketWeek(), Players: []marketfeeds.Player{{ID: id, Value: 12, Low: 1, High: 20, Rank: 1}}}}}
 	}
 	board, err := a.TargetMarketReports()
 	if err != nil {

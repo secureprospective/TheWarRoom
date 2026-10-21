@@ -55,21 +55,21 @@ func TestInspectorOpenReadsDepthThroughFixtureClient(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
-	a.lookup, a.hasLookup, a.week = in.lookup, true, leagueweek.Week{Number: 5}
+	a.core.Lookup, a.core.HasLookup, a.core.Week = in.lookup, true, leagueweek.Week{Number: 5}
 	a.research.feeds = in.held.feeds
-	a.fallbackLog = func(string) {}
+	a.core.FallbackLog = func(string) {}
 	var body bytes.Buffer
-	if err := parquet.Write(&body, in.held.depth.value); err != nil {
+	if err := parquet.Write(&body, in.held.depth.Value); err != nil {
 		t.Fatal(err)
 	}
 	events := []string{}
-	a.fetches = &archive.Transport{Sink: a.history,
+	a.core.Fetches = &archive.Transport{Sink: a.core.History,
 		Base: researchFixtureTransport{t: t, events: &events, depth: body.Bytes()}}
 	p, err := a.TargetResearchPlayer("16162")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if a.research.depth.fetchedAt.IsZero() || len(events) != 1 {
+	if a.research.depth.FetchedAt.IsZero() || len(events) != 1 {
 		t.Fatal("opening did not read depth", events, a.research.depth)
 	}
 	for _, row := range p.Report.Rows {
@@ -116,12 +116,12 @@ func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
 	t.Parallel()
 	in := realResearch(t)
 	a := targetTestApp(t)
-	a.lookup, a.hasLookup, a.week = in.lookup, true, leagueweek.Week{Number: 5}
-	a.researchArchiveMu.Lock()
+	a.core.Lookup, a.core.HasLookup, a.core.Week = in.lookup, true, leagueweek.Week{Number: 5}
+	a.core.ResearchArchiveMu.Lock()
 	locked := true
 	defer func() {
 		if locked {
-			a.researchArchiveMu.Unlock()
+			a.core.ResearchArchiveMu.Unlock()
 		}
 	}()
 	result := make(chan ResearchPlayerReading, 1)
@@ -141,10 +141,10 @@ func TestInspectorWaitsForHeldArchivePublication(t *testing.T) {
 		t.Fatal(err)
 	case <-time.After(50 * time.Millisecond):
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	a.research.feeds = in.held.feeds
-	a.seasonMu.Unlock()
-	a.researchArchiveMu.Unlock()
+	a.core.SeasonMu.Unlock()
+	a.core.ResearchArchiveMu.Unlock()
 	locked = false
 	select {
 	case p := <-result:
@@ -174,12 +174,12 @@ func TestLiveBoxKeepsCrosswalkIdentity(t *testing.T) {
 	if source == "" {
 		t.Fatal("validated ESPN athlete identity was discarded")
 	}
-	if _, err := a.history.LinkPlayerIDs(a.ctx, dynastyProcessSource, []history.PlayerIDLink{
+	if _, err := a.core.History.LinkPlayerIDs(a.core.Ctx, dynastyProcessSource, []history.PlayerIDLink{
 		{IDType: "espn", IDValue: source, PlayerID: "13130"},
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := a.inspectLiveBox(a.ctx, &v); err != nil {
+	if err := a.inspectLiveBox(a.core.Ctx, &v); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Contains(v.Box.Entities, ReportEntity{Text: name, Kind: "player", ID: "13130"}) {

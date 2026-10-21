@@ -3,6 +3,7 @@ import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { ReportView } from '../reports/ReportView';
 import { commsState } from './state';
+import { subscribeComms } from './api';
 import type { Comms } from './contract';
 import './comms.css';
 
@@ -52,13 +53,7 @@ export default function CommsMount({ panel = false }: { panel?: boolean }) {
   const state = commsState.use();
   useEffect(() => {
     if (!commsState.peek().pending) void commsState.load();
-    let disposed = false;
-    let stop: (() => void) | undefined;
-    void import('../../../wailsjs/runtime/runtime').then(m => {
-      if (!disposed && typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-        stop = m.EventsOn('target:season', () => { void commsState.load(); });
-    });
-    return () => { disposed = true; stop?.(); };
+    return subscribeComms(() => { void commsState.load(); });
   }, []);
   return <section className="comms-reading" aria-label={panel ? 'League communications' : 'Digests'}>
     {!panel && <h4>Digests</h4>}

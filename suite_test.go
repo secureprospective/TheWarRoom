@@ -102,15 +102,15 @@ func seedHistoryFixture(ctx context.Context, path string) (err error) {
 func TestHistoryFixturesAreIndependent(t *testing.T) {
 	t.Parallel()
 	first := targetTestApp(t)
-	recordTargetPlayers(t, first.history)
+	recordTargetPlayers(t, first.core.History)
 	body := []byte(`{"players":{"player":{"id":"0042","name":"Archived","position":"QB","team":"BUF"}}}`)
 	sum := sha256.Sum256(body)
 	sha := hex.EncodeToString(sum[:])
-	if _, err := first.history.Body(first.ctx, sha); err != nil {
+	if _, err := first.core.History.Body(first.core.Ctx, sha); err != nil {
 		t.Fatal("first fixture did not retain its write", err)
 	}
 	second := targetTestApp(t)
-	if _, err := second.history.Body(second.ctx, sha); !errors.Is(err, history.ErrNoBody) {
+	if _, err := second.core.History.Body(second.core.Ctx, sha); !errors.Is(err, history.ErrNoBody) {
 		t.Fatal("history fixtures share writes", err)
 	}
 }

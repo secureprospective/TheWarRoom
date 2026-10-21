@@ -14,7 +14,7 @@ import (
 
 func marketOf(t *testing.T, f *waiverFixture, command, who string) commissioner.Market {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{who}
+	f.app.core.CommissionerSession = testCommissionerSession{who}
 	reading, err := f.app.TargetCommissionerMarket(legalityLeague, command)
 	if err != nil {
 		t.Fatal(err)
@@ -24,7 +24,7 @@ func marketOf(t *testing.T, f *waiverFixture, command, who string) commissioner.
 
 func marketPreview(t *testing.T, f *waiverFixture, command string, args commissioner.RawArgs, who string) {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{who}
+	f.app.core.CommissionerSession = testCommissionerSession{who}
 	body, err := json.Marshal(f.raw(t, command, args, "league"))
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func marketPreview(t *testing.T, f *waiverFixture, command string, args commissi
 func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 	t.Parallel()
 	f := waiverApp(t)
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	for _, command := range []string{commissioner.WaiverProcess, commissioner.WaiverOverride,
 		commissioner.BidsProcess, commissioner.BidsOverride, commissioner.TradeReview,
 		commissioner.TradeAppealRule, commissioner.TradeOverride} {
@@ -56,7 +56,7 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 	if err != nil || actor != "owner.one" {
 		t.Fatalf("actor: %q %v", actor, err)
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	people, err := f.app.TargetCommissionerPeople(legalityLeague)
 	if err != nil || people.YourFranchise != "" {
 		t.Fatal("commissioner unexpectedly owns a franchise", err)
@@ -67,7 +67,7 @@ func TestCommissionerMarketPermissionAndSession(t *testing.T) {
 	f.command(t, "commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{
 		Principal: "cc", Role: governance.CoCommissioner}}, "private")
 	marketOf(t, f, commissioner.WaiverOverride, "cc")
-	f.app.commissionerSession = testCommissionerSession{"cc"}
+	f.app.core.CommissionerSession = testCommissionerSession{"cc"}
 	if _, err := f.app.TargetCommissionerMarket(legalityLeague, commissioner.TradeOverride); err == nil {
 		t.Fatal("co-commissioner got commissioner-only override targets")
 	}
@@ -272,11 +272,11 @@ func TestCommissionerScheduleDraftAndPublishedRoundTrip(t *testing.T) {
 	t.Parallel()
 	f := waiverApp(t)
 	f.command(t, commissioner.ScheduleGenerate, commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{Weeks: 2}}, "league")
-	f.app.commissionerSession = testCommissionerSession{"owner.one"}
+	f.app.core.CommissionerSession = testCommissionerSession{"owner.one"}
 	if _, err := f.app.TargetCommissionerSchedule(legalityLeague); err == nil {
 		t.Fatal("owner read unpublished games")
 	}
-	f.app.commissionerSession = testCommissionerSession{"creator"}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	draft, err := f.app.TargetCommissionerSchedule(legalityLeague)
 	if err != nil || len(draft.Draft) != 2 || len(draft.Published) != 0 {
 		t.Fatal(draft, err)

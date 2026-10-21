@@ -15,11 +15,11 @@ import (
 // from the held players directory under its lock, NFL listings from the held injuries feed.
 func (a *App) nativeFacts() nativecheck.Facts {
 	facts := nativecheck.Facts{}
-	a.lookupMu.Lock()
-	if a.hasLookup {
-		facts = nativeapp.PlayerFacts(a.lookup)
+	a.core.LookupMu.Lock()
+	if a.core.HasLookup {
+		facts = nativeapp.PlayerFacts(a.core.Lookup)
 	}
-	a.lookupMu.Unlock()
+	a.core.LookupMu.Unlock()
 	if !a.injuriesHeld() {
 		return facts
 	}
@@ -35,9 +35,9 @@ func (a *App) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.Na
 	if err := a.ready(); err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeCapCheck(ctx, scope)
+	reading, err := a.core.History.NativeCapCheck(ctx, scope)
 	if err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("native salary cap check: %w", err)
 	}
@@ -48,9 +48,9 @@ func (a *App) TargetNativeRosterCheck(leagueID string) (commissioner.NativeRoste
 	if err := a.ready(); err != nil {
 		return commissioner.NativeRosterCheck{}, fmt.Errorf("native roster check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeRosterCheck(ctx, leagueID, a.nativeFacts())
+	reading, err := a.core.History.NativeRosterCheck(ctx, leagueID, a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeRosterCheck{}, fmt.Errorf("native roster check: %w", err)
 	}
@@ -61,9 +61,9 @@ func (a *App) TargetNativeReserveCheck(leagueID string) (commissioner.NativeRese
 	if err := a.ready(); err != nil {
 		return commissioner.NativeReserveCheck{}, fmt.Errorf("native reserve check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeReserveCheck(ctx, leagueID, a.nativeFacts())
+	reading, err := a.core.History.NativeReserveCheck(ctx, leagueID, a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeReserveCheck{}, fmt.Errorf("native reserve check: %w", err)
 	}
@@ -78,9 +78,9 @@ func (a *App) TargetNativeLineupCheck(input commissioner.RawNativeLineup) (commi
 	if err := a.ready(); err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("native lineup check startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeLineupCheck(ctx, input, a.nativeFacts())
+	reading, err := a.core.History.NativeLineupCheck(ctx, input, a.nativeFacts())
 	if err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("native lineup check: %w", err)
 	}
@@ -91,9 +91,9 @@ func (a *App) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseR
 	if err := a.ready(); err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeHouseRules(ctx, leagueID)
+	reading, err := a.core.History.NativeHouseRules(ctx, leagueID)
 	if err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("native house rules: %w", err)
 	}
@@ -109,9 +109,9 @@ func (a *App) TargetNativePlayerScore(league, player string, season, week int) (
 	if err := a.ready(); err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("player score startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativePlayerScore(ctx, league, scope)
+	reading, err := a.core.History.NativePlayerScore(ctx, league, scope)
 	if err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("player score: %w", err)
 	}
@@ -133,7 +133,7 @@ func (a *App) TargetNativeContractQuote(raw commissioner.RawContractQuote) (comm
 	if err != nil {
 		return commissioner.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
 	}
-	records, err := a.leagueRecords(a.ctx, raw.League)
+	records, err := a.leagueRecords(a.core.Ctx, raw.League)
 	if err != nil {
 		return commissioner.ContractQuote{}, err
 	}
@@ -169,9 +169,9 @@ func (a *App) TargetNativeResults(league string, season, week int) (commissioner
 	if err := a.ready(); err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("native results startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeResults(ctx, league, season, week)
+	reading, err := a.core.History.NativeResults(ctx, league, season, week)
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("native results: %w", err)
 	}
@@ -187,9 +187,9 @@ func (a *App) TargetNativeStandings(league string, season int) (commissioner.Nat
 	if err := a.ready(); err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("native standings startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeStandings(ctx, league, season)
+	reading, err := a.core.History.NativeStandings(ctx, league, season)
 	if err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("native standings: %w", err)
 	}
@@ -206,9 +206,9 @@ func (a *App) TargetNativeScorePreview(body string) (commissioner.ScorePreview, 
 	if err := a.ready(); err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("score preview startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	preview, err := a.history.NativeScorePreview(ctx, raw)
+	preview, err := a.core.History.NativeScorePreview(ctx, raw)
 	if err != nil {
 		return commissioner.ScorePreview{}, fmt.Errorf("score preview: %w", err)
 	}
@@ -224,9 +224,9 @@ func (a *App) TargetNativeBracket(league string, season int) (commissioner.Nativ
 	if err := a.ready(); err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("native bracket startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.NativeBracket(ctx, league, season)
+	reading, err := a.core.History.NativeBracket(ctx, league, season)
 	if err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("native bracket: %w", err)
 	}
@@ -242,9 +242,9 @@ func (a *App) TargetStatQueue(league string, season int) (commissioner.StatQueue
 	if err := a.ready(); err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("statistics queue startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	reading, err := a.history.StatQueue(ctx, league, season)
+	reading, err := a.core.History.StatQueue(ctx, league, season)
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("statistics queue: %w", err)
 	}

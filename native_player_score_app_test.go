@@ -24,7 +24,7 @@ import (
 func scoreApp(t *testing.T) *legalityFixture {
 	t.Helper()
 	f := legalityApp(t)
-	if _, err := f.app.history.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
+	if _, err := f.app.core.History.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "1000"},
 	}); err != nil {
 		t.Fatal(err)
@@ -97,7 +97,7 @@ func holdNativeStats(t *testing.T, f *legalityFixture, include bool, position, t
 		t.Fatal("weekly feed missing")
 	}
 	at := time.Date(2026, 10, 13, 11, revision, 0, 0, time.UTC)
-	if err := f.app.history.Record(t.Context(), archive.Fetch{URL: feed.URLFor(2026), Status: 200,
+	if err := f.app.core.History.Record(t.Context(), archive.Fetch{URL: feed.URLFor(2026), Status: 200,
 		SHA256: sha, Size: int64(text.Len()), Gzip: zipped.Bytes(), FetchedAt: at}); err != nil {
 		t.Fatal(err)
 	}
@@ -261,11 +261,11 @@ func TestNativeScorePastSeasonKeepsItsRules(t *testing.T) {
 	f := scoreApp(t)
 	f.set(t, "calendar.rollover", `"2027-03-01T05:00:00Z"`, "now")
 	future := time.Date(2027, 3, 2, 12, 0, 0, 0, time.UTC)
-	f.app.history.SetClock(func() time.Time { return future })
+	f.app.core.History.SetClock(func() time.Time { return future })
 	f.set(t, "scoring.catalogue", scoreCatalogue(t, leaguerules.Known[leaguerules.Decimal](90000)), "now")
 	assertNativePoints(t, f, 15000)
 	f.reopen(t)
-	f.app.history.SetClock(func() time.Time { return future })
+	f.app.core.History.SetClock(func() time.Time { return future })
 	assertNativePoints(t, f, 15000)
 }
 
@@ -358,7 +358,7 @@ func TestNativeScoreKeepsTheCountedVersionUntilTheLeagueApprovesTheNewest(t *tes
 func TestNativeScoreNoHeldFilesAndUnboundIdentity(t *testing.T) {
 	t.Parallel()
 	f := legalityApp(t)
-	if _, err := f.app.history.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
+	if _, err := f.app.core.History.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "1000"},
 	}); err != nil {
 		t.Fatal(err)
@@ -370,7 +370,7 @@ func TestNativeScoreNoHeldFilesAndUnboundIdentity(t *testing.T) {
 	}
 	a := nativeSeedTestApp(t)
 	createNativeSeedLeague(t, a, commissioner.PresetLegacy)
-	if _, err := a.history.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
+	if _, err := a.core.History.LinkPlayerIDs(t.Context(), "dynastyprocess", []history.PlayerIDLink{
 		{IDType: "gsis", IDValue: "00-0023459", PlayerID: "1000"},
 	}); err != nil {
 		t.Fatal(err)

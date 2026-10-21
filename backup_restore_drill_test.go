@@ -8,13 +8,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
 func restoreDrillApp(t *testing.T, dir string) *App {
 	t.Helper()
-	a := &App{ctx: t.Context(), dataDir: dir, started: make(chan struct{})}
+	a := &App{core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}, Started: make(chan struct{})}}
 	_, hist, err := a.openDatabases(t.Context(), dir)
 	if err != nil {
 		t.Fatal(err)
@@ -23,14 +24,14 @@ func restoreDrillApp(t *testing.T, dir string) *App {
 	if err := hist.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []*db.Pools{a.pools, a.whatifPools} {
+	for _, p := range []*db.Pools{a.core.Pools, a.core.WhatifPools} {
 		if err := p.InitializeMain(t.Context()); err != nil {
 			t.Fatal(err)
 		}
 	}
 	hist.SetClock(func() time.Time { return time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC) })
-	a.history = hist
-	close(a.started)
+	a.core.History = hist
+	close(a.core.Started)
 	return a
 }
 
@@ -76,7 +77,7 @@ func TestBackupSnapshotDifferentHomeCommissionerRightsFinding(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	held, err := restored.history.CommissionerPeople(t.Context(), raw.League, principal)
+	held, err := restored.core.History.CommissionerPeople(t.Context(), raw.League, principal)
 	if err != nil || !held.MayChangeRules {
 		t.Fatalf("snapshot lost stored commissioner rights rather than local identity: %+v %v", held, err)
 	}
@@ -102,7 +103,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw.Command, raw.Args, raw.Expected, raw.Request = commissioner.NativeSeed, commissioner.RawArgs{Native: wire.Snapshot}, 1, "seed"
-	if _, err := a.history.ExecuteCommissioner(t.Context(), raw, principal, nil); err != nil {
+	if _, err := a.core.History.ExecuteCommissioner(t.Context(), raw, principal, nil); err != nil {
 		t.Fatal(err)
 	}
 	before := readNativeTest(t, a, raw.League)
@@ -114,7 +115,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC)
-	set, err := a.backups.Capture(t.Context(), [3]*db.Pools{a.pools, a.histPools, a.whatifPools}, "daily", at)
+	set, err := a.core.Backups.Capture(t.Context(), [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, "daily", at)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +123,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 	raw.League = "native.later"
 	executeCommissionerTest(t, a, raw)
 	a.shutdown(t.Context())
-	if err := a.backups.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
+	if err := a.core.Backups.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	restored := restoreDrillApp(t, dir)
@@ -147,7 +148,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 func TestDatabaseMaintenanceCreatesDailySet(t *testing.T) {
 	a := restoreDrillApp(t, t.TempDir())
 	a.startDatabaseChecks()
-	root := filepath.Join(a.dataDir, "backups")
+	root := filepath.Join(a.core.Paths.DataDir, "backups")
 	deadline := time.Now().Add(10 * time.Second)
 	var entries []os.DirEntry
 	for time.Now().Before(deadline) {
@@ -189,7 +190,7 @@ func TestStartupCapturesMatchedSetBeforeOpeningPools(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	a := &App{ctx: t.Context(), dataDir: dir}
+	a := &App{core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}}}
 	if _, _, err := a.openDatabases(t.Context(), dir); err != nil {
 		t.Fatal(err)
 	}

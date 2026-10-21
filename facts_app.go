@@ -20,7 +20,7 @@ const factsTimeout = 5 * time.Minute
 // compileFactsInBackground compiles the checked facts after launch when the archive has been
 // imported and the manifest has no snapshot for this compiler and these rules yet.
 func (a *App) compileFactsInBackground() {
-	parent := a.workCtx
+	parent := a.core.WorkCtx
 	if parent == nil {
 		parent = a.fallbackParent()
 	}
@@ -32,7 +32,7 @@ func (a *App) compileFactsInBackground() {
 		defer cancel()
 		// A manifest published by an older build may lack an input this build pins (the curated
 		// readings); re-publishing is idempotent and only ever follows an archive import.
-		if _, ok, err := a.history.LatestManifest(ctx, labFrozenInputs); err != nil || !ok {
+		if _, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs); err != nil || !ok {
 			return
 		}
 		if _, _, err := a.publishLabManifest(ctx); err != nil {
@@ -53,8 +53,8 @@ func (a *App) compileFactsInBackground() {
 // The cache is what the first open would have held anyway.
 func (a *App) warmArchive(ctx context.Context) {
 	began := time.Now()
-	a.factsMu.Lock()
-	defer a.factsMu.Unlock()
+	a.core.FactsMu.Lock()
+	defer a.core.FactsMu.Unlock()
 	if _, _, err := a.readArchiveFacts(ctx); err != nil {
 		log.Printf("the war room: league archive: %v", err)
 		return
@@ -73,10 +73,10 @@ func (a *App) compileFacts(ctx context.Context) (string, error) {
 
 // compileFactsWith compiles with the given curated readings, which the manifest must pin.
 func (a *App) compileFactsWith(ctx context.Context, readings lab.Curated) (string, error) {
-	if !a.factsMu.TryLock() {
+	if !a.core.FactsMu.TryLock() {
 		return "The checked facts are already compiling.", nil
 	}
-	defer a.factsMu.Unlock()
+	defer a.core.FactsMu.Unlock()
 	return a.sourcesService().CompileFactsWith(ctx, readings) //nolint:wrapcheck // preserve the existing contextual error shown by the binding
 }
 

@@ -36,7 +36,7 @@ func probeTrade(t *testing.T, f *tradeFixture, args commissioner.RawTradeArgs, v
 	last := reading[len(reading)-1]
 	result := fmt.Sprintf("%s|%s|%v|%v", last.Status, last.Words, last.ExpiresAt.Sub(last.OfferedAt), last.Policy)
 	for i := len(receipts) - 1; i >= 0; i-- {
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, receipts[i])
 	}
 	return result
@@ -65,7 +65,7 @@ func TestTradeRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 			}
 			for cycle := 0; cycle < 2; cycle++ {
 				before := proof.probe(t, f)
-				f.app.commissionerSession = testCommissionerSession{"creator"}
+				f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 				change := f.set(t, proof.field, proof.value, "now")
 				changed := proof.probe(t, f)
 				if before == changed {
@@ -75,7 +75,7 @@ func TestTradeRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 				if replay := proof.probe(t, f); replay != changed {
 					t.Fatalf("active ruling did not replay: %s / %s", changed, replay)
 				}
-				f.app.commissionerSession = testCommissionerSession{"creator"}
+				f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 				f.revert(t, change)
 				if restored := proof.probe(t, f); restored != before {
 					t.Fatalf("compensation failed: %s / %s", before, restored)
@@ -103,7 +103,7 @@ func TestTradePickRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 			probe := func() string { return probeTrade(t, f, tradePickOffer(), -1) }
 			for cycle := 0; cycle < 2; cycle++ {
 				before := probe()
-				f.app.commissionerSession = testCommissionerSession{"creator"}
+				f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 				change := f.set(t, proof.field, proof.value, "now")
 				changed := probe()
 				if changed == before {
@@ -113,7 +113,7 @@ func TestTradePickRulesGovernNativeDeskRevertAndReopen(t *testing.T) {
 				if probe() != changed {
 					t.Fatal("pick restriction did not replay")
 				}
-				f.app.commissionerSession = testCommissionerSession{"creator"}
+				f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 				f.revert(t, change)
 				if probe() != before {
 					t.Fatal("pick compensation failed")
@@ -140,14 +140,14 @@ func TestTradeReviewAndAppealGovernNativeDeskRevertAndReopen(t *testing.T) {
 			t.Fatal("review approval did not govern assets")
 		}
 		f.restart(t)
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, third)
 		if f.only(t).Status != "review" || len(f.only(t).Votes) != 2 || f.ownerOf(t, "1000") != "franchise.02" {
 			t.Fatal("review compensation failed")
 		}
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, second)
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, first)
 		f.veto(t, offer)
 		appeal := f.mustAction(t, "owner.one", commissioner.TradeAppeal, commissioner.RawTradeArgs{ID: offer.Entry, Franchise: "franchise.01"})
@@ -159,12 +159,12 @@ func TestTradeReviewAndAppealGovernNativeDeskRevertAndReopen(t *testing.T) {
 			t.Fatal("appeal ruling did not govern")
 		}
 		f.restart(t)
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, ruling)
 		if f.only(t).Status != "appealed" || f.ownerOf(t, "1000") != "franchise.02" {
 			t.Fatal("appeal ruling compensation failed")
 		}
-		f.app.commissionerSession = testCommissionerSession{"creator"}
+		f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 		f.revert(t, appeal)
 		if f.only(t).Status != "vetoed" || len(f.only(t).Appeals) != 0 {
 			t.Fatal("appeal compensation failed")
@@ -179,7 +179,7 @@ func TestTradeReviewAndAppealGovernNativeDeskRevertAndReopen(t *testing.T) {
 			if r.Command.Command == commissioner.TradeReview && r.Command.Args.Trade.Decision == "veto" && r.Receipt.RecordedAt.Equal(f.now.Truncate(time.Microsecond)) {
 				active := commissioner.Replay(records).Active
 				if active[r.Receipt.Entry] {
-					f.app.commissionerSession = testCommissionerSession{"creator"}
+					f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 					f.revert(t, r.Receipt)
 				}
 			}

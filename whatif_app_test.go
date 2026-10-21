@@ -24,7 +24,7 @@ func whatIfTestApp(t *testing.T) *App {
 			t.Error(err)
 		}
 	})
-	a.whatifPools = p
+	a.core.WhatifPools = p
 	replaceWhatIfMirror(t, a, 10*100_000_000)
 	return a
 }
@@ -41,7 +41,7 @@ func replaceWhatIfMirror(t *testing.T, a *App, salary domain.Money) {
 		}
 		players = append(players, state.MirrorPlayer{MFLID: id, FranchiseID: "0001", Salary: salary, ContractYear: expiration, RosterStatus: domain.RosterActive})
 	}
-	if _, err := a.league.Replace(a.ctx, state.MirrorSnapshot{Season: 2026, Players: players, Adjustments: []state.Adjustment{{ID: "a", FranchiseID: "0001", Amount: -12345}}}); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, state.MirrorSnapshot{Season: 2026, Players: players, Adjustments: []state.Adjustment{{ID: "a", FranchiseID: "0001", Amount: -12345}}}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -56,7 +56,7 @@ func whatIfCall(t *testing.T, a *App, action, player, move string) Reading[WhatI
 func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
 	t.Parallel()
 	a := whatIfTestApp(t)
-	before, stamp, _ := a.league.ContractsView()
+	before, stamp, _ := a.core.League.ContractsView()
 	empty := whatIfCall(t, a, "read", "", "")
 	if len(empty.Value.Moves) != 0 || len(empty.Value.Choices) != 5 || empty.Baseline == "" || empty.HowCounted == "" {
 		t.Fatalf("empty %+v", empty)
@@ -74,11 +74,11 @@ func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
 	}
 	// New composition root over the same pools proves no in-memory move dependency.
 	restart := NewApp()
-	restart.ctx = a.ctx
-	restart.whatifPools = a.whatifPools
-	restart.league = a.league
-	restart.rulebook = a.rulebook
-	close(restart.started)
+	restart.core.Ctx = a.core.Ctx
+	restart.core.WhatifPools = a.core.WhatifPools
+	restart.core.League = a.core.League
+	restart.core.Rulebook = a.core.Rulebook
+	close(restart.core.Started)
 	saved := whatIfCall(t, restart, "read", "", "")
 	if len(saved.Value.Moves) != 2 || saved.Value.Moves[0].ID != bought.Value.Moves[0].ID {
 		t.Fatal("restart lost moves")
@@ -91,7 +91,7 @@ func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
 	if len(reset.Value.Moves) != 0 || reset.Value.Figures[1].Before != reset.Value.Figures[1].After {
 		t.Fatalf("reset %+v", reset)
 	}
-	after, afterStamp, _ := a.league.ContractsView()
+	after, afterStamp, _ := a.core.League.ContractsView()
 	if stamp != afterStamp || len(before.Players) != len(after.Players) || before.Players[0].Salary != after.Players[0].Salary {
 		t.Fatal("simulation wrote mirror")
 	}

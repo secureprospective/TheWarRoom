@@ -38,10 +38,10 @@ func TestLiveOrArchive(t *testing.T) {
 	const here = "https://www47.myfantasyleague.com/2026/export?JSON=1&L=14432&TYPE=leagueStandings"
 	feed := func(fetchErr error, bodies ...archived) archivedFeed[string] {
 		return archivedFeed[string]{
-			export: "leagueStandings",
-			fetch:  func(context.Context) ([]string, error) { return []string{"live"}, fetchErr },
-			parse:  parse,
-			bodies: archiveOf(bodies...),
+			Export: "leagueStandings",
+			Fetch:  func(context.Context) ([]string, error) { return []string{"live"}, fetchErr },
+			Parse:  parse,
+			Bodies: archiveOf(bodies...),
 		}
 	}
 	old := time.Unix(1_700_000_000, 0)
@@ -91,11 +91,11 @@ func TestLiveOrArchiveLeaguelessFallback(t *testing.T) {
 	const other = "https://api.myfantasyleague.com/2026/export?TYPE=injuries&L=99999&JSON=1"
 	at := time.Unix(1_700_000_000, 0)
 	feed := archivedFeed[string]{
-		export:     "injuries",
-		leagueless: true,
-		fetch:      func(context.Context) ([]string, error) { return nil, down },
-		parse:      func(b []byte) ([]string, error) { return strings.Split(string(b), ","), nil },
-		bodies: archiveOf(
+		Export:     "injuries",
+		Leagueless: true,
+		Fetch:      func(context.Context) ([]string, error) { return nil, down },
+		Parse:      func(b []byte) ([]string, error) { return strings.Split(string(b), ","), nil },
+		Bodies: archiveOf(
 			archived{other, "other,league", at.Add(time.Minute)},
 			archived{bare, "api,copy", at}),
 	}

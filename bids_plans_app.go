@@ -98,11 +98,11 @@ func (a *App) bidPlan(ctx context.Context, r envelope.Receipt, f envelope.BidFac
 }
 
 func (a *App) bidPlans(ctx context.Context, franchise string) ([]BidPlan, error) {
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, franchise)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, franchise)
 	if err != nil {
 		return nil, fmt.Errorf("bid plans: list: %w", err)
 	}
-	facts, err := a.moves.AllBidFacts(ctx)
+	facts, err := a.core.Moves.AllBidFacts(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("bid plans: %w", err)
 	}
@@ -121,7 +121,7 @@ func (a *App) openBidPlansByPlayer(ctx context.Context, franchise string) map[st
 	if franchise == "" {
 		return out
 	}
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, franchise)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, franchise)
 	if err != nil {
 		return out
 	}
@@ -158,7 +158,7 @@ func (a *App) TargetBidPlans(franchiseID string) Reading[BidBoard] {
 	if err := ingestion.FeedFranchise(franchiseID); err != nil {
 		return fail(fmt.Errorf("bid plans: %w", err))
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	plans, err := a.bidPlans(ctx, franchiseID)
 	if err != nil {
@@ -180,14 +180,14 @@ func boardSummary(plans []BidPlan) string {
 
 // loadBid reads a plan's envelope and facts and checks it belongs to the owner's bids.
 func (a *App) loadBid(ctx context.Context, id string) (envelope.Envelope, envelope.BidFacts, error) {
-	e, err := a.moves.Get(ctx, id)
+	e, err := a.core.Moves.Get(ctx, id)
 	if err != nil {
 		return envelope.Envelope{}, envelope.BidFacts{}, fmt.Errorf("load: %w", err)
 	}
 	if e.Receipt().Spec.Intent != envelope.BidIntent {
 		return envelope.Envelope{}, envelope.BidFacts{}, fmt.Errorf("load: %s is not a bid plan", id)
 	}
-	f, err := a.moves.BidFacts(ctx, id)
+	f, err := a.core.Moves.BidFacts(ctx, id)
 	if err != nil {
 		return envelope.Envelope{}, envelope.BidFacts{}, fmt.Errorf("load: %w", err)
 	}
@@ -199,10 +199,10 @@ func (a *App) bidMove(id, what string, change func(context.Context, envelope.Env
 	if err := a.ready(); err != nil {
 		return BidPlan{}, fmt.Errorf("bid %s: startup: %w", what, err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	e, f, err := a.loadBid(ctx, id)
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid %s: %w", what, err)
@@ -211,11 +211,11 @@ func (a *App) bidMove(id, what string, change func(context.Context, envelope.Env
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid %s: %w", what, err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return BidPlan{}, fmt.Errorf("bid %s: save: %w", what, err)
 	}
 	a.logMove(next)
-	a.movesChanged(a.ctx)
+	a.core.MovesChanged(a.core.Ctx)
 	a.wakeMoves()
 	return a.bidPlan(ctx, next.Receipt(), f), nil
 }
@@ -232,7 +232,7 @@ func (a *App) TargetBidHandOff(id string) (BidPlan, error) {
 		if rules := bid.Check(in); bid.Blocked(rules) {
 			return envelope.Envelope{}, fmt.Errorf("the rules no longer pass: %s", bid.Note(rules))
 		}
-		return e.HandOffManual(a.movesNow(), "post text copied for ProBoards; nothing was posted for you")
+		return e.HandOffManual(a.core.MovesNow(), "post text copied for ProBoards; nothing was posted for you")
 	})
 }
 
@@ -240,7 +240,7 @@ func (a *App) TargetBidHandOff(id string) (BidPlan, error) {
 // watcher then waits for the award.
 func (a *App) TargetBidPosted(id string) (BidPlan, error) {
 	return a.bidMove(id, "posted", func(_ context.Context, e envelope.Envelope, _ envelope.BidFacts) (envelope.Envelope, error) {
-		return e.Await(a.movesNow(), envelope.AwaitBid)
+		return e.Await(a.core.MovesNow(), envelope.AwaitBid)
 	})
 }
 
@@ -249,13 +249,13 @@ func (a *App) TargetBidWithdraw(id string) (BidPlan, error) {
 	return a.bidMove(id, "withdraw", func(_ context.Context, e envelope.Envelope, _ envelope.BidFacts) (envelope.Envelope, error) {
 		s := e.State()
 		if s == envelope.Draft || s == envelope.Blocked || s == envelope.Ready {
-			return e.WithdrawBid(a.movesNow(), envelope.RemovePlanNote)
+			return e.WithdrawBid(a.core.MovesNow(), envelope.RemovePlanNote)
 		}
 		if s == envelope.HandedOff || s == envelope.NotYetDone {
-			return e.WithdrawBid(a.movesNow(), "You said you did not post it, so the plan is withdrawn.")
+			return e.WithdrawBid(a.core.MovesNow(), "You said you did not post it, so the plan is withdrawn.")
 		}
 		if s == envelope.BidPending || s == envelope.NotVerified || s == envelope.Stale {
-			return e.WithdrawBid(a.movesNow(), "Withdrawn: you said this bid was not processed; the app cannot remove a ProBoards post.")
+			return e.WithdrawBid(a.core.MovesNow(), "Withdrawn: you said this bid was not processed; the app cannot remove a ProBoards post.")
 		}
 		return envelope.Envelope{}, fmt.Errorf("only a plan not yet posted can be withdrawn; this one is %s",
 			strings.ToLower(bidStateWord(e.State())))
@@ -272,10 +272,10 @@ func (a *App) TargetBidRevise(id string, raw RawBidInput) (BidPlan, error) {
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
 	e, _, err := a.loadBid(ctx, id)
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: %w", err)
@@ -293,15 +293,15 @@ func (a *App) TargetBidRevise(id string, raw RawBidInput) (BidPlan, error) {
 		return BidPlan{}, fmt.Errorf("bid revise: %w", err)
 	}
 	entry.facts = withConditionalName(entry.facts, a.bidDropOptions(entry.franchise, entry.facts.Salary))
-	checked, err := next.Check(a.movesNow(), snapshot.Snapshot{}, envelope.BidCheck{Input: in})
+	checked, err := next.Check(a.core.MovesNow(), snapshot.Snapshot{}, envelope.BidCheck{Input: in})
 	if err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: check: %w", err)
 	}
-	if err := a.moves.SaveBid(ctx, checked, entry.facts); err != nil {
+	if err := a.core.Moves.SaveBid(ctx, checked, entry.facts); err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: save: %w", err)
 	}
 	a.logMove(checked)
-	a.movesChanged(a.ctx)
+	a.core.MovesChanged(a.core.Ctx)
 	return a.bidPlan(ctx, checked.Receipt(), entry.facts), nil
 }
 
@@ -313,7 +313,7 @@ func (a *App) reopened(e envelope.Envelope) (envelope.Envelope, error) {
 	if e.State() != envelope.Ready {
 		return envelope.Envelope{}, fmt.Errorf("a %s plan cannot be changed", strings.ToLower(bidStateWord(e.State())))
 	}
-	now := a.movesNow()
+	now := a.core.MovesNow()
 	stale, err := e.Invalidate(now, "figures changed by you")
 	if err != nil {
 		return envelope.Envelope{}, fmt.Errorf("reopen: %w", err)

@@ -36,7 +36,7 @@ func tradePlayerOffer() commissioner.RawTradeArgs {
 
 func (f *tradeFixture) action(t *testing.T, who, command string, args commissioner.RawTradeArgs) (commissioner.Receipt, error) {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{who}
+	f.app.core.CommissionerSession = testCommissionerSession{who}
 	raw := f.raw(t, command, commissioner.RawArgs{Trade: &args}, "league")
 	if commissioner.OwnerTradeAction(command) != "" {
 		return f.app.TargetNativeTradeAction(raw)
@@ -81,7 +81,7 @@ func (f *tradeFixture) veto(t *testing.T, offer commissioner.Receipt) {
 
 func (f *tradeFixture) trades(t *testing.T, who, team string) commissioner.NativeTrades {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{who}
+	f.app.core.CommissionerSession = testCommissionerSession{who}
 	reading, err := f.app.TargetNativeTrades(legalityLeague, team)
 	if err != nil {
 		t.Fatal(err)

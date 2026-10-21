@@ -37,19 +37,19 @@ func bidApp(t *testing.T) *bidFixture {
 	f := &bidFixture{waiverFixture: waiverApp(t), season: &heldSeason{week: 5, known: true,
 		playoff: map[string]nativecheck.PlayoffStanding{}}}
 	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["cut","waiver_claim","ufa_bid"]}}`, "now")
-	f.app.history.SetBidEnvironment(f.season)
+	f.app.core.History.SetBidEnvironment(f.season)
 	return f
 }
 
 func (f *bidFixture) restart(t *testing.T) {
 	t.Helper()
 	f.waiverFixture.restart(t)
-	f.app.history.SetBidEnvironment(f.season)
+	f.app.core.History.SetBidEnvironment(f.season)
 }
 
 func (f *bidFixture) ownerBid(t *testing.T, principal, command string, args commissioner.RawBidArgs) (commissioner.Receipt, error) {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	return f.app.TargetNativeBidAction(f.raw(t, command, commissioner.RawArgs{Bid: &args}, "private"))
 }
 
@@ -84,7 +84,7 @@ func (f *bidFixture) withdraw(t *testing.T, principal, franchise string, bid com
 
 func (f *bidFixture) bids(t *testing.T, principal, franchise string) commissioner.NativeBids {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	reading, err := f.app.TargetNativeBids(legalityLeague, franchise)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +99,7 @@ func (f *bidFixture) decide(t *testing.T, player string) commissioner.Receipt {
 
 func (f *bidFixture) tryDecide(t *testing.T, principal, player string) error {
 	t.Helper()
-	f.app.commissionerSession = testCommissionerSession{principal}
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	body, err := jsonOf(f.raw(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: player}}, "league"))
 	if err != nil {
 		t.Fatal(err)

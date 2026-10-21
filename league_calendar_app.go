@@ -29,7 +29,7 @@ func (a *App) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner.Cal
 	if err := a.ready(); err != nil {
 		return commissioner.Calendar{}, fmt.Errorf("league calendar startup: %w", err)
 	}
-	records, err := a.leagueRecords(a.ctx, raw.League)
+	records, err := a.leagueRecords(a.core.Ctx, raw.League)
 	if err != nil {
 		return commissioner.Calendar{}, err
 	}
@@ -42,7 +42,7 @@ func (a *App) leagueRecords(parent context.Context, league string) ([]commission
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
 	//nolint:wrapcheck // the service's errors already name the league calendar
-	return commissionerapp.Records(ctx, a.history, league, "calendar")
+	return commissionerapp.Records(ctx, a.core.History, league, "calendar")
 }
 
 type RawLeagueScheduleScope struct {
@@ -60,9 +60,9 @@ func (a *App) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner.Sch
 	if err := a.ready(); err != nil {
 		return commissioner.Schedule{}, fmt.Errorf("league schedule startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	records, err := commissionerapp.Records(ctx, a.history, raw.League, "schedule")
+	records, err := commissionerapp.Records(ctx, a.core.History, raw.League, "schedule")
 	if err != nil {
 		return commissioner.Schedule{}, err //nolint:wrapcheck // the service's errors already name the league schedule
 	}

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -23,17 +24,5 @@ const (
 	FreshFail  = domain.FreshFail
 )
 
-// liveFreshness marks a result as served from a successful fetch at time t.
-func liveFreshness(t time.Time) Freshness {
-	return Freshness{State: FreshLive, FetchedAt: t.UTC().Format(time.RFC3339)}
-}
-
-// staleFreshness marks a cached result after a failed fetch. The cause is shown so an MFL
-// outage reads differently from a local network fault.
-func staleFreshness(fetchedAt time.Time, cause error) Freshness {
-	return Freshness{
-		State:     FreshStale,
-		FetchedAt: fetchedAt.UTC().Format(time.RFC3339),
-		Note:      fmt.Sprintf("live fetch failed, showing last known data: %v", cause),
-	}
-}
+func liveFreshness(t time.Time) Freshness               { return core.LiveFreshness(t) }
+func staleFreshness(t time.Time, cause error) Freshness { return core.StaleFreshness(t, cause) }

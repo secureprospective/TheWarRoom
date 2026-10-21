@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
+
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -85,8 +88,8 @@ func seasonGzFixture(t *testing.T, feed, name string) string {
 func seasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Duration, *int) {
 	t.Helper()
 	a, transport, pauses, events := isolatedSeasonTestApp(t)
-	a.keyStore = mflkey.NewMemory(ingestion.LeagueID, "2026")
-	a.mflClient = a.mflClient.WithKeySource(a.keyStore.Get)
+	a.core.KeyStore = mflkey.NewMemory(ingestion.LeagueID, "2026")
+	a.core.MFLClient = a.core.MFLClient.WithKeySource(a.core.KeyStore.Get)
 	return a, transport, pauses, events
 }
 
@@ -119,20 +122,20 @@ func isolatedSeasonTestApp(t *testing.T) (*App, *seasonTransport, *[]time.Durati
 		},
 	}
 	var err error
-	a.mflClient, err = mfl.New("api", 10000, mfl.WithTransport(transport),
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(transport),
 		mfl.WithKeySource(func(context.Context) (mflkey.Key, error) { return "", mflkey.ErrNoKey }))
 	if err != nil {
 		t.Fatal(err)
 	}
 	pauses := []time.Duration{}
-	a.seasonPause = func(ctx context.Context, d time.Duration) error {
+	a.core.SeasonPause = func(ctx context.Context, d time.Duration) error {
 		pauses = append(pauses, d)
 		transport.now = transport.now.Add(d)
 		return ctx.Err()
 	}
 	events := 0
-	a.seasonChanged = func(context.Context) { events++ }
-	t.Cleanup(func() { a.weekWorkers.Wait() })
+	a.core.SeasonChanged = func(context.Context) { events++ }
+	t.Cleanup(func() { a.core.WeekWorkers.Wait() })
 	return a, transport, &pauses, &events
 }
 
@@ -164,11 +167,11 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	if len(transport.requests) != 0 {
 		t.Fatal("binding fetched")
 	}
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
-	a.week.Number = 5
-	a.refreshSeason(a.ctx)
+	a.core.Week.Number = 5
+	a.refreshSeason(a.core.Ctx)
 	r := seasonReading(t, a)
 	for _, p := range []Freshness{
 		r.Transactions.Provenance.Freshness, r.Lineups.Provenance.Freshness, r.PendingTrades.Provenance.Freshness,
@@ -196,10 +199,10 @@ func TestSeasonHeldOnlyAndRefreshOrder(t *testing.T) {
 	if transport.weeks[5] != "5" || transport.weeks[20] != "5" || r.Lineups.Provenance.Source != "liveScoring W=5" {
 		t.Fatal("requested wrong week")
 	}
-	a.week.Number = 0
+	a.core.Week.Number = 0
 	second := len(transport.requests)
 	transport.bodies["liveScoring"] = seasonFixture(t, "livescoring", "liveScoring.json")
-	a.refreshSeason(a.ctx)
+	a.refreshSeason(a.core.Ctx)
 	r = seasonReading(t, a)
 	if transport.weeks[second+3] != "" || r.Lineups.Value.Week != 4 ||
 		r.Lineups.Provenance.Source != "liveScoring default week" {
@@ -235,7 +238,7 @@ func recordSeasonArchiveForm(t *testing.T, a *App, export, week, body string, at
 	if week != "" {
 		src += "&W=" + week
 	}
-	err := a.history.Record(a.ctx, archive.Fetch{
+	err := a.core.History.Record(a.core.Ctx, archive.Fetch{
 		URL: src, Status: 200, SHA256: hex.EncodeToString(sum[:]), Size: int64(len(body)),
 		Gzip: compressed.Bytes(), FetchedAt: at,
 	})
@@ -253,7 +256,7 @@ func TestSeasonArchiveFallback(t *testing.T) {
 				recordSeasonArchive(t, a, "transactions", "", transport.bodies["transactions"], at)
 			}
 			transport.failure = "transactions"
-			a.refreshSeasonTransactions(a.ctx)
+			a.refreshSeasonTransactions(a.core.Ctx)
 			r := seasonReading(t, a)
 			want := FreshFail
 			if archived {
@@ -291,8 +294,8 @@ func TestSeasonInjuriesFallbackHoldsTheStaleCopyTime(t *testing.T) {
 		a, transport, _, _ := seasonTestApp(t)
 		transport.bodies["injuries"] = feed
 		var logged []string
-		a.fallbackLog = func(line string) { logged = append(logged, line) }
-		a.refreshInjuries(a.ctx)
+		a.core.FallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.core.Ctx)
 		p := a.heldInjuries().Provenance.Freshness
 		if p.State != FreshLive || p.FetchedAt == "" || len(a.heldInjuries().Status) != 1 {
 			t.Fatalf("live injuries: %+v", p)
@@ -307,8 +310,8 @@ func TestSeasonInjuriesFallbackHoldsTheStaleCopyTime(t *testing.T) {
 		transport.failure = "injuries"
 		recordSeasonBareArchive(t, a, "injuries", feed, at)
 		var logged []string
-		a.fallbackLog = func(line string) { logged = append(logged, line) }
-		a.refreshInjuries(a.ctx)
+		a.core.FallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.core.Ctx)
 		inj := a.heldInjuries()
 		p := inj.Provenance.Freshness
 		if p.State != FreshStale || p.FetchedAt != at.Format(time.RFC3339) ||
@@ -326,8 +329,8 @@ func TestSeasonInjuriesFallbackHoldsTheStaleCopyTime(t *testing.T) {
 		a, transport, _, _ := seasonTestApp(t)
 		transport.failure = "injuries"
 		var logged []string
-		a.fallbackLog = func(line string) { logged = append(logged, line) }
-		a.refreshInjuries(a.ctx)
+		a.core.FallbackLog = func(line string) { logged = append(logged, line) }
+		a.refreshInjuries(a.core.Ctx)
 		p := a.heldInjuries().Provenance.Freshness
 		// Claude-OS's 10-25 CDT run: never-held reads "not checked" with no as-of time,
 		// because no copy exists; the run.log line names the feed and the error.
@@ -345,28 +348,28 @@ func TestSeasonLineupArchiveWeekIsolation(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	at := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	recordSeasonArchive(t, a, "liveScoring", "4", seasonFixture(t, "livescoring", "liveScoring.json"), at)
-	a.week.Number = 5
+	a.core.Week.Number = 5
 	transport.failure = "liveScoring"
-	a.refreshSeasonLineups(a.ctx)
+	a.refreshSeasonLineups(a.core.Ctx)
 	r := seasonReading(t, a)
 	if r.Lineups.Provenance.Freshness.State != FreshFail || r.Lineups.Value.Week != 0 {
 		t.Fatal("another week's archived lineup used")
 	}
 	recordSeasonArchive(t, a, "liveScoring", "5", transport.bodies["liveScoring"], at.Add(-time.Hour))
-	a.refreshSeasonLineups(a.ctx)
+	a.refreshSeasonLineups(a.core.Ctx)
 	r = seasonReading(t, a)
 	if r.Lineups.Provenance.Freshness.State != FreshStale || r.Lineups.Value.Week != 5 ||
 		r.Lineups.Provenance.Freshness.FetchedAt != at.Add(-time.Hour).Format(time.RFC3339) {
 		t.Fatal(r.Lineups)
 	}
-	a.week.Number = 0
-	a.refreshSeasonLineups(a.ctx)
+	a.core.Week.Number = 0
+	a.refreshSeasonLineups(a.core.Ctx)
 	r = seasonReading(t, a)
 	if r.Lineups.Provenance.Freshness.State != FreshFail || r.Lineups.Value.Week != 0 {
 		t.Fatal("explicit week used for default")
 	}
 	recordSeasonArchive(t, a, "liveScoring", "", seasonFixture(t, "livescoring", "liveScoring.json"), at)
-	a.refreshSeasonLineups(a.ctx)
+	a.refreshSeasonLineups(a.core.Ctx)
 	r = seasonReading(t, a)
 	if r.Lineups.Provenance.Freshness.State != FreshStale || r.Lineups.Value.Week != 4 {
 		t.Fatal("default archive ignored")
@@ -375,28 +378,28 @@ func TestSeasonLineupArchiveWeekIsolation(t *testing.T) {
 
 func TestSeasonPendingTradesKeyStates(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
-	a.seasonPendingTrades.value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
-	a.refreshPendingTrades(a.ctx)
+	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
+	a.refreshPendingTrades(a.core.Ctx)
 	r := seasonReading(t, a)
 	if len(transport.requests) != 0 || len(r.PendingTrades.Value) != 0 ||
 		r.PendingTrades.Provenance.Freshness.Note != "MFL not connected" {
 		t.Fatal("absent key sent request or retained trades")
 	}
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	// Synthetic: an authenticated trade body is not present in the real captures.
 	transport.bodies["pendingTrades"] = `{"pendingTrades":{"pendingTrade":{` +
 		`"trade_id":"101","offeringteam":"0001","offeredto":"0002",` +
 		`"will_give_up":"12345,","will_receive":"BB_10.50,","timestamp":"100","expires":"200"}}}`
-	a.refreshPendingTrades(a.ctx)
+	a.refreshPendingTrades(a.core.Ctx)
 	r = seasonReading(t, a)
 	at := r.PendingTrades.Provenance.Freshness.FetchedAt
 	if len(r.PendingTrades.Value) != 1 || r.PendingTrades.Provenance.Freshness.State != FreshLive {
 		t.Fatal(r.PendingTrades)
 	}
 	transport.failure = "pendingTrades"
-	a.refreshPendingTrades(a.ctx)
+	a.refreshPendingTrades(a.core.Ctx)
 	r = seasonReading(t, a)
 	if len(r.PendingTrades.Value) != 1 || r.PendingTrades.Provenance.Freshness.State != FreshStale ||
 		r.PendingTrades.Provenance.Freshness.FetchedAt != at {
@@ -404,8 +407,8 @@ func TestSeasonPendingTradesKeyStates(t *testing.T) {
 	}
 	calls := len(transport.requests)
 	keyring.MockInitWithError(errors.New("locked"))
-	a.keyStore = mflkey.New(ingestion.LeagueID, "2026")
-	a.refreshPendingTrades(a.ctx)
+	a.core.KeyStore = mflkey.New(ingestion.LeagueID, "2026")
+	a.refreshPendingTrades(a.core.Ctx)
 	r = seasonReading(t, a)
 	if len(transport.requests) != calls || len(r.PendingTrades.Value) != 1 ||
 		r.PendingTrades.Provenance.Freshness.State != FreshStale ||
@@ -416,8 +419,8 @@ func TestSeasonPendingTradesKeyStates(t *testing.T) {
 
 func TestSeasonBindingDoesNotWaitForRefresh(t *testing.T) {
 	a, _, _, _ := seasonTestApp(t)
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
 	done := make(chan error, 1)
 	go func() {
 		_, err := a.TargetSeason()
@@ -441,17 +444,17 @@ func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	if err != nil || status.State != "connected" {
 		t.Fatal(status, err)
 	}
-	a.weekWorkers.Wait()
+	a.core.WeekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{"pendingTrades", "pendingTrades"}) || *events != 1 {
 		t.Fatalf("requests %v events %d", transport.requests, *events)
 	}
-	a.seasonPendingTrades.value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
+	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
 	// Holding refreshMu proves deletion returns and clears without waiting for the worker.
-	a.refreshMu.Lock()
+	a.core.RefreshMu.Lock()
 	status, err = a.DeleteMFLKey()
 	r := seasonReading(t, a)
-	a.refreshMu.Unlock()
-	a.weekWorkers.Wait()
+	a.core.RefreshMu.Unlock()
+	a.core.WeekWorkers.Wait()
 	if err != nil || status.State != "absent" || len(r.PendingTrades.Value) != 0 ||
 		r.PendingTrades.Provenance.Freshness.Note != "MFL not connected" || *events != 2 ||
 		len(transport.requests) != 2 {
@@ -466,9 +469,9 @@ func TestSeasonPauseCancellationAndNotReady(t *testing.T) {
 		t.Fatal(err)
 	}
 	a := NewApp()
-	a.startupErr = errors.New("not ready")
-	close(a.started)
-	if _, err := a.TargetSeason(); !errors.Is(err, a.startupErr) {
+	a.core.StartupErr = errors.New("not ready")
+	close(a.core.Started)
+	if _, err := a.TargetSeason(); !errors.Is(err, a.core.StartupErr) {
 		t.Fatal(err)
 	}
 }
@@ -476,22 +479,22 @@ func TestSeasonPauseCancellationAndNotReady(t *testing.T) {
 func TestSeasonWorkerUsesRefreshedWeek(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	scheduleApp, _, _ := weekTestApp(t, "17", weekFixture(t, "nflSchedule-w5.json"))
-	a.whatif, a.rulebook, a.coordinator = scheduleApp.whatif, scheduleApp.rulebook, scheduleApp.coordinator
-	a.clockChanged = func(context.Context) {}
+	a.core.Whatif, a.core.Rulebook, a.core.Coordinator = scheduleApp.core.Whatif, scheduleApp.core.Rulebook, scheduleApp.core.Coordinator
+	a.core.ClockChanged = func(context.Context) {}
 	transport.bodies["nflSchedule"] = weekFixture(t, "nflSchedule-w5.json")
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
-	ctx, cancel := context.WithCancel(a.ctx)
+	ctx, cancel := context.WithCancel(a.core.Ctx)
 	defer cancel()
 	changes := 0
-	a.seasonChanged = func(context.Context) { // the second change is the refresh's end
+	a.core.SeasonChanged = func(context.Context) { // the second change is the refresh's end
 		if changes++; changes == 2 {
 			cancel()
 		}
 	}
 	a.refreshInBackground(ctx)
-	a.weekWorkers.Wait()
+	a.core.WeekWorkers.Wait()
 	if !reflect.DeepEqual(transport.requests, []string{
 		"nflSchedule", "transactions", "messageBoard", "polls", "calendar", "tradeBait", "liveScoring", "pendingTrades", "injuries", "draftResults", "futureDraftPicks",
 		"projectedScores", "playerRanks", "adp", "aav",
@@ -533,15 +536,15 @@ func (h heldSeasonTrade) RoundTrip(r *http.Request) (*http.Response, error) {
 
 func TestSeasonShutdownCancelsKeyChangeRefresh(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
-	a.workCtx, a.workCancel = context.WithCancel(a.ctx)
+	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(a.core.Ctx)
 	entered := make(chan struct{})
 	var err error
-	a.mflClient, err = mfl.New("api", 10000,
+	a.core.MFLClient, err = mfl.New("api", 10000,
 		mfl.WithTransport(heldSeasonTrade{base: transport, entered: entered}),
-		mfl.WithKeySource(a.keyStore.Get))
+		mfl.WithKeySource(a.core.KeyStore.Get))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -549,8 +552,8 @@ func TestSeasonShutdownCancelsKeyChangeRefresh(t *testing.T) {
 	<-entered
 	done := make(chan struct{})
 	go func() {
-		a.workCancel()
-		a.weekWorkers.Wait()
+		a.core.WorkCancel()
+		a.core.WeekWorkers.Wait()
 		close(done)
 	}()
 	timer := time.NewTimer(5 * time.Second)
@@ -564,14 +567,14 @@ func TestSeasonShutdownCancelsKeyChangeRefresh(t *testing.T) {
 
 func TestSeasonDeleteDoesNotWaitForPendingFetch(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	entered, release := make(chan struct{}), make(chan struct{})
 	var err error
-	a.mflClient, err = mfl.New("api", 10000,
+	a.core.MFLClient, err = mfl.New("api", 10000,
 		mfl.WithTransport(blockedSeasonTrade{base: transport, entered: entered, release: release}),
-		mfl.WithKeySource(a.keyStore.Get))
+		mfl.WithKeySource(a.core.KeyStore.Get))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -596,7 +599,7 @@ func TestSeasonDeleteDoesNotWaitForPendingFetch(t *testing.T) {
 		t.Error("delete waited for pendingTrades network request")
 	}
 	close(release)
-	a.weekWorkers.Wait()
+	a.core.WeekWorkers.Wait()
 	r := seasonReading(t, a)
 	if r.PendingTrades.Provenance.Freshness.Note != "MFL not connected" ||
 		r.PendingTrades.Provenance.Freshness.State != FreshFail || len(r.PendingTrades.Value) != 0 {
@@ -608,17 +611,17 @@ func TestSeasonPendingKeySourceErrors(t *testing.T) {
 	for _, cause := range []error{mflkey.ErrNoKey, mflkey.ErrUnavailable, mflkey.ErrTimeout} {
 		t.Run(cause.Error(), func(t *testing.T) {
 			a, transport, _, _ := seasonTestApp(t)
-			if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+			if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 				t.Fatal(err)
 			}
-			a.seasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{
-				value:     []leaguefeed.PendingTrade{{ID: "kept"}},
-				fetchedAt: time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC),
+			a.core.SeasonPendingTrades = heldSeasonFeed[[]leaguefeed.PendingTrade]{
+				Value:     []leaguefeed.PendingTrade{{ID: "kept"}},
+				FetchedAt: time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC),
 			}
-			a.mflClient = a.mflClient.WithKeySource(func(context.Context) (mflkey.Key, error) {
+			a.core.MFLClient = a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) {
 				return "", cause
 			})
-			a.refreshPendingTrades(a.ctx)
+			a.refreshPendingTrades(a.core.Ctx)
 			r := seasonReading(t, a)
 			if len(transport.requests) != 0 {
 				t.Fatal("key source failure sent keyed request")
@@ -638,16 +641,43 @@ func TestSeasonPendingKeySourceErrors(t *testing.T) {
 
 func TestSeasonPendingTradesNeverUsesArchive(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	recordSeasonArchive(t, a, "pendingTrades", "", transport.bodies["pendingTrades"],
 		time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC))
 	transport.failure = "pendingTrades"
-	a.refreshPendingTrades(a.ctx)
+	a.refreshPendingTrades(a.core.Ctx)
 	r := seasonReading(t, a)
 	if r.PendingTrades.Provenance.Freshness.State != FreshFail ||
 		!strings.Contains(r.PendingTrades.Provenance.Freshness.Note, "synthetic offline") {
 		t.Fatal("pending trades used archived offers")
+	}
+}
+
+func TestCommsRefreshWire(t *testing.T) {
+	a, transport, pauses, _ := seasonTestApp(t)
+	if err := a.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+		t.Fatal(err)
+	}
+	err := commsapp.New(a.core).TargetCommsRefresh(true)
+	message := ""
+	if err != nil {
+		message = err.Error()
+	}
+	got, err := json.MarshalIndent(struct {
+		Error           string
+		Requests, Keyed []string
+		Pauses          int
+	}{message, transport.requests, transport.keyed, len(*pauses)}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(commstest.RepoPath("testdata", "wire", "comms", "refresh.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(append(got, '\n'), want) {
+		t.Fatal("Comms refresh binding contract changed")
 	}
 }

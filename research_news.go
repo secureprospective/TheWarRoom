@@ -43,7 +43,7 @@ func archivedNews(ctx context.Context, bodies archivedBodies, season int, want [
 		}
 		for _, id := range asked {
 			if news := rows[id]; open[id] {
-				out[id] = heldSeasonFeed[[]researchfeeds.News]{value: news, fetchedAt: at}
+				out[id] = heldSeasonFeed[[]researchfeeds.News]{Value: news, FetchedAt: at}
 				delete(open, id)
 			}
 		}
@@ -64,7 +64,7 @@ func readResearchNewsBatches(ctx context.Context, held map[string]heldSeasonFeed
 	today := func(at time.Time) bool { return at.In(time.Local).Format("2006-01-02") == day }
 	need := []string{}
 	for _, id := range ids {
-		if h := held[id]; h.fetchedAt.IsZero() || !today(h.fetchedAt) {
+		if h := held[id]; h.FetchedAt.IsZero() || !today(h.FetchedAt) {
 			need = append(need, id)
 		}
 	}
@@ -128,7 +128,7 @@ func fallbackResearchNews(ctx context.Context, held map[string]heldSeasonFeed[[]
 		next, loss := held[id], losses[id]
 		switch h, ok := found[id]; {
 		case ok:
-			holdSeasonFeed(&next, h.value, staleFreshness(h.fetchedAt, loss), nil)
+			holdSeasonFeed(&next, h.Value, staleFreshness(h.FetchedAt, loss), nil)
 		case err != nil:
 			holdSeasonFeed(&next, nil, Freshness{}, fmt.Errorf("news player %s archive: %w (live: %v)", id, err, loss))
 		default:

@@ -44,7 +44,7 @@ func TestBidOnlyOnePlanOpenPerPlayer(t *testing.T) {
 		t.Fatalf("after the first plan was withdrawn: %v", err)
 	}
 	// The pool row on him names the open plan, so the screen offers it instead of a second.
-	rows := a.openBidPlansByPlayer(a.ctx, "0001")
+	rows := a.openBidPlansByPlayer(a.core.Ctx, "0001")
 	if got := rows["13593"]; got.State != "Ready" || got.ID == "" || got.ID == first.Receipt.CorrelationID {
 		t.Errorf("open plan on him = %+v", got)
 	}
@@ -75,7 +75,7 @@ func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
 	if err != nil || actionIDs(handed) != "copy,posted,unposted" {
 		t.Fatalf("handed off: %v, actions %s", err, actionIDs(handed))
 	}
-	before, err := a.moves.BidFacts(a.ctx, id)
+	before, err := a.core.Moves.BidFacts(a.core.Ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,13 +91,13 @@ func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
 	if len(gone.Actions) != 0 {
 		t.Errorf("a withdrawn plan still offers %s", actionIDs(gone))
 	}
-	after, err := a.moves.BidFacts(a.ctx, id)
+	after, err := a.core.Moves.BidFacts(a.core.Ctx, id)
 	if err != nil || *after.Beat != *before.Beat || after.Salary != before.Salary || after.Years != before.Years ||
 		after.Points != before.Points || after.Snipe != before.Snipe || after.Evidence != before.Evidence ||
 		after.Closes != before.Closes {
 		t.Fatalf("facts changed by the withdrawal: %+v then %+v, %v", before, after, err)
 	}
-	if err := a.moves.SaveBid(a.ctx, mustGet(t, a, id), envelope.BidFacts{Player: before.Player, Salary: 1,
+	if err := a.core.Moves.SaveBid(a.core.Ctx, mustGet(t, a, id), envelope.BidFacts{Player: before.Player, Salary: 1,
 		Years: 1}); err == nil {
 		t.Error("the facts of a withdrawn plan were rewritten")
 	}
@@ -121,7 +121,7 @@ func TestBidHandedOffPlanCanBeWithdrawnAndItsFactsStayFrozen(t *testing.T) {
 
 func mustGet(t *testing.T, a *App, id string) envelope.Envelope {
 	t.Helper()
-	e, err := a.moves.Get(a.ctx, id)
+	e, err := a.core.Moves.Get(a.core.Ctx, id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,7 +132,7 @@ func TestBidNotYetDoneAndPendingCanBeWithdrawn(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
 	past := time.Now().Add(-time.Hour)
-	a.movesNow = func() time.Time { return past }
+	a.core.MovesNow = func() time.Time { return past }
 	plan, err := a.TargetBidDraft(rawBid("5", 3))
 	if err != nil {
 		t.Fatal(err)
@@ -141,9 +141,9 @@ func TestBidNotYetDoneAndPendingCanBeWithdrawn(t *testing.T) {
 	if _, err := a.TargetBidHandOff(id); err != nil {
 		t.Fatal(err)
 	}
-	a.movesNow = func() time.Time { return time.Now().Add(time.Minute) }
-	a.movesRefresh = func(context.Context, envelope.Source) error { setRosters(t, a); return nil }
-	if err := a.checkMoves(a.ctx); err != nil {
+	a.core.MovesNow = func() time.Time { return time.Now().Add(time.Minute) }
+	a.core.MovesRefresh = func(context.Context, envelope.Source) error { setRosters(t, a); return nil }
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	waiting := a.TargetBidPlans("0001").Value.Plans[0]

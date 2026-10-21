@@ -72,7 +72,7 @@ func TestCommissionerPreviewChecksMatchExecute(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			app := previewApp(t)
-			app.commissionerSession = testCommissionerSession{tc.principal}
+			app.core.CommissionerSession = testCommissionerSession{tc.principal}
 			body := previewRuleBody(t, tc.field, tc.value, tc.effective, tc.reason, tc.expected)
 			preview, err := app.TargetCommissionerPreview(body)
 			if err != nil || len(preview.Blockers) != 1 {

@@ -125,34 +125,34 @@ func TestHeldLiveReadingKeepsTimesAndFailure(t *testing.T) {
 func TestMFLDemandPollingAndBackoff(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	a.week.Number = 5
-	if err := a.keyStore.Set(a.ctx, "synthetic-stored-key"); err != nil {
+	a.core.Week.Number = 5
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
 		t.Fatal(err)
 	}
 	at := time.Date(2026, 10, 11, 21, 0, 0, 0, time.UTC)
-	a.pollLiveMFL(a.ctx, at, false)
+	a.pollLiveMFL(a.core.Ctx, at, false)
 	if len(transport.requests) != 0 {
 		t.Fatal("inactive MFL poll fetched")
 	}
-	a.pollLiveMFL(a.ctx, at, true)
+	a.pollLiveMFL(a.core.Ctx, at, true)
 	if len(transport.requests) != 1 || transport.requests[0] != "liveScoring" || transport.weeks[0] != "5" {
 		t.Fatal(transport.requests)
 	}
-	a.pollLiveMFL(a.ctx, at.Add(29*time.Second), true)
+	a.pollLiveMFL(a.core.Ctx, at.Add(29*time.Second), true)
 	if len(transport.requests) != 1 {
 		t.Fatal("MFL polled early")
 	}
-	heldAt := a.seasonLineups.fetchedAt
+	heldAt := a.core.SeasonLineups.FetchedAt
 	transport.failure = "liveScoring"
-	a.pollLiveMFL(a.ctx, at.Add(30*time.Second), true)
-	if len(transport.requests) != 2 || !a.seasonLineups.fetchedAt.Equal(heldAt) || a.seasonLineups.refreshError == "" {
+	a.pollLiveMFL(a.core.Ctx, at.Add(30*time.Second), true)
+	if len(transport.requests) != 2 || !a.core.SeasonLineups.FetchedAt.Equal(heldAt) || a.core.SeasonLineups.RefreshError == "" {
 		t.Fatal("MFL lost held time/failure")
 	}
-	a.pollLiveMFL(a.ctx, at.Add(89*time.Second), true)
+	a.pollLiveMFL(a.core.Ctx, at.Add(89*time.Second), true)
 	if len(transport.requests) != 2 {
 		t.Fatal("MFL did not back off")
 	}
-	a.pollLiveMFL(a.ctx, at.Add(90*time.Second), false)
+	a.pollLiveMFL(a.core.Ctx, at.Add(90*time.Second), false)
 	if len(transport.requests) != 2 {
 		t.Fatal("closed or off-game MFL refreshed")
 	}

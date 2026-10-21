@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -18,7 +20,7 @@ func TestContractReadingStatesAndCantCut(t *testing.T) {
 	if failed.Table.Status != ReadingFailed || failed.Cap.Status != ReadingFailed || failed.Adjustments.Status != ReadingFailed {
 		t.Fatal("failure became figures")
 	}
-	a := &App{}
+	a := &App{core: &core.State{}}
 	if a.TargetContracts(snapshot.RawContractScope{Sort: "bad"}).Table.Status != ReadingFailed {
 		t.Fatal("invalid scope accepted")
 	}
@@ -55,7 +57,7 @@ func TestTargetContractsAndPlayerReadOnlyMirror(t *testing.T) {
 func TestCapSourceUsesGMSettingsWords(t *testing.T) {
 	t.Parallel()
 	a := whatIfTestApp(t)
-	if err := a.rulebook.Initialize(a.ctx, lineupRulesSource{cfg: league.RawConfig{SalaryCapAmount: "120"}}); err != nil {
+	if err := a.core.Rulebook.Initialize(a.core.Ctx, lineupRulesSource{cfg: league.RawConfig{SalaryCapAmount: "120"}}); err != nil {
 		t.Fatal(err)
 	}
 	read := func() string {
@@ -68,7 +70,7 @@ func TestCapSourceUsesGMSettingsWords(t *testing.T) {
 	if got := read(); got != "League salary cap: $120,000,000 (MFL league settings)" {
 		t.Fatal(got)
 	}
-	if err := a.rulebook.SetOverride(a.ctx, "cap", "salaryCapAmount", "150", "test"); err != nil {
+	if err := a.core.Rulebook.SetOverride(a.core.Ctx, "cap", "salaryCapAmount", "150", "test"); err != nil {
 		t.Fatal(err)
 	}
 	if got := read(); got != "League salary cap: $150,000,000 (set by the commissioner)" {

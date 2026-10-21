@@ -107,14 +107,14 @@ func targetTestAppAt(t *testing.T, path string) *App {
 		t.Fatal(err)
 	}
 	a := NewApp()
-	a.pools = p
-	a.moves = moveStore
-	a.ctx = ctx
-	a.season = 2026
-	a.league = mirror
-	a.rulebook = rb
-	a.history = hs
-	close(a.started)
+	a.core.Pools = p
+	a.core.Moves = moveStore
+	a.core.Ctx = ctx
+	a.core.Season = 2026
+	a.core.League = mirror
+	a.core.Rulebook = rb
+	a.core.History = hs
+	close(a.core.Started)
 	return a
 }
 
@@ -127,7 +127,7 @@ func TestTargetDirectoryReusesLiveCacheAndOriginalTime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.lookup, a.hasLookup, a.lookupAt = lk, true, time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
+	a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lk, true, time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	// A nil MFL client would panic if the live leg bypassed the directory cache.
 	for range 2 {
 		dir := a.targetDirectory(context.Background())
@@ -173,9 +173,9 @@ func TestTargetDirectoryFallsBackAfterCancelledLiveFetch(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		a.mflClient = client
+		a.core.MFLClient = client
 		if archived {
-			recordTargetPlayers(t, a.history)
+			recordTargetPlayers(t, a.core.History)
 		}
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
@@ -190,7 +190,7 @@ func TestTargetDirectoryFallsBackAfterCancelledLiveFetch(t *testing.T) {
 			!strings.Contains(dir.Provenance.Freshness.Note, "no archived copy") {
 			t.Fatal(dir.Provenance)
 		}
-		if a.hasLookup {
+		if a.core.HasLookup {
 			t.Fatal("archive was promoted into the live cache")
 		}
 	}
@@ -203,7 +203,7 @@ func targetOfflineClient(t *testing.T, a *App) *directoryDown {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.mflClient = client
+	a.core.MFLClient = client
 	return down
 }
 
@@ -299,12 +299,12 @@ func TestTargetSnapshotFailureKeepsCache(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	a.ctx = ctx
+	a.core.Ctx = ctx
 	if _, err := a.TargetSnapshot(); err == nil {
 		t.Fatal("cancelled build succeeded")
 	}
 	// The cancelled context only simulated a failed build; the app itself is still running.
-	a.ctx = context.Background()
+	a.core.Ctx = context.Background()
 	r, err := a.TargetDraftIR("0001", "0042")
 	if err != nil || r.State != envelope.Blocked ||
 		r.Audit[0].Note != "Not checked: stale; MFL will decide. "+
@@ -325,7 +325,7 @@ func TestTargetMovesSurviveRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := first.pools.Close(); err != nil {
+	if err := first.core.Pools.Close(); err != nil {
 		t.Fatal(err)
 	}
 	second := targetTestAppAt(t, path)

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
@@ -50,7 +51,7 @@ func TestDraftReadingStatesAndParity(t *testing.T) {
 	if thin.Status != ReadingThin || thin.Count != 0 || thin.AbsenceReason == nil || len(thin.Value.Sections) != 0 {
 		t.Fatal("empty scope fabricated")
 	}
-	a = &App{labData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}
+	a = &App{core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
 	failed := a.TargetDraftLab(raw)
 	if failed.Status != ReadingFailed || failed.AbsenceReason == nil || !strings.Contains(*failed.AbsenceReason, "fingerprint mismatch") {
 		t.Fatal("failed load hidden")

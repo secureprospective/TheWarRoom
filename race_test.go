@@ -17,7 +17,7 @@ import (
 )
 
 var raceHeldAt = time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC) //nolint:gochecknoglobals // fixed fixture clock
-func held[T any](v T) heldSeasonFeed[T]                         { return heldSeasonFeed[T]{value: v, fetchedAt: raceHeldAt} }
+func held[T any](v T) heldSeasonFeed[T]                         { return heldSeasonFeed[T]{Value: v, FetchedAt: raceHeldAt} }
 func realRace(t *testing.T, year string) raceInput {
 	d := seasontest.Load(t, year)
 	return raceInput{held: raceHeld{weeks: held(d.Weeks), brackets: held(d.Brackets), standings: held(d.Standings)}, config: d.Config, lookup: d.Lookup, hasLookup: true, team: "0001", mine: "0001", zone: time.UTC}
@@ -38,11 +38,11 @@ func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 	if err := a.TargetRaceRefresh(false); err != nil {
 		t.Fatal(err)
 	}
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	weeks := a.race.weeks
-	a.seasonMu.Unlock()
-	if len(weeks.value) != 17 || weeks.refreshError == "" {
-		t.Fatal("archived weekly results not served as stale", weeks.refreshError)
+	a.core.SeasonMu.Unlock()
+	if len(weeks.Value) != 17 || weeks.RefreshError == "" {
+		t.Fatal("archived weekly results not served as stale", weeks.RefreshError)
 	}
 	requests := len(transport.requests)
 	if err := a.TargetRaceRefresh(false); err != nil || len(transport.requests) == requests {
@@ -160,15 +160,15 @@ func TestRaceSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 	a.race.power = map[string]PowerRankingsResult{ViewSeason: testPower()}
 	in := a.raceReadInput()
 	in.config, in.lookup, in.hasLookup, in.zone = fixture.config, fixture.lookup, true, time.UTC
-	a.seasonMu.Lock()
+	a.core.SeasonMu.Lock()
 	delete(a.race.power, ViewSeason)
-	a.seasonMu.Unlock()
+	a.core.SeasonMu.Unlock()
 	if _, ok := in.held.power[ViewSeason]; !ok {
 		t.Fatal("snapshot retained the mutable power index")
 	}
 	snapshot := in.snapshot()
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
 	done := make(chan error, 1)
 	go func() {
 		_, err := raceapp.Build(snapshot)
@@ -187,12 +187,12 @@ func TestRaceSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 func TestRaceConcurrentRefreshAndRead(t *testing.T) {
 	t.Parallel()
 	a, _, _, _ := seasonTestApp(t)
-	if _, err := a.rulebook.Sync(a.ctx, realRace(t, "2026").config); err != nil {
+	if _, err := a.core.Rulebook.Sync(a.core.Ctx, realRace(t, "2026").config); err != nil {
 		t.Fatal(err)
 	}
 	published, release := make(chan struct{}), make(chan struct{})
 	var once sync.Once
-	a.seasonPause = func(ctx context.Context, _ time.Duration) error {
+	a.core.SeasonPause = func(ctx context.Context, _ time.Duration) error {
 		once.Do(func() {
 			close(published)
 			select {
@@ -240,7 +240,7 @@ func TestRaceConcurrentRefreshAndRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	in := a.raceReadInput()
-	if len(in.held.weeks.value) == 0 || in.held.brackets.fetchedAt.IsZero() || in.held.standings.fetchedAt.IsZero() {
+	if len(in.held.weeks.Value) == 0 || in.held.brackets.FetchedAt.IsZero() || in.held.standings.FetchedAt.IsZero() {
 		t.Fatal("refresh did not publish all race feeds")
 	}
 }

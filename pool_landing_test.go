@@ -55,7 +55,7 @@ func TestPoolLandingNoTeamToggle(t *testing.T) {
 		ids = append(ids, id)
 	}
 	for _, show := range []bool{false, true} {
-		got, _ := a.poolRows(a.ctx, ids, lookup, RawPoolScope{Sort: "engine", Desc: true, ShowNoTeam: show})
+		got, _ := a.poolRows(a.core.Ctx, ids, lookup, RawPoolScope{Sort: "engine", Desc: true, ShowNoTeam: show})
 		want := 1
 		if show {
 			want = 2

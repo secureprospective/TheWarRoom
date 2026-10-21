@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -25,13 +26,13 @@ func calendarTestApp(t *testing.T, at time.Time) (*App, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app := &App{ctx: t.Context(), started: make(chan struct{}), clockNow: func() time.Time { return at },
-		commissionerSession: testCommissionerSession{"creator"}}
-	close(app.started)
+	app := &App{core: &core.State{Ctx: t.Context(), Started: make(chan struct{}), ClockNow: func() time.Time { return at },
+		CommissionerSession: testCommissionerSession{"creator"}}}
+	close(app.core.Started)
 	initialize := func() {
-		app.history = history.New(pools, reg)
-		app.history.SetClock(func() time.Time { return at })
-		if err := app.history.Initialize(t.Context()); err != nil {
+		app.core.History = history.New(pools, reg)
+		app.core.History.SetClock(func() time.Time { return at })
+		if err := app.core.History.Initialize(t.Context()); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -137,11 +138,11 @@ func TestCalendarExceptionCommandOwnerExpiryRevertRestart(t *testing.T) {
 	if err != nil || other.Decision.Open {
 		t.Fatal(other, err)
 	}
-	app.clockNow = func() time.Time { return at.Add(time.Hour) }
+	app.core.ClockNow = func() time.Time { return at.Add(time.Hour) }
 	if calendarOwnerRead(t, app).Decision.Open {
 		t.Fatal("expired exception opened the action")
 	}
-	app.clockNow = func() time.Time { return at }
+	app.core.ClockNow = func() time.Time { return at }
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: changed.Entry}
 	raw.Expected, raw.Request = 5, "restore-exception"
 	executeCommissionerTest(t, app, raw)
@@ -181,7 +182,7 @@ func TestCalendarExceptionSafety(t *testing.T) {
 	if calendarOwnerRead(t, app).Revision != 4 {
 		t.Fatal("refusal wrote an event")
 	}
-	app.commissionerSession = testCommissionerSession{"outsider"}
+	app.core.CommissionerSession = testCommissionerSession{"outsider"}
 	body, err := json.Marshal(raw)
 	if err != nil {
 		t.Fatal(err)

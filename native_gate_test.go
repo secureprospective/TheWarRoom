@@ -34,7 +34,7 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 	t.Parallel()
 	shut := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, _ := calendarTestApp(t, shut)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	probe := newGateProbe("rfa_tender")
 	registry := probe.registry
@@ -63,12 +63,12 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); !errors.Is(err, errActionClosed) || ran != 0 {
 			t.Fatalf("%s ran with its window shut (ran %d, %v)", entry.Name, ran, err)
 		}
-		app.clockNow = func() time.Time { return time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC) }
+		app.core.ClockNow = func() time.Time { return time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC) }
 		// A real action may refuse for want of its own details; it must still have been let through the gate.
 		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); errors.Is(err, errActionClosed) || ran != 1 {
 			t.Fatalf("%s did not run in its window (ran %d, %v)", entry.Name, ran, err)
 		}
-		app.clockNow = func() time.Time { return shut }
+		app.core.ClockNow = func() time.Time { return shut }
 	}
 	if _, err := app.runNativeAction(registry, raw.League, "franchise.01", "unregistered", nil); err == nil {
 		t.Fatal("an action outside the registry ran")
@@ -79,7 +79,7 @@ func TestTradeDeadlineClosesTheGateAtTheChosenInstant(t *testing.T) {
 	t.Parallel()
 	recorded := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, recorded)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	executeCommissionerTest(t, app, windowCommandFrom(raw, commissioner.WindowSet, "season", 4,
 		commissioner.RawWindowArgs{ID: "season", Start: date(3, 1), Opens: []leaguerules.Action{"trade"}}))
@@ -90,7 +90,7 @@ func TestTradeDeadlineClosesTheGateAtTheChosenInstant(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		app.clockNow = func() time.Time { return instant }
+		app.core.ClockNow = func() time.Time { return instant }
 		ran, why := probe.try(t, app, raw.League, "franchise.01")
 		if ran != open || why != sentence {
 			t.Fatalf("at %s: open=%v %q, want open=%v %q", now, ran, why, open, sentence)
@@ -124,7 +124,7 @@ func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
 	t.Parallel()
 	recorded := time.Date(2026, 4, 1, 12, 0, 0, 0, time.UTC)
 	app, restart := calendarTestApp(t, recorded)
-	app.localZone = westCoast(t)
+	app.core.LocalZone = westCoast(t)
 	raw := seedCalendarTest(t, app)
 	probe := newGateProbe("ufa_bid")
 	until := recorded.Add(time.Hour)
@@ -132,7 +132,7 @@ func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
 	raw.Args = commissioner.RawArgs{Exception: &commissioner.RawWindowException{
 		Action: "ufa_bid", Franchise: "franchise.01", Until: until}}
 	exception := executeCommissionerTest(t, app, raw)
-	at := func(now time.Time) { app.clockNow = func() time.Time { return now } }
+	at := func(now time.Time) { app.core.ClockNow = func() time.Time { return now } }
 	decide := func(now time.Time, one, two bool) {
 		t.Helper()
 		at(now)

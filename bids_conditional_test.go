@@ -48,7 +48,7 @@ func TestConditionalBidUsesSharedChargeAndVersionsThePlan(t *testing.T) {
 	if err != nil || ready.Receipt.State != envelope.Ready || ready.Facts.ConditionalDrop.String() != "0042" {
 		t.Fatalf("revised plan: %+v, %v", ready, err)
 	}
-	stored, err := a.moves.BidFacts(a.ctx, ready.Receipt.CorrelationID)
+	stored, err := a.core.Moves.BidFacts(a.core.Ctx, ready.Receipt.CorrelationID)
 	if err != nil || stored.ConditionalDrop != ready.Facts.ConditionalDrop || stored.ConditionalName != "Rostered, Rick (QB, BUF)" {
 		t.Fatalf("condition lost in store: %+v, %v", stored, err)
 	}

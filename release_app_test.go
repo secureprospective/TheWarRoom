@@ -17,25 +17,25 @@ import (
 func releaseTestApp(t *testing.T) *App {
 	t.Helper()
 	a := whatIfTestApp(t)
-	a.movesChanged = func(context.Context) {}
-	a.movesLog = func(string) {}
-	a.openURL = func(context.Context, string) {}
-	a.movesNow = func() time.Time { return time.Now().UTC() }
-	m, _, _ := a.league.ContractsView()
-	a.whatif = state.New(a.whatifPools, ingestion.LeagueID, 2026, a.rulebook)
-	if err := a.whatif.Initialize(a.ctx, state.SnapshotSource{Snapshot: m}); err != nil {
+	a.core.MovesChanged = func(context.Context) {}
+	a.core.MovesLog = func(string) {}
+	a.core.OpenURL = func(context.Context, string) {}
+	a.core.MovesNow = func() time.Time { return time.Now().UTC() }
+	m, _, _ := a.core.League.ContractsView()
+	a.core.Whatif = state.New(a.core.WhatifPools, ingestion.LeagueID, 2026, a.core.Rulebook)
+	if err := a.core.Whatif.Initialize(a.core.Ctx, state.SnapshotSource{Snapshot: m}); err != nil {
 		t.Fatal(err)
 	}
 	client, err := mfl.New("www47", 100, mfl.WithTransport(&directoryDown{}))
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.mflClient = client
+	a.core.MFLClient = client
 	return a
 }
 func releasePhase(t *testing.T, a *App, phase domain.Phase) {
 	t.Helper()
-	_, err := a.whatifPools.Write().ExecContext(a.ctx, `INSERT INTO season_phases (league_id,season,from_phase,to_phase,note,at) VALUES (?,2026,'',?,'fixture',?)`, ingestion.LeagueID, string(phase), time.Now().UTC().Format(time.RFC3339))
+	_, err := a.core.WhatifPools.Write().ExecContext(a.core.Ctx, `INSERT INTO season_phases (league_id,season,from_phase,to_phase,note,at) VALUES (?,2026,'',?,'fixture',?)`, ingestion.LeagueID, string(phase), time.Now().UTC().Format(time.RFC3339))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,21 +64,21 @@ func planRelease(t *testing.T, a *App, action, player string) ReleasePlanView {
 func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	t.Parallel()
 	a := releaseTestApp(t)
-	before, stamp, _ := a.league.ContractsView()
+	before, stamp, _ := a.core.League.ContractsView()
 	plan := planRelease(t, a, "cut", "0042")
 	if plan.Receipt.State != envelope.Ready || plan.Charge != "$7,000,000" || !strings.Contains(plan.Confirmation, "$7,000,000 dead cap this season") || !strings.Contains(plan.Receipt.Spec.Target.URL, "O=257") {
 		t.Fatalf("plan %+v", plan)
 	}
-	session, _, err := state.NewWhatIfSessions(a.whatifPools).Load(a.ctx, "0001")
+	session, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
 	if err != nil {
 		t.Fatal(err)
 	}
-	f, err := a.moves.ReleaseFacts(a.ctx, plan.ID)
+	f, err := a.core.Moves.ReleaseFacts(a.core.Ctx, plan.ID)
 	if err != nil || f.Charge != session.Moves[0].Charge || f.RostersStamp != session.Stamps.Rosters || f.ContractStamp != session.Stamps.Contract || f.DeadCapStamp != session.Stamps.DeadCap {
 		t.Fatalf("facts %+v %v", f, err)
 	}
 	opened := 0
-	a.openURL = func(_ context.Context, url string) {
+	a.core.OpenURL = func(_ context.Context, url string) {
 		opened++
 		if !strings.Contains(url, "options?L=14432&O=257") {
 			t.Error(url)
@@ -103,7 +103,7 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	if labels.Value.Moves[0].Plan != "Plan: Handed off" {
 		t.Fatal(labels.Value.Moves)
 	}
-	after, afterStamp, _ := a.league.ContractsView()
+	after, afterStamp, _ := a.core.League.ContractsView()
 	if !reflect.DeepEqual(before, after) || stamp != afterStamp {
 		t.Fatal("release writes mirror")
 	}
@@ -140,11 +140,11 @@ func TestReleaseBuyoutPhaseAndCountIntegration(t *testing.T) {
 	if third.Receipt.State != envelope.Blocked || !strings.Contains(third.Receipt.Audit[0].Note, "Two buyouts") {
 		t.Fatal(third)
 	}
-	count, err := a.releaseBuyoutCount(a.ctx, "0001", third.ID, 2026)
+	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", third.ID, 2026)
 	if err != nil || count != 2 {
 		t.Fatal(count, err)
 	}
-	if count, err := a.releaseBuyoutCount(a.ctx, "0001", "", 2027); err != nil || count != 0 {
+	if count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2027); err != nil || count != 0 {
 		t.Fatal(count, err)
 	}
 }
@@ -160,14 +160,14 @@ func TestReleaseInvalidationAndRebaseEngine(t *testing.T) {
 			}
 			plan := planRelease(t, a, action, "0042")
 			old := plan.Charge
-			m, _, _ := a.league.ContractsView()
+			m, _, _ := a.core.League.ContractsView()
 			switch trigger {
 			case "contract":
 				m.Players[0].Salary = 20 * 100_000_000
 			case "adjustment":
 				m.Adjustments = append(m.Adjustments, state.Adjustment{ID: "new", FranchiseID: "0001", Amount: 12345})
 			case "dead-cap":
-				if _, err := a.pools.Write().ExecContext(a.ctx, `CREATE TABLE dead_cap_ledger(franchise_id TEXT,created_at TEXT); INSERT INTO dead_cap_ledger VALUES ('0001','2099-01-01T00:00:00Z')`); err != nil {
+				if _, err := a.core.Pools.Write().ExecContext(a.core.Ctx, `CREATE TABLE dead_cap_ledger(franchise_id TEXT,created_at TEXT); INSERT INTO dead_cap_ledger VALUES ('0001','2099-01-01T00:00:00Z')`); err != nil {
 					t.Fatal(err)
 				}
 			case "left":
@@ -175,7 +175,7 @@ func TestReleaseInvalidationAndRebaseEngine(t *testing.T) {
 			case "window":
 				releasePhase(t, a, domain.PhaseRegularSeason)
 			}
-			if _, err := a.league.Replace(a.ctx, m); err != nil {
+			if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 				t.Fatal(err)
 			}
 			plans := releaseCall(t, a, "read", "", "", false)
@@ -212,14 +212,14 @@ func TestReleaseWatcherLandsAndChargeMismatchIsNote(t *testing.T) {
 	a := releaseTestApp(t)
 	plan := planRelease(t, a, "cut", "0042")
 	releaseCall(t, a, "handoff", "", plan.ID, true)
-	a.movesRefresh = func(ctx context.Context, _ envelope.Source) error {
-		m, _, _ := a.league.ContractsView()
+	a.core.MovesRefresh = func(ctx context.Context, _ envelope.Source) error {
+		m, _, _ := a.core.League.ContractsView()
 		m.Players = m.Players[1:]
 		m.Adjustments = append(m.Adjustments, state.Adjustment{ID: "charge", FranchiseID: "0001", Amount: 100_000_000, Description: "dead cap player 0042"})
-		_, err := a.league.Replace(ctx, m)
+		_, err := a.core.League.Replace(ctx, m)
 		return err
 	}
-	if err := a.checkMoves(a.ctx); err != nil {
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
 	plans := releaseCall(t, a, "read", "", "", false)
@@ -235,15 +235,15 @@ func TestReleaseWatcherLandsAndChargeMismatchIsNote(t *testing.T) {
 	if got := releaseCall(t, a, "read", "", "", false)[0]; len(got.Receipt.Audit) != before {
 		t.Fatal("repeated note appended")
 	}
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	m.Adjustments = nil
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
 	if got := releaseCall(t, a, "read", "", "", false)[0]; !strings.Contains(got.Receipt.Audit[len(got.Receipt.Audit)-1].Note, "cannot see") {
 		t.Fatal(got)
 	}
-	count, err := a.releaseBuyoutCount(a.ctx, "0001", "", 2026)
+	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2026)
 	if err != nil || count != 0 {
 		t.Fatal(count, err)
 	}
@@ -253,9 +253,9 @@ func TestReleaseBaselinePlayerNoLongerMineBlocksDraft(t *testing.T) {
 	t.Parallel()
 	a := releaseTestApp(t)
 	w := whatIfCall(t, a, "cut", "0042", "")
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	m.Players = m.Players[1:]
-	if _, err := a.league.Replace(a.ctx, m); err != nil {
+	if _, err := a.core.League.Replace(a.core.Ctx, m); err != nil {
 		t.Fatal(err)
 	}
 	got := releaseCall(t, a, "draft", w.Value.Moves[0].ID, "", false)[0]
@@ -268,20 +268,20 @@ func TestReleaseCountIncludesLandedBuyoutAndIgnoresOtherSeason(t *testing.T) {
 	a := releaseTestApp(t)
 	plan := planRelease(t, a, "buyout", "0042")
 	releaseCall(t, a, "handoff", "", plan.ID, false)
-	a.movesRefresh = func(ctx context.Context, _ envelope.Source) error {
-		m, _, _ := a.league.ContractsView()
+	a.core.MovesRefresh = func(ctx context.Context, _ envelope.Source) error {
+		m, _, _ := a.core.League.ContractsView()
 		m.Players = m.Players[1:]
-		_, err := a.league.Replace(ctx, m)
+		_, err := a.core.League.Replace(ctx, m)
 		return err
 	}
-	if err := a.checkMoves(a.ctx); err != nil {
+	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	count, err := a.releaseBuyoutCount(a.ctx, "0001", "", 2026)
+	count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2026)
 	if err != nil || count != 1 {
 		t.Fatal("landed buyout not counted", count, err)
 	}
-	if count, err := a.releaseBuyoutCount(a.ctx, "0001", "", 2027); err != nil || count != 0 {
+	if count, err := a.releaseBuyoutCount(a.core.Ctx, "0001", "", 2027); err != nil || count != 0 {
 		t.Fatal("wrong season counted", count, err)
 	}
 }
@@ -300,22 +300,22 @@ func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
 				action = "buyout"
 			}
 			plan := planRelease(t, a, action, "0042")
-			session, _, err := state.NewWhatIfSessions(a.whatifPools).Load(a.ctx, "0001")
+			session, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
 			if err != nil {
 				t.Fatal(err)
 			}
 			if stage == "handed_off" || stage == "not_yet_done" {
 				releaseCall(t, a, "handoff", "", plan.ID, true)
 				if stage == "not_yet_done" {
-					a.movesRefresh = func(context.Context, envelope.Source) error { return nil }
-					if err := a.checkMoves(a.ctx); err != nil {
+					a.core.MovesRefresh = func(context.Context, envelope.Source) error { return nil }
+					if err := a.checkMoves(a.core.Ctx); err != nil {
 						t.Fatal(err)
 					}
 				}
 			}
-			before, stamp, _ := a.league.ContractsView()
+			before, stamp, _ := a.core.League.ContractsView()
 			opened := 0
-			a.openURL = func(context.Context, string) { opened++ }
+			a.core.OpenURL = func(context.Context, string) { opened++ }
 			current := releaseCall(t, a, "read", "", "", false)[0]
 			want := "Remove plan"
 			if stage == "handed_off" || stage == "not_yet_done" {
@@ -331,7 +331,7 @@ func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
 			if opened != 0 {
 				t.Fatal("withdraw opened MFL")
 			}
-			after, afterStamp, _ := a.league.ContractsView()
+			after, afterStamp, _ := a.core.League.ContractsView()
 			if !reflect.DeepEqual(before, after) || stamp != afterStamp {
 				t.Fatal("withdraw writes mirror")
 			}
@@ -352,7 +352,7 @@ func TestReleaseViewWordsAndPostKeepIDsOnlyInFacts(t *testing.T) {
 			if strings.Contains(strings.ReplaceAll(plan.Post, plan.Player, "Example"), "0042") || strings.Contains(plan.Post, "— player") || !strings.Contains(plan.Post, "annual salary") || !strings.Contains(plan.Post, plan.Charge) {
 				t.Fatal(plan.Post)
 			}
-			f, err := a.moves.ReleaseFacts(a.ctx, plan.ID)
+			f, err := a.core.Moves.ReleaseFacts(a.core.Ctx, plan.ID)
 			if err != nil || f.Player.String() != "0042" {
 				t.Fatal(f, err)
 			}

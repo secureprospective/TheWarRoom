@@ -24,13 +24,13 @@ func (a *App) TargetArchive(season int, team, other string) (ArchiveBoard, error
 	if err := a.ready(); err != nil {
 		return ArchiveBoard{}, fmt.Errorf("archive: startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.ctx, factsTimeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, factsTimeout)
 	defer cancel()
 	if other == "" {
 		other = a.archiveOpponent(team)
 	}
-	a.factsMu.Lock()
-	defer a.factsMu.Unlock()
+	a.core.FactsMu.Lock()
+	defer a.core.FactsMu.Unlock()
 	cache, stale, err := a.readArchiveFacts(ctx)
 	if err != nil {
 		return ArchiveBoard{}, err
@@ -50,10 +50,10 @@ func buildArchive(cache archiveapp.Snapshot, stale bool, season int, team, other
 
 func (a *App) archiveOpponent(team string) string {
 	week := a.marketWeek()
-	a.seasonMu.Lock()
-	defer a.seasonMu.Unlock()
-	for _, m := range a.seasonLineups.value.Matchups {
-		if a.seasonLineups.value.Week != week {
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	for _, m := range a.core.SeasonLineups.Value.Matchups {
+		if a.core.SeasonLineups.Value.Week != week {
 			break
 		}
 		if m.Home == team {
@@ -63,7 +63,7 @@ func (a *App) archiveOpponent(team string) string {
 			return m.Home
 		}
 	}
-	for _, w := range a.race.weeks.value {
+	for _, w := range a.race.weeks.Value {
 		if w.Week != week {
 			continue
 		}
@@ -81,7 +81,7 @@ func (a *App) archiveOpponent(team string) string {
 // The caller holds factsMu, which guards archiveCache.
 func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, error) {
 	notes := lab.NoteReadings()
-	src := archiveapp.Source{History: a.history, Bodies: curatedBodies{archive: a.history, curated: map[string][]byte{notes.SHA256: notes.Body}},
+	src := archiveapp.Source{History: a.core.History, Bodies: curatedBodies{archive: a.core.History, curated: map[string][]byte{notes.SHA256: notes.Body}},
 		Manifest: labFrozenInputs, Compiler: factsCompiler}
 	cache, stale, err := archiveapp.Read(ctx, src, a.archiveCache)
 	if err != nil {

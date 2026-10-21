@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
@@ -30,7 +31,7 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	checkGolden(t, "market", "reports-unfetched", reports)
 	held := map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	for kind, feed := range realMarketHeld(t) {
-		feed.value[0].Players = feed.value[0].Players[:12] // a sample keeps the goldens readable
+		feed.Value[0].Players = feed.Value[0].Players[:12] // a sample keeps the goldens readable
 		held[kind] = feed
 	}
 	names := map[string]string{"16162": "Bijan Robinson", "16161": "Jahmyr Gibbs", "13589": "Josh Allen"}
@@ -42,9 +43,9 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	adp := held[marketfeeds.ADP]
-	adp.value, adp.refreshError = []marketfeeds.Feed{empty}, "offline"
+	adp.Value, adp.RefreshError = []marketfeeds.Feed{empty}, "offline"
 	held[marketfeeds.ADP] = adp
-	held[marketfeeds.Ranks] = heldSeasonFeed[[]marketfeeds.Feed]{refreshError: "offline"}
+	held[marketfeeds.Ranks] = heldSeasonFeed[[]marketfeeds.Feed]{RefreshError: "offline"}
 	checkGolden(t, "market", "reports-failed", buildMarketReports(held, nil, 0, time.UTC))
 	board, err := fresh.TargetAssetBoard()
 	if err != nil {
@@ -87,7 +88,7 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	} {
 		checkGolden(t, "market", "profile-"+name, a.TargetAssetProfile(raw))
 	}
-	broken := &App{labData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}
+	broken := &App{core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
 	checkGolden(t, "market", "lists-unloaded", broken.TargetMarketLists(full))
 	checkGolden(t, "market", "profile-unloaded", broken.TargetAssetProfile(RawMarketAsset{Scope: full, Kind: "LB"}))
 }

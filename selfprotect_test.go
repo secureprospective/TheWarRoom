@@ -5,8 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"slices"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 )
 
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
@@ -112,5 +116,42 @@ func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
 	var out, errOut bytes.Buffer
 	if code := runFlag([]string{"-version"}, &out, &errOut); code != 0 || strings.TrimSpace(out.String()) != buildLabel() {
 		t.Errorf("-version = %d, stdout %q; want 0 and %q", code, out.String(), buildLabel())
+	}
+}
+
+// Wails reflects the pointer method set without a signature filter; no exemptions are configured.
+func TestBindingManifest(t *testing.T) {
+	t.Parallel()
+	methods := map[string]bool{}
+	for _, command := range comms.Commands() {
+		if methods[command.Method] {
+			t.Fatalf("duplicate catalog method %s", command.Method)
+		}
+		methods[command.Method] = true
+	}
+	var got []string
+	for _, typ := range []reflect.Type{reflect.TypeFor[*App](), reflect.TypeFor[*comms.API]()} {
+		prefix := typ.Elem().String() + "."
+		for i := range typ.NumMethod() {
+			name := typ.Method(i).Name
+			got = append(got, prefix+name)
+			if typ == reflect.TypeFor[*comms.API]() {
+				if !methods[name] {
+					t.Errorf("bound method %s%s has no catalog entry", prefix, name)
+				}
+				delete(methods, name)
+			}
+		}
+	}
+	for name := range methods {
+		t.Errorf("catalog method %s is not bound", name)
+	}
+	slices.Sort(got)
+	want, err := os.ReadFile("testdata/bindings/manifest.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actual := strings.Join(got, "\n") + "\n"; actual != string(want) {
+		t.Fatalf("binding manifest changed; review the surface before updating the golden\ngot:\n%s", actual)
 	}
 }

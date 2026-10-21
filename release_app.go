@@ -53,13 +53,13 @@ func (a *App) TargetReleasePlans(raw RawReleaseRequest) Reading[[]ReleasePlanVie
 	if err := a.ready(); err != nil {
 		return releaseReading(nil, err)
 	}
-	a.whatifMu.Lock()
-	defer a.whatifMu.Unlock()
-	a.refreshMu.Lock()
-	defer a.refreshMu.Unlock()
-	a.movesMu.Lock()
-	defer a.movesMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.ctx, m2Timeout)
+	a.core.WhatifMu.Lock()
+	defer a.core.WhatifMu.Unlock()
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	a.core.MovesMu.Lock()
+	defer a.core.MovesMu.Unlock()
+	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
 	if err := a.releaseAction(ctx, raw); err != nil {
 		return releaseReading(nil, err)
@@ -67,7 +67,7 @@ func (a *App) TargetReleasePlans(raw RawReleaseRequest) Reading[[]ReleasePlanVie
 	if err := a.revalidateReleasePlans(ctx); err != nil {
 		return releaseReading(nil, err)
 	}
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, raw.Mine)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, raw.Mine)
 	if err != nil {
 		return releaseReading(nil, fmt.Errorf("release list: %w", err))
 	}
@@ -76,7 +76,7 @@ func (a *App) TargetReleasePlans(raw RawReleaseRequest) Reading[[]ReleasePlanVie
 		if !envelope.IsRelease(r.Spec.Intent) {
 			continue
 		}
-		f, err := a.moves.ReleaseFacts(ctx, r.CorrelationID)
+		f, err := a.core.Moves.ReleaseFacts(ctx, r.CorrelationID)
 		if err != nil {
 			return releaseReading(nil, err)
 		}
@@ -100,7 +100,7 @@ func (a *App) releaseAction(ctx context.Context, r RawReleaseRequest) error {
 	if r.Action == "draft" {
 		return a.draftRelease(ctx, r)
 	}
-	e, err := a.moves.Get(ctx, r.ID)
+	e, err := a.core.Moves.Get(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("release plan: %w", err)
 	}
@@ -111,7 +111,7 @@ func (a *App) releaseAction(ctx context.Context, r RawReleaseRequest) error {
 	if err := a.revalidateReleasePlans(ctx); err != nil {
 		return err
 	}
-	e, err = a.moves.Get(ctx, r.ID)
+	e, err = a.core.Moves.Get(ctx, r.ID)
 	if err != nil {
 		return fmt.Errorf("release reload: %w", err)
 	}
@@ -121,7 +121,7 @@ func (a *App) releaseAction(ctx context.Context, r RawReleaseRequest) error {
 	if r.Action == "withdraw" {
 		return a.withdrawRelease(ctx, e)
 	}
-	next, err := e.HandOffRelease(a.movesNow(), r.Confirmed)
+	next, err := e.HandOffRelease(a.core.MovesNow(), r.Confirmed)
 	if err != nil {
 		return fmt.Errorf("release hand-off: %w", err)
 	}
@@ -130,18 +130,18 @@ func (a *App) releaseAction(ctx context.Context, r RawReleaseRequest) error {
 			return err
 		}
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("release hand-off save: %w", err)
 	}
 	if spec.Intent == envelope.CutIntent {
-		a.openURL(ctx, spec.Target.URL)
+		a.core.OpenURL(ctx, spec.Target.URL)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	a.wakeMoves()
 	return nil
 }
 func (a *App) draftRelease(ctx context.Context, r RawReleaseRequest) error {
-	s, found, err := state.NewWhatIfSessions(a.whatifPools).Load(ctx, r.Mine)
+	s, found, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(ctx, r.Mine)
 	if err != nil {
 		return fmt.Errorf("release baseline: %w", err)
 	}
@@ -171,20 +171,20 @@ func (a *App) draftRelease(ctx context.Context, r RawReleaseRequest) error {
 		return fmt.Errorf("release id: %w", err)
 	}
 	id := "release-" + hex.EncodeToString(random[:])
-	e, err := envelope.DraftRelease(a.movesNow(), spec, check, func() string { return id })
+	e, err := envelope.DraftRelease(a.core.MovesNow(), spec, check, func() string { return id })
 	if err != nil {
 		return fmt.Errorf("release draft: %w", err)
 	}
-	if err := a.moves.SaveRelease(ctx, e, f); err != nil {
+	if err := a.core.Moves.SaveRelease(ctx, e, f); err != nil {
 		return fmt.Errorf("release save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
 func (a *App) releaseCheck(ctx context.Context, mine, _, id string, f envelope.ReleaseFacts) (envelope.ReleaseCheck, error) {
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	p, found := contractsapp.Player(m, mine, f.Player.String())
-	phase, err := a.whatif.CurrentPhase(ctx)
+	phase, err := a.core.Whatif.CurrentPhase(ctx)
 	if err != nil {
 		return envelope.ReleaseCheck{}, fmt.Errorf("release phase: %w", err)
 	}
@@ -195,7 +195,7 @@ func (a *App) releaseCheck(ctx context.Context, mine, _, id string, f envelope.R
 	return envelope.ReleaseCheck{OnRoster: found, Offseason: phase == domain.PhaseOffseason, OtherBuyouts: count, Remaining: p.ContractYear - m.Season, ChargeText: snapshot.ContractAmountOf(f.Charge).Text}, nil
 }
 func (a *App) releaseBuyoutCount(ctx context.Context, mine, except string, season int) (int, error) {
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, mine)
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, mine)
 	if err != nil {
 		return 0, fmt.Errorf("release buyout count: %w", err)
 	}
@@ -204,7 +204,7 @@ func (a *App) releaseBuyoutCount(ctx context.Context, mine, except string, seaso
 		if r.CorrelationID == except || r.Spec.Intent != envelope.BuyoutIntent || (!envelope.ReleaseOpen(r.State) && r.State != envelope.Landed) {
 			continue
 		}
-		f, err := a.moves.ReleaseFacts(ctx, r.CorrelationID)
+		f, err := a.core.Moves.ReleaseFacts(ctx, r.CorrelationID)
 		if err != nil {
 			return 0, fmt.Errorf("release count facts: %w", err)
 		}
@@ -217,14 +217,14 @@ func (a *App) releaseBuyoutCount(ctx context.Context, mine, except string, seaso
 
 func (a *App) withdrawRelease(ctx context.Context, e envelope.Envelope) error {
 	note := contractsapp.WithdrawNote(e.Receipt())
-	next, err := e.WithdrawRelease(a.movesNow(), note)
+	next, err := e.WithdrawRelease(a.core.MovesNow(), note)
 	if err != nil {
 		return fmt.Errorf("release withdraw: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("release withdraw save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
 
@@ -233,12 +233,12 @@ func (a *App) rebaseRelease(ctx context.Context, e envelope.Envelope) error {
 		return fmt.Errorf("release rebase: only a stale plan can be repriced")
 	}
 	r := e.Receipt()
-	old, err := a.moves.ReleaseFacts(ctx, e.ID())
+	old, err := a.core.Moves.ReleaseFacts(ctx, e.ID())
 	if err != nil {
 		return fmt.Errorf("release facts: %w", err)
 	}
-	m, _, _ := a.league.ContractsView()
-	stamps, err := a.league.Stamps(ctx)
+	m, _, _ := a.core.League.ContractsView()
+	stamps, err := a.core.League.Stamps(ctx)
 	if err != nil {
 		return fmt.Errorf("release rebase stamps: %w", err)
 	}
@@ -246,7 +246,7 @@ func (a *App) rebaseRelease(ctx context.Context, e envelope.Envelope) error {
 	if r.Spec.Intent == envelope.BuyoutIntent {
 		kind = string(transactions.KindBuyout)
 	}
-	s := state.WhatIfSession{Mine: r.Spec.FranchiseID, Snapshot: m, Stamps: stamps, Generation: "release-rebase:" + e.ID() + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: a.rulebook.TaxiCapPercent(), IRPercent: a.rulebook.IRCapPercent()}
+	s := state.WhatIfSession{Mine: r.Spec.FranchiseID, Snapshot: m, Stamps: stamps, Generation: "release-rebase:" + e.ID() + ":" + fmt.Sprint(time.Now().UnixNano()), TaxiPercent: a.core.Rulebook.TaxiCapPercent(), IRPercent: a.core.Rulebook.IRCapPercent()}
 	move := state.WhatIfMove{Kind: kind, Player: old.Player.String(), Name: old.Name}
 	f, err := contractsapp.ReleaseFacts(s, move)
 	if err != nil {
@@ -262,17 +262,17 @@ func (a *App) rebaseRelease(ctx context.Context, e envelope.Envelope) error {
 	}
 	note := snapshot.ContractAmountOf(old.Charge).Text + " → " + snapshot.ContractAmountOf(f.Charge).Text + " dead cap on current mirror"
 	check.ChargeText = note
-	e, err = e.Rebase(a.movesNow(), note)
+	e, err = e.Rebase(a.core.MovesNow(), note)
 	if err == nil {
-		e, err = e.Check(a.movesNow(), snapshot.Snapshot{}, check)
+		e, err = e.Check(a.core.MovesNow(), snapshot.Snapshot{}, check)
 	}
 	if err != nil {
 		return fmt.Errorf("release rebase: %w", err)
 	}
-	if err := a.moves.SaveRelease(ctx, e, f); err != nil {
+	if err := a.core.Moves.SaveRelease(ctx, e, f); err != nil {
 		return fmt.Errorf("release rebase save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
 func (a *App) releaseCharge(ctx context.Context, s state.WhatIfSession, m state.WhatIfMove) (domain.Money, error) {
@@ -300,7 +300,7 @@ func (a *App) releaseCharge(ctx context.Context, s state.WhatIfSession, m state.
 
 // Caller holds refreshMu and movesMu; this touches only the local plan ledger.
 func (a *App) revalidateReleasePlans(ctx context.Context) error {
-	receipts, err := a.moves.List(ctx, ingestion.LeagueID, "")
+	receipts, err := a.core.Moves.List(ctx, ingestion.LeagueID, "")
 	if err != nil {
 		return fmt.Errorf("release validation list: %w", err)
 	}
@@ -315,11 +315,11 @@ func (a *App) revalidateReleasePlans(ctx context.Context) error {
 	return nil
 }
 func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
-	f, err := a.moves.ReleaseFacts(ctx, r.CorrelationID)
+	f, err := a.core.Moves.ReleaseFacts(ctx, r.CorrelationID)
 	if err != nil {
 		return fmt.Errorf("release facts: %w", err)
 	}
-	m, _, _ := a.league.ContractsView()
+	m, _, _ := a.core.League.ContractsView()
 	if r.State == envelope.Landed {
 		return a.releaseChargeNote(ctx, r, f, m)
 	}
@@ -327,7 +327,7 @@ func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
 		return nil
 	}
 	p, onRoster := contractsapp.Player(m, r.Spec.FranchiseID, f.Player.String())
-	stamps, err := a.league.ReleaseStamps(ctx, f.Player.String(), r.Spec.FranchiseID)
+	stamps, err := a.core.League.ReleaseStamps(ctx, f.Player.String(), r.Spec.FranchiseID)
 	if err != nil {
 		return fmt.Errorf("release validation stamps: %w", err)
 	}
@@ -335,7 +335,7 @@ func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
 	if err != nil {
 		return err //nolint:wrapcheck // the service's errors already start "release"
 	}
-	phase, err := a.whatif.CurrentPhase(ctx)
+	phase, err := a.core.Whatif.CurrentPhase(ctx)
 	if err != nil {
 		return fmt.Errorf("release validation phase: %w", err)
 	}
@@ -346,18 +346,18 @@ func (a *App) revalidateRelease(ctx context.Context, r envelope.Receipt) error {
 	if reason == "" {
 		return nil
 	}
-	e, err := a.moves.Get(ctx, r.CorrelationID)
+	e, err := a.core.Moves.Get(ctx, r.CorrelationID)
 	if err != nil {
 		return fmt.Errorf("release invalidate load: %w", err)
 	}
-	next, err := e.Invalidate(a.movesNow(), reason)
+	next, err := e.Invalidate(a.core.MovesNow(), reason)
 	if err != nil {
 		return fmt.Errorf("release invalidate: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("release invalidate save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
 func (a *App) releaseChargeNote(ctx context.Context, r envelope.Receipt, f envelope.ReleaseFacts, m state.MirrorSnapshot) error {
@@ -365,17 +365,17 @@ func (a *App) releaseChargeNote(ctx context.Context, r envelope.Receipt, f envel
 	if len(r.Audit) > 0 && r.Audit[len(r.Audit)-1].Note == note {
 		return nil
 	}
-	e, err := a.moves.Get(ctx, r.CorrelationID)
+	e, err := a.core.Moves.Get(ctx, r.CorrelationID)
 	if err != nil {
 		return fmt.Errorf("release charge note load: %w", err)
 	}
-	next, err := e.Invalidate(a.movesNow(), note)
+	next, err := e.Invalidate(a.core.MovesNow(), note)
 	if err != nil {
 		return fmt.Errorf("release charge note: %w", err)
 	}
-	if err := a.moves.Save(ctx, next); err != nil {
+	if err := a.core.Moves.Save(ctx, next); err != nil {
 		return fmt.Errorf("release charge note save: %w", err)
 	}
-	a.movesChanged(ctx)
+	a.core.MovesChanged(ctx)
 	return nil
 }
