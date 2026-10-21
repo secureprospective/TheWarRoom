@@ -46,7 +46,8 @@ const moved = new Map([
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['TargetOpenResearchArticle', 'TargetResearch', 'TargetResearchNewsRefresh', 'TargetResearchPlayer',
     'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),
-  ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
+  ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCacheClear', 'TargetCacheScopes',
+    'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
   ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTrades'].map(name => [name, 'trades']),
 ]);

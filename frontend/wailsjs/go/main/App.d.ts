@@ -12,10 +12,6 @@ export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading
 
 export function TargetAlerts(arg1:string):Promise<main.AlertReading>;
 
-export function TargetCacheClear(arg1:string):Promise<main.DataActResult>;
-
-export function TargetCacheScopes():Promise<Array<main.DataScope>>;
-
 export function TargetCheckMoves():Promise<void>;
 
 export function TargetClock():Promise<snapshot.Sourced_github_com_secureprospective_TheWarRoom_internal_leagueclock_Reading_>;

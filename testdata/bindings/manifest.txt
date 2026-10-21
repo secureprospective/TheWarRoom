@@ -32,8 +32,6 @@ draft.API.TargetOpenMFLDraftRoom
 main.App.SetPhotos
 main.App.TargetAcquisition
 main.App.TargetAlerts
-main.App.TargetCacheClear
-main.App.TargetCacheScopes
 main.App.TargetCheckMoves
 main.App.TargetClock
 main.App.TargetCommissionerActor
@@ -125,6 +123,8 @@ research.API.TargetResearchStatus
 sources.API.GetCrosswalkReport
 sources.API.LoadCrosswalk
 sources.API.SetLeagueArchiveDir
+sources.API.TargetCacheClear
+sources.API.TargetCacheScopes
 sources.API.TargetCrosswalk
 sources.API.TargetDataRefresh
 sources.API.TargetDataSources

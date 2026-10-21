@@ -21,11 +21,13 @@ const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescrip
 let root: Root | undefined;
 
 export const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
-export async function mount(node: ReactElement, app: Partial<App> = {}) {
+// features stubs the bound feature APIs (window.go.<pkg>.API) alongside the root App.
+export async function mount(node: ReactElement, app: Partial<App> = {},
+  features: Record<string, unknown> = {}) {
   const document = new KeyDocument();
   const host = document.createElement('div');
   vi.stubGlobal('document', document);
-  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: app } } });
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go: { main: { App: app }, ...features } });
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   root = createRoot(host as unknown as HTMLElement);
   await act(async () => root?.render(node));

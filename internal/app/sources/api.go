@@ -23,6 +23,7 @@ type Host interface {
 	CrosswalkHost
 	SettingsHost
 	ReadingHost
+	CacheHost
 	Ready() error
 	SourcesContext() context.Context
 	RefreshSourcesLeague(context.Context) (int, bool, bool, error)
@@ -54,6 +55,14 @@ type ReadingHost interface {
 	SourcesDatabaseChecks() *report.Report
 	SourcesPhotos() (headshot.Stats, int, int64, bool, bool)
 	SourcesPositions() map[string]string
+}
+
+// CacheHost lists the held copies a person can ask to read afresh and runs that copy's own forced
+// refresh, which belongs to the feature that holds it.
+type CacheHost interface {
+	CacheScopes() []DataScope
+	// ClearCache runs scope's forced refresh. found is false for an unknown scope; label names it.
+	ClearCache(scope string) (label string, found bool, err error)
 }
 
 type API struct {
@@ -268,8 +277,30 @@ func Commands() []catalog.Command {
 		{ID: catalog.Unset, Method: "GetCrosswalkReport", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "LoadCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "SetLeagueArchiveDir", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCacheClear", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCacheScopes", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},
 		{ID: "refresh.run", Method: "TargetDataRefresh", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetDataSources", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
 	}
+}
+
+// TargetCacheScopes lists the held copies a person can ask the app to read afresh.
+func (a *API) TargetCacheScopes() []DataScope { return a.host.CacheScopes() }
+
+// TargetCacheClear reads one held copy afresh, ignoring the copy held. If the source does not answer, the
+// copy held stays and the reason is returned.
+func (a *API) TargetCacheClear(scope string) DataActResult {
+	if err := a.host.Ready(); err != nil {
+		return DataActResult{Error: err.Error()}
+	}
+	label, found, err := a.host.ClearCache(scope)
+	if !found {
+		return DataActResult{Error: fmt.Sprintf("unknown held copy %q", scope)}
+	}
+	if err != nil {
+		return DataActResult{Error: fmt.Sprintf("%s could not be read again: %v. The copy held stays.", label, err)}
+	}
+	return DataActResult{OK: true, Summary: "Asked for a fresh copy of " + label +
+		". Each screen shows how fresh what it holds is."}
 }

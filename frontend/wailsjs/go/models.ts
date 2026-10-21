@@ -11789,26 +11789,6 @@ export namespace main {
 	        this.summary = source["summary"];
 	    }
 	}
-	export class DataScope {
-	    id: string;
-	    label: string;
-	    note: string;
-	    action: string;
-	    progress: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new DataScope(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.label = source["label"];
-	        this.note = source["note"];
-	        this.action = source["action"];
-	        this.progress = source["progress"];
-	    }
-	}
 	export class PhotoView {
 	    src: string;
 	    alt: string;

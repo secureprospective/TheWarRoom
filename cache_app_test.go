@@ -21,7 +21,7 @@ func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
 		}
 	}
 	app := commissionerTestApp(t)
-	listed := app.TargetCacheScopes()
+	listed := app.sourcesAPI().TargetCacheScopes()
 	if len(listed) != len(cacheScopes()) || len(listed) < 5 {
 		t.Fatalf("the screen lists what Go can read again: %+v", listed)
 	}
@@ -31,7 +31,7 @@ func TestReadingAnUnknownHeldCopyAgainIsRefusedWithoutAskingAnySource(t *testing
 	t.Parallel()
 	app := commissionerTestApp(t)
 	for _, scope := range []string{"", "everything", "league"} {
-		result := app.TargetCacheClear(scope)
+		result := app.sourcesAPI().TargetCacheClear(scope)
 		if result.OK || !strings.Contains(result.Error, "unknown held copy") {
 			t.Fatalf("%q: %+v", scope, result)
 		}

@@ -77,7 +77,7 @@ func TestDatabaseChecksWorkerJoinsOnShutdown(t *testing.T) {
 
 func TestDataSourcesIncludesLocalDatabaseChecks(t *testing.T) {
 	a := targetTestApp(t)
-	data, err := sourcesapp.New(a.core, a.sourcesHeld).TargetDataSources()
+	data, err := a.sourcesAPI().TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}
