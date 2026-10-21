@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/app/market/markettest"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -28,17 +29,17 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 	a, transport, _, _ := seasonTestApp(t)
 	a.core.Week = leagueweek.Week{Number: 6}
 	transport.bodies[marketfeeds.Projections] = seasonFixture(t, "marketfeeds", "projectedScores.json")
-	if err := a.TargetMarketReportsRefresh(false); err != nil {
+	if err := newMarketAPI(a).TargetMarketReportsRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	if len(transport.requests) != 4 {
 		t.Fatal(transport.requests)
 	}
 	for range 2 {
-		if err := a.TargetMarketReportsRefresh(false); err != nil {
+		if err := newMarketAPI(a).TargetMarketReportsRefresh(false); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := a.TargetMarketReports(); err != nil {
+		if _, err := newMarketAPI(a).TargetMarketReports(); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -50,24 +51,24 @@ func TestMarketRefreshDailyWeekAndHeldReads(t *testing.T) {
 		t.Fatal("old projection masquerades as this week")
 	}
 	transport.bodies[marketfeeds.Projections] = strings.Replace(transport.bodies[marketfeeds.Projections], `"week":"6"`, `"week":"7"`, 1)
-	if err := a.TargetMarketReportsRefresh(false); err != nil {
+	if err := newMarketAPI(a).TargetMarketReportsRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	if len(transport.requests) != 5 || transport.requests[4] != marketfeeds.Projections || transport.weeks[4] != "7" {
 		t.Fatal(transport.requests)
 	}
 	a.core.SeasonMu.Lock()
-	h := a.core.SeasonMarket[marketfeeds.ADP]
+	h := a.marketHeld.SnapshotFeeds()[marketfeeds.ADP]
 	h.FetchedAt = time.Now().Add(-25 * time.Hour)
-	a.core.SeasonMarket[marketfeeds.ADP] = h
+	a.marketHeld.PublishFeed(marketfeeds.ADP, h)
 	a.core.SeasonMu.Unlock()
-	if err := a.TargetMarketReportsRefresh(false); err != nil {
+	if err := newMarketAPI(a).TargetMarketReportsRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	if len(transport.requests) != 6 || transport.requests[5] != marketfeeds.ADP {
 		t.Fatal("daily ADP not refreshed")
 	}
-	if err := a.TargetMarketReportsRefresh(true); err != nil {
+	if err := newMarketAPI(a).TargetMarketReportsRefresh(true); err != nil {
 		t.Fatal(err)
 	}
 	if len(transport.requests) != 10 {
@@ -141,6 +142,48 @@ func TestMarketReportWireMatchesGo(t *testing.T) {
 	}
 }
 
+// TestMarketRefreshPublishesWhileReadsRace races a real refresh publication, made under
+// SeasonMu, against the held reads every surface makes, and proves a read is detached.
+func TestMarketRefreshPublishesWhileReadsRace(t *testing.T) {
+	t.Parallel()
+	a, transport, _, _ := seasonTestApp(t)
+	a.core.Week.Number = 6
+	transport.bodies[marketfeeds.Projections] = seasonFixture(t, "marketfeeds", "projectedScores.json")
+	api := newMarketAPI(a)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		for range 3 {
+			a.refreshMarketFeeds(a.core.Ctx, true)
+		}
+	}()
+	for {
+		held := a.heldMarket()
+		for _, feed := range held {
+			for i := range feed.Value {
+				for j := range feed.Value[i].Players {
+					feed.Value[i].Players[j].Value = -1
+				}
+			}
+		}
+		if _, err := api.TargetMarketReports(); err != nil {
+			t.Fatal(err)
+		}
+		select {
+		case <-done:
+			for kind, feed := range a.heldMarket() {
+				for _, p := range feed.Value[0].Players {
+					if p.Value == -1 {
+						t.Fatalf("%s: a read's copy reached the holder", kind)
+					}
+				}
+			}
+			return
+		default:
+		}
+	}
+}
+
 func TestMarketFeedCancelledDoesNotFetch(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
@@ -158,9 +201,7 @@ func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 	if err := a.TargetPoolRefresh(true); err != nil {
 		t.Fatal(err)
 	}
-	a.core.SeasonMu.Lock()
-	a.core.SeasonMarket = nil
-	a.core.SeasonMu.Unlock()
+	a.marketHeld = &marketapp.Held{} // as if no market report was ever read
 	reading := a.TargetPool(RawPoolScope{Sort: "name"})
 	if reading.Status != ReadingOK || len(reading.Value.Rows) != 3 {
 		t.Fatal("missing feed blocked pool")
@@ -175,7 +216,7 @@ func TestPoolMarketColumnsMissingFeedDoesNotBlock(t *testing.T) {
 			}
 		}
 	}
-	report, err := a.TargetMarketReports()
+	report, err := newMarketAPI(a).TargetMarketReports()
 	if err != nil {
 		t.Fatal(err)
 	}

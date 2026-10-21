@@ -2,43 +2,22 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
 )
 
-// AssetBoard is C-01: what each player is worth on the field now and as a dynasty asset. Go words
-// every cell; a value the app cannot support says why in place of a number.
-type AssetBoard struct {
-	Values        []AssetValue `json:"values"`
-	NowSource     string       `json:"nowSource"`
-	DynastySource string       `json:"dynastySource"`
-	How           string       `json:"how"`
-}
-
-// AssetValue is one player's three cells: on-field-now, dynasty value and market. NowValue and
-// DynastyValue order the board (points per game, discounted wins); zero when not held.
-type AssetValue struct {
-	ID           string    `json:"id"`
-	Now          AssetCell `json:"now"`
-	Dynasty      AssetCell `json:"dynasty"`
-	Market       AssetCell `json:"market"`
-	NowValue     float64   `json:"nowValue"`
-	DynastyValue float64   `json:"dynastyValue"`
-}
-
-// AssetCell is a worded value: a short headline, the qualifier beneath it and the detail on hover.
-// Held is false when the words say why there is no value.
-type AssetCell struct {
-	Text   string `json:"text"`
-	Sub    string `json:"sub"`
-	Detail string `json:"detail"`
-	Held   bool   `json:"held"`
-}
+// AssetBoard, AssetValue and AssetCell are Market's wire types; the pool and trade surfaces
+// still built here carry them.
+type (
+	AssetBoard = marketapp.AssetBoard
+	AssetValue = marketapp.AssetValue
+	AssetCell  = marketapp.AssetCell
+)
 
 // dynastyValue and assetModel are the service's Lab answer and value model; the App holds the
 // model (assetModel) once the Lab compiles. Neither is on the wire.
@@ -50,7 +29,7 @@ type (
 // buildAssetBoard words C-01 in the service for every player with a held score this season, and
 // every id in also, and converts it to its wire type.
 func buildAssetBoard(v researchView, model assetModel, at time.Time, also []string) AssetBoard {
-	return wireAssetBoard(marketapp.BuildBoard(v.onField(), model, at, also))
+	return marketapp.WireAssetBoard(marketapp.BuildBoard(v.onField(), model, at, also))
 }
 
 type onFieldRow struct {
@@ -113,40 +92,39 @@ func dynastyValueCells(d dynastyValue) (AssetCell, AssetCell, float64) {
 	return AssetCell(dynasty), AssetCell(market), wins
 }
 
-// wireAssetBoard converts a board built by the Market service to its wire twin.
-func wireAssetBoard(b marketapp.Board) AssetBoard {
-	values := make([]AssetValue, len(b.Values))
-	for i, v := range b.Values {
-		values[i] = AssetValue{ID: v.ID, Now: AssetCell(v.Now), Dynasty: AssetCell(v.Dynasty), Market: AssetCell(v.Market),
-			NowValue: v.NowValue, DynastyValue: v.DynastyValue}
-	}
-	return AssetBoard{Values: wireSlice(b.Values, values), NowSource: b.NowSource, DynastySource: b.DynastySource, How: b.How}
+// marketHost composes Market's Host: shared state from core, and the Research scores and the
+// build stamp still held at the root. It is never bound.
+type marketHost struct {
+	*core.State
+	app *App
 }
 
-// TargetAssetBoard reads C-01 from held state: the weekly scores (from their archived copies when
-// no refresh has run this launch) and, once compiled, the Lab's value model. Every rostered player
-// has a row, scored or not. It never fetches.
-func (a *App) TargetAssetBoard() (AssetBoard, error) {
-	if err := a.ready(); err != nil {
-		return AssetBoard{}, fmt.Errorf("asset board: startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
-	defer cancel()
-	return a.assetBoard(ctx)
+func (h marketHost) LabStamp() string { return labStamp() }
+func (h marketHost) AssetInput(ctx context.Context) (marketapp.OnField, []string) {
+	return h.app.assetInput(ctx)
 }
 
+// newMarketAPI is the Market API over this App's state and its one Market holder.
+func newMarketAPI(app *App) *marketapp.API {
+	return marketapp.New(marketHost{State: app.core, app: app}, app.marketHeld)
+}
+
+// assetBoard is C-01 for the trade builder: the Research scores and rostered ids, and the held
+// value model.
 func (a *App) assetBoard(ctx context.Context) (AssetBoard, error) {
+	now, rostered := a.assetInput(ctx)
+	return marketapp.WireAssetBoard(marketapp.BuildBoard(now, a.marketHeld.SnapshotModel(), time.Now(), rostered)), nil
+}
+
+// assetInput hydrates Research's held scores and reads them, with every rostered id, for Market.
+func (a *App) assetInput(ctx context.Context) (marketapp.OnField, []string) {
 	a.hydrateResearchContext(ctx)
 	in := a.heldResearchInput()
 	rostered := make([]string, 0, len(in.mirror.Players))
 	for _, p := range in.mirror.Players {
 		rostered = append(rostered, p.MFLID)
 	}
-	var model assetModel
-	if m := a.assetModel.Load(); m != nil {
-		model = *m
-	}
-	return buildAssetBoard(researchView{researchInput: in}, model, time.Now(), rostered), nil
+	return researchView{researchInput: in}.onField(), rostered
 }
 
 // fitAssetModel fits the Lab's value model on the verified facts warmArchive just read, so C-01
@@ -165,8 +143,7 @@ func (a *App) fitAssetModel(ctx context.Context) {
 		log.Printf("the war room: value model: %v", err)
 		return
 	}
-	var model assetModel = marketapp.LabModel{Model: m}
-	a.assetModel.Store(&model)
+	a.marketHeld.PublishModel(marketapp.LabModel{Model: m})
 	log.Printf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond))
 	a.core.SeasonChanged(ctx)
 }

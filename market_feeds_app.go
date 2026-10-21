@@ -7,9 +7,9 @@ import (
 	"time"
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
 // MarketFact is one market cell of a pool row, the wire twin of marketapp.Fact; value is the
@@ -28,23 +28,15 @@ func (a *App) heldMarket() map[string]heldSeasonFeed[[]marketfeeds.Feed] {
 	return a.heldMarketForWeek(a.marketWeek())
 }
 func (a *App) heldMarketForWeek(week int) map[string]heldSeasonFeed[[]marketfeeds.Feed] {
-	a.core.SeasonMu.Lock()
-	defer a.core.SeasonMu.Unlock()
+	feeds := a.core.CaptureMarket(a.marketHeld.SnapshotFeeds)
 	held := map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
-	for kind, feed := range a.core.SeasonMarket {
-		if kind == marketfeeds.Projections && len(feed.Value) == 1 && feed.Value[0].Week != week {
-			feed = heldSeasonFeed[[]marketfeeds.Feed]{}
-		}
-		held[kind] = feed
+	for kind, feed := range marketapp.ForWeek(feeds, week) {
+		held[kind] = heldSeasonFeed[[]marketfeeds.Feed](feed)
 	}
 	return held
 }
 
-func (a *App) marketWeek() int {
-	a.core.WeekMu.Lock()
-	defer a.core.WeekMu.Unlock()
-	return a.core.Week.Number
-}
+func (a *App) marketWeek() int { return a.core.MarketWeek() }
 
 func (a *App) refreshMarketFeeds(ctx context.Context, force bool) {
 	week := a.marketWeek()
@@ -97,48 +89,16 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	if a.core.SeasonMarket == nil {
-		a.core.SeasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
-	}
-	held := a.core.SeasonMarket[kind]
+	held := heldSeasonFeed[[]marketfeeds.Feed](a.marketHeld.SnapshotFeeds()[kind])
 	if kind == marketfeeds.Projections && len(held.Value) == 1 && held.Value[0].Week != week {
 		held = heldSeasonFeed[[]marketfeeds.Feed]{}
 	}
 	holdSeasonFeed(&held, rows, fresh, err)
-	a.core.SeasonMarket[kind] = held
+	a.marketHeld.PublishFeed(kind, season.Feed[[]marketfeeds.Feed](held))
 }
 
 func marketArchiveScope(src, kind string, week int) bool {
 	return marketapp.ArchiveScope(src, kind, week)
-}
-
-func (a *App) TargetMarketReportsRefresh(force bool) error {
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("market refresh: startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-	defer cancel()
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	a.refreshMarketFeeds(ctx, force)
-	return nil
-}
-
-func (a *App) TargetMarketReports() (ReportBoard, error) {
-	if err := a.ready(); err != nil {
-		return ReportBoard{}, fmt.Errorf("market reports: startup: %w", err)
-	}
-	week := a.marketWeek()
-	held := a.heldMarketForWeek(week)
-	a.core.LookupMu.Lock()
-	lookup := a.core.Lookup
-	a.core.LookupMu.Unlock()
-	return buildMarketReports(held, marketNames(held, lookup), week, time.Local), nil
-}
-
-// marketNames labels every player the held reports list, through the service.
-func marketNames(held map[string]heldSeasonFeed[[]marketfeeds.Feed], lookup normalize.Lookup) map[string]string {
-	return marketapp.Names(marketHeld(held), lookup)
 }
 
 // buildMarketReports builds the board in the feature service and converts it to its wire type.

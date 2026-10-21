@@ -161,7 +161,7 @@ func (a *App) TargetPoolRefresh(force bool) error {
 	held := a.core.SeasonFreeAgents
 	a.core.SeasonMu.Unlock()
 	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < poolFreshFor {
-		return a.TargetMarketReportsRefresh(false)
+		return newMarketAPI(a).TargetMarketReportsRefresh(false) //nolint:wrapcheck // The API preserves the existing refresh error.
 	}
 	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
@@ -315,10 +315,7 @@ func noNFLTeam(team string) bool { return team == "" || team == "FA" || team == 
 
 func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
 	a.hydrateResearchContext(ctx)
-	var model assetModel
-	if held := a.assetModel.Load(); held != nil {
-		model = *held
-	}
+	model := a.marketHeld.SnapshotModel()
 	also := make([]string, 0, len(ids))
 	for _, id := range ids {
 		also = append(also, id.String())

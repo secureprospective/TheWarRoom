@@ -20,7 +20,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -41,6 +40,9 @@ type State struct {
 	// CaptureRace takes SeasonMu before capturing private held and shared season data.
 	CaptureRace      func(func() season.Held) season.Snapshot
 	RefreshRaceFeeds func(context.Context)
+
+	// RefreshMarketFeeds runs under RefreshMu; Market's held reports stay at the composition root.
+	RefreshMarketFeeds func(context.Context, bool)
 
 	// ReadArchive runs under FactsMu; its feature-owned cache stays at the composition root.
 	ReadArchive func(context.Context) (report.ArchiveSnapshot, bool, error)
@@ -125,7 +127,6 @@ type State struct {
 	SeasonPendingTrades HeldFeed[[]leaguefeed.PendingTrade]
 	SeasonInjuries      HeldFeed[[]leaguefeed.Injury]
 	SeasonFreeAgents    HeldFeed[[]playerid.PlayerID]
-	SeasonMarket        map[string]HeldFeed[[]marketfeeds.Feed]
 	SeasonDraftResults  HeldFeed[[]draftreports.Pick]
 	SeasonFuturePicks   HeldFeed[[]draftreports.FuturePick]
 	ResearchArchiveMu   sync.Mutex

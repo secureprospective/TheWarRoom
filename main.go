@@ -100,6 +100,7 @@ func bindings(app *App) []interface{} {
 		comms.New(app.core),
 		counterparties.New(app.core),
 		draft.New(draftHost{State: app.core, app: app}),
+		newMarketAPI(app),
 		raceapp.New(app.core, app.raceHeld),
 		sources.New(app.core, app.sourcesHeld),
 	}

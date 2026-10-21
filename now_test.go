@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -272,7 +273,7 @@ func TestNowBindingsGolden(t *testing.T) {
 		r.Rows = r.Rows[:min(3, len(r.Rows))]
 	}
 	checkGolden(t, "now", "held", populated)
-	stopped := &App{raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
+	stopped := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
 	close(stopped.core.Started)
 	checkGolden(t, "now", "TargetNowRefresh", stopped.TargetNowRefresh(0, false).Error())
 	if _, err := a.TargetLiveGame(false, "invalid!", ""); err == nil {

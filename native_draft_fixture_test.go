@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -124,7 +125,7 @@ func (f *draftFixture) reopen(t *testing.T) {
 	}
 	store, pools := openClockedHistory(t, f.path, func() time.Time { return f.now })
 	f.pools = pools
-	restarted := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+	restarted := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
 		ClockNow: func() time.Time { return f.now }, LocalZone: old.core.LocalZone}}
 	close(restarted.core.Started)
 	restarted.core.Lookup, restarted.core.HasLookup, restarted.core.SeasonInjuries = old.core.Lookup, old.core.HasLookup, old.core.SeasonInjuries

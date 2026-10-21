@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
@@ -32,7 +33,7 @@ func controlResult[T any](value T, err error) controlWireResult[T] {
 }
 
 func TestControlBindingGolden(t *testing.T) {
-	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
+	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
 	close(a.core.Started)
 	values := map[string][]byte{
 		"GetParams":               sourcesWire(t, a.GetParams()),

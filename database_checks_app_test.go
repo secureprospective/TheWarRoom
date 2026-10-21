@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
@@ -17,7 +18,7 @@ import (
 )
 
 func TestDatabaseChecksReportAllFilesAndFailures(t *testing.T) {
-	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{}}
+	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}
 	for _, file := range []struct {
 		dest **db.Pools
 		name string

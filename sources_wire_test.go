@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
@@ -34,7 +35,7 @@ func TestSourcesBindingGolden(t *testing.T) {
 	}
 	ds.Health.AsOf = "As of: fixture clock"
 	// The not-ready load exercises the binding without a network request.
-	stopped := &App{raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
+	stopped := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
 	close(stopped.core.Started)
 	values := map[string][]byte{
 		"LoadCrosswalk":       sourcesWire(t, sourcesapp.New(stopped.core, stopped.sourcesHeld).LoadCrosswalk()),

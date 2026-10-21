@@ -42,14 +42,6 @@ export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
 }
 
-export function TargetAssetBoard() {
-  return window['go']['main']['App']['TargetAssetBoard']();
-}
-
-export function TargetAssetProfile(arg1) {
-  return window['go']['main']['App']['TargetAssetProfile'](arg1);
-}
-
 export function TargetBidDraft(arg1) {
   return window['go']['main']['App']['TargetBidDraft'](arg1);
 }
@@ -210,26 +202,6 @@ export function TargetLiveGame(arg1, arg2, arg3) {
   return window['go']['main']['App']['TargetLiveGame'](arg1, arg2, arg3);
 }
 
-export function TargetMarket(arg1) {
-  return window['go']['main']['App']['TargetMarket'](arg1);
-}
-
-export function TargetMarketLists(arg1) {
-  return window['go']['main']['App']['TargetMarketLists'](arg1);
-}
-
-export function TargetMarketReports() {
-  return window['go']['main']['App']['TargetMarketReports']();
-}
-
-export function TargetMarketReportsRefresh(arg1) {
-  return window['go']['main']['App']['TargetMarketReportsRefresh'](arg1);
-}
-
-export function TargetMarketStretches(arg1) {
-  return window['go']['main']['App']['TargetMarketStretches'](arg1);
-}
-
 export function TargetMoves(arg1) {
   return window['go']['main']['App']['TargetMoves'](arg1);
 }
@@ -372,10 +344,6 @@ export function TargetPersonalHandOff(arg1) {
 
 export function TargetPhoto(arg1) {
   return window['go']['main']['App']['TargetPhoto'](arg1);
-}
-
-export function TargetPickClock(arg1) {
-  return window['go']['main']['App']['TargetPickClock'](arg1);
 }
 
 export function TargetPlayerContract(arg1) {

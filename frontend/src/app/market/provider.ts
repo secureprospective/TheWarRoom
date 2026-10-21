@@ -1,10 +1,4 @@
-import {
-  TargetMarketLists,
-  TargetMarketStretches,
-  TargetAssetProfile,
-  TargetPickClock,
-} from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { marketAPI, type RawMarketScope } from './api';
 import { freshness } from '../data/parse';
 import { object, text, integer, choice, array } from '../data/parseValues';
 
@@ -124,7 +118,7 @@ export function unavailable(
   };
 }
 async function read(call: () => Promise<unknown>): Promise<SurfaceReading> {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go) {
+  if (!marketAPI.hasDesktop()) {
     return unavailable(
       'Historical Market needs the desktop app; no browser fixtures are substituted',
       'not_wired',
@@ -136,15 +130,14 @@ async function read(call: () => Promise<unknown>): Promise<SurfaceReading> {
     return unavailable(`Market read failed: ${String(cause)}. Retry the held archive reading.`);
   }
 }
-const raw = (scope: MarketScope): main.RawMarketScope => ({
+const raw = (scope: MarketScope): RawMarketScope => ({
   ...scope,
   phases: scope.phases ?? [],
   assets: scope.assets ?? [],
 });
 export const marketProvider: MarketProvider = {
-  lists: (scope) => read(() => TargetMarketLists(raw(scope))),
-  clock: (scope) => read(() => TargetPickClock(raw(scope))),
-  stretches: (scope) => read(() => TargetMarketStretches(raw(scope))),
-  profile: (scope, kind) =>
-    read(() => TargetAssetProfile({ scope: raw(scope), kind } as main.RawMarketAsset)),
+  lists: (scope) => read(() => marketAPI.lists(raw(scope))),
+  clock: (scope) => read(() => marketAPI.clock(raw(scope))),
+  stretches: (scope) => read(() => marketAPI.stretches(raw(scope))),
+  profile: (scope, kind) => read(() => marketAPI.profile(raw(scope), kind)),
 };

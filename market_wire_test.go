@@ -3,29 +3,26 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"reflect"
 	"slices"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-
-	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
-// TestMarketWireMatchesGolden freezes the Market wire contract in testdata/wire/market: what the
-// frontend receives from every Market binding, field for field. The bound methods run on fresh
-// apps (the reports and the asset board hold nothing, so no clock or time zone reaches them; the
-// Lab surfaces read the frozen Lab facts); the held states build in UTC.
+// TestMarketWireMatchesGolden keeps the composition goldens in testdata/wire/market: the reports
+// and asset board through the bound API over a fresh app's real host, the held asset board over
+// Research's held weeks, and the pool's market facts. Every other Market golden is frozen beside
+// the API in internal/app/market. The bound methods run on fresh apps (the reports and the asset
+// board hold nothing, so no clock or time zone reaches them); the held states build in UTC.
 // Regenerate with TWR_WRITE_WIRE=1 go test -run TestMarketWireMatchesGolden . and review the diff.
 func TestMarketWireMatchesGolden(t *testing.T) {
 	t.Parallel()
-	fresh := targetTestApp(t)
+	fresh := newMarketAPI(targetTestApp(t))
 	reports, err := fresh.TargetMarketReports()
 	if err != nil {
 		t.Fatal(err)
@@ -36,19 +33,8 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 		feed.Value[0].Players = feed.Value[0].Players[:12] // a sample keeps the goldens readable
 		held[kind] = feed
 	}
-	names := map[string]string{"16162": "Bijan Robinson", "16161": "Jahmyr Gibbs", "13589": "Josh Allen"}
-	checkGolden(t, "market", "reports-held", buildMarketReports(held, names, 6, time.UTC))
 	facts := marketFactsAt(held, time.UTC)
 	checkGolden(t, "market", "facts", map[string][]MarketFact{"16162": facts["16162"], "13589": facts["13589"], "": facts[""]})
-	empty, err := marketfeeds.Parse(marketfeeds.ADP, []byte(`{"adp":{"totalDrafts":"0","totalPicks":"0"}}`))
-	if err != nil {
-		t.Fatal(err)
-	}
-	adp := held[marketfeeds.ADP]
-	adp.Value, adp.RefreshError = []marketfeeds.Feed{empty}, "offline"
-	held[marketfeeds.ADP] = adp
-	held[marketfeeds.Ranks] = heldSeasonFeed[[]marketfeeds.Feed]{RefreshError: "offline"}
-	checkGolden(t, "market", "reports-failed", buildMarketReports(held, nil, 0, time.UTC))
 	board, err := fresh.TargetAssetBoard()
 	if err != nil {
 		t.Fatal(err)
@@ -69,69 +55,99 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	}
 	assets.Values = sample
 	checkGolden(t, "market", "assets-held", assets)
-
-	a := NewApp()
-	full := RawMarketScope{From: 2017, To: 2026}
-	thin := RawMarketScope{From: 2100, To: 2101}
-	invalid := RawMarketScope{From: 2026, To: 2017}
-	filtered := RawMarketScope{From: 2017, To: 2026, Phases: []string{"winter", "deadline"}, Assets: []string{"LB", "pick1:next"}, ByAge: true}
-	for name, scope := range map[string]RawMarketScope{"full": full, "thin": thin, "invalid": invalid, "filtered": filtered} {
-		checkGolden(t, "market", "market-"+name, a.TargetMarket(scope))
-		checkGolden(t, "market", "lists-"+name, a.TargetMarketLists(scope))
-		checkGolden(t, "market", "clock-"+name, a.TargetPickClock(scope))
-		checkGolden(t, "market", "stretches-"+name, a.TargetMarketStretches(scope))
-	}
-	for name, raw := range map[string]RawMarketAsset{
-		"position": {Scope: full, Kind: "LB"},
-		"anchor":   {Scope: full, Kind: lab.Anchor},
-		"age":      {Scope: RawMarketScope{From: 2017, To: 2026, ByAge: true}, Kind: "WR:prime"},
-		"thin":     {Scope: thin, Kind: "LB"},
-		"invalid":  {Scope: full, Kind: "LB:prime"},
-	} {
-		checkGolden(t, "market", "profile-"+name, a.TargetAssetProfile(raw))
-	}
-	broken := &App{raceHeld: &raceapp.Held{}, core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
-	checkGolden(t, "market", "lists-unloaded", broken.TargetMarketLists(full))
-	checkGolden(t, "market", "profile-unloaded", broken.TargetAssetProfile(RawMarketAsset{Scope: full, Kind: "LB"}))
 }
 
-// TestMarketWireTwinsMatch proves wireSurface, wireReading, wireFact and wireAssetBoard lose
-// nothing: a reading, a fact and an asset board with every field set, and empty ones, encode the
-// same before and after conversion. A field added to one type set and not the other, a renamed
-// JSON tag, or a field a converter skips fails here.
-func TestMarketWireTwinsMatch(t *testing.T) {
+// TestMarketFactWireTwinMatches proves wireFact loses nothing: a fact with every field set
+// encodes the same before and after conversion, and keeps the pool's value.
+func TestMarketFactWireTwinMatches(t *testing.T) {
 	t.Parallel()
-	var full report.Reading[marketapp.Surface]
-	n := 0
-	fillWire(reflect.ValueOf(&full).Elem(), &n)
 	var fact marketapp.Fact
+	n := 0
 	fillWire(reflect.ValueOf(&fact).Elem(), &n)
-	var assets marketapp.Board
-	fillWire(reflect.ValueOf(&assets).Elem(), &n)
-	for _, c := range []struct {
-		name       string
-		built, got any
-	}{
-		{"full reading", full, wireReading(full, wireSurface)},
-		{"empty reading", report.Reading[marketapp.Surface]{}, wireReading(report.Reading[marketapp.Surface]{}, wireSurface)},
-		{"empty section", marketapp.Surface{Sections: []marketapp.Section{{}}}, wireSurface(marketapp.Surface{Sections: []marketapp.Section{{}}})},
-		{"fact", fact, wireFact(fact)},
-		{"full asset board", assets, wireAssetBoard(assets)},
-		{"empty asset board", marketapp.Board{}, wireAssetBoard(marketapp.Board{})},
-	} {
-		want, err := json.Marshal(c.built)
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := json.Marshal(c.got)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !bytes.Equal(want, got) {
-			t.Errorf("%s: wire twin encodes differently\n built %s\n wire  %s", c.name, want, got)
-		}
+	want, err := json.Marshal(fact)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := json.Marshal(wireFact(fact))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(want, got) {
+		t.Errorf("fact: wire twin encodes differently\n built %s\n wire  %s", want, got)
 	}
 	if wireFact(fact).value != fact.Value {
 		t.Error("fact: the pool's value was dropped")
+	}
+}
+
+type fakeAssets map[string]dynastyValue
+
+func (f fakeAssets) Player(pid string, _ time.Time) dynastyValue { return f[pid] }
+func (fakeAssets) Pick(int, int, string, time.Time) dynastyValue { return dynastyValue{} }
+
+func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
+	t.Parallel()
+	in := realResearch(t) // week 5: weeks 1-4 are finished
+	v := researchView{researchInput: in}
+	b := buildAssetBoard(v, nil, time.Now(), []string{"99999"})
+	if !strings.Contains(b.NowSource, "4 of 4 finished weeks held") {
+		t.Fatal(b.NowSource)
+	}
+	// Recount one player by hand from the weekly feeds: points per game over the weeks he scored.
+	const id = "16162"
+	sum, games := 0.0, 0
+	for w := 1; w <= 4; w++ {
+		for _, e := range researchRows(v.feed("playerScores", strconv.Itoa(w))) {
+			if e.ID.String() == id {
+				sum, games = sum+e.Value, games+1
+			}
+		}
+	}
+	if games == 0 {
+		t.Fatal("fixture player has no weekly scores")
+	}
+	cells := map[string]AssetValue{}
+	for _, value := range b.Values {
+		cells[value.ID] = value
+	}
+	got := cells[id].Now
+	position := v.player(id).Position
+	ppg := strconv.FormatFloat(sum/float64(games), 'f', 2, 64) + " PPG"
+	if !got.Held || got.Text != ppg || !strings.HasPrefix(got.Sub, position+" ") || !strings.Contains(got.Sub, "· top ") ||
+		cells[id].NowValue != sum/float64(games) ||
+		!strings.Contains(got.Detail, strconv.Itoa(games)+" scored week") {
+		t.Fatalf("%s: %+v, want %q", id, got, ppg)
+	}
+	// Ranks run 1..n at each position, the best points per game first.
+	firsts := 0
+	for _, value := range cells {
+		if f := strings.Fields(value.Now.Sub); value.Now.Held && len(f) == 5 && strings.HasPrefix(f[1], "1/") {
+			firsts++
+		}
+	}
+	if firsts < 8 {
+		t.Fatal("expected a leader at every position", firsts)
+	}
+	if c := cells["99999"].Now; c.Held || c.Text != "No score" || c.Sub != "this season" {
+		t.Fatal("unscored rostered player", c)
+	}
+	if c := cells[id].Dynasty; c.Held || c.Text != "Not valued yet" || c.Sub != "Lab model not compiled" || b.DynastySource == "" {
+		t.Fatal("no model", c, b.DynastySource)
+	}
+}
+
+func TestAppLabDecodesOnce(t *testing.T) {
+	t.Parallel()
+	a := NewApp()
+	first, err := a.lab()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := a.lab()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first != second {
+		t.Fatal("the App decoded the frozen Lab facts twice")
 	}
 }

@@ -521,8 +521,7 @@ func (landingPickModel) Pick(year, round int, orig string, at time.Time) dynasty
 func TestTradeBuilderLandingPickValue(t *testing.T) {
 	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
-	var model assetModel = landingPickModel{}
-	a.assetModel.Store(&model)
+	a.marketHeld.PublishModel(landingPickModel{})
 	got := a.builderPickValue(2027, 1, "0001", time.Now())
 	if !got.Held || got.Text != "0.78 wins" {
 		t.Fatal(got)

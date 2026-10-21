@@ -301,6 +301,7 @@ linters:
           files:
             - "**/internal/app/market/**"
           allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
             - github.com/secureprospective/TheWarRoom/internal/app/market$
             - github.com/secureprospective/TheWarRoom/internal/app/market/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -309,7 +310,7 @@ linters:
             - github.com/secureprospective/TheWarRoom/internal/app/season/
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
-              desc: "feature services may import only their own subtree and shared report/season"
+              desc: "feature services may import only their own subtree, shared report/season and catalog"
 
         app-research-no-siblings:
           list-mode: lax
