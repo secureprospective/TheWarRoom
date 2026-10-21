@@ -15,18 +15,21 @@ function bindings(missing: string): typeof Bindings {
 }
 const values = 'Player values require the desktop app; no browser fixture is substituted.';
 const reports = 'Player market reports require the desktop app; no browser fixture is substituted.';
+const historical = 'Historical Market needs the desktop app';
 
 export const marketAPI = {
   // hasDesktop is false in a plain browser, where the surfaces read as not wired.
   hasDesktop: (): boolean => desktop() !== undefined,
-  lists: async (raw: RawMarketScope): Promise<unknown> => bindings('Historical Market needs the desktop app').TargetMarketLists(raw),
-  clock: async (raw: RawMarketScope): Promise<unknown> => bindings('Historical Market needs the desktop app').TargetPickClock(raw),
-  stretches: async (raw: RawMarketScope): Promise<unknown> => bindings('Historical Market needs the desktop app').TargetMarketStretches(raw),
+  lists: async (raw: RawMarketScope): Promise<unknown> => bindings(historical).TargetMarketLists(raw),
+  clock: async (raw: RawMarketScope): Promise<unknown> => bindings(historical).TargetPickClock(raw),
+  stretches: async (raw: RawMarketScope): Promise<unknown> =>
+    bindings(historical).TargetMarketStretches(raw),
   profile: async (raw: RawMarketScope, kind: string): Promise<unknown> =>
-    bindings('Historical Market needs the desktop app').TargetAssetProfile({ scope: raw, kind } as market.RawMarketAsset),
+    bindings(historical).TargetAssetProfile({ scope: raw, kind } as market.RawMarketAsset),
   assetBoard: async (): Promise<unknown> => bindings(values).TargetAssetBoard(),
   reports: async (): Promise<unknown> => bindings(reports).TargetMarketReports(),
-  refreshReports: async (force: boolean): Promise<void> => bindings(reports).TargetMarketReportsRefresh(force),
+  refreshReports: async (force: boolean): Promise<void> =>
+    bindings(reports).TargetMarketReportsRefresh(force),
 };
 
 // subscribeSeason calls changed whenever the season's held feeds change, until the returned stop.

@@ -46,13 +46,22 @@ describe('Market transport adapter', () => {
     expect(marketAPI.hasDesktop()).toBe(false);
     const reading = await marketProvider.clock(scope);
     expect(reading.status).toBe('not_wired');
-    expect(reading.absenceReason).toBe('Historical Market needs the desktop app; no browser fixtures are substituted');
-    await expect(marketAPI.assetBoard()).rejects.toThrow('Player values require the desktop app; no browser fixture is substituted.');
-    await expect(marketAPI.reports()).rejects.toThrow('Player market reports require the desktop app; no browser fixture is substituted.');
+    expect(reading.absenceReason).toBe(
+      'Historical Market needs the desktop app; no browser fixtures are substituted',
+    );
+    await expect(marketAPI.assetBoard()).rejects.toThrow(
+      'Player values require the desktop app; no browser fixture is substituted.',
+    );
+    await expect(marketAPI.reports()).rejects.toThrow(
+      'Player market reports require the desktop app; no browser fixture is substituted.',
+    );
     await expect(marketAPI.refreshReports(false)).rejects.toThrow('require the desktop app');
     await marketReportState.refresh();
     expect(marketReportState.peek().error).toContain('Player market reports require the desktop app');
-    const assets = createAssetState(async () => { await marketAPI.assetBoard(); throw new Error('unreachable'); }, () => () => {});
+    const assets = createAssetState(
+      async () => { await marketAPI.assetBoard(); throw new Error('unreachable'); },
+      () => () => {},
+    );
     await assets.load();
     expect(assets.peek().error).toContain('Player values require the desktop app');
     const stop = subscribeSeason(() => { throw new Error('unexpected browser event'); });

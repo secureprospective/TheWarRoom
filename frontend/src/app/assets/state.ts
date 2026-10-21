@@ -52,4 +52,7 @@ export function createAssetState(read: () => Promise<AssetBoard>,
   return { useCell, useBoard, load, peek: store.getState, cellFor };
 }
 
-export const assetState = createAssetState(async () => parseAssetBoard(await marketAPI.assetBoard()), subscribeSeason);
+export const assetState = createAssetState(
+  async () => parseAssetBoard(await marketAPI.assetBoard()),
+  subscribeSeason,
+);
