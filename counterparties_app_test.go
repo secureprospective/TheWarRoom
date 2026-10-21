@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -182,4 +183,26 @@ func fillCounterWire(v reflect.Value, n *int) {
 		return
 	}
 	fillWire(v, n)
+}
+
+func TestCounterpartiesDenialBeforeLabRead(t *testing.T) {
+	t.Parallel()
+	a := NewApp()
+	calls := 0
+	a.core.LabData = func() (*lab.Data, error) {
+		calls++
+		return nil, fmt.Errorf("load lab facts: unavailable")
+	}
+	bad := RawCounterpartiesScope{From: 2026, To: 2017}
+	board := a.TargetCounterparties(bad)
+	team := a.TargetCounterpartTeam(RawCounterpartTeam{Scope: bad})
+	if calls != 0 || *board.AbsenceReason != "counterparties scope: invalid season range" || *team.AbsenceReason != *board.AbsenceReason {
+		t.Fatal("invalid scope reached Lab or changed its refusal")
+	}
+	good := RawCounterpartiesScope{From: 2017, To: 2026}
+	board = a.TargetCounterparties(good)
+	team = a.TargetCounterpartTeam(RawCounterpartTeam{Scope: good, Fid: "0001"})
+	if calls != 2 || *board.AbsenceReason != "load lab facts: unavailable" || *team.AbsenceReason != *board.AbsenceReason {
+		t.Fatal("Lab failure text or read order changed")
+	}
 }
