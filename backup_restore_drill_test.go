@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -15,7 +17,7 @@ import (
 
 func restoreDrillApp(t *testing.T, dir string) *App {
 	t.Helper()
-	a := &App{core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}, Started: make(chan struct{})}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}, Started: make(chan struct{})}}
 	_, hist, err := a.openDatabases(t.Context(), dir)
 	if err != nil {
 		t.Fatal(err)
@@ -190,7 +192,7 @@ func TestStartupCapturesMatchedSetBeforeOpeningPools(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	a := &App{core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), Paths: core.Paths{DataDir: dir}}}
 	if _, _, err := a.openDatabases(t.Context(), dir); err != nil {
 		t.Fatal(err)
 	}

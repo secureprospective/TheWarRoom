@@ -106,8 +106,6 @@ main.App.TargetPickClock
 main.App.TargetPlayerContract
 main.App.TargetPool
 main.App.TargetPoolRefresh
-main.App.TargetRace
-main.App.TargetRaceRefresh
 main.App.TargetReleasePlans
 main.App.TargetResearch
 main.App.TargetResearchNewsRefresh
@@ -125,6 +123,8 @@ main.App.TargetTradeBuilder
 main.App.TargetTrades
 main.App.TargetWhatIf
 main.App.TargetWithdrawRoster
+race.API.TargetRace
+race.API.TargetRaceRefresh
 sources.API.GetCrosswalkReport
 sources.API.LoadCrosswalk
 sources.API.SetLeagueArchiveDir

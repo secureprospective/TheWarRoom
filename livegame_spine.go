@@ -27,7 +27,7 @@ type SpineEntry struct {
 func (a *App) heldMatchupStarters(mine string) map[string]bool {
 	week := a.marketWeek()
 	a.core.SeasonMu.Lock()
-	live, weeks := a.core.SeasonLineups.Value, a.race.weeks.Value
+	live, weeks := a.core.SeasonLineups.Value, a.raceHeld.Snapshot().Weeks.Value
 	a.core.SeasonMu.Unlock()
 	return nowapp.HeldMatchupStarters(live, weeks, week, mine)
 }

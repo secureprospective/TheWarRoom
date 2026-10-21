@@ -25,7 +25,8 @@ func (a *App) nowReadInput(week, reportWeek int, mine string) nowapp.Snapshot {
 	for k, v := range a.now.firsts.weeks {
 		firsts[k] = nowapp.FirstScore{At: v.at, Week: v.week}
 	}
-	in := nowapp.Snapshot{Race: season.Snapshot{Held: season.Held{Weeks: raceFeed(a.race.weeks), Brackets: raceFeed(a.race.brackets), Standings: raceFeed(a.race.standings)}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.core.SeasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
+	raceHeld := a.raceHeld.Snapshot()
+	in := nowapp.Snapshot{Race: season.Snapshot{Held: season.Held{Weeks: raceHeld.Weeks, Brackets: raceHeld.Brackets, Standings: raceHeld.Standings}}, Held: nowapp.Held{Schedules: schedules, Byes: nowFeed(a.now.byes), Firsts: nowapp.FirstScores{Weeks: firsts, Copies: a.now.firsts.copies}}, Live: nowFeed(a.core.SeasonLineups), Projections: nowFeed(projections), At: a.timeNow(), Current: current, Week: week, ReportWeek: reportWeek}
 	a.core.SeasonMu.Unlock()
 	a.core.LookupMu.Lock()
 	in.Race.Lookup, in.Race.HasLookup = a.core.Lookup, a.core.HasLookup

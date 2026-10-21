@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -88,7 +90,7 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	} {
 		checkGolden(t, "market", "profile-"+name, a.TargetAssetProfile(raw))
 	}
-	broken := &App{core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
+	broken := &App{raceHeld: &raceapp.Held{}, core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
 	checkGolden(t, "market", "lists-unloaded", broken.TargetMarketLists(full))
 	checkGolden(t, "market", "profile-unloaded", broken.TargetAssetProfile(RawMarketAsset{Scope: full, Kind: "LB"}))
 }

@@ -3,6 +3,7 @@ import { commands } from '../commands/registry';
 import { ReportsView } from '../draftreports/Reports';
 import { ReportView } from '../reports/ReportView';
 import { raceState } from './state';
+import { subscribeRace } from './api';
 import type { Race as RaceBoard } from './contract';
 
 const weekReports = ['M-009', 'M-010'];
@@ -41,13 +42,7 @@ export default function Race() {
   const mine = commands.use().franchiseId;
   useEffect(() => {
     if (!raceState.peek().pending) void raceState.load(true);
-    let disposed = false;
-    let stop: (() => void) | undefined;
-    void import('../../../wailsjs/runtime/runtime').then(m => {
-      if (!disposed && typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-        stop = m.EventsOn('target:season', () => { void raceState.load(false); });
-    });
-    return () => { disposed = true; stop?.(); };
+    return subscribeRace(() => { void raceState.load(false); });
   }, []);
   useEffect(() => {
     if (raceState.peek().race) void raceState.load(false);

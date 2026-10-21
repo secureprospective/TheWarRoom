@@ -12,8 +12,11 @@ import (
 	"testing"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/now/nowtest"
@@ -167,7 +170,7 @@ func TestNowBindingReadsHeldAndRefreshReadsTheWeek(t *testing.T) {
 	read := func(week int) NowBoard {
 		a.core.SeasonMu.Lock()
 		in := nowInput{race: realRace(t, "2026"), held: a.now, current: 5, week: week, at: raceHeldAt}
-		in.race.held = a.race
+		in.race.held = raceHeld{weeks: heldSeasonFeed[[]leaguefeed.WeekResult](a.raceHeld.Snapshot().Weeks), brackets: heldSeasonFeed[[]leaguefeed.Bracket](a.raceHeld.Snapshot().Brackets), standings: heldSeasonFeed[[]leaguestandings.RawStanding](a.raceHeld.Snapshot().Standings)}
 		a.core.SeasonMu.Unlock()
 		return nowBoard(t, in)
 	}
@@ -269,7 +272,7 @@ func TestNowBindingsGolden(t *testing.T) {
 		r.Rows = r.Rows[:min(3, len(r.Rows))]
 	}
 	checkGolden(t, "now", "held", populated)
-	stopped := &App{core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
+	stopped := &App{raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: fmt.Errorf("fixture startup failed")}}
 	close(stopped.core.Started)
 	checkGolden(t, "now", "TargetNowRefresh", stopped.TargetNowRefresh(0, false).Error())
 	if _, err := a.TargetLiveGame(false, "invalid!", ""); err == nil {
@@ -362,7 +365,8 @@ func TestNowSnapshotDetachedAndConstructionUnlocked(t *testing.T) {
 	if _, err := a.core.Rulebook.Sync(a.core.Ctx, fixture.race.config); err != nil {
 		t.Fatal(err)
 	}
-	a.race, a.now, a.core.SeasonLineups = fixture.race.held, fixture.held, fixture.live
+	publishRaceFixture(a, fixture.race.held)
+	a.now, a.core.SeasonLineups = fixture.held, fixture.live
 	a.now.firsts = scoreFirsts{weeks: map[int]firstScores{5: {at: raceHeldAt, week: fixture.race.held.weeks.Value[4]}}, copies: 1}
 	in := a.nowReadInput(5, 0, "")
 	a.core.SeasonMu.Lock()

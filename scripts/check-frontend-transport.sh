@@ -15,16 +15,18 @@ const folders = new Map([
   ['comms', 'comms'],
   ['counterparties', 'counterparties'],
   ['draft', 'draftreports'],
+  ['race', 'race'],
   ['sources', 'datasources'],
 ]);
 // Folders whose feature has no root App bindings left: nothing in them may touch main/App or runtime.
-const whole = ['archive', 'comms', 'counterparties'];
+const whole = ['archive', 'comms', 'counterparties', 'race'];
 const moved = new Map([
   ['TargetArchive', 'archive'],
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),
+  ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
 ]);

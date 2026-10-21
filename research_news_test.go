@@ -249,7 +249,11 @@ func blockedResearchNews(t *testing.T) (*App, blockingNewsTransport, <-chan erro
 	a.core.SeasonPause = func(context.Context, time.Duration) error { return nil }
 	a.core.FallbackLog = func(string) {}
 	at := time.Now()
-	a.race.weeks.FetchedAt, a.race.brackets.FetchedAt, a.race.standings.FetchedAt = at, at, at
+	h := a.raceHeld.Snapshot()
+	h.Weeks.FetchedAt, h.Brackets.FetchedAt, h.Standings.FetchedAt = at, at, at
+	a.raceHeld.PublishWeeks(h.Weeks)
+	a.raceHeld.PublishBrackets(h.Brackets)
+	a.raceHeld.PublishStandings(h.Standings, h.Power, true)
 	a.core.Week.Number = 0
 	done := make(chan error, 1)
 	go func() { done <- a.TargetResearchNewsRefresh("") }()

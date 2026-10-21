@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
 	"github.com/secureprospective/TheWarRoom/internal/lab"
@@ -12,7 +14,7 @@ import (
 
 func TestTargetMarketReading(t *testing.T) {
 	t.Parallel()
-	a := &App{core: &core.State{}}
+	a := &App{raceHeld: &raceapp.Held{}, core: &core.State{}}
 	r := a.TargetMarket(RawMarketScope{From: 2017, To: 2026})
 	if r.Status != ReadingOK || r.Count < 80 || r.Threshold != 80 || r.Value.Going == nil {
 		t.Fatal("missing Market reading")

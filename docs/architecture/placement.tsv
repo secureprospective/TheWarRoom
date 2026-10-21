@@ -149,7 +149,6 @@ pool_market_layout_test.go	offers
 pool_wire_test.go	offers
 power_rankings_app.go	scoring
 race_app.go	race
-race_reading.go	race
 race_test.go	race
 refresh_app.go	control
 refresh_publication_test.go	control

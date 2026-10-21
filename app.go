@@ -13,6 +13,7 @@ import (
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -42,7 +43,7 @@ type App struct {
 	assetModel   atomic.Pointer[assetModel]
 	control      controlFeeds
 	research     researchHeld
-	race         raceHeld
+	raceHeld     *raceapp.Held
 	now          nowHeld
 	liveGame     liveGameHeld
 	sourcesHeld  *sourcesapp.Held
@@ -70,7 +71,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	a := &App{sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
+	a := &App{raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
@@ -85,6 +86,8 @@ func NewApp() *App {
 		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
 	a.configureArchive()
+	a.core.CaptureRace = a.raceSnapshot
+	a.core.RefreshRaceFeeds = a.refreshRace
 	a.core.RefreshTransactions = a.refreshSeasonTransactions
 	a.wireSources()
 	return a

@@ -154,13 +154,16 @@ func TestLandingNowWaitsForTheLeaguesWeeks(t *testing.T) {
 		t.Fatalf("cold Now must wait for the league's weeks: %q %v", board.Waiting, err)
 	}
 	a.core.SeasonMu.Lock()
-	a.race.weeks.RefreshError = "MFL refused the schedule"
+	h := a.raceHeld.Snapshot().Weeks
+	h.RefreshError = "MFL refused the schedule"
+	a.raceHeld.PublishWeeks(h)
 	a.core.SeasonMu.Unlock()
 	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("a failed read is not waiting: %q %v", board.Waiting, err)
 	}
 	a.core.SeasonMu.Lock()
-	a.race.weeks.RefreshError, a.race.weeks.FetchedAt = "", time.Now()
+	h.RefreshError, h.FetchedAt = "", time.Now()
+	a.raceHeld.PublishWeeks(h)
 	a.core.SeasonMu.Unlock()
 	if board, err = a.TargetNow(0, 0, ""); err != nil || board.Waiting != "" {
 		t.Fatalf("held weeks are not waiting: %q %v", board.Waiting, err)

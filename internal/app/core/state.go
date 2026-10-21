@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -37,6 +38,10 @@ import (
 )
 
 type State struct {
+	// CaptureRace takes SeasonMu before capturing private held and shared season data.
+	CaptureRace      func(func() season.Held) season.Snapshot
+	RefreshRaceFeeds func(context.Context)
+
 	// ReadArchive runs under FactsMu; its feature-owned cache stays at the composition root.
 	ReadArchive func(context.Context) (report.ArchiveSnapshot, bool, error)
 	// ArchiveOpponentFallback runs under SeasonMu, after the current lineup lookup.

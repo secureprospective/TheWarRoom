@@ -202,10 +202,6 @@ export function TargetPool(arg1:main.RawPoolScope):Promise<main.Reading_main_Poo
 
 export function TargetPoolRefresh(arg1:boolean):Promise<void>;
 
-export function TargetRace(arg1:number,arg2:string,arg3:string):Promise<main.RaceBoard>;
-
-export function TargetRaceRefresh(arg1:boolean):Promise<void>;
-
 export function TargetReleasePlans(arg1:main.RawReleaseRequest):Promise<main.Reading___main_ReleasePlanView_>;
 
 export function TargetResearch(arg1:main.RawResearchScope):Promise<main.ResearchBoard>;

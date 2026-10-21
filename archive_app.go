@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
@@ -12,11 +13,11 @@ import (
 
 // archiveOpponentFallback reads Race's held weeks under the caller's SeasonMu.
 func (a *App) archiveOpponentFallback(week int, team string) string {
-	for _, w := range a.race.weeks.Value {
+	for _, w := range a.raceHeld.Snapshot().Weeks.Value {
 		if w.Week != week {
 			continue
 		}
-		if g, ok := findGame(w, team); ok {
+		if g, ok := season.FindGame(w, team); ok {
 			if g.Home.Franchise == team {
 				return g.Away.Franchise
 			}

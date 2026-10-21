@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -26,7 +28,7 @@ func calendarTestApp(t *testing.T, at time.Time) (*App, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	app := &App{core: &core.State{Ctx: t.Context(), Started: make(chan struct{}), ClockNow: func() time.Time { return at },
+	app := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), Started: make(chan struct{}), ClockNow: func() time.Time { return at },
 		CommissionerSession: testCommissionerSession{"creator"}}}
 	close(app.core.Started)
 	initialize := func() {

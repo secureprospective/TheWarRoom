@@ -6,6 +6,7 @@ import (
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 
 	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 )
 
 type DataScope struct {
@@ -32,7 +33,7 @@ func cacheScopes() []cacheScope {
 		{DataScope{"research", "Player research", "Player scores, activity and depth charts.",
 			"Read player research again", "Reading…"}, (*App).TargetResearchRefresh},
 		{DataScope{"race", "League race", "The standings and the race for the playoffs.",
-			"Read the league race again", "Reading…"}, (*App).TargetRaceRefresh},
+			"Read the league race again", "Reading…"}, func(a *App, force bool) error { return raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(force) }},
 		{DataScope{"comms", "League board", "The league's message board posts.",
 			"Read the league board again", "Reading…"}, func(a *App, force bool) error { return commsapp.New(a.core).TargetCommsRefresh(force) }},
 		{DataScope{"draft", "Draft reports", "The draft boards and reports.",
