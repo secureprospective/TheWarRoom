@@ -1,4 +1,4 @@
-package main
+package draft
 
 import (
 	"errors"
@@ -6,22 +6,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
 func TestDraftReadingStatesAndParity(t *testing.T) {
 	t.Parallel()
-	a := NewApp()
+	a := newTestAPI(t)
 	raw := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
 	got := a.TargetDraftLab(raw)
-	d, err := a.lab()
+	d, _, err := a.host.DraftFacts()
 	if err != nil {
 		t.Fatal(err)
 	}
 	picks := lab.DraftScope(d, draftScope(raw))
 	p := lab.PositionDraft(picks, "DL")
-	if got.Status != ReadingOK || got.Count <= 1000 || got.Threshold != 40 || got.InputSHA != lab.DataSHA || got.HowCounted == "" || got.Cutoff == "" {
+	if got.Status != report.ReadingOK || got.Count <= 1000 || got.Threshold != 40 || got.InputSHA != lab.DataSHA || got.HowCounted == "" || got.Cutoff == "" {
 		t.Fatalf("incomplete reading: %+v", got)
 	}
 	if len(got.Value.Sections) != 8 || !reflect.DeepEqual(got.Value.Sections, draftSections(d, draftScope(raw), picks, "DL")) {
@@ -42,18 +42,18 @@ func TestDraftReadingStatesAndParity(t *testing.T) {
 	if !foundLike {
 		t.Fatal("plays-like missing")
 	}
-	if !strings.Contains(got.Value.Sections[5].Rows[0].Detail, percent(p.Hits.Rate)) || !strings.Contains(got.Value.Sections[6].Rows[0].Detail, percent(*p.Kept)) {
+	if !strings.Contains(got.Value.Sections[5].Rows[0].Detail, report.Percent(p.Hits.Rate)) || !strings.Contains(got.Value.Sections[6].Rows[0].Detail, report.Percent(*p.Kept)) {
 		t.Fatal("hit or kept estimate missing")
 	}
 	raw.From = 2100
 	raw.To = 2101
 	thin := a.TargetDraftLab(raw)
-	if thin.Status != ReadingThin || thin.Count != 0 || thin.AbsenceReason == nil || len(thin.Value.Sections) != 0 {
+	if thin.Status != report.ReadingThin || thin.Count != 0 || thin.AbsenceReason == nil || len(thin.Value.Sections) != 0 {
 		t.Fatal("empty scope fabricated")
 	}
-	a = &App{core: &core.State{LabData: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }}}
+	a = New(&fakeHost{load: func() (*lab.Data, error) { return nil, errors.New("fingerprint mismatch") }})
 	failed := a.TargetDraftLab(raw)
-	if failed.Status != ReadingFailed || failed.AbsenceReason == nil || !strings.Contains(*failed.AbsenceReason, "fingerprint mismatch") {
+	if failed.Status != report.ReadingFailed || failed.AbsenceReason == nil || !strings.Contains(*failed.AbsenceReason, "fingerprint mismatch") {
 		t.Fatal("failed load hidden")
 	}
 }
@@ -69,11 +69,11 @@ func TestDraftBoundaryValidationAndFilters(t *testing.T) {
 	bads[5].NFL = []string{"nx", "nx"}
 	bads[6].Segments = []string{"r0"}
 	for _, bad := range bads {
-		if NewApp().TargetDraftLab(bad).Status != ReadingFailed {
+		if newTestAPI(t).TargetDraftLab(bad).Status != report.ReadingFailed {
 			t.Fatal("invalid draft IPC accepted")
 		}
 	}
-	a := NewApp()
+	a := newTestAPI(t)
 	all := a.TargetDraftLab(valid)
 	valid.Segments = []string{}
 	valid.NFL = []string{}
@@ -82,7 +82,7 @@ func TestDraftBoundaryValidationAndFilters(t *testing.T) {
 	}
 	valid.Segments = []string{"r3"}
 	narrow := a.TargetDraftLab(valid)
-	if narrow.Status != ReadingOK || narrow.Count >= all.Count {
+	if narrow.Status != report.ReadingOK || narrow.Count >= all.Count {
 		t.Fatal("stretch filter ignored")
 	}
 	if !reflect.DeepEqual(narrow.Value.Sections[7], all.Value.Sections[7]) {
@@ -95,7 +95,7 @@ func TestDraftBoundaryValidationAndFilters(t *testing.T) {
 	}
 	valid.From = 1900
 	valid.To = 2016
-	if a.TargetDraftLab(valid).Status != ReadingThin {
+	if a.TargetDraftLab(valid).Status != report.ReadingThin {
 		t.Fatal("pre-2017 facts shown as draft lab")
 	}
 }
@@ -118,10 +118,10 @@ func floatPtr(v float64) *float64 { return &v }
 
 func TestDraftSummaryAndClosedBreakdownData(t *testing.T) {
 	t.Parallel()
-	a := NewApp()
+	a := newTestAPI(t)
 	raw := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
 	r := a.TargetDraftLab(raw)
-	d, err := a.lab()
+	d, _, err := a.host.DraftFacts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,14 +136,14 @@ func TestDraftSummaryAndClosedBreakdownData(t *testing.T) {
 			!reflect.DeepEqual(section.Rows, draftAxis("", "", cells).Rows) {
 			t.Fatal("all-position summary missing")
 		}
-		for j, group := range marketAssets()[:8] {
+		for j, group := range report.Assets()[:8] {
 			p := lab.PositionDraft(picks, group)
 			b := section.Breakdowns[j]
 			expected := p.Where
 			if i == 1 {
 				expected = p.When
 			}
-			if b.Title != marketName(group) || b.Count != p.N ||
+			if b.Title != report.AssetName(group) || b.Count != p.N ||
 				!reflect.DeepEqual(b.Rows, draftAxis("", "", expected).Rows) {
 				t.Fatal("position counts or rows drifted")
 			}
@@ -197,8 +197,8 @@ func TestCountLabelPlural(t *testing.T) {
 		{1, "pick", "1 pick"}, {0, "trade", "0 trades"},
 		{1, "trade", "1 trade"}, {1, "trade side", "1 trade side"},
 	} {
-		if got := countLabel(c.n, c.noun); got != c.want {
-			t.Errorf("countLabel(%d, %q) = %q, want %q", c.n, c.noun, got, c.want)
+		if got := report.Count(c.n, c.noun); got != c.want {
+			t.Errorf("report.Count(%d, %q) = %q, want %q", c.n, c.noun, got, c.want)
 		}
 	}
 }

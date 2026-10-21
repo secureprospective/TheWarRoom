@@ -6,42 +6,15 @@ import (
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-// Line is one row of a Lab surface; it is main.MarketLine.
-type Line struct {
-	Key    string        `json:"key"`
-	Label  string        `json:"label"`
-	Detail string        `json:"detail"`
-	Count  int           `json:"count"`
-	Range  *report.Range `json:"range"`
-	Mark   string        `json:"mark"`
-}
-
-// Breakdown is a titled run of lines inside a section; it is main.MarketBreakdown.
-type Breakdown struct {
-	Title string `json:"title"`
-	Count int    `json:"count"`
-	Rows  []Line `json:"rows"`
-}
-
-// Section is one panel of a Lab surface; it is main.MarketSection.
-type Section struct {
-	Breakdowns []Breakdown `json:"breakdowns,omitempty"`
-	ID         string      `json:"id"`
-	Title      string      `json:"title"`
-	Note       string      `json:"note"`
-	Rows       []Line      `json:"rows"`
-}
-
-// Surface is a Lab screen's value: a summary and its sections; it is main.MarketSurface.
-type Surface struct {
-	Summary  string    `json:"summary"`
-	Sections []Section `json:"sections"`
-}
+// Lab surfaces share their contract with Draft without a feature dependency.
+type Line = report.Line
+type Breakdown = report.Breakdown
+type Section = report.Section
+type Surface = report.Surface
 
 // Scope is the seasons, stretches and assets a Market surface reads; it is main.RawMarketScope.
 type Scope struct {
@@ -94,9 +67,7 @@ func PhaseName(phase string) string {
 }
 
 // Assets are the traded asset kinds: the eight positions, then the picks by round and draft.
-func Assets() []string {
-	return []string{"QB", "RB", "WR", "TE", "PK", "DL", "LB", "DB", "pick1:next", "pick2:next", "pick3:next", "pick1:later", "pick2:later", "pick3:later"}
-}
+func Assets() []string { return report.Assets() }
 
 // LabScope is the Lab's scope for a request, empty filters left unset.
 func LabScope(raw Scope) lab.Scope {
@@ -117,12 +88,7 @@ func Name(kind string) string { return report.AssetName(kind) }
 func Percent(v float64) string { return report.Percent(v) }
 
 // RangeOf words a ratio's interval as a range; nil stays nil.
-func RangeOf(r *lab.Interval) *report.Range {
-	if r == nil {
-		return nil
-	}
-	return &report.Range{Interval: *r, Text: Percent(r.Value) + "; likely " + Percent(r.Lo) + " to " + Percent(r.Hi)}
-}
+func RangeOf(r *lab.Interval) *report.Range { return report.RangeOf(r) }
 
 // FailedMarket is the reading of a market that could not be read, saying why.
 func FailedMarket(err error) report.Reading[lab.Market] {
@@ -134,7 +100,7 @@ func FailedMarket(err error) report.Reading[lab.Market] {
 func (l Lab) Market(s lab.Scope) report.Reading[lab.Market] {
 	d := l.Data
 	value := lab.LeagueMarket(d, s)
-	r := report.Reading[lab.Market]{Sourced: snapshot.Sourced[lab.Market]{Value: value, Provenance: snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}}, Status: report.ReadingOK, Count: value.Trades, Threshold: lab.MinWhole, Baseline: "Median traded position or pick cost per delivered win; age splits keep this yardstick", Cutoff: d.ArchiveThrough, Method: "ridge least-squares with partial-pivot Gauss and sandwich covariance", InputSHA: lab.DataSHA, BuildStamp: l.Stamp, HowCounted: "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote."}
+	r := report.Reading[lab.Market]{Sourced: snapshot.Sourced[lab.Market]{Value: value, Provenance: report.LabProvenance(d.Built)}, Status: report.ReadingOK, Count: value.Trades, Threshold: lab.MinWhole, Baseline: "Median traded position or pick cost per delivered win; age splits keep this yardstick", Cutoff: d.ArchiveThrough, Method: "ridge least-squares with partial-pivot Gauss and sandwich covariance", InputSHA: lab.DataSHA, BuildStamp: l.Stamp, HowCounted: "Valued two-sided trades in the selected seasons and league-year stretches. Prices are anchored to a next-draft first-round pick. At least 80 trades for the whole view, 60 per half or window, and 8 delivery records with at least 0.5 forecast wins. Delivered wins are compared with the forecast at trade time. Ranges carry price and delivery uncertainty. The going rate is the asset-count-weighted median across positions and picks, never a live quote."}
 	if value.Rows == nil {
 		reason := "Fewer than 80 valued trades in this scope"
 		r.Status = report.ReadingThin

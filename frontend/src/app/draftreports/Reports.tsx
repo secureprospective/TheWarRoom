@@ -1,3 +1,4 @@
+import { subscribeDraft } from './api';
 import { useEffect, type ReactNode } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -46,14 +47,7 @@ export default function Reports() {
   const selected = commands.use().endpointIds;
   useEffect(() => {
     if (!reportState.peek().pending) void reportState.refresh();
-    const runtime = import('../../../wailsjs/runtime/runtime');
-    let disposed = false;
-    let stop: (() => void) | undefined;
-    void runtime.then(m => {
-      if (!disposed && typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-        stop = m.EventsOn('target:season', () => { void reportState.refresh(); });
-    });
-    return () => { disposed = true; stop?.(); };
+    return subscribeDraft(() => { void reportState.refresh(); });
   }, []);
   return <>
     {state.pending && <p role="status">{state.board?.loading ?? 'Reading MFL draft reports…'}</p>}

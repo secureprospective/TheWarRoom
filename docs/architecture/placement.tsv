@@ -52,8 +52,6 @@ corrections_transactions_test.go	commissioner
 database_checks_app.go	platform
 database_checks_app_test.go	platform
 dirmode_test.go	platform
-draft_app.go	draft
-draft_app_test.go	draft
 draft_reports_app.go	draft
 draft_wire_test.go	draft
 engine_refresh.go	scoring

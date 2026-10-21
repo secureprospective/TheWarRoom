@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	personalapp "github.com/secureprospective/TheWarRoom/internal/app/personal"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -101,28 +103,7 @@ func (a *App) TargetPersonalHandOff(kind string) error {
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.
 func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,
 	parse func([]byte) ([]T, error)) heldSeasonFeed[[]T] {
-	feed := heldSeasonFeed[[]T]{}
-	if a.core.History == nil {
-		feed.RefreshError = "No held archive"
-		return feed
-	}
-	found, err := a.core.History.ReferenceBodies(ctx, "TYPE="+export, func(src string, body []byte, at time.Time) bool {
-		if !sameExport(src, export, a.core.Season, leagueless) {
-			return false
-		}
-		rows, err := parse(body)
-		if err != nil {
-			return false
-		}
-		feed.Value, feed.FetchedAt = rows, at
-		return true
-	})
-	if err != nil {
-		feed.RefreshError = "Held archive unreadable: " + err.Error()
-	} else if !found {
-		feed.RefreshError = "No usable held " + export + " export"
-	}
-	return feed
+	return core.ArchivedOnly(ctx, a.core, export, leagueless, parse)
 }
 
 type PersonalPlayer struct {

@@ -4,6 +4,8 @@
 package drafttest
 
 import (
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -62,4 +64,11 @@ func Stale(t *testing.T) Draft {
 		Franchises: map[string]string{"0001": "One"}, ValueNote: "Engine points unavailable.",
 		Next: "Next draft: no date set by the commissioner.",
 	}
+}
+
+// RepoPath resolves canonical fixtures independently of the test's working directory.
+func RepoPath(parts ...string) string {
+	_, file, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(file), "..", "..", "..", "..")
+	return filepath.Join(append([]string{root}, parts...)...)
 }

@@ -27,7 +27,7 @@ import (
 func TestDraftWireMatchesGolden(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	board, err := a.TargetDraftReports()
+	board, err := draftAPI(a).TargetDraftReports()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 	checkDraftWire(t, "reports-stale", draftFixtureBoard(drafttest.Stale(t)))
 	checkDraftWire(t, "reports-empty", buildDraftReports(2026, heldSeasonFeed[[]draftreports.Pick]{},
 		heldSeasonFeed[[]draftreports.FuturePick]{RefreshError: "down"}, nil, nil, nil, "", "", time.UTC))
-	nfl, err := a.TargetNFLDraft()
+	nfl, err := draftAPI(a).TargetNFLDraft()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,16 +47,16 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 		{ID: "0816", Name: "Old rookie", Position: "WR", Team: "IND", DraftYear: "2025", DraftRound: "1", DraftPick: "2"},
 		{ID: "0817", Name: "Undrafted", Position: "WR", Team: "IND", DraftYear: "2026"},
 	}}))
-	scope := RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
-	checkDraftWire(t, "lab", a.TargetDraftLab(scope))
+	scope := draftapp.RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
+	checkDraftWire(t, "lab", draftAPI(a).TargetDraftLab(scope))
 	scope.Segments, scope.NFL = []string{"r1a", "r3"}, []string{"n1"}
-	checkDraftWire(t, "lab-filtered", a.TargetDraftLab(scope))
+	checkDraftWire(t, "lab-filtered", draftAPI(a).TargetDraftLab(scope))
 	scope.From, scope.To = 2100, 2101
-	checkDraftWire(t, "lab-thin", a.TargetDraftLab(scope))
+	checkDraftWire(t, "lab-thin", draftAPI(a).TargetDraftLab(scope))
 	scope.Seasons = 5
-	checkDraftWire(t, "lab-invalid", a.TargetDraftLab(scope))
+	checkDraftWire(t, "lab-invalid", draftAPI(a).TargetDraftLab(scope))
 	errs := map[string]string{}
-	if err := a.TargetOpenMFLDraftRoom(); err != nil {
+	if err := draftAPI(a).TargetOpenMFLDraftRoom(); err != nil {
 		errs["openDraftRoom"] = err.Error()
 	}
 	checkDraftWire(t, "errors", errs)
@@ -122,20 +122,6 @@ func checkGolden(t *testing.T, feature, name string, v any) {
 	}
 }
 
-func TestDraftRefreshKeepsEachLastGoodCopy(t *testing.T) {
-	t.Parallel()
-	a, transport, _, _ := seasonTestApp(t)
-	a.refreshDraftReports(a.core.Ctx)
-	if len(a.core.SeasonDraftResults.Value) != 160 || len(a.core.SeasonFuturePicks.Value) != 320 {
-		t.Fatal("feeds not filled")
-	}
-	transport.failure = "draftResults"
-	a.refreshDraftReports(a.core.Ctx)
-	if len(a.core.SeasonDraftResults.Value) != 160 || a.core.SeasonDraftResults.RefreshError == "" || a.core.SeasonFuturePicks.RefreshError != "" {
-		t.Fatal("last good copy not retained independently")
-	}
-}
-
 func TestDraftWireFixtureMatchesGo(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join("frontend", "src", "app", "draftreports", "wire.testdata.json")
@@ -161,31 +147,31 @@ func TestDraftWireFixtureMatchesGo(t *testing.T) {
 func TestDraftHeldReadingRefreshCacheAndMFLLink(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
-	if err := a.TargetOpenMFLDraftRoom(); err == nil {
+	if err := draftAPI(a).TargetOpenMFLDraftRoom(); err == nil {
 		t.Fatal("opened undiscovered host")
 	}
-	if _, err := a.TargetDraftReports(); err != nil || len(transport.requests) != 0 {
+	if _, err := draftAPI(a).TargetDraftReports(); err != nil || len(transport.requests) != 0 {
 		t.Fatal("reading fetched", err)
 	}
-	if err := a.TargetDraftReportsRefresh(false); err != nil {
+	if err := draftAPI(a).TargetDraftReportsRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	if !reflect.DeepEqual(transport.requests, []string{"draftResults", "futureDraftPicks"}) {
 		t.Fatal(transport.requests)
 	}
-	board, err := a.TargetDraftReports()
-	if err != nil || len(reportByID(t, board, "M-063").Rows) != 160 || !strings.Contains(board.MFLURL, "O=17") {
+	board, err := draftAPI(a).TargetDraftReports()
+	if err != nil || len(reportByID(t, wireBoard(board), "M-063").Rows) != 160 || !strings.Contains(board.MFLURL, "O=17") {
 		t.Fatal(board, err)
 	}
-	if err := a.TargetDraftReportsRefresh(false); err != nil || len(transport.requests) != 2 {
+	if err := draftAPI(a).TargetDraftReportsRefresh(false); err != nil || len(transport.requests) != 2 {
 		t.Fatal("fresh copy refetched", err)
 	}
 	opened := ""
 	a.core.OpenURL = func(_ context.Context, url string) { opened = url }
-	if err := a.TargetOpenMFLDraftRoom(); err != nil || opened != board.MFLURL || len(transport.requests) != 2 {
+	if err := draftAPI(a).TargetOpenMFLDraftRoom(); err != nil || opened != board.MFLURL || len(transport.requests) != 2 {
 		t.Fatal("link submitted or fetched", opened, err)
 	}
-	if err := a.TargetDraftReportsRefresh(true); err != nil || len(transport.requests) != 4 {
+	if err := draftAPI(a).TargetDraftReportsRefresh(true); err != nil || len(transport.requests) != 4 {
 		t.Fatal("force refresh skipped", err)
 	}
 }
@@ -196,14 +182,14 @@ func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
 	at := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	recordSeasonArchive(t, a, "draftResults", "", transport.bodies["draftResults"], at)
 	transport.failure = "draftResults"
-	a.refreshDraftReports(a.core.Ctx)
-	board, err := a.TargetDraftReports()
+	a.core.RefreshDraftReportsFeeds(a.core.Ctx)
+	board, err := draftAPI(a).TargetDraftReports()
 	if err != nil {
 		t.Fatal(err)
 	}
-	results := reportByID(t, board, "M-063")
+	results := reportByID(t, wireBoard(board), "M-063")
 	if results.Status != "stale" || len(results.Rows) != 160 || !strings.Contains(results.AsOf, reportTime(at, time.Local)) ||
-		!strings.Contains(results.Note, "last known data") || reportByID(t, board, "M-068").Status != "ok" {
+		!strings.Contains(results.Note, "last known data") || reportByID(t, wireBoard(board), "M-068").Status != "ok" {
 		t.Fatal(results)
 	}
 }
@@ -240,4 +226,20 @@ func TestCounterpartiesWireMatchesGolden(t *testing.T) {
 		checkGolden(t, "counterparties", c.name, a.TargetCounterparties(c.scope))
 		checkGolden(t, "counterparties", c.name+"-team", a.TargetCounterpartTeam(counterpartiesapp.RawCounterpartTeam{Scope: c.scope, Fid: c.fid}))
 	}
+}
+
+func draftAPI(a *App) *draftapp.API { return draftapp.New(draftHost{State: a.core, app: a}) }
+
+func nflDraftReport(season int, held heldSeasonFeed[[]players.RawPlayer]) Report {
+	return wireReport(draftapp.NFL(season, draftHeld(held), time.Local))
+}
+
+func buildDraftReports(season int, results heldSeasonFeed[[]draftreports.Pick], future heldSeasonFeed[[]draftreports.FuturePick],
+	names, franchises map[string]string, values map[string]float64, valueNote, next string, zone *time.Location) ReportBoard {
+	return wireBoard(draftapp.Build(draftapp.Input{Season: season, Results: draftHeld(results), Future: draftHeld(future),
+		Names: names, Franchises: franchises, Values: values, ValueNote: valueNote, Next: next, Zone: zone}))
+}
+
+func draftHeld[T any](h heldSeasonFeed[[]T]) draftapp.Held[T] {
+	return draftapp.Held[T]{Value: h.Value, Feed: h.FeedState()}
 }

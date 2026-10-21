@@ -94,13 +94,7 @@ export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>
 
 export function TargetDraftIR(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
-export function TargetDraftLab(arg1:main.RawDraftScope):Promise<main.Reading_main_MarketSurface_>;
-
 export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelope.Receipt>;
-
-export function TargetDraftReports():Promise<main.ReportBoard>;
-
-export function TargetDraftReportsRefresh(arg1:boolean):Promise<void>;
 
 export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
@@ -129,8 +123,6 @@ export function TargetMarketReportsRefresh(arg1:boolean):Promise<void>;
 export function TargetMarketStretches(arg1:main.RawMarketScope):Promise<main.Reading_main_MarketSurface_>;
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
-
-export function TargetNFLDraft():Promise<main.Report>;
 
 export function TargetNativeAssets(arg1:string):Promise<commissioner.NativeAssets>;
 
@@ -191,8 +183,6 @@ export function TargetNowRefresh(arg1:number,arg2:boolean):Promise<void>;
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 
 export function TargetOpenMFLAccounting():Promise<void>;
-
-export function TargetOpenMFLDraftRoom():Promise<void>;
 
 export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
 

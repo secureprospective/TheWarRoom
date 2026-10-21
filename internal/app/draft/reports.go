@@ -2,10 +2,7 @@
 // pace, status and live room, the steals and busts against engine values, future pick ownership,
 // and the NFL draft read from the held players export.
 //
-// It is the feature service behind the root bindings App.TargetDraftReports and
-// App.TargetNFLDraft. It holds no state and starts nothing: the caller reads the held feeds
-// under its own lock and passes copies in. The Draft Lab (App.TargetDraftLab) stays at root
-// until the Market surface it is built on has a shared contract.
+// The feature API reads detached shared feeds through its Host and starts no workers.
 package draft
 
 import (

@@ -3,6 +3,7 @@ import { array } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
 import { ReportView } from '../reports/ReportView';
 import { commands } from '../commands/registry';
+import { readNFLDraft } from '../draftreports/api';
 import type * as Bindings from '../../../wailsjs/go/main/App';
 
 export default function RosterReports({ mine, draft = false }: { mine: string; draft?: boolean }) {
@@ -15,7 +16,7 @@ export default function RosterReports({ mine, draft = false }: { mine: string; d
         if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
           throw new Error('Roster reports need the desktop app; no sample data is substituted.');
         const app = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-        const reports = draft ? [report(await app.TargetNFLDraft(), 'NFL draft')]
+        const reports = draft ? [await readNFLDraft()]
           : array(await app.TargetRosterReports(mine), 'Roster reports', report);
         if (active) { setReports(reports); setError(''); }
       } catch (cause) { if (active) setError(String(cause)); }

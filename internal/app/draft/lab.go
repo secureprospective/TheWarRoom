@@ -1,4 +1,4 @@
-package main
+package draft
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ func (r RawDraftScope) Validate() error {
 			seen[v] = true
 		}
 	}
-	if !slices.Contains(marketAssets()[:8], r.Group) {
+	if !slices.Contains(report.Assets()[:8], r.Group) {
 		return fmt.Errorf("draft scope: invalid position %q", r.Group)
 	}
 	return nil
@@ -46,13 +46,13 @@ func draftScope(raw RawDraftScope) lab.DraftScopeFilter {
 	}
 	return s
 }
-func (a *App) TargetDraftLab(raw RawDraftScope) Reading[MarketSurface] {
+func (a *API) TargetDraftLab(raw RawDraftScope) LabReading {
 	if err := raw.Validate(); err != nil {
-		return failedDraft(err)
+		return LabReading(failedDraft(err))
 	}
-	d, err := a.lab()
+	d, stamp, err := a.host.DraftFacts()
 	if err != nil {
-		return failedDraft(err)
+		return LabReading(failedDraft(err))
 	}
 	s := draftScope(raw)
 	picks := lab.DraftScope(d, s)
@@ -62,23 +62,24 @@ func (a *App) TargetDraftLab(raw RawDraftScope) Reading[MarketSurface] {
 			count++
 		}
 	}
-	value := MarketSurface{Summary: fmt.Sprintf("%s with %s finished; %s profile. 100%% is the same slots in other classes.", countLabel(count, "pick"), countLabel(raw.Seasons, "season"), marketName(raw.Group)), Sections: []MarketSection{}}
+	value := report.Surface{Summary: fmt.Sprintf("%s with %s finished; %s profile. 100%% is the same slots in other classes.", report.Count(count, "pick"), report.Count(raw.Seasons, "season"), report.AssetName(raw.Group)), Sections: []report.Section{}}
 	reason := ""
 	if count < 40 {
 		reason = "Fewer than 40 judged picks; widen the seasons, stretches or NFL rounds, or judge on fewer seasons"
 	} else {
 		value.Sections = draftSections(d, s, picks, raw.Group)
 	}
-	base := marketReading(d, lab.Scope{From: s.From, To: s.To})
-	r := Reading[MarketSurface]{Sourced: snapshot.Sourced[MarketSurface]{Value: value, Provenance: base.Provenance}, Status: ReadingOK, Count: count, Threshold: 40, Baseline: "100% is wins returned by the same overall slots in other draft classes", Cutoff: base.Cutoff, Method: "slot-relative ratio estimator, 1.96 standard-error ranges and monotone nine-slot value curve", InputSHA: base.InputSHA, BuildStamp: base.BuildStamp, HowCounted: draftHowCounted()}
+	provenance := report.LabProvenance(d.Built)
+	r := report.Reading[report.Surface]{Sourced: snapshot.Sourced[report.Surface]{Value: value, Provenance: provenance}, Status: report.ReadingOK, Count: count, Threshold: 40, Baseline: "100% is wins returned by the same overall slots in other draft classes", Cutoff: d.ArchiveThrough, Method: "slot-relative ratio estimator, 1.96 standard-error ranges and monotone nine-slot value curve", InputSHA: lab.DataSHA, BuildStamp: stamp, HowCounted: draftHowCounted()}
 	if reason != "" {
-		r.Status = ReadingThin
+		r.Status = report.ReadingThin
 		r.AbsenceReason = &reason
 	}
-	return r
+	return LabReading(r)
 }
-func failedDraft(err error) Reading[MarketSurface] {
-	r := failedSurface(err)
+func failedDraft(err error) report.Reading[report.Surface] {
+	reason := err.Error()
+	r := report.Reading[report.Surface]{Status: report.ReadingFailed, AbsenceReason: &reason, InputSHA: lab.DataSHA}
 	r.Threshold = 40
 	r.Method = "historical draft against the slot"
 	return r
@@ -89,14 +90,14 @@ func draftHowCounted() string {
 func draftLabel(id string) string {
 	return map[string]string{"r1a": "1.01–1.10", "r1b": "1.11–1.32", "r2a": "2.01–2.16", "r2b": "2.17–2.32", "r3": "Round 3", "r4": "Round 4", "r5": "Round 5 on", "n1": "NFL round 1", "n2": "NFL round 2", "n3": "NFL round 3", "n4": "NFL rounds 4–7", "nx": "No NFL pick that spring", "a21": "21 or younger", "a22": "22", "a23": "23 or older"}[id]
 }
-func draftCellLine(c lab.DraftCell) MarketLine {
+func draftCellLine(c lab.DraftCell) report.Line {
 	label := draftLabel(c.Segment + c.NFL + c.Age)
 	if c.Season > 0 {
 		label = fmt.Sprintf("Year %d", c.Season)
 	}
-	line := MarketLine{Label: label, Count: c.N, Detail: "Too few picks or less than 0.5 slot wins; not a zero"}
+	line := report.Line{Label: label, Count: c.N, Detail: "Too few picks or less than 0.5 slot wins; not a zero"}
 	if c.Ratio != nil {
-		line.Range = marketRange(&lab.Interval{Value: *c.Ratio, Lo: *c.Lo, Hi: *c.Hi})
+		line.Range = report.RangeOf(&lab.Interval{Value: *c.Ratio, Lo: *c.Lo, Hi: *c.Hi})
 		line.Detail = slotTone(c.Tone)
 	}
 	if c.Best {
@@ -107,38 +108,38 @@ func draftCellLine(c lab.DraftCell) MarketLine {
 	}
 	return line
 }
-func draftAxis(id, title string, cells []lab.DraftCell) MarketSection {
-	s := MarketSection{ID: id, Title: title, Note: "100% is the slot's return. Unavailable ranges are not zeros.", Rows: []MarketLine{}}
+func draftAxis(id, title string, cells []lab.DraftCell) report.Section {
+	s := report.Section{ID: id, Title: title, Note: "100% is the slot's return. Unavailable ranges are not zeros.", Rows: []report.Line{}}
 	for _, c := range cells {
 		s.Rows = append(s.Rows, draftCellLine(c))
 	}
 	return s
 }
-func draftSections(d *lab.Data, s lab.DraftScopeFilter, picks []lab.JudgedPick, group string) []MarketSection {
+func draftSections(d *lab.Data, s lab.DraftScopeFilter, picks []lab.JudgedPick, group string) []report.Section {
 	p := lab.PositionDraft(picks, group)
-	sections := []MarketSection{
-		draftAxis("L-15", "Return by draft stretch · "+marketName(group), p.Where),
-		draftAxis("L-16", "Return by season after draft · "+marketName(group), p.When),
-		draftAxis("L-17", "Return by NFL draft round · "+marketName(group), p.NFL),
-		draftAxis("L-18", "Return by age at the draft · "+marketName(group), p.Age),
+	sections := []report.Section{
+		draftAxis("L-15", "Return by draft stretch · "+report.AssetName(group), p.Where),
+		draftAxis("L-16", "Return by season after draft · "+report.AssetName(group), p.When),
+		draftAxis("L-17", "Return by NFL draft round · "+report.AssetName(group), p.NFL),
+		draftAxis("L-18", "Return by age at the draft · "+report.AssetName(group), p.Age),
 		draftLikeSection(p), draftHitsSection(p), draftKeptSection(p), draftBuySection(d, s, p),
 	}
 	all := lab.PositionDraft(picks, "")
 	sections[0] = draftAxis("L-15", "Return by draft stretch · all positions", all.Where)
 	sections[1] = draftAxis("L-16", "Return by season after draft · all positions", all.When)
-	for _, group := range marketAssets()[:8] {
+	for _, group := range report.Assets()[:8] {
 		position := lab.PositionDraft(picks, group)
 		for i, cells := range [][]lab.DraftCell{position.Where, position.When} {
 			rows := draftAxis("", "", cells).Rows
-			sections[i].Breakdowns = append(sections[i].Breakdowns, MarketBreakdown{
-				Title: marketName(group), Count: position.N, Rows: rows,
+			sections[i].Breakdowns = append(sections[i].Breakdowns, report.Breakdown{
+				Title: report.AssetName(group), Count: position.N, Rows: rows,
 			})
 		}
 	}
 	return sections
 }
-func draftLikeSection(p lab.DraftPosition) MarketSection {
-	section := MarketSection{ID: "L-19", Title: "Plays like pick #N", Note: "Historical position cohorts, not predictions for a named prospect. Each line opens that round's pick asset in the Inspector.", Rows: []MarketLine{}}
+func draftLikeSection(p lab.DraftPosition) report.Section {
+	section := report.Section{ID: "L-19", Title: "Plays like pick #N", Note: "Historical position cohorts, not predictions for a named prospect. Each line opens that round's pick asset in the Inspector.", Rows: []report.Line{}}
 	for i, c := range p.Where {
 		line := draftCellLine(c)
 		round := []int{1, 1, 2, 2, 3, 3, 3}[i]
@@ -150,31 +151,31 @@ func draftLikeSection(p lab.DraftPosition) MarketSection {
 	}
 	return section
 }
-func draftHitsSection(p lab.DraftPosition) MarketSection {
-	line := MarketLine{Label: marketName(p.Group), Count: p.N, Detail: "Fewer than 8 judged picks; no hit-rate estimate"}
+func draftHitsSection(p lab.DraftPosition) report.Section {
+	line := report.Line{Label: report.AssetName(p.Group), Count: p.N, Detail: "Fewer than 8 judged picks; no hit-rate estimate"}
 	if h := p.Hits; h != nil {
-		line.Detail = percent(h.Rate) + " became starters or better, against " + percent(h.Baseline) + " for the same stretches · " + chanceTone(h.Tone)
+		line.Detail = report.Percent(h.Rate) + " became starters or better, against " + report.Percent(h.Baseline) + " for the same stretches · " + chanceTone(h.Tone)
 	}
-	return MarketSection{ID: "L-20", Title: "Hit rate against the stretch baseline", Note: "Best season was top or starter; the baseline matches each pick's draft stretch.", Rows: []MarketLine{line}}
+	return report.Section{ID: "L-20", Title: "Hit rate against the stretch baseline", Note: "Best season was top or starter; the baseline matches each pick's draft stretch.", Rows: []report.Line{line}}
 }
-func draftKeptSection(p lab.DraftPosition) MarketSection {
-	line := MarketLine{Label: marketName(p.Group), Detail: "No known year-2 retention outcomes"}
+func draftKeptSection(p lab.DraftPosition) report.Section {
+	line := report.Line{Label: report.AssetName(p.Group), Detail: "No known year-2 retention outcomes"}
 	for _, x := range p.All {
 		if x.KeptYear2 != nil {
 			line.Count++
 		}
 	}
 	if p.Kept != nil {
-		line.Detail = percent(*p.Kept) + " kept by year 2 among known outcomes"
+		line.Detail = report.Percent(*p.Kept) + " kept by year 2 among known outcomes"
 	}
-	return MarketSection{ID: "L-21", Title: "Kept by year 2", Note: "Unknown retention is excluded, not counted as lost. Includes picks not yet judged on total return.", Rows: []MarketLine{line}}
+	return report.Section{ID: "L-21", Title: "Kept by year 2", Note: "Unknown retention is excluded, not counted as lost. Includes picks not yet judged on total return.", Rows: []report.Line{line}}
 }
-func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) MarketSection {
+func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) report.Section {
 	m := lab.LeagueMarket(d, lab.Scope{From: s.From, To: s.To, ByAge: true})
 	buy := lab.DraftBuy(m, p.All, p.Group)
-	section := MarketSection{ID: "L-22", Title: "Draft it, or buy it", Note: "Cost per delivered win against the going rate in the same seasons; draft stretches and NFL filters do not narrow the trade market.", Rows: []MarketLine{}}
+	section := report.Section{ID: "L-22", Title: "Draft it, or buy it", Note: "Cost per delivered win against the going rate in the same seasons; draft stretches and NFL filters do not narrow the trade market.", Rows: []report.Line{}}
 	for _, r := range buy.Rows {
-		line := MarketLine{Key: r.Kind, Label: marketName(r.Kind), Count: r.N, Range: marketRange(r.Cost), Detail: "Historical cost per delivered win"}
+		line := report.Line{Key: r.Kind, Label: report.AssetName(r.Kind), Count: r.N, Range: report.RangeOf(r.Cost), Detail: "Historical cost per delivered win"}
 		if buy.Cheapest != nil && r.Kind == *buy.Cheapest {
 			line.Detail += " · lowest priced age in view (not a beyond-chance claim)"
 		}
@@ -189,9 +190,6 @@ func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) M
 	return section
 }
 
-// countLabel and countNumber are report.Count and report.Number, the shared count wordings.
-func countLabel(n int, noun string) string { return report.Count(n, noun) }
-func countNumber(n int) string             { return report.Number(n) }
 func slotTone(tone string) string {
 	return map[string]string{"down": "below its slot beyond chance", "even": "within chance of its slot", "up": "above its slot beyond chance"}[tone]
 }
