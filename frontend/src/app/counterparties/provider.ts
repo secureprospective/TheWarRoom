@@ -1,5 +1,3 @@
-import { TargetCounterparties, TargetCounterpartTeam } from '../../../wailsjs/go/main/App';
-import { main } from '../../../wailsjs/go/models';
 import { freshness } from '../data/parse';
 import { object, text, integer, choice, array } from '../data/parseValues';
 import type {
@@ -536,62 +534,3 @@ export function parseTeamPanel(value: unknown): TeamPanelReading {
   }
   return parsed;
 }
-function unavailable(reason: string, status: 'failed' | 'not_wired'): CounterpartiesReading {
-  return {
-    status,
-    absenceReason: reason,
-    count: 0,
-    threshold: 40,
-    baseline: '',
-    cutoff: '',
-    method: '',
-    inputSHA: '',
-    buildStamp: '',
-    howCounted: '',
-  };
-}
-function teamUnavailable(reason: string, status: 'failed' | 'not_wired'): TeamPanelReading {
-  return {
-    status,
-    absenceReason: reason,
-    count: 0,
-    threshold: 1,
-    baseline: '',
-    cutoff: '',
-    method: '',
-    inputSHA: '',
-    buildStamp: '',
-    howCounted: '',
-  };
-}
-async function read<T>(
-  call: () => Promise<T>,
-  fail: (reason: string, status: 'failed' | 'not_wired') => T,
-): Promise<T> {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go) {
-    return fail(
-      'Counterparties needs the desktop app; no browser fixtures are substituted',
-      'not_wired',
-    );
-  }
-  try {
-    return await call();
-  } catch (cause) {
-    return fail(
-      `Counterparties read failed: ${String(cause)}. Retry the held archive reading.`,
-      'failed',
-    );
-  }
-}
-export const counterpartProvider = {
-  surface(scope: CounterScope) {
-    return read(async () => parseCounterparties(await TargetCounterparties(scope)), unavailable);
-  },
-  team(scope: CounterScope, fid: string) {
-    return read(
-      async () =>
-        parseTeamPanel(await TargetCounterpartTeam(new main.RawCounterpartTeam({ scope, fid }))),
-      teamUnavailable,
-    );
-  },
-};

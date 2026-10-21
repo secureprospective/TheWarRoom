@@ -299,6 +299,24 @@ The contracts and roster-action extraction (reorg PR 13) added the plans a GM dr
 - Placement and SYSTEM_MAP changes that remove old paths must accompany the move commit:
   those gates reject references to deleted files. Finish the narrative and root ratchet next.
 
+### Counterparties Feature API move
+
+- The frozen Lab has no readiness/authorization gate, shared mutex or refresh publication.
+  `core.State.Lab` preserves the shared once-decoder and zero-state fallback; the host detaches
+  only Trades (including nested leg/player pointers), TeamSeasons and Franchises plus the two
+  timestamps the service reads. Do not add a live-feed lock or a startup wait to this path.
+- Existing service payloads already have identical wire fields, so the API uses them directly
+  through concrete `BoardReading` and `TeamCounterpartReading` report envelopes. Wails discovers
+  their nested models; returning the generic `report.Reading[T]` directly omits the nested
+  payload model classes. Envelope `value: any` remains the existing Wails limitation.
+  There is no payload converter left to twin-test. Canonical root goldens still call the API.
+- Shared asset names/percent formatting join Number/Count in report; Market delegates. Root
+  Offers retains its own TeamOption wire declaration and provenance delegate; unrelated Draft
+  wording assertions move to its existing test file. Neither scoped root file needs to remain.
+- The registry has endpoint.open navigation verbs, not verbs for either backend read. Their
+  command IDs, roles, gravity and version remain Unset, blocking future server publication.
+  Counterparties has no runtime subscription or disposal lifecycle to migrate.
+
 ## Comms additions
 
 - Held season exports pass as `report.Feed[T]` snapshots; `report.Shell`, `report.Time` and

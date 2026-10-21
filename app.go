@@ -73,6 +73,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
 	a := &App{core: &core.State{Started: make(chan struct{}),
+		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
 		MovesChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:moves") },

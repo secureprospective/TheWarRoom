@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -51,6 +52,7 @@ func main() {
 		Bind: []interface{}{
 			app,
 			comms.New(app.core),
+			counterparties.New(app.core),
 		},
 	})
 

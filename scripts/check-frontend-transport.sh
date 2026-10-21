@@ -40,9 +40,10 @@ for (const file of files(path.resolve('frontend/src'))) {
   function moduleAccess(spec, node) {
     const match = spec.match(/wailsjs\/go\/([^/]+)\//);
     if (match && match[1] !== 'main') check(match[1], node, 'generated feature transport outside its adapter');
-    if (file.startsWith(path.join(root, 'comms') + path.sep) &&
+    const feature = ['comms', 'counterparties'].find(name => file.startsWith(path.join(root, name) + path.sep));
+    if (feature &&
         /wailsjs\/(?:go\/main\/App|runtime\/)/.test(spec))
-      check('comms', node, 'Comms backend access outside its feature adapter', !/go\/main\/App/.test(spec));
+      check(feature, node, 'backend access outside its feature adapter', !/go\/main\/App/.test(spec));
   }
   // Discover model namespace aliases before inspecting accesses, including multiline imports.
   for (const statement of source.statements) {
@@ -69,7 +70,9 @@ for (const file of files(path.resolve('frontend/src'))) {
     if (at >= 0 && parts[at + 1] === 'go' && parts[at + 2]) {
       const feature = parts[at + 2];
       if (feature !== 'main') check(feature, node, 'window.go feature access outside its adapter');
-      else if (file.startsWith(path.join(root, 'comms') + path.sep)) check('comms', node, 'Comms still accesses the root App', false);
+      else for (const name of ['comms', 'counterparties']) {
+        if (file.startsWith(path.join(root, name) + path.sep)) check(name, node, 'feature still accesses the root App', false);
+      }
     }
     if (modelAliases.has(parts[0]) && features.has(parts[1])) check(parts[1], node, 'generated feature models outside its adapter');
     ts.forEachChild(node, visit);

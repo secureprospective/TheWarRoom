@@ -1,6 +1,8 @@
 comms.API.TargetComms
 comms.API.TargetCommsRefresh
 comms.API.TargetOpenComms
+counterparties.API.TargetCounterpartTeam
+counterparties.API.TargetCounterparties
 main.App.DeleteMFLKey
 main.App.GetCrosswalkReport
 main.App.GetParams
@@ -47,8 +49,6 @@ main.App.TargetCommissionerSchedule
 main.App.TargetContractActs
 main.App.TargetContracts
 main.App.TargetCorrections
-main.App.TargetCounterpartTeam
-main.App.TargetCounterparties
 main.App.TargetCrosswalk
 main.App.TargetDataRefresh
 main.App.TargetDataSources

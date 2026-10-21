@@ -10,7 +10,8 @@ import { CounterReading, CounterControls, TeamTable, sortedRows, panelEndpoint }
 import { TeamReading } from './TeamPanel';
 import { EdgeBar, teamIdentity } from './Displays';
 import { createCounterState, filtered } from './state';
-import { parseCounterparties, parseTeamPanel, counterpartProvider } from './provider';
+import { parseCounterparties, parseTeamPanel } from './provider';
+import { counterpartProvider } from './api';
 import { surfaceWire, teamWire, thinWire, emptyWire } from './wire.testdata';
 import type { CounterpartiesReading, CounterScope } from './contract';
 const scope: CounterScope = {
@@ -134,11 +135,13 @@ it('awaits desktop calls before parsing and reports invalid or rejected response
   const surface = vi.fn(async () => surfaceWire),
     team = vi.fn(async () => teamWire);
   globalThis.window = {
-    go: { main: { App: { TargetCounterparties: surface, TargetCounterpartTeam: team } } },
+    go: { counterparties: { API: { TargetCounterparties: surface, TargetCounterpartTeam: team } } },
   } as unknown as Window & typeof globalThis;
   try {
     expect((await counterpartProvider.surface(scope)).status).toBe('ok');
     expect((await counterpartProvider.team(scope, '0001')).status).toBe('ok');
+    expect(surface).toHaveBeenLastCalledWith(scope);
+    expect(team).toHaveBeenLastCalledWith(expect.objectContaining({ scope, fid: '0001' }));
     surface.mockRejectedValueOnce(new Error('fingerprint mismatch'));
     expect((await counterpartProvider.surface(scope)).absenceReason).toContain(
       'fingerprint mismatch',
@@ -465,4 +468,23 @@ it('renders filtered shares without chance arrows and excluded tiers without thi
   }
   expect(html(TeamReading, panel)).toContain('Not in the current filter');
   expect(html(TeamReading, panel)).not.toMatch(/As [^<]+: .*likely/);
+});
+
+it('keeps browser-without-go and missing-feature transport paths honest', async () => {
+  const old = globalThis.window;
+  globalThis.window = {} as Window & typeof globalThis;
+  try {
+    for (const reading of [await counterpartProvider.surface(scope),
+      await counterpartProvider.team(scope, '0001')]) {
+      expect(reading.status).toBe('not_wired');
+      expect(reading.absenceReason).toBe(
+        'Counterparties needs the desktop app; no browser fixtures are substituted',
+      );
+    }
+    globalThis.window = { go: {} } as unknown as Window & typeof globalThis;
+    expect((await counterpartProvider.surface(scope)).status).toBe('failed');
+    expect((await counterpartProvider.team(scope, '0001')).status).toBe('failed');
+  } finally {
+    globalThis.window = old;
+  }
 });

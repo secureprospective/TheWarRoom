@@ -13,39 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
-type RawCounterpartiesScope struct {
-	From     int      `json:"from"`
-	To       int      `json:"to"`
-	Tiers    []string `json:"tiers"`
-	Windows  []string `json:"windows"`
-	Postures []string `json:"postures"`
-	Team     string   `json:"team"`
-}
-
-func (r RawCounterpartiesScope) Validate() error {
-	if r.From < 1900 || r.To > 2200 || r.From > r.To {
-		return fmt.Errorf("counterparties scope: invalid season range")
-	}
-	sets := []struct {
-		label           string
-		values, allowed []string
-	}{
-		{"tier", r.Tiers, lab.TeamTiers()},
-		{"window", r.Windows, []string{"spring", "summer", "season"}},
-		{"posture", r.Postures, lab.TeamPostures()},
-	}
-	for _, set := range sets {
-		seen := make(map[string]bool)
-		for _, v := range set.values {
-			if !slices.Contains(set.allowed, v) || seen[v] {
-				return fmt.Errorf("counterparties scope: invalid or duplicate %s %q", set.label, v)
-			}
-			seen[v] = true
-		}
-	}
-	return nil
-}
-
 // counterScope keeps an empty selection meaning "no filter", like the Lab's null.
 func (svc Service) counterScope(raw RawCounterpartiesScope) lab.TeamScope {
 	s := lab.TeamScope{From: max(2017, raw.From), To: raw.To, Team: raw.Team}

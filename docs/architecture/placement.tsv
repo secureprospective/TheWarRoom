@@ -49,8 +49,6 @@ control_room_app.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
-counterparties_app.go	counterparties
-counterparties_app_test.go	counterparties
 crosswalk_app.go	sources
 data_sources_app.go	sources
 data_sources_test.go	sources

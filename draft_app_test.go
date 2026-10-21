@@ -156,3 +156,61 @@ func TestDraftSummaryAndClosedBreakdownData(t *testing.T) {
 		}
 	}
 }
+
+func ptrFloat(v float64) *float64 { return &v }
+
+func TestDraftToneWordsOnScreen(t *testing.T) {
+	t.Parallel()
+	for tone, want := range map[string]string{
+		"up":   "above its slot beyond chance",
+		"down": "below its slot beyond chance",
+		"even": "within chance of its slot",
+	} {
+		line := draftCellLine(lab.DraftCell{Tone: tone, Ratio: ptrFloat(1.1), Lo: ptrFloat(1.0), Hi: ptrFloat(1.2)})
+		if line.Detail != want {
+			t.Fatalf("tone %s rendered %q, want %q", tone, line.Detail, want)
+		}
+	}
+	for tone, want := range map[string]string{
+		"up":   "above baseline beyond chance",
+		"down": "below baseline beyond chance",
+		"even": "within chance of baseline",
+	} {
+		h := lab.DraftHits{Rate: 0.4, Baseline: 0.2, Tone: tone}
+		section := draftHitsSection(lab.DraftPosition{Hits: &h})
+		if !strings.Contains(section.Rows[0].Detail, want) {
+			t.Fatalf("hits tone %s missing words %q in %q", tone, want, section.Rows[0].Detail)
+		}
+		if strings.Contains(section.Rows[0].Detail, "· "+tone) {
+			t.Fatalf("raw tone token reached the screen: %q", section.Rows[0].Detail)
+		}
+	}
+}
+
+func TestCountLabelPlural(t *testing.T) {
+	t.Parallel()
+	for _, c := range []struct {
+		n          int
+		noun, want string
+	}{
+		{1, "record", "1 record"}, {2, "record", "2 records"},
+		{1, "pick", "1 pick"}, {0, "trade", "0 trades"},
+		{1, "trade", "1 trade"}, {1, "trade side", "1 trade side"},
+	} {
+		if got := countLabel(c.n, c.noun); got != c.want {
+			t.Errorf("countLabel(%d, %q) = %q, want %q", c.n, c.noun, got, c.want)
+		}
+	}
+}
+
+func TestCounterpartiesSlotTone(t *testing.T) {
+	for tone, want := range map[string]string{
+		"up":   "above its slot beyond chance",
+		"down": "below its slot beyond chance",
+		"even": "within chance of its slot",
+	} {
+		if slotTone(tone) != want {
+			t.Errorf("slot tone %s rendered %q", tone, slotTone(tone))
+		}
+	}
+}

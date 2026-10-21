@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 )
 
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
@@ -123,19 +124,26 @@ func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
 func TestBindingManifest(t *testing.T) {
 	t.Parallel()
 	methods := map[string]bool{}
-	for _, command := range comms.Commands() {
+	for _, command := range slices.Concat(
+		comms.Commands(),
+		counterparties.Commands(),
+	) {
 		if methods[command.Method] {
 			t.Fatalf("duplicate catalog method %s", command.Method)
 		}
 		methods[command.Method] = true
 	}
 	var got []string
-	for _, typ := range []reflect.Type{reflect.TypeFor[*App](), reflect.TypeFor[*comms.API]()} {
+	for _, typ := range []reflect.Type{
+		reflect.TypeFor[*App](),
+		reflect.TypeFor[*comms.API](),
+		reflect.TypeFor[*counterparties.API](),
+	} {
 		prefix := typ.Elem().String() + "."
 		for i := range typ.NumMethod() {
 			name := typ.Method(i).Name
 			got = append(got, prefix+name)
-			if typ == reflect.TypeFor[*comms.API]() {
+			if typ != reflect.TypeFor[*App]() {
 				if !methods[name] {
 					t.Errorf("bound method %s%s has no catalog entry", prefix, name)
 				}

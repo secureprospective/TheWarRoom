@@ -100,10 +100,6 @@ export function TargetContracts(arg1:snapshot.RawContractScope):Promise<main.Con
 
 export function TargetCorrections(arg1:string):Promise<commissioner.Corrections>;
 
-export function TargetCounterpartTeam(arg1:main.RawCounterpartTeam):Promise<main.Reading_main_TeamCounterpart_>;
-
-export function TargetCounterparties(arg1:main.RawCounterpartiesScope):Promise<main.Reading_main_Counterparties_>;
-
 export function TargetCrosswalk():Promise<main.Report>;
 
 export function TargetDataRefresh(arg1:string):Promise<main.DataActResult>;

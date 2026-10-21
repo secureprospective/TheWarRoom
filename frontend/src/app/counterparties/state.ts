@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { counterpartProvider } from './provider';
+import { counterpartProvider } from './api';
 import type { ReadingShell } from '../market/contract';
 import type { MarketFilter } from '../market/contract';
 import type { CounterScope, CounterpartiesReading, TeamPanelReading } from './contract';
