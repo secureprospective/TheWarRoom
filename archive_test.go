@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -160,4 +161,36 @@ func fillWire(v reflect.Value, n *int) {
 		panic("fillWire: add a case for " + kind.String())
 	}
 	set()
+}
+
+func TestArchiveStartupDenial(t *testing.T) {
+	a := targetTestApp(t)
+	a.core.StartupErr = errors.New("fixture startup failure")
+	_, err := a.TargetArchive(-1, "invalid", "invalid")
+	if err == nil || err.Error() != "archive: startup: fixture startup failure" {
+		t.Fatal(err)
+	}
+}
+
+func TestArchiveWireTwinsMatch(t *testing.T) {
+	for _, populated := range []bool{false, true} {
+		var built archiveapp.Board
+		if populated {
+			n := 0
+			fillWire(reflect.ValueOf(&built).Elem(), &n)
+		}
+		got := ArchiveBoard{Board: wireBoard(built.Board), Season: built.Season,
+			Seasons: wireChoices(built.Seasons), Team: built.Team, Other: built.Other, Teams: wireChoices(built.Teams)}
+		wantJSON, err := json.Marshal(built)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotJSON, err := json.Marshal(got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(wantJSON, gotJSON) {
+			t.Fatalf("archive wire twin differs: %s != %s", wantJSON, gotJSON)
+		}
+	}
 }
