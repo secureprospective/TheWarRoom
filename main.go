@@ -18,7 +18,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/research"
-	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 
 	"github.com/wailsapp/wails/v2"
@@ -113,7 +112,7 @@ func bindings(app *App) []interface{} {
 		offers.New(offersHost{State: app.core, app: app}),
 		raceapp.New(app.core, app.raceHeld),
 		research.New(researchHost{app: app}, app.researchHeld),
-		sources.New(app.core, app.sourcesHeld),
+		app.sourcesAPI(),
 		trades.New(tradesHost{State: app.core, app: app}),
 	}
 }

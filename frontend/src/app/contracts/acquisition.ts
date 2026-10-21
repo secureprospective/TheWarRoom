@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { TargetAcquisition } from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { targetAcquisition } from './api';
 import { array, object, text, integer } from '../data/parseValues';
 import { selectProvider } from '../data/provider';
 import { parseReading } from './provider';
@@ -37,8 +36,8 @@ export async function openAcquisition(request: AcquisitionRequest) {
   useAcquisition.setState({ request, busy: true, error: '' });
   try {
     if (selectProvider().kind !== 'live') throw new Error('Acquisition preview needs the desktop app');
-    const reading = parseAcquisition(await TargetAcquisition({ mine: request.mine,
-      player: request.player ?? '', bid: request.bid ?? '', cut: request.cut ?? '' } as main.RawAcquisition));
+    const reading = parseAcquisition(await targetAcquisition({ mine: request.mine,
+      player: request.player ?? '', bid: request.bid ?? '', cut: request.cut ?? '' }));
     if (ticket !== sequence) return;
     if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Acquisition preview unavailable');
     useAcquisition.setState({ reading });

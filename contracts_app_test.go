@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
@@ -16,8 +17,8 @@ import (
 
 func TestContractReadingStatesAndCantCut(t *testing.T) {
 	t.Parallel()
-	r := contractReading(123, "2026-10-10T00:00:00Z", "MFL", "Integer cents", 1, nil)
-	if r.Status != ReadingOK || r.Value != 123 || r.HowCounted == "" || r.Cutoff != r.Provenance.Freshness.FetchedAt {
+	r := contractsapp.Reading(123, "2026-10-10T00:00:00Z", "MFL", "Integer cents", 1, nil, buildLabel()+" "+buildDate)
+	if r.Status != report.ReadingOK || r.Value != 123 || r.HowCounted == "" || r.Cutoff != r.Provenance.Freshness.FetchedAt {
 		t.Fatalf("reading: %+v", r)
 	}
 	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}

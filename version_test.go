@@ -29,7 +29,7 @@ func TestIPCWaitsForStartup(t *testing.T) {
 	t.Parallel()
 	a := NewApp()
 	got := make(chan sourcesapp.DataActResult, 1)
-	go func() { got <- sourcesapp.New(a.core, a.sourcesHeld).TargetDataRefresh("league") }()
+	go func() { got <- a.sourcesAPI().TargetDataRefresh("league") }()
 	select {
 	case r := <-got:
 		t.Fatalf("TargetDataRefresh answered before startup finished: %+v", r)

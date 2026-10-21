@@ -6,20 +6,8 @@ export function SetPhotos(arg1) {
   return window['go']['main']['App']['SetPhotos'](arg1);
 }
 
-export function TargetAcquisition(arg1) {
-  return window['go']['main']['App']['TargetAcquisition'](arg1);
-}
-
 export function TargetAlerts(arg1) {
   return window['go']['main']['App']['TargetAlerts'](arg1);
-}
-
-export function TargetCacheClear(arg1) {
-  return window['go']['main']['App']['TargetCacheClear'](arg1);
-}
-
-export function TargetCacheScopes() {
-  return window['go']['main']['App']['TargetCacheScopes']();
 }
 
 export function TargetCheckMoves() {

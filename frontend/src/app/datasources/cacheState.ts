@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import { TargetCacheScopes, TargetCacheClear } from '../../../wailsjs/go/main/App';
+import { sourcesAPI } from './api';
 import { array, object, text } from '../data/parseValues';
 import { parseOutcome, type Outcome, type Scope } from './provider';
 
@@ -21,8 +21,8 @@ function desktop() {
     throw new Error('Reading data again needs the desktop app. No sample data is substituted.');
 }
 const cacheProvider: CacheProvider = {
-  scopes: async () => { desktop(); return parseCacheScopes(await TargetCacheScopes()); },
-  clear: async scope => { desktop(); return parseOutcome(await TargetCacheClear(scope)); },
+  scopes: async () => { desktop(); return parseCacheScopes(await sourcesAPI.cacheScopes()); },
+  clear: async scope => { desktop(); return parseOutcome(await sourcesAPI.cacheClear(scope)); },
 };
 
 function createCacheState(provider: CacheProvider) {

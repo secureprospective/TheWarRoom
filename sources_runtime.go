@@ -88,7 +88,7 @@ func (a *App) warmArchive(ctx context.Context) {
 }
 
 func (a *App) compileFacts(ctx context.Context) (string, error) {
-	return sourcesapp.CompileFacts(ctx, a.core, lab.NoteReadings()) //nolint:wrapcheck // Preserve the existing compile error.
+	return sourcesapp.CompileFacts(ctx, sourcesHost{State: a.core, app: a}, lab.NoteReadings()) //nolint:wrapcheck // Preserve the existing compile error.
 }
 
 // appSettings is the app's own configuration, kept as settings.json in its data directory.
@@ -134,11 +134,11 @@ func (a *App) publishLabManifest(ctx context.Context) (manifest.Manifest, bool, 
 }
 
 func (a *App) loadSignals(ctx context.Context) sourcesapp.SignalsReport {
-	return sourcesapp.LoadSignals(ctx, a.core, a.sourcesHeld)
+	return sourcesapp.LoadSignals(ctx, sourcesHost{State: a.core, app: a}, a.sourcesHeld)
 }
 
 func (a *App) healthInput(ctx context.Context) (sourcesHealthInput, error) {
-	in, err := sourcesapp.HealthFor(ctx, a.core)
+	in, err := sourcesapp.HealthFor(ctx, sourcesHost{State: a.core, app: a})
 	return sourcesHealthInput{HealthInput: in, now: in.Now}, err //nolint:wrapcheck // Preserve the existing health error.
 }
 

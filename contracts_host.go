@@ -7,11 +7,14 @@ import (
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 // contractsHost is the contracts API's Host: core's shared state, plus unbound adapters over the
@@ -71,4 +74,34 @@ func scorePeriod(ctx context.Context, a *App, period string) heldSeasonFeed[[]in
 		}
 		return out, nil
 	})
+}
+
+func (h contractsHost) AcquisitionSnapshot(mine string) (snapshot.Snapshot, error) {
+	snap, _, err := h.app.tradeState(mine)
+	return snap, err
+}
+
+func (h contractsHost) AcquisitionTeams(ctx context.Context, snap snapshot.Snapshot) []contractsapp.AcquisitionTeam {
+	cell := func(c *tradesapp.Cell) *contractsapp.AcquisitionCell {
+		if c == nil {
+			return nil
+		}
+		out := contractsapp.AcquisitionCell(*c)
+		return &out
+	}
+	teams := h.app.tradeBuilderTeams(ctx, snap)
+	out := make([]contractsapp.AcquisitionTeam, len(teams))
+	for i, team := range teams {
+		assets := make([]contractsapp.AcquisitionAsset, len(team.Assets))
+		for j, x := range team.Assets {
+			assets[j] = contractsapp.AcquisitionAsset{Team: x.Team, Contract: x.Contract, Now: cell(x.Now),
+				Dynasty: cell(x.Dynasty), Token: x.Token, Name: x.Name, Position: x.Position}
+		}
+		out[i] = contractsapp.AcquisitionTeam{ID: team.ID, Name: team.Name, Assets: assets}
+	}
+	return out
+}
+
+func (h contractsHost) AcquisitionCorrection(p state.MirrorPlayer, s state.WhatIfSession) domain.Money {
+	return tradeCentsCorrection(p, "", s)
 }

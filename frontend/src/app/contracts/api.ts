@@ -35,3 +35,6 @@ export async function targetDraftLineup(franchiseId: string, starters: string[])
 export async function targetRosterReports(mine: string): Promise<unknown> {
   return bindings().TargetRosterReports(mine);
 }
+export async function targetAcquisition(raw: unknown): Promise<unknown> {
+  return bindings().TargetAcquisition(raw as contracts.RawAcquisition);
+}

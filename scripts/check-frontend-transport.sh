@@ -32,7 +32,7 @@ const moved = new Map([
   ['TargetComms', 'comms'], ['TargetCommsRefresh', 'comms'], ['TargetOpenComms', 'comms'],
   ...['DeleteMFLKey', 'GetParams', 'MFLKeyStatus', 'ResetParam', 'SetMFLKey', 'SetParam', 'TargetAccounting',
     'TargetBylaws', 'TargetLeagueSettings', 'TargetOpenMFLAccounting', 'TargetSiteNews'].map(name => [name, 'control']),
-  ...['TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
+  ...['TargetAcquisition', 'TargetCheckLineup', 'TargetContractActs', 'TargetContracts', 'TargetDraftLineup', 'TargetLineup',
     'TargetPlayerContract', 'TargetReleasePlans', 'TargetRosterReports', 'TargetWhatIf'].map(name => [name, 'contracts']),
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
@@ -46,7 +46,8 @@ const moved = new Map([
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['TargetOpenResearchArticle', 'TargetResearch', 'TargetResearchNewsRefresh', 'TargetResearchPlayer',
     'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),
-  ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
+  ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCacheClear', 'TargetCacheScopes',
+    'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
   ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTrades'].map(name => [name, 'trades']),
 ]);

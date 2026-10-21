@@ -14,6 +14,14 @@ export function SetLeagueArchiveDir(arg1) {
   return window['go']['sources']['API']['SetLeagueArchiveDir'](arg1);
 }
 
+export function TargetCacheClear(arg1) {
+  return window['go']['sources']['API']['TargetCacheClear'](arg1);
+}
+
+export function TargetCacheScopes() {
+  return window['go']['sources']['API']['TargetCacheScopes']();
+}
+
 export function TargetCrosswalk() {
   return window['go']['sources']['API']['TargetCrosswalk']();
 }

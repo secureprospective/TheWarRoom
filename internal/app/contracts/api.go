@@ -29,6 +29,7 @@ type Host interface {
 	Serializer
 	LeagueHost
 	CrossHost
+	AcquisitionHost
 }
 
 // PlanLedger is the local plan ledger: the self-locking stores, the plan clock and the change notice.
@@ -127,6 +128,7 @@ func contractReading[T any](a *API, value T, at, source, how string, count int, 
 // A release hand-off opens MFL's drop page in the browser, so release plans are desktop-only.
 func Commands() []catalog.Command {
 	return []catalog.Command{
+		{ID: catalog.Unset, Method: "TargetAcquisition", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetCheckLineup", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetContractActs", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetContracts", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},

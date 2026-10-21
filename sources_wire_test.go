@@ -30,7 +30,7 @@ func TestSourcesBindingGolden(t *testing.T) {
 	a.sourcesHeld.PublishCrosswalk(sourcesapp.CrosswalkReport{OK: true, LoadedAt: "2026-10-11T18:00:00Z", Links: 1000, Promoted: 12,
 		Rates: []sourcesapp.CrosswalkRate{{Position: "QB", Rostered: 4, RosteredMatched: 3}}, Total: sourcesapp.CrosswalkRate{Position: "ALL", Rostered: 4, RosteredMatched: 3},
 		Unmatched: []sourcesapp.CrosswalkMiss{{MFLID: "0042", Name: "Waiting", Position: "QB", Reason: "no NFL id yet"}}})
-	ds, err := sourcesapp.New(a.core, a.sourcesHeld).TargetDataSources()
+	ds, err := a.sourcesAPI().TargetDataSources()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,12 +39,12 @@ func TestSourcesBindingGolden(t *testing.T) {
 	stopped := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
 	close(stopped.core.Started)
 	values := map[string][]byte{
-		"LoadCrosswalk":       sourcesWire(t, sourcesapp.New(stopped.core, stopped.sourcesHeld).LoadCrosswalk()),
-		"GetCrosswalkReport":  sourcesWire(t, sourcesapp.New(a.core, a.sourcesHeld).GetCrosswalkReport()),
-		"TargetCrosswalk":     sourcesWire(t, sourcesapp.New(a.core, a.sourcesHeld).TargetCrosswalk()),
+		"LoadCrosswalk":       sourcesWire(t, stopped.sourcesAPI().LoadCrosswalk()),
+		"GetCrosswalkReport":  sourcesWire(t, a.sourcesAPI().GetCrosswalkReport()),
+		"TargetCrosswalk":     sourcesWire(t, a.sourcesAPI().TargetCrosswalk()),
 		"TargetDataSources":   sourcesWire(t, ds),
-		"TargetDataRefresh":   sourcesWire(t, sourcesapp.New(a.core, a.sourcesHeld).TargetDataRefresh("unknown")),
-		"SetLeagueArchiveDir": sourcesWire(t, sourcesapp.New(a.core, a.sourcesHeld).SetLeagueArchiveDir("relative")),
+		"TargetDataRefresh":   sourcesWire(t, a.sourcesAPI().TargetDataRefresh("unknown")),
+		"SetLeagueArchiveDir": sourcesWire(t, a.sourcesAPI().SetLeagueArchiveDir("relative")),
 	}
 	for name, body := range values {
 		path := filepath.Join("testdata", "wire", "sources", name+".json")
@@ -111,7 +111,7 @@ func TestDataSourcesWireMatchesGo(t *testing.T) {
 		Total: sourcesapp.CrosswalkRate{Position: "ALL", Rostered: 4, RosteredMatched: 3},
 		Unmatched: []sourcesapp.CrosswalkMiss{{MFLID: "0816", Name: "Gosnell, Stephen", Team: "MIN", Position: "WR",
 			Franchise: "Cincinnati Bengals", Reason: "no NFL id yet"}}})
-	c := sourcesapp.New(a.core, a.sourcesHeld).TargetCrosswalk()
+	c := a.sourcesAPI().TargetCrosswalk()
 	wire := struct {
 		Data      sourcesapp.DataSources  `json:"data"`
 		Crosswalk report.Report           `json:"crosswalk"`

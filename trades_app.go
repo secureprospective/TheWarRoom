@@ -124,7 +124,7 @@ func labelTradeReceipts(receipts []envelope.Receipt, snap snapshot.Snapshot) {
 	tradesapp.LabelReceipts(receipts, snap)
 }
 func tradeFigure(label string, before, after domain.Money) tradesapp.Figure {
-	return tradesapp.Figure(whatIfFigure(label, before, after))
+	return tradesapp.Figure(contractsapp.Figure(label, before, after))
 }
 func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []tradesapp.TradeBuilderTeam {
 	m, _, _ := a.core.League.ContractsView()

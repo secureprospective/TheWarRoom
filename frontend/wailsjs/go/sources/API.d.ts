@@ -9,6 +9,10 @@ export function LoadCrosswalk():Promise<sources.CrosswalkReport>;
 
 export function SetLeagueArchiveDir(arg1:string):Promise<sources.DataActResult>;
 
+export function TargetCacheClear(arg1:string):Promise<sources.DataActResult>;
+
+export function TargetCacheScopes():Promise<Array<sources.DataScope>>;
+
 export function TargetCrosswalk():Promise<report.Report>;
 
 export function TargetDataRefresh(arg1:string):Promise<sources.DataActResult>;
