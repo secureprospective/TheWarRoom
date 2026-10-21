@@ -10,6 +10,12 @@ afterEach(() => {
 });
 
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+// The adapter loads the Wails runtime with a dynamic import; one macrotask is not always enough
+// under load, and a late resolution would leak into the next test. Wait for it to settle.
+const runtimeLoaded = async () => {
+  await vi.dynamicImportSettled();
+  await flush();
+};
 
 describe('Comms transport adapter', () => {
   it('uses the feature API namespace for all three operations', async () => {
@@ -49,7 +55,7 @@ describe('Comms transport adapter', () => {
     vi.stubGlobal('window', { runtime: { EventsOnMultiple } });
     const changed = vi.fn();
     const stop = subscribeComms(changed);
-    await flush();
+    await runtimeLoaded();
     expect(EventsOnMultiple).toHaveBeenCalledWith('target:season', changed, -1);
     callback?.();
     expect(changed).toHaveBeenCalledTimes(1);
@@ -62,7 +68,7 @@ describe('Comms transport adapter', () => {
     vi.stubGlobal('window', { runtime: { EventsOnMultiple } });
     const stop = subscribeComms(vi.fn());
     stop();
-    await flush();
+    await runtimeLoaded();
     expect(EventsOnMultiple).not.toHaveBeenCalled();
   });
 });
