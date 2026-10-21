@@ -30,7 +30,8 @@ describe('Comms transport adapter', () => {
       vi.stubGlobal('window', window);
       const state = createCommsState(commsAPI);
       await state.load();
-      expect(state.peek().error).toContain('Comms requires the desktop app; no browser fixture is substituted.');
+      expect(state.peek().error)
+        .toContain('Comms requires the desktop app; no browser fixture is substituted.');
       expect(state.peek().pending).toBe(false);
       const stop = subscribeComms(() => { throw new Error('browser event fired'); });
       await flush();
