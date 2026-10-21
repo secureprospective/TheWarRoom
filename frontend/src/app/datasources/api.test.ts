@@ -37,7 +37,9 @@ describe('Sources transport adapter', () => {
       vi.stubGlobal('window', window);
       for (const call of [sourcesAPI.read, sourcesAPI.crosswalk, sourcesAPI.crosswalkReport,
         sourcesAPI.loadCrosswalk, () => sourcesAPI.refresh('league'), () => sourcesAPI.folder('/raw')]) {
-        await expect(call()).rejects.toThrow('Data and sources needs the desktop app. No sample data is substituted.');
+        await expect(call()).rejects.toThrow(
+          'Data and sources needs the desktop app. No sample data is substituted.',
+        );
       }
       const stop = subscribeSources(() => { throw new Error('fixture event fired'); });
       await flush();
