@@ -1,3 +1,4 @@
+archive.API.TargetArchive
 comms.API.TargetComms
 comms.API.TargetCommsRefresh
 comms.API.TargetOpenComms
@@ -16,7 +17,6 @@ main.App.SetPhotos
 main.App.TargetAccounting
 main.App.TargetAcquisition
 main.App.TargetAlerts
-main.App.TargetArchive
 main.App.TargetAssetBoard
 main.App.TargetAssetProfile
 main.App.TargetBidDraft
