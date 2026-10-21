@@ -39,8 +39,6 @@ commissioner_preview_forms_test.go	commissioner
 commissioner_preview_market_test.go	commissioner
 commissioner_shell_test.go	commissioner
 commissioner_wire_test.go	commissioner
-comms_app.go	comms
-comms_test.go	comms
 contract_acts_app.go	contracts
 contract_acts_app_test.go	contracts
 contract_acts_cap_test.go	contracts
@@ -314,3 +312,4 @@ internal/app/now	now
 internal/app/now/nowtest	now
 internal/app/trades	trades
 internal/app/core	core
+internal/app/core/coretest	core

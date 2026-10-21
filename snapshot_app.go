@@ -42,15 +42,15 @@ func (a *App) TargetSnapshot() (snapshot.Snapshot, error) {
 
 func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.League.Season(), archivedFeed[normalize.Lookup]{
-		export: "players",
-		fetch: func(ctx context.Context) ([]normalize.Lookup, error) {
+		Export: "players",
+		Fetch: func(ctx context.Context) ([]normalize.Lookup, error) {
 			lk, err := a.directory(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("target directory: %w", err)
 			}
 			return []normalize.Lookup{lk}, nil
 		},
-		parse: func(body []byte) ([]normalize.Lookup, error) {
+		Parse: func(body []byte) ([]normalize.Lookup, error) {
 			raw, err := players.Parse(context.WithoutCancel(ctx), body)
 			if err != nil {
 				return nil, fmt.Errorf("target directory: parse archive: %w", err)
@@ -61,7 +61,7 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 			}
 			return []normalize.Lookup{lk}, nil
 		},
-		bodies: a.core.History.ArchivedBodies,
+		Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
 	p := snapshot.Provenance{Source: "mfl-players", Kind: "live", Freshness: fresh}
 	if err != nil {

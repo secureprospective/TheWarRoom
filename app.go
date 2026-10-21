@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/facts"
+
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
@@ -70,7 +72,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	return &App{core: &core.State{Started: make(chan struct{}),
+	a := &App{core: &core.State{Started: make(chan struct{}),
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
 		MovesChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:moves") },
@@ -83,6 +85,12 @@ func NewApp() *App {
 		ClockChanged:  func(ctx context.Context) { desktop.EventsEmit(ctx, "target:clock") },
 		SeasonChanged: func(ctx context.Context) { desktop.EventsEmit(ctx, "target:season") }},
 	}
+	a.core.RefreshTransactions = a.refreshSeasonTransactions
+	a.core.ReadCommsArchive = func(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
+		cache, _, err := a.readArchiveFacts(ctx)
+		return cache.Facts.RosterWeek, cache.Facts.NflGame, err
+	}
+	return a
 }
 
 // ready waits for startup to finish and returns its failure, if any. On Linux, Wails runs startup

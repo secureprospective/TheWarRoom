@@ -47,17 +47,17 @@ func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force 
 		bodies = a.scopedBodies("W", week)
 	}
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[researchfeeds.Feed]{
-		export: kind, leagueless: researchfeeds.IsTrend(kind),
-		fetch: func(ctx context.Context) ([]researchfeeds.Feed, error) {
+		Export: kind, Leagueless: researchfeeds.IsTrend(kind),
+		Fetch: func(ctx context.Context) ([]researchfeeds.Feed, error) {
 			return researchfeeds.Fetch(ctx, a.core.MFLClient, a.core.Season, kind, week)
 		},
-		parse: func(body []byte) ([]researchfeeds.Feed, error) {
+		Parse: func(body []byte) ([]researchfeeds.Feed, error) {
 			feed, err := researchfeeds.Parse(body, kind, week)
 			if err != nil {
 				return nil, fmt.Errorf("research archive: %w", err)
 			}
 			return []researchfeeds.Feed{feed}, nil
-		}, bodies: bodies,
+		}, Bodies: bodies,
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()

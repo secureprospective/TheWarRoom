@@ -133,3 +133,8 @@ func commsData(t *testing.T, feed, name string) []byte {
 func Held[T any](rows []T) report.Held[T] {
 	return report.Held[T]{Value: rows, Feed: report.Feed{FetchedAt: time.Date(2026, 10, 11, 12, 0, 0, 0, time.UTC)}}
 }
+
+// RepoPath keeps wire contracts and frontend samples at their canonical repository paths.
+func RepoPath(parts ...string) string {
+	return filepath.Join(append([]string{dataRoot(), "..", ".."}, parts...)...)
+}

@@ -90,22 +90,22 @@ func (a *App) refreshFreeAgents(ctx context.Context) {
 	a.restoreFreeAgents(ctx)
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[freeagents.RawFreeAgent]{
-			export: freeagents.Export,
-			fetch: func(ctx context.Context) ([]freeagents.RawFreeAgent, error) {
+			Export: freeagents.Export,
+			Fetch: func(ctx context.Context) ([]freeagents.RawFreeAgent, error) {
 				raw, ferr := freeagents.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 				if ferr != nil {
 					return nil, fmt.Errorf("free agents refresh: %w", ferr)
 				}
 				return raw, nil
 			},
-			parse: func(body []byte) ([]freeagents.RawFreeAgent, error) {
+			Parse: func(body []byte) ([]freeagents.RawFreeAgent, error) {
 				raw, perr := freeagents.Parse(body)
 				if perr != nil {
 					return nil, fmt.Errorf("free agents refresh: %w", perr)
 				}
 				return raw, nil
 			},
-			bodies: a.core.History.ArchivedBodies,
+			Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
 	var value []playerid.PlayerID
 	if err == nil {

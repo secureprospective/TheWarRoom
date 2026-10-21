@@ -10,6 +10,10 @@ import (
 	"testing"
 	"time"
 
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
+
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -256,4 +260,32 @@ func TestLandingAlertOrderUrgencyGravityID(t *testing.T) {
 		alerts[2].PlayerID != "16162" || alerts[3].Kind != "lineup" {
 		t.Fatal(alerts)
 	}
+}
+
+// The Now landing scenario retains its fixture facade without owning Comms construction.
+type commsLandingInput struct {
+	commsapp.Input
+	mirror      state.MirrorSnapshot
+	rosters     facts.RosterWeekColumns
+	rosterTimes map[[2]int64]int64
+}
+
+func realComms(t *testing.T) commsLandingInput {
+	t.Helper()
+	in := commstest.Real(t)
+	return commsLandingInput{Input: in, mirror: in.Mirror, rosters: in.Rosters, rosterTimes: in.RosterTimes}
+}
+
+func rosterWeekTimes(games facts.NflGameColumns) map[[2]int64]int64 {
+	return commsapp.RosterWeekTimes(games)
+}
+
+func (in commsLandingInput) transactionSentence(tx leaguefeed.Transaction) string {
+	in.Mirror, in.Rosters, in.RosterTimes = in.mirror, in.rosters, in.rosterTimes
+	in.Transactions.Value = []leaguefeed.Transaction{tx}
+	board, err := commsapp.Build(in.Input, commsapp.RawCommsScope{})
+	if err != nil {
+		return err.Error()
+	}
+	return board.Events[0].Sentence
 }

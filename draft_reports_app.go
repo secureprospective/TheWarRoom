@@ -17,10 +17,10 @@ import (
 
 func (a *App) refreshDraftReports(ctx context.Context) {
 	results, rf, re := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[draftreports.Pick]{
-		export: draftreports.ResultsExport,
-		fetch: func(ctx context.Context) ([]draftreports.Pick, error) {
+		Export: draftreports.ResultsExport,
+		Fetch: func(ctx context.Context) ([]draftreports.Pick, error) {
 			return draftreports.FetchResults(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-		}, parse: draftreports.ParseResults, bodies: a.core.History.ArchivedBodies,
+		}, Parse: draftreports.ParseResults, Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	holdSeasonFeed(&a.core.SeasonDraftResults, results, rf, re)
@@ -33,10 +33,10 @@ func (a *App) refreshDraftReports(ctx context.Context) {
 		return
 	}
 	future, ff, fe := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[draftreports.FuturePick]{
-		export: draftreports.FutureExport,
-		fetch: func(ctx context.Context) ([]draftreports.FuturePick, error) {
+		Export: draftreports.FutureExport,
+		Fetch: func(ctx context.Context) ([]draftreports.FuturePick, error) {
 			return draftreports.FetchFuture(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-		}, parse: draftreports.ParseFuture, bodies: a.core.History.ArchivedBodies,
+		}, Parse: draftreports.ParseFuture, Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()

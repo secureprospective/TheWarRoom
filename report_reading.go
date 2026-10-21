@@ -135,6 +135,5 @@ func wireSlice[S, T any](in []S, out []T) []T {
 }
 
 // reportHeld copies a held season feed into the shape feature services read.
-func reportHeld[T any](feed heldSeasonFeed[[]T]) report.Held[T] {
-	return report.Held[T]{Value: feed.Value, Feed: feed.FeedState()}
-}
+
+func proseName(name string) string { return report.ProseName(name) }

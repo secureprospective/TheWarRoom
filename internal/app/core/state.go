@@ -3,10 +3,13 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -36,6 +39,8 @@ import (
 )
 
 type State struct {
+	ReadCommsArchive       func(context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error)
+	RefreshTransactions    func(context.Context)
 	CommissionerSession    commissioner.Session
 	CommissionerAuthorizer commissioner.Authorizer
 	WhatifMu               sync.Mutex
@@ -177,4 +182,28 @@ func (h HeldFeed[T]) Provenance(source, feed string) snapshot.Provenance {
 		}
 	}
 	return snapshot.Provenance{Kind: "live", Source: source, Freshness: fresh}
+}
+
+func Pause(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("season refresh pause: %w", ctx.Err())
+	case <-timer.C:
+		return nil
+	}
+}
+
+func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
+	if err != nil {
+		h.RefreshError = err.Error()
+		return
+	}
+	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
+	if parseErr != nil {
+		h.RefreshError = "season refresh time: " + parseErr.Error()
+		return
+	}
+	h.Value, h.FetchedAt, h.RefreshError, h.ReadPending = value, at, fresh.Note, false
 }

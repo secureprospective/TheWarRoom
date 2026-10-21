@@ -33,12 +33,12 @@ func (a *App) refreshRace(ctx context.Context) {
 		pause = seasonPause
 	}
 	weeks, wf, werr := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguefeed.WeekResult]{
-		export: weeklyresults.Export,
-		fetch: func(ctx context.Context) ([]leaguefeed.WeekResult, error) {
+		Export: weeklyresults.Export,
+		Fetch: func(ctx context.Context) ([]leaguefeed.WeekResult, error) {
 			return weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 		},
-		parse:  weeklyresults.Parse,
-		bodies: a.scopedBodies("W", "YTD"),
+		Parse:  weeklyresults.Parse,
+		Bodies: a.scopedBodies("W", "YTD"),
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	holdSeasonFeed(&a.race.weeks, weeks, wf, werr)
@@ -92,11 +92,11 @@ func (a *App) bracketsOrArchive(
 ) ([]leaguefeed.Bracket, Freshness, error) {
 	year := strconv.Itoa(a.core.Season)
 	list, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguefeed.Bracket]{
-		export: playoffs.ListExport,
-		fetch: func(ctx context.Context) ([]leaguefeed.Bracket, error) {
+		Export: playoffs.ListExport,
+		Fetch: func(ctx context.Context) ([]leaguefeed.Bracket, error) {
 			return playoffs.FetchList(ctx, a.core.MFLClient, year, ingestion.LeagueID)
 		},
-		parse: playoffs.ParseList, bodies: a.core.History.ArchivedBodies,
+		Parse: playoffs.ParseList, Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
 	if err != nil {
 		return nil, Freshness{}, fmt.Errorf("playoff brackets: %w", err)
@@ -106,12 +106,12 @@ func (a *App) bracketsOrArchive(
 			return nil, Freshness{}, fmt.Errorf("playoff brackets: %w", err)
 		}
 		games, gf, gerr := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguefeed.BracketGame]{
-			export: playoffs.BracketExport,
-			fetch: func(ctx context.Context) ([]leaguefeed.BracketGame, error) {
+			Export: playoffs.BracketExport,
+			Fetch: func(ctx context.Context) ([]leaguefeed.BracketGame, error) {
 				return playoffs.FetchBracket(ctx, a.core.MFLClient, year, ingestion.LeagueID, b.ID)
 			},
-			parse:  func(body []byte) ([]leaguefeed.BracketGame, error) { return playoffs.ParseBracket(b.ID, body) },
-			bodies: a.scopedBodies("BRACKET_ID", strconv.Itoa(b.ID)),
+			Parse:  func(body []byte) ([]leaguefeed.BracketGame, error) { return playoffs.ParseBracket(b.ID, body) },
+			Bodies: a.scopedBodies("BRACKET_ID", strconv.Itoa(b.ID)),
 		}, a.core.FallbackLog)
 		if gerr != nil {
 			return nil, Freshness{}, fmt.Errorf("playoff bracket %s: %w", b.Name, gerr)

@@ -113,15 +113,15 @@ func (a *App) seedCurrentWeek(ctx context.Context) {
 			week = strconv.Itoa(requested)
 		}
 		rows, at, found, err := readArchivedFeed(ctx, a.core.Season, archivedFeed[nflschedule.RawWeek]{
-			export: nflschedule.Export, leagueless: true,
-			parse: func(body []byte) ([]nflschedule.RawWeek, error) {
+			Export: nflschedule.Export, Leagueless: true,
+			Parse: func(body []byte) ([]nflschedule.RawWeek, error) {
 				raw, err := nflschedule.Parse(body)
 				if err != nil {
 					return nil, fmt.Errorf("held NFL week: %w", err)
 				}
 				return []nflschedule.RawWeek{raw}, nil
 			},
-			bodies: a.scopedBodies("W", week),
+			Bodies: a.scopedBodies("W", week),
 		})
 		if err != nil {
 			return nflschedule.RawWeek{}, fmt.Errorf("held NFL week: %w", err)

@@ -40,11 +40,11 @@ func (a *App) TargetLeagueSettings() (Report, error) {
 	a.core.SeasonMu.Unlock()
 	if held.Value == nil {
 		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[league.RawRuleCode]{
-			export: league.RuleDictionaryExport, leagueless: true,
-			fetch: func(ctx context.Context) ([]league.RawRuleCode, error) {
+			Export: league.RuleDictionaryExport, Leagueless: true,
+			Fetch: func(ctx context.Context) ([]league.RawRuleCode, error) {
 				return league.FetchRuleDictionary(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 			},
-			parse: league.ParseRuleDictionary, bodies: a.core.History.ArchivedBodies,
+			Parse: league.ParseRuleDictionary, Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
 		a.core.SeasonMu.Lock()
 		holdSeasonFeed(&a.control.ruleNames, league.RuleNames(rows), fresh, err)
@@ -72,11 +72,11 @@ func (a *App) TargetSiteNews() (Report, error) {
 		ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 		defer cancel()
 		rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[sitenews.RawItem]{
-			export: sitenews.Export, leagueless: true,
-			fetch: func(ctx context.Context) ([]sitenews.RawItem, error) {
+			Export: sitenews.Export, Leagueless: true,
+			Fetch: func(ctx context.Context) ([]sitenews.RawItem, error) {
 				return sitenews.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 			},
-			parse: sitenews.Parse, bodies: a.core.History.ArchivedBodies,
+			Parse: sitenews.Parse, Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
 		a.core.SeasonMu.Lock()
 		holdSeasonFeed(&a.control.siteNews, rows, fresh, err)

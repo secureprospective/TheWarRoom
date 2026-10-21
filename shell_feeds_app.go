@@ -51,16 +51,16 @@ func shellFeedTime[T any](feed heldSeasonFeed[[]T], zone *time.Location) string 
 func refreshDailyShellFeed[T any](ctx context.Context, a *App, held *heldSeasonFeed[[]T], now time.Time,
 	feed archivedFeed[T]) {
 	day := now.In(time.Local).Format("2006-01-02")
-	current := readShellFeed(ctx, a, held, feed.export, feed.parse)
+	current := readShellFeed(ctx, a, held, feed.Export, feed.Parse)
 	a.core.SeasonMu.Lock()
 	if a.core.ShellFeedDays == nil {
 		a.core.ShellFeedDays = map[string]string{}
 	}
-	if a.core.ShellFeedDays[feed.export] == day || current.FetchedAt.In(time.Local).Format("2006-01-02") == day {
+	if a.core.ShellFeedDays[feed.Export] == day || current.FetchedAt.In(time.Local).Format("2006-01-02") == day {
 		a.core.SeasonMu.Unlock()
 		return
 	}
-	a.core.ShellFeedDays[feed.export] = day
+	a.core.ShellFeedDays[feed.Export] = day
 	a.core.SeasonMu.Unlock()
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, feed, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
@@ -78,8 +78,8 @@ func (a *App) refreshShellFeeds(ctx context.Context) {
 	}
 	year, now := strconv.Itoa(a.core.Season), a.timeNow()
 	refreshDailyShellFeed(ctx, a, &a.core.SeasonCalendar, now, archivedFeed[ingestion.RawCalendarEvent]{
-		export: "calendar", parse: ingestion.ParseCalendar, bodies: a.core.History.ReferenceBodies,
-		fetch: func(ctx context.Context) ([]ingestion.RawCalendarEvent, error) {
+		Export: "calendar", Parse: ingestion.ParseCalendar, Bodies: a.core.History.ReferenceBodies,
+		Fetch: func(ctx context.Context) ([]ingestion.RawCalendarEvent, error) {
 			return ingestion.FetchCalendar(ctx, a.core.MFLClient, year, ingestion.LeagueID)
 		},
 	})
@@ -87,8 +87,8 @@ func (a *App) refreshShellFeeds(ctx context.Context) {
 		return
 	}
 	refreshDailyShellFeed(ctx, a, &a.core.SeasonTradeBait, now, archivedFeed[ingestion.RawTradeBait]{
-		export: "tradeBait", parse: ingestion.ParseTradeBait, bodies: a.core.History.ReferenceBodies,
-		fetch: func(ctx context.Context) ([]ingestion.RawTradeBait, error) {
+		Export: "tradeBait", Parse: ingestion.ParseTradeBait, Bodies: a.core.History.ReferenceBodies,
+		Fetch: func(ctx context.Context) ([]ingestion.RawTradeBait, error) {
 			return ingestion.FetchTradeBait(ctx, a.core.MFLClient, year, ingestion.LeagueID)
 		},
 	})

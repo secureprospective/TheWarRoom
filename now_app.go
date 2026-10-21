@@ -127,11 +127,11 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 		return
 	}
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[nflschedule.RawBye]{
-		export: nflschedule.ByeExport, leagueless: true,
-		fetch: func(ctx context.Context) ([]nflschedule.RawBye, error) {
+		Export: nflschedule.ByeExport, Leagueless: true,
+		Fetch: func(ctx context.Context) ([]nflschedule.RawBye, error) {
 			return nflschedule.FetchByes(ctx, a.core.MFLClient, year)
 		},
-		parse: nflschedule.ParseByes, bodies: a.core.History.ArchivedBodies,
+		Parse: nflschedule.ParseByes, Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
@@ -141,22 +141,22 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
 	year := strconv.Itoa(a.core.Season)
 	return archivedFeed[nflschedule.RawWeek]{
-		export: nflschedule.Export, leagueless: true,
-		fetch: func(ctx context.Context) ([]nflschedule.RawWeek, error) {
+		Export: nflschedule.Export, Leagueless: true,
+		Fetch: func(ctx context.Context) ([]nflschedule.RawWeek, error) {
 			raw, ferr := nflschedule.Fetch(ctx, a.core.MFLClient, year, week)
 			if ferr != nil {
 				return nil, fmt.Errorf("NFL schedule: %w", ferr)
 			}
 			return checkScheduleWeek(raw, week)
 		},
-		parse: func(body []byte) ([]nflschedule.RawWeek, error) {
+		Parse: func(body []byte) ([]nflschedule.RawWeek, error) {
 			raw, perr := nflschedule.Parse(body)
 			if perr != nil {
 				return nil, fmt.Errorf("NFL schedule: %w", perr)
 			}
 			return checkScheduleWeek(raw, week)
 		},
-		bodies: a.scopedBodies("W", strconv.Itoa(week)),
+		Bodies: a.scopedBodies("W", strconv.Itoa(week)),
 	}
 }
 

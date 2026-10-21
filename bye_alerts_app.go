@@ -103,7 +103,7 @@ func byeRoster(snap snapshot.Snapshot, mine string, byes []nflschedule.RawBye) (
 func (a *App) byeWeekLock(ctx context.Context, current leagueweek.Week, week int, now time.Time) time.Time {
 	if week != current.Number {
 		feed := a.scheduleFeed(week)
-		feed.bodies = a.core.History.ReferenceBodies
+		feed.Bodies = a.core.History.ReferenceBodies
 		rows, _, found, err := readArchivedFeed(ctx, a.core.Season, feed)
 		if err != nil || !found || len(rows) == 0 {
 			return time.Time{}

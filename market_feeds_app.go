@@ -78,15 +78,15 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 		return []marketfeeds.Feed{feed}, nil
 	}
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[marketfeeds.Feed]{
-		export: kind, leagueless: kind != marketfeeds.Projections,
-		fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
+		Export: kind, Leagueless: kind != marketfeeds.Projections,
+		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
 			feed, ferr := marketfeeds.Fetch(ctx, a.core.MFLClient, kind, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
 			if ferr != nil {
 				return nil, fmt.Errorf("market refresh: %w", ferr)
 			}
 			return []marketfeeds.Feed{feed}, nil
-		}, parse: parse,
-		bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		}, Parse: parse,
+		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
 			return a.core.History.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
 				if !marketArchiveScope(src, kind, week) {
 					return false

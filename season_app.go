@@ -23,16 +23,7 @@ import (
 type heldSeasonFeed[T any] = core.HeldFeed[T]
 
 func holdSeasonFeed[T any](h *heldSeasonFeed[T], value T, fresh Freshness, err error) {
-	if err != nil {
-		h.RefreshError = err.Error()
-		return
-	}
-	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
-	if parseErr != nil {
-		h.RefreshError = "season refresh time: " + parseErr.Error()
-		return
-	}
-	h.Value, h.FetchedAt, h.RefreshError, h.ReadPending = value, at, fresh.Note, false
+	core.HoldFeed(h, value, fresh, err)
 }
 
 // SeasonReading is the three season feeds as held, each with its own provenance.
@@ -77,16 +68,7 @@ func (a *App) TargetSeason() (SeasonReading, error) {
 	}, nil
 }
 
-func seasonPause(ctx context.Context, duration time.Duration) error {
-	timer := time.NewTimer(duration)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("season refresh pause: %w", ctx.Err())
-	case <-timer.C:
-		return nil
-	}
-}
+func seasonPause(ctx context.Context, duration time.Duration) error { return core.Pause(ctx, duration) } //nolint:wrapcheck // Preserve the shared pause error.
 
 func (a *App) refreshSeason(ctx context.Context) {
 	defer a.wakeMoves()
@@ -97,7 +79,7 @@ func (a *App) refreshSeason(ctx context.Context) {
 	}
 	defer a.core.SeasonChanged(ctx)
 	a.refreshSeasonTransactions(ctx)
-	a.refreshCommsBoards(ctx)
+	a.core.RefreshCommsBoards(ctx)
 	a.refreshShellFeeds(ctx)
 	pause := a.core.SeasonPause
 	if pause == nil {
@@ -143,25 +125,25 @@ func (a *App) refreshSeason(ctx context.Context) {
 func (a *App) refreshInjuries(ctx context.Context) {
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[injuries.RawInjury]{
-			export: injuries.Export,
+			Export: injuries.Export,
 			// The injuries export is league-less: fetched without L from the api host, so its
 			// archived copies match with or without the league id.
-			leagueless: true,
-			fetch: func(ctx context.Context) ([]injuries.RawInjury, error) {
+			Leagueless: true,
+			Fetch: func(ctx context.Context) ([]injuries.RawInjury, error) {
 				raw, ferr := injuries.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season))
 				if ferr != nil {
 					return nil, fmt.Errorf("injuries refresh: %w", ferr)
 				}
 				return raw, nil
 			},
-			parse: func(body []byte) ([]injuries.RawInjury, error) {
+			Parse: func(body []byte) ([]injuries.RawInjury, error) {
 				raw, perr := injuries.Parse(ctx, body)
 				if perr != nil {
 					return nil, fmt.Errorf("injuries refresh: %w", perr)
 				}
 				return raw, nil
 			},
-			bodies: a.core.History.ArchivedBodies,
+			Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
 	var value []leaguefeed.Injury
 	if err == nil {
@@ -189,22 +171,22 @@ func (a *App) heldInjuries() snapshot.Injuries {
 func (a *App) refreshSeasonTransactions(ctx context.Context) {
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season,
 		archivedFeed[feedtransactions.RawTransactions]{
-			export: feedtransactions.Export,
-			fetch: func(ctx context.Context) ([]feedtransactions.RawTransactions, error) {
+			Export: feedtransactions.Export,
+			Fetch: func(ctx context.Context) ([]feedtransactions.RawTransactions, error) {
 				raw, err := feedtransactions.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
 				if err != nil {
 					return nil, fmt.Errorf("season transactions: %w", err)
 				}
 				return []feedtransactions.RawTransactions{raw}, nil
 			},
-			parse: func(body []byte) ([]feedtransactions.RawTransactions, error) {
+			Parse: func(body []byte) ([]feedtransactions.RawTransactions, error) {
 				raw, err := feedtransactions.Parse(body)
 				if err != nil {
 					return nil, fmt.Errorf("season transactions: %w", err)
 				}
 				return []feedtransactions.RawTransactions{raw}, nil
 			},
-			bodies: a.core.History.ArchivedBodies,
+			Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
 	var value []leaguefeed.Transaction
 	if err == nil {
@@ -220,8 +202,8 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 	week := a.core.Week.Number
 	a.core.WeekMu.Unlock()
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[livescoring.RawLineups]{
-		export: livescoring.Export,
-		fetch: func(ctx context.Context) ([]livescoring.RawLineups, error) {
+		Export: livescoring.Export,
+		Fetch: func(ctx context.Context) ([]livescoring.RawLineups, error) {
 			raw, err := livescoring.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
 			if err != nil {
 				return nil, fmt.Errorf("season lineups: %w", err)
@@ -231,7 +213,7 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 			}
 			return []livescoring.RawLineups{raw}, nil
 		},
-		parse: func(body []byte) ([]livescoring.RawLineups, error) {
+		Parse: func(body []byte) ([]livescoring.RawLineups, error) {
 			raw, err := livescoring.Parse(body)
 			if err != nil {
 				return nil, fmt.Errorf("season lineups: %w", err)
@@ -241,7 +223,7 @@ func (a *App) refreshSeasonLineups(ctx context.Context) {
 			}
 			return []livescoring.RawLineups{raw}, nil
 		},
-		bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
 			return a.core.History.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
 				u, err := url.Parse(src)
 				if err != nil || u.Query().Get("W") != lineupWeekParam(week) {

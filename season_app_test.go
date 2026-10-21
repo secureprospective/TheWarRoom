@@ -17,6 +17,9 @@ import (
 	"testing"
 	"time"
 
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/comms/commstest"
+
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -649,5 +652,32 @@ func TestSeasonPendingTradesNeverUsesArchive(t *testing.T) {
 	if r.PendingTrades.Provenance.Freshness.State != FreshFail ||
 		!strings.Contains(r.PendingTrades.Provenance.Freshness.Note, "synthetic offline") {
 		t.Fatal("pending trades used archived offers")
+	}
+}
+
+func TestCommsRefreshWire(t *testing.T) {
+	a, transport, pauses, _ := seasonTestApp(t)
+	if err := a.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
+		t.Fatal(err)
+	}
+	err := commsapp.New(a.core).TargetCommsRefresh(true)
+	message := ""
+	if err != nil {
+		message = err.Error()
+	}
+	got, err := json.MarshalIndent(struct {
+		Error           string
+		Requests, Keyed []string
+		Pauses          int
+	}{message, transport.requests, transport.keyed, len(*pauses)}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(commstest.RepoPath("testdata", "wire", "comms", "refresh.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(append(got, '\n'), want) {
+		t.Fatal("Comms refresh binding contract changed")
 	}
 }
