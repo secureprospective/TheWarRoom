@@ -7,21 +7,7 @@ import {envelope} from '../models';
 import {time} from '../models';
 import {personal} from '../models';
 
-export function DeleteMFLKey():Promise<main.MFLKeyStatus>;
-
-export function GetParams():Promise<main.ParamsResult>;
-
-export function MFLKeyStatus():Promise<main.MFLKeyStatus>;
-
-export function ResetParam(arg1:string,arg2:string):Promise<main.SetParamResult>;
-
-export function SetMFLKey(arg1:string):Promise<main.MFLKeyStatus>;
-
-export function SetParam(arg1:string,arg2:string,arg3:number):Promise<main.SetParamResult>;
-
 export function SetPhotos(arg1:boolean):Promise<main.DataActResult>;
-
-export function TargetAccounting():Promise<main.Report>;
 
 export function TargetAcquisition(arg1:main.RawAcquisition):Promise<main.Reading_main_AcquisitionView_>;
 
@@ -40,8 +26,6 @@ export function TargetBidPreview(arg1:main.RawBidInput):Promise<main.BidPreview>
 export function TargetBidRevise(arg1:string,arg2:main.RawBidInput):Promise<main.BidPlan>;
 
 export function TargetBidWithdraw(arg1:string):Promise<main.BidPlan>;
-
-export function TargetBylaws():Promise<Array<main.BylawSection>>;
 
 export function TargetCacheClear(arg1:string):Promise<main.DataActResult>;
 
@@ -90,8 +74,6 @@ export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 export function TargetLeagueCalendar(arg1:main.RawLeagueCalendarScope):Promise<commissioner.Calendar>;
 
 export function TargetLeagueSchedule(arg1:main.RawLeagueScheduleScope):Promise<commissioner.Schedule>;
-
-export function TargetLeagueSettings():Promise<main.Report>;
 
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
@@ -149,8 +131,6 @@ export function TargetNativeWeek(arg1:main.RawNativeWeekScope):Promise<commissio
 
 export function TargetOffers(arg1:main.RawOfferScope):Promise<main.Reading_main_OffersView_>;
 
-export function TargetOpenMFLAccounting():Promise<void>;
-
 export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
 
 export function TargetPersonal(arg1:string):Promise<main.PersonalReading>;
@@ -180,8 +160,6 @@ export function TargetSeason():Promise<main.SeasonReading>;
 export function TargetSetWindow(arg1:string,arg2:string):Promise<void>;
 
 export function TargetShellStatus():Promise<main.ShellStatus>;
-
-export function TargetSiteNews():Promise<main.Report>;
 
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 

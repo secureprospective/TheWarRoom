@@ -36,21 +36,21 @@ func TestControlBindingGolden(t *testing.T) {
 	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Started: make(chan struct{}), StartupErr: errors.New("fixture startup failed")}}
 	close(a.core.Started)
 	values := map[string][]byte{
-		"GetParams":               sourcesWire(t, a.GetParams()),
-		"SetParam":                sourcesWire(t, a.SetParam("model.k_now", "", 4)),
-		"ResetParam":              sourcesWire(t, a.ResetParam("model.k_now", "")),
-		"TargetLeagueSettings":    sourcesWire(t, controlResult(a.TargetLeagueSettings())),
-		"TargetSiteNews":          sourcesWire(t, controlResult(a.TargetSiteNews())),
-		"TargetAccounting":        sourcesWire(t, a.TargetAccounting()),
-		"TargetBylaws":            sourcesWire(t, a.TargetBylaws()),
-		"TargetOpenMFLAccounting": sourcesWire(t, controlResult(struct{}{}, a.TargetOpenMFLAccounting())),
+		"GetParams":               sourcesWire(t, a.controlAPI().GetParams()),
+		"SetParam":                sourcesWire(t, a.controlAPI().SetParam("model.k_now", "", 4)),
+		"ResetParam":              sourcesWire(t, a.controlAPI().ResetParam("model.k_now", "")),
+		"TargetLeagueSettings":    sourcesWire(t, controlResult(a.controlAPI().TargetLeagueSettings())),
+		"TargetSiteNews":          sourcesWire(t, controlResult(a.controlAPI().TargetSiteNews())),
+		"TargetAccounting":        sourcesWire(t, a.controlAPI().TargetAccounting()),
+		"TargetBylaws":            sourcesWire(t, a.controlAPI().TargetBylaws()),
+		"TargetOpenMFLAccounting": sourcesWire(t, controlResult(struct{}{}, a.controlAPI().TargetOpenMFLAccounting())),
 		"TargetAlerts":            sourcesWire(t, controlResult(a.TargetAlerts("0001"))),
 		"TargetSeason":            sourcesWire(t, controlResult(a.TargetSeason())),
 		"TargetShellStatus":       sourcesWire(t, controlResult(a.TargetShellStatus())),
 		"TargetSetWindow":         sourcesWire(t, controlResult(struct{}{}, a.TargetSetWindow("unknown", ""))),
-		"MFLKeyStatus":            sourcesWire(t, controlResult(a.MFLKeyStatus())),
-		"SetMFLKey":               sourcesWire(t, controlResult(a.SetMFLKey(""))),
-		"DeleteMFLKey":            sourcesWire(t, controlResult(a.DeleteMFLKey())),
+		"MFLKeyStatus":            sourcesWire(t, controlResult(a.controlAPI().MFLKeyStatus())),
+		"SetMFLKey":               sourcesWire(t, controlResult(a.controlAPI().SetMFLKey(""))),
+		"DeleteMFLKey":            sourcesWire(t, controlResult(a.controlAPI().DeleteMFLKey())),
 	}
 	for name, body := range values {
 		path := filepath.Join("testdata", "wire", "control", name+".json")
@@ -164,10 +164,5 @@ func TestControlWireTwins(t *testing.T) {
 	fillWire(reflect.ValueOf(&in.Provenance).Elem(), &n)
 	if string(sourcesWire(t, in)) != string(sourcesWire(t, Alert(in))) {
 		t.Fatal("alert wire twin drifted")
-	}
-	for _, in := range [][]controlapp.BylawSection{nil, {}, {{Title: "Section", Lines: []string{"Line"}}}} {
-		if string(sourcesWire(t, in)) != string(sourcesWire(t, wireBylaws(in))) {
-			t.Fatal("bylaw wire twin drifted")
-		}
 	}
 }

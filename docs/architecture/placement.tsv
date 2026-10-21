@@ -3,7 +3,6 @@
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
 acquisitions_app.go	contracts
-admin_app.go	control
 alerts_app.go	control
 alerts_app_test.go	control
 app.go	platform
@@ -43,7 +42,7 @@ contract_acts_app_test.go	contracts
 contract_acts_cap_test.go	contracts
 contracts_app_test.go	contracts
 contracts_wire_test.go	contracts
-control_room_app.go	control
+control_host.go	control
 control_room_test.go	control
 corrections_app_test.go	commissioner
 corrections_transactions_test.go	commissioner
@@ -79,7 +78,6 @@ market_feeds_test.go	market
 market_wire_test.go	market
 mfl_feed_cache.go	control
 mfl_feed_cache_test.go	control
-mflkey_app.go	control
 mflkey_app_test.go	control
 moves_app.go	platform
 moves_app_test.go	platform

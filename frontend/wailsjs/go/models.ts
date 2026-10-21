@@ -6120,6 +6120,125 @@ export namespace contracts {
 
 }
 
+export namespace control {
+	
+	export class BylawSection {
+	    title: string;
+	    lines: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new BylawSection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.title = source["title"];
+	        this.lines = source["lines"];
+	    }
+	}
+	export class MFLKeyStatus {
+	    state: string;
+	    league: string;
+	    season: number;
+	    verifiedAt?: string;
+	    detail?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new MFLKeyStatus(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.state = source["state"];
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.verifiedAt = source["verifiedAt"];
+	        this.detail = source["detail"];
+	    }
+	}
+	export class ParamView {
+	    key: string;
+	    label: string;
+	    group: string;
+	    position: string;
+	    description: string;
+	    default: number;
+	    min: number;
+	    max: number;
+	    value: number;
+	    calibrated: boolean;
+	    overridden: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ParamView(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.key = source["key"];
+	        this.label = source["label"];
+	        this.group = source["group"];
+	        this.position = source["position"];
+	        this.description = source["description"];
+	        this.default = source["default"];
+	        this.min = source["min"];
+	        this.max = source["max"];
+	        this.value = source["value"];
+	        this.calibrated = source["calibrated"];
+	        this.overridden = source["overridden"];
+	    }
+	}
+	export class ParamsResult {
+	    ok: boolean;
+	    error: string;
+	    params: ParamView[];
+	
+	    static createFrom(source: any = {}) {
+	        return new ParamsResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	        this.params = this.convertValues(source["params"], ParamView);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class SetParamResult {
+	    ok: boolean;
+	    error: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SetParamResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ok = source["ok"];
+	        this.error = source["error"];
+	    }
+	}
+
+}
+
 export namespace counterparties {
 	
 	export class CounterRow {
@@ -11820,20 +11939,6 @@ export namespace main {
 		    return a;
 		}
 	}
-	export class BylawSection {
-	    title: string;
-	    lines: string[];
-	
-	    static createFrom(source: any = {}) {
-	        return new BylawSection(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.title = source["title"];
-	        this.lines = source["lines"];
-	    }
-	}
 	export class DataActResult {
 	    ok: boolean;
 	    error: string;
@@ -11870,26 +11975,6 @@ export namespace main {
 	        this.progress = source["progress"];
 	    }
 	}
-	export class MFLKeyStatus {
-	    state: string;
-	    league: string;
-	    season: number;
-	    verifiedAt?: string;
-	    detail?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new MFLKeyStatus(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.state = source["state"];
-	        this.league = source["league"];
-	        this.season = source["season"];
-	        this.verifiedAt = source["verifiedAt"];
-	        this.detail = source["detail"];
-	    }
-	}
 	export class MarketRange {
 	    max?: number;
 	    value: number;
@@ -11909,72 +11994,6 @@ export namespace main {
 	        this.hi = source["hi"];
 	        this.text = source["text"];
 	    }
-	}
-	export class ParamView {
-	    key: string;
-	    label: string;
-	    group: string;
-	    position: string;
-	    description: string;
-	    default: number;
-	    min: number;
-	    max: number;
-	    value: number;
-	    calibrated: boolean;
-	    overridden: boolean;
-	
-	    static createFrom(source: any = {}) {
-	        return new ParamView(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.key = source["key"];
-	        this.label = source["label"];
-	        this.group = source["group"];
-	        this.position = source["position"];
-	        this.description = source["description"];
-	        this.default = source["default"];
-	        this.min = source["min"];
-	        this.max = source["max"];
-	        this.value = source["value"];
-	        this.calibrated = source["calibrated"];
-	        this.overridden = source["overridden"];
-	    }
-	}
-	export class ParamsResult {
-	    ok: boolean;
-	    error: string;
-	    params: ParamView[];
-	
-	    static createFrom(source: any = {}) {
-	        return new ParamsResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.error = source["error"];
-	        this.params = this.convertValues(source["params"], ParamView);
-	    }
-	
-		convertValues(a: any, classs: any, asMap: boolean = false): any {
-		    if (!a) {
-		        return a;
-		    }
-		    if (a.slice && a.map) {
-		        return (a as any[]).map(elem => this.convertValues(elem, classs));
-		    } else if ("object" === typeof a) {
-		        if (asMap) {
-		            for (const key of Object.keys(a)) {
-		                a[key] = new classs(a[key]);
-		            }
-		            return a;
-		        }
-		        return new classs(a);
-		    }
-		    return a;
-		}
 	}
 	export class PersonalPlayer {
 	    id: string;
@@ -13239,20 +13258,6 @@ export namespace main {
 		    }
 		    return a;
 		}
-	}
-	export class SetParamResult {
-	    ok: boolean;
-	    error: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new SetParamResult(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ok = source["ok"];
-	        this.error = source["error"];
-	    }
 	}
 	export class ShellStatus {
 	    health: string;

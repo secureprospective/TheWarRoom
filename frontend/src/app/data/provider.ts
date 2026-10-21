@@ -4,9 +4,9 @@ import type {
 } from './contract';
 import { ruleDatedWindows } from '../clock/labels';
 import {
-  DeleteMFLKey, MFLKeyStatus as ReadMFLKey, SetMFLKey,
   TargetSetWindow, TargetClock, TargetDraftIR, TargetDraftTaxi, TargetMoves, TargetSnapshot,
 } from '../../../wailsjs/go/main/App';
+import { deleteMFLKey, readMFLKey, setMFLKey } from '../control/api';
 
 interface ReadingProvider {
   alerts(franchiseId: string): Promise<AlertReading>;
@@ -223,15 +223,15 @@ export class LiveProvider implements ReadingProvider, DraftingProvider {
     return onTargetChange('target:moves', listener);
   }
   async mflKey(): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), ReadMFLKey()]);
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), readMFLKey()]);
     return parseMFLKeyStatus(status);
   }
   async connectMFL(key: string): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), SetMFLKey(key)]);
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), setMFLKey(key)]);
     return parseMFLKeyStatus(status);
   }
   async forgetMFL(): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), DeleteMFLKey()]);
+    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), deleteMFLKey()]);
     return parseMFLKeyStatus(status);
   }
   onClockChange(listener: () => void): () => void {

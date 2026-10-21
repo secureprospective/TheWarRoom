@@ -171,4 +171,4 @@ func accountingReport() Report { return wireReport(controlapp.AccountingReport()
 func accountingURL(host string, season int) (string, error) {
 	return controlapp.AccountingURL(host, season)
 }
-func bylawSections(md []byte) []BylawSection { return wireBylaws(controlapp.BylawSections(md)) }
+func bylawSections(md []byte) []controlapp.BylawSection { return controlapp.BylawSections(md) }

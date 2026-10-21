@@ -31,7 +31,7 @@ describe('MFL key boundary (§M5)', () => {
     const read = vi.fn().mockResolvedValue(absent);
     const connect = vi.fn().mockResolvedValue({ ...absent, state: 'connected' });
     const forget = vi.fn().mockResolvedValue(absent);
-    vi.stubGlobal('window', { go: { main: { App: {
+    vi.stubGlobal('window', { go: { control: { API: {
       MFLKeyStatus: read, SetMFLKey: connect, DeleteMFLKey: forget,
     } } } });
     const provider = new LiveProvider();
