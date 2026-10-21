@@ -19,8 +19,6 @@ main.App.SetPhotos
 main.App.TargetAccounting
 main.App.TargetAcquisition
 main.App.TargetAlerts
-main.App.TargetAssetBoard
-main.App.TargetAssetProfile
 main.App.TargetBidDraft
 main.App.TargetBidHandOff
 main.App.TargetBidPlans
@@ -61,11 +59,6 @@ main.App.TargetLeagueSchedule
 main.App.TargetLeagueSettings
 main.App.TargetLineup
 main.App.TargetLiveGame
-main.App.TargetMarket
-main.App.TargetMarketLists
-main.App.TargetMarketReports
-main.App.TargetMarketReportsRefresh
-main.App.TargetMarketStretches
 main.App.TargetMoves
 main.App.TargetNativeAssets
 main.App.TargetNativeBidAction
@@ -102,7 +95,6 @@ main.App.TargetPersonal
 main.App.TargetPersonalChange
 main.App.TargetPersonalHandOff
 main.App.TargetPhoto
-main.App.TargetPickClock
 main.App.TargetPlayerContract
 main.App.TargetPool
 main.App.TargetPoolRefresh
@@ -123,6 +115,14 @@ main.App.TargetTradeBuilder
 main.App.TargetTrades
 main.App.TargetWhatIf
 main.App.TargetWithdrawRoster
+market.API.TargetAssetBoard
+market.API.TargetAssetProfile
+market.API.TargetMarket
+market.API.TargetMarketLists
+market.API.TargetMarketReports
+market.API.TargetMarketReportsRefresh
+market.API.TargetMarketStretches
+market.API.TargetPickClock
 race.API.TargetRace
 race.API.TargetRaceRefresh
 sources.API.GetCrosswalkReport

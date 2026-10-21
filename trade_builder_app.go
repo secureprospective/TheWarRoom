@@ -233,11 +233,11 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 }
 
 func (a *App) builderPickValue(year, round int, original string, at time.Time) *AssetCell {
-	held := a.assetModel.Load()
-	if held == nil {
+	model := a.marketHeld.SnapshotModel()
+	if model == nil {
 		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
 	}
-	cell, _, _ := dynastyValueCells((*held).Pick(year, round, original, at))
+	cell, _, _ := dynastyValueCells(model.Pick(year, round, original, at))
 	return &cell
 }
 

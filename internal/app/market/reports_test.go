@@ -13,11 +13,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
-func heldFixture(t *testing.T) map[string]Held {
+func heldFixture(t *testing.T) map[string]HeldFeed {
 	t.Helper()
-	held := map[string]Held{}
+	held := map[string]HeldFeed{}
 	for kind, feed := range markettest.Feeds(t) {
-		held[kind] = Held{Value: []marketfeeds.Feed{feed}, Feed: report.Feed{FetchedAt: markettest.Read()}}
+		held[kind] = HeldFeed{Value: []marketfeeds.Feed{feed}, Feed: report.Feed{FetchedAt: markettest.Read()}}
 	}
 	return held
 }
@@ -112,7 +112,7 @@ func TestMarketEmptyADPAndIndependentFailures(t *testing.T) {
 	h := held[marketfeeds.ADP]
 	h.Value = []marketfeeds.Feed{feed}
 	held[marketfeeds.ADP] = h
-	held[marketfeeds.Ranks] = Held{Feed: report.Feed{RefreshError: "offline"}}
+	held[marketfeeds.Ranks] = HeldFeed{Feed: report.Feed{RefreshError: "offline"}}
 	b := Reports(held, nil, 6, time.UTC)
 	adp := reportByID(t, b, "M-067")
 	if adp.Status != "empty" || len(adp.Rows) != 0 || !strings.Contains(adp.Note, "no draft picks") {

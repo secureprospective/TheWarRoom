@@ -21,6 +21,12 @@ func Kinds() []string {
 	return []string{marketfeeds.Projections, marketfeeds.Ranks, marketfeeds.ADP, marketfeeds.AAV}
 }
 
+// RepoPath joins parts onto the repository root, so tests read canonical goldens in place.
+func RepoPath(parts ...string) string {
+	_, here, _, _ := runtime.Caller(0)
+	return filepath.Join(append([]string{filepath.Dir(here), "..", "..", "..", ".."}, parts...)...)
+}
+
 // Feeds parses the real MFL export of every market report kind, from the ingestion testdata.
 func Feeds(t testing.TB) map[string]marketfeeds.Feed {
 	t.Helper()

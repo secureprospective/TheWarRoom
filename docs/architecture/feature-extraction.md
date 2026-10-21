@@ -96,6 +96,20 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    frontend tests/typecheck/build and binding freshness; CI runs the full make verify when a
    scoped extraction brief excludes the full root suite.
 
+   Market is the second stateful instance and the first whose Host needs a still-root
+   feature: `market.Held` owns the four held market reports and the Lab value model.
+   Root refresh writers and readers keep SeasonMu around each feed publication and
+   capture (`core.State.CaptureMarket`); RefreshMu stays the refresh serializer. Its Host
+   is an unbound root adapter (`marketHost`) embedding `*core.State` and adding the
+   Research read (`AssetInput`) and the root build stamp (`LabStamp`); `newMarketAPI(app)`
+   is the one constructor for bindings and root callers. Wire types other root features
+   still carry (asset cells, surface lines) live in the feature and are aliased at the
+   root; `MarketRange`/`Reading` stay root contracts for the remaining features. A feature
+   folder may host another feature's legacy root binding (Draft Lab in `app/market`): the
+   transport guard allows a named `main/App` import there only when it names no method a
+   feature API binds, and rejects moved method names through `main/App` or
+   `window.go.main` everywhere outside the adapter.
+
 **Comms ownership and metadata.** Core holds transactions/boards and their locks, key access and
 refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now` and `liveGame`
 remain on App: their types belong to other feature packages or still-root feature adapters.

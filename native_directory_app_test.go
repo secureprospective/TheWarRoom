@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -141,7 +142,7 @@ func TestNativeDirectoryReopenWithoutMirror(t *testing.T) {
 		t.Fatal(err)
 	}
 	store, _ = openDirectoryHistory(t, path)
-	restarted := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+	restarted := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
 		CommissionerSession: testCommissionerSession{"creator"}}}
 	close(restarted.core.Started)
 	if after := readDirectoryTest(t, restarted); !reflect.DeepEqual(before, after) {

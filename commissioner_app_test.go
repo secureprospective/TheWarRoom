@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -40,7 +41,7 @@ func commissionerTestApp(t *testing.T) *App {
 	if err := store.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-	app := &App{raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
+	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Ctx: t.Context(), History: store, Started: make(chan struct{}),
 		CommissionerSession: testCommissionerSession{"creator"}}}
 	close(app.core.Started)
 	return app
@@ -252,12 +253,12 @@ func TestLocalCommissionerSessionStableAndNotFranchise(t *testing.T) {
 	if err != nil || first != second || !strings.HasPrefix(first, "local.") {
 		t.Fatalf("local identity: %s %v", second, err)
 	}
-	app := &App{raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: "installation"}}}
+	app := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{Paths: core.Paths{DataDir: "installation"}}}
 	principal, err := app.commissionerPrincipal()
 	if err != nil || principal != first {
 		t.Fatalf("production port: %s %v", principal, err)
 	}
-	if _, err := (&App{raceHeld: &raceapp.Held{}, core: &core.State{}}).commissionerPrincipal(); err == nil {
+	if _, err := (&App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}).commissionerPrincipal(); err == nil {
 		t.Fatal("missing installation fabricated identity")
 	}
 }

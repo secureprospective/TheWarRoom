@@ -11,7 +11,6 @@ app_shutdown_test.go	platform
 archive_app.go	archive
 archive_test.go	archive
 asset_board.go	market
-asset_board_test.go	market
 backup_restore_drill_test.go	platform
 bids_app.go	offers
 bids_app_test.go	offers
@@ -62,7 +61,6 @@ freshness.go	platform
 instance_lock_unix.go	platform
 instance_lock_windows.go	platform
 lab_app.go	market
-lab_app_test.go	market
 landing_test.go	now
 landing_home_test.go	now
 now_pulse_test.go	now
@@ -83,7 +81,6 @@ logging.go	platform
 main.go	platform
 market_feeds_app.go	market
 market_feeds_test.go	market
-market_surfaces_app_test.go	market
 market_wire_test.go	market
 mfl_feed_cache.go	control
 mfl_feed_cache_test.go	control

@@ -15,6 +15,7 @@ const folders = new Map([
   ['comms', 'comms'],
   ['counterparties', 'counterparties'],
   ['draft', 'draftreports'],
+  ['market', 'market'],
   ['race', 'race'],
   ['sources', 'datasources'],
 ]);
@@ -26,6 +27,8 @@ const moved = new Map([
   ['TargetCounterparties', 'counterparties'], ['TargetCounterpartTeam', 'counterparties'],
   ...['TargetDraftLab', 'TargetDraftReports', 'TargetDraftReportsRefresh', 'TargetNFLDraft',
     'TargetOpenMFLDraftRoom'].map(name => [name, 'draft']),
+  ...['TargetAssetBoard', 'TargetAssetProfile', 'TargetMarket', 'TargetMarketLists', 'TargetMarketReports',
+    'TargetMarketReportsRefresh', 'TargetMarketStretches', 'TargetPickClock'].map(name => [name, 'market']),
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'TargetCrosswalk',
     'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),

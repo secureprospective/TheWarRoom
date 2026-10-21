@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -80,11 +81,10 @@ func TestMarketReportPlayerContext(t *testing.T) {
 		t.Fatal(err)
 	}
 	a, _ := poolApp(t)
-	a.core.SeasonMarket = map[string]heldSeasonFeed[[]marketfeeds.Feed]{}
 	for _, kind := range marketKinds() {
-		a.core.SeasonMarket[kind] = heldSeasonFeed[[]marketfeeds.Feed]{FetchedAt: time.Now(), Value: []marketfeeds.Feed{{Week: a.marketWeek(), Players: []marketfeeds.Player{{ID: id, Value: 12, Low: 1, High: 20, Rank: 1}}}}}
+		a.marketHeld.PublishFeed(kind, season.Feed[[]marketfeeds.Feed]{FetchedAt: time.Now(), Value: []marketfeeds.Feed{{Week: a.marketWeek(), Players: []marketfeeds.Player{{ID: id, Value: 12, Low: 1, High: 20, Rank: 1}}}}})
 	}
-	board, err := a.TargetMarketReports()
+	board, err := newMarketAPI(a).TargetMarketReports()
 	if err != nil {
 		t.Fatal(err)
 	}

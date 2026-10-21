@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 )
@@ -148,6 +149,7 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		reflect.TypeFor[*comms.API]():          comms.Commands(),
 		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
 		reflect.TypeFor[*draft.API]():          draft.Commands(),
+		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
 		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
 		reflect.TypeFor[*sources.API]():        sources.Commands(),
 	}

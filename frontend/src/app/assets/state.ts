@@ -1,6 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { marketAPI, subscribeSeason } from '../market/api';
 import { parseAssetBoard, type AssetBoard, type AssetCell } from './contract';
 
 type AssetState = { board?: AssetBoard; byId: ReadonlyMap<string, AssetBoard['values'][number]>;
@@ -52,18 +52,7 @@ export function createAssetState(read: () => Promise<AssetBoard>,
   return { useCell, useBoard, load, peek: store.getState, cellFor };
 }
 
-function desktop(): typeof Bindings {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Player values require the desktop app; no browser fixture is substituted.');
-  return (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-}
-export const assetState = createAssetState(async () => parseAssetBoard(await desktop().TargetAssetBoard()),
-  (listener) => {
-    let stop: (() => void) | undefined;
-    let active = true;
-    if (typeof window !== 'undefined' && (window as { runtime?: unknown }).runtime)
-      void import('../../../wailsjs/runtime/runtime').then(m => {
-        if (active) stop = m.EventsOn('target:season', listener);
-      });
-    return () => { active = false; stop?.(); };
-  });
+export const assetState = createAssetState(
+  async () => parseAssetBoard(await marketAPI.assetBoard()),
+  subscribeSeason,
+);

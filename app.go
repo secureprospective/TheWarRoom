@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
@@ -40,13 +40,13 @@ import (
 type App struct {
 	core         *core.State
 	archiveCache archiveapp.Snapshot
-	assetModel   atomic.Pointer[assetModel]
 	control      controlFeeds
 	research     researchHeld
 	raceHeld     *raceapp.Held
 	now          nowHeld
 	liveGame     liveGameHeld
 	sourcesHeld  *sourcesapp.Held
+	marketHeld   *marketapp.Held
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.
@@ -71,7 +71,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	a := &App{raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
+	a := &App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
@@ -88,6 +88,7 @@ func NewApp() *App {
 	a.configureArchive()
 	a.core.CaptureRace = a.raceSnapshot
 	a.core.RefreshRaceFeeds = a.refreshRace
+	a.core.RefreshMarketFeeds = a.refreshMarketFeeds
 	a.core.RefreshTransactions = a.refreshSeasonTransactions
 	a.wireSources()
 	return a

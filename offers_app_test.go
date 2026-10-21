@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -95,7 +96,7 @@ func TestOffersWireFixture(t *testing.T) {
 	if os.Getenv("TWR_WRITE_OFFERS_WIRE") != "1" {
 		t.Skip("opt-in frontend IPC fixture generation")
 	}
-	r := (&App{raceHeld: &raceapp.Held{}, core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
+	r := (&App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	b, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -114,7 +115,7 @@ func TestOffersWireFixture(t *testing.T) {
 
 func TestOfferStackWidthsAndCounts(t *testing.T) {
 	t.Parallel()
-	r := (&App{raceHeld: &raceapp.Held{}, core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
+	r := (&App{marketHeld: &marketapp.Held{}, raceHeld: &raceapp.Held{}, core: &core.State{}}).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"})
 	for _, st := range r.Value.Stretches {
 		if len(st.Outcomes) != 6 {
 			t.Fatal("stack requires five endings and open offers")
