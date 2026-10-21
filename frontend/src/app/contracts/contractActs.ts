@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { commands } from '../commands/registry';
-import type * as Bindings from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { targetContractActs } from './api';
 import { array, object, text, integer } from '../data/parseValues';
 import { parseRailReceipt } from '../shell/railReceipt';
 import type { RailReceipt } from '../shell/EnvelopeRail';
@@ -60,10 +59,9 @@ export function onContractActsChange(listener: () => void) {
 }
 export async function contractActAction(request: ContractActRequest) {
   if (selectProvider().kind !== 'live') throw new Error('Contract plans need the desktop app');
-  const go = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
   const raw = { player: '', intent: '', id: '', level: 1, years: 1, source: 0, destination: 0, move: '',
       ...request };
-  const reading = parseContractActs(await go.TargetContractActs(raw as main.RawContractAct));
+  const reading = parseContractActs(await targetContractActs(raw));
   if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Contract plans unavailable');
   if (!['read', 'options', 'preview'].includes(request.action)) for (const listener of listeners) listener();
   return reading;

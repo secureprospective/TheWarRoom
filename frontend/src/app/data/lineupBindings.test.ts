@@ -11,9 +11,10 @@ it('checks, drafts and hands off through lazy bindings and strict parsers', asyn
   const check = vi.fn().mockResolvedValue({ full: true, legal: true, problems: [] });
   const draft = vi.fn().mockResolvedValue(lineupReceipt());
   const handOff = vi.fn().mockResolvedValue(lineupReceipt());
-  vi.stubGlobal('window', { go: { main: { App: {
-    TargetCheckLineup: check, TargetDraftLineup: draft, TargetHandOff: handOff,
-  } } } });
+  vi.stubGlobal('window', { go: {
+    main: { App: { TargetHandOff: handOff } },
+    contracts: { API: { TargetCheckLineup: check, TargetDraftLineup: draft } },
+  } });
   const provider = new LiveProvider();
   const starters = lineupReceipt().spec.expected.lineup!.starters;
   expect(await provider.checkLineup('0025', starters)).toEqual({ full: true, legal: true, problems: [] });

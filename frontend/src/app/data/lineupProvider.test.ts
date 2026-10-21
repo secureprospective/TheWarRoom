@@ -11,7 +11,7 @@ describe('lineup provider', () => {
   it('calls the binding and parses strictly, never replacing bad data with fixtures', async () => {
     const r = heldLineup();
     const call = vi.fn().mockResolvedValue(r);
-    vi.stubGlobal('window', { go: { main: { App: { TargetLineup: call } } } });
+    vi.stubGlobal('window', { go: { contracts: { API: { TargetLineup: call } } } });
     const provider = new LiveProvider();
     expect(await provider.lineup('0025')).toEqual(r);
     expect(call).toHaveBeenCalledWith('0025');

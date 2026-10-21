@@ -1,8 +1,7 @@
 import type { Reading } from './contract';
 import { createStore } from 'zustand/vanilla';
 import { useStore } from 'zustand';
-import type * as Bindings from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { targetReleasePlans } from './api';
 import { array, object, text } from '../data/parseValues';
 import { selectProvider } from '../data/provider';
 import { parseRailReceipt } from '../shell/railReceipt';
@@ -37,10 +36,9 @@ export function parseReleases(v: unknown): Reading<ReleasePlan[]> {
 }
 export async function releaseAction(action: ReleaseAction): Promise<Reading<ReleasePlan[]>> {
   if (selectProvider().kind !== 'live') throw new Error('Release plans need the desktop app');
-  const go = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
-  const result = parseReleases(await go.TargetReleasePlans({
+  const result = parseReleases(await targetReleasePlans({
     ...action, move: action.move ?? '', id: action.id ?? '', confirmed: action.confirmed ?? false,
-  } as main.RawReleaseRequest));
+  }));
   if (result.status !== 'ok') throw new Error(result.absenceReason ?? 'Release plans failed');
   if (action.action !== 'read') for (const listener of listeners) listener();
   return result;

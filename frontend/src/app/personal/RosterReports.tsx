@@ -4,7 +4,7 @@ import { report, type Report } from '../reports/contract';
 import { ReportView } from '../reports/ReportView';
 import { commands } from '../commands/registry';
 import { readNFLDraft } from '../draftreports/api';
-import type * as Bindings from '../../../wailsjs/go/main/App';
+import { targetRosterReports } from '../contracts/api';
 
 export default function RosterReports({ mine, draft = false }: { mine: string; draft?: boolean }) {
   const [reports, setReports] = useState<Report[]>();
@@ -15,9 +15,8 @@ export default function RosterReports({ mine, draft = false }: { mine: string; d
       try {
         if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
           throw new Error('Roster reports need the desktop app; no sample data is substituted.');
-        const app = (window as unknown as { go: { main: { App: typeof Bindings } } }).go.main.App;
         const reports = draft ? [await readNFLDraft()]
-          : array(await app.TargetRosterReports(mine), 'Roster reports', report);
+          : array(await targetRosterReports(mine), 'Roster reports', report);
         if (active) { setReports(reports); setError(''); }
       } catch (cause) { if (active) setError(String(cause)); }
     };

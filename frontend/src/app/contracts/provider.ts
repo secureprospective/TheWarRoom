@@ -1,5 +1,4 @@
-import { TargetContracts, TargetPlayerContract } from '../../../wailsjs/go/main/App';
-import type { snapshot } from '../../../wailsjs/go/models';
+import { targetContracts, targetPlayerContract } from './api';
 import { freshness } from '../data/parse';
 import { object, text, integer, choice, array, id } from '../data/parseValues';
 import { selectProvider } from '../data/provider';
@@ -161,11 +160,11 @@ export function contractsProvider(): ContractsProvider {
   return {
     contracts: async (scope) => {
       desktop();
-      return parseContracts(await TargetContracts(scope as snapshot.RawContractScope));
+      return parseContracts(await targetContracts(scope));
     },
     player: async (id) => {
       desktop();
-      return parsePlayerContract(await TargetPlayerContract(id));
+      return parsePlayerContract(await targetPlayerContract(id));
     },
     onChange: selected.onSeasonChange.bind(selected),
   };

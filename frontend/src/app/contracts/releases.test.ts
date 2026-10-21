@@ -113,7 +113,7 @@ describe('Release plans', () => {
     }
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire(p));
-    vi.stubGlobal('window', { go: { main: { App: { TargetReleasePlans: call } } } });
+    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'withdraw', id: p.id } });
     expect(call).toHaveBeenCalledWith({
       mine: '0001', action: 'withdraw', id: p.id, move: '', confirmed: false,
@@ -128,7 +128,7 @@ describe('Release plans', () => {
     expect(() => parseReleases(bad)).toThrow('expected boolean');
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire());
-    vi.stubGlobal('window', { go: { main: { App: { TargetReleasePlans: call } } } });
+    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'draft', move: 'move-1' } });
     expect(call).toHaveBeenCalledWith({
       mine: '0001', action: 'draft', move: 'move-1', id: '', confirmed: false,
@@ -141,7 +141,7 @@ describe('Release plans', () => {
     const p = plan(); p.cut = false; p.label = 'Buy out Example'; p.receipt.spec.intent = 'roster.buyout';
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire(p));
-    vi.stubGlobal('window', { go: { main: { App: { TargetReleasePlans: call } } } });
+    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
     const writeText = vi.fn().mockResolvedValue(true);
     Object.assign(window, { runtime: { ClipboardSetText: writeText } });
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'handoff', id: p.id } });
@@ -155,8 +155,8 @@ describe('Release plans', () => {
   });
   it('keeps release bindings and screens lazy, with ordinary button type and one-line headers', () => {
     const source = readFileSync('src/app/contracts/releases.ts', 'utf8');
-    expect(source).toContain('import type * as Bindings');
-    expect(source).toContain('go.TargetReleasePlans');
+    expect(source).toContain("import { targetReleasePlans } from './api'");
+    expect(source).toContain('await targetReleasePlans(');
     const moves = readFileSync('src/app/shell/MyMoves.tsx', 'utf8');
     expect(moves).toContain("lazy(() => import('../contracts/ReleasePlans'))");
     const css = readFileSync('src/app/contracts/contracts.css', 'utf8');

@@ -1,6 +1,5 @@
 import { commands } from '../commands/registry';
-import { TargetWhatIf } from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { targetWhatIf } from './api';
 import { array, object, text, choice } from '../data/parseValues';
 import { selectProvider } from '../data/provider';
 import { parseReading } from './provider';
@@ -65,9 +64,9 @@ export function whatIfProvider(): WhatIfProvider {
   const call = async (action: WhatIfAction) => {
     if (selected.kind !== 'live') throw new Error('What-if needs the desktop app; no figures invented');
     choice(action.action, 'What-if action', ['read', 'cut', 'buyout', 'undo', 'reset']);
-    return parseWhatIf(await TargetWhatIf({
+    return parseWhatIf(await targetWhatIf({
       ...action, player: action.player ?? '', move: action.move ?? '',
-    } as main.RawWhatIfRequest));
+    }));
   };
   return {
     query: (mine) => call({ mine, action: 'read' }),
