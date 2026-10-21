@@ -140,6 +140,7 @@ linters:
             - "!**/internal/app/comms/**"
             - "!**/internal/app/counterparties/**"
             - "!**/internal/app/draft/**"
+            - "!**/internal/app/trades/**"
             - "!**/internal/app/scoring/**"
             - "!**/internal/app/sources/**"
             - "!**/internal/app/market/**"
@@ -288,6 +289,22 @@ linters:
             - github.com/secureprospective/TheWarRoom/internal/app/catalog$
             - github.com/secureprospective/TheWarRoom/internal/app/draft$
             - github.com/secureprospective/TheWarRoom/internal/app/draft/
+            - github.com/secureprospective/TheWarRoom/internal/app/report$
+            - github.com/secureprospective/TheWarRoom/internal/app/report/
+            - github.com/secureprospective/TheWarRoom/internal/app/season$
+            - github.com/secureprospective/TheWarRoom/internal/app/season/
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
+              desc: "feature services may import only their own subtree, shared report/season and catalog"
+
+        app-trades-no-siblings:
+          list-mode: lax
+          files:
+            - "**/internal/app/trades/**"
+          allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/app/trades$
+            - github.com/secureprospective/TheWarRoom/internal/app/trades/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
             - github.com/secureprospective/TheWarRoom/internal/app/season$

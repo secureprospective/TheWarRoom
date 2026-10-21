@@ -7,6 +7,7 @@ import (
 	"time"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -34,7 +35,7 @@ type AcquisitionChoice struct {
 }
 type AcquisitionView struct {
 	Incoming []AcquisitionChoice     `json:"incoming"`
-	Cuts     []TradeAsset            `json:"cuts"`
+	Cuts     []tradesapp.TradeAsset  `json:"cuts"`
 	Player   string                  `json:"player"`
 	Seasons  []WhatIfFigure          `json:"seasons"`
 	Team     []WhatIfFigure          `json:"team"`
@@ -45,7 +46,7 @@ type AcquisitionView struct {
 }
 
 func (a *App) TargetAcquisition(r RawAcquisition) Reading[AcquisitionView] {
-	out := AcquisitionView{Incoming: []AcquisitionChoice{}, Cuts: []TradeAsset{}, Seasons: []WhatIfFigure{}, Team: []WhatIfFigure{}, Reasons: []string{}}
+	out := AcquisitionView{Incoming: []AcquisitionChoice{}, Cuts: []tradesapp.TradeAsset{}, Seasons: []WhatIfFigure{}, Team: []WhatIfFigure{}, Reasons: []string{}}
 	if err := r.Validate(); err != nil {
 		return acquisitionReading(out, err)
 	}

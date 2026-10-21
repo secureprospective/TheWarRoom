@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -52,13 +53,7 @@ func (a *App) contractsInput() (contractsInput, error) {
 }
 
 func contractReading[T any](value T, at, source, how string, count int, err error) Reading[T] {
-	r := Reading[T]{Sourced: snapshot.Sourced[T]{Value: value, Provenance: snapshot.Provenance{Source: source, Kind: "live", Freshness: domain.Freshness{State: domain.FreshLive, FetchedAt: at, Note: "Held MFL mirror; no network or what-if state"}}}, Status: ReadingOK, Count: count, Threshold: 0, Baseline: "Current MFL mirror revision", Cutoff: at, Method: "Integer cents; Go-authored display", BuildStamp: buildLabel() + " " + buildDate, HowCounted: how}
-	if err != nil {
-		reason := err.Error()
-		r.Status, r.AbsenceReason = ReadingFailed, &reason
-		r.Provenance.Freshness.State = domain.FreshFail
-	}
-	return r
+	return wireReading(report.MirrorReading(value, at, source, how, count, buildLabel()+" "+buildDate, err), func(v T) T { return v })
 }
 
 func failedContracts(err error) ContractsReadings {

@@ -175,9 +175,7 @@ shell_status_app.go	control
 suite_test.go	platform
 snapshot_app.go	platform
 snapshot_app_test.go	platform
-trade_builder_app.go	trades
 trade_builder_app_test.go	trades
-trade_link_guard_test.go	trades
 trades_app.go	trades
 trades_app_test.go	trades
 transactions_app.go	contracts

@@ -1,7 +1,6 @@
 import { parseAssetCell } from '../assets/contract';
 import { create } from 'zustand';
-import { TargetTradeBuilder } from '../../../wailsjs/go/main/App';
-import type { main } from '../../../wailsjs/go/models';
+import { targetTradeBuilder } from '../trades/api';
 import { selectProvider } from '../data/provider';
 import { array, object, text } from '../data/parseValues';
 import { parseReceipt } from '../data/parseEnvelope';
@@ -90,9 +89,9 @@ export async function builderAction(action: BuilderAction) {
   try {
     if (selectProvider().kind !== 'live') throw new Error('Trade builder needs the desktop app');
     if (action.action === 'handoff') {
-      const reading = parseBuilder(await TargetTradeBuilder({
+      const reading = parseBuilder(await targetTradeBuilder({
         mine: action.mine, action: 'read', other: '', give: [], get: [], rationale: '', id: '',
-      } as main.RawTradeBuilder));
+      }));
       if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Trade plan unavailable');
       const proposal = reading.value?.plans.find(p => p.id === action.id);
       const post = proposal?.post ?? action.post;
@@ -102,11 +101,11 @@ export async function builderAction(action: BuilderAction) {
       }
     }
     const reset = s.mine !== action.mine;
-    const response = parseBuilder(await TargetTradeBuilder({
+    const response = parseBuilder(await targetTradeBuilder({
       mine: action.mine, other: reset ? '' : s.other, give: reset ? [] : s.give,
       get: reset ? [] : s.get, rationale: s.rationale, action: action.action,
       id: 'id' in action ? action.id : '',
-    } as main.RawTradeBuilder));
+    }));
     if (response.status !== 'ok') throw new Error(response.absenceReason ?? 'Trade builder unavailable');
     useBuilder.setState({ reading: response, mine: action.mine,
       ...(reset ? { other: '', give: [], get: [], rationale: '' } : {}) });

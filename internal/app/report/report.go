@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -189,6 +190,18 @@ type Reading[T any] struct {
 	InputSHA      string        `json:"inputSHA"`
 	BuildStamp    string        `json:"buildStamp"`
 	HowCounted    string        `json:"howCounted"`
+}
+
+// MirrorReading is the reading over the held MFL mirror, in integer cents: a failure keeps the
+// value and words the error as its absence reason.
+func MirrorReading[T any](value T, at, source, how string, count int, stamp string, err error) Reading[T] {
+	r := Reading[T]{Sourced: snapshot.Sourced[T]{Value: value, Provenance: snapshot.Provenance{Source: source, Kind: "live", Freshness: domain.Freshness{State: domain.FreshLive, FetchedAt: at, Note: "Held MFL mirror; no network or what-if state"}}}, Status: ReadingOK, Count: count, Threshold: 0, Baseline: "Current MFL mirror revision", Cutoff: at, Method: "Integer cents; Go-authored display", BuildStamp: stamp, HowCounted: how}
+	if err != nil {
+		reason := err.Error()
+		r.Status, r.AbsenceReason = ReadingFailed, &reason
+		r.Provenance.Freshness.State = domain.FreshFail
+	}
+	return r
 }
 
 // Count words a count with its noun: "1 trade", "1,204 trades".

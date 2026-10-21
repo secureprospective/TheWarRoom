@@ -94,8 +94,6 @@ export function TargetDraftLineup(arg1:string,arg2:Array<string>):Promise<envelo
 
 export function TargetDraftTaxi(arg1:string,arg2:string):Promise<envelope.Receipt>;
 
-export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope.Receipt>;
-
 export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
 export function TargetLeagueCalendar(arg1:main.RawLeagueCalendarScope):Promise<commissioner.Calendar>;
@@ -211,10 +209,6 @@ export function TargetSiteNews():Promise<main.Report>;
 export function TargetSnapshot():Promise<snapshot.Snapshot>;
 
 export function TargetStatQueue(arg1:string,arg2:number):Promise<commissioner.StatQueue>;
-
-export function TargetTradeBuilder(arg1:main.RawTradeBuilder):Promise<main.Reading_main_TradeBuilderView_>;
-
-export function TargetTrades(arg1:string):Promise<main.TradeReading>;
 
 export function TargetWhatIf(arg1:main.RawWhatIfRequest):Promise<main.Reading_main_WhatIfView_>;
 

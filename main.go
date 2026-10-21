@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
+	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -103,5 +104,6 @@ func bindings(app *App) []interface{} {
 		newMarketAPI(app),
 		raceapp.New(app.core, app.raceHeld),
 		sources.New(app.core, app.sourcesHeld),
+		trades.New(tradesHost{State: app.core, app: app}),
 	}
 }

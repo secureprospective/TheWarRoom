@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -83,16 +85,16 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	transport.requests = nil
 	return a, transport
 }
-func builderCall(t *testing.T, a *App, r RawTradeBuilder) TradeBuilderView {
+func builderCall(t *testing.T, a *App, r tradesapp.RawTradeBuilder) tradesapp.TradeBuilderView {
 	t.Helper()
-	reading := a.TargetTradeBuilder(r)
-	if reading.Status != ReadingOK {
+	reading := a.tradesAPI().TargetTradeBuilder(r)
+	if reading.Status != report.ReadingOK {
 		t.Fatalf("builder %s: %+v", r.Action, reading)
 	}
 	return reading.Value
 }
-func realDeal() RawTradeBuilder {
-	return RawTradeBuilder{Mine: "0001", Other: "0025", Action: "preview", Give: []string{"11675"}, Get: []string{"15761"}, Rationale: "Balance salary with a younger starter."}
+func realDeal() tradesapp.RawTradeBuilder {
+	return tradesapp.RawTradeBuilder{Mine: "0001", Other: "0025", Action: "preview", Give: []string{"11675"}, Get: []string{"15761"}, Rationale: "Balance salary with a younger starter."}
 }
 func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	t.Parallel()
@@ -145,7 +147,7 @@ func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	if !strings.Contains(preview.Post, "a year through 2026") || strings.Contains(preview.Post, "11675") {
 		t.Fatal(preview.Post)
 	}
-	body, err := json.Marshal(a.TargetTradeBuilder(realDeal()))
+	body, err := json.Marshal(a.tradesAPI().TargetTradeBuilder(realDeal()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,8 +182,8 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(-time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
-	failed := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
-	if failed.Status != ReadingFailed || opens != 0 {
+	failed := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
+	if failed.Status != report.ReadingFailed || opens != 0 {
 		t.Fatal("deadline bypass", failed)
 	}
 	blocked := builderCall(t, a, r).Preview
@@ -191,8 +193,8 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if err := a.TargetSetWindow("trade_deadline", time.Now().Add(time.Hour).UTC().Format(time.RFC3339)); err != nil {
 		t.Fatal(err)
 	}
-	handed := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
-	if handed.Status != ReadingOK || opens != 1 {
+	handed := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "handoff", ID: id})
+	if handed.Status != report.ReadingOK || opens != 1 {
 		t.Fatal(handed, opens)
 	}
 	if _, err := a.TargetHandOff(id); err == nil {
@@ -204,7 +206,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 	if len(preview.Reasons) == 0 {
 		t.Fatal("wrong ownership passed")
 	}
-	picks := builderCall(t, a, RawTradeBuilder{Mine: r.Mine, Action: "read"}).Teams
+	picks := builderCall(t, a, tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "read"}).Teams
 	has := false
 	for _, team := range picks {
 		for _, asset := range team.Assets {
@@ -313,7 +315,7 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		receipt, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+		receipt, err := a.draftTradeExit(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 		_ = snap
 		if err != nil || receipt.State != envelope.Ready || receipt.Spec.Gravity != envelope.G3 {
 			t.Fatal(receipt, err)
@@ -328,7 +330,7 @@ func TestTradeExitDirectionsAndAmbiguity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: "0025", Action: "revoke", ID: offer.ID}, held); err == nil {
+	if _, err := a.draftTradeExit(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: "0025", Action: "revoke", ID: offer.ID}, held); err == nil {
 		t.Fatal("other owner's revoke allowed")
 	}
 }
@@ -341,7 +343,7 @@ func TestTradeExitPlanSupersedesTheLastForTheSameOffer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw := RawTradeBuilder{Mine: "0001", Action: "revoke", ID: offer.ID}
+	raw := tradesapp.RawTradeBuilder{Mine: "0001", Action: "revoke", ID: offer.ID}
 	first, err := a.draftTradeExit(a.core.Ctx, raw, held)
 	if err != nil {
 		t.Fatal(err)
@@ -434,7 +436,7 @@ func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
 	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
 	a.core.SeasonPendingTrades.Value = nil
-	req := a.tradeRequest("0001", offer)
+	req := a.core.TradeRequest("0001", offer)
 	req.Trade.TradeID = "local"
 	e, err := envelope.DraftTradeAct(a.core.MovesNow(), "trade.propose", req, nil, func() string { return "watch-propose" })
 	if err != nil {
@@ -484,7 +486,7 @@ func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
 func TestTradeBuilderLandingRichAssets(t *testing.T) {
 	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
-	view := builderCall(t, a, RawTradeBuilder{Mine: "0001", Action: "read"})
+	view := builderCall(t, a, tradesapp.RawTradeBuilder{Mine: "0001", Action: "read"})
 	players, picks := 0, 0
 	for _, team := range view.Teams {
 		for _, asset := range team.Assets {
@@ -537,11 +539,11 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 	opened := 0
 	a.core.OpenURL = func(context.Context, string) { opened++ }
 	m, stamp, _ := a.core.League.ContractsView()
-	wrong := a.TargetTradeBuilder(RawTradeBuilder{Mine: r.Other, Action: "remove", ID: saved.ID})
-	if wrong.Status == ReadingOK {
+	wrong := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: r.Other, Action: "remove", ID: saved.ID})
+	if wrong.Status == report.ReadingOK {
 		t.Fatal("another owner removed plan")
 	}
-	view := builderCall(t, a, RawTradeBuilder{Mine: r.Mine, Action: "remove", ID: saved.ID})
+	view := builderCall(t, a, tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "remove", ID: saved.ID})
 	if len(view.Plans) != 0 || view.Preview != nil {
 		t.Fatalf("removed plan still on desk: %+v", view)
 	}
@@ -563,7 +565,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 	if opened != 0 || len(transport.requests) != 0 || !reflect.DeepEqual(m, after) || stamp != nextStamp {
 		t.Fatal("local removal opened MFL, fetched or changed mirror")
 	}
-	if len(builderCall(t, a, RawTradeBuilder{Mine: r.Mine, Action: "read"}).Plans) != 0 {
+	if len(builderCall(t, a, tradesapp.RawTradeBuilder{Mine: r.Mine, Action: "read"}).Plans) != 0 {
 		t.Fatal("removed plan reappeared on read")
 	}
 }
@@ -571,7 +573,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
 	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
-	reading := a.TargetTradeBuilder(realDeal())
+	reading := a.tradesAPI().TargetTradeBuilder(realDeal())
 	body, err := json.Marshal(reading)
 	if err != nil {
 		t.Fatal(err)
@@ -599,15 +601,15 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			r, err := a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			r, err := a.draftTradeExit(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 			if err != nil || r.State != envelope.Ready {
 				t.Fatal(r, err)
 			}
 			before, stamp, _ := a.core.League.ContractsView()
-			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: "9999", ID: r.CorrelationID}); err == nil {
+			if err := a.removeTradePlan(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: "9999", ID: r.CorrelationID}); err == nil {
 				t.Fatal("another franchise removed plan")
 			}
-			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
+			if err := a.removeTradePlan(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err != nil {
 				t.Fatal(err)
 			}
 			receipts, err := a.TargetMoves(tc.mine)
@@ -624,7 +626,7 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			if !found {
 				t.Fatal("removed receipt missing")
 			}
-			r, err = a.draftTradeExit(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
+			r, err = a.draftTradeExit(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, Action: tc.action, ID: offer.ID}, held)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -639,7 +641,7 @@ func TestTradeExitPlanRemovalIsLocal(t *testing.T) {
 			if err := a.core.Moves.Save(a.core.Ctx, handed); err != nil {
 				t.Fatal(err)
 			}
-			if err := a.removeTradePlan(a.core.Ctx, RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err == nil {
+			if err := a.removeTradePlan(a.core.Ctx, tradesapp.RawTradeBuilder{Mine: tc.mine, ID: r.CorrelationID}); err == nil {
 				t.Fatal("removed plan after hand-off")
 			}
 			kept, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
@@ -665,7 +667,7 @@ func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := futureTradePickName(2027, 1, "0001", a.core.TargetSnapshot)
+	want := tradesapp.FuturePickName(2027, 1, "0001", a.core.TargetSnapshot)
 	found := false
 	for _, receipt := range receipts {
 		if receipt.CorrelationID != saved.ID {
