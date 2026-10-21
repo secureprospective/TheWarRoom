@@ -149,7 +149,7 @@ Offers, Personal and Pool. No API opens a database or starts a worker.
 | `moves_app.go` | `TargetHandOff(correlationID string) (envelope.Receipt, error)` saves before browser hand-off; `TargetWithdrawRoster(correlationID)` ends a local IR/taxi plan without changing MFL; `TargetCheckMoves() error` wakes landing checks; `target:moves` signals a hand-off or changed move. |
 | `moves_watcher.go` | Cancellable landing watcher; shared 60-second wake/fast-mode rate limit and persisted restart recovery. |
 | `livegame_app.go`, `livegame_spine.go` | `TargetLiveGame(open, follow, mine)`: demand-driven Now poll on held NFL windows; MFL liveScoring at 30 s, ESPN board at 30 s/details at 15 s with capped backoff; separate held detail time, strict ESPN crosswalk starter matching, cached personal-use photos. Source URLs are data in `livegame_sources.json`. Lazy `frontend/src/app/now/LiveGame.tsx`; `game.follow id=` command. |
-| `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
+| `season_app.go` | Held season feeds (transactions, lineups, pendingTrades, injuries); `control.API.TargetSeason` reads without network; `target:season` signals refreshes and key changes. Ready roster plans whose held eligibility turned ineligible return to Draft after a refresh (`revalidateReadyRosterMoves`, in `moves_app.go`). |
 | `snapshot_app.go` | `TargetSnapshot` (initialized mirror and rulebook, cached live directory with archive fallback, held injuries feed fetched on first use; shared fixture/live contract; keeps the last good build); `TargetClock` (phase log and commissioner calendar from the what-if store; no network); `TargetDraftIR`, `TargetDraftTaxi`, `TargetMoves` (draft `roster.ir` / `roster.taxi` against the kept build into the persistent move store; no network) |
 | `version.go` | The build stamp (`buildLabel`); no binding. Every `Reading` carries it as its build line, and `-version` prints it. |
 | `refresh_app.go` | `refreshLeague` (pull the league from MFL into the mirror); no binding. It runs at startup on an empty mirror, at launch from `domReady`, and from `TargetDataRefresh("league")`. |
@@ -157,7 +157,7 @@ Offers, Personal and Pool. No API opens a database or starts a worker.
 | `rankings_app.go` | `loadSeasonPoints` (MFL's season totals into history, for the engine refresh); no binding |
 | `power_rankings_app.go` | `powerRankings`, behind the race readings; no binding |
 | `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
-| `internal/app/control/api.go`, `control_host.go` | `control.API` binds `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement), `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default), `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old). `control_host.go` is the unbound Host adapter; `frontend/src/app/control/api.ts` alone touches Control transport. |
+| `internal/app/control/api.go`, `control_host.go` | `control.API` binds `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement), `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default), `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old), `TargetAlerts`, `TargetSeason`, `TargetShellStatus` and `TargetSetWindow(kind, at)` (sets one league window). Its unbound `Held` keeps the private rule names and site news. `control_host.go` is the unbound Host adapter, `control_alerts.go` gathers the alert tray's held inputs and `internal/app/core/host_control.go` copies the season feeds and writes league dates; `frontend/src/app/control/api.ts` alone touches Control transport. |
 | `internal/app/sources/api.go`, `internal/app/core/host_sources.go`, `sources_runtime.go` | `sources.API` binds `LoadCrosswalk`, `GetCrosswalkReport`, `TargetCrosswalk`, `TargetDataSources`, `TargetDataRefresh(scope)` and `SetLeagueArchiveDir(dir)`. Its unbound `Held` deep-clones private crosswalk/signals reports on publication and reads. Core retains shared lookup/season state and whole-operation serializers; main wires shared settings, directory acquisition, league refresh and database-check readings through lower-level callbacks. Startup workers and shared settings remain unbound at root. `frontend/src/app/datasources/api.ts` alone touches Sources transport and owns its shared-provider event subscription. |
 | `archive_app.go`, `asset_board.go` | `TargetArchive(season, team, other)` (the league-history board), `TargetAssetBoard` (C-01 from held weekly scores and, once compiled, the Lab value model; never fetches) |
 | `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom`, `TargetNFLDraft` (held detailed players only) |
@@ -165,7 +165,6 @@ Offers, Personal and Pool. No API opens a database or starts a worker.
 | `research_app.go` | `TargetResearchStatus` |
 | `acquisitions_app.go`, `contract_acts_app.go`, `release_app.go`, `trade_builder_app.go` | `TargetAcquisition(RawAcquisition)`, `TargetContractActs(RawContractAct)`, `TargetReleasePlans(RawReleaseRequest)`, `TargetTradeBuilder(RawTradeBuilder)`: validated what-if readings in the `Reading` shell |
 | `commissioner_app.go` | `TargetCommissionerLeagues`, `TargetCommissionerLedger(league)`, `TargetCommissionerRules(league)` (see the Composition row) |
-| `windows_app.go` | `TargetSetWindow(kind, at)` sets one league window |
 
 Every method that takes frontend input validates it before acting. Bindings in
 `frontend/wailsjs/` are generated (`wails generate module`); never hand-edit them.
@@ -325,7 +324,7 @@ Hand-off Act: `move.handoff` opens a Ready plan; `target:moves` reloads receipts
 Trade desk: `shell/TradeDesk.tsx` groups held offers; lazy `data/tradeProvider.ts` parses Go readings.
 Accept plan: `commands/tradeAccept.ts` drafts `trade.accept`; `shell/TradePlan.tsx` tracks desk hand-off.
 
-`alerts_app.go`, `bye_alerts_app.go`: `TargetAlerts(franchiseID string) (AlertReading, error)` reads
+`control.API.TargetAlerts(franchiseID string) (AlertReading, error)` (`control_alerts.go` gathers) reads
 lineup, incoming-offer and current/next-week position-minimum bye alerts from held inputs only.
 `internal/leaguefeed`, `internal/ingestion/livescoring`: matchups, playing counts and per-player live scores.
 
@@ -495,11 +494,11 @@ release the old table anchor, reveal within the work column and focus the salary
 `internal/ingestion/shellfeeds.go` validates calendar, trade bait and player-score exports.
 `lineup_app.go` exposes `TargetRosterReports` from held exports (built by `internal/app/contracts`); `draft_reports_app.go`
 exposes `TargetNFLDraft` from validated detailed player draft selections (`internal/app/draft`); `internal/lineup/byes.go`
-checks position-minimum bye shortfalls. `calendar_app.go` merges held MFL calendar events into C-04.
+checks position-minimum bye shortfalls. `shell_feeds_app.go` merges held MFL calendar events into C-04.
 `shell_feeds_app.go` holds calendar and tradeBait, refreshed once per local day with archive fallback;
 screen reads never fetch. Their fetchers live beside the parsers in `internal/ingestion/shellfeeds.go`.
 `frontend/src/app/personal` is lazy list editing and persistence; `shell/StatusStrip.tsx` lazily
-reads source health and held gameday counts via `TargetShellStatus`.
+reads source health and held gameday counts via `control.API.TargetShellStatus`.
 
 The snapshot's player directory now also includes named unrostered players for global search and
 private draft/watch lists; eligibility remains roster-only. `history.ReferenceBodies` admits imported

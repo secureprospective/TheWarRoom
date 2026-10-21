@@ -112,9 +112,10 @@ Comms is the first instance: `internal/app/comms/api.go`, `internal/app/core/hos
    `window.go.main` everywhere outside the adapter.
 
 **Comms ownership and metadata.** Core holds transactions/boards and their locks, key access and
-refresh coordination. `archiveCache`, `assetModel`, `control`, `research`, `race`, `now` and `liveGame`
+refresh coordination. `archiveCache`, `assetModel`, `research`, `race`, `now` and `liveGame`
 remain on App: their types belong to other feature packages or still-root feature adapters.
-Sources now owns `crosswalk` and `signals` through the named `App.sourcesHeld` pointer. Core's archive callback accesses archiveCache under FactsMu; the
+Sources now owns `crosswalk` and `signals` through the named `App.sourcesHeld` pointer, and
+Control its rule names and site news through `App.controlHeld`. Core's archive callback accesses archiveCache under FactsMu; the
 transaction callback publishes through the existing root fetcher under RefreshMu. No feature
 imports core. The catalog records the current compound desktop `comms.read` command's ambient
 roles (`gm,commish,admin`) and gravity (`G0`) for its read/refresh/open actions. The registry's social
@@ -660,3 +661,50 @@ TargetSetWindow. The canonical `testdata/wire/control` goldens already freeze al
 including the startup refusals, so no new golden bytes are needed. Control's private held
 values are the MFL rule names and site news (`App.control`, read and written only by the
 Control Room under SeasonMu); no other critical section reads them with shared state.
+
+## Control stateful API
+
+The four remaining App methods move one-for-one to `control.API`, which now carries all
+fifteen Control bindings, with package-level Commands and the existing `bindings(app)` entry.
+Their wire declarations (AlertReading, Unavailable, SeasonReading, ShellStatus) and the
+RawWindowDate request move too; `control.Alert` already existed, so the root Alert twin and
+its twin test go. TargetSetWindow still validates before startup. TargetSetWindow copies the
+desktop `window.set` command's roles and G2 gravity; the other three have no registry verb.
+
+Control is stateful: `control.Held` owns the rule names and site news that `App.control`
+held under SeasonMu. Only the Control Room read or wrote them, each in its own span, so the
+holder's private lock replaces SeasonMu there; there is no joint capture to keep. Publish
+applies the held-feed rule (keep the last good copy on a failed read) and returns a detached
+copy, so hold-then-read stays one critical section. Fetches run through the Host with no
+holder lock held. `New(Host, *Held)`; `NewApp` creates one holder on `App.controlHeld`.
+
+Core's `host_control.go` copies the transactions, lineups (via CloneLineups) and pending
+trades under SeasonMu, and takes the coordinator window writes from `windows_app.go`
+unchanged, with the clock event after the write. `control_host.go` embeds `core.State` and
+adds the root-only reads: live-or-archive fetches, source health, the week snapshot and the
+pinned clock. Alert acquisition reads other features' bindings (contracts' lineup, trades'
+offers), the roster snapshot, injuries and archived byes, so it stays at root in
+`control_alerts.go`; the API sorts the alerts and words the refusal. Root callers (Moves'
+observation, Contracts' season read) call `controlAPI()`, not an App wrapper.
+
+The root drops from 172 to 165 Go files. These control files stay, none with a binding:
+- `control_host.go`, `control_alerts.go`: the unbound Host adapter and the alert tray's
+  cross-feature acquisition (alerts_app.go and bye_alerts_app.go merged).
+- `refresh_app.go`, `season_app.go`, `week_app.go`, `shell_feeds_app.go`: refresh workers,
+  RefreshMu/WeekMu serializers, held-feed publication, the week phase writer and shared
+  helpers (`timeNow`, `heldInjuries`, `weekSnapshot`, `readShellFeed`) that other root
+  features call. `shell_feeds_app.go` takes the MFL calendar merge from `calendar_app.go`.
+- `mfl_feed_cache.go`: the root delegates to core's live-or-archive used by every feature.
+- `control_wire_test.go`, `control_alerts_test.go`, `season_app_test.go`, `week_app_test.go`,
+  `windows_app_test.go`, `mflkey_app_test.go`, `refresh_publication_test.go`,
+  `shell_feeds_app_test.go`: canonical goldens and real refresh/store/key integration.
+  Pure report tests moved to `internal/app/control/room_test.go`, live-or-archive tests to
+  core's `fallback_test.go`.
+
+Proof: holder ingress/egress, nil versus empty and last-good tests, a publish/read race, reads
+completing while a fetch is in the Host, fake-Host refusal order (validation before startup,
+startup before the window write), season lists and detachment, alert sorting; core tests for
+season-feed detachment, nil preservation, SeasonMu and a publication race. Planted mutants
+(core and sibling imports, a bound Held, an extra exported API method, missing holder and
+season clones, a missing SeasonMu, a moved binding and window.go access in the shell) all
+failed and were restored. `testdata/wire` is byte-identical.
