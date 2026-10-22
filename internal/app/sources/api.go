@@ -165,6 +165,9 @@ func (a *API) SetLeagueArchiveDir(dir string) DataActResult {
 
 // SetPhotos turns player photos on or off; off means no request reaches a photo host.
 func (a *API) SetPhotos(on bool) DataActResult {
+	if err := a.host.Ready(); err != nil {
+		return DataActResult{Error: err.Error()}
+	}
 	dir, _, err := a.host.SourcesSettings()
 	if err != nil {
 		return DataActResult{Error: err.Error()}
