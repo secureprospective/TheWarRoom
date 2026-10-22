@@ -1,24 +1,20 @@
 # R2 caller-team handoff
 
 ## Baton
-ClaudeBox/reviewer — 2026-10-22. Bee completed the R2 caller-team brief on `session/r2-caller-team`. Not pushed.
+ClaudeBox/reviewer — 2026-10-22. Bee completed the startup follow-up on `session/r2-caller-team`. Not pushed.
 
 ## Where it stands
-- Saved MFL key → api-host `myleagues` → validated league/franchise → `core.State.MyFranchise`. Startup and successful saves resolve it; failed lookup/deletion clear it. The discovered-host keyed path stays restricted.
-- `RequireOwnFranchise` checks the actor on all 11 brief rows before effects. Contract/release/trade plan IDs and hand-off/withdrawal use the stored franchise too. Native roles do not bypass this check.
-- Trade counterparty projection uses held MFL truth, never the counterparty's private what-if session.
-- Picker views any team. Existing key status supplies identity and Go refusal text to team-action buttons. Bound methods remain 133; bindings regenerated.
-- Commits: identity `02cf9d26`; enforcement `718cba02`; picker/status is the final commit containing this handoff.
-- Requested gates, `make lint`, `make test`, and final `make verify` pass. Frontend: 1,394 tests; entry bundle 306,306 / 321,818 bytes; CSP passes. No vulnerabilities found.
-- Regression tests: `TestMyFranchise`, `TestLoginFranchiseLookupFailsClosed`, `TestOwnerActionsRefuseWithoutChangingState`, `TestTradeCounterpartyProjectionIgnoresPrivateWhatIf`, and the picker/action case in `frontend/src/app/shell/mflKey.test.ts`. Removing the shared check failed the refusal regression; restored before final gates.
+- Existing R2 identity, own-franchise enforcement and picker behavior remain unchanged; 133 bound methods, no Go changes in this follow-up.
+- Live command-registry creation now loads MFL key status once. Control Room consumes the same state without issuing a mount request. Fixture creation makes no key-status request.
+- Regression: `loads identity at live startup: own-team Act enabled without Control Room; others refused` mounts Acts without Control Room, observes pending → own-team enabled / other-team Go refusal, then mounts the connection surface and verifies no second read. Removing startup loading fails the request-count assertion; restored.
+- Final gate results are in the builder report. Scratch logs: `r2-startup-verify.log` and `r2-startup-mutant.log` (operator log directory, outside this repo).
 
 ## Next move
-Review the three commits, then live-test a throwaway profile: connect a login, view another team, verify action refusal and unchanged plans; return to the login's team and verify planning works; delete the key and verify refusal. Nothing may be submitted to MFL.
+Review the single follow-up commit and live-test a fresh throwaway profile: own-team planning enables without visiting Control Room; another franchise refuses; opening Control Room does not cause another status read. Nothing may be submitted to MFL.
 
 ## Blocked on
-Independent review and live GUI/MFL verification are not done. No implementation blocker.
+Independent review and live GUI verification. No implementation blocker.
 
 ## Tried and rejected
-- Parallel full test suites exceeded the targeted command's default timeout. Sequential rerun passed; the project's full gate uses 60 minutes.
-- An in-tree toolchain TMPDIR let a source-scanning test encounter disappearing linker files. Normal tooling temporary storage passed; no test/gate was weakened.
-- System pnpm 9 rejects `pnpm test --run`; the pinned `corepack pnpm` 10.34.3 ran that gate successfully.
+- Control Room-only loading left own-team actions stuck on Checking MFL after fresh launch.
+- First full verify caught two overlong test names; shortened without changing assertions.

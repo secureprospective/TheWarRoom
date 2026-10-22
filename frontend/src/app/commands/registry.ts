@@ -769,6 +769,9 @@ export function createCommands(
     }
     return false;
   }
+  if (provider.kind === 'live') {
+    void requestMFL(() => provider.mflKey(), 'Checking the keyring…');
+  }
   return {
     registry,
     teamActionReason,

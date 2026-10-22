@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { act, createElement } from 'react';
+import { act, createElement, type ReactElement } from 'react';
+import { Act } from '../commands/Act';
 import { createRoot, type Root } from 'react-dom/client';
 import { createCommands } from '../commands/registry';
 import * as registry from '../commands/registry';
@@ -34,7 +35,8 @@ async function settle() {
   await act(async () => { await new Promise((done) => setTimeout(done, 0)); });
 }
 async function mount(provider: Provider = new LiveProvider(), status: MFLKeyStatus = absent,
-  initialRead?: () => Promise<MFLKeyStatus>) {
+  initialRead?: () => Promise<MFLKeyStatus>,
+  surface: () => ReactElement = () => createElement(MFLConnection)) {
   const read = vi.spyOn(provider, 'mflKey').mockResolvedValue(status);
   if (initialRead) read.mockImplementation(initialRead);
   const c = createCommands(() => undefined, provider);
@@ -49,7 +51,7 @@ async function mount(provider: Provider = new LiveProvider(), status: MFLKeyStat
   let outerRenders = 0;
   function SettingsProbe() {
     outerRenders += 1;
-    return createElement(MFLConnection);
+    return surface();
   }
   act(() => mounted?.render(createElement(SettingsProbe)));
   await settle();
@@ -109,19 +111,41 @@ describe('MFL key leak gate (§M3)', () => {
   });
 });
 
+it('loads identity at live startup: own-team Act enabled without Control Room; others refused', async () => {
+  const status = { ...connected, myFranchise: '0025', teamActionRefusal: 'Go: only your own team.' };
+  let finish!: (status: MFLKeyStatus) => void;
+  const surface = () => createElement('div', {}, ...['0025', '0001'].map((mine) =>
+    createElement(Act, {
+      key: mine, verb: 'contracts.set', variant: 'button',
+      args: { field: 'whatif', value: { mine, action: 'reset' } },
+      label: `Plan for ${mine}`,
+    })));
+  const { c, container, read, button } = await mount(new LiveProvider(), absent, () =>
+    new Promise<MFLKeyStatus>((done) => { finish = done; }), surface);
+  expect(container.textContent).not.toContain('MFL connection');
+  expect(button('Checking MFL…')?.disabled).toBe(true);
+  expect(read).toHaveBeenCalledTimes(1);
+  await act(async () => { finish(status); });
+  expect(button('Plan for 0025')?.disabled).toBe(false);
+  expect(button(status.teamActionRefusal)?.disabled).toBe(true);
+  expect(container.textContent).toContain(status.teamActionRefusal);
+  expect(c.history()).toEqual([]);
+  expect(read).toHaveBeenCalledTimes(1);
+  act(() => mounted?.render(createElement(MFLConnection)));
+  await settle();
+  expect(read).toHaveBeenCalledTimes(1);
+});
+
 describe('MFL connection surface', () => {
-  it('does not read at launch; reads once on mount and names the keyring while pending', async () => {
+  it('reads once at startup, not on connection mount, and names the keyring while pending', async () => {
     const provider = new LiveProvider();
-    const before = vi.spyOn(provider, 'mflKey');
-    const c = createCommands(() => undefined, provider);
-    expect(before).not.toHaveBeenCalled();
+    let finish!: (status: MFLKeyStatus) => void;
+    const { c, container, read, button } = await mount(provider, absent, () =>
+      new Promise<MFLKeyStatus>((done) => { finish = done; }));
     expect(c.registry['mflkey.connect']).toMatchObject({
       args: [], aliases: ['mfl', 'api key'], gravity: 'G1', undo: 'reversible',
     });
     expect(c.registry['mflkey.forget']).toMatchObject({ args: [], gravity: 'G1', undo: 'reversible' });
-    let finish!: (status: MFLKeyStatus) => void;
-    const { container, read, button } = await mount(provider, absent, () =>
-      new Promise<MFLKeyStatus>((done) => { finish = done; }));
     expect(read).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain('Checking the keyring…');
     expect(button('Connect MFL')?.disabled).toBe(true);
@@ -130,8 +154,10 @@ describe('MFL connection surface', () => {
   });
   it('focuses a newly mounted field after an empty command-bar invocation', async () => {
     const provider = new LiveProvider();
+    vi.spyOn(provider, 'mflKey').mockResolvedValue(absent);
     const connect = vi.spyOn(provider, 'connectMFL');
     const c = createCommands(() => undefined, provider);
+    await settle();
     c.dispatch('commandbar.open', {});
     c.dispatch('mflkey.connect', {});
     await settle();
@@ -178,6 +204,7 @@ describe('MFL connection surface', () => {
   });
   it('disables fixtures with the reason and never reaches mutations', async () => {
     const provider = new FixtureProvider();
+    const read = vi.spyOn(provider, 'mflKey');
     const connect = vi.spyOn(provider, 'connectMFL');
     const forget = vi.spyOn(provider, 'forgetMFL');
     const { c, button, input, container } = await mount(provider);
@@ -187,6 +214,7 @@ describe('MFL connection surface', () => {
     expect(button('Forget MFL key')?.disabled).toBe(true);
     c.dispatch('mflkey.connect', {});
     c.dispatch('mflkey.forget', {});
+    expect(read).not.toHaveBeenCalled();
     expect(connect).not.toHaveBeenCalled();
     expect(forget).not.toHaveBeenCalled();
   });
@@ -268,7 +296,7 @@ it('keeps the picker for viewing and shows Go refusal words on team-action butto
   const snapshot = heldSnapshot();
   snapshot.franchises.value.push({ ...snapshot.franchises.value[0], id: '0001' });
   c.loadSnapshot(snapshot);
-  await c.loadMFLKey();
+  await settle();
   c.dispatch('franchise.set', { franchiseId: '0025' });
   const button = () => renderToStaticMarkup(createElement(Act, {
     verb: 'lineup.draft', args: {}, variant: 'button',
