@@ -186,6 +186,9 @@ func (a *API) lineupRequest(
 // TargetDraftLineup saves a checked lineup.set plan for the held week, after moving earlier live
 // plans for the same franchise and week to Stale.
 func (a *API) TargetDraftLineup(franchiseID string, starters []string) (envelope.Receipt, error) {
+	if err := a.host.RequireOwnFranchise(franchiseID); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
+	}
 	snap, ids, err := LineupSelection(a.host, franchiseID, starters)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft lineup: %w", err)

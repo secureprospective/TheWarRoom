@@ -20,6 +20,7 @@ import (
 func contractMirrorFixture(t *testing.T) *App {
 	t.Helper()
 	a := releaseTestApp(t)
+	a.core.MyFranchise = "0025"
 	data, err := os.ReadFile("frontend/src/app/data/fixtures/snapshot.json")
 	if err != nil {
 		t.Fatal(err)

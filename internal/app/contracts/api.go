@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
@@ -41,6 +42,7 @@ type PlanLedger interface {
 
 // Selector reads the held players directory after startup.
 type Selector interface {
+	RequireOwnFranchise(string) error
 	Ready() error
 	ContractsDirectory() (snapshot.Snapshot, bool)
 }
@@ -139,4 +141,15 @@ func Commands() []catalog.Command {
 		{ID: catalog.Unset, Method: "TargetRosterReports", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetWhatIf", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
 	}
+}
+
+func (a *API) requirePlanFranchise(ctx context.Context, id, label string) error {
+	if id == "" {
+		return nil
+	}
+	e, err := a.stores().Moves.Get(ctx, id)
+	if err != nil {
+		return fmt.Errorf("%s: %w", label, err)
+	}
+	return a.host.RequireOwnFranchise(e.Receipt().Spec.FranchiseID) //nolint:wrapcheck // Preserve the shared authorization refusal.
 }

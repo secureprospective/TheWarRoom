@@ -74,6 +74,9 @@ func (a *API) TargetContractActs(raw RawContractAct) ContractActsReading {
 	if err := a.host.Ready(); err != nil {
 		return a.contractActsReading(nil, err)
 	}
+	if err := a.host.RequireOwnFranchise(raw.Mine); err != nil {
+		return a.contractActsReading(nil, err)
+	}
 	var out ContractActsReading
 	a.host.SerializeContractActs(func() {
 		ctx, cancel := context.WithTimeout(a.host.ContractsContext(), timeout)
@@ -86,6 +89,9 @@ func (a *API) TargetContractActs(raw RawContractAct) ContractActsReading {
 // contractActs runs under the refresh and plan-ledger serializers.
 func (a *API) contractActs(ctx context.Context, raw RawContractAct) ContractActsReading {
 	st := a.stores()
+	if err := a.requirePlanFranchise(ctx, raw.ID, "contract plan"); err != nil {
+		return a.contractActsReading(nil, err)
+	}
 	if err := RevalidateContractPlans(ctx, a.host); err != nil {
 		return a.contractActsReading(nil, err)
 	}

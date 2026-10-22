@@ -185,3 +185,19 @@ func Pause(ctx context.Context, duration time.Duration) error {
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
 	report.HoldFeed(h, value, fresh, err)
 }
+
+// RequireOwnFranchise binds MFL-side plans to the saved login, never the viewed team or native role.
+func (s *State) RequireOwnFranchise(franchise string) error {
+	if err := s.Ready(); err != nil {
+		return fmt.Errorf("team authorization: startup: %w", err)
+	}
+	s.KeyMu.Lock()
+	defer s.KeyMu.Unlock()
+	if s.MyFranchise == "" {
+		return fmt.Errorf("Connect your MFL account to act for your team.") //nolint:revive,staticcheck // User-facing refusal is a complete sentence.
+	}
+	if franchise != s.MyFranchise {
+		return fmt.Errorf("You can only act for your own team.") //nolint:revive,staticcheck // User-facing refusal is a complete sentence.
+	}
+	return nil
+}

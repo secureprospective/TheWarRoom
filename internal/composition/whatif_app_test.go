@@ -78,6 +78,7 @@ func TestWhatIfComposeUndoResetRestartAndMirrorIsolation(t *testing.T) {
 	}
 	// New composition root over the same pools proves no in-memory move dependency.
 	restart := NewApp()
+	restart.core.MyFranchise = "0001"
 	restart.core.Ctx = a.core.Ctx
 	restart.core.WhatifPools = a.core.WhatifPools
 	restart.core.League = a.core.League

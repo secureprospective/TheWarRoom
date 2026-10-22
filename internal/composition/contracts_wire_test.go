@@ -161,12 +161,7 @@ func blockedWords(r envelope.Receipt, err error) string {
 	return string(r.State) + ": " + r.Audit[len(r.Audit)-1].Note
 }
 
-// TestContractsDenialsMatchGolden pins the exact words each refused caller reads before the contracts
-// logic moves out of package main: every malformed request, a franchise acting on another franchise's
-// plan, player or what-if move, a shut window (in-season tender, re-sign and buyout, a locked or
-// unknown lineup week), a stale what-if, a second open plan, an unconfirmed release and a fresh-plan
-// rebase. None of these bindings has an owner session or a commissioner principal: the franchise in
-// the request scopes every plan, and a plan from another franchise is refused.
+// TestContractsDenialsMatchGolden pins malformed, unauthorized and illegal-state refusal text.
 func TestContractsDenialsMatchGolden(t *testing.T) {
 	t.Parallel()
 	got := map[string]string{}

@@ -89,6 +89,9 @@ func (a *API) TargetAcquisition(r RawAcquisition) AcquisitionReading {
 	if err := a.host.Ready(); err != nil {
 		return a.acquisitionReading(out, err)
 	}
+	if err := a.host.RequireOwnFranchise(r.Mine); err != nil {
+		return a.acquisitionReading(out, err)
+	}
 	var reading AcquisitionReading
 	a.host.SerializeWhatIf(func() {
 		ctx, cancel := context.WithTimeout(a.host.ContractsContext(), timeout)

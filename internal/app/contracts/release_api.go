@@ -39,6 +39,9 @@ func (a *API) TargetReleasePlans(raw RawReleaseRequest) ReleasePlansReading {
 	if err := a.host.Ready(); err != nil {
 		return a.releaseReading(nil, err)
 	}
+	if err := a.host.RequireOwnFranchise(raw.Mine); err != nil {
+		return a.releaseReading(nil, err)
+	}
 	var out ReleasePlansReading
 	a.host.SerializeReleasePlans(func() {
 		ctx, cancel := context.WithTimeout(a.host.ContractsContext(), timeout)
@@ -51,6 +54,9 @@ func (a *API) TargetReleasePlans(raw RawReleaseRequest) ReleasePlansReading {
 // releasePlans runs under the what-if, refresh and plan-ledger serializers.
 func (a *API) releasePlans(ctx context.Context, raw RawReleaseRequest) ReleasePlansReading {
 	st := a.stores()
+	if err := a.requirePlanFranchise(ctx, raw.ID, "release plan"); err != nil {
+		return a.releaseReading(nil, err)
+	}
 	if err := a.releaseAction(ctx, raw); err != nil {
 		return a.releaseReading(nil, err)
 	}
