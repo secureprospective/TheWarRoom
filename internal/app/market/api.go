@@ -272,13 +272,13 @@ func Commands() []catalog.Command {
 		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: "gm,commish,admin", Gravity: gravity, Availability: "both"}
 	}
 	return []catalog.Command{
-		read("TargetAssetBoard", "G2"),
-		read("TargetAssetProfile", catalog.Unset),
-		read("TargetMarket", catalog.Unset),
-		read("TargetMarketLists", catalog.Unset),
-		read("TargetMarketReports", catalog.Unset),
-		read("TargetMarketReportsRefresh", catalog.Unset),
-		read("TargetMarketStretches", catalog.Unset),
-		read("TargetPickClock", catalog.Unset),
+		read("TargetAssetBoard", "G0"),
+		read("TargetAssetProfile", "G0"),
+		read("TargetMarket", "G0"),
+		read("TargetMarketLists", "G0"),
+		read("TargetMarketReports", "G0"),
+		read("TargetMarketReportsRefresh", "G1"),
+		read("TargetMarketStretches", "G0"),
+		read("TargetPickClock", "G0"),
 	}
 }

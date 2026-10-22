@@ -70,8 +70,8 @@ func (a *API) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 // game has a registry verb (game.follow, X-01).
 func Commands() []catalog.Command {
 	return []catalog.Command{
-		{ID: "game.follow", Method: "TargetLiveGame", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetNow", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetNowRefresh", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
+		{ID: "game.follow", Method: "TargetLiveGame", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetNow", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetNowRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 	}
 }

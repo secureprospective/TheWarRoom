@@ -98,13 +98,13 @@ func (a *API) TargetPhoto(mflID string) PhotoView {
 
 // Commands is the platform catalog.
 func Commands() []catalog.Command {
-	c := func(method, availability string) catalog.Command {
-		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: catalog.Unset,
-			Gravity: catalog.Unset, Availability: availability}
+	c := func(method, role, gravity, availability string) catalog.Command {
+		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: role,
+			Gravity: gravity, Availability: availability}
 	}
 	return []catalog.Command{
-		c("TargetCheckMoves", "both"), c("TargetClock", "both"), c("TargetDraftIR", "both"),
-		c("TargetDraftTaxi", "both"), c("TargetHandOff", "desktop"), c("TargetMoves", "both"),
-		c("TargetPhoto", "both"), c("TargetSnapshot", "both"), c("TargetWithdrawRoster", "both"),
+		c("TargetCheckMoves", "gm,commish,admin", "G1", "both"), c("TargetClock", "gm,commish,admin", "G0", "both"), c("TargetDraftIR", "gm,commish", "G2", "both"),
+		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
+		c("TargetPhoto", "gm,commish,admin", "G0", "both"), c("TargetSnapshot", "gm,commish,admin", "G0", "both"), c("TargetWithdrawRoster", "gm,commish", "G1", "both"),
 	}
 }

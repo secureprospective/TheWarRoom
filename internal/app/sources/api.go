@@ -292,15 +292,15 @@ func CompileFacts(ctx context.Context, host Host, readings lab.Curated) (string,
 
 func Commands() []catalog.Command {
 	return []catalog.Command{
-		{ID: catalog.Unset, Method: "GetCrosswalkReport", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "LoadCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "SetLeagueArchiveDir", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "SetPhotos", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCacheClear", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCacheScopes", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCrosswalk", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G0", Availability: "both"},
-		{ID: "refresh.run", Method: "TargetDataRefresh", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetDataSources", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "GetCrosswalkReport", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "LoadCrosswalk", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "SetLeagueArchiveDir", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "SetPhotos", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCacheClear", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCacheScopes", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCrosswalk", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "refresh.run", Method: "TargetDataRefresh", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetDataSources", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 	}
 }
 
