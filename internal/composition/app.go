@@ -158,6 +158,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 	log.Printf("the war room: season %d ready in %s", a.core.Season, time.Since(began).Round(time.Millisecond))
 	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
+	a.lookupMyFranchise(ctx)
 	a.core.LaunchRefreshDue = !refreshed
 }
 

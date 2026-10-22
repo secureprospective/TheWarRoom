@@ -45,21 +45,25 @@ func (c *Client) doKeyed(ctx context.Context, req Request) (out Response, err er
 		return out, errors.New("mfl: keyed export requires current discovered league host")
 	}
 	cleanURL = c.buildURL(host, req.Year, req.Type, req.Params)
+	return c.executeKeyed(ctx, cleanURL, secret)
+}
+
+func (c *Client) executeKeyed(ctx context.Context, cleanURL, secret string) (Response, error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, cleanURL, nil)
 	if err != nil {
-		return out, fmt.Errorf("mfl: create keyed request: %w", err)
+		return Response{}, fmt.Errorf("mfl: create keyed request: %w", err)
 	}
 	q := httpReq.URL.Query()
 	q.Set("APIKEY", secret)
 	httpReq.URL.RawQuery = q.Encode()
 	resp, err := c.executeWithRetry(ctx, httpReq, c.keyedHTTP)
 	if err != nil {
-		return out, fmt.Errorf("mfl: execute keyed request: %w", err)
+		return Response{}, fmt.Errorf("mfl: execute keyed request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 	body, err := readBody(resp.Body)
 	if err != nil {
-		return out, fmt.Errorf("mfl: read keyed response: %w", err)
+		return Response{}, fmt.Errorf("mfl: read keyed response: %w", err)
 	}
 	// Parsers and bindings must not echo credentials even when MFL echoes them in an error body.
 	body = []byte(redact(string(body), secret))

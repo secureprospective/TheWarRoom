@@ -220,6 +220,7 @@ func (h controlHost) SetKey(key string) (controlapp.MFLKeyStatus, error) {
 	if err := a.core.KeyStore.Set(ctx, candidate); err != nil {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
+	a.lookupMyFranchise(ctx)
 	a.core.KeyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
 	a.core.KeyGeneration++
 	a.refreshPendingTradesInBackground()
@@ -236,6 +237,7 @@ func (h controlHost) DeleteKey() (controlapp.MFLKeyStatus, error) {
 	if err := a.core.KeyStore.Delete(a.core.Ctx); err != nil {
 		return a.keyStatus("unavailable", err.Error()), nil
 	}
+	a.core.MyFranchise = ""
 	a.core.KeyVerifiedAt = ""
 	a.core.KeyGeneration++
 	a.core.SeasonMu.Lock()
@@ -243,4 +245,16 @@ func (h controlHost) DeleteKey() (controlapp.MFLKeyStatus, error) {
 	a.core.SeasonMu.Unlock()
 	a.refreshPendingTradesInBackground()
 	return a.keyStatus("absent", ""), nil
+}
+
+// lookupMyFranchise runs under KeyMu (or before startup publishes state). Lookup failures deny actions.
+func (a *App) lookupMyFranchise(ctx context.Context) {
+	a.core.MyFranchise = ""
+	if _, err := a.core.KeyStore.Get(ctx); err != nil {
+		return
+	}
+	franchise, err := a.core.MFLClient.MyFranchise(ctx, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+	if err == nil {
+		a.core.MyFranchise = franchise
+	}
 }

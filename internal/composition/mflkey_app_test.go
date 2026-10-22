@@ -217,7 +217,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 			if followed != 0 {
 				t.Fatal("redirect followed")
 			}
-			if scenario == "retry" && attempts != 3 {
+			if scenario == "retry" && attempts != 4 {
 				t.Fatalf("attempts: %d", attempts)
 			}
 		})

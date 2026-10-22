@@ -63,6 +63,7 @@ type State struct {
 	KeyMu                  sync.Mutex
 	KeyStore               *mflkey.Store
 	KeyVerifiedAt          string
+	MyFranchise            string // guarded by KeyMu; empty means identity is unknown
 	KeyGeneration          uint64
 	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
 	WorkCtx    context.Context

@@ -440,12 +440,13 @@ func TestSeasonBindingDoesNotWaitForRefresh(t *testing.T) {
 
 func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a, transport, _, events := seasonTestApp(t)
+	transport.bodies["myleagues"] = `{"leagues":{"league":{"league_id":"14432","franchise_id":"0025"}}}`
 	status, err := a.controlAPI().SetMFLKey("synthetic-stored-key")
 	if err != nil || status.State != "connected" {
 		t.Fatal(status, err)
 	}
 	a.core.WeekWorkers.Wait()
-	if !reflect.DeepEqual(transport.requests, []string{"pendingTrades", "pendingTrades"}) || *events != 1 {
+	if !reflect.DeepEqual(transport.requests, []string{"pendingTrades", "myleagues", "pendingTrades"}) || *events != 1 || a.core.MyFranchise != "0025" {
 		t.Fatalf("requests %v events %d", transport.requests, *events)
 	}
 	a.core.SeasonPendingTrades.Value = []leaguefeed.PendingTrade{{ID: "forgotten"}}
@@ -457,7 +458,7 @@ func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a.core.WeekWorkers.Wait()
 	if err != nil || status.State != "absent" || len(r.PendingTrades.Value) != 0 ||
 		r.PendingTrades.Provenance.Freshness.Note != "MFL not connected" || *events != 2 ||
-		len(transport.requests) != 2 {
+		len(transport.requests) != 3 || a.core.MyFranchise != "" {
 		t.Fatal("delete did not clear before returning or sent keyed request")
 	}
 }
