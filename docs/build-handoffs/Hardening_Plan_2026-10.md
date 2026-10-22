@@ -89,6 +89,12 @@ never on the real league files.
 - Tooling notes: `make verify` needs `~/go/bin` on PATH; a stale golangci-lint cache can report
   removed worktrees (`golangci-lint cache clean`).
 
+**Deep slice result (2026-10-22):** one `archive.Gunzip(body, size)` (Option A, `83070a6a`); the body
+must unzip to exactly its recorded size, ceiling 256 MiB. All 179 real archived bodies match their
+size. `make verify` passed on `b99a78d0`. Live gate on Claude-OS, throwaway profile, same binary:
+startup clean; league archive import 1,720 files; checked facts compiled, every check passed; Archive ›
+League history shows the imported seasons. Evidence: `~/Downloads/gate-hardening-g*.png` (Beelink).
+
 Next session: the full hygiene audit, and the big-league test database with time budgets.
 
 ## How every phase runs
