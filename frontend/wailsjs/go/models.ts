@@ -6532,6 +6532,8 @@ export namespace control {
 	    }
 	}
 	export class MFLKeyStatus {
+	    myFranchise?: string;
+	    teamActionRefusal: string;
 	    state: string;
 	    league: string;
 	    season: number;
@@ -6544,6 +6546,8 @@ export namespace control {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.myFranchise = source["myFranchise"];
+	        this.teamActionRefusal = source["teamActionRefusal"];
 	        this.state = source["state"];
 	        this.league = source["league"];
 	        this.season = source["season"];

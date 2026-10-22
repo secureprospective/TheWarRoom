@@ -38,6 +38,8 @@ func (a *App) controlAPI() *controlapp.API {
 func (h controlHost) RulebookMarkdown() []byte { return rulebookMarkdown }
 
 func (h controlHost) KeyUnavailable(detail string) controlapp.MFLKeyStatus {
+	h.app.core.KeyMu.Lock()
+	defer h.app.core.KeyMu.Unlock()
 	return h.app.keyStatus("unavailable", detail)
 }
 
@@ -172,6 +174,7 @@ func (h controlHost) ResetParam(key, position string) controlapp.SetParamResult 
 func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {
 	return controlapp.MFLKeyStatus{
 		State: state, League: ingestion.LeagueID, Season: a.core.Season,
+		MyFranchise: a.core.MyFranchise, TeamActionRefusal: core.OwnFranchiseRefusal(a.core.MyFranchise, ""),
 		VerifiedAt: a.core.KeyVerifiedAt, Detail: detail,
 	}
 }

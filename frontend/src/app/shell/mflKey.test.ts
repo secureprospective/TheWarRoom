@@ -254,3 +254,45 @@ describe('MFL connection surface', () => {
     expect(document.focused).toBe(input);
   });
 });
+
+it('keeps the picker for viewing and shows Go refusal words on team-action buttons', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { Act } = await import('../commands/Act');
+  const { FranchisePicker } = await import('./FranchisePicker');
+  const { heldSnapshot } = await import('../data/lineupTestData');
+  const provider = new LiveProvider();
+  const status = { ...connected, myFranchise: '0025', teamActionRefusal: 'Go: only your own team.' };
+  const read = vi.spyOn(provider, 'mflKey').mockResolvedValue(status);
+  const c = createCommands(() => undefined, provider);
+  vi.spyOn(registry, 'commands', 'get').mockReturnValue(c);
+  const snapshot = heldSnapshot();
+  snapshot.franchises.value.push({ ...snapshot.franchises.value[0], id: '0001' });
+  c.loadSnapshot(snapshot);
+  await c.loadMFLKey();
+  c.dispatch('franchise.set', { franchiseId: '0025' });
+  const button = () => renderToStaticMarkup(createElement(Act, {
+    verb: 'lineup.draft', args: {}, variant: 'button',
+  }));
+  expect(button()).toContain('Check and save plan');
+  expect(button()).not.toContain('disabled=');
+  const other = snapshot.franchises.value.find(f => f.id !== '0025')!.id;
+  c.dispatch('franchise.set', { franchiseId: other });
+  expect(c.read().franchiseId).toBe(other);
+  expect(c.readMFLKey().myFranchise).toBe('0025');
+  expect(button()).toContain('Go: only your own team.');
+  expect(button()).toContain('disabled=');
+  const picker = renderToStaticMarkup(createElement(FranchisePicker, { snapshot }));
+  expect(picker).toContain('View a franchise');
+  expect(picker).not.toContain('disabled=');
+  expect(picker).not.toContain('Go: only your own team.');
+  expect(c.teamActionReason('contracts.set', { field: 'sort', value: 'name' })).toBeUndefined();
+  expect(c.teamActionReason('contracts.set', {
+    field: 'whatif', value: { mine: other, action: 'reset' },
+  })).toBe(status.teamActionRefusal);
+  expect(c.teamActionReason('trade.builder', { action: 'preview', mine: other }))
+    .toBe(status.teamActionRefusal);
+  read.mockResolvedValue({ ...absent, teamActionRefusal: 'Go: connect your MFL account.' });
+  await c.loadMFLKey();
+  expect(button()).toContain('Go: connect your MFL account.');
+  expect(button()).toContain('disabled=');
+});

@@ -12,7 +12,8 @@ afterEach(() => {
 describe('MFL key boundary (§M5)', () => {
   it.each(['absent', 'connected', 'rejected', 'unreachable', 'unavailable'])(
     'accepts the Go %s shape', (state) => {
-      const status = { ...absent, state, verifiedAt: '2026-10-07T08:00:00-05:00', detail: 'detail' };
+      const status = { ...absent, state, myFranchise: '0025', teamActionRefusal: 'Go refusal',
+        verifiedAt: '2026-10-07T08:00:00-05:00', detail: 'detail' };
       expect(parseMFLKeyStatus(status)).toEqual(status);
       expect(parseMFLKeyStatus({ ...absent, state })).toEqual({ ...absent, state });
     },
@@ -23,7 +24,8 @@ describe('MFL key boundary (§M5)', () => {
     { ...absent, verifiedAt: '' }, { ...absent, verifiedAt: null },
     { ...absent, verifiedAt: '2026-10-07' }, { ...absent, verifiedAt: '2026-10-07T00:00:00' },
     { ...absent, verifiedAt: '2026-99-07T00:00:00Z' }, { ...absent, detail: null },
-    { ...absent, detail: 7 },
+    { ...absent, detail: 7 }, { ...absent, myFranchise: 25 },
+    { ...absent, teamActionRefusal: null },
   ])('rejects malformed or extra fields', (value) => {
     expect(() => parseMFLKeyStatus(value)).toThrow('mflKey');
   });

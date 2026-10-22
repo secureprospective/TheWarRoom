@@ -140,6 +140,8 @@ export type EnvelopeDemo = { kind: 'fixture'; receipt: Receipt };
 
 export const MFL_KEY_STATES = ['absent', 'connected', 'rejected', 'unreachable', 'unavailable'] as const;
 export type MFLKeyStatus = {
+  myFranchise?: string;
+  teamActionRefusal?: string;
   state: (typeof MFL_KEY_STATES)[number];
   league: string;
   season: number;

@@ -551,8 +551,8 @@ export function createCommands(
     'franchise.set': command({
       ...ambient,
       id: 'franchise.set',
-      label: 'Choose my franchise',
-      aliases: ['my team'],
+      label: 'View a franchise',
+      aliases: ['view team'],
       args: ['franchiseId'],
       run: (args: { franchiseId: string }) => {
         if (!snapshot || !validFranchise(snapshot, args.franchiseId)) {
@@ -715,6 +715,33 @@ export function createCommands(
   type Id = keyof typeof registry;
   type Args<K extends Id> = Parameters<(typeof registry)[K]['run']>[0];
   type Entry = { [K in Id]: { id: K; args: Args<K> } }[Id];
+  function teamActionFranchise(id: Id, args: Args<Id>): string | null | undefined {
+    let mine = state.read().franchiseId;
+    if (id === 'contracts.set' && 'field' in args) {
+      if (!['whatif', 'release', 'release-confirm', 'contract-open', 'contract-keep',
+        'contract-act'].includes(args.field)) return undefined;
+      if (typeof args.value === 'object' && args.value !== null && 'mine' in args.value)
+        mine = args.value.mine;
+    } else if (['acquisition', 'trade.builder'].includes(id) && 'mine' in args) {
+      mine = args.mine;
+    } else if (['roster.ir', 'roster.taxi'].includes(id) && 'subject' in args) {
+      mine = args.subject.franchiseId;
+    } else if (id === 'lineup.edit' && 'franchiseId' in args) {
+      mine = args.franchiseId;
+    } else if (!['lineup.toggle', 'lineup.reset', 'lineup.draft', 'move.withdraw', 'move.handoff',
+      'trade.accept.plan'].includes(id)) {
+      return undefined;
+    }
+    return mine;
+  }
+  function teamActionReason(id: Id, args: Args<Id>): string | undefined {
+    if (provider.kind !== 'live') return undefined;
+    const mine = teamActionFranchise(id, args);
+    if (mine === undefined) return undefined;
+    const status = mflKey.read();
+    if (mine && mine === status.myFranchise) return undefined;
+    return status.teamActionRefusal || 'Checking MFL…';
+  }
   const history: Readonly<Entry>[] = [];
   function dispatch<K extends Id>(id: K, args: Args<K>) {
     const selected = registry[id] as Command<Args<K>>;
@@ -744,6 +771,14 @@ export function createCommands(
   }
   return {
     registry,
+    teamActionReason,
+    isTeamAction: (id: Id, args: Args<Id>) =>
+      provider.kind === 'live' && teamActionFranchise(id, args) !== undefined,
+    useTeamActionReason: (id: Id, args: Args<Id>) => {
+      state.use();
+      mflKey.use();
+      return teamActionReason(id, args);
+    },
     checkLineup: provider.checkLineup.bind(provider),
     onMovesChange: lineups.onMovesChange,
     useLineupEdit: state.useLineupEdit,

@@ -442,7 +442,7 @@ func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a, transport, _, events := seasonTestApp(t)
 	transport.bodies["myleagues"] = `{"leagues":{"league":{"league_id":"14432","franchise_id":"0025"}}}`
 	status, err := a.controlAPI().SetMFLKey("synthetic-stored-key")
-	if err != nil || status.State != "connected" {
+	if err != nil || status.State != "connected" || status.MyFranchise != "0025" || status.TeamActionRefusal != "You can only act for your own team." {
 		t.Fatal(status, err)
 	}
 	a.core.WeekWorkers.Wait()
@@ -458,7 +458,8 @@ func TestSeasonKeyChangesRefreshAndClear(t *testing.T) {
 	a.core.WeekWorkers.Wait()
 	if err != nil || status.State != "absent" || len(r.PendingTrades.Value) != 0 ||
 		r.PendingTrades.Provenance.Freshness.Note != "MFL not connected" || *events != 2 ||
-		len(transport.requests) != 3 || a.core.MyFranchise != "" {
+		len(transport.requests) != 3 || a.core.MyFranchise != "" || status.MyFranchise != "" ||
+		status.TeamActionRefusal != "Connect your MFL account to act for your team." {
 		t.Fatal("delete did not clear before returning or sent keyed request")
 	}
 }
@@ -680,5 +681,31 @@ func TestCommsRefreshWire(t *testing.T) {
 	}
 	if !bytes.Equal(append(got, '\n'), want) {
 		t.Fatal("Comms refresh binding contract changed")
+	}
+}
+
+func TestLoginFranchiseLookupFailsClosed(t *testing.T) {
+	a, transport, _, _ := seasonTestApp(t)
+	if err := a.core.KeyStore.Set(a.core.Ctx, "synthetic-stored-key"); err != nil {
+		t.Fatal(err)
+	}
+	transport.bodies["myleagues"] = `{"leagues":{"league":{"league_id":"14432","franchise_id":"0025"}}}`
+	a.lookupMyFranchise(a.core.Ctx)
+	if a.core.MyFranchise != "0025" {
+		t.Fatal("saved login's franchise not learned")
+	}
+	transport.failure = "myleagues"
+	a.lookupMyFranchise(a.core.Ctx)
+	if a.core.MyFranchise != "" {
+		t.Fatal("failed lookup retained old authority")
+	}
+	if err := a.core.KeyStore.Delete(a.core.Ctx); err != nil {
+		t.Fatal(err)
+	}
+	a.core.MyFranchise = "0025"
+	before := len(transport.requests)
+	a.lookupMyFranchise(a.core.Ctx)
+	if a.core.MyFranchise != "" || len(transport.requests) != before {
+		t.Fatal("absent key retained authority or fetched")
 	}
 }

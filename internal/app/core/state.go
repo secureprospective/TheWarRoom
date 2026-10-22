@@ -3,6 +3,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -193,11 +194,19 @@ func (s *State) RequireOwnFranchise(franchise string) error {
 	}
 	s.KeyMu.Lock()
 	defer s.KeyMu.Unlock()
-	if s.MyFranchise == "" {
-		return fmt.Errorf("Connect your MFL account to act for your team.") //nolint:revive,staticcheck // User-facing refusal is a complete sentence.
-	}
-	if franchise != s.MyFranchise {
-		return fmt.Errorf("You can only act for your own team.") //nolint:revive,staticcheck // User-facing refusal is a complete sentence.
+	if reason := OwnFranchiseRefusal(s.MyFranchise, franchise); reason != "" {
+		return errors.New(reason)
 	}
 	return nil
+}
+
+// OwnFranchiseRefusal supplies the same words to bindings and team-action controls.
+func OwnFranchiseRefusal(mine, acting string) string {
+	if mine == "" {
+		return "Connect your MFL account to act for your team."
+	}
+	if mine != acting {
+		return "You can only act for your own team."
+	}
+	return ""
 }
