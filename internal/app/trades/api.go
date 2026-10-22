@@ -16,6 +16,7 @@ import (
 // Host supplies detached held trade state and runs the root-owned plan lifecycle (simulation,
 // supersession, saves, hand-off and notification) under its original locks. No lock enters the API.
 type Host interface {
+	RequireOwnFranchise(string) error
 	Ready() error
 	TradeState(franchiseID string) (snapshot.Snapshot, snapshot.Sourced[[]leaguefeed.PendingTrade], error)
 	// DraftTradeAccept saves the accept plan for offer under the moves lock, superseding the last.
@@ -40,6 +41,9 @@ func (a *API) TargetTrades(franchiseID string) (TradeReading, error) {
 }
 
 func (a *API) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Receipt, error) {
+	if err := a.host.RequireOwnFranchise(franchiseID); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
+	}
 	snap, held, err := a.host.TradeState(franchiseID)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft trade accept: %w", err)
@@ -71,12 +75,15 @@ func (a *API) TargetTradeBuilder(r RawTradeBuilder) TradeBuilderReading {
 	if err := a.host.Ready(); err != nil {
 		return a.builderReading(out, err)
 	}
+	if err := a.host.RequireOwnFranchise(r.Mine); err != nil {
+		return a.builderReading(out, err)
+	}
 	out, err := a.host.TradeBuilder(r, out)
 	return a.builderReading(out, err)
 }
 
 func (a *API) builderReading(v TradeBuilderView, err error) TradeBuilderReading {
-	return TradeBuilderReading(report.MirrorReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Both pinned what-if rosters are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), a.host.TradesBuildStamp(), err))
+	return TradeBuilderReading(report.MirrorReading(v, "", "whatif.db; held MFL rosters and futureDraftPicks", "Your pinned what-if and the counterparty’s held MFL roster are projected through the trade coordinator. Current cap includes MFL adjustments and modelled cuts; cents retained. Next-season gross commitments use flat-filled held salaries and this season's cap, not a known future cap. IR may be traded; taxi status carries with the player. The trade deadline is the league clock's: Week 9's first kickoff unless the commissioner moved it. Compensatory picks are not identified by this export: commissioner verification required. Three DOT approvals, then commissioner approval on MFL. Nothing submitted by the app.", len(v.Plans), a.host.TradesBuildStamp(), err))
 }
 
 // Commands records existing bindings without inventing publication metadata. The builder can open

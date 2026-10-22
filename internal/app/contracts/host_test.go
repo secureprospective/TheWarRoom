@@ -27,6 +27,7 @@ import (
 type fakeHost struct {
 	*contractstest.Stores
 	readyErr error
+	ownErr   error
 	stamp    string
 
 	refreshMu, movesMu, whatifMu sync.Mutex
@@ -142,3 +143,5 @@ func (h *fakeHost) AcquisitionCorrection(state.MirrorPlayer, state.WhatIfSession
 }
 
 var _ Host = (*fakeHost)(nil)
+
+func (h *fakeHost) RequireOwnFranchise(string) error { return h.ownErr }

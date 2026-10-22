@@ -34,6 +34,9 @@ func (a *API) TargetWhatIf(raw RawWhatIfRequest) WhatIfReading {
 	if err := a.host.Ready(); err != nil {
 		return a.whatIfReading(WhatIfView{}, state.WhatIfSession{}, err)
 	}
+	if err := a.host.RequireOwnFranchise(raw.Mine); err != nil {
+		return a.whatIfReading(WhatIfView{}, state.WhatIfSession{}, err)
+	}
 	var out WhatIfReading
 	a.host.SerializeWhatIf(func() {
 		ctx, cancel := context.WithTimeout(a.host.ContractsContext(), timeout)
@@ -108,22 +111,9 @@ func OpenWhatIf(ctx context.Context, st Stores, raw RawWhatIfRequest) (state.Wha
 		return session, nil, fmt.Errorf("what-if session: %w", err)
 	}
 	if !found || raw.Action == "reset" {
-		m, _, used := st.League.ContractsView()
-		amount, ok := used[raw.Mine]
-		if !ok {
-			return session, nil, fmt.Errorf("what-if: franchise %s is not in the mirror", raw.Mine)
-		}
-		stamps, err := st.League.Stamps(ctx)
+		session, err = MirrorWhatIf(ctx, st, raw.Mine)
 		if err != nil {
-			return session, nil, fmt.Errorf("what-if baseline: %w", err)
-		}
-		session = state.WhatIfSession{Mine: raw.Mine, Snapshot: m, Stamps: stamps, Used: amount, Moves: []state.WhatIfMove{}, TaxiPercent: st.Rulebook.TaxiCapPercent(), IRPercent: st.Rulebook.IRCapPercent()}
-		if capText := st.Rulebook.GetSalaryCap(); capText != "" {
-			capAmount, err := domain.ParseMoneyMillions(capText)
-			if err != nil {
-				return session, nil, fmt.Errorf("what-if cap: %w", err)
-			}
-			session.Cap = &capAmount
+			return session, nil, err
 		}
 		return replayWhatIf(ctx, st.WhatifPools, session)
 	}
@@ -267,4 +257,27 @@ func whatIfPlanLabels(ctx context.Context, st Stores, mine string, moves []WhatI
 		}
 	}
 	return nil
+}
+
+// MirrorWhatIf builds an unpersisted baseline; counterparty projections must not read private plans.
+func MirrorWhatIf(ctx context.Context, st Stores, mine string) (state.WhatIfSession, error) {
+	var session state.WhatIfSession
+	m, _, used := st.League.ContractsView()
+	amount, ok := used[mine]
+	if !ok {
+		return session, fmt.Errorf("what-if: franchise %s is not in the mirror", mine)
+	}
+	stamps, err := st.League.Stamps(ctx)
+	if err != nil {
+		return session, fmt.Errorf("what-if baseline: %w", err)
+	}
+	session = state.WhatIfSession{Mine: mine, Snapshot: m, Stamps: stamps, Used: amount, Moves: []state.WhatIfMove{}, TaxiPercent: st.Rulebook.TaxiCapPercent(), IRPercent: st.Rulebook.IRCapPercent()}
+	if capText := st.Rulebook.GetSalaryCap(); capText != "" {
+		capAmount, err := domain.ParseMoneyMillions(capText)
+		if err != nil {
+			return session, fmt.Errorf("what-if cap: %w", err)
+		}
+		session.Cap = &capAmount
+	}
+	return session, nil
 }

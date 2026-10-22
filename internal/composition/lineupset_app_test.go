@@ -21,6 +21,7 @@ import (
 func lineupDraftApp(t *testing.T) (*App, *seasonTransport, []string) {
 	t.Helper()
 	a, transport, _, _ := isolatedSeasonTestApp(t)
+	a.core.MyFranchise = "0025"
 	lineupTestRules(t, a, false)
 	ids := lineupTestSnapshot(t, a)
 	now := time.Date(2026, 10, 7, 15, 0, 0, 0, time.UTC)

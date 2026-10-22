@@ -29,6 +29,7 @@ import (
 func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	t.Helper()
 	a, transport, _ := lineupDraftApp(t)
+	a.core.MyFranchise = "0001"
 	pools, err := db.Open(a.core.Ctx, filepath.Join(t.TempDir(), "whatif.db"))
 	if err != nil {
 		t.Fatal(err)
@@ -424,6 +425,7 @@ func TestTradeBuilderNextSeasonToTheCentAndPickOnly(t *testing.T) {
 		t.Fatal("original owner confused with current owner")
 	}
 	r.Mine = "0002"
+	a.core.MyFranchise = "0002"
 	r.Give = []string{"FP_0002_2027_1"}
 	r.Get = []string{"FP_0025_2027_2"}
 	picks := builderCall(t, a, r).Preview
@@ -683,5 +685,131 @@ func TestTradeReceiptPickUsesBuilderName(t *testing.T) {
 	}
 	if !found || len(transport.requests) != 0 {
 		t.Fatal("pick name missing or fetched", receipts)
+	}
+}
+
+func TestOwnerActionsRefuseWithoutChangingState(t *testing.T) {
+	a, transport := realTradeBuilderApp(t)
+	raw := realDeal()
+	raw.Action = "save"
+	kept := builderCall(t, a, raw).Preview.Receipt
+	if kept == nil {
+		t.Fatal("own team could not save")
+	}
+	opened := 0
+	a.core.OpenURL = func(context.Context, string) { opened++ }
+	for _, identity := range []string{"0025", ""} {
+		a.core.MyFranchise = identity
+		want := "You can only act for your own team."
+		if identity == "" {
+			want = "Connect your MFL account to act for your team."
+		}
+		calls := map[string]func() string{
+			"Acquisition": func() string {
+				return refusal(a.contracts().TargetAcquisition(contractsapp.RawAcquisition{Mine: "0001"}))
+			},
+			"ContractActs": func() string {
+				return refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0001", Action: "read"}))
+			},
+			"DraftLineup": func() string { _, err := a.contracts().TargetDraftLineup("0001", nil); return errText(err) },
+			"ReleasePlans": func() string {
+				return refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0001", Action: "read"}))
+			},
+			"WhatIf": func() string {
+				return refusal(a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0001", Action: "reset"}))
+			},
+			"DraftIR":          func() string { _, err := a.platformAPI().TargetDraftIR("0001", "11675"); return errText(err) },
+			"DraftTaxi":        func() string { _, err := a.platformAPI().TargetDraftTaxi("0001", "11675"); return errText(err) },
+			"HandOff":          func() string { _, err := a.platformAPI().TargetHandOff(kept.CorrelationID); return errText(err) },
+			"WithdrawRoster":   func() string { _, err := a.platformAPI().TargetWithdrawRoster(kept.CorrelationID); return errText(err) },
+			"DraftTradeAccept": func() string { _, err := a.tradesAPI().TargetDraftTradeAccept("0001", "77"); return errText(err) },
+			"TradeBuilder":     func() string { return refusal(a.tradesAPI().TargetTradeBuilder(realDeal())) },
+		}
+		for name, call := range calls {
+			before := ownerActionState(t, a)
+			if got := call(); got != want {
+				t.Fatalf("%s identity %q: %s", name, identity, got)
+			}
+			if after := ownerActionState(t, a); after != before || opened != 0 || len(transport.requests) != 0 {
+				t.Fatalf("%s changed state", name)
+			}
+		}
+	}
+	// Supplying one's own actor does not authorize a stored plan belonging to somebody else.
+	a.core.MyFranchise = "0025"
+	calls := map[string]func() string{
+		"ContractActs plan": func() string {
+			return refusal(a.contracts().TargetContractActs(contractsapp.RawContractAct{Mine: "0025", Action: "withdraw", ID: kept.CorrelationID}))
+		},
+		"ReleasePlans plan": func() string {
+			return refusal(a.contracts().TargetReleasePlans(contractsapp.RawReleaseRequest{Mine: "0025", Action: "handoff", ID: kept.CorrelationID, Confirmed: true}))
+		},
+	}
+	for _, action := range []string{"remove", "handoff"} {
+		calls["TradeBuilder "+action] = func() string {
+			return refusal(a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: "0025", Action: action, ID: kept.CorrelationID}))
+		}
+	}
+	for name, call := range calls {
+		before := ownerActionState(t, a)
+		if got := call(); got != "You can only act for your own team." {
+			t.Fatalf("%s: %s", name, got)
+		}
+		if ownerActionState(t, a) != before || opened != 0 {
+			t.Fatalf("%s changed state", name)
+		}
+	}
+}
+
+func ownerActionState(t *testing.T, a *App) string {
+	t.Helper()
+	var sessions []state.WhatIfSession
+	var receipts []envelope.Receipt
+	for _, fid := range []string{"0001", "0025"} {
+		s, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, fid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sessions = append(sessions, s)
+		plans, err := a.core.Moves.List(a.core.Ctx, ingestion.LeagueID, fid)
+		if err != nil {
+			t.Fatal(err)
+		}
+		receipts = append(receipts, plans...)
+	}
+	mirror, stamp, _ := a.core.League.ContractsView()
+	body, err := json.Marshal(struct {
+		Sessions []state.WhatIfSession
+		Plans    []envelope.Receipt
+		Mirror   state.MirrorSnapshot
+		Stamp    string
+	}{sessions, receipts, mirror, stamp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(body)
+}
+
+func TestTradeCounterpartyProjectionIgnoresPrivateWhatIf(t *testing.T) {
+	a, _ := realTradeBuilderApp(t)
+	first := builderCall(t, a, realDeal()).Preview
+	sessions := state.NewWhatIfSessions(a.core.WhatifPools)
+	if _, found, err := sessions.Load(a.core.Ctx, "0025"); err != nil || found {
+		t.Fatal("preview opened other owner's session", err)
+	}
+	a.core.MyFranchise = "0025"
+	cut := a.contracts().TargetWhatIf(contractsapp.RawWhatIfRequest{Mine: "0025", Action: "cut", Player: "15761"})
+	if cut.Status != report.ReadingOK || cut.Value.Notice != "" {
+		t.Fatal(cut)
+	}
+	before, found, err := sessions.Load(a.core.Ctx, "0025")
+	if err != nil || !found {
+		t.Fatal(err)
+	}
+	a.core.MyFranchise = "0001"
+	second := builderCall(t, a, realDeal()).Preview
+	after, _, err := sessions.Load(a.core.Ctx, "0025")
+	if err != nil || !reflect.DeepEqual(before, after) || !reflect.DeepEqual(first.Teams, second.Teams) || !reflect.DeepEqual(first.Reasons, second.Reasons) {
+		t.Fatal("counterparty private plans entered projection or changed", err)
 	}
 }

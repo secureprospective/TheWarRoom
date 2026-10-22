@@ -3,6 +3,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -63,6 +64,7 @@ type State struct {
 	KeyMu                  sync.Mutex
 	KeyStore               *mflkey.Store
 	KeyVerifiedAt          string
+	MyFranchise            string // guarded by KeyMu; empty means identity is unknown
 	KeyGeneration          uint64
 	//nolint:containedctx // Key-change refreshes run under it; shutdown cancels it.
 	WorkCtx    context.Context
@@ -183,4 +185,28 @@ func Pause(ctx context.Context, duration time.Duration) error {
 
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
 	report.HoldFeed(h, value, fresh, err)
+}
+
+// RequireOwnFranchise binds MFL-side plans to the saved login, never the viewed team or native role.
+func (s *State) RequireOwnFranchise(franchise string) error {
+	if err := s.Ready(); err != nil {
+		return fmt.Errorf("team authorization: startup: %w", err)
+	}
+	s.KeyMu.Lock()
+	defer s.KeyMu.Unlock()
+	if reason := OwnFranchiseRefusal(s.MyFranchise, franchise); reason != "" {
+		return errors.New(reason)
+	}
+	return nil
+}
+
+// OwnFranchiseRefusal supplies the same words to bindings and team-action controls.
+func OwnFranchiseRefusal(mine, acting string) string {
+	if mine == "" {
+		return "Connect your MFL account to act for your team."
+	}
+	if mine != acting {
+		return "You can only act for your own team."
+	}
+	return ""
 }

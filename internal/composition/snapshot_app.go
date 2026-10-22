@@ -133,6 +133,9 @@ func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Re
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft: startup: %w", err)
 	}
+	if err := a.core.RequireOwnFranchise(franchiseID); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
+	}
 	pid, err := playerid.New(playerID)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft: player: %w", err)

@@ -21,6 +21,7 @@ import (
 type fakeHost struct {
 	calls    []string
 	ready    error
+	ownErr   error
 	state    error
 	snap     snapshot.Snapshot
 	held     snapshot.Sourced[[]leaguefeed.PendingTrade]
@@ -229,3 +230,5 @@ func TestTradesWireTwins(t *testing.T) {
 		t.Fatal("aliased cell")
 	}
 }
+
+func (h *fakeHost) RequireOwnFranchise(string) error { return h.ownErr }

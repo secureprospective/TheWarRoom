@@ -125,11 +125,13 @@ type SetParamResult struct {
 // absent | connected | rejected | unreachable | unavailable. Every one of them is returned with
 // a nil error: Wails rejects the JS promise on any error and drops the status with it.
 type MFLKeyStatus struct {
-	State      string `json:"state"`
-	League     string `json:"league"`
-	Season     int    `json:"season"`
-	VerifiedAt string `json:"verifiedAt,omitempty"`
-	Detail     string `json:"detail,omitempty"`
+	MyFranchise       string `json:"myFranchise,omitempty"`
+	TeamActionRefusal string `json:"teamActionRefusal"`
+	State             string `json:"state"`
+	League            string `json:"league"`
+	Season            int    `json:"season"`
+	VerifiedAt        string `json:"verifiedAt,omitempty"`
+	Detail            string `json:"detail,omitempty"`
 }
 
 // TargetLeagueSettings is Control Room › League › League settings (M-091, M-097 merged in).

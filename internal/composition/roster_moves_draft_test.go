@@ -27,6 +27,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a, transport, _ := lineupDraftApp(t)
+			a.core.MyFranchise = "0001"
 			player, err := playerid.New("0042")
 			if err != nil {
 				t.Fatal(err)

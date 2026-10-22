@@ -1,4 +1,4 @@
-import { useLayoutEffect, useSyncExternalStore } from 'react';
+import { useSyncExternalStore } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import type { MFLKeyState } from '../commands/mflKey';
@@ -26,7 +26,6 @@ export default function MFLConnection() {
   const field = commands.mflField;
   const empty = useSyncExternalStore(field.subscribe, field.empty, field.empty);
   const fixture = commands.providerKind === 'fixture';
-  useLayoutEffect(() => { void commands.loadMFLKey(); }, []);
   return (
     <section className="mfl-connection" aria-labelledby="mfl-connection-heading">
       <h4 id="mfl-connection-heading">MFL connection</h4>

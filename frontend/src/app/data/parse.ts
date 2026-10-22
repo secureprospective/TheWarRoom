@@ -253,13 +253,18 @@ export function parseClock(value: unknown): Sourced<ClockReading> {
 
 export function parseMFLKeyStatus(value: unknown): MFLKeyStatus {
   const path = 'mflKey';
-  const row = object(value, path, ['state', 'league', 'season', 'verifiedAt', 'detail']);
+  const row = object(value, path, ['state', 'league', 'season', 'verifiedAt', 'detail',
+    'myFranchise', 'teamActionRefusal']);
   let verifiedAt: string | undefined;
   if (row.verifiedAt !== undefined) {
     verifiedAt = timestamp(row.verifiedAt, `${path}.verifiedAt`);
     if (!verifiedAt) throw new Error(`${path}.verifiedAt: expected RFC3339 timestamp`);
   }
   return {
+    ...(row.myFranchise === undefined ? {} : { myFranchise: text(row.myFranchise, `${path}.myFranchise`) }),
+    ...(row.teamActionRefusal === undefined ? {} : {
+      teamActionRefusal: text(row.teamActionRefusal, `${path}.teamActionRefusal`),
+    }),
     state: choice(row.state, `${path}.state`, MFL_KEY_STATES),
     league: text(row.league, `${path}.league`),
     season: integer(row.season, `${path}.season`),

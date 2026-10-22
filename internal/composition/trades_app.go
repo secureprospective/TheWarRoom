@@ -74,6 +74,10 @@ func (h tradesHost) TradeBuilder(r tradesapp.RawTradeBuilder, out tradesapp.Trad
 	defer a.core.RefreshMu.Unlock()
 	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
 	defer cancel()
+	if err := a.requireTradePlanFranchise(ctx, r); err != nil {
+		return out, err
+	}
+
 	snap, held, err := a.tradeState(r.Mine)
 	if err != nil {
 		return out, err
@@ -221,6 +225,9 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 		return nil, fmt.Errorf("saved trade plans: %w", err)
 	}
 	for _, plan := range plans {
+		if err := a.core.RequireOwnFranchise(plan.Mine); err != nil {
+			return nil, err //nolint:wrapcheck // Preserve the shared authorization refusal.
+		}
 		e, err := a.core.Moves.Get(ctx, plan.ID)
 		if err != nil {
 			return nil, fmt.Errorf("saved trade receipt: %w", err)
@@ -292,7 +299,21 @@ func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradeSim
 	out := tradeSimulation{Before: map[string]domain.Money{}}
 	merged := state.MirrorSnapshot{}
 	for _, fid := range []string{mine, other} {
-		s, store, err := contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: fid, Action: "read"})
+		var s state.WhatIfSession
+		var store *state.Store
+		var err error
+		if fid == mine {
+			s, store, err = contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: fid, Action: "read"})
+		} else {
+			s, err = contractsapp.MirrorWhatIf(ctx, contractsapp.StoresOf(a.core), fid)
+			if err == nil {
+				s.Generation = "trade-counterparty:" + fmt.Sprint(time.Now().UnixNano())
+				store, err = contractsapp.LoadWhatIf(ctx, a.core.WhatifPools, s)
+				if err == nil {
+					s.SeedUsed, _ = store.CapUsed(fid)
+				}
+			}
+		}
 		if err != nil {
 			return out, err //nolint:wrapcheck // contracts errors already name the step; wrapping would change the refusal
 		}
@@ -386,6 +407,9 @@ func (a *App) tradeBuilderHandOff(ctx context.Context, r tradesapp.RawTradeBuild
 	}
 	blocks := []string{}
 	for _, p := range plans {
+		if err := a.core.RequireOwnFranchise(p.Mine); err != nil {
+			return err //nolint:wrapcheck // Preserve the shared authorization refusal.
+		}
 		if p.ID != r.ID {
 			continue
 		}
@@ -484,4 +508,17 @@ func tradeProjectionInput(sim tradeSimulation, s state.WhatIfSession, seed domai
 	}
 	return tradesapp.ProjectionInput{Session: s, Name: name, Before: sim.Before[s.Mine], Seed: seed,
 		Used: used, Players: original, Live: live, Names: players}
+}
+
+func (a *App) requireTradePlanFranchise(ctx context.Context, r tradesapp.RawTradeBuilder) error {
+	if r.ID != "" && (r.Action == "remove" || r.Action == "handoff") {
+		e, err := a.core.Moves.Get(ctx, r.ID)
+		if err != nil {
+			return fmt.Errorf("trade plan: %w", err)
+		}
+		if err := a.core.RequireOwnFranchise(e.Receipt().Spec.FranchiseID); err != nil {
+			return err //nolint:wrapcheck // Preserve the shared authorization refusal.
+		}
+	}
+	return nil
 }

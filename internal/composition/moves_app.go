@@ -28,6 +28,9 @@ func (a *App) handOffMove(correlationID string) (envelope.Receipt, error) {
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: load: %w", err)
 	}
+	if err := a.core.RequireOwnFranchise(e.Receipt().Spec.FranchiseID); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
+	}
 	if envelope.IsTrade(e.Receipt().Spec.Intent) && e.Receipt().Spec.Intent != "trade.accept" {
 		return envelope.Receipt{}, fmt.Errorf("trade Act needs its trade-desk pre-flight and confirmation")
 	}
@@ -454,6 +457,9 @@ func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error)
 	e, err := a.core.Moves.Get(ctx, correlationID)
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: load: %w", err)
+	}
+	if err := a.core.RequireOwnFranchise(e.Receipt().Spec.FranchiseID); err != nil {
+		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
 	}
 	next, err := e.WithdrawRoster(a.core.MovesNow())
 	if err != nil {

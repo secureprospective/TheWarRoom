@@ -15,9 +15,17 @@ type ActProps<K extends CommandId> = {
   submit?: boolean;
   densityKey?: string;
 };
-export function Act<K extends CommandId>({
+export function Act<K extends CommandId>(props: ActProps<K>) {
+  return commands.isTeamAction(props.verb, props.args) ? <TeamAct {...props} /> : ActButton(props);
+}
+function TeamAct<K extends CommandId>(props: ActProps<K>) {
+  const refusal = commands.useTeamActionReason(props.verb, props.args);
+  return ActButton({ ...props, refusal });
+}
+function ActButton<K extends CommandId>({
   verb,
   args,
+  refusal,
   variant,
   children,
   active,
@@ -28,9 +36,10 @@ export function Act<K extends CommandId>({
   disabled,
   submit = false,
   densityKey,
-}: ActProps<K>) {
-  const accessibleLabel = label ?? commands.registry[verb].label;
-  const content = children ?? accessibleLabel;
+}: ActProps<K> & { refusal?: string }) {
+  disabled = disabled || Boolean(refusal);
+  const accessibleLabel = refusal ?? label ?? commands.registry[verb].label;
+  const content = refusal ?? children ?? accessibleLabel;
   const title = (disabled && variant !== 'command' && variant !== 'rail') ||
     (variant === 'icon' && typeof children !== 'string')
     ? accessibleLabel : undefined;
@@ -40,7 +49,7 @@ export function Act<K extends CommandId>({
       disabled={disabled}
       className={`act act-${variant}${active ? ' on' : ''}`}
       data-d={densityKey}
-      aria-label={label ?? commands.registry[verb].label}
+      aria-label={accessibleLabel}
       aria-pressed={active}
       aria-current={current ? 'true' : undefined}
       aria-expanded={expanded}
