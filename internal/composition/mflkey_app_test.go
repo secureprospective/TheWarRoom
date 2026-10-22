@@ -199,7 +199,7 @@ func TestMFLKeyLeakGate(t *testing.T) {
 				assertAbsent(record.URL)
 				assertAbsent(record.Err)
 				if len(record.Gzip) > 0 {
-					plain, err := archive.Gunzip(record.Gzip)
+					plain, err := archive.Gunzip(record.Gzip, record.Size)
 					if err != nil {
 						t.Fatal(err)
 					}

@@ -11,7 +11,8 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 
 ## Where the work stands
 
-- **Plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
+- **Current plan:** `docs/build-handoffs/Hardening_Plan_2026-10.md`, with its Method section.
+- **Engine plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
   the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
 - **Latest state:** `HANDOFF.md`. (The old RESUME files were removed on 2026-10-20; see
   `docs/architecture/removed-code.md` to recover one from git.)
@@ -121,8 +122,10 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 
 | Need | Document |
 |---|---|
-| Build doctrine: load before any build or review | `docs/agent-codex.md` |
-| The plan, rulings and gates | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
+| How code is written and judged: load before any build or review | `docs/standards/quality-contract.md`, `docs/standards/architecture-review.md` |
+| Older build doctrine (reference only) | `docs/agent-codex.md` |
+| The current plan and method | `docs/build-handoffs/Hardening_Plan_2026-10.md` |
+| The engine plan and rulings | `docs/build-handoffs/Core_Build_Plan_2026-10.md` |
 | Why the plan is shaped this way | `docs/build-handoffs/Core_Build_Reasoning_2026-10.md` |
 | Where each feature lives (two hops), and where new code goes | `SYSTEM_MAP.md` |
 | What exists at length, and the import rules | `docs/architecture/system-narrative.md` |

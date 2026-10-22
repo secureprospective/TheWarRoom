@@ -1,13 +1,10 @@
 package history
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
 	"net/url"
 	"time"
 
@@ -76,14 +73,15 @@ var ErrNoBody = errors.New("history: no archived body with that sha256")
 // Body returns an archived body exactly as it was received, for replaying it through a parser.
 func (s *Store) Body(ctx context.Context, sha256 string) ([]byte, error) {
 	var gz []byte
-	err := s.pools.Read().QueryRowContext(ctx, `SELECT body FROM raw_archive WHERE sha256 = ?`, sha256).Scan(&gz)
+	var size int64
+	err := s.pools.Read().QueryRowContext(ctx, `SELECT size, body FROM raw_archive WHERE sha256 = ?`, sha256).Scan(&size, &gz)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("%w: %s", ErrNoBody, sha256)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("history: read body %s: %w", sha256, err)
 	}
-	body, err := archive.Gunzip(gz)
+	body, err := archive.Gunzip(gz, size)
 	if err != nil {
 		return nil, fmt.Errorf("history: body %s: %w", sha256, err)
 	}
@@ -113,11 +111,11 @@ func (s *Store) ExactArchivedBodies(ctx context.Context, wanted string,
 }
 
 const archiveContainsQuery = `
-SELECT f.source, f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
+SELECT f.source, f.url, f.fetched_at, r.size, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
 WHERE f.status = 200 AND instr(f.url, ?) > 0 ORDER BY f.fetched_at DESC, f.fetch_id DESC`
 
 const archiveExactQuery = `
-SELECT f.source, f.url, f.fetched_at, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
+SELECT f.source, f.url, f.fetched_at, r.size, r.body FROM fetch_log f JOIN raw_archive r ON r.sha256 = f.sha256
 WHERE f.status = 200 AND f.url = ? ORDER BY f.fetched_at DESC, f.fetch_id DESC`
 
 func (s *Store) archivedBodies(ctx context.Context, part string,
@@ -134,7 +132,8 @@ func (s *Store) archivedBodies(ctx context.Context, part string,
 	for rows.Next() {
 		var source, src, at string
 		var gz []byte
-		if err := rows.Scan(&source, &src, &at, &gz); err != nil {
+		var size int64
+		if err := rows.Scan(&source, &src, &at, &size, &gz); err != nil {
 			return false, fmt.Errorf("history: scan archived body: %w", err)
 		}
 		if reg, ok := s.reg.Source(source); ok && reg.Imported() && !includeImports {
@@ -144,7 +143,7 @@ func (s *Store) archivedBodies(ctx context.Context, part string,
 		if err != nil {
 			return false, err
 		}
-		body, err := gunzip(gz)
+		body, err := archive.Gunzip(gz, size)
 		if err != nil {
 			return false, fmt.Errorf("history: archived body of %s: %w", src, err)
 		}
@@ -156,17 +155,4 @@ func (s *Store) archivedBodies(ctx context.Context, part string,
 		return false, fmt.Errorf("history: archived bodies: %w", err)
 	}
 	return false, nil
-}
-
-func gunzip(gz []byte) ([]byte, error) {
-	r, err := gzip.NewReader(bytes.NewReader(gz))
-	if err != nil {
-		return nil, fmt.Errorf("gunzip: %w", err)
-	}
-	defer func() { _ = r.Close() }()
-	body, err := io.ReadAll(r)
-	if err != nil {
-		return nil, fmt.Errorf("gunzip: %w", err)
-	}
-	return body, nil
 }

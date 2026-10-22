@@ -1,6 +1,8 @@
 # TheWarRoom Hardening Plan — 2026-10
 
-**Status (2026-10-19):** agreed with Christopher, not started. This is the one plan for the cleanup
+**Status (2026-10-22):** under way. Store findings F1–F8, F10 and F11 are fixed in source on `main`;
+F12–F14 are partly fixed; F9 and F15 are open. Re-check a finding in code before working on it.
+Agreed with Christopher 2026-10-19. This is the one plan for the cleanup
 week and the work after it. It replaces the separate store plan; the command findings stay as evidence
 in `Command_Protocol_Audit_2026-10.md`.
 **Why now:** real people are interested in running native leagues. This week is the cleanup before
@@ -10,10 +12,96 @@ the native league side.
 **Runs alongside the ring work,** as small branches merged between ring phases. Only one push or
 verify runs at a time on the Beelink.
 
+## Method (Christopher, 2026-10-22)
+
+How every item in this plan is judged. The rules come from `docs/standards/quality-contract.md` and
+`docs/standards/architecture-review.md`. `docs/agent-codex.md` is reference only, where it disagrees
+with them.
+
+**Goals, in order:** security, then the least code that does the job. No new features.
+
+**Who it is for:** regular people running a fantasy league, not technical users. Commands, names and
+messages use plain words. Internal codes (gravity levels, role ids) never reach the user.
+
+**The shared object: the boundaries.** These are the places where data or authority crosses in or out:
+
+| # | Boundary | Today (main @ d3dabe7a) |
+|---|---|---|
+| B1 | Frontend calls into Go | 133 methods on 15 APIs (`testdata/bindings/manifest.txt`) |
+| B2 | Outbound HTTPS | MFL, ESPN, Yahoo, GitHub (nflverse, dynastyprocess), CFBD, photo CDNs |
+| B3 | Files | archive import, settings, 3 databases, backup and restore, logs |
+| B4 | Secrets | MFL key in the OS keyring; CFBD key from an environment variable |
+| B5 | Browser launch | MFL pages, the league board |
+| B6 | Startup and assets | the 4 command-line flags, the embedded frontend, CSP, `/headshot` |
+
+A folder you pick is permission to read that place. Its contents stay untrusted.
+
+**One row per operation** records: the code symbol, input and output, what it writes and who owns that
+state, its checks (shape, permission, size), what happens when it fails, its callers and timing
+assumptions, and its evidence. The row extends the existing Go catalog (`internal/app/catalog`).
+It is never a second hand-kept list. A row is not permission to publish a command (`catalog.Unset`).
+
+**Evidence** is one of: intent, traced in source, exercised by a named test or run, or unknown.
+Each guarantee says which, against which build. A search that finds no caller is not proof of dead code.
+
+**Measuring:** physical lines, counted against a fixed ref, with production, tests and generated code
+kept apart, over the whole affected file set. Moving code is not a reduction. Shrinking is not
+required: safer code may grow. Report the real before and after.
+
+**Every change:**
+1. A finding, written as: finding, proposal, preserve, evidence, verify and risk, impact.
+2. Where behaviour changes, a test that fails first and shows the rejection and the unchanged state.
+3. The smallest change, one hypothesis at a time.
+4. Its targeted tests. Then `make verify` once on the final build of the block.
+5. Claude reviews read-only: the diff, its callers and effects. Any fix is reviewed again.
+6. Tests, review and Christopher's live test all cover the same final build. A later edit repeats them.
+
+**Live test:** on a throwaway profile (its own config folder, holding copies of the databases),
+never on the real league files.
+
+**Hygiene:**
+- A test harness built for one job is deleted when the job is done. First trace what still calls it
+  (the Makefile, CI, other tests).
+- The tree reads with basic logic: one feature, one place, and folder names that say what is inside.
+- Every package opens with one line saying what it is. `SYSTEM_MAP.md` keeps one row per area.
+  That index is what an AI agent reads first, and the CLI command list grows from the same catalog.
+
+**Living catalogs:**
+- Commands: the Go catalog (above).
+- Database growth: `docs/data-layer/Database_Growth_Catalog.md`. It records what
+  makes SQLite hold up as real leagues fill it. Each entry has: pressure, symptom, how to measure,
+  trigger, smallest fix, owner, last measured, status.
+
+**This session's scope (2026-10-22):**
+- the method and the rule documents (this change)
+- the 133-method inventory (`Command_Inventory_2026-10-22.md`), with the 23 methods no screen calls yet marked keep
+- one deep slice: the two gzip readers (`internal/archive/archive.go:188`,
+  `internal/store/history/archive.go:161`) become one, with a size cap set from real archive sizes
+
+**Baseline (B0, branch at `51db1fa6`, main `d3dabe7a`, 2026-10-22):**
+- Gates: lint, placement, root ratchet, transport, bloat, bindings, `tsc`, govulncheck (no
+  vulnerabilities) all pass. Frontend: 1391 tests pass; bundle 305,211 of 321,818 bytes; CSP ok.
+- Go tests: all pass except one inherited flake, `TestReadsCompleteDuringActualSignalsLoad`
+  (`internal/app/sources/held_test.go:130`, 5 s read budget). It fails under the full `-race`
+  run and passes 5 of 5 alone. Named here, not fixed.
+- Size: Go 104,588 prod lines / 84,354 test; frontend 21,854 TS/TSX + 2,479 CSS hand-written;
+  133 bound methods in 15 APIs, 23 with no screen caller.
+- Tooling notes: `make verify` needs `~/go/bin` on PATH; a stale golangci-lint cache can report
+  removed worktrees (`golangci-lint cache clean`).
+
+**Deep slice result (2026-10-22):** one `archive.Gunzip(body, size)` (Option A, `83070a6a`); the body
+must unzip to exactly its recorded size, ceiling 256 MiB. All 179 real archived bodies match their
+size. `make verify` passed on `b99a78d0`. Live gate on Claude-OS, throwaway profile, same binary:
+startup clean; league archive import 1,720 files; checked facts compiled, every check passed; Archive ›
+League history shows the imported seasons. Evidence: `~/Downloads/gate-hardening-g*.png` (Beelink).
+
+Next session: the full hygiene audit, and the big-league test database with time budgets.
+
 ## How every phase runs
 - One `session/<phase>` branch per phase, cut from the latest `main`.
 - Sol (`gpt-6.1-sol`, medium) builds from a brief file. Claude reviews every line and plants one
-  mutant per report. Claude also runs `make verify` and the live gate on Claude-OS.
+  mutant per report. Claude also runs `make verify`. Christopher's live test runs on a throwaway
+  profile (see Method).
 - Christopher clicks before any merge. Squash-merge only.
 - Every fix ships with a test that fails without it.
 - A decision that is hard to undo goes to the expert panel first (non-Claude seats, `panel-dispatch.sh`).
@@ -100,7 +188,7 @@ The databases are three files in `~/.config/TheWarRoom/`:
 | 7 | Fast reads | F13, F14, F15 | 1.5 | a native week scores within a stated budget; results unchanged |
 | 8 | Command panel + catalog as data | G1, G6 | 3–3.5 | panel recommendation recorded; every command self-describes, with a version |
 | 9 | One command path + reads as commands | G3, G5 | 2–4 | the six special IPC doors collapse into one; native readings are catalog reads |
-| 10 | Frontend from the catalog + typed grammar | G2, G7 | 2 | the bar shows Go's real roles and gravity; `domain.verb key=value` parses |
+| 10 | Frontend from the catalog + typed grammar | G2, G7 | 2 | the bar shows Go's real roles and gravity, in plain words; a regular person can type a command without learning a syntax (grammar goes to the panel) |
 | 11 | `twr` CLI + AI tools | — | 2–3 | CLI runs the bar's commands with the same confirmations; AI previews by default |
 | 12 | MFL-side commands (solo owner first: free-agent pools and bids) | G4 | ring-sized | before any owner other than Christopher; near Alpha |
 

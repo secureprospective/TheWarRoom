@@ -1,6 +1,8 @@
 package archive
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -56,7 +58,7 @@ func TestRedirectIsRecordedUnderTheURLAskedFor(t *testing.T) {
 	if !strings.Contains(final.URL, "/release/file.csv") || !strings.Contains(final.URL, "year=2025") {
 		t.Errorf("final body recorded under %q, want the URL first requested", final.URL)
 	}
-	body, err := Gunzip(final.Gzip)
+	body, err := Gunzip(final.Gzip, final.Size)
 	if err != nil || string(body) != "a,b\n1,2\n" || final.Size != int64(len(body)) || len(final.SHA256) != 64 {
 		t.Errorf("recorded body %q (size %d, sha %q), %v", body, final.Size, final.SHA256, err)
 	}
@@ -165,5 +167,42 @@ func TestJudgeMarksRefusals(t *testing.T) {
 		if got[path] != err {
 			t.Errorf("%s: error %q, want %q", path, got[path], err)
 		}
+	}
+}
+
+func TestGunzipBodySize(t *testing.T) {
+	const plain = "archived body"
+	var compressed bytes.Buffer
+	zw := gzip.NewWriter(&compressed)
+	if _, err := io.WriteString(zw, plain); err != nil {
+		t.Fatal(err)
+	}
+	if err := zw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	for _, tt := range []struct {
+		name   string
+		body   []byte
+		size   int64
+		refuse bool
+	}{
+		{name: "larger than recorded", body: compressed.Bytes(), size: int64(len(plain)) - 1, refuse: true},
+		{name: "shorter than recorded", body: compressed.Bytes(), size: int64(len(plain)) + 1, refuse: true},
+		{name: "over cap before opening gzip", body: []byte("not gzip"), size: maxArchivedBody + 1, refuse: true},
+		{name: "negative size", body: compressed.Bytes(), size: -1, refuse: true},
+		{name: "exact size", body: compressed.Bytes(), size: int64(len(plain))},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := Gunzip(tt.body, tt.size)
+			if tt.refuse {
+				if !errors.Is(err, ErrBodySize) || got != nil {
+					t.Fatalf("Gunzip = %q, %v; want nil, ErrBodySize", got, err)
+				}
+				return
+			}
+			if err != nil || string(got) != plain {
+				t.Fatalf("Gunzip = %q, %v; want %q, nil", got, err, plain)
+			}
+		})
 	}
 }
