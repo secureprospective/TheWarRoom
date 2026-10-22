@@ -78,6 +78,17 @@ never on the real league files.
 - one deep slice: the two gzip readers (`internal/archive/archive.go:188`,
   `internal/store/history/archive.go:161`) become one, with a size cap set from real archive sizes
 
+**Baseline (B0, branch at `51db1fa6`, main `d3dabe7a`, 2026-10-22):**
+- Gates: lint, placement, root ratchet, transport, bloat, bindings, `tsc`, govulncheck (no
+  vulnerabilities) all pass. Frontend: 1391 tests pass; bundle 305,211 of 321,818 bytes; CSP ok.
+- Go tests: all pass except one inherited flake, `TestReadsCompleteDuringActualSignalsLoad`
+  (`internal/app/sources/held_test.go:130`, 5 s read budget). It fails under the full `-race`
+  run and passes 5 of 5 alone. Named here, not fixed.
+- Size: Go 104,588 prod lines / 84,354 test; frontend 21,854 TS/TSX + 2,479 CSS hand-written;
+  133 bound methods in 15 APIs, 23 with no screen caller.
+- Tooling notes: `make verify` needs `~/go/bin` on PATH; a stale golangci-lint cache can report
+  removed worktrees (`golangci-lint cache clean`).
+
 Next session: the full hygiene audit, and the big-league test database with time budgets.
 
 ## How every phase runs
