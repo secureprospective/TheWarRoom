@@ -181,8 +181,16 @@ func TestCacheClearKeepsItsWordsAndRunsOnlyTheNamedCopy(t *testing.T) {
 
 func TestSetPhotosKeepsTheArchiveFolderAndPublishesTheSwitch(t *testing.T) {
 	t.Parallel()
-	host := &fakeHost{dir: "/league"}
+	host := &fakeHost{dir: "/league", startup: errors.New("still starting")}
 	api := sourcesapp.New(host, &sourcesapp.Held{})
+	for _, on := range []bool{false, true} {
+		if got := api.SetPhotos(on); got.OK || got.Error != host.startup.Error() ||
+			host.dir != "/league" || host.off || host.photosOff {
+			t.Fatalf("SetPhotos(%v) before ready = %+v, host dir %q off %v published %v",
+				on, got, host.dir, host.off, host.photosOff)
+		}
+	}
+	host.startup = nil
 	if got := api.SetPhotos(false); !got.OK || host.dir != "/league" || !host.off || !host.photosOff {
 		t.Fatalf("SetPhotos(false) = %+v, host dir %q off %v published %v", got, host.dir, host.off, host.photosOff)
 	}

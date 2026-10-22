@@ -83,10 +83,10 @@ func (a *API) TargetNFLDraft() (report.Report, error) {
 // Commands records existing bindings without inventing publication metadata.
 func Commands() []catalog.Command {
 	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetDraftLab", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetDraftReports", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetDraftReportsRefresh", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetNFLDraft", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: "draft.reports", Method: "TargetOpenMFLDraftRoom", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "desktop"},
+		{ID: catalog.Unset, Method: "TargetDraftLab", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetDraftReports", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetDraftReportsRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetNFLDraft", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "draft.reports", Method: "TargetOpenMFLDraftRoom", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
 	}
 }

@@ -184,6 +184,9 @@ func bindingManifest(bound []interface{}) ([]string, []string) {
 		seen[typ] = true
 		methods := map[string]bool{}
 		for _, command := range commands {
+			if command.Role == catalog.Unset || command.Gravity == catalog.Unset {
+				problems = append(problems, "catalog method "+command.Method+" has unset role or gravity")
+			}
 			if methods[command.Method] {
 				problems = append(problems, "duplicate catalog method "+command.Method)
 			}

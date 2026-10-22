@@ -128,15 +128,15 @@ func contractReading[T any](a *API, value T, at, source, how string, count int, 
 // A release hand-off opens MFL's drop page in the browser, so release plans are desktop-only.
 func Commands() []catalog.Command {
 	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetAcquisition", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCheckLineup", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetContractActs", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetContracts", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: "lineup.set", Method: "TargetDraftLineup", Version: catalog.Unset, Role: catalog.Unset, Gravity: "G3", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetLineup", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPlayerContract", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetReleasePlans", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "desktop"},
-		{ID: catalog.Unset, Method: "TargetRosterReports", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetWhatIf", Version: catalog.Unset, Role: catalog.Unset, Gravity: catalog.Unset, Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetAcquisition", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetCheckLineup", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetContractActs", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetContracts", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "lineup.set", Method: "TargetDraftLineup", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetLineup", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetPlayerContract", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetReleasePlans", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
+		{ID: catalog.Unset, Method: "TargetRosterReports", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: catalog.Unset, Method: "TargetWhatIf", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
 	}
 }

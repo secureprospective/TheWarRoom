@@ -334,16 +334,16 @@ func (a *API) TargetSetWindow(kind, at string) error {
 // dates copy the desktop window.set command's roles and gravity; the alert tray, season feeds and
 // status strip have no registry verb.
 func Commands() []catalog.Command {
-	c := func(method, availability string) catalog.Command {
-		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: catalog.Unset,
-			Gravity: catalog.Unset, Availability: availability}
+	c := func(method, role, gravity, availability string) catalog.Command {
+		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: role,
+			Gravity: gravity, Availability: availability}
 	}
 	return []catalog.Command{
-		c("DeleteMFLKey", "desktop"), c("GetParams", "both"), c("MFLKeyStatus", "desktop"), c("ResetParam", "both"),
-		c("SetMFLKey", "desktop"), c("SetParam", "both"), c("TargetAccounting", "both"), c("TargetAlerts", "both"),
-		c("TargetBylaws", "both"), c("TargetLeagueSettings", "both"), c("TargetOpenMFLAccounting", "desktop"),
-		c("TargetSeason", "both"), c("TargetShellStatus", "both"), c("TargetSiteNews", "both"),
-		{ID: "window.set", Method: "TargetSetWindow", Version: catalog.Unset, Role: "gm,commish,admin",
+		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), c("GetParams", "gm,commish,admin", "G0", "both"), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
+		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), c("TargetAccounting", "gm,commish,admin", "G0", "both"), c("TargetAlerts", "gm,commish,admin", "G0", "both"),
+		c("TargetBylaws", "gm,commish,admin", "G0", "both"), c("TargetLeagueSettings", "gm,commish,admin", "G0", "both"), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),
+		c("TargetSeason", "gm,commish,admin", "G0", "both"), c("TargetShellStatus", "gm,commish,admin", "G0", "both"), c("TargetSiteNews", "gm,commish,admin", "G0", "both"),
+		{ID: "window.set", Method: "TargetSetWindow", Version: catalog.Unset, Role: "commish,admin",
 			Gravity: "G2", Availability: "both"},
 	}
 }
