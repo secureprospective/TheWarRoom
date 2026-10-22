@@ -11,16 +11,18 @@
 
 ## Build doctrine — load before writing or reviewing code
 
-- **`docs/agent-codex.md`** — the 17 motifs, slop catalog, and canon→motif map. Cite motifs by ID (`§M3`) in review notes.
+- **`docs/standards/quality-contract.md`** and **`docs/standards/architecture-review.md`** govern how code is written and judged.
+- **`docs/agent-codex.md`** is reference only. Where it disagrees with the two above, they win.
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
-- **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the current build plan and its rulings (R1–R12).
+- **`docs/build-handoffs/Hardening_Plan_2026-10.md`** — the current plan and its Method section.
+- **`docs/build-handoffs/Core_Build_Plan_2026-10.md`** — the engine build plan and its rulings (R1–R12).
 
 ## Code footprint
 
 - Split files by responsibility, never by size. `make filelen` reports files over 600 lines; say why in the commit. Function limits (`funlen`, `gocyclo`) still gate.
 - Comments say what the code can't, in the fewest lines. No review history, decision IDs or session notes in code; those belong in commits and docs. `make bloat` fails if comment share, provenance, tiny files or duplication rise.
-- No copy-paste. A second near-copy is the signal to turn it into data. Check `SYSTEM_MAP.md` and `docs/architecture/system-narrative.md` for existing utilities first.
-- Add a dependency only when the alternative is >~15 lines of native code.
+- Share the same business rule, not merely similar code. Check `SYSTEM_MAP.md` and `docs/architecture/system-narrative.md` for existing utilities first.
+- Add a dependency only for a real need, after checking its source and identity.
 - No commented-out code. Delete; `git` remembers.
 
 ## Security mandates
@@ -69,6 +71,6 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
 - `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
-- `docs/build-handoffs/Core_Build_Plan_2026-10.md` — stages, gates and current progress.
+- `docs/build-handoffs/Hardening_Plan_2026-10.md` — the current plan, method and progress.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.
 - `.pre-commit-config.yaml` + `.golangci.yml` — the gates that run on your commit.
