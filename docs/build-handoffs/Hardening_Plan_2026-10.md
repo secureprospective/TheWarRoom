@@ -68,13 +68,13 @@ never on the real league files.
 
 **Living catalogs:**
 - Commands: the Go catalog (above).
-- Database growth: `docs/data-layer/Database_Growth_Catalog.md` (to be written). It records what
+- Database growth: `docs/data-layer/Database_Growth_Catalog.md`. It records what
   makes SQLite hold up as real leagues fill it. Each entry has: pressure, symptom, how to measure,
   trigger, smallest fix, owner, last measured, status.
 
 **This session's scope (2026-10-22):**
 - the method and the rule documents (this change)
-- the 133-method inventory, with the 23 methods no screen calls yet marked keep
+- the 133-method inventory (`Command_Inventory_2026-10-22.md`), with the 23 methods no screen calls yet marked keep
 - one deep slice: the two gzip readers (`internal/archive/archive.go:188`,
   `internal/store/history/archive.go:161`) become one, with a size cap set from real archive sizes
 
