@@ -45,7 +45,7 @@ type NativeLineup struct {
 
 // NativeLineupReading reads the lineup standing for a franchise's week at an instant. The lineup comes
 // from the ledger alone, never from MFL's held starters.
-func NativeLineupReading(league, franchise string, week int, records []Record, at time.Time,
+func NativeLineupReading(league, franchise, principal string, week int, records []Record, at time.Time,
 	env LineupFacts) (NativeLineup, error) {
 	if week < 1 || week > 22 {
 		return NativeLineup{}, fmt.Errorf("choose a week")
@@ -72,6 +72,9 @@ func NativeLineupReading(league, franchise string, week int, records []Record, a
 	}
 	held, set, err := RecordedLineupFor(records, franchise, season, week)
 	if err != nil {
+		return NativeLineup{}, err
+	}
+	if err := authorizeLineupReading(league, principal, seat.Owner, held.Corrected, records); err != nil {
 		return NativeLineup{}, err
 	}
 	out := NativeLineup{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Season: season,
@@ -146,4 +149,18 @@ func lineupWords(l NativeLineup, franchise string) string {
 		return fmt.Sprintf("A commissioner set %s's week %d lineup (%s). %s.", franchise, l.Week, l.Reason, l.Verdict.Words)
 	}
 	return fmt.Sprintf("%s's week %d lineup is set. %s.", franchise, l.Week, l.Verdict.Words)
+}
+
+func authorizeLineupReading(league, principal, owner string, corrected bool, records []Record) error {
+	if corrected {
+		return nil
+	}
+	state, err := GovernanceState(records)
+	if err != nil {
+		return err
+	}
+	if principal != "" && (owner == principal || privilegedLedgerReader(league, principal, GovernanceAuthorizer{State: state})) {
+		return nil
+	}
+	return fmt.Errorf("%s", "This lineup is private to its team and the commissioner.")
 }

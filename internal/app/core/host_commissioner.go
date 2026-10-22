@@ -72,10 +72,10 @@ func (s *State) NativeDraft(ctx context.Context, scope commissioner.RawNativeDra
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeDraft(ctx, scope, local, facts)
 }
-func (s *State) NativeLineup(ctx context.Context, league, franchise string, week int,
+func (s *State) NativeLineup(ctx context.Context, league, franchise, principal string, week int,
 	at time.Time) (commissioner.NativeLineup, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
-	return s.History.NativeLineup(ctx, league, franchise, week, at)
+	return s.History.NativeLineup(ctx, league, franchise, principal, week, at)
 }
 func (s *State) NativePlayerScore(ctx context.Context, league string,
 	scope source.RawNativeScope) (commissioner.NativePlayerScore, error) {

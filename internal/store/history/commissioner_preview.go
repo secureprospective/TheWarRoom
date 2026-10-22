@@ -58,7 +58,7 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		return recordedPreview(raw, records, *retry), nil
 	}
 
-	preview, err := s.describePreparedChange(ctx, raw, records, catalogue, facts, before, plan, checkErr == nil)
+	preview, err := s.describePreparedChange(ctx, raw, principal, records, catalogue, facts, before, plan, checkErr == nil)
 	if err != nil {
 		if len(blockers) > 0 {
 			return blockedPreview(blockers), nil
@@ -148,7 +148,7 @@ func recordedPreview(raw commissioner.RawCommand, records []commissioner.Record,
 		Blockers: []string{}, Affects: commissioner.PreviewAffects{Readings: []string{}, Words: "Already recorded; nothing changes"}}
 }
 
-func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.RawCommand,
+func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.RawCommand, principal string,
 	records []commissioner.Record, catalogue commissioner.PreviewCatalogue, facts appendFacts,
 	before *commissioner.RolloverBefore, plan *commissioner.RolloverPlan, accepted bool) (commissioner.Preview, error) {
 	preview, err := s.describeChange(raw, records, catalogue, facts)
@@ -160,7 +160,7 @@ func (s *Store) describePreparedChange(ctx context.Context, raw commissioner.Raw
 		return preview, nil
 	}
 	if accepted {
-		fields, err := s.previewReadingFields(ctx, raw, records, facts)
+		fields, err := s.previewReadingFields(ctx, raw, principal, records, facts)
 		if err != nil {
 			return commissioner.Preview{}, err
 		}

@@ -71,7 +71,7 @@ type LeagueHost interface {
 type ResultsHost interface {
 	NativeDraft(ctx context.Context, scope commissioner.RawNativeDraftScope,
 		local *time.Location, facts nativecheck.Facts) (commissioner.NativeDraft, error)
-	NativeLineup(ctx context.Context, league, franchise string, week int,
+	NativeLineup(ctx context.Context, league, franchise, principal string, week int,
 		at time.Time) (commissioner.NativeLineup, error)
 	NativePlayerScore(ctx context.Context, league string,
 		scope source.RawNativeScope) (commissioner.NativePlayerScore, error)

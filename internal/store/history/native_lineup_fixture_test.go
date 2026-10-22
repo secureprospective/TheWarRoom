@@ -254,7 +254,7 @@ func (f *lineupFixture) results(t *testing.T) commissioner.NativeResults {
 
 func (f *lineupFixture) reading(t *testing.T, franchise string) commissioner.NativeLineup {
 	t.Helper()
-	out, err := f.s.NativeLineup(t.Context(), "native.test", franchise, 1, f.at)
+	out, err := f.s.NativeLineup(t.Context(), "native.test", franchise, f.owner(franchise), 1, f.at)
 	if err != nil {
 		t.Fatal(err)
 	}

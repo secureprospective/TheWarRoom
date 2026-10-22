@@ -113,8 +113,7 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		return Ledger{}, err
 	}
 	out := Ledger{League: league, Name: p.Name, Entries: []Entry{}}
-	role, err := auth.Allow(league, principal, "commish.ledger.read")
-	private := err == nil && (role == "commissioner" || role == "cocommissioner")
+	private := privilegedLedgerReader(league, principal, auth)
 	roots := reversalRoots(records)
 	hasRollover := slices.ContainsFunc(records, func(r Record) bool { return r.Command.Command == SeasonRollover })
 	for i := len(records) - 1; i >= 0; i-- {
@@ -329,4 +328,9 @@ func ledgerEntryVisible(r, target Record, records []Record, principal string, pr
 		return r.Principal == principal || (privileged && decidedBidRecord(r, records))
 	}
 	return r.Command.Visibility != "private" || privileged
+}
+
+func privilegedLedgerReader(league, principal string, auth Authorizer) bool {
+	role, err := auth.Allow(league, principal, "commish.ledger.read")
+	return err == nil && (role == "commissioner" || role == "cocommissioner")
 }

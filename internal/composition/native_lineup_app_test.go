@@ -3,6 +3,7 @@ package composition
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -157,6 +158,42 @@ func TestNativeLineupSetThroughTheGateReadingAndRestart(t *testing.T) {
 		err.Error() != "You may set a lineup only for your own franchise" {
 		t.Fatalf("a lineup was set for a franchise the owner does not hold: %v", err)
 	}
+	f.execute(t, commissioner.RawCommand{Command: "commish.seat.replace", Visibility: "league",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: "other-owner"}}})
+	f.execute(t, commissioner.RawCommand{Command: "commish.role.grant", Visibility: "private",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "chief", Role: "commissioner"}}})
+	f.execute(t, commissioner.RawCommand{Command: "commish.role.grant", Visibility: "private",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "deputy", Role: "co-commissioner"}}})
+	f.execute(t, commissioner.RawCommand{Command: "commish.seat.replace", Visibility: "league",
+		Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: "team-owner"}}})
+	version = f.version(t)
+	for _, test := range []struct {
+		name, principal string
+		allowed         bool
+	}{
+		{"owner", "team-owner", true},
+		{"commissioner", "chief", true},
+		{"co-commissioner", "deputy", true},
+		{"unknown principal", "stranger", false},
+		{"another franchise owner", "other-owner", false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			f.app.core.CommissionerSession = testCommissionerSession{test.principal}
+			reading, err := newCommissionerAPI(f.app).TargetNativeLineup(legalityLeague, "franchise.02", 1, "")
+			if test.allowed {
+				if err != nil || !reading.Set || len(reading.Starters) != 21 {
+					t.Fatalf("allowed lineup read: %+v %v", reading, err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), "This lineup is private to its team and the commissioner.") ||
+				!reflect.DeepEqual(reading, commissioner.NativeLineup{}) {
+				t.Fatalf("private lineup disclosed: %+v %v", reading, err)
+			}
+			if f.version(t) != version {
+				t.Fatal("reading a lineup changed the ledger")
+			}
+		})
+	}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 }
 
 func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T) {
@@ -188,6 +225,12 @@ func TestNativeLineupCorrectionPreviewsAndRecordsThroughTheCommand(t *testing.T)
 	if err != nil || !reading.Set || !reading.Corrected || reading.Reason != correction.Reason {
 		t.Fatalf("the correction is not read back: %+v %v", reading, err)
 	}
+	f.app.core.CommissionerSession = testCommissionerSession{"stranger"}
+	public, err := newCommissionerAPI(f.app).TargetNativeLineup(legalityLeague, "franchise.01", 1, "")
+	if err != nil || !reflect.DeepEqual(public, reading) {
+		t.Fatalf("a league-visible correction became private: %+v %v", public, err)
+	}
+	f.app.core.CommissionerSession = testCommissionerSession{"creator"}
 	results, err := newCommissionerAPI(f.app).TargetNativeResults(legalityLeague, 2026, 1)
 	if err != nil {
 		t.Fatal(err)

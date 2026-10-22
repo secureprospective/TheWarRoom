@@ -49,9 +49,13 @@ func (a *API) TargetNativeLineup(league, franchise string, week int,
 	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("native lineup startup: %w", err)
 	}
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		return commissioner.NativeLineup{}, fmt.Errorf("native lineup identity: %w", err)
+	}
 	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	reading, err := a.host.NativeLineup(ctx, league, franchise, week, instant)
+	reading, err := a.host.NativeLineup(ctx, league, franchise, principal, week, instant)
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("native lineup: %w", err)
 	}
