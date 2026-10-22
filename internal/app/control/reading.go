@@ -211,10 +211,10 @@ func SiteNewsReport(items []sitenews.Item, fresh, refreshError string, zone *tim
 // AccountingURL is MFL's accounting report for the league's season on its own host (found in the
 // captured MFL league pages: claudeos ~/mflmap-runs/bee-mfl-ui-map-2026-10-04/nav.log).
 func AccountingURL(host string, season int) (string, error) {
-	if !regexp.MustCompile(`^www[0-9]{1,3}$`).MatchString(host) {
+	if !regexp.MustCompile(`^www[0-9]{1,3}\.myfantasyleague\.com$`).MatchString(host) {
 		return "", fmt.Errorf("accounting: the league's MFL host is not known yet")
 	}
-	u := url.URL{Scheme: "https", Host: host + ".myfantasyleague.com", Path: fmt.Sprintf("/%d/accounting_report", season),
+	u := url.URL{Scheme: "https", Host: host, Path: fmt.Sprintf("/%d/accounting_report", season),
 		RawQuery: url.Values{"L": {ingestion.LeagueID}}.Encode()}
 	return u.String(), nil
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // previewReadingFields compares owner readings on the same held evidence, before and after one trial act.
-func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCommand,
+func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCommand, principal string,
 	records []commissioner.Record, facts appendFacts) ([]commissioner.PreviewField, error) {
 	if season := previewScoreSeason(raw); season != 0 {
 		recorded, err := commissioner.PreviewSeasonRecorded(records, season, s.now())
@@ -24,11 +24,11 @@ func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCo
 	}
 	trial := append(slices.Clone(records), commissioner.Record{Command: raw,
 		Receipt: commissioner.Receipt{Entry: "proposed." + raw.Request, RecordedAt: s.now()}})
-	before, err := s.previewReadings(ctx, raw, records, facts)
+	before, err := s.previewReadings(ctx, raw, principal, records, facts)
 	if err != nil {
 		return nil, err
 	}
-	after, err := s.previewReadings(ctx, raw, trial, facts)
+	after, err := s.previewReadings(ctx, raw, principal, trial, facts)
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (s *Store) previewReadingFields(ctx context.Context, raw commissioner.RawCo
 	return fields, nil
 }
 
-func (s *Store) previewReadings(ctx context.Context, raw commissioner.RawCommand,
+func (s *Store) previewReadings(ctx context.Context, raw commissioner.RawCommand, principal string,
 	records []commissioner.Record, facts appendFacts) (map[string]string, error) {
 
 	out := map[string]string{}
@@ -83,7 +83,7 @@ func (s *Store) previewReadings(ctx context.Context, raw commissioner.RawCommand
 		return s.previewResultReadings(ctx, raw.League, records, c.Season, c.Week, out)
 	case raw.Args.Lineup != nil:
 		c := raw.Args.Lineup
-		view, err := commissioner.NativeLineupReading(raw.League, c.Franchise, c.Week, records, s.now(), facts.lineup)
+		view, err := commissioner.NativeLineupReading(raw.League, c.Franchise, principal, c.Week, records, s.now(), facts.lineup)
 		if err != nil {
 			return nil, fmt.Errorf("read lineup for preview: %w", err)
 		}

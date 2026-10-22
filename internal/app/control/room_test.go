@@ -96,11 +96,11 @@ func TestSiteNewsReportAndAccountingHandOff(t *testing.T) {
 	if e := SiteNewsReport(nil, "As of: now", "MFL down", time.UTC); e.Status != "empty" || !strings.Contains(e.Note, "MFL down") {
 		t.Fatalf("empty news = %+v", e)
 	}
-	u, err := AccountingURL("www47", 2026)
+	u, err := AccountingURL("www47.myfantasyleague.com", 2026)
 	if err != nil || u != "https://www47.myfantasyleague.com/2026/accounting_report?L=14432" {
 		t.Fatalf("accounting url = %q, %v", u, err)
 	}
-	for _, bad := range []string{"", "evil.example.com", "www47.evil"} {
+	for _, bad := range []string{"", "api", "www47", "evil.example.com", "www47.evil", "www47.myfantasyleague.com/path", "www47.myfantasyleague.com:443"} {
 		if _, err := AccountingURL(bad, 2026); err == nil {
 			t.Errorf("host %q accepted", bad)
 		}

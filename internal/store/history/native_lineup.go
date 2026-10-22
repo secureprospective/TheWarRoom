@@ -74,7 +74,7 @@ func (s *Store) weekFacts(ctx context.Context, season, week int) (commissioner.L
 }
 
 // NativeLineup reads the lineup standing for a franchise's week at an instant, with locks in the owner's zone.
-func (s *Store) NativeLineup(ctx context.Context, league, franchise string, week int,
+func (s *Store) NativeLineup(ctx context.Context, league, franchise, principal string, week int,
 	at time.Time) (commissioner.NativeLineup, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *Store) NativeLineup(ctx context.Context, league, franchise string, week
 	if err != nil {
 		return commissioner.NativeLineup{}, err
 	}
-	out, err := commissioner.NativeLineupReading(league, franchise, week, records, at, env)
+	out, err := commissioner.NativeLineupReading(league, franchise, principal, week, records, at, env)
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("read native lineup: %w", err)
 	}

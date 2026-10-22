@@ -365,7 +365,7 @@ func TestNativeLineupReadingNamesLocksInTheOwnersTime(t *testing.T) {
 	if !strings.Contains(locked.Words, "Held team 1's week 1 lineup is set. Valid lineup.") {
 		t.Fatalf("verdict words: %q", locked.Words)
 	}
-	if _, err := f.s.NativeLineup(t.Context(), "native.test", "franchise.99", 1, f.at); err == nil {
+	if _, err := f.s.NativeLineup(t.Context(), "native.test", "franchise.99", f.creatorID, 1, f.at); err == nil {
 		t.Fatal("read a franchise the league does not have")
 	}
 	if !reflect.DeepEqual(locked.Rules, f.reading(t, f.a).Rules) {
@@ -494,7 +494,7 @@ func TestLineupsNeedTheAppsFootballFacts(t *testing.T) {
 	if got := refusal(t, err); !strings.Contains(got, "Lineups can't be judged until the app holds the NFL players and schedule") {
 		t.Fatalf("a lineup was judged without football facts: %q", got)
 	}
-	if _, err := f.s.NativeLineup(t.Context(), "native.test", f.a, 1, f.at); err == nil {
+	if _, err := f.s.NativeLineup(t.Context(), "native.test", f.a, f.ownerOfA, 1, f.at); err == nil {
 		t.Fatal("a lineup was read without football facts")
 	}
 }
