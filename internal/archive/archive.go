@@ -184,15 +184,28 @@ func originURL(req *http.Request) string {
 	return u.String()
 }
 
-// Gunzip returns an archived body as it was received.
-func Gunzip(body []byte) ([]byte, error) {
+// Largest real body is ~98 MB; the cap only stops a forged size.
+const maxArchivedBody = 256 << 20
+
+// ErrBodySize means an archived body's recorded or uncompressed size is invalid.
+var ErrBodySize = errors.New("archive: invalid body size")
+
+// Gunzip returns an archived body only when it matches its recorded size.
+func Gunzip(body []byte, size int64) ([]byte, error) {
+	if size < 0 || size > maxArchivedBody {
+		return nil, fmt.Errorf("%w: recorded %d", ErrBodySize, size)
+	}
 	zr, err := gzip.NewReader(bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("archive: open body: %w", err)
 	}
-	out, err := io.ReadAll(zr)
+	defer func() { _ = zr.Close() }()
+	out, err := io.ReadAll(io.LimitReader(zr, size+1))
 	if err != nil {
 		return nil, fmt.Errorf("archive: read body: %w", err)
+	}
+	if int64(len(out)) != size {
+		return nil, fmt.Errorf("%w: recorded %d, got %d", ErrBodySize, size, len(out))
 	}
 	return out, nil
 }
