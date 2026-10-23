@@ -31,5 +31,14 @@ function csp(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), csp()]
+  plugins: [react(), csp()],
+  build: {
+    manifest: true,
+    rolldownOptions: {
+      output: {
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+      },
+    },
+  },
 })

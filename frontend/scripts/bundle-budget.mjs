@@ -8,6 +8,20 @@ const dist = resolve(frontend, 'dist');
 const html = readFileSync(resolve(dist, 'index.html'), 'utf8');
 const entries = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+\.js)"/g)]
   .map((match) => resolve(dist, match[1].replace(/^\//, '')));
+const manifest = JSON.parse(readFileSync(resolve(dist, '.vite/manifest.json'), 'utf8'));
+
+// Rolldown can extract eagerly loaded shared chunks; charge the whole static graph.
+function eagerFiles(entry) {
+  const files = new Set();
+  function visit(chunk) {
+    if (files.has(chunk.file)) return;
+    files.add(chunk.file);
+    for (const key of chunk.imports ?? []) visit(manifest[key]);
+  }
+  visit(Object.values(manifest).find((chunk) => resolve(dist, chunk.file) === entry));
+  return [...files].map((file) => resolve(dist, file));
+}
+const eager = new Set(entries.flatMap(eagerFiles));
 const fixture = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/snapshot.json')));
 const envelope = JSON.parse(readFileSync(resolve(frontend, 'src/app/data/fixtures/envelope-demo.json')));
 const names = fixture.players.value.map((player) => player.name).filter(Boolean);
@@ -45,7 +59,8 @@ function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
 
 if (!entries.length) throw new Error('No entry script in dist/index.html');
 for (const entry of entries) {
-  console.log(`bundle-budget: ${entry}: ${check(entry)} bytes (limit ${BUDGET})`);
+  const source = eagerFiles(entry).map((file) => readFileSync(file, 'utf8')).join('');
+  console.log(`bundle-budget: ${entry}: ${check(entry, BUDGET, source)} eager bytes (limit ${BUDGET})`);
   if (process.argv.includes('--self-test')) {
     assert.throws(() => check(entry, 1000), /exceeds 1000/);
     assert.throws(() => check(entry, BUDGET, names.slice(0, 12).join('|')), /Fixture player run/);
@@ -81,7 +96,7 @@ assert.ok(commissionerChunks.some((name) =>
 console.log('bundle-budget: lazy commissioner IPC proxy verified');
 
 const lazySources = readdirSync(resolve(dist, 'assets')).filter((name) => /\.js$/.test(name))
-  .filter((name) => !entries.some((entry) => entry.endsWith(name)))
+  .filter((name) => !eager.has(resolve(dist, 'assets', name)))
   .map((name) => readFileSync(resolve(dist, 'assets', name), 'utf8'));
 for (const words of commissionerForms) {
   assert.ok(lazySources.some((source) => source.includes(words)),

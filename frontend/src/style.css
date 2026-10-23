@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@config '../tailwind.config.js';
+
+/* Tailwind 4 preflight fades placeholders from the text colour; keep the Tailwind 3 grey. */
+@layer base {
+  input::placeholder,
+  textarea::placeholder {
+    color: #9ca3af;
+  }
+}
 
 /* ============================================================================
    Fonts — self-hosted (offline desktop app, no CDN at runtime).

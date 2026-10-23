@@ -498,7 +498,7 @@ it('retains the what-if during replay and restores the clicked row position befo
   const row = { isConnected: true, getBoundingClientRect: vi.fn().mockReturnValue({ top: 400 }) };
   const scroll = { scrollTop: 100, clientHeight: 600, getBoundingClientRect: () => ({ top: 60 }) };
   const anchor = { row, top: 400, scroll };
-  simulation.query = vi.fn(() => new Promise(yes => { resolve = yes; }));
+  simulation.query = vi.fn(() => new Promise<Reading<WhatIf>>(yes => { resolve = yes; }));
   await act(async () => { changed(); });
   expect(test.element.textContent).toContain('No moves yet.');
   row.getBoundingClientRect.mockReturnValue({ top: 650 });

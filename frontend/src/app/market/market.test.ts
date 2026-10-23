@@ -207,7 +207,7 @@ it('retains profiles and ignores stale Go replies', async () => {
     await s.profile('LB');
     const old = s.peek().profiles.LB;
     let finish!: (r: SurfaceReading) => void;
-    p.profile = vi.fn(() => new Promise((resolve) => {
+    p.profile = vi.fn(() => new Promise<SurfaceReading>((resolve) => {
         finish = resolve;
     }));
     await s.change({ field: 'phase', value: 'early' });

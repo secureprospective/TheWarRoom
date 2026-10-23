@@ -46,8 +46,7 @@ jobs:
         run: gitleaks git --redact --no-banner .
       - name: Dependency audit, shipped app (blocking)
         run: cd frontend && pnpm audit --prod
-      - name: Dependency audit, dev toolchain (report only until the toolchain upgrade)
-        continue-on-error: true
+      - name: Dependency audit, dev toolchain (blocking)
         run: cd frontend && pnpm audit
       - name: Lint (with placement and root ratchet), bindings, frontend checks
         run: |

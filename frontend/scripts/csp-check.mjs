@@ -8,7 +8,8 @@ const dist = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const html = readFileSync(resolve(dist, 'index.html'), 'utf8');
 const meta = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)"/);
 if (!meta) throw new Error('dist/index.html has no Content-Security-Policy meta');
-const policy = meta[1];
+// Vite 8 HTML-escapes apostrophes in injected attributes; browsers decode them.
+const policy = meta[1].replace(/&#39;/g, "'");
 for (const bad of ["'unsafe-eval'", 'http:', 'https:', 'ws:', 'wss:', '*']) {
   if (policy.includes(bad)) throw new Error(`CSP allows ${bad}: ${policy}`);
 }
