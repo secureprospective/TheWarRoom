@@ -392,6 +392,7 @@ The rule of this phase: **security first, as little code as possible second.** E
 - **🎭 Every command knows who may run it.** All 133 actions the app can take now carry a role: owner, commissioner, co-commissioner, support, server admin, and the AI actors to come. Permission becomes **data you can read and audit**, not scattered `if` statements. *(#100)*
 - **🏈 You can only act for your own team.** Your MFL login *is* your identity. Sign in as the Cardinals and you run the Cardinals. Try to bid, sign or trade as anyone else and the engine says no in plain English: *"You can only act for your own team."* It's checked on every route that moves a roster or a dollar, and it was **proven live**: another owner's team refused, our own team's actions enabled from the moment the app starts. *(#101)*
 - **📦 The archive import guard.** Every season of league history since 2013 comes in from a folder on disk, and a folder is an attack surface. The guard refuses symlinks, pipes and anything that isn't a plain file. It caps every file and the whole import by size, file count and depth, and it refuses **before** anything is recorded. A booby-trapped archive gets a clear "no" instead of a hang or a peek at a file it should never touch. **Proven live**: a planted pipe and a planted symlink both refused, the real archive (1,720 files) imported clean. *(#103)*
+- **🔗 A locked supply chain.** Every push scans the **entire git history** for leaked secrets and audits every dependency. The shipped app and the build tools both have to come back clean, or CI says no. Getting there meant upgrading the whole frontend toolchain (Vite 8, Vitest 5, Tailwind 4): **32 known advisories down to 0**, every test still passing, and a screen-by-screen check that the app looks exactly as it did. *(#105, #106)*
 
 ### 🏔️ Built for the server it will live on
 
@@ -405,9 +406,9 @@ Server mode ships as **our own appliance**, not something bolted onto whatever b
    ✅ #100  roles catalog ───────────── every command, its role
    ✅ #101  own-team guard ──────────── live-proven on the real league
    ✅ #103  archive import guard ────── live-proven: pipes · links refused
-   ▶  NOW   supply chain ────────────── dependency audit + secret scanning in CI
-      NEXT  league-scale database ───── a big-league fixture to measure growth
-      THEN  the Alpine appliance ─────── lean image · encrypted backups · disk unlock
+   ✅ #106  supply chain ────────────── secrets scanned · audit 32 → 0, now blocking
+   ▶  NOW   league-scale database ───── a big-league fixture to measure growth
+      NEXT  the Alpine appliance ─────── lean image · encrypted backups · disk unlock
 ```
 
 ---
