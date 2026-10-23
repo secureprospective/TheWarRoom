@@ -94,7 +94,10 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 		t.Fatal(err)
 	}
 	a.core.SeasonPause = func(context.Context, time.Duration) error { pauses++; return nil }
+	// Live fetch provenance uses wall time, independently of the app's schedule clock.
+	started := time.Now().Truncate(time.Second)
 	a.refreshFinishedScores(a.core.Ctx)
+	finished := time.Now().Truncate(time.Second)
 	next := a.now.schedules[5]
 	next.FetchedAt = now.Add(time.Hour)
 	a.now.schedules[5] = next
@@ -104,7 +107,7 @@ func TestBackgroundFinishedScoresRereadsOnce(t *testing.T) {
 		t.Fatal(requests, pauses)
 	}
 	held := a.snapshotResearch().feeds[researchKey("playerScores", "5")]
-	if len(held.Value) != 1 || !held.FetchedAt.Equal(now) || held.RefreshError != "" {
+	if len(held.Value) != 1 || held.FetchedAt.Before(started) || held.FetchedAt.After(finished) || held.RefreshError != "" {
 		t.Fatal(held)
 	}
 }
