@@ -173,3 +173,14 @@ lab-goldens:
 
 lab-mutants:
 	go test -race ./internal/lab -run TestMutants -v
+
+# Opt-in generated league benchmarks; neither make test nor verify enables leaguebench.
+.PHONY: bench-league
+bench-league:
+	@set -eu; \
+	mkdir -p "$$HOME/logs/TheWarRoom"; \
+	scratch=$$(mktemp -d "$$HOME/logs/TheWarRoom/bench-league.XXXXXX"); \
+	echo "Generated benchmark artifacts: $$scratch"; \
+	export BENCH_LEAGUE_SCRATCH="$$scratch"; \
+	go test -v -tags leaguebench -run '^$$' -bench '^BenchmarkLeague' -benchmem -count=5 -timeout $(GO_TEST_TIMEOUT) ./internal/store/history; \
+	go test -v -tags leaguebench -run '^$$' -bench '^BenchmarkLeagueWhatIf$$' -benchmem -count=5 -timeout $(GO_TEST_TIMEOUT) ./internal/app/contracts
