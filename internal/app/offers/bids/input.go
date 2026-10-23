@@ -1,3 +1,4 @@
+// Package bids reads and prices the owner's bid plans and the window closes they watch.
 package bids
 
 import (
