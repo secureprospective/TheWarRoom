@@ -36,11 +36,8 @@ func resumeClosedNative(assets *NativeAssets, records []Record, waivers *waiverS
 	// Native projectors consume entire command bodies. Unlike the smaller shared
 	// folds, their checkpoint must also reject edits to a caller's nested payloads.
 	hash, err := ClosedBooksHash(records[:b.raw.Revision])
-	if err != nil {
-		return 0, err
-	}
-	if hash != b.raw.SourceHash {
-		return 0, nil
+	if err != nil || hash != b.raw.SourceHash {
+		return 0, nil //nolint:nilerr // Unhashable edited source bodies invalidate this derived checkpoint; full replay owns their errors.
 	}
 	held, book, err := cloneClosedNative(b.raw)
 	if err != nil {

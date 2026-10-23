@@ -155,3 +155,29 @@ func TestClosedNativeStartsAtBoundaryAndRejectsEditedBodies(t *testing.T) {
 		t.Fatal("edited native source used a stale checkpoint")
 	}
 }
+
+func TestClosedNativeUnhashableSourceFallsBack(t *testing.T) {
+	b := rolloverLedger(t)
+	b.rollover(2027, rolloverMoment())
+	raw, err := CloseBooks(b.records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	folded, ok := WithClosedBooks(b.records, raw)
+	if !ok {
+		t.Fatal("valid summary rejected")
+	}
+	folded[2].Command.Args.Value = []byte("{")
+	full := WithoutClosedBooks(folded)
+	got, gotErr := NativeAssetsReading(rolloverLeague, folded)
+	want, wantErr := NativeAssetsReading(rolloverLeague, full)
+	if !reflect.DeepEqual(got, want) || (gotErr != nil) != (wantErr != nil) {
+		t.Fatalf("edited source differs from full replay: %v / %v", gotErr, wantErr)
+	}
+	var assets NativeAssets
+	var waivers waiverState
+	since, err := resumeClosedNative(&assets, folded, &waivers)
+	if err != nil || since != 0 {
+		t.Fatalf("unhashable source did not select full replay: %d %v", since, err)
+	}
+}
