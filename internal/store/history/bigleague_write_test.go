@@ -3,7 +3,9 @@
 package history
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"path/filepath"
@@ -25,7 +27,7 @@ func seedLeagueWrite(t testing.TB, s *Store, size int) *bigLeagueBuilder {
 	defer func() { _ = tx.Rollback() }()
 	for g.revision < int64(size) {
 		raw := commissioner.RawCommand{League: bigLeagueID, Command: commissioner.RulesSet,
-			Args: commissioner.RawArgs{Field: "cap.amount", Value: []byte(`100000000000000`)}, Expected: g.revision,
+			Args: commissioner.RawArgs{Field: "cap.amount", Value: []byte(fmt.Sprintf("%d", 100000000000000+g.revision%2))}, Expected: g.revision,
 			Request: fmt.Sprintf("generated.%08d", g.revision), Reason: "Deterministic growth fixture", Effective: "now", Visibility: "league"}
 		prepared, canonical, err := preparedCommand(raw, "creator", true)
 		if err != nil {
@@ -52,10 +54,39 @@ func BenchmarkLeagueWrite(b *testing.B) {
 			b.ReportAllocs()
 			b.ResetTimer()
 			for b.Loop() {
-				g.set("cap.amount", `100000000000000`)
+				g.set("cap.amount", fmt.Sprintf("%d", 100000000000000+g.revision%2))
 			}
 			b.StopTimer()
 			b.Logf("ledger start=%d end=%d (use -benchtime=1x for exact size)", size, g.revision)
 		})
+	}
+}
+
+func TestBigLeagueWriteSeed(t *testing.T) {
+	bulk, _ := openBigLeague(t, filepath.Join(t.TempDir(), "bulk.db"))
+	seedLeagueWrite(t, bulk, 10)
+	normal, _ := openBigLeague(t, filepath.Join(t.TempDir(), "normal.db"))
+	g := seedLeagueWrite(t, normal, 1)
+	for g.revision < 10 {
+		g.set("cap.amount", fmt.Sprintf("%d", 100000000000000+g.revision%2))
+	}
+	first, err := bulk.Events(t.Context(), bigLeagueID, commissioner.Stream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := normal.Events(t.Context(), bigLeagueID, commissioner.Stream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a, err := json.Marshal(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(a, b) {
+		t.Fatal("bulk write seed differs from fully authorized commands")
 	}
 }

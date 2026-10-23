@@ -134,12 +134,27 @@ events including the two scoring-schedule commands. The separate D2 smoke scored
 
 **ASSUMED:** an ordinary `rules.set cap.amount` is the simplest independent write. This is
 not a roster/trade cost estimate. The synthetic ledger starts with a production create and
-valid identical-value rule updates, serialized by production `appendCommissioner` inside one
+alternating cap-value rule updates, serialized by production `appendCommissioner` inside one
 setup transaction; setup bypasses replay deliberately, not during the measured write. There
 are no raw ledger INSERTs. Each timed operation calls `ExecuteCommissionerWithFacts` through
 the normal builder. Use `-benchtime=1x -count=1` for precisely one write at each starting size;
 longer repetitions grow the ledger, with start/end counts printed. The full-tier season
 curve measures the larger real workload with native snapshots and transactions.
 
-Measurements pending; no threshold is assigned. For unequal size steps, per-doubling time
+Single-operation samples (`-benchtime=1x -count=1 -benchmem`), Beelink, Go 1.26.4,
+GOMAXPROCS=8; provisional, not an idle-machine statistical baseline. All five writes
+succeeded and advanced exactly one revision. No threshold is assigned. For unequal size steps, per-doubling time
 ratio is `(time2/time1)^(log(2)/log(size2/size1))`; adjacent ratios are also reported.
+
+| Starting records | ns/op | B/op | allocs/op | Adjacent time ratio | Per-doubling time ratio |
+|---:|---:|---:|---:|---:|---:|
+| 1,000 | 209,120,524 | 375,664,584 | 1,957,823 | — | — |
+| 5,000 | 854,123,537 | 1,743,066,152 | 8,750,841 | 4.084 | 1.833 |
+| 10,000 | 1,637,585,785 | 3,452,457,312 | 17,241,860 | 1.917 | 1.917 |
+| 20,000 | 3,216,565,297 | 6,877,261,760 | 34,223,800 | 1.964 | 1.964 |
+| 50,000 | 7,862,917,603 | 17,128,199,392 | 85,167,332 | 2.445 | 1.966 |
+
+`TestBigLeagueWriteSeed` compares the bulk seed byte-for-byte with fully authorized
+commands at ten records. An initial identical-value cap command was rejected correctly
+as a no-op; the benchmark now alternates two cap amounts one cent apart. Timed commands
+do not bypass validation, authorization, replay or commit.
