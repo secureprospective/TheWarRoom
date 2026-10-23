@@ -7,6 +7,22 @@ Update this narrative in the same commit as any new package, IPC method or exter
 5739c5c9), then the clean sweep checked every path, symbol and IPC method named here against the
 code.
 
+## Loopback native fixture path
+
+`cmd/twr-server -fixture` → `internal/serverhttp` (TLS 1.3, literal loopback bind,
+validated read-only `/v1/fixture/ledger`) → `internal/leagueservice.FixtureLedger` →
+`commissioner.Reading` over freshly decoded/validated built-in creation evidence.
+The fixed observer has no command permissions; caller input cannot choose a league or principal.
+The service owns no database, writes, MFL credentials, catalog publication or Wails runtime.
+Unknown routes/major versions, mutation methods and read arguments fail before engine access.
+
+`cmd/twr-server -fixture -read` uses `internal/serverclient` with an explicit trusted CA,
+normal hostname/certificate verification, no proxy or redirects, and bounded JSON decoding plus
+`RawLedgerResponse.Validate`. Protocol v1 is separate from durable command versions.
+`TestRealBinaryFixtureHTTPS` exercises the real headless binary and local Go invocation,
+compares its JSON with a direct engine reading, and checks certificate/version/write rejection.
+This is not an authenticated/deployable server. Usage: `cmd/twr-server/README.md`.
+
 ## Layers and packages
 
 Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conventions.
