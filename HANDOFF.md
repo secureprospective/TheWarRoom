@@ -15,7 +15,7 @@ Christopher / reviewer — 2026-10-23. Bee completed `session/toolchain-upgrade`
 - Binary: `build/bin/thewarroom`. Snapshot lazy chunk +15.3%; full dist +5.05%
   including the new manifest. All comparable lazy growth flags and exhaustive
   resolved-package changes: `docs/build-handoffs/Toolchain_Upgrade_2026-10.md`.
-- CI audit step absent on base; instruction 6 skipped, workflow unchanged.
+- CI: the full dev-toolchain audit step is now blocking.
 
 ## Next move
 Review commits; launch binary and check shell, form controls, channel chips, Market,
