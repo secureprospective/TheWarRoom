@@ -47,11 +47,24 @@ func testStoredBooksFallback(t *testing.T, s *Store, league string, original []b
 		t.Fatal(err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	if mode == "missing" {
+	var originalRaw commissioner.RawClosedBooks
+	if err := json.Unmarshal(original, &originalRaw); err != nil {
+		t.Fatal(err)
+	}
+	cached, ok := commissioner.WithClosedBooks(full, originalRaw)
+	if !ok {
+		t.Fatal("test could not prime cached checkpoint")
+	}
+	switch mode {
+	case "latest-missing":
+		if _, err := tx.ExecContext(t.Context(), `DELETE FROM league_season_summary WHERE revision=(SELECT MAX(revision) FROM league_season_summary)`); err != nil {
+			t.Fatal(err)
+		}
+	case "missing":
 		if _, err := tx.ExecContext(t.Context(), `DELETE FROM league_season_summary`); err != nil {
 			t.Fatal(err)
 		}
-	} else {
+	default:
 		body := original
 		var raw commissioner.RawClosedBooks
 		if err := json.Unmarshal(original, &raw); err != nil {
@@ -82,7 +95,7 @@ func testStoredBooksFallback(t *testing.T, s *Store, league string, original []b
 			t.Fatal(err)
 		}
 	}
-	records, err := loadClosedBooks(t.Context(), tx, league, full)
+	records, err := loadClosedBooks(t.Context(), tx, league, cached)
 	if err != nil {
 		t.Fatal(err)
 	}

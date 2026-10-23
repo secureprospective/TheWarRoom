@@ -68,7 +68,7 @@ func TestClosedBooksDifferential(t *testing.T) {
 	if err := s.pools.Read().QueryRow(`SELECT payload FROM league_season_summary ORDER BY revision DESC LIMIT 1`).Scan(&body); err != nil {
 		t.Fatal(err)
 	}
-	for _, mode := range []string{"missing", "checksum", "source"} {
+	for _, mode := range []string{"missing", "latest-missing", "checksum", "source"} {
 		t.Run("fallback/"+mode, func(t *testing.T) { testStoredBooksFallback(t, s, bigLeagueID, body, mode, full) })
 	}
 }

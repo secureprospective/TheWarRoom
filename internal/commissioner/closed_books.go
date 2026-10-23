@@ -115,10 +115,7 @@ func keyForFold(r Record) foldKey {
 // WithClosedBooks returns an independently owned outer slice. A rejected summary
 // leaves full replay in place; it can never replace the authoritative records.
 func WithClosedBooks(records []Record, raw RawClosedBooks) ([]Record, bool) {
-	out := slices.Clone(records)
-	if len(out) > 0 {
-		out[0].books = nil
-	}
+	out := WithoutClosedBooks(records)
 	if raw.Validate() != nil || raw.Revision > len(records) {
 		return out, false
 	}
@@ -149,6 +146,15 @@ func WithClosedBooks(records []Record, raw RawClosedBooks) ([]Record, bool) {
 	}
 	out[0].books = b
 	return out, true
+}
+
+// WithoutClosedBooks selects authoritative replay without changing the caller's slice.
+func WithoutClosedBooks(records []Record) []Record {
+	out := slices.Clone(records)
+	if len(out) > 0 {
+		out[0].books = nil
+	}
+	return out
 }
 
 func usableClosedBooks(records []Record) *closedBooks {

@@ -50,11 +50,16 @@ func saveClosedBooks(ctx context.Context, tx *sql.Tx, records []commissioner.Rec
 // An absent, corrupt, unsupported or stale derived row is not a ledger error.
 // Only database failures escape; rejection retains the complete replay path.
 func loadClosedBooks(ctx context.Context, tx *sql.Tx, league string, records []commissioner.Record) ([]commissioner.Record, error) {
+	records = commissioner.WithoutClosedBooks(records)
+	boundary := latestClosedRevision(records)
+	if boundary == 0 {
+		return records, nil
+	}
 	var body []byte
 	var expected string
 	var revision, season int
-	err := tx.QueryRowContext(ctx, `SELECT revision,season,payload,payload_hash FROM league_season_summary WHERE league=? AND revision<=? ORDER BY revision DESC LIMIT 1`,
-		league, len(records)).Scan(&revision, &season, &body, &expected)
+	err := tx.QueryRowContext(ctx, `SELECT revision,season,payload,payload_hash FROM league_season_summary WHERE league=? AND revision=?`,
+		league, boundary).Scan(&revision, &season, &body, &expected)
 	if errors.Is(err, sql.ErrNoRows) {
 		return records, nil
 	}
@@ -95,4 +100,13 @@ func (s *Store) closeRolloverBooks(ctx context.Context, tx *sql.Tx, raw commissi
 		return err
 	}
 	return saveClosedBooks(ctx, tx, records)
+}
+
+func latestClosedRevision(records []commissioner.Record) int64 {
+	for i := len(records) - 1; i >= 0; i-- {
+		if records[i].Command.Command == commissioner.SeasonRollover {
+			return records[i].Receipt.Revision
+		}
+	}
+	return 0
 }
