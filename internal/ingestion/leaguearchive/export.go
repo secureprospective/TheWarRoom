@@ -13,6 +13,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/archive"
+)
+
+const (
+	archiveLayoutMessage = "An archive file has an unexpected name or folder. Use the original archive names and keep weekly files in each season’s weekly folder."
 )
 
 // Scope says whose view of MFL a body is.
@@ -104,31 +110,31 @@ func ParsePath(rel string, rootSeason int) (Export, error) {
 	parts := strings.Split(rel, "/")
 	name, ok := strings.CutSuffix(parts[len(parts)-1], ".json")
 	if !ok || name == "" {
-		return Export{}, fmt.Errorf("leaguearchive: %s is not a .json export", rel)
+		return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s is not a .json export", rel), archiveLayoutMessage)
 	}
 	if len(parts) == 1 {
 		return Export{Season: rootSeason, Type: name, Params: map[string]string{}}, nil
 	}
 	season, err := strconv.Atoi(parts[0])
 	if err != nil || season < 1900 || len(parts) > 3 {
-		return Export{}, fmt.Errorf("leaguearchive: %s is not under a season folder", rel)
+		return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s is not under a season folder", rel), archiveLayoutMessage)
 	}
 	if len(parts) == 3 && parts[1] == "messageBoardThread" {
 		if _, err := strconv.Atoi(name); err != nil {
-			return Export{}, fmt.Errorf("leaguearchive: %s is not a thread id", rel)
+			return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s is not a thread id", rel), archiveLayoutMessage)
 		}
 		return Export{Season: season, Type: "messageBoardThread", Params: map[string]string{"THREAD": name}}, nil
 	}
 	e, err := parseName(season, name)
 	if err != nil {
-		return Export{}, fmt.Errorf("leaguearchive: %s: %w", rel, err)
+		return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s: %w", rel, err), archiveLayoutMessage)
 	}
 	weekly := len(parts) == 3 && parts[1] == "weekly"
 	if len(parts) == 3 && !weekly {
-		return Export{}, fmt.Errorf("leaguearchive: %s is in an unknown folder", rel)
+		return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s is in an unknown folder", rel), archiveLayoutMessage)
 	}
 	if weekly != (e.Week() > 0) {
-		return Export{}, fmt.Errorf("leaguearchive: %s: a weekly file must name its week, and only a weekly file may", rel)
+		return Export{}, archive.WithMessage(fmt.Errorf("leaguearchive: %s: a weekly file must name its week, and only a weekly file may", rel), archiveLayoutMessage)
 	}
 	return e, nil
 }
@@ -142,12 +148,12 @@ func parseName(season int, name string) (Export, error) {
 	}
 	key, bare, ok := suffixParam(typ)
 	if !ok {
-		return Export{}, fmt.Errorf("export %s takes no parameter", typ)
+		return Export{}, archive.WithMessage(fmt.Errorf("export %s takes no parameter", typ), archiveLayoutMessage)
 	}
 	value := suffix
 	if !bare {
 		if value, ok = strings.CutPrefix(suffix, key); !ok || value == "" {
-			return Export{}, fmt.Errorf("suffix %q does not carry %s", suffix, key)
+			return Export{}, archive.WithMessage(fmt.Errorf("suffix %q does not carry %s", suffix, key), archiveLayoutMessage)
 		}
 	}
 	if n, err := strconv.Atoi(value); err == nil {
@@ -192,13 +198,13 @@ func parentDomain(host string) string {
 func ParseURL(raw string) (Export, string, error) {
 	u, err := url.Parse(raw)
 	if err != nil {
-		return Export{}, "", fmt.Errorf("leaguearchive: url %q: %w", raw, err)
+		return Export{}, "", archive.WithMessage(fmt.Errorf("leaguearchive: url %q: %w", raw, err), "A saved MFL address is not valid. Read the data again to replace it.")
 	}
 	seasonText, ok := strings.CutSuffix(strings.TrimPrefix(u.Path, "/"), "/export")
 	season, err := strconv.Atoi(seasonText)
 	q := u.Query()
 	if !ok || err != nil || q.Get("TYPE") == "" {
-		return Export{}, "", fmt.Errorf("leaguearchive: %q is not an MFL export request", raw)
+		return Export{}, "", archive.WithMessage(fmt.Errorf("leaguearchive: %q is not an MFL export request", raw), "A saved MFL address is not valid. Read the data again to replace it.")
 	}
 	e := Export{Season: season, Type: q.Get("TYPE"), Params: map[string]string{}}
 	for k := range q {

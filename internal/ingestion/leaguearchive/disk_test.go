@@ -2,6 +2,7 @@ package leaguearchive
 
 import (
 	"context"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -35,8 +36,11 @@ func refuseDisk(t *testing.T, g fs.FS, want string) {
 	t.Helper()
 	var sink diskSink
 	_, err := Import(context.Background(), g, "test", nil, &sink)
-	if err == nil || !strings.Contains(err.Error(), want) {
+	if err == nil || !strings.Contains(diagnosticChain(err), want) {
 		t.Fatalf("error = %v; want %q", err, want)
+	}
+	if strings.Contains(err.Error(), "archive:") || !strings.Contains(err.Error(), "Choose") {
+		t.Fatalf("owner message = %q", err.Error())
 	}
 	if sink.calls != 0 {
 		t.Fatalf("Record called %d times", sink.calls)
@@ -124,4 +128,13 @@ func TestDiskDepth(t *testing.T) {
 		t.Fatal(err)
 	}
 	refuseDisk(t, NewDiskFS(root), "depth exceeded")
+}
+
+func diagnosticChain(err error) string {
+	var text strings.Builder
+	for err != nil {
+		text.WriteString(err.Error())
+		err = errors.Unwrap(err)
+	}
+	return text.String()
 }
