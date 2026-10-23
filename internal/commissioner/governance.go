@@ -31,26 +31,43 @@ func recordEvents(r Record) ([]governance.Event, error) {
 
 func GovernanceState(records []Record) (governance.State, error) {
 	projection := Replay(records)
-	events := []governance.Event{}
-	for _, r := range records {
-		// Creation remains bootstrap metadata, just as in the ledger's identity projection.
-		if !projection.Active[r.Receipt.Entry] && r.Command.Command != Create {
-			// A reversed change was still the person's activity when it was recorded.
-			events = withActivity(events, r)
-			continue
-		}
-		recorded, err := recordEvents(r)
+	if books := usableClosedBooks(records); books != nil {
+		events, err := governanceEvents(records[len(books.keys):], projection)
 		if err != nil {
 			return governance.State{}, err
 		}
-		events = append(events, recorded...)
-		events = withActivity(events, r)
+		state, err := governance.Resume(books.raw.People, events, books.raw.PeopleEvents)
+		if err != nil {
+			return governance.State{}, fmt.Errorf("read league people: %w", err)
+		}
+		return state, nil
+	}
+	events, err := governanceEvents(records, projection)
+	if err != nil {
+		return governance.State{}, err
 	}
 	state, err := governance.Replay(events)
 	if err != nil {
 		return governance.State{}, fmt.Errorf("read league people: %w", err)
 	}
 	return state, nil
+}
+
+func governanceEvents(records []Record, projection Projection) ([]governance.Event, error) {
+	events := []governance.Event{}
+	for _, r := range records {
+		if !projection.Active[r.Receipt.Entry] && r.Command.Command != Create {
+			events = withActivity(events, r)
+			continue
+		}
+		recorded, err := recordEvents(r)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, recorded...)
+		events = withActivity(events, r)
+	}
+	return events, nil
 }
 
 type GovernanceAuthorizer struct{ State governance.State }

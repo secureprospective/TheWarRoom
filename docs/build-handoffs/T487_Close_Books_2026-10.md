@@ -1,6 +1,6 @@
-# T487 close-books investigation — not implemented
+# T487 initial investigation — historical evidence
 
-Branch: `session/t487-close-books`, base `b72eb6c8`. This is evidence and a handoff, not a completed fix. No production code, tests, schema or ledger format changed. Do not merge this as the performance fix.
+These notes describe the initial investigation at base `b72eb6c8`, before the checkpoint implementation. Its unchanged-code measurements and rejected experiment are retained as historical evidence, not the implementation's before/after result. PR #113 contains the current implementation, schema change, verification and measurements.
 
 ## Source-traced slice
 
