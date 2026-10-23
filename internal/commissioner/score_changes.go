@@ -26,11 +26,16 @@ type ScoreChanges struct {
 
 // PlayerScoreChanges folds compensation before selecting the last position and adding each delta once.
 func PlayerScoreChanges(records []Record, player string, season, week int) (ScoreChanges, error) {
+	return playerScoreChanges(records, Replay(records).Active, player, season, week)
+}
+
+func playerScoreChanges(records []Record, active map[string]bool, player string,
+	season, week int) (ScoreChanges, error) {
 	id, err := playerid.New(player)
 	if err != nil || id.String() != player || season < 1920 || season > 9999 || week < 1 || week > 22 {
 		return ScoreChanges{}, fmt.Errorf("choose a player, season and week")
 	}
-	return scoreChanges(records, player, "", season, week)
+	return scoreChangesFrom(records, active, player, "", season, week)
 }
 
 func FranchiseScoreChanges(records []Record, franchise string, season, week int) (ScoreChanges, error) {
@@ -41,8 +46,13 @@ func FranchiseScoreChanges(records []Record, franchise string, season, week int)
 }
 
 func scoreChanges(records []Record, player, franchise string, season, week int) (ScoreChanges, error) {
+	return scoreChangesFrom(records, Replay(records).Active, player, franchise, season, week)
+}
+
+// scoreChangesFrom reads the changes with the ledger's active entries already replayed.
+func scoreChangesFrom(records []Record, active map[string]bool, player, franchise string,
+	season, week int) (ScoreChanges, error) {
 	out := ScoreChanges{Changes: []ScoreChange{}}
-	active := Replay(records).Active
 	for _, r := range records {
 		command := r.Command.Command
 		switch command {

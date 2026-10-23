@@ -44,6 +44,19 @@ func NativePlayerScoreReading(league string, scope source.RawNativeScope, record
 // can resolve the season's rules once. The resolver is called only when the player's rules are needed.
 func NativePlayerScoreWith(league string, scope source.RawNativeScope, records []Record,
 	evidence source.NativeEvidence, now time.Time, resolve RulesFunc) (NativePlayerScore, error) {
+	return nativePlayerScore(league, scope, records, evidence, now, resolve, foldLedger)
+}
+
+// Score is NativePlayerScoreWith with this memo's rules, and the ledger folded once however many players
+// the reading scores.
+func (m *RulesMemo) Score(league string, scope source.RawNativeScope, records []Record,
+	evidence source.NativeEvidence, now time.Time) (NativePlayerScore, error) {
+	return nativePlayerScore(league, scope, records, evidence, now, m.InForce, m.fold)
+}
+
+func nativePlayerScore(league string, scope source.RawNativeScope, records []Record,
+	evidence source.NativeEvidence, now time.Time, resolve RulesFunc,
+	fold func([]Record) ledgerFold) (NativePlayerScore, error) {
 	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
 		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
 	if err := scope.Validate(); err != nil {
@@ -60,22 +73,22 @@ func NativePlayerScoreWith(league string, scope source.RawNativeScope, records [
 	if err != nil {
 		return out, err
 	}
-	changes, err := PlayerScoreChanges(records, scope.Player, scope.Season, scope.Week)
+	folded := fold(records)
+	changes, err := playerScoreChanges(records, folded.active, scope.Player, scope.Season, scope.Week)
 	if err != nil {
 		return out, err
 	}
-	effects, err := foldStatEffects(records)
-	if err != nil {
-		return out, err
+	if folded.err != nil {
+		return out, folded.err
 	}
 	key := statKey{scope.Player, scope.Season, scope.Week}
-	out.Changes = orderChanges(records, changes.Changes, effects.changes[key])
+	out.Changes = orderChanges(folded.position, changes.Changes, folded.effects.changes[key])
 	out.Missing = append(out.Missing, evidence.Missing...)
-	counted, err := countedVersion(evidence.Versions(), effects.baselines[key])
+	counted, err := countedVersion(evidence.Versions(), folded.effects.baselines[key])
 	if err != nil {
 		return out, err
 	}
-	corrections := effects.corrections[key]
+	corrections := folded.effects.corrections[key]
 	var week source.PlayerWeek
 	switch {
 	case counted != nil:
