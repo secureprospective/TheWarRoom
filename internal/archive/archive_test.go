@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -76,7 +77,7 @@ func TestSinkFailureFailsTheRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-	if _, err := io.ReadAll(resp.Body); err == nil || !strings.Contains(err.Error(), "disk full") {
+	if _, err := io.ReadAll(resp.Body); err == nil || !strings.Contains(err.Error(), "Check free disk space") {
 		t.Fatalf("read error = %v, want the archive failure", err)
 	}
 }
@@ -204,5 +205,14 @@ func TestGunzipBodySize(t *testing.T) {
 				t.Fatalf("Gunzip = %q, %v; want %q, nil", got, err, plain)
 			}
 		})
+	}
+}
+
+func TestOwnerMessageKeepsWrappedCause(t *testing.T) {
+	cause := errors.New("private technical detail")
+	err := WithMessage(cause, "The file could not be saved. Try again.")
+	wrapped := WithMessage(fmt.Errorf("record file: %w", err), "Fallback message")
+	if wrapped.Error() != "The file could not be saved. Try again." || !errors.Is(wrapped, cause) {
+		t.Fatalf("owner message or cause lost: %v", wrapped)
 	}
 }

@@ -121,8 +121,8 @@ func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 		t.Fatal(r.Error)
 	}
 	r := a.api().TargetDataRefresh("archive")
-	if r.OK || !strings.Contains(r.Error, "2014/rules.json: not an MFL export") {
-		t.Fatalf("import = %+v, want the malformed file named", r)
+	if r.OK || !strings.Contains(r.Error, "An archive file is incomplete or is not a valid MFL download.") {
+		t.Fatalf("import = %+v, want a plain explanation and recovery step", r)
 	}
 	ctx := context.Background()
 	if fetches, _ := a.hist.SourceFetches(ctx, sourcesapp.LeagueArchiveSource); len(fetches) != 0 {
@@ -133,7 +133,7 @@ func TestArchiveImportRefusesAMalformedFileAndRecordsTheFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, h := range health {
-		if h.Source == sourcesapp.LeagueArchiveSource && !strings.Contains(h.LastError, "2014/rules.json") {
+		if h.Source == sourcesapp.LeagueArchiveSource && h.LastError != r.Error {
 			t.Errorf("archive health = %+v, want the failure recorded", h)
 		}
 	}

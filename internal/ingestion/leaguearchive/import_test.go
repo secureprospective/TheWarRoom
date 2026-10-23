@@ -117,15 +117,15 @@ func TestImportRefusesAMalformedArchiveWholly(t *testing.T) {
 	cases := map[string]struct {
 		file, body, want string
 	}{
-		"null":            {"2014/rules.json", `null`, "2014/rules.json: not an MFL export"},
-		"array":           {"2014/rules.json", `[]`, "2014/rules.json: not an MFL export"},
-		"not JSON":        {"2014/rules.json", `{"rules":`, "2014/rules.json: not an MFL export"},
-		"unknown suffix":  {"2014/rules_X1.json", `{}`, "2014/rules_X1.json: export rules takes no parameter"},
-		"week outside":    {"2014/rosters_W03.json", `{}`, "2014/rosters_W03.json: a weekly file must name its week"},
-		"no league":       {"2015/rules.json", `{}`, "read 2015/league.json"},
-		"bad league id":   {"2015/league.json", league("x", "www45.myfantasyleague.com"), `2015/league.json: league id "x"`},
-		"unknown folder":  {"2014/extra/rules.json", `{}`, "2014/extra/rules.json is in an unknown folder"},
-		"not json suffix": {"2014/notes.txt", `x`, "2014/notes.txt is not a .json export"},
+		"null":            {"2014/rules.json", `null`, "An archive file is incomplete or is not a valid MFL download."},
+		"array":           {"2014/rules.json", `[]`, "An archive file is incomplete or is not a valid MFL download."},
+		"not JSON":        {"2014/rules.json", `{"rules":`, "An archive file is incomplete or is not a valid MFL download."},
+		"unknown suffix":  {"2014/rules_X1.json", `{}`, "An archive file has an unexpected name or folder."},
+		"week outside":    {"2014/rosters_W03.json", `{}`, "An archive file has an unexpected name or folder."},
+		"no league":       {"2015/rules.json", `{}`, "The archive could not be read."},
+		"bad league id":   {"2015/league.json", league("x", "www45.myfantasyleague.com"), `An archive file is incomplete or is not a valid MFL download.`},
+		"unknown folder":  {"2014/extra/rules.json", `{}`, "An archive file has an unexpected name or folder."},
+		"not json suffix": {"2014/notes.txt", `x`, "An archive file has an unexpected name or folder."},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

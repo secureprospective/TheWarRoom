@@ -15,10 +15,16 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+)
+
+const (
+	saveDownloadMessage = "The app could not save a downloaded file. Check free disk space and folder permissions, then try again."
+	damagedBodyMessage  = "A saved file is damaged or too large to open. Read the data again to replace it."
 )
 
 // Fetch is one request's record. SHA256, Size and Gzip are set only when the whole body was
@@ -65,7 +71,8 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		f.Err = redactSecret(err.Error(), req.URL.Query().Get("APIKEY"))
 		if rerr := t.Sink.Record(ctx, f); rerr != nil {
-			return nil, errors.Join(err, rerr)
+			recordErr := WithMessage(fmt.Errorf("archive: record %s: %w", f.URL, rerr), saveDownloadMessage)
+			return nil, &ownerError{cause: errors.Join(err, recordErr), message: recordErr.Error()}
 		}
 		return nil, err //nolint:wrapcheck // a transport returns its base transport's error as is
 	}
@@ -120,7 +127,7 @@ func (r *recorder) Read(p []byte) (int, error) {
 		r.size += int64(n)
 		r.hash.Write(p[:n])
 		if _, gerr := r.gz.Write(p[:n]); gerr != nil {
-			return n, fmt.Errorf("archive: compress %s: %w", r.fetch.URL, gerr)
+			return n, WithMessage(fmt.Errorf("archive: compress %s: %w", r.fetch.URL, gerr), saveDownloadMessage)
 		}
 	}
 	if errors.Is(err, io.EOF) && !r.done {
@@ -145,20 +152,22 @@ func (r *recorder) finish(complete bool) error {
 	f := r.fetch
 	switch {
 	case r.leaked:
-		f.Err = "body omitted: credential echoed in response"
+		log.Printf("the war room: body omitted: credential echoed in response")
+		f.Err = "The download included private login information, so its contents were not saved. Try reading the data again."
 	case complete:
 		if err := r.gz.Close(); err != nil {
-			return fmt.Errorf("archive: compress %s: %w", f.URL, err)
+			return WithMessage(fmt.Errorf("archive: compress %s: %w", f.URL, err), saveDownloadMessage)
 		}
 		f.SHA256, f.Size, f.Gzip = hex.EncodeToString(r.hash.Sum(nil)), r.size, r.buf.Bytes()
 		if r.judge != nil && len(r.head) <= judgedBytes {
 			f.Err = redactSecret(r.judge(f.URL, r.head), r.secret)
 		}
 	default:
-		f.Err = "body not read to the end"
+		log.Printf("the war room: body not read to the end")
+		f.Err = "The download stopped before it finished. Read the data again."
 	}
 	if err := r.sink.Record(r.ctx, f); err != nil {
-		return fmt.Errorf("archive: record %s: %w", f.URL, err)
+		return WithMessage(fmt.Errorf("archive: record %s: %w", f.URL, err), saveDownloadMessage)
 	}
 	return nil
 }
@@ -193,19 +202,19 @@ var ErrBodySize = errors.New("archive: invalid body size")
 // Gunzip returns an archived body only when it matches its recorded size.
 func Gunzip(body []byte, size int64) ([]byte, error) {
 	if size < 0 || size > maxArchivedBody {
-		return nil, fmt.Errorf("%w: recorded %d", ErrBodySize, size)
+		return nil, WithMessage(fmt.Errorf("%w: recorded %d", ErrBodySize, size), damagedBodyMessage)
 	}
 	zr, err := gzip.NewReader(bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("archive: open body: %w", err)
+		return nil, WithMessage(fmt.Errorf("archive: open body: %w", err), damagedBodyMessage)
 	}
 	defer func() { _ = zr.Close() }()
 	out, err := io.ReadAll(io.LimitReader(zr, size+1))
 	if err != nil {
-		return nil, fmt.Errorf("archive: read body: %w", err)
+		return nil, WithMessage(fmt.Errorf("archive: read body: %w", err), damagedBodyMessage)
 	}
 	if int64(len(out)) != size {
-		return nil, fmt.Errorf("%w: recorded %d, got %d", ErrBodySize, size, len(out))
+		return nil, WithMessage(fmt.Errorf("%w: recorded %d, got %d", ErrBodySize, size, len(out)), damagedBodyMessage)
 	}
 	return out, nil
 }
@@ -217,3 +226,21 @@ func redactSecret(message, secret string) string {
 	message = strings.ReplaceAll(message, secret, "[redacted]")
 	return strings.ReplaceAll(message, url.QueryEscape(secret), "[redacted]")
 }
+
+// WithMessage keeps the cause available to diagnostics without showing it to an owner.
+func WithMessage(cause error, message string) error {
+	var existing *ownerError
+	if errors.As(cause, &existing) {
+		message = existing.message
+	}
+	log.Printf("the war room: %v", cause)
+	return &ownerError{cause: cause, message: message}
+}
+
+type ownerError struct {
+	cause   error
+	message string
+}
+
+func (e *ownerError) Error() string { return e.message }
+func (e *ownerError) Unwrap() error { return e.cause }
