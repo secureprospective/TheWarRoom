@@ -15,40 +15,25 @@ import (
 
 func benchmarkLeague(b *testing.B, tier string) (*Store, int) {
 	b.Helper()
+	cache := cachedBigLeague(b, tier)
 	path := filepath.Join(os.Getenv("BENCH_LEAGUE_BINARY_DIR"), tier+".db")
-	root := bigLeagueRoot(b, "BENCH_LEAGUE_BINARY_DIR")
-	_, statErr := root.Stat(tier + ".db")
+	copyLeagueFile(b, cache, path)
 	s, _ := openBigLeague(b, path)
 	volumes := leagueVolumes(tier == "double")
 	season := volumes[len(volumes)-1].year
-	if os.IsNotExist(statErr) {
-		start := time.Now()
-		generateBigLeague(b, s, volumes)
-		setupBigLeagueScoring(b, s, season, tier == "double")
-		b.Logf("BUILD tier=%s elapsed=%s", tier, time.Since(start))
-		assets, err := s.NativeAssets(context.Background(), bigLeagueID)
-		if err != nil {
+	assets, err := s.NativeAssets(context.Background(), bigLeagueID)
+	if err != nil {
+		b.Fatal(err)
+	}
+	body, err := json.Marshal(assets.Snapshot)
+	if err != nil {
+		b.Fatal(err)
+	}
+	if os.Getenv("BENCH_LEAGUE_SCRATCH") != "" {
+		root := bigLeagueRoot(b, "BENCH_LEAGUE_SCRATCH")
+		if err := root.WriteFile(tier+".json", body, 0600); err != nil {
 			b.Fatal(err)
 		}
-		expected := int64(37606)
-		if tier == "double" {
-			expected = 75341
-		}
-		if assets.Revision != expected {
-			b.Fatalf("fixture revision=%d, want %d census-mapped events", assets.Revision, expected)
-		}
-		body, err := json.Marshal(assets.Snapshot)
-		if err != nil {
-			b.Fatal(err)
-		}
-		if dir := os.Getenv("BENCH_LEAGUE_SCRATCH"); dir != "" {
-			root := bigLeagueRoot(b, "BENCH_LEAGUE_SCRATCH")
-			if err := root.WriteFile(tier+".json", body, 0600); err != nil {
-				b.Fatal(err)
-			}
-		}
-	} else if statErr != nil {
-		b.Fatal(statErr)
 	}
 	s.SetClock(func() time.Time { return time.Date(season, 6, 1, 12, 0, 0, 0, time.UTC) })
 	installBigLeagueLineups(b, s)

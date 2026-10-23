@@ -175,7 +175,10 @@ lab-mutants:
 	go test -race ./internal/lab -run TestMutants -v
 
 # Opt-in generated league benchmarks; neither make test nor verify enables leaguebench.
-.PHONY: bench-league
+.PHONY: bench-league bench-league-build
+bench-league-build:
+	go test -v -tags leaguebench -run '^TestBigLeagueBuild$$' -timeout 0 ./internal/store/history
+
 bench-league:
 	@set -eu; \
 	mkdir -p "$$HOME/logs/TheWarRoom"; \

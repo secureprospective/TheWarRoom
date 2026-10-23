@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -57,7 +58,11 @@ type bigLeagueBuilder struct {
 	revision int64
 	nextID   int
 	facts    nativecheck.Facts
+	players  []leagueOwner
+	offered  []commissioner.TradeAsset
 }
+
+type leagueOwner struct{ ID, Franchise string }
 
 func bigTeam(n int) string  { return fmt.Sprintf("franchise.%02d", n%32+1) }
 func bigOwner(n int) string { return fmt.Sprintf("owner.%02d", n%32+1) }
@@ -150,6 +155,9 @@ func (g *bigLeagueBuilder) start(lastYear int) {
 			}
 		}
 	}
+	for _, p := range seed.Players {
+		g.players = append(g.players, leagueOwner{p.ID, p.Franchise})
+	}
 	g.command("creator", commissioner.NativeSeed, commissioner.RawArgs{Native: seed}, false)
 	// Relax only workload legality; all moves still pass production authorization and append checks.
 	g.set("roster.limits", `{"min":0,"max":10000}`)
@@ -168,7 +176,7 @@ func (g *bigLeagueBuilder) start(lastYear int) {
 }
 
 func (g *bigLeagueBuilder) moves(v leagueVolume) {
-	players := g.assets().Players
+	players := slices.Clone(g.players)
 	if len(players) < v.drops {
 		g.t.Fatal("not enough players for measured drops")
 	}
@@ -187,6 +195,7 @@ func (g *bigLeagueBuilder) moves(v leagueVolume) {
 		r := g.command(who, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
 			Player: p.ID, Franchise: p.Franchise}}, false)
 		windows[n] = r.Entry
+		g.players = slices.DeleteFunc(g.players, func(p leagueOwner) bool { return p.ID == players[n].ID })
 	}
 	order := make([]string, 32)
 	for n := range 32 {
@@ -209,16 +218,24 @@ func (g *bigLeagueBuilder) moves(v leagueVolume) {
 			Player: id, Franchise: bigTeam(n), Salary: 100000000, Years: 1}}, true)
 	}
 	g.now = g.now.Add(25 * time.Hour)
-	for _, window := range windows {
+	for n, window := range windows {
 		g.command("creator", commissioner.WaiverProcess, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Window: window}}, false)
+		if n < waivers {
+			team := (n + 1) % 32
+			if players[n].Franchise == bigTeam(team) {
+				team = (team + 1) % 32
+			}
+			g.players = append(g.players, leagueOwner{players[n].ID, bigTeam(team)})
+		}
 	}
-	for _, player := range bids {
+	for n, player := range bids {
 		g.command("creator", commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: player}}, false)
+		g.players = append(g.players, leagueOwner{player, bigTeam(n)})
 	}
 }
 
 func (g *bigLeagueBuilder) offer(count int) (commissioner.Receipt, string, string) {
-	players := g.assets().Players
+	players := g.players
 	if len(players) < count {
 		g.t.Fatal("not enough trade assets")
 	}
@@ -245,6 +262,7 @@ func (g *bigLeagueBuilder) offer(count int) (commissioner.Receipt, string, strin
 	if len(assets) != count {
 		g.t.Fatal("not enough assets held by trade proposer")
 	}
+	g.offered = assets
 	r := g.command(proposer, commissioner.TradeOffer, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{
 		Franchise: from, Parties: []string{from, to}, Assets: assets}}, false)
 	return r, to, receiver
@@ -259,6 +277,13 @@ func (g *bigLeagueBuilder) trades(v leagueVolume) {
 		r, to, receiver := g.offer(count)
 		g.command(receiver, commissioner.TradeAccept, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: r.Entry, Franchise: to}}, false)
 		g.command("creator", commissioner.TradeReview, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: r.Entry, Decision: "approve"}}, false)
+		for i := range g.players {
+			for _, a := range g.offered {
+				if g.players[i].ID == a.Player {
+					g.players[i].Franchise = a.To
+				}
+			}
+		}
 	}
 	// Lifecycle counts are not correlated by offer in the census. Independent offers avoid
 	// inventing correlations; supplementary proposals make every observed response legal.
@@ -271,7 +296,7 @@ func (g *bigLeagueBuilder) trades(v leagueVolume) {
 		case n < v.accepts+v.rejects:
 			g.command(receiver, commissioner.TradeDecline, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: r.Entry, Franchise: to}}, false)
 		case n < v.accepts+v.rejects+v.revokes:
-			from, who := g.assets().Players[0].Franchise, ""
+			from, who := g.players[0].Franchise, ""
 			for team := range 32 {
 				if from == bigTeam(team) {
 					who = bigOwner(team)
@@ -304,6 +329,7 @@ func (g *bigLeagueBuilder) draft(v leagueVolume) {
 		}
 		act.Player = id
 		g.command("creator", command, commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: v.year, Act: act}}, false)
+		g.players = append(g.players, leagueOwner{id, bigTeam(n)})
 	}
 	g.command("creator", commissioner.DraftArchive, commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: v.year}}, false)
 }
@@ -320,6 +346,7 @@ func generateBigLeague(t testing.TB, s *Store, volumes []leagueVolume) {
 	g := &bigLeagueBuilder{t: t, s: s, now: time.Date(2013, 4, 1, 12, 0, 0, 0, time.UTC), facts: nativecheck.Facts{}, nextID: 10000000}
 	s.SetClock(func() time.Time { return g.now })
 	s.SetBidEnvironment(bigLeagueEnvironment{})
+	started := time.Now()
 	g.start(volumes[len(volumes)-1].year)
 	for i, v := range volumes {
 		if i != 0 {
@@ -329,9 +356,17 @@ func generateBigLeague(t testing.TB, s *Store, volumes []leagueVolume) {
 		g.draft(v)
 		g.moves(v)
 		g.trades(v)
-		t.Logf("generated season=%d revision=%d", v.year, g.revision)
+		fmt.Printf("BUILD season=%d cumulative-seconds=%.3f revision=%d\n", v.year, time.Since(started).Seconds(), g.revision)
 	}
-	if got := g.assets(); got.Season != volumes[len(volumes)-1].year || len(got.Franchises) != 32 {
+	got := g.assets()
+	actual := make([]leagueOwner, 0, len(got.Players))
+	for _, p := range got.Players {
+		actual = append(actual, leagueOwner{p.ID, p.Franchise})
+	}
+	if !slices.Equal(g.players, actual) {
+		t.Fatal("in-memory roster ownership/order differs from ledger")
+	}
+	if got.Season != volumes[len(volumes)-1].year || len(got.Franchises) != 32 {
 		t.Fatal("generated league lost its season or franchises")
 	}
 }

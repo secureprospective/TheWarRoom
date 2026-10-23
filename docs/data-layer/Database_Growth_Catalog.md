@@ -20,6 +20,7 @@ unzipped in total, the largest 97.95 MB (nflverse play-by-play 2025 CSV).
 | D6 | Growth | `history.db` holds every fetch body for good (224 MB of archive) | `raw_archive` count and sum of `size` per month | file size or backup time over budget | a retention rule for bodies nothing pins | open (new) |
 | D7 | Integrity | An archived body unzipped with no limit | — | — | `archive.Gunzip(body, size)`: the body must match its recorded size, with a 256 MiB ceiling | fixed on `session/hardening-method` (83070a6a); all 179 real rows match |
 | D8 | Many leagues | One file serves every league; one writer per file | write wait time with several active leagues | writes queue past budget | decide one file vs one per league at the client/server panel | open (panel) |
+| D9 | Write growth | Every write re-reads all records (`internal/store/history/commissioner.go:105–118`, `transactionRecords` → `prepareCommissionerTrial`); repeated appends make fixture builds approximately quadratic | `BenchmarkLeagueWrite/records={1000,5000,10000,20000,50000}`; `make bench-league-build` prints cumulative seconds/revision per season | | reuse validated folded state inside the atomic write path | open (new) |
 
 Fixed earlier (in source on main `d3dabe7a`): F1–F8, F10, F11. See `docs/build-handoffs/Hardening_Plan_2026-10.md`.
 
@@ -30,7 +31,13 @@ Fixed earlier (in source on main `d3dabe7a`): F1–F8, F10, F11. See `docs/build
 Neither `make test`, `make verify`, nor default CI enables it. No database binary is committed.
 Helpers live in existing test packages (`internal/store/history`, `internal/app/contracts`);
 placement is package-based, so no new SYSTEM_MAP/placement row is needed.
-Native fixture files are reused across calibration/count repetitions within each benchmark binary.
+Native tier files are cached at `~/logs/TheWarRoom/bigleague-fixtures/<tier>-<key>.db`.
+The key is SHA256 over stable filenames and contents of all `bigleague*_test.go` history
+sources (including the volume table). `make bench-league-build` builds both tiers without
+benchmarks; `make bench-league` builds missing entries and opens only disposable copies.
+An exclusive lock rejects concurrent builders; an interrupted builder may leave a lock
+that must only be removed after proving its process is dead. Completed caches are published
+by rename only after final ownership/revision checks and closing/checkpointing the DB.
 The target prints its scratch directory and exports native final snapshots for the D4 binary.
 
 The census is Claude's measurement of the real MFL archive's per-season `transactions.json`
@@ -121,3 +128,18 @@ The two-season smoke proves identical 266-event ledgers (2,459,787 serialized by
 not full-tier determinism. Full successful fixtures must have 37,606 / 75,341 native
 events including the two scoring-schedule commands. The separate D2 smoke scored 640 starters twice and observed exactly
 9 cached CSV bodies after both the cold and warm pass; runtime was 194.09 seconds under load.
+
+
+### D9 write baseline (Beelink)
+
+**ASSUMED:** an ordinary `rules.set cap.amount` is the simplest independent write. This is
+not a roster/trade cost estimate. The synthetic ledger starts with a production create and
+valid identical-value rule updates, serialized by production `appendCommissioner` inside one
+setup transaction; setup bypasses replay deliberately, not during the measured write. There
+are no raw ledger INSERTs. Each timed operation calls `ExecuteCommissionerWithFacts` through
+the normal builder. Use `-benchtime=1x -count=1` for precisely one write at each starting size;
+longer repetitions grow the ledger, with start/end counts printed. The full-tier season
+curve measures the larger real workload with native snapshots and transactions.
+
+Measurements pending; no threshold is assigned. For unequal size steps, per-doubling time
+ratio is `(time2/time1)^(log(2)/log(size2/size1))`; adjacent ratios are also reported.
