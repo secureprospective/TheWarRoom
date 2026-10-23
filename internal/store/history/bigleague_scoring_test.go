@@ -47,7 +47,7 @@ func installBigLeagueLineups(t testing.TB, s *Store) bigLeagueLineups {
 	return lineups
 }
 
-func setupBigLeagueScoring(t testing.TB, s *Store, season int, double bool) {
+func setupBigLeagueScoring(t testing.TB, s *Store, season int) {
 	t.Helper()
 	records, err := s.nativeRecords(context.Background(), bigLeagueID)
 	if err != nil {
@@ -68,9 +68,6 @@ func setupBigLeagueScoring(t testing.TB, s *Store, season int, double bool) {
 		t.Fatal(err)
 	}
 	fetches, copies := 24, 9
-	if double {
-		fetches, copies = 48, 18
-	}
 	feed, ok := s.reg.Feed("stats_player_week")
 	if !ok {
 		t.Fatal("weekly feed missing")
@@ -146,7 +143,7 @@ func TestBigLeagueScoringSmoke(t *testing.T) {
 			Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2027, ContractStatus: domain.CStatusUFA})
 	}
 	g.command("creator", commissioner.NativeSeed, commissioner.RawArgs{Native: seed}, false)
-	setupBigLeagueScoring(t, s, 2026, false)
+	setupBigLeagueScoring(t, s, 2026)
 	checkBigLeagueWeek(t, s, 2026)
 	if len(s.weekly) != 9 {
 		t.Fatalf("cold parsed %d distinct CSVs, want 9", len(s.weekly))

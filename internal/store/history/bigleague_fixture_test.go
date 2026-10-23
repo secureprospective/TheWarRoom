@@ -52,14 +52,15 @@ func TestMain(m *testing.M) {
 }
 
 type bigLeagueBuilder struct {
-	t        testing.TB
-	s        *Store
-	now      time.Time
-	revision int64
-	nextID   int
-	facts    nativecheck.Facts
-	players  []leagueOwner
-	offered  []commissioner.TradeAsset
+	t         testing.TB
+	s         *Store
+	now       time.Time
+	firstYear int // seed-only startup season: no draft, no moves
+	revision  int64
+	nextID    int
+	facts     nativecheck.Facts
+	players   []leagueOwner
+	offered   []commissioner.TradeAsset
 }
 
 type leagueOwner struct{ ID, Franchise string }
@@ -131,10 +132,10 @@ func (g *bigLeagueBuilder) assets() *commissioner.RawNativeSnapshot {
 	return got.Snapshot
 }
 
-func (g *bigLeagueBuilder) start(lastYear int) {
+func (g *bigLeagueBuilder) start(firstYear, lastYear int) {
 	g.command("creator", commissioner.Create, commissioner.RawArgs{Name: "Big league", Preset: commissioner.PresetLegacy,
-		Season: 2013, FranchiseCount: 32}, false)
-	seed := &commissioner.RawNativeSnapshot{Season: 2013, RosterAt: g.now, DraftAt: g.now, FutureAt: g.now}
+		Season: firstYear, FranchiseCount: 32}, false)
+	seed := &commissioner.RawNativeSnapshot{Season: firstYear, RosterAt: g.now, DraftAt: g.now, FutureAt: g.now}
 	for n := range 32 {
 		team := bigTeam(n)
 		seed.Franchises = append(seed.Franchises, commissioner.NativeFranchise{ID: team, HeldID: fmt.Sprintf("%04d", n+1),
@@ -143,12 +144,12 @@ func (g *bigLeagueBuilder) start(lastYear int) {
 	}
 	// Startup is a held snapshot: the native draft is a rookie draft, not a veteran startup.
 	for n := range 1696 {
-		id := g.player(2012)
+		id := g.player(firstYear - 1)
 		seed.Players = append(seed.Players, commissioner.NativePlayer{ID: id, Name: g.facts[id].Name,
 			Franchise: bigTeam(n), Status: domain.RosterActive, Salary: 100000000,
 			ExpirationYear: lastYear + 1, ContractStatus: domain.CStatusUFA, AcquiredVia: "held"})
 	}
-	for year := 2014; year <= lastYear+2; year++ {
+	for year := firstYear + 1; year <= lastYear+2; year++ {
 		for round := 1; round <= 5; round++ {
 			for n := range 32 {
 				seed.Picks = append(seed.Picks, commissioner.NativePick{Season: year, Round: round, Original: bigTeam(n), Owner: bigTeam(n)})
@@ -165,7 +166,7 @@ func (g *bigLeagueBuilder) start(lastYear int) {
 	g.set("calendar.timezone", `"UTC"`)
 	g.set("calendar.boundary", `"start_of_day"`)
 	g.set("calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["cut","waiver_claim","ufa_bid","trade"]}}`)
-	g.set("calendar.tradeDeadline", `"2013-12-31T00:00:00Z"`)
+	g.set("calendar.tradeDeadline", fmt.Sprintf(`"%d-12-31T00:00:00Z"`, firstYear))
 	g.set("trades.review", `"commissioner"`)
 	g.set("draft.laterPattern", `"linear"`)
 	g.set("draft.maximumPicks", `100`)
@@ -310,7 +311,7 @@ func (g *bigLeagueBuilder) trades(v leagueVolume) {
 }
 
 func (g *bigLeagueBuilder) draft(v leagueVolume) {
-	if v.year == 2013 {
+	if v.year == g.firstYear {
 		return
 	}
 	order := make([]string, 32)
@@ -343,11 +344,12 @@ func (bigLeagueEnvironment) BidEnvironment(context.Context, string, time.Time) (
 
 func generateBigLeague(t testing.TB, s *Store, volumes []leagueVolume) {
 	t.Helper()
-	g := &bigLeagueBuilder{t: t, s: s, now: time.Date(2013, 4, 1, 12, 0, 0, 0, time.UTC), facts: nativecheck.Facts{}, nextID: 10000000}
+	g := &bigLeagueBuilder{t: t, s: s, now: time.Date(volumes[0].year, 4, 1, 12, 0, 0, 0, time.UTC), facts: nativecheck.Facts{}, nextID: 10000000,
+		firstYear: volumes[0].year}
 	s.SetClock(func() time.Time { return g.now })
 	s.SetBidEnvironment(bigLeagueEnvironment{})
 	started := time.Now()
-	g.start(volumes[len(volumes)-1].year)
+	g.start(volumes[0].year, volumes[len(volumes)-1].year)
 	for i, v := range volumes {
 		if i != 0 {
 			g.now = time.Date(v.year, 4, 1, 12, 0, 0, 0, time.UTC)

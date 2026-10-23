@@ -87,11 +87,11 @@ func readBigLeaguePreview(b *testing.B, tier string) rawBigLeaguePreview {
 }
 
 func BenchmarkLeagueWhatIf(b *testing.B) {
-	for _, tier := range []string{"legacy", "double"} {
+	for _, tier := range []string{"thick3"} {
 		b.Run(tier+"/D4Season", func(b *testing.B) {
 			raw := readBigLeaguePreview(b, tier)
-			// Full-season 2026: round(287*1500/809) adds + round(109*1500/809) trades.
-			const previews = 532 + 202
+			// The thickest season, 2023: 419 adds + 316 trades.
+			const previews = 419 + 316
 			b.ReportAllocs()
 			for b.Loop() {
 				b.StopTimer()
@@ -111,6 +111,7 @@ func BenchmarkLeagueWhatIf(b *testing.B) {
 				if err := pools.Close(); err != nil {
 					b.Fatal(err)
 				}
+				b.StartTimer()
 			}
 		})
 	}

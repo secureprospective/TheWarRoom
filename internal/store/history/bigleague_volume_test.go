@@ -28,55 +28,24 @@ func legacyVolumes() []leagueVolume {
 	}
 }
 
-func fullSeason(v leagueVolume) leagueVolume {
-	if v.year != 2026 {
-		return v
-	}
-	scale := func(n int) int { return (n*1500 + 809/2) / 809 }
-	v.transactions, v.trades, v.addRows = 1500, scale(v.trades), scale(v.addRows)
-	v.ir, v.taxi, v.loads, v.lifecycle = scale(v.ir), scale(v.taxi), scale(v.loads), scale(v.lifecycle)
-	v.picks, v.adds, v.drops, v.assets = scale(v.picks), scale(v.adds), scale(v.drops), scale(v.assets)
-	v.proposals, v.accepts, v.rejects = scale(v.proposals), scale(v.accepts), scale(v.rejects)
-	v.revokes, v.expired = scale(v.revokes), scale(v.expired)
-	return v
-}
-
-func leagueVolumes(double bool) []leagueVolume {
-	out := legacyVolumes()
-	for i := range out {
-		out[i] = fullSeason(out[i])
-	}
-	if double {
-		for _, v := range legacyVolumes() {
-			v = fullSeason(v)
-			v.year += 14
-			// The startup happens once; the repeated tier uses an ordinary rookie class.
-			if v.year == 2027 {
-				v.picks = 170
-			}
-			out = append(out, v)
-		}
-	}
-	return out
+// thickVolumes is the startup (seed only, no moves) followed by the three busiest real seasons,
+// 2022-2024 (4,697 transactions), replayed as 2014-2016 so rollover, picks and contracts line up.
+func thickVolumes() []leagueVolume {
+	legacy := legacyVolumes()
+	out := []leagueVolume{{year: 2021, picks: legacy[0].picks}}
+	return append(out, legacy[9:12]...)
 }
 
 func TestBigLeagueVolumeModel(t *testing.T) {
-	legacy, double := leagueVolumes(false), leagueVolumes(true)
-	if len(legacy) != 14 || len(double) != 28 || legacy[0].picks != 1696 || double[14].picks != 170 {
-		t.Fatal("tiers must retain one startup and 14/28 seasons")
+	got := thickVolumes()
+	if len(got) != 4 || got[0].picks != 1696 || got[0].adds != 0 || got[0].year != 2021 || got[3].year != 2024 {
+		t.Fatal("thick tier must be one seed-only startup and three seasons")
 	}
-	if legacy[13].transactions != 1500 || legacy[13].adds != 532 || legacy[13].picks != 297 {
-		t.Fatalf("full 2026 scaling: %+v", legacy[13])
+	var transactions int
+	for _, v := range got {
+		transactions += v.transactions
 	}
-	var adds, trades, repeatedAdds, repeatedTrades int
-	for i, v := range legacy {
-		adds, trades = adds+v.adds, trades+v.trades
-		repeatedAdds, repeatedTrades = repeatedAdds+double[i+14].adds, repeatedTrades+double[i+14].trades
-		if double[i+14].year != v.year+14 {
-			t.Fatal("double must continue the same league")
-		}
-	}
-	if adds != repeatedAdds || trades != repeatedTrades {
-		t.Fatal("double must repeat measured move demand")
+	if transactions != 1483+1680+1534 {
+		t.Fatalf("thick tier transactions=%d, want the 2022-2024 total", transactions)
 	}
 }

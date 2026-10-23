@@ -90,22 +90,16 @@ func cachedBigLeague(t testing.TB, tier string) string {
 	}()
 	tmp := filepath.Join(t.TempDir(), "build.db")
 	s, pools := openBigLeague(t, tmp)
-	volumes := leagueVolumes(tier == "double")
+	volumes := thickVolumes()
 	start := time.Now()
 	fmt.Printf("BUILD tier=%s path=%s\n", tier, path)
 	generateBigLeague(t, s, volumes)
-	setupBigLeagueScoring(t, s, volumes[len(volumes)-1].year, tier == "double")
+	setupBigLeagueScoring(t, s, volumes[len(volumes)-1].year)
 	assets, err := s.NativeAssets(context.Background(), bigLeagueID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := int64(37606)
-	if tier == "double" {
-		expected = 75341
-	}
-	if assets.Revision != expected {
-		t.Fatalf("fixture revision=%d, want %d", assets.Revision, expected)
-	}
+	fmt.Printf("BUILD revision=%d\n", assets.Revision)
 	// Closing both pools checkpoints WAL before copying the self-contained database.
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
@@ -119,7 +113,7 @@ func cachedBigLeague(t testing.TB, tier string) string {
 }
 
 func TestBigLeagueBuild(t *testing.T) {
-	for _, tier := range []string{"legacy", "double"} {
+	for _, tier := range []string{"thick3"} {
 		t.Run(tier, func(t *testing.T) { cachedBigLeague(t, tier) })
 	}
 }

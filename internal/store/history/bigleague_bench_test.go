@@ -19,7 +19,7 @@ func benchmarkLeague(b *testing.B, tier string) (*Store, int) {
 	path := filepath.Join(os.Getenv("BENCH_LEAGUE_BINARY_DIR"), tier+".db")
 	copyLeagueFile(b, cache, path)
 	s, _ := openBigLeague(b, path)
-	volumes := leagueVolumes(tier == "double")
+	volumes := thickVolumes()
 	season := volumes[len(volumes)-1].year
 	assets, err := s.NativeAssets(context.Background(), bigLeagueID)
 	if err != nil {
@@ -41,13 +41,10 @@ func benchmarkLeague(b *testing.B, tier string) (*Store, int) {
 }
 
 func BenchmarkLeague(b *testing.B) {
-	for _, tier := range []string{"legacy", "double"} {
+	for _, tier := range []string{"thick3"} {
 		b.Run(tier, func(b *testing.B) {
 			s, season := benchmarkLeague(b, tier)
 			copies := 9
-			if tier == "double" {
-				copies = 18
-			}
 			b.Run("D1People", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
@@ -115,16 +112,13 @@ func checkBigLeagueWeek(b testing.TB, s *Store, season int) {
 }
 
 func BenchmarkLeagueArchive(b *testing.B) {
-	for _, tier := range []string{"legacy", "double"} {
+	for _, tier := range []string{"thick3"} {
 		b.Run(tier, func(b *testing.B) {
 			path := filepath.Join(os.Getenv("BENCH_LEAGUE_BINARY_DIR"), "archive-"+tier+".db")
 			root := bigLeagueRoot(b, "BENCH_LEAGUE_BINARY_DIR")
 			_, statErr := root.Stat("archive-" + tier + ".db")
 			s, _ := openBigLeague(b, path)
 			bodies := 2000
-			if tier == "double" {
-				bodies *= 2
-			}
 			if os.IsNotExist(statErr) {
 				generateBigLeagueArchive(b, s, bodies)
 			} else if statErr != nil {
