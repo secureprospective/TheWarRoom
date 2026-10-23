@@ -202,6 +202,8 @@ func TestBigLeaguePreviewRetainsGenerations(t *testing.T) {
 		raw.Players = append(raw.Players, commissioner.NativePlayer{ID: fmt.Sprintf("%04d", n+1000), Franchise: team,
 			Status: domain.RosterActive, Salary: 100000000, ExpirationYear: 2027, ContractStatus: domain.CStatusUFA})
 	}
+	raw.Adjustments = []commissioner.NativeCharge{{ID: "current", Franchise: raw.Franchises[31].ID, Season: 2026, Amount: 1000000},
+		{ID: "past", Franchise: raw.Franchises[0].ID, Season: 2025, Amount: 2000000}}
 	if err := raw.Validate(); err != nil {
 		t.Fatal(err)
 	}
@@ -213,6 +215,13 @@ func TestBigLeaguePreviewRetainsGenerations(t *testing.T) {
 	var rosters, cells, changes int
 	if err := pools.Read().QueryRow(`SELECT (SELECT count(*) FROM rosters), (SELECT count(*) FROM contract_years), (SELECT count(*) FROM contract_year_changes)`).Scan(&rosters, &cells, &changes); err != nil {
 		t.Fatal(err)
+	}
+	var adjustments int
+	if err := pools.Read().QueryRow("SELECT count(*) FROM mfl_salary_adjustments").Scan(&adjustments); err != nil {
+		t.Fatal(err)
+	}
+	if adjustments != 2 {
+		t.Fatalf("current league adjustments=%d, want one per generation", adjustments)
 	}
 	if rosters != 2 || cells != 6 || changes != 8 {
 		t.Fatalf("retained rows: rosters=%d cells=%d changes=%d", rosters, cells, changes)

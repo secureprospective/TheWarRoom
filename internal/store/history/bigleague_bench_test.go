@@ -30,6 +30,13 @@ func benchmarkLeague(b *testing.B, tier string) (*Store, int) {
 		if err != nil {
 			b.Fatal(err)
 		}
+		expected := int64(37606)
+		if tier == "double" {
+			expected = 75341
+		}
+		if assets.Revision != expected {
+			b.Fatalf("fixture revision=%d, want %d census-mapped events", assets.Revision, expected)
+		}
 		body, err := json.Marshal(assets.Snapshot)
 		if err != nil {
 			b.Fatal(err)
@@ -52,6 +59,10 @@ func BenchmarkLeague(b *testing.B) {
 	for _, tier := range []string{"legacy", "double"} {
 		b.Run(tier, func(b *testing.B) {
 			s, season := benchmarkLeague(b, tier)
+			copies := 9
+			if tier == "double" {
+				copies = 18
+			}
 			b.Run("D1People", func(b *testing.B) {
 				b.ReportAllocs()
 				for b.Loop() {
@@ -67,6 +78,10 @@ func BenchmarkLeague(b *testing.B) {
 			b.Run("D2WeekWarm", func(b *testing.B) {
 				checkBigLeagueWeek(b, s, season)
 				parsed := len(s.weekly)
+				if parsed != copies {
+					b.Fatalf("parsed %d bodies, want %d", parsed, copies)
+				}
+				b.ReportMetric(0, "csv-parses/op")
 				b.ReportAllocs()
 				for b.Loop() {
 					checkBigLeagueWeek(b, s, season)
@@ -76,6 +91,7 @@ func BenchmarkLeague(b *testing.B) {
 				}
 			})
 			b.Run("D2WeekCold", func(b *testing.B) {
+				b.ReportMetric(float64(copies), "csv-parses/op")
 				b.ReportAllocs()
 				for b.Loop() {
 					// Fresh Store: both ledger and CSV caches are cold; the open pools remain warm.
@@ -83,6 +99,9 @@ func BenchmarkLeague(b *testing.B) {
 					cold.SetClock(s.now)
 					cold.SetNativeLineups(s.lineups)
 					checkBigLeagueWeek(b, cold, season)
+					if len(cold.weekly) != copies {
+						b.Fatal("cold pass did not parse all distinct bodies")
+					}
 				}
 			})
 		})
