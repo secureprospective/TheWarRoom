@@ -31,5 +31,16 @@ function csp(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), csp()]
+  plugins: [react(), csp()],
+  // Vitest 0.x still uses esbuild; remove when its Oxc-capable upgrade lands.
+  esbuild: {jsx: 'automatic'},
+  build: {
+    manifest: true,
+    rolldownOptions: {
+      output: {
+        entryFileNames: 'assets/[name].[hash].js',
+        chunkFileNames: 'assets/[name].[hash].js',
+      },
+    },
+  },
 })
