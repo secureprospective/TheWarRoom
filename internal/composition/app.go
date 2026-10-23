@@ -1,3 +1,5 @@
+// Package composition is the backend's composition root: it wires the stores and routes each feature's
+// IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 package composition
 
 import (
@@ -108,7 +110,8 @@ func (a *App) ready() error {
 // startup is the Wails OnStartup hook. OnStartup cannot return an error, so a failure is
 // kept in startupErr, logged, and shown by the shell's banner through AppInfo.
 func (a *App) startup(ctx context.Context) {
-	defer close(a.core.Started)
+	var refreshed bool
+	defer func() { a.finishStartup(ctx, refreshed) }()
 	a.core.Ctx = ctx
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer func() {
@@ -151,7 +154,7 @@ func (a *App) startup(ctx context.Context) {
 
 	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
 	began := time.Now()
-	refreshed, err := a.initStoreFloor(ctx, hist)
+	refreshed, err = a.initStoreFloor(ctx, hist)
 	if err != nil {
 		a.core.StartupErr = err
 		return
@@ -160,6 +163,18 @@ func (a *App) startup(ctx context.Context) {
 	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
 	a.lookupMyFranchise(ctx)
 	a.core.LaunchRefreshDue = !refreshed
+}
+
+func (a *App) finishStartup(ctx context.Context, refreshed bool) {
+	// Revalidation reads through ready; publish the completed store floor first.
+	close(a.core.Started)
+	if a.core.StartupErr != nil || !refreshed {
+		return
+	}
+	defer a.sourceHealthChanged(ctx)
+	a.core.RefreshMu.Lock()
+	defer a.core.RefreshMu.Unlock()
+	a.revalidateReadyRosterMoves(ctx)
 }
 
 // domReady is the Wails OnDomReady hook: the window is up, so the launch refresh and the signals

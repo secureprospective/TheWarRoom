@@ -1,3 +1,4 @@
+// Package personal shapes the owner's personal board: player names, trade bait and watched players.
 package personal
 
 import (

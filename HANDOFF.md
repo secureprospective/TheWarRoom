@@ -1,20 +1,18 @@
-# Fresh-install crash handoff
+# Handoff
 
 ## Baton
-ClaudeBox / reviewer — 2026-10-23. Bee completed `session/t467-fresh-install`; do not merge without review/live gate.
+Claude — 2026-10-23. Nothing in flight; main is the latest state.
 
-## Where it stands
-- Initial mirror seeding uses the locked refresh without post-refresh readers. Draft feeds load only after history, season and all stores are assigned.
-- Regression: `TestFreshInstallDraftFailureKeepsLeagueUsable` reproduced the nil-history panic before the fix; now checks both unavailable draft feeds, correct season, preserved roster and completed store floor. Uses only fake HTTP.
-- Siblings fixed by the same ordering: futureDraftPicks fallback; season-zero draft requests; move revalidation waiting on startup's own ready channel.
-- Frozen frontend install/build passed. Targeted startup tests and full composition `-race` batch passed (470s).
-- Final `go test -race ./... -timeout=15m` timed out in composition (900s); all other packages passed. Full-suite success remains unproven.
+## Recently merged
+- #108 AGENTS.md: tests run in batches, not before every commit.
+- #109 Opt-in big-league benchmarks (`make bench-league`); budgets and baselines in
+  `docs/data-layer/Database_Growth_Catalog.md`. Budgets: a page opens in under 1 s, a save in under 0.5 s.
+- #110 Weekly results: 81 s to 0.95 s on the three-season league.
 
-## Next move
-Review the PR and run a throwaway-profile desktop fresh install. Passing: shell opens, roster remains usable, unavailable draft feeds are labelled, no panic or startup hang.
+## Next
+- D9: saves replay all history and miss the 0.5 s budget after about one season ("close the books").
+- R2 follow-ups from the PR #101 live test (contracts tab before startup finishes; other-team labels).
 
-## Blocked on
-Independent review, CI and desktop live gate. No real MFL calls or roster moves were made.
-
-## Tried and rejected
-- Publishing history alone would leave season-zero draft reads and startup waiting on its own readiness through plan revalidation. Defer those post-refresh consumers instead.
+## Working notes
+- Commits over ssh on the Beelink need `GOTOOLCHAIN=go1.26.10` or the lint hook crashes.
+- A fresh worktree needs `frontend/dist` built (pnpm install + build) before hooks run.

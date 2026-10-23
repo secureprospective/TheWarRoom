@@ -1,3 +1,4 @@
+// Package contractacts holds contract terms: re-sign and extension limits, RFA tender levels and salary cells.
 package contractacts
 
 import (

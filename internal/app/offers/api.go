@@ -1,3 +1,4 @@
+// Package offers is the Offers feature: pending offers, the personal board, the player pool and bid plans.
 package offers
 
 import (

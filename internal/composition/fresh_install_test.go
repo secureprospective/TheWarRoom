@@ -2,6 +2,7 @@ package composition
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"path/filepath"
 	"slices"
@@ -10,9 +11,11 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -22,6 +25,10 @@ type freshInstallTransport struct {
 }
 
 func (f *freshInstallTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.URL.Query().Get("TYPE") == "rosters" {
+		return seasonResponse(`{"rosters":{"franchise":{"id":"0001","player":
+			{"id":"0042","status":"TAXI_SQUAD","salary":"1","contractYear":"2026"}}}}`), nil
+	}
 	if slices.Contains([]string{"draftResults", "futureDraftPicks"}, r.URL.Query().Get("TYPE")) {
 		f.draftPaths = append(f.draftPaths, r.URL.Path)
 	}
@@ -66,6 +73,12 @@ func TestFreshInstallDraftFailureKeepsLeagueUsable(t *testing.T) {
 		t.Fatal(err)
 	}
 	hist := history.New(a.core.HistPools, reg)
+	// A persisted Ready IR plan predates the first mirror, which has 0042 on taxi.
+	a.core.Moves = moves.New(a.core.Pools)
+	if err := a.core.Moves.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	ready := readyIRPlan(t, a, time.Now().UTC())
 	refreshed, err := a.initStoreFloor(t.Context(), hist)
 	if err != nil {
 		t.Fatal(err)
@@ -89,9 +102,73 @@ func TestFreshInstallDraftFailureKeepsLeagueUsable(t *testing.T) {
 			t.Fatalf("missing honest unavailable-feed message: %q", failure)
 		}
 	}
+	verifyFreshStartupCompletion(t, a, refreshed, ready)
 	for _, export := range []string{"draftResults", "futureDraftPicks"} {
 		if !slices.Contains(transport.requests, export) {
 			t.Fatalf("did not exercise %s failure: %v", export, transport.requests)
+		}
+	}
+}
+
+func verifyFreshStartupCompletion(t *testing.T, a *App, refreshed bool, ready envelope.Envelope) {
+	t.Helper()
+	select {
+	case <-a.core.Started:
+		t.Fatal("readiness published before startup completion")
+	default:
+	}
+	stored, err := a.core.Moves.Get(t.Context(), ready.ID())
+	if err != nil || stored.State() != envelope.Ready {
+		t.Fatalf("plan changed before readiness: %v %v", stored.State(), err)
+	}
+	health, revalidated := 0, 0
+	a.core.SeasonChanged = func(context.Context) {
+		if err := a.ready(); err != nil {
+			t.Error(err)
+		}
+		health++
+	}
+	a.core.MovesChanged = func(context.Context) {
+		if err := a.ready(); err != nil {
+			t.Error(err)
+		}
+		revalidated++
+	}
+	done := make(chan struct{})
+	go func() {
+		a.finishStartup(t.Context(), refreshed)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(10 * time.Second):
+		t.Fatal("startup completion blocked on its own readiness")
+	}
+	stored, err = a.core.Moves.Get(t.Context(), ready.ID())
+	if err != nil || stored.State() != envelope.Draft || health != 1 || revalidated != 1 {
+		t.Fatalf("startup effects: state=%s health=%d revalidated=%d err=%v", stored.State(), health, revalidated, err)
+	}
+	if audit := stored.Receipt().Audit; len(audit) != 3 || !strings.Contains(audit[1].Note, "on the taxi squad") {
+		t.Fatalf("plan not revalidated against startup mirror: %+v", audit)
+	}
+}
+
+func TestStartupCompletionWithoutFreshMirror(t *testing.T) {
+	t.Parallel()
+	for _, failed := range []bool{false, true} {
+		a := NewApp()
+		if failed {
+			a.core.StartupErr = errors.New("store floor failed")
+		}
+		a.core.SeasonChanged = func(context.Context) { t.Error("unexpected health update") }
+		a.finishStartup(t.Context(), failed)
+		select {
+		case <-a.core.Started:
+		default:
+			t.Fatal("startup did not signal readiness")
+		}
+		if err := a.ready(); (err != nil) != failed {
+			t.Fatalf("startup failure not preserved: %v", err)
 		}
 	}
 }
