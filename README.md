@@ -373,6 +373,48 @@ The fix is built and measured: **the same 2,000 events now read in 66 ms, about 
 
 ---
 
+## 🛡️ Hardened Before It's Shared — Security You Can Watch Land
+
+> Opening the doors to a whole league means every owner trusts this thing with their team.
+> **So before a single owner connects, every door gets locked from the inside, one PR at a time.**
+
+<div align="center">
+
+![Hardening](https://img.shields.io/badge/HARDENING-SECURITY_FIRST_·_MINIMAL_CODE_SECOND-DC143C?style=for-the-badge&labelColor=0d1117)
+![Live Gate](https://img.shields.io/badge/EVERY_FIX-PROVEN_LIVE_ON_REAL_DATA-0d1117?style=for-the-badge&labelColor=1b1e23)
+
+</div>
+
+The rule of this phase: **security first, as little code as possible second.** Every fix is traced before it's built, reviewed line by line, and then proven **live** in the real app on a copy of the real league before it merges. Each one adds the smallest amount of code that closes the door.
+
+### ✅ Landed
+
+- **🎭 Every command knows who may run it.** All 133 actions the app can take now carry a role: owner, commissioner, co-commissioner, support, server admin, and the AI actors to come. Permission becomes **data you can read and audit**, not scattered `if` statements. *(#100)*
+- **🏈 You can only act for your own team.** Your MFL login *is* your identity. Sign in as the Cardinals and you run the Cardinals. Try to bid, sign or trade as anyone else and the engine says no in plain English: *"You can only act for your own team."* It's checked on every route that moves a roster or a dollar, and it was **proven live**: another owner's team refused, our own team's actions enabled from the moment the app starts. *(#101)*
+
+### ▶ On the bench now
+
+- **📦 The archive import guard.** Five seasons of league history come in from a folder on disk, and a folder is an attack surface. The guard refuses symlinks, pipes and anything that isn't a plain file. It caps every file and the whole import by size, file count and depth, and it refuses **before** anything is recorded. A booby-trapped archive gets a clear "no" instead of a hang or a peek at a file it should never touch.
+
+### 🏔️ Built for the server it will live on
+
+Server mode ships as **our own appliance**, not something bolted onto whatever box is lying around:
+
+- **Alpine Linux, kept lean.** Only what TheWarRoom needs to run. Every package has to justify its place. No desktop, no WebKit: the same Go engine serves the screens over the web.
+- **A Proxmox helper, a CasaOS app and container images**, so self-hosters install it the way they already install everything else.
+- **Encryption at rest is on the table.** Every off-site backup is encrypted. Encrypting the appliance's data disk is being designed to unlock itself after an unattended reboot without giving up the protection, because a league that's down at 3 a.m. isn't secure, it's just broken.
+
+```
+   ✅ #100  roles catalog ───────────── every command, its role
+   ✅ #101  own-team guard ──────────── live-proven on the real league
+   ▶  NOW   archive import guard ────── symlinks · pipes · size budgets
+      NEXT  supply chain ────────────── dependency audit + secret scanning in CI
+      NEXT  league-scale database ───── a big-league fixture to measure growth
+      THEN  the Alpine appliance ─────── lean image · encrypted backups · disk unlock
+```
+
+---
+
 ## 🏛️ 5 · The War Room Architecture
 
 A multi-block system design where the boundaries aren't conventions — they're **compiler-enforced law**. A violation is a *build failure*, not a code-review note.
