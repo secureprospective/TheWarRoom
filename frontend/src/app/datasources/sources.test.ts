@@ -191,17 +191,18 @@ it('keeps held-read progress and its Go result beside the button, including fail
   p.read = async () => { throw new Error('held reader unavailable'); };
   await state.run({ kind: 'read' });
   expect(state.read().outcomes.read).toContain('held reader unavailable');
-  it('turns photos off when they are on, and keeps Go\'s result line', async () => {
-    const asked: boolean[] = [];
-    const p = { ...provider(), photos: async (on: boolean) => {
-      asked.push(on); return { ok: true, error: '', summary: 'Player photos are off.' }; } };
-    const state = createDataState(p);
-    await state.run({ kind: 'read' });
-    expect(state.read().data!.photosOn).toBe(true);
-    await state.run({ kind: 'photos', on: false });
-    expect(asked).toEqual([false]);
-    expect(state.read().outcomes.photos).toBe('Player photos are off.');
-    const markup = html(createElement(RefreshScopes, { data: state.read().data!, busy: '' }));
-    expect(markup).toContain('Turn photos off');
-  });
+});
+
+it('turns photos off when they are on, and keeps Go\'s result line', async () => {
+  const asked: boolean[] = [];
+  const p = { ...provider(), photos: async (on: boolean) => {
+    asked.push(on); return { ok: true, error: '', summary: 'Player photos are off.' }; } };
+  const state = createDataState(p);
+  await state.run({ kind: 'read' });
+  expect(state.read().data!.photosOn).toBe(true);
+  await state.run({ kind: 'photos', on: false });
+  expect(asked).toEqual([false]);
+  expect(state.read().outcomes.photos).toBe('Player photos are off.');
+  const markup = html(createElement(RefreshScopes, { data: state.read().data!, busy: '' }));
+  expect(markup).toContain('Turn photos off');
 });
