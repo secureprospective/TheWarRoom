@@ -1,0 +1,10 @@
+{
+  "league": "native.https-fixture",
+  "command": "commish.league.create",
+  "args": {"name": "Loopback fixture league", "preset": "empty", "franchiseCount": 2, "season": 2026},
+  "reason": "Exercise the shared engine without live league data",
+  "expected": 0,
+  "request": "fixture-create",
+  "effective": "now",
+  "visibility": "league"
+}

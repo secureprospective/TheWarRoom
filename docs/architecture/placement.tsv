@@ -114,3 +114,6 @@ internal/app/offers/offerstest	offers
 internal/app/commissioner/commissionertest	commissioner
 internal/app/platform	platform
 internal/composition	platform
+internal/leagueservice	platform
+internal/serverhttp	platform
+internal/serverclient	platform
