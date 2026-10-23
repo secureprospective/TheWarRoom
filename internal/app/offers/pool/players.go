@@ -1,3 +1,4 @@
+// Package pool shapes player-pool rows: age, position order and each player's plan.
 package pool
 
 import (

@@ -1,3 +1,4 @@
+// Package researchtest loads the shared real-source Research fixture for tests.
 package researchtest
 
 import (

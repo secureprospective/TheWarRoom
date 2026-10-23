@@ -1,3 +1,5 @@
+// Command fixtures builds the browser fixture: it copies league and history snapshots to disposable
+// databases, initializes the app stores offline and exports the shared snapshot.
 package main
 
 import (

@@ -1,3 +1,5 @@
+// Package composition is the backend's composition root: it wires the stores and routes each feature's
+// IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 package composition
 
 import (
