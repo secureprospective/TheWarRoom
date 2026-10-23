@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"slices"
 	"time"
@@ -18,16 +17,15 @@ func CheckArchiveDir(dir string) error {
 	if !filepath.IsAbs(dir) {
 		return fmt.Errorf("the archive folder must be a full path, not %q", dir)
 	}
-	seasons, err := filepath.Glob(filepath.Join(dir, "[0-9][0-9][0-9][0-9]", "league.json"))
-	if err != nil || len(seasons) == 0 {
-		return fmt.Errorf("%s holds no season folder with a league.json", dir)
+	if err := leaguearchive.NewDiskFS(dir).Check(); err != nil {
+		return fmt.Errorf("archive folder: %w", err)
 	}
 	return nil
 }
 
 func (a Service) ImportArchiveFrom(ctx context.Context, dir string) (leaguearchive.Report, error) {
-	if err := CheckArchiveDir(dir); err != nil {
-		return leaguearchive.Report{}, err
+	if !filepath.IsAbs(dir) {
+		return leaguearchive.Report{}, fmt.Errorf("the archive folder must be a full path, not %q", dir)
 	}
 	fetches, err := a.Archive.SourceFetches(ctx, LeagueArchiveSource)
 	if err != nil {
@@ -38,7 +36,7 @@ func (a Service) ImportArchiveFrom(ctx context.Context, dir string) (leaguearchi
 		held[leaguearchive.HeldKey(f.URL, f.SHA256)] = true
 	}
 	began := time.Now()
-	rep, err := leaguearchive.Import(ctx, os.DirFS(dir), LeagueArchiveSource, held, a.Archive)
+	rep, err := leaguearchive.Import(ctx, leaguearchive.NewDiskFS(dir), LeagueArchiveSource, held, a.Archive)
 	if err != nil {
 		return rep, fmt.Errorf("app: import league archive: %w", err)
 	}
