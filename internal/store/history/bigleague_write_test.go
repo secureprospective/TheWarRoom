@@ -7,10 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 // Minimal valid rule-only history isolates ledger length from roster workload. Setup uses
@@ -20,12 +21,18 @@ func seedLeagueWrite(t testing.TB, s *Store, size int) *bigLeagueBuilder {
 	g := &bigLeagueBuilder{t: t, s: s, now: time.Date(2013, 4, 1, 12, 0, 0, 0, time.UTC)}
 	s.SetClock(func() time.Time { return g.now })
 	g.command("creator", commissioner.Create, commissioner.RawArgs{Name: "Write growth", Preset: commissioner.PresetLegacy, Season: 2013, FranchiseCount: 32}, false)
+	seedGrowthRules(t, s, g, size-1)
+	return g
+}
+
+func seedGrowthRules(t testing.TB, s *Store, g *bigLeagueBuilder, count int) {
+	t.Helper()
 	tx, err := s.pools.Write().BeginTx(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	for g.revision < int64(size) {
+	for range count {
 		raw := commissioner.RawCommand{League: bigLeagueID, Command: commissioner.RulesSet,
 			Args: commissioner.RawArgs{Field: "cap.amount", Value: []byte(fmt.Sprintf("%d", 100000000000000+g.revision%2))}, Expected: g.revision,
 			Request: fmt.Sprintf("generated.%08d", g.revision), Reason: "Deterministic growth fixture", Effective: "now", Visibility: "league"}
@@ -43,7 +50,6 @@ func seedLeagueWrite(t testing.TB, s *Store, size int) *bigLeagueBuilder {
 	if err := tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
-	return g
 }
 
 func BenchmarkLeagueWrite(b *testing.B) {

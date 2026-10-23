@@ -1,18 +1,20 @@
 # Handoff
 
 ## Baton
-Claude — 2026-10-23. Nothing in flight; main is the latest state.
+Bee — 2026-10-23. Save profiling follow-up complete on `session/t487-close-books`; PR #113 remains unmerged.
 
-## Recently merged
-- #108 AGENTS.md: tests run in batches, not before every commit.
-- #109 Opt-in big-league benchmarks (`make bench-league`); budgets and baselines in
-  `docs/data-layer/Database_Growth_Catalog.md`. Budgets: a page opens in under 1 s, a save in under 0.5 s.
-- #110 Weekly results: 81 s to 0.95 s on the three-season league.
+## Where it stands
+- D9 multi-season 10k profile: current-season rule validation dominates; `CheckRulesAppend` is 3.42/4.58 sampled CPU seconds on the save stack. Whole-profile GC is substantial (includes fixture setup).
+- `internal/leaguerules/resolve.go` now constructs field descriptors once per resolution, not twice per change. Same checks, no shared cache.
+- Differential complete-result/error tests in `internal/leaguerules/resolve_equivalence_test.go`; affected-package race tests and `go test ./...` pass.
+- Three-run medians and method in `docs/data-layer/Database_Growth_Catalog.md`: 10k D9 0.627 → 0.507 s; D1 0.444 → 0.424 s. 1k essentially unchanged.
+- Local profile, raw measurements and test logs: `.scratch/t487-profile/` (ignored).
 
-## Next
-- D9: saves replay all history and miss the 0.5 s budget after about one season ("close the books").
-- R2 follow-ups from the PR #101 live test (contracts tab before startup finishes; other-team labels).
+## Next move
+Review PR #113; further current-season rule decoding/allocation reduction if the strict 0.5 s budget is required. No GUI/live MFL testing performed.
 
-## Working notes
-- Commits over ssh on the Beelink need `GOTOOLCHAIN=go1.26.10` or the lint hook crashes.
-- A fresh worktree needs `frontend/dist` built (pnpm install + build) before hooks run.
+## Blocked on
+D9 still narrowly misses budget. No merge authorized.
+
+## Tried and rejected
+No broad replay cache or validation shortcuts: the measured catalogue allocation had a contained fix preserving all validation.

@@ -68,6 +68,12 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 		return nil, err
 	}
 	records := append(slices.Clone(hit.records), tail...)
+	if hit.revision == 0 || slices.ContainsFunc(tail, func(r commissioner.Record) bool { return r.Command.Command == commissioner.SeasonRollover }) {
+		records, err = loadClosedBooks(ctx, tx, league, records)
+		if err != nil {
+			return nil, err
+		}
+	}
 	if s.records == nil {
 		s.records = map[string]recordRevision{}
 	}
@@ -131,6 +137,10 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
+	if err := s.closeRolloverBooks(ctx, tx, raw); err != nil {
+		return commissioner.Receipt{}, err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
@@ -370,11 +380,7 @@ func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principa
 }
 
 func (s *Store) CommissionerPeople(ctx context.Context, league, principal string) (commissioner.People, error) {
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
-	if err != nil {
-		return commissioner.People{}, err
-	}
-	records, err := commissionerRecords(events)
+	records, err := s.leagueRecords(ctx, league)
 	if err != nil {
 		return commissioner.People{}, err
 	}
@@ -427,11 +433,7 @@ func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague,
 }
 
 func (s *Store) CommissionerRules(ctx context.Context, league string) (commissioner.Rules, error) {
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
-	if err != nil {
-		return commissioner.Rules{}, err
-	}
-	records, err := commissionerRecords(events)
+	records, err := s.leagueRecords(ctx, league)
 	if err != nil {
 		return commissioner.Rules{}, err
 	}
@@ -444,11 +446,7 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 
 // CommissionerJobs reads the league's jobs as of the store's clock.
 func (s *Store) CommissionerJobs(ctx context.Context, league string) (commissioner.Jobs, error) {
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
-	if err != nil {
-		return commissioner.Jobs{}, err
-	}
-	records, err := commissionerRecords(events)
+	records, err := s.leagueRecords(ctx, league)
 	if err != nil {
 		return commissioner.Jobs{}, err
 	}
@@ -494,11 +492,12 @@ func (s *Store) CommissionerDigests(ctx context.Context, league, principal strin
 }
 
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
-	events, err := s.Events(ctx, league, commissioner.Stream, 0)
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read league records: %w", err)
 	}
-	return commissionerRecords(events)
+	defer func() { _ = tx.Rollback() }()
+	return s.transactionRecords(ctx, tx, league)
 }
 
 func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,

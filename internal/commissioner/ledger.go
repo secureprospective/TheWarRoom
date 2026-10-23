@@ -17,6 +17,8 @@ type Receipt struct {
 }
 
 type Record struct {
+	books *closedBooks
+
 	GeneratedSchedule []ScheduleWeek  `json:"generatedSchedule,omitempty"`
 	Before            *RolloverBefore `json:"before,omitempty"`
 	Command           RawCommand      `json:"command"`
@@ -66,6 +68,13 @@ type Projection struct {
 // Replay walks compensation links backwards, then sets aside what a draft restore compensated: a reversed reversal no longer
 // compensates its target. Originals and every correction remain in the ledger.
 func Replay(records []Record) Projection {
+	if books := usableClosedBooks(records); books != nil {
+		return replayClosedBooks(records, books)
+	}
+	return replayFull(records)
+}
+
+func replayFull(records []Record) Projection {
 	p := Projection{Active: make(map[string]bool)}
 	for _, r := range records {
 		p.Active[r.Receipt.Entry] = true

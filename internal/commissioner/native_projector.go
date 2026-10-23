@@ -12,7 +12,16 @@ import (
 // given, sees the assets after each entry is applied.
 func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState, visit func(*NativeAssets)) error {
 	active := Replay(records).Active
-	for i, record := range records {
+	since := 0
+	if visit == nil {
+		var err error
+		since, err = resumeClosedNative(assets, records, waivers)
+		if err != nil {
+			return err
+		}
+	}
+	for i := since; i < len(records); i++ {
+		record := records[i]
 		if !active[record.Receipt.Entry] {
 			continue
 		}
