@@ -242,7 +242,10 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 				return nil
 			}
 			refreshed = true
-			_, err := a.refreshLeague(c, rb, mirror)
+			// Startup seeds only the mirror; reports and plan checks need the completed store floor.
+			a.core.RefreshMu.Lock()
+			defer a.core.RefreshMu.Unlock()
+			_, err := a.refreshLeagueLocked(c, rb, mirror)
 			return err
 		}},
 		{"what-if league", func(c context.Context) error {
@@ -270,6 +273,9 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	a.core.Moves = moveStore
 	hist.SetLineupEnvironment(appLineupEnv{app: a})
 	hist.SetBidEnvironment(appBidEnv{app: a})
+	if refreshed {
+		a.core.RefreshDraftReportsFeeds(ctx)
+	}
 	a.seedClockSchedules(ctx)
 	return refreshed, nil
 }
