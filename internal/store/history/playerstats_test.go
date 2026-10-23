@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -128,6 +129,35 @@ func TestPlayerWeekStatsArchiveRevisions(t *testing.T) {
 			}
 			s, _ = statStore(t, path)
 		}
+	}
+}
+
+// One reading scores every starter from a single read of the held files; what it selects must be what the
+// archive itself answers, and a file fetched mid-reading waits for the next reading.
+func TestReadingStatsMatchArchiveAndReadOnce(t *testing.T) {
+	t.Parallel()
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	putStatBody(t, s, statBody(t, "245", true), "", t0().Add(time.Hour))
+	scope := source.RawStatScope{GSIS: "00-0023459", Season: 2025, Week: 1}
+	reading := s.nativeSources("league", 2025)
+	got, err := reading.PlayerWeekStats(context.Background(), scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := readStatPort(t, s); !reflect.DeepEqual(got, want) {
+		t.Fatalf("reading selected %+v, archive answers %+v", got, want)
+	}
+	putStatBody(t, s, statBody(t, "246", true), "", t0().Add(2*time.Hour))
+	again, err := reading.PlayerWeekStats(context.Background(), scope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, got) {
+		t.Fatalf("reading re-read the archive: %+v", again)
+	}
+	if fresh := readStatPort(t, s); len(fresh) != 3 {
+		t.Fatalf("next reading did not see the new file: %+v", fresh)
 	}
 }
 

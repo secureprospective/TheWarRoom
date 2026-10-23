@@ -35,9 +35,12 @@ type StatCorrection struct {
 }
 
 func foldStatEffects(records []Record) (statEffects, error) {
+	return foldStatEffectsFrom(records, Replay(records).Active)
+}
+
+func foldStatEffectsFrom(records []Record, active map[string]bool) (statEffects, error) {
 	out := statEffects{baselines: map[statKey]StatBaseline{}, rejected: map[StatItemID]bool{},
 		corrections: map[statKey]map[leaguerules.StatID]StatCorrection{}, changes: map[statKey][]ScoreChange{}}
-	active := Replay(records).Active
 	for _, r := range records {
 		command := r.Command.Command
 		if !isStatCommand(command) {
@@ -120,11 +123,7 @@ func withCorrections(week source.PlayerWeek, corrections map[leaguerules.StatID]
 }
 
 // orderChanges lists provenance entries in the order the ledger recorded them.
-func orderChanges(records []Record, lists ...[]ScoreChange) []ScoreChange {
-	position := map[string]int{}
-	for i, r := range records {
-		position[r.Receipt.Entry] = i
-	}
+func orderChanges(position map[string]int, lists ...[]ScoreChange) []ScoreChange {
 	var all []ScoreChange
 	for _, list := range lists {
 		all = append(all, list...)

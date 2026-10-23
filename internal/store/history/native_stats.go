@@ -119,7 +119,7 @@ func (s *Store) statWeekFor(ctx context.Context, raw commissioner.RawCommand) (c
 		return commissioner.StatWeek{}, fmt.Errorf("read the statistic change: %w", commissioner.Refused(err))
 	}
 	player, season, week := change.Scope()
-	evidence, err := s.nativeEvidence(ctx, source.RawNativeScope{Player: player, Season: season, Week: week})
+	evidence, err := s.nativeEvidence(ctx, s, source.RawNativeScope{Player: player, Season: season, Week: week})
 	if errors.Is(err, source.ErrSeasonNotLoaded) {
 		return commissioner.StatWeek{Player: player, Week: week}, nil
 	}

@@ -60,19 +60,50 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 	if err := scope.Validate(); err != nil {
 		return nil, fmt.Errorf("read held player statistics: %w", err)
 	}
-	out := []source.HeldWeek{}
-	err := s.heldWeeklyFiles(ctx, scope.Season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
-		held := source.SelectHeldWeek(scope, weeks, sha, at)
+	files, err := s.heldSeason(ctx, scope.Season)
+	if err != nil {
+		return nil, err
+	}
+	return selectHeldWeeks(scope, files), nil
+}
+
+// heldFile is one held copy of a season's weekly file, already parsed.
+type heldFile struct {
+	sha   string
+	at    time.Time
+	weeks []source.PlayerWeek
+	index source.HeldWeekIndex // built only by readings that look up many players
+}
+
+// heldSeason reads every held copy of a season's weekly file once, newest first.
+func (s *Store) heldSeason(ctx context.Context, season int) ([]heldFile, error) {
+	files := []heldFile{}
+	err := s.heldWeeklyFiles(ctx, season, func(sha string, at time.Time, weeks []source.PlayerWeek) {
+		files = append(files, heldFile{sha: sha, at: at, weeks: weeks})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
+// selectHeldWeeks picks the player's week out of each held copy.
+func selectHeldWeeks(scope source.RawStatScope, files []heldFile) []source.HeldWeek {
+	out := make([]source.HeldWeek, 0, len(files))
+	for _, f := range files {
+		var held source.HeldWeek
+		if f.index != nil {
+			held = f.index.Select(scope, f.weeks, f.sha, f.at)
+		} else {
+			held = source.SelectHeldWeek(scope, f.weeks, f.sha, f.at)
+		}
 		if held.Week != nil {
 			week := clonePlayerWeek(*held.Week)
 			held.Week = &week
 		}
 		out = append(out, held)
-	})
-	if err != nil {
-		return nil, err
 	}
-	return out, nil
+	return out
 }
 
 func (s *Store) NativePlayerScore(ctx context.Context, league string,
@@ -94,7 +125,7 @@ func (s *Store) scorePlayer(ctx context.Context, league string, records []commis
 	evidence := source.NativeEvidence{}
 	if nativeSeeded(records) {
 		var err error
-		if evidence, err = s.nativeEvidence(ctx, scope); err != nil {
+		if evidence, err = s.nativeEvidence(ctx, s, scope); err != nil {
 			return commissioner.NativePlayerScore{}, fmt.Errorf("read native score evidence: %w", err)
 		}
 	}
@@ -114,12 +145,14 @@ func nativeSeeded(records []commissioner.Record) bool {
 	return false
 }
 
-// nativeEvidence reads the held NFL evidence for a player's week; tests replace it with supplied evidence.
-func (s *Store) nativeEvidence(ctx context.Context, scope source.RawNativeScope) (source.NativeEvidence, error) {
+// nativeEvidence reads the held NFL evidence for a player's week from stats; tests replace it with supplied
+// evidence.
+func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
+	scope source.RawNativeScope) (source.NativeEvidence, error) {
 	if s.evidence != nil {
 		return s.evidence(ctx, scope)
 	}
-	out, err := source.ReadNativeEvidence(ctx, s, s, scope)
+	out, err := source.ReadNativeEvidence(ctx, s, stats, scope)
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}

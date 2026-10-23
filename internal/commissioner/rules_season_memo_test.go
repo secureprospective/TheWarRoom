@@ -151,6 +151,34 @@ func TestNativePlayerScoreWithSharedMemoResolvesOnceAndFollowsTheLedger(t *testi
 	}
 }
 
+// The memo folds each ledger once for a reading, and every score it gives is the score read afresh.
+func TestRulesMemoScoreFoldsOnceAndMatchesTheDirectReading(t *testing.T) {
+	b := newLedger(t, PresetLegacy)
+	b.seed(2026, nil, seasonMoment(2))
+	rounded := slices.Clone(b.records)
+	b.set("scoring.roundStatPoints", "false", "now", seasonMoment(3))
+	unrounded := slices.Clone(b.records)
+	evidence := completeScoreEvidence()
+	evidence.Held.Week.Line = fantasyscore.StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"tackle": 10002}}
+	m := NewRulesMemo()
+	for _, records := range [][]Record{rounded, unrounded, rounded} {
+		for _, player := range []string{"0001", "0002", "0003"} {
+			scope := source.RawNativeScope{Player: player, Season: 2026, Week: 1}
+			got, err := m.Score("native.test", scope, records, evidence, seasonMoment(5))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, err := NativePlayerScoreReading("native.test", scope, records, evidence, seasonMoment(5))
+			if err != nil || !reflect.DeepEqual(got, want) {
+				t.Fatalf("memo score differs from the direct reading: %+v vs %+v (%v)", got, want, err)
+			}
+		}
+	}
+	if len(m.folds) != 2 {
+		t.Fatalf("two ledgers were folded %d times", len(m.folds))
+	}
+}
+
 func TestNativePlayerScoreWithAsksForRulesOnlyWhenScoring(t *testing.T) {
 	b := newLedger(t, PresetLegacy)
 	asked := 0

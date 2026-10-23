@@ -41,13 +41,15 @@ func (s *Store) SetNativeLineups(lineups LineupSource) {
 // nativeSources is one reading's view of lineups and player scores. Held evidence does not depend on the
 // ledger, so a player's week is read once however many ledgers it is scored under. The reading's clock is
 // taken once and its rules are resolved once per ledger, however many players are scored; a ledger with a
-// proposed change in it is a different ledger and resolves for itself.
+// proposed change in it is a different ledger and resolves for itself. The season's held weekly files are
+// read once for the reading, not once per starter.
 type nativeSources struct {
 	store  *Store
 	league string
 	season int
 	now    time.Time
 	held   map[source.RawNativeScope]source.NativeEvidence
+	files  []heldFile
 	rules  *commissioner.RulesMemo
 	facts  nativecheck.Facts
 }
@@ -88,18 +90,39 @@ func (n *nativeSources) PlayerScore(ctx context.Context, records []commissioner.
 		held, ok := n.held[scope]
 		if !ok {
 			var err error
-			if held, err = n.store.nativeEvidence(ctx, scope); err != nil {
+			if held, err = n.store.nativeEvidence(ctx, n, scope); err != nil {
 				return commissioner.NativePlayerScore{}, fmt.Errorf("read native score evidence: %w", err)
 			}
 			n.held[scope] = held
 		}
 		evidence = held
 	}
-	reading, err := commissioner.NativePlayerScoreWith(n.league, scope, records, evidence, n.now, n.rules.InForce)
+	reading, err := n.rules.Score(n.league, scope, records, evidence, n.now)
 	if err != nil {
 		return commissioner.NativePlayerScore{}, fmt.Errorf("read native score: %w", err)
 	}
 	return reading, nil
+}
+
+// PlayerWeekStats selects the player's week from the season's held files, read on first use.
+func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) ([]source.HeldWeek, error) {
+	if scope.Season != n.season {
+		return n.store.PlayerWeekStats(ctx, scope)
+	}
+	if err := scope.Validate(); err != nil {
+		return nil, fmt.Errorf("read held player statistics: %w", err)
+	}
+	if n.files == nil {
+		files, err := n.store.heldSeason(ctx, scope.Season)
+		if err != nil {
+			return nil, err
+		}
+		for i := range files {
+			files[i].index = source.IndexHeldWeeks(files[i].weeks)
+		}
+		n.files = files
+	}
+	return selectHeldWeeks(scope, n.files), nil
 }
 
 // NativeResults scores one week of the published schedule.

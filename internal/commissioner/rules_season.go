@@ -341,12 +341,55 @@ type rulesEntry struct {
 // RulesMemo remembers resolved rules for the length of one reading, so scoring every starter of a season
 // reads the ledger once, not once per starter. It is never shared between readings: a later reading starts
 // from a new memo and so sees any change recorded since. The rule sets it returns are shared, read-only.
+//
+// It also keeps what scoring reads from the whole ledger whatever player is scored: which entries are
+// active, the stat decisions, and each entry's place in the ledger.
 type RulesMemo struct {
 	entries  map[rulesKey]rulesEntry
+	folds    map[ledgerKey]ledgerFold
 	resolved int
 }
 
-func NewRulesMemo() *RulesMemo { return &RulesMemo{entries: map[rulesKey]rulesEntry{}} }
+// ledgerKey is one ledger: the same entries, not merely the same length.
+type ledgerKey struct {
+	ledger *Record
+	length int
+}
+
+// ledgerFold is the player-independent part of scoring, read once per ledger. All of it is read-only.
+type ledgerFold struct {
+	active   map[string]bool
+	position map[string]int
+	effects  statEffects
+	err      error
+}
+
+func NewRulesMemo() *RulesMemo {
+	return &RulesMemo{entries: map[rulesKey]rulesEntry{}, folds: map[ledgerKey]ledgerFold{}}
+}
+
+func foldLedger(records []Record) ledgerFold {
+	f := ledgerFold{active: Replay(records).Active, position: make(map[string]int, len(records))}
+	for i, r := range records {
+		f.position[r.Receipt.Entry] = i
+	}
+	f.effects, f.err = foldStatEffectsFrom(records, f.active)
+	return f
+}
+
+// fold is foldLedger, answered from memory when this ledger was already folded.
+func (m *RulesMemo) fold(records []Record) ledgerFold {
+	if len(records) == 0 {
+		return foldLedger(records)
+	}
+	key := ledgerKey{ledger: &records[0], length: len(records)}
+	if hit, ok := m.folds[key]; ok {
+		return hit
+	}
+	f := foldLedger(records)
+	m.folds[key] = f
+	return f
+}
 
 // InForce is RulesInForce, answered from memory when this ledger, season and instant were already resolved.
 func (m *RulesMemo) InForce(records []Record, season int, at time.Time) (leaguerules.RuleSet, error) {
