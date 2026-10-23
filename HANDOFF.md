@@ -1,33 +1,20 @@
-# Frontend toolchain upgrade handoff
+# T487 close-books handoff — incomplete
 
 ## Baton
-Christopher / reviewer — 2026-10-23. Bee completed `session/toolchain-upgrade`; no push.
+ClaudeBox / reviewer — 2026-10-23. Bee investigated `session/t487-close-books`; no performance fix delivered.
 
 ## Where it stands
-- Full frontend audit: 32 → 0. Vite 8.3.5, plugin-react 6.1.2, Vitest 5.0.5.
-- PostCSS 8.5.31 and Tailwind 4.3.3 remove remaining advisories; no overrides.
-  Tailwind 3's braces has no patched release. Existing JS theme explicitly loaded.
-- React/React DOM 18.3.1 and TypeScript 4.9.5 unchanged.
-- Tests: 125 files, 1,395 → 1,396 tests; nested photos test promoted, none weakened.
-- Budget charges full static JS graph: 300,304 / 321,818 bytes. CSP unchanged.
-- Frozen install, audit, tsc, frontend tests/build, budget/self-tests, CSP, make lint,
-  make test, make verify, make build, bindings-fresh pass. Bound methods remain 133.
-- Binary: `build/bin/thewarroom`. Snapshot lazy chunk +15.3%; full dist +5.05%
-  including the new manifest. All comparable lazy growth flags and exhaustive
-  resolved-package changes: `docs/build-handoffs/Toolchain_Upgrade_2026-10.md`.
-- CI: the full dev-toolchain audit step is now blocking.
+- Production code unchanged. No schema or ledger-format change.
+- Evidence and final D9/D1 five-run medians: `docs/build-handoffs/T487_Close_Books_2026-10.md`.
+- Existing rollover plans already carry rules/assets, but not every save/read fold.
+- Frozen frontend install/build passed. Final `go test -race ./...` failed at the default 10-minute `internal/composition` package timeout; history/commissioner/governance passed.
+- No differential test for closed seasons, no GUI/live gate, no merge. Performance budgets remain unmet.
 
 ## Next move
-Review commits; launch binary and check shell, form controls, channel chips, Market,
-Draft room and commissioner trays for visual parity after Tailwind 4. No GUI run
-against operator data was performed. Merge/push only with operator approval.
+Define a summary-aware replay contract retaining authoritative history; add identical several-closed-season fixtures for summary/full differential tests and performance comparisons. Review with ClaudeBox before wider storage decisions.
 
 ## Blocked on
-No build/security gate blocker. Interactive visual parity remains unverified.
+Growth fixtures have no closed seasons, so a closed-season summary alone cannot improve those measured paths. No safe general summary implementation was completed. Any schema change needs Christopher's sign-off before merge.
 
 ## Tried and rejected
-- Replacing only Vite/Vitest left PostCSS/Tailwind advisories. Real upgrades used.
-- Chokidar override would break glob watching; Tailwind upgrade removes dependency.
-- Entry-only budget would miss Rolldown's shared eager chunks; manifest traversal
-  now checks all static imports, with negative probes for shared-chunk violations.
-- Shared lint cache briefly reported another worktree; cleaned cache and reran gates.
+Mutating private governance replay state avoided per-event copies and passed targeted race tests, but did not meet budgets or implement the approved summary. Reverted completely. Do not treat the unchanged-code rerun as before/after evidence of an improvement.
