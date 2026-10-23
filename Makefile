@@ -179,7 +179,7 @@ lab-mutants:
 bench-league-build:
 	go test -v -tags leaguebench -run '^TestBigLeagueBuild$$' -timeout 0 ./internal/store/history
 
-bench-league:
+bench-league: bench-league-build
 	@set -eu; \
 	mkdir -p "$$HOME/logs/TheWarRoom"; \
 	scratch=$$(mktemp -d "$$HOME/logs/TheWarRoom/bench-league.XXXXXX"); \
