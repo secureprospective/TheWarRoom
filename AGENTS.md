@@ -44,7 +44,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 ## Workflow
 
 - Tests required for every functional change. `make test` runs with `-race` (non-negotiable).
-- Run before committing: `make lint` then `make test`. Fix hook failures; never `--no-verify`.
+- Tests run in batches, not per step. While working, run only the tests for the packages you touched (`go test -race ./internal/<pkg>/...`). The pre-push hook runs `make verify` once per push and CI runs the full suite; do not repeat them by hand on an unchanged tree. Fix hook failures; never `--no-verify`.
 
 ## Stack-specific commands
 
