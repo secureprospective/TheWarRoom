@@ -57,8 +57,10 @@ export function ContractReading<T>({
   error,
   children,
   metadata = true,
+  kind,
 }: {
   title: string;
+  kind?: string;
   endpoint?: string;
   reading?: Reading<T>;
   error?: string;
@@ -66,7 +68,7 @@ export function ContractReading<T>({
   metadata?: boolean;
 }) {
   return (
-    <section className="contract-reading" aria-label={title} data-endpoint={endpoint}>
+    <section className="contract-reading" aria-label={title} data-kind={kind} data-endpoint={endpoint}>
       <h4>{title}</h4>
       {error ? (
         <p role="alert">
@@ -220,6 +222,9 @@ export default function Contracts({
   whatIf?: WhatIfProvider;
 }) {
   const s = commands.use();
+  // Your team is the one your MFL login belongs to; any other franchise is only being viewed.
+  const { myFranchise } = commands.useMFLKey();
+  const own = !myFranchise || myFranchise === s.franchiseId;
   const provider = useMemo(() => supplied ?? contractsProvider(), [supplied]);
   const simulation = useMemo(() => suppliedWhatIf ?? whatIfProvider(), [suppliedWhatIf]);
   const whatif = useContractRead<Reading<WhatIf>>(
@@ -247,11 +252,15 @@ export default function Contracts({
   const table = readings?.table.value;
   return (
     <div ref={root} className="contracts">
-      <WhatIfPanel mine={s.franchiseId} {...whatif} />
-      <ContractMovePanel mine={s.franchiseId} />
-      {whatif.reading?.value?.moves.length ? <p className="whatif-status" role="status">
-        {whatif.reading.value.moves.at(-1)?.status}</p> : null}
-      <ContractReading title="My franchise cap" reading={readings?.cap} error={error}>
+      {own ? <>
+        <WhatIfPanel mine={s.franchiseId} {...whatif} />
+        <ContractMovePanel mine={s.franchiseId} />
+        {whatif.reading?.value?.moves.length ? <p className="whatif-status" role="status">
+          {whatif.reading.value.moves.at(-1)?.status}</p> : null}
+      </> : <p className="contract-viewing" role="status">
+        You are viewing another team. What-ifs and contract moves are for your own team.</p>}
+      <ContractReading title={own ? 'My franchise cap' : 'Team cap'} kind="cap" reading={readings?.cap}
+        error={error}>
         {cap && (
           <>
             <p>
@@ -330,7 +339,7 @@ export default function Contracts({
         <Act variant="button" verb="contracts.set" args={{ field: 'desc', value: !filters.desc }}>
           {filters.desc ? 'Descending' : 'Ascending'}
         </Act>
-        <p>My team first.</p>
+        <p>{own ? 'My team first.' : 'Selected team first.'}</p>
       </section>
       <ContractReading
         title="Every contract in the league"
@@ -344,7 +353,7 @@ export default function Contracts({
           ) : (
             <div className="contract-table-container">
               <ContractGroup
-                title={`My team · ${cap?.team ??
+                title={`${own ? 'My team' : 'Selected team'} · ${cap?.team ??
                   options.teams.find((team) => team.id === s.franchiseId)?.name ?? s.franchiseId}`}
                 rows={table.rows.filter((row) => row.franchiseId === s.franchiseId)}
                 mine whatif={whatif.reading?.value}

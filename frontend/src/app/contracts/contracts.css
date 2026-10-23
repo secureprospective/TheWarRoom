@@ -38,13 +38,13 @@
   .twr-app .contract-table td:first-child .act { max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
   .twr-app .contract-table .contract-money { overflow: visible; text-overflow: clip; font-size: 11px; }
 }
-.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: auto 1fr auto 1fr auto 1fr; margin-bottom: 6px; gap: 4px 8px; }
-.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv dd { text-align: left; }
-.twr-app .insp .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: 1fr auto; }
-.twr-app .contracts > .contract-reading[aria-label="My franchise cap"] { container: contract-cap / inline-size; }
+.twr-app .contracts > .contract-reading[data-kind="cap"] .kv { grid-template-columns: auto 1fr auto 1fr auto 1fr; margin-bottom: 6px; gap: 4px 8px; }
+.twr-app .contracts > .contract-reading[data-kind="cap"] .kv dd { text-align: left; }
+.twr-app .insp .contracts > .contract-reading[data-kind="cap"] .kv { grid-template-columns: 1fr auto; }
+.twr-app .contracts > .contract-reading[data-kind="cap"] { container: contract-cap / inline-size; }
 @container contract-cap (max-width: 480px) {
-  .twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv { grid-template-columns: 1fr auto; }
-  .twr-app .contracts > .contract-reading[aria-label="My franchise cap"] .kv dd { text-align: right; }
+  .twr-app .contracts > .contract-reading[data-kind="cap"] .kv { grid-template-columns: 1fr auto; }
+  .twr-app .contracts > .contract-reading[data-kind="cap"] .kv dd { text-align: right; }
 }
 .twr-app .whatif-panel { min-width: 0; container: whatif / inline-size; }
 .twr-app .whatif-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
