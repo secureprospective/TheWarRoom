@@ -39,8 +39,16 @@ jobs:
           go install github.com/wailsapp/wails/v2/cmd/wails@$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v2)
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+          go install github.com/zricethezav/gitleaks/v8@v8.30.1
       - name: Frontend install
         run: cd frontend && pnpm install --frozen-lockfile && pnpm build
+      - name: Secret scan, full history
+        run: gitleaks git --redact --no-banner .
+      - name: Dependency audit, shipped app (blocking)
+        run: cd frontend && pnpm audit --prod
+      - name: Dependency audit, dev toolchain (report only until the toolchain upgrade)
+        continue-on-error: true
+        run: cd frontend && pnpm audit
       - name: Lint (with placement and root ratchet), bindings, frontend checks
         run: |
           make lint
