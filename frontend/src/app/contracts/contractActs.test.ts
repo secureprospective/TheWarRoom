@@ -151,7 +151,7 @@ describe('Contract Acts', () => {
     const source = readFileSync(new URL('./Contracts.tsx', import.meta.url), 'utf8');
     expect(source.indexOf('<ContractMovePanel')).toBeGreaterThan(source.indexOf('<WhatIfPanel'));
     expect(source.indexOf('<ContractMovePanel'))
-      .toBeLessThan(source.indexOf('title="My franchise cap"'));
+      .toBeLessThan(source.indexOf('kind="cap"'));
     const form = readFileSync(new URL('./ContractActs.tsx', import.meta.url), 'utf8');
     const actions = readFileSync(new URL('./contractActs.ts', import.meta.url), 'utf8');
     expect(form).toContain('className="bid-actions"');

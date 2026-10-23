@@ -427,6 +427,30 @@ it('covers each failed surface and refreshes on held-feed change', async () => {
   expect(panel.element.textContent).not.toContain('Inferred · Inferred');
 });
 
+it('labels a viewed team as selected, not mine, and offers no what-if for it', async () => {
+  shell();
+  vi.spyOn(commands, 'useMFLKey').mockReturnValue({ ...commands.readMFLKey(), myFranchise: '0025' });
+  const value = readings();
+  value.cap.value!.team = 'Arizona Cardinals';
+  const p = provider();
+  p.contracts = vi.fn().mockResolvedValue(value);
+  const simulation: WhatIfProvider = {
+    query: vi.fn().mockRejectedValue(new Error('what-if plans are private')),
+    change: async () => {}, onChange: () => () => {},
+  };
+  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(), provider: p,
+    whatIf: simulation }));
+  const text = test.element.textContent ?? '';
+  expect(text).toContain('Team cap');
+  expect(text).toContain('Selected team first.');
+  expect(text).toContain('What-ifs and contract moves are for your own team.');
+  expect(text).not.toContain('My franchise cap');
+  expect(text).not.toContain('My team');
+  expect(text).not.toContain('Failed');
+  test.renderer.unmount();
+  vi.restoreAllMocks();
+});
+
 it('keeps twelve one-line my-team rows and counts filtered groups without repeating team cells', async () => {
   shell();
   const value = readings();
