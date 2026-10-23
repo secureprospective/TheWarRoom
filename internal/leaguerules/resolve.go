@@ -28,6 +28,10 @@ type Change struct {
 }
 
 func (c Change) Validate() error {
+	return c.validate(ruleFields())
+}
+
+func (c Change) validate(fields []ruleField) error {
 	if c.LeagueID == "" {
 		return fmt.Errorf("choose a league")
 	}
@@ -43,7 +47,7 @@ func (c Change) Validate() error {
 	if _, err := c.starts(); err != nil {
 		return err
 	}
-	for _, f := range ruleFields() {
+	for _, f := range fields {
 		if f.pathName() != c.Field {
 			continue
 		}
@@ -81,6 +85,7 @@ func Resolve(changes []Change, season int, at time.Time) (RuleSet, error) {
 	if season <= 0 || at.IsZero() {
 		return RuleSet{}, fmt.Errorf("choose a season and a reading time")
 	}
+	fields := ruleFields()
 	for _, c := range changes {
 		if result.LeagueID == "" {
 			result.LeagueID = c.LeagueID
@@ -91,7 +96,7 @@ func Resolve(changes []Change, season int, at time.Time) (RuleSet, error) {
 		if c.Season != season {
 			continue
 		}
-		if err := c.Validate(); err != nil {
+		if err := c.validate(fields); err != nil {
 			return RuleSet{}, fmt.Errorf("rule change: %w", err)
 		}
 		start, err := c.starts()
@@ -101,7 +106,7 @@ func Resolve(changes []Change, season int, at time.Time) (RuleSet, error) {
 		if at.Before(start) || at.Before(c.RecordedAt) {
 			continue
 		}
-		for _, f := range ruleFields() {
+		for _, f := range fields {
 			if f.pathName() == c.Field {
 				if err := f.apply(&result, c.New); err != nil {
 					return RuleSet{}, fmt.Errorf("rule value: %w", err)

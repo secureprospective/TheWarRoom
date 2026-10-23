@@ -82,3 +82,30 @@ D3 plan: `SCAN f` · `SEARCH r USING INDEX sqlite_autoindex_raw_archive_1 (sha25
 | 50,000 | 7.14 s (17 GB) | 3.93 s (10 GB) |
 
 Both are linear: time doubles as records double. A real league adds about 2,500 records a season.
+
+### Multi-season save profile follow-up (2026-10-23)
+
+The four-season `BenchmarkLeagueClosedBooks` fixture isolates D9 saves and D1 people reads.
+CPU profiling at 10k (`-benchtime=10x -cpuprofile`, `pprof -top -cum`) found current-season
+rule resolution dominant, not SQLite: the save-only stack spent 3.42 of 4.58 sampled CPU
+seconds in `CheckRulesAppend`. Whole-profile GC consumed 7.72 CPU seconds; fixture setup
+is also profiled, so those GC samples cannot all be attributed to the save.
+
+Finding: `Resolve` rebuilt the entire field catalogue twice per change. Proposal: build it
+once per resolution and pass it to the unchanged validation logic. No checks, ordering,
+errors or state ownership change; no global cache. Differential tests compare complete
+rules and error messages with the per-change path, including invalid and historical inputs.
+
+Beelink, Go 1.26.10, no competing build/test workloads, 88–93% idle before runs. Three-run
+medians, `-benchtime=1x`, same fixture and toolchain before/after (seconds):
+
+| Workload | Records | Before | After |
+|---|---:|---:|---:|
+| D9 save | 1,000 | 0.159 | 0.162 |
+| D9 save | 10,000 | 0.627 | 0.507 |
+| D1 people | 1,000 | 0.117 | 0.121 |
+| D1 people | 10,000 | 0.444 | 0.424 |
+
+At 10k D9 allocations fall from 4.97M to 2.99M, bytes from 1.065 GB to 0.878 GB.
+D9 improves 19% but still narrowly misses the 0.5 s budget; D1 remains inside 1 s.
+Further rule decoding/replay work remains; no broader cache or validation shortcut was added.
