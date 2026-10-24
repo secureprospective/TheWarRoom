@@ -53,6 +53,8 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
 		h.authenticator(w, r)
+	case RevokePath:
+		h.revoke(w, r)
 	case LoginPath:
 		h.login(w, r)
 	case LedgerPath, PeoplePath, PreviewPath, ExecutePath:
@@ -234,7 +236,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	return nil
 }
 
-func decodeHosted[T RawLogin | RawNativeRequest | RawAuthenticator](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -258,7 +260,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
+func writeHosted[T RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
