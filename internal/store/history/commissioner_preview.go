@@ -39,6 +39,10 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 	if err != nil {
 		return commissioner.Preview{}, err
 	}
+	if err := commissioner.AdmitCredential(ctx, commissioner.Access{Principal: principal, League: raw.League,
+		Operation: raw.Command, Mode: "preview", Raw: raw, Records: records}); err != nil {
+		return previewRefusal(err)
+	}
 	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts)
 	if role == "" && checkErr != nil {
 		return previewRefusal(checkErr)

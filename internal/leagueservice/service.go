@@ -2,6 +2,7 @@ package leagueservice
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -91,8 +92,44 @@ type Host interface {
 }
 
 // Service composes native readings, previews and mutations over the shared transactional store.
-type Service struct{ host Host }
+type Service struct {
+	host      Host
+	admission commissioner.CredentialAdmission
+	hosted    bool
+}
 
 func New(host Host) *Service { return &Service{host: host} }
+
+// NewHosted requires credential admission on every operation, independently of the host's
+// domain Authorizer. A nil admission is a closed door, never desktop authority.
+func NewHosted(host Host, admission commissioner.CredentialAdmission) *Service {
+	return &Service{host: host, admission: admission, hosted: true}
+}
+
+func (a *Service) requestContext(ctx context.Context) context.Context {
+	if a.hosted {
+		return commissioner.WithCredentialAdmission(ctx, a.admission)
+	}
+	return ctx
+}
+
+func (a *Service) admitRead(league, operation, franchise string) error {
+	return a.admitReading(commissioner.Access{League: league, Operation: operation, Mode: "read", Franchise: franchise})
+}
+
+func (a *Service) admitReading(access commissioner.Access) error {
+	if !a.hosted {
+		return nil
+	}
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		return fmt.Errorf("read identity: %w", err)
+	}
+	access.Principal = principal
+	if err := commissioner.AdmitCredential(a.requestContext(a.host.CommissionerContext()), access); err != nil {
+		return fmt.Errorf("admit league reading: %w", err)
+	}
+	return nil
+}
 
 const refreshTimeout = 120 * time.Second

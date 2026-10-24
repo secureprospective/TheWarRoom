@@ -33,8 +33,16 @@ func TestWailsServiceReadParity(t *testing.T) {
 			// Exercise every adapter's empty-input refusal as well as a real league read. Named
 			// desktop Raw types deliberately retain their binding identity across the boundary.
 			for _, populated := range []bool{false, true} {
-				assertParityResults(t, left.Call(parityInputs(t, left.Type(), populated)),
-					right.Call(parityInputs(t, right.Type(), populated)))
+				local := left.Call(parityInputs(t, left.Type(), populated))
+				shared := right.Call(parityInputs(t, right.Type(), populated))
+				if command.Method == "TargetCommissionerControls" {
+					// Hosted metadata can refuse a credential; the offline desktop signature stays fixed.
+					if len(shared) != 2 || !shared[1].IsNil() {
+						t.Fatal("local controls unexpectedly refused")
+					}
+					shared = shared[:1]
+				}
+				assertParityResults(t, local, shared)
 			}
 		})
 	}

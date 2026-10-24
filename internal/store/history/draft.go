@@ -45,6 +45,10 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
+	if err := commissioner.AdmitCredential(ctx, commissioner.Access{Principal: principal, League: in.League,
+		Operation: commissioner.DraftPick, Mode: "execute", Franchise: in.Franchise, DraftPick: &in, Records: records}); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
+	}
 	if err := ownsFranchise(records, principal, in.Franchise); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("rookie pick refused: %w", commissioner.Refused(err))
 	}

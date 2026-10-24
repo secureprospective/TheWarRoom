@@ -37,7 +37,11 @@ func (a *Service) Execute(ctx context.Context, raw commissioner.RawCommand) (com
 		//nolint:wrapcheck // Preserve the session refusal and its identity.
 		return commissioner.Receipt{}, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
+	if err := commissioner.AdmitCredential(a.requestContext(ctx), commissioner.Access{Principal: principal,
+		League: raw.League, Operation: raw.Command, Mode: "execute", Raw: raw}); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.requestContext(ctx), refreshTimeout)
 	defer cancel()
 	receipt, err := a.host.ExecuteCommissionerWithFacts(ctx, raw, principal,
 		a.host.CommissionerAuthorization(), a.host.NativeFacts(), a.host.CommissionerZone())

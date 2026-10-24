@@ -47,7 +47,8 @@ func (a *API) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
 
 // TargetCommissionerControls lists every commissioner control, grouped, and whether it is built yet.
 func (a *API) TargetCommissionerControls() commissioner.Controls {
-	return a.reads.TargetCommissionerControls()
+	// Desktop metadata is available offline; hosted callers use the admitted service read.
+	return commissioner.ControlsReading()
 }
 
 // TargetCommissionerNotices reads the posted notices, league notes, release notes and the mail log. Every

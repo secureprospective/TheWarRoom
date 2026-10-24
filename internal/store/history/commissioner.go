@@ -112,6 +112,10 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
+	if err := commissioner.AdmitCredential(ctx, commissioner.Access{Principal: principal, League: raw.League,
+		Operation: raw.Command, Mode: "execute", Raw: raw, Records: records}); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
+	}
 	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical, gathered)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -315,6 +319,10 @@ type appendRequest struct {
 }
 
 func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRequest) (commissioner.Receipt, error) {
+	if err := commissioner.AdmitCredential(ctx, commissioner.Access{Principal: req.principal, League: req.raw.League,
+		Operation: req.raw.Command, Mode: "execute", Raw: req.raw, Records: req.records}); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
+	}
 	raw, principal, now := req.raw, req.principal, req.at
 	hash := sha256.Sum256([]byte(req.canonical))
 	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
