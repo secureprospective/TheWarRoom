@@ -1,7 +1,11 @@
 package report
 
 import (
+	"errors"
 	"fmt"
+	"log"
+	"net"
+	"net/url"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -43,7 +47,7 @@ func (h HeldFeed[T]) Provenance(source, feed string) snapshot.Provenance {
 
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
 	if err != nil {
-		h.RefreshError = err.Error()
+		h.RefreshError = FailureText(err)
 		return
 	}
 	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
@@ -67,4 +71,35 @@ func StaleFreshness(fetchedAt time.Time, cause error) domain.Freshness {
 		FetchedAt: fetchedAt.UTC().Format(time.RFC3339),
 		Note:      fmt.Sprintf("live fetch failed, showing last known data: %v", cause),
 	}
+}
+
+// Offline is what a person sees when a fetch never reached the site: no connection, no DNS, or a
+// refused or timed-out connection. The error chain behind it goes to the log, not the screen.
+const Offline = "Can't reach the league site. Check your internet connection, then try again."
+
+// offlineError keeps the network cause for errors.Is and the log while reading as Offline.
+type offlineError struct{ cause error }
+
+func (e offlineError) Error() string { return Offline }
+func (e offlineError) Unwrap() error { return e.cause }
+
+// PlainFailure returns a network failure as an error reading Offline alone, logging its detail
+// once; any other error is returned unchanged.
+func PlainFailure(err error) error {
+	var plain offlineError
+	if err == nil || errors.As(err, &plain) || !unreachable(err) {
+		return err
+	}
+	log.Printf("the war room: offline: %v", err)
+	return offlineError{cause: err}
+}
+
+// FailureText is PlainFailure's text, for the held-feed notes a screen shows.
+func FailureText(err error) string { return PlainFailure(err).Error() }
+
+func unreachable(err error) bool {
+	var dns *net.DNSError
+	var op *net.OpError
+	var fetch *url.Error
+	return errors.As(err, &dns) || errors.As(err, &op) || (errors.As(err, &fetch) && fetch.Timeout())
 }

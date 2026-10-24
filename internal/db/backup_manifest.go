@@ -38,7 +38,7 @@ func (m RawBackupManifest) Validate(files [3]BackupFile) error {
 	if m.ManifestVersion != 1 || len(m.Files) != 3 || m.AppBuild == "" || m.CapturedAt.IsZero() || m.CapturedAt.Location() != time.UTC {
 		return fmt.Errorf("db: invalid backup manifest header")
 	}
-	if m.Kind != "daily" && m.Kind != "pre-migration" && m.Kind != "pre-restore" {
+	if m.Kind != "daily" && m.Kind != "manual" && m.Kind != "pre-migration" && m.Kind != "pre-restore" {
 		return fmt.Errorf("db: invalid backup kind %q", m.Kind)
 	}
 	seen := make(map[string]bool)

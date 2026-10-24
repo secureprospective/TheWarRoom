@@ -439,6 +439,15 @@ export function createCommands(
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),
+    'backup.now': command({
+      ...ambient, id: 'backup.now', label: 'Back up now', aliases: ['backup', 'save a backup'], gravity: 'G1',
+      // Control Room › App holds the result, and the sign-in form when a backup needs one first.
+      run: (_args: Record<string, never>) => {
+        state.navigate({ node: 'control', workspace: 'app' });
+        void import('../commissioner/backupState').then(m => m.backupState.run())
+          .catch(cause => state.write({ notice: String(cause) }));
+      },
+    }),
     'commissioner.surface': command({
       ...ambient, id: 'commissioner.surface', label: 'Change the league view',
       args: ['screen', 'action', 'value'],

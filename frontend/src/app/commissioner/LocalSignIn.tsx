@@ -21,7 +21,8 @@ const args = { screen: 'local-sign-in', action: 'check', value: 'submit' } as co
 
 // LocalSignIn keeps the league with its owner when the data moves to another computer or user.
 // The password never leaves this form except to Go, and the field clears after every attempt.
-export function LocalSignIn() {
+// onSeat hears each sign-in Go accepts.
+export function LocalSignIn({ onSeat }: { onSeat?: (seat: Seat) => void } = {}) {
   const [seat, setSeat] = useState<Seat>();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -35,7 +36,9 @@ export function LocalSignIn() {
     if (pending) return;
     setPending(true); setError('');
     try {
-      setSeat(parseSeat(await bindings().TargetCommissionerSeatSignIn(username, password)));
+      const signed = parseSeat(await bindings().TargetCommissionerSeatSignIn(username, password));
+      setSeat(signed);
+      onSeat?.(signed);
       await leagueState.choose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));

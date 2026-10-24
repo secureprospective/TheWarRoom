@@ -51,15 +51,18 @@ func probeVersion(ctx context.Context, path, options string) (int, error) {
 
 // Capture reserves the single writer connection in main, history, what-if order;
 // reservations are the write locks shared by every store, released in reverse order.
-// No VACUUM starts until every writer is stopped. Callers must not hold a writer.
+// No VACUUM starts until every writer is stopped. Callers must not hold a writer. A daily set
+// is taken once a UTC day and returns "" when one exists; a manual set is taken on every call.
 func (b *Backups) Capture(ctx context.Context, pools [3]*Pools, kind string, now time.Time) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if kind != "daily" {
-		return "", fmt.Errorf("db: online capture must be daily")
+	if kind != "daily" && kind != "manual" {
+		return "", fmt.Errorf("db: online capture must be daily or manual")
 	}
-	if due, err := b.dailyDue(ctx, now); err != nil || !due {
-		return "", err
+	if kind == "daily" {
+		if due, err := b.dailyDue(ctx, now); err != nil || !due {
+			return "", err
+		}
 	}
 	var conns [3]*sql.Conn
 	defer func() {

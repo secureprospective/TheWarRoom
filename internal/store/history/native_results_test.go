@@ -548,7 +548,7 @@ func TestMatchedRestoreKeepsPopulatedNativeResults(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := b.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
+	if _, err := b.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	f.s, f.pools = statStore(t, f.path)

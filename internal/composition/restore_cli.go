@@ -41,7 +41,8 @@ func listBackups(stdout, stderr io.Writer) int {
 
 // restoreBackup replaces all three databases with the named set, offline. It takes the same
 // instance lock the app does, so it refuses while the app is open, and the files it replaces are
-// kept as a pre-restore set beside the others.
+// kept as a pre-restore set beside the others. A profile never opened (a new computer) has no
+// files to keep, and the result says so.
 func restoreBackup(set string, stdout, stderr io.Writer) int {
 	dir, err := configDir()
 	if err != nil {
@@ -59,10 +60,15 @@ func restoreBackup(set string, stdout, stderr io.Writer) int {
 		_, _ = fmt.Fprintf(stderr, "thewarroom: %s\n", err)
 		return 1
 	}
-	if err := backups.Restore(context.Background(), filepath.Join(dir, "backups", filepath.Base(set)), time.Now().UTC()); err != nil {
+	safety, err := backups.Restore(context.Background(), filepath.Join(dir, "backups", filepath.Base(set)), time.Now().UTC())
+	if err != nil {
 		_, _ = fmt.Fprintf(stderr, "thewarroom: restore %s: %s\n", set, err)
 		return 1
 	}
-	_, _ = fmt.Fprintf(stdout, "restored %s; the replaced files are kept as a pre-restore set in %s\n", filepath.Base(set), filepath.Join(dir, "backups"))
+	if safety == "" {
+		_, _ = fmt.Fprintf(stdout, "restored %s; this computer had no league data yet, so there was nothing to keep a safety copy of\n", filepath.Base(set))
+		return 0
+	}
+	_, _ = fmt.Fprintf(stdout, "restored %s; the replaced files are kept as the safety copy %s\n", filepath.Base(set), filepath.Base(safety))
 	return 0
 }

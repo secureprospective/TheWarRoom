@@ -19,6 +19,7 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
@@ -125,11 +126,7 @@ func (a *App) startup(ctx context.Context) {
 	defer func() { a.finishStartup(ctx, refreshed) }()
 	a.core.Ctx = ctx
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
-	defer func() {
-		if a.core.StartupErr != nil {
-			log.Printf("the war room: startup failed: %v", a.core.StartupErr)
-		}
-	}()
+	defer a.settleStartupFailure()
 
 	// Logging starts first so a lock or open failure below reaches the disk log. A logging
 	// failure is not fatal.
@@ -174,6 +171,15 @@ func (a *App) startup(ctx context.Context) {
 	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
 	a.lookupMyFranchise(ctx)
 	a.core.LaunchRefreshDue = !refreshed
+}
+
+// settleStartupFailure logs a failed startup's whole chain. One that could not reach MFL is then
+// kept as the plain offline sentence, which every screen shows through ready.
+func (a *App) settleStartupFailure() {
+	if a.core.StartupErr != nil {
+		log.Printf("the war room: startup failed: %v", a.core.StartupErr)
+		a.core.StartupErr = report.PlainFailure(a.core.StartupErr)
+	}
 }
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
