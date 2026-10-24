@@ -77,9 +77,10 @@ func testCertificates(t *testing.T) (string, string, string, *x509.CertPool) {
 	return certPath, keyPath, caPath, roots
 }
 
-func startBinary(ctx context.Context, t *testing.T, binary, cert, key string) string {
+func startBinary(ctx context.Context, t *testing.T, binary, cert, key string, extra ...string) string {
 	t.Helper()
-	command := exec.CommandContext(ctx, binary, "-fixture", "-listen", "127.0.0.1:0", "-tls-cert", cert, "-tls-key", key)
+	args := append([]string{"-fixture", "-listen", "127.0.0.1:0", "-tls-cert", cert, "-tls-key", key}, extra...)
+	command := exec.CommandContext(ctx, binary, args...)
 	// An actual headless child process, not the desktop composition or a test HTTP server.
 	command.Env = append(os.Environ(), "DISPLAY=", "WAYLAND_DISPLAY=")
 	var stderr bytes.Buffer
@@ -157,6 +158,7 @@ func TestRealBinaryFixtureHTTPS(t *testing.T) {
 		t.Fatalf("untrusted cert accepted: %v", err)
 	}
 	assertReadOnlyProtocol(ctx, t, origin, roots)
+	assertFixtureChanges(ctx, t, startBinary(ctx, t, binary, cert, key, "-fixture-changes"), roots)
 	after, err := client.FixtureLedger(ctx)
 	if err != nil || !reflect.DeepEqual(after, got) {
 		t.Fatalf("rejection changed fixture: %+v %v", after, err)
@@ -213,4 +215,52 @@ type observer struct{}
 
 func (observer) Allow(_, _, _ string) (string, error) {
 	return "", fmt.Errorf("fixture observer has no permissions")
+}
+
+func assertFixtureChanges(ctx context.Context, t *testing.T, origin string, roots *x509.CertPool) {
+	t.Helper()
+	client, err := serverclient.NewFixture(origin, roots)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	raw := commissioner.RawCommand{League: "native.https-fixture", Command: commissioner.NotePost,
+		Args:   commissioner.RawArgs{Note: &commissioner.RawNote{Text: "A note over HTTPS"}},
+		Reason: "Exercise the binary write path", Expected: 1, Request: "https-note", Effective: "now", Visibility: "league"}
+	if _, err := client.FixtureChange(ctx, raw); err != nil {
+		t.Fatal(err)
+	}
+	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}
+	defer transport.CloseIdleConnections()
+	httpClient := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+	encoded, err := json.Marshal(serverhttp.RawFixtureChange{Protocol: 1, Command: raw})
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid := string(encoded)
+	for _, body := range []string{
+		strings.Replace(valid, `"protocol":1`, `"protocol":2`, 1),
+		strings.Replace(valid, `"protocol":1`, `"protocol":1,"principal":"owner.other"`, 1),
+		strings.Replace(valid, `native.https-fixture`, `native.other`, 1),
+		valid + `{}`, strings.Repeat("x", (256<<10)+1),
+	} {
+		request, err := http.NewRequestWithContext(ctx, http.MethodPost, origin+serverhttp.FixtureChangePath, strings.NewReader(body))
+		if err != nil {
+			t.Fatal(err)
+		}
+		response, err := httpClient.Do(request)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := response.Body.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if response.StatusCode != http.StatusBadRequest {
+			t.Fatalf("invalid body accepted: %d", response.StatusCode)
+		}
+	}
+	ledger, err := client.FixtureLedger(ctx)
+	if err != nil || ledger.Revision != 2 {
+		t.Fatalf("binary write/refusal state: %+v %v", ledger, err)
+	}
 }

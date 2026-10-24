@@ -32,7 +32,7 @@ func (r RawLedgerResponse) Validate() error {
 		return fmt.Errorf("invalid fixture ledger")
 	}
 	for _, e := range r.Ledger.Entries {
-		if e.ID == "" || e.Who == "" || e.What == "" || e.When.IsZero() || e.Undo != "" {
+		if e.ID == "" || e.Who == "" || e.What == "" || e.When.IsZero() {
 			return fmt.Errorf("invalid fixture ledger entry")
 		}
 	}
@@ -59,12 +59,16 @@ func ListenLoopback(ctx context.Context, address string) (net.Listener, error) {
 
 // ServeFixture owns the listener and closes it on cancellation. It has no write routes.
 func ServeFixture(ctx context.Context, listener net.Listener, certificate tls.Certificate) error {
+	return serveFixture(ctx, listener, certificate, http.HandlerFunc(fixtureRead))
+}
+
+func serveFixture(ctx context.Context, listener net.Listener, certificate tls.Certificate, handler http.Handler) error {
 	address, ok := listener.Addr().(*net.TCPAddr)
 	if !ok || !address.IP.IsLoopback() {
 		return fmt.Errorf("fixture listener is not loopback")
 	}
 	server := &http.Server{
-		Handler: http.HandlerFunc(fixtureRead), ReadHeaderTimeout: 5 * time.Second,
+		Handler: handler, ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout: 10 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second,
 		MaxHeaderBytes: 16 << 10,
 		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}},

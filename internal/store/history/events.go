@@ -144,7 +144,7 @@ func (s *Store) insertEvent(ctx context.Context, tx *sql.Tx, e LeagueEvent, expe
 	if e.Supersedes != "" {
 		supersedes = sql.NullString{String: e.Supersedes, Valid: true}
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,supersedes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.League, e.Stream, e.Revision, formatTime(e.EffectiveAt), formatTime(e.RecordedAt), e.Actor, e.Scope, e.Kind, string(payload), e.InputHash, e.CorrelationID, supersedes); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,supersedes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.League, e.Stream, e.Revision, e.EffectiveAt.UTC().Format(time.RFC3339Nano), e.RecordedAt.UTC().Format(time.RFC3339Nano), e.Actor, e.Scope, e.Kind, string(payload), e.InputHash, e.CorrelationID, supersedes); err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: append: %w", err)
 	}
 	return e, nil
@@ -171,10 +171,10 @@ func scanEvents(rows *sql.Rows) ([]LeagueEvent, error) {
 		if err := rows.Scan(&e.ID, &e.League, &e.Stream, &e.Revision, &effective, &recorded, &e.Actor, &e.Scope, &e.Kind, &payload, &e.InputHash, &e.CorrelationID, &e.Supersedes); err != nil {
 			return nil, fmt.Errorf("league event: scan: %w", err)
 		}
-		if e.EffectiveAt, err = parseTime(effective); err != nil {
+		if e.EffectiveAt, err = parseEventTime(effective); err != nil {
 			return nil, err
 		}
-		if e.RecordedAt, err = parseTime(recorded); err != nil {
+		if e.RecordedAt, err = parseEventTime(recorded); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(payload), &e.Payload); err != nil {
@@ -241,4 +241,13 @@ func (s *Store) Authority(ctx context.Context, league, domain string, at time.Ti
 		return AuthorityMFL, nil
 	}
 	return AuthorityLocal, nil
+}
+
+// RFC3339Nano also accepts the microsecond timestamps in older event rows.
+func parseEventTime(value string) (time.Time, error) {
+	at, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read event time: %w", err)
+	}
+	return at, nil
 }
