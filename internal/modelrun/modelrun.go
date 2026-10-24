@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -208,6 +209,7 @@ type pass struct {
 	params  map[domain.Position]model.Params
 	horizon model.Horizon
 	season  int
+	decay   float64 // the engine's age-pull rate, for positions valued by today's board rule
 }
 
 func newPass(d model.Data, spec Spec) (pass, error) {
@@ -230,6 +232,9 @@ func newPass(d model.Data, spec Spec) (pass, error) {
 		return pass{}, fmt.Errorf("modelrun: %w", err)
 	}
 	p.horizon = model.Horizon{Seasons: int(math.Round(seasons)), Discount: discount}
+	if p.decay, err = spec.Params.GetGlobal(params.KeyLayer3DecayRate); err != nil {
+		return pass{}, fmt.Errorf("modelrun: %w", err)
+	}
 	return p, nil
 }
 
@@ -241,6 +246,8 @@ type playerInput struct {
 	Past      []model.Past
 	Current   model.Past
 	Mislinked bool
+	// TodayTotal and TodayPull feed today's board rule where the fit did not keep the model.
+	TodayTotal, TodayPull float64
 }
 
 // value scores one rostered player, or returns why it could not.
@@ -273,6 +280,17 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no %s regulars in %d to read points from", facts.Position, ps.season-1)
 	}
 	v := m.Value(&pl, in.Past, in.Current, ps.horizon, scale)
+	if !m.BoardKept {
+		pull, err := AgePull(facts.Position, pl.AgeAt(ps.season), ps.decay)
+		if err != nil {
+			return history.ModelScore{}, playerInput{}, err.Error()
+		}
+		if last := ps.data.Seasons[mflID][ps.season-1]; last != nil && last.Games() > 0 {
+			in.TodayTotal = last.PPG() * float64(last.Games())
+		}
+		in.TodayPull = pull
+		v = model.TodayRule(v, in.TodayTotal, pull, scale)
+	}
 	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
 }
 
@@ -300,6 +318,19 @@ func (ps pass) player(mflID string, facts normalize.PlayerFacts) (pl model.Playe
 		pl.Birth = time.Unix(facts.Birthdate, 0).UTC()
 	}
 	return pl, mislinked
+}
+
+// AgePull is the engine's age pull that today's board applies at age; an unknown age is the arc's
+// centre, as the survival arc reads it.
+func AgePull(pos domain.Position, age, decay float64) (float64, error) {
+	if math.IsNaN(age) {
+		age = model.ArcCenter
+	}
+	pull, err := engine.ApplyDecay(age, engine.PeakLimit(pos), decay)
+	if err != nil {
+		return 0, fmt.Errorf("modelrun: age pull: %w", err)
+	}
+	return pull, nil
 }
 
 func abs(n int) int { return max(n, -n) }

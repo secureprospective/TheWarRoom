@@ -58,6 +58,14 @@ export function TargetCommissionerSchedule(arg1) {
   return window['go']['commissioner']['API']['TargetCommissionerSchedule'](arg1);
 }
 
+export function TargetCommissionerSeat() {
+  return window['go']['commissioner']['API']['TargetCommissionerSeat']();
+}
+
+export function TargetCommissionerSeatSignIn(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetCommissionerSeatSignIn'](arg1, arg2);
+}
+
 export function TargetCorrections(arg1) {
   return window['go']['commissioner']['API']['TargetCorrections'](arg1);
 }

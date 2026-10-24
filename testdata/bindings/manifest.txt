@@ -13,6 +13,8 @@ commissioner.API.TargetCommissionerPeople
 commissioner.API.TargetCommissionerPreview
 commissioner.API.TargetCommissionerRules
 commissioner.API.TargetCommissionerSchedule
+commissioner.API.TargetCommissionerSeat
+commissioner.API.TargetCommissionerSeatSignIn
 commissioner.API.TargetCorrections
 commissioner.API.TargetLeagueCalendar
 commissioner.API.TargetLeagueSchedule

@@ -36,7 +36,7 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			http.Error(w, "service unavailable", http.StatusServiceUnavailable)
 			return
 		}
-		service, device := h.invalidationService(w, r)
+		service, gate, device := h.invalidationService(w, r)
 		if service == nil {
 			return
 		}
@@ -48,6 +48,11 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		}
 		//nolint:contextcheck // StoredHost owns the request context used by the reading API.
 		reading, err := service.TargetCommissionerLedger(league)
+		if err != nil {
+			http.Error(w, "native read refused", http.StatusForbidden)
+			return
+		}
+		lifetime, limited, err := gate.proofRemaining(r.Context(), league)
 		if err != nil {
 			http.Error(w, "native read refused", http.StatusForbidden)
 			return
@@ -72,11 +77,20 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			}
 			mu.Unlock()
 		}()
-		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision)
+		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision, proofLapse(lifetime, limited))
 	})
 }
 
-func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64) {
+// proofLapse fires when a privileged stream's recent-auth proof lapses; nil never fires. The timer is
+// left to the runtime: an unreferenced timer is collected whether or not it fired.
+func proofLapse(lifetime time.Duration, limited bool) <-chan time.Time {
+	if !limited {
+		return nil
+	}
+	return time.NewTimer(lifetime).C
+}
+
+func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64, lapse <-chan time.Time) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	controller := http.NewResponseController(w)
 	if emitInvalidation(controller, w) != nil {
@@ -98,7 +112,7 @@ func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Requ
 		}
 		return nil
 	}
-	streamInvalidations(r.Context(), controller, w, &poll, checkSession)
+	streamInvalidations(r.Context(), controller, w, &poll, checkSession, lapse)
 }
 
 // The global head is only a work gate; the authorized recipient token alone wakes peers.
@@ -125,7 +139,7 @@ func (p *invalidationPoll) changed(ctx context.Context) (bool, error) {
 	return changed, nil
 }
 
-func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, poll *invalidationPoll, checkSession func(context.Context) error) {
+func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, poll *invalidationPoll, checkSession func(context.Context) error, lapse <-chan time.Time) {
 	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
 	session := time.NewTicker(500 * time.Millisecond)
@@ -135,6 +149,8 @@ func streamInvalidations(ctx context.Context, controller *http.ResponseControlle
 	for {
 		select {
 		case <-ctx.Done():
+			return
+		case <-lapse:
 			return
 		case <-ticker.C:
 			changed, err := poll.changed(ctx)
@@ -175,27 +191,27 @@ func emitInvalidation(controller *http.ResponseController, w http.ResponseWriter
 	return nil
 }
 
-func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request) (*leagueservice.Service, string) {
+func (h Hosted) invalidationService(w http.ResponseWriter, r *http.Request) (*leagueservice.Service, accountAdmission, string) {
 	authorization := r.Header.Get("Authorization")
 	if len(r.Header.Values("Authorization")) != 1 || !strings.HasPrefix(authorization, "Bearer ") {
 		http.Error(w, "session required", http.StatusUnauthorized)
-		return nil, ""
+		return nil, accountAdmission{}, ""
 	}
 	session := accounts.RawSession{Bearer: strings.TrimPrefix(authorization, "Bearer ")}
 	account, err := h.Sessions.Authenticate(r.Context(), session)
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)
-		return nil, ""
+		return nil, accountAdmission{}, ""
 	}
 	principal, err := account.Principal()
 	if err != nil {
 		http.Error(w, "session refused", http.StatusUnauthorized)
-		return nil, ""
+		return nil, accountAdmission{}, ""
 	}
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(session), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
-	return service, session.Bearer
+	return service, gate, session.Bearer
 }
 
 func validInvalidationRequest(r *http.Request) bool {

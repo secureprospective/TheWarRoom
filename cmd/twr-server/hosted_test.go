@@ -101,3 +101,17 @@ func TestHostedUsesHostClock(t *testing.T) {
 		t.Fatalf("hosted due worker clock is %v, not a sourced HostClock", clock)
 	}
 }
+
+func TestTrustedProxyFlagAcceptsOnlyLoopback(t *testing.T) {
+	if hop, err := trustedProxy(""); err != nil || hop.IsValid() {
+		t.Fatalf("default trusts a proxy: %v %v", hop, err)
+	}
+	if hop, err := trustedProxy("127.0.0.1"); err != nil || hop.String() != "127.0.0.1" {
+		t.Fatalf("loopback hop refused: %v %v", hop, err)
+	}
+	for _, bad := range []string{"192.0.2.9", "0.0.0.0", "localhost", "fe80::1%lo"} {
+		if _, err := trustedProxy(bad); err == nil {
+			t.Errorf("%q accepted as a trusted hop", bad)
+		}
+	}
+}

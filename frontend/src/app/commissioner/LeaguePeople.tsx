@@ -1,4 +1,5 @@
 import { DensityScreen } from './DensityScreen';
+import { LocalSignIn } from './LocalSignIn';
 import { ReportView } from '../reports/ReportView';
 import { personLabel } from './forms';
 import type { People, PeopleVote } from './people';
@@ -35,6 +36,7 @@ export default function LeaguePeople() {
       <div className="league-people">
         <h4>People</h4>
         <p>You are: {people.yourRole}</p>
+        <LocalSignIn />
         <ReportView report={seatsReport(people)} howLabel="How to read this" />
         <p>Trade review seats (DOT): {people.dotCount}. {people.dotStatus}</p>
         {people.roles.length > 0 && <ReportView report={rolesReport(people)} howLabel="How to read this" />}

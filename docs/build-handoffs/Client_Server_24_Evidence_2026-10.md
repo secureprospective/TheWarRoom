@@ -54,3 +54,29 @@ append-triggered fanout. Intermediate changes may coalesce; consumers reread cur
 state, not an event history. Target-CT load/latency, 64-stream saturation, slow-network
 revocation and proxy/Tunnel streaming remain staging acceptance work, not measured
 claims. Handler lifetime owns the connection budget; instantiate it once per server.
+
+## Debt sweep 2 (2026-10-24): privileged streams end with their proof
+
+A commissioner's or deputy's stream is admitted by a five-minute recent-auth proof.
+The handler now reads the proof's remaining lifetime on the server clock at admission
+(`TOTPService.PrivilegedRemaining`) and closes the stream on a one-shot timer at that
+moment, instead of leaving it open and silent until the next commit failed a reread.
+Owner streams, which need no proof, have no timer.
+`TestSSEPrivilegedStreamClosesWhenProofLapses` opens a stream with 300 ms of proof left
+and requires it to close between 200 ms and 5 s; removing the timer case fails it.
+
+## Debt sweep 2: idle-stream cost with session checks
+
+`BenchmarkIdleStreamHeads100k` (`-tags leaguebench`, linux) now includes the device
+session checks: one op is one 250 ms round for 24 idle streams on a 100k-event ledger,
+24 committed-head queries plus, every second round, 24 `SessionService.Check` calls
+against account tables sharing the ledger's pools (12 per op on average). Beelink,
+Ryzen 9 6900HX, `-count 3`, local process (not the target CT):
+
+| Version | ns/op | CPU ns/op | session checks/op | B/op | allocs/op |
+|---|---|---|---|---|---|
+| heads only (`main` before this sweep) | 693,944–721,870 | 861,674–894,458 | 0 | 24,078–24,091 | 648 |
+| heads + session checks | 1,206,946–1,274,107 | 1,464,053–1,532,602 | 12 | 42,547–42,601 | 1,177 |
+
+So a session check costs about 45 µs of CPU, and 24 idle streams cost about 6 ms of
+CPU per second (four rounds), roughly 0.6% of one core.

@@ -287,3 +287,33 @@ func TestSSEOutlivesOrdinaryRequestBudget(t *testing.T) {
 	appendStreamNote(t, f, "league")
 	expectInvalidation(t, events)
 }
+
+// A commissioner's stream was admitted by a five-minute recent-auth proof. When the proof lapses
+// the stream closes at that moment, without waiting for the next commit to fail a read.
+func TestSSEPrivilegedStreamClosesWhenProofLapses(t *testing.T) {
+	f := newHostedFixture(t)
+	bearer, proof := f.directCommissioner(t)
+	f.now = f.now.Add(accounts.RecentAuthLifetime - 300*time.Millisecond)
+	response := openStream(t, f, bearer, proof, 200)
+	defer response.Body.Close()
+	events := streamEvents(response)
+	expectInvalidation(t, events)
+	opened := time.Now()
+	select {
+	case event, ok := <-events:
+		if ok {
+			t.Fatalf("lapsed proof sent event %q", event)
+		}
+		if waited := time.Since(opened); waited < 200*time.Millisecond {
+			t.Fatalf("stream closed %s before the proof lapsed", waited)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("stream stayed open after its recent-auth proof lapsed")
+	}
+	// An owner's stream needs no proof and is not cut short.
+	owner := openStream(t, f, streamOwner(t, f), "", 200)
+	defer owner.Body.Close()
+	quiet := streamEvents(owner)
+	expectInvalidation(t, quiet)
+	expectQuiet(t, quiet)
+}

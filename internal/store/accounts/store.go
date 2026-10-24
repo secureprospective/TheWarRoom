@@ -77,6 +77,9 @@ CREATE TABLE IF NOT EXISTS account_security_audit (
 	if err := s.initializeSessions(ctx); err != nil {
 		return err
 	}
+	if err := s.initializeAliases(ctx); err != nil {
+		return err
+	}
 	return s.initializeTokens(ctx)
 }
 

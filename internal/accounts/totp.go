@@ -76,7 +76,7 @@ type TOTPRepository interface {
 	BeginTOTP(context.Context, string, []byte) error
 	TOTP(context.Context, string) (TOTPState, error)
 	ConsumeTOTP(ctx context.Context, accountID string, sealedSeed []byte, counter int64, confirming bool, proofDigest string) error
-	CheckRecentAuth(ctx context.Context, accountID, proofDigest string) error
+	RecentAuthRemaining(ctx context.Context, accountID, proofDigest string) (time.Duration, error)
 }
 
 type TOTPService struct {
@@ -187,18 +187,27 @@ func (s *TOTPService) open(accountID string, sealed []byte) ([]byte, error) {
 // CheckPrivileged is a credential gate, not domain authorization. The caller supplies
 // current league policy and canonical identity from trusted admission, never request fields.
 func (s *TOTPService) CheckPrivileged(ctx context.Context, policy governance.State, principal governance.Principal, proof RecentAuth) error {
+	_, _, err := s.PrivilegedRemaining(ctx, policy, principal, proof)
+	return err
+}
+
+// PrivilegedRemaining checks like CheckPrivileged and says how long the proof has left. limited is
+// false for ordinary accounts, whose access never depended on a proof.
+func (s *TOTPService) PrivilegedRemaining(ctx context.Context, policy governance.State, principal governance.Principal,
+	proof RecentAuth) (remaining time.Duration, limited bool, err error) {
 	if !policy.HasRole(principal, governance.Commissioner) && !policy.HasRole(principal, governance.CoCommissioner) {
-		return nil
+		return 0, false, nil
 	}
 	id := strings.TrimPrefix(string(principal), "acct.")
 	canonical, err := governance.AccountPrincipal(id)
 	if err != nil || canonical != principal || len(proof.Token) != 43 {
-		return ErrTOTPRequired
+		return 0, true, ErrTOTPRequired
 	}
-	if err := s.store.CheckRecentAuth(ctx, id, enrollmentDigest(proof.Token)); err != nil {
-		return fmt.Errorf("recent authentication: %w", err)
+	remaining, err = s.store.RecentAuthRemaining(ctx, id, enrollmentDigest(proof.Token))
+	if err != nil {
+		return 0, true, fmt.Errorf("recent authentication: %w", err)
 	}
-	return nil
+	return remaining, true, nil
 }
 
 // ValidTOTPCounter is rechecked after writer acquisition so a queued code cannot age in.

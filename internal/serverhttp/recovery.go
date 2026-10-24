@@ -1,7 +1,6 @@
 package serverhttp
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -45,9 +44,7 @@ func (h Hosted) recoverAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err := h.Recovery.Recover(r.Context(), accounts.RawRecovery{Username: raw.Username, Code: raw.Code, Password: raw.Password})
-	if errors.Is(err, accounts.ErrPasswordBusy) {
-		w.Header().Set("Retry-After", "1")
-		http.Error(w, "password service busy", http.StatusTooManyRequests)
+	if passwordBusy(w, err) {
 		return
 	}
 	if err != nil {

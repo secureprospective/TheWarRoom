@@ -73,7 +73,9 @@ func limitsSection(w func(string, ...any)) {
 		"still takes the lower number, and the simpler piece on a tie.\n" +
 		"- Players are fitted at the position MFL lists them at; a player MFL does not list keeps nflverse's, and nflverse's generic \"DB\" among them is left out, its position ambiguous between CB and S.\n" +
 		"- Kickers: a season barely predicts the next and the prior explains nothing, so the model shrinks toward a " +
-		"prior that is noise and ranks kickers worse than last season's total does (see Against today's board).\n" +
+		"prior that is noise and ranks kickers worse than last season's total does (see Against today's board). Where " +
+		"today's rule beats the model on both talent and value, the stored params set model.board_kept to 0 and the app " +
+		"values that position by today's rule instead.\n" +
 		"- The prior's weight for the app's own scouting history needs years of stored priors.\n")
 }
 

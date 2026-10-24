@@ -68,6 +68,14 @@ loses. That is `internal/model`, not native statistics or fantasyscore. This sli
 proves native kicker scoring and baseline retention; it does **not** implement or
 claim the separate valuation fallback. That requires an explicitly scoped follow-up.
 
+**Built in debt sweep 2 (2026-10-24).** The fit now records `model.board_kept` per
+position: the model is kept only where it strictly beats today's board rule on talent or
+value. On the 2025 holdout only K loses both (0.03 vs 0.25, 0.07 vs 0.46), so shipped
+`fitted.json` sets K to 0 and `modelrun` values kickers by today's rule: last season's
+total league points × the engine's age pull, per game of a 17-game season. Tests:
+`TestKickerValueFallsBackToTodaysBoardRule`, `TestOnlyKickersFallBackToTodaysBoardRule`,
+`TestBoardCheckKeepsTheModelOnlyWhereItWins`.
+
 No live MFL calls, production import, deployed server, full-season capacity or
 source-provider completeness were exercised. Game presence is the existing
 `AttachPlays` coverage contract, not independent proof every source play exists.

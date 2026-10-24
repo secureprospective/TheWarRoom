@@ -1,7 +1,6 @@
 package serverhttp
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -72,9 +71,7 @@ func (h Hosted) authenticator(w http.ResponseWriter, r *http.Request) {
 		proof, err = h.TOTP.StepUp(r.Context(), credentials, accounts.RawTOTP{Code: raw.Code})
 		response.RecentAuth = proof.Token
 	}
-	if errors.Is(err, accounts.ErrPasswordBusy) {
-		w.Header().Set("Retry-After", "1")
-		http.Error(w, "password service busy", http.StatusTooManyRequests)
+	if passwordBusy(w, err) {
 		return
 	}
 	if err != nil {

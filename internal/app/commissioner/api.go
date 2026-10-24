@@ -20,6 +20,7 @@ type Host interface {
 	ResultsHost
 	RosterHost
 	MutationHost
+	SeatHost
 }
 type SessionHost = leagueservice.SessionHost
 type ActionHost interface {
@@ -71,6 +72,8 @@ func Commands() []catalog.Command {
 		{"TargetCommissionerPreview", "commish", "G0"},
 		{"TargetCommissionerRules", "gm,commish", "G0"},
 		{"TargetCommissionerSchedule", "commish", "G0"},
+		{"TargetCommissionerSeat", "gm,commish,admin", "G0"},
+		{"TargetCommissionerSeatSignIn", "gm,commish,admin", "G1"},
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
 		{"TargetLeagueSchedule", "gm,commish", "G0"},
@@ -119,6 +122,8 @@ func desktopCommands(methods []struct{ method, role, gravity string }) []catalog
 			command.ID = "commish.ledger.read"
 		case "TargetNativeLineupSet":
 			command.ID = "lineup.set"
+		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn":
+			command.Availability = "desktop" // a hosted league signs in on the server
 		}
 		if read, ok := reads[command.Method]; ok {
 			read.Role = command.Role

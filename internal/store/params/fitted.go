@@ -48,6 +48,9 @@ func fittedKind(key string) (lo, hi float64, meaning string) {
 		return 0.01, 10000, "Games of this season's evidence at which production and the prior weigh equally"
 	case key == "model.k_dynasty":
 		return 0.01, 10000, "Games of evidence at which production and the prior weigh equally for dynasty"
+	case key == "model.board_kept":
+		return 0, 1, "1: the model values this position; 0: today's board rule does (last season's total × age pull), " +
+			"because it ranked the holdout better on talent and value"
 	case key == "model.z_exponential":
 		return 0, 1, "1: production's weight is 1 − exp(−games/k); 0: games/(games + k)"
 	case strings.HasPrefix(key, "model.recency."):

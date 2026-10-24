@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/netip"
 	"os"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -28,6 +29,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	key := flags.String("tls-key", "", "TLS private key PEM")
 	totpKey := flags.String("totp-key-file", "", "owner-only 32-byte authenticator encryption key")
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
+	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse hosted flags: %w", err)
 	}
@@ -35,17 +37,13 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil || !info.Mode().IsRegular() || flags.NArg() != 0 {
 		return fmt.Errorf("hosted mode requires an existing server database")
 	}
-	encryptionKey, err := readOfflineKey(*totpKey)
+	encryptionKey, catalogue, certificate, err := hostedFiles(*totpKey, *registry, *cert, *key)
 	if err != nil {
-		return fmt.Errorf("authenticator key: %w", err)
+		return err
 	}
-	catalogue, err := readPreviewRegistry(*registry)
+	hop, err := trustedProxy(*trusted)
 	if err != nil {
-		return fmt.Errorf("read preview registry: %w", err)
-	}
-	certificate, err := tls.LoadX509KeyPair(*cert, *key)
-	if err != nil {
-		return fmt.Errorf("load server TLS: %w", err)
+		return err
 	}
 	pools, err := db.Open(ctx, *path, history.SchemaVersion())
 	if err != nil {
@@ -56,6 +54,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	handler.TrustedProxy = hop
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
@@ -71,6 +70,35 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return fmt.Errorf("serve account HTTPS: %w", err)
 	}
 	return nil
+}
+
+// hostedFiles reads the authenticator key, preview registry and TLS pair the server is started with.
+func hostedFiles(totpKey, registry, cert, key string) ([]byte, []byte, tls.Certificate, error) {
+	encryptionKey, err := readOfflineKey(totpKey)
+	if err != nil {
+		return nil, nil, tls.Certificate{}, fmt.Errorf("authenticator key: %w", err)
+	}
+	catalogue, err := readPreviewRegistry(registry)
+	if err != nil {
+		return nil, nil, tls.Certificate{}, fmt.Errorf("read preview registry: %w", err)
+	}
+	certificate, err := tls.LoadX509KeyPair(cert, key)
+	if err != nil {
+		return nil, nil, tls.Certificate{}, fmt.Errorf("load server TLS: %w", err)
+	}
+	return encryptionKey, catalogue, certificate, nil
+}
+
+// trustedProxy accepts only a literal loopback address: the tunnel hop must run on this host.
+func trustedProxy(flag string) (netip.Addr, error) {
+	if flag == "" {
+		return netip.Addr{}, nil
+	}
+	hop, err := netip.ParseAddr(flag)
+	if err != nil || !hop.IsLoopback() || hop.Zone() != "" {
+		return netip.Addr{}, fmt.Errorf("trusted proxy must be a literal loopback IP")
+	}
+	return hop, nil
 }
 
 func startHostedDueWorker(ctx context.Context, worker *leagueservice.DueWorker) func() {

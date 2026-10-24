@@ -48,6 +48,7 @@ export function stub(over: Partial<App> = {}, readings: { people?: Reading; rule
       return read(readings.rules ?? rulesWire);
     },
     TargetCommissionerNotices: async () => noticesWire.commissioner,
+    TargetCommissionerSeat: async () => ({ hasAccount: true, username: 'commish' }),
     TargetCommissionerDigests: async () => digestsWire.creator,
     TargetCommissionerPeople: async league => {
       calls.people.push(league);

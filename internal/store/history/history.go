@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -51,6 +52,8 @@ type Store struct {
 	lineupEnv LineupEnvironment
 	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
 	bidEnv BidEnvironmentSource
+	// aliases is the desktop's linked-identity map, read when a caller supplies none.
+	aliases VerifiedAliasSource
 
 	leaguesMu sync.Mutex
 	leagues   nativeLeagueRevision
@@ -78,6 +81,12 @@ func (s *Store) signalCommissionerCommit() {
 
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
+
+// VerifiedAliasSource supplies identities a trusted account check linked to one account.
+type VerifiedAliasSource func(ctx context.Context, league string) ([]governance.VerifiedAlias, error)
+
+// SetVerifiedAliases installs the desktop's linked identities before serving requests.
+func (s *Store) SetVerifiedAliases(source VerifiedAliasSource) { s.aliases = source }
 
 // Registry returns the registry the store was built with.
 func (s *Store) Registry() *measures.Registry { return s.reg }
