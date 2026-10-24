@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS account_enrollments (
  expires_at INTEGER NOT NULL,
  redeemed_account TEXT REFERENCES accounts(id),
  CHECK(expires_at > issued_at)
+) STRICT;
+CREATE TABLE IF NOT EXISTS account_totp (
+ account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
+ sealed_seed BLOB NOT NULL CHECK(length(sealed_seed) = 48),
+ pending_until INTEGER NOT NULL,
+ confirmed INTEGER NOT NULL DEFAULT 0 CHECK(confirmed IN (0, 1)),
+ last_counter INTEGER NOT NULL DEFAULT -1,
+ proof_hash TEXT NOT NULL DEFAULT '',
+ authenticated_at INTEGER NOT NULL DEFAULT 0
 ) STRICT;`)
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)

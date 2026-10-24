@@ -21,9 +21,9 @@ fail before allocating KDF memory. Credentials redact normal Go formatting and
 omit secrets from JSON; callers must never log individual secret fields.
 
 Bootstrap is a local Go service operation, not an HTTP route, CLI flag, account
-recovery mechanism, league creation or role grant. Hosting, enrollment, stronger
-password policy, login throttling/KDF concurrency, TOTP and sessions belong to
-later slices. No network authentication is enabled here.
+recovery mechanism, league creation or role grant. Hosting, stronger password
+policy, login throttling/KDF concurrency and sessions remain later slices.
+No network login is enabled here.
 
 Evidence: `TestLocalBootstrapAuthenticationAndLeagueIsolation` exercises the real
 service and stores alongside an existing native league: valid/invalid logins,
@@ -73,3 +73,47 @@ admission and atomic refusal. `TestAccountEnrollmentDoesNotGrantOrReplaceSeat`
 observes unchanged real league history, seats and roles and a Visitor account.
 `TestEnrollmentHTTPSRoute` exercises actual TLS requests, strict input rejection,
 wrong identity, success, replay and login using the new password.
+
+## Privileged authenticators
+
+The account service owns password verification, TOTP verification and encryption;
+the account store owns replay counters, setup expiry and recent-auth admission.
+The seed is 20 random bytes, provisioned as unpadded base32, using the RFC 6238
+HMAC-SHA1 / six-digit / 30-second profile with one adjacent step of clock leeway.
+HMAC-SHA1 is for authenticator compatibility, not password hashing or signatures.
+
+| Flow | Contract and effects |
+|---|---|
+| `TOTPService.Begin` → `Store.BeginTOTP` | Verify this account's password; generate seed and nonce; AES-256-GCM encrypt with account ID as associated data. Persist only ciphertext with a ten-minute setup lifetime. Return the seed once for the account's setup UI. A pending setup can be replaced, never a confirmed factor. |
+| `RawTOTP.Validate` → `Confirm` → `Store.ConsumeTOTP` | Verify password, decrypt the account-bound seed, compare the six-digit code in constant time. Acquire the writer, resample server time, check pending expiry/current counter/unchanged seed, and atomically confirm and consume the counter. Setup itself grants no recent-auth proof. |
+| `StepUp` → `Store.ConsumeTOTP` | Require password and a fresh code for a confirmed factor. Atomically consume the counter and store a random proof's SHA-256 digest and server authentication time. Only return the plaintext proof after commit. A new step-up supersedes this account's prior proof. |
+| `CheckPrivileged` → `Store.CheckRecentAuth` | With current trusted policy and canonical principal, require a confirmed factor and matching account-bound proof for the commissioner and every co-commissioner. Accept only `[authenticated_at, authenticated_at+5m)`; reads never extend it. Ordinary accounts get no extra TOTP requirement, and this check grants no domain rights. |
+
+The consume path requires a strictly increasing counter: confirmation, concurrent
+requests, adjacent-window codes and restarts cannot reuse a consumed counter.
+A queued verification rechecks its code window after writer admission. Any
+refusal or failed persistence preserves factor/counter/proof state. Confirmation
+uses its code, so the user needs the next unused authenticator code for step-up.
+Seeds, codes, ciphertext state and proofs redact normal Go formatting and omit
+secrets from JSON. Callers must never log individual secret fields.
+
+`NewTOTP` takes an external 32-byte encryption key, never saved in SQLite. Losing
+it loses factor access; rotation, offline recovery and deployed key delivery are
+not implemented here. There is no factor-reset or commissioner-reset door. The
+repository is a trusted service port, not an API for request-supplied counters,
+account IDs or policy. No TOTP HTTP route or deployable admission adapter is
+installed: slice 20 must call this guard on every hosted path, including the
+inside-transaction recheck with current policy; slices 18–19 supply recovery and
+sessions. Device-bound step-up integration, request throttling and operational
+clock/key handling still need their planned slices. This is not evidence that
+the fixture listener or the legacy local desktop now enforces TOTP.
+
+Exercised evidence: `TestPrivilegedTOTPEnrollmentReplayAndRecentAuth` covers
+unconfigured/confirmed commissioners, replay, forged proofs, exact five-minute
+boundaries and redaction; `TestTOTPDeputiesAndAccountBinding` covers two deputies
+and cross-account proof denial. Concurrent-code/reopen tests observe one winner,
+persistent replay protection and fresh-code success after restart. RFC vectors,
+wrong passwords/codes, wrong keys, ciphertext tampering/account swapping,
+expired/replaced pending setup, injected persistence failure and queued-code
+expiry have separate regression coverage. Changing the replay comparison to
+allow equality makes the proving test fail on confirmation-code replay.

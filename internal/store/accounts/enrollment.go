@@ -11,9 +11,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
-func validateEnrollment(digest, username string) error {
+func validSecretDigest(digest string) bool {
 	decoded, err := hex.DecodeString(digest)
-	if err != nil || len(decoded) != 32 || strings.ToLower(digest) != digest {
+	return err == nil && len(decoded) == 32 && strings.ToLower(digest) == digest
+}
+
+func validateEnrollment(digest, username string) error {
+	if !validSecretDigest(digest) {
 		return identity.ErrEnrollmentRefused
 	}
 	canonical, err := identity.CanonicalUsername(username)
