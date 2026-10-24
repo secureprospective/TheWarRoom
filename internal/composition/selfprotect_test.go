@@ -134,6 +134,22 @@ func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {
 	}
 }
 
+func TestNativeStartupRefusesUnsafeOriginBeforeWindow(t *testing.T) {
+	var stderr bytes.Buffer
+	if code := runNative("https://user:sentinel@localhost", "native.test", Embedded{}, &stderr); code != 2 {
+		t.Fatalf("unsafe native startup = %d", code)
+	}
+	if strings.Contains(stderr.String(), "sentinel") || !strings.Contains(stderr.String(), "HTTPS origin") {
+		t.Fatalf("unsafe startup diagnostic: %q", stderr.String())
+	}
+	// A missing native argument must not fall through to local app startup.
+	stderr.Reset()
+	var stdout bytes.Buffer
+	if code := runFlag([]string{"-native", "https://localhost"}, &stdout, &stderr); code != 2 {
+		t.Fatalf("incomplete native startup = %d", code)
+	}
+}
+
 // Wails reflects the pointer method set without a signature filter; no exemptions are configured.
 func TestBindingManifest(t *testing.T) {
 	t.Parallel()

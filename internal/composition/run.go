@@ -20,6 +20,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 
+	"github.com/secureprospective/TheWarRoom/internal/serverclient"
+
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
@@ -38,6 +40,9 @@ type Embedded struct {
 // database.
 func Main(args []string, embedded Embedded) int {
 	rulebookMarkdown, commissionerPreviewRegistry = embedded.Rulebook, embedded.EndpointRegistry
+	if len(args) == 3 && args[0] == "-native" {
+		return runNative(args[1], args[2], embedded, os.Stderr)
+	}
 	if len(args) > 0 {
 		return runFlag(args, os.Stdout, os.Stderr)
 	}
@@ -91,7 +96,7 @@ func runFlag(args []string, stdout, stderr io.Writer) int {
 	case len(args) == 2 && args[0] == "-restore":
 		return restoreBackup(args[1], stdout, stderr)
 	default:
-		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version | -backups | -restore <set>]\n", args)
+		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version | -backups | -restore <set> | -native <https-origin> <league-id>]\n", args)
 		return 2
 	}
 }
@@ -125,4 +130,25 @@ func bindings(app *App) []interface{} {
 		app.sourcesAPI(),
 		trades.New(tradesHost{State: app.core, app: app}),
 	}
+}
+
+// runNative never constructs the local App: no MFL key, databases, refresh workers
+// or authoritative local mutations are available in a hosted window.
+func runNative(address, league string, embedded Embedded, stderr io.Writer) int {
+	desktop, err := serverclient.NewDesktop(address, league, nil)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "native startup requires an HTTPS origin and native league ID")
+		return 2
+	}
+	defer desktop.Close()
+	err = wails.Run(&options.App{
+		Title: "The War Room — Native league", Width: 960, Height: 800,
+		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
+		AssetServer:      &assetserver.Options{Assets: embedded.Assets, Handler: desktop.Handler()},
+	})
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "native window could not start")
+		return 1
+	}
+	return 0
 }

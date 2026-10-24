@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import {createRoot} from 'react-dom/client'
 import './style.css'
-import { TargetMount } from './TargetMount'
+import { NativeStartup } from './app/control/NativeStartup'
 
 const container = document.getElementById('root')
 
@@ -12,6 +12,6 @@ const Specimen = import.meta.env.DEV && location.search.includes('specimen')
 
 root.render(
     <React.StrictMode>
-        {Specimen ? <Suspense fallback={<p>Loading specimen…</p>}><Specimen/></Suspense> : <TargetMount/>}
+        {Specimen ? <Suspense fallback={<p>Loading specimen…</p>}><Specimen/></Suspense> : <NativeStartup/>}
     </React.StrictMode>
 )

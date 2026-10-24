@@ -1,0 +1,19 @@
+.twr-app.native-account { min-height: 100vh; padding: clamp(20px, 5vw, 64px); box-sizing: border-box; }
+.native-account > * { max-width: 72ch; }
+.native-account h1 { font-size: 28px; line-height: 1.2; margin: 0 0 12px; font-weight: 700; }
+.native-account h2 { font-size: 20px; margin: 28px 0 12px; font-weight: 600; }
+.native-account h3 { font-size: 15px; margin: 24px 0 8px; font-weight: 600; }
+.native-account p { margin: 8px 0; line-height: 1.6; }
+.native-account nav, .native-account .native-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
+.native-account label { display: grid; gap: 6px; margin-block: 16px; max-width: 46ch; }
+.native-account input, .native-account button { font: inherit; color: var(--surface-tx1); background: var(--surface-2); border: 1px solid var(--surface-line-hi); padding: 10px 12px; border-radius: 4px; }
+.native-account input { min-width: 0; width: 100%; box-sizing: border-box; caret-color: var(--surface-tx1); }
+.native-account button { cursor: pointer; min-height: 44px; }
+.native-account button:hover:not(:disabled), .native-account button[aria-current] { background: var(--surface-4); border-color: var(--surface-tx2); }
+.native-account button:disabled { opacity: .6; cursor: wait; }
+.native-account :focus-visible { outline: 2px solid var(--signal-blue); outline-offset: 3px; }
+.native-account [role=alert] { color: var(--signal-red); }
+.native-account .native-address, .native-account footer { color: var(--surface-tx2); overflow-wrap: anywhere; }
+.native-account .native-seed { overflow-wrap: anywhere; }
+.native-account footer { margin-top: 40px; }
+.native-account ::selection { background: var(--surface-tx1); color: var(--surface-0); }
