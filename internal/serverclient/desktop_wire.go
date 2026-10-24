@@ -27,7 +27,7 @@ type enrollmentBody struct {
 	Enrollment enrollmentCredentials `json:"enrollment"`
 }
 type desktopPayload interface {
-	loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest
+	serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest
 }
 
 type rawDesktopLogin serverhttp.LoginResponse

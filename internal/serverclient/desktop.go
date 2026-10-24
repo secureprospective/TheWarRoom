@@ -20,17 +20,19 @@ import (
 
 const DesktopPath = "/desktop/native"
 
-// Desktop owns memory-only credentials. The webview receives neither the bearer nor
+// Desktop owns device credentials outside the webview. The webview receives neither the bearer nor
 // the recent-auth proof. Its origin and league are fixed before the window opens.
 type Desktop struct {
-	mu     sync.Mutex
-	client *Client
-	league string
-	bearer string
-	proof  string
+	mu          sync.Mutex
+	client      *Client
+	league      string
+	bearer      string
+	proof       string
+	credentials CredentialStore
+	loaded      bool
 }
 
-func NewDesktop(address, league string, roots *x509.CertPool) (*Desktop, error) {
+func NewDesktop(address, league string, roots *x509.CertPool, storage ...CredentialStore) (*Desktop, error) {
 	u, err := url.Parse(address)
 	if err != nil {
 		return nil, fmt.Errorf("parse native server: %w", err)
@@ -42,7 +44,11 @@ func NewDesktop(address, league string, roots *x509.CertPool) (*Desktop, error) 
 	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}
 	client := &Client{base: address, http: &http.Client{Timeout: 15 * time.Second, Transport: transport,
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return fmt.Errorf("native redirects refused") }}}
-	return &Desktop{client: client, league: league}, nil
+	credentials := newDeviceKeychain(address, league)
+	if len(storage) > 0 && storage[0] != nil {
+		credentials = storage[0]
+	}
+	return &Desktop{client: client, league: league, credentials: credentials}, nil
 }
 
 func (d *Desktop) Close() {
@@ -64,7 +70,7 @@ func (r RawDesktop) String() string   { return "[desktop credentials redacted]" 
 func (r RawDesktop) GoString() string { return r.String() }
 func (r RawDesktop) Validate() error {
 	switch r.Action {
-	case "status", "enter", "forget":
+	case "status", "enter", "forget", "revoke-device", "revoke-all":
 		if r.Username != "" || r.Password != "" || r.Code != "" {
 			return fmt.Errorf("unexpected credentials")
 		}
@@ -110,26 +116,24 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) 
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
+	d.restore()
 	switch raw.Action {
 	case "status":
+		if d.bearer != "" {
+			view.Message = "Saved device session available. Open your franchise to check access."
+		}
 		return view, nil
+	case "revoke-device", "revoke-all":
+		return d.revoke(ctx, view, raw.Action == "revoke-all")
 	case "forget":
-		d.bearer, d.proof = "", ""
-		view.Message = "Signed out on this window. Server-side device revocation is separate."
+		if err := d.clearCredential(); err != nil {
+			return view, err
+		}
+		view.Message = "Signed out and removed the saved device session. Server-side device revocation is separate."
 	case "enter":
 		return d.enter(ctx, view)
 	case "login":
-		d.bearer, d.proof = "", ""
-		body, err := postDesktop(ctx, d, serverhttp.LoginPath, loginBody{1, raw.Username, raw.Password, "The War Room desktop"})
-		if err != nil {
-			return view, err
-		}
-		var response rawDesktopLogin
-		if err := decodeDesktop(body, &response); err != nil {
-			return view, err
-		}
-		d.bearer = response.Bearer
-		view.Message = "Signed in. Open your franchise, or verify your authenticator if you are a commissioner."
+		return d.login(ctx, raw, view)
 	case "enroll":
 		body, err := postDesktop(ctx, d, serverhttp.EnrollmentPath, enrollmentBody{1, enrollmentCredentials{raw.Code, raw.Username, raw.Password}})
 		if err != nil {
@@ -171,7 +175,7 @@ func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string,
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusCreated {
 		if response.StatusCode == http.StatusUnauthorized {
-			d.bearer, d.proof = "", ""
+			_ = d.clearCredential()
 		}
 		return nil, desktopRefusal(path, response.StatusCode)
 	}
