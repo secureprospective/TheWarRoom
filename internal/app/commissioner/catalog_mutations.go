@@ -122,6 +122,7 @@ func nativePeopleMutations() []struct{ id, args string } {
 		{"commish.visibility.set", "people"},
 		{"commish.role.grant", "people"},
 		{"commish.role.revoke", "people"},
+		{commissioner.DeputyOrder, "people"},
 		{"commish.succession.stepdown", "people"},
 		{"commish.succession.accept", "people"},
 		{"commish.succession.decline", "people"},

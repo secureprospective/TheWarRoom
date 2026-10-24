@@ -166,3 +166,48 @@ func TestLegacyDeputyCheckpoint(t *testing.T) {
 		t.Fatal("ambiguous summary accepted")
 	}
 }
+
+func TestDeputyExplicitOrder(t *testing.T) {
+	events := append(deputyEvents(), DeputyOrderSet{Order: []Principal{"m", "z", "a"}})
+	s, err := Replay(events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, order := range [][]Principal{{"m", "z"}, {"m", "z", "a", "extra"}, {"m", "m", "a"}, {"m", "z", "extra"}} {
+		rejected(t, s, DeputyOrderSet{Order: order})
+	}
+	for _, p := range []Principal{"m", "z", "a"} {
+		if !s.HasRole(p, CoCommissioner) {
+			t.Fatalf("%s lost powers", p)
+		}
+	}
+	judge, err := AppealJudge(s, []Principal{"creator"})
+	if err != nil || judge != "m" {
+		t.Fatalf("appeal priority: %s %v", judge, err)
+	}
+	successor := change(t, s, StepDown{Principal: "creator"})
+	replayed, err := Replay(append(events, StepDown{Principal: "creator"}))
+	if err != nil || !reflect.DeepEqual(successor, replayed) || !replayed.HasRole("m", Commissioner) {
+		t.Fatalf("succession replay: %v", err)
+	}
+	s = change(t, s, RoleGranted{Principal: "new", Role: CoCommissioner})
+	s = change(t, s, RoleRevoked{Principal: "z", Role: CoCommissioner})
+	if !reflect.DeepEqual(s.CoCommissioners(), []Principal{"m", "a", "new"}) {
+		t.Fatal("grant/revoke priority changed")
+	}
+}
+
+func TestDeputyExplicitOrderRunoffTie(t *testing.T) {
+	s := tiedRunoff(t)
+	for _, p := range []Principal{"first", "second", "third"} {
+		s = change(t, s, RoleGranted{Principal: p, Role: CoCommissioner})
+	}
+	s = change(t, s, DeputyOrderSet{Order: []Principal{"third", "first", "second"}})
+	v, _ := s.Vote("e")
+	rejected(t, s, ElectionTieBreakCast{ID: "e", Principal: "first", Choice: "a", Now: v.EndsAt})
+	s = change(t, s, ElectionTieBreakCast{ID: "e", Principal: "third", Choice: "b", Now: v.EndsAt})
+	s = closeRound(t, s, "b")
+	if !s.HasRole("b", Commissioner) {
+		t.Fatal("ordered deputy tie ruling ignored")
+	}
+}

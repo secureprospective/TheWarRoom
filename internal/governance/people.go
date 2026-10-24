@@ -96,6 +96,28 @@ func (e RoleRevoked) apply(s *State) error {
 	return nil
 }
 
+// DeputyOrderSet changes priority without changing anyone's roles.
+type DeputyOrderSet struct{ Order []Principal }
+
+func (DeputyOrderSet) Private() bool { return true }
+func (e DeputyOrderSet) apply(s *State) error {
+	if err := s.requireCreated(); err != nil {
+		return err
+	}
+	if len(e.Order) != len(s.coCommissioners) {
+		return fmt.Errorf("list every current co-commissioner exactly once, with no added names")
+	}
+	seen := make(map[Principal]bool, len(e.Order))
+	for _, p := range e.Order {
+		if !s.HasRole(p, CoCommissioner) || seen[p] {
+			return fmt.Errorf("list every current co-commissioner exactly once, with no added names")
+		}
+		seen[p] = true
+	}
+	s.coCommissioners = slices.Clone(e.Order)
+	return nil
+}
+
 type AbilitySet struct {
 	Franchise FranchiseID
 	All       bool

@@ -84,6 +84,12 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.deputy.order",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "commish.succession.accept",
     "effective": "now",
     "field": "",

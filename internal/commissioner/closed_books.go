@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"time"
 
@@ -102,6 +103,7 @@ func keyForFold(r Record) foldKey {
 		name: r.Command.Args.Name, target: r.Command.Args.Entry}
 	if p := r.Command.Args.People; p != nil {
 		k.people, k.hasPeople = *p, true
+		k.people.Order = slices.Clone(p.Order)
 	}
 	if c := r.Command.Args.Correction; c != nil {
 		k.correction = c.Entry
@@ -166,7 +168,7 @@ func usableClosedBooks(records []Record) *closedBooks {
 		return nil
 	}
 	for i, key := range b.keys {
-		if keyForFold(records[i]) != key {
+		if !reflect.DeepEqual(keyForFold(records[i]), key) {
 			return nil
 		}
 	}

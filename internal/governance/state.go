@@ -154,7 +154,7 @@ func (s State) SuccessionPeriods() (time.Duration, time.Duration, time.Duration,
 // LastActivity is the recorded activity evidence, never a wall-clock guess.
 func (s State) LastActivity(p Principal) time.Time { return s.activity[p] }
 
-// CoCommissioners returns priority order. Grants append; revoking and regranting moves a deputy last.
+// CoCommissioners returns priority order. Grants append; reordering preserves roles.
 func (s State) CoCommissioners() []Principal { return slices.Clone(s.coCommissioners) }
 
 func (s State) firstDeputy(excluded []Principal) Principal {
