@@ -35,7 +35,8 @@ class DesktopTests(unittest.TestCase):
                     with tarfile.open(artifact) as stream:
                         self.assertEqual(set(stream.getnames()), {"thewarroom", "INSTALL.md"})
                         self.assertEqual(stream.extractfile("thewarroom").read(), source.read_bytes())
-                        self.assertEqual(stream.getmember("thewarroom").mode & 0o111, 0o111)
+                        if package.platform.system() != "Windows":
+                            self.assertEqual(stream.getmember("thewarroom").mode & 0o111, 0o111)
 
     def test_real_platform_lock_contention_and_crash_release(self):
         base = package.ROOT / ".tmp/desktop"
