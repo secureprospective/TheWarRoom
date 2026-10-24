@@ -19,6 +19,9 @@ type seasonStatFeed struct {
 
 // Weeks reads each held file once and keeps, per player's week, only the versions that differ.
 func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, error) {
+	if pinned, ok := f.store.lineupEnv.(*PinnedFootball); ok {
+		return pinned.statWeeks(ctx, f.season)
+	}
 	if f.store.statWeeks != nil {
 		return f.store.statWeeks(ctx, f.season)
 	}

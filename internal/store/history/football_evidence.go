@@ -15,6 +15,7 @@ import (
 type PinnedFootball struct {
 	digest string
 	raw    RawFootballEvidence
+	stats  []heldFile
 }
 
 // LoadFootball refuses missing or changed bodies, never substitutes the latest fetch.
@@ -33,7 +34,11 @@ func (s *Store) LoadFootball(ctx context.Context, digest string) (*PinnedFootbal
 	if err != nil {
 		return nil, err
 	}
-	return &PinnedFootball{digest: digest, raw: raw}, nil
+	stats, err := raw.scoringFiles()
+	if err != nil {
+		return nil, err
+	}
+	return &PinnedFootball{digest: digest, raw: raw, stats: stats}, nil
 }
 
 func (p *PinnedFootball) Digest() string { return p.digest }

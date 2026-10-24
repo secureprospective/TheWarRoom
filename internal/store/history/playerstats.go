@@ -149,6 +149,13 @@ func nativeSeeded(records []commissioner.Record) bool {
 // evidence.
 func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 	scope source.RawNativeScope) (source.NativeEvidence, error) {
+	if pinned, ok := s.lineupEnv.(*PinnedFootball); ok {
+		out, err := source.ReadNativeEvidence(ctx, pinned, pinned, scope)
+		if err != nil {
+			return out, fmt.Errorf("read pinned native evidence: %w", err)
+		}
+		return out, nil
+	}
 	if s.evidence != nil {
 		return s.evidence(ctx, scope)
 	}

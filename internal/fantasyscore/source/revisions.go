@@ -45,8 +45,11 @@ func LineDigest(week PlayerWeek) string {
 type lineHistory struct{ newestFirst []LineRevision }
 
 func (h *lineHistory) add(week PlayerWeek, sha string, at time.Time) {
-	digest := LineDigest(week)
-	held := HeldWeek{SHA256: sha, FetchedAt: at, Week: &week, Missing: []string{missingPlayByPlay}}
+	h.addHeld(HeldWeek{SHA256: sha, FetchedAt: at, Week: &week, Missing: []string{missingPlayByPlay}})
+}
+
+func (h *lineHistory) addHeld(held HeldWeek) {
+	digest := LineDigest(*held.Week)
 	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest {
 		h.newestFirst[n-1].Held = held
 		return
@@ -69,7 +72,7 @@ func DistinctLines(newestFirst []HeldWeek) []LineRevision {
 	var history lineHistory
 	for _, held := range newestFirst {
 		if held.Week != nil {
-			history.add(*held.Week, held.SHA256, held.FetchedAt)
+			history.addHeld(held)
 		}
 	}
 	return history.versions()
