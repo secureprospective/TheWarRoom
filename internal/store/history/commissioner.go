@@ -86,10 +86,7 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 			return nil, err
 		}
 	}
-	if s.records == nil {
-		s.records = map[string]recordRevision{}
-	}
-	s.records[league] = recordRevision{revision: revision, records: records}
+	records = s.cacheRecords(league, revision, records)
 	return deepClone(records), nil
 }
 

@@ -155,6 +155,7 @@ func WithoutClosedBooks(records []Record) []Record {
 	out := slices.Clone(records)
 	if len(out) > 0 {
 		out[0].books = nil
+		out[0].replay = nil
 	}
 	return out
 }
