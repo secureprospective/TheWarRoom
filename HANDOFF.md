@@ -1,21 +1,20 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-23. Client/server planning complete on `session/cs-plan`; review pending. No merge authorized.
+Bee → ClaudeBox/reviewer — 2026-10-24. Repeat-restore fix on `session/bfix`; no merge authorized.
 
 ## Where it stands
-- Plan: `docs/build-handoffs/Client_Server_Build_Plan_2026-10.md`.
-- Source baseline `d75929f6`; four panel engineer outputs and round-two corrections checked against current code.
-- 52 bounded PR slices, 102 estimated engineer-days, explicit safe parallel pairs and eight owner-access blockers.
-- Freeze May 28 2027; invitation gate June 25. Capacity arithmetic exposes three days beyond four-day/week budget if all 25 contingency days stay reserved.
-- Planning only. No runtime code or deployment changed. Frontend frozen install/build passed as hook prerequisite; server/drill tests are future acceptance targets.
+- Unique 0600 per-file migration copies; retain five per DB, including legacy fixed-name copies.
+- Matched-set captures now create DB copies 0600. Matched retention policy unchanged.
+- Repeated old-schema matched restore/app initialization passes twice, preserving data and both rounds of safety copies.
+- Regression tests initially failed as expected. Full verification found a history test assuming the old filename; it now uses migration findings. Final `make verify` passes: full Go race suite, lint, vulnerability/binding checks, 1,415 frontend tests, build and CSP checks.
+- Rationale and evidence: `docs/build-handoffs/BlockB_Phase6_Backups_2026-10.md`.
 
 ## Next move
-Review plan and rule on disk unlock, multiple-deputy ordering and extra capacity. Follow slice dependencies; no public network commands before catalog/policy completion, no owners before release blockers.
+Read-only Claude review/mutant, CI and Christopher's throwaway-profile live repeat-restore gate. Open PR title: “Fix repeat restore bricking startup”. Do not merge.
 
 ## Blocked on
-Those rulings and normal PR review. Actual CT, owner OS inventory, backup destination and spare-host inputs remain to collect.
+Reviewer and live gate, not implementation. No production data touched.
 
 ## Tried and rejected
-- Do not repeat stale panel defects: Windows locking, pre-open downgrade refusal, MFL limits and decoded-ledger caching already exist.
-- No native database split, paid signing, direct port forwarding, autonomous agent merge or June feature spillover.
+Removing per-file copies: store initialization/offline tools also migrate outside matched-set startup, so those callers still need their own safety copy.

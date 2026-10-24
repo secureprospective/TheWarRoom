@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestMigrationBackupPrecedesStepAndPreservesData(t *testing.T) {
@@ -24,7 +25,11 @@ func TestMigrationBackupPrecedesStepAndPreservesData(t *testing.T) {
 	called := false
 	result, err := p.Migrate(t.Context(), func(ctx context.Context, tx *sql.Tx) error {
 		called = true
-		backup, err := sql.Open("sqlite", "file:"+path+".pre-v0.bak?mode=ro")
+		matches, err := filepath.Glob(path + ".pre-v0-*.bak")
+		if err != nil || len(matches) != 1 {
+			t.Fatalf("backups=%v err=%v", matches, err)
+		}
+		backup, err := sql.Open("sqlite", "file:"+matches[0]+"?mode=ro")
 		if err != nil {
 			return err
 		}
@@ -49,7 +54,7 @@ func TestMigrationBackupPrecedesStepAndPreservesData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !called || result.Backup != path+".pre-v0.bak" {
+	if !called || !strings.HasPrefix(result.Backup, path+".pre-v0-") {
 		t.Fatalf("called=%v result=%+v", called, result)
 	}
 	var value []byte
@@ -176,22 +181,73 @@ func TestOpenUsesCallerFileVersionBeforeWriting(t *testing.T) {
 	}
 }
 
-func TestMigrationBackupCollisionStopsBeforeStep(t *testing.T) {
+func TestMigrationBackupsRetainNewestFiveIncludingLegacy(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "backup.db")
 	p, err := Open(t.Context(), path, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer func() { _ = p.Close() }()
-	if err := os.WriteFile(path+".pre-v0.bak", []byte("keep existing recovery snapshot"), 0600); err != nil {
+	legacy := path + ".pre-v0.bak"
+	if err := os.WriteFile(legacy, []byte("keep existing recovery snapshot"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	called := false
-	_, err = p.Migrate(t.Context(), func(context.Context, *sql.Tx) error { called = true; return nil })
-	if err == nil || called {
-		t.Fatalf("collision: called=%v err=%v", called, err)
+	old := time.Unix(1, 0)
+	if err := os.Chtimes(legacy, old, old); err != nil {
+		t.Fatal(err)
+	}
+	foreign := path + ".pre-vnotes.bak"
+	if err := os.WriteFile(foreign, []byte("foreign"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	link := path + ".pre-v99-123.bak"
+	if err := os.Symlink(foreign, link); err != nil {
+		t.Fatal(err)
+	}
+	failure := errors.New("retry migration")
+	var backups []string
+	for i := range 7 {
+		result, err := p.Migrate(t.Context(), func(context.Context, *sql.Tx) error { return failure })
+		if !errors.Is(err, failure) {
+			t.Fatalf("attempt %d: %v", i, err)
+		}
+		backups = append(backups, result.Backup)
+		at := old.Add(time.Duration(i+1) * time.Hour)
+		if err := os.Chtimes(result.Backup, at, at); err != nil {
+			t.Fatal(err)
+		}
+		if i == 0 {
+			body, err := os.ReadFile(legacy)
+			if err != nil || string(body) != "keep existing recovery snapshot" {
+				t.Fatalf("legacy changed: %q %v", body, err)
+			}
+		}
 	}
 	assertVersion(t, p, 0)
+	for i, backup := range append([]string{legacy}, backups...) {
+		info, err := os.Stat(backup)
+		if i < 3 {
+			if !errors.Is(err, os.ErrNotExist) {
+				t.Fatalf("old backup retained: %s %v", backup, err)
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm() != 0600 {
+			t.Fatalf("backup mode: %v", info.Mode())
+		}
+		version, err := fileUserVersion(t.Context(), backup)
+		if err != nil || version != 0 {
+			t.Fatalf("backup version: %d %v", version, err)
+		}
+	}
+	for _, preserved := range []string{foreign, link} {
+		if _, err := os.Lstat(preserved); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func assertVersion(t *testing.T, p *Pools, want int) {
@@ -203,4 +259,35 @@ func assertVersion(t *testing.T, p *Pools, want int) {
 	if got != want {
 		t.Fatalf("user_version=%d, want %d", got, want)
 	}
+}
+
+func TestFailedMigrationBackupLeavesPriorCopiesAndSchema(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "backup.db")
+	p, err := Open(t.Context(), path, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = p.Close() }()
+	prior, err := p.backupMigration(t.Context(), 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(prior)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := p.backupMigration(ctx, 0); !errors.Is(err, context.Canceled) {
+		t.Fatalf("backup failure: %v", err)
+	}
+	matches, err := filepath.Glob(path + ".pre-v*.bak")
+	if err != nil || len(matches) != 1 || matches[0] != prior {
+		t.Fatalf("failed capture leaked or removed copies: %v %v", matches, err)
+	}
+	after, err := os.ReadFile(prior)
+	if err != nil || !bytes.Equal(before, after) {
+		t.Fatalf("prior backup changed: %v", err)
+	}
+	assertVersion(t, p, 0)
 }

@@ -412,3 +412,35 @@ func TestBackupManifestValidation(t *testing.T) {
 		})
 	}
 }
+
+func TestCapturedSetFilesAreOwnerOnly(t *testing.T) {
+	b, pools := backupFixture(t)
+	daily, err := b.Capture(t.Context(), pools, "daily", backupAt())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range pools {
+		if err := p.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	migration, err := b.BeforeMigrations(t.Context(), backupAt().Add(time.Hour))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, set := range []string{daily, migration} {
+		entries, err := os.ReadDir(set)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range entries {
+			info, err := entry.Info()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm() != 0600 {
+				t.Errorf("%s: mode=%v", filepath.Join(set, entry.Name()), info.Mode())
+			}
+		}
+	}
+}

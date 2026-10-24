@@ -132,7 +132,7 @@ func tightenOwned(path string) error {
 		name := e.Name()
 		owned := name == base || name == base+"-wal" || name == base+"-shm" || name == base+"-journal" ||
 			strings.HasPrefix(name, base+".premigration-") ||
-			(strings.HasPrefix(name, base+".pre-v") && strings.HasSuffix(name, ".bak"))
+			isMigrationBackup(name, base)
 		if !owned || !e.Type().IsRegular() {
 			continue
 		}

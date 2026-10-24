@@ -142,6 +142,9 @@ func (b *Backups) capture(ctx context.Context, kind string, now time.Time, vacuu
 	m := RawBackupManifest{ManifestVersion: 1, AppBuild: b.build, CapturedAt: now.UTC(), Kind: kind}
 	for i, file := range b.files {
 		path := filepath.Join(stage, file.Name)
+		if err := createOwnerOnly(path); err != nil {
+			return "", err
+		}
 		if err := vacuum(ctx, i, path); err != nil {
 			return "", err
 		}
