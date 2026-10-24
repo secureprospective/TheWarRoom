@@ -56,6 +56,12 @@ func resourceLimits(next http.Handler) http.Handler {
 	authInFlight := make(chan struct{}, 6)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		if len(r.Header.Values("Origin")) != 0 {
+			http.Error(w, "browser requests refused", http.StatusBadRequest)
+			return
+		}
 		// No proxy is trusted yet. Deployment must strip these headers, not let clients
 		// select their throttle identity or assert that an insecure hop was HTTPS.
 		for key := range r.Header {

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -174,7 +173,7 @@ func (c *Client) DiscoverHost(ctx context.Context, year string, leagueID string)
 	baseURL := lr.League.BaseURL
 	sub, err := extractSubdomain(baseURL)
 	if err != nil {
-		return fmt.Errorf("failed to extract subdomain from base URL %q: %w", baseURL, err)
+		return fmt.Errorf("failed to extract subdomain from base URL: %w", err)
 	}
 
 	c.mu.Lock()
@@ -279,19 +278,12 @@ func extractSubdomain(baseURL string) (string, error) {
 	}
 	parsed, err := url.Parse(baseURL)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse baseURL %q: %w", baseURL, err)
+		return "", fmt.Errorf("%w: malformed base URL", ErrDisallowedHost)
 	}
-	host := parsed.Host
-	if host == "" {
-		return "", fmt.Errorf("empty host in baseURL %q", baseURL)
+	if err := checkURL(parsed); err != nil {
+		return "", err
 	}
-
-	if strings.Contains(host, ":") {
-		h, _, err := net.SplitHostPort(host)
-		if err == nil {
-			host = h
-		}
-	}
+	host := parsed.Hostname()
 
 	const suffix = ".myfantasyleague.com"
 	if strings.HasSuffix(strings.ToLower(host), suffix) {
@@ -300,7 +292,7 @@ func extractSubdomain(baseURL string) (string, error) {
 			return sub, nil
 		}
 	}
-	return "", fmt.Errorf("%w: baseURL host %q", ErrDisallowedHost, host)
+	return "", fmt.Errorf("%w: baseURL has no league subdomain", ErrDisallowedHost)
 }
 
 // allowedHost reports MFL's apex or a single-label subdomain of it (api, www47).
@@ -315,8 +307,8 @@ func allowedHost(host string) bool {
 
 // checkURL refuses anything but https to an allowed host on the default port.
 func checkURL(u *url.URL) error {
-	if u.Scheme != "https" || u.Port() != "" || !allowedHost(u.Hostname()) {
-		return fmt.Errorf("%w: %s://%s", ErrDisallowedHost, u.Scheme, u.Host)
+	if u.Scheme != "https" || u.Port() != "" || u.User != nil || !allowedHost(u.Hostname()) {
+		return fmt.Errorf("%w: HTTPS on an MFL host without credentials or a custom port is required", ErrDisallowedHost)
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ REPOS/
 GUIDES/
 WORK_LOGS/
 frontend/package.json.md5
+frontend/.csp-browser-*/
 /TheWarRoom
 
 # Local-only state (purge 2026-10-20)

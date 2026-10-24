@@ -1,8 +1,10 @@
 package mfl
 
 import (
+	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -123,5 +125,63 @@ func TestReadBody_StopsAtTheCap(t *testing.T) {
 	}
 	if r.n != maxBodyBytes+1 {
 		t.Fatalf("read %d bytes, want %d", r.n, maxBodyBytes+1)
+	}
+}
+
+func TestDiscoverHostRejectsURLTricks(t *testing.T) {
+	for _, base := range []string{
+		"http://www47.myfantasyleague.com", "https://www47.myfantasyleague.com:443",
+		"https://sentinel-private-key@www47.myfantasyleague.com", "https://www47.myfantasyleague.com.evil.test",
+		"https://www47.myfantasyleague.com./", "https://a.b.myfantasyleague.com", "https://[sentinel-private-key",
+	} {
+		t.Run(base, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				_, _ = fmt.Fprintf(w, `{"league":{"baseURL":%q}}`, base)
+			}))
+			defer srv.Close()
+			c, _ := newTestClient(t, srv)
+			err := c.DiscoverHost(t.Context(), "2026", "1")
+			if !errors.Is(err, ErrDisallowedHost) || c.host != "api" || strings.Contains(err.Error(), "sentinel-private-key") {
+				t.Fatalf("discovery changed host or leaked input: host=%s error=%v", c.host, err)
+			}
+		})
+	}
+}
+
+func TestDoCapsDecompressedResponse(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Encoding", "gzip")
+		gz := gzip.NewWriter(w)
+		_, _ = io.Copy(gz, io.LimitReader(&countingReader{limit: maxBodyBytes + 1}, int64(maxBodyBytes+1)))
+		_ = gz.Close()
+	}))
+	defer srv.Close()
+	c, _ := newTestClient(t, srv)
+	response, err := c.Do(t.Context(), Request{Type: "players", Year: "2026"})
+	if !errors.Is(err, ErrBodyTooLarge) || len(response.Body) != 0 {
+		t.Fatalf("decompressed oversize accepted: bytes=%d err=%v", len(response.Body), err)
+	}
+}
+
+func TestKeyedRedirectRefusesDestinationWithoutLeakingSecret(t *testing.T) {
+	const sentinel = "sentinel-private-key"
+	for _, destination := range []string{
+		"https://evil.test/" + sentinel, "http://www47.myfantasyleague.com/" + sentinel,
+		"https://www47.myfantasyleague.com:444/" + sentinel, "https://" + sentinel + "@www47.myfantasyleague.com/",
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Query().Get("APIKEY") != sentinel {
+				t.Error("key missing on initial request")
+			}
+			http.Redirect(w, r, destination, http.StatusFound)
+		}))
+		c, rt := newTestClient(t, srv)
+		c.keySource = func(context.Context) (mflkey.Key, error) { return sentinel, nil }
+		c.host, c.hostFor, c.hostAt = "www47", "2026/1", time.Now()
+		response, err := c.Do(t.Context(), Request{Type: "rosters", Year: "2026", Params: map[string]string{"L": "1"}, Keyed: true})
+		srv.Close()
+		if err != nil || response.StatusCode != http.StatusFound || strings.Contains(string(response.Body), sentinel) || len(rt.builtHosts()) != 1 {
+			t.Fatalf("redirect reached destination or leaked key: hosts=%v err=%v", rt.builtHosts(), err)
+		}
 	}
 }
