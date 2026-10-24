@@ -63,7 +63,8 @@ describe('catalog-generated native client', () => {
 
   it('renders modes and named grammar from every catalog entry, without role inference', () => {
     const rows = nativeGrammar({ availability: 'server', capabilities: [] });
-    expect(rows.length).toBe(Object.values(nativeCommands).reduce((n, c) => n + c.definition.Modes.length, 0));
+    const count = Object.values(nativeCommands).reduce((n, c) => n + c.definition.Modes.length, 0);
+    expect(rows.length).toBe(count);
     expect(rows.every(row => !row.enabled && row.reason)).toBe(true);
     expect(nativeGrammar(context(), 'read league ledger')).toContainEqual(expect.objectContaining({
       command: read.command, mode: 'read', enabled: true,
@@ -84,7 +85,7 @@ describe('catalog-generated native client', () => {
     });
   });
 
-  it('retains the exact reason, request key and expected revision rather than inventing approval', async () => {
+  it('retains reason, request key and expected revision without inventing approval', async () => {
     type Create = NativeArguments<'commish.league.create'>;
     const args: Create = { league: '', command: 'commish.league.create',
       args: { name: 'Our league', preset: 'empty', franchiseCount: 12, season: 2027 },
