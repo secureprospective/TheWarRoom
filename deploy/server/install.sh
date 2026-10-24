@@ -27,7 +27,7 @@ install -m 755 twr-sandbox /usr/local/libexec/
 install -m 755 twr-server.initd /etc/init.d/twr-server
 install -m 755 cloudflared.initd /etc/init.d/twr-tunnel
 install -m 600 twr-logrotate /etc/logrotate.d/twr
-# Run rotation hourly; the logs and rotated copies stay on the encrypted CT disk.
+# Run rotation hourly; logs and rotated copies stay private inside the CT.
 ln -s /etc/periodic/daily/logrotate /etc/periodic/hourly/twr-logrotate
 rc-update add crond default
 rc-service crond start

@@ -17,13 +17,12 @@ tar -xzf "$work/goreleaser.tar.gz" -C "$work" goreleaser
 "$work/goreleaser" check --config deploy/server/goreleaser.yaml
 GOOS=linux GOARCH=amd64 "$work/goreleaser" build --snapshot --clean --single-target \
   --config deploy/server/goreleaser.yaml --output "$work/twr-server"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags='-s -w' -o "$work/twr-unlock" ./cmd/twr-unlock
 # Official Cloudflare release asset, independently pinned to its GitHub release digest.
 curl --fail --location --silent --show-error --connect-timeout 10 --max-time 180 \
   https://github.com/cloudflare/cloudflared/releases/download/2026.10.3/cloudflared-linux-amd64 \
   -o "$work/cloudflared"
 echo '053b80b0a23031a038fdbf3c073f59f82b8f1f152aa67971d7383ffafc0dbab0  cloudflared' | (cd "$work" && sha256sum -c -)
-cp deploy/server/{install.sh,cloudflare.sh,twr-sandbox,twr-server.initd,cloudflared.initd,twr-logrotate,proxmox.sh,install-storage.sh,storage.sh,recover-storage.sh,twr-storage@.service,twr-container@.service,twr-no-swap.service} "$work/"
+cp deploy/server/{install.sh,cloudflare.sh,twr-sandbox,twr-server.initd,cloudflared.initd,twr-logrotate,proxmox.sh} "$work/"
 cp docs/ui/endpoint-registry.csv "$work/"
 mkdir -p "$(dirname "$out")"
 tar -czf "$out" -C "$work" .

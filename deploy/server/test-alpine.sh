@@ -19,6 +19,9 @@ docker exec "$name" sh -ec '
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   if sh /root/twr/install.sh; then exit 1; fi
   [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
+  [ "$(stat -c %a /var/lib/twr)" = 700 ]
+  [ "$(stat -c %U:%G /var/lib/twr)" = twr:twr ]
+  [ "$(readlink /etc/periodic/hourly/twr-logrotate)" = /etc/periodic/daily/logrotate ]
   for file in server.db server.db-wal server.db-shm server.log; do
     [ -f "/var/lib/twr/$file" ]
     [ "$(stat -c %a "/var/lib/twr/$file")" = 600 ]
