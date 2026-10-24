@@ -32,10 +32,18 @@ type EnrollmentRepository interface {
 type EnrollmentService struct {
 	store     EnrollmentRepository
 	authority EnrollmentAuthority
+	work      *PasswordWork
 }
 
 func NewEnrollment(store EnrollmentRepository, authority EnrollmentAuthority) *EnrollmentService {
-	return &EnrollmentService{store: store, authority: authority}
+	return NewEnrollmentWithPasswordWork(store, authority, NewPasswordWork())
+}
+
+func NewEnrollmentWithPasswordWork(store EnrollmentRepository, authority EnrollmentAuthority, work *PasswordWork) *EnrollmentService {
+	if work == nil {
+		work = NewPasswordWork()
+	}
+	return &EnrollmentService{store: store, authority: authority, work: work}
 }
 
 // EnrollmentCode is returned only to the local issuer for personal handoff, never in a league event.
@@ -106,7 +114,7 @@ func (s *EnrollmentService) Redeem(ctx context.Context, raw RawEnrollment) (Acco
 	if err != nil {
 		return Account{}, ErrEnrollmentRefused
 	}
-	hash, err := HashPassword(raw.Password)
+	hash, err := s.work.Hash(ctx, raw.Password)
 	if err != nil {
 		return Account{}, err
 	}

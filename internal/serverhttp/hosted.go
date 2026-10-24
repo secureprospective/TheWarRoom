@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -36,7 +37,7 @@ type Hosted struct {
 	Registry   string
 }
 
-func (h Hosted) Handler() http.Handler { return http.HandlerFunc(h.serveHTTP) }
+func (h Hosted) Handler() http.Handler { return resourceLimits(http.HandlerFunc(h.serveHTTP)) }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
@@ -92,6 +93,11 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	session, err := h.Sessions.Login(r.Context(), accounts.RawCredentials{Username: raw.Username, Password: raw.Password}, raw.Device)
+	if errors.Is(err, accounts.ErrPasswordBusy) {
+		w.Header().Set("Retry-After", "1")
+		http.Error(w, "password service busy", http.StatusTooManyRequests)
+		return
+	}
 	if err != nil {
 		http.Error(w, "login refused", http.StatusUnauthorized)
 		return

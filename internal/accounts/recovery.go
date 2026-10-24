@@ -125,7 +125,7 @@ func (s *RecoveryService) reset(ctx context.Context, username, password, codeDig
 	if err != nil {
 		return ErrRecoveryRefused
 	}
-	hash, err := HashPassword(password)
+	hash, err := s.passwords.work.Hash(ctx, password)
 	if err != nil {
 		return err
 	}
