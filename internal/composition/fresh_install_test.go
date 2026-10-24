@@ -73,6 +73,7 @@ func TestFreshInstallDraftFailureKeepsLeagueUsable(t *testing.T) {
 		t.Fatal(err)
 	}
 	hist := history.New(a.core.HistPools, reg)
+	a.attachSeat(hist)
 	// A persisted Ready IR plan predates the first mirror, which has 0042 on taxi.
 	a.core.Moves = moves.New(a.core.Pools)
 	if err := a.core.Moves.Initialize(t.Context()); err != nil {

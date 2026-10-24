@@ -59,6 +59,13 @@ type App struct {
 	seat         *accounts.LocalSeat
 }
 
+// attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.
+func (a *App) attachSeat(hist *history.Store) {
+	a.seatStore = accountstore.New(a.core.HistPools)
+	a.seat = accounts.NewLocalSeat(accounts.New(a.seatStore), a.seatStore)
+	hist.SetVerifiedAliases(a.seat.VerifiedAliases)
+}
+
 // directory returns the cached players Lookup for the season held, fetching it on first use.
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.core.LookupMu.Lock()
@@ -222,10 +229,7 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.core.HistPools, reg)
-	// The local sign-in lives beside the ledger, so a matched backup carries it.
-	a.seatStore = accountstore.New(a.core.HistPools)
-	a.seat = accounts.NewLocalSeat(accounts.New(a.seatStore), a.seatStore)
-	hist.SetVerifiedAliases(a.seat.VerifiedAliases)
+	a.attachSeat(hist)
 	a.core.Fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }

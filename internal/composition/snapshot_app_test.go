@@ -109,6 +109,7 @@ func targetTestAppAt(t *testing.T, path string) *App {
 	a := NewApp()
 	a.core.MyFranchise = "0001"
 	a.core.Pools = p
+	a.core.HistPools = hp
 	a.core.Moves = moveStore
 	a.core.Ctx = ctx
 	a.core.Season = 2026

@@ -180,6 +180,7 @@ func TestPulseStartupDatesWindowsWithoutRefresh(t *testing.T) {
 		}
 	})
 	a.core.WhatifPools = pools
+	a.attachSeat(a.core.History)
 	if _, err := a.initStoreFloor(a.core.Ctx, a.core.History); err != nil {
 		t.Fatal(err)
 	}
