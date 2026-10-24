@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -36,10 +37,12 @@ type Hosted struct {
 	Recovery   *accounts.RecoveryService
 	Worker     *leagueservice.DueWorker
 	Registry   string
+	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
+	TrustedProxy netip.Addr
 }
 
 func (h Hosted) Handler() http.Handler {
-	return resourceLimits(h.invalidationHandler(http.HandlerFunc(h.serveHTTP)))
+	return resourceLimits(h.invalidationHandler(http.HandlerFunc(h.serveHTTP)), h.TrustedProxy)
 }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {

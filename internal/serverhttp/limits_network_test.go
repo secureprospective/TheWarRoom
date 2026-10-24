@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ func TestBoundedServerSlowBodyAndHeaders(t *testing.T) {
 		_, err := io.Copy(io.Discard, r.Body)
 		bodyResult <- err
 		http.Error(w, "body refused", http.StatusBadRequest)
-	}))
+	}), netip.Addr{})
 	server := httptest.NewUnstartedServer(handler)
 	server.Config = boundedServer(handler, tls.Certificate{})
 	if server.Config.ReadHeaderTimeout != 5*time.Second || server.Config.ReadTimeout != 10*time.Second || server.Config.WriteTimeout != 5*time.Second || server.Config.MaxHeaderBytes != 16<<10 {
@@ -64,7 +65,7 @@ func TestBoundedServerSlowBodyAndHeaders(t *testing.T) {
 }
 
 func TestHostedServerOversizeHeaders(t *testing.T) {
-	server := httptest.NewUnstartedServer(resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(204) })))
+	server := httptest.NewUnstartedServer(resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(204) }), netip.Addr{}))
 	server.Config = boundedServer(server.Config.Handler, tls.Certificate{})
 	server.Config.TLSConfig.Certificates = nil
 	server.TLS = server.Config.TLSConfig

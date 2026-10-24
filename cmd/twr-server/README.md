@@ -160,7 +160,11 @@ acquires no fixture/league authority. No MFL calls are involved.
 Hosted mode now uses one shared two-active/four-waiting password budget, a
 six-request authentication pool, a 64-request total pool and bounded per-socket-IP
 authentication throttling. It rejects forwarding headers rather than trusting
-client-supplied IP/HTTPS assertions. A future proxy must strip those headers;
-proxy-origin traffic currently shares one throttle allowance. No public exposure
+client-supplied IP/HTTPS assertions. Behind Cloudflare Tunnel, pass
+`-trusted-proxy 127.0.0.1` (the loopback address cloudflared connects from; off by
+default). Only requests from that exact loopback peer may carry forwarding headers,
+and each must name exactly one client in `CF-Connecting-IP`, which becomes its
+throttle bucket. The same headers from any other peer are still refused
+(`TestTrustedTunnelHopThrottlesEachClient`). No public exposure
 or target-CT performance acceptance is implied. Limits, proving tests and exact
 CT measurement steps: `docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`.

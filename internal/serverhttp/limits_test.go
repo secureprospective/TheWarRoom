@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"testing"
 	"time"
@@ -18,7 +19,7 @@ func TestProxySpoofingAndAuthThrottle(t *testing.T) {
 			t.Error("missing auth deadline")
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}))
+	}), netip.Addr{})
 	for _, header := range []string{"Forwarded", "X-Forwarded-For", "X-Forwarded-Proto", "X-Real-IP", "CF-Connecting-IP", "True-Client-IP"} {
 		r := httptest.NewRequest(http.MethodPost, LoginPath, nil)
 		r.Header.Set(header, "sentinel-secret")
@@ -51,28 +52,29 @@ func TestProxySpoofingAndAuthThrottle(t *testing.T) {
 
 func TestAuthThrottleStorageAndExpiry(t *testing.T) {
 	throttle := &authThrottle{peers: make(map[string]authWindow)}
+	addr := func(peer string) netip.Addr { return netip.MustParseAddrPort(peer).Addr() }
 	now := time.Now()
 	for i := range 4096 {
 		peer := fmt.Sprintf("[2001:db8::%x]:1", i)
-		if !throttle.allow(peer, now) {
+		if !throttle.allow(addr(peer), now) {
 			t.Fatalf("peer %d refused", i)
 		}
 	}
-	if throttle.allow("192.0.2.1:1", now) || len(throttle.peers) != 4096 {
+	if throttle.allow(addr("192.0.2.1:1"), now) || len(throttle.peers) != 4096 {
 		t.Fatal("unbounded peer storage")
 	}
-	if !throttle.allow("192.0.2.1:1", now.Add(time.Minute)) || len(throttle.peers) != 1 {
+	if !throttle.allow(addr("192.0.2.1:1"), now.Add(time.Minute)) || len(throttle.peers) != 1 {
 		t.Fatal("expired entries not reclaimed")
 	}
 	for range 9 {
-		if !throttle.allow("192.0.2.1:2", now.Add(time.Minute)) {
+		if !throttle.allow(addr("192.0.2.1:2"), now.Add(time.Minute)) {
 			t.Fatal("unexpected refusal")
 		}
 	}
-	if throttle.allow("192.0.2.1:3", now.Add(time.Minute)) {
+	if throttle.allow(addr("192.0.2.1:3"), now.Add(time.Minute)) {
 		t.Fatal("port evaded throttle")
 	}
-	if !throttle.allow("192.0.2.1:3", now.Add(2*time.Minute)) {
+	if !throttle.allow(addr("192.0.2.1:3"), now.Add(2*time.Minute)) {
 		t.Fatal("window did not reset")
 	}
 }
@@ -89,7 +91,7 @@ func TestHTTPInFlightAndCommandDeadline(t *testing.T) {
 		entered <- struct{}{}
 		<-unblock
 		w.WriteHeader(http.StatusNoContent)
-	}))
+	}), netip.Addr{})
 	for range 64 {
 		go func() {
 			handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, ExecutePath, nil))
@@ -120,7 +122,7 @@ func TestHTTPAuthFloodReservesCommandSlots(t *testing.T) {
 			<-unblock
 		}
 		w.WriteHeader(http.StatusNoContent)
-	}))
+	}), netip.Addr{})
 	for range 6 {
 		go func() {
 			handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, LoginPath, nil))
@@ -140,5 +142,71 @@ func TestHTTPAuthFloodReservesCommandSlots(t *testing.T) {
 	}
 	if login.Code != 429 || command.Code != 204 {
 		t.Fatalf("auth=%d command=%d", login.Code, command.Code)
+	}
+}
+
+// Behind cloudflared every owner arrives from the loopback hop. With the hop configured, each
+// owner's CF-Connecting-IP is their own throttle bucket; the same header from anyone else, or a
+// hop request that does not name exactly one client, is still refused.
+func TestTrustedTunnelHopThrottlesEachClient(t *testing.T) {
+	calls := 0
+	handler := resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		w.WriteHeader(http.StatusNoContent)
+	}), netip.MustParseAddr("127.0.0.1"))
+	send := func(peer string, headers map[string][]string) int {
+		r := httptest.NewRequest(http.MethodPost, LoginPath, nil)
+		r.RemoteAddr = peer
+		for key, values := range headers {
+			for _, v := range values {
+				r.Header.Add(key, v)
+			}
+		}
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, r)
+		return w.Code
+	}
+	tunnel := func(client string) map[string][]string {
+		return map[string][]string{"CF-Connecting-IP": {client}, "X-Forwarded-For": {client}, "X-Forwarded-Proto": {"https"}}
+	}
+	for i := range 11 {
+		want := 204
+		if i == 10 {
+			want = 429
+		}
+		if got := send(fmt.Sprintf("127.0.0.1:%d", 2000+i), tunnel("198.51.100.1")); got != want {
+			t.Fatalf("first owner attempt %d: %d", i, got)
+		}
+	}
+	if got := send("127.0.0.1:3000", tunnel("2001:db8::7")); got != 204 {
+		t.Fatalf("second owner shared the first owner's bucket: %d", got)
+	}
+	for name, tc := range map[string]struct {
+		peer    string
+		headers map[string][]string
+	}{
+		"untrusted peer":       {"192.0.2.9:4000", tunnel("198.51.100.3")},
+		"other loopback port":  {"127.0.0.2:4000", tunnel("198.51.100.3")},
+		"hop without a client": {"127.0.0.1:4000", map[string][]string{"X-Forwarded-For": {"198.51.100.3"}}},
+		"hop naming two":       {"127.0.0.1:4000", map[string][]string{"CF-Connecting-IP": {"198.51.100.3", "198.51.100.4"}}},
+		"hop naming junk":      {"127.0.0.1:4000", map[string][]string{"CF-Connecting-IP": {"sentinel-secret"}}},
+	} {
+		if got := send(tc.peer, tc.headers); got != 400 {
+			t.Errorf("%s: %d, want 400", name, got)
+		}
+	}
+	if calls != 11 {
+		t.Fatalf("downstream calls %d", calls)
+	}
+	// A hop that is not loopback is never trusted.
+	open := resourceLimits(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(204) }),
+		netip.MustParseAddr("192.0.2.9"))
+	r := httptest.NewRequest(http.MethodPost, LoginPath, nil)
+	r.RemoteAddr = "192.0.2.9:4000"
+	r.Header.Set("CF-Connecting-IP", "198.51.100.5")
+	w := httptest.NewRecorder()
+	open.ServeHTTP(w, r)
+	if w.Code != 400 {
+		t.Fatalf("non-loopback hop trusted: %d", w.Code)
 	}
 }

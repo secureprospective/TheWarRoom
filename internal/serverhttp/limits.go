@@ -2,8 +2,8 @@ package serverhttp
 
 import (
 	"context"
-	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"sync"
 	"time"
@@ -21,11 +21,11 @@ type authWindow struct {
 	attempts int
 }
 
-func (t *authThrottle) allow(peer string, now time.Time) bool {
-	host, _, err := net.SplitHostPort(peer)
-	if err != nil || net.ParseIP(host) == nil {
+func (t *authThrottle) allow(client netip.Addr, now time.Time) bool {
+	if !client.IsValid() {
 		return false
 	}
+	host := client.Unmap().String()
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	entry, exists := t.peers[host]
@@ -50,7 +50,40 @@ func (t *authThrottle) allow(peer string, now time.Time) bool {
 	return true
 }
 
-func resourceLimits(next http.Handler) http.Handler {
+// clientAddress is the address a request is throttled as: its socket peer, or, only when that peer
+// is the configured loopback tunnel hop (cloudflared), the one CF-Connecting-IP the hop sets. Every
+// other forwarding header is refused from anyone else, so a client cannot choose its own bucket.
+func clientAddress(r *http.Request, hop netip.Addr) (netip.Addr, bool) {
+	peer, err := netip.ParseAddrPort(r.RemoteAddr)
+	if err != nil {
+		return netip.Addr{}, false
+	}
+	viaHop := hop.IsValid() && hop.IsLoopback() && peer.Addr().Unmap() == hop.Unmap()
+	for key := range r.Header {
+		key = strings.ToLower(key)
+		if !viaHop && (key == "forwarded" || strings.HasPrefix(key, "x-forwarded-") || key == "x-real-ip" ||
+			key == "cf-connecting-ip" || key == "true-client-ip") {
+			return netip.Addr{}, false
+		}
+	}
+	if !viaHop {
+		return peer.Addr(), true
+	}
+	// The hop always names the client; a request without exactly one address is not from cloudflared.
+	values := r.Header.Values("CF-Connecting-IP")
+	if len(values) != 1 {
+		return netip.Addr{}, false
+	}
+	client, err := netip.ParseAddr(values[0])
+	if err != nil || client.Zone() != "" {
+		return netip.Addr{}, false
+	}
+	return client, true
+}
+
+// resourceLimits bounds every hosted request. hop is the loopback cloudflared address whose
+// CF-Connecting-IP is trusted; the zero address trusts no proxy.
+func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 	throttle := &authThrottle{peers: make(map[string]authWindow)}
 	inFlight := make(chan struct{}, 64)
 	authInFlight := make(chan struct{}, 6)
@@ -62,14 +95,11 @@ func resourceLimits(next http.Handler) http.Handler {
 			http.Error(w, "browser requests refused", http.StatusBadRequest)
 			return
 		}
-		// No proxy is trusted yet. Deployment must strip these headers, not let clients
-		// select their throttle identity or assert that an insecure hop was HTTPS.
-		for key := range r.Header {
-			key = strings.ToLower(key)
-			if key == "forwarded" || strings.HasPrefix(key, "x-forwarded-") || key == "x-real-ip" || key == "cf-connecting-ip" || key == "true-client-ip" {
-				http.Error(w, "forwarding headers refused", http.StatusBadRequest)
-				return
-			}
+		// Clients never select their throttle identity or assert that an insecure hop was HTTPS.
+		client, ok := clientAddress(r, hop)
+		if !ok {
+			http.Error(w, "forwarding headers refused", http.StatusBadRequest)
+			return
 		}
 		// Streams own their connection budget and per-write deadlines.
 		if r.URL.Path == InvalidationPath {
@@ -96,7 +126,7 @@ func resourceLimits(next http.Handler) http.Handler {
 		budget := 5 * time.Second
 		if strings.HasPrefix(r.URL.Path, "/v1/auth/") {
 			budget = 10 * time.Second
-			if !throttle.allow(r.RemoteAddr, time.Now()) {
+			if !throttle.allow(client, time.Now()) {
 				w.Header().Set("Retry-After", "60")
 				http.Error(w, "too many authentication attempts", http.StatusTooManyRequests)
 				return
