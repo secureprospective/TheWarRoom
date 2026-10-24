@@ -2,7 +2,6 @@ package serverhttp
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -67,9 +66,7 @@ func EnrollmentHandler(service *accounts.EnrollmentService) http.Handler {
 			return
 		}
 		account, err := service.Redeem(r.Context(), raw.Enrollment)
-		if errors.Is(err, accounts.ErrPasswordBusy) {
-			w.Header().Set("Retry-After", "1")
-			http.Error(w, "password service busy", http.StatusTooManyRequests)
+		if passwordBusy(w, err) {
 			return
 		}
 		if err != nil {

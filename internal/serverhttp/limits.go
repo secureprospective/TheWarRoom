@@ -2,11 +2,14 @@ package serverhttp
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/netip"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 )
 
 // authThrottle stores only socket peer IPs, never usernames, headers or credentials.
@@ -83,6 +86,21 @@ func clientAddress(r *http.Request, hop netip.Addr) (netip.Addr, bool) {
 
 // resourceLimits bounds every hosted request. hop is the loopback cloudflared address whose
 // CF-Connecting-IP is trusted; the zero address trusts no proxy.
+// BusyMessage is what a person reads when the server, not their password or code, is the problem.
+const BusyMessage = "The server is busy; try again in a minute"
+
+// passwordBusy answers a full password budget, or password work that ran out of request time while
+// queued, as the server being busy. Reporting it as a wrong password or phone clock sends people
+// hunting for a mistake they did not make.
+func passwordBusy(w http.ResponseWriter, err error) bool {
+	if !errors.Is(err, accounts.ErrPasswordBusy) && !errors.Is(err, context.DeadlineExceeded) {
+		return false
+	}
+	w.Header().Set("Retry-After", "60")
+	http.Error(w, BusyMessage, http.StatusServiceUnavailable)
+	return true
+}
+
 func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 	throttle := &authThrottle{peers: make(map[string]authWindow)}
 	inFlight := make(chan struct{}, 64)
@@ -111,8 +129,8 @@ func resourceLimits(next http.Handler, hop netip.Addr) http.Handler {
 			case authInFlight <- struct{}{}:
 				defer func() { <-authInFlight }()
 			default:
-				w.Header().Set("Retry-After", "1")
-				http.Error(w, "authentication service busy", http.StatusTooManyRequests)
+				w.Header().Set("Retry-After", "60")
+				http.Error(w, BusyMessage, http.StatusServiceUnavailable)
 				return
 			}
 		}

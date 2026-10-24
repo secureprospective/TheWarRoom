@@ -186,6 +186,10 @@ calls and four waiters, rejecting overflow with `ErrPasswordBusy`. Defaults crea
 private budgets for independent local services. Raw `HashPassword`/`VerifyPassword`
 remain fixed-cost primitives, not network admission doors. Canceled queued work
 never enters Argon2; active work retains its slot until the library returns.
+Every hosted password door answers a full budget, or password work that ran out of
+request time while queued, with HTTP 503 and `Retry-After`, worded "The server is busy;
+try again in a minute" (`TestPasswordWorkTimeoutIsBusyNotRefused`); the desktop shows
+that wording rather than password or phone-clock advice.
 Hosted throttles and performance evidence supersede the earlier future-work
 statements about KDF concurrency above. See
 `docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`; target-CT performance and

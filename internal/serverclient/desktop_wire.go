@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base32"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -171,6 +172,10 @@ func (d *Desktop) authenticator(ctx context.Context, raw RawDesktop, view Deskto
 }
 
 func desktopRefusal(path string, status int) error {
+	// A busy server is never the person's password, code or phone clock.
+	if status == 503 {
+		return errors.New("the server is busy; try again in a minute")
+	}
 	switch path {
 	case serverhttp.RecoveryPath:
 		if status == 429 {

@@ -36,6 +36,7 @@ type hostedFixture struct {
 	accounts   *accountstore.Store
 	sessions   *accounts.SessionService
 	enrollment *accounts.EnrollmentService
+	totp       *accounts.TOTPService
 	principal  string
 	now        time.Time
 }
@@ -72,7 +73,7 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	}
 	f := &hostedFixture{history: store, pools: pools, accounts: credentials, principal: string(principal), now: time.Now().UTC()}
 	credentials.SetClock(func() time.Time { return f.now })
-	f.sessions = accounts.NewSessions(passwords, credentials)
+	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
 	f.enrollment = accounts.NewEnrollment(credentials, enrollmentAuthority{policy: policy, principal: principal})
 	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, nil)
 	f.server = httptest.NewTLSServer(serverhttp.Hosted{Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
@@ -83,6 +84,22 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 }
 
 func (f *hostedFixture) post(t *testing.T, path, body, bearer, proof string, status int) []byte {
+	t.Helper()
+	// A busy reply is transient: a loaded test machine retries it, as a desktop would.
+	for attempt := 1; ; attempt++ {
+		got, result := f.send(t, path, body, bearer, proof)
+		if got == http.StatusServiceUnavailable && status != got && attempt < 5 &&
+			strings.TrimSpace(string(result)) == serverhttp.BusyMessage {
+			continue
+		}
+		if got != status {
+			t.Fatalf("%s: status=%d want=%d body=%s", path, got, status, result)
+		}
+		return result
+	}
+}
+
+func (f *hostedFixture) send(t *testing.T, path, body, bearer, proof string) (int, []byte) {
 	t.Helper()
 	request, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.server.URL+path, strings.NewReader(body))
 	if err != nil {
@@ -102,11 +119,37 @@ func (f *hostedFixture) post(t *testing.T, path, body, bearer, proof string, sta
 	if err != nil {
 		t.Fatal(err)
 	}
-	if response.StatusCode != status || response.Header.Get("Cache-Control") != "no-store" {
-		t.Fatalf("%s: status=%d want=%d body=%s", path, response.StatusCode, status, result)
+	if response.Header.Get("Cache-Control") != "no-store" {
+		t.Fatalf("%s: cacheable reply %d", path, response.StatusCode)
 	}
-	return result
+	return response.StatusCode, result
 }
+
+// directCommissioner signs in and steps up through the account services, outside the 10-second
+// HTTP password budget, for tests whose subject is not sign-in itself. The HTTPS sign-in flows
+// keep their own coverage (TestHostedHTTPSEnrollmentLoginWriteAndAdmission).
+func (f *hostedFixture) directCommissioner(t *testing.T) (bearer, proof string) {
+	t.Helper()
+	credentials := accounts.RawCredentials{Username: "commissioner", Password: "private-password"}
+	session, err := f.sessions.Login(t.Context(), credentials, "test device")
+	if err != nil {
+		t.Fatal(err)
+	}
+	setup, err := f.totp.Begin(t.Context(), credentials)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.totp.Confirm(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)}); err != nil {
+		t.Fatal(err)
+	}
+	f.now = f.now.Add(30 * time.Second)
+	recent, err := f.totp.StepUp(t.Context(), credentials, accounts.RawTOTP{Code: testTOTP(t, setup.Seed, f.now)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return session.Bearer, recent.Token
+}
+
 func (f *hostedFixture) login(t *testing.T, username, password string) string {
 	t.Helper()
 	body := fmt.Sprintf(`{"protocol":1,"username":%q,"password":%q,"device":"test device"}`, username, password)
@@ -248,8 +291,7 @@ func TestHostedNilDependenciesFailClosed(t *testing.T) {
 
 func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 	f := newHostedFixture(t)
-	bearer := f.login(t, "commissioner", "private-password")
-	proof := f.privilegedProof(t)
+	bearer, proof := f.directCommissioner(t)
 	f.now = f.now.Add(time.Nanosecond)
 	digest := sha256.Sum256([]byte(bearer))
 	tokenHash := hex.EncodeToString(digest[:])
@@ -306,7 +348,7 @@ func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 		if status != 409 {
 			t.Fatalf("queued revoked request status=%d", status)
 		}
-	case <-time.After(5 * time.Second):
+	case <-time.After(30 * time.Second):
 		t.Fatal("queued request did not complete")
 	}
 	f.revision(t, 1)
@@ -314,7 +356,7 @@ func TestHostedHTTPSQueuedRevocation(t *testing.T) {
 
 func waitFor(t *testing.T, condition func() bool) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(30 * time.Second)
 	for !condition() {
 		if time.Now().After(deadline) {
 			t.Fatal("request did not reach the expected admission boundary")

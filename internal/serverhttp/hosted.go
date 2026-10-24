@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -101,9 +100,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	session, err := h.Sessions.Login(r.Context(), accounts.RawCredentials{Username: raw.Username, Password: raw.Password}, raw.Device)
-	if errors.Is(err, accounts.ErrPasswordBusy) {
-		w.Header().Set("Retry-After", "1")
-		http.Error(w, "password service busy", http.StatusTooManyRequests)
+	if passwordBusy(w, err) {
 		return
 	}
 	if err != nil {

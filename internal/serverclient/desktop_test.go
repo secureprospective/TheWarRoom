@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
 func TestDesktopBoundaryAndTLS(t *testing.T) {
@@ -111,5 +113,17 @@ func TestDesktopViewNeverSerializesCredentials(t *testing.T) {
 	body, err := json.Marshal(view)
 	if err != nil || strings.Contains(string(body), "sentinel") {
 		t.Fatalf("secret crossed webview: %s %v", body, err)
+	}
+}
+
+// A busy server reads as busy on every account screen, never as a password or phone-clock problem.
+func TestDesktopBusyServerWording(t *testing.T) {
+	for _, path := range []string{serverhttp.LoginPath, serverhttp.TOTPStepUpPath, serverhttp.RecoveryPath, serverhttp.EnrollmentPath, serverhttp.PeoplePath} {
+		if err := desktopRefusal(path, 503); err == nil || !strings.EqualFold(err.Error(), serverhttp.BusyMessage) {
+			t.Errorf("%s: %v", path, err)
+		}
+	}
+	if err := desktopRefusal(serverhttp.TOTPStepUpPath, 403); err == nil || !strings.Contains(err.Error(), "phone clock") {
+		t.Errorf("a refused code lost its advice: %v", err)
 	}
 }

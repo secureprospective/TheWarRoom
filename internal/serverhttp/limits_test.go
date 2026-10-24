@@ -140,7 +140,7 @@ func TestHTTPAuthFloodReservesCommandSlots(t *testing.T) {
 	for range 6 {
 		<-done
 	}
-	if login.Code != 429 || command.Code != 204 {
+	if login.Code != 503 || command.Code != 204 {
 		t.Fatalf("auth=%d command=%d", login.Code, command.Code)
 	}
 }
