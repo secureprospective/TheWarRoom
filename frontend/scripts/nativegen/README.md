@@ -9,9 +9,10 @@ go test -race ./frontend/scripts/nativegen
 ```
 
 The generator validates the entire frozen `commissioner.NativeCommands()` publication before
-writing `frontend/src/app/commands/native.gen.ts`. That single generated object carries every
-schema, version, permission, mode and safeguard; TypeScript derives request types from its literal
-schemas, rather than keeping a second argument list. The Go freshness test compares the complete
+writing `frontend/src/app/commands/native.gen.ts`. Identical schema subtrees are emitted once as
+shared literal constants; the command table references them. This retains every schema, version,
+permission, mode and safeguard without repeating nested mutation envelopes. TypeScript derives
+request types from those literal schemas, rather than keeping a second argument list. The Go freshness test compares the complete
 output byte-for-byte and rejects an intentionally incomplete declaration. No Wails bindings change.
 
 Flow: Go catalog → generated schema and plain-word phrases → `commands/native.ts` typed requests,
