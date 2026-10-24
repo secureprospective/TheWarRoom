@@ -24,6 +24,11 @@
    "value": 0
   },
   {
+   "key": "model.board_kept",
+   "position": "CB",
+   "value": 1
+  },
+  {
    "key": "model.debut.draft",
    "position": "CB",
    "value": -1.3226876998770576
@@ -242,6 +247,11 @@
    "key": "model.arc.second_year",
    "position": "DE",
    "value": 0
+  },
+  {
+   "key": "model.board_kept",
+   "position": "DE",
+   "value": 1
   },
   {
    "key": "model.debut.draft",
@@ -482,6 +492,11 @@
    "key": "model.arc.second_year",
    "position": "DT",
    "value": 0.026189908501119876
+  },
+  {
+   "key": "model.board_kept",
+   "position": "DT",
+   "value": 1
   },
   {
    "key": "model.debut.draft",
@@ -754,6 +769,11 @@
    "value": 0.010147992032817967
   },
   {
+   "key": "model.board_kept",
+   "position": "K",
+   "value": 0
+  },
+  {
    "key": "model.debut.draft",
    "position": "K",
    "value": -1.441150417197331
@@ -952,6 +972,11 @@
    "key": "model.arc.second_year",
    "position": "LB",
    "value": 0.041311885040950375
+  },
+  {
+   "key": "model.board_kept",
+   "position": "LB",
+   "value": 1
   },
   {
    "key": "model.debut.draft",
@@ -1174,6 +1199,11 @@
    "value": 0
   },
   {
+   "key": "model.board_kept",
+   "position": "QB",
+   "value": 1
+  },
+  {
    "key": "model.debut.draft",
    "position": "QB",
    "value": -1.1143829978581323
@@ -1374,6 +1404,11 @@
    "value": 0.09112923958431539
   },
   {
+   "key": "model.board_kept",
+   "position": "RB",
+   "value": 1
+  },
+  {
    "key": "model.debut.draft",
    "position": "RB",
    "value": -2.3206787385413365
@@ -1572,6 +1607,11 @@
    "key": "model.arc.second_year",
    "position": "S",
    "value": -0.009614570226235502
+  },
+  {
+   "key": "model.board_kept",
+   "position": "S",
+   "value": 1
   },
   {
    "key": "model.debut.draft",
@@ -1794,6 +1834,11 @@
    "value": 0.002792761393477531
   },
   {
+   "key": "model.board_kept",
+   "position": "TE",
+   "value": 1
+  },
+  {
    "key": "model.debut.draft",
    "position": "TE",
    "value": -2.3479681343316363
@@ -1992,6 +2037,11 @@
    "key": "model.arc.second_year",
    "position": "WR",
    "value": 0.03623048929758538
+  },
+  {
+   "key": "model.board_kept",
+   "position": "WR",
+   "value": 1
   },
   {
    "key": "model.debut.draft",

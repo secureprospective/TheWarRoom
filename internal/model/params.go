@@ -33,6 +33,10 @@ type Params struct {
 
 	// Debut: the log-odds that a rookie becomes a regular are Debut · (1, draft).
 	Debut [2]float64
+
+	// BoardKept is false where today's board rule ranked the holdout better than the model on
+	// both talent and value; the position is then valued by that rule (TodayRule).
+	BoardKept bool
 }
 
 // Prior is the player's expected percentile from pre-NFL facts, kept inside [0.01, 0.99].
@@ -118,8 +122,8 @@ func draftCapital(pick float64) float64 {
 func (p Params) Values() map[string]float64 {
 	out := map[string]float64{
 		"model.prior.intercept": p.Intercept, "model.k_now": p.KNow, "model.k_dynasty": p.KDynasty,
-		"model.z_exponential": boolValue(p.Exponential),
-		"model.recency.1":     p.Recency[0], "model.recency.2": p.Recency[1],
+		"model.z_exponential": boolValue(p.Exponential), "model.board_kept": boolValue(p.BoardKept),
+		"model.recency.1": p.Recency[0], "model.recency.2": p.Recency[1],
 	}
 	for i, f := range PriorFeatures(p.Position) {
 		out["model.prior."+f+".weight"] = p.Weight[i]
@@ -140,10 +144,11 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 	n := len(PriorFeatures(pos))
 	p := Params{Position: pos, Weight: make([]float64, n), Missing: make([]float64, n),
 		Survival: make([]float64, len(SurvivalTerms(pos)))}
-	var z float64
+	var z, kept float64
 	targets := map[string]*float64{
 		"model.prior.intercept": &p.Intercept, "model.k_now": &p.KNow, "model.k_dynasty": &p.KDynasty,
-		"model.z_exponential": &z, "model.recency.1": &p.Recency[0], "model.recency.2": &p.Recency[1],
+		"model.z_exponential": &z, "model.board_kept": &kept,
+		"model.recency.1": &p.Recency[0], "model.recency.2": &p.Recency[1],
 	}
 	for i, f := range PriorFeatures(pos) {
 		targets["model.prior."+f+".weight"] = &p.Weight[i]
@@ -163,7 +168,7 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 		}
 		*dst = v
 	}
-	p.Exponential = z != 0
+	p.Exponential, p.BoardKept = z != 0, kept != 0
 	return p, nil
 }
 

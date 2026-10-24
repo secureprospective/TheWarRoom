@@ -124,6 +124,16 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 	return v
 }
 
+// TodayRule values a player by today's board rule where the fit kept it over the model
+// (BoardKept false): last season's total league points times the engine's age pull, counted per
+// game of a full season, for both measurables. The model's own diagnostics stay beside it.
+func TodayRule(v Value, lastTotal, pull float64, scale Scale) Value {
+	ppg := lastTotal * pull / fullSeason
+	pct := unit(scale.Pct(ppg))
+	v.Now, v.NowPPG, v.Dynasty, v.DynastyPPG = pct, ppg, pct, ppg
+	return v
+}
+
 // onFieldNow is the chance he plays this season: 1 once he has; before his first NFL game, the
 // chance a rookie at his draft slot becomes a regular; otherwise each season from his last one
 // is survived in turn, a season he missed at 0 games.

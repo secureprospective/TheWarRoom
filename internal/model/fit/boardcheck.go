@@ -30,6 +30,26 @@ type BoardCheck struct {
 	RookieModel float64
 }
 
+// Kept reports whether the model beats today's rule on the holdout: strictly, on talent or on
+// value. A tie keeps the simpler rule, as every other kept/fallback choice does.
+func (c BoardCheck) Kept() bool {
+	return c.TalentModel > c.TalentToday || c.ValueModel > c.ValueToday
+}
+
+// KeepBoard records each position's board check on its fitted params.
+func KeepBoard(results []Result, checks []BoardCheck) {
+	kept := make(map[domain.Position]bool, len(checks))
+	for _, c := range checks {
+		kept[c.Position] = c.Kept()
+	}
+	for i := range results {
+		r := &results[i]
+		if k, ok := kept[r.Position]; ok {
+			r.Params.BoardKept = k
+		}
+	}
+}
+
 // CheckBoard scores the trained model against today's rule on predicting season holdout.
 func CheckBoard(d model.Data, results []Result, holdout int, today Today) []BoardCheck {
 	scales := d.Scales()

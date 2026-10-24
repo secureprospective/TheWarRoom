@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/model"
@@ -60,6 +59,19 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	d := model.Build(obs, lastWeek)
 	moved := modelrun.AtLeaguePositions(d, dir)
 	results := fit.Run(d, first, holdout)
+	decay, err := params.DefaultSet().GetGlobal(params.KeyLayer3DecayRate)
+	if err != nil {
+		return fmt.Errorf("fit: %w", err)
+	}
+	today := func(pl *model.Player, lastTotal, age float64) float64 {
+		pull, err := modelrun.AgePull(pl.Position, age, decay)
+		if err != nil {
+			return 0
+		}
+		return lastTotal * pull
+	}
+	checks := fit.CheckBoard(d, results, holdout, today)
+	fit.KeepBoard(results, checks)
 	file := params.FittedFile{Fitted: time.Now().UTC().Format("2006-01-02"), First: first, Holdout: holdout}
 	for _, r := range results {
 		for key, v := range r.Params.Values() {
@@ -79,18 +91,6 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	if err := os.WriteFile(out, append(enc, '\n'), 0o600); err != nil {
 		return fmt.Errorf("fit: write params: %w", err)
 	}
-	decay, err := params.DefaultSet().GetGlobal(params.KeyLayer3DecayRate)
-	if err != nil {
-		return fmt.Errorf("fit: %w", err)
-	}
-	today := func(pl *model.Player, lastTotal, age float64) float64 {
-		pull, err := engine.ApplyDecay(age, engine.PeakLimit(pl.Position), decay)
-		if err != nil {
-			return 0
-		}
-		return lastTotal * pull
-	}
-	checks := fit.CheckBoard(d, results, holdout, today)
 	md := fit.Markdown(results, checks, first, holdout, fmt.Sprintf("a history database holding %d values, "+
 		"with %d players moved to the position MFL's players export (sha256 %s) lists them at", len(obs), moved, playersSum[:12]))
 	if err := os.WriteFile(report, []byte(md), 0o600); err != nil {

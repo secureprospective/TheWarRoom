@@ -115,3 +115,26 @@ func TestSpearmanRanksWithTies(t *testing.T) {
 		t.Errorf("a column with no spread has no correlation, got %v", got)
 	}
 }
+
+// The board check keeps the model only where it strictly beats today's rule on talent or value;
+// the 2025 holdout's kicker row loses both and falls back, a tie falls back to the simpler rule.
+func TestBoardCheckKeepsTheModelOnlyWhereItWins(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		check BoardCheck
+		kept  bool
+	}{
+		{"kicker loses both", BoardCheck{TalentModel: 0.03, TalentToday: 0.25, ValueModel: 0.07, ValueToday: 0.46}, false},
+		{"quarterback wins talent", BoardCheck{TalentModel: 0.73, TalentToday: 0.65, ValueModel: 0.70, ValueToday: 0.72}, true},
+		{"tie on both", BoardCheck{TalentModel: 0.75, TalentToday: 0.75, ValueModel: 0.75, ValueToday: 0.75}, false},
+	} {
+		if got := tc.check.Kept(); got != tc.kept {
+			t.Errorf("%s: kept %v, want %v", tc.name, got, tc.kept)
+		}
+	}
+	results := []Result{{Position: domain.PosK, Params: model.Params{BoardKept: true}}}
+	KeepBoard(results, []BoardCheck{{Position: domain.PosK, TalentModel: 0.03, TalentToday: 0.25, ValueModel: 0.07, ValueToday: 0.46}})
+	if results[0].Params.BoardKept {
+		t.Error("KeepBoard kept the model at K")
+	}
+}
