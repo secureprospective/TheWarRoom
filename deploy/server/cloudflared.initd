@@ -1,0 +1,16 @@
+#!/sbin/openrc-run
+name="TheWarRoom Tunnel"
+description="Outbound Cloudflare Tunnel; no inbound listener"
+supervisor="supervise-daemon"
+command="/usr/local/bin/cloudflared"
+command_args="--no-autoupdate --config /etc/cloudflared/config.yml tunnel run"
+command_user="twr-tunnel:twr-tunnel"
+respawn_delay=5
+respawn_max=5
+respawn_period=60
+umask=0077
+
+depend() {
+	need net twr-server
+	use dns
+}

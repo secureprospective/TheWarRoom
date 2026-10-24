@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+umask 077
+exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
+  --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \
+  --ro-bind /etc/twr /etc/twr --proc /proc --dev /dev \
+  --tmpfs /tmp --tmpfs /run --bind /var/lib/twr /var/lib/twr \
+  --chdir /var/lib/twr --clearenv --setenv PATH /usr/bin:/bin \
+  --setenv HOME /var/lib/twr --setenv TMPDIR /var/lib/twr \
+  --setenv GOMEMLIMIT 768MiB --setenv GOMAXPROCS 2 \
+  /usr/local/bin/twr-server hosted -listen 127.0.0.1:8443 \
+  -db /var/lib/twr/server.db -tls-cert /etc/twr/origin.pem \
+  -tls-key /etc/twr/origin.key -totp-key-file /etc/twr/authenticator.key \
+  -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1
