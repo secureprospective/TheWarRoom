@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 func TestClosedBooksResumeAndCompensationFallback(t *testing.T) {
@@ -180,4 +182,29 @@ func TestClosedNativeUnhashableSourceFallsBack(t *testing.T) {
 	if err != nil || since != 0 {
 		t.Fatalf("unhashable source did not select full replay: %d %v", since, err)
 	}
+}
+
+func TestClosedBooksDeputyOrderOwnership(t *testing.T) {
+	b := rolloverLedger(t)
+	for _, p := range []string{"A", "B", "C"} {
+		b.add(RawCommand{Command: roleGrant, Args: RawArgs{People: &RawPeople{Principal: p, Role: "co-commissioner"}}}, seasonMoment(5))
+	}
+	b.add(RawCommand{Command: DeputyOrder, Args: RawArgs{People: &RawPeople{Order: []governance.Principal{"C", "A", "B"}}}}, seasonMoment(5))
+	orderIndex := len(b.records) - 1
+	b.rollover(2027, rolloverMoment())
+	raw, err := CloseBooks(b.records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	folded, ok := WithClosedBooks(b.records, raw)
+	if !ok || usableClosedBooks(folded) == nil {
+		t.Fatal("order checkpoint refused")
+	}
+	assertClosedBooksCore(t, folded, b.records)
+	folded[orderIndex].Command.Args.People.Order[0] = "B"
+	folded[orderIndex].Command.Args.People.Order[2] = "C"
+	if usableClosedBooks(folded) != nil {
+		t.Fatal("changed order reused a stale checkpoint")
+	}
+	assertClosedBooksCore(t, folded, WithoutClosedBooks(folded))
 }

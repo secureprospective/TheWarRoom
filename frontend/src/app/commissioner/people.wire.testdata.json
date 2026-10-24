@@ -70,6 +70,7 @@
     "mayGrantRoles": true,
     "mayPostNotices": true
   },
+  "duplicateCoCommissionerRefusal": "This person already holds that role. Nothing would change",
   "owner": {
     "league": "native.people",
     "name": "People league",
@@ -128,6 +129,5 @@
     "mayChangeRules": false,
     "mayGrantRoles": false,
     "mayPostNotices": false
-  },
-  "secondCoCommissionerRefusal": "This league already has a co-commissioner: revoke them first"
+  }
 }

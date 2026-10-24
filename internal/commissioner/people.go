@@ -9,25 +9,28 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
+const DeputyOrder = "commish.deputy.order"
+
 type RawPeople struct {
-	Franchise     string          `json:"franchise,omitempty"`
-	Principal     string          `json:"principal,omitempty"`
-	Name          string          `json:"name,omitempty"`
-	Abbreviation  string          `json:"abbreviation,omitempty"`
-	ID            string          `json:"id,omitempty"`
-	Role          governance.Role `json:"role,omitempty"`
-	Ability       string          `json:"ability,omitempty"`
-	On            bool            `json:"on,omitempty"`
-	All           bool            `json:"all,omitempty"`
-	Report        string          `json:"report,omitempty"`
-	Audience      string          `json:"audience,omitempty"`
-	Successor     string          `json:"successor,omitempty"`
-	Commissioner  string          `json:"commissioner,omitempty"`
-	Choice        string          `json:"choice,omitempty"`
-	InSeasonDays  int64           `json:"inSeasonDays,omitempty"`
-	OffseasonDays int64           `json:"offseasonDays,omitempty"`
-	ElectionDays  int64           `json:"electionDays,omitempty"`
-	RunoffDays    int64           `json:"runoffDays,omitempty"`
+	Order         []governance.Principal `json:"order,omitempty"`
+	Franchise     string                 `json:"franchise,omitempty"`
+	Principal     string                 `json:"principal,omitempty"`
+	Name          string                 `json:"name,omitempty"`
+	Abbreviation  string                 `json:"abbreviation,omitempty"`
+	ID            string                 `json:"id,omitempty"`
+	Role          governance.Role        `json:"role,omitempty"`
+	Ability       string                 `json:"ability,omitempty"`
+	On            bool                   `json:"on,omitempty"`
+	All           bool                   `json:"all,omitempty"`
+	Report        string                 `json:"report,omitempty"`
+	Audience      string                 `json:"audience,omitempty"`
+	Successor     string                 `json:"successor,omitempty"`
+	Commissioner  string                 `json:"commissioner,omitempty"`
+	Choice        string                 `json:"choice,omitempty"`
+	InSeasonDays  int64                  `json:"inSeasonDays,omitempty"`
+	OffseasonDays int64                  `json:"offseasonDays,omitempty"`
+	ElectionDays  int64                  `json:"electionDays,omitempty"`
+	RunoffDays    int64                  `json:"runoffDays,omitempty"`
 }
 
 type peopleDefinition struct {
@@ -46,6 +49,7 @@ func peopleDefinitions() []peopleDefinition {
 		{"commish.visibility.set", "CM-020", "G2", "Changed who may read a report"},
 		{"commish.role.grant", "CM-021", "G3", "Granted a league role"},
 		{"commish.role.revoke", "CM-021", "G3", "Revoked a league role"},
+		{DeputyOrder, "CM-021", "G3", "Changed the co-commissioner order"},
 	}
 }
 
@@ -73,6 +77,11 @@ func (r RawPeople) Validate(command string) error {
 		r.Ability, r.Report, r.Audience, string(r.Role), r.Successor, r.Commissioner, r.Choice} {
 		if text != strings.TrimSpace(text) {
 			return fmt.Errorf("remove surrounding spaces from the people change")
+		}
+	}
+	for _, person := range r.Order {
+		if person == "" || string(person) != strings.TrimSpace(string(person)) {
+			return fmt.Errorf("list each co-commissioner by name without surrounding spaces")
 		}
 	}
 	if command == "commish.abilities.set" {
@@ -112,6 +121,8 @@ func (r RawPeople) selected(command string) (RawPeople, error) {
 		return RawPeople{Franchise: r.Franchise, All: r.All, Ability: r.Ability, On: r.On}, nil
 	case "commish.visibility.set":
 		return RawPeople{Report: r.Report, Audience: r.Audience}, nil
+	case DeputyOrder:
+		return RawPeople{Order: r.Order}, nil
 	case "commish.role.grant", "commish.role.revoke":
 		return RawPeople{Principal: r.Principal, Role: r.Role}, nil
 	default:
@@ -123,6 +134,8 @@ func (r RawPeople) label(command string) string {
 	switch command {
 	case "commish.franchise.edit":
 		return fmt.Sprintf("Named franchise %s “%s” (%s)", r.Franchise, r.Name, r.Abbreviation)
+	case DeputyOrder:
+		return fmt.Sprintf("Set co-commissioner priority to %v", r.Order)
 	case "commish.role.grant":
 		return fmt.Sprintf("Granted %s to %s", roleLabel(r.Role), r.Principal)
 	case "commish.role.revoke":
@@ -174,6 +187,8 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 		return governance.AbilitySet{Franchise: f, All: r.All, Ability: r.Ability, On: r.On}, nil
 	case "commish.visibility.set":
 		return governance.VisibilitySet{Report: r.Report, Audience: r.Audience}, nil
+	case DeputyOrder:
+		return governance.DeputyOrderSet{Order: r.Order}, nil
 	case "commish.role.grant":
 		return governance.RoleGranted{Principal: p, Role: r.Role}, nil
 	case "commish.role.revoke":

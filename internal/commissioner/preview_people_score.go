@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -33,6 +34,11 @@ func peoplePreviewValues(raw RawCommand, records []Record) (map[string]string, e
 	if err != nil {
 		return nil, err
 	}
+	order := []string{}
+	for _, person := range state.CoCommissioners() {
+		order = append(order, personWords(string(person)))
+	}
+	out["Co-commissioner priority"] = strings.Join(order, ", ")
 	p := raw.Args.People
 	inSeason, offseason, election, runoff := state.SuccessionPeriods()
 	out["In-season commissioner inactivity period"] = leaguerules.DurationWords(inSeason)

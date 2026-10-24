@@ -4191,6 +4191,7 @@ export namespace commissioner {
 	    }
 	}
 	export class RawPeople {
+	    order?: string[];
 	    franchise?: string;
 	    principal?: string;
 	    name?: string;
@@ -4216,6 +4217,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.order = source["order"];
 	        this.franchise = source["franchise"];
 	        this.principal = source["principal"];
 	        this.name = source["name"];

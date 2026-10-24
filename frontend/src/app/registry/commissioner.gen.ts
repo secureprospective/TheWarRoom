@@ -661,7 +661,7 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     gravity: "G3",
     clock: "none",
     placement: places[18],
-    verb: "commish.role.grant commish.role.revoke",
+    verb: "commish.role.grant commish.role.revoke commish.deputy.order",
     disposition: "kept",
     ring: 4,
     status: "landed",
