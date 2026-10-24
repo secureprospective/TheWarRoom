@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS account_security_audit (
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)
 	}
-	return nil
+	return s.initializeSessions(ctx)
 }
 
 // Insert serializes uniqueness and first-account bootstrap at the single writer.
