@@ -325,7 +325,8 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
 	}
 	raw.Gravity = definition.Gravity
-	record := commissioner.Record{Command: raw, Principal: principal, Role: req.role,
+	record := commissioner.Record{CommandVersion: commissioner.DurableCommandVersion,
+		Command: raw, Principal: principal, Role: req.role,
 		Gravity: definition.Gravity, Canonical: req.canonical, Receipt: receipt, Before: req.before}
 	if raw.Command == commissioner.ScheduleGenerate {
 		record.GeneratedSchedule, err = commissioner.FreezeSchedule(raw, req.records)
@@ -343,7 +344,7 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 	}
 	event := LeagueEvent{ID: receipt.Entry, League: raw.League, Stream: commissioner.Stream,
 		EffectiveAt: effective, RecordedAt: now, Actor: principal, Scope: raw.Visibility, Kind: raw.Command,
-		Payload: EventPayload{Version: 1, Commissioner: &record}, InputHash: hex.EncodeToString(hash[:]),
+		Payload: EventPayload{Version: eventPayloadVersion, Commissioner: &record}, InputHash: hex.EncodeToString(hash[:]),
 		CorrelationID: raw.Request, Supersedes: raw.Args.Entry}
 	if _, err := s.insertEvent(ctx, tx, event, raw.Expected); err != nil {
 		return commissioner.Receipt{}, err

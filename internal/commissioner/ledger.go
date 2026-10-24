@@ -16,8 +16,13 @@ type Receipt struct {
 	Plan       *RolloverPlan `json:"plan,omitempty"`
 }
 
+// DurableCommandVersion versions recorded commands, independently of catalog and transport versions.
+const DurableCommandVersion = 1
+
 type Record struct {
 	books *closedBooks
+
+	CommandVersion int `json:"commandVersion,omitempty"`
 
 	GeneratedSchedule []ScheduleWeek  `json:"generatedSchedule,omitempty"`
 	Before            *RolloverBefore `json:"before,omitempty"`
@@ -29,7 +34,23 @@ type Record struct {
 	Receipt           Receipt         `json:"receipt"`
 }
 
+// Upcast converts legacy envelopes in memory only. Version zero is the original unversioned
+// command shape; its canonical request and receipt must stay unchanged for retries.
+func (r Record) Upcast() (Record, error) {
+	switch r.CommandVersion {
+	case 0:
+		r.CommandVersion = DurableCommandVersion
+	case DurableCommandVersion:
+	default:
+		return Record{}, fmt.Errorf("unsupported recorded command version %d; update the app before reading this league", r.CommandVersion)
+	}
+	return r, nil
+}
+
 func (r Record) Validate() error {
+	if _, err := r.Upcast(); err != nil {
+		return err
+	}
 	if err := r.validateRolloverRecord(); err != nil {
 		return err
 	}
@@ -43,11 +64,8 @@ func (r Record) Validate() error {
 	if err != nil {
 		return err
 	}
-	if strings.TrimSpace(r.Principal) == "" || strings.TrimSpace(r.Role) == "" ||
-		r.Gravity != definition.Gravity || r.Command.Gravity != definition.Gravity ||
-		r.Receipt.League != r.Command.League || r.Receipt.Entry == "" ||
-		r.Receipt.Revision < 1 || r.Receipt.RecordedAt.IsZero() {
-		return fmt.Errorf("league ledger has invalid identity or receipt metadata")
+	if err := r.validateReceipt(definition); err != nil {
+		return err
 	}
 	canonical, err := r.Command.Canonical(r.Principal)
 	if err != nil {
@@ -55,6 +73,16 @@ func (r Record) Validate() error {
 	}
 	if canonical != r.Canonical {
 		return fmt.Errorf("league ledger command does not match its recorded request")
+	}
+	return nil
+}
+
+func (r Record) validateReceipt(definition Definition) error {
+	if strings.TrimSpace(r.Principal) == "" || strings.TrimSpace(r.Role) == "" ||
+		r.Gravity != definition.Gravity || r.Command.Gravity != definition.Gravity ||
+		r.Receipt.League != r.Command.League || r.Receipt.Entry == "" ||
+		r.Receipt.Revision < 1 || r.Receipt.RecordedAt.IsZero() {
+		return fmt.Errorf("league ledger has invalid identity or receipt metadata")
 	}
 	return nil
 }
