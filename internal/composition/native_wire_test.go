@@ -485,7 +485,7 @@ func TestNativeSimultaneousOwnerActsLandOnce(t *testing.T) {
 	if lost == nil {
 		lost = errs[1]
 	}
-	if !strings.Contains(lost.Error(), "check league version: league version is ") {
+	if !strings.Contains(lost.Error(), "League version is ") {
 		t.Fatalf("the losing bid must read as stale: %v", lost)
 	}
 	records, err := f.app.leagueRecords(t.Context(), legalityLeague)

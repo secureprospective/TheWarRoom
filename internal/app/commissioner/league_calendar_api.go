@@ -2,8 +2,6 @@ package commissioner
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -86,14 +84,8 @@ func Blocked(err error) commissioner.Preview {
 // ChangeError words a recorded change's failure: a refusal reads as its reason alone, without the
 // context each layer adds for the log; anything else keeps the "league change" context.
 func ChangeError(err error) error {
-	var refused *commissioner.Refusal
-	if errors.As(err, &refused) {
-		return errors.New(refused.Reason())
-	}
-	if err != nil {
-		return fmt.Errorf("league change: %w", err)
-	}
-	return nil
+	//nolint:wrapcheck // The shared service supplies the user-facing context.
+	return leagueservice.ChangeError(err)
 }
 
 type RawNativeScheduleScope struct {

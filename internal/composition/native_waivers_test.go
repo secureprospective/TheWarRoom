@@ -166,7 +166,7 @@ func TestNativeClaimRefusesRosterAndCapBreaks(t *testing.T) {
 	f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
 	_, err := f.owner(t, "owner.one", commissioner.WaiverClaim,
 		commissioner.RawWaiverArgs{Window: cut.Entry, Franchise: "franchise.01"})
-	if err == nil || !strings.Contains(err.Error(), "roster would not be legal") {
+	if err == nil || !strings.Contains(err.Error(), "Roster would not be legal") {
 		t.Fatalf("illegal roster claim accepted: %v", err)
 	}
 	if r := f.reading(t, "owner.one", "franchise.01"); len(r.Claims) != 0 {
