@@ -49,7 +49,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       const tab = tabs.find(([id]) => id === args.value);
       if (tab) changeScreen(tab[0]);
     } else if (args.action === 'check') {
-      const actions: NativeAction[] = ['totp-begin', 'totp-confirm', 'enter', 'forget', 'revoke-device', 'revoke-all'];
+      const actions: NativeAction[] = [
+        'totp-begin', 'totp-confirm', 'enter', 'forget', 'revoke-device', 'revoke-all',
+      ];
       const action = actions.find(value => value === args.value);
       if (action) void run(action);
     }

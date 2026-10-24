@@ -21,9 +21,13 @@ const submit = async (host: Awaited<ReturnType<typeof mount>>) => {
 
 describe('native desktop account access', () => {
   it('restores saved sign-in controls and revokes without sending passwords', async () => {
-    const fetcher = vi.fn().mockResolvedValue(reply({ ...initial, message: 'All device sessions revoked.' }));
+    const fetcher = vi.fn().mockResolvedValue(reply({
+      ...initial, message: 'All device sessions revoked.',
+    }));
     vi.stubGlobal('fetch', fetcher);
-    const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved device session available.' } }));
+    const host = await mount(render(NativeAccount, {
+      initial: { ...initial, message: 'Saved device session available.' },
+    }));
     await click(button(host, 'Revoke all devices')); await settle();
     expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
       action: 'revoke-all', username: '', password: '', code: '',
