@@ -1,9 +1,12 @@
 package commissioner
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -17,25 +20,8 @@ func (a *API) TargetNativeTradeAction(raw commissioner.RawCommand) (commissioner
 
 // TargetNativeTrades reads the league's native trade desk; viewer is the seated owner's franchise.
 func (a *API) TargetNativeTrades(league, viewer string) (commissioner.NativeTrades, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeTrades{}, fmt.Errorf("trade startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeTrades{}, err
-	}
-	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), league)
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeTrades{}, err
-	}
-	reading, err := commissioner.NativeTradesReading(league, viewer, principal, records,
-		a.host.CommissionerNow(), a.host.CommissionerZone())
-	if err != nil {
-		return commissioner.NativeTrades{}, fmt.Errorf("read trades: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeTrades(league, viewer)
 }
 
 func (a *API) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
@@ -48,23 +34,8 @@ func (a *API) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissione
 
 func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (commissioner.NativeWaivers,
 	error) {
-	if at.IsZero() {
-		return commissioner.NativeWaivers{}, fmt.Errorf("choose when to read waivers")
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeWaivers{}, fmt.Errorf("waivers startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeWaivers{}, err
-	}
-	reading, err := a.host.NativeWaivers(a.host.CommissionerContext(), league, franchise, principal, at,
-		a.host.CommissionerZone(), a.host.NativeFacts())
-	if err != nil {
-		return commissioner.NativeWaivers{}, fmt.Errorf("native waivers: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeWaivers(league, franchise, at)
 }
 
 func (a *API) TargetNativeBidAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
@@ -76,18 +47,64 @@ func (a *API) TargetNativeBidAction(raw commissioner.RawCommand) (commissioner.R
 }
 
 func (a *API) TargetNativeBids(league, franchise string) (commissioner.NativeBids, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeBids(league, franchise)
+}
+
+// TargetNativeDraftPick makes the owner's pick for the franchise on the clock. It asks the calendar first:
+// a closed draft window refuses the pick in the calendar's own words.
+func (a *API) TargetNativeDraftPick(input commissioner.DraftPickInput) (commissioner.Receipt, error) {
+	if err := input.Validate(); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", err)
+	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeBids{}, fmt.Errorf("bids startup: %w", err)
+		return commissioner.Receipt{}, fmt.Errorf("rookie pick startup: %w", err)
 	}
-	principal, err := a.host.CommissionerPrincipal()
+	body, err := json.Marshal(input)
 	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeBids{}, err
+		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", err)
 	}
-	reading, err := a.host.NativeBids(a.host.CommissionerContext(), league, franchise, principal,
-		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
+	receipt, err := a.host.RunNativeOwnerAction(input.League, input.Franchise, draftPickName, body)
+	var refused *commissioner.Refusal
+	if errors.As(err, &refused) {
+		return commissioner.Receipt{}, errors.New(refused.Reason())
+	}
 	if err != nil {
-		return commissioner.NativeBids{}, fmt.Errorf("native bids: %w", err)
+		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w", err)
 	}
-	return reading, nil
+	a.host.CloseFinishedDrafts(input.League)
+	return receipt, nil
+}
+
+// TargetNativeDraft reads the rookie draft for a franchise: the order and its owners, the picks made, who is
+// on the clock until when in the viewer's time, and the franchise's own next pick.
+func (a *API) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (commissioner.NativeDraft, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeDraft(scope)
+}
+
+// TargetNativeLineupSet sets an owner's lineup through the native action gate and the league ledger. The
+// lineup must be legal under the league's lineup check, and no player whose game has started can move.
+func (a *API) TargetNativeLineupSet(body string) (commissioner.Receipt, error) {
+	in, err := nativeapp.DecodeLineupSet([]byte(body))
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("lineup input: %w", err)
+	}
+	receipt, err := a.host.RunNativeOwnerAction(in.League, in.Franchise, "lineup.set", json.RawMessage(body))
+	var refused *commissioner.Refusal
+	if errors.As(err, &refused) {
+		return commissioner.Receipt{}, errors.New(refused.Reason())
+	}
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("set lineup: %w", err)
+	}
+	return receipt, nil
+}
+
+// TargetNativeLineup reads a franchise's lineup for a week: starters and bench, who is locked and when it
+// locks in the owner's time, and the league's verdict. at is an RFC 3339 instant, or empty for now.
+func (a *API) TargetNativeLineup(league, franchise string, week int,
+	at string) (commissioner.NativeLineup, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeLineup(league, franchise, week, at)
 }
