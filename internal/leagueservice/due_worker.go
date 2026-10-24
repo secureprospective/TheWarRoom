@@ -18,6 +18,26 @@ type DueClock interface {
 	Trusted() error
 }
 
+// HostClock rereads the kernel's NTP discipline state on each admission; nothing is cached.
+// Platforms without a kernel status source remain untrusted.
+type HostClock struct{ synchronized func() (bool, error) }
+
+func NewHostClock() HostClock    { return HostClock{synchronized: kernelSynchronized} }
+func (HostClock) Now() time.Time { return time.Now() }
+func (c HostClock) Trusted() error {
+	if c.synchronized == nil {
+		return fmt.Errorf("clock synchronization source unavailable")
+	}
+	ok, err := c.synchronized()
+	if err != nil {
+		return fmt.Errorf("read clock synchronization: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("host clock is not NTP synchronized")
+	}
+	return nil
+}
+
 // DueWorker owns hosted scheduling; it never starts the desktop ticker. All effects
 // use the existing due processors and their transaction-time legality checks.
 type DueWorker struct {

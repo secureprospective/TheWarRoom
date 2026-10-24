@@ -28,16 +28,3 @@ func TestHostClockSynchronization(t *testing.T) {
 		t.Fatal("missing source trusted")
 	}
 }
-
-func TestRawClockStatus(t *testing.T) {
-	for _, value := range []string{"yes", "no"} {
-		if err := (RawClockStatus{Synchronized: value}).Validate(); err != nil {
-			t.Fatal(err)
-		}
-	}
-	for _, value := range []string{"", "true", "unknown", "yes\nno"} {
-		if (RawClockStatus{Synchronized: value}).Validate() == nil {
-			t.Fatalf("accepted %q", value)
-		}
-	}
-}

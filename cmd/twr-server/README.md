@@ -129,10 +129,11 @@ preview/execute additionally use argument-aware domain authorization. Refusals
 return generic errors and append nothing. Revocation and ledger append share the
 writer, so a revocation committed ahead of a queued append wins.
 
-**Clock health:** hosted mode reads `timedatectl show --property=NTPSynchronized --value`
-with a one-second timeout at each timed admission and worker pass. The host must run
-systemd with working NTP synchronization; missing, malformed, failed, or unsynchronized
-status fails closed. Status is never cached or inherited from fixture trust. The due
+**Clock health:** hosted mode reads the kernel's NTP state with a read-only `adjtimex`
+call at each timed admission and worker pass: trusted only when the call succeeds, the
+clock state is not `TIME_ERROR` and `STA_UNSYNC` is clear. Any Linux host with a running
+NTP client (chrony, ntpd, timesyncd; systemd or OpenRC) qualifies; non-Linux builds and
+unsynchronized or unreadable status fail closed. Status is never cached or inherited from fixture trust. The due
 worker starts with hosted HTTPS and is cancelled/joined before the database closes.
 
 **Recovery:** `POST /v1/auth/recover` accepts protocol 1, username, one unused printed
