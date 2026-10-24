@@ -94,10 +94,19 @@ func ValidDeviceName(device string) bool {
 // Authenticate records activity at server time. Call before entering the ledger writer;
 // admission below is read-only and rechecks expiry/revocation without reentering it.
 func (s *SessionService) Authenticate(ctx context.Context, raw RawSession) (Account, error) {
+	return s.sessionAccount(ctx, raw, true)
+}
+
+// Check checks expiry and revocation without recording activity or entering the writer.
+func (s *SessionService) Check(ctx context.Context, raw RawSession) (Account, error) {
+	return s.sessionAccount(ctx, raw, false)
+}
+
+func (s *SessionService) sessionAccount(ctx context.Context, raw RawSession, touch bool) (Account, error) {
 	if err := raw.Validate(); err != nil {
 		return Account{}, err
 	}
-	account, err := s.store.SessionAccount(ctx, enrollmentDigest(raw.Bearer), true)
+	account, err := s.store.SessionAccount(ctx, enrollmentDigest(raw.Bearer), touch)
 	if err != nil {
 		return Account{}, fmt.Errorf("authenticate device session: %w", err)
 	}

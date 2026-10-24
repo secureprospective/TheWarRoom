@@ -272,7 +272,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 	// Request identity and receipts from closed seasons must remain available.
 	retry := full[2]
 	sameBooksProbe(t, readingProbe(func(r []commissioner.Record) (commissioner.Receipt, error) {
-		receipt, _, err := retriedReceipt(retry.Command, retry.Principal, r)
+		receipt, _, err := retriedReceipt(t.Context(), retry.Command, retry.Principal, r)
 		return receipt, err
 	}), folded, full)
 }

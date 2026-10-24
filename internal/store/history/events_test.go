@@ -164,3 +164,38 @@ func TestLeagueEventPayloadRequiresIntegerVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestCommittedHeadIgnoresUncommittedAndOtherStreams(t *testing.T) {
+	s, _, pools := newStore(t)
+	check := func(want int64) {
+		t.Helper()
+		head, err := s.CommittedHead(t.Context(), "legacy", "contracts")
+		if err != nil || head != want {
+			t.Fatalf("head=%d want=%d err=%v", head, want, err)
+		}
+	}
+	check(0)
+	if _, err := s.AppendEvent(t.Context(), eventFixture("committed"), 0); err != nil {
+		t.Fatal(err)
+	}
+	check(1)
+	other := eventFixture("other-stream")
+	other.Stream = "other"
+	if _, err := s.AppendEvent(t.Context(), other, 0); err != nil {
+		t.Fatal(err)
+	}
+	check(1)
+	tx, err := pools.Write().BeginTx(t.Context(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := s.insertEvent(t.Context(), tx, eventFixture("pending"), 1); err != nil {
+		t.Fatal(err)
+	}
+	check(1)
+	if err := tx.Rollback(); err != nil {
+		t.Fatal(err)
+	}
+	check(1)
+}

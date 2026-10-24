@@ -65,6 +65,11 @@ func resourceLimits(next http.Handler) http.Handler {
 				return
 			}
 		}
+		// Streams own their connection budget and per-write deadlines.
+		if r.URL.Path == InvalidationPath {
+			next.ServeHTTP(w, r)
+			return
+		}
 		if strings.HasPrefix(r.URL.Path, "/v1/auth/") {
 			select {
 			case authInFlight <- struct{}{}:
