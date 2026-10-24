@@ -28,6 +28,7 @@ type RawFootballEvidence struct {
 	AsOf    time.Time                    `json:"asOf"`
 	Players map[string]RawFootballPlayer `json:"players"`
 	Weeks   []leagueweek.Week            `json:"weeks"`
+	Stats   []RawFootballStats           `json:"stats,omitempty"`
 }
 
 type RawFootballPlayer struct {
@@ -54,7 +55,11 @@ func (r RawFootballEvidence) Validate() error {
 		}
 		identities[player.Identity] = true
 	}
-	return validateFootballWeeks(r.Weeks)
+	if err := validateFootballWeeks(r.Weeks); err != nil {
+		return err
+	}
+	_, err := r.scoringFiles()
+	return err
 }
 
 func (r RawFootballPlayer) Validate() error {
