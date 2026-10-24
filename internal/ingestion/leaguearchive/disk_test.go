@@ -6,15 +6,23 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 )
 
-type diskSink struct{ calls int }
+type diskSink struct {
+	calls   int
+	fetches []archive.Fetch
+}
 
-func (s *diskSink) Record(context.Context, archive.Fetch) error { s.calls++; return nil }
+func (s *diskSink) Record(_ context.Context, fetch archive.Fetch) error {
+	s.calls++
+	s.fetches = append(s.fetches, fetch)
+	return nil
+}
 
 const diskLeague = `{"league":{"id":"1","baseURL":"https://example.test"}}`
 
@@ -137,4 +145,91 @@ func diagnosticChain(err error) string {
 		err = errors.Unwrap(err)
 	}
 	return text.String()
+}
+
+func TestDiskRefusesReplacementAfterPathCheck(t *testing.T) {
+	for _, replacement := range []string{"file", "season", "root", "internal link"} {
+		t.Run(replacement, func(t *testing.T) {
+			root := diskFixture(t)
+			g := NewDiskFS(root)
+			rootInfo, fileInfo, err := g.pathInfo("2026/rules.json", []string{"2026", "rules.json"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			outside := diskFixture(t)
+			if err := os.WriteFile(filepath.Join(outside, "2026", "rules.json"), []byte("sentinel-outside-secret"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			target, link := filepath.Join(root, "2026", "rules.json"), filepath.Join(outside, "2026", "rules.json")
+			switch replacement {
+			case "season":
+				target, link = filepath.Join(root, "2026"), filepath.Join(outside, "2026")
+			case "root":
+				target, link = root, outside
+			case "internal link":
+				link = "private.json"
+				if err := os.WriteFile(filepath.Join(root, "2026", link), []byte("sentinel-outside-secret"), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if err := os.Rename(target, target+".held"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Symlink(link, target); err != nil {
+				t.Skip(err)
+			}
+			f, err := g.openChecked("2026/rules.json", rootInfo, fileInfo)
+			if f != nil {
+				_ = f.Close()
+				t.Fatal("replacement opened")
+			}
+			if err == nil || strings.Contains(err.Error(), "sentinel-outside-secret") {
+				t.Fatalf("unsafe refusal: %v", err)
+			}
+		})
+	}
+}
+
+type swappingDisk struct {
+	*DiskFS
+	outside string
+}
+
+func (g swappingDisk) Open(name string) (fs.File, error) {
+	if name != "2026/rules.json" {
+		return g.DiskFS.Open(name)
+	}
+	rootInfo, fileInfo, err := g.pathInfo(name, strings.Split(name, "/"))
+	if err != nil {
+		return nil, err
+	}
+	if err := os.Rename(filepath.Join(g.root, "2026"), filepath.Join(g.root, "held")); err != nil {
+		return nil, err
+	}
+	if err := os.Symlink(g.outside, filepath.Join(g.root, "2026")); err != nil {
+		return nil, err
+	}
+	return g.openChecked(name, rootInfo, fileInfo)
+}
+
+func (g swappingDisk) ReadFile(name string) ([]byte, error) {
+	// Hide DiskFS.ReadFile so fs.ReadFile exercises the checkpoint swap in Open.
+	return fs.ReadFile(struct{ fs.FS }{g}, name)
+}
+
+func TestDiskSwapPreservesPriorImport(t *testing.T) {
+	root := diskFixture(t)
+	var sink diskSink
+	if _, err := Import(t.Context(), NewDiskFS(root), "test", nil, &sink); err != nil {
+		t.Fatal(err)
+	}
+	prior := append([]archive.Fetch(nil), sink.fetches...)
+	outside := filepath.Join(diskFixture(t), "2026")
+	if err := os.WriteFile(filepath.Join(outside, "rules.json"), []byte(`{"secret":"sentinel-outside-secret"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := Import(t.Context(), swappingDisk{NewDiskFS(root), outside}, "test", nil, &sink)
+	if err == nil || !reflect.DeepEqual(sink.fetches, prior) || strings.Contains(err.Error(), "sentinel-outside-secret") {
+		t.Fatalf("failed import changed prior records: before=%d after=%d err=%v", len(prior), len(sink.fetches), err)
+	}
 }
