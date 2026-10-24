@@ -1,0 +1,17 @@
+version: 2
+project_name: twr-server
+dist: .scratch/goreleaser
+builds:
+  - id: twr-server
+    main: ./cmd/twr-server
+    binary: twr-server
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
