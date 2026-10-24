@@ -116,31 +116,36 @@ func (s *Service) LocalBootstrap(ctx context.Context, raw RawCredentials) (Accou
 }
 
 func (s *Service) Authenticate(ctx context.Context, raw RawCredentials) (Account, error) {
+	credential, err := s.authenticateCredential(ctx, raw)
+	return credential.Account, err
+}
+
+func (s *Service) authenticateCredential(ctx context.Context, raw RawCredentials) (Credential, error) {
 	if err := raw.Validate(); err != nil {
-		return Account{}, ErrInvalidCredentials
+		return Credential{}, ErrInvalidCredentials
 	}
 	username, err := CanonicalUsername(raw.Username)
 	if err != nil {
-		return Account{}, ErrInvalidCredentials
+		return Credential{}, ErrInvalidCredentials
 	}
 	credential, err := s.store.Credential(ctx, username)
 	if errors.Is(err, ErrNotFound) {
-		return Account{}, ErrInvalidCredentials
+		return Credential{}, ErrInvalidCredentials
 	}
 	if err != nil {
-		return Account{}, fmt.Errorf("load account: %w", err)
+		return Credential{}, fmt.Errorf("load account: %w", err)
 	}
 	if err := credential.Validate(); err != nil {
-		return Account{}, fmt.Errorf("stored account: %w", err)
+		return Credential{}, fmt.Errorf("stored account: %w", err)
 	}
 	valid, err := VerifyPassword(credential.PasswordHash, raw.Password)
 	if err != nil {
-		return Account{}, err
+		return Credential{}, err
 	}
 	if !valid {
-		return Account{}, ErrInvalidCredentials
+		return Credential{}, ErrInvalidCredentials
 	}
-	return credential.Account, nil
+	return credential, nil
 }
 
 func newAccountID() (string, error) {
