@@ -156,6 +156,9 @@ func (s *Store) insertEvent(ctx context.Context, tx *sql.Tx, e LeagueEvent, expe
 	if _, err := tx.ExecContext(ctx, `INSERT INTO league_event (id,league,stream,revision,effective_at,recorded_at,actor,scope,kind,payload,input_hash,correlation_id,supersedes) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`, e.ID, e.League, e.Stream, e.Revision, e.EffectiveAt.UTC().Format(time.RFC3339Nano), e.RecordedAt.UTC().Format(time.RFC3339Nano), e.Actor, e.Scope, e.Kind, string(payload), e.InputHash, e.CorrelationID, supersedes); err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: append: %w", err)
 	}
+	if err := appendLedgerAudit(ctx, tx, e.ID); err != nil {
+		return LeagueEvent{}, err
+	}
 	return e, nil
 }
 
