@@ -12,6 +12,11 @@ export function parseSeat(v: unknown): Seat {
   return { hasAccount: r.hasAccount,
     username: r.username === undefined ? '' : text(r.username, 'Username') };
 }
+const KEEP_TITLE = 'Keep your league if you change computers';
+const RESTORED_HELP =
+  'Sign in with the username and password made on the original computer to get your roles back.';
+const NEW_HELP = 'Choose a username and password. If you restore a backup on another computer, '
+  + 'sign in there with them to keep your roles.';
 const args = { screen: 'local-sign-in', action: 'check', value: 'submit' } as const;
 
 // LocalSignIn keeps the league with its owner when the data moves to another computer or user.
@@ -44,14 +49,13 @@ export function LocalSignIn() {
   const label = pending ? 'Please wait…' : seat.hasAccount ? 'Sign in' : 'Create sign-in';
   return (
     <form className="league-form" aria-label="League sign-in" onSubmit={submit}>
-      <h5>{seat.hasAccount ? 'Restored from another computer?' : 'Keep your league if you change computers'}</h5>
-      <p>{seat.hasAccount
-        ? 'Sign in with the username and password made on the original computer to get your roles back.'
-        : 'Choose a username and password. If you restore a backup on another computer, sign in there with them to keep your roles.'}</p>
+      <h5>{seat.hasAccount ? 'Restored from another computer?' : KEEP_TITLE}</h5>
+      <p>{seat.hasAccount ? RESTORED_HELP : NEW_HELP}</p>
       {error && <p role="alert">{error}</p>}
       <label>Username<input autoComplete="username" required minLength={3} maxLength={64} value={username}
         disabled={pending} onChange={e => setUsername(e.target.value)} /></label>
-      <label>Password<input type="password" autoComplete={seat.hasAccount ? 'current-password' : 'new-password'}
+      <label>Password<input type="password"
+        autoComplete={seat.hasAccount ? 'current-password' : 'new-password'}
         required maxLength={1024} value={password} disabled={pending}
         onChange={e => setPassword(e.target.value)} /></label>
       <Act variant="button" verb="commissioner.surface" args={args} submit disabled={pending}

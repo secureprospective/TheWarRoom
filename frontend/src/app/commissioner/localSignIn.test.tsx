@@ -15,7 +15,10 @@ describe('League sign-in', () => {
     const sent: string[][] = [];
     const { app } = stub({
       TargetCommissionerSeat: async () => ({ hasAccount: false }),
-      TargetCommissionerSeatSignIn: async (...args) => { sent.push(args); return { hasAccount: true, username: 'commish' }; },
+      TargetCommissionerSeatSignIn: async (...args) => {
+        sent.push(args);
+        return { hasAccount: true, username: 'commish' };
+      },
     });
     const host = await mount(render(LocalSignIn), app);
     await settle();
@@ -29,7 +32,9 @@ describe('League sign-in', () => {
   });
   it('asks a restored copy for the original sign-in and clears a refused password', async () => {
     const { app } = stub({
-      TargetCommissionerSeatSignIn: async () => { throw new Error('league sign-in: incorrect username or password'); },
+      TargetCommissionerSeatSignIn: async () => {
+        throw new Error('league sign-in: incorrect username or password');
+      },
       TargetCommissionerSeat: async () => ({ hasAccount: true }),
     });
     const host = await mount(render(LocalSignIn), app);

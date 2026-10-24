@@ -11,7 +11,7 @@ afterEach(() => {
 it('routes every moved method through the generated Commissioner module', async () => {
   const calls = Object.fromEntries(methods.map(([name]) => [name, vi.fn(async () => name)]));
   vi.stubGlobal('window', { go: { commissioner: { API: calls } } });
-  expect(methods).toHaveLength(44);
+  expect(methods).toHaveLength(46);
   for (const [name, method] of methods) {
     const call = method as (...args: unknown[]) => Promise<unknown>;
     const args = ['scope', { request: 'retry-key' }, 2026, 1, 'UTC', 'viewer', 'extra'];
