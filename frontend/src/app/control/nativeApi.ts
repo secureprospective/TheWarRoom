@@ -1,5 +1,5 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
-export type NativeAction = 'status' | 'enroll' | 'login' | 'enter' | 'forget'
+export type NativeAction = 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
 export type NativeView = {
   server: string; league: string; message: string; name: string; role: string;

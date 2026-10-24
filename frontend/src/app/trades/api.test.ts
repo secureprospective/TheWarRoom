@@ -4,7 +4,7 @@ import { targetDraftTradeAccept, targetTradeBuilder, targetTrades } from './api'
 import { draftTradeAccept, trades } from '../data/tradeProvider';
 import { parseTrades } from '../data/parseTrades';
 import { parseReceipt } from '../data/parseEnvelope';
-import { parseBuilder } from '../shell/tradeBuilder';
+import { parseBuilder } from '../shell/tradeBuilderState';
 
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
 afterEach(() => {

@@ -4,7 +4,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import tradeWire from './trade-wire.testdata.json';
 import acquisitionWire from '../contracts/acquisition-wire.testdata.json';
-import { parseBuilder } from './tradeBuilder';
+import { parseBuilder } from './tradeBuilderState';
 import { parseAcquisition } from '../contracts/acquisition';
 import { parseReceipt } from '../data/parseEnvelope';
 import { TradePlan } from './TradePlan';

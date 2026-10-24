@@ -7,7 +7,7 @@ import { ContractActCard, ContractActChoices, ContractActMenu, ContractMovePrevi
 } from './ContractActs';
 import { menuPlacement, placeRowMenu, watchRowMenu } from './RowMenu';
 import { keepContractMove, keepLabel, openContractMove, revealContractPlan, useContractMove,
-  type ContractActPlan, type ContractActRequest } from './contractActs';
+  type ContractActPlan, type ContractActRequest } from './contractActState';
 import { commands } from '../commands/registry';
 import type { Reading } from './contract';
 import { ReleaseCard } from './ReleasePlans';
@@ -153,7 +153,7 @@ describe('Contract Acts', () => {
     expect(source.indexOf('<ContractMovePanel'))
       .toBeLessThan(source.indexOf('kind="cap"'));
     const form = readFileSync(new URL('./ContractActs.tsx', import.meta.url), 'utf8');
-    const actions = readFileSync(new URL('./contractActs.ts', import.meta.url), 'utf8');
+    const actions = readFileSync(new URL('./contractActState.ts', import.meta.url), 'utf8');
     expect(form).toContain('className="bid-actions"');
     expect(actions).toContain("reading.value?.find(p => !before.value?.some(old => old.id === p.id))");
     const css = readFileSync(new URL('./contracts.css', import.meta.url), 'utf8');

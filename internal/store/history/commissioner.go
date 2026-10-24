@@ -157,7 +157,12 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
-	return viewReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
+	return s.committedReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
+}
+
+func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Receipt, records []commissioner.Record) commissioner.Receipt {
+	s.signalCommissionerCommit()
+	return viewReceipt(ctx, receipt, records)
 }
 
 // checkCommissionerCommand is every check a league change must pass, shared by execute and the dry-run

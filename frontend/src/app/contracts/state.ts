@@ -24,22 +24,22 @@ export type ContractsAction = ContractsFilter | {
   | { field: 'release-confirm'; value: string }
   | { field: 'contract-close'; value: string }
   | { field: 'contract-open'; value: { mine: string; player: string } }
-  | { field: 'contract-keep'; value: import('./contractActs').ContractActRequest }
-  | { field: 'contract-act'; value: import('./contractActs').ContractActRequest }
+  | { field: 'contract-keep'; value: import('./contractActState').ContractActRequest }
+  | { field: 'contract-act'; value: import('./contractActState').ContractActRequest }
   | { field: 'contract-reveal'; value: string };
 export async function runContractsAction(action: ContractsAction) {
   if (action.field === 'contract-close') {
-    (await import('./contractActs')).useContractMove.setState({
+    (await import('./contractActState')).useContractMove.setState({
       player: '', kept: undefined, keptTerms: '', error: '',
     });
   } else if (action.field === 'contract-open') {
-    (await import('./contractActs')).openContractMove(action.value.mine, action.value.player);
+    (await import('./contractActState')).openContractMove(action.value.mine, action.value.player);
   } else if (action.field === 'contract-keep') {
-    await (await import('./contractActs')).keepContractMove(action.value);
+    await (await import('./contractActState')).keepContractMove(action.value);
   } else if (action.field === 'contract-act') {
-    await (await import('./contractActs')).runContractAct(action.value);
+    await (await import('./contractActState')).runContractAct(action.value);
   } else if (action.field === 'contract-reveal') {
-    (await import('./contractActs')).revealContractPlan(action.value);
+    (await import('./contractActState')).revealContractPlan(action.value);
   }
   else if (action.field === 'whatif') await (await import('./whatif')).changeWhatIf(action.value);
   else if (action.field === 'release-confirm') (await import('./releases')).confirmRelease(action.value);

@@ -33,6 +33,7 @@ type Hosted struct {
 	Sessions   *accounts.SessionService
 	TOTP       *accounts.TOTPService
 	Enrollment *accounts.EnrollmentService
+	Recovery   *accounts.RecoveryService
 	Worker     *leagueservice.DueWorker
 	Registry   string
 }
@@ -50,6 +51,8 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch r.URL.Path {
+	case RecoveryPath:
+		h.recoverAccount(w, r)
 	case EnrollmentPath:
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
@@ -242,7 +245,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	return nil
 }
 
-func decodeHosted[T RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRecoveryRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -266,7 +269,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
+func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)

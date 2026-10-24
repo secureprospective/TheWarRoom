@@ -37,9 +37,10 @@ func parseTime(s string) (time.Time, error) {
 // Store is the history store. Construct with New, prepare with Initialize. Writes serialize
 // under wmu.
 type Store struct {
-	pools *db.Pools
-	reg   *measures.Registry
-	now   func() time.Time
+	commits chan struct{}
+	pools   *db.Pools
+	reg     *measures.Registry
+	now     func() time.Time
 
 	// evidence feeds native results (the zero value reads the held archive); lineups say who counts for a
 	// franchise (the default is the league's own ledger); lineupEnv supplies the football facts a lineup
@@ -62,7 +63,17 @@ type Store struct {
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.
 func New(pools *db.Pools, reg *measures.Registry) *Store {
-	return &Store{pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
+	return &Store{commits: make(chan struct{}, 1), pools: pools, reg: reg, now: time.Now, lineups: ledgerLineups{}}
+}
+
+// CommissionerCommits coalesces native ledger commits for the single due worker.
+func (s *Store) CommissionerCommits() <-chan struct{} { return s.commits }
+
+func (s *Store) signalCommissionerCommit() {
+	select {
+	case s.commits <- struct{}{}:
+	default:
+	}
 }
 
 // SetClock replaces the store's clock. Tests use it to write corrections at known times.

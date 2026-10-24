@@ -83,9 +83,26 @@ describe('native desktop account access', () => {
     expect(host.textContent).toContain('eight printed one-time recovery codes');
     expect(host.textContent).toContain('audited console recovery');
     expect(host.textContent).toContain('cannot reset your account by reassigning a seat');
-    expect(all(host, 'input')).toHaveLength(0);
+    expect(all(host, 'input')).toHaveLength(3);
     await click(button(host, 'Back to sign in'));
     expect(control(host, 'Password').value).toBe('');
+  });
+
+  it('resets with a printed code, clears secrets and returns to sign-in', async () => {
+    const fetcher = vi.fn().mockResolvedValue(
+      reply({ ...initial, message: 'Password reset. Sign in next.' }));
+    vi.stubGlobal('fetch', fetcher);
+    const host = await mount(render(NativeAccount, { initial }));
+    await click(button(host, 'Account recovery'));
+    await type(control(host, 'Username'), 'owner');
+    await type(control(host, 'Unused recovery code'), 'a'.repeat(43));
+    await type(control(host, 'New password'), 'replacement-password');
+    await submit(host);
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ action: 'recover', username: 'owner',
+      password: 'replacement-password', code: 'a'.repeat(43) });
+    expect(host.textContent).toContain('Password reset');
+    expect(control(host, 'Password').value).toBe('');
+    expect(all(host, 'input').some(input => input.value === 'a'.repeat(43))).toBe(false);
   });
 
   it('shows the private setup key but never requests bearer or proof from JavaScript', async () => {

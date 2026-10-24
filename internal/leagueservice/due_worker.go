@@ -2,6 +2,7 @@ package leagueservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -27,11 +28,8 @@ type DueWorker struct {
 	reconcile time.Duration
 }
 
-// NewDueWorker is called at startup, before the store accepts concurrent requests.
+// NewDueWorker shares the store clock configured by its composition root.
 func NewDueWorker(store *history.Store, facts func() nativecheck.Facts, clock DueClock) *DueWorker {
-	if clock != nil {
-		store.SetClock(clock.Now)
-	}
 	return &DueWorker{store: store, facts: facts, clock: clock, wake: make(chan struct{}, 1), reconcile: time.Minute}
 }
 
@@ -87,14 +85,16 @@ func (w *DueWorker) Run(ctx context.Context, report func(error)) {
 				return
 			}
 			report(err)
-			wait = time.Second
-		} else if !next.IsZero() {
+			wait = min(wait, time.Second)
+		}
+		if !next.IsZero() {
 			wait = min(wait, max(time.Duration(0), next.Sub(w.clock.Now())))
 		}
 		timer := time.NewTimer(wait)
 		select {
 		case <-ctx.Done():
 		case <-w.wake:
+		case <-w.store.CommissionerCommits():
 		case <-timer.C:
 		}
 		timer.Stop()
@@ -110,23 +110,25 @@ func (w *DueWorker) step(ctx context.Context) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("read due leagues: %w", err)
 	}
 	var next time.Time
+	var failures []error
 	for _, league := range leagues {
 		deadline, err := w.processLeague(ctx, league.ID)
 		if err != nil {
-			return time.Time{}, fmt.Errorf("process due league %s: %w", league.ID, err)
+			failures = append(failures, fmt.Errorf("process due league %s: %w", league.ID, err))
+			continue
 		}
 		if !deadline.IsZero() && (next.IsZero() || deadline.Before(next)) {
 			next = deadline
 		}
 	}
-	return next, nil
+	return next, errors.Join(failures...)
 }
 
 func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time, error) {
 	ctx = commissioner.WithCredentialAdmission(ctx, dueAdmission{worker: w, system: true})
 	at := w.clock.Now()
 	facts := w.facts()
-	// Waivers clear before bids are evaluated; exhausted drafts need no timer.
+	// Waivers clear before bids are evaluated; a draft is closed once its clock has used the last pick.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
 		w.store.ProcessDueWaivers, w.store.ProcessDueBids, w.store.CloseFinishedDrafts,
 	} {
@@ -148,6 +150,13 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	next, err := commissioner.NextDueDeadline(league, records, at)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read next deadline: %w", err)
+	}
+	draft, err := w.store.NextDraftDeadline(ctx, league, at)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("read next draft deadline: %w", err)
+	}
+	if !draft.IsZero() && (next.IsZero() || draft.Before(next)) {
+		next = draft
 	}
 	return next, nil
 }

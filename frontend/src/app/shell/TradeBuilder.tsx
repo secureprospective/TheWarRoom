@@ -6,7 +6,7 @@ import { commands } from '../commands/registry';
 import { WhatIfFigures } from '../contracts/WhatIfFigures';
 import { gravityClasses } from '../look/channels';
 import { RailStrip } from './EnvelopeRail';
-import { useBuilder, builderAction, type BuilderPlan } from './tradeBuilder';
+import { useBuilder, builderAction, type BuilderPlan } from './tradeBuilderState';
 import '../contracts/contracts.css';
 import '../pool/pool.css';
 

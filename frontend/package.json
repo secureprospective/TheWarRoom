@@ -8,7 +8,7 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "node scripts/check-path-casing.mjs && tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },

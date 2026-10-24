@@ -27,7 +27,16 @@ type enrollmentBody struct {
 	Enrollment enrollmentCredentials `json:"enrollment"`
 }
 type desktopPayload interface {
-	serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest
+	serverhttp.RawRecoveryRequest | serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest
+}
+
+type rawDesktopRecovery serverhttp.RecoveryResponse
+
+func (r rawDesktopRecovery) Validate() error {
+	if r.Protocol != 1 {
+		return fmt.Errorf("unsupported recovery response")
+	}
+	return nil
 }
 
 type rawDesktopLogin serverhttp.LoginResponse
@@ -163,6 +172,11 @@ func (d *Desktop) authenticator(ctx context.Context, raw RawDesktop, view Deskto
 
 func desktopRefusal(path string, status int) error {
 	switch path {
+	case serverhttp.RecoveryPath:
+		if status == 429 {
+			return fmt.Errorf("too many recovery attempts. Wait a minute, then try again")
+		}
+		return fmt.Errorf("recovery refused. Check your username and unused printed code, or contact the server operator for audited console recovery")
 	case serverhttp.EnrollmentPath:
 		return fmt.Errorf("enrollment refused: the code may be expired, used, or for a different username. Ask your commissioner for a new personally handed code; codes last 48 hours")
 	case serverhttp.LoginPath:

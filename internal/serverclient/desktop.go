@@ -75,6 +75,8 @@ func (r RawDesktop) Validate() error {
 			return fmt.Errorf("unexpected credentials")
 		}
 		return nil
+	case "recover":
+		return (accounts.RawRecovery{Username: r.Username, Code: r.Code, Password: r.Password}).Validate() //nolint:wrapcheck // Local boundary returns validation only.
 	case "enroll":
 		return (accounts.RawEnrollment{Username: r.Username, Password: r.Password, Code: r.Code}).Validate() //nolint:wrapcheck // Local boundary returns validation only.
 	case "login", "totp-begin", "totp-confirm", "totp-step-up":
@@ -134,6 +136,8 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) 
 		return d.enter(ctx, view)
 	case "login":
 		return d.login(ctx, raw, view)
+	case "recover":
+		return d.recoverAccount(ctx, raw, view)
 	case "enroll":
 		body, err := postDesktop(ctx, d, serverhttp.EnrollmentPath, enrollmentBody{1, enrollmentCredentials{raw.Code, raw.Username, raw.Password}})
 		if err != nil {
@@ -147,6 +151,22 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) 
 	default:
 		return d.authenticator(ctx, raw, view)
 	}
+	return view, nil
+}
+
+func (d *Desktop) recoverAccount(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
+	body, err := postDesktop(ctx, d, serverhttp.RecoveryPath, serverhttp.RawRecoveryRequest{Protocol: 1, Username: raw.Username, Code: raw.Code, Password: raw.Password})
+	if err != nil {
+		return view, err
+	}
+	var response rawDesktopRecovery
+	if err := decodeDesktop(body, &response); err != nil {
+		return view, err
+	}
+	if err := d.clearCredential(); err != nil {
+		return view, err
+	}
+	view.Message = "Password reset. Sign in with your new password. Set up your authenticator again if required."
 	return view, nil
 }
 
