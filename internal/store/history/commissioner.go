@@ -42,6 +42,18 @@ type recordRevision struct {
 }
 
 func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
+	records, err := s.cachedTransactionRecords(ctx, tx, league)
+	if err != nil {
+		return nil, err
+	}
+	resolved, err := commissioner.ResolvePrincipals(ctx, league, records)
+	if err != nil {
+		return nil, fmt.Errorf("resolve league identities: %w", err)
+	}
+	return resolved, nil
+}
+
+func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {
 	var revision int64
 	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(revision),0) FROM league_event WHERE league=? AND stream=?`, league, commissioner.Stream).Scan(&revision); err != nil {
 		return nil, fmt.Errorf("read league revision: %w", err)
@@ -117,7 +129,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
 	now := s.now().UTC()
-	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical, gathered, now)
+	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, gathered, now)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
@@ -154,13 +166,13 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 // checkCommissionerCommand is every check a league change must pass, shared by execute and the dry-run
 // preview so the two can never disagree. A retried request returns its stored receipt.
 func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
-	auth commissioner.Authorizer, records []commissioner.Record, canonical string,
+	auth commissioner.Authorizer, records []commissioner.Record,
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
 	role, err := commandRole(raw, principal, auth, records)
 	if err != nil {
 		return "", nil, err
 	}
-	prior, retried, err := retriedReceipt(raw, canonical, records)
+	prior, retried, err := retriedReceipt(raw, principal, records)
 	if err != nil {
 		return "", nil, err
 	}
@@ -175,13 +187,17 @@ func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal 
 
 // retriedReceipt returns the stored receipt when this request was already recorded, and refuses a
 // request key reused for a different change.
-func retriedReceipt(raw commissioner.RawCommand, canonical string,
+func retriedReceipt(raw commissioner.RawCommand, principal string,
 	records []commissioner.Record) (commissioner.Receipt, bool, error) {
 	for _, r := range records {
 		if r.Command.Request != raw.Request {
 			continue
 		}
-		if r.Canonical != canonical {
+		matches, err := commissioner.MatchesRetry(raw, principal, r, records)
+		if err != nil {
+			return commissioner.Receipt{}, false, fmt.Errorf("match league retry: %w", err)
+		}
+		if !matches {
 			return commissioner.Receipt{}, false, fmt.Errorf("league change refused: %w",
 				commissioner.Refused(errors.New("this request was already used for a different change")))
 		}

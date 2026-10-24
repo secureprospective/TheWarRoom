@@ -54,7 +54,7 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 	}
 	out := People{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		Seats: []PeopleSeat{}, Roles: []PeopleRole{}, Invites: []PeopleInvite{}}
-	p := governance.Principal(principal)
+	p := governance.Principal(PrincipalFor(records, principal))
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
 	persons, invites := peopleInventory(records)
 	// Seats and names do not depend on the clock, only the alignment beside them does.
@@ -124,10 +124,10 @@ func yourFranchise(p governance.Principal, seats []PeopleSeat) string {
 func peopleInventory(records []Record) ([]string, []string) {
 	persons, invites := make(map[string]bool), make(map[string]bool)
 	for _, r := range records {
-		persons[r.Principal] = true
+		persons[PrincipalFor(records, r.Principal)] = true
 		if p := r.Command.Args.People; p != nil {
 			if p.Principal != "" {
-				persons[p.Principal] = true
+				persons[PrincipalFor(records, p.Principal)] = true
 			}
 			if r.Command.Command == "commish.seat.invite" {
 				invites[p.ID] = true

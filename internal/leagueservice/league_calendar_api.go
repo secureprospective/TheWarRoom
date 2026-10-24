@@ -94,6 +94,10 @@ func Records(ctx context.Context, ledger Ledger, league, subject string) ([]comm
 		}
 		records = append(records, record)
 	}
+	records, err = commissioner.ResolvePrincipals(ctx, league, records)
+	if err != nil {
+		return nil, fmt.Errorf("resolve league %s identities: %w", subject, err)
+	}
 	return records, nil
 }
 

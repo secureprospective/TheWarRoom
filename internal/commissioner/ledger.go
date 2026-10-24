@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
 type Receipt struct {
@@ -20,7 +22,8 @@ type Receipt struct {
 const DurableCommandVersion = 1
 
 type Record struct {
-	books *closedBooks
+	books      *closedBooks
+	principals *governance.Principals
 
 	CommandVersion int `json:"commandVersion,omitempty"`
 
@@ -358,11 +361,11 @@ func undoPlacement(records []Record, i, root int, p Projection, principal string
 
 func ledgerEntryVisible(r, target Record, records []Record, principal string, privileged bool) bool {
 	if privateWaiverRecord(target, records) {
-		return (r.Principal == principal && r.Command.Command == WaiverClaim) ||
+		return (SamePrincipal(records, r.Principal, principal) && r.Command.Command == WaiverClaim) ||
 			(privileged && processedWaiverClaim(r, records))
 	}
 	if privateBidRecord(target, records) {
-		return r.Principal == principal || (privileged && decidedBidRecord(r, records))
+		return SamePrincipal(records, r.Principal, principal) || (privileged && decidedBidRecord(r, records))
 	}
 	return r.Command.Visibility != "private" || privileged
 }

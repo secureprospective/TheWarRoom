@@ -77,7 +77,7 @@ func tradeReviewers(t *TradeState, state governance.State, records []Record, now
 	parties := tradeParties(state, t.Parties)
 	all := tradeDOT(state, records)
 	for _, p := range all {
-		if slices.Contains(parties, p) && !slices.ContainsFunc(t.Recusals, func(v TradeVote) bool { return v.Who == string(p) }) {
+		if slices.Contains(parties, p) && !slices.ContainsFunc(t.Recusals, func(v TradeVote) bool { return SamePrincipal(records, v.Who, string(p)) }) {
 			t.Recusals = append(t.Recusals, TradeVote{Who: string(p), Decision: TradeRecuse, At: now, Reason: "A trade party cannot review its own trade"})
 		}
 	}

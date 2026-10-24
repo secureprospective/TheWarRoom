@@ -21,7 +21,7 @@ func (s *Store) PreviewCommissioner(ctx context.Context, raw commissioner.RawCom
 func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, catalogue commissioner.PreviewCatalogue,
 	playerFacts nativecheck.Facts, zone *time.Location) (commissioner.Preview, error) {
-	raw, canonical, err := preparedCommand(raw, principal, false)
+	raw, _, err := preparedCommand(raw, principal, false)
 	if err != nil {
 		return previewRefusal(err)
 	}
@@ -44,7 +44,7 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		return previewRefusal(err)
 	}
 	now := s.now().UTC()
-	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts, now)
+	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, facts, now)
 	if role == "" && checkErr != nil {
 		return previewRefusal(checkErr)
 	}

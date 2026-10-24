@@ -159,7 +159,7 @@ func authorizeLineupReading(league, principal, owner string, corrected bool, rec
 	if err != nil {
 		return err
 	}
-	if principal != "" && (owner == principal || privilegedLedgerReader(league, principal, GovernanceAuthorizer{State: state})) {
+	if principal != "" && (SamePrincipal(records, owner, principal) || privilegedLedgerReader(league, principal, GovernanceAuthorizer{State: state})) {
 		return nil
 	}
 	return fmt.Errorf("%s", "This lineup is private to its team and the commissioner.")

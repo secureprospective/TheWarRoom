@@ -30,6 +30,7 @@ func recordEvents(r Record) ([]governance.Event, error) {
 }
 
 func GovernanceState(records []Record) (governance.State, error) {
+	records = policyRecords(records)
 	projection := Replay(records)
 	if books := usableClosedBooks(records); books != nil {
 		events, err := governanceEvents(records[len(books.keys):], projection)
@@ -146,6 +147,8 @@ func ledgerReader(state governance.State, principal string) string {
 }
 
 func AuthorizeRecords(raw RawCommand, principal string, records []Record) (string, error) {
+	raw = policyCommand(raw, records)
+	principal = PrincipalFor(records, principal)
 	if TradeCommand(raw.Command) {
 		return authorizeTrade(raw, principal, records)
 	}
@@ -258,7 +261,7 @@ func checkRoleChangesSomething(raw RawCommand, records []Record) error {
 	if err != nil {
 		return err
 	}
-	held := state.HasRole(governance.Principal(raw.Args.People.Principal), raw.Args.People.Role)
+	held := state.HasRole(governance.Principal(PrincipalFor(records, raw.Args.People.Principal)), raw.Args.People.Role)
 	if held && raw.Command == roleGrant {
 		return Refused(errors.New("this person already holds that role. Nothing would change"))
 	}
@@ -296,7 +299,7 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 	if err != nil {
 		return err
 	}
-	if err := takeoverWaitedLongest(before, raw, at); err != nil {
+	if err := takeoverWaitedLongest(before, policyCommand(raw, records), at); err != nil {
 		return Refused(fmt.Errorf("people change refused: %w", err))
 	}
 	return nil
