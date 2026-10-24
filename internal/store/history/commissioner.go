@@ -116,14 +116,14 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		Operation: raw.Command, Mode: "execute", Raw: raw, Records: records}); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
-	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical, gathered)
+	now := s.now().UTC()
+	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, canonical, gathered, now)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
 	if retry != nil {
 		return *retry, nil
 	}
-	now := s.now().UTC().Truncate(time.Microsecond)
 	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, gathered)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -155,7 +155,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 // preview so the two can never disagree. A retried request returns its stored receipt.
 func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, records []commissioner.Record, canonical string,
-	facts appendFacts) (string, *commissioner.Receipt, error) {
+	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
 	role, err := commandRole(raw, principal, auth, records)
 	if err != nil {
 		return "", nil, err
@@ -167,7 +167,7 @@ func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal 
 	if retried {
 		return role, &prior, nil
 	}
-	if err := s.checkAppend(raw, principal, records, facts); err != nil {
+	if err := s.checkAppend(raw, principal, records, facts, now); err != nil {
 		return role, nil, err
 	}
 	return role, nil, nil
@@ -192,7 +192,7 @@ func retriedReceipt(raw commissioner.RawCommand, canonical string,
 
 // checkAppend runs every check a league change must pass before it is recorded, in order.
 func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, records []commissioner.Record,
-	facts appendFacts) error {
+	facts appendFacts, now time.Time) error {
 	if err := checkCommissionerAppend(raw, records); err != nil {
 		return fmt.Errorf("check league version: %w", commissioner.Refused(err))
 	}
@@ -200,18 +200,18 @@ func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, recor
 		what  string
 		check func() error
 	}{
-		{"asset correction", func() error { return commissioner.CheckCorrectionAppend(raw, records, s.now()) }},
-		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, s.now()) }},
+		{"asset correction", func() error { return commissioner.CheckCorrectionAppend(raw, records, now) }},
+		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, now) }},
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
-		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, s.now()) }},
-		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, s.now()) }},
-		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, s.now(), facts.draft) }},
+		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, now) }},
+		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, now) }},
+		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, now, facts.draft) }},
 		{"league schedule", func() error { return commissioner.CheckScheduleAppend(raw, records) }},
 		{"season rollover", func() error { return commissioner.CheckRolloverAppend(raw, records) }},
-		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, s.now()) }},
-		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, s.now(), facts.lineup) }},
-		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, s.now(), facts.lineup) }},
-		{"statistic", func() error { return commissioner.CheckStatAppend(raw, records, facts.stat, s.now()) }},
+		{"league rules", func() error { return commissioner.CheckRulesAppend(raw, records, now) }},
+		{"lineup", func() error { return commissioner.CheckLineupAppend(raw, records, now, facts.lineup) }},
+		{"playoffs", func() error { return commissioner.CheckPlayoffAppend(raw, records, now, facts.lineup) }},
+		{"statistic", func() error { return commissioner.CheckStatAppend(raw, records, facts.stat, now) }},
 	}
 	for _, c := range checks {
 		if err := c.check(); err != nil {

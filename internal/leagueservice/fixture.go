@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 //go:embed fixture.json
@@ -59,4 +62,48 @@ func FixtureLedger(ctx context.Context) (commissioner.Ledger, error) {
 		return commissioner.Ledger{}, fmt.Errorf("read fixture ledger: %w", err)
 	}
 	return reading, nil
+}
+
+// NewFixtureChanges supplies only the fixed development identity and scope. The caller
+// owns a disposable store; no account, owner identity or MFL credentials are accepted.
+func NewFixtureChanges(store *history.Store) *Service {
+	return NewHosted(fixtureChangeHost{Store: store}, fixtureChangeAdmission{})
+}
+
+type fixtureChangeAdmission struct{}
+
+func (fixtureChangeAdmission) Admit(_ context.Context, access commissioner.Access) error {
+	if access.Principal != "fixture.creator" || access.League != "native.https-fixture" ||
+		(access.Operation != commissioner.NotePost && access.Operation != "commish.ledger.read") {
+		return fmt.Errorf("outside fixture authority")
+	}
+	return nil
+}
+
+type fixtureChangeHost struct{ *history.Store }
+
+func (fixtureChangeHost) Ready() error                                       { return nil }
+func (fixtureChangeHost) CommissionerContext() context.Context               { return context.Background() }
+func (fixtureChangeHost) CommissionerPrincipal() (string, error)             { return "fixture.creator", nil }
+func (fixtureChangeHost) CommissionerAuthorization() commissioner.Authorizer { return nil }
+func (fixtureChangeHost) CommissionerNow() time.Time                         { return time.Now() }
+func (fixtureChangeHost) CommissionerZone() *time.Location                   { return time.UTC }
+func (fixtureChangeHost) CommissionerPreviewRegistry() string                { return "" }
+func (fixtureChangeHost) NativeFacts() nativecheck.Facts                     { return nil }
+func (h fixtureChangeHost) CommissionerRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
+	events, err := h.Events(ctx, league, commissioner.Stream, 0)
+	if err != nil {
+		return nil, fmt.Errorf("fixture records: %w", err)
+	}
+	records := make([]commissioner.Record, 0, len(events))
+	for _, event := range events {
+		if event.Payload.Commissioner == nil {
+			return nil, fmt.Errorf("invalid fixture record")
+		}
+		records = append(records, *event.Payload.Commissioner)
+	}
+	return records, nil
+}
+func (fixtureChangeHost) NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error) {
+	return nil, fmt.Errorf("the fixture has no football schedule")
 }

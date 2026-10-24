@@ -43,7 +43,8 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 		Operation: raw.Command, Mode: "preview", Raw: raw, Records: records}); err != nil {
 		return previewRefusal(err)
 	}
-	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts)
+	now := s.now().UTC()
+	role, retry, checkErr := s.checkCommissionerCommand(raw, principal, auth, records, canonical, facts, now)
 	if role == "" && checkErr != nil {
 		return previewRefusal(checkErr)
 	}
@@ -51,7 +52,7 @@ func (s *Store) PreviewCommissionerWithFacts(ctx context.Context, raw commission
 	var plan *commissioner.RolloverPlan
 	if checkErr == nil && retry == nil {
 		before, plan, checkErr = s.prepareCommissionerTrial(ctx, &raw, principal, records,
-			s.now().UTC().Truncate(time.Microsecond), playerFacts, zone, facts)
+			now, playerFacts, zone, facts)
 	}
 	blockers, err := previewBlockers(raw, checkErr)
 	if err != nil {

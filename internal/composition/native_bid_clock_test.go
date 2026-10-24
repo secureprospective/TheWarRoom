@@ -2,7 +2,9 @@ package composition
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -301,5 +303,96 @@ func TestNativeBidActionsRefusedAtAuctionDeadline(t *testing.T) {
 				t.Fatalf("%s at deadline: %v", action, err)
 			}
 		})
+	}
+}
+
+func TestNativeBidNanosecondAdmissionWithStoppedWorker(t *testing.T) {
+	for _, queued := range []bool{false, true} {
+		for _, action := range []string{commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw} {
+			for _, offset := range []time.Duration{-time.Nanosecond, 0, time.Nanosecond} {
+				t.Run(fmt.Sprintf("%s/%s/queued=%t", action, offset, queued), func(t *testing.T) {
+					testBidAdmissionBoundary(t, action, offset, queued)
+				})
+			}
+		}
+	}
+}
+
+func testBidAdmissionBoundary(t *testing.T, action string, offset time.Duration, queued bool) {
+	t.Helper()
+	f := bidApp(t)
+	// A sub-microsecond close catches both premature rounding and late admission rounded backwards.
+	f.now = f.now.Add(321 * time.Nanosecond)
+	bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
+	closeAt := bid.RecordedAt.Add(24 * time.Hour)
+	args := commissioner.RawBidArgs{Franchise: "franchise.01", Bid: bid.Entry, Salary: moneyOf(6 * million), Years: 1}
+	principal := "owner.one"
+	switch action {
+	case commissioner.BidPlace:
+		principal = "owner.two"
+		args = commissioner.RawBidArgs{Franchise: "franchise.02", Player: "5004", Salary: moneyOf(7 * million), Years: 1}
+	case commissioner.BidWithdraw:
+		args = commissioner.RawBidArgs{Franchise: "franchise.01", Bid: bid.Entry}
+	}
+	raw := f.raw(t, action, commissioner.RawArgs{Bid: &args}, "private")
+	var instant atomic.Int64
+	instant.Store(closeAt.Add(-time.Second).UnixNano())
+	f.app.core.History.SetClock(func() time.Time { return time.Unix(0, instant.Load()).UTC() })
+	done := make(chan error, 1)
+	execute := func() {
+		_, err := f.app.core.History.ExecuteCommissionerWithFacts(t.Context(), raw, principal, nil, f.app.nativeFacts(), time.UTC)
+		done <- err
+	}
+	if queued {
+		pools := f.pools.Write()
+		tx, err := pools.BeginTx(t.Context(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback() }()
+		waits := pools.Stats().WaitCount
+		go execute()
+		limit := time.After(5 * time.Second)
+		for pools.Stats().WaitCount == waits {
+			select {
+			case <-limit:
+				t.Fatal("write never queued")
+			default:
+				time.Sleep(time.Millisecond)
+			}
+		}
+		instant.Store(closeAt.Add(offset).UnixNano())
+		if err := tx.Rollback(); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		instant.Store(closeAt.Add(offset).UnixNano())
+		go execute()
+	}
+	err := <-done
+	if offset < 0 && err != nil {
+		t.Fatalf("before deadline: %v", err)
+	}
+	if offset >= 0 && (err == nil || !strings.Contains(err.Error(), "closed")) {
+		t.Fatalf("closed deadline: %v", err)
+	}
+	records, err := f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := raw.Expected
+	if offset < 0 {
+		want++
+	}
+	if int64(len(records)) != want {
+		t.Fatalf("events=%d want=%d", len(records), want)
+	}
+	if offset < 0 && !records[len(records)-1].Receipt.RecordedAt.Equal(closeAt.Add(offset)) {
+		t.Fatal("admission instant changed")
+	}
+	f.restart(t)
+	records, err = f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil || int64(len(records)) != want {
+		t.Fatalf("reopen: count=%d error=%v", len(records), err)
 	}
 }
