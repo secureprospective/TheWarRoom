@@ -1,20 +1,21 @@
 # Handoff
 
 ## Baton
-Bee → ClaudeBox/reviewer — 2026-10-24. Repeat-restore fix on `session/bfix`; no merge authorized.
+Bee — 2026-10-24. Slice 34 follow-up on `session/cs34`, PR #150. No merge authorized.
 
 ## Where it stands
-- Unique 0600 per-file migration copies; retain five per DB, including legacy fixed-name copies.
-- Matched-set captures now create DB copies 0600. Matched retention policy unchanged.
-- Repeated old-schema matched restore/app initialization passes twice, preserving data and both rounds of safety copies.
-- Regression tests initially failed as expected. Full verification found a history test assuming the old filename; it now uses migration findings. Final `make verify` passes: full Go race suite, lint, vulnerability/binding checks, 1,415 frontend tests, build and CSP checks.
-- Rationale and evidence: `docs/build-handoffs/BlockB_Phase6_Backups_2026-10.md`.
+- Cloudflare entry completes recorded cleanup before creating resources; cleanup retains failed resources, forgets successful deletions and accepts already-absent resources.
+- DNS identifier is recorded before credential permission changes can fail.
+- README places first-league activation in desktop→server transfer (39–41); install success tells the commissioner to move their league from the desktop app.
+- Rebuilt bundle and disposable Alpine/OpenRC test passed, including simulated outage/retry, exact resource deletion, unrelated occupied DNS preservation, partial cleanup and already-absent Tunnel recovery.
+- PR marked ready for review.
 
 ## Next move
-Read-only Claude review/mutant, CI and Christopher's throwaway-profile live repeat-restore gate. Open PR title: “Fix repeat restore bricking startup”. Do not merge.
+Coordinator review; verify CI after push. Do not merge without authorization.
 
 ## Blocked on
-Reviewer and live gate, not implementation. No production data touched.
+Real Proxmox isolation/reboot and Cloudflare connectivity acceptance remain unverified; no disposable node/zone available. Simulated API evidence is not a live deployment claim.
 
 ## Tried and rejected
-Removing per-file copies: store initialization/offline tools also migrate outside matched-set startup, so those callers still need their own safety copy.
+- No deployment-shell account/league/grant bootstrap: transfer slices own that authority path.
+- No broad remote resource discovery/deletion: cleanup uses only recorded identifiers.
