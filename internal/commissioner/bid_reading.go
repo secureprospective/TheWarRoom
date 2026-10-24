@@ -120,7 +120,7 @@ func NativeBidsReading(league, franchise, principal string, records []Record, at
 	if err != nil {
 		return NativeBids{}, err
 	}
-	out := NativeBids{League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
+	out := NativeBids{League: league, Franchise: franchise, Revision: RecipientRevision(records, principal, at), Season: rules.Season,
 		Mode: fieldWords(rules, "bids.ufa"), ActiveLimit: fieldWords(rules, "bids.maximumActive"),
 		Players: []NativeBidPlayer{}, Awards: []NativeBidAward{}, Notes: []string{}}
 	if !assets.Seeded {

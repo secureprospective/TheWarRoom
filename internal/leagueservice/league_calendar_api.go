@@ -42,13 +42,15 @@ func (a *Service) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Calendar{}, fmt.Errorf("league calendar startup: %w", err)
 	}
-	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), raw.League)
+	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Calendar{}, err
 	}
 
-	return Calendar(CalendarScope(raw), records, a.host.CommissionerNow())
+	reading, err := Calendar(CalendarScope(raw), records, a.host.CommissionerNow())
+	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
+	return reading, err
 }
 
 func (a *Service) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner.Schedule, error) {
@@ -61,14 +63,16 @@ func (a *Service) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Schedule{}, fmt.Errorf("league schedule startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	records, err := Records(ctx, a.host, raw.League, "schedule")
 	if err != nil {
 		return commissioner.Schedule{}, err
 	}
 
-	return Schedule(raw.League, records)
+	reading, err := Schedule(raw.League, records)
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
+	return reading, err
 }
 
 // Ledger is the part of the history store Records reads: one league's events on one stream.

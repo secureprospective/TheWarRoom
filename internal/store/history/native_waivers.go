@@ -32,6 +32,7 @@ func (s *Store) NativeWaivers(ctx context.Context, league, franchise, principal 
 	if err != nil {
 		return commissioner.NativeWaivers{}, fmt.Errorf("read native waivers: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -82,6 +83,7 @@ func (s *Store) NativeBids(ctx context.Context, league, franchise, principal str
 	if err != nil {
 		return commissioner.NativeBids{}, fmt.Errorf("read native bids: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	if s.bidEnv != nil {
 		env, err := s.bidEnv.BidEnvironment(ctx, league, at)
 		if err != nil {

@@ -8,6 +8,16 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
+// viewContext keeps recipient concurrency metadata request-local, never in the replay cache.
+func (a *Service) viewContext(ctx context.Context) context.Context {
+	ctx = a.requestContext(ctx)
+	if !a.hosted {
+		return ctx
+	}
+	principal, _ := a.host.CommissionerPrincipal()
+	return commissioner.WithRecipient(ctx, principal, a.host.CommissionerNow())
+}
+
 func (a *Service) TargetCommissionerLedger(league string) (commissioner.Ledger, error) {
 	return a.commissionerLedger(league, commissioner.RawLedgerFilter{}, "commish.ledger.read")
 }
@@ -36,7 +46,7 @@ func (a *Service) commissionerLedger(league string,
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Ledger{}, err
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.CommissionerLedgerFiltered(ctx, league, principal,
 		a.host.CommissionerAuthorization(), filter)
@@ -61,7 +71,7 @@ func (a *Service) TargetCommissionerPeople(league string) (commissioner.People, 
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.People{}, err
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	people, err := a.host.CommissionerPeople(ctx, league, principal)
 	if err != nil {
@@ -77,7 +87,7 @@ func (a *Service) TargetCommissionerLeagues() ([]commissioner.NativeLeague, erro
 	if err := a.host.Ready(); err != nil {
 		return nil, fmt.Errorf("app leagues startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	leagues, err := a.host.NativeLeagues(ctx)
 	if err != nil {
@@ -96,7 +106,7 @@ func (a *Service) TargetCommissionerRules(league string) (commissioner.Rules, er
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Rules{}, fmt.Errorf("league rules startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.CommissionerRules(ctx, league)
 	if err != nil {
@@ -115,7 +125,7 @@ func (a *Service) TargetCommissionerJobs(league string) (commissioner.Jobs, erro
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Jobs{}, fmt.Errorf("league jobs startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.CommissionerJobs(ctx, league)
 	if err != nil {
@@ -141,7 +151,7 @@ func (a *Service) TargetCommissionerNotices(league string) (commissioner.LeagueN
 	if err := a.host.Ready(); err != nil {
 		return commissioner.LeagueNotes{}, fmt.Errorf("league notices startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.CommissionerNotes(ctx, league)
 	if err != nil {
@@ -165,7 +175,7 @@ func (a *Service) TargetCommissionerDigests(league string) (commissioner.Digests
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Digests{}, err
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.CommissionerDigests(ctx, league, principal, a.host.CommissionerAuthorization())
 	if err != nil {
@@ -181,7 +191,7 @@ func (a *Service) TargetCorrections(league string) (commissioner.Corrections, er
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Corrections{}, fmt.Errorf("corrections startup: %w", err)
 	}
-	out, err := a.host.Corrections(a.requestContext(a.host.CommissionerContext()), league)
+	out, err := a.host.Corrections(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		return commissioner.Corrections{}, fmt.Errorf("read corrections: %w", err)
 	}
@@ -200,7 +210,7 @@ func (a *Service) TargetCommissionerMarket(league, command string) (commissioner
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Market{}, err
 	}
-	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), league)
+	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Market{}, err
@@ -210,6 +220,7 @@ func (a *Service) TargetCommissionerMarket(league, command string) (commissioner
 	if err != nil {
 		return commissioner.Market{}, fmt.Errorf("commissioner market: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, nil
 }
 
@@ -236,7 +247,7 @@ func (a *Service) TargetCommissionerSchedule(league string) (commissioner.Manage
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.ManagedSchedule{}, err
 	}
-	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), league)
+	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.ManagedSchedule{}, err
@@ -245,6 +256,7 @@ func (a *Service) TargetCommissionerSchedule(league string) (commissioner.Manage
 	if err != nil {
 		return commissioner.ManagedSchedule{}, fmt.Errorf("commissioner schedule: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, nil
 }
 
@@ -267,7 +279,7 @@ func (a *Service) Preview(raw commissioner.RawCommand) (commissioner.Preview, er
 	if err != nil {
 		return commissioner.Preview{}, fmt.Errorf("league preview catalogue: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	preview, err := a.host.PreviewCommissionerWithFacts(ctx, raw, principal, a.host.CommissionerAuthorization(),
 		catalogue, a.host.NativeFacts(), a.host.CommissionerZone())

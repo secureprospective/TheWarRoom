@@ -104,6 +104,7 @@ func (s *Store) StatQueue(ctx context.Context, league string, season int) (commi
 	if err != nil {
 		return commissioner.StatQueue{}, fmt.Errorf("read statistics queue: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
 

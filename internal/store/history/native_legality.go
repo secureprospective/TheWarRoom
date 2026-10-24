@@ -20,6 +20,7 @@ func (s *Store) NativeCapCheck(ctx context.Context, scope commissioner.RawNative
 	if err != nil {
 		return commissioner.NativeCapCheck{}, fmt.Errorf("read native salary cap check: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -32,6 +33,7 @@ func (s *Store) NativeRosterCheck(ctx context.Context, league string, facts nati
 	if err != nil {
 		return commissioner.NativeRosterCheck{}, fmt.Errorf("read native roster check: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -44,6 +46,7 @@ func (s *Store) NativeReserveCheck(ctx context.Context, league string, facts nat
 	if err != nil {
 		return commissioner.NativeReserveCheck{}, fmt.Errorf("read native reserve check: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -56,6 +59,7 @@ func (s *Store) NativeLineupCheck(ctx context.Context, in commissioner.RawNative
 	if err != nil {
 		return commissioner.NativeLineupCheck{}, fmt.Errorf("read native lineup check: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -68,5 +72,6 @@ func (s *Store) NativeHouseRules(ctx context.Context, league string) (commission
 	if err != nil {
 		return commissioner.NativeHouseRules{}, fmt.Errorf("read native house rules: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }

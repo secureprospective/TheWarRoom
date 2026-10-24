@@ -22,6 +22,7 @@ func (s *Store) NativeDraft(ctx context.Context, scope commissioner.RawNativeDra
 	if err != nil {
 		return commissioner.NativeDraft{}, fmt.Errorf("read rookie draft: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -57,9 +58,9 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 		return commissioner.Receipt{}, fmt.Errorf("check rookie pick request: %w", err)
 	}
 	if retried {
-		return prior, nil
+		return viewReceipt(ctx, prior, records), nil
 	}
-	if current := int64(len(records)); in.Expected != current {
+	if current := commissioner.ViewRevisionAt(ctx, records, int64(len(records)), s.now()); in.Expected != current {
 		return commissioner.Receipt{}, fmt.Errorf("check league version: %w", commissioner.Refused(
 			staleVersion{current: current, expected: in.Expected}))
 	}
@@ -80,7 +81,7 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record rookie pick: %w", err)
 	}
-	return receipt, nil
+	return viewReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
 }
 
 // ownsFranchise holds a pick to the franchise's own seated owner: identity comes from the session, never

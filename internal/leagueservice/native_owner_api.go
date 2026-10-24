@@ -21,7 +21,7 @@ func (a *Service) TargetNativeTrades(league, viewer string) (commissioner.Native
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.NativeTrades{}, err
 	}
-	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), league)
+	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.NativeTrades{}, err
@@ -31,6 +31,7 @@ func (a *Service) TargetNativeTrades(league, viewer string) (commissioner.Native
 	if err != nil {
 		return commissioner.NativeTrades{}, fmt.Errorf("read trades: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, nil
 }
 
@@ -50,7 +51,7 @@ func (a *Service) TargetNativeWaivers(league, franchise string, at time.Time) (c
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.NativeWaivers{}, err
 	}
-	reading, err := a.host.NativeWaivers(a.requestContext(a.host.CommissionerContext()), league, franchise, principal, at,
+	reading, err := a.host.NativeWaivers(a.viewContext(a.host.CommissionerContext()), league, franchise, principal, at,
 		a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
 		return commissioner.NativeWaivers{}, fmt.Errorf("native waivers: %w", err)
@@ -70,7 +71,7 @@ func (a *Service) TargetNativeBids(league, franchise string) (commissioner.Nativ
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.NativeBids{}, err
 	}
-	reading, err := a.host.NativeBids(a.requestContext(a.host.CommissionerContext()), league, franchise, principal,
+	reading, err := a.host.NativeBids(a.viewContext(a.host.CommissionerContext()), league, franchise, principal,
 		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
 		return commissioner.NativeBids{}, fmt.Errorf("native bids: %w", err)
@@ -91,7 +92,7 @@ func (a *Service) TargetNativeDraft(scope commissioner.RawNativeDraftScope) (com
 	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeDraft{}, fmt.Errorf("rookie draft startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.NativeDraft(ctx, scope, a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
@@ -124,7 +125,7 @@ func (a *Service) TargetNativeLineup(league, franchise string, week int,
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("native lineup identity: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	reading, err := a.host.NativeLineup(ctx, league, franchise, principal, week, instant)
 	if err != nil {
@@ -140,7 +141,7 @@ func (a *Service) TargetNativeDirectory(leagueID string) (commissioner.NativeDir
 	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeDirectory{}, fmt.Errorf("native directory startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	directory, err := a.host.NativeDirectory(ctx, leagueID)
 	if err != nil {
@@ -156,7 +157,7 @@ func (a *Service) TargetNativeAssets(leagueID string) (commissioner.NativeAssets
 	if err := a.host.Ready(); err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("native assets startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	assets, err := a.host.NativeAssets(ctx, leagueID)
 	if err != nil {

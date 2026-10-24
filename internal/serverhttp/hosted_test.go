@@ -189,7 +189,12 @@ func TestHostedHTTPSEnrollmentLoginWriteAndAdmission(t *testing.T) {
 	// A forged principal header plus the real commissioner's proof cannot upgrade a visitor.
 	f.post(t, serverhttp.ExecutePath, change, visitor, proof, 409)
 	f.post(t, serverhttp.ExecutePath, strings.Replace(change, `"protocol":1`, `"protocol":1,"principal":"`+f.principal+`"`, 1), commissionerSession, proof, 400)
-	f.post(t, serverhttp.LedgerPath, read, commissionerSession, proof, 200)
+	initialBody := f.post(t, serverhttp.LedgerPath, read, commissionerSession, proof, 200)
+	var initial commissioner.Ledger
+	if err := json.Unmarshal(initialBody, &initial); err != nil {
+		t.Fatal(err)
+	}
+	change = strings.Replace(change, `"expected":1`, fmt.Sprintf(`"expected":%d`, initial.Revision), 1)
 	preview := f.post(t, serverhttp.PreviewPath, change, commissionerSession, proof, 200)
 	if !bytes.Contains(preview, []byte("Hello owners")) {
 		t.Fatalf("missing preview: %s", preview)
@@ -202,7 +207,7 @@ func TestHostedHTTPSEnrollmentLoginWriteAndAdmission(t *testing.T) {
 	}
 	f.revision(t, 2)
 	var recorded commissioner.Receipt
-	if err := json.Unmarshal(receipt, &recorded); err != nil || recorded.Revision != 2 {
+	if err := json.Unmarshal(receipt, &recorded); err != nil || recorded.Revision == initial.Revision || recorded.Revision < 2 {
 		t.Fatalf("receipt: %v", err)
 	}
 	events, err := f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
