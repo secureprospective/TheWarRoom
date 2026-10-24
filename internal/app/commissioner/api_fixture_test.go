@@ -28,6 +28,7 @@ type fixtureHost struct {
 	ResultsHost
 	RosterHost
 	MutationHost
+	SeatHost
 }
 
 func commissionerTestApp(t *testing.T) *ledgerFixture {

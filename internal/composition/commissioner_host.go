@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -41,6 +42,35 @@ func (a *App) commissionerPrincipal() (string, error) {
 		return "", fmt.Errorf("local identity is unavailable")
 	}
 	return principal, nil
+}
+
+// commissionerSeat reads whether this computer is linked to the local sign-in.
+func (a *App) commissionerSeat() (accounts.SeatStatus, error) {
+	if err := a.ready(); err != nil {
+		return accounts.SeatStatus{}, err
+	}
+	local, err := a.commissionerPrincipal()
+	if err != nil {
+		return accounts.SeatStatus{}, err
+	}
+	//nolint:wrapcheck // the seat names its own failure
+	return a.seat.Status(a.core.Ctx, local)
+}
+
+// commissionerSeatSignIn links this computer's identity to the local sign-in. On the computer that
+// made the league it protects the commissioner; on a restored copy it proves the same person.
+func (a *App) commissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
+	if err := a.ready(); err != nil {
+		return accounts.SeatStatus{}, err
+	}
+	local, err := a.commissionerPrincipal()
+	if err != nil {
+		return accounts.SeatStatus{}, err
+	}
+	if _, err := a.seat.SignIn(a.core.Ctx, raw, local); err != nil {
+		return accounts.SeatStatus{}, err //nolint:wrapcheck // the seat names its own failure
+	}
+	return a.commissionerSeat()
 }
 
 // commissionerPreviewRegistry is docs/ui/endpoint-registry.csv, embedded by the root binary.
@@ -111,5 +141,11 @@ func (h commissionerHost) RunNativeOwnerAction(league, franchise, name string,
 func (h commissionerHost) NativeSeedCommand(ctx context.Context,
 	input commissionerapp.RawNativeSeedRequest) (commissioner.RawCommand, error) {
 	return h.app.nativeSeedCommand(ctx, input)
+}
+func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
+	return h.app.commissionerSeat()
+}
+func (h commissionerHost) CommissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
+	return h.app.commissionerSeatSignIn(raw)
 }
 func (h commissionerHost) CloseFinishedDrafts(league string) { h.app.closeFinishedDrafts(league) }

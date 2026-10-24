@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -46,11 +47,33 @@ func (s *Store) transactionRecords(ctx context.Context, tx *sql.Tx, league strin
 	if err != nil {
 		return nil, err
 	}
+	ctx, err = s.linkedIdentities(ctx, league)
+	if err != nil {
+		return nil, err
+	}
 	resolved, err := commissioner.ResolvePrincipals(ctx, league, records)
 	if err != nil {
 		return nil, fmt.Errorf("resolve league identities: %w", err)
 	}
 	return resolved, nil
+}
+
+func (s *Store) linkedIdentities(ctx context.Context, league string) (context.Context, error) {
+	if s.aliases == nil || commissioner.HasPrincipals(ctx) || !strings.HasPrefix(league, "native.") {
+		return ctx, nil
+	}
+	aliases, err := s.aliases(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("read linked identities: %w", err)
+	}
+	if len(aliases) == 0 {
+		return ctx, nil
+	}
+	principals, err := governance.NewPrincipals(league, aliases)
+	if err != nil {
+		return nil, fmt.Errorf("read linked identities: %w", err)
+	}
+	return commissioner.WithPrincipals(ctx, principals), nil
 }
 
 func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league string) ([]commissioner.Record, error) {

@@ -27,6 +27,9 @@ func restoreDrillApp(t *testing.T, dir string) *App {
 	if err := hist.Initialize(t.Context()); err != nil {
 		t.Fatal(err)
 	}
+	if err := a.seatStore.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
 	for _, p := range []*db.Pools{a.core.Pools, a.core.WhatifPools} {
 		if err := p.InitializeMain(t.Context()); err != nil {
 			t.Fatal(err)
@@ -38,51 +41,108 @@ func restoreDrillApp(t *testing.T, dir string) *App {
 	return a
 }
 
-// This fixture has no concurrent writers. It exercises SQLite snapshots, not a production
-// matched-set restore implementation or a crash-recovery protocol.
-func TestBackupSnapshotDifferentHomeCommissionerRightsFinding(t *testing.T) {
-	source := restoreDrillApp(t, t.TempDir())
-	raw := commissioner.RawCommand{League: "native.restore", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Restore drill", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
-		Reason: "Start the restore drill", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, source, raw)
-	before, err := newCommissionerAPI(source).TargetCommissionerRules(raw.League)
-	if err != nil {
-		t.Fatal(err)
-	}
-	people, err := newCommissionerAPI(source).TargetCommissionerPeople(raw.League)
-	if err != nil || !people.MayChangeRules {
-		t.Fatalf("source commissioner missing: %+v %v", people, err)
-	}
+// snapshotInto copies all three databases into another home. This fixture has no concurrent
+// writers. It exercises SQLite snapshots, not a production matched-set restore or crash recovery.
+func snapshotInto(t *testing.T, source *App) *App {
+	t.Helper()
 	home := t.TempDir()
 	for _, file := range source.databaseFiles() {
 		if _, err := file.pools.Write().ExecContext(t.Context(), "VACUUM INTO ?", filepath.Join(home, dbFileName(file.name, isDevBuild()))); err != nil {
 			t.Fatal(err)
 		}
 	}
-	restored := restoreDrillApp(t, home)
+	return restoreDrillApp(t, home)
+}
+
+func restoreDrillLeague(t *testing.T) (*App, commissioner.RawCommand) {
+	t.Helper()
+	source := restoreDrillApp(t, t.TempDir())
+	raw := commissioner.RawCommand{League: "native.restore", Command: commissioner.Create,
+		Args:   commissioner.RawArgs{Name: "Restore drill", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
+		Reason: "Start the restore drill", Request: "create", Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, source, raw)
+	people, err := newCommissionerAPI(source).TargetCommissionerPeople(raw.League)
+	if err != nil || !people.MayChangeRules {
+		t.Fatalf("source commissioner missing: %+v %v", people, err)
+	}
+	return source, raw
+}
+
+func requireRole(t *testing.T, a *App, league, role string) {
+	t.Helper()
+	people, err := newCommissionerAPI(a).TargetCommissionerPeople(league)
+	if err != nil || people.YourRole != role || people.MayChangeRules != (role == "Commissioner") {
+		t.Fatalf("want %s: %+v %v", role, people, err)
+	}
+}
+
+// A restore into another folder or OS user is a new local identity. The commissioner's local
+// sign-in, made before the backup, links the new identity back to the same account.
+func TestRestoreOnAnotherComputerKeepsCommissionerWithSignIn(t *testing.T) {
+	source, raw := restoreDrillLeague(t)
+	api := newCommissionerAPI(source)
+	if status, err := api.TargetCommissionerSeat(); err != nil || status.HasAccount {
+		t.Fatalf("fresh install already has a sign-in: %+v %v", status, err)
+	}
+	if status, err := api.TargetCommissionerSeatSignIn("Commish", "league-password"); err != nil || status.Username != "commish" {
+		t.Fatalf("protect seat: %+v %v", status, err)
+	}
+	before, err := api.TargetCommissionerRules(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored := snapshotInto(t, source)
+	sourcePrincipal, _ := source.commissionerPrincipal()
+	restoredPrincipal, _ := restored.commissionerPrincipal()
+	if sourcePrincipal == restoredPrincipal {
+		t.Fatal("the drill must restore under a different local identity")
+	}
 	after, err := newCommissionerAPI(restored).TargetCommissionerRules(raw.League)
 	if err != nil || !reflect.DeepEqual(before, after) {
 		t.Fatalf("native rules changed after snapshot restore: %v", err)
 	}
-	leagues, err := newCommissionerAPI(restored).TargetCommissionerLeagues()
-	if err != nil || len(leagues) != 1 || leagues[0].ID != raw.League {
-		t.Fatalf("native league missing: %+v %v", leagues, err)
+	requireRole(t, restored, raw.League, "Visitor")
+	seat := newCommissionerAPI(restored)
+	if status, err := seat.TargetCommissionerSeat(); err != nil || !status.HasAccount || status.Username != "" {
+		t.Fatalf("restored copy before sign-in: %+v %v", status, err)
 	}
-	people, err = newCommissionerAPI(restored).TargetCommissionerPeople(raw.League)
-	if err != nil {
+	// A copy without the password links nothing; it cannot create a second sign-in either.
+	if _, err := seat.TargetCommissionerSeatSignIn("commish", "guessed-password"); err == nil {
+		t.Fatal("wrong password linked the restored copy")
+	}
+	if _, err := seat.TargetCommissionerSeatSignIn("stranger", "own-password"); err == nil {
+		t.Fatal("a second local account was created on a restored copy")
+	}
+	requireRole(t, restored, raw.League, "Visitor")
+	if status, err := seat.TargetCommissionerSeatSignIn("COMMISH", "league-password"); err != nil || status.Username != "commish" {
+		t.Fatalf("claim seat: %+v %v", status, err)
+	}
+	requireRole(t, restored, raw.League, "Commissioner")
+	grant := commissioner.RawCommand{League: raw.League, Command: "commish.franchise.edit",
+		Args:   commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Name: "Restored", Abbreviation: "RES"}},
+		Reason: "Prove restored authority", Request: "restored-edit", Expected: 1, Effective: "now", Visibility: "league"}
+	executeCommissionerTest(t, restored, grant)
+	// The source computer keeps its own link and its role.
+	requireRole(t, source, raw.League, "Commissioner")
+}
+
+// Without the commissioner's sign-in, a stranger's copy of the data stays a Visitor even after
+// the stranger creates a sign-in of their own.
+func TestStrangersRestoredCopyWithoutSignInStaysVisitor(t *testing.T) {
+	source, raw := restoreDrillLeague(t)
+	restored := snapshotInto(t, source)
+	requireRole(t, restored, raw.League, "Visitor")
+	if _, err := newCommissionerAPI(restored).TargetCommissionerSeatSignIn("stranger", "own-password"); err != nil {
 		t.Fatal(err)
 	}
-	if people.MayChangeRules || people.YourRole != "Visitor" {
-		t.Fatalf("expected the documented folder-derived identity loss: %+v", people)
-	}
+	requireRole(t, restored, raw.League, "Visitor")
 	principal, err := source.commissionerPrincipal()
 	if err != nil {
 		t.Fatal(err)
 	}
 	held, err := restored.core.History.CommissionerPeople(t.Context(), raw.League, principal)
 	if err != nil || !held.MayChangeRules {
-		t.Fatalf("snapshot lost stored commissioner rights rather than local identity: %+v %v", held, err)
+		t.Fatalf("snapshot lost stored commissioner rights: %+v %v", held, err)
 	}
 }
 

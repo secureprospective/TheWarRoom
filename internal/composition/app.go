@@ -22,6 +22,7 @@ import (
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -31,6 +32,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -53,6 +55,8 @@ type App struct {
 	nowHeld      *nowapp.Held
 	sourcesHeld  *sourcesapp.Held
 	marketHeld   *marketapp.Held
+	seatStore    *accountstore.Store
+	seat         *accounts.LocalSeat
 }
 
 // directory returns the cached players Lookup for the season held, fetching it on first use.
@@ -218,6 +222,10 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 		return "", nil, fmt.Errorf("open what-if database: %w", err)
 	}
 	hist := history.New(a.core.HistPools, reg)
+	// The local sign-in lives beside the ledger, so a matched backup carries it.
+	a.seatStore = accountstore.New(a.core.HistPools)
+	a.seat = accounts.NewLocalSeat(accounts.New(a.seatStore), a.seatStore)
+	hist.SetVerifiedAliases(a.seat.VerifiedAliases)
 	a.core.Fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
@@ -247,6 +255,7 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 		run  func(context.Context) error
 	}{
 		{"history", hist.Initialize},
+		{"local sign-in", a.seatStore.Initialize},
 		{"params", pstore.Initialize},
 		{"moves", moveStore.Initialize},
 		{"personal lists", personal.New(a.core.Pools).Initialize},

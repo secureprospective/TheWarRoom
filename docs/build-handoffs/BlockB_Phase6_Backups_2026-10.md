@@ -52,7 +52,7 @@ identity or database filenames.
   excludes pruning throughout restore.
 - **D5:** no identity redesign.
 
-Restore into the same data dir keeps commissioner rights; a different home becomes Visitor until accounts (block C) replace the local principal.
+Restore into the same data dir keeps commissioner rights. A different home or OS user keeps them once the commissioner signs in with the local sign-in made before the backup (`internal/accounts/README.md` → Desktop sign-in and restored copies).
 
 ## Shipped: matched sets and offline recovery
 
@@ -128,18 +128,13 @@ not individual stores' in-memory publication mutexes. Restore is intentionally a
 offline API contract, not an in-process live restore command. No button, live
 profile access, GUI exercise or network fetch was performed.
 
-## Restore drill finding
+## Restore drill finding (resolved 2026-10-24)
 
-`TestBackupSnapshotDifferentHomeCommissionerRightsFinding` creates a native
-league under the real local principal, snapshots all three fixture files using
-`VACUUM INTO`, and opens them in another temporary home. No concurrent writers
-exist in this drill; it is not the missing production restore API.
-
-Native league discovery and rules reproduce exactly. The original commissioner
-becomes **Visitor**, with `MayChangeRules=false`. Looking up the old principal in
-the restored store still grants commissioner rights: data is intact, but
-`localCommissionerSession.Principal` hashes dataDir and uid. The first test run
-asserted retained rights and failed with precisely that Visitor reading. The
-committed test records this expected finding, not a passing rights guarantee.
-Identity was not redesigned. The matched-set tests above now cover populated
-native results/rosters, same-home rights and hostile-set rejection.
+The original drill showed a snapshot opened in another home made the commissioner a
+**Visitor**: the ledger was intact, but `localCommissionerSession.Principal` hashes
+dataDir and uid. Debt sweep 2 resolved it with the existing account/alias model, not a
+new identity scheme: the local sign-in links each computer's identity to one account,
+and the ledger resolves linked identities through the verified-alias map.
+`TestRestoreOnAnotherComputerKeepsCommissionerWithSignIn` replaces the finding test and
+`TestStrangersRestoredCopyWithoutSignInStaysVisitor` keeps a copy without the password
+a Visitor. See `internal/accounts/README.md` → Desktop sign-in and restored copies.

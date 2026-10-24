@@ -239,3 +239,21 @@ stores, explicit trusted test policy, exact expiry, role loss/gain, cross-scope 
 reference denials, hash-only storage/redaction, queued revocation before retry,
 zero denied ledger growth, immutable scope, reopen, recovery/epoch fences and
 rollback on audit failure. No deployed policy adapter or live owner is exercised.
+
+## Desktop sign-in and restored copies
+
+The desktop's local principal hashes its data folder and OS user, so a backup restored
+under another folder or user is a new identity. `LocalSeat.SignIn` creates the first
+local account (or verifies the existing one) and appends `account_aliases(alias →
+account)` in history.db, beside the ledger, so a matched backup carries it. The history
+store resolves every linked alias to its account through the existing verified-alias map
+(`governance.Principals`) whenever a caller supplies none; recorded authors never change.
+A restored copy links its new identity only after the original username and password
+verify, and bootstrap stays closed once any account exists, so a copy without the
+password cannot link or create its way into a role. Links are append-only.
+
+Evidence: `TestRestoreOnAnotherComputerKeepsCommissionerWithSignIn` (restored under a
+different local identity: Visitor, wrong password and a second account refused, then
+Commissioner after the original sign-in, and a ruled change executes) and
+`TestStrangersRestoredCopyWithoutSignInStaysVisitor`. Removing the history alias hook
+makes the first fail with a Visitor reading.

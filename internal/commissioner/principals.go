@@ -16,6 +16,12 @@ func WithPrincipals(ctx context.Context, principals *governance.Principals) cont
 	return context.WithValue(ctx, principalsKey{}, principals)
 }
 
+// HasPrincipals reports whether a trusted adapter already supplied the identity map.
+func HasPrincipals(ctx context.Context) bool {
+	_, supplied := ctx.Value(principalsKey{}).(*governance.Principals)
+	return supplied
+}
+
 // ResolvePrincipals binds identities to a private policy view, preserving every recorded byte.
 func ResolvePrincipals(ctx context.Context, league string, records []Record) ([]Record, error) {
 	principals, supplied := ctx.Value(principalsKey{}).(*governance.Principals)
