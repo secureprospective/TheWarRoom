@@ -2,6 +2,7 @@ package composition
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -47,5 +48,45 @@ func TestRestoreFlagRestoresASetWithTheAppClosed(t *testing.T) {
 	leagues, err := newCommissionerAPI(restoreDrillApp(t, dir)).TargetCommissionerLeagues()
 	if err != nil || len(leagues) != 1 || leagues[0].ID != "native.kept" {
 		t.Fatalf("after restore leagues = %+v %v; want only the league held when the set was captured", leagues, err)
+	}
+}
+
+// Issue 18 through the operator path: on a new computer the profile has never been opened, and
+// -restore installs the set, says there was nothing to keep, and the app opens on its league.
+func TestRestoreFlagIntoNeverOpenedProfile(t *testing.T) {
+	source := restoreDrillApp(t, t.TempDir())
+	executeCommissionerTest(t, source, restoreCLILeague("native.moved"))
+	set, err := source.core.Backups.Capture(t.Context(), [3]*db.Pools{source.core.Pools, source.core.HistPools, source.core.WhatifPools}, "manual", time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	dir, err := configDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	copied := filepath.Join(dir, "backups", filepath.Base(set))
+	if err := os.MkdirAll(copied, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{dbFileName("thewarroom", isDevBuild()), dbFileName("history", isDevBuild()),
+		dbFileName("whatif", isDevBuild()), "manifest.json"} {
+		body, err := os.ReadFile(filepath.Join(set, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		//nolint:gosec // both paths are this test's temp dirs and fixed member names
+		if err := os.WriteFile(filepath.Join(copied, name), body, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var out, errOut bytes.Buffer
+	if code := runFlag([]string{"-restore", filepath.Base(set)}, &out, &errOut); code != 0 ||
+		!strings.Contains(out.String(), "nothing to keep a safety copy of") {
+		t.Fatalf("-restore = %d, %q %q", code, out.String(), errOut.String())
+	}
+	leagues, err := newCommissionerAPI(restoreDrillApp(t, dir)).TargetCommissionerLeagues()
+	if err != nil || len(leagues) != 1 || leagues[0].ID != "native.moved" {
+		t.Fatalf("leagues after a fresh-profile restore = %+v %v", leagues, err)
 	}
 }
