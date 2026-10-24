@@ -154,6 +154,14 @@ func Commands() []catalog.Command {
 		{"TargetNativeWeek", "gm,commish,admin", "G0"},
 		{"TargetStatQueue", "commish", "G0"},
 	}
+	return desktopCommands(methods)
+}
+
+func desktopCommands(methods []struct{ method, role, gravity string }) []catalog.Command {
+	reads := map[string]catalog.Command{}
+	for _, read := range nativeReads() {
+		reads[read.Method] = read
+	}
 	commands := make([]catalog.Command, 0, len(methods))
 	for _, metadata := range methods {
 		command := catalog.Command{ID: catalog.Unset, Method: metadata.method, Version: catalog.Unset,
@@ -163,6 +171,10 @@ func Commands() []catalog.Command {
 			command.ID = "commish.ledger.read"
 		case "TargetNativeLineupSet":
 			command.ID = "lineup.set"
+		}
+		if read, ok := reads[command.Method]; ok {
+			read.Role = command.Role
+			command = read
 		}
 		commands = append(commands, command)
 	}
