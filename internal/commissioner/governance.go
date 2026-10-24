@@ -165,6 +165,9 @@ func AuthorizeRecords(raw RawCommand, principal string, records []Record) (strin
 	if err != nil {
 		return "", err
 	}
+	if raw.Command == CaretakerSeat {
+		return authorizeCaretaker(state, raw, principal)
+	}
 	if raw.Command == "commish.seat.invite.redeem" {
 		return authorizeRedemption(state, raw, principal)
 	}
@@ -198,7 +201,7 @@ func authorizeLineupSet(state governance.State, raw RawCommand, principal string
 		return "", err
 	}
 	seat, ok := state.Franchise(governance.FranchiseID(change.Franchise))
-	if !ok || principal == "" || seat.Seat != governance.Principal(principal) {
+	if !ok || !state.HoldsSeat(governance.FranchiseID(change.Franchise), governance.Principal(principal)) {
 		return "", fmt.Errorf("you may set a lineup only for your own franchise")
 	}
 	if !seat.Abilities["lineups"] {
@@ -313,4 +316,11 @@ func marketOwnerFranchise(raw RawCommand) string {
 		return raw.Args.Bid.Franchise
 	}
 	return ""
+}
+
+func authorizeCaretaker(state governance.State, raw RawCommand, principal string) (string, error) {
+	if !state.HasRole(governance.Principal(principal), governance.Commissioner) || raw.Args.People.Principal != principal {
+		return "", fmt.Errorf("only the commissioner may take their own caretaker seat")
+	}
+	return "commissioner", nil
 }

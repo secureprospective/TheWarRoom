@@ -525,3 +525,25 @@ func TestOwnersLineupCanBeCompensatedPrivatelyAndNeedsTheReversalPermission(t *t
 		f.reopen(t)
 	}
 }
+
+func TestVacantCaretakerSetsLineupButCannotProxyAnOwner(t *testing.T) {
+	f := lineupTest(t)
+	executePeople(t, f.s, "creator", "commish.seat.remove", commissioner.RawPeople{Franchise: f.a}, revision(t, f.s))
+	executePeople(t, f.s, "creator", commissioner.CaretakerSeat, commissioner.RawPeople{Franchise: f.a, Principal: "creator"}, revision(t, f.s))
+	raw := f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a))
+	if _, err := f.s.ExecuteCommissioner(t.Context(), raw, "creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	got, err := f.s.NativeLineup(t.Context(), "native.test", f.a, "creator", 1, f.at)
+	if err != nil || !got.Set || got.Verdict.Status != nativecheck.LineupValid {
+		t.Fatalf("caretaker lineup not recorded: %v", err)
+	}
+	executePeople(t, f.s, "creator", "commish.seat.replace", commissioner.RawPeople{Franchise: f.a, Principal: f.ownerOfA}, revision(t, f.s))
+	before := revision(t, f.s)
+	if _, err := f.s.ExecuteCommissioner(t.Context(), f.command(t, commissioner.LineupSet, f.a, 1, f.legal(f.a)), "creator", nil); err == nil {
+		t.Fatal("former caretaker set owner's lineup")
+	}
+	if revision(t, f.s) != before {
+		t.Fatal("refused caretaker changed ledger")
+	}
+}

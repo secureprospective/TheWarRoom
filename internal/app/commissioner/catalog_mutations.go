@@ -112,6 +112,7 @@ func nativeMarketMutations() []struct{ id, args string } {
 
 func nativePeopleMutations() []struct{ id, args string } {
 	return []struct{ id, args string }{
+		{commissioner.CaretakerSeat, "people"},
 		{"commish.franchise.edit", "people"},
 		{"commish.seat.invite", "people"},
 		{"commish.seat.invite.revoke", "people"},

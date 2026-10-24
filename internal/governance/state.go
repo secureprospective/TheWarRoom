@@ -27,6 +27,7 @@ type Franchise struct {
 	ID                 FranchiseID
 	Name, Abbreviation string
 	Seat               Principal
+	Caretaker          Principal
 	Abilities          map[string]bool
 }
 type Invite struct {
@@ -164,4 +165,11 @@ func (s State) firstDeputy(excluded []Principal) Principal {
 		}
 	}
 	return ""
+}
+
+// HoldsSeat includes a caretaker only while the franchise is vacant and the caretaker
+// still holds the commissioner role. An owner assignment permanently clears it.
+func (s State) HoldsSeat(id FranchiseID, p Principal) bool {
+	f, ok := s.franchises[id]
+	return ok && p != "" && (f.Seat == p || (f.Seat == "" && f.Caretaker == p && s.HasRole(p, Commissioner)))
 }

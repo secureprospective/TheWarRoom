@@ -13,6 +13,7 @@ type PeopleSeat struct {
 	Name         string `json:"name"`
 	Abbreviation string `json:"abbreviation"`
 	Owner        string `json:"owner"`
+	Caretaker    string `json:"caretaker,omitempty"`
 }
 
 type PeopleRole struct {
@@ -157,7 +158,11 @@ func readSeats(state governance.State, ids []string) []PeopleSeat {
 		if owner == "" {
 			owner = "Vacant"
 		}
-		seats = append(seats, PeopleSeat{Franchise: id, Name: f.Name, Abbreviation: f.Abbreviation, Owner: owner})
+		caretaker := ""
+		if state.HoldsSeat(governance.FranchiseID(id), f.Caretaker) {
+			caretaker = string(f.Caretaker)
+		}
+		seats = append(seats, PeopleSeat{Franchise: id, Name: f.Name, Abbreviation: f.Abbreviation, Owner: owner, Caretaker: caretaker})
 	}
 	return seats
 }

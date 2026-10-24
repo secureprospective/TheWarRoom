@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -258,4 +259,38 @@ func TestLineupSetIsRegisteredWithTheGate(t *testing.T) {
 		}
 	}
 	t.Fatal("lineup.set is not in nativeOwnerActions, so the gate guard test would never run it")
+}
+
+func TestTokenCaretakerLineupKeepsCalendarAndSeatChecks(t *testing.T) {
+	f := lineupAppTest(t)
+	f.execute(t, commissioner.RawCommand{Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "calendar.boundary", Value: json.RawMessage(`"start_of_day"`)}})
+	f.execute(t, commissioner.RawCommand{Command: "commish.role.grant", Visibility: "private", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "backup", Role: governance.Commissioner}}})
+	f.execute(t, commissioner.RawCommand{Command: "commish.seat.remove", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02"}}})
+	service, principal, auditID := ownerAgent(t, f.pools, f.app, legalityLeague, "franchise.02", commissioner.LineupSet, func() time.Time { return f.at })
+	raw := commissioner.RawCommand{League: legalityLeague, Command: commissioner.LineupSet, Expected: ownerAgentRevision(t, service, legalityLeague), Request: "agent-lineup", Effective: "now", Visibility: "private", Args: commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{Season: 2026, Franchise: "franchise.02", Week: 1, Starters: fixtureStarters(0, 21)}}}
+	if _, err := service.Execute(t.Context(), raw); err == nil {
+		t.Fatal("generic path admitted lineup")
+	}
+	if _, err := service.SetLineup(commissioner.WithTokenAudit(t.Context(), auditID), raw); err != nil {
+		t.Fatal(err)
+	}
+	got, err := f.app.core.History.NativeLineup(t.Context(), legalityLeague, "franchise.02", principal, 1, f.at)
+	if err != nil || !got.Set {
+		t.Fatalf("token caretaker lineup missing: %v", err)
+	}
+	f.execute(t, commissioner.RawCommand{Command: commissioner.WindowRemove, Args: commissioner.RawArgs{Window: &commissioner.RawWindowArgs{ID: "lineups"}}})
+	raw.Expected, raw.Request = ownerAgentRevision(t, service, legalityLeague), "closed-calendar"
+	before := f.version(t)
+	if _, err := service.SetLineup(commissioner.WithTokenAudit(t.Context(), auditID), raw); err == nil || !strings.Contains(err.Error(), "window") {
+		t.Fatalf("closed-calendar token lineup: %v", err)
+	}
+	if f.version(t) != before {
+		t.Fatal("refused lineup appended")
+	}
+	f.openLineupWindow(t)
+	f.execute(t, commissioner.RawCommand{Command: "commish.seat.replace", Args: commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.02", Principal: "new-owner"}}})
+	raw.Expected = ownerAgentRevision(t, service, legalityLeague)
+	if _, err := service.SetLineup(commissioner.WithTokenAudit(t.Context(), auditID), raw); err == nil {
+		t.Fatal("token retained caretaker authority over owner")
+	}
 }

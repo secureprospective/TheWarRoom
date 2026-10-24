@@ -134,7 +134,11 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	store.SetClock(clock.Now)
 	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, clock)
 	// HTTPS recovery is by printed code only; the zero digest matches no offline key, so console recovery stays offline.
-	handler := serverhttp.Hosted{Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+	confirmations, err := serverhttp.NewConfirmations()
+	if err != nil {
+		return serverhttp.Hosted{}, fmt.Errorf("initialize human confirmation: %w", err)
+	}
+	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
 	return handler, nil

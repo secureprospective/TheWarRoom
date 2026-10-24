@@ -1,10 +1,19 @@
 package composition
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -275,4 +284,124 @@ func TestDraftMaximumPicksForfeitsTheExtrasWithoutAClock(t *testing.T) {
 	}
 	// franchise.01 holds two first round picks and one in each later round: six, so one allowed forfeits five.
 	f.governs(t, forfeited, func() commissioner.Receipt { return f.setRule(t, "draft.maximumPicks", `1`) }, "0", "5")
+}
+
+func TestCaretakerPicksOnlyForVacantFranchiseAndStopsAtOwnerSeating(t *testing.T) {
+	f := draftApp(t)
+	f.scheduled(t, 3, 2, 1)
+	f.now = draftStartAt().Add(time.Minute)
+	f.command(t, commissioner.CaretakerSeat, commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.03", Principal: "creator"}}, "Care for a vacant team")
+	f.pick(t, "franchise.03", "5001")
+	f.seat(t, "franchise.03", "new-owner")
+	before := f.revision(t)
+	if _, err := f.tryPick("franchise.03", "5002", "closed-caretaker", before); err == nil {
+		t.Fatal("caretaker acted after owner was seated")
+	}
+	if f.revision(t) != before {
+		t.Fatal("refused caretaker appended a pick")
+	}
+}
+
+type agentOwnerHost struct {
+	leagueservice.StoredHost
+	at    func() time.Time
+	facts nativecheck.Facts
+}
+
+func (h agentOwnerHost) CommissionerNow() time.Time     { return h.at() }
+func (h agentOwnerHost) NativeFacts() nativecheck.Facts { return h.facts }
+
+func ownerAgent(t *testing.T, pools *db.Pools, app *App, league, franchise, command string, at func() time.Time) (*leagueservice.Service, string, string) {
+	t.Helper()
+	credentials := accountstore.New(pools)
+	if err := credentials.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	passwords := accounts.New(credentials)
+	login := accounts.RawCredentials{Username: "agent-commissioner", Password: "disposable-agent-password"}
+	account, err := passwords.LocalBootstrap(t.Context(), login)
+	if err != nil {
+		t.Fatal(err)
+	}
+	principal, err := account.Principal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, change := range []struct {
+		command string
+		people  commissioner.RawPeople
+	}{
+		{"commish.role.grant", commissioner.RawPeople{Principal: string(principal), Role: governance.Commissioner}},
+		{commissioner.CaretakerSeat, commissioner.RawPeople{Principal: string(principal), Franchise: franchise}},
+	} {
+		events, err := app.core.History.Events(t.Context(), league, commissioner.Stream, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		actor := "creator"
+		if i == 1 {
+			actor = string(principal)
+		}
+		raw := commissioner.RawCommand{League: league, Command: change.command, Args: commissioner.RawArgs{People: &change.people}, Request: fmt.Sprintf("agent-setup-%d", i), Expected: int64(len(events)), Reason: "Prepare caretaker", Effective: "now", Visibility: "league"}
+		if i == 0 {
+			raw.Visibility = "private"
+		}
+		if _, err := app.core.History.ExecuteCommissioner(t.Context(), raw, actor, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	sessions := accounts.NewSessions(passwords, credentials)
+	session, err := sessions.Login(t.Context(), login, "agent-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens := accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: app.core.History})
+	token, err := tokens.Issue(t.Context(), session.RawSession, accounts.RawTokenScope{League: league, Franchise: franchise, Commands: []string{command, "commish.ledger.read"}, Modes: []string{"execute", "read"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := commissioner.WithTokenAudit(t.Context(), token.ID)
+	host := agentOwnerHost{StoredHost: leagueservice.StoredHost{Store: app.core.History, Principal: string(principal), Context: func() context.Context { return ctx }}, at: at, facts: app.nativeFacts()}
+	return leagueservice.NewHosted(host, tokens.Admission(token.RawSession)), string(principal), token.ID
+}
+
+func TestTokenCaretakerDraftUsesDraftRoomAndCurrentSeat(t *testing.T) {
+	f := draftApp(t)
+	f.scheduled(t, 3, 4, 1)
+	f.now = draftStartAt().Add(time.Minute)
+	service, principal, auditID := ownerAgent(t, f.pools, f.app, draftLeague, "franchise.03", commissioner.DraftPick, func() time.Time { return f.now })
+	in := commissioner.DraftPickInput{League: draftLeague, Season: draftSeason, Franchise: "franchise.04", Player: "5001", Request: "wrong-team", Expected: ownerAgentRevision(t, service, draftLeague)}
+	if _, err := service.Pick(commissioner.WithTokenAudit(t.Context(), auditID), in); err == nil {
+		t.Fatal("token escaped caretaker franchise")
+	}
+	in.Franchise, in.Request = "franchise.03", "agent-pick"
+	if _, err := service.Pick(commissioner.WithTokenAudit(t.Context(), auditID), in); err != nil {
+		t.Fatal(err)
+	}
+	events, err := f.app.core.History.Events(t.Context(), draftLeague, commissioner.Stream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := events[len(events)-1].Payload.Commissioner
+	if last.TokenAuditID == "" || last.Principal != principal {
+		t.Fatal("draft lost token audit")
+	}
+	in.Expected, in.Player, in.Request = ownerAgentRevision(t, service, draftLeague), "5002", "off-clock"
+	if _, err := service.Pick(commissioner.WithTokenAudit(t.Context(), auditID), in); err == nil || !strings.Contains(err.Error(), "turn") {
+		t.Fatalf("off-clock token pick: %v", err)
+	}
+	f.seat(t, "franchise.03", "new-owner")
+	in.Expected = ownerAgentRevision(t, service, draftLeague)
+	if _, err := service.Pick(commissioner.WithTokenAudit(t.Context(), auditID), in); err == nil {
+		t.Fatal("former caretaker token acted")
+	}
+}
+
+func ownerAgentRevision(t *testing.T, service *leagueservice.Service, league string) int64 {
+	t.Helper()
+	reading, err := service.TargetCommissionerLedger(league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return reading.Revision
 }

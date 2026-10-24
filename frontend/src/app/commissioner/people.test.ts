@@ -1,3 +1,4 @@
+import { seatsReport } from './peopleReport';
 import { describe, expect, it } from 'vitest';
 import { parsePeople } from './people';
 import wire from './people.wire.testdata.json';
@@ -31,4 +32,12 @@ describe('Commissioner people wire', () => {
     const vote = { ...wire.owner.votes[0], endsAt: 'soon' };
     expect(() => parsePeople({ ...wire.owner, votes: [vote] })).toThrow();
   });
+});
+
+it('shows the caretaker without presenting them as the owner', () => {
+  const seat = { ...wire.owner.seats[3], caretaker: 'commissioner' };
+  const reading = parsePeople({ ...wire.owner, seats: [seat] });
+  expect(reading.seats[0].owner).toBe('Vacant');
+  expect(seatsReport(reading).rows[0].cells[1]).toBe('Vacant — caretaker: commissioner');
+  expect(() => parsePeople({ ...wire.owner, seats: [{ ...seat, caretaker: true }] })).toThrow();
 });
