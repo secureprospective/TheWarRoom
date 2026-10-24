@@ -17,6 +17,7 @@ func ParameterWords(key, description string) (label, group string) {
 		"model.k_now":                 {"Games until production and scouting weigh equally", "Production blend · this season"},
 		"model.k_dynasty":             {"Games until production and scouting weigh equally", "Production blend · dynasty"},
 		"model.z_exponential":         {"Use the exponential production blend", "Production blend"},
+		"model.board_kept":            {"Value this position with the fitted ratings (off: use the board rule)", "Production blend"},
 	}
 	if words, ok := fixed[key]; ok {
 		return words[0], words[1]
