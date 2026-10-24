@@ -1,6 +1,7 @@
 package serverhttp
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -70,6 +71,11 @@ func (h Hosted) authenticator(w http.ResponseWriter, r *http.Request) {
 		var proof accounts.RecentAuth
 		proof, err = h.TOTP.StepUp(r.Context(), credentials, accounts.RawTOTP{Code: raw.Code})
 		response.RecentAuth = proof.Token
+	}
+	if errors.Is(err, accounts.ErrPasswordBusy) {
+		w.Header().Set("Retry-After", "1")
+		http.Error(w, "password service busy", http.StatusTooManyRequests)
+		return
 	}
 	if err != nil {
 		http.Error(w, "authenticator refused", http.StatusForbidden)

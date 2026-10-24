@@ -67,12 +67,7 @@ func serveFixture(ctx context.Context, listener net.Listener, certificate tls.Ce
 	if !ok || !address.IP.IsLoopback() {
 		return fmt.Errorf("fixture listener is not loopback")
 	}
-	server := &http.Server{
-		Handler: handler, ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout: 10 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second,
-		MaxHeaderBytes: 16 << 10,
-		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}},
-	}
+	server := boundedServer(handler, certificate)
 	stopped := make(chan struct{})
 	defer close(stopped)
 	go func() {
@@ -152,5 +147,14 @@ func fixtureRead(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if _, err := w.Write(body); err != nil {
 		return
+	}
+}
+
+func boundedServer(handler http.Handler, certificate tls.Certificate) *http.Server {
+	return &http.Server{
+		Handler: handler, ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout: 10 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 30 * time.Second,
+		MaxHeaderBytes: 16 << 10,
+		TLSConfig:      &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{certificate}},
 	}
 }

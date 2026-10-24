@@ -91,14 +91,15 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	if err := credentials.Initialize(ctx); err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server accounts: %w", err)
 	}
-	passwords := accounts.New(credentials)
+	work := accounts.NewPasswordWork()
+	passwords := accounts.NewWithPasswordWork(credentials, work)
 	totp, err := accounts.NewTOTP(passwords, credentials, encryptionKey)
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server authenticators: %w", err)
 	}
 	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, hostedClock{})
 	handler := serverhttp.Hosted{Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
-		Enrollment: accounts.NewEnrollment(credentials, nil), Worker: worker, Registry: catalogue}
+		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
 	return handler, nil
 }
 

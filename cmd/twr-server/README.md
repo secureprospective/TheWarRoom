@@ -134,7 +134,7 @@ It deliberately uses an untrusted DueClock, so timed mutations fail closed and
 it does not start due processing. The existing due-worker adapter still guards
 transaction admission and records commit wakes; operational clock-health evidence
 and worker activation must precede timed league operation. It never inherits the
-fixture clock's unconditional trust. Throttling/KDF budgets, public proxy/Tunnel,
+fixture clock's unconditional trust. Public proxy/Tunnel,
 SSE, recovery screens/routes, packaged desktop flows and deployment drills remain
 separate slices.
 
@@ -147,3 +147,13 @@ proves zero events append; removing the session-admission rejection makes it fai
 with HTTP 200. `TestRealBinaryFixtureHTTPS` also launches the real binary in hosted
 mode, logs into its persistent account store and verifies that host bootstrap
 acquires no fixture/league authority. No MFL calls are involved.
+
+## HTTP and password resource limits
+
+Hosted mode now uses one shared two-active/four-waiting password budget, a
+six-request authentication pool, a 64-request total pool and bounded per-socket-IP
+authentication throttling. It rejects forwarding headers rather than trusting
+client-supplied IP/HTTPS assertions. A future proxy must strip those headers;
+proxy-origin traffic currently shares one throttle allowance. No public exposure
+or target-CT performance acceptance is implied. Limits, proving tests and exact
+CT measurement steps: `docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`.
