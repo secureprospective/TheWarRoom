@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -45,7 +46,7 @@ func TestMainSchemaAdoptsAllStoresOnceWithDataIntact(t *testing.T) {
 		}
 	}
 	first := pools.MigrationFindings()
-	if first.Backup != path+".pre-v0.bak" {
+	if !strings.HasPrefix(first.Backup, path+".pre-v0-") {
 		t.Fatalf("backup=%q", first.Backup)
 	}
 	if err := pools.InitializeMain(t.Context()); err != nil {

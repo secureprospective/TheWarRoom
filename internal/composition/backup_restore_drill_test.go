@@ -279,3 +279,98 @@ func TestStartupCapturesMatchedSetBeforeOpeningPools(t *testing.T) {
 		}
 	}
 }
+
+func TestRepeatedOldSchemaRestoreStartsAndRetainsSafetyCopies(t *testing.T) {
+	dir := t.TempDir()
+	b, err := newDatabaseBackups(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var pools [3]*db.Pools
+	for i, base := range []string{"thewarroom", "history", "whatif"} {
+		p, err := db.Open(t.Context(), filepath.Join(dir, dbFileName(base, isDevBuild())))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pools[i] = p
+		t.Cleanup(func() { _ = p.Close() })
+		if _, err := p.Write().ExecContext(t.Context(), "CREATE TABLE before_migration (id TEXT); INSERT INTO before_migration VALUES ('retained')"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	at := time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC)
+	source, err := b.Capture(t.Context(), pools, "daily", at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range pools {
+		if err := p.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var copies []string
+	for attempt := range 2 {
+		if err := b.Restore(t.Context(), source, at.Add(time.Duration(attempt+1)*time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+		a := restoreDrillApp(t, dir)
+		for _, file := range a.databaseFiles() {
+			backup := file.pools.MigrationFindings().Backup
+			if backup == "" {
+				t.Fatalf("%s has no migration safety copy", file.name)
+			}
+			copies = append(copies, backup)
+			var held string
+			if err := file.pools.Read().QueryRowContext(t.Context(), "SELECT id FROM before_migration").Scan(&held); err != nil || held != "retained" {
+				t.Fatalf("%s lost data: %q %v", file.name, held, err)
+			}
+		}
+		a.shutdown(t.Context())
+	}
+	seen := make(map[string]bool)
+	for _, copy := range copies {
+		if seen[copy] {
+			t.Fatalf("migration backup reused: %s", copy)
+		}
+		seen[copy] = true
+		info, err := os.Stat(copy)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if info.Mode().Perm() != 0600 {
+			t.Fatalf("%s mode=%v", copy, info.Mode())
+		}
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, "backups"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts := make(map[string]int)
+	for _, entry := range entries {
+		set := filepath.Join(dir, "backups", entry.Name())
+		body, err := os.ReadFile(filepath.Join(set, "manifest.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var manifest db.RawBackupManifest
+		if err := json.Unmarshal(body, &manifest); err != nil {
+			t.Fatal(err)
+		}
+		counts[manifest.Kind]++
+		for _, file := range manifest.Files {
+			info, err := os.Stat(filepath.Join(set, file.Name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.Mode().Perm() != 0600 {
+				t.Fatalf("%s/%s mode=%v", entry.Name(), file.Name, info.Mode())
+			}
+			if manifest.Kind == "pre-migration" && file.UserVersion != 0 {
+				t.Fatalf("safety copy already migrated: %+v", file)
+			}
+		}
+	}
+	if counts["daily"] != 1 || counts["pre-migration"] != 2 || counts["pre-restore"] != 2 {
+		t.Fatalf("safety copies: %v", counts)
+	}
+}
