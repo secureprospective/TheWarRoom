@@ -11,30 +11,69 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/db"
+	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 )
 
-// One operation is one polling round for 24 established idle streams. This isolates
-// the committed-head gate from stream startup, session checks, timers and TLS writes.
+// One operation is one 250ms polling round for 24 established idle streams: 24 committed-head
+// queries, and on every second round (the 500ms session ticker) 24 device-session checks against
+// the account tables sharing the ledger's pools, as hosted mode composes them. Stream startup,
+// timers and TLS writes are excluded.
 func BenchmarkIdleStreamHeads100k(b *testing.B) {
-	s, _ := openBigLeague(b, filepath.Join(b.TempDir(), "idle.db"))
+	s, pools := openBigLeague(b, filepath.Join(b.TempDir(), "idle.db"))
 	seedIdleStreamLeague(b, s)
+	sessions, devices := idleStreamSessions(b, pools)
 	before := benchmarkProcessCPU(b)
 	b.ReportAllocs()
 	b.ResetTimer()
+	rounds, checks := 0, 0
 	for b.Loop() {
-		for range 24 {
+		for _, device := range devices {
 			head, err := s.CommittedHead(b.Context(), bigLeagueID, commissioner.Stream)
 			if err != nil || head != 100_000 {
 				b.Fatalf("head=%d err=%v", head, err)
 			}
+			if rounds%2 == 1 {
+				if _, err := sessions.Check(b.Context(), device); err != nil {
+					b.Fatalf("session check: %v", err)
+				}
+				checks++
+			}
 		}
+		rounds++
 	}
 	b.StopTimer()
 	cpu := benchmarkProcessCPU(b) - before
 	b.ReportMetric(float64(cpu.Nanoseconds())/float64(b.N), "cpu-ns/op")
 	b.ReportMetric(24, "head-queries/op")
+	b.ReportMetric(float64(checks)/float64(b.N), "session-checks/op")
 	b.ReportMetric(0, "ledger-reads/op")
+}
+
+// idleStreamSessions signs one owner in on 24 devices, one per stream, in the ledger's database.
+func idleStreamSessions(b *testing.B, pools *db.Pools) (*accounts.SessionService, []accounts.RawSession) {
+	b.Helper()
+	store := accountstore.New(pools)
+	if err := store.Initialize(b.Context()); err != nil {
+		b.Fatal(err)
+	}
+	passwords := accounts.New(store)
+	credentials := accounts.RawCredentials{Username: "stream.owner", Password: "stream-owner-password"}
+	if _, err := passwords.LocalBootstrap(b.Context(), credentials); err != nil {
+		b.Fatal(err)
+	}
+	sessions := accounts.NewSessions(passwords, store)
+	devices := make([]accounts.RawSession, 24)
+	for i := range devices {
+		session, err := sessions.Login(b.Context(), credentials, fmt.Sprintf("stream device %d", i))
+		if err != nil {
+			b.Fatal(err)
+		}
+		devices[i] = accounts.RawSession{Bearer: session.Bearer}
+	}
+	return sessions, devices
 }
 
 func benchmarkProcessCPU(b *testing.B) time.Duration {
