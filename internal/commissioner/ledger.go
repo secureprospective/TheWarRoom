@@ -22,6 +22,7 @@ type Receipt struct {
 const DurableCommandVersion = 1
 
 type Record struct {
+	replay     *replayMemo
 	books      *closedBooks
 	principals *governance.Principals
 
@@ -99,6 +100,9 @@ type Projection struct {
 // Replay walks compensation links backwards, then sets aside what a draft restore compensated: a reversed reversal no longer
 // compensates its target. Originals and every correction remain in the ledger.
 func Replay(records []Record) Projection {
+	if p, ok := cachedReplay(records); ok {
+		return p
+	}
 	if books := usableClosedBooks(records); books != nil {
 		return replayClosedBooks(records, books)
 	}
