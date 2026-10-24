@@ -1,4 +1,4 @@
-// Command twr-server serves a development-only native fixture or reads it with a local Go client.
+// Command twr-server serves account-authenticated leagues or isolated development fixtures.
 package main
 
 import (
@@ -36,6 +36,9 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, output io.Writer) error {
+	if len(args) > 0 && args[0] == "hosted" {
+		return runHosted(ctx, args[1:], output)
+	}
 	if len(args) > 0 && args[0] == "recover" {
 		return runRecovery(ctx, args[1:], os.Stdin, output)
 	}

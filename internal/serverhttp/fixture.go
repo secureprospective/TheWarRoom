@@ -1,4 +1,4 @@
-// Package serverhttp exposes the loopback-only fixture HTTPS JSON protocol.
+// Package serverhttp exposes account-authenticated and isolated fixture HTTPS JSON routes.
 package serverhttp
 
 import (
