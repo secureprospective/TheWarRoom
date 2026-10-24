@@ -117,3 +117,5 @@ internal/composition	platform
 internal/leagueservice	platform
 internal/serverhttp	platform
 internal/serverclient	platform
+internal/accounts	platform
+internal/store/accounts	platform
