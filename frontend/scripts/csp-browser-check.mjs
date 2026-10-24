@@ -54,7 +54,7 @@ try {
   remote.listen(0, '127.0.0.1');
   server.listen(0, '127.0.0.1');
   await Promise.all([once(remote, 'listening'), once(server, 'listening')]);
-  browser = spawn(process.env.FIREFOX ?? 'firefox', ['--headless', '--no-remote', '--profile', profile, `http://127.0.0.1:${server.address().port}/`], {stdio: 'ignore'});
+  browser = spawn(process.env.FIREFOX ?? 'firefox', ['--headless', '--no-remote', '--profile', profile, `http://127.0.0.1:${server.address().port}/`], {stdio: ['ignore', 'inherit', 'inherit']});
   const failure = new Promise((_, reject) => {
     browser.once('error', reject);
     browser.once('exit', (code) => reject(new Error(`browser exited before proof (${code})`)));
