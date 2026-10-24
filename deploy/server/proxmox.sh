@@ -17,17 +17,15 @@ bundle=$(realpath "$1")
 read -rp 'Container number: ' ctid
 read -rp 'Isolated network bridge [vmbr0]: ' bridge; bridge=${bridge:-vmbr0}
 read -rp 'Isolated VLAN number: ' vlan
-read -rp 'Container disk storage [local-lvm]: ' storage; storage=${storage:-local-lvm}
 read -rp 'Template storage [local]: ' templates; templates=${templates:-local}
 read -rp 'Cloudflare zone (example.org): ' zone
 read -rp 'New public hostname (league.example.org): ' hostname
-read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
 [[ $ctid =~ ^[1-9][0-9]{2,8}$ && $vlan =~ ^[0-9]{1,4}$ ]]
 (( vlan >= 1 && vlan <= 4094 ))
 [[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]]
-[[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]]
+[[ $templates =~ ^[a-zA-Z0-9_-]+$ ]]
 [[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]]
-[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $token =~ ^[a-zA-Z0-9_-]+$ ]]
+[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]]
 [[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]]
 work=$(mktemp -d)
 created=0
@@ -38,12 +36,21 @@ cleanup() {
   if (( created && !complete )); then
     pct exec "$ctid" -- sh -ec 'if [ -f /root/twr-input.json ]; then rc-service twr-tunnel --ifstarted stop || true; sh /root/twr/cloudflare.sh --rollback /root/twr-input.json; fi' || true
     pct exec "$ctid" -- rm -f /root/twr-input.json 2>/dev/null || true
+    systemctl disable --now "twr-container@$ctid.service" 2>/dev/null || true
     pct set "$ctid" --onboot 0 || true
     pct stop "$ctid" || true
     echo "Install failed. Container $ctid is stopped and retained for diagnosis; no retry overwrites state." >&2
   fi
 }
 trap cleanup EXIT
+# Encrypt the entire CT rootfs, including state, credentials and logs, before it exists.
+tar -xOf "$bundle" ./twr-unlock > "$work/twr-unlock"
+chmod 700 "$work/twr-unlock"
+bash "$(dirname "$0")/install-storage.sh" "$ctid" "$work/twr-unlock"
+storage="twr-$ctid"
+# Host swap is now off; do not collect secrets before that boundary.
+read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
+[[ $token =~ ^[a-zA-Z0-9_-]+$ ]]
 # This bundle is trusted release input, not a league archive. Never extract it on the host.
 pveam update
 template=$(pveam available --section system | awk '$2 ~ /^alpine-3\.23-default_.*amd64.tar.xz$/ {print $2}' | sort -V | tail -1)
@@ -92,6 +99,9 @@ printf '%s\n' "$token" | jq -Rn --arg zone "$zone" --arg hostname "$hostname" \
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
 pct exec "$ctid" -- sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
+# Exercise the host's unlock dependency and container unit before enabling boot.
+pct shutdown "$ctid" --timeout 60
+systemctl start "twr-container@$ctid.service"
 # A real reboot, not merely writing an init file.
 pct reboot "$ctid"
 ready=0
@@ -104,6 +114,7 @@ for ((attempt=0; attempt<60; attempt++)); do
 done
 (( ready ))
 pct exec "$ctid" -- rm -f /root/twr-input.json
-pct set "$ctid" --onboot 1
+# Host systemd owns boot ordering; Proxmox must never start this CT before unlock.
+systemctl enable "twr-container@$ctid.service"
 complete=1
 printf 'Installed: https://%s. Administration is Proxmox console only (pct enter %s).\n' "$hostname" "$ctid"

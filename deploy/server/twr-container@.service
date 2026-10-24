@@ -1,0 +1,17 @@
+[Unit]
+Description=League container %i on encrypted storage
+Requires=twr-storage@%i.service
+BindsTo=twr-storage@%i.service
+PartOf=twr-storage@%i.service
+After=twr-storage@%i.service pve-guests.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/pct start %i
+ExecStop=/usr/sbin/pct shutdown %i --timeout 60
+TimeoutStartSec=120
+TimeoutStopSec=90
+
+[Install]
+WantedBy=multi-user.target

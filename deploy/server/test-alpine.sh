@@ -19,8 +19,16 @@ docker exec "$name" sh -ec '
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   if sh /root/twr/install.sh; then exit 1; fi
   [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
-  [ "$(stat -c %a /var/lib/twr/server.db)" = 600 ]
+  for file in server.db server.db-wal server.db-shm server.log; do
+    [ -f "/var/lib/twr/$file" ]
+    [ "$(stat -c %a "/var/lib/twr/$file")" = 600 ]
+  done
   [ "$(stat -c %a /etc/twr/authenticator.key)" = 600 ]
+  printf "rotation probe\n" >> /var/lib/twr/server.log
+  logrotate -f -s /tmp/rotation.state /etc/logrotate.d/twr
+  [ "$(stat -c %a /var/lib/twr/server.log.1)" = 600 ]
+  [ "$(stat -c %a /var/lib/twr/server.log)" = 600 ]
+  rc-service crond status
   # Reuse the exact deployed namespace/mount options, replacing only its payload.
   sed "/  \/usr\/local\/bin\/twr-server hosted/,$ d" /usr/local/libexec/twr-sandbox > /tmp/probe
   cat >> /tmp/probe <<'\''PROBE'\''

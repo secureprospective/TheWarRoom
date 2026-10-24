@@ -8,6 +8,8 @@ respawn_delay=5
 respawn_max=5
 respawn_period=60
 umask=0077
+output_log="/var/lib/twr/server.log"
+error_log="/var/lib/twr/server.log"
 
 depend() {
 	need net
@@ -15,4 +17,5 @@ depend() {
 
 start_pre() {
 	checkpath --directory --mode 0700 --owner twr:twr /var/lib/twr
+	checkpath --file --mode 0600 --owner twr:twr /var/lib/twr/server.log
 }

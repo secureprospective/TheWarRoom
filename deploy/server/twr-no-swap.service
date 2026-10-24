@@ -1,0 +1,11 @@
+[Unit]
+Description=Keep league host secrets out of swap
+After=swap.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/swapoff -a
+
+[Install]
+WantedBy=multi-user.target

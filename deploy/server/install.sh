@@ -8,7 +8,7 @@ cd /root/twr
 . /etc/os-release
 [ "$ID" = alpine ] && [ "${VERSION_ID%%.*}" = 3 ]
 [ ! -e /etc/twr ] || { echo 'An installation already exists; refusing to replace keys or state.' >&2; exit 1; }
-apk add --no-cache openrc bubblewrap openssl ca-certificates curl jq
+apk add --no-cache openrc bubblewrap openssl ca-certificates curl jq logrotate busybox-openrc
 # Proxmox templates may already have SSH enabled. Console is the only admin door.
 if apk info -e openssh-server >/dev/null; then
   rc-service sshd --ifstarted stop
@@ -26,6 +26,11 @@ install -m 755 twr-server cloudflared /usr/local/bin/
 install -m 755 twr-sandbox /usr/local/libexec/
 install -m 755 twr-server.initd /etc/init.d/twr-server
 install -m 755 cloudflared.initd /etc/init.d/twr-tunnel
+install -m 600 twr-logrotate /etc/logrotate.d/twr
+# Run rotation hourly; the logs and rotated copies stay on the encrypted CT disk.
+ln -s /etc/periodic/daily/logrotate /etc/periodic/hourly/twr-logrotate
+rc-update add crond default
+rc-service crond start
 install -m 640 -o root -g twr endpoint-registry.csv /etc/twr/
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout /etc/twr/origin.key -out /etc/twr/origin.pem -days 36500 \

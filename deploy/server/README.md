@@ -1,6 +1,9 @@
 # Alpine league-server deployment (slice 34)
 
-**Preproduction. Not approved for real owners.** This is an Alpine 3.23 amd64,
+**Preproduction. Not approved for real owners.** Storage/unlock is now implemented
+on the Proxmox host; see [STORAGE.md](STORAGE.md) for the passphrase, automatic
+TPM unlock, host systemd credentials and unverified cold-boot gate.
+This is an Alpine 3.23 amd64,
 OpenRC, unprivileged Proxmox CT installer. It deliberately replaces the plan's
 systemd service and separate reverse-proxy assumption. The Go origin already
 speaks TLS; cloudflared verifies its private origin certificate directly. No
@@ -35,13 +38,15 @@ this installer delivered together:
 bash deploy/server/proxmox.sh ./twr-server-alpine-amd64.tar.gz
 ```
 
-Prompts collect the unused container number, bridge, isolated VLAN, storage,
-Cloudflare zone/new hostname and API token (hidden input). Token permissions are
+Prompts collect the unused container number, bridge, isolated VLAN, template storage,
+Cloudflare zone/new hostname and API token (hidden input), then a backup disk
+passphrase and explicit consent to disable host swap. The CT disk storage is
+created automatically inside a new LUKS2 filesystem, not an unencrypted storage selection. Token permissions are
 Cloudflare Tunnel Edit for the account, plus DNS Edit and Zone Read for that zone.
 The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
-It does not change the host's management network, firewall policy or storage
-security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
+It does not change the host's management network or firewall policy. It provisions
+fresh encrypted storage and disables host swap with consent; no existing disk is formatted. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
 storage and synchronized host clock are infrastructure prerequisites, not claims
 that this script can safely reconfigure a whole homelab.
 
@@ -122,8 +127,9 @@ Cloudflare shared-edge scans cannot prove origin isolation.
   which moves the commissioner's league and grants to the server. `install.sh`
   initializes empty hosted storage and directs the commissioner to that next step;
   deployment must not invent accounts or ledger grants.
-- Release integrity (43), storage encryption/unlock (35), off-host backups (36)
-  and health dashboard (38) remain their own gates. Adopt GoReleaser OSS for
+- Release integrity (43), off-host backups (36) and health dashboard (38) remain
+  their own gates. Storage encryption/unlock (35) is implemented with the remaining
+  hardware acceptance recorded in [STORAGE.md](STORAGE.md). Adopt GoReleaser OSS for
   artifacts and Gatus + ntfy for health/alerts in those slices per the operator's
   later ruling; the older plan's “no outbound alerts” conflicts with that ruling.
   There is currently no hosted `/healthz`; do not invent a static success response
@@ -132,5 +138,5 @@ Cloudflare shared-edge scans cannot prove origin isolation.
 The origin certificate is private, pinned only to this local Tunnel hop, and has
 a long lifetime to avoid an unattended-expiry outage. It is not desktop/public
 trust material. Public TLS and renewal belong to Cloudflare. This slice makes no
-claim against Proxmox root, CT root, a running compromised process, host swap or
-unencrypted backing storage. No owners connect until the integrated release gates.
+claim against Proxmox root, CT root or a running compromised process. The host
+storage/swap implementation and its unverified live limits are in STORAGE.md. No owners connect until the integrated release gates.
