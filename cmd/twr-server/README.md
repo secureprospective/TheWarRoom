@@ -79,3 +79,71 @@ host-replacement recovery are separate later gates.
 `TestOfflineConsoleRecovery` exercises stdin validation, insecure-key permissions,
 success, preserved identity, new-password login and the persisted audit record.
 This is not a deployed recovery or key-custody drill.
+
+## Account-authenticated mode
+
+```
+twr-server hosted -db /path/to/server.db \
+  -tls-cert /path/to/server.pem -tls-key /path/to/server.key \
+  -totp-key-file /path/to/authenticator.key \
+  -preview-registry docs/ui/endpoint-registry.csv
+```
+
+This is a separate mode, still literal-loopback-only pending the deployment work.
+It opens one existing server-owned database for history **and** accounts, sharing
+one SQLite writer. It never seeds a fixture, registers `/v1/fixture/*`, reads an
+installation principal or supplies a domain authorization override. `-fixture`
+and `-fixture-changes` are not accepted in this mode. No real-owner exposure is
+approved by this wiring.
+
+Provision the first account and initial league through the existing trusted local
+account/history APIs; bootstrap itself grants no league role. Enrollment codes
+must already have been issued locally by a current canonical commissioner and
+handed personally to the intended username. The listener only redeems codes;
+there is no network issuance, account-reset or role-override route. Legacy league
+migration and persisted verified-alias configuration are not supplied here.
+
+| Route (POST, protocol 1 JSON) | Input / result |
+|---|---|
+| `/v1/auth/enroll` | Existing enrollment envelope; creates an account, not a seat/session. |
+| `/v1/auth/login` | `protocol`, `username`, `password`, `device`; returns `bearer` and redacted session metadata. |
+| `/v1/auth/totp/begin` | `protocol`, `username`, `password`; returns setup `seed` once. |
+| `/v1/auth/totp/confirm` | Same plus six-digit `code`; consumes confirmation code. |
+| `/v1/auth/totp/step-up` | Same plus a fresh `code`; returns `recent_auth`. |
+| `/v1/native/ledger` | `protocol`, `league`; authorized ledger. |
+| `/v1/native/preview` | `protocol`, `command` (RawCommand); shared-service dry run. |
+| `/v1/native/execute` | Same command envelope; shared-service receipt, including canonical retries. |
+
+Native routes require `Authorization: Bearer <device secret>`. Commissioners and
+all deputies also need `X-TWR-Recent-Auth: <proof>`. Credentials, setup seeds and
+proofs belong in desktop Go memory/keychain, never the webview or logs. TLS,
+no browser Origin, no query parameters, strict single-object bounded JSON and
+`Cache-Control: no-store` apply. Identity/role/time fields are not accepted;
+spoofed identity headers do not select the principal.
+
+Flow: session authentication/touch → canonical account principal → validated Raw
+request → request-scoped shared service → current league policy + privileged
+recent-auth guard → store transaction → repeat session/policy/TOTP checks before
+retry lookup or append → receipt. Ledger reads require current membership;
+preview/execute additionally use argument-aware domain authorization. Refusals
+return generic errors and append nothing. Revocation and ledger append share the
+writer, so a revocation committed ahead of a queued append wins.
+
+**Remaining boundary:** this entrypoint has no established clock-health source.
+It deliberately uses an untrusted DueClock, so timed mutations fail closed and
+it does not start due processing. The existing due-worker adapter still guards
+transaction admission and records commit wakes; operational clock-health evidence
+and worker activation must precede timed league operation. It never inherits the
+fixture clock's unconditional trust. Throttling/KDF budgets, public proxy/Tunnel,
+SSE, recovery screens/routes, packaged desktop flows and deployment drills remain
+separate slices.
+
+Evidence: `TestHostedHTTPSEnrollmentLoginWriteAndAdmission` exercises real TLS
+requests through enrollment, password login, TOTP setup/replay/step-up, authorized
+read/preview/write/retry and expired/revoked/spoofed/missing credentials with
+unchanged history on denial. `TestHostedHTTPSQueuedRevocation` delays the request
+body after authentication, queues the append behind a revocation transaction and
+proves zero events append; removing the session-admission rejection makes it fail
+with HTTP 200. `TestRealBinaryFixtureHTTPS` also launches the real binary in hosted
+mode, logs into its persistent account store and verifies that host bootstrap
+acquires no fixture/league authority. No MFL calls are involved.

@@ -164,3 +164,15 @@ Tests: `TestRecoveryConcurrentUseRevokesCredentials`,
 league seat path. Console usage and its exercised boundary are documented in
 `cmd/twr-server/README.md`. Account schema deployment/migrations, hosted recovery
 routes, off-host audit anchors and restoring a fresh auth epoch remain unproven.
+
+## Hosted integration
+
+The earlier slice-local statements above describing network wiring as future work
+are superseded by `cmd/twr-server/README.md` → Account-authenticated mode.
+`serverhttp.Hosted` installs enrollment redemption, device login and authenticator
+setup/step-up, then constructs a request-scoped shared league service from the
+session account. Its admission guard rechecks sessions, current league policy and
+privileged proofs inside preview/append, including retry lookup. Credentials and
+history must share the same database pools/writer; separate account databases are
+not a supported hosted composition. Device sessions now enforce recovery generation
+and epoch fences. Agent delegations and deployed recovery remain separate work.

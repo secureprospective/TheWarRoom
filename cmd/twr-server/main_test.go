@@ -80,6 +80,11 @@ func testCertificates(t *testing.T) (string, string, string, *x509.CertPool) {
 func startBinary(ctx context.Context, t *testing.T, binary, cert, key string, extra ...string) string {
 	t.Helper()
 	args := append([]string{"-fixture", "-listen", "127.0.0.1:0", "-tls-cert", cert, "-tls-key", key}, extra...)
+	return startServerBinary(ctx, t, binary, args...)
+}
+
+func startServerBinary(ctx context.Context, t *testing.T, binary string, args ...string) string {
+	t.Helper()
 	command := exec.CommandContext(ctx, binary, args...)
 	// An actual headless child process, not the desktop composition or a test HTTP server.
 	command.Env = append(os.Environ(), "DISPLAY=", "WAYLAND_DISPLAY=")
@@ -116,6 +121,7 @@ func TestRealBinaryFixtureHTTPS(t *testing.T) {
 		t.Fatalf("headless build: %v: %s", err, output)
 	}
 	cert, key, ca, roots := testCertificates(t)
+	assertHostedBinary(ctx, t, binary, cert, key, roots)
 	origin := startBinary(ctx, t, binary, cert, key)
 	client, err := serverclient.NewFixture(origin, roots)
 	if err != nil {

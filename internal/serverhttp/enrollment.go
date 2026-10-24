@@ -26,8 +26,8 @@ func (r RawEnrollmentRequest) Validate() error {
 	return nil
 }
 
-// EnrollmentHandler is an opt-in route, not installed in the fixture server.
-// Issuance stays local; sessions and authenticated hosted wiring arrive separately.
+// EnrollmentHandler redeems personally handed codes in hosted mode, never fixture mode.
+// Issuance stays local and enrollment alone grants no session or league rights.
 func EnrollmentHandler(service *accounts.EnrollmentService) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
