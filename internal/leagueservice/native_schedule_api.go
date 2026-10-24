@@ -50,7 +50,7 @@ func (r RawNativeWeekScope) Validate() error {
 
 func (a *Service) TargetNativeFranchiseSchedule(raw RawNativeScheduleScope) (commissioner.FranchiseSchedule,
 	error) {
-	reading, _, err := a.nativeFranchiseSchedule(raw, a.host.CommissionerNow())
+	reading, _, err := a.nativeFranchiseSchedule(raw, a.host.CommissionerNow(), "schedule.franchise.read")
 	return reading, err
 }
 
@@ -58,7 +58,7 @@ func (a *Service) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeW
 	if err := raw.Validate(); err != nil {
 		return commissioner.NativeWeek{}, err
 	}
-	schedule, weeks, err := a.nativeFranchiseSchedule(raw.RawNativeScheduleScope, raw.At)
+	schedule, weeks, err := a.nativeFranchiseSchedule(raw.RawNativeScheduleScope, raw.At, "week.read")
 	if err != nil {
 		return commissioner.NativeWeek{}, err
 	}
@@ -69,15 +69,18 @@ func (a *Service) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeW
 	return reading, nil
 }
 
-func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) (
+func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time, operation string) (
 	commissioner.FranchiseSchedule, []leagueweek.Week, error) {
 	if err := raw.Validate(); err != nil {
+		return commissioner.FranchiseSchedule{}, nil, err
+	}
+	if err := a.admitRead(raw.League, operation, raw.Franchise); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err
 	}
 	if err := a.host.Ready(); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("native schedule startup: %w", err)
 	}
-	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), raw.League)
+	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.FranchiseSchedule{}, nil, err
@@ -86,7 +89,7 @@ func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Ti
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("read owner time zone: %w", err)
 	}
-	weeks, err := a.host.NativeScheduleDates(a.host.CommissionerContext(), raw.Season, at)
+	weeks, err := a.host.NativeScheduleDates(a.requestContext(a.host.CommissionerContext()), raw.Season, at)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.FranchiseSchedule{}, nil, err

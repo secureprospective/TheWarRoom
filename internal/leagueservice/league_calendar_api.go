@@ -36,10 +36,13 @@ func (a *Service) TargetLeagueCalendar(raw RawLeagueCalendarScope) (commissioner
 	if err := raw.Validate(); err != nil {
 		return commissioner.Calendar{}, err
 	}
+	if err := a.admitRead(raw.League, "calendar.read", raw.Franchise); err != nil {
+		return commissioner.Calendar{}, err
+	}
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Calendar{}, fmt.Errorf("league calendar startup: %w", err)
 	}
-	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), raw.League)
+	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Calendar{}, err
@@ -52,10 +55,13 @@ func (a *Service) TargetLeagueSchedule(raw RawLeagueScheduleScope) (commissioner
 	if err := raw.Validate(); err != nil {
 		return commissioner.Schedule{}, err
 	}
+	if err := a.admitRead(raw.League, "schedule.read", ""); err != nil {
+		return commissioner.Schedule{}, err
+	}
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Schedule{}, fmt.Errorf("league schedule startup: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
+	ctx, cancel := context.WithTimeout(a.requestContext(a.host.CommissionerContext()), refreshTimeout)
 	defer cancel()
 	records, err := Records(ctx, a.host, raw.League, "schedule")
 	if err != nil {
