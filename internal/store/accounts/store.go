@@ -54,6 +54,22 @@ CREATE TABLE IF NOT EXISTS account_totp (
  last_counter INTEGER NOT NULL DEFAULT -1,
  proof_hash TEXT NOT NULL DEFAULT '',
  authenticated_at INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE TABLE IF NOT EXISTS account_recovery_codes (
+ account_id TEXT NOT NULL REFERENCES accounts(id),
+ code_hash TEXT NOT NULL CHECK(length(code_hash) = 64),
+ PRIMARY KEY(account_id, code_hash)
+) STRICT;
+CREATE TABLE IF NOT EXISTS account_auth_generation (
+ account_id TEXT PRIMARY KEY NOT NULL REFERENCES accounts(id),
+ generation INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE TABLE IF NOT EXISTS account_security_audit (
+ sequence INTEGER PRIMARY KEY,
+ account_id TEXT NOT NULL REFERENCES accounts(id),
+ operation TEXT NOT NULL,
+ reason TEXT NOT NULL,
+ occurred_at INTEGER NOT NULL
 ) STRICT;`)
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)
