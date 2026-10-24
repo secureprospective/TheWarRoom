@@ -70,6 +70,11 @@ func NewFixtureChanges(store *history.Store) *Service {
 	return NewHosted(fixtureChangeHost{Store: store}, fixtureChangeAdmission{})
 }
 
+// NewFixtureChangesWithWorker keeps the fixture transport on the hosted scheduling path.
+func NewFixtureChangesWithWorker(store *history.Store, worker *DueWorker) *Service {
+	return NewHosted(worker.Host(fixtureChangeHost{Store: store}), fixtureChangeAdmission{})
+}
+
 type fixtureChangeAdmission struct{}
 
 func (fixtureChangeAdmission) Admit(_ context.Context, access commissioner.Access) error {
