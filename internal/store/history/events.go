@@ -97,6 +97,15 @@ func (e LeagueEvent) Validate() error {
 	return nil
 }
 
+// CommittedHead reads only the indexed league stream revision, never its payloads.
+func (s *Store) CommittedHead(ctx context.Context, league, stream string) (int64, error) {
+	var revision int64
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT COALESCE(MAX(revision),0) FROM league_event WHERE league=? AND stream=?`, league, stream).Scan(&revision); err != nil {
+		return 0, fmt.Errorf("read committed head: %w", err)
+	}
+	return revision, nil
+}
+
 // AppendEvent adds e as the stream's next revision when the stream holds exactly expected
 // revisions, and returns it with its revision and recorded time. A stale expected revision
 // returns ErrRevisionConflict: reread the stream before appending.

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
@@ -39,6 +40,12 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 		if service == nil {
 			return
 		}
+		// Read the head before the view so a concurrent commit cannot be skipped.
+		head, err := h.Store.CommittedHead(r.Context(), league, commissioner.Stream)
+		if err != nil {
+			http.Error(w, "native read unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		//nolint:contextcheck // StoredHost owns the request context used by the reading API.
 		reading, err := service.TargetCommissionerLedger(league)
 		if err != nil {
@@ -65,18 +72,64 @@ func (h Hosted) invalidationHandler(next http.Handler) http.Handler {
 			}
 			mu.Unlock()
 		}()
-		w.Header().Set("Content-Type", "text/event-stream")
-		controller := http.NewResponseController(w)
-		if emitInvalidation(controller, w) != nil {
-			return
-		}
-		streamInvalidations(r.Context(), controller, w, service, league, reading.Revision)
+		h.streamRecipientInvalidations(w, r, service, league, device, head, reading.Revision)
 	})
 }
 
-func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, service *leagueservice.Service, league string, revision int64) {
+func (h Hosted) streamRecipientInvalidations(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, league, device string, head, revision int64) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	controller := http.NewResponseController(w)
+	if emitInvalidation(controller, w) != nil {
+		return
+	}
+	poll := invalidationPoll{head: head, revision: revision,
+		committedHead: func(ctx context.Context) (int64, error) {
+			return h.Store.CommittedHead(ctx, league, commissioner.Stream)
+		},
+		read: func(context.Context) (commissioner.Ledger, error) {
+			//nolint:contextcheck // StoredHost owns the request context.
+			return service.TargetCommissionerLedger(league)
+		},
+	}
+	checkSession := func(ctx context.Context) error {
+		_, err := h.Sessions.Check(ctx, accounts.RawSession{Bearer: device})
+		if err != nil {
+			return fmt.Errorf("stream session: %w", err)
+		}
+		return nil
+	}
+	streamInvalidations(r.Context(), controller, w, &poll, checkSession)
+}
+
+// The global head is only a work gate; the authorized recipient token alone wakes peers.
+type invalidationPoll struct {
+	head, revision int64
+	committedHead  func(context.Context) (int64, error)
+	read           func(context.Context) (commissioner.Ledger, error)
+}
+
+func (p *invalidationPoll) changed(ctx context.Context) (bool, error) {
+	head, err := p.committedHead(ctx)
+	if err != nil {
+		return false, fmt.Errorf("poll committed head: %w", err)
+	}
+	if head == p.head {
+		return false, nil
+	}
+	reading, err := p.read(ctx)
+	if err != nil {
+		return false, fmt.Errorf("poll recipient view: %w", err)
+	}
+	changed := reading.Revision != p.revision
+	p.head, p.revision = head, reading.Revision
+	return changed, nil
+}
+
+func streamInvalidations(ctx context.Context, controller *http.ResponseController, w http.ResponseWriter, poll *invalidationPoll, checkSession func(context.Context) error) {
 	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
+	session := time.NewTicker(500 * time.Millisecond)
+	defer session.Stop()
 	heartbeat := time.NewTicker(15 * time.Second)
 	defer heartbeat.Stop()
 	for {
@@ -84,18 +137,16 @@ func streamInvalidations(ctx context.Context, controller *http.ResponseControlle
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			// Reads recheck session, current grants and TOTP. Only committed, recipient-visible
-			// state affects the token; hidden inserts and failed transactions cannot wake a peer.
-			//nolint:contextcheck // The service's StoredHost carries ctx through the read.
-			reading, err := service.TargetCommissionerLedger(league)
+			changed, err := poll.changed(ctx)
 			if err != nil {
 				return
 			}
-			if reading.Revision != revision {
-				if emitInvalidation(controller, w) != nil {
-					return
-				}
-				revision = reading.Revision
+			if changed && emitInvalidation(controller, w) != nil {
+				return
+			}
+		case <-session.C:
+			if checkSession(ctx) != nil {
+				return
 			}
 		case <-heartbeat.C:
 			if err := controller.SetWriteDeadline(time.Now().Add(500 * time.Millisecond)); err != nil {

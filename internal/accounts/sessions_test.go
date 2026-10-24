@@ -252,3 +252,26 @@ func TestDeviceSessionValidationAndAdmissionDoesNotRefreshIdle(t *testing.T) {
 		t.Fatalf("activity did not refresh idle: %v", err)
 	}
 }
+
+func TestSessionCheckDoesNotTouchIdleAndRejectsRevocation(t *testing.T) {
+	f := newTOTPFixture(t)
+	service := accounts.NewSessions(accounts.New(f.store), f.store)
+	session := loginDevice(t, f, service, "idle stream")
+	issued := f.now
+	f.now = issued.Add(accounts.SessionIdleLifetime - time.Nanosecond)
+	if _, err := service.Check(t.Context(), session.RawSession); err != nil {
+		t.Fatal(err)
+	}
+	f.now = issued.Add(accounts.SessionIdleLifetime)
+	if _, err := service.Check(t.Context(), session.RawSession); !errors.Is(err, accounts.ErrSessionRefused) {
+		t.Fatalf("check extended idle lifetime: %v", err)
+	}
+	f.now = issued
+	session = loginDevice(t, f, service, "revoked stream")
+	if err := service.Revoke(t.Context(), session.RawSession, false); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.Check(t.Context(), session.RawSession); !errors.Is(err, accounts.ErrSessionRefused) {
+		t.Fatalf("check accepted revoked session: %v", err)
+	}
+}

@@ -271,3 +271,19 @@ func TestSSEHiddenBidHasNoActivityCursor(t *testing.T) {
 	hiddenBid()
 	expectQuiet(t, events)
 }
+
+func TestSSEOutlivesOrdinaryRequestBudget(t *testing.T) {
+	f := newHostedFixture(t)
+	bearer := streamOwner(t, f)
+	response := openStream(t, f, bearer, "", 200)
+	defer response.Body.Close()
+	events := streamEvents(response)
+	expectInvalidation(t, events)
+	select {
+	case event, ok := <-events:
+		t.Fatalf("idle stream ended or emitted %q (open=%v)", event, ok)
+	case <-time.After(5500 * time.Millisecond):
+	}
+	appendStreamNote(t, f, "league")
+	expectInvalidation(t, events)
+}
