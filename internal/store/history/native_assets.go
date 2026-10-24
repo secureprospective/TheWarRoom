@@ -33,6 +33,7 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 	if err != nil {
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -45,6 +46,7 @@ func (s *Store) NativeDirectory(ctx context.Context, league string) (commissione
 	if err != nil {
 		return commissioner.NativeDirectory{}, fmt.Errorf("read native league directory: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -69,5 +71,6 @@ func (s *Store) Corrections(ctx context.Context, league string) (commissioner.Co
 	if err != nil {
 		return commissioner.Corrections{}, fmt.Errorf("read native corrections: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }

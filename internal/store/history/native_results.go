@@ -136,6 +136,7 @@ func (s *Store) NativeResults(ctx context.Context, league string, season, week i
 	if err != nil {
 		return commissioner.NativeResults{}, fmt.Errorf("read native results: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
 
@@ -150,6 +151,7 @@ func (s *Store) NativeStandings(ctx context.Context, league string, season int) 
 	if err != nil {
 		return commissioner.NativeStandings{}, fmt.Errorf("read native standings: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
 
@@ -195,6 +197,7 @@ func (s *Store) NativeBracket(ctx context.Context, league string, season int) (c
 	if err != nil {
 		return commissioner.NativeBracket{}, fmt.Errorf("read native bracket: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
 

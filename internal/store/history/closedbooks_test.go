@@ -253,7 +253,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 					Retry *commissioner.Receipt
 				}
 				probe := readingProbe(func(r []commissioner.Record) (result, error) {
-					role, retry, err := s.checkCommissionerCommand(prepared, principal, nil, r, appendFacts{players: g.facts}, s.now())
+					role, retry, err := s.checkCommissionerCommand(t.Context(), prepared, principal, nil, r, appendFacts{players: g.facts}, s.now())
 					return result{role, retry}, err
 				})
 				sameBooksProbe(t, probe, folded, full)

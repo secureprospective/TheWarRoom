@@ -47,6 +47,11 @@ func TestHostedCommandRequiresPinnedFootballDigestWithoutDesktopKey(t *testing.T
 	}
 	service := NewHosted(host, admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
 	raw := f.raw(t, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0099", Franchise: "franchise.02"}})
+	ledger, err := service.TargetCommissionerLedger(dueLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw.Expected = ledger.Revision
 	changed := importTestFootball(t, f, "Changed identity facts")
 	before := len(f.events(t))
 	for _, pin := range []string{"", changed, strings.Repeat("0", 64)} {
@@ -62,7 +67,7 @@ func TestHostedCommandRequiresPinnedFootballDigestWithoutDesktopKey(t *testing.T
 			t.Fatal("preview accepted changed or missing evidence")
 		}
 	}
-	preview, err := host.PreviewCommissionerWithFacts(WithFootballDigest(t.Context(), digest), raw, "owner.two", nil, commissioner.PreviewCatalogue{}, nil, time.UTC)
+	preview, err := host.PreviewCommissionerWithFacts(commissioner.WithRecipient(WithFootballDigest(t.Context(), digest), "owner.two", f.clock.Now()), raw, "owner.two", nil, commissioner.PreviewCatalogue{}, nil, time.UTC)
 	if err != nil || len(preview.Blockers) != 0 || len(f.events(t)) != before {
 		t.Fatalf("keyless preview: %+v %v", preview, err)
 	}

@@ -126,12 +126,12 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
 	now := s.now().UTC()
-	role, retry, err := s.checkCommissionerCommand(raw, principal, auth, records, gathered, now)
+	role, retry, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, gathered, now)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
 	if retry != nil {
-		return *retry, nil
+		return viewReceipt(ctx, *retry, records), nil
 	}
 	before, plan, err := s.prepareCommissionerTrial(ctx, &raw, principal, records, now, facts, zone, gathered)
 	if err != nil {
@@ -157,26 +157,26 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
-	return receipt, nil
+	return viewReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
 }
 
 // checkCommissionerCommand is every check a league change must pass, shared by execute and the dry-run
 // preview so the two can never disagree. A retried request returns its stored receipt.
-func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal string,
+func (s *Store) checkCommissionerCommand(ctx context.Context, raw commissioner.RawCommand, principal string,
 	auth commissioner.Authorizer, records []commissioner.Record,
 	facts appendFacts, now time.Time) (string, *commissioner.Receipt, error) {
 	role, err := commandRole(raw, principal, auth, records)
 	if err != nil {
 		return "", nil, err
 	}
-	prior, retried, err := retriedReceipt(raw, principal, records)
+	prior, retried, err := retriedReceipt(ctx, raw, principal, records)
 	if err != nil {
 		return "", nil, err
 	}
 	if retried {
 		return role, &prior, nil
 	}
-	if err := s.checkAppend(raw, principal, records, facts, now); err != nil {
+	if err := s.checkAppend(ctx, raw, principal, records, facts, now); err != nil {
 		return role, nil, err
 	}
 	return role, nil, nil
@@ -184,10 +184,11 @@ func (s *Store) checkCommissionerCommand(raw commissioner.RawCommand, principal 
 
 // retriedReceipt returns the stored receipt when this request was already recorded, and refuses a
 // request key reused for a different change.
-func retriedReceipt(raw commissioner.RawCommand, principal string,
+func retriedReceipt(ctx context.Context, raw commissioner.RawCommand, principal string,
 	records []commissioner.Record) (commissioner.Receipt, bool, error) {
 	for _, r := range records {
-		if r.Command.Request != raw.Request {
+		if r.Command.Request != raw.Request ||
+			(commissioner.HasRecipient(ctx) && !commissioner.SamePrincipal(records, principal, r.Principal)) {
 			continue
 		}
 		matches, err := commissioner.MatchesRetry(raw, principal, r, records)
@@ -204,9 +205,9 @@ func retriedReceipt(raw commissioner.RawCommand, principal string,
 }
 
 // checkAppend runs every check a league change must pass before it is recorded, in order.
-func (s *Store) checkAppend(raw commissioner.RawCommand, principal string, records []commissioner.Record,
+func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, principal string, records []commissioner.Record,
 	facts appendFacts, now time.Time) error {
-	if err := checkCommissionerAppend(raw, records); err != nil {
+	if err := checkCommissionerAppend(ctx, raw, principal, records, now); err != nil {
 		return fmt.Errorf("check league version: %w", commissioner.Refused(err))
 	}
 	checks := []struct {
@@ -282,44 +283,6 @@ func commandRole(raw commissioner.RawCommand, principal string, auth commissione
 	return role, nil
 }
 
-// staleVersion refuses a change made against an older league version. It is ErrRevisionConflict, and its
-// own message is the reason the owner reads.
-type staleVersion struct{ current, expected int64 }
-
-func (e staleVersion) Error() string {
-	return fmt.Sprintf("league version is %d; reread before changing it (expected %d)", e.current, e.expected)
-}
-func (e staleVersion) Is(target error) bool { return target == ErrRevisionConflict }
-
-func checkCommissionerAppend(raw commissioner.RawCommand, records []commissioner.Record) error {
-	current := int64(len(records))
-	if raw.Expected != current {
-		return staleVersion{current: current, expected: raw.Expected}
-	}
-	if raw.Command == commissioner.Create {
-		if current != 0 {
-			return fmt.Errorf("this app league already exists")
-		}
-		return nil
-	}
-	if current == 0 {
-		return fmt.Errorf("create this app league before changing it")
-	}
-	if raw.Command != commissioner.Revert {
-		return nil
-	}
-	for _, r := range records {
-		if r.Receipt.Entry != raw.Args.Entry {
-			continue
-		}
-		if r.Command.Visibility == "private" && raw.Visibility != "private" {
-			return fmt.Errorf("a private recorded change must be reversed privately")
-		}
-		return nil
-	}
-	return fmt.Errorf("that recorded change is not in this league")
-}
-
 // appendRequest is one league change ready to be recorded, with the instant it is recorded at, the ledger
 // it is appended to and, for a season rollover, its before-state and plan.
 type appendRequest struct {
@@ -338,9 +301,10 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 	}
 	raw, principal, now := req.raw, req.principal, req.at
 	hash := sha256.Sum256([]byte(req.canonical))
-	identity := sha256.Sum256([]byte(raw.League + "\x00" + raw.Request))
+	request := viewRequestKey(ctx, commissioner.PrincipalFor(req.records, principal), raw.Request)
+	identity := sha256.Sum256([]byte(raw.League + "\x00" + request))
 	receipt := commissioner.Receipt{Entry: "act." + hex.EncodeToString(identity[:]), League: raw.League,
-		Revision: raw.Expected + 1, RecordedAt: now, Plan: req.plan, Message: "Recorded in the league ledger."}
+		Revision: int64(len(req.records)) + 1, RecordedAt: now, Plan: req.plan, Message: "Recorded in the league ledger."}
 	definition, err := raw.EffectiveDefinition()
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("define league change: %w", err)
@@ -366,8 +330,8 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 	event := LeagueEvent{ID: receipt.Entry, League: raw.League, Stream: commissioner.Stream,
 		EffectiveAt: effective, RecordedAt: now, Actor: principal, Scope: raw.Visibility, Kind: raw.Command,
 		Payload: EventPayload{Version: eventPayloadVersion, Commissioner: &record}, InputHash: hex.EncodeToString(hash[:]),
-		CorrelationID: raw.Request, Supersedes: raw.Args.Entry}
-	if _, err := s.insertEvent(ctx, tx, event, raw.Expected); err != nil {
+		CorrelationID: request, Supersedes: raw.Args.Entry}
+	if _, err := s.insertEvent(ctx, tx, event, int64(len(req.records))); err != nil {
 		return commissioner.Receipt{}, err
 	}
 	return receipt, nil
@@ -398,6 +362,7 @@ func (s *Store) CommissionerLedgerFiltered(ctx context.Context, league, principa
 	if err != nil {
 		return commissioner.Ledger{}, fmt.Errorf("read league ledger: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -410,6 +375,7 @@ func (s *Store) CommissionerPeople(ctx context.Context, league, principal string
 	if err != nil {
 		return commissioner.People{}, fmt.Errorf("read league people: %w", err)
 	}
+	people.Revision = commissioner.ViewRevision(ctx, records, people.Revision)
 	return people, nil
 }
 
@@ -463,6 +429,7 @@ func (s *Store) CommissionerRules(ctx context.Context, league string) (commissio
 	if err != nil {
 		return commissioner.Rules{}, fmt.Errorf("read league rules: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -476,6 +443,7 @@ func (s *Store) CommissionerJobs(ctx context.Context, league string) (commission
 	if err != nil {
 		return commissioner.Jobs{}, fmt.Errorf("read league jobs: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 
@@ -489,6 +457,7 @@ func (s *Store) CommissionerNotes(ctx context.Context, league string) (commissio
 	if err != nil {
 		return commissioner.LeagueNotes{}, fmt.Errorf("read league notices: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
 }
 

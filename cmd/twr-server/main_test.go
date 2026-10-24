@@ -230,9 +230,13 @@ func assertFixtureChanges(ctx context.Context, t *testing.T, origin string, root
 		t.Fatal(err)
 	}
 	defer client.Close()
+	initial, err := client.FixtureLedger(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	raw := commissioner.RawCommand{League: "native.https-fixture", Command: commissioner.NotePost,
 		Args:   commissioner.RawArgs{Note: &commissioner.RawNote{Text: "A note over HTTPS"}},
-		Reason: "Exercise the binary write path", Expected: 1, Request: "https-note", Effective: "now", Visibility: "league"}
+		Reason: "Exercise the binary write path", Expected: initial.Revision, Request: "https-note", Effective: "now", Visibility: "league"}
 	if _, err := client.FixtureChange(ctx, raw); err != nil {
 		t.Fatal(err)
 	}
@@ -266,7 +270,7 @@ func assertFixtureChanges(ctx context.Context, t *testing.T, origin string, root
 		}
 	}
 	ledger, err := client.FixtureLedger(ctx)
-	if err != nil || ledger.Revision != 2 {
+	if err != nil || len(ledger.Entries) != 2 || ledger.Revision == initial.Revision {
 		t.Fatalf("binary write/refusal state: %+v %v", ledger, err)
 	}
 }

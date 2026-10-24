@@ -80,7 +80,7 @@ func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Ti
 	if err := a.host.Ready(); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("native schedule startup: %w", err)
 	}
-	records, err := a.host.CommissionerRecords(a.requestContext(a.host.CommissionerContext()), raw.League)
+	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.FranchiseSchedule{}, nil, err
@@ -89,7 +89,7 @@ func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Ti
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("read owner time zone: %w", err)
 	}
-	weeks, err := a.host.NativeScheduleDates(a.requestContext(a.host.CommissionerContext()), raw.Season, at)
+	weeks, err := a.host.NativeScheduleDates(a.viewContext(a.host.CommissionerContext()), raw.Season, at)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.FranchiseSchedule{}, nil, err
@@ -99,5 +99,6 @@ func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Ti
 	if err != nil {
 		return commissioner.FranchiseSchedule{}, nil, fmt.Errorf("native franchise schedule: %w", err)
 	}
+	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, weeks, nil
 }

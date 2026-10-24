@@ -92,6 +92,7 @@ func (s *Store) NativeLineup(ctx context.Context, league, franchise, principal s
 	if err != nil {
 		return commissioner.NativeLineup{}, fmt.Errorf("read native lineup: %w", err)
 	}
+	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
 }
 
