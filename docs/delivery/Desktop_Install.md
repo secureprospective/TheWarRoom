@@ -66,8 +66,15 @@ Use the *downloaded/extracted package*, never `go run` or a development build.
 
 ## Automation and evidence limits
 
-`desktop-packages.yml` builds native packages without regenerating bindings,
-extracts them and runs `-version` to verify the executable loader/build stamp.
+`desktop-packages.yml` checks/builds platform-neutral frontend assets once on Linux
+and transfers that same commit-named bundle within the workflow to each native
+packager. Existing `ContractActs.tsx`/`contractActs.ts` and
+`TradeBuilder.tsx`/`tradeBuilder.ts` module names confuse TypeScript on the default
+case-insensitive Windows/macOS filesystems. Native frontend development there
+remains blocked pending a separate source rename; packaging does not rename or
+patch source, skip the Linux TypeScript check, or use assets from a different run.
+The workflow builds native packages without regenerating bindings, extracts them
+and runs `-version` to verify the executable loader/build stamp.
 `python -m unittest discover -s scripts/desktop -v` proves archive bytes/modes/
 checksums and contention, normal close and forced-kill release using the existing
 `flock`/`LockFileEx` implementation compiled into a tiny subprocess probe. It never
@@ -79,8 +86,10 @@ already have WebView dependencies. All three manual drills above remain release
 blockers until their evidence is recorded on the exact candidate; no passes are
 claimed by this document. Owner OS/CPU inventory is still outstanding.
 
-Local reproduction after frozen frontend install/build and exact-version Wails
-CLI installation: `python scripts/desktop/package.py`. Build tools additionally
+Local reproduction after frozen frontend install/build on a case-sensitive
+filesystem (or downloading the exact candidate's checked frontend asset bundle
+to `frontend/dist`) and exact-version Wails CLI installation:
+`python scripts/desktop/package.py`. Build tools additionally
 need Go from `go.mod`, Node 24, pnpm from `frontend/package.json`, a native C compiler,
 and Linux GTK/WebKit development headers. Output is under `.tmp/desktop/artifacts`.
 The script refuses non-target hosts rather than silently cross-compiling.
