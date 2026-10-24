@@ -13,7 +13,7 @@ import { ReportsView } from '../draftreports/Reports';
 import { parseBoard } from '../draftreports/provider';
 import draftWire from '../draftreports/wire.testdata.json';
 import { BuilderAsset } from '../shell/TradeBuilder';
-import { parseAssets } from '../shell/tradeBuilder';
+import { parseAssets } from '../shell/tradeBuilderState';
 
 it('keeps engine, season PPG and Lab in separate sortable headed columns', () => {
   const reading = parsePool(wire.pool);

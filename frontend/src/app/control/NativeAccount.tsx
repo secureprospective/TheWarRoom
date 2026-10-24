@@ -32,11 +32,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     try {
       const credentials = !['enter', 'forget', 'revoke-device', 'revoke-all'].includes(action);
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
-        ['enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
+        ['recover', 'enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
       setView(result);
       if (action === 'login') setSignedIn(true);
       if (['forget', 'revoke-device', 'revoke-all'].includes(action)) setSignedIn(false);
-      if (action === 'enroll') setScreen('login');
+      if (action === 'enroll' || action === 'recover') setScreen('login');
+      if (action === 'recover') setSignedIn(false);
     } catch (e) {
       setView(initial);
       setError(e instanceof Error ? e.message : 'Could not reach your league. Try again.');
@@ -58,7 +59,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   }));
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    void run(screen === 'join' ? 'enroll' : screen === 'authenticator' ? 'totp-step-up' : 'login');
+    void run(screen === 'recovery' ? 'recover' : screen === 'join' ? 'enroll'
+      : screen === 'authenticator' ? 'totp-step-up' : 'login');
   };
   const title = screen === 'join' ? 'Create your account'
     : screen === 'authenticator' ? 'Protect privileged access' : 'Sign in';
@@ -85,11 +87,21 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <h3>Lost your phone or password?</h3>
       <p>Keep your username and any of your eight printed one-time recovery codes private.
         Do not post passwords, setup keys or recovery codes in league chat.</p>
-      <p>Self-service recovery is not available in this desktop build. Contact the server operator
-        for audited console recovery with the offline recovery key and its key holder.
-        A commissioner cannot reset your account by reassigning a seat.</p>
-      <p>Recovery revokes existing credentials. After the operator confirms recovery, sign in with
-        your new password and set up the authenticator again if you are a commissioner or deputy.</p>
+      <p>Use one unused printed code to choose a new password. This signs out all your devices
+        and removes your old authenticator. Then sign in and set up your authenticator again if required.</p>
+      <form onSubmit={submit}>
+        <label>Username<input autoComplete="username" required minLength={3} maxLength={64}
+          value={username} disabled={pending} onChange={e => setUsername(e.target.value)} /></label>
+        <label>Unused recovery code<input autoComplete="off" required minLength={43} maxLength={43}
+          value={code} disabled={pending} onChange={e => setCode(e.target.value)} /></label>
+        <label>New password<input type="password" autoComplete="new-password" required
+          maxLength={1024} value={password} disabled={pending}
+          onChange={e => setPassword(e.target.value)} /></label>
+        <Act variant="button" verb="commissioner.surface" args={args('check', 'submit')}
+          submit disabled={pending} label="Reset password">{pending ? 'Please wait…' : 'Reset password'}</Act>
+      </form>
+      <p>No unused code? Contact the server operator for audited console recovery with the offline
+        recovery key and its key holder. A commissioner cannot reset your account by reassigning a seat.</p>
       <h3>Code expired or already used?</h3>
       <p>Enrollment codes last 48 hours and work once for the intended username. Ask your commissioner
         to personally hand you a new code. If you already joined, sign in instead.</p>

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -168,4 +169,73 @@ func TestDueWorkerBlockedAwardDoesNotSpinAtOldDeadline(t *testing.T) {
 	if len(f.events(t)) != count {
 		t.Fatal("worker broke an unresolved tie")
 	}
+}
+
+func TestDueWorkerContinuesAfterLeagueFailure(t *testing.T) {
+	f := newDueFixture(t)
+	a := *f
+	a.league = "native.a"
+	a.seed(t)
+	a.bid(t)
+	bid := f.bid(t)
+	f.clock.instant.Add(int64(12 * time.Hour))
+	cut := f.execute(t, "owner.two", commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0099", Franchise: "franchise.02"}})
+	if _, err := f.pools.Write().ExecContext(t.Context(), `CREATE TRIGGER fail_league_a BEFORE INSERT ON league_event WHEN NEW.league = 'native.a' BEGIN SELECT RAISE(ABORT, 'league A broken'); END`); err != nil {
+		t.Fatal(err)
+	}
+	f.clock.instant.Store(bid.RecordedAt.Add(24 * time.Hour).UnixNano())
+	next, err := f.worker.step(t.Context())
+	if err == nil || !strings.Contains(err.Error(), "native.a") {
+		t.Fatalf("missing league failure: %v", err)
+	}
+	if !next.Equal(cut.RecordedAt.Add(24 * time.Hour)) {
+		t.Fatalf("healthy deadline lost: %s", next)
+	}
+	events := f.events(t)
+	if events[len(events)-1].Payload.Commissioner.Command.Command != commissioner.BidsProcess {
+		t.Fatal("healthy league due work blocked")
+	}
+}
+
+type observedDueClock struct {
+	now   func() time.Time
+	reads chan struct{}
+}
+
+func (c observedDueClock) Now() time.Time { c.reads <- struct{}{}; return c.now() }
+func (observedDueClock) Trusted() error   { return nil }
+
+func TestDueWorkerSleepsUntilDeadlineOrCommit(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		f := newDueFixture(t)
+		bid := f.bid(t)
+		select {
+		case <-f.store.CommissionerCommits():
+		default:
+		}
+		start := time.Now()
+		clock := observedDueClock{now: func() time.Time { return bid.RecordedAt.Add(time.Since(start)) }, reads: make(chan struct{}, 100)}
+		f.worker.clock = clock
+		f.worker.reconcile = 48 * time.Hour
+		ctx, cancel := context.WithCancel(t.Context())
+		done := make(chan struct{})
+		go func() { defer close(done); f.worker.Run(ctx, func(err error) { t.Error(err) }) }()
+		// processLeague and timer calculation each read once. Wait for real database I/O first.
+		<-clock.reads
+		<-clock.reads
+		synctest.Wait()
+		time.Sleep(23 * time.Hour)
+		synctest.Wait()
+		if len(clock.reads) != 0 {
+			t.Fatal("woke between deadlines")
+		}
+		f.execute(t, "creator", commissioner.RulesSet, commissioner.RawArgs{Field: "cap.amount", Value: []byte(`200000000000`)})
+		<-clock.reads
+		<-clock.reads
+		synctest.Wait()
+		time.Sleep(time.Hour)
+		<-clock.reads
+		cancel()
+		<-done
+	})
 }

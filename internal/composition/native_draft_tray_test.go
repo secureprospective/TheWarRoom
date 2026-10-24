@@ -436,7 +436,7 @@ func TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045(t *testing.T) {
 		if words := f.read(t, "franchise.01").Words; words != "Every pick has been used; the draft has not been closed." {
 			t.Fatalf("%s: the finished draft says %q", when, words)
 		}
-		f.app.processNativeDraftsDue(t.Context())
+		f.closeDue(t)
 		if got := f.closedWords(t); got != closed {
 			t.Fatalf("%s: the closed draft: %s\nwant %s", when, got, closed)
 		}
@@ -446,7 +446,7 @@ func TestClosingTheDraftReleasesRookiesAndIssuesPicksCM045(t *testing.T) {
 		}
 		// The draft closes once; asking again records nothing.
 		before := f.revision(t)
-		f.app.processNativeDraftsDue(t.Context())
+		f.closeDue(t)
 		if f.revision(t) != before {
 			t.Fatalf("%s: a closed draft was closed again", when)
 		}
@@ -495,5 +495,53 @@ func TestACommissionerCanCloseTheDraftEarlyAndNothingMoreIsPicked(t *testing.T) 
 	if _, err := f.tryCommand(commissioner.DraftArchive, commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{
 		Season: draftSeason}}, ""); err == nil {
 		t.Fatal("a closed draft was closed again")
+	}
+}
+
+// closeDue is the due worker's draft pass for this league.
+func (f *draftFixture) closeDue(t *testing.T) {
+	t.Helper()
+	if err := f.app.core.History.CloseFinishedDrafts(t.Context(), draftLeague, f.app.nativeFacts()); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// The due worker sleeps until a draft's clock starts or runs out, since no one records a pick the clock used.
+func TestTheDraftClockNamesTheDueWorkersNextWake(t *testing.T) {
+	t.Parallel()
+	f := draftApp(t)
+	f.scheduled(t, 3, 2, 1)
+	f.seated(t, 3)
+	next := func() time.Time {
+		t.Helper()
+		at, err := f.app.core.History.NextDraftDeadline(t.Context(), draftLeague, f.now)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return at
+	}
+	if got := next(); !got.Equal(draftStartAt()) {
+		t.Fatalf("before the draft: next wake %s, want its start", got)
+	}
+	f.now = draftStartAt().Add(time.Hour)
+	select {
+	case <-f.app.core.History.CommissionerCommits():
+	default:
+	}
+	f.asOwner(3)
+	f.pick(t, "franchise.03", "5001")
+	f.actAs("creator")
+	select {
+	case <-f.app.core.History.CommissionerCommits():
+	default:
+		t.Fatal("a pick did not wake the due worker")
+	}
+	clock := f.read(t, "franchise.01").Draft.OnClock
+	if clock == nil || !next().Equal(clock.Deadline) {
+		t.Fatalf("running draft: next wake %s, want the pick clock %+v", next(), clock)
+	}
+	f.draftEnds()
+	if got := next(); !got.IsZero() {
+		t.Fatalf("finished draft still wakes the worker at %s", got)
 	}
 }

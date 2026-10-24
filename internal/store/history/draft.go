@@ -81,7 +81,7 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record rookie pick: %w", err)
 	}
-	return viewReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
+	return s.committedReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
 }
 
 // ownsFranchise holds a pick to the franchise's own seated owner: identity comes from the session, never
@@ -116,6 +116,15 @@ func (clockDraftAuthorizer) Allow(_ string, principal, command string) (string, 
 		return "", fmt.Errorf("the draft clock can only close a finished draft")
 	}
 	return "automatic", nil
+}
+
+// NextDraftDeadline is when the league's next draft clock starts or runs out, or zero when none is counting.
+func (s *Store) NextDraftDeadline(ctx context.Context, league string, at time.Time) (time.Time, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return commissioner.NextDraftDeadline(records, at, s.draftStandings(ctx, league)), nil
 }
 
 // CloseFinishedDrafts closes every draft of the league whose last pick has been used, as the app and not a

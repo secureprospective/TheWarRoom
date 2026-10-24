@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -79,5 +81,23 @@ func assertHostedBinary(ctx context.Context, t *testing.T, binary, cert, key str
 		if response.StatusCode < 400 {
 			t.Fatalf("host bootstrap acquired fixture/league authority: %s", path)
 		}
+	}
+}
+
+// Hosted admission must use the kernel-backed HostClock, never a fixture or always-trusted clock.
+func TestHostedUsesHostClock(t *testing.T) {
+	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "server.db"), history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	handler, err := hostedServices(t.Context(), pools, []byte(strings.Repeat("k", 32)), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock := reflect.ValueOf(handler.Worker).Elem().FieldByName("clock")
+	if clock.IsNil() || clock.Elem().Type() != reflect.TypeFor[leagueservice.HostClock]() ||
+		clock.Elem().FieldByName("synchronized").IsNil() {
+		t.Fatalf("hosted due worker clock is %v, not a sourced HostClock", clock)
 	}
 }

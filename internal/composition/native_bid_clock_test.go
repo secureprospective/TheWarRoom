@@ -107,7 +107,7 @@ func TestNativeBidNewBidRestartsTheClock(t *testing.T) {
 		t.Fatal("new bid did not restart the clock")
 	}
 	f.advance(12 * time.Hour)
-	f.app.processNativeBidsDue(context.Background())
+	f.tickBids(t)
 	if p, ok := f.roster(t, "5004"); !ok || p.Salary != moneyOf(6*million) {
 		t.Fatalf("restarted clock never awarded: %+v", p)
 	}

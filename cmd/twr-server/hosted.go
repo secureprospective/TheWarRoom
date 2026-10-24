@@ -6,8 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"os"
-	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -19,13 +19,6 @@ import (
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
-
-// Clock-health integration is not inferred from the fixture's trusted wall clock.
-// Until deployment supplies health evidence, timed writes and due processing fail closed.
-type hostedClock struct{}
-
-func (hostedClock) Now() time.Time { return time.Now() }
-func (hostedClock) Trusted() error { return fmt.Errorf("clock health has not been established") }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	flags := flag.NewFlagSet("twr-server hosted", flag.ContinueOnError)
@@ -64,6 +57,8 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 
+	defer startHostedDueWorker(ctx, handler.Worker)()
+
 	listener, err := serverhttp.ListenLoopback(ctx, *address)
 	if err != nil {
 		return fmt.Errorf("listen for account HTTPS: %w", err)
@@ -76,6 +71,16 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return fmt.Errorf("serve account HTTPS: %w", err)
 	}
 	return nil
+}
+
+func startHostedDueWorker(ctx context.Context, worker *leagueservice.DueWorker) func() {
+	workerCtx, stop := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		worker.Run(workerCtx, func(err error) { log.Printf("hosted due work: %v", err) })
+	}()
+	return func() { stop(); <-done }
 }
 
 func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, catalogue string) (serverhttp.Hosted, error) {
@@ -97,8 +102,12 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	if err != nil {
 		return serverhttp.Hosted{}, fmt.Errorf("initialize server authenticators: %w", err)
 	}
-	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, hostedClock{})
+	clock := leagueservice.NewHostClock()
+	store.SetClock(clock.Now)
+	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, clock)
+	// HTTPS recovery is by printed code only; the zero digest matches no offline key, so console recovery stays offline.
 	handler := serverhttp.Hosted{Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
+		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
 	return handler, nil
 }

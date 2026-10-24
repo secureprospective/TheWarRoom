@@ -183,6 +183,24 @@ func DueDrafts(records []Record, at time.Time, standings DraftStandings) []int {
 	return seasons
 }
 
+// NextDraftDeadline is the nearest instant after at when a draft's clock starts or runs out, so a due
+// worker can sleep until then; no one records a pick the clock used up. A paused clock waits for reconcile.
+func NextDraftDeadline(records []Record, at time.Time, standings DraftStandings) time.Time {
+	var next time.Time
+	for _, season := range draftSeasonsKnown(records) {
+		basis, err := readDraft(records, season, at, standings)
+		if err != nil || basis.words != "" || basis.closed != nil || basis.draft.Exhausted {
+			continue
+		}
+		if !basis.started {
+			next = nearerFutureDeadline(next, basis.start, at)
+		} else if clock := basis.draft.OnClock; clock != nil && !clock.Paused {
+			next = nearerFutureDeadline(next, clock.Deadline, at)
+		}
+	}
+	return next
+}
+
 // draftSeasonsKnown are the drafts with a start, a pick or any other live change recorded.
 func draftSeasonsKnown(records []Record) []int {
 	seasons := draftsWithPicks(records)

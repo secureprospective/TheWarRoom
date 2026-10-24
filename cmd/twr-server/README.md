@@ -129,14 +129,21 @@ preview/execute additionally use argument-aware domain authorization. Refusals
 return generic errors and append nothing. Revocation and ledger append share the
 writer, so a revocation committed ahead of a queued append wins.
 
-**Remaining boundary:** this entrypoint has no established clock-health source.
-It deliberately uses an untrusted DueClock, so timed mutations fail closed and
-it does not start due processing. The existing due-worker adapter still guards
-transaction admission and records commit wakes; operational clock-health evidence
-and worker activation must precede timed league operation. It never inherits the
-fixture clock's unconditional trust. Public proxy/Tunnel,
-SSE, recovery screens/routes, packaged desktop flows and deployment drills remain
-separate slices.
+**Clock health:** hosted mode reads the kernel's NTP state with a read-only `adjtimex`
+call at each timed admission and worker pass: trusted only when the call succeeds, the
+clock state is not `TIME_ERROR` and `STA_UNSYNC` is clear. Any Linux host with a running
+NTP client (chrony, ntpd, timesyncd; systemd or OpenRC) qualifies; non-Linux builds and
+unsynchronized or unreadable status fail closed. Status is never cached or inherited from fixture trust. The due
+worker starts with hosted HTTPS and is cancelled/joined before the database closes.
+
+**Recovery:** `POST /v1/auth/recover` accepts protocol 1, username, one unused printed
+recovery code, and the new password over HTTPS. No session is needed; the code supplies
+account authority, never league authority. It consumes the shared authentication peer
+allowance and password-work budget. Successful reset revokes devices, removes old factors,
+and consumes the code. The native desktop Account recovery tab uses this route and then
+returns to sign-in. Console recovery remains the fallback when no unused code is available.
+
+Public proxy/Tunnel, SSE and deployment/key-custody drills remain separate gates.
 
 Evidence: `TestHostedHTTPSEnrollmentLoginWriteAndAdmission` exercises real TLS
 requests through enrollment, password login, TOTP setup/replay/step-up, authorized

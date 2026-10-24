@@ -333,8 +333,8 @@ export function createCommands(
     'trade.builder': command({
       ...ambient, id: 'trade.builder', label: 'Trade builder', gravity: 'G3', undo: 'irreversible',
       args: ['action'],
-      run: (action: import('../shell/tradeBuilder').BuilderAction) => {
-        void import('../shell/tradeBuilder').then(m => m.builderAction(action))
+      run: (action: import('../shell/tradeBuilderState').BuilderAction) => {
+        void import('../shell/tradeBuilderState').then(m => m.builderAction(action))
           .catch(cause => state.write({ notice: String(cause) }));
       },
     }),

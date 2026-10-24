@@ -11,7 +11,7 @@ import { commands } from '../commands/registry';
 import Contracts, { ContractReading, ContractPanel } from './Contracts';
 import { ContractActCard, ContractMovePanel } from './ContractActs';
 import { WhatIfActs } from './WhatIfPanel';
-import { reconcileContractMove, termsKey, useContractMove, type ContractActPlan } from './contractActs';
+import { reconcileContractMove, termsKey, useContractMove, type ContractActPlan } from './contractActState';
 import { parseContracts, parsePlayerContract } from './provider';
 import { setContractsFilter } from './state';
 import type { WhatIf, WhatIfProvider } from './whatif';

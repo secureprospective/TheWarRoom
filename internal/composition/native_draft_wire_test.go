@@ -92,7 +92,7 @@ func TestTheDraftRoomWireIsWhatGoSends(t *testing.T) {
 	paused := f.read(t, "franchise.01")
 	f.tray(t, commissioner.DraftTimer, commissioner.RawDraftAct{Timer: commissioner.TimerResume})
 	f.draftEnds()
-	f.app.processNativeDraftsDue(t.Context())
+	f.closeDue(t)
 	closed := f.read(t, "franchise.01")
 	if closed.Closed == nil || !closed.Closed.Automatic {
 		t.Fatalf("the draft did not close at its last pick: %+v", closed.Closed)
@@ -137,7 +137,7 @@ func TestTheDraftRoomOpensOnTheDraftThatIsNext(t *testing.T) {
 		if got := f.seasonOfRoom(t); got != draftSeason {
 			t.Fatalf("%s: a finished draft that is not yet closed: season %d", when, got)
 		}
-		f.app.processNativeDraftsDue(t.Context())
+		f.closeDue(t)
 		if got := f.seasonOfRoom(t); got != draftSeason+1 {
 			t.Fatalf("%s: after the close the next draft is the one the close issued picks for: season %d", when, got)
 		}

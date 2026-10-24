@@ -56,19 +56,3 @@ func (a *App) closeFinishedDrafts(league string) {
 		log.Printf("the war room: close finished rookie drafts for %s: %v", league, err)
 	}
 }
-
-// processNativeDraftsDue closes every league's finished drafts: the last pick can be used up by the pick
-// clock running out, which no one records.
-func (a *App) processNativeDraftsDue(ctx context.Context) {
-	leagues, err := a.core.History.NativeLeagues(ctx)
-	if err != nil {
-		log.Printf("the war room: read native draft leagues: %v", err)
-		return
-	}
-	facts := a.nativeFacts()
-	for _, league := range leagues {
-		if err := a.core.History.CloseFinishedDrafts(ctx, league.ID, facts); err != nil {
-			log.Printf("the war room: close native drafts for %s: %v", league.ID, err)
-		}
-	}
-}

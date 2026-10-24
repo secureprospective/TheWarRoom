@@ -1,6 +1,6 @@
 import { WhatIfFigures } from './WhatIfFigures';
 import { RowMenu } from './RowMenu';
-import { useContractMove } from './contractActs';
+import { useContractMove } from './contractActState';
 import { ContractActMenu } from './ContractActs';
 import { Act } from '../commands/Act';
 import { localDate } from '../clock/labels';

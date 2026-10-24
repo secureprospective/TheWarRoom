@@ -40,6 +40,7 @@ func (dueEnvironment) BidEnvironment(context.Context, string, time.Time) (commis
 }
 
 type dueFixture struct {
+	league string
 	store  *history.Store
 	pools  *db.Pools
 	clock  *dueTestClock
@@ -50,10 +51,16 @@ type dueFixture struct {
 
 func newDueFixture(t *testing.T) *dueFixture {
 	t.Helper()
-	f := &dueFixture{clock: &dueTestClock{}, path: filepath.Join(t.TempDir(), "history.db")}
+	f := &dueFixture{league: dueLeague, clock: &dueTestClock{}, path: filepath.Join(t.TempDir(), "history.db")}
 	f.clock.instant.Store(time.Date(2026, 10, 24, 12, 0, 0, 321, time.UTC).UnixNano())
 	f.facts = nativecheck.Facts{"0099": {Position: leaguerules.QB, DesignationHeld: true}, "5001": {Position: leaguerules.QB, DesignationHeld: true}}
 	f.open(t)
+	f.seed(t)
+	return f
+}
+
+func (f *dueFixture) seed(t *testing.T) {
+	t.Helper()
 	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Worker league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32})
 	at := f.clock.Now()
 	seed := &commissioner.RawNativeSnapshot{Season: 2026, RosterAt: at, DraftAt: at, FutureAt: at,
@@ -78,7 +85,6 @@ func newDueFixture(t *testing.T) *dueFixture {
 		f.execute(t, "creator", "commish.seat.replace", commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: seat.team, Principal: seat.owner}})
 	}
 	f.execute(t, "creator", commissioner.WaiverOrderSet, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Order: order}})
-	return f
 }
 
 func (f *dueFixture) open(t *testing.T) {
@@ -104,7 +110,7 @@ func (f *dueFixture) open(t *testing.T) {
 
 func (f *dueFixture) raw(t *testing.T, command string, args commissioner.RawArgs) commissioner.RawCommand {
 	t.Helper()
-	events, err := f.store.Events(t.Context(), dueLeague, commissioner.Stream, 0)
+	events, err := f.store.Events(t.Context(), f.league, commissioner.Stream, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +118,7 @@ func (f *dueFixture) raw(t *testing.T, command string, args commissioner.RawArgs
 	if command == commissioner.BidPlace || command == commissioner.BidRaise || command == commissioner.BidWithdraw || command == commissioner.WaiverClaim {
 		visibility = "private"
 	}
-	return commissioner.RawCommand{League: dueLeague, Command: command, Args: args, Expected: int64(len(events)), Request: fmt.Sprintf("worker.%d.%s", len(events), command), Reason: "Exercise due scheduling", Effective: "now", Visibility: visibility}
+	return commissioner.RawCommand{League: f.league, Command: command, Args: args, Expected: int64(len(events)), Request: fmt.Sprintf("worker.%d.%s", len(events), command), Reason: "Exercise due scheduling", Effective: "now", Visibility: visibility}
 }
 
 func (f *dueFixture) execute(t *testing.T, principal, command string, args commissioner.RawArgs) commissioner.Receipt {
@@ -131,7 +137,7 @@ func (f *dueFixture) bid(t *testing.T) commissioner.Receipt {
 
 func (f *dueFixture) events(t *testing.T) []history.LeagueEvent {
 	t.Helper()
-	events, err := f.store.Events(t.Context(), dueLeague, commissioner.Stream, 0)
+	events, err := f.store.Events(t.Context(), f.league, commissioner.Stream, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

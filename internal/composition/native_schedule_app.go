@@ -9,6 +9,7 @@ import (
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -80,52 +81,12 @@ func (e appBidEnv) BidEnvironment(ctx context.Context, league string,
 	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
 }
 
-func (a *App) processNativeBidsDue(ctx context.Context) {
-	leagues, err := a.core.History.NativeLeagues(ctx)
-	if err != nil {
-		log.Printf("the war room: read native bid leagues: %v", err)
-		return
-	}
-	facts := a.nativeFacts()
-	for _, league := range leagues {
-		if err := a.core.History.ProcessDueBids(ctx, league.ID, facts); err != nil {
-			log.Printf("the war room: award native bids for %s: %v", league.ID, err)
-		}
-	}
-}
+type nativeDueClock struct{ now func() time.Time }
 
-const draftLookEvery = 15 * time.Second
+func (c nativeDueClock) Now() time.Time { return c.now() }
+func (nativeDueClock) Trusted() error   { return nil }
 
 func (a *App) nativeWaiverClock(ctx context.Context) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	var lastDrafts time.Time
-	for {
-		a.processNativeWaiversDue(ctx)
-		a.processNativeBidsDue(ctx)
-		// A finished draft is found by reading each draft, so that look is taken every few seconds.
-		if time.Since(lastDrafts) >= draftLookEvery {
-			lastDrafts = time.Now()
-			a.processNativeDraftsDue(ctx)
-		}
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-		}
-	}
-}
-
-func (a *App) processNativeWaiversDue(ctx context.Context) {
-	leagues, err := a.core.History.NativeLeagues(ctx)
-	if err != nil {
-		log.Printf("the war room: read native waiver leagues: %v", err)
-		return
-	}
-	facts := a.nativeFacts()
-	for _, league := range leagues {
-		if err := a.core.History.ProcessDueWaivers(ctx, league.ID, facts); err != nil {
-			log.Printf("the war room: process native waivers for %s: %v", league.ID, err)
-		}
-	}
+	worker := leagueservice.NewDueWorker(a.core.History, a.nativeFacts, nativeDueClock{now: a.timeNow})
+	worker.Run(ctx, func(err error) { log.Printf("the war room: process native deadlines: %v", err) })
 }

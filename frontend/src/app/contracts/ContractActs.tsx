@@ -10,7 +10,7 @@ import {
   contractActAction, reconcileContractMove, keepLabel, onContractActsChange, useContractMove,
   type ContractActPlan,
   type ContractActRequest,
-} from './contractActs';
+} from './contractActState';
 import '../pool/pool.css';
 
 export function Figures({ plan }: { plan: ContractActPlan }) {

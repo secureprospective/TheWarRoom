@@ -3,7 +3,7 @@ import { targetAcquisition } from './api';
 import { array, object, text, integer } from '../data/parseValues';
 import { selectProvider } from '../data/provider';
 import { parseReading } from './provider';
-import { parseAssets, parseFigures, type Figure } from '../shell/tradeBuilder';
+import { parseAssets, parseFigures, type Figure } from '../shell/tradeBuilderState';
 import type { Reading, Amount } from './contract';
 import type { TradeAsset } from '../data/contract';
 
