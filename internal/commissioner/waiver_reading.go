@@ -96,14 +96,14 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 			row.Status = "Closed; awaiting processing"
 		}
 		out.Players = append(out.Players, row)
-		out.Claims = appendOwnWaiverClaims(out.Claims, w, franchise, principal)
+		out.Claims = appendOwnWaiverClaims(out.Claims, w, franchise, principal, records)
 	}
 	return out, nil
 }
 
-func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, principal string) []NativeWaiverClaim {
+func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, principal string, records []Record) []NativeWaiverClaim {
 	for _, c := range w.Claims {
-		if c.Franchise != franchise || c.Principal != principal {
+		if c.Franchise != franchise || !SamePrincipal(records, c.Principal, principal) {
 			continue
 		}
 		status := "Claim recorded privately"

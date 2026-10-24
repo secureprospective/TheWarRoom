@@ -225,13 +225,13 @@ func (x tradeExecution) review(raw RawCommand, t *TradeState) error {
 	if raw.Command == TradeRecuse {
 		return fmt.Errorf("party DOT members are recused automatically")
 	}
-	if slices.ContainsFunc(t.Votes, func(v TradeVote) bool { return v.Who == x.principal }) {
+	if slices.ContainsFunc(t.Votes, func(v TradeVote) bool { return SamePrincipal(x.records, v.Who, x.principal) }) {
 		return fmt.Errorf("each DOT member may vote once")
 	}
 	t.Votes = append(t.Votes, TradeVote{Who: x.principal, Decision: raw.Args.Trade.Decision, At: x.now, Reason: raw.Reason})
 	counts := map[string]int{}
 	for _, v := range t.Votes {
-		if slices.Contains(eligible, governance.Principal(v.Who)) {
+		if slices.Contains(eligible, governance.Principal(PrincipalFor(x.records, v.Who))) {
 			counts[v.Decision]++
 		}
 	}

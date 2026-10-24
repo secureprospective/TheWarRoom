@@ -242,7 +242,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 		if raw.Command == "commish.role.grant" {
 			raw.Visibility = "private"
 		}
-		prepared, canonical, err := preparedCommand(raw, "creator", true)
+		prepared, _, err := preparedCommand(raw, "creator", true)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -253,7 +253,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 					Retry *commissioner.Receipt
 				}
 				probe := readingProbe(func(r []commissioner.Record) (result, error) {
-					role, retry, err := s.checkCommissionerCommand(prepared, principal, nil, r, canonical, appendFacts{players: g.facts}, s.now())
+					role, retry, err := s.checkCommissionerCommand(prepared, principal, nil, r, appendFacts{players: g.facts}, s.now())
 					return result{role, retry}, err
 				})
 				sameBooksProbe(t, probe, folded, full)
@@ -272,7 +272,7 @@ func testBooksDecisions(t *testing.T, s *Store, g *bigLeagueBuilder, folded, ful
 	// Request identity and receipts from closed seasons must remain available.
 	retry := full[2]
 	sameBooksProbe(t, readingProbe(func(r []commissioner.Record) (commissioner.Receipt, error) {
-		receipt, _, err := retriedReceipt(retry.Command, retry.Canonical, r)
+		receipt, _, err := retriedReceipt(retry.Command, retry.Principal, r)
 		return receipt, err
 	}), folded, full)
 }

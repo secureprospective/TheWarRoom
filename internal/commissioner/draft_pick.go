@@ -166,7 +166,7 @@ func RetriedDraftPick(in DraftPickInput, principal string, records []Record) (Re
 			continue
 		}
 		d := r.Command.Args.Draft
-		if r.Command.Command != DraftPick || r.Principal != principal || d.Season != in.Season ||
+		if r.Command.Command != DraftPick || !SamePrincipal(records, r.Principal, principal) || d.Season != in.Season ||
 			d.Pick.Franchise != in.Franchise || d.Pick.Player != in.Player {
 			return Receipt{}, false, Refused(fmt.Errorf("this request was already used for a different change"))
 		}
