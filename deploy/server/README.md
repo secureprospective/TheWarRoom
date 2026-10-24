@@ -44,8 +44,9 @@ The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
 It does not change the host's management network, firewall policy or storage
 security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
-storage, jq and synchronized host clock are infrastructure prerequisites, not claims
-that this script can safely reconfigure a whole homelab.
+storage and synchronized host clock are infrastructure prerequisites, not claims
+that this script can safely reconfigure a whole homelab. No host packages are installed;
+JSON tooling runs only inside the container.
 
 It installs 2 cores / 1 GiB RAM / 4 GiB disk / no CT swap, unprivileged with
 `nesting=1` for bubblewrap's namespaces. The firewall allows public TCP 443 and

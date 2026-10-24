@@ -2,10 +2,19 @@
 # One-command, interactive install from a prepared release bundle on a Proxmox host.
 set -euo pipefail
 umask 077
-[[ $EUID == 0 && $# == 1 && -f $1 ]]
-for tool in pct pveam pvesm pve-firewall chronyc jq; do command -v "$tool" >/dev/null; done
+[[ $EUID == 0 ]] || { echo 'Run this installer as root on the Proxmox host.' >&2; exit 1; }
+[[ $# == 1 && -f $1 ]] || { echo 'Provide one existing release bundle file.' >&2; exit 1; }
+for tool in pct pveam pvesm pve-firewall chronyc realpath grep mktemp rm awk sort tail ip cat sleep; do
+  command -v "$tool" >/dev/null || {
+    echo "Required Proxmox host tool is missing: $tool. Nothing was changed; ask your host administrator for help." >&2
+    exit 1
+  }
+done
 # CTs inherit the host kernel clock; wait for real host synchronization.
-chronyc waitsync 30 0.5 0 2
+chronyc waitsync 30 0.5 0 2 || {
+  echo 'The Proxmox host clock is not synchronized. Nothing was changed; ask your host administrator for help.' >&2
+  exit 1
+}
 pve-firewall status | grep -q 'Status: enabled/running' || {
   echo 'Proxmox firewall must already protect this host; refusing an unfiltered deployment.' >&2; exit 1;
 }
@@ -83,8 +92,9 @@ pct start "$ctid"
 pct exec "$ctid" -- mkdir -m 700 /root/twr
 pct push "$ctid" "$bundle" /root/twr.tar.gz --perms 0600
 pct exec "$ctid" -- tar -xzf /root/twr.tar.gz -C /root/twr
-printf '%s\n' "$token" | jq -Rn --arg zone "$zone" --arg hostname "$hostname" \
-  'input as $api_token | {zone:$zone,hostname:$hostname,api_token:$api_token}' > "$work/input.json"
+# The validated domain/token alphabets contain no JSON escapes or control characters.
+printf '{"zone":"%s","hostname":"%s","api_token":"%s"}\n' \
+  "$zone" "$hostname" "$token" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
 pct exec "$ctid" -- sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'
