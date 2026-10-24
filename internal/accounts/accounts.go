@@ -86,9 +86,19 @@ type Repository interface {
 	Credential(ctx context.Context, username string) (Credential, error)
 }
 
-type Service struct{ store Repository }
+type Service struct {
+	store Repository
+	work  *PasswordWork
+}
 
-func New(store Repository) *Service { return &Service{store: store} }
+func New(store Repository) *Service { return NewWithPasswordWork(store, NewPasswordWork()) }
+
+func NewWithPasswordWork(store Repository, work *PasswordWork) *Service {
+	if work == nil {
+		work = NewPasswordWork()
+	}
+	return &Service{store: store, work: work}
+}
 
 // LocalBootstrap is a local operator door, never an enrollment or league-role grant.
 // The store must atomically refuse it once any account exists.
@@ -100,7 +110,7 @@ func (s *Service) LocalBootstrap(ctx context.Context, raw RawCredentials) (Accou
 	if err != nil {
 		return Account{}, err
 	}
-	hash, err := HashPassword(raw.Password)
+	hash, err := s.work.Hash(ctx, raw.Password)
 	if err != nil {
 		return Account{}, err
 	}
@@ -138,7 +148,7 @@ func (s *Service) authenticateCredential(ctx context.Context, raw RawCredentials
 	if err := credential.Validate(); err != nil {
 		return Credential{}, fmt.Errorf("stored account: %w", err)
 	}
-	valid, err := VerifyPassword(credential.PasswordHash, raw.Password)
+	valid, err := s.work.Verify(ctx, credential.PasswordHash, raw.Password)
 	if err != nil {
 		return Credential{}, err
 	}

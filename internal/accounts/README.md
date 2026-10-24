@@ -176,3 +176,17 @@ privileged proofs inside preview/append, including retry lookup. Credentials and
 history must share the same database pools/writer; separate account databases are
 not a supported hosted composition. Device sessions now enforce recovery generation
 and epoch fences. Agent delegations and deployed recovery remain separate work.
+
+## Hosted password resource budget
+
+The deployed composition shares one `PasswordWork` between `NewWithPasswordWork`
+and `NewEnrollmentWithPasswordWork`; TOTP and recovery use the same account service.
+All account-service hashing and verification now admit at most two active Argon2
+calls and four waiters, rejecting overflow with `ErrPasswordBusy`. Defaults create
+private budgets for independent local services. Raw `HashPassword`/`VerifyPassword`
+remain fixed-cost primitives, not network admission doors. Canceled queued work
+never enters Argon2; active work retains its slot until the library returns.
+Hosted throttles and performance evidence supersede the earlier future-work
+statements about KDF concurrency above. See
+`docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`; target-CT performance and
+proxy log redaction still require staging evidence.
