@@ -13,7 +13,7 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit}
 }
 
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {
