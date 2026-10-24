@@ -3,7 +3,6 @@ package commissioner
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -53,212 +52,72 @@ func (a *API) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 }
 
 func (a *API) TargetCommissionerLedger(league string) (commissioner.Ledger, error) {
-	return a.commissionerLedger(league, commissioner.RawLedgerFilter{})
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerLedger(league)
 }
 
 func (a *API) TargetCommissionerLedgerFiltered(league, body string) (commissioner.Ledger, error) {
-	filter, err := commissioner.DecodeLedgerFilter(body)
-	if err != nil {
-		return commissioner.Ledger{}, fmt.Errorf("league ledger filters: %w", err)
-	}
-	return a.commissionerLedger(league, filter)
-}
-
-func (a *API) commissionerLedger(league string,
-	filter commissioner.RawLedgerFilter) (commissioner.Ledger, error) {
-	if !strings.HasPrefix(league, "native.") {
-		return commissioner.Ledger{}, fmt.Errorf("choose an app league")
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Ledger{}, fmt.Errorf("league ledger startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Ledger{}, err
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	reading, err := a.host.CommissionerLedgerFiltered(ctx, league, principal,
-		a.host.CommissionerAuthorization(), filter)
-	if err != nil {
-		return commissioner.Ledger{}, fmt.Errorf("league ledger: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerLedgerFiltered(league, body)
 }
 
 func (a *API) TargetCommissionerPeople(league string) (commissioner.People, error) {
-	if !strings.HasPrefix(league, "native.") || league == "native." {
-		return commissioner.People{}, fmt.Errorf("choose an app league")
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.People{}, fmt.Errorf("league people startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.People{}, err
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	people, err := a.host.CommissionerPeople(ctx, league, principal)
-	if err != nil {
-		return commissioner.People{}, fmt.Errorf("league people: %w", err)
-	}
-	return people, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerPeople(league)
 }
 
 func (a *API) TargetCommissionerLeagues() ([]commissioner.NativeLeague, error) {
-	if err := a.host.Ready(); err != nil {
-		return nil, fmt.Errorf("app leagues startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	leagues, err := a.host.NativeLeagues(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("app leagues: %w", err)
-	}
-	return leagues, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerLeagues()
 }
 
 func (a *API) TargetCommissionerRules(league string) (commissioner.Rules, error) {
-	if err := AppLeague(league); err != nil {
-		return commissioner.Rules{}, err
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Rules{}, fmt.Errorf("league rules startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	reading, err := a.host.CommissionerRules(ctx, league)
-	if err != nil {
-		return commissioner.Rules{}, fmt.Errorf("league rules: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerRules(league)
 }
 
 func (a *API) TargetCommissionerJobs(league string) (commissioner.Jobs, error) {
-	if err := AppLeague(league); err != nil {
-		return commissioner.Jobs{}, err
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Jobs{}, fmt.Errorf("league jobs startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	reading, err := a.host.CommissionerJobs(ctx, league)
-	if err != nil {
-		return commissioner.Jobs{}, fmt.Errorf("league jobs: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerJobs(league)
 }
 
 // TargetCommissionerControls lists every commissioner control, grouped, and whether it is built yet.
 func (a *API) TargetCommissionerControls() commissioner.Controls {
-	return commissioner.ControlsReading()
+	return a.reads.TargetCommissionerControls()
 }
 
 // TargetCommissionerNotices reads the posted notices, league notes, release notes and the mail log. Every
 // owner may read it.
 func (a *API) TargetCommissionerNotices(league string) (commissioner.LeagueNotes, error) {
-	if err := AppLeague(league); err != nil {
-		return commissioner.LeagueNotes{}, err
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.LeagueNotes{}, fmt.Errorf("league notices startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	reading, err := a.host.CommissionerNotes(ctx, league)
-	if err != nil {
-		return commissioner.LeagueNotes{}, fmt.Errorf("league notices: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerNotices(league)
 }
 
 // TargetCommissionerDigests writes a plain sentence for each change that took a hold or a typed reason.
 func (a *API) TargetCommissionerDigests(league string) (commissioner.Digests, error) {
-	if err := AppLeague(league); err != nil {
-		return commissioner.Digests{}, err
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Digests{}, fmt.Errorf("league digests startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Digests{}, err
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	reading, err := a.host.CommissionerDigests(ctx, league, principal, a.host.CommissionerAuthorization())
-	if err != nil {
-		return commissioner.Digests{}, fmt.Errorf("league digests: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerDigests(league)
 }
 
 // TargetCorrections reads only this app league's public, active corrections and exceptions.
 func (a *API) TargetCorrections(league string) (commissioner.Corrections, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Corrections{}, fmt.Errorf("corrections startup: %w", err)
-	}
-	out, err := a.host.Corrections(a.host.CommissionerContext(), league)
-	if err != nil {
-		return commissioner.Corrections{}, fmt.Errorf("read corrections: %w", err)
-	}
-	return out, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCorrections(league)
 }
 
 // TargetCommissionerMarket reads held targets under the permission of the requested act.
 func (a *API) TargetCommissionerMarket(league, command string) (commissioner.Market, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Market{}, fmt.Errorf("commissioner market startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Market{}, err
-	}
-	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), league)
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Market{}, err
-	}
-	reading, err := commissioner.MarketReading(league, command, principal, records,
-		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
-	if err != nil {
-		return commissioner.Market{}, fmt.Errorf("commissioner market: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerMarket(league, command)
 }
 
 // TargetCommissionerActor supplies the session identity for acts that must be performed as oneself.
 func (a *API) TargetCommissionerActor() (string, error) {
-	if err := a.host.Ready(); err != nil {
-		return "", fmt.Errorf("acting person startup: %w", err)
-	}
-	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-	return a.host.CommissionerPrincipal()
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerActor()
 }
 
 func (a *API) TargetCommissionerSchedule(league string) (commissioner.ManagedSchedule, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.ManagedSchedule{}, fmt.Errorf("commissioner schedule startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.ManagedSchedule{}, err
-	}
-	records, err := a.host.CommissionerRecords(a.host.CommissionerContext(), league)
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.ManagedSchedule{}, err
-	}
-	reading, err := commissioner.ManagedScheduleReading(league, principal, records)
-	if err != nil {
-		return commissioner.ManagedSchedule{}, fmt.Errorf("commissioner schedule: %w", err)
-	}
-	return reading, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetCommissionerSchedule(league)
 }

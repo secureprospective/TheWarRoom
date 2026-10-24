@@ -16,26 +16,8 @@ func (a *API) TargetCommissionerPreview(body string) (commissioner.Preview, erro
 	if err != nil {
 		return Blocked(err), nil
 	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Preview{}, fmt.Errorf("league preview startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Preview{}, err
-	}
-	catalogue, err := commissioner.ReadPreviewCatalogue(a.host.CommissionerPreviewRegistry())
-	if err != nil {
-		return commissioner.Preview{}, fmt.Errorf("league preview catalogue: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	preview, err := a.host.PreviewCommissionerWithFacts(ctx, raw, principal, a.host.CommissionerAuthorization(),
-		catalogue, a.host.NativeFacts(), a.host.CommissionerZone())
-	if err != nil {
-		return commissioner.Preview{}, fmt.Errorf("league preview: %w", err)
-	}
-	return preview, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.Preview(raw)
 }
 
 // A seed preview accepts the exact TargetNativeSeed request, never client-supplied starting assets.

@@ -1,4 +1,4 @@
-package commissioner
+package leagueservice
 
 import (
 	"fmt"
@@ -48,13 +48,13 @@ func (r RawNativeWeekScope) Validate() error {
 	return nil
 }
 
-func (a *API) TargetNativeFranchiseSchedule(raw RawNativeScheduleScope) (commissioner.FranchiseSchedule,
+func (a *Service) TargetNativeFranchiseSchedule(raw RawNativeScheduleScope) (commissioner.FranchiseSchedule,
 	error) {
 	reading, _, err := a.nativeFranchiseSchedule(raw, a.host.CommissionerNow())
 	return reading, err
 }
 
-func (a *API) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeWeek, error) {
+func (a *Service) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeWeek, error) {
 	if err := raw.Validate(); err != nil {
 		return commissioner.NativeWeek{}, err
 	}
@@ -69,7 +69,7 @@ func (a *API) TargetNativeWeek(raw RawNativeWeekScope) (commissioner.NativeWeek,
 	return reading, nil
 }
 
-func (a *API) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) (
+func (a *Service) nativeFranchiseSchedule(raw RawNativeScheduleScope, at time.Time) (
 	commissioner.FranchiseSchedule, []leagueweek.Week, error) {
 	if err := raw.Validate(); err != nil {
 		return commissioner.FranchiseSchedule{}, nil, err

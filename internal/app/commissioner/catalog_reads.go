@@ -1,15 +1,17 @@
 package commissioner
 
 import (
+	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
-// Positional desktop inputs become named JSON arguments in the logical catalog. Their existing
-// adapter remains responsible for validation until shared dispatch replaces it.
+// Positional desktop inputs become named JSON arguments in the logical catalog; the shared
+// read service retains their validation and domain checks.
 func queryShape(method, fields string) catalog.Schema {
 	schema := catalog.Schema{Type: "object", Validator: method, Fields: []catalog.Field{}}
 	for _, token := range strings.Fields(fields) {
@@ -92,4 +94,21 @@ func nativeReadShape(method, fields string) catalog.Schema {
 	default:
 		return queryShape(method, fields)
 	}
+}
+
+// ReadPreviewCommands is the completed service surface. Execution remains on the desktop gates
+// until mutation dispatch is unified; generic desktop doors are never published.
+func ReadPreviewCommands() ([]catalog.Command, error) {
+	commands, err := catalog.Publication(NativeCommands())
+	if err != nil {
+		return nil, fmt.Errorf("register native service: %w", err)
+	}
+	for i := range commands {
+		if slices.Contains(commands[i].Modes, catalog.Read) {
+			continue
+		}
+		commands[i].Modes = []catalog.Mode{catalog.Preview}
+		commands[i].Method = "Preview"
+	}
+	return commands, nil
 }

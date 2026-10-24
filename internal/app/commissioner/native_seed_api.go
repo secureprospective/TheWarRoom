@@ -60,27 +60,11 @@ func (a *API) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt
 }
 
 func (a *API) TargetNativeDirectory(leagueID string) (commissioner.NativeDirectory, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeDirectory{}, fmt.Errorf("native directory startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	directory, err := a.host.NativeDirectory(ctx, leagueID)
-	if err != nil {
-		return commissioner.NativeDirectory{}, fmt.Errorf("native league directory: %w", err)
-	}
-	return directory, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeDirectory(leagueID)
 }
 
 func (a *API) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, error) {
-	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeAssets{}, fmt.Errorf("native assets startup: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	assets, err := a.host.NativeAssets(ctx, leagueID)
-	if err != nil {
-		return commissioner.NativeAssets{}, fmt.Errorf("native league assets: %w", err)
-	}
-	return assets, nil
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeAssets(leagueID)
 }
