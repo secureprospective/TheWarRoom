@@ -110,13 +110,24 @@ func TestCommissionerPeopleWire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := newCommissionerAPI(app).TargetCommissionerExecute(string(encoded)); err != nil {
+		t.Fatalf("second deputy: %v", err)
+	}
+	people, err := newCommissionerAPI(app).TargetCommissionerPeople(raw.League)
+	if err != nil || len(people.Roles) != 3 {
+		t.Fatalf("second deputy missing: %+v %v", people, err)
+	}
+	raw.Expected, raw.Request = 8, "duplicate.cc"
+	encoded, err = json.Marshal(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, refusal := newCommissionerAPI(app).TargetCommissionerExecute(string(encoded))
-	// The owner reads the reason alone, without the context each layer adds for the log.
-	if refusal == nil || refusal.Error() != "This league already has a co-commissioner: revoke them first" {
-		t.Fatalf("a second co-commissioner must be refused in the owner's words: %v", refusal)
+	if refusal == nil || refusal.Error() != "This person already holds that role. Nothing would change" {
+		t.Fatalf("duplicate deputy refusal: %v", refusal)
 	}
 	body, err := json.MarshalIndent(map[string]any{"commissioner": views["creator"],
-		"owner": views["owner-one"], "secondCoCommissionerRefusal": refusal.Error()}, "", "  ")
+		"owner": views["owner-one"], "duplicateCoCommissionerRefusal": refusal.Error()}, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}

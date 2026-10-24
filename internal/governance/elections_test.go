@@ -36,33 +36,6 @@ func closeRound(t *testing.T, s State, winner Principal) State {
 	v, _ := s.Vote("e")
 	return change(t, s, VoteClosed{ID: "e", Winner: winner, Now: v.EndsAt})
 }
-func TestSingleCoCommissioner(t *testing.T) {
-	s := change(t, league(t, 2), RoleGranted{Principal: "z", Role: CoCommissioner})
-	for _, p := range []Principal{"a", "z"} {
-		rejected(t, s, RoleGranted{Principal: p, Role: CoCommissioner})
-		_, err := Apply(s, RoleGranted{Principal: p, Role: CoCommissioner})
-		if err == nil || !strings.Contains(err.Error(), "This league already has a co-commissioner: revoke them first") {
-			t.Fatalf("second seat: %v", err)
-		}
-	}
-	_, err := Replay([]Event{
-		LeagueCreated{Creator: "creator", Franchises: []FranchiseID{"f"}},
-		RoleGranted{Principal: "z", Role: CoCommissioner}, RoleGranted{Principal: "a", Role: CoCommissioner},
-	})
-	if err == nil || !strings.Contains(err.Error(), "change 3") {
-		t.Fatalf("two-seat history: %v", err)
-	}
-	s = change(t, s, RoleRevoked{Principal: "z", Role: CoCommissioner})
-	s = change(t, s, RoleGranted{Principal: "a", Role: CoCommissioner})
-	judge, err := AppealJudge(s, []Principal{"creator"})
-	if err != nil || judge != "a" {
-		t.Fatalf("single appeal seat: %s %v", judge, err)
-	}
-	s = change(t, s, StepDown{Principal: "creator"})
-	if !s.HasRole("a", Commissioner) || s.HasRole("z", Commissioner) {
-		t.Fatal("wrong successor")
-	}
-}
 func TestElectionAllFranchises(t *testing.T) {
 	for _, yes := range []int{16, 17} {
 		t.Run(fmt.Sprint(yes), func(t *testing.T) {

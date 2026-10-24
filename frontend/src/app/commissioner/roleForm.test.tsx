@@ -53,8 +53,8 @@ describe('Give or take a role', () => {
     expect(calls.sent[0]).toMatchObject({ command: 'commish.role.revoke',
       args: { people: { principal: 'owner-one', role: 'DOT' } } });
   });
-  it('shows Go’s refusal of a second co-commissioner as written, and changes nothing', async () => {
-    const refusal = peopleWire.secondCoCommissionerRefusal;
+  it('shows Go’s refusal of a duplicate co-commissioner as written, and changes nothing', async () => {
+    const refusal = peopleWire.duplicateCoCommissionerRefusal;
     const { app, calls } = stub({ TargetCommissionerExecute: async () => { throw new Error(refusal); } });
     const host = await mount(render(RoleForm, { people: commissionerPeople }), app);
     await open('native.people');
@@ -64,7 +64,7 @@ describe('Give or take a role', () => {
     await settle();
     await click(host, give);
     await settle();
-    expect(refusal).toContain('already has a co-commissioner');
+    expect(refusal).toContain('already holds that role');
     expect(host.textContent).toContain(refusal);
     expect([calls.ledger, calls.rules, calls.people]).toEqual([[], [], []]);
   });

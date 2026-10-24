@@ -147,7 +147,7 @@ func (e ElectionTieBreakCast) apply(s *State) error {
 	return nil
 }
 func (s State) tieJudges(v Vote) (Principal, []Principal) {
-	if p := s.coCommissioner; p != "" && !slices.Contains(v.Candidates, p) {
+	if p := s.firstDeputy(v.Candidates); p != "" {
 		return p, nil
 	}
 	eligible := []Principal{}

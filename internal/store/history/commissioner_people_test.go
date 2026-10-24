@@ -52,12 +52,11 @@ func TestCommissionerGovernancePermissions(t *testing.T) {
 	}
 	raw = peopleCommand("commish.role.grant",
 		commissioner.RawPeople{Principal: "second", Role: governance.CoCommissioner}, 2)
-	if _, err := s.ExecuteCommissioner(t.Context(), raw, "creator", nil); err == nil ||
-		!strings.Contains(err.Error(), "This league already has a co-commissioner: revoke them first") {
+	if _, err := s.ExecuteCommissioner(t.Context(), raw, "creator", nil); err != nil {
 		t.Fatalf("second CC: %v", err)
 	}
 	raw = peopleCommand("commish.franchise.edit",
-		commissioner.RawPeople{Franchise: "franchise.01", Name: "Falcons", Abbreviation: "FAL"}, 2)
+		commissioner.RawPeople{Franchise: "franchise.01", Name: "Falcons", Abbreviation: "FAL"}, 3)
 	if _, err := s.ExecuteCommissioner(t.Context(), raw, "owner", nil); err == nil {
 		t.Fatal("owner changed a franchise identity")
 	}
@@ -65,7 +64,7 @@ func TestCommissionerGovernancePermissions(t *testing.T) {
 		t.Fatalf("CC refused on CC control: %v", err)
 	}
 	reading, err := s.CommissionerPeople(t.Context(), "native.test", "creator")
-	if err != nil || reading.Revision != 3 || reading.Seats[0].Name != "Falcons" || len(reading.Roles) != 2 {
+	if err != nil || reading.Revision != 4 || reading.Seats[0].Name != "Falcons" || len(reading.Roles) != 3 {
 		t.Fatalf("wrong authorized projection or refusal appended: %+v %v", reading, err)
 	}
 }

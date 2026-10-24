@@ -1,6 +1,9 @@
 package governance
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type LeagueCreated struct {
 	Creator    Principal
@@ -56,15 +59,15 @@ func (e RoleGranted) apply(s *State) error {
 	if e.Principal == "" || !validRole(e.Role) {
 		return fmt.Errorf("choose a person and a league role")
 	}
-	if e.Role == CoCommissioner && s.coCommissioner != "" {
-		return fmt.Errorf("%s: revoke them first", "This league already has a co-commissioner")
+	if e.Role == CoCommissioner && s.HasRole(e.Principal, CoCommissioner) {
+		return fmt.Errorf("that person is already a co-commissioner")
 	}
 	if e.Role == DOT && !s.HasRole(e.Principal, DOT) && len(s.members(DOT)) >= 10 {
 		return fmt.Errorf("dOT already has its maximum of 10 seats")
 	}
 	s.grant(e.Principal, e.Role)
 	if e.Role == CoCommissioner {
-		s.coCommissioner = e.Principal
+		s.coCommissioners = append(s.coCommissioners, e.Principal)
 	}
 	return nil
 }
@@ -84,7 +87,11 @@ func (e RoleRevoked) apply(s *State) error {
 	}
 	delete(s.roles[e.Principal], e.Role)
 	if e.Role == CoCommissioner {
-		s.coCommissioner = ""
+		if s.pending == e.Principal {
+			delete(s.roles[e.Principal], Commissioner)
+			s.advanceSuccession(e.Principal)
+		}
+		s.coCommissioners = slices.DeleteFunc(s.coCommissioners, func(p Principal) bool { return p == e.Principal })
 	}
 	return nil
 }

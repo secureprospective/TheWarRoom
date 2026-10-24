@@ -7,16 +7,19 @@ import (
 
 // RawCheckpoint is derived state, not an alternate source of league history.
 type RawCheckpoint struct {
-	Created                           bool
-	Franchises                        map[FranchiseID]Franchise
-	Roles                             map[Principal]map[Role]bool
-	Invites                           map[string]Invite
-	Visibility                        map[string]string
-	Activity                          map[Principal]time.Time
-	InSeason, Offseason               time.Duration
-	Votes                             map[string]Vote
-	Pending, Outgoing, CoCommissioner Principal
-	ElectionPeriod, RunoffPeriod      time.Duration
+	Created             bool
+	Franchises          map[FranchiseID]Franchise
+	Roles               map[Principal]map[Role]bool
+	Invites             map[string]Invite
+	Visibility          map[string]string
+	Activity            map[Principal]time.Time
+	InSeason, Offseason time.Duration
+	Votes               map[string]Vote
+	Pending, Outgoing   Principal
+	CoCommissioners     []Principal
+	// CoCommissioner reads summaries made before ordered deputies.
+	CoCommissioner               Principal
+	ElectionPeriod, RunoffPeriod time.Duration
 }
 
 func (r RawCheckpoint) Validate() error {
@@ -25,6 +28,9 @@ func (r RawCheckpoint) Validate() error {
 		return fmt.Errorf("invalid league people checkpoint")
 	}
 	if err := r.validateMembers(); err != nil {
+		return err
+	}
+	if err := r.validateDeputies(); err != nil {
 		return err
 	}
 	return r.validateEvidence()
@@ -72,7 +78,7 @@ func (s State) Checkpoint() RawCheckpoint {
 	n := s.clone()
 	return RawCheckpoint{Created: n.created, Franchises: n.franchises, Roles: n.roles, Invites: n.invites,
 		Visibility: n.visibility, Activity: n.activity, InSeason: n.inSeason, Offseason: n.offseason, Votes: n.votes,
-		Pending: n.pending, Outgoing: n.outgoing, CoCommissioner: n.coCommissioner, ElectionPeriod: n.electionPeriod, RunoffPeriod: n.runoffPeriod}
+		Pending: n.pending, Outgoing: n.outgoing, CoCommissioners: n.coCommissioners, ElectionPeriod: n.electionPeriod, RunoffPeriod: n.runoffPeriod}
 }
 
 // Resume owns its copy, so a failed suffix cannot mutate the checkpoint.
@@ -82,7 +88,7 @@ func Resume(raw RawCheckpoint, events []Event, offset int) (State, error) {
 	}
 	s := State{created: raw.Created, franchises: raw.Franchises, roles: raw.Roles, invites: raw.Invites,
 		visibility: raw.Visibility, activity: raw.Activity, inSeason: raw.InSeason, offseason: raw.Offseason, votes: raw.Votes,
-		pending: raw.Pending, outgoing: raw.Outgoing, coCommissioner: raw.CoCommissioner, electionPeriod: raw.ElectionPeriod, runoffPeriod: raw.RunoffPeriod}
+		pending: raw.Pending, outgoing: raw.Outgoing, coCommissioners: raw.deputyOrder(), electionPeriod: raw.ElectionPeriod, runoffPeriod: raw.RunoffPeriod}
 	s = s.clone()
 	for i, e := range events {
 		n, err := Apply(s, e)
@@ -92,4 +98,30 @@ func Resume(raw RawCheckpoint, events []Event, offset int) (State, error) {
 		s = n
 	}
 	return s, nil
+}
+
+func (r RawCheckpoint) validateDeputies() error {
+	seen := make(map[Principal]bool)
+	if r.CoCommissioner != "" && len(r.CoCommissioners) != 0 {
+		return fmt.Errorf("conflicting checkpoint deputy orders")
+	}
+	for _, p := range r.deputyOrder() {
+		if p == "" || seen[p] || !r.Roles[p][CoCommissioner] {
+			return fmt.Errorf("invalid checkpoint deputy order")
+		}
+		seen[p] = true
+	}
+	for p, roles := range r.Roles {
+		if roles[CoCommissioner] && !seen[p] {
+			return fmt.Errorf("checkpoint deputy missing from order")
+		}
+	}
+	return nil
+}
+
+func (r RawCheckpoint) deputyOrder() []Principal {
+	if r.CoCommissioner != "" {
+		return []Principal{r.CoCommissioner}
+	}
+	return r.CoCommissioners
 }

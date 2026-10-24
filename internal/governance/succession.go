@@ -2,6 +2,7 @@ package governance
 
 import (
 	"fmt"
+	"slices"
 	"time"
 )
 
@@ -82,10 +83,21 @@ func (s *State) transfer(from, to Principal) {
 func (s *State) startSuccession(from Principal) {
 	s.outgoing = from
 	delete(s.roles[from], Commissioner)
-	if p := s.coCommissioner; p != "" && p != from {
-		s.transfer(from, p)
-		s.pending = p
-		s.outgoing = from
+	s.advanceSuccession("")
+}
+
+func (s *State) advanceSuccession(after Principal) {
+	s.pending = ""
+	start := 0
+	if after != "" {
+		start = slices.Index(s.coCommissioners, after) + 1
+	}
+	for _, p := range s.coCommissioners[start:] {
+		if p != s.outgoing && s.HasRole(p, CoCommissioner) {
+			s.grant(p, Commissioner)
+			s.pending = p
+			return
+		}
 	}
 }
 
@@ -97,7 +109,7 @@ func (e SuccessorDeclined) apply(s *State) error {
 		return fmt.Errorf("you are not the pending successor")
 	}
 	delete(s.roles[e.Principal], Commissioner)
-	s.pending = ""
+	s.advanceSuccession(e.Principal)
 	return nil
 }
 
@@ -121,7 +133,7 @@ type InactivityTakeover struct {
 
 func (InactivityTakeover) Private() bool { return false }
 func (e InactivityTakeover) apply(s *State) error {
-	if !s.HasRole(e.Principal, CoCommissioner) || e.Principal == e.Commissioner {
+	if e.Principal == "" || e.Principal != s.firstDeputy([]Principal{e.Commissioner}) {
 		return fmt.Errorf("only a co-commissioner may take over after inactivity")
 	}
 	ok, err := InactivityEligible(*s, e.Commissioner, e.Now, e.InSeason)

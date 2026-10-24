@@ -7,6 +7,7 @@ package governance
 import (
 	"fmt"
 	"maps"
+	"slices"
 	"sort"
 	"time"
 )
@@ -45,7 +46,7 @@ type State struct {
 	votes                        map[string]Vote
 	pending                      Principal
 	outgoing                     Principal
-	coCommissioner               Principal
+	coCommissioners              []Principal
 	electionPeriod, runoffPeriod time.Duration
 }
 type Event interface {
@@ -61,6 +62,7 @@ func emptyState() State {
 }
 func (s State) clone() State {
 	n := s
+	n.coCommissioners = slices.Clone(s.coCommissioners)
 	n.franchises = maps.Clone(s.franchises)
 	for id, f := range n.franchises {
 		f.Abilities = maps.Clone(f.Abilities)
@@ -151,3 +153,15 @@ func (s State) SuccessionPeriods() (time.Duration, time.Duration, time.Duration,
 
 // LastActivity is the recorded activity evidence, never a wall-clock guess.
 func (s State) LastActivity(p Principal) time.Time { return s.activity[p] }
+
+// CoCommissioners returns priority order. Grants append; revoking and regranting moves a deputy last.
+func (s State) CoCommissioners() []Principal { return slices.Clone(s.coCommissioners) }
+
+func (s State) firstDeputy(excluded []Principal) Principal {
+	for _, p := range s.coCommissioners {
+		if s.HasRole(p, CoCommissioner) && !slices.Contains(excluded, p) {
+			return p
+		}
+	}
+	return ""
+}

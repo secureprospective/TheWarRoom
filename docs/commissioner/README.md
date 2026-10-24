@@ -267,3 +267,25 @@ details are league-private and stay in the run dir.
   the waiver settings the app needs (each with that logical default); MFL's add limits, rookie-waiver
   switch and minimum-stay days are not part of the model.
 - **Victory points:** dropped, including the victory-points adjuster inside Adjust Standings.
+
+## Native deputy priority
+
+The commissioner maintains the co-commissioner priority list through role grants:
+first granted is #1, next granted is #2, and so on. Revoking a deputy removes only
+that person and closes the gap; regranting appends them at the end. Duplicate grants
+are refused. These are commissioner-only actions.
+
+Automatic succession promotes #1, then the next remaining deputy if they decline
+or their deputy role is revoked while acceptance is pending. Exhausting the list
+opens the existing election path. Inactivity takeover belongs to the highest-ranked
+remaining deputy. An explicit named successor at step-down remains supported.
+Appeals use an uninvolved commissioner first, then the highest-ranked uninvolved
+deputy. A runoff tie uses the highest-ranked remaining noncandidate deputy; only
+when none is eligible does the existing DOT-majority fallback apply. “Remaining”
+means holding the league role, not being connected to the server. A lower-ranked
+deputy cannot replace an eligible higher-ranked judge merely because they have not
+ruled yet. Commissioner-only powers are not extended to deputies.
+
+Role commands → canonical identity policy view → governance trial fold → ledger
+append is unchanged. The fold owns the ordered list; replay and closed-season
+summaries preserve it without editing historical commands or receipts.

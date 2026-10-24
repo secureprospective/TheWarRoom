@@ -91,7 +91,7 @@ func AppealJudge(s State, parties []Principal) (Principal, error) {
 			return p, nil
 		}
 	}
-	if p := s.coCommissioner; p != "" && !slices.Contains(parties, p) {
+	if p := s.firstDeputy(parties); p != "" {
 		return p, nil
 	}
 	return "", fmt.Errorf("this appeal has no eligible commissioner or co-commissioner; it must wait")

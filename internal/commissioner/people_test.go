@@ -42,3 +42,36 @@ func TestPeopleBoundary(t *testing.T) {
 		t.Fatal("caller chose gravity")
 	}
 }
+
+func TestDeputyCommandReplayAndCommissionerOnlyPowers(t *testing.T) {
+	b := newLedger(t, PresetEmpty)
+	for _, p := range []string{"z", "a"} {
+		raw := RawCommand{Command: "commish.role.grant", Args: RawArgs{People: &RawPeople{Principal: p, Role: governance.CoCommissioner}}}
+		if err := CheckGovernanceAppend(raw, "creator", b.records, seasonMoment(2)); err != nil {
+			t.Fatal(err)
+		}
+		b.add(raw, seasonMoment(2))
+	}
+	state, err := GovernanceState(b.records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{"z", "a"} {
+		for _, command := range []string{"commish.role.grant", "commish.role.revoke", ContractActionSet, TradeOverride} {
+			if _, err := (GovernanceAuthorizer{State: state}).Allow("native.test", p, command); err == nil {
+				t.Fatalf("%s gained %s", p, command)
+			}
+		}
+	}
+	raw := RawCommand{Command: "commish.role.revoke", Args: RawArgs{People: &RawPeople{Principal: "z", Role: governance.CoCommissioner}}}
+	b.add(raw, seasonMoment(3))
+	raw = RawCommand{Command: "commish.succession.stepdown", Args: RawArgs{People: &RawPeople{Principal: "creator"}}}
+	if err := CheckGovernanceAppend(raw, "creator", b.records, seasonMoment(4)); err != nil {
+		t.Fatal(err)
+	}
+	b.add(raw, seasonMoment(4))
+	state, err = GovernanceState(b.records)
+	if err != nil || !state.HasRole("a", governance.Commissioner) || state.HasRole("z", governance.CoCommissioner) {
+		t.Fatalf("wrong succession after command replay: %v", err)
+	}
+}
