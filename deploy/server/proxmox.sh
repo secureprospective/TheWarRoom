@@ -27,13 +27,15 @@ read -rp 'Template storage [local]: ' templates; templates=${templates:-local}
 read -rp 'Cloudflare zone (example.org): ' zone
 read -rp 'New public hostname (league.example.org): ' hostname
 read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
-[[ $ctid =~ ^[1-9][0-9]{2,8}$ && $vlan =~ ^[0-9]{1,4}$ ]]
-(( vlan >= 1 && vlan <= 4094 ))
-[[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]]
-[[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]]
-[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]]
-[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $token =~ ^[a-zA-Z0-9_-]+$ ]]
-[[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]]
+stop() { echo "$1 Nothing was changed." >&2; exit 1; }
+[[ $ctid =~ ^[1-9][0-9]{2,8}$ ]] || stop 'The container number must be 100 or higher.'
+[[ $vlan =~ ^[0-9]{1,4}$ ]] && (( vlan >= 1 && vlan <= 4094 )) || stop 'The VLAN number must be between 1 and 4094.'
+[[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]] || stop "Network bridge $bridge was not found on this host."
+[[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
+[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
+[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
+[[ $token =~ ^[a-zA-Z0-9_-]+$ ]] || stop "That Cloudflare API token does not look right; copy it again from Cloudflare."
+[[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]] || stop "Container $ctid already exists; choose another number."
 work=$(mktemp -d)
 created=0
 complete=0
