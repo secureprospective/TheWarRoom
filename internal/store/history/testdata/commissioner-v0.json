@@ -1,0 +1,87 @@
+[
+  {
+    "command": {
+      "league": "native.test",
+      "command": "commish.league.create",
+      "args": {
+        "name": "Legacy league",
+        "franchises": [
+          "franchise.01",
+          "franchise.02"
+        ],
+        "preset": "empty",
+        "franchiseCount": 2,
+        "season": 2026
+      },
+      "reason": "recorded reason",
+      "expected": 0,
+      "request": "old.1",
+      "effective": "now",
+      "visibility": "league",
+      "gravity": "G3"
+    },
+    "principal": "creator",
+    "role": "commissioner",
+    "gravity": "G3",
+    "canonical": "{\"command\":{\"league\":\"native.test\",\"command\":\"commish.league.create\",\"args\":{\"name\":\"Legacy league\",\"franchises\":[\"franchise.01\",\"franchise.02\"],\"preset\":\"empty\",\"franchiseCount\":2,\"season\":2026},\"reason\":\"recorded reason\",\"expected\":0,\"request\":\"old.1\",\"effective\":\"now\",\"visibility\":\"league\",\"gravity\":\"G3\"},\"principal\":\"creator\"}",
+    "receipt": {
+      "entry": "legacy.1",
+      "league": "native.test",
+      "revision": 1,
+      "recordedAt": "2026-10-03T12:00:00Z",
+      "message": "Recorded in the league ledger."
+    }
+  },
+  {
+    "command": {
+      "league": "native.test",
+      "command": "commish.correction.revert",
+      "args": {
+        "entry": "legacy.1"
+      },
+      "reason": "recorded reason",
+      "expected": 1,
+      "request": "old.2",
+      "effective": "now",
+      "visibility": "league",
+      "gravity": "G3"
+    },
+    "principal": "creator",
+    "role": "commissioner",
+    "gravity": "G3",
+    "canonical": "{\"command\":{\"league\":\"native.test\",\"command\":\"commish.correction.revert\",\"args\":{\"entry\":\"legacy.1\"},\"reason\":\"recorded reason\",\"expected\":1,\"request\":\"old.2\",\"effective\":\"now\",\"visibility\":\"league\",\"gravity\":\"G3\"},\"principal\":\"creator\"}",
+    "receipt": {
+      "entry": "legacy.2",
+      "league": "native.test",
+      "revision": 2,
+      "recordedAt": "2026-10-03T12:00:00Z",
+      "message": "Recorded in the league ledger."
+    }
+  },
+  {
+    "command": {
+      "league": "native.test",
+      "command": "commish.correction.revert",
+      "args": {
+        "entry": "legacy.2"
+      },
+      "reason": "recorded reason",
+      "expected": 2,
+      "request": "old.3",
+      "effective": "now",
+      "visibility": "league",
+      "gravity": "G3"
+    },
+    "principal": "creator",
+    "role": "commissioner",
+    "gravity": "G3",
+    "canonical": "{\"command\":{\"league\":\"native.test\",\"command\":\"commish.correction.revert\",\"args\":{\"entry\":\"legacy.2\"},\"reason\":\"recorded reason\",\"expected\":2,\"request\":\"old.3\",\"effective\":\"now\",\"visibility\":\"league\",\"gravity\":\"G3\"},\"principal\":\"creator\"}",
+    "receipt": {
+      "entry": "legacy.3",
+      "league": "native.test",
+      "revision": 3,
+      "recordedAt": "2026-10-03T12:00:00Z",
+      "message": "Recorded in the league ledger."
+    }
+  }
+]

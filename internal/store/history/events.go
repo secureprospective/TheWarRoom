@@ -54,6 +54,8 @@ const (
 	AuthorityLocal = "local" // this app's league_event stream is the record, from the cutover on
 )
 
+const eventPayloadVersion = 1
+
 // EventPayload is an event's versioned body. Money is whole cents, never a float.
 type EventPayload struct {
 	Commissioner *commissioner.Record `json:"commissioner,omitempty"`
@@ -81,8 +83,16 @@ func (e LeagueEvent) Validate() error {
 		}
 	}
 	hash, err := hex.DecodeString(e.InputHash)
-	if err != nil || len(hash) != 32 || e.EffectiveAt.IsZero() || e.Payload.Version < 1 {
-		return fmt.Errorf("league event: invalid hash, effective time or payload version")
+	if err != nil || len(hash) != 32 || e.EffectiveAt.IsZero() {
+		return fmt.Errorf("league event: invalid hash or effective time")
+	}
+	if e.Payload.Version != eventPayloadVersion {
+		return fmt.Errorf("league event: unsupported payload version %d; update the app before reading this league", e.Payload.Version)
+	}
+	if e.Payload.Commissioner != nil {
+		if _, err := e.Payload.Commissioner.Upcast(); err != nil {
+			return fmt.Errorf("league event: %w", err)
+		}
 	}
 	return nil
 }
@@ -172,6 +182,13 @@ func scanEvents(rows *sql.Rows) ([]LeagueEvent, error) {
 		}
 		if err := e.Validate(); err != nil {
 			return nil, err
+		}
+		if e.Payload.Commissioner != nil {
+			record, err := e.Payload.Commissioner.Upcast()
+			if err != nil {
+				return nil, fmt.Errorf("league event: upcast command: %w", err)
+			}
+			e.Payload.Commissioner = &record
 		}
 		out = append(out, e)
 	}
