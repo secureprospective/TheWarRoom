@@ -6,14 +6,21 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	identity "github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
-type Store struct{ pools *db.Pools }
+type Store struct {
+	pools *db.Pools
+	now   func() time.Time
+}
 
-func New(pools *db.Pools) *Store { return &Store{pools: pools} }
+func New(pools *db.Pools) *Store { return &Store{pools: pools, now: time.Now} }
+
+// SetClock configures the server clock before serving requests.
+func (s *Store) SetClock(now func() time.Time) { s.now = now }
 
 // Initialize adds account-owned tables without changing the shared database's migration version.
 func (s *Store) Initialize(ctx context.Context) error {
@@ -28,7 +35,17 @@ CREATE TRIGGER IF NOT EXISTS accounts_identity_immutable
  BEGIN SELECT RAISE(ABORT, 'account identity is immutable'); END;
 CREATE TRIGGER IF NOT EXISTS accounts_no_delete
  BEFORE DELETE ON accounts
- BEGIN SELECT RAISE(ABORT, 'accounts cannot be deleted'); END;`)
+ BEGIN SELECT RAISE(ABORT, 'accounts cannot be deleted'); END;
+CREATE TABLE IF NOT EXISTS account_enrollments (
+ code_hash TEXT PRIMARY KEY NOT NULL CHECK(length(code_hash) = 64),
+ username TEXT NOT NULL,
+ league TEXT NOT NULL,
+ issuer TEXT NOT NULL,
+ issued_at INTEGER NOT NULL,
+ expires_at INTEGER NOT NULL,
+ redeemed_account TEXT REFERENCES accounts(id),
+ CHECK(expires_at > issued_at)
+) STRICT;`)
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)
 	}
