@@ -1,13 +1,18 @@
 package composition
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestTradePickOwnershipGovernsDraftOrderAndCompensation(t *testing.T) {
@@ -125,8 +130,8 @@ func TestTradeActionsIdentityRetryVersionAndTerminalStates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "native trade") {
-		t.Fatalf("commissioner door allowed owner action: %v", err)
+	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(string(body)); err == nil || !strings.Contains(err.Error(), "no longer waiting") {
+		t.Fatalf("generic door lost the trade refusal: %v", err)
 	}
 	// Separate offers retain distinct decline and withdrawal outcomes.
 	for _, command := range []string{commissioner.TradeDecline, commissioner.TradeWithdraw} {
@@ -334,5 +339,163 @@ func TestTradeCompensationCannotEraseEarlierVoteOrOffer(t *testing.T) {
 	f.vote(t, offer, "dot.c", "approve")
 	if _, err := f.action(t, "cc", commissioner.TradeOverride, commissioner.RawTradeArgs{ID: offer.Entry, Decision: "veto"}); err == nil {
 		t.Fatal("co-commissioner overrode a trade")
+	}
+}
+
+func TestMutationDispatchParityAndExactlyOnce(t *testing.T) {
+	for _, family := range []string{"generic", "trade", "bid", "waiver"} {
+		t.Run(family, func(t *testing.T) {
+			var want commissioner.Record
+			var wantAssets commissioner.NativeAssets
+			for _, door := range []string{"legacy", "generic", "service"} {
+				f := nativeMarketApp(t)
+				raw, principal := mutationProbe(t, f, family)
+				f.app.core.CommissionerSession = testCommissionerSession{principal}
+				before := mutationRecords(t, f)
+				first, err := runMutationDoor(t, f, door, raw)
+				if err != nil {
+					t.Fatalf("%s: %v", door, err)
+				}
+				if first.Revision != int64(len(before)+1) {
+					t.Fatalf("%s receipt: %+v", door, first)
+				}
+				after := mutationRecords(t, f)
+				if len(after) != len(before)+1 {
+					t.Fatal("mutation did not append exactly once")
+				}
+				assets, err := commissioner.NativeAssetsReading(legalityLeague, after)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// Each independent held-data fixture captures its roster at wall-clock time.
+				assets.Snapshot.RosterAt = time.Time{}
+				if door == "legacy" {
+					want, wantAssets = after[len(after)-1], assets
+				} else if !reflect.DeepEqual(want, after[len(after)-1]) || !reflect.DeepEqual(wantAssets, assets) {
+					t.Fatalf("%s %s changed the receipt or replayed assets", family, door)
+				}
+				for _, retryDoor := range []string{"legacy", "generic", "service"} {
+					retry, err := runMutationDoor(t, f, retryDoor, raw)
+					if err != nil || !reflect.DeepEqual(retry, first) {
+						t.Fatalf("%s retry: %+v %v", retryDoor, retry, err)
+					}
+				}
+				if got := mutationRecords(t, f); !reflect.DeepEqual(after, got) {
+					t.Fatal("retry appended an event")
+				}
+				raw.Request = "stale.mutation"
+				if _, err := runMutationDoor(t, f, door, raw); err == nil {
+					t.Fatal("stale revision accepted")
+				}
+				if got := mutationRecords(t, f); !reflect.DeepEqual(after, got) {
+					t.Fatal("refusal changed state")
+				}
+			}
+		})
+	}
+}
+
+func mutationProbe(t *testing.T, f *bidFixture, family string) (commissioner.RawCommand, string) {
+	t.Helper()
+	switch family {
+	case "trade":
+		return f.raw(t, commissioner.TradeOffer, commissioner.RawArgs{Trade: new(tradePlayerOffer())}, "league"), "owner.two"
+	case "bid":
+		return f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{
+			Player: "5004", Franchise: "franchise.01", Salary: moneyOf(5 * million), Years: 1}}, "private"), "owner.one"
+	case "waiver":
+		return f.raw(t, commissioner.RosterCut, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{
+			Player: "1000", Franchise: "franchise.02"}}, "league"), "owner.two"
+	default:
+		return f.raw(t, commissioner.RulesSet, commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":0,"max":90}`)}, "league"), "creator"
+	}
+}
+
+func runMutationDoor(t *testing.T, f *bidFixture, door string, raw commissioner.RawCommand) (commissioner.Receipt, error) {
+	t.Helper()
+	api := newCommissionerAPI(f.app)
+	switch {
+	case door == "service":
+		return leagueservice.New(commissionerHost{State: f.app.core, app: f.app}).Execute(t.Context(), raw)
+	case door == "generic":
+		return api.TargetCommissionerExecute(encodedCommand(t, raw))
+	case commissioner.OwnerTradeAction(raw.Command) != "":
+		return api.TargetNativeTradeAction(raw)
+	case commissioner.OwnerBidAction(raw.Command) != "":
+		return api.TargetNativeBidAction(raw)
+	case commissioner.OwnerWaiverAction(raw.Command) != "":
+		return api.TargetNativeWaiverAction(raw)
+	default:
+		return api.TargetCommissionerExecute(encodedCommand(t, raw))
+	}
+}
+
+func mutationRecords(t *testing.T, f *bidFixture) []commissioner.Record {
+	t.Helper()
+	records, err := f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return records
+}
+
+func TestMutationDispatchRefusalParityAndUnchangedState(t *testing.T) {
+	for _, family := range []string{"generic", "trade", "bid", "waiver"} {
+		t.Run(family, func(t *testing.T) {
+			f := nativeMarketApp(t)
+			raw, principal := mutationProbe(t, f, family)
+			f.app.core.CommissionerSession = testCommissionerSession{"stranger"}
+			assertMutationRefusals(t, f, raw)
+			if family == "generic" {
+				return
+			}
+			f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["rookie_draft"]}}`, "now")
+			raw, _ = mutationProbe(t, f, family)
+			f.app.core.CommissionerSession = testCommissionerSession{principal}
+			assertMutationRefusals(t, f, raw)
+		})
+	}
+}
+
+func assertMutationRefusals(t *testing.T, f *bidFixture, raw commissioner.RawCommand) {
+	t.Helper()
+	before := mutationRecords(t, f)
+	var want string
+	for _, door := range []string{"legacy", "generic", "service"} {
+		receipt, err := runMutationDoor(t, f, door, raw)
+		if err == nil || receipt.Entry != "" {
+			t.Fatalf("%s accepted refused mutation", door)
+		}
+		if want == "" {
+			want = err.Error()
+		} else if err.Error() != want {
+			t.Fatalf("%s refusal: %q, want %q", door, err, want)
+		}
+		if after := mutationRecords(t, f); !reflect.DeepEqual(before, after) {
+			t.Fatal("refusal appended an event")
+		}
+	}
+}
+
+type missingMutationFacts struct{ leagueservice.Host }
+
+func (missingMutationFacts) NativeFacts() nativecheck.Facts { return nil }
+
+func TestMutationDispatchKeepsFactsAndCancellation(t *testing.T) {
+	f := nativeMarketApp(t)
+	raw, principal := mutationProbe(t, f, "bid")
+	f.app.core.CommissionerSession = testCommissionerSession{principal}
+	host := commissionerHost{State: f.app.core, app: f.app}
+	before := mutationRecords(t, f)
+	if _, err := leagueservice.New(missingMutationFacts{Host: host}).Execute(t.Context(), raw); err == nil {
+		t.Fatal("bid accepted without held player facts")
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	if _, err := leagueservice.New(host).Execute(ctx, raw); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled request: %v", err)
+	}
+	if after := mutationRecords(t, f); !reflect.DeepEqual(before, after) {
+		t.Fatal("missing facts or cancellation appended an event")
 	}
 }

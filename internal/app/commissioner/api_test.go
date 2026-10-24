@@ -65,7 +65,7 @@ func TestExecuteKeepsIdentityAndOneTransactionalWriteInOrder(t *testing.T) {
 	t.Parallel()
 	h := &orderedHost{}
 	receipt, err := New(h).TargetCommissionerExecute(createBody(t))
-	want := []string{"ready", "principal", "context", "authorization", "facts", "zone", "execute"}
+	want := []string{"context", "ready", "principal", "authorization", "facts", "zone", "execute"}
 	if err != nil || receipt.Entry != "recorded" || h.principal != "caller" ||
 		h.raw.Request != "create" || !reflect.DeepEqual(h.calls, want) {
 		t.Fatal(receipt, err, h.calls, h.raw)
@@ -80,8 +80,8 @@ func TestExecuteRefusesBeforeAnyLaterCapability(t *testing.T) {
 		want              []string
 	}{
 		{"decode", `{}`, nil, nil, nil},
-		{"startup", createBody(t), errors.New("not started"), nil, []string{"ready"}},
-		{"session", createBody(t), nil, errors.New("unreadable identity"), []string{"ready", "principal"}},
+		{"startup", createBody(t), errors.New("not started"), nil, []string{"context", "ready"}},
+		{"session", createBody(t), nil, errors.New("unreadable identity"), []string{"context", "ready", "principal"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			h := &orderedHost{startup: tc.startup, identity: tc.identity}

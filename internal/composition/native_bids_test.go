@@ -297,7 +297,7 @@ func TestNativeBidRefusesWhatTheRostersAndWaiversForbid(t *testing.T) {
 	f.advance(24 * time.Hour)
 	f.process(t, cut.Entry)
 	if err := f.tryPlace(t, "owner.two", "franchise.02", "1000", 5*million, 1); err == nil ||
-		!strings.Contains(err.Error(), "you released") {
+		!strings.Contains(err.Error(), "You released") {
 		t.Fatalf("a franchise re-signed the player it released this season: %v", err)
 	}
 	f.set(t, "contracts.releaseReSignSameSeason", `true`, "now")
@@ -310,7 +310,7 @@ func TestNativeBidRefusesWhatTheRosterAndCapForbid(t *testing.T) {
 	f := bidApp(t)
 	f.set(t, "roster.limits", `{"min":0,"max":40}`, "now")
 	if err := f.tryPlace(t, "owner.one", "franchise.01", "5001", 5*million, 1); err == nil ||
-		!strings.Contains(err.Error(), "roster would not be legal") {
+		!strings.Contains(err.Error(), "Roster would not be legal") {
 		t.Fatalf("a bid that breaks the roster limit was accepted: %v", err)
 	}
 	f.set(t, "roster.limits", `{"min":0,"max":100}`, "now")
@@ -344,7 +344,7 @@ func TestNativeBidActionsCannotSkipTheGateOrTheOwnerSeat(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := newCommissionerAPI(f.app).TargetCommissionerExecute(body); err == nil {
-		t.Fatal("an owner bid used the commissioner door")
+		t.Fatal("a bid skipped the gate through the generic door")
 	}
 	f.set(t, "calendar.windows", `{"native":{"start":{"month":1,"day":1},"opens":["cut","waiver_claim","ufa_bid"]}}`, "now")
 	if err := f.tryPlace(t, "owner.two", "franchise.01", "5002", 5*million, 1); err == nil {

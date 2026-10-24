@@ -11,11 +11,11 @@ import (
 )
 
 func (a *API) TargetNativeTradeAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	if commissioner.OwnerTradeAction(raw.Command) == "" || raw.Args.TradeOutcome != nil {
+	if commissioner.OwnerTradeAction(raw.Command) == "" || raw.Args.Trade == nil || raw.Args.TradeOutcome != nil {
 		return commissioner.Receipt{}, fmt.Errorf("choose to offer, accept, decline or withdraw a trade")
 	}
 	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-	return a.host.SubmitNativeTrade(raw)
+	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
 // TargetNativeTrades reads the league's native trade desk; viewer is the seated owner's franchise.
@@ -25,11 +25,11 @@ func (a *API) TargetNativeTrades(league, viewer string) (commissioner.NativeTrad
 }
 
 func (a *API) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	if commissioner.OwnerWaiverAction(raw.Command) == "" || raw.Args.WaiverOutcome != nil {
+	if commissioner.OwnerWaiverAction(raw.Command) == "" || raw.Args.Waiver == nil || raw.Args.WaiverOutcome != nil {
 		return commissioner.Receipt{}, fmt.Errorf("choose a native cut or waiver claim")
 	}
 	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-	return a.host.SubmitNativeWaiver(raw)
+	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
 func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (commissioner.NativeWaivers,
@@ -39,11 +39,11 @@ func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (commi
 }
 
 func (a *API) TargetNativeBidAction(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	if commissioner.OwnerBidAction(raw.Command) == "" || raw.Args.BidOutcome != nil {
+	if commissioner.OwnerBidAction(raw.Command) == "" || raw.Args.Bid == nil || raw.Args.BidOutcome != nil {
 		return commissioner.Receipt{}, fmt.Errorf("choose to place, raise or withdraw a bid")
 	}
 	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-	return a.host.SubmitNativeBid(raw)
+	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
 func (a *API) TargetNativeBids(league, franchise string) (commissioner.NativeBids, error) {

@@ -1,7 +1,6 @@
 package commissioner
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -12,43 +11,8 @@ func (a *API) TargetCommissionerExecute(body string) (commissioner.Receipt, erro
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("league change: %w", err)
 	}
-	if commissioner.OwnerTradeAction(raw.Command) != "" {
-		return commissioner.Receipt{},
-			fmt.Errorf("use the native trade action to offer, accept, decline or withdraw")
-	}
-	if commissioner.OwnerWaiverAction(raw.Command) != "" {
-		return commissioner.Receipt{}, fmt.Errorf("use the native owner action for cuts and claims")
-	}
-	if commissioner.OwnerBidAction(raw.Command) != "" {
-		return commissioner.Receipt{}, fmt.Errorf("use the native owner action to place, raise or withdraw a bid")
-	}
-	if raw.Command == commissioner.NativeSeed {
-		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
-	}
-	if raw.Command == commissioner.LineupSet {
-		return commissioner.Receipt{},
-			fmt.Errorf("set a lineup from the lineup screen, which asks the league calendar first")
-	}
-	if raw.Command == commissioner.DraftPick {
-		return commissioner.Receipt{},
-			fmt.Errorf("a rookie pick is made by the franchise on the clock, in the draft room")
-	}
-	if err := a.host.Ready(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("league change startup: %w", err)
-	}
-	principal, err := a.host.CommissionerPrincipal()
-	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Receipt{}, err
-	}
-	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
-	defer cancel()
-	receipt, err := a.host.ExecuteCommissionerWithFacts(ctx, raw, principal,
-		a.host.CommissionerAuthorization(), a.host.NativeFacts(), a.host.CommissionerZone())
-	if err != nil {
-		return commissioner.Receipt{}, ChangeError(err)
-	}
-	return receipt, nil
+	//nolint:wrapcheck // The shared service supplies the user-facing context.
+	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
 func (a *API) TargetCommissionerLedger(league string) (commissioner.Ledger, error) {

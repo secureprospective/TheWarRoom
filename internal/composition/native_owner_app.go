@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
 // ownerFamily is one kind of native owner command. seat says which franchise a command acts for and which
@@ -35,52 +36,12 @@ func recordOwnerAction(family ownerFamily) func(context.Context, *App, commissio
 		if permit.League() != raw.League || permit.Franchise() != franchise || permit.Action() != action {
 			return commissioner.Receipt{}, fmt.Errorf("ask the league calendar before acting")
 		}
-		principal, err := a.commissionerPrincipal()
-		if err != nil {
-			return commissioner.Receipt{}, err
-		}
-		ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
-		defer cancel()
-		receipt, err := a.core.History.ExecuteCommissionerWithFacts(ctx, raw, principal, nil, a.nativeFacts(),
-			a.ownerZone())
+		receipt, err := leagueservice.New(commissionerHost{State: a.core, app: a}).Execute(ctx, raw)
 		if err != nil {
 			return commissioner.Receipt{}, fmt.Errorf("record %s: %w", family.label, err)
 		}
 		return receipt, nil
 	}
-}
-
-// submitOwnerAction is the owner door shared by every native owner action family: identity comes from the
-// local session, a retried request returns its recorded receipt, and the calendar's gate is asked before the
-// action runs.
-func (a *App) submitOwnerAction(raw commissioner.RawCommand, family ownerFamily) (commissioner.Receipt,
-	error) {
-	franchise, _, ok := family.seat(raw)
-	if !ok {
-		return commissioner.Receipt{}, fmt.Errorf("choose %s", family.choose)
-	}
-	if err := raw.Validate(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("%s input: %w", family.label, err)
-	}
-	if err := a.ready(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("%s startup: %w", family.label, err)
-	}
-	principal, err := a.commissionerPrincipal()
-	if err != nil {
-		return commissioner.Receipt{}, err
-	}
-	if receipt, retried, err := a.nativeActionRetry(raw, principal); retried || err != nil {
-		return receipt, err
-	}
-	body, err := json.Marshal(raw)
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("%s input: %w", family.label, err)
-	}
-	receipt, err := a.runNativeAction(nativeOwnerActions(), raw.League, franchise, raw.Command, body)
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("%s: %w", family.label, err)
-	}
-	return receipt, nil
 }
 
 func tradeFamily() ownerFamily {
@@ -111,23 +72,6 @@ func waiverFamily() ownerFamily {
 func waiverAction(command string) NativeOwnerAction {
 	return NativeOwnerAction{Name: command, Opens: commissioner.OwnerWaiverAction(command),
 		Run: recordOwnerAction(waiverFamily())}
-}
-
-func (a *App) nativeActionRetry(raw commissioner.RawCommand, principal string) (commissioner.Receipt,
-	bool, error) {
-	_, found, err := a.core.History.NativeSeedRetry(a.core.Ctx, raw.League, raw.Request)
-	if err != nil {
-		return commissioner.Receipt{}, false, fmt.Errorf("read native action retry: %w", err)
-	}
-	if !found {
-		return commissioner.Receipt{}, false, nil
-	}
-	receipt, err := a.core.History.ExecuteCommissionerWithFacts(a.core.Ctx, raw, principal, nil,
-		a.nativeFacts(), a.ownerZone())
-	if err != nil {
-		return commissioner.Receipt{}, true, fmt.Errorf("retry native action: %w", err)
-	}
-	return receipt, true, nil
 }
 
 func bidFamily() ownerFamily {

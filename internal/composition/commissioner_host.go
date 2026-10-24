@@ -108,15 +108,6 @@ func (h commissionerHost) RunNativeOwnerAction(league, franchise, name string,
 	body json.RawMessage) (commissioner.Receipt, error) {
 	return h.app.runNativeAction(nativeOwnerActions(), league, franchise, name, body)
 }
-func (h commissionerHost) SubmitNativeTrade(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	return h.app.submitOwnerAction(raw, tradeFamily())
-}
-func (h commissionerHost) SubmitNativeWaiver(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	return h.app.submitOwnerAction(raw, waiverFamily())
-}
-func (h commissionerHost) SubmitNativeBid(raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	return h.app.submitOwnerAction(raw, bidFamily())
-}
 func (h commissionerHost) NativeSeedCommand(ctx context.Context,
 	input commissionerapp.RawNativeSeedRequest) (commissioner.RawCommand, error) {
 	return h.app.nativeSeedCommand(ctx, input)

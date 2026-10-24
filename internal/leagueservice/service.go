@@ -75,15 +75,22 @@ type PreviewHost interface {
 		playerFacts nativecheck.Facts, zone *time.Location) (commissioner.Preview, error)
 }
 
+type MutationHost interface {
+	ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
+		principal string, auth commissioner.Authorizer, facts nativecheck.Facts,
+		zone *time.Location) (commissioner.Receipt, error)
+}
+
 type Host interface {
 	SessionHost
 	LeagueHost
 	ResultsHost
 	RosterHost
 	PreviewHost
+	MutationHost
 }
 
-// Service owns native read and preview composition; its ports cannot execute or append commands.
+// Service composes native readings, previews and mutations over the shared transactional store.
 type Service struct{ host Host }
 
 func New(host Host) *Service { return &Service{host: host} }
