@@ -42,14 +42,14 @@ func TestSchemaSubtreesSharedWithoutLosingConstraints(t *testing.T) {
 	}
 	schema.Enum = []string{"allowed"}
 	constrained, err := table.intern(schema)
-	if err != nil || constrained == first || !strings.Contains(table.out.String(), `Enum:["allowed"]`) {
+	if err != nil || constrained == first || !strings.Contains(table.out.String(), `"allowed"`) {
 		t.Fatal("distinct constraints were lost", err)
 	}
 	body, err := generate(app.NativeCommands())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Count(body, []byte(`Type:"string",Enum:null,Format:"",Validator:"",Nullable:false,Fields:null,Items:null`)) != 1 {
+	if bytes.Count(body, []byte("Type:\"string\",\n  Enum:null,\n  Format:\"\",\n  Validator:\"\",\n  Nullable:false,\n  Fields:null,\n  Items:null")) != 1 {
 		t.Fatal("unconstrained text schema was not shared across the catalog")
 	}
 }

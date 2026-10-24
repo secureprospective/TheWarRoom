@@ -54,20 +54,19 @@ func generate(commands []catalog.Command) ([]byte, error) {
 	schemas := schemaTable{names: make(map[string]string)}
 	var entries strings.Builder
 	for _, command := range published {
-		body, err := json.Marshal(command)
-		if err != nil {
-			return nil, fmt.Errorf("encode native command: %w", err)
-		}
-		arguments, err := json.Marshal(command.Arguments)
-		if err != nil {
-			return nil, fmt.Errorf("encode native arguments: %w", err)
-		}
 		name, err := schemas.intern(command.Arguments)
 		if err != nil {
 			return nil, err
 		}
-		definition := strings.Replace(string(body), `"Arguments":`+string(arguments), `"Arguments":`+name, 1)
-		fmt.Fprintf(&entries, "%q: { definition: %s, phrase: %q },\n", command.ID, definition, phrase(command.ID))
+		body, err := json.MarshalIndent(struct {
+			catalog.Command
+			Arguments string
+		}{command, name}, "  ", "  ")
+		if err != nil {
+			return nil, fmt.Errorf("encode native command: %w", err)
+		}
+		definition := strings.Replace(string(body), `"Arguments": "`+name+`"`, `"Arguments": `+name, 1)
+		fmt.Fprintf(&entries, "%q: {\n  definition: %s,\n  phrase: %q,\n},\n", command.ID, definition, phrase(command.ID))
 	}
 	out.WriteString(schemas.out.String())
 	out.WriteString("export const nativeCommands = {\n")
@@ -92,18 +91,18 @@ func (t *schemaTable) intern(schema catalog.Schema) (string, error) {
 		return name, nil
 	}
 	var fields strings.Builder
-	fields.WriteString("[")
+	fields.WriteString("[\n")
 	for i, field := range schema.Fields {
 		name, err := t.intern(field.Schema)
 		if err != nil {
 			return "", err
 		}
 		if i > 0 {
-			fields.WriteString(",")
+			fields.WriteString(",\n")
 		}
-		fmt.Fprintf(&fields, "{Name:%q,Optional:%t,Schema:%s}", field.Name, field.Optional, name)
+		fmt.Fprintf(&fields, "    {Name:%q,Optional:%t,Schema:%s}", field.Name, field.Optional, name)
 	}
-	fields.WriteString("]")
+	fields.WriteString("\n  ]")
 	items := "null"
 	if schema.Items != nil {
 		items, err = t.intern(*schema.Items)
@@ -111,7 +110,7 @@ func (t *schemaTable) intern(schema catalog.Schema) (string, error) {
 			return "", err
 		}
 	}
-	enum, err := json.Marshal(schema.Enum)
+	enum, err := json.MarshalIndent(schema.Enum, "  ", "  ")
 	if err != nil {
 		return "", fmt.Errorf("encode native choices: %w", err)
 	}
@@ -121,7 +120,7 @@ func (t *schemaTable) intern(schema catalog.Schema) (string, error) {
 	}
 	name := fmt.Sprintf("schema%d", len(t.names))
 	t.names[key] = name
-	fmt.Fprintf(&t.out, "const %s = {Type:%q,Enum:%s,Format:%q,Validator:%q,Nullable:%t,Fields:%s,Items:%s} as const;\n",
+	fmt.Fprintf(&t.out, "const %s = {\n  Type:%q,\n  Enum:%s,\n  Format:%q,\n  Validator:%q,\n  Nullable:%t,\n  Fields:%s,\n  Items:%s,\n} as const;\n",
 		name, schema.Type, enum, schema.Format, schema.Validator, schema.Nullable, fieldList, items)
 	return name, nil
 }
