@@ -18,6 +18,7 @@ import (
 )
 
 const (
+	PeoplePath  = "/v1/native/people"
 	LoginPath   = "/v1/auth/login"
 	LedgerPath  = "/v1/native/ledger"
 	PreviewPath = "/v1/native/preview"
@@ -54,7 +55,7 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		h.authenticator(w, r)
 	case LoginPath:
 		h.login(w, r)
-	case LedgerPath, PreviewPath, ExecutePath:
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -140,7 +141,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	var raw RawNativeRequest
 	if r.Method != http.MethodPost || decodeHosted(w, r, &raw) != nil || raw.Validate() != nil ||
-		(r.URL.Path == LedgerPath) != (raw.Command == nil) {
+		((r.URL.Path == LedgerPath || r.URL.Path == PeoplePath) != (raw.Command == nil)) {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
 		return
 	}
@@ -152,6 +153,14 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 
 func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
 	switch r.URL.Path {
+	case PeoplePath:
+		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
+		reading, err := service.TargetCommissionerPeople(raw.League)
+		if err != nil {
+			http.Error(w, "native read refused", http.StatusForbidden)
+			return
+		}
+		writeHosted(w, reading)
 	case LedgerPath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
 		reading, err := service.TargetCommissionerLedger(raw.League)
@@ -214,7 +223,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	}
 	if access.Mode == "read" {
 		if !policy.HasRole(principal, governance.Commissioner) && !policy.HasRole(principal, governance.CoCommissioner) &&
-			!policy.HasRole(principal, governance.Owner) && !policy.HasRole(principal, governance.DOT) {
+			!hostedOwner(policy, principal, records) && !policy.HasRole(principal, governance.DOT) {
 			return fmt.Errorf("league membership required")
 		}
 		return nil
@@ -249,7 +258,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
+func writeHosted[T commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
@@ -265,4 +274,14 @@ func writeHosted[T commissioner.Ledger | commissioner.Preview | commissioner.Rec
 // Exposure remains loopback-only until the deployment boundary is established.
 func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Certificate, hosted Hosted) error {
 	return serveFixture(ctx, listener, certificate, hosted.Handler())
+}
+
+func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
+	for _, id := range records[0].Command.Args.Franchises {
+		seat, ok := policy.Franchise(governance.FranchiseID(id))
+		if ok && seat.Seat == principal {
+			return true
+		}
+	}
+	return false
 }

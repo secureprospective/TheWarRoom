@@ -1,4 +1,4 @@
-// Package serverclient makes verified HTTPS native fixture reads from Go, outside the webview.
+// Package serverclient keeps native HTTPS transport and desktop credentials outside the webview.
 package serverclient
 
 import (
