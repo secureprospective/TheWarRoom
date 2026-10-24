@@ -58,7 +58,12 @@ its authoritative state for diagnosis. If Cloudflare creation succeeded before a
 later failure, its DNS/Tunnel identifiers are recorded in `/etc/twr-cloudflare.ids`. Failure automatically
 stops cloudflared and attempts to delete only this install's DNS and Tunnel.
 If the API is unreachable during cleanup, identifiers remain in the stopped CT
-for recovery; they are not secret. An existing DNS record is never overwritten.
+for recovery; they are not secret. On the CT, supply a fresh owner-only API input
+file with the same fields and run `sh /root/twr/cloudflare.sh --rollback <input>`.
+The cleanup entry retries only recorded resources and reports failure plainly;
+normal `cloudflare.sh` entry also completes pending cleanup before creation.
+Successful deletions are removed from the ledger; already-absent resources count
+as cleaned. An existing DNS record is never overwritten.
 
 ## Build and test the candidate
 
@@ -90,7 +95,8 @@ production databases, Cloudflare credentials or real MFL calls. It executes:
   by the real pinned cloudflared binary; native routes match, admin/metrics/wrong
   hostname do not, occupied DNS is preserved, service cannot read Tunnel secrets;
   explicit rollback deletes both newly created resources and injected DNS failure
-  automatically deletes the newly created Tunnel.
+  automatically deletes the newly created Tunnel; an API outage retains identifiers,
+  and a second run cleans exactly those resources without touching occupied DNS.
 
 ## Evidence and remaining gates
 
@@ -112,15 +118,10 @@ Cloudflare shared-edge scans cannot prove origin isolation.
 - `proxmox.sh`: real Proxmox isolation/reboot acceptance is not yet established;
   the installer fails closed on missing prerequisites but cannot substitute for
   that host-level proving test.
-- `install.sh`: initializes empty hosted storage only. The current backend has no
-  supported first-commissioner/league bootstrap CLI (see
-  `cmd/twr-server/README.md`); inventing accounts or ledger grants in a deployment
-  shell would bypass the existing authority path. No usable first-league claim
-  is made. A supported bootstrap must precede novice owner deployment.
-- `cloudflare.sh`: a failed install during a Cloudflare outage can leave a
-  disconnected DNS/Tunnel resource;
-  automatic rollback is attempted, but an unreachable API can prevent cleanup.
-  The installer retains identifiers and fails rather than claiming remote cleanup.
+- First-league activation belongs to desktop→server transfer (slices 39–41),
+  which moves the commissioner's league and grants to the server. `install.sh`
+  initializes empty hosted storage and directs the commissioner to that next step;
+  deployment must not invent accounts or ledger grants.
 - Release integrity (43), storage encryption/unlock (35), off-host backups (36)
   and health dashboard (38) remain their own gates. Adopt GoReleaser OSS for
   artifacts and Gatus + ntfy for health/alerts in those slices per the operator's

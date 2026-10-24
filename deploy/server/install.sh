@@ -48,7 +48,10 @@ attempt=0
 while [ "$attempt" -lt 30 ]; do
   status=$(curl --silent --cacert /etc/twr/origin.pem --max-time 2 -H 'CF-Connecting-IP: 127.0.0.1' \
     --output /dev/null --write-out '%{http_code}' https://127.0.0.1:8443/not-a-route) || status=000
-  [ "$status" != 404 ] || exit 0
+  if [ "$status" = 404 ]; then
+    echo 'Next, move your league to the server from the desktop app.'
+    exit 0
+  fi
   attempt=$((attempt + 1))
   sleep 1
 done

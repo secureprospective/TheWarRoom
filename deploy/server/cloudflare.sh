@@ -23,23 +23,34 @@ jq -er '"Authorization: Bearer " + .api_token' "$input" > "$header"
 api() {
   method=$1 path=$2
   shift 2
-  curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 60 \
+  status=$(curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 60 \
     -X "$method" -H @"$header" -H 'Content-Type: application/json' \
-    "https://api.cloudflare.com/client/v4/$path" "$@" > "$reply"
+    "https://api.cloudflare.com/client/v4/$path" "$@" --output "$reply" --write-out '%{http_code}') || {
+    [ "$method" = DELETE ] && [ "$status" = 404 ] && return 0
+    return 1
+  }
   jq -e '.success == true' "$reply" >/dev/null
 }
 rollback() {
   ids=/etc/twr-cloudflare.ids
   [ -e "$ids" ] || return 0
   account=$(jq -er '.account' "$ids")
-  tunnel=$(jq -er '.tunnel' "$ids")
+  tunnel=$(jq -r '.tunnel // empty' "$ids")
   zone_id=$(jq -er '.zone' "$ids")
   dns=$(jq -r '.dns // empty' "$ids")
   failed=0
   if [ -n "$dns" ]; then
-    if ! api DELETE "zones/$zone_id/dns_records/$dns"; then failed=1; fi
+    if api DELETE "zones/$zone_id/dns_records/$dns"; then
+      jq 'del(.dns)' "$ids" > "$reply"
+      cat "$reply" > "$ids"
+    else failed=1; fi
   fi
-  if ! api DELETE "accounts/$account/cfd_tunnel/$tunnel"; then failed=1; fi
+  if [ -n "$tunnel" ]; then
+    if api DELETE "accounts/$account/cfd_tunnel/$tunnel"; then
+      jq 'del(.tunnel)' "$ids" > "$reply"
+      cat "$reply" > "$ids"
+    else failed=1; fi
+  fi
   if [ "$failed" = 0 ]; then
     rm -f "$ids" /etc/cloudflared/credentials.json /etc/cloudflared/config.yml
   else
@@ -47,7 +58,8 @@ rollback() {
   fi
   return "$failed"
 }
-if [ "$mode" = rollback ]; then rollback; exit; fi
+rollback
+if [ "$mode" = rollback ]; then exit; fi
 api GET "zones?name=$zone&status=active"
 zone_id=$(jq -er '.result | select(length == 1) | .[0].id' "$reply")
 account=$(jq -er '.result[0].account.id' "$reply")
@@ -74,10 +86,10 @@ jq -n --arg tunnel "$tunnel" --arg hostname "$hostname" \
 jq -nc --arg name "$hostname" --arg target "$tunnel.cfargotunnel.com" \
   '{type:"CNAME",name:$name,content:$target,proxied:true,ttl:1}' > "$payload"
 api POST "zones/$zone_id/dns_records" --data-binary @"$payload"
-chown -R root:twr-tunnel /etc/cloudflared
-chmod 750 /etc/cloudflared
-chmod 640 /etc/cloudflared/*
 # Keep non-secret identifiers for console incident response, not the API token.
 dns=$(jq -er '.result.id' "$reply")
 jq --arg dns "$dns" '.dns=$dns' /etc/twr-cloudflare.ids > "$reply"
 cat "$reply" > /etc/twr-cloudflare.ids
+chown -R root:twr-tunnel /etc/cloudflared
+chmod 750 /etc/cloudflared
+chmod 640 /etc/cloudflared/*

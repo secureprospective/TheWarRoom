@@ -1,21 +1,21 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-23. Client/server planning complete on `session/cs-plan`; review pending. No merge authorized.
+Bee — 2026-10-24. Slice 34 follow-up on `session/cs34`, PR #150. No merge authorized.
 
 ## Where it stands
-- Plan: `docs/build-handoffs/Client_Server_Build_Plan_2026-10.md`.
-- Source baseline `d75929f6`; four panel engineer outputs and round-two corrections checked against current code.
-- 52 bounded PR slices, 102 estimated engineer-days, explicit safe parallel pairs and eight owner-access blockers.
-- Freeze May 28 2027; invitation gate June 25. Capacity arithmetic exposes three days beyond four-day/week budget if all 25 contingency days stay reserved.
-- Planning only. No runtime code or deployment changed. Frontend frozen install/build passed as hook prerequisite; server/drill tests are future acceptance targets.
+- Cloudflare entry completes recorded cleanup before creating resources; cleanup retains failed resources, forgets successful deletions and accepts already-absent resources.
+- DNS identifier is recorded before credential permission changes can fail.
+- README places first-league activation in desktop→server transfer (39–41); install success tells the commissioner to move their league from the desktop app.
+- Rebuilt bundle and disposable Alpine/OpenRC test passed, including simulated outage/retry, exact resource deletion, unrelated occupied DNS preservation, partial cleanup and already-absent Tunnel recovery.
+- PR marked ready for review.
 
 ## Next move
-Review plan and rule on disk unlock, multiple-deputy ordering and extra capacity. Follow slice dependencies; no public network commands before catalog/policy completion, no owners before release blockers.
+Coordinator review; verify CI after push. Do not merge without authorization.
 
 ## Blocked on
-Those rulings and normal PR review. Actual CT, owner OS inventory, backup destination and spare-host inputs remain to collect.
+Real Proxmox isolation/reboot and Cloudflare connectivity acceptance remain unverified; no disposable node/zone available. Simulated API evidence is not a live deployment claim.
 
 ## Tried and rejected
-- Do not repeat stale panel defects: Windows locking, pre-open downgrade refusal, MFL limits and decoded-ledger caching already exist.
-- No native database split, paid signing, direct port forwarding, autonomous agent merge or June feature spillover.
+- No deployment-shell account/league/grant bootstrap: transfer slices own that authority path.
+- No broad remote resource discovery/deletion: cleanup uses only recorded identifiers.
