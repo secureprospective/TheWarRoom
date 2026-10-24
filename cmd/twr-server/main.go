@@ -36,6 +36,9 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, output io.Writer) error {
+	if len(args) > 0 && args[0] == "recover" {
+		return runRecovery(ctx, args[1:], os.Stdin, output)
+	}
 	flags := flag.NewFlagSet("twr-server", flag.ContinueOnError)
 	fixture := flags.Bool("fixture", false, "required: use disposable built-in fixture only")
 	changes := flags.Bool("fixture-changes", false, "enable one fixture mutation in a fresh disposable database")

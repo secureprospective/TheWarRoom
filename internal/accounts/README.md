@@ -117,3 +117,50 @@ wrong passwords/codes, wrong keys, ciphertext tampering/account swapping,
 expired/replaced pending setup, injected persistence failure and queued-code
 expiry have separate regression coverage. Changing the replay comparison to
 allow equality makes the proving test fail on confirmation-code replay.
+
+## Lost credentials and printed codes
+
+`RecoveryService.PrintCodes` verifies the account password; the store rechecks a
+confirmed, account-bound recent TOTP proof **after writer acquisition**. It replaces
+any prior set with SHA-256 digests of eight independent 256-bit codes and audits
+issuance in the same transaction. `RecoveryCodes.Codes` is returned once for the
+caller to print and keep offline; formatting and JSON omit the codes. No printer
+or UI is installed here. Losing the printout requires authenticated regeneration
+or the offline-key console. Regeneration invalidates the old set.
+
+`RawRecovery.Validate` → `Recover` → hash the new password → `ResetAccount`:
+under the single writer, match username plus code digest, replace the password,
+remove TOTP/setup/recent-auth state, invalidate **all** old recovery codes, advance
+`account_auth_generation`, and insert a security audit entry before commit.
+A code alone is a full recovery credential; password knowledge is not required.
+Two concurrent uses have one winner. Invalid codes, wrong accounts and audit
+failure preserve credentials and consumption. Identity and league state never
+change. The account must re-enroll its authenticator before privileged admission.
+Recovery does not grant recent authentication, a session, or league rights.
+
+`ConsoleRecover` additionally requires a 32-byte offline key whose SHA-256 digest
+matches trusted operator configuration in constant time, plus a bounded printable
+reason. It performs the same transactional reset and records `offline_key_reset`,
+account ID, server time and reason. Only successful operations are recorded here;
+failed-attempt throttling/security telemetry and hash chaining remain later work.
+Never put secrets in the operator reason. The offline key is independent of the
+TOTP encryption key; neither is saved in this database. A host administrator can
+change local configuration/database state: this does not protect against root.
+Commissioners can reassign seats, not reset accounts; no league policy or actor
+field is accepted by either recovery operation.
+
+`AuthGeneration` is the durable revocation fence: a credential/delegation's issued
+generation must equal the current account generation, checked at admission and
+again inside append. Device sessions and agent delegations do **not** yet exist;
+slices 19/20/25 must implement that comparison on their real paths. This slice
+proves generation advancement/persistence and recent-proof revocation, not live
+token rejection. The repository is trusted, not a request-facing reset API.
+
+Tests: `TestRecoveryConcurrentUseRevokesCredentials`,
+`TestRecoveryAuditFailureRollsBackAndConsoleRequiresOfflineKey`,
+`TestRecoveryPrintingRequiresFreshAccountBoundProof`,
+`TestRecoveryResetPersistsAcrossReopen`, and
+`TestCommissionerSeatReassignmentCannotResetAccount` exercise the real stores and
+league seat path. Console usage and its exercised boundary are documented in
+`cmd/twr-server/README.md`. Account schema deployment/migrations, hosted recovery
+routes, off-host audit anchors and restoring a fresh auth epoch remain unproven.

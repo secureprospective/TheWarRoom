@@ -45,3 +45,37 @@ rereads unchanged fixture state. Targeted service/client tests cover fresh fixtu
 ownership, cancellation, malformed/oversize/new-major replies and redirect rejection.
 Public deployment, storage, authorization, accounts, mutations, version negotiation
 beyond rejecting unknown majors, and desktop integration remain later slices.
+
+## Offline account recovery (local console only)
+
+Stop the hosted service before using its database. Mount the sealed offline key
+only for this operation. It is exactly 32 random binary bytes in an owner-only
+regular file, independent of the authenticator encryption key. Its SHA-256 digest
+must already be pinned in trusted operator configuration; do not obtain the digest
+from the reset requester. Initial offline-key custody/delivery is an operations
+prerequisite, not an automatic key bootstrap in this command.
+
+```
+twr-server recover -accounts-db /path/to/server.db \
+  -offline-key-file /mounted-offline/key \
+  -offline-key-sha256 <configured-64-hex-digest>
+```
+
+Supply one JSON object on stdin (4096-byte maximum): `username`, new `password`,
+and a nonempty printable `reason` (256 characters maximum). Use a console secret
+input tool or an owner-only temporary input file; do not put the password in
+shell arguments/history. The command emits only a generic result, opens no
+listener, and cannot be invoked through league commands. Remove the mounted key
+and any temporary input immediately afterward. Do not log raw stdin or secrets.
+
+Success atomically resets the password, removes the authenticator and recent-auth
+proof, invalidates printed codes, advances the account credential generation and
+records the account/time/reason audit. It changes no account ID, username, role,
+seat or league event. Set up the authenticator again before privileged use.
+Device-session/token admission will consume the generation fence in later slices;
+there are no live sessions or delegations to revoke yet. Audit chaining and
+host-replacement recovery are separate later gates.
+
+`TestOfflineConsoleRecovery` exercises stdin validation, insecure-key permissions,
+success, preserved identity, new-password login and the persisted audit record.
+This is not a deployed recovery or key-custody drill.
