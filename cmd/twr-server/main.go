@@ -15,10 +15,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -126,8 +128,28 @@ func serveChanges(ctx context.Context, listener net.Listener, certificate tls.Ce
 	if _, err := store.ExecuteCommissioner(ctx, records[0].Command, "fixture.creator", nil); err != nil {
 		return fmt.Errorf("seed fixture state: %w", err)
 	}
-	if err := serverhttp.ServeFixtureChanges(ctx, listener, certificate, leagueservice.NewFixtureChanges(store)); err != nil {
+	if err := serveChangesWorker(ctx, listener, certificate, store); err != nil {
 		return fmt.Errorf("serve fixture changes: %w", err)
 	}
 	return nil
+}
+
+// The disposable fixture deliberately trusts its wall clock. Deployable mode must
+// supply real clock-health evidence; fixture trust is not a production health check.
+type fixtureDueClock struct{}
+
+func (fixtureDueClock) Now() time.Time { return time.Now() }
+func (fixtureDueClock) Trusted() error { return nil }
+
+func serveChangesWorker(ctx context.Context, listener net.Listener, certificate tls.Certificate, store *history.Store) error {
+	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, fixtureDueClock{})
+	ctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		worker.Run(ctx, func(err error) { log.Printf("fixture due worker: %v", err) })
+	}()
+	defer func() { cancel(); <-done }()
+	//nolint:wrapcheck // The caller adds the fixture server operation context.
+	return serverhttp.ServeFixtureChanges(ctx, listener, certificate, leagueservice.NewFixtureChangesWithWorker(store, worker))
 }
