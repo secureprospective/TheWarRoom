@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -205,6 +206,25 @@ type accountAdmission struct {
 	sessions commissioner.CredentialAdmission
 	totp     *accounts.TOTPService
 	proof    accounts.RecentAuth
+}
+
+// proofRemaining is how long this account's admission to league lasts: until its recent-auth proof
+// lapses for a commissioner or deputy; limited is false for anyone whose access needs no proof.
+func (a accountAdmission) proofRemaining(ctx context.Context, league string) (time.Duration, bool, error) {
+	records, err := a.host.CommissionerRecords(ctx, league)
+	if err != nil {
+		return 0, false, fmt.Errorf("admission records: %w", err)
+	}
+	if len(records) == 0 {
+		return 0, false, fmt.Errorf("league access unavailable")
+	}
+	policy, err := commissioner.GovernanceState(records)
+	if err != nil {
+		return 0, false, fmt.Errorf("league policy: %w", err)
+	}
+	principal := governance.Principal(commissioner.PrincipalFor(records, a.host.Principal))
+	//nolint:wrapcheck // the account service names the refusal
+	return a.totp.PrivilegedRemaining(ctx, policy, principal, a.proof)
 }
 
 func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access) error {

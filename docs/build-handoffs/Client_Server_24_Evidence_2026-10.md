@@ -54,3 +54,13 @@ append-triggered fanout. Intermediate changes may coalesce; consumers reread cur
 state, not an event history. Target-CT load/latency, 64-stream saturation, slow-network
 revocation and proxy/Tunnel streaming remain staging acceptance work, not measured
 claims. Handler lifetime owns the connection budget; instantiate it once per server.
+
+## Debt sweep 2 (2026-10-24): privileged streams end with their proof
+
+A commissioner's or deputy's stream is admitted by a five-minute recent-auth proof.
+The handler now reads the proof's remaining lifetime on the server clock at admission
+(`TOTPService.PrivilegedRemaining`) and closes the stream on a one-shot timer at that
+moment, instead of leaving it open and silent until the next commit failed a reread.
+Owner streams, which need no proof, have no timer.
+`TestSSEPrivilegedStreamClosesWhenProofLapses` opens a stream with 300 ms of proof left
+and requires it to close between 200 ms and 5 s; removing the timer case fails it.

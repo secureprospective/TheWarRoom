@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	identity "github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -110,22 +111,28 @@ func (s *Store) ConsumeTOTP(ctx context.Context, accountID string, sealedSeed []
 }
 
 func (s *Store) CheckRecentAuth(ctx context.Context, accountID, proofDigest string) error {
+	_, err := s.RecentAuthRemaining(ctx, accountID, proofDigest)
+	return err
+}
+
+// RecentAuthRemaining is how long a valid recent-authentication proof has left on the server clock.
+func (s *Store) RecentAuthRemaining(ctx context.Context, accountID, proofDigest string) (time.Duration, error) {
 	if err := validateTOTPAccount(accountID); err != nil {
-		return err
+		return 0, err
 	}
 	if !validSecretDigest(proofDigest) {
-		return identity.ErrTOTPRequired
+		return 0, identity.ErrTOTPRequired
 	}
 	now := s.now().UTC().UnixNano()
-	var exists bool
-	err := s.pools.Read().QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM account_totp
+	var authenticated int64
+	err := s.pools.Read().QueryRowContext(ctx, `SELECT COALESCE((SELECT authenticated_at FROM account_totp
  WHERE account_id = ? AND confirmed = 1 AND proof_hash = ?
- AND authenticated_at <= ? AND authenticated_at > ?)`, accountID, proofDigest, now, now-int64(identity.RecentAuthLifetime)).Scan(&exists)
+ AND authenticated_at <= ? AND authenticated_at > ?), 0)`, accountID, proofDigest, now, now-int64(identity.RecentAuthLifetime)).Scan(&authenticated)
 	if err != nil {
-		return fmt.Errorf("accounts: check recent authentication: %w", err)
+		return 0, fmt.Errorf("accounts: check recent authentication: %w", err)
 	}
-	if !exists {
-		return identity.ErrTOTPRequired
+	if authenticated == 0 {
+		return 0, identity.ErrTOTPRequired
 	}
-	return nil
+	return time.Duration(authenticated + int64(identity.RecentAuthLifetime) - now), nil
 }
