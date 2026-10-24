@@ -190,3 +190,52 @@ Hosted throttles and performance evidence supersede the earlier future-work
 statements about KDF concurrency above. See
 `docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`; target-CT performance and
 proxy log redaction still require staging evidence.
+
+## Scoped agent tokens
+
+`RawTokenScope.Validate` → human device session → `TokenService.Issue` → shared
+single-writer transaction → recheck session and trusted `TokenAuthority` → hash-only
+agent credential plus security audit → return bearer once, after commit. Issuance
+fixes one league/franchise, explicit command allowlist and explicit modes. Any
+execute mode caps the entire token at 24 hours; read/preview-only tokens last 30
+days. Expiry is server-owned, nanosecond precise, exclusive, and never refreshed.
+The persisted scope and issuance fields cannot be updated. Policy cannot extend
+the issuance ceiling when an issuer gains new rights.
+
+`TokenService.Admission` → validate/hash bearer → check expiry, revocation, account
+recovery generation and auth epoch → intersect requested operation with issuance
+scope → recheck current issuer rights for that operation → check all argument
+references. Role loss can remove execution while retaining an independently held
+read right. `Authenticate` establishes credential identity only; callers must use
+`Admission` on reads/previews/execute/retries, including inside ledger append.
+
+`TokenAuthority` is a mandatory trusted policy port. Its scope check must authorize
+every requested command/mode at issuance, and the single actual command/mode on
+use. Its access check must resolve player, bid, trade, pick and other indirect
+references against the scoped franchise and current policy. Both checks are
+read-only, must use the current state (including `Access.Records` at append), and
+must not acquire the writer. Accounts and history must share the same pools so
+revocation/recovery/role writes serialize with append. Missing policy fails closed.
+Transport composition and production reference resolution belong to slice 26;
+this slice does not enable agent HTTP/CLI access or claim all-family scope proof.
+
+Tokens cannot issue/revoke credentials or administer seats, roles, succession or
+permissions. Generic correction/revert is excluded because it could undo a role
+change. These exclusions are enforced independently of the supplied authority.
+Agent and device hashes live in separate tables; neither credential is accepted
+as the other. A current human device session can revoke only its account's token
+ID. Recovery generation/restore epoch changes invalidate tokens automatically.
+Device-only revocation does not itself revoke separately issued agent tokens.
+IDs (not token digests or bearer values) are recorded in transactional issuance
+and revocation audits. Bearers are omitted from JSON and normal Go formatting;
+never log an individual bearer field. Audit chaining remains separate work.
+
+Tests `TestAgentTokenLifetimesScopeAndCurrentIssuerRights`,
+`TestAgentTokenHashOnlyCeilingAndCredentialIsolation`,
+`TestAgentTokenRevokedQueuedAppendAndRetry`,
+`TestAgentTokenValidationAndFailClosedPolicy`, and
+`TestAgentTokenPersistenceRecoveryAndAtomicIssuance` exercise real account/history
+stores, explicit trusted test policy, exact expiry, role loss/gain, cross-scope and
+reference denials, hash-only storage/redaction, queued revocation before retry,
+zero denied ledger growth, immutable scope, reopen, recovery/epoch fences and
+rollback on audit failure. No deployed policy adapter or live owner is exercised.

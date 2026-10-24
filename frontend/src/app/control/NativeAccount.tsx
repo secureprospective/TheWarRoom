@@ -19,7 +19,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  const [signedIn, setSignedIn] = useState(Boolean(initial.message));
   const changeScreen = (next: Screen) => {
     setScreen(next); setPassword(''); setCode(''); setError('');
     setView(current => ({ ...current, seed: '', message: '' }));
@@ -30,12 +30,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     // Remove the old private reading before fresh admission.
     setView(current => ({ ...initial, seed: current.seed }));
     try {
-      const credentials = !['enter', 'forget'].includes(action);
+      const credentials = !['enter', 'forget', 'revoke-device', 'revoke-all'].includes(action);
       const result = await nativeAction(action, credentials ? username : '', credentials ? password : '',
         ['enroll', 'totp-confirm', 'totp-step-up'].includes(action) ? code : '');
       setView(result);
       if (action === 'login') setSignedIn(true);
-      if (action === 'forget') setSignedIn(false);
+      if (['forget', 'revoke-device', 'revoke-all'].includes(action)) setSignedIn(false);
       if (action === 'enroll') setScreen('login');
     } catch (e) {
       setView(initial);
@@ -49,7 +49,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       const tab = tabs.find(([id]) => id === args.value);
       if (tab) changeScreen(tab[0]);
     } else if (args.action === 'check') {
-      const actions: NativeAction[] = ['totp-begin', 'totp-confirm', 'enter', 'forget'];
+      const actions: NativeAction[] = [
+        'totp-begin', 'totp-confirm', 'enter', 'forget', 'revoke-device', 'revoke-all',
+      ];
       const action = actions.find(value => value === args.value);
       if (action) void run(action);
     }
@@ -129,9 +131,14 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       <Act variant="button" verb="commissioner.surface" args={args('check', 'enter')}
         disabled={pending} label="Open my franchise">Open my franchise</Act>
       <Act variant="button" verb="commissioner.surface" args={args('check', 'forget')}
-        disabled={pending} label="Sign out of this window">Sign out of this window</Act>
+        disabled={pending} label="Forget saved sign-in">Forget saved sign-in</Act>
+      <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-device')}
+        disabled={pending} label="Revoke this device">Revoke this device</Act>
+      <Act variant="button" verb="commissioner.surface" args={args('check', 'revoke-all')}
+        disabled={pending} label="Revoke all devices">Revoke all devices</Act>
     </div>}
-    <footer>Session stays in Go memory for this window only. Closing the app requires signing in again.
+    <footer>Device sessions use your OS keychain when available, otherwise Go memory only.
+      Revoke all devices signs you out everywhere. Authenticator verification is never saved.
       Offline execution is unavailable.</footer>
   </main>;
 }

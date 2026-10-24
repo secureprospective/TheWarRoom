@@ -3,6 +3,7 @@ package serverhttp_test
 import (
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -17,7 +18,7 @@ func desktopFor(t *testing.T, f *hostedFixture) *serverclient.Desktop {
 	t.Helper()
 	roots := x509.NewCertPool()
 	roots.AddCert(f.server.Certificate())
-	desktop, err := serverclient.NewDesktop(f.server.URL, "native.hosted", roots)
+	desktop, err := serverclient.NewDesktop(f.server.URL, "native.hosted", roots, &desktopCredentials{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,4 +142,45 @@ func TestDesktopExpiredInviteAndPrivilegedAuthenticator(t *testing.T) {
 	// The new read door uses the same missing/spoofed-session policy as every hosted route.
 	f.post(t, serverhttp.PeoplePath, `{"protocol":1,"league":"native.hosted"}`, "", "", 401)
 	f.revision(t, 1)
+}
+
+type desktopCredentials struct{ secret string }
+
+func (s *desktopCredentials) Get() (string, error) {
+	if s.secret == "" {
+		return "", errors.New("missing")
+	}
+	return s.secret, nil
+}
+func (s *desktopCredentials) Set(secret string) error { s.secret = secret; return nil }
+func (s *desktopCredentials) Delete() error           { s.secret = ""; return nil }
+
+func TestDesktopDeviceRevocation(t *testing.T) {
+	for _, action := range []string{"revoke-device", "revoke-all"} {
+		t.Run(action, func(t *testing.T) {
+			f := newHostedFixture(t)
+			first, second := desktopFor(t, f), desktopFor(t, f)
+			login := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}
+			for _, device := range []*serverclient.Desktop{first, second} {
+				if _, err := device.Act(t.Context(), login); err != nil {
+					t.Fatal(err)
+				}
+			}
+			// A commissioner without recent TOTP gets a policy refusal, not a session refusal.
+			if _, err := second.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil || strings.Contains(err.Error(), "revoked") {
+				t.Fatalf("before revoke: %v", err)
+			}
+			if _, err := first.Act(t.Context(), serverclient.RawDesktop{Action: action}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := first.Act(t.Context(), serverclient.RawDesktop{Action: "enter"}); err == nil {
+				t.Fatal("revoked device retained access")
+			}
+			_, err := second.Act(t.Context(), serverclient.RawDesktop{Action: "enter"})
+			if err == nil || (strings.Contains(err.Error(), "revoked") != (action == "revoke-all")) {
+				t.Fatalf("other device: %v", err)
+			}
+			f.revision(t, 1)
+		})
+	}
 }

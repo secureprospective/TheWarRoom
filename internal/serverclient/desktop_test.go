@@ -11,13 +11,13 @@ import (
 
 func TestDesktopBoundaryAndTLS(t *testing.T) {
 	for _, address := range []string{"http://localhost", "https://user:secret@localhost", "https://localhost/path", "https://localhost?x=1", "https://localhost#x"} {
-		if _, err := NewDesktop(address, "native.test", nil); err == nil {
+		if _, err := NewDesktop(address, "native.test", nil, &testCredentials{unavailable: true}); err == nil {
 			t.Fatalf("unsafe origin accepted: %s", address)
 		}
 	}
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "secret-sentinel", http.StatusForbidden) }))
 	defer server.Close()
-	desktop, err := NewDesktop(server.URL, "native.test", nil)
+	desktop, err := NewDesktop(server.URL, "native.test", nil, &testCredentials{unavailable: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestDesktopBoundaryAndTLS(t *testing.T) {
 	}
 	roots := x509.NewCertPool()
 	roots.AddCert(server.Certificate())
-	trusted, err := NewDesktop(server.URL, "native.test", roots)
+	trusted, err := NewDesktop(server.URL, "native.test", roots, &testCredentials{unavailable: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestDesktopRejectsMalformedSuccessfulRepliesAndRedirects(t *testing.T) {
 		}))
 		roots := x509.NewCertPool()
 		roots.AddCert(server.Certificate())
-		desktop, err := NewDesktop(server.URL, "native.test", roots)
+		desktop, err := NewDesktop(server.URL, "native.test", roots, &testCredentials{unavailable: true})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,7 +87,7 @@ func TestDesktopRejectsMalformedSuccessfulRepliesAndRedirects(t *testing.T) {
 	defer server.Close()
 	roots := x509.NewCertPool()
 	roots.AddCert(server.Certificate())
-	desktop, err := NewDesktop(server.URL, "native.test", roots)
+	desktop, err := NewDesktop(server.URL, "native.test", roots, &testCredentials{unavailable: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestDesktopRejectsMalformedSuccessfulRepliesAndRedirects(t *testing.T) {
 }
 
 func TestDesktopViewNeverSerializesCredentials(t *testing.T) {
-	desktop, err := NewDesktop("https://example.invalid", "native.test", nil)
+	desktop, err := NewDesktop("https://example.invalid", "native.test", nil, &testCredentials{unavailable: true})
 	if err != nil {
 		t.Fatal(err)
 	}
