@@ -36,7 +36,9 @@ type Hosted struct {
 	Registry   string
 }
 
-func (h Hosted) Handler() http.Handler { return http.HandlerFunc(h.serveHTTP) }
+func (h Hosted) Handler() http.Handler {
+	return h.invalidationHandler(http.HandlerFunc(h.serveHTTP))
+}
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
