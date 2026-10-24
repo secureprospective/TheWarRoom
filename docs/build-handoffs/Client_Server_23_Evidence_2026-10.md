@@ -65,7 +65,11 @@ hosted StoredHost identity is immutable, read/write clocks use server time, dry-
 receipts bypass receipt projection, and own-record compensations intentionally
 invalidate the affected owner's broader view even if a filtered ledger omits them.
 
-Affected handwritten production Go: 2,904 → 3,065 physical lines against `63797ac3`;
+The first push gate rejected the separate tiny helper file. Grouping the existing
+revision-conflict checks with those helpers satisfied the responsibility boundary
+without raising the ratchet; the affected race batch passed again after regrouping.
+
+Affected handwritten production Go: 2,904 → 3,066 physical lines against `63797ac3`;
 counted with splitlines, excluding tests/goldens/docs. This is a safety addition,
 not a debloat claim. No new package or placement/map entry was needed.
 

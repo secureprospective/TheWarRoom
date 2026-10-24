@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -36,4 +37,42 @@ func expectedViewRevision(ctx context.Context, raw commissioner.RawCommand, prin
 		return commissioner.RecipientRevision(records, principal, now)
 	}
 	return current
+}
+
+// staleVersion refuses a change made against an older league version. It is ErrRevisionConflict, and its
+// own message is the reason the owner reads.
+type staleVersion struct{ current, expected int64 }
+
+func (e staleVersion) Error() string {
+	return fmt.Sprintf("league version is %d; reread before changing it (expected %d)", e.current, e.expected)
+}
+func (e staleVersion) Is(target error) bool { return target == ErrRevisionConflict }
+
+func checkCommissionerAppend(ctx context.Context, raw commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time) error {
+	current := expectedViewRevision(ctx, raw, principal, records, now)
+	if raw.Expected != current {
+		return staleVersion{current: current, expected: raw.Expected}
+	}
+	if raw.Command == commissioner.Create {
+		if len(records) != 0 {
+			return fmt.Errorf("this app league already exists")
+		}
+		return nil
+	}
+	if len(records) == 0 {
+		return fmt.Errorf("create this app league before changing it")
+	}
+	if raw.Command != commissioner.Revert {
+		return nil
+	}
+	for _, r := range records {
+		if r.Receipt.Entry != raw.Args.Entry {
+			continue
+		}
+		if r.Command.Visibility == "private" && raw.Visibility != "private" {
+			return fmt.Errorf("a private recorded change must be reversed privately")
+		}
+		return nil
+	}
+	return fmt.Errorf("that recorded change is not in this league")
 }
