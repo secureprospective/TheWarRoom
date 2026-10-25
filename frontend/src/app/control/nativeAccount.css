@@ -18,3 +18,10 @@
 .native-account code.native-seed { display: block; white-space: pre-wrap; }
 .native-account footer { margin-top: 40px; }
 .native-account ::selection { background: var(--surface-tx1); color: var(--surface-0); }
+
+.twr-app.native-account select {
+  color-scheme: dark;
+  color: var(--surface-tx1);
+  background-color: var(--surface-2);
+}
+.native-account .native-preview { white-space: pre-line; overflow-wrap: anywhere; }

@@ -36,6 +36,8 @@ describe('native AI helpers', () => {
     expect(css).toMatch(/\.native-account \.native-seed\s*\{\s*overflow-wrap: anywhere;/);
     expect(css).toMatch(/\.native-account code\.native-seed\s*\{[^}]*white-space: pre-wrap;/);
     expect(css).toMatch(/\.native-account code\.native-seed\s*\{[^}]*display: block;/);
+    expect(css).toMatch(/\.twr-app\.native-account select\s*\{[^}]*color-scheme: dark;/);
+    expect(css).toMatch(/\.twr-app\.native-account select\s*\{[^}]*color: var\(--surface-tx1\);/);
     vi.mocked(copyHelperConnection).mockResolvedValue(true);
     await click(button(host, 'Copy connection line')); await settle();
     expect(copyHelperConnection).toHaveBeenCalledWith('twr1.' + id + '.' + 'Q'.repeat(43));
@@ -60,9 +62,23 @@ describe('native AI helpers', () => {
     expect(host.textContent).not.toContain('Connection line copied.');
   });
 
+  it('does not offer confirmation after a refused preview', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false,
+      text: async () => 'The league changed. Read it again before making this change.' }));
+    const host = await mount(render(NativeHelpers, props));
+    const request = 'twrc1.' + btoa(JSON.stringify({ tokenId: id,
+      change: { command: 'commish.franchise.edit' } }));
+    await type(control(host, 'Confirm request from your helper'), request);
+    await click(button(host, 'Check this change')); await settle();
+    expect(host.textContent).toContain('The league changed.');
+    expect(button(host, 'Confirm this change').disabled).toBe(true);
+    expect(host.textContent).not.toContain('Code for your helper:');
+  });
+
   it('shows the exact change before confirming it, and refuses a partial paste', async () => {
-    const fetcher = vi.fn().mockResolvedValue(reply({ message: 'Give this code to your AI helper.',
-      confirmation: '123.signed' }));
+    const description = 'Rename franchise\nFranchise 1 name changes from “Franchise 1 (F1)” '
+      + 'to “Helper team (HT)”.\nHelper: ' + id + '\n1 franchise affected: Franchise 1\nReason: “New name”';
+    const fetcher = vi.fn().mockResolvedValue(reply({ helperPreview: description }));
     vi.stubGlobal('fetch', fetcher);
     const host = await mount(render(NativeHelpers, props));
     await type(control(host, 'Confirm request from your helper'), 'twrc1.broken');
@@ -72,9 +88,21 @@ describe('native AI helpers', () => {
       change: { command: 'commish.franchise.edit', reason: 'New name', args: { people: { name: 'HT' } } } }))
       .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
     await type(control(host, 'Confirm request from your helper'), request);
-    expect(host.textContent).toContain('You are confirming commish.franchise.edit because “New name”');
+    expect(button(host, 'Confirm this change').disabled).toBe(true);
+    await click(button(host, 'Check this change')); await settle();
+    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ action: 'helper-check', change: request });
+    expect(host.textContent).toContain(description);
+    expect(host.textContent).not.toContain('commish.franchise.edit');
+    expect(host.textContent).not.toContain('{"people":');
+    await type(control(host, 'Confirm request from your helper'), 'twrc1.broken');
+    expect(button(host, 'Confirm this change').disabled).toBe(true);
+    expect(host.textContent).not.toContain(description);
+    await type(control(host, 'Confirm request from your helper'), request);
+    await click(button(host, 'Check this change')); await settle();
+    fetcher.mockResolvedValue(reply({ confirmation: '123.signed' }));
     await click(button(host, 'Confirm this change')); await settle();
-    expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({ action: 'helper-confirm', change: request });
+    expect(JSON.parse(fetcher.mock.calls[2][1].body)).toEqual({ action: 'helper-confirm', change: request });
     expect(host.textContent).toContain('Code for your helper: 123.signed');
+    expect(button(host, 'Confirm this change').disabled).toBe(true);
   });
 });
