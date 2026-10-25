@@ -12,6 +12,16 @@ export type Preview = {
   safeguard: Safeguard | null;
 };
 
+type PreviewField = Preview['fields'][number];
+
+// previewChange says one field's change in plain words: "before → after", adding no punctuation of
+// its own, and naming the timing only when the change does not take effect immediately.
+export function previewChange(field: Pick<PreviewField, 'before' | 'after' | 'when'>): string {
+  const change = `${field.before} → ${field.after}`;
+  return /^(in force )?now$/i.test(field.when.trim()) || !field.when.trim()
+    ? change : `${change} (${field.when})`;
+}
+
 export function parsePreview(value: unknown): Preview {
   const p = object(value, 'Change preview',
     ['question', 'target', 'fields', 'affects', 'blockers', 'safeguard']);

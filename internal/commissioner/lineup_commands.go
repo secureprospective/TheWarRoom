@@ -72,9 +72,12 @@ func (r RawCommand) validateLineupPlacement() error {
 }
 
 func lineupLabel(command string, change RawLineupChange) string {
-	if command == LineupCorrect {
-		return fmt.Sprintf("Set the week %d lineup of %s to %d starters by ruling", change.Week, change.Franchise,
-			len(change.Starters))
+	starters := fmt.Sprintf("%d starters", len(change.Starters))
+	if len(change.Starters) == 1 {
+		starters = "1 starter"
 	}
-	return fmt.Sprintf("Set the week %d lineup of %s to %d starters", change.Week, change.Franchise, len(change.Starters))
+	if command == LineupCorrect {
+		return fmt.Sprintf("Set the week %d lineup of %s to %s by ruling", change.Week, change.Franchise, starters)
+	}
+	return fmt.Sprintf("Set the week %d lineup of %s to %s", change.Week, change.Franchise, starters)
 }
