@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -161,4 +164,95 @@ func TestWindowExceptionOpensOneFranchiseUntilItExpires(t *testing.T) {
 	if !strings.Contains(fmt.Sprint(probe.ran), "franchise.01") || len(probe.ran) != 4 {
 		t.Fatalf("the exception ran %v", probe.ran)
 	}
+}
+
+func TestReleaseMatrixSpecializedDesktopDoors(t *testing.T) {
+	t.Parallel()
+	app := nativeSeedTestApp(t)
+	input := createNativeSeedLeague(t, app, commissioner.PresetLegacy)
+	seedNativeTest(t, app, input)
+	record := func(league, principal, command string, args commissioner.RawArgs, visibility string) {
+		t.Helper()
+		records, err := app.leagueRecords(t.Context(), league)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw := commissioner.RawCommand{League: league, Command: command, Args: args, Expected: int64(len(records)), Request: fmt.Sprintf("matrix.setup.%d", len(records)), Reason: "Set up disposable matrix", Effective: "now", Visibility: visibility}
+		if _, err := app.core.History.ExecuteCommissioner(t.Context(), raw, principal, nil); err != nil {
+			t.Fatal(err)
+		}
+	}
+	record("native.other", "other.creator", commissioner.Create, commissioner.RawArgs{Name: "Other matrix league", Preset: commissioner.PresetLegacy, Season: 2026, FranchiseCount: 32}, "league")
+	for _, person := range []struct {
+		principal string
+		role      governance.Role
+	}{{"deputy.one", governance.CoCommissioner}, {"deputy.two", governance.CoCommissioner}, {"dot", governance.DOT}} {
+		record(input.League, "creator", "commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{Principal: person.principal, Role: person.role}}, "private")
+	}
+	record(input.League, "creator", "commish.seat.replace", commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "owner", Franchise: "franchise.02"}}, "league")
+	record(input.League, "creator", commissioner.CaretakerSeat, commissioner.RawArgs{People: &commissioner.RawPeople{Principal: "creator", Franchise: "franchise.03"}}, "league")
+	for _, league := range []string{input.League, "native.other"} {
+		principal := "creator"
+		if league == "native.other" {
+			principal = "other.creator"
+		}
+		for _, rule := range []struct{ field, value string }{{"calendar.timezone", `"UTC"`}, {"calendar.boundary", `"start_of_day"`}, {"calendar.windows", `{"matrix":{"start":{"month":1,"day":1},"opens":["lineup","draft_pick"]}}`}} {
+			record(league, principal, commissioner.RulesSet, commissioner.RawArgs{Field: rule.field, Value: json.RawMessage(rule.value)}, "league")
+		}
+	}
+	snapshots := map[string][]commissioner.Record{}
+	for _, league := range []string{input.League, "native.other"} {
+		before, err := app.leagueRecords(t.Context(), league)
+		if err != nil {
+			t.Fatal(err)
+		}
+		snapshots[league] = before
+		for _, principal := range []string{"creator", "deputy.one", "deputy.two", "dot", "owner", "outsider"} {
+			app.core.CommissionerSession = testCommissionerSession{principal}
+			api := newCommissionerAPI(app)
+			doors := map[string]func() (commissioner.Receipt, error){
+				"TargetNativeSeed": func() (commissioner.Receipt, error) {
+					return api.TargetNativeSeed(RawNativeSeedRequest{League: league, Expected: int64(len(before)), Request: "matrix.seed", Reason: "Disposable seed"})
+				},
+				"TargetNativeLineupSet": func() (commissioner.Receipt, error) {
+					body, err := json.Marshal(RawLineupSet{League: league, Season: 2026, Week: 1, Franchise: "franchise.04", Starters: []string{"0099"}, Expected: int64(len(before)), Request: "matrix.lineup"})
+					if err != nil {
+						t.Fatal(err)
+					}
+					return api.TargetNativeLineupSet(string(body))
+				},
+				"TargetNativeDraftPick": func() (commissioner.Receipt, error) {
+					return api.TargetNativeDraftPick(commissioner.DraftPickInput{League: league, Season: 2026, Franchise: "franchise.04", Player: "0099", Expected: int64(len(before)), Request: "matrix.pick"})
+				},
+			}
+			exercised := 0
+			for _, command := range commissionerapp.NativeCommands() {
+				execute, ok := doors[command.Method]
+				if !ok {
+					continue
+				}
+				exercised++
+				t.Run(league+"/"+principal+"/"+command.ID, func(t *testing.T) {
+					receipt, err := execute()
+					if err == nil || receipt.Entry != "" {
+						t.Fatalf("specialized desktop denial recorded: %+v %v", receipt, err)
+					}
+					after, err := app.leagueRecords(t.Context(), league)
+					if err != nil || !reflect.DeepEqual(before, after) {
+						t.Fatalf("denial changed ledger: %v", err)
+					}
+				})
+			}
+			if exercised != len(doors) {
+				t.Fatal("specialized desktop catalog changed; extend matrix")
+			}
+		}
+	}
+	for league, before := range snapshots {
+		after, err := app.leagueRecords(t.Context(), league)
+		if err != nil || !reflect.DeepEqual(before, after) {
+			t.Fatalf("specialized denial changed either league: %v", err)
+		}
+	}
+
 }

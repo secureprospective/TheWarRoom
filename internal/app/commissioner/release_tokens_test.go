@@ -3,6 +3,7 @@ package commissioner
 import (
 	"context"
 	"errors"
+	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
@@ -12,13 +13,16 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
 	domain "github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 type releaseTokenFixture struct {
@@ -27,12 +31,12 @@ type releaseTokenFixture struct {
 	sessions *accounts.SessionService
 	tokens   *accounts.TokenService
 	creator  accounts.DeviceSession
+	football string
 }
 
-func newReleaseTokenFixture(t *testing.T) *releaseTokenFixture {
+func newReleaseTokenFixture(t *testing.T, workflow ...bool) *releaseTokenFixture {
 	t.Helper()
-	app := commissionerTestApp(t)
-	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "accounts.db"))
+	pools, err := db.Open(t.Context(), filepath.Join(t.TempDir(), "server.db"), history.SchemaVersion())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,6 +45,20 @@ func newReleaseTokenFixture(t *testing.T) *releaseTokenFixture {
 			t.Error(err)
 		}
 	})
+	registry, err := os.ReadFile(commissionertest.RepoPath("docs/ui/endpoint-registry.csv"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	measures, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := history.New(pools, measures)
+	if err := ledger.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	app := &ledgerFixture{history: ledger, registry: string(registry)}
+	app.API = New(fixtureHost{SessionHost: app, LeagueHost: ledger, ResultsHost: ledger, RosterHost: ledger, MutationHost: ledger})
 	store := accountstore.New(pools)
 	credentials := accounts.RawCredentials{Username: "commissioner", Password: "release-matrix-password"}
 	principal, err := hostedfixture.Bootstrap(t.Context(), store, credentials)
@@ -48,15 +66,20 @@ func newReleaseTokenFixture(t *testing.T) *releaseTokenFixture {
 		t.Fatal(err)
 	}
 	app.session = string(principal)
-	executeCommissionerTest(t, app, domain.RawCommand{League: "native.hosted", Command: domain.Create,
-		Args:    domain.RawArgs{Name: "Matrix league", Preset: domain.PresetEmpty, Season: 2026, FranchiseCount: 4},
-		Request: "create", Reason: "Create disposable league", Effective: "now", Visibility: "league"})
+	football := ""
+	if len(workflow) > 0 && workflow[0] {
+		football = releaseWorkflowLeague(t, ledger, principal)
+	} else {
+		executeCommissionerTest(t, app, domain.RawCommand{League: "native.hosted", Command: domain.Create,
+			Args:    domain.RawArgs{Name: "Matrix league", Preset: domain.PresetEmpty, Season: 2026, FranchiseCount: 4},
+			Request: "create", Reason: "Create disposable league", Effective: "now", Visibility: "league"})
+	}
 	sessions := accounts.NewSessions(accounts.New(store), store)
 	creator, err := sessions.Login(t.Context(), credentials, "matrix commissioner")
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &releaseTokenFixture{app: app, store: store, sessions: sessions, creator: creator,
+	return &releaseTokenFixture{app: app, store: store, sessions: sessions, creator: creator, football: football,
 		tokens: accounts.NewTokens(store, serverhttp.TokenPolicy{Store: app.history})}
 }
 

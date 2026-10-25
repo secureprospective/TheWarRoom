@@ -1,0 +1,1735 @@
+{
+  "commish.league.create": {
+    "args": {
+      "name": "Matrix league",
+      "preset": "empty",
+      "season": 2026,
+      "franchiseCount": 4,
+      "franchises": [
+        "franchise.01",
+        "franchise.02",
+        "franchise.03",
+        "franchise.04"
+      ]
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.correction.revert": {
+    "args": {
+      "entry": "reference.note"
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": []
+  },
+  "commish.rules.set": {
+    "args": {
+      "field": "roster.limits",
+      "value": {
+        "min": 20,
+        "max": 70
+      }
+    },
+    "visibility": "league",
+    "effective": "next_rollover",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "contract.action.set": {
+    "args": {
+      "contractAction": {
+        "action": "tag",
+        "on": false,
+        "params": {}
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.league.seed_held": {
+    "args": {
+      "native": {
+        "season": 2026,
+        "rosterAt": "2026-10-24T12:00:00Z",
+        "draftAt": "2026-10-24T12:00:00Z",
+        "futureAt": "2026-10-24T12:00:00Z",
+        "franchises": [
+          {
+            "id": "franchise.01",
+            "heldId": "1",
+            "name": "Team 1"
+          },
+          {
+            "id": "franchise.02",
+            "heldId": "2",
+            "name": "Team 2"
+          },
+          {
+            "id": "franchise.03",
+            "heldId": "3",
+            "name": "Team 3"
+          },
+          {
+            "id": "franchise.04",
+            "heldId": "4",
+            "name": "Team 4"
+          },
+          {
+            "id": "franchise.05",
+            "heldId": "5",
+            "name": "Team 5"
+          },
+          {
+            "id": "franchise.06",
+            "heldId": "6",
+            "name": "Team 6"
+          },
+          {
+            "id": "franchise.07",
+            "heldId": "7",
+            "name": "Team 7"
+          },
+          {
+            "id": "franchise.08",
+            "heldId": "8",
+            "name": "Team 8"
+          },
+          {
+            "id": "franchise.09",
+            "heldId": "9",
+            "name": "Team 9"
+          },
+          {
+            "id": "franchise.10",
+            "heldId": "10",
+            "name": "Team 10"
+          },
+          {
+            "id": "franchise.11",
+            "heldId": "11",
+            "name": "Team 11"
+          },
+          {
+            "id": "franchise.12",
+            "heldId": "12",
+            "name": "Team 12"
+          },
+          {
+            "id": "franchise.13",
+            "heldId": "13",
+            "name": "Team 13"
+          },
+          {
+            "id": "franchise.14",
+            "heldId": "14",
+            "name": "Team 14"
+          },
+          {
+            "id": "franchise.15",
+            "heldId": "15",
+            "name": "Team 15"
+          },
+          {
+            "id": "franchise.16",
+            "heldId": "16",
+            "name": "Team 16"
+          },
+          {
+            "id": "franchise.17",
+            "heldId": "17",
+            "name": "Team 17"
+          },
+          {
+            "id": "franchise.18",
+            "heldId": "18",
+            "name": "Team 18"
+          },
+          {
+            "id": "franchise.19",
+            "heldId": "19",
+            "name": "Team 19"
+          },
+          {
+            "id": "franchise.20",
+            "heldId": "20",
+            "name": "Team 20"
+          },
+          {
+            "id": "franchise.21",
+            "heldId": "21",
+            "name": "Team 21"
+          },
+          {
+            "id": "franchise.22",
+            "heldId": "22",
+            "name": "Team 22"
+          },
+          {
+            "id": "franchise.23",
+            "heldId": "23",
+            "name": "Team 23"
+          },
+          {
+            "id": "franchise.24",
+            "heldId": "24",
+            "name": "Team 24"
+          },
+          {
+            "id": "franchise.25",
+            "heldId": "25",
+            "name": "Team 25"
+          },
+          {
+            "id": "franchise.26",
+            "heldId": "26",
+            "name": "Team 26"
+          },
+          {
+            "id": "franchise.27",
+            "heldId": "27",
+            "name": "Team 27"
+          },
+          {
+            "id": "franchise.28",
+            "heldId": "28",
+            "name": "Team 28"
+          },
+          {
+            "id": "franchise.29",
+            "heldId": "29",
+            "name": "Team 29"
+          },
+          {
+            "id": "franchise.30",
+            "heldId": "30",
+            "name": "Team 30"
+          },
+          {
+            "id": "franchise.31",
+            "heldId": "31",
+            "name": "Team 31"
+          },
+          {
+            "id": "franchise.32",
+            "heldId": "32",
+            "name": "Team 32"
+          }
+        ],
+        "players": [
+          {
+            "id": "0099",
+            "franchise": "franchise.02",
+            "status": "ROSTER",
+            "salaryCents": 100,
+            "expirationYear": 2027
+          }
+        ],
+        "picks": [],
+        "adjustments": []
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "season.rollover": {
+    "args": {
+      "rollover": {
+        "to": 2027
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.calendar.exception": {
+    "args": {
+      "exception": {
+        "action": "lineup",
+        "franchise": "franchise.02",
+        "until": "2027-01-01T00:00:00Z"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "correct.roster": {
+    "args": {
+      "correction": {
+        "player": "0099",
+        "franchise": "franchise.02",
+        "action": "remove"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "correct.transaction": {
+    "args": {
+      "correction": {
+        "entry": "reference.cut"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "correct.provenance": {
+    "args": {
+      "correction": {
+        "player": "0099",
+        "via": "held"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "correct.pick": {
+    "args": {
+      "correction": {
+        "pick": {
+          "season": 2027,
+          "round": 1,
+          "original": "franchise.01"
+        },
+        "owner": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "rule.exception": {
+    "args": {
+      "correction": {
+        "rule": "roster.limits",
+        "scope": {
+          "franchise": "franchise.02"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.order.auto": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "source": "standings"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.order.set": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "order": [
+          "franchise.01",
+          "franchise.02"
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.order.pattern": {
+    "args": {
+      "draft": {
+        "pattern": "snake"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.order.tiebreak": {
+    "args": {
+      "draft": {
+        "tie": "coin toss"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.start": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "at": "2026-10-24T12:00:00Z"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.pick": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "pick": {
+          "franchise": "franchise.02",
+          "player": "0099",
+          "entrySeason": 2026,
+          "round": 1,
+          "slot": 1,
+          "original": "franchise.02",
+          "terms": {
+            "years": 1,
+            "salaryCents": 100
+          }
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": []
+  },
+  "draft.skip": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "round": 1,
+          "original": "franchise.01"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.assign": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "round": 1,
+          "original": "franchise.01",
+          "player": "0099"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.insert": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "round": 1,
+          "original": "franchise.01",
+          "franchise": "franchise.02",
+          "player": "0099"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.change": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "round": 1,
+          "original": "franchise.01",
+          "player": "0099",
+          "replaces": "0100"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.timer": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "timer": "pause"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.revert": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "act": {
+          "to": "reference.draft"
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.archive": {
+    "args": {
+      "draft": {
+        "season": 2026
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "calendar.window.set": {
+    "args": {
+      "window": {
+        "id": "matrix",
+        "start": {
+          "month": 3,
+          "day": 1
+        },
+        "opens": [
+          "lineup"
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "calendar.window.move": {
+    "args": {
+      "window": {
+        "id": "matrix",
+        "start": {
+          "month": 3,
+          "day": 2
+        }
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "calendar.window.remove": {
+    "args": {
+      "window": {
+        "id": "matrix"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.contract.edit": {
+    "args": {
+      "override": {
+        "player": "0099",
+        "years": 2,
+        "salaryCents": 100
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.cap.adjust": {
+    "args": {
+      "override": {
+        "franchise": "franchise.02",
+        "amountCents": 100,
+        "season": 2026
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.cap.relief": {
+    "args": {
+      "override": {
+        "player": "0099",
+        "amountCents": 100
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.reserve.exception": {
+    "args": {
+      "override": {
+        "player": "0099",
+        "bucket": "ir"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "schedule.generate": {
+    "args": {
+      "schedule": {
+        "weeks": 1
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "schedule.edit": {
+    "args": {
+      "schedule": {
+        "week": 1,
+        "games": [
+          {
+            "id": "game.01",
+            "home": "franchise.02",
+            "away": "franchise.01"
+          }
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "schedule.publish": {
+    "args": {
+      "schedule": {}
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bracket.build": {
+    "args": {
+      "bracket": {
+        "season": 2026,
+        "preset": "league_rules"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bracket.edit": {
+    "args": {
+      "bracket": {
+        "season": 2026,
+        "node": "final/home",
+        "team": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bracket.seed": {
+    "args": {
+      "bracket": {
+        "season": 2026,
+        "slot": 1,
+        "team": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bracket.preset.save": {
+    "args": {
+      "bracket": {
+        "season": 2026,
+        "name": "matrix",
+        "shape": [
+          {
+            "id": "final",
+            "week": 17,
+            "homeSeed": 1,
+            "awaySeed": 2
+          }
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bracket.advance": {
+    "args": {
+      "bracket": {
+        "season": 2026,
+        "game": "final",
+        "team": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.standings.record.adjust": {
+    "args": {
+      "standings": {
+        "season": 2026,
+        "franchise": "franchise.02",
+        "wins": 1
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.standings.override": {
+    "args": {
+      "standings": {
+        "season": 2026,
+        "order": [
+          "franchise.01",
+          "franchise.02"
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.standings.override.clear": {
+    "args": {
+      "standings": {
+        "season": 2026
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.stat.queue.approve": {
+    "args": {
+      "stat": {
+        "item": "stat.2026.1.0099.1.0123456789abcdef"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.stat.queue.reject": {
+    "args": {
+      "stat": {
+        "item": "stat.2026.1.0099.1.0123456789abcdef"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.stat.correct": {
+    "args": {
+      "stat": {
+        "player": "0099",
+        "season": 2026,
+        "week": 1,
+        "stat": "passing_yards",
+        "value": 10000,
+        "source": "Official game book"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.player.position": {
+    "args": {
+      "score": {
+        "player": "0099",
+        "position": "WR"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.player.position.clear": {
+    "args": {
+      "score": {
+        "player": "0099"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.score.player": {
+    "args": {
+      "score": {
+        "player": "0099",
+        "season": 2026,
+        "week": 1,
+        "delta": 10000
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.score.franchise": {
+    "args": {
+      "score": {
+        "franchise": "franchise.02",
+        "season": 2026,
+        "week": 1,
+        "delta": 10000
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.lineup.set": {
+    "args": {
+      "lineup": {
+        "season": 2026,
+        "week": 1,
+        "franchise": "franchise.02",
+        "starters": [
+          "0099"
+        ]
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "commish.lineup.correct": {
+    "args": {
+      "lineup": {
+        "season": 2026,
+        "week": 1,
+        "franchise": "franchise.02",
+        "starters": [
+          "0099"
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "title.set": {
+    "args": {
+      "title": {
+        "season": 2026,
+        "label": "Matrix champion"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "history.link": {
+    "args": {
+      "link": {
+        "record": "season.2025",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.notice.publish": {
+    "args": {
+      "note": {
+        "text": "Matrix league note"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.whatsnew.post": {
+    "args": {
+      "note": {
+        "text": "Matrix league note"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "trade.offer": {
+    "args": {
+      "trade": {
+        "franchise": "franchise.02",
+        "parties": [
+          "franchise.02",
+          "franchise.01"
+        ],
+        "assets": [
+          {
+            "from": "franchise.02",
+            "to": "franchise.01",
+            "player": "0099"
+          }
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "trade.accept": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "trade.decline": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "trade.withdraw": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "trade.review": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "decision": "approve"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "trade.recuse": {
+    "args": {
+      "trade": {
+        "id": "reference.trade"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "trade.appeal": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "trade.appeal.rule": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "decision": "approve"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "trade.override": {
+    "args": {
+      "trade": {
+        "id": "reference.trade",
+        "decision": "approve"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "roster.reserve": {
+    "args": {
+      "waiver": {
+        "player": "0099",
+        "franchise": "franchise.02",
+        "bucket": "ir"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "roster.cut": {
+    "args": {
+      "waiver": {
+        "player": "0099",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "waivers.claim": {
+    "args": {
+      "waiver": {
+        "window": "reference.cut",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "waivers.process": {
+    "args": {
+      "waiver": {
+        "window": "reference.cut"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "waivers.order.set": {
+    "args": {
+      "waiver": {
+        "order": [
+          "franchise.01",
+          "franchise.02"
+        ]
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "waivers.order.auto": {
+    "args": {
+      "waiver": {}
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "waivers.award.override": {
+    "args": {
+      "waiver": {
+        "claim": "reference.claim",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bid.place": {
+    "args": {
+      "bid": {
+        "player": "0099",
+        "franchise": "franchise.02",
+        "salaryCents": 100,
+        "years": 1
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "bid.raise": {
+    "args": {
+      "bid": {
+        "bid": "reference.bid",
+        "franchise": "franchise.02",
+        "salaryCents": 200,
+        "years": 1
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "bid.withdraw": {
+    "args": {
+      "bid": {
+        "bid": "reference.bid",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "owner"
+    ]
+  },
+  "bids.process": {
+    "args": {
+      "bid": {
+        "player": "0099"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "bids.award.override": {
+    "args": {
+      "bid": {
+        "bid": "reference.bid",
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.seat.caretaker": {
+    "args": {
+      "people": {
+        "franchise": "franchise.03",
+        "principal": "$actor"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.franchise.edit": {
+    "args": {
+      "people": {
+        "franchise": "franchise.02",
+        "name": "Matrix",
+        "abbreviation": "MTX"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.seat.invite": {
+    "args": {
+      "people": {
+        "id": "matrix.invite",
+        "franchise": "franchise.04",
+        "principal": "$actor"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.seat.invite.revoke": {
+    "args": {
+      "people": {
+        "id": "matrix.invite"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.seat.invite.redeem": {
+    "args": {
+      "people": {
+        "id": "matrix.invite",
+        "principal": "$actor"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": []
+  },
+  "commish.seat.remove": {
+    "args": {
+      "people": {
+        "franchise": "franchise.02"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.seat.replace": {
+    "args": {
+      "people": {
+        "franchise": "franchise.02",
+        "principal": "$actor"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.abilities.set": {
+    "args": {
+      "people": {
+        "franchise": "franchise.02",
+        "ability": "lineups",
+        "on": false
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.visibility.set": {
+    "args": {
+      "people": {
+        "report": "roster",
+        "audience": "owners"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "commish.role.grant": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "role": "DOT"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.role.revoke": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "role": "DOT"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.deputy.order": {
+    "args": {
+      "people": {
+        "order": [
+          "deputy.one",
+          "deputy.two"
+        ]
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.succession.stepdown": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "successor": "deputy.one"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.succession.accept": {
+    "args": {
+      "people": {
+        "principal": "$actor"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT",
+      "owner",
+      "outsider"
+    ]
+  },
+  "commish.succession.decline": {
+    "args": {
+      "people": {
+        "principal": "$actor"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT",
+      "owner",
+      "outsider"
+    ]
+  },
+  "commish.succession.inactivity.set": {
+    "args": {
+      "people": {
+        "inSeasonDays": 30,
+        "offseasonDays": 60
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.succession.activity": {
+    "args": {
+      "people": {
+        "principal": "$actor"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.succession.takeover": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "commissioner": "creator"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT",
+      "owner",
+      "outsider"
+    ]
+  },
+  "commish.succession.voteout.open": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "id": "matrix.vote",
+        "commissioner": "creator"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "commish.succession.election.open": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "id": "matrix.election"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "commish.succession.periods.set": {
+    "args": {
+      "people": {
+        "electionDays": 3,
+        "runoffDays": 2
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner"
+    ]
+  },
+  "commish.vote.cast": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "id": "matrix.vote",
+        "choice": "yes"
+      }
+    },
+    "visibility": "private",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT",
+      "owner",
+      "outsider"
+    ]
+  },
+  "commish.vote.close": {
+    "args": {
+      "people": {
+        "id": "matrix.vote"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "deputy",
+      "second-deputy",
+      "DOT"
+    ]
+  },
+  "commish.vote.tiebreak": {
+    "args": {
+      "people": {
+        "principal": "$actor",
+        "id": "matrix.vote",
+        "choice": "yes"
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy",
+      "DOT",
+      "owner",
+      "outsider"
+    ]
+  }
+}

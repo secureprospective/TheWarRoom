@@ -48,3 +48,12 @@ without importing or activating anything. This console operation needs the exist
 league database and a private export key, not the saved HTTPS connection token. See
 [`internal/leaguetransfer/README.md`](../../internal/leaguetransfer/README.md) for the
 commands, key custody, pinned-evidence requirements and authority warnings.
+
+## Authorization regression matrix
+
+`release_matrix_test.go` sends every catalog mutation fixture through the real CLI
+and SDK MCP tools to a disposable TLS hosted server. Both helper modes, two
+leagues, undelegable commands and revoked retries must leave both histories
+unchanged. The fixture inventory is checked against `NativeCommands` in
+`internal/app/commissioner`; release evidence is in
+`docs/build-handoffs/Release_Blocker_Matrix_2026-10.md`.
