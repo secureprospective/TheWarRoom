@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"time"
@@ -76,7 +77,7 @@ func projectWaiver(seed *RawNativeSnapshot, state *waiverState, r Record) error 
 		}
 		seed.Players = slices.Delete(seed.Players, index, index+1)
 		seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
-			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + args.Player})
+			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(result.Player.Name, args.Player)})
 		state.Windows = append(state.Windows, waiverWindow{ID: r.Receipt.Entry, Player: *result.Player,
 			CutAt: r.Receipt.RecordedAt, Season: result.Season, Dead: result.Dead, Claims: []waiverClaim{}})
 	case WaiverClaim:

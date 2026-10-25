@@ -70,7 +70,7 @@ func CreateWorkflowLeague(ctx context.Context, store *history.Store, principal g
 func setupWorkflowRules(record func(string, commissioner.RawArgs) error, at time.Time, order []string) error {
 	for _, rule := range []struct{ field, value string }{
 		{"roster.limits", `{"min":0,"max":100}`}, {"cap.amount", `100000000000`},
-		{"calendar.timezone", `"UTC"`}, {"calendar.boundary", `"start_of_day"`},
+		{"calendar.timezone", `"America/Chicago"`}, {"calendar.boundary", `"start_of_day"`},
 		{"calendar.windows", `{"rookie_draft":{"start":{"month":1,"day":1},"opens":["draft_pick","lineup","ir","taxi","cut","waiver_claim","ufa_bid","trade"]}}`},
 		{"lineup.positions", `{"QB":{"min":1,"max":1},"WR":{"min":0,"max":2}}`},
 		{"lineup.groups", `{"total":{"min":1,"max":3}}`},
@@ -91,7 +91,7 @@ func setupWorkflowRules(record func(string, commissioner.RawArgs) error, at time
 	if err := record(commissioner.RulesSet, commissioner.RawArgs{Field: "league.alignment", Value: divisions}); err != nil {
 		return err
 	}
-	deadline, err := json.Marshal(at.Add(365 * 24 * time.Hour))
+	deadline, err := json.Marshal(at.AddDate(0, 0, 30))
 	if err != nil {
 		return fmt.Errorf("practice deadline: %w", err)
 	}

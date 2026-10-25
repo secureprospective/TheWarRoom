@@ -23,7 +23,7 @@ func TestRolloverRoutesExpiringPlayersByRookieRound(t *testing.T) {
 		routes[pending.Player] = pending.Route
 	}
 	for id, want := range map[string]string{"0001": "Unrestricted free agent", "0002": "Restricted free agent",
-		"0003": "Restricted free agent", "0004": "Unrestricted free agent", "0005": "cannot be determined"} {
+		"0003": "Restricted free agent", "0004": "Unrestricted free agent", "0005": "cannot say yet whether he becomes a restricted or unrestricted"} {
 		if !strings.Contains(routes[id], want) {
 			t.Fatalf("player %s route %q, want %q", id, routes[id], want)
 		}

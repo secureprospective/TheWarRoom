@@ -2,6 +2,7 @@ package history
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -119,6 +120,10 @@ func (s *Store) SetPinnedFootball(evidence *PinnedFootball) {
 	s.SetBidEnvironment(pinnedBidEnvironment{store: s, evidence: evidence})
 }
 
+// ErrBidSeasonEvidence marks selected football evidence that is not for the league's current season.
+// Bids are refused; a bid reading still opens and says why.
+var ErrBidSeasonEvidence = errors.New("select football evidence for the league's current season before bidding")
+
 type pinnedBidEnvironment struct {
 	store    *Store
 	evidence *PinnedFootball
@@ -130,7 +135,7 @@ func (p pinnedBidEnvironment) BidEnvironment(ctx context.Context, league string,
 		return commissioner.BidEnvironment{}, fmt.Errorf("read bid season: %w", err)
 	}
 	if p.evidence == nil || assets.Snapshot == nil || assets.Snapshot.Season != p.evidence.raw.Season {
-		return commissioner.BidEnvironment{}, fmt.Errorf("select football evidence for the league's current season before bidding")
+		return commissioner.BidEnvironment{}, ErrBidSeasonEvidence
 	}
 	return p.evidence.BidEnvironment(ctx, league, at)
 }

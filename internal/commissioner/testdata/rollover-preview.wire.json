@@ -7,23 +7,23 @@
   "lines": [
     "A player with no name recorded (0001) returns from taxi to the active roster.",
     "A player with no name recorded (0001): contract years remaining change from 1 to 0.",
-    "A player with no name recorded (0001) is pending a contract decision, not released. RFA or UFA cannot be determined: the rookie contract's draft round is not recorded.",
+    "A player with no name recorded (0001) is pending a contract decision, not released. The app cannot say yet whether he becomes a restricted or unrestricted free agent: no rookie draft round is recorded for his contract.",
     "A player with no name recorded (0002) returns from injured reserve to the active roster.",
     "A player with no name recorded (0002): contract years remaining change from 3 to 2.",
-    "A player with no name recorded (0003): contract years are not built yet; no end year recorded.",
+    "A player with no name recorded (0003): no contract end year is recorded, so the contract is unchanged.",
     "No champion is decided for season 2026, so none is archived.",
     "Team f01: the salary adjustment (, $1.23) ends with season 2026; the cap resets.",
-    "The contracts window opens 1 Mar 2027 at 12:00 AM EST and closes 1 May 2027 at 12:00 AM EDT.",
-    "The cut buyout window opens 25 Aug 2027 at 12:00 AM EDT and closes 2 Sep 2027 at 12:00 AM EDT.",
-    "The lineups window opens 1 Mar 2027 at 12:00 AM EST.",
-    "The open fa window opens 19 May 2027 at 12:00 AM EDT.",
-    "The resign window opens 10 May 2027 at 12:00 AM EDT and closes 16 May 2027 at 12:00 AM EDT.",
-    "The rfa tenders window opens 1 May 2027 at 12:00 AM EDT and closes 3 May 2027 at 12:00 AM EDT.",
-    "The rookie draft window opens 14 Jul 2027 at 12:00 AM EDT.",
-    "The ufa window opens 3 May 2027 at 12:00 AM EDT and closes 10 May 2027 at 12:00 AM EDT.",
-    "The waivers window opens 1 Mar 2027 at 12:00 AM EST.",
+    "The contracts window opens Mon, Mar 1, 2027 at 12:00 AM EST and closes Sat, May 1, 2027 at 12:00 AM EDT.",
+    "The cut buyout window opens Wed, Aug 25, 2027 at 12:00 AM EDT and closes Thu, Sep 2, 2027 at 12:00 AM EDT.",
+    "The lineups window opens Mon, Mar 1, 2027 at 12:00 AM EST.",
+    "The open fa window opens Wed, May 19, 2027 at 12:00 AM EDT.",
+    "The resign window opens Mon, May 10, 2027 at 12:00 AM EDT and closes Sun, May 16, 2027 at 12:00 AM EDT.",
+    "The rfa tenders window opens Sat, May 1, 2027 at 12:00 AM EDT and closes Mon, May 3, 2027 at 12:00 AM EDT.",
+    "The rookie draft window opens Wed, Jul 14, 2027 at 12:00 AM EDT.",
+    "The ufa window opens Mon, May 3, 2027 at 12:00 AM EDT and closes Mon, May 10, 2027 at 12:00 AM EDT.",
+    "The waivers window opens Mon, Mar 1, 2027 at 12:00 AM EST.",
     "The new season's salary cap resets to $125,000,000.",
-    "Future annual contract salaries: not built yet; recorded salaries are unchanged.",
+    "Salaries stay as recorded.",
     "No draft picks are issued at rollover.",
     "The league schedule starts empty for season 2027; the season 2026 schedule stays in the ledger."
   ],
@@ -313,7 +313,7 @@
     {
       "player": "0001",
       "franchise": "f01",
-      "route": "RFA or UFA cannot be determined: the rookie contract's draft round is not recorded."
+      "route": "The app cannot say yet whether he becomes a restricted or unrestricted free agent: no rookie draft round is recorded for his contract."
     }
   ],
   "rules": {

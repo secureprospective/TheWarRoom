@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -12,10 +13,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-type workflowClock struct{}
+// workflowClock runs ahead of the wall clock by skew, which tests advance to pass due deadlines.
+type workflowClock struct{ skew *atomic.Int64 }
 
-func (workflowClock) Now() time.Time { return time.Now() }
-func (workflowClock) Trusted() error { return nil }
+func (c workflowClock) Now() time.Time { return time.Now().Add(time.Duration(c.skew.Load())) }
+func (workflowClock) Trusted() error   { return nil }
 
 func workflowRequest(t *testing.T, command, mode string, args string, football string) serverhttp.RawWorkflow {
 	t.Helper()

@@ -120,7 +120,7 @@ func (p *RolloverPlan) agePlayers(names map[string]string) {
 			player.Status = domain.RosterActive
 		}
 		if player.ExpirationYear == 0 {
-			p.Lines = append(p.Lines, fmt.Sprintf("%s: contract years are not built yet; no end year recorded.",
+			p.Lines = append(p.Lines, fmt.Sprintf("%s: no contract end year is recorded, so the contract is unchanged.",
 				name))
 			continue
 		}
@@ -158,10 +158,19 @@ func (p *RolloverPlan) block(reason string) {
 }
 
 func (p *RolloverPlan) describeRules(before leaguerules.RuleSet) {
+	zone, zoneErr := time.LoadLocation(p.Rules.Calendar.Timezone.Value)
 	for _, change := range leaguerules.Diff(before, p.Rules) {
-		p.Lines = append(p.Lines, change.Label+" takes effect: "+
-			leaguerules.DescribeField(change.Field, change.After).Words+".")
+		words := leaguerules.DescribeField(change.Field, change.After).Words
+		if at, ok := change.After.(leaguerules.Value[time.Time]); ok && at.State == leaguerules.IsKnown && zoneErr == nil {
+			words = leagueTimeWords(at.Value, zone)
+		}
+		p.Lines = append(p.Lines, change.Label+" takes effect: "+words+".")
 	}
+}
+
+// leagueTimeWords is a rollover date in the league's own time zone, worded like the app's other times.
+func leagueTimeWords(at time.Time, zone *time.Location) string {
+	return at.In(zone).Format("Mon, Jan 2, 2006 at 3:04 PM MST")
 }
 
 func (p *RolloverPlan) describeCap(noAssets bool) {
@@ -172,6 +181,6 @@ func (p *RolloverPlan) describeCap(noAssets bool) {
 		p.Lines = append(p.Lines, "The new season's salary cap resets to "+value.Words+".")
 	}
 	if !noAssets {
-		p.Lines = append(p.Lines, "Future annual contract salaries: not built yet; recorded salaries are unchanged.")
+		p.Lines = append(p.Lines, "Salaries stay as recorded.")
 	}
 }

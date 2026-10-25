@@ -128,8 +128,8 @@ func TestRolloverBlocksNeededRulingsAndDisclosesUnbuiltFacts(t *testing.T) {
 	state, rules := rolloverInputs()
 	plan := requireRollover(t, state, rules)
 	lines := strings.Join(plan.Lines, "\n")
-	for _, missing := range []string{"RFA or UFA cannot be determined", "Future annual contract salaries: not built yet",
-		"No champion is decided for season 2026", "contract years are not built yet"} {
+	for _, missing := range []string{"cannot say yet whether he becomes a restricted or unrestricted free agent", "Salaries stay as recorded.",
+		"No champion is decided for season 2026", "no contract end year is recorded, so the contract is unchanged"} {
 		if !strings.Contains(lines, missing) {
 			t.Fatalf("missing disclosure %q", missing)
 		}

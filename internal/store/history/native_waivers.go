@@ -2,6 +2,7 @@ package history
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -86,6 +87,10 @@ func (s *Store) NativeBids(ctx context.Context, league, franchise, principal str
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	if s.bidEnv != nil {
 		env, err := s.bidEnv.BidEnvironment(ctx, league, at)
+		if errors.Is(err, ErrBidSeasonEvidence) {
+			reading.Notes = append(reading.Notes, fmt.Sprintf("Bids for the %d season open once the server operator selects football players and schedule for that season.", reading.Season))
+			return reading, nil
+		}
 		if err != nil {
 			return commissioner.NativeBids{}, fmt.Errorf("read bidding season: %w", err)
 		}

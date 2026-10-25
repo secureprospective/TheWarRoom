@@ -268,7 +268,7 @@ func previewContextKey(raw RawCommand, key string) bool {
 	case raw.Args.Bid != nil:
 		return strings.HasPrefix(key, "Bids for player")
 	case raw.Args.Trade != nil:
-		return strings.HasPrefix(key, "Trade "+raw.Args.Trade.ID)
+		return strings.HasPrefix(key, "This trade")
 	default:
 		return true
 	}
@@ -298,7 +298,8 @@ func standingsPreviewValues(raw RawCommand, records []Record) (map[string]string
 	}
 	for id, r := range view.Records {
 		out["Record set by hand for "+id] =
-			fmt.Sprintf("%d wins, %d losses, %d ties", r.Wins, r.Losses, r.Ties)
+			countWords(r.Wins, "win", "wins") + ", " + countWords(r.Losses, "loss", "losses") + ", " +
+				countWords(r.Ties, "tie", "ties")
 	}
 	return out, nil
 }
