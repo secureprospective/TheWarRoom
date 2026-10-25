@@ -55,7 +55,11 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			if response.Code != http.StatusUpgradeRequired || response.Header().Get(serverhttp.UpdateHeader) != string(side) {
 				t.Fatalf("webview lost update signal: %d %s", response.Code, response.Body.String())
 			}
-			if retry || calls != 4 {
+			expectedCalls := 4
+			if side == serverversion.App {
+				expectedCalls = 3
+			} // Once refused, native actions stay blocked locally.
+			if retry || calls != expectedCalls {
 				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls)
 			}
 		})

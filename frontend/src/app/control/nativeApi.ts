@@ -1,10 +1,11 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
-export type NativeAction = 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
+export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
 export type NativeView = {
   helperPreview?: string;
+  update?: 'app' | 'server';
   server: string; league: string; message: string; name: string; role: string;
   franchise: string; franchiseName: string; seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
@@ -18,7 +19,8 @@ const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
 export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
-  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
+  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0) + ('update' in value ? 1 : 0)
+    || ('update' in value && value.update !== 'app' && value.update !== 'server')
     || ('helperPreview' in value && typeof value.helperPreview !== 'string')
     || textKeys.some(key => typeof value[key] !== 'string')
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
@@ -38,6 +40,12 @@ async function post(body: Record<string, string>): Promise<NativeView> {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
     body: JSON.stringify(body),
   });
+  if (response.status === 426) {
+    const view = parseNativeView(await response.json());
+    if (!view.update) throw new Error('The update request could not be read. Close and reopen the app.');
+    window.dispatchEvent(new CustomEvent('native-update', { detail: view }));
+    return view;
+  }
   if (!response.ok) throw new Error(await response.text());
   return parseNativeView(await response.json());
 }

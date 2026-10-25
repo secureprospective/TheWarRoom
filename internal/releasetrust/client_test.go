@@ -19,9 +19,10 @@ import (
 )
 
 type repository struct {
-	root  *metadata.Metadata[metadata.RootType]
-	keys  map[string][]signature.Signer
-	files map[string][]byte
+	root     *metadata.Metadata[metadata.RootType]
+	keys     map[string][]signature.Signer
+	files    map[string][]byte
+	payloads map[string][]byte
 }
 
 func newRepository(t *testing.T) *repository {
@@ -53,6 +54,7 @@ func newRepository(t *testing.T) *repository {
 	}
 	r.root.Signed.Roles["root"].Threshold = 2
 	r.files["/metadata/1.root.json"] = signed(t, r.root, r.keys["root"][:2]...)
+	r.payloads = map[string][]byte{"app.tar.gz": []byte("reviewed application"), "client-config.json": configBytes(t)}
 	r.publish(t, 1, "")
 	return r
 }
@@ -82,7 +84,7 @@ func (r *repository) publish(t *testing.T, version int64, expired string) {
 	}
 	targets := metadata.Targets(expiry("targets"))
 	targets.Signed.Version = version
-	for name, payload := range map[string][]byte{"app.tar.gz": []byte("reviewed application"), "client-config.json": configBytes(t)} {
+	for name, payload := range r.payloads {
 		info, err := metadata.TargetFile().FromBytes(name, payload, "sha256")
 		if err != nil {
 			t.Fatal(err)
