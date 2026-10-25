@@ -152,3 +152,8 @@ a long lifetime to avoid an unattended-expiry outage. It is not desktop/public
 trust material. Public TLS and renewal belong to Cloudflare. This slice makes no
 claim against Proxmox root, CT root, a running compromised process, host swap or
 unencrypted backing storage. No owners connect until the integrated release gates.
+
+## Updating an installed server
+
+Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the new bundle's
+`upgrade.sh`; never rerun the installer or replace only the binary over newer data.

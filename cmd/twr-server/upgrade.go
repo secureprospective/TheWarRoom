@@ -57,6 +57,9 @@ func upgradeFile(ctx context.Context, path, save, backup string, output io.Write
 	if err := upgradeReady(ctx, path); err != nil {
 		return putBack(path, saved, err)
 	}
+	if err := runCheckpoint(ctx, []string{"-db", path, "-check", filepath.Join(save, "checkpoint.json")}, io.Discard); err != nil {
+		return putBack(path, saved, err)
+	}
 	current := serverversion.Current()
 	return report(output, fmt.Sprintf("Upgraded the league file to version %d (release %d). The league as it was before is saved in %s.", current.Schema, current.Release, save))
 }
@@ -78,6 +81,16 @@ func saveMatchedCopy(ctx context.Context, path, save, backup string) (string, er
 	saved := filepath.Join(save, "server.db")
 	if err := pools.CaptureHosted(ctx, saved, func() error { return syncPath(saved) }); err != nil {
 		return "", fmt.Errorf("save the pre-upgrade copy: %w", err)
+	}
+	checkpoint, err := hostedCheckpoint(ctx, saved)
+	if err != nil {
+		return "", fmt.Errorf("verify the pre-upgrade copy: %w", err)
+	}
+	if err := os.WriteFile(filepath.Join(save, "checkpoint.json"), checkpoint, 0o600); err != nil {
+		return "", fmt.Errorf("save pre-upgrade checkpoint: %w", err)
+	}
+	if err := syncPath(filepath.Join(save, "checkpoint.json")); err != nil {
+		return "", err
 	}
 	if backup != "" {
 		if err := upgradeOffsite(ctx, pools, backup, filepath.Dir(path)); err != nil {
@@ -162,7 +175,7 @@ func copyFile(source, dest string) (err error) {
 		return fmt.Errorf("open pre-upgrade copy: %w", err)
 	}
 	defer func() { _ = in.Close() }()
-	out, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 	if err != nil {
 		return fmt.Errorf("create restored file: %w", err)
 	}
