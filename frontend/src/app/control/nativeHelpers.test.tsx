@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { ClipboardSetText } from '../../../wailsjs/runtime/runtime';
+import { copyHelperConnection } from './api';
 import { all, button, click, control, mount, render, settle, type, unmount }
   from '../commissioner/commissionerDom';
 import NativeHelpers from './NativeHelpers';
 import type { NativeView } from './nativeApi';
 
-vi.mock('../../../wailsjs/runtime/runtime', () => ({ ClipboardSetText: vi.fn() }));
+vi.mock('./api', () => ({ copyHelperConnection: vi.fn() }));
 
 const view: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
@@ -38,9 +38,9 @@ describe('native AI helpers', () => {
     expect(css).toMatch(/\.native-account code\.native-seed\s*\{[^}]*display: block;/);
     expect(css).toMatch(/\.twr-app\.native-account select\s*\{[^}]*color-scheme: dark;/);
     expect(css).toMatch(/\.twr-app\.native-account select\s*\{[^}]*color: var\(--surface-tx1\);/);
-    vi.mocked(ClipboardSetText).mockResolvedValue(true);
+    vi.mocked(copyHelperConnection).mockResolvedValue(true);
     await click(button(host, 'Copy connection line')); await settle();
-    expect(ClipboardSetText).toHaveBeenCalledWith('twr1.' + id + '.' + 'Q'.repeat(43));
+    expect(copyHelperConnection).toHaveBeenCalledWith('twr1.' + id + '.' + 'Q'.repeat(43));
     expect(host.textContent).toContain('Connection line copied.');
     expect(fetcher).toHaveBeenCalledTimes(1);
     expect(control(host, 'Helper ID').value).toBe(id);
@@ -52,8 +52,8 @@ describe('native AI helpers', () => {
 
   it.each(['unavailable', 'rejected'])('keeps the line for manual copy when clipboard is %s', async kind => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply({ connection: 'twr1.' + id })));
-    if (kind === 'unavailable') vi.mocked(ClipboardSetText).mockResolvedValue(false);
-    else vi.mocked(ClipboardSetText).mockRejectedValue(new Error('Clipboard denied'));
+    if (kind === 'unavailable') vi.mocked(copyHelperConnection).mockResolvedValue(false);
+    else vi.mocked(copyHelperConnection).mockRejectedValue(new Error('Clipboard denied'));
     const host = await mount(render(NativeHelpers, props));
     await click(button(host, 'Connect a helper')); await settle();
     await click(button(host, 'Copy connection line')); await settle();
