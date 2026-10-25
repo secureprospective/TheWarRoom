@@ -122,7 +122,7 @@ handoff in `docs/delivery/Release_Trust.md`.
 
 ## Lineup, reserves and draft walkthrough
 
-After opening your franchise, use **Refresh league** if needed. The location label is
+After opening your franchise, use **Refresh league server** if needed. The location label is
 **This league is managed here**; a failed refresh keeps the last reading read-only.
 
 1. **Set lineup**: select Practice quarterback, check the lineup, then hold to confirm.
@@ -204,3 +204,44 @@ real bid, rolls the season over, then refreshes as commissioner and owner. Front
 read-only stale/reconnect behavior and explicitly unavailable new-season lineups.
 
 These tests do not replace a graphical click acceptance on the final desktop binary.
+
+## Block E acceptance walk: MFL reference versus your league server
+
+Christopher runs this on the final practice build. Automated checks do not mark this live
+walk passed. Use the isolated launcher above; no real MFL login, submission or roster move.
+
+1. Start a fresh practice league, launch the printed Desktop command, sign in as
+   `commissioner`, authenticate and **Open my franchise**. Expect **Your league server**,
+   the explanation that MFL refresh cannot replace recorded changes, and
+   **Refresh league server**. No MFL key or local reference screen should open.
+2. Open **Roster and reserves**. Move **Injured prospect** to **Injured reserve**,
+   check the preview and hold to confirm. Refresh: the server still records that squad.
+   Open **Set lineup**, **Draft room** and **League rules**; each is a server reading,
+   not a roster imported from MFL.
+3. Open **Free-agent bids**, **Waivers**, **Trades**, **Results and standings** and
+   **Next season**. Follow the task walks above for disposable changes (next season last).
+   Confirmations must say they change your league server, not MFL or a local plan.
+   Commissioner rulings remain under commissioner control.
+4. To simulate a disconnect without deleting the league, use your process monitor to find
+   the exact `twr-server` executable inside this sandbox directory, verify its path, and
+   pause that process (not any real league server). Click **Refresh league server** and
+   wait for the request to time out. Expect **Stale — read-only saved view**, the last-read
+   time, preserved roster and disabled change controls. No MFL/local fallback may appear.
+5. Resume that same sandbox process and refresh. Expect the recorded reserve move and
+   other confirmed changes to remain. No queued bid, claim, trade, lineup or ruling should
+   run. If a confirmation was interrupted, inspect the fresh reading before another action.
+6. In a separate fixture-only browser preview (`cd frontend && pnpm dev`, then open its
+   printed address), expect **From MFL (reference only)**. In Control Room → League,
+   expand the MFL reference details; in Data and sources inspect the refresh explanation;
+   on Trade Floor inspect offers history. Expect references, not server offers. The browser
+   cannot perform desktop MFL refresh. Return to the practice desktop and refresh: its
+   recorded state remains unchanged. Close the preview and desktop, then run the printed
+   sandbox stop command.
+
+The fixture preview is a copy/label check, not a live MFL refresh test. The actual
+reference-replacement boundary is covered with fixtures by
+`TestNativeSeedOnceAndRetryAfterMirrorRefresh` and
+`TestNativeCapReadingUsesRecordedAssetsAndSignedDeadMoney`: replacing the MFL mirror changes
+its reference values without changing native assets/cap, and seeding again is refused.
+No MFL write endpoint is added or exercised. The startup tests also reject failed hosted
+startup responses without mounting the local shell or its refresh hooks.

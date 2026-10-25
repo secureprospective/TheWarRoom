@@ -83,6 +83,8 @@ describe('Control Room', () => {
     expect(html).toContain('1. SALARY CAP');
     expect(html).toContain('Search the by-laws');
     expect(html).toContain('Open MFL accounting');
+    expect(html).toContain('From MFL (reference only)');
+    expect(html).toContain('Refreshing MFL updates this reference');
     expect(html).toContain('holds no entries for this league');
     expect(html).toContain('Scoring weeks');
     expect(html.indexOf('League settings')).toBeLessThan(html.indexOf('By-laws'));

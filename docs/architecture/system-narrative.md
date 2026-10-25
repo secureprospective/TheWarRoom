@@ -1069,3 +1069,20 @@ Evidence: `internal/serverhttp/workflow_test.go` (HTTPS/desktop reads, writes, r
 retry, revocation) and `frontend/src/app/commissioner/hostedRoom.test.tsx` (real Go wire
 parsing, disconnected views, reconnect without replay). Graphical acceptance is separate;
 `cmd/twr-practice/README.md` provides the disposable click walkthrough.
+
+### MFL reference and hosted-server screen boundary
+
+`control/NativeStartup.tsx` probes only the desktop startup route. A missing route (404)
+or the local development HTML fallback opens the local shell; other HTTP failures or
+malformed hosted status stop startup rather than falling back to MFL. Hosted windows mount
+`NativeAccount` and `HostedLeague`, never `TargetApp` or its local refresh/binding hooks.
+The local shell, MFL offer history, league settings and refresh help identify MFL as reference
+only. Other source refresh scopes retain their existing meaning.
+
+`commissioner/hostedRoom.ts` owns only in-memory server readings and an unconfirmed preview.
+**Refresh league server** sends read commands through the Go desktop workflow transport.
+A failed refresh preserves the last reading, marks it stale, removes the preview and disables
+writes; reconnect reads do not replay changes. Only an explicit checked confirmation may
+record a server change. The MFL mirror remains separate from the native event ledger: a mirror
+replacement cannot replace recorded native assets or cap. The fixture boundary tests and
+Christopher’s separate Block E acceptance walk are listed in `cmd/twr-practice/README.md`.

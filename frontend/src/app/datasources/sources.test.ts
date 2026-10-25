@@ -38,6 +38,8 @@ describe('Control Room data and sources', () => {
   it('offers one Act per Go scope, a labelled folder and progress, disabling duplicate work', () => {
     const d = data();
     const markup = html(createElement(RefreshScopes, { data: d, busy: 'archive' }));
+    expect(markup).toContain('MFL refresh updates reference data only');
+    expect(markup).toContain('It cannot replace your league server');
     expect(markup).toContain('id="archive-folder"');
     expect(markup).toContain(d.scopes[3].progress);
     expect(markup.match(/disabled=""/g)?.length).toBe(6);

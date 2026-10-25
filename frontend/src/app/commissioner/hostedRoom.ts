@@ -259,6 +259,7 @@ export function createHostedRoom(
       if (turn === generation)
         store.setState({
           stale: true,
+          message: '',
           error: 'Could not read commissioner choices. Refresh before choosing another action.',
         });
     } finally {

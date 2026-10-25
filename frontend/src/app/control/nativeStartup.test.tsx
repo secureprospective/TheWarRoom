@@ -55,3 +55,18 @@ it('replaces account access with the update screen after a live server refusal',
   expect(host.textContent).not.toContain('Join with a code');
   expect(local.calls).toBe(0);
 });
+
+it.each([400, 403, 500, 503])('does not open MFL reference after startup HTTP %s', async (status) => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status }));
+  const host = await mount(render(NativeStartup));
+  await settle();
+  expect(host.textContent).toContain('Close and reopen');
+  expect(local.calls).toBe(0);
+});
+
+it('opens the local app only when no hosted endpoint exists', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+  const host = await mount(render(NativeStartup));
+  await vi.waitFor(async () => { await settle(); expect(local.calls).toBeGreaterThan(0); });
+  expect(host.textContent).toContain('Local reference app');
+});

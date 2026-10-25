@@ -98,6 +98,7 @@ export function TargetApp() {
     <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
       <aside className="rail">
         <div className="league">
+          <p>From MFL (reference only)</p>
           <div className="crest">
             <i>LN</i>
             <div>

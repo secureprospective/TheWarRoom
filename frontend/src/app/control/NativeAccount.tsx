@@ -71,8 +71,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     : screen === 'authenticator' ? 'Verify fresh code' : 'Sign in to server';
   const args = (action: 'view' | 'check', value: string) => ({ screen: 'native-account', action, value });
   return <main className="twr-app native-account" aria-busy={pending}>
-    <header><h1>{view.name || 'Your native league'}</h1>
-      <p>Hosted league · No MFL account or key needed</p>
+    <header><h1>{view.name || 'Your league server'}</h1>
+      <p>Your league server · No MFL account or key needed</p>
       <p className="native-address">{initial.server}</p></header>
     <nav aria-label="Account access">
       {tabs.map(([id, label]) => <Act key={id} variant="button" verb="commissioner.surface"
