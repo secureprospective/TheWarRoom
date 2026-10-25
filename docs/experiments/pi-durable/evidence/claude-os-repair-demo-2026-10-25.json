@@ -1,0 +1,108 @@
+{
+  "run": ".runs/demo-CArIo6",
+  "node": "v24.22.1",
+  "started": "2026-10-25T09:32:24.901Z",
+  "mainBefore": "b097d2f5d4bf345a1445700a1ec3238723a48de3",
+  "crashed": {
+    "code": null,
+    "signal": "SIGKILL",
+    "output": "{\"event\":\"admitted\",\"taskId\":8}\n{\"event\":\"fix-entered\",\"taskId\":8}\n",
+    "errors": "(node:20350) [PERM0002] SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  "before": {
+    "event": "status",
+    "goal": {
+      "taskId": 8,
+      "completed": [
+        "reproduced"
+      ],
+      "failing": {
+        "exit": 1,
+        "tail": [
+          "    code: 'ERR_ASSERTION',",
+          "    actual: 'legacy-nfl war room',",
+          "    expected: 'legacy-nfl-war-room',",
+          "    operator: 'strictEqual',",
+          "    diff: 'simple'",
+          "  }"
+        ]
+      }
+    },
+    "task": {
+      "id": 8,
+      "conversationId": 1,
+      "kind": "experiment.repair",
+      "version": 1,
+      "input": {
+        "pause": true
+      },
+      "background": false,
+      "abortRequested": false,
+      "state": {
+        "status": "pending",
+        "checkpoint": {
+          "phase": "fix"
+        }
+      },
+      "startedAt": 1792920745190,
+      "restarts": 1
+    }
+  },
+  "resumed": {
+    "code": 0,
+    "signal": null,
+    "output": "{\"event\":\"admitted\",\"taskId\":8}\n{\"event\":\"fix-entered\",\"taskId\":8}\n{\"event\":\"settled\",\"receipt\":{\"id\":8,\"conversationId\":1,\"kind\":\"experiment.repair\",\"version\":1,\"input\":{\"pause\":true},\"background\":false,\"abortRequested\":false,\"state\":{\"status\":\"terminal\",\"outcome\":{\"status\":\"completed\",\"result\":\"branch durable/fix-slug and outbox/fix.patch ready for human review\"}},\"startedAt\":1792920745190,\"endedAt\":1792920746897},\"goal\":{\"taskId\":8,\"completed\":[\"reproduced\",\"fixed\",\"verified\",\"proposed\"],\"failing\":{\"exit\":1,\"tail\":[\"    code: 'ERR_ASSERTION',\",\"    actual: 'legacy-nfl war room',\",\"    expected: 'legacy-nfl-war-room',\",\"    operator: 'strictEqual',\",\"    diff: 'simple'\",\"  }\"]}}}\n",
+    "errors": "(node:20376) [PERM0002] SecurityWarning: The flag --allow-child-process must be used with extreme caution. It could invalidate the permission model.\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  "after": {
+    "event": "status",
+    "goal": {
+      "taskId": 8,
+      "completed": [
+        "reproduced",
+        "fixed",
+        "verified",
+        "proposed"
+      ],
+      "failing": {
+        "exit": 1,
+        "tail": [
+          "    code: 'ERR_ASSERTION',",
+          "    actual: 'legacy-nfl war room',",
+          "    expected: 'legacy-nfl-war-room',",
+          "    operator: 'strictEqual',",
+          "    diff: 'simple'",
+          "  }"
+        ]
+      }
+    },
+    "task": {
+      "id": 8,
+      "conversationId": 1,
+      "kind": "experiment.repair",
+      "version": 1,
+      "input": {
+        "pause": true
+      },
+      "background": false,
+      "abortRequested": false,
+      "state": {
+        "status": "terminal",
+        "outcome": {
+          "status": "completed",
+          "result": "branch durable/fix-slug and outbox/fix.patch ready for human review"
+        }
+      },
+      "startedAt": 1792920745190,
+      "endedAt": 1792920746897
+    }
+  },
+  "testRuns": [
+    "fail",
+    "pass"
+  ],
+  "mainAfter": "b097d2f5d4bf345a1445700a1ec3238723a48de3",
+  "branch": "durable/fix-slug",
+  "patch": "From a2905bb92e1226de5e0ef9daf5d3ac2d3dc792b2 Mon Sep 17 00:00:00 2001\nFrom: durable-demo <durable-demo@invalid>\nDate: Sun, 25 Oct 2026 04:32:26 -0500\nSubject: [PATCH] fix: slug joins every word, not just the first two\n\n---\n slug.mjs | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n\ndiff --git a/slug.mjs b/slug.mjs\nindex 0e4b0f4..e44685f 100644\n--- a/slug.mjs\n+++ b/slug.mjs\n@@ -1 +1 @@\n-export const slug = (text) => text.toLowerCase().replace(' ', '-');\n+export const slug = (text) => text.trim().toLowerCase().split(/\\s+/).join('-');\n-- \n2.47.3\n",
+  "result": "PASS"
+}

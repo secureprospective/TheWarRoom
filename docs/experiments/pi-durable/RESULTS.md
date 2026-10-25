@@ -1,4 +1,4 @@
-# Slice 28 evidence
+# Slices 28–29 evidence
 
 ## Local observed result — 2026-10-24
 
@@ -37,23 +37,60 @@ tools registered; no runtime imports or Git/merge/deploy path. Process-crash
 recovery is exercised, not merely source-traced. This fixed goal makes no claim
 about idempotency of external tools or crash-safe network effects.
 
-## Claude-OS acceptance — UNRUN
+## Claude-OS observed result — slice 28, 2026-10-24/25
 
-The builder is explicitly not authorized to run it. ClaudeBox executes the README
-runbook in a disposable, credential-free copy and records its actual candidate,
-commands, exit codes, task IDs, observed result and reviewer here. The eight-hour
-mode is also unrun; seconds-long local success is not an overnight pass.
+Host: Claude-OS VM, Debian 13 (trixie), kernel 6.12.107, Node v24.22.1 (private copy
+inside the workspace), flock from util-linux. Candidate `a4bb7a9a` (PR #155's branch
+head; its experiment files hash identically to the fingerprints above). Disposable copy
+`/tmp/twr-durable-*`, credential-free, made with the README runbook. Run by ClaudeBox;
+recorded and checked by Tom on 2026-10-25 from the copy's own log and evidence files.
 
-Unproven: Claude-OS execution, eight-hour wake, host reboot/power loss, model calls,
-repair-to-PR and fleet dispatch. The latter two belong to slice 29; host/power loss
-are not claimed by this process-crash experiment. No app integration is proposed.
+| Command | Observed result |
+|---|---|
+| `corepack pnpm test` | 3/3 pass; the two drills' evidence: delay 3000 ms and 0 ms, both SIGKILL, task 8 before and after, `['prepared','finished']`, PASS. |
+| `node drill.mjs` | PASS at `2026-10-24T23:43:11Z`, delay 3000 ms, SIGKILL, task 8 before and after, `['prepared','finished']`. |
+| `node drill.mjs --overnight > overnight.log` | **PASS.** Started `2026-10-24T23:43:22.899Z`, delay 28,800,000 ms (8 h). Worker killed with SIGKILL at the committed sleeping checkpoint; status before restart: task 8, `sleeping` until `2026-10-25T07:43:23.368Z`, checkpoint `finish`, completed `['prepared']`. The restarted worker entered `finish` once and settled `completed` ("checklist ready for human review") at `2026-10-25T07:43:23.477Z`: 109 ms after the persisted wake, 8.00003 h after admission, well inside the 12 h expiry. After: same task 8, `['prepared','finished']`; a further start changed nothing. |
+
+`overnight.log` holds exactly the workspace line and
+`{"result":"PASS","evidence":".../.runs/goal-Fkc3KN/evidence.json"}`. The evidence is
+committed as [`evidence/claude-os-overnight-2026-10-24.json`](evidence/claude-os-overnight-2026-10-24.json);
+the only edit is the absolute workspace path, replaced by `"run": ".runs/goal-Fkc3KN"`.
+It holds no tokens, keys or profile paths.
+
+What this proves: a durable sleep committed before a SIGKILL was honoured once, by a
+fresh process, eight hours later, on Claude-OS. What it does not: the restart was
+immediate (the new process then waited eight hours), so it is not an eight-hour outage,
+a whole-host restart or a power-loss test.
+
+## Claude-OS observed result — slice 29 repair demo, 2026-10-25
+
+Same host and Node. Candidate: this PR's first commit `2dc6975c`, copied with
+`git archive` into a fresh `/tmp/twr-demo29-*`. Tom ran it over `ssh claudeos`,
+command line only, no desktop.
+
+| Command | Observed result |
+|---|---|
+| `corepack pnpm install --frozen-lockfile --ignore-scripts` | Exit 0. |
+| `corepack pnpm test` | Exit 0, 4/4 pass (the three slice 28 tests plus the repair demo). |
+| `node demo.mjs` | Exit 0, PASS, `.runs/demo-CArIo6`. Failing test reproduced for the real reason (`actual: 'legacy-nfl war room'`, `expected: 'legacy-nfl-war-room'`, exit 1). Worker SIGKILLed inside `fix`; status before restart: task 8, checkpoint `fix`, completed `['reproduced']`. The restart finished `['reproduced','fixed','verified','proposed']` on the same task; `test-runs.log` reads `fail, pass`, so the failing run was not repeated. `main` stayed at `b097d2f`; branch `durable/fix-slug` is one commit ahead (`a2905bb`); no remote; clean tree; `outbox/fix.patch` written. A third start changed nothing. |
+| `node demo.mjs --stop demo-CArIo6` | Exit 0; outcome unchanged `completed` ("branch durable/fix-slug and outbox/fix.patch ready for human review"). |
+
+Evidence, including the patch text: [`evidence/claude-os-repair-demo-2026-10-25.json`](evidence/claude-os-repair-demo-2026-10-25.json).
+Its `errors` fields hold only Node's `--allow-child-process` security warning.
+Nothing was merged: merging is the human's step. No process was left running; deleting
+the workspace (`/tmp/twr-demo29-*`, about 384 MB) waits on a human confirmation.
+
+Reviewer mutant (local, not committed): making `propose` commit the fix on `main`
+instead of a new branch fails the demo with `the goal must never write main`.
+
+Unproven: whole-host restart or power loss, model-written fixes (the fix is a fixed
+patch), real pull requests and fleet dispatch. See the README's follow-up assessment.
 
 ## Plan correction / debt
 
 No binding decision changed. The probe intentionally uses Pi Durable's custom-task
 API without a paid model/provider, proving persistence independently of coding
-behavior. The plan's live observed-result requirement remains open for ClaudeBox,
-as assigned by the dispatch brief; this is not accepted live evidence.
+behavior. Slices 28 and 29 now have observed Claude-OS results, above.
 
-Debt left: none in runtime or installer. `README.md`/this file retain the explicit
-live acceptance boundary; slice 29 owns the already-planned repair/test/PR follow-up.
+Debt left: none in runtime or installer. The README's follow-ups are proposals, not
+open work.
