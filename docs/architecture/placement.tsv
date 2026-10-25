@@ -123,5 +123,6 @@ internal/offline	platform
 internal/releasetrust	platform
 internal/hostedfixture	platform
 internal/offsite	platform
+internal/serverstatus	platform
 internal/leaguetransfer	platform
 internal/serverversion	platform

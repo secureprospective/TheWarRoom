@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -85,4 +86,40 @@ func accountIDs(ctx context.Context, tx *sql.Tx) ([]string, error) {
 		return nil, fmt.Errorf("accounts: list accounts: %w", err)
 	}
 	return ids, nil
+}
+
+// Reset is the newest sign-in reset of one kind, read back from the sign-in history.
+// The zero value means none has happened on this league's history.
+type Reset struct {
+	At       time.Time
+	Reason   string
+	Accounts int
+}
+
+// LastResets reads the newest spare-host restore and the newest incident reset for the
+// private dashboard. Both are hash-chained history entries, so they survive restarts
+// and ride along in every off-site backup.
+func (s *Store) LastResets(ctx context.Context) (restore, incident Reset, err error) {
+	if restore, err = s.lastReset(ctx, "restored_sign_ins_reset"); err != nil {
+		return Reset{}, Reset{}, err
+	}
+	if incident, err = s.lastReset(ctx, "sign_ins_reset"); err != nil {
+		return Reset{}, Reset{}, err
+	}
+	return restore, incident, nil
+}
+
+func (s *Store) lastReset(ctx context.Context, operation string) (Reset, error) {
+	var reason sql.NullString
+	var at sql.NullInt64
+	var count int
+	err := s.pools.Read().QueryRowContext(ctx, `SELECT MAX(reason), MAX(occurred_at), COUNT(*) FROM account_security_audit
+ WHERE operation = ?1 AND occurred_at = (SELECT MAX(occurred_at) FROM account_security_audit WHERE operation = ?1)`, operation).Scan(&reason, &at, &count)
+	if err != nil {
+		return Reset{}, fmt.Errorf("accounts: read last sign-in reset: %w", err)
+	}
+	if count == 0 {
+		return Reset{}, nil
+	}
+	return Reset{At: time.Unix(0, at.Int64).UTC(), Reason: reason.String, Accounts: count}, nil
 }

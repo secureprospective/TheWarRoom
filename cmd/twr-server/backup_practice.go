@@ -15,18 +15,18 @@ import (
 
 // This file is absent from release binaries. The separately built desktop click-test
 // server accepts only the launcher's private disposable layout, never R2 deployment settings.
-func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ *db.Pools, path, temp string, files ...string) (func(), error) {
+func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ *db.Pools, path, temp string, files ...string) (func(), backupStatus, error) {
 	if path != "" {
-		return nil, fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
+		return nil, nil, fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
 	}
 	if err := practiceFolders(temp); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if err := practiceFiles(temp, files); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	log.Printf("DISPOSABLE PRACTICE BUILD: no off-site protection; never use for real league state")
-	return func() {}, nil
+	return func() {}, noBackups, nil
 }
 
 // upgradeOffsite has no R2 in practice builds; upgrades there run without -backup-config.

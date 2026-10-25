@@ -21,7 +21,8 @@ that matches no recipient is `ErrRestoreKey`, distinct from damage. It does not
 activate a server or reset credentials: `R2.Sets` (newest first) and `R2.Open`
 feed `twr-server restore`, which compares the checkpoint, resets sign-ins in the
 staged copy and hands it to the CT script ([RESTORE.md](../../deploy/server/RESTORE.md)).
-Slice 38 consumes `Manager.Status` over VPN only, not a new public route.
+`internal/serverstatus` reads `Manager.Status` (coverage, newest failure) for the
+console dashboard over an owner-only socket, never a public route.
 
 Failure routes: any capture/audit/crypto/PUT/GET/hash error preserves previous
 coverage; coverage expiry rejects new queued writes without mutation. Pruning

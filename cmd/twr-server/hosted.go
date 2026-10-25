@@ -34,6 +34,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
+	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse hosted flags: %w", err)
 	}
@@ -49,10 +50,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := servePreflight(ctx, *path); err != nil {
-		return err
-	}
-	pools, err := db.Open(ctx, *path, history.SchemaVersion())
+	pools, err := openHostedFile(ctx, *path)
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
@@ -61,19 +59,32 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
-		return fmt.Errorf("record server release: %w", err)
-	}
 	handler.TrustedProxy = hop
-	stopBackup, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
+	stopBackup, backups, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
 	if err != nil {
 		return err
 	}
 	defer stopBackup()
+	stopStatus, err := startStatusSocket(ctx, *status, statusSource(pools, handler.Store, backups))
+	if err != nil {
+		return err
+	}
+	defer stopStatus()
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
 	return serveHosted(ctx, *address, certificate, handler, output)
+}
+
+func openHostedFile(ctx context.Context, path string) (*db.Pools, error) {
+	if err := servePreflight(ctx, path); err != nil {
+		return nil, err
+	}
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	if err != nil {
+		return nil, fmt.Errorf("open league file: %w", err)
+	}
+	return pools, nil
 }
 
 // servePreflight refuses, before the file is opened for writing, a league file this release may
@@ -158,6 +169,9 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
+	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
+		return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
+	}
 	return handler, nil
 }
 

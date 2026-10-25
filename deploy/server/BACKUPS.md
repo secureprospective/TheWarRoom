@@ -65,9 +65,9 @@ expired/revoked token. It stops the service before changing immutable settings.
 Until the first complete encrypted upload has been downloaded and checked,
 changes and sign-ins stay paused with a plain explanation. Missing settings
 never enable unprotected writes. Setup success means the settings were accepted,
-not that R2 connectivity or recoverability was proved. The VPN dashboard in
-slice 38 will display `offsite.Manager.Status` (capture time, verification time,
-writable flag and plain failure); no public backup-status endpoint is added.
+not that R2 connectivity or recoverability was proved. The console dashboard
+([CHECKLIST.md](CHECKLIST.md)) shows whether a checked backup is current, when it
+was saved and the newest error; no public backup-status endpoint exists.
 
 ## What is saved and when
 

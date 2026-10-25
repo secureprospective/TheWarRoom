@@ -14,23 +14,23 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-func startHostedBackup(ctx context.Context, pools *db.Pools, path, temp string) (func() error, func(), error) {
+func startHostedBackup(ctx context.Context, pools *db.Pools, path, temp string) (func() error, backupStatus, func(), error) {
 	// Missing configuration never enables unprotected writes, including on development hosts.
 	_, configErr := os.Stat(path)
 	if path == "" || os.IsNotExist(configErr) {
 		guard := func() error { return fmt.Errorf("changes are paused until off-site backups are configured") }
 		pools.SetWriteGuard(guard)
-		return guard, func() {}, nil
+		return guard, noBackups, func() {}, nil
 	}
 	manager, err := newBackupManager(pools, path, temp)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	pools.SetWriteGuard(manager.CheckWrite)
 	work, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() { defer close(done); manager.Run(work) }()
-	return manager.CheckWrite, func() { cancel(); <-done }, nil
+	return manager.CheckWrite, func() (offsite.Status, bool) { return manager.Status(), true }, func() { cancel(); <-done }, nil
 }
 
 func newBackupManager(pools *db.Pools, path, temp string) (*offsite.Manager, error) {
@@ -63,19 +63,19 @@ func upgradeOffsite(ctx context.Context, pools *db.Pools, path, temp string) err
 	return manager.Backup(attempt)
 }
 
-func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, pools *db.Pools, path, temp string, files ...string) (func(), error) {
+func configureHostedBackup(ctx context.Context, handler *serverhttp.Hosted, pools *db.Pools, path, temp string, files ...string) (func(), backupStatus, error) {
 	if path != "" {
 		if filepath.Base(path) != "backup.json" {
-			return nil, fmt.Errorf("private backup settings must be named backup.json")
+			return nil, nil, fmt.Errorf("private backup settings must be named backup.json")
 		}
 		if err := checkBackupFiles(filepath.Dir(path), files); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
-	admission, stop, err := startHostedBackup(ctx, pools, path, temp)
+	admission, status, stop, err := startHostedBackup(ctx, pools, path, temp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	handler.WriteAdmission = admission
-	return stop, nil
+	return stop, status, nil
 }

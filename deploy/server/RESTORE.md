@@ -15,7 +15,7 @@ minutes** of changes.
 | The league server machine is dead, destroyed or stolen, and will not come back | [A. Replace the server](#a-replace-the-server-on-the-spare-machine) |
 | Someone may be using another person's sign-in (lost laptop, leaked password, strange changes) | [B. Sign everyone out](#b-sign-everyone-out) |
 | The internet, Cloudflare or the power is down, but the machine is fine | Wait for it to come back. Do not replace the server. |
-| The server is running but says changes are paused | Check the backup settings with Christopher ([BACKUPS.md](BACKUPS.md)). Do not replace the server. |
+| The server is running but says changes are paused | Look at the dashboard and do what it says ([CHECKLIST.md](CHECKLIST.md)). Do not replace the server. |
 
 ## Before you ever need this (Christopher, once)
 
@@ -143,7 +143,9 @@ Restore installed. …
   empty or damaged backup was passed over in favour of an older good one.
 
 Wait about five minutes. Until the first backup of the restored league is uploaded
-and checked, the server pauses changes and sign-ins with a plain explanation.
+and checked, the server pauses changes and sign-ins with a plain explanation. Type
+`sh /usr/local/libexec/twr-status` and press Enter: when **Backups** reads OK, the
+league is open again. Its **Last restore** line keeps the saved time for later.
 
 ### 6. Tell the owners
 

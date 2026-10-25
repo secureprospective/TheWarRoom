@@ -54,6 +54,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runUpgrade(ctx, args, output)
 	case "version":
 		return true, runVersion(args, output)
+	case "status":
+		return true, runStatus(ctx, args, output)
 	}
 	return false, nil
 }
