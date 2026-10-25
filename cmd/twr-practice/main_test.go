@@ -99,7 +99,7 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 		t.Fatalf("HTTPS authenticator: %v", err)
 	}
 	view, err := desktop.Act(ctx, serverclient.RawDesktop{Action: "enter"})
-	if err != nil || view.Name != "Hosted test" {
+	if err != nil || view.Name != "Practice league" {
 		t.Fatalf("enter hosted league: %+v %v", view, err)
 	}
 	if err := run(ctx, []string{"code", dir}, &output); err != nil {

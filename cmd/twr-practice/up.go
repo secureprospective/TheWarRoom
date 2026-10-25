@@ -42,7 +42,10 @@ func up(ctx context.Context, dir, bin string, out io.Writer) (result error) {
 		return fmt.Errorf("create server log: %w", err)
 	}
 	defer func() { _ = log.Close() }()
-	child = exec.Command(filepath.Join(dir, "twr-server"), "hosted", "-db", filepath.Join(dir, "server.db"), "-listen", "127.0.0.1:0", "-tls-cert", filepath.Join(dir, "server.pem"), "-tls-key", filepath.Join(dir, "server.key"), "-totp-key-file", filepath.Join(dir, "authenticator.key"), "-preview-registry", filepath.Join(dir, "registry.csv")) //nolint:noctx,gosec // Fixed executable in the claimed sandbox, no shell; down owns the detached lifetime.
+	child, err = practiceServer(dir)
+	if err != nil {
+		return err
+	}
 	child.Stdout, child.Stderr = log, log
 	child.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 	if err := child.Start(); err != nil {
@@ -59,11 +62,19 @@ func up(ctx context.Context, dir, bin string, out io.Writer) (result error) {
 	if err := saveState(dir, state); err != nil {
 		return err
 	}
-	if err := report(out, dir, state, bin); err != nil {
-		return err
+	if result = report(out, dir, state, bin); result == nil {
+		go func() { _ = child.Wait() }()
 	}
-	go func() { _ = child.Wait() }()
-	return nil
+	return result
+}
+
+func practiceServer(dir string) (*exec.Cmd, error) {
+	digest, err := os.ReadFile(filepath.Join(dir, "football.digest")) //nolint:gosec // Fixed file inside the claimed private sandbox.
+	if err != nil {
+		return nil, fmt.Errorf("read practice football digest: %w", err)
+	}
+	child := exec.Command(filepath.Join(dir, "twr-server"), "hosted", "-football", string(digest), "-db", filepath.Join(dir, "server.db"), "-listen", "127.0.0.1:0", "-tls-cert", filepath.Join(dir, "server.pem"), "-tls-key", filepath.Join(dir, "server.key"), "-totp-key-file", filepath.Join(dir, "authenticator.key"), "-preview-registry", filepath.Join(dir, "registry.csv")) //nolint:noctx,gosec // Fixed executable in the claimed sandbox, no shell; down owns the detached lifetime.
+	return child, nil
 }
 
 func claimDirectory(dir string) error {

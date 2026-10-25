@@ -96,6 +96,7 @@ func nativeMarketMutations() []struct{ id, args string } {
 		{commissioner.TradeAppeal, "trade"},
 		{commissioner.TradeAppealRule, "trade"},
 		{commissioner.TradeOverride, "trade"},
+		{commissioner.RosterReserve, "waiver"},
 		{commissioner.RosterCut, "waiver"},
 		{commissioner.WaiverClaim, "waiver"},
 		{commissioner.WaiverProcess, "waiver"},
@@ -149,6 +150,11 @@ func nativeMutation(id, args string) catalog.Command {
 		Modes: []catalog.Mode{catalog.Preview, catalog.Execute}, Undo: "checked-reversal",
 		Facts: "ledger", Safeguards: "RawCommand.EffectiveDefinition+MissingReason",
 		Arguments: mutationShape(id, args)}
+	if id == commissioner.DraftPick {
+		command.Arguments = catalog.Shape(reflect.TypeFor[commissioner.DraftPickInput](), "DraftPickInput.Validate")
+		command.Modes = []catalog.Mode{catalog.Execute}
+		command.Safeguards = "on-clock owner selection; server fixes slot and contract"
+	}
 	if id == commissioner.NativeSeed {
 		command.Availability, command.Undo = "desktop", "none"
 		command.Arguments = catalog.Shape(reflect.TypeFor[RawNativeSeedRequest](), "RawNativeSeedRequest.Validate/ValidatePreview")

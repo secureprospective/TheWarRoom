@@ -64,6 +64,8 @@ func projectWaiver(seed *RawNativeSnapshot, state *waiverState, r Record) error 
 		return fmt.Errorf("a waiver change has no recorded decision")
 	}
 	switch r.Command.Command {
+	case RosterReserve:
+		return projectReserve(seed, args, result)
 	case RosterCut:
 		if result.Player == nil {
 			return fmt.Errorf("a cut has no recorded contract")

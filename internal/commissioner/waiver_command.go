@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	RosterReserve   = "roster.reserve"
 	RosterCut       = "roster.cut"
 	WaiverClaim     = "waivers.claim"
 	WaiverProcess   = "waivers.process"
@@ -24,6 +25,7 @@ const (
 
 // RawWaiverArgs names recorded native assets, never prices or an owner identity.
 type RawWaiverArgs struct {
+	Bucket    string   `json:"bucket,omitempty"`
 	Player    string   `json:"player,omitempty"`
 	Franchise string   `json:"franchise,omitempty"`
 	Window    string   `json:"window,omitempty"`
@@ -51,12 +53,14 @@ type WaiverOutcome struct {
 }
 
 func WaiverCommand(command string) bool {
-	return slices.Contains([]string{RosterCut, WaiverClaim, WaiverProcess,
+	return slices.Contains([]string{RosterReserve, RosterCut, WaiverClaim, WaiverProcess,
 		WaiverOrderSet, WaiverOrderAuto, WaiverOverride}, command)
 }
 
 func OwnerWaiverAction(command string) leaguerules.Action {
 	switch command {
+	case RosterReserve:
+		return "ir"
 	case RosterCut:
 		return "cut"
 	case WaiverClaim:
@@ -76,10 +80,9 @@ func (a RawArgs) validateWaiver(command string) error {
 
 func (r RawWaiverArgs) Validate(command string) error {
 	switch command {
-	case RosterCut:
-		id, err := playerid.New(r.Player)
-		if err != nil || id.String() != r.Player || strings.TrimSpace(r.Franchise) == "" {
-			return fmt.Errorf("choose a player on your roster")
+	case RosterReserve, RosterCut:
+		if err := r.validateRosterMove(command); err != nil {
+			return err
 		}
 	case WaiverClaim:
 		if r.Window == "" || r.Franchise == "" {
@@ -101,9 +104,24 @@ func (r RawWaiverArgs) Validate(command string) error {
 	return r.validateWaiverShape(command)
 }
 
+func (r RawWaiverArgs) validateRosterMove(command string) error {
+	if command == RosterReserve && r.Bucket != "active" && r.Bucket != "ir" && r.Bucket != "taxi" {
+		return fmt.Errorf("choose active roster, IR or taxi")
+	}
+	id, err := playerid.New(r.Player)
+	if err != nil || id.String() != r.Player || strings.TrimSpace(r.Franchise) == "" {
+		return fmt.Errorf("choose a player on your roster")
+	}
+
+	return nil
+}
+
 func (r RawWaiverArgs) validateWaiverShape(command string) error {
 	expected := RawWaiverArgs{}
 	switch command {
+	case RosterReserve:
+		expected.Bucket = r.Bucket
+		expected.Player, expected.Franchise = r.Player, r.Franchise
 	case RosterCut:
 		expected.Player, expected.Franchise = r.Player, r.Franchise
 	case WaiverClaim:
@@ -146,6 +164,8 @@ func AuthorizeFranchiseOwner(records []Record, principal, franchise string) erro
 
 func waiverLabel(command string) string {
 	switch command {
+	case RosterReserve:
+		return "Moved a player between the active roster and reserves"
 	case RosterCut:
 		return "Released a roster player to waivers"
 	case WaiverClaim:

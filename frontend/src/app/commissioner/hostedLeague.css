@@ -1,0 +1,13 @@
+.native-account .hosted-league { margin-block: 32px; padding-block: 24px; border-block: 1px solid var(--surface-line); }
+.hosted-league fieldset { border: 1px solid var(--surface-line); padding: 12px; margin-block: 20px; }
+.native-account .hosted-starter { display: flex; align-items: start; gap: 12px; max-width: none; }
+.native-account .hosted-starter input { width: 20px; height: 20px; accent-color: var(--signal-blue); flex: 0 0 auto; }
+.hosted-league small { display: block; color: var(--surface-tx2); font-size: 13px; line-height: 1.5; }
+.hosted-league li { padding-block: 8px; }
+.hosted-league dl > div { padding-block: 10px; border-bottom: 1px solid var(--surface-line); }
+.hosted-league dt { font-weight: 600; }
+.hosted-league dd { margin: 4px 0 0; }
+.hosted-review { margin-block: 24px; padding: 20px; background: var(--surface-2); }
+.hosted-review .hold-to-fire { display: inline-block; margin: 12px 12px 12px 0; }
+.hosted-review .hold-fill { display: none; }
+.hosted-review .hold-help, .hosted-review .hold-said { display: block; font-size: 13px; }

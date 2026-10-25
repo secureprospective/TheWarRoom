@@ -43,7 +43,7 @@ type hostedFixture struct {
 	now        time.Time
 }
 
-func newHostedFixture(t *testing.T) *hostedFixture {
+func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	t.Helper()
 	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"))
 	credentials := accountstore.New(pools)
@@ -52,7 +52,13 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := hostedfixture.CreateLeague(t.Context(), store, principal); err != nil {
+	var digest string
+	if len(workflows) > 0 && workflows[0] {
+		digest, err = hostedfixture.CreateWorkflowLeague(t.Context(), store, principal)
+	} else {
+		err = hostedfixture.CreateLeague(t.Context(), store, principal)
+	}
+	if err != nil {
 		t.Fatal(err)
 	}
 	policy, err := governance.Apply(governance.State{}, governance.LeagueCreated{Creator: principal, Franchises: []governance.FranchiseID{"franchise.01", "franchise.02"}})
@@ -73,10 +79,20 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.server = httptest.NewTLSServer(serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
+	handler := serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
-			"CM-018,Franchise,What is this franchise called?,\n"}.Handler())
+			"CM-018,Franchise,What is this franchise called?,\n"}
+	if digest != "" {
+		handler.FootballDigest = digest
+		handler.Football, err = store.LoadFootball(t.Context(), digest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		store.SetLineupEnvironment(handler.Football)
+		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{})
+	}
+	f.server = httptest.NewTLSServer(handler.Handler())
 	t.Cleanup(f.server.Close)
 	return f
 }

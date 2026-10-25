@@ -32,10 +32,14 @@ func TestNativeCatalogPublication(t *testing.T) {
 			continue
 		}
 		mutations[command.ID] = true
-		if command.Permission != "command:"+command.ID || !slices.Equal(command.Modes, []catalog.Mode{catalog.Preview, catalog.Execute}) {
+		modes := []catalog.Mode{catalog.Preview, catalog.Execute}
+		if command.ID == commissioner.DraftPick {
+			modes = []catalog.Mode{catalog.Execute}
+		}
+		if command.Permission != "command:"+command.ID || !slices.Equal(command.Modes, modes) {
 			t.Fatalf("mutation lost domain admission or modes: %+v", command)
 		}
-		if command.ID != commissioner.NativeSeed {
+		if command.ID != commissioner.NativeSeed && command.ID != commissioner.DraftPick {
 			assertMutationShape(t, command)
 		}
 	}
@@ -62,7 +66,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 			t.Errorf("unrecognized native mutation %s", id)
 		}
 	}
-	if len(mutations) != 100 {
+	if len(mutations) != 101 {
 		t.Fatalf("mutation inventory changed: got %d; review the new family's metadata", len(mutations))
 	}
 }
@@ -154,9 +158,21 @@ func TestNativeCatalogRetainsSpecialSafeguards(t *testing.T) {
 	if seed.Availability != "desktop" || seed.Undo != "none" || seed.Facts != "held-mirror" {
 		t.Fatalf("held seed was presented as a hosted import: %+v", seed)
 	}
-	for _, id := range []string{commissioner.BidPlace, commissioner.LineupSet, commissioner.DraftPick, commissioner.TradeAccept} {
+	for _, id := range []string{commissioner.BidPlace, commissioner.LineupSet, commissioner.TradeAccept} {
 		if commands[id].Safeguards != "RawCommand.EffectiveDefinition+MissingReason" {
 			t.Errorf("%s lost argument-dependent reason/confirmation checks", id)
+		}
+	}
+}
+
+func TestDraftPickCatalogMatchesOwnerInput(t *testing.T) {
+	for _, command := range NativeCommands() {
+		if command.ID != commissioner.DraftPick {
+			continue
+		}
+		want := catalog.Shape(reflect.TypeFor[commissioner.DraftPickInput](), "DraftPickInput.Validate")
+		if !reflect.DeepEqual(command.Arguments, want) || !slices.Equal(command.Modes, []catalog.Mode{catalog.Execute}) {
+			t.Fatal("draft pick must accept an owner choice, not a computed contract")
 		}
 	}
 }

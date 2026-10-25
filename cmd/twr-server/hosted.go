@@ -30,6 +30,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	key := flags.String("tls-key", "", "TLS private key PEM")
 	totpKey := flags.String("totp-key-file", "", "owner-only 32-byte authenticator encryption key")
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
+	football := flags.String("football", "", "pinned server-held football evidence digest for owner workflows")
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	if err := flags.Parse(args); err != nil {
@@ -56,6 +57,9 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if err := selectHostedFootball(ctx, &handler, *football); err != nil {
+		return err
+	}
 	handler.TrustedProxy = hop
 	stopBackup, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
 	if err != nil {
@@ -66,6 +70,19 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
 	return serveHosted(ctx, *address, certificate, handler, output)
+}
+
+func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, digest string) error {
+	if digest == "" {
+		return nil
+	}
+	evidence, err := handler.Store.LoadFootball(ctx, digest)
+	if err != nil {
+		return fmt.Errorf("select hosted football: %w", err)
+	}
+	handler.Football, handler.FootballDigest = evidence, digest
+	handler.Store.SetLineupEnvironment(evidence)
+	return nil
 }
 
 // hostedFiles reads the authenticator key, preview registry and TLS pair the server is started with.
