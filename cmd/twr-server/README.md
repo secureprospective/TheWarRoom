@@ -176,3 +176,9 @@ history after verifying both. Keep it away from the server (slice 36 stores one 
 off-site backup). `twr-server checkpoint -db /path/to/server.db -check checkpoint.json` reports
 whether the server's history still matches it; a rewrite or rollback since then fails with a
 plain message. Both forms only read the database. Details: `docs/backend/Audit_Chain.md`.
+
+## One-command hosted click tests
+
+For a pre-provisioned throwaway hosted league, TLS, enrolled authenticator and isolated desktop
+launch command, use [`twr-sandbox`](../twr-sandbox/README.md). This is development tooling, not
+commissioner installation/bootstrap or a release artifact.
