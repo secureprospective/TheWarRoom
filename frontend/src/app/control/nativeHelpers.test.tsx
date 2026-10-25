@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { button, click, control, mount, render, settle, type, unmount }
+import { readFileSync } from 'node:fs';
+import { ClipboardSetText } from '../../../wailsjs/runtime/runtime';
+import { all, button, click, control, mount, render, settle, type, unmount }
   from '../commissioner/commissionerDom';
 import NativeHelpers from './NativeHelpers';
 import type { NativeView } from './nativeApi';
+
+vi.mock('../../../wailsjs/runtime/runtime', () => ({ ClipboardSetText: vi.fn() }));
 
 const view: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
@@ -25,12 +29,35 @@ describe('native AI helpers', () => {
       action: 'helper-issue', helper: 'suggest', franchise: 'franchise.02',
     });
     expect(host.textContent).toContain('twr connect --address https://league.example --league native.test');
-    expect(host.textContent).toContain('twr1.' + id);
+    expect(host.textContent).toContain('Connection line (shown once):');
+    const line = all(host, 'code').find(code => code.textContent.startsWith('twr1.'));
+    expect(line?.getAttribute('class')).toBe('native-seed');
+    const css = readFileSync('src/app/control/nativeAccount.css', 'utf8');
+    expect(css).toMatch(/\.native-account \.native-seed\s*\{\s*overflow-wrap: anywhere;/);
+    expect(css).toMatch(/\.native-account code\.native-seed\s*\{[^}]*white-space: pre-wrap;/);
+    expect(css).toMatch(/\.native-account code\.native-seed\s*\{[^}]*display: block;/);
+    vi.mocked(ClipboardSetText).mockResolvedValue(true);
+    await click(button(host, 'Copy connection line')); await settle();
+    expect(ClipboardSetText).toHaveBeenCalledWith('twr1.' + id + '.' + 'Q'.repeat(43));
+    expect(host.textContent).toContain('Connection line copied.');
+    expect(fetcher).toHaveBeenCalledTimes(1);
     expect(control(host, 'Helper ID').value).toBe(id);
     fetcher.mockResolvedValue(reply({ message: 'AI helper disconnected.' }));
     await click(button(host, 'Disconnect helper')); await settle();
     expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({ action: 'helper-revoke', code: id });
     expect(host.textContent).not.toContain('twr1.' + id);
+  });
+
+  it.each(['unavailable', 'rejected'])('keeps the line for manual copy when clipboard is %s', async kind => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(reply({ connection: 'twr1.' + id })));
+    if (kind === 'unavailable') vi.mocked(ClipboardSetText).mockResolvedValue(false);
+    else vi.mocked(ClipboardSetText).mockRejectedValue(new Error('Clipboard denied'));
+    const host = await mount(render(NativeHelpers, props));
+    await click(button(host, 'Connect a helper')); await settle();
+    await click(button(host, 'Copy connection line')); await settle();
+    expect(host.textContent).toContain('Could not copy. Select the connection line and copy it yourself.');
+    expect(host.textContent).toContain('twr1.' + id);
+    expect(host.textContent).not.toContain('Connection line copied.');
   });
 
   it('shows the exact change before confirming it, and refuses a partial paste', async () => {

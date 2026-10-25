@@ -15,5 +15,6 @@
 .native-account [role=alert] { color: var(--signal-red); }
 .native-account .native-address, .native-account footer { color: var(--surface-tx2); overflow-wrap: anywhere; }
 .native-account .native-seed { overflow-wrap: anywhere; }
+.native-account code.native-seed { display: block; white-space: pre-wrap; }
 .native-account footer { margin-top: 40px; }
 .native-account ::selection { background: var(--surface-tx1); color: var(--surface-0); }

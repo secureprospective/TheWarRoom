@@ -32,12 +32,25 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
       setError(e instanceof Error ? e.message : 'Could not reach your league. Try again.');
     } finally { setPending(false); }
   }
+  async function copyConnection() {
+    if (pending || !connection) return;
+    setError(''); setMessage('');
+    try {
+      const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');
+      if (!await ClipboardSetText(connection)) throw new Error('Clipboard unavailable');
+      setMessage('Connection line copied.');
+    } catch {
+      setError('Could not copy. Select the connection line and copy it yourself.');
+    }
+  }
   useEffect(() => surfaceActions.register('native-helpers', args => {
+    if (args.action === 'check' && args.value === 'copy-connection') { void copyConnection(); return; }
     const actions: HelperAction[] = ['helper-issue', 'helper-revoke', 'helper-confirm'];
     const action = actions.find(value => value === args.value);
     if (args.action === 'check' && action) void run(action);
   }));
-  const args = (value: HelperAction) => ({ screen: 'native-helpers', action: 'check' as const, value });
+  const args = (value: HelperAction | 'copy-connection') =>
+    ({ screen: 'native-helpers', action: 'check' as const, value });
   return <section aria-labelledby="helpers-title" aria-busy={pending}>
     <h2 id="helpers-title">AI helpers</h2>
     <p>An AI helper can read this league and suggest changes for you through the twr command.
@@ -60,7 +73,11 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
     {connection && <div className="native-seed">
       <p>On the helper's computer, run this and paste the line below when asked:</p>
       <p><code>twr connect --address {server} --league {league}</code></p>
-      <p>Connection line (shown once): <code>{connection}</code></p>
+      <p>Connection line (shown once): <code className="native-seed">{connection}</code></p>
+      <div className="native-actions">
+        <Act variant="button" verb="commissioner.surface" args={args('copy-connection')}
+          disabled={pending} label="Copy connection line">Copy</Act>
+      </div>
     </div>}
     <h3>Confirm a helper's change</h3>
     <label>Confirm request from your helper<textarea value={request} disabled={pending} rows={3}
