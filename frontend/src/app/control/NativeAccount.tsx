@@ -85,7 +85,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
     {signedIn && view.franchise && <Suspense fallback={<p>Opening your franchise…</p>}>
-      <HostedLeague league={initial.league} franchise={view.franchise} name={view.franchiseName} role={view.role} />
+      <HostedLeague league={initial.league} franchise={view.franchise}
+        name={view.franchiseName} role={view.role} />
     </Suspense>}
     {signedIn && view.name && view.seats.length > 0 &&
       <NativeHelpers server={initial.server}

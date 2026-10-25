@@ -1,28 +1,66 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
-export type NativeAction = 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
-  | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
+export type NativeAction =
+  | 'status'
+  | 'recover'
+  | 'enroll'
+  | 'login'
+  | 'enter'
+  | 'forget'
+  | 'revoke-device'
+  | 'revoke-all'
+  | 'totp-begin'
+  | 'totp-confirm'
+  | 'totp-step-up';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
 export type NativeView = {
   helperPreview?: string;
-  server: string; league: string; message: string; name: string; role: string;
-  franchise: string; franchiseName: string; seed: string;
+  server: string;
+  league: string;
+  message: string;
+  name: string;
+  role: string;
+  franchise: string;
+  franchiseName: string;
+  seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
-  connection: string; helperId: string; confirmation: string; seats: NativeSeat[];
+  connection: string;
+  helperId: string;
+  confirmation: string;
+  seats: NativeSeat[];
 };
-const textKeys = ['server', 'league', 'message', 'name', 'role', 'franchise', 'franchiseName', 'seed',
-  'connection', 'helperId', 'confirmation'];
-const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
-  && Object.keys(seat as object).length === 2
-  && typeof (seat as NativeSeat).franchise === 'string' && typeof (seat as NativeSeat).name === 'string';
+const textKeys = [
+  'server',
+  'league',
+  'message',
+  'name',
+  'role',
+  'franchise',
+  'franchiseName',
+  'seed',
+  'connection',
+  'helperId',
+  'confirmation',
+];
+const isSeat = (seat: unknown) =>
+  Boolean(seat) &&
+  typeof seat === 'object' &&
+  Object.keys(seat as object).length === 2 &&
+  typeof (seat as NativeSeat).franchise === 'string' &&
+  typeof (seat as NativeSeat).name === 'string';
 export function parseNativeView(raw: unknown): NativeView {
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw))
+    throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
-  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
-    || ('helperPreview' in value && typeof value.helperPreview !== 'string')
-    || textKeys.some(key => typeof value[key] !== 'string')
-    || !Array.isArray(value.seats) || !value.seats.every(isSeat)
-    || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))
+  if (
+    Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0) ||
+    ('helperPreview' in value && typeof value.helperPreview !== 'string') ||
+    textKeys.some((key) => typeof value[key] !== 'string') ||
+    !Array.isArray(value.seats) ||
+    !value.seats.every(isSeat) ||
+    !String(value.server).startsWith('https://') ||
+    !String(value.league).startsWith('native.')
+  )
     throw new Error('Unreadable desktop response.');
   return value as NativeView;
 }
@@ -35,19 +73,25 @@ export async function nativeStartup(): Promise<NativeView | null> {
 }
 async function post(body: Record<string, string>): Promise<NativeView> {
   const response = await fetch('/desktop/native', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, cache: 'no-store',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    cache: 'no-store',
     body: JSON.stringify(body),
   });
   if (!response.ok) throw new Error(await response.text());
   return parseNativeView(await response.json());
 }
 export function nativeAction(
-  action: NativeAction, username = '', password = '', code = '',
+  action: NativeAction,
+  username = '',
+  password = '',
+  code = '',
 ): Promise<NativeView> {
   return post({ action, username, password, code });
 }
 export function helperAction(
-  action: HelperAction, fields: { helper?: string; franchise?: string; code?: string; change?: string },
+  action: HelperAction,
+  fields: { helper?: string; franchise?: string; code?: string; change?: string },
 ): Promise<NativeView> {
   return post({ action, ...fields });
 }
@@ -59,5 +103,43 @@ export function readConfirmRequest(text: string): boolean {
     const json = atob(trimmed.slice(6).replace(/-/g, '+').replace(/_/g, '/'));
     const request = JSON.parse(json) as { tokenId?: unknown; change?: { command?: unknown } };
     return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
-  } catch { return false; }
+  } catch {
+    return false;
+  }
+}
+
+import type { NativeRequest } from '../commands/native';
+import { object, text } from '../data/parseValues';
+
+export type HostedResponse = { label: string; writable: boolean; football: string; data: unknown };
+export async function hostedWorkflow(
+  request: NativeRequest,
+  football = '',
+): Promise<HostedResponse> {
+  const { nativeEnvelope } = await import('../commands/native');
+  const response = await fetch('/desktop/workflow', {
+    method: 'POST',
+    cache: 'no-store',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...nativeEnvelope(request), football }),
+  });
+  if (!response.ok)
+    throw new Error(
+      'The league could not accept this action. ' +
+      'Refresh before retrying; check your connection, seat and authenticator.',
+    );
+  const r = object(await response.json(), 'Hosted league', [
+    'label',
+    'writable',
+    'football',
+    'data',
+  ]);
+  if (typeof r.writable !== 'boolean')
+    throw new Error('Unreadable league authority. Refresh to try again.');
+  return {
+    label: text(r.label, 'League location'),
+    writable: r.writable,
+    football: text(r.football, 'Football evidence'),
+    data: r.data,
+  };
 }
