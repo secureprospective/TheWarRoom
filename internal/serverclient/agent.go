@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
@@ -43,9 +42,7 @@ func NewAgent(address, league, bearer string, roots *x509.CertPool) (*Agent, err
 	if bearer == "" || len(bearer) > 256 {
 		return nil, fmt.Errorf("paste the whole connection token from The War Room")
 	}
-	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}
-	client := &Client{base: strings.TrimSuffix(address, "/"), http: &http.Client{Timeout: 15 * time.Second, Transport: transport,
-		CheckRedirect: func(*http.Request, []*http.Request) error { return fmt.Errorf("redirects refused") }}}
+	client := &Client{base: strings.TrimSuffix(address, "/"), http: newHTTPClient(roots, 15*time.Second, "redirects refused")}
 	return &Agent{client: client, league: league, bearer: bearer}, nil
 }
 
@@ -93,6 +90,9 @@ func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNat
 		request.Header.Set("X-TWR-Human-Confirmation", confirmation)
 	}
 	response, err := a.client.http.Do(request)
+	if update, ok := updateRequired(err); ok {
+		return nil, update
+	}
 	if err != nil {
 		return nil, fmt.Errorf("can't reach the league server securely; check the address and your internet connection")
 	}

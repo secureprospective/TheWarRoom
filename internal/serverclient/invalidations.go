@@ -63,6 +63,9 @@ func (d *Desktop) watchInvalidations(ctx context.Context, reread func(context.Co
 	request.Header.Set("X-TWR-Recent-Auth", proof)
 	request.Header.Set("X-TWR-League", league)
 	response, err := client.Do(request)
+	if update, ok := updateRequired(err); ok {
+		return false, update
+	}
 	if err != nil {
 		return true, fmt.Errorf("connect invalidations: %w", err)
 	}

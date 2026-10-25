@@ -50,7 +50,7 @@ type Hosted struct {
 }
 
 func (h Hosted) Handler() http.Handler {
-	return resourceLimits(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP))), h.TrustedProxy)
+	return resourceLimits(versionGate(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP)))), h.TrustedProxy)
 }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {

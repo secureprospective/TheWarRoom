@@ -107,6 +107,17 @@ binary remains paused without verified R2 coverage; there is no runtime switch
 to disable that rule. Prebuilt practice bundles must use the tagged build shown
 above. Never use the practice binary for real league state.
 
+### Update-required screen
+
+`up` also prints an **Update-required click test** command. With an unstamped development
+binary, this sets `TWR_PRACTICE_UPDATE=app` in the isolated practice profile and opens the real
+blocking desktop screen. It offers one button, **Update and reopen**. Without installer trust,
+clicking it must explain that update setup is missing, preserve the screen, and permit retry;
+no test signing keys or unsigned executable are installed. Release-stamped builds ignore the
+practice override. For a valid verified-executable launch use the generated-key staging test
+in `internal/releasetrust`; actual signed release/three-OS click drills require the install
+handoff in `docs/delivery/Release_Trust.md`.
+
 ## Lineup, reserves and draft walkthrough
 
 After opening your franchise, use **Refresh league** if needed. The location label is

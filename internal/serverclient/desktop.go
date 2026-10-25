@@ -3,7 +3,6 @@ package serverclient
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 )
 
 const DesktopPath = "/desktop/native"
@@ -30,6 +30,8 @@ type Desktop struct {
 	proof       string
 	credentials CredentialStore
 	loaded      bool
+	required    serverversion.Side
+	update      func() error
 	// seats are what the last "enter" read; an AI helper acts for one of them.
 	seats          []DesktopSeat
 	helperCommands []string
@@ -44,9 +46,7 @@ func NewDesktop(address, league string, roots *x509.CertPool, storage ...Credent
 		!strings.HasPrefix(league, "native.") || len(league) <= 7 || len(league) > 128 {
 		return nil, fmt.Errorf("native startup requires an HTTPS origin and native league ID")
 	}
-	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}
-	client := &Client{base: address, http: &http.Client{Timeout: 15 * time.Second, Transport: transport,
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return fmt.Errorf("native redirects refused") }}}
+	client := &Client{base: address, http: newHTTPClient(roots, 15*time.Second, "native redirects refused")}
 	credentials := newDeviceKeychain(address, league)
 	if len(storage) > 0 && storage[0] != nil {
 		credentials = storage[0]
@@ -83,7 +83,7 @@ func (r RawDesktop) Validate() error {
 		return fmt.Errorf("unexpected helper request")
 	}
 	switch r.Action {
-	case "status", "enter", "forget", "revoke-device", "revoke-all":
+	case "retry", "update", "status", "enter", "forget", "revoke-device", "revoke-all":
 		if r.Username != "" || r.Password != "" || r.Code != "" {
 			return fmt.Errorf("unexpected credentials")
 		}
@@ -116,6 +116,7 @@ type DesktopView struct {
 	Server        string `json:"server"`
 	League        string `json:"league"`
 	Message       string `json:"message"`
+	Update        string `json:"update,omitempty"`
 	Name          string `json:"name"`
 	Role          string `json:"role"`
 	Franchise     string `json:"franchise"`
@@ -135,15 +136,40 @@ type DesktopSeat struct {
 }
 
 // Act serializes login/forget/read so a delayed response cannot revive a forgotten session.
-func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) {
+func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, resultErr error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	view := DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	view = DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
+	defer func() {
+		if update, ok := updateRequired(resultErr); ok {
+			d.required = update.Update
+			view.Update = string(update.Update)
+		}
+	}()
+	if d.required == serverversion.Server && raw.Action == "retry" {
+		d.required = ""
+		return view, nil
+	}
+	if d.required != "" {
+		view.Update = string(d.required)
+		if raw.Action == "update" {
+			return view, d.installUpdate()
+		}
+		if d.required == serverversion.App || raw.Action == "status" {
+			return view, nil
+		}
+	}
+	return d.actLocked(ctx, raw, view)
+}
+
+func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
 	d.restore()
 	switch raw.Action {
+	case "update", "retry":
+		return view, fmt.Errorf("no desktop update is required")
 	case "status":
 		if d.bearer != "" {
 			view.Message = "Saved device session available. Open your franchise to check access."
@@ -215,6 +241,9 @@ func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string,
 		request.Header.Set("X-TWR-Recent-Auth", d.proof)
 	}
 	response, err := d.client.http.Do(request)
+	if update, ok := updateRequired(err); ok {
+		return nil, update
+	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
 	}
