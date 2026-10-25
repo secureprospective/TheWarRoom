@@ -59,7 +59,7 @@ describe('local MFL reference command transport', () => {
     expect(() => mflEnvelope(read, { ...desktop, role: 'viewer' } as unknown as MFLContext))
       .toThrow('not available');
     expect(() => mflEnvelope({ ...read, mode: 'execute' } as unknown as MFLRequest, desktop)).toThrow();
-    expect(() => mflEnvelope({ ...read, arguments: { franchiseId: '0001', principal: 'admin' } }
-      as MFLRequest, desktop)).toThrow();
+    const forged = { ...read, arguments: { franchiseId: '0001', principal: 'admin' } } as MFLRequest;
+    expect(() => mflEnvelope(forged, desktop)).toThrow();
   });
 });
