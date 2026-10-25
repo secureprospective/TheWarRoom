@@ -48,8 +48,10 @@ install -m 600 -o twr -g twr /dev/null /var/lib/twr/server.db
 install -m 755 backup-setup.sh /usr/local/libexec/twr-backup-setup
 install -m 755 restore.sh /usr/local/libexec/twr-restore
 install -m 755 reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
+install -m 755 status.sh /usr/local/libexec/twr-status
 rc-update add twr-server default
-# No SSH, HTTP admin listener or public metrics service is installed.
+# No SSH, HTTP admin listener or public metrics service is installed. The status
+# dashboard is a console command reading an owner-only socket (CHECKLIST.md).
 rc-service twr-server start
 # Check TLS and an actual application response, not just an open socket.
 attempt=0
