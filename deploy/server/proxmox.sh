@@ -26,6 +26,7 @@ read -rp 'Container disk storage [local-lvm]: ' storage; storage=${storage:-loca
 read -rp 'Template storage [local]: ' templates; templates=${templates:-local}
 read -rp 'Cloudflare zone (example.org): ' zone
 read -rp 'New public hostname (league.example.org): ' hostname
+read -rp 'Replacing a lost league server at that hostname? (yes/no) [no]: ' replace; replace=${replace:-no}
 read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
 stop() { echo "$1 Nothing was changed." >&2; exit 1; }
 [[ $ctid =~ ^[1-9][0-9]{2,8}$ ]] || stop 'The container number must be 100 or higher.'
@@ -36,6 +37,8 @@ fi
 [[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
 [[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
 [[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
+[[ $replace == yes || $replace == no ]] || stop 'Answer yes or no to replacing a lost server.'
+if [[ $replace == yes ]]; then replace=true; else replace=false; fi
 [[ $token =~ ^[a-zA-Z0-9_-]+$ ]] || stop "That Cloudflare API token does not look right; copy it again from Cloudflare."
 [[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]] || stop "Container $ctid already exists; choose another number."
 work=$(mktemp -d)
@@ -97,8 +100,8 @@ pct exec "$ctid" -- mkdir -m 700 /root/twr
 pct push "$ctid" "$bundle" /root/twr.tar.gz --perms 0600
 pct exec "$ctid" -- tar -xzf /root/twr.tar.gz -C /root/twr
 # The validated domain/token alphabets contain no JSON escapes or control characters.
-printf '{"zone":"%s","hostname":"%s","api_token":"%s"}\n' \
-  "$zone" "$hostname" "$token" > "$work/input.json"
+printf '{"zone":"%s","hostname":"%s","api_token":"%s","replace":%s}\n' \
+  "$zone" "$hostname" "$token" "$replace" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
 pct exec "$ctid" -- sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'

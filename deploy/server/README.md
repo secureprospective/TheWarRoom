@@ -1,6 +1,7 @@
 # Alpine league-server deployment (slices 34–36)
 
 Encrypted Cloudflare R2 recovery and CT-only setup: [BACKUPS.md](BACKUPS.md).
+Replacing a lost server, and signing everyone out after an incident: [RESTORE.md](RESTORE.md).
 New installations serve with changes paused until that setup verifies an off-site set.
 
 **Preproduction. Not approved for real owners.** League files are private inside
@@ -22,6 +23,8 @@ speaks TLS; cloudflared verifies its private origin certificate directly. No
 | OpenRC → `twr-sandbox` → Go | Non-root, no capabilities, private PID/user/mount/IPC/UTS namespaces. Only persistent writable mount is `/var/lib/twr`; `/tmp`, `/run` and minimal `/dev` are disposable. No host root/home, Tunnel credential or external filesystem is mounted. Share the CT network only for loopback TLS; Proxmox owns lateral-network containment. |
 | `cloudflare.sh` → Cloudflare API | API token is an owner-only transient file/header, not a process argument. Create a locally managed Tunnel and new proxied DNS record; refuse an occupied hostname. Install its separate scoped credential, local ingress rules and origin CA automatically. Delete API token input on exit. |
 | cloudflared → origin | Only the configured hostname's `/v1/` routes reach `https://127.0.0.1:8443`, verified as `localhost` with the installed CA. Everything else is an edge 404. Origin trusts exactly `127.0.0.1` for `CF-Connecting-IP`; missing/forged peer metadata is refused. Metrics/readiness bind `127.0.0.1:20241`, never public ingress. |
+| `restore.sh` → CT (`twr-restore`) | Console answers → `twr-server restore` as the service user → newest usable R2 set, checkpoint compared, sign-ins reset in the staged copy → installed database, authenticator key and new backup settings. Refuses a target holding a league; a failure leaves the fresh install running. [RESTORE.md](RESTORE.md). |
+| `reset-sign-ins.sh` → CT (`twr-reset-sign-ins`) | Incident reason → new auth epoch for every account; passwords, authenticators and league unchanged. |
 | Installer → reboot | Reboot CT; require both OpenRC services and cloudflared's connected `/ready` before declaring success/enabling on-boot. A dead Tunnel is not a successful installation. |
 
 Administration is the Proxmox console (`pct enter <number>`) through the existing
@@ -41,7 +44,7 @@ bash deploy/server/proxmox.sh ./twr-server-alpine-amd64.tar.gz
 ```
 
 Prompts collect the unused container number, bridge, isolated VLAN, storage,
-Cloudflare zone/new hostname and API token (hidden input). Token permissions are
+Cloudflare zone/new hostname, whether a lost server is being replaced and API token (hidden input). Token permissions are
 Cloudflare Tunnel Edit for the account, plus DNS Edit and Zone Read for that zone.
 The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
@@ -70,7 +73,9 @@ file with the same fields and run `sh /root/twr/cloudflare.sh --rollback <input>
 The cleanup entry retries only recorded resources and reports failure plainly;
 normal `cloudflare.sh` entry also completes pending cleanup before creation.
 Successful deletions are removed from the ledger; already-absent resources count
-as cleaned. An existing DNS record is never overwritten.
+as cleaned. An existing DNS record is never overwritten, except when replacing a
+lost server: then only a single CNAME to a disconnected `twr-…` Tunnel in the same
+account is repointed in place and that old Tunnel deleted ([RESTORE.md](RESTORE.md)).
 
 ## Build and test the candidate
 

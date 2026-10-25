@@ -229,7 +229,7 @@ func TestAgentTokenHashOnlyCeilingAndCredentialIsolation(t *testing.T) {
 		t.Fatalf("revoked token: %v", err)
 	}
 	fresh := issueToken(t, service, session, tokenScope("read"))
-	if err := f.store.RotateAuthEpoch(t.Context()); err != nil {
+	if _, err := f.store.ResetAfterRestore(t.Context(), "restore drill"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.Authenticate(t.Context(), fresh.RawSession); !errors.Is(err, accounts.ErrTokenRefused) {

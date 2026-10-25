@@ -118,21 +118,15 @@ This is recovery against physical host loss, not immutability against someone
 who steals the running server's bucket read/write credential. Keep desktop
 checkpoints too; R2 read/write credentials can delete objects.
 
-## Restore handoff (slice 37)
+## Restoring
 
-Download a complete `.tar.gz.age` object from the private bucket on your own
-computer. Keep the private age key off the old CT. `offsite.Restore` is the offline
-library seam: it decrypts into a **new staging directory**, validates every member
-and digest, checks the age authentication tag, and deletes partial output on
-failure. It never replaces live state. `checkpoint.json` is compatible with
-`twr-server checkpoint -db <staged server.db> -check <staged checkpoint.json>`.
-
-Slice 37 owns spare-host CLI/runbook/activation, rotating the restored auth epoch
-before any listener opens, and the measured four-hour recovery drill including
-host replacement/unlock. Recreate Cloudflare Tunnel credentials using deployment
-setup; the separate tunnel account's credentials are deliberately not readable
-by the league service. Do not start a restored server directly: old sessions and
-consumed recovery-code state require that restore procedure.
+Follow [RESTORE.md](RESTORE.md): install a fresh CT on the spare, then run
+`twr-restore` inside it. It downloads the newest set from R2 into the CT, unlocks
+it with the restore key typed at the console (held in memory, never saved),
+compares the saved checkpoint, signs every owner out and only then starts the
+service. Do not copy a decrypted `server.db` into a server by hand: sessions and
+used recovery codes from before the snapshot would come back. The fresh CT keeps
+its own TLS key and Tunnel; the old R2 token is replaced with a new one.
 
 ## Research and evidence
 

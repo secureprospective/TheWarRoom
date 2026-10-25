@@ -14,7 +14,7 @@ docker exec "$name" sh -ec '
   touch /run/openrc/softlevel
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/test-alpine.sh
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
@@ -48,8 +48,8 @@ STUB
   # Exercise the deployed JSON writer with the allowed domain/token characters.
   mkdir /tmp/json-work
   sed -n "/^printf.*zone.*hostname.*api_token/,/input.json/p" /root/twr/proxmox.sh > /tmp/write-input
-  zone=example.org hostname=league-1.example.org token=Abc_123-xyz work=/tmp/json-work sh /tmp/write-input
-  jq -e '\''. == {zone:"example.org",hostname:"league-1.example.org",api_token:"Abc_123-xyz"}'\'' /tmp/json-work/input.json
+  zone=example.org hostname=league-1.example.org token=Abc_123-xyz replace=true work=/tmp/json-work sh /tmp/write-input
+  jq -e '\''. == {zone:"example.org",hostname:"league-1.example.org",api_token:"Abc_123-xyz",replace:true}'\'' /tmp/json-work/input.json
   rc-service twr-server status
   # Real CT-only settings validation/install, but stub service restart to avoid external R2.
   mkdir /tmp/backup-tools
@@ -66,6 +66,18 @@ STUB
   grep -F "twr-server start" /tmp/backup-service-calls
   /usr/local/bin/twr-server backup-check -config /etc/twr/backup.json
   rm /etc/twr/backup.json
+  # Spare-host restore refuses a bad key before touching state, then restarts the fresh install.
+  before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
+  : > /tmp/backup-service-calls
+  if printf "endpoint\nbucket\naccess\nsecret\nnot-a-key\n" | PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-restore > /tmp/restore-result 2>&1; then exit 1; fi
+  grep -F "restore key is not right" /tmp/restore-result
+  grep -F "twr-server --ifstopped start" /tmp/backup-service-calls
+  [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
+  test ! -e /var/lib/twr/restore
+  test ! -e /etc/twr/backup.json
+  # The incident reset runs as the service user and keeps its files owned by twr.
+  printf "alpine drill\n" | PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-reset-sign-ins | grep -F "on 0 accounts"
+  [ -z "$(find /var/lib/twr ! -user twr)" ]
   # A second install refuses without replacing authoritative state or keys.
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   if sh /root/twr/install.sh; then exit 1; fi
