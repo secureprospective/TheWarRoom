@@ -1,7 +1,9 @@
 import { array, integer, object, text, timestamp } from '../data/parseValues';
 
 // The Go people reading (TargetCommissionerPeople). Owners get no role or invite rows from Go.
-export type PeopleSeat = { franchise: string; name: string; abbreviation: string; owner: string };
+export type PeopleSeat = {
+  franchise: string; name: string; abbreviation: string; owner: string; caretaker?: string;
+};
 export type PeopleVote = {
   id: string; status: string; ballotsCast: number; totalFranchises: number; votesRequired: number;
   requirement: string; endsAt: string; candidates: string[]; counts: { choice: string; ballots: number }[];
@@ -45,9 +47,10 @@ export function parsePeople(v: unknown): People {
     league: text(r.league, 'League'), name: text(r.name, 'League name'),
     revision: integer(r.revision, 'League version'),
     seats: array(r.seats, 'Seats', (s, p) => {
-      const o = object(s, p, ['franchise', 'name', 'abbreviation', 'owner']);
+      const o = object(s, p, ['franchise', 'name', 'abbreviation', 'owner', 'caretaker']);
       return { franchise: text(o.franchise, p), name: text(o.name, p),
-        abbreviation: text(o.abbreviation, p), owner: text(o.owner, p) };
+        abbreviation: text(o.abbreviation, p), owner: text(o.owner, p),
+        ...(o.caretaker === undefined ? {} : { caretaker: text(o.caretaker, p) }) };
     }),
     roles: array(r.roles, 'Roles', (s, p) => {
       const o = object(s, p, ['person', 'role']);

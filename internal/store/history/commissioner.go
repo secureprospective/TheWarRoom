@@ -339,7 +339,7 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 	}
 	raw.Gravity = definition.Gravity
 	record := commissioner.Record{CommandVersion: commissioner.DurableCommandVersion,
-		Command: raw, Principal: principal, Role: req.role,
+		Command: raw, Principal: principal, Role: req.role, TokenAuditID: commissioner.TokenAuditID(ctx),
 		Gravity: definition.Gravity, Canonical: req.canonical, Receipt: receipt, Before: req.before}
 	if raw.Command == commissioner.ScheduleGenerate {
 		record.GeneratedSchedule, err = commissioner.FreezeSchedule(raw, req.records)

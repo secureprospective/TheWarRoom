@@ -24,6 +24,12 @@
     "safeguard": "confirm"
   },
   {
+    "command": "commish.seat.caretaker",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
     "command": "commish.franchise.edit",
     "effective": "now",
     "field": "",

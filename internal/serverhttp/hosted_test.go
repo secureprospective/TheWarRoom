@@ -36,6 +36,7 @@ type hostedFixture struct {
 	accounts   *accountstore.Store
 	sessions   *accounts.SessionService
 	enrollment *accounts.EnrollmentService
+	tokens     *accounts.TokenService
 	totp       *accounts.TOTPService
 	principal  string
 	now        time.Time
@@ -76,7 +77,12 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	f.sessions, f.totp = accounts.NewSessions(passwords, credentials), totp
 	f.enrollment = accounts.NewEnrollment(credentials, enrollmentAuthority{policy: policy, principal: principal})
 	worker := leagueservice.NewDueWorker(store, func() nativecheck.Facts { return nil }, nil)
-	f.server = httptest.NewTLSServer(serverhttp.Hosted{Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
+	f.tokens = accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store})
+	confirmations, err := serverhttp.NewConfirmations()
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.server = httptest.NewTLSServer(serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n"}.Handler())
 	t.Cleanup(f.server.Close)

@@ -14,7 +14,10 @@ export const seatName = (people: People, franchise: string) => {
 };
 export function seatsReport(people: People): Report {
   return table('league-seats', 'Franchises and owners', people.name,
-    ['Franchise', 'Owner'], people.seats.map(s => [`${s.name} (${s.abbreviation})`, personLabel(s.owner)]));
+    ['Franchise', 'Owner'], people.seats.map(s => [
+      `${s.name} (${s.abbreviation})`,
+      s.caretaker ? `Vacant — caretaker: ${personLabel(s.caretaker)}` : personLabel(s.owner),
+    ]));
 }
 // Roles and invitations come from Go only for the commissioner and co-commissioner; an owner gets none.
 export function rolesReport(people: People): Report {

@@ -26,7 +26,8 @@ type Record struct {
 	books      *closedBooks
 	principals *governance.Principals
 
-	CommandVersion int `json:"commandVersion,omitempty"`
+	CommandVersion int    `json:"commandVersion,omitempty"`
+	TokenAuditID   string `json:"tokenAuditId,omitempty"`
 
 	GeneratedSchedule []ScheduleWeek  `json:"generatedSchedule,omitempty"`
 	Before            *RolloverBefore `json:"before,omitempty"`
@@ -175,6 +176,9 @@ func Reading(league, principal string, records []Record, auth Authorizer) (Ledge
 		who := r.Principal
 		if strings.HasPrefix(who, "local.") {
 			who = "Local operator"
+		}
+		if r.TokenAuditID != "" {
+			who = "via AI/CLI, acting for " + who
 		}
 		gravity := "Confirmation required"
 		if r.Gravity == "G3" {

@@ -220,8 +220,8 @@ references against the scoped franchise and current policy. Both checks are
 read-only, must use the current state (including `Access.Records` at append), and
 must not acquire the writer. Accounts and history must share the same pools so
 revocation/recovery/role writes serialize with append. Missing policy fails closed.
-Transport composition and production reference resolution belong to slice 26;
-this slice does not enable agent HTTP/CLI access or claim all-family scope proof.
+The hosted adapter and its proving tests are described below. CLI/MCP transport
+remains a separate slice.
 
 Tokens cannot issue/revoke credentials or administer seats, roles, succession or
 permissions. Generic correction/revert is excluded because it could undo a role
@@ -242,7 +242,7 @@ Tests `TestAgentTokenLifetimesScopeAndCurrentIssuerRights`,
 stores, explicit trusted test policy, exact expiry, role loss/gain, cross-scope and
 reference denials, hash-only storage/redaction, queued revocation before retry,
 zero denied ledger growth, immutable scope, reopen, recovery/epoch fences and
-rollback on audit failure. No deployed policy adapter or live owner is exercised.
+rollback on audit failure. No live owner is exercised.
 
 ## Desktop sign-in and restored copies
 
@@ -261,3 +261,45 @@ different local identity: Visitor, wrong password and a second account refused, 
 Commissioner after the original sign-in, and a ruled change executes) and
 `TestStrangersRestoredCopyWithoutSignInStaysVisitor`. Removing the history alias hook
 makes the first fail with a Visitor reading.
+
+### Hosted token dispatch and caretaker seats
+
+The hosted composition now supplies `serverhttp.TokenPolicy` over the same history
+and account pools. HTTPS authenticates a device session or scoped token; a token
+uses `NewHosted` and the existing dispatch, not a second mutation implementation.
+`/v1/native/dispatch` defaults to preview; execution requires `mode: "execute"`.
+Existing explicit preview/execute routes remain available. Domain permissions,
+argument references and token expiry/revocation are rechecked before retry lookup
+and again at append. `Record.TokenAuditID` stores only the public audit ID; ledger
+attribution says “via AI/CLI, acting for …”. Tokens act for current commissioners;
+explicitly allowlisted league-wide commands retain their league-wide semantics.
+Franchise/player/bid/claim/trade/pick references cannot escape the named franchise.
+
+For G2/G3, a human device session with recent privileged authentication posts the
+exact command and `tokenId` to `/v1/native/confirm`. The returned five-minute
+confirmation is bound to the issuer, token audit ID and canonical command
+(including request and expected revision). The token sends it in
+`X-TWR-Human-Confirmation`. Tokens cannot mint consent. Invalid/expired consent,
+changed commands, revoked credentials and changed league rights fail closed.
+Server restart invalidates outstanding consent; confirmation is not a boolean in
+agent-controlled JSON.
+
+`/v1/native/lineup/set` calls `Service.SetLineup`; `/v1/native/draft/pick` carries
+`pick: DraftPickInput` and calls `Service.Pick`. Both use `NativeActionGate`, then
+recheck the calendar against transaction records. Lineup legality/locks and draft
+on-the-clock/roster/cap checks remain in their original stores. Generic `Execute`
+still refuses both commands. The human desktop's registered owner actions remain
+unchanged.
+
+`commish.seat.caretaker` records a commissioner's own temporary seat on a vacant
+franchise. It is public in People and the ledger, grants lineup/pick seat authority
+only, and never ownership or proxy power over an owned franchise. Owner assignment
+(including invitation redemption) clears the caretaker; removing that owner does
+not restore it. A caretaker who loses the commissioner role cannot act. Checkpoints
+retain caretaker state alongside the franchise, with no alternate state owner.
+
+Evidence: `TestAgentSharedDispatchDefaultsToPreviewAndAuditsAppend`,
+`TestAgentG2G3RequireExactHumanConsent`, `TestAgentScopeFamiliesAndExpiredRetry`,
+`TestTokenArgumentScopeIncludesIndirectReferences`, and the composition
+`TestTokenCaretaker*` tests exercise real account/history stores. Live deployment
+and the CLI/MCP transport are outside this slice.

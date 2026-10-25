@@ -2432,6 +2432,7 @@ export namespace commissioner {
 	    name: string;
 	    abbreviation: string;
 	    owner: string;
+	    caretaker?: string;
 	    division: string;
 	
 	    static createFrom(source: any = {}) {
@@ -2444,6 +2445,7 @@ export namespace commissioner {
 	        this.name = source["name"];
 	        this.abbreviation = source["abbreviation"];
 	        this.owner = source["owner"];
+	        this.caretaker = source["caretaker"];
 	        this.division = source["division"];
 	    }
 	}
@@ -3669,6 +3671,7 @@ export namespace commissioner {
 	    name: string;
 	    abbreviation: string;
 	    owner: string;
+	    caretaker?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new PeopleSeat(source);
@@ -3680,6 +3683,7 @@ export namespace commissioner {
 	        this.name = source["name"];
 	        this.abbreviation = source["abbreviation"];
 	        this.owner = source["owner"];
+	        this.caretaker = source["caretaker"];
 	    }
 	}
 	export class People {

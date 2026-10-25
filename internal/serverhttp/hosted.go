@@ -20,23 +20,28 @@ import (
 )
 
 const (
-	PeoplePath  = "/v1/native/people"
-	LoginPath   = "/v1/auth/login"
-	LedgerPath  = "/v1/native/ledger"
-	PreviewPath = "/v1/native/preview"
-	ExecutePath = "/v1/native/execute"
+	PeoplePath   = "/v1/native/people"
+	LoginPath    = "/v1/auth/login"
+	LedgerPath   = "/v1/native/ledger"
+	PreviewPath  = "/v1/native/preview"
+	ExecutePath  = "/v1/native/execute"
+	DispatchPath = "/v1/native/dispatch"
+	LineupPath   = "/v1/native/lineup/set"
+	PickPath     = "/v1/native/draft/pick"
 )
 
 // Hosted has no fixture fallback. Accounts and history must share the single writer,
 // so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
-	Store      *history.Store
-	Sessions   *accounts.SessionService
-	TOTP       *accounts.TOTPService
-	Enrollment *accounts.EnrollmentService
-	Recovery   *accounts.RecoveryService
-	Worker     *leagueservice.DueWorker
-	Registry   string
+	Tokens        *accounts.TokenService
+	Confirmations *Confirmations
+	Store         *history.Store
+	Sessions      *accounts.SessionService
+	TOTP          *accounts.TOTPService
+	Enrollment    *accounts.EnrollmentService
+	Recovery      *accounts.RecoveryService
+	Worker        *leagueservice.DueWorker
+	Registry      string
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }
@@ -66,7 +71,7 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		h.revoke(w, r)
 	case LoginPath:
 		h.login(w, r)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath:
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, DispatchPath, LineupPath, PickPath, ConfirmPath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -113,14 +118,29 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 }
 
 type RawNativeRequest struct {
-	Protocol int                      `json:"protocol"`
-	League   string                   `json:"league,omitempty"`
-	Command  *commissioner.RawCommand `json:"command,omitempty"`
+	Protocol int                          `json:"protocol"`
+	League   string                       `json:"league,omitempty"`
+	Command  *commissioner.RawCommand     `json:"command,omitempty"`
+	Pick     *commissioner.DraftPickInput `json:"pick,omitempty"`
+	Mode     string                       `json:"mode,omitempty"`
+	TokenID  string                       `json:"tokenId,omitempty"`
 }
 
 func (r RawNativeRequest) Validate() error {
 	if r.Protocol != 1 {
 		return fmt.Errorf("unsupported protocol")
+	}
+	if !validDispatchMode(r.Mode) {
+		return fmt.Errorf("choose preview or execute")
+	}
+	if r.Pick != nil {
+		if r.Command != nil || r.League != "" || r.Mode != "" || r.TokenID != "" {
+			return fmt.Errorf("send only a draft pick")
+		}
+		if err := r.Pick.Validate(); err != nil {
+			return fmt.Errorf("rookie pick input: %w", err)
+		}
+		return nil
 	}
 	if r.Command == nil {
 		if !strings.HasPrefix(r.League, "native.") || len(r.League) <= len("native.") || len(r.League) > 128 {
@@ -143,9 +163,25 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "session required", http.StatusUnauthorized)
 		return
 	}
-	account, err := h.Sessions.Authenticate(r.Context(), rawSession)
-	if err != nil {
-		http.Error(w, "session refused", http.StatusUnauthorized)
+	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
+	if authenticationErr != nil {
+		if h.Tokens == nil {
+			http.Error(w, "session refused", http.StatusUnauthorized)
+			return
+		}
+		if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
+			http.Error(w, "session refused", http.StatusUnauthorized)
+			return
+		}
+	}
+	var raw RawNativeRequest
+	if r.Method != http.MethodPost || decodeHosted(w, r, &raw) != nil || raw.Validate() != nil ||
+		!raw.matchesPath(r.URL.Path) {
+		http.Error(w, "invalid native request", http.StatusBadRequest)
+		return
+	}
+	if authenticationErr != nil {
+		h.agent(w, r, rawSession, raw)
 		return
 	}
 	principal, err := account.Principal()
@@ -153,20 +189,27 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return
 	}
-	var raw RawNativeRequest
-	if r.Method != http.MethodPost || decodeHosted(w, r, &raw) != nil || raw.Validate() != nil ||
-		((r.URL.Path == LedgerPath || r.URL.Path == PeoplePath) != (raw.Command == nil)) {
-		http.Error(w, "invalid native request", http.StatusBadRequest)
-		return
-	}
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
+	if r.URL.Path == ConfirmPath {
+		h.confirm(w, r, gate, raw)
+		return
+	}
 	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
 	h.dispatch(w, r, service, raw)
 }
 
 func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
-	switch r.URL.Path {
+	path := r.URL.Path
+	if path == DispatchPath {
+		path = PreviewPath
+		if raw.Mode == "execute" {
+			path = ExecutePath
+		}
+	}
+	switch path {
+	case LineupPath, PickPath:
+		h.dispatchOwner(w, r, service, raw)
 	case PeoplePath:
 		//nolint:contextcheck // The request-scoped StoredHost supplies r.Context to the existing reading API.
 		reading, err := service.TargetCommissionerPeople(raw.League)
@@ -255,9 +298,14 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 		return fmt.Errorf("privileged authentication: %w", err)
 	}
 	if access.Mode == "read" {
-		if !policy.HasRole(principal, governance.Commissioner) && !policy.HasRole(principal, governance.CoCommissioner) &&
-			!hostedOwner(policy, principal, records) && !policy.HasRole(principal, governance.DOT) {
+		if !hostedMember(policy, principal, records) {
 			return fmt.Errorf("league membership required")
+		}
+		return nil
+	}
+	if access.DraftPick != nil {
+		if !policy.HoldsSeat(governance.FranchiseID(access.DraftPick.Franchise), principal) {
+			return fmt.Errorf("only a seated owner or caretaker may pick")
 		}
 		return nil
 	}
@@ -291,7 +339,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse](w http.ResponseWriter, body T) {
+func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
@@ -317,4 +365,36 @@ func hostedOwner(policy governance.State, principal governance.Principal, record
 		}
 	}
 	return false
+}
+
+func validDispatchMode(mode string) bool { return mode == "" || mode == "preview" || mode == "execute" }
+
+func (r RawNativeRequest) matchesPath(path string) bool {
+	if (path == LedgerPath || path == PeoplePath) != (r.Command == nil && r.Pick == nil) {
+		return false
+	}
+	if (path == PickPath) != (r.Pick != nil) {
+		return false
+	}
+	return (r.TokenID == "" || path == ConfirmPath) && (r.Mode == "" || path == DispatchPath)
+}
+
+func (Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
+	var receipt commissioner.Receipt
+	var err error
+	if r.URL.Path == PickPath {
+		receipt, err = service.Pick(r.Context(), *raw.Pick)
+	} else {
+		receipt, err = service.SetLineup(r.Context(), *raw.Command)
+	}
+	if err != nil {
+		http.Error(w, "owner action refused", http.StatusConflict)
+		return
+	}
+	writeHosted(w, receipt)
+}
+
+func hostedMember(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
+	return policy.HasRole(principal, governance.Commissioner) || policy.HasRole(principal, governance.CoCommissioner) ||
+		hostedOwner(policy, principal, records) || policy.HasRole(principal, governance.DOT)
 }

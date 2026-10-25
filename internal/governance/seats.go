@@ -91,6 +91,27 @@ func (s *State) assign(id FranchiseID, p Principal, replace bool) error {
 		return fmt.Errorf("the last commissioner cannot be replaced; choose a successor first")
 	}
 	f.Seat = p
+	f.Caretaker = ""
 	s.franchises[id] = f
+	return nil
+}
+
+// CaretakerSeated records temporary stewardship, never ownership or proxy authority.
+type CaretakerSeated struct {
+	Franchise FranchiseID
+	Principal Principal
+}
+
+func (CaretakerSeated) Private() bool { return false }
+func (e CaretakerSeated) apply(s *State) error {
+	f, ok := s.franchises[e.Franchise]
+	if !ok || f.Seat != "" || e.Principal == "" || !s.HasRole(e.Principal, Commissioner) {
+		return fmt.Errorf("only a commissioner may take a vacant franchise as caretaker")
+	}
+	if f.Caretaker == e.Principal {
+		return fmt.Errorf("this commissioner is already the caretaker")
+	}
+	f.Caretaker = e.Principal
+	s.franchises[e.Franchise] = f
 	return nil
 }

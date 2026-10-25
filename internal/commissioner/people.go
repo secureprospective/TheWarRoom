@@ -9,6 +9,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
+const CaretakerSeat = "commish.seat.caretaker"
+
 const DeputyOrder = "commish.deputy.order"
 
 type RawPeople struct {
@@ -39,6 +41,7 @@ type peopleDefinition struct {
 
 func peopleDefinitions() []peopleDefinition {
 	return []peopleDefinition{
+		{CaretakerSeat, "CM-019", "G2", "Seated a caretaker for a vacant franchise"},
 		{"commish.franchise.edit", "CM-018", "G2", "Changed a franchise's name and abbreviation"},
 		{"commish.seat.invite", "CM-019", "G2", "Issued an owner invitation"},
 		{"commish.seat.invite.revoke", "CM-019", "G2", "Revoked an owner invitation"},
@@ -115,7 +118,7 @@ func (r RawPeople) selected(command string) (RawPeople, error) {
 		return RawPeople{ID: r.ID, Principal: r.Principal}, nil
 	case "commish.seat.remove":
 		return RawPeople{Franchise: r.Franchise}, nil
-	case "commish.seat.replace":
+	case CaretakerSeat, "commish.seat.replace":
 		return RawPeople{Franchise: r.Franchise, Principal: r.Principal}, nil
 	case "commish.abilities.set":
 		return RawPeople{Franchise: r.Franchise, All: r.All, Ability: r.Ability, On: r.On}, nil
@@ -140,6 +143,8 @@ func (r RawPeople) label(command string) string {
 		return fmt.Sprintf("Granted %s to %s", roleLabel(r.Role), r.Principal)
 	case "commish.role.revoke":
 		return fmt.Sprintf("Revoked %s from %s", roleLabel(r.Role), r.Principal)
+	case CaretakerSeat:
+		return fmt.Sprintf("Seated %s as caretaker for vacant franchise %s", r.Principal, r.Franchise)
 	case "commish.seat.replace":
 		return fmt.Sprintf("Assigned %s to franchise %s", r.Principal, r.Franchise)
 	case "commish.seat.remove":
@@ -181,6 +186,8 @@ func (r RawPeople) event(command string) (governance.Event, error) {
 		return governance.InviteRedeemed{ID: r.ID, Principal: p}, nil
 	case "commish.seat.remove":
 		return governance.SeatRemoved{Franchise: f}, nil
+	case CaretakerSeat:
+		return governance.CaretakerSeated{Franchise: f, Principal: p}, nil
 	case "commish.seat.replace":
 		return governance.SeatReplaced{Franchise: f, Principal: p}, nil
 	case "commish.abilities.set":

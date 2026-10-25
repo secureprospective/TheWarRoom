@@ -91,8 +91,7 @@ func ownsFranchise(records []commissioner.Record, principal, franchise string) e
 	if err != nil {
 		return fmt.Errorf("read league seats: %w", err)
 	}
-	seat, ok := state.Franchise(governance.FranchiseID(franchise))
-	if !ok || principal == "" || seat.Seat != governance.Principal(principal) {
+	if !state.HoldsSeat(governance.FranchiseID(franchise), governance.Principal(commissioner.PrincipalFor(records, principal))) {
 		return errors.New("only the owner of this franchise may make its picks")
 	}
 	return nil
