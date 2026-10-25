@@ -1,0 +1,13 @@
+{
+  "name": "warroom-durable-experiment",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.3",
+  "engines": { "node": ">=24.22.1" },
+  "scripts": { "test": "node --test prototype.test.mjs" },
+  "dependencies": {
+    "@earendil-works/pi-durable": "1.4.0",
+    "@earendil-works/pi-ai": "1.4.0",
+    "@earendil-works/chord": "1.4.0"
+  }
+}
