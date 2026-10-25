@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func up(ctx context.Context, dir string, out io.Writer) (result error) {
+func up(ctx context.Context, dir, bin string, out io.Writer) (result error) {
 	if err := claimDirectory(dir); err != nil {
 		return err
 	}
@@ -30,7 +30,7 @@ func up(ctx context.Context, dir string, out io.Writer) (result error) {
 			result = fmt.Errorf("%w; cleanup: %v", result, err)
 		}
 	}()
-	if err := prepareFiles(ctx, dir); err != nil {
+	if err := prepareFiles(ctx, dir, bin); err != nil {
 		return err
 	}
 	password, seed, err := provision(ctx, dir)
@@ -59,7 +59,7 @@ func up(ctx context.Context, dir string, out io.Writer) (result error) {
 	if err := saveState(dir, state); err != nil {
 		return err
 	}
-	if err := report(out, dir, state); err != nil {
+	if err := report(out, dir, state, bin); err != nil {
 		return err
 	}
 	go func() { _ = child.Wait() }()
@@ -82,15 +82,19 @@ func claimDirectory(dir string) error {
 	return nil
 }
 
-func prepareFiles(ctx context.Context, dir string) error {
+func prepareFiles(ctx context.Context, dir, bin string) error {
 	for _, name := range []string{"home", "config", "data", "cache", "runtime"} {
 		if err := os.Mkdir(filepath.Join(dir, name), 0700); err != nil { //nolint:gosec // Fixed subdirectory names inside the claimed sandbox.
 			return fmt.Errorf("create isolated profile: %w", err)
 		}
 	}
-	registry, err := os.ReadFile("docs/ui/endpoint-registry.csv")
+	registryPath := "docs/ui/endpoint-registry.csv"
+	if bin != "" {
+		registryPath = filepath.Join(bin, "registry.csv")
+	}
+	registry, err := os.ReadFile(registryPath)
 	if err != nil {
-		return fmt.Errorf("run from repository root: %w", err)
+		return fmt.Errorf("read preview registry %s: %w", registryPath, err)
 	}
 	if err := writePrivate(filepath.Join(dir, "registry.csv"), registry); err != nil {
 		return err
@@ -99,6 +103,12 @@ func prepareFiles(ctx context.Context, dir string) error {
 		{"openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256", "-nodes", "-keyout", filepath.Join(dir, "server.key"), "-out", filepath.Join(dir, "server.pem"), "-days", "1", "-subj", "/CN=Disposable loopback", "-addext", "subjectAltName=IP:127.0.0.1"},
 		{"go", "build", "-o", filepath.Join(dir, "twr-server"), "./cmd/twr-server"},
 		{"go", "build", "-tags", "webkit2_41", "-o", filepath.Join(dir, "thewarroom"), "."},
+	}
+	if bin != "" {
+		if err := copyBinaries(dir, bin); err != nil {
+			return err
+		}
+		commands = commands[:1]
 	}
 	for _, args := range commands {
 		if output, err := exec.CommandContext(ctx, args[0], args[1:]...).CombinedOutput(); err != nil { //nolint:gosec // Fixed build/TLS commands with argument arrays, never a shell.
@@ -134,4 +144,46 @@ func awaitAddress(ctx context.Context, dir string) (string, error) {
 		case <-ticker.C:
 		}
 	}
+}
+
+func copyBinaries(dir, bin string) error {
+	for _, name := range []string{"twr-server", "thewarroom"} {
+		source := filepath.Join(bin, name)
+		file, err := os.Open(source)
+		if err != nil {
+			return fmt.Errorf("open prebuilt %s (provide an executable file): %w", source, err)
+		}
+		err = copyExecutable(dir, name, file)
+		closeErr := file.Close()
+		if err != nil {
+			return err
+		}
+		if closeErr != nil {
+			return fmt.Errorf("close prebuilt %s: %w", source, closeErr)
+		}
+	}
+	return nil
+}
+
+func copyExecutable(dir, name string, source *os.File) error {
+	info, err := source.Stat()
+	if err != nil {
+		return fmt.Errorf("check prebuilt %s: %w", source.Name(), err)
+	}
+	if !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+		return fmt.Errorf("prebuilt %s must be a regular executable file; check its permissions", source.Name())
+	}
+	destination, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700) //nolint:gosec // Exclusive executable in the claimed empty sandbox.
+	if err != nil {
+		return fmt.Errorf("create sandbox executable: %w", err)
+	}
+	_, copyErr := io.Copy(destination, source)
+	closeErr := destination.Close()
+	if copyErr != nil {
+		return fmt.Errorf("copy prebuilt %s: %w", source.Name(), copyErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("close sandbox executable: %w", closeErr)
+	}
+	return nil
 }
