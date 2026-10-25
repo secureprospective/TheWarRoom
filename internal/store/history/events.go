@@ -300,3 +300,20 @@ func appendLedgerAudit(ctx context.Context, tx *sql.Tx, id string) error {
 	}
 	return nil
 }
+
+// VerifyAuditAnchor checks the full local chain and its independently held prefix in one snapshot.
+func (s *Store) VerifyAuditAnchor(ctx context.Context, anchor db.AuditHead) error {
+	tx, err := s.pools.Read().BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin anchored audit verification: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	current, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery)
+	if err != nil {
+		return fmt.Errorf("verify anchored audit: %w", err)
+	}
+	if err := db.CheckAuditAnchor(ctx, tx, current, anchor); err != nil {
+		return fmt.Errorf("verify anchored audit prefix: %w", err)
+	}
+	return nil
+}
