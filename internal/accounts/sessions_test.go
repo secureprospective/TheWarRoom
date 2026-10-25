@@ -106,7 +106,7 @@ func TestDeviceSessionsHashOnlyRevocationAndEpoch(t *testing.T) {
 	if _, err := service.Authenticate(t.Context(), fresh.RawSession); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.store.RotateAuthEpoch(t.Context()); err != nil {
+	if _, err := f.store.ResetSignIns(t.Context(), "incident drill"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := service.Authenticate(t.Context(), fresh.RawSession); !errors.Is(err, accounts.ErrSessionRefused) {

@@ -14,12 +14,14 @@ single-statement writes on the same path. All hosted history/account stores use
 these paths, including background due work; raw `Write()` remains the existing
 startup/desktop DB API, not an alternate hosted mutation route.
 
-`Restore` belongs on the offline recovery side. It accepts an identity in memory,
+`Restore` belongs on the recovery side. It accepts an identity in memory,
 validates bounded Raw manifest/member input before path use, decrypts/verifies the
-entire archive, and leaves only a complete new private staging directory. It does
-not activate a server or reset credentials. Slice 37 must compare the checkpoint,
-rotate auth epoch and gate restored startup. Slice 38 consumes `Manager.Status`
-over VPN only, not a new public route.
+entire archive, and leaves only a complete new private staging directory. A key
+that matches no recipient is `ErrRestoreKey`, distinct from damage. It does not
+activate a server or reset credentials: `R2.Sets` (newest first) and `R2.Open`
+feed `twr-server restore`, which compares the checkpoint, resets sign-ins in the
+staged copy and hands it to the CT script ([RESTORE.md](../../deploy/server/RESTORE.md)).
+Slice 38 consumes `Manager.Status` over VPN only, not a new public route.
 
 Failure routes: any capture/audit/crypto/PUT/GET/hash error preserves previous
 coverage; coverage expiry rejects new queued writes without mutation. Pruning

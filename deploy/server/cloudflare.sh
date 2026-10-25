@@ -64,9 +64,23 @@ api GET "zones?name=$zone&status=active"
 zone_id=$(jq -er '.result | select(length == 1) | .[0].id' "$reply")
 account=$(jq -er '.result[0].account.id' "$reply")
 api GET "zones/$zone_id/dns_records?name=$hostname"
-jq -e '.result | length == 0' "$reply" >/dev/null || {
-  echo 'That hostname is already in use; nothing was replaced.' >&2; exit 1;
-}
+old_dns=
+old_tunnel=
+if ! jq -e '.result | length == 0' "$reply" >/dev/null; then
+  # Spare-host restore (RESTORE.md) may take over only a lost TheWarRoom server's record.
+  jq -e '.replace == true' "$input" >/dev/null || {
+    echo 'That hostname is already in use; nothing was replaced.' >&2; exit 1;
+  }
+  foreign() { echo 'That hostname does not point to a TheWarRoom server; nothing was replaced.' >&2; exit 1; }
+  old_dns=$(jq -er '.result | select(length == 1) | .[0] | select(.type == "CNAME") | .id' "$reply") || foreign
+  old_tunnel=$(jq -er '.result[0].content | capture("^(?<id>[0-9a-f-]{36})[.]cfargotunnel[.]com$").id' "$reply") || foreign
+  api GET "accounts/$account/cfd_tunnel/$old_tunnel"
+  jq -e '.result.name | startswith("twr-")' "$reply" >/dev/null || foreign
+  jq -e '.result.deleted_at != null or (((.result.connections // []) | length) == 0 and (.result.status == "down" or .result.status == "inactive"))' "$reply" >/dev/null || {
+    echo 'The old server is still connected to Cloudflare. Only replace a server that is really gone; nothing was replaced.' >&2; exit 1;
+  }
+  jq -e '.result.deleted_at == null' "$reply" >/dev/null || old_tunnel=
+fi
 secret=$(openssl rand -base64 32)
 printf '%s\n' "$secret" | jq -Rnc --arg name "twr-$(cat /etc/hostname)" \
   'input as $secret | {name:$name,tunnel_secret:$secret,config_src:"local"}' > "$payload"
@@ -85,11 +99,20 @@ jq -n --arg tunnel "$tunnel" --arg hostname "$hostname" \
       {service:"http_status:404"}]}' > /etc/cloudflared/config.yml
 jq -nc --arg name "$hostname" --arg target "$tunnel.cfargotunnel.com" \
   '{type:"CNAME",name:$name,content:$target,proxied:true,ttl:1}' > "$payload"
-api POST "zones/$zone_id/dns_records" --data-binary @"$payload"
+if [ -n "$old_dns" ]; then
+  # Repoint in place: the hostname moves to the new Tunnel without a gap.
+  api PATCH "zones/$zone_id/dns_records/$old_dns" --data-binary @"$payload"
+else
+  api POST "zones/$zone_id/dns_records" --data-binary @"$payload"
+fi
 # Keep non-secret identifiers for console incident response, not the API token.
 dns=$(jq -er '.result.id' "$reply")
 jq --arg dns "$dns" '.dns=$dns' /etc/twr-cloudflare.ids > "$reply"
 cat "$reply" > /etc/twr-cloudflare.ids
+# The lost server's Tunnel credential may sit on a stolen disk; delete that Tunnel.
+if [ -n "$old_tunnel" ] && ! api DELETE "accounts/$account/cfd_tunnel/$old_tunnel"; then
+  echo "Delete the old Tunnel $old_tunnel in the Cloudflare dashboard (Networks, Tunnels)." >&2
+fi
 chown -R root:twr-tunnel /etc/cloudflared
 chmod 750 /etc/cloudflared
 chmod 640 /etc/cloudflared/*
