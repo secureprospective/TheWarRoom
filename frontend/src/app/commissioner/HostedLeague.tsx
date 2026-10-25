@@ -7,6 +7,7 @@ import { GovernedGlyph } from '../governed/GovernedGlyph';
 import { localTime } from '../clock/localTime';
 import { hostedWords } from './hostedWords';
 import { createHostedRoom, type HostedRoom } from './hostedRoom';
+import { previewChange } from './preview';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
 import './hostedLeague.css';
@@ -253,7 +254,6 @@ export default function HostedLeague({
             Choose a week, then refresh. Your changes below stay on this screen until confirmed.
           </p>
           <p>{reading.lineup.words}</p>
-          <p>{reading.lineup.verdict}</p>
           <fieldset disabled={disabled || !reading.lineup.available || Boolean(state.review)}>
             <legend>Choose your starters</legend>
             {[...reading.lineup.starters, ...reading.lineup.bench].map((p) => (
@@ -473,8 +473,7 @@ function Review({ room }: { room: HostedRoom }) {
       <p>This changes your hosted league, not a local plan. Nothing is queued while offline.</p>
       {review.preview?.fields.map((field, i) => (
         <p key={i}>
-          <strong>{words(field.label)}</strong>: {words(field.before)} → {words(field.after)}.{' '}
-          {words(field.when)}
+          <strong>{words(field.label)}</strong>: {words(previewChange(field))}
         </p>
       ))}
       {review.preview?.blockers.map((b, i) => (

@@ -57,4 +57,6 @@ it('uses held names for preview targets rather than showing internal identifiers
   await room.refresh();
   expect(hostedWords(room.peek().reading, 'franchise.01, player 0099'))
     .toBe('Practice team 1, player Practice quarterback');
+  expect(hostedWords(room.peek().reading, 'Bids for player 6001'))
+    .toBe('Bids for player Practice free agent');
 });

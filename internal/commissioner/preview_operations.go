@@ -215,9 +215,32 @@ func lineupPreviewValues(raw RawCommand, records []Record) (map[string]string, e
 	}
 	words := "No lineup recorded"
 	if set {
-		words = "Starting players: " + strings.Join(held.Starters, ", ")
+		names, err := lineupPlayerNames(records, held.Starters)
+		if err != nil {
+			return nil, err
+		}
+		words = "Starting players: " + strings.Join(names, ", ")
 	}
 	return map[string]string{fmt.Sprintf("%s, season %d, week %d lineup", c.Franchise, c.Season, c.Week): words}, nil
+}
+
+// lineupPlayerNames shows starters by name; an owner never reads a player id.
+func lineupPlayerNames(records []Record, ids []string) ([]string, error) {
+	assets, err := NativeAssetsReading(records[0].Command.League, records)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]string{}
+	if assets.Seeded {
+		for _, p := range assets.Snapshot.Players {
+			known[p.ID] = p.Name
+		}
+	}
+	names := make([]string, len(ids))
+	for i, id := range ids {
+		names[i] = cmp.Or(known[id], "A player no longer on the roster")
+	}
+	return names, nil
 }
 
 func UnchangedPreviewFields(raw RawCommand, before, after map[string]string) []PreviewField {
@@ -245,7 +268,7 @@ func previewContextKey(raw RawCommand, key string) bool {
 	case raw.Args.Bid != nil:
 		return strings.HasPrefix(key, "Bids for player")
 	case raw.Args.Trade != nil:
-		return strings.HasPrefix(key, "Trade "+raw.Args.Trade.ID)
+		return strings.HasPrefix(key, "This trade")
 	default:
 		return true
 	}
@@ -275,7 +298,8 @@ func standingsPreviewValues(raw RawCommand, records []Record) (map[string]string
 	}
 	for id, r := range view.Records {
 		out["Record set by hand for "+id] =
-			fmt.Sprintf("%d wins, %d losses, %d ties", r.Wins, r.Losses, r.Ties)
+			countWords(r.Wins, "win", "wins") + ", " + countWords(r.Losses, "loss", "losses") + ", " +
+				countWords(r.Ties, "tie", "ties")
 	}
 	return out, nil
 }

@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -14,14 +15,16 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 	if err != nil {
 		return err
 	}
+	names := map[string]string{}
+	var seats []PeopleSeat
 	if assets.Seeded {
 		directory, err := NativeDirectoryReading(raw.League, records, now)
 		if err != nil {
 			return err
 		}
-		names := map[string]string{}
 		for _, f := range directory.Franchises {
 			names[f.Franchise] = f.Name
+			seats = append(seats, f.PeopleSeat)
 		}
 		if raw.Command == NativeSeed {
 			seedPreviewValues(assets.Snapshot, names, out)
@@ -41,12 +44,13 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 			}
 		}
 	}
-	marketPreviewValues(raw, book, out)
+	marketPreviewValues(raw, book, names, out)
 	if raw.Args.Trade != nil {
+		labels := map[string]int{}
 		for _, t := range book.Trades {
-			out["Trade "+t.ID] = fmt.Sprintf("%s; %s; %d review votes, %d recusals, %d appeals, %d overrides",
-				t.Status, t.Words, len(t.Votes), len(t.Recusals), len(t.Appeals), len(t.Overrides))
-			tradePreviewVotes(t, out)
+			label := tradePreviewLabel(raw, t, names, labels)
+			out[label] = tradePreviewWords(t)
+			tradePreviewVotes(t, label, seats, records, out)
 		}
 	}
 	if raw.Args.Correction != nil {
@@ -61,6 +65,18 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 	return nil
 }
 
+// rosterStatusWords names a squad the way the owner screens do, never by its stored code.
+func rosterStatusWords(status domain.RosterStatus) string {
+	switch status {
+	case domain.RosterIR:
+		return "Injured reserve"
+	case domain.RosterTaxi:
+		return "Taxi squad"
+	case domain.RosterActive:
+	}
+	return "Active roster"
+}
+
 func acquisitionWords(via string) string {
 	words := map[string]string{"held": "Starting roster", "draft": "Rookie draft", "waiver": "Waivers",
 		"trade": "Trade", "free_agent": "Free agency", "commissioner": "Commissioner ruling"}
@@ -70,9 +86,9 @@ func acquisitionWords(via string) string {
 	return "No acquisition source recorded"
 }
 
-func pickPreviewWords(p NativePick) string {
+func pickPreviewWords(p NativePick, players map[string]string) string {
 	if p.Player != "" {
-		return "; player " + p.Player
+		return "; used on " + cmp.Or(players[p.Player], "a player no longer on a roster")
 	}
 	if p.Skipped {
 		return "; skipped"
@@ -158,18 +174,27 @@ func seedPickWords(picks []NativePick, franchise string) string {
 }
 
 func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out map[string]string) {
+	players := map[string]string{}
 	for _, p := range seed.Players {
 		name := p.Name
 		if name == "" {
 			name = "Player " + p.ID
 		}
-		out[name+" roster"] = names[p.Franchise] + ", " + string(p.Status)
-		out[name+" contract"] = fmt.Sprintf("%s salary; contract ends in %d; %s", p.Salary, p.ExpirationYear, p.ContractInfo)
+		players[p.ID] = name
+		out[name+" roster"] = names[p.Franchise] + ", " + rosterStatusWords(p.Status)
+		contract := fmt.Sprintf("%s salary; contract ends in %d", p.Salary, p.ExpirationYear)
+		if info := strings.TrimSpace(p.ContractInfo); info != "" {
+			contract += "; " + info
+		}
+		out[name+" contract"] = contract
 		out[name+" acquisition"] = acquisitionWords(p.AcquiredVia)
 	}
 	for _, p := range seed.Picks {
-		out[fmt.Sprintf("Season %d, round %d, %s pick (slot %d)", p.Season, p.Round, p.Original, p.Slot)] =
-			names[p.Owner] + pickPreviewWords(p)
+		label := fmt.Sprintf("Season %d, round %d, %s pick", p.Season, p.Round, cmp.Or(names[p.Original], p.Original))
+		if p.Slot > 0 {
+			label += fmt.Sprintf(" (slot %d)", p.Slot)
+		}
+		out[label] = names[p.Owner] + pickPreviewWords(p, players)
 	}
 	for _, f := range seed.Franchises {
 		charges := []string{}
@@ -183,7 +208,7 @@ func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out
 
 }
 
-func marketPreviewValues(raw RawCommand, book waiverState, out map[string]string) {
+func marketPreviewValues(raw RawCommand, book waiverState, names map[string]string, out map[string]string) {
 	if raw.Args.Waiver != nil {
 		out["Waiver priority"] = strings.Join(book.Order, ", ") + " — " + book.Source
 		for _, w := range book.Windows {
@@ -191,19 +216,19 @@ func marketPreviewValues(raw RawCommand, book waiverState, out map[string]string
 			if w.Processed {
 				words = "Available as a free agent"
 				if w.Winner != "" {
-					words = "Awarded to " + w.Winner
+					words = "Awarded to " + cmp.Or(names[w.Winner], w.Winner)
 				}
 			}
-			out["Waivers for player "+w.Player.ID] = words
+			out["Waivers for "+cmp.Or(w.Player.Name, "player "+w.Player.ID)] = words
 		}
 	}
 	if raw.Args.Bid != nil {
 		for _, a := range book.Bids.Auctions {
-			words := fmt.Sprintf("%d bids awaiting a decision", len(a.liveBids()))
+			words := countWords(len(a.liveBids()), "bid", "bids") + " awaiting a decision"
 			if a.Decided {
 				words = "No award"
 				if a.Winner != "" {
-					words = "Awarded to " + a.Winner
+					words = "Awarded to " + cmp.Or(names[a.Winner], a.Winner)
 				}
 			}
 			out["Bids for player "+a.Player] = words
@@ -211,7 +236,60 @@ func marketPreviewValues(raw RawCommand, book waiverState, out map[string]string
 	}
 }
 
-func tradePreviewVotes(trade TradeState, out map[string]string) {
+// tradePreviewLabel names a trade by its teams, never by its ledger id. The trade being changed reads
+// "This trade"; repeat offers between the same teams are numbered in the order they were made.
+func tradePreviewLabel(raw RawCommand, t TradeState, names map[string]string, seen map[string]int) string {
+	teams := make([]string, len(t.Parties))
+	for i, f := range t.Parties {
+		teams[i] = cmp.Or(names[f], f)
+	}
+	label := "Trade between " + joinWords(teams)
+	if t.ID == raw.Args.Trade.ID || t.ID == "proposed."+raw.Request {
+		label = "This trade, between " + joinWords(teams)
+	}
+	seen[label]++
+	if seen[label] > 1 {
+		label += fmt.Sprintf(" (offer %d)", seen[label])
+	}
+	return label
+}
+
+// tradePreviewWords says where a trade stands and counts only the review steps that have happened.
+func tradePreviewWords(t TradeState) string {
+	parts := []string{t.Words}
+	for _, c := range []struct {
+		n         int
+		one, many string
+	}{{len(t.Votes), "review vote", "review votes"}, {len(t.Recusals), "recusal", "recusals"},
+		{len(t.Appeals), "appeal", "appeals"}, {len(t.Overrides), "override", "overrides"}} {
+		if c.n > 0 {
+			parts = append(parts, countWords(c.n, c.one, c.many))
+		}
+	}
+	return strings.Join(parts, "; ")
+}
+
+func joinWords(words []string) string {
+	if len(words) < 2 {
+		return strings.Join(words, "")
+	}
+	return strings.Join(words[:len(words)-1], ", ") + " and " + words[len(words)-1]
+}
+
+// seatPersonWords names a voter by the team they own, falling back to the shared person wording.
+func seatPersonWords(who string, seats []PeopleSeat, records []Record) string {
+	for _, s := range seats {
+		if s.Owner != "" && SamePrincipal(records, s.Owner, who) {
+			return s.Name + "'s owner"
+		}
+	}
+	if words := personWords(who); words != who {
+		return words
+	}
+	return "a league official"
+}
+
+func tradePreviewVotes(trade TradeState, label string, seats []PeopleSeat, records []Record, out map[string]string) {
 	trails := []struct {
 		label string
 		votes []TradeVote
@@ -220,7 +298,11 @@ func tradePreviewVotes(trade TradeState, out map[string]string) {
 	}
 	for _, trail := range trails {
 		for _, vote := range trail.votes {
-			out["Trade "+trade.ID+" — "+trail.label+" by "+personWords(vote.Who)] = tradeVoteWords(vote.Decision) + "; " + vote.Reason
+			key := label + " — " + trail.label + " by " + seatPersonWords(vote.Who, seats, records)
+			for n := 2; out[key] != ""; n++ {
+				key = fmt.Sprintf("%s — %s %d by %s", label, trail.label, n, seatPersonWords(vote.Who, seats, records))
+			}
+			out[key] = tradeVoteWords(vote.Decision) + "; " + vote.Reason
 		}
 	}
 }

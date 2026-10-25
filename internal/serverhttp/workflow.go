@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -187,6 +188,8 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 	ctx := leagueservice.WithFootballDigest(r.Context(), raw.Football)
 	data, err := runWorkflow(ctx, service, raw)
 	if err != nil {
+		// The command name and mode are fixed catalogue words; arguments, bearer and proof are never logged.
+		log.Printf("hosted league %s %s refused: %v", raw.Command, raw.Mode, err)
 		http.Error(w, "The league could not accept this action. Refresh before retrying; check your seat, league rules and authenticator.", http.StatusConflict)
 		return
 	}

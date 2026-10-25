@@ -88,7 +88,7 @@ func TestRolloverExplainsMissingRookieRoundForEveryExpiry(t *testing.T) {
 		t.Fatal("not every expiring player has a route explanation")
 	}
 	for _, pending := range plan.Pending {
-		if pending.Route != "RFA or UFA cannot be determined: the rookie contract's draft round is not recorded." {
+		if pending.Route != "The app cannot say yet whether he becomes a restricted or unrestricted free agent: no rookie draft round is recorded for his contract." {
 			t.Fatalf("display-only contract notes were guessed into a route: %+v", pending)
 		}
 		want := state.PlayerNames[pending.Player] + " is pending a contract decision, not released. " + pending.Route

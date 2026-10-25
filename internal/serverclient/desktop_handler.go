@@ -27,58 +27,68 @@ func (d *Desktop) Handler() http.Handler {
 			d.workflowHTTP(w, r)
 			return
 		}
-		raw := RawDesktop{Action: "status"}
-		if r.Method == http.MethodPost {
-			if r.Header.Get("Content-Type") != "application/json" {
-				http.Error(w, "JSON required", http.StatusBadRequest)
-				return
-			}
-			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
-			decoder := json.NewDecoder(r.Body)
-			decoder.DisallowUnknownFields()
-			if err := decoder.Decode(&raw); err != nil {
-				http.Error(w, "invalid desktop request", http.StatusBadRequest)
-				return
-			}
-			var trailing json.RawMessage
-			if err := decoder.Decode(&trailing); err != io.EOF {
-				http.Error(w, "one desktop request required", http.StatusBadRequest)
-				return
-			}
-		} else if r.Method != http.MethodGet {
-			http.Error(w, "use GET or POST", http.StatusMethodNotAllowed)
+		raw, ok := readDesktopRequest(w, r)
+		if !ok {
 			return
 		}
-		d.desktopActionHTTP(w, r, raw)
+		view, err := d.Act(r.Context(), raw)
+		if err != nil {
+			if update, ok := updateRequired(err); ok {
+				w.Header().Set("X-TWR-Update", string(update.Update))
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusUpgradeRequired)
+				_ = json.NewEncoder(w).Encode(view)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		writeDesktopView(w, view, raw.Action)
 	})
 }
 
-func (d *Desktop) desktopActionHTTP(w http.ResponseWriter, r *http.Request, raw RawDesktop) {
-	view, err := d.Act(r.Context(), raw)
-	if err != nil {
-		if update, ok := updateRequired(err); ok {
-			w.Header().Set("X-TWR-Update", string(update.Update))
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusUpgradeRequired)
-			_ = json.NewEncoder(w).Encode(view)
-			return
-		}
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+// readDesktopRequest reads a GET as a status request and a POST as exactly one JSON desktop request.
+func readDesktopRequest(w http.ResponseWriter, r *http.Request) (RawDesktop, bool) {
+	raw := RawDesktop{Action: "status"}
+	if r.Method == http.MethodGet {
+		return raw, true
 	}
+	if r.Method != http.MethodPost {
+		http.Error(w, "use GET or POST", http.StatusMethodNotAllowed)
+		return raw, false
+	}
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "JSON required", http.StatusBadRequest)
+		return raw, false
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&raw); err != nil {
+		http.Error(w, "invalid desktop request", http.StatusBadRequest)
+		return raw, false
+	}
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		http.Error(w, "one desktop request required", http.StatusBadRequest)
+		return raw, false
+	}
+	return raw, true
+}
+
+// writeDesktopView answers with the view; a pending update fences every action except status.
+func writeDesktopView(w http.ResponseWriter, view DesktopView, action string) {
 	body, err := json.Marshal(view)
 	if err != nil {
 		http.Error(w, "desktop response unavailable", http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	if view.Update != "" && raw.Action != "status" {
+	if view.Update != "" && action != "status" {
 		w.Header().Set("X-TWR-Update", view.Update)
 		w.WriteHeader(http.StatusUpgradeRequired)
 	}
-	if _, err := w.Write(body); err != nil {
-		return
-	}
+	_, _ = w.Write(body)
 }
 
 func desktopOrigin(origin string) bool {

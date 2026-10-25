@@ -27,7 +27,7 @@ func rolloverPlayerName(player NativePlayer, held map[string]string) string {
 func expiryRoute(rookieRound int) string {
 	switch {
 	case rookieRound == 0:
-		return "RFA or UFA cannot be determined: the rookie contract's draft round is not recorded."
+		return "The app cannot say yet whether he becomes a restricted or unrestricted free agent: no rookie draft round is recorded for his contract."
 	case rookieRound >= firstRFARound && rookieRound <= lastRFARound:
 		return fmt.Sprintf("Restricted free agent (RFA): a round %d rookie contract.", rookieRound)
 	default:

@@ -1,11 +1,13 @@
 import { expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import HostedLeague from './HostedLeague';
+import { previewChange } from './preview';
 import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { HostedResponse } from './api';
 import type { NativeRequest } from '../commands/native';
 import wire from './hosted.wire.testdata.json';
 import preview from './preview.wire.testdata.json';
+import rollover from './rollover.wire.testdata.json';
 
 const readings = wire as Record<string, HostedResponse>;
 function fixture() {
@@ -166,6 +168,29 @@ it.each(['bid.place', 'waivers.claim', 'trade.offer', 'commish.score.franchise',
   },
 );
 
+it('confirms a real rollover receipt and refreshes the new season for the commissioner', async () => {
+  const after = rollover.readings as Record<string, HostedResponse>;
+  let rolled = false;
+  const room = createHostedRoom('native.hosted', 'franchise.01', async request => {
+    if (request.mode === 'preview') return { ...readings['lineup.read'], data: preview.confirm };
+    if (request.mode === 'execute') {
+      rolled = true;
+      return rollover.receipt as HostedResponse;
+    }
+    if (rolled && request.command === 'lineup.read') throw new Error('New season schedule is not selected');
+    return (rolled ? after : readings)[request.command];
+  });
+  await room.refresh();
+  const command = 'season.rollover';
+  const request = { ...change(), command, arguments: { ...change().arguments, command } } as NativeRequest;
+  await room.review(request, 'Move to the next season');
+  await room.confirm();
+  expect(room.peek().error).toBe('');
+  expect(room.peek().stale).toBe(false);
+  expect(room.peek().reading?.roster.season).toBe(2027);
+  expect(room.peek().reading?.lineup.available).toBe(false);
+});
+
 it('keeps other workflows readable when new-season lineup evidence is unavailable', async () => {
   const room = createHostedRoom('native.hosted', 'franchise.01', async request => {
     if (request.command === 'lineup.read') throw new Error('New season schedule is not selected');
@@ -176,4 +201,36 @@ it('keeps other workflows readable when new-season lineup evidence is unavailabl
   expect(room.peek().reading?.lineup.available).toBe(false);
   expect(room.peek().reading?.lineup.words).toContain('football evidence');
   expect(room.peek().reading?.markets.standings).toBeDefined();
+});
+
+it('says each previewed change once, in plain words, without a stray timing word', () => {
+  const now = (before: string, after: string, when = 'now') => previewChange({ before, after, when });
+  expect(now('No lineup recorded', 'Starting players: Practice quarterback')).toBe(
+    'No lineup recorded → Starting players: Practice quarterback',
+  );
+  const ledger = 'Set the week 1 lineup of Practice team 1 to 1 starter';
+  expect(now('This change is not recorded', ledger, 'in force now')).toBe(
+    `This change is not recorded → ${ledger}`,
+  );
+  const unset = 'Practice team 1, week 1: No lineup was set.';
+  const set = "Practice team 1's week 1 lineup is set. Valid lineup.";
+  expect(now(unset, set)).toBe(`${unset} → ${set}`);
+  expect(now('Practice team 1, Active roster', 'Practice team 1, Injured reserve')).toBe(
+    'Practice team 1, Active roster → Practice team 1, Injured reserve',
+  );
+  expect(now('20 to 70', '18 to 80', 'from the next rollover')).toBe(
+    '20 to 70 → 18 to 80 (from the next rollover)',
+  );
+});
+
+it('clears the recorded-change notice when the follow-up refresh fails', async () => {
+  const f = fixture();
+  await f.room.refresh();
+  await f.room.review(change(), 'Set lineup');
+  await f.room.confirm();
+  expect(f.room.peek().message).toBe('The server recorded your change. Refreshing the league.');
+  f.disconnect();
+  await f.room.refresh();
+  expect(f.room.peek().error).toContain('Could not refresh your league');
+  expect(f.room.peek().message).toBe('');
 });

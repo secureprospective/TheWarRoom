@@ -1,4 +1,6 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
+import type { NativeRequest } from '../commands/native';
+import { object, text } from '../data/parseValues';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
@@ -75,38 +77,21 @@ export function readConfirmRequest(text: string): boolean {
     return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
   } catch { return false; }
 }
-import type { NativeRequest } from '../commands/native';
-import { object, text } from '../data/parseValues';
-
 export type HostedResponse = { label: string; writable: boolean; football: string; data: unknown };
-export async function hostedWorkflow(
-  request: NativeRequest,
-  football = '',
-): Promise<HostedResponse> {
+export async function hostedWorkflow(request: NativeRequest, football = ''): Promise<HostedResponse> {
   const { nativeEnvelope } = await import('../commands/native');
   const response = await fetch('/desktop/workflow', {
-    method: 'POST',
-    cache: 'no-store',
-    headers: { 'Content-Type': 'application/json' },
+    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...nativeEnvelope(request), football }),
   });
-  if (!response.ok)
-    throw new Error(
-      'The league could not accept this action. ' +
-      'Refresh before retrying; check your connection, seat and authenticator.',
-    );
-  const r = object(await response.json(), 'Hosted league', [
-    'label',
-    'writable',
-    'football',
-    'data',
-  ]);
-  if (typeof r.writable !== 'boolean')
-    throw new Error('Unreadable league authority. Refresh to try again.');
+  if (!response.ok) {
+    throw new Error('The league could not accept this action. '
+      + 'Refresh before retrying; check your connection, seat and authenticator.');
+  }
+  const r = object(await response.json(), 'Hosted league', ['label', 'writable', 'football', 'data']);
+  if (typeof r.writable !== 'boolean') throw new Error('Unreadable league authority. Refresh to try again.');
   return {
-    label: text(r.label, 'League location'),
-    writable: r.writable,
-    football: text(r.football, 'Football evidence'),
-    data: r.data,
+    label: text(r.label, 'League location'), writable: r.writable,
+    football: text(r.football, 'Football evidence'), data: r.data,
   };
 }
