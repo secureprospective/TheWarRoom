@@ -278,3 +278,21 @@ func decode(ctx context.Context, data []byte) (RawExport, error) {
 	}
 	return raw, raw.Validate(ctx)
 }
+
+// Import authenticates and replays before opening the destination writer transaction.
+// It preserves durable bytes without executing commands, enrolling accounts or activating authority.
+func Import(ctx context.Context, store *history.Store, input io.Reader, key [32]byte) (history.ImportReceipt, error) {
+	raw, err := Decrypt(ctx, input, key)
+	if err != nil {
+		return history.ImportReceipt{}, fmt.Errorf("check league before importing: %w", err)
+	}
+	document, err := json.Marshal(raw)
+	if err != nil {
+		return history.ImportReceipt{}, fmt.Errorf("save league import document: %w", err)
+	}
+	receipt, err := store.StageTransfer(ctx, history.ImportReceipt{League: raw.League, SourceEpoch: raw.SourceEpoch, Content: raw.Content}, document, raw.Events, raw.Blobs)
+	if err != nil {
+		return receipt, fmt.Errorf("import inactive league: %w", err)
+	}
+	return receipt, nil
+}
