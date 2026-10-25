@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { all, button, click, mount, render, settle, unmount } from '../commissioner/commissionerDom';
 import UpdateRequired from './UpdateRequired';
-import { nativeAction, parseNativeView, type NativeView } from './nativeApi';
+import { nativeAction, parseNativeView, subscribeNativeUpdate, type NativeView } from './nativeApi';
 
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   update: 'app', name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '',
@@ -9,7 +9,8 @@ const initial: NativeView = { server: 'https://league.example', league: 'native.
 afterEach(async () => { await unmount(); vi.unstubAllGlobals(); });
 
 it('offers one action, explains league safety, and permits retry after failure', async () => {
-  const fetcher = vi.fn().mockResolvedValue({ ok: false, text: async () => 'The update could not be checked. Try again. Your league is unchanged.' });
+  const fetcher = vi.fn().mockResolvedValue({ ok: false,
+    text: async () => 'The update could not be checked. Try again. Your league is unchanged.' });
   vi.stubGlobal('fetch', fetcher);
   const host = await mount(render(UpdateRequired, { initial, onRetry: vi.fn() }));
   expect(all(host, 'button')).toHaveLength(1);
@@ -26,17 +27,19 @@ it('never offers desktop installation for an older server', async () => {
   const next = { ...initial, update: undefined }; delete next.update;
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => next }));
   const retry = vi.fn();
-  const host = await mount(render(UpdateRequired, { initial: { ...initial, update: 'server' }, onRetry: retry }));
+  const host = await mount(render(UpdateRequired, {
+    initial: { ...initial, update: 'server' }, onRetry: retry }));
   expect(host.textContent).toContain('Ask your commissioner');
   await click(button(host, 'Try again')); await settle();
   expect(retry).toHaveBeenCalledWith(next);
 });
 
 it('keeps the typed update signal across the webview boundary and rejects unknown sides', async () => {
-  vi.stubGlobal('window', { dispatchEvent: vi.fn() });
-  vi.stubGlobal('CustomEvent', class { constructor(public type: string, public value: unknown) {} });
+  const listener = vi.fn();
+  const unsubscribe = subscribeNativeUpdate(listener);
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 426, json: async () => initial }));
   expect(await nativeAction('enter')).toEqual(initial);
-  expect(window.dispatchEvent).toHaveBeenCalled();
+  expect(listener).toHaveBeenCalledWith(initial);
+  unsubscribe();
   expect(() => parseNativeView({ ...initial, update: 'anything' })).toThrow();
 });

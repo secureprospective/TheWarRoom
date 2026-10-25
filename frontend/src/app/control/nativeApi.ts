@@ -11,6 +11,11 @@ export type NativeView = {
   // A helper's connection line is shown once; a confirmation code covers one change.
   connection: string; helperId: string; confirmation: string; seats: NativeSeat[];
 };
+const updateListeners = new Set<(view: NativeView) => void>();
+export function subscribeNativeUpdate(listener: (view: NativeView) => void): () => void {
+  updateListeners.add(listener);
+  return () => { updateListeners.delete(listener); };
+}
 const textKeys = ['server', 'league', 'message', 'name', 'role', 'franchise', 'franchiseName', 'seed',
   'connection', 'helperId', 'confirmation'];
 const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
@@ -19,7 +24,8 @@ const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
 export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
-  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0) + ('update' in value ? 1 : 0)
+  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
+      + ('update' in value ? 1 : 0)
     || ('update' in value && value.update !== 'app' && value.update !== 'server')
     || ('helperPreview' in value && typeof value.helperPreview !== 'string')
     || textKeys.some(key => typeof value[key] !== 'string')
@@ -43,7 +49,7 @@ async function post(body: Record<string, string>): Promise<NativeView> {
   if (response.status === 426) {
     const view = parseNativeView(await response.json());
     if (!view.update) throw new Error('The update request could not be read. Close and reopen the app.');
-    window.dispatchEvent(new CustomEvent('native-update', { detail: view }));
+    updateListeners.forEach(listener => listener(view));
     return view;
   }
   if (!response.ok) throw new Error(await response.text());
