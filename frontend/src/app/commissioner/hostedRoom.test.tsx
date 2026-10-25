@@ -129,6 +129,10 @@ it('starts read-only with discoverable tasks and no raw player identifiers', () 
   expect(html).toContain('Roster and reserves');
   expect(html).toContain('Draft room');
   expect(html).toContain('No changes can be made');
+  expect(html).toContain('Stale — read-only saved view');
+  expect(html).toContain('Your league server');
+  expect(html).toContain('Refresh league server');
+  expect(html).toContain('Refreshing MFL cannot replace');
   expect(html).not.toContain('franchise.01');
 });
 

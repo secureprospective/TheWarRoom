@@ -129,7 +129,7 @@ describe('native desktop account access', () => {
     expect(fetcher.mock.calls[0][0]).toBe('/desktop/native');
     fetcher.mockResolvedValue({ ok: true, headers: new Headers({ 'Content-Type': 'text/html' }) });
     await expect(nativeStartup()).resolves.toBeNull();
-    fetcher.mockResolvedValue({ ok: false });
+    fetcher.mockResolvedValue({ ok: false, status: 404 });
     await expect(nativeStartup()).resolves.toBeNull();
     expect(() => parseNativeView({ ...initial, bearer: 'must-not-cross' })).toThrow();
     expect(() => parseNativeView({ ...initial, league: 3 })).toThrow();

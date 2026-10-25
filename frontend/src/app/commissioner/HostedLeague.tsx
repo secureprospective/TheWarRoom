@@ -196,10 +196,12 @@ export default function HostedLeague({
   return (
     <section className="hosted-league" aria-label="Hosted franchise" aria-busy={state.pending}>
       <h2>{name || 'Your franchise'}</h2>
+      <p>Your league server</p>
+      <p>MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules or recorded changes.</p>
       <p>{reading?.label || 'Checking where your league is managed…'}</p>
       <p role="status">
         {state.stale
-          ? 'Read-only saved view — not connected. No changes can be made.'
+          ? 'Stale — read-only saved view. Refresh to check your connection. No changes can be made.'
           : state.pending
             ? 'Checking the server…'
             : 'Connected to your league server. The server records every change.'}
@@ -207,7 +209,7 @@ export default function HostedLeague({
       {reading && <p>Last read: {localTime(new Date(reading.readAt).toISOString())}</p>}
       {state.error && <p role="alert">{state.error}</p>}
       {state.message && <p role="status">{state.message}</p>}
-      {action('refresh', state.pending ? 'Refreshing…' : 'Refresh league', state.pending)}
+      {action('refresh', state.pending ? 'Refreshing…' : 'Refresh league server', state.pending)}
       <nav aria-label="Franchise tasks">
         {(Object.keys(labels) as Tab[]).map((id) => (
           <Act
@@ -470,7 +472,7 @@ function Review({ room }: { room: HostedRoom }) {
   return (
     <section aria-label="Confirm league change" className="hosted-review">
       <h3>{review.summary}</h3>
-      <p>This changes your hosted league, not a local plan. Nothing is queued while offline.</p>
+      <p>This changes your league server, not MFL or a local plan. Nothing is queued while offline.</p>
       {review.preview?.fields.map((field, i) => (
         <p key={i}>
           <strong>{words(field.label)}</strong>: {words(field.before)} → {words(field.after)}.{' '}

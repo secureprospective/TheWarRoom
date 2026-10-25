@@ -36,7 +36,8 @@ export function parseNativeView(raw: unknown): NativeView {
 }
 export async function nativeStartup(): Promise<NativeView | null> {
   const response = await fetch('/desktop/native', { cache: 'no-store' });
-  if (!response.ok) return null;
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error('Desktop startup unavailable.');
   // Vite's local development fallback serves index.html for unknown routes.
   if (response.headers.get('Content-Type')?.startsWith('text/html')) return null;
   return parseNativeView(await response.json());

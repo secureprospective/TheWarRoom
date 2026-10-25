@@ -22,7 +22,9 @@ export function OffersScreen({ reading, scope, pending = false }: {
     provenance: reading.provenance && { ...reading.provenance,
       source: localText(reading.provenance.source) } };
   return <section className="offers-history" aria-label={v.words.heading}>
-    <header data-endpoint="L-32"><h4>{v.words.heading}</h4><p>{localText(v.disclosure)}</p></header>
+    <header data-endpoint="L-32"><h4>{v.words.heading}</h4>
+      <p>From MFL (reference only). This is MFL offer history, not offers sent to your league server.</p>
+      <p>{localText(v.disclosure)}</p></header>
     <div className="market-controls" data-endpoint="L-31" aria-label={v.words.direction}>
       {v.directions.map(p => <Act variant="button" key={p.id} verb="offers.filter"
         args={{ field: 'direction', value: p.id }} active={scope.direction === p.id} label={p.label} />)}
