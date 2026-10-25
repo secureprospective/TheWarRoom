@@ -40,3 +40,11 @@ uses, so token scope, expiry and revocation are checked by the server each time.
 A revoked token stops both the CLI and a running `twr mcp` on the next call.
 
 Tests: `go test -race ./cmd/twr` runs both against a throwaway HTTPS league.
+
+## Moving a league
+
+`league-export save` creates an encrypted local copy; `league-export check` verifies it
+without importing or activating anything. This console operation needs the existing
+league database and a private export key, not the saved HTTPS connection token. See
+[`internal/leaguetransfer/README.md`](../../internal/leaguetransfer/README.md) for the
+commands, key custody, pinned-evidence requirements and authority warnings.
