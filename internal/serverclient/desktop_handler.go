@@ -27,48 +27,58 @@ func (d *Desktop) Handler() http.Handler {
 			d.workflowHTTP(w, r)
 			return
 		}
-		raw := RawDesktop{Action: "status"}
-		if r.Method == http.MethodPost {
-			if r.Header.Get("Content-Type") != "application/json" {
-				http.Error(w, "JSON required", http.StatusBadRequest)
-				return
-			}
-			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
-			decoder := json.NewDecoder(r.Body)
-			decoder.DisallowUnknownFields()
-			if err := decoder.Decode(&raw); err != nil {
-				http.Error(w, "invalid desktop request", http.StatusBadRequest)
-				return
-			}
-			var trailing json.RawMessage
-			if err := decoder.Decode(&trailing); err != io.EOF {
-				http.Error(w, "one desktop request required", http.StatusBadRequest)
-				return
-			}
-		} else if r.Method != http.MethodGet {
-			http.Error(w, "use GET or POST", http.StatusMethodNotAllowed)
-			return
-		}
-		view, err := d.Act(r.Context(), raw)
-		if err != nil {
-			if update, ok := updateRequired(err); ok {
-				w.Header().Set("X-TWR-Update", string(update.Update))
-				http.Error(w, update.Message, http.StatusUpgradeRequired)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		body, err := json.Marshal(view)
-		if err != nil {
-			http.Error(w, "desktop response unavailable", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if _, err := w.Write(body); err != nil {
-			return
-		}
+		d.nativeHTTP(w, r)
 	})
+}
+
+func (d *Desktop) nativeHTTP(w http.ResponseWriter, r *http.Request) {
+	raw := RawDesktop{Action: "status"}
+	if r.Method == http.MethodPost {
+		if r.Header.Get("Content-Type") != "application/json" {
+			http.Error(w, "JSON required", http.StatusBadRequest)
+			return
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
+		decoder := json.NewDecoder(r.Body)
+		decoder.DisallowUnknownFields()
+		if err := decoder.Decode(&raw); err != nil {
+			http.Error(w, "invalid desktop request", http.StatusBadRequest)
+			return
+		}
+		var trailing json.RawMessage
+		if err := decoder.Decode(&trailing); err != io.EOF {
+			http.Error(w, "one desktop request required", http.StatusBadRequest)
+			return
+		}
+	} else if r.Method != http.MethodGet {
+		http.Error(w, "use GET or POST", http.StatusMethodNotAllowed)
+		return
+	}
+	view, err := d.Act(r.Context(), raw)
+	if err != nil {
+		if update, ok := updateRequired(err); ok {
+			w.Header().Set("X-TWR-Update", string(update.Update))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUpgradeRequired)
+			_ = json.NewEncoder(w).Encode(view)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	body, err := json.Marshal(view)
+	if err != nil {
+		http.Error(w, "desktop response unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if view.Update != "" && raw.Action != "status" {
+		w.Header().Set("X-TWR-Update", view.Update)
+		w.WriteHeader(http.StatusUpgradeRequired)
+	}
+	if _, err := w.Write(body); err != nil {
+		return
+	}
 }
 
 func desktopOrigin(origin string) bool {

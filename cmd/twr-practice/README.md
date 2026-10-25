@@ -190,3 +190,14 @@ evidence is refused without appending. Frontend `hostedRoom.test.tsx` and
 read-only stale/reconnect behavior and explicitly unavailable new-season lineups.
 
 These tests do not replace a graphical click acceptance on the final desktop binary.
+
+### Update-required screen
+
+`up` also prints an **Update-required click test** command. With an unstamped development
+binary, this sets `TWR_PRACTICE_UPDATE=app` in the isolated practice profile and opens the real
+blocking desktop screen. It offers one button, **Update and reopen**. Without installer trust,
+clicking it must explain that update setup is missing, preserve the screen, and permit retry;
+no test signing keys or unsigned executable are installed. Release-stamped builds ignore the
+practice override. For a valid verified-executable launch use the generated-key staging test
+in `internal/releasetrust`; actual signed release/three-OS click drills require the install
+handoff in `docs/delivery/Release_Trust.md`.
