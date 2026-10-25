@@ -20,6 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -142,11 +143,15 @@ func Shell(id, title, how string, feed Feed, held int, zone *time.Location, colu
 		r.Status, r.Note = "stale", PendingRead(feed.FetchedAt, zone)
 	}
 	if feed.RefreshError != "" {
+		next := "Try refreshing from MFL again."
+		if sentence := offline.Find(feed.RefreshError); sentence != "" {
+			next = sentence
+		}
 		if !feed.FetchedAt.IsZero() {
-			r.Note += " Refresh failed; showing the last known data. Try refreshing from MFL again."
+			r.Note += " Refresh failed; showing the last known data. " + next
 			r.Status = "stale"
 		} else {
-			r.Note += " Refresh failed. Try refreshing from MFL again."
+			r.Note += " Refresh failed. " + next
 		}
 	}
 	return r

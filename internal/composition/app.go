@@ -19,9 +19,9 @@ import (
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -178,7 +178,7 @@ func (a *App) startup(ctx context.Context) {
 func (a *App) settleStartupFailure() {
 	if a.core.StartupErr != nil {
 		log.Printf("the war room: startup failed: %v", a.core.StartupErr)
-		a.core.StartupErr = report.PlainFailure(a.core.StartupErr)
+		a.core.StartupErr = offline.Plain(a.core.StartupErr)
 	}
 }
 
@@ -236,7 +236,7 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	}
 	hist := history.New(a.core.HistPools, reg)
 	a.attachSeat(hist)
-	a.core.Fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
+	a.core.Fetches = &archive.Transport{Base: a.core.Network, Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
 

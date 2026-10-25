@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { OFFLINE, plainBindings, plainFailure } from './plainFailure';
+import { ADVICE, OFFLINE, plainBindings, plainFailure } from './plainFailure';
 
 describe('plain failures', () => {
   it('shows the offline sentence without the Go context in front of it', async () => {
@@ -13,6 +13,7 @@ describe('plain failures', () => {
     await expect(go.control.API.TargetSiteNews()).rejects.toThrow(new Error(OFFLINE));
     await expect(go.control.API.TargetBylaws()).rejects.toBe(other);
     await expect(go.control.API.TargetAccounting()).resolves.toBe('report');
+    expect(plainFailure(`live game: final: Can't reach ESPN.${ADVICE}`)).toBe(`Can't reach ESPN.${ADVICE}`);
     expect(plainFailure('incorrect username or password')).toBe('incorrect username or password');
   });
 });

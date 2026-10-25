@@ -73,7 +73,7 @@ func (a *App) startHeadshots() {
 		}
 		return espn, sleeper, nil
 	}
-	a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout}))
+	a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout, Transport: a.core.Network}))
 	if s, err := a.readSettings(); err == nil {
 		a.core.PhotosOff.Store(s.PhotosOff)
 	}

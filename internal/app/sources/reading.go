@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -85,7 +86,7 @@ func healthRows(in HealthInput) []healthRow {
 	for _, h := range in.Sources {
 		src, _ := in.Reg.Source(h.Source)
 		row := healthRow{name: src.Name, measuresFrom: h.Source, lastGood: h.LastSuccess, lastFail: h.LastFailure,
-			lastError: h.LastError, lost: h.State == history.SourceLost, retired: h.State == history.SourceRetired}
+			lastError: offline.Recorded("", h.LastError), lost: h.State == history.SourceLost, retired: h.State == history.SourceRetired}
 		if row.lastGood.IsZero() {
 			row.unset = in.Unset[h.Source]
 		}
@@ -176,7 +177,7 @@ func mflExportRows(urls []history.URLHealth) []healthRow {
 			row.lastGood = u.LastSuccess
 		}
 		if u.LastFailure.After(row.lastFail) {
-			row.lastFail, row.lastError = u.LastFailure, u.LastError
+			row.lastFail, row.lastError = u.LastFailure, offline.Recorded(u.URL, u.LastError)
 		}
 	}
 	out := make([]healthRow, 0, len(byType))

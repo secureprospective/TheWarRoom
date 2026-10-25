@@ -265,7 +265,7 @@ func (h nowHost) LiveGame(open bool, follow, mine string) (nowapp.LiveGameView, 
 	a.pollLiveMFL(ctx, &live, now, open && active)
 	view := liveGameReading(*adapter, follow, active)
 	if err := a.liveGameSpines(ctx, &view, *adapter, mine); err != nil {
-		view.DetailFailure += " " + err.Error()
+		view.DetailFailure += " " + report.FailureText(err)
 	}
 	return view, nil
 }
@@ -278,7 +278,7 @@ func (a *App) startLiveGame(adapter *livegame.Adapter) error {
 	if err != nil {
 		return err //nolint:wrapcheck // LiveEndpoints keeps the original "live game sources" text.
 	}
-	adapter.Fetch = livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second}, endpoints)
+	adapter.Fetch = livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second, Transport: a.core.Network}, endpoints)
 	if a.core.History != nil {
 		adapter.Finals = nowapp.HeldFinals{Store: a.core.History, Endpoints: endpoints}
 	}

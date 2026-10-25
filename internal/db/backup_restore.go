@@ -1,8 +1,10 @@
 package db
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,14 +17,22 @@ import (
 // RawRestoreJournal records an offline restore in flight. Fresh marks a restore into a profile
 // that held no databases: it has no safety set, and rolling it back removes what it installed.
 type RawRestoreJournal struct {
-	Set    string `json:"set"`
-	Stage  string `json:"stage"`
-	Safety string `json:"safety"`
-	Step   string `json:"step"`
-	Fresh  bool   `json:"fresh,omitempty"`
+	Version int    `json:"version,omitempty"`
+	Set     string `json:"set"`
+	Stage   string `json:"stage"`
+	Safety  string `json:"safety"`
+	Step    string `json:"step"`
+	Fresh   bool   `json:"fresh,omitempty"`
 }
 
+// ErrRestoreJournalNewer stops recovery before touching files owned by a newer app.
+var ErrRestoreJournalNewer = errors.New("this restore was started by a newer version of The War Room; open that version or update the app to finish it")
+
 func (j RawRestoreJournal) Validate() error {
+	if j.Version < 0 || j.Version > 1 {
+		return ErrRestoreJournalNewer
+	}
+
 	names := []string{j.Set, j.Stage}
 	if !j.Fresh {
 		names = append(names, j.Safety)
@@ -83,7 +93,7 @@ func (b *Backups) Restore(ctx context.Context, set string, now time.Time) (strin
 			_ = os.RemoveAll(stage)
 		}
 	}()
-	j := RawRestoreJournal{Set: filepath.Base(set), Stage: filepath.Base(stage), Step: "prepared", Fresh: fresh}
+	j := RawRestoreJournal{Version: 1, Set: filepath.Base(set), Stage: filepath.Base(stage), Step: "prepared", Fresh: fresh}
 	if !fresh {
 		j.Safety = "pre-restore-" + now.UTC().Format("20060102T150405.000000000Z")
 		if err := b.prepareSafety(ctx, filepath.Join(root, j.Safety), now); err != nil {
@@ -214,7 +224,7 @@ func checkpointOffline(ctx context.Context, path string) error {
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf("db: current restore member: %w", err)
 	}
-	p, err := sql.Open("sqlite", "file:"+path+"?mode=rw")
+	p, err := sql.Open("sqlite", fileURI(path)+"?mode=rw")
 	if err != nil {
 		return fmt.Errorf("db: open offline checkpoint: %w", err)
 	}
@@ -295,6 +305,28 @@ func (b *Backups) Recover(ctx context.Context) error {
 	return b.recover(ctx)
 }
 
+// Read the version before enforcing this version's field list. Unknown fields still refuse
+// recovery; legacy unversioned journals retain their original layout.
+func readRestoreJournal(path string) (RawRestoreJournal, error) {
+	var body json.RawMessage
+	var j RawRestoreJournal
+	if err := readJSON(path, &body); err != nil {
+		return j, err
+	}
+	if err := json.Unmarshal(body, &j); err != nil {
+		return j, fmt.Errorf("db: decode restore journal: %w", err)
+	}
+	if err := j.Validate(); err != nil {
+		return j, err
+	}
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&j); err != nil {
+		return j, fmt.Errorf("db: decode restore journal: %w", err)
+	}
+	return j, nil
+}
+
 func (b *Backups) recover(ctx context.Context) error {
 	path := filepath.Join(b.dir, "restore.journal")
 	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
@@ -302,11 +334,8 @@ func (b *Backups) recover(ctx context.Context) error {
 	} else if err != nil {
 		return fmt.Errorf("db: inspect restore journal: %w", err)
 	}
-	var j RawRestoreJournal
-	if err := readJSON(path, &j); err != nil {
-		return err
-	}
-	if err := j.Validate(); err != nil {
+	j, err := readRestoreJournal(path)
+	if err != nil {
 		return err
 	}
 	if j.Step == "complete" {

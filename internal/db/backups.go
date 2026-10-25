@@ -37,7 +37,7 @@ func fileUserVersion(ctx context.Context, path string) (int, error) {
 }
 
 func probeVersion(ctx context.Context, path, options string) (int, error) {
-	p, err := sql.Open("sqlite", "file:"+path+options)
+	p, err := sql.Open("sqlite", fileURI(path)+options)
 	if err != nil {
 		return 0, fmt.Errorf("db: open backup probe: %w", err)
 	}
@@ -120,7 +120,7 @@ func (b *Backups) BeforeMigrations(ctx context.Context, now time.Time) (string, 
 		return "", fmt.Errorf("db: pre-migration backup requires all three databases")
 	}
 	return b.capture(ctx, "pre-migration", now, func(ctx context.Context, i int, dest string) error {
-		p, err := sql.Open("sqlite", "file:"+filepath.Join(b.dir, b.files[i].Name)+"?mode=ro")
+		p, err := sql.Open("sqlite", fileURI(filepath.Join(b.dir, b.files[i].Name))+"?mode=ro")
 		if err != nil {
 			return fmt.Errorf("db: open startup snapshot: %w", err)
 		}

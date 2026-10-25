@@ -1,9 +1,12 @@
-// Go's offline sentence, report.Offline in internal/app/report/held.go. Go puts its own
-// context in front of it ("site news: startup: …"); a person sees the sentence alone.
-export const OFFLINE = "Can't reach the league site. Check your internet connection, then try again.";
+// Go's offline sentences, offline.Sentence in internal/offline/offline.go: "Can't reach <site>."
+// then ADVICE. Go may put its own context in front ("site news: startup: …"); a person sees the
+// sentence alone.
+export const ADVICE = " Check your internet connection, then try again.";
+export const OFFLINE = "Can't reach the league site." + ADVICE;
+const SENTENCE = new RegExp("Can't reach [^.]+\\." + ADVICE.replace(/[.,]/g, '\\$&'));
 
 export function plainFailure(text: string): string {
-  return text.includes(OFFLINE) ? OFFLINE : text;
+  return text.match(SENTENCE)?.[0] ?? text;
 }
 
 type Bound = Record<string, Record<string, Record<string, unknown>>>;
@@ -19,7 +22,8 @@ export function plainBindings(go: unknown): void {
         api[name] = (...args: unknown[]) => (method as (...a: unknown[]) => Promise<unknown>)(...args)
           .catch((cause: unknown) => {
             const text = cause instanceof Error ? cause.message : String(cause);
-            throw plainFailure(text) === text ? cause : new Error(OFFLINE);
+            const plain = plainFailure(text);
+            throw plain === text ? cause : new Error(plain);
           });
       }
     }
