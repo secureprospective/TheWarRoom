@@ -60,8 +60,9 @@ No real app profile or league archive is opened. Do not remove the printed envir
 Close the desktop window before `down`.
 
 Sign in as the printed commissioner, use **Authenticate** with the code from `code`, then
-enter the league. The commissioner also owns franchise.01; franchise.02 is vacant. The
-league has two franchises and no imported MFL data. The confirmation uses the preceding time
+click **Open my franchise**. The commissioner owns Practice team 1; the other 31
+franchises are vacant. The league has disposable football evidence, three roster players,
+and a 2027 rookie draft with one available rookie. No MFL data is imported. The confirmation uses the preceding time
 step, so the current code is immediately usable. If a code has already been used, wait for the
 next 30-second authenticator step before using `code` again.
 
@@ -105,3 +106,29 @@ off-site protection. The release builder never uses this tag. A normal server
 binary remains paused without verified R2 coverage; there is no runtime switch
 to disable that rule. Prebuilt practice bundles must use the tagged build shown
 above. Never use the practice binary for real league state.
+
+## Lineup, reserves and draft walkthrough
+
+After opening your franchise, use **Refresh league** if needed. The location label is
+**This league is managed here**; a failed refresh keeps the last reading read-only.
+
+1. **Set lineup**: select Practice quarterback, check the lineup, then hold to confirm.
+   Refresh and verify he is a starter. Kickoffs are one day after sandbox creation.
+2. **Roster and reserves**: select Injured prospect, choose Injured reserve, check and
+   confirm. Refresh shows the new squad. A healthy quarterback must be refused for IR;
+   Young receiver is eligible for taxi. Choose Active roster to bring a reserve back.
+3. **Draft room**: Practice team 1 is on the clock two seconds after provisioning.
+   Select Practice rookie, review, then hold to confirm. Refresh shows the pick and roster.
+   Commissioner controls can pause/resume or skip with a recorded reason.
+4. **League rules** shows the rules in force and their existing governed explanations.
+5. Disconnect the server, refresh: the saved view stays visible with all mutation controls
+   disabled. Reconnect and refresh: only reads are sent, never queued changes. A failed
+   confirmation warns that it may have reached the server; inspect the refreshed state
+   before choosing another action.
+
+Automated workflow coverage: `internal/serverhttp/workflow_test.go` exercises real HTTPS
+and desktop sessions, eligibility refusal with unchanged roster, idempotent retry, lineup,
+rookie selection and revocation. `frontend/src/app/commissioner/hostedRoom.test.tsx` consumes
+real Go response fixtures and checks stale mode, reconnect, authority fencing and no replay.
+Regenerate its wire fixture with `TWR_UPDATE_HOSTED_WIRE=1 go test ./internal/serverhttp
+-run TestHostedWorkflowFrontendReadings -count=1` (keep the command on one shell line).

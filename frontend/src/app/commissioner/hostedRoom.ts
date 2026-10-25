@@ -21,7 +21,6 @@ export function createHostedRoom(league: string, franchise: string, port: Hosted
   const store = createStore<State>(() => ({ stale: true, pending: false, error: '', message: '' }));
   let generation = 0;
   let activeWeek = 1;
-  let held: Review | undefined;
   async function read(week = activeWeek) {
     if (store.getState().pending) return;
     activeWeek = week;
@@ -43,7 +42,7 @@ export function createHostedRoom(league: string, franchise: string, port: Hosted
       if (reading.lineup.league !== league || reading.lineup.franchise !== franchise
         || reading.draft.league !== league || reading.rules.league !== league
         || results.some(r => r.football !== reading.football)) throw new Error('League readings changed. Refresh again.');
-      if (turn === generation) { held = undefined; store.setState({ reading, stale: false, error: '' }); }
+      if (turn === generation) { store.setState({ reading, stale: false, error: '' }); }
     } catch {
       if (turn === generation) store.setState({ stale: true,
         error: 'Could not refresh your league. Saved readings are read-only. Check your connection, seat and authenticator, then refresh.' });
@@ -56,38 +55,40 @@ export function createHostedRoom(league: string, franchise: string, port: Hosted
   async function review(request: NativeRequest, summary: string) {
     if (!canChange()) return;
     if (request.mode !== 'preview' && request.command !== 'draft.pick') return;
+    const turn = generation;
     store.setState({ pending: true, error: '', message: '', review: undefined });
     try {
       const preview = request.mode === 'preview'
         ? parsePreview((await port(request, store.getState().reading?.football)).data) : null;
-      // Retain the exact request key/revision across an ambiguous delivery, never silently retry.
-      const signature = JSON.stringify({ ...request, arguments: { ...request.arguments, request: '' } });
-      const prior = held && JSON.stringify({ ...held.request, arguments: { ...held.request.arguments, request: '' } });
-      const next = { request: signature === prior ? held!.request : request, preview, summary };
-      held = next;
+      if (turn !== generation) return;
+      const next = { request, preview, summary };
       store.setState({ review: next });
     } catch {
+      if (turn !== generation) return;
       store.setState({ stale: true, error: 'Could not check this change. Nothing is queued. Refresh your league before trying again.' });
-    } finally { store.setState({ pending: false }); }
+    } finally { if (turn === generation) store.setState({ pending: false }); }
   }
   async function confirm() {
     const s = store.getState();
     if (!canChange() || !s.review || s.review.preview?.blockers.length) return;
     const review = s.review;
+    const turn = generation;
     store.setState({ pending: true, review: undefined, error: '' });
     try {
       const request = { ...review.request, mode: 'execute' } as NativeRequest;
       const receipt = parseReceipt((await port(request, s.reading?.football)).data);
-      store.setState({ message: 'The server recorded your change. Refreshing the league.' });
+      if (turn !== generation) return;
       if (receipt.league !== league) throw new Error('Wrong league receipt');
+      store.setState({ message: 'The server recorded your change. Refreshing the league.' });
     } catch {
+      if (turn !== generation) return;
       store.setState({ stale: true, error: 'The change was not confirmed. It may have reached the server. Refresh before trying again; nothing will be sent automatically.' });
       return;
-    } finally { store.setState({ pending: false }); }
+    } finally { if (turn === generation) store.setState({ pending: false }); }
     await read();
   }
   const cancel = () => store.setState({ review: undefined });
-  const dispose = () => { generation++; held = undefined; store.setState({ reading: undefined, stale: true, pending: false, review: undefined }); };
+  const dispose = () => { generation++; store.setState({ reading: undefined, stale: true, pending: false, review: undefined }); };
   return { read, review, confirm, cancel, dispose, canChange, peek: store.getState, use: () => useStore(store) };
 }
 export type HostedRoom = ReturnType<typeof createHostedRoom>;

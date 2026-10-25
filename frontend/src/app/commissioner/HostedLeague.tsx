@@ -74,7 +74,7 @@ export default function HostedLeague({ league, franchise, name, role, port }: {
   const own = reading?.roster.players.filter(p => p.franchise === franchise) || [];
   const reserves = reading?.reserves.find(r => r.franchise === franchise);
   const clock = reading?.draft.onClock;
-  const commissioner = role === 'commissioner' || role === 'cocommissioner';
+  const commissioner = role === 'Commissioner' || role === 'Co-commissioner';
   return <section className="hosted-league" aria-label="Hosted franchise" aria-busy={state.pending}>
     <h2>{name || 'Your franchise'}</h2>
     <p>{reading?.label || 'Checking where your league is managed…'}</p>
@@ -148,6 +148,7 @@ function Review({ room }: { room: HostedRoom }) {
   if (!review) return null;
   return <section aria-label="Confirm league change" className="hosted-review"><h3>{review.summary}</h3>
     <p>This changes your hosted league, not a local plan. Nothing is queued while offline.</p>
+    {review.preview?.fields.map((field, i) => <p key={i}><strong>{field.label}</strong>: {field.before} → {field.after}. {field.when}</p>)}
     {review.preview?.blockers.map((b, i) => <p role="alert" key={i}>{b}</p>)}
     {!review.preview?.blockers.length && <HoldToFire label="Confirm league change" body={JSON.stringify(review.request)}
       disabled={pending || !room.canChange()} onConfirm={() => void room.confirm()} />}

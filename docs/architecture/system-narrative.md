@@ -1045,3 +1045,27 @@ coordinate the existing lineup/trade/roster/injury/archive readers at root. The 
 no lock or worker. Root tests retain binding goldens, populated wire-twin comparisons,
 concurrent refresh/read coverage and nested-copy detachment checks; pure calculation tests
 live beside the service. See `feature-extraction.md`'s stateful-features recipe.
+
+### Hosted franchise workflows
+
+`NativeAccount` mounts `commissioner/HostedLeague.tsx` after account/seat admission.
+`hostedRoom.ts` holds only the current in-memory reading and explicit confirmation; it
+never writes local league data or queues mutations. The catalog-generated `nativeEnvelope`
+feeds `/desktop/workflow`; `serverclient.Desktop.Workflow` retains bearer/authenticator
+proofs in Go and binds every command to the window's league. `/v1/native/workflow` strictly
+validates its bounded published commands, obtains the existing transfer authority label,
+and delegates to `leagueservice`. Read/preview failures fence the saved view until refresh.
+
+The server owns permission, evidence digest, recipient revisions and transactional state:
+lineup uses `SetLineup`, rookie selection uses `Pick`, reserve moves use the existing
+waiver append/projector with IR/taxi entry checks and post-move roster/cap checks. Draft
+clock controls use the existing commissioner preview/execute path, including reasons and
+current authentication. The underlying append rechecks admission while holding the writer.
+A successful confirmation rereads; ambiguous delivery never retries automatically. Transfer
+fences and server-held football evidence still govern every write. Slice 47 can publish
+additional generated commands through this same bounded envelope without a local fallback.
+
+Evidence: `internal/serverhttp/workflow_test.go` (HTTPS/desktop reads, writes, refusals,
+retry, revocation) and `frontend/src/app/commissioner/hostedRoom.test.tsx` (real Go wire
+parsing, disconnected views, reconnect without replay). Graphical acceptance is separate;
+`cmd/twr-practice/README.md` provides the disposable click walkthrough.

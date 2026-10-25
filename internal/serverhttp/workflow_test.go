@@ -2,6 +2,7 @@ package serverhttp_test
 
 import (
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -217,5 +218,42 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	}
 	if _, err := desktop.Workflow(t.Context(), workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")); err == nil {
 		t.Fatal("revoked device could read")
+	}
+}
+
+func TestHostedWorkflowFrontendReadings(t *testing.T) {
+	f := newHostedFixture(t, true)
+	bearer, proof := f.directCommissioner(t)
+	readings := map[string]serverhttp.WorkflowResponse{}
+	for _, command := range []string{"lineup.read", "native.assets.read", "native.reserve.check", "draft.read", "commish.rules.read"} {
+		args := `{"league":"native.hosted"}`
+		if command == "lineup.read" {
+			args = `{"league":"native.hosted","franchise":"franchise.01","week":1,"at":""}`
+		}
+		if command == "draft.read" {
+			args = `{"league":"native.hosted","franchise":"franchise.01","season":0,"at":"0001-01-01T00:00:00Z"}`
+		}
+		raw := workflowRequest(t, command, "read", args, "")
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var reading serverhttp.WorkflowResponse
+		if err := json.Unmarshal(f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, 200), &reading); err != nil {
+			t.Fatal(err)
+		}
+		if err := reading.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		readings[command] = reading
+	}
+	if os.Getenv("TWR_UPDATE_HOSTED_WIRE") == "1" {
+		body, err := json.MarshalIndent(readings, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile("../../frontend/src/app/commissioner/hosted.wire.testdata.json", body, 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
