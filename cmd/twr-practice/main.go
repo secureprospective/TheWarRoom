@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -21,16 +22,28 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, out io.Writer) error {
-	if len(args) != 2 {
-		return fmt.Errorf("usage: go run ./cmd/twr-practice <up|code|down> <throwaway-directory>")
+	if len(args) == 0 {
+		return fmt.Errorf("usage: twr-practice <up [-bin directory]|code|down> <throwaway-directory>")
 	}
-	dir, err := sandboxPath(args[1])
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	var bin string
+	if args[0] == "up" {
+		flags.StringVar(&bin, "bin", "", "copy prebuilt binaries and registry.csv from this directory")
+	}
+	if err := flags.Parse(args[1:]); err != nil {
+		return fmt.Errorf("read %s options: %w", args[0], err)
+	}
+	if flags.NArg() != 1 {
+		return fmt.Errorf("usage: twr-practice <up [-bin directory]|code|down> <throwaway-directory>")
+	}
+	dir, err := sandboxPath(flags.Arg(0))
 	if err != nil {
 		return err
 	}
 	switch args[0] {
 	case "up":
-		return up(ctx, dir, out)
+		return up(ctx, dir, bin, out)
 	case "down":
 		return down(ctx, dir)
 	case "code":
@@ -78,10 +91,18 @@ func sandboxPath(path string) (string, error) {
 
 func quote(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'" }
 
-func report(out io.Writer, dir string, state rawState) error {
+func report(out io.Writer, dir string, state rawState, bin string) error {
+	launcher := "go run ./cmd/twr-practice"
+	if bin != "" {
+		executable, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("locate practice launcher: %w", err)
+		}
+		launcher = quote(executable)
+	}
 	desktop := fmt.Sprintf("env HOME=%s XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_CACHE_HOME=%s XDG_RUNTIME_DIR=%s DBUS_SESSION_BUS_ADDRESS=%s SSL_CERT_FILE=%s %s -native %s native.hosted",
 		quote(filepath.Join(dir, "home")), quote(filepath.Join(dir, "config")), quote(filepath.Join(dir, "data")), quote(filepath.Join(dir, "cache")), quote(filepath.Join(dir, "runtime")), quote("unix:path="+filepath.Join(dir, "no-session-bus")), quote(filepath.Join(dir, "server.pem")), quote(filepath.Join(dir, "thewarroom")), quote(state.Address))
-	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: go run ./cmd/twr-practice code %s\nDesktop (inherits DISPLAY):\n%s\nStop and delete: go run ./cmd/twr-practice down %s\n", state.Address, state.Password, state.Seed, quote(dir), desktop, quote(dir))
+	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: %s code %s\nDesktop (inherits DISPLAY):\n%s\nStop and delete: %s down %s\n", state.Address, state.Password, state.Seed, launcher, quote(dir), desktop, launcher, quote(dir))
 	if err != nil {
 		return fmt.Errorf("print sandbox instructions: %w", err)
 	}
