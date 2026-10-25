@@ -193,6 +193,8 @@ func desktopRefusal(path string, status int) error {
 		return fmt.Errorf("sign-in refused. Check your username and password, or open account recovery")
 	case serverhttp.AgentTokenPath, serverhttp.AgentTokenRevokePath:
 		return fmt.Errorf("the league would not connect or disconnect this AI helper. Verify a fresh authenticator code and try again")
+	case serverhttp.PreviewPath:
+		return fmt.Errorf("the league could not check this change. Verify your access and try again")
 	case serverhttp.ConfirmPath:
 		return fmt.Errorf("the league would not confirm this change. Verify a fresh authenticator code, and check the change is one you may make")
 	case serverhttp.PeoplePath:

@@ -14,18 +14,22 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
   const [helperId, setHelperId] = useState('');
   const [request, setRequest] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [preview, setPreview] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const change = readConfirmRequest(request);
   async function run(action: HelperAction) {
     if (pending) return;
+    if (action === 'helper-confirm' && !preview) return;
+    setPreview('');
     setPending(true); setError(''); setMessage(''); setConnection(''); setConfirmation('');
     try {
       const fields = action === 'helper-issue' ? { helper: level, franchise: seat }
         : action === 'helper-revoke' ? { code: helperId.trim() } : { change: request };
       const result = await helperAction(action, fields);
       setMessage(result.message);
+      if (action === 'helper-check') setPreview(result.helperPreview || '');
       if (action === 'helper-issue') { setConnection(result.connection); setHelperId(result.helperId); }
       if (action === 'helper-confirm') { setConfirmation(result.confirmation); setRequest(''); }
     } catch (e) {
@@ -45,7 +49,7 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
   }
   useEffect(() => surfaceActions.register('native-helpers', args => {
     if (args.action === 'check' && args.value === 'copy-connection') { void copyConnection(); return; }
-    const actions: HelperAction[] = ['helper-issue', 'helper-revoke', 'helper-confirm'];
+    const actions: HelperAction[] = ['helper-issue', 'helper-revoke', 'helper-check', 'helper-confirm'];
     const action = actions.find(value => value === args.value);
     if (args.action === 'check' && action) void run(action);
   }));
@@ -81,16 +85,16 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
     </div>}
     <h3>Confirm a helper's change</h3>
     <label>Confirm request from your helper<textarea value={request} disabled={pending} rows={3}
-      onChange={e => setRequest(e.target.value)} /></label>
-    {change && <div>
-      <p>You are confirming <strong>{change.command}</strong>
-        {change.reason && <> because “{change.reason}”</>}.</p>
-      <p className="native-seed"><code>{change.args}</code></p>
-    </div>}
+      onChange={e => {
+        setRequest(e.target.value); setPreview(''); setConfirmation(''); setError('');
+      }} /></label>
+    {preview && <p className="native-preview">{preview}</p>}
     {request && !change && <p role="alert">That is not a whole confirm request. It starts with twrc1.</p>}
     <div className="native-actions">
+      <Act variant="button" verb="commissioner.surface" args={args('helper-check')}
+        disabled={pending || !change} label="Check this change">Check this change</Act>
       <Act variant="button" verb="commissioner.surface" args={args('helper-confirm')}
-        disabled={pending || !change} label="Confirm this change">Confirm this change</Act>
+        disabled={pending || !preview} label="Confirm this change">Confirm this change</Act>
     </div>
     {confirmation && <p className="native-seed">Code for your helper: <code>{confirmation}</code></p>}
     <h3>Disconnect a helper</h3>

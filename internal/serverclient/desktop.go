@@ -76,7 +76,7 @@ func (r RawDesktop) String() string   { return "[desktop credentials redacted]" 
 func (r RawDesktop) GoString() string { return r.String() }
 func (r RawDesktop) Validate() error {
 	switch r.Action {
-	case "helper-issue", "helper-revoke", "helper-confirm":
+	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":
 		return r.validateHelper()
 	}
 	if r.Helper+r.Franchise+r.Change != "" {
@@ -122,10 +122,11 @@ type DesktopView struct {
 	FranchiseName string `json:"franchiseName"`
 	Seed          string `json:"seed"`
 	// Connection is shown once, right after a helper is connected; Confirmation is one change's code.
-	Connection   string        `json:"connection"`
-	HelperID     string        `json:"helperId"`
-	Confirmation string        `json:"confirmation"`
-	Seats        []DesktopSeat `json:"seats"`
+	Connection    string        `json:"connection"`
+	HelperID      string        `json:"helperId"`
+	Confirmation  string        `json:"confirmation"`
+	Seats         []DesktopSeat `json:"seats"`
+	HelperPreview string        `json:"helperPreview,omitempty"`
 }
 
 type DesktopSeat struct {
@@ -157,7 +158,7 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) 
 		view.Message = "Signed out and removed the saved device session. Server-side device revocation is separate."
 	case "enter":
 		return d.enter(ctx, view)
-	case "helper-issue", "helper-revoke", "helper-confirm":
+	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":
 		return d.helper(ctx, raw, view)
 	case "login":
 		return d.login(ctx, raw, view)

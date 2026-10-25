@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -74,20 +76,7 @@ func (d *Desktop) helper(ctx context.Context, raw RawDesktop, view DesktopView) 
 		}
 		view.Message = "AI helper disconnected. Its connection line no longer works."
 	default:
-		id, change, _ := DecodeConfirmRequest(raw.Change)
-		if change.League != d.league {
-			return view, fmt.Errorf("this confirm request is for a different league")
-		}
-		body, err := postDesktop(ctx, d, serverhttp.ConfirmPath, serverhttp.RawNativeRequest{Protocol: 1, Command: &change, TokenID: id})
-		if err != nil {
-			return view, err
-		}
-		var response rawDesktopConfirmation
-		if err := decodeDesktop(body, &response); err != nil {
-			return view, err
-		}
-		view.Confirmation = response.Confirmation
-		view.Message = "Give this code to your AI helper. It works for this exact change only, for five minutes."
+		return d.confirmHelper(ctx, raw, view)
 	}
 	return view, nil
 }
@@ -108,4 +97,87 @@ func (r rawDesktopConfirmation) Validate() error {
 		return fmt.Errorf("invalid confirmation response")
 	}
 	return nil
+}
+
+// The desktop uses the same league preview as the CLI, without changing the signed revision.
+func (d *Desktop) previewHelper(
+	ctx context.Context, change commissioner.RawCommand,
+) (commissioner.Preview, error) {
+	body, err := postDesktop(ctx, d, serverhttp.PreviewPath,
+		serverhttp.RawNativeRequest{Protocol: 1, Command: &change})
+	if err != nil {
+		return commissioner.Preview{}, err
+	}
+	var preview rawDesktopHelperPreview
+	if err := decodeDesktop(body, &preview); err != nil {
+		return commissioner.Preview{}, err
+	}
+	if len(preview.Blockers) != 0 {
+		return commissioner.Preview{}, fmt.Errorf("%s", strings.Join(preview.Blockers, "\n"))
+	}
+	if preview.Target.League != change.League || preview.Target.Version != change.Expected {
+		return commissioner.Preview{},
+			fmt.Errorf("the preview is for a different league version; check the change again")
+	}
+	return commissioner.Preview(preview), nil
+}
+
+type rawDesktopHelperPreview commissioner.Preview
+
+func (r rawDesktopHelperPreview) Validate() error {
+	if len(r.Blockers) == 0 && (r.Target.League == "" || len(r.Fields) == 0) {
+		return fmt.Errorf("unreadable change preview; check the change again")
+	}
+	for _, field := range r.Fields {
+		if field.Label == "" {
+			return fmt.Errorf("unreadable change preview; check the change again")
+		}
+	}
+	for _, blocker := range r.Blockers {
+		if strings.TrimSpace(blocker) == "" {
+			return fmt.Errorf("unreadable change refusal; check the change again")
+		}
+	}
+	return nil
+}
+
+func (d *Desktop) confirmHelper(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
+	id, change, _ := DecodeConfirmRequest(raw.Change)
+	if change.League != d.league {
+		return view, fmt.Errorf("this confirm request is for a different league")
+	}
+	preview, err := d.previewHelper(ctx, change)
+	if err != nil {
+		return view, err
+	}
+	view.HelperPreview = preview.Question
+	if view.HelperPreview == "" {
+		view.HelperPreview = preview.Target.Name
+	}
+	for _, field := range preview.Fields {
+		view.HelperPreview += fmt.Sprintf("\n%s changes from “%s” to “%s”.",
+			field.Label, field.Before, field.After)
+	}
+	view.HelperPreview += "\nHelper: " + id
+	if preview.Affects.Words != "" {
+		view.HelperPreview += "\n" + preview.Affects.Words
+	}
+	if change.Reason != "" {
+		view.HelperPreview += "\nReason: “" + change.Reason + "”"
+	}
+	if raw.Action == "helper-check" {
+		return view, nil
+	}
+	body, err := postDesktop(ctx, d, serverhttp.ConfirmPath,
+		serverhttp.RawNativeRequest{Protocol: 1, Command: &change, TokenID: id})
+	if err != nil {
+		return view, err
+	}
+	var response rawDesktopConfirmation
+	if err := decodeDesktop(body, &response); err != nil {
+		return view, err
+	}
+	view.Confirmation = response.Confirmation
+	view.Message = "Give this code to your AI helper. It works for this exact change only, for five minutes."
+	return view, nil
 }

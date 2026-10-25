@@ -1,9 +1,10 @@
 // Native-only desktop transport. Go owns HTTPS and all bearer/recent-auth secrets.
 export type NativeAction = 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
-export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-confirm';
+export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
 export type NativeView = {
+  helperPreview?: string;
   server: string; league: string; message: string; name: string; role: string;
   franchise: string; franchiseName: string; seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
@@ -17,7 +18,8 @@ const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
 export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
-  if (Object.keys(value).length !== textKeys.length + 1
+  if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
+    || ('helperPreview' in value && typeof value.helperPreview !== 'string')
     || textKeys.some(key => typeof value[key] !== 'string')
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
     || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))
@@ -49,16 +51,13 @@ export function helperAction(
 ): Promise<NativeView> {
   return post({ action, ...fields });
 }
-// readConfirmRequest shows the person what they are about to confirm. Go checks it again.
-export function readConfirmRequest(text: string): { command: string; reason: string; args: string } | null {
+// Only recognize the envelope here; Go validates the change and the league describes it.
+export function readConfirmRequest(text: string): boolean {
   const trimmed = text.trim();
-  if (!trimmed.startsWith('twrc1.')) return null;
+  if (!trimmed.startsWith('twrc1.')) return false;
   try {
     const json = atob(trimmed.slice(6).replace(/-/g, '+').replace(/_/g, '/'));
-    type Change = { command?: unknown; reason?: unknown; args?: unknown };
-    const change = (JSON.parse(json) as { change?: Change }).change;
-    if (!change || typeof change.command !== 'string') return null;
-    return { command: change.command, reason: typeof change.reason === 'string' ? change.reason : '',
-      args: JSON.stringify(change.args ?? {}) };
-  } catch { return null; }
+    const request = JSON.parse(json) as { tokenId?: unknown; change?: { command?: unknown } };
+    return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
+  } catch { return false; }
 }
