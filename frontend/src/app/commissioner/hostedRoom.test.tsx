@@ -181,7 +181,8 @@ it('confirms a real rollover receipt and refreshes the new season for the commis
     return (rolled ? after : readings)[request.command];
   });
   await room.refresh();
-  const request = { ...change(), command: 'season.rollover', arguments: { ...change().arguments, command: 'season.rollover' } } as NativeRequest;
+  const command = 'season.rollover';
+  const request = { ...change(), command, arguments: { ...change().arguments, command } } as NativeRequest;
   await room.review(request, 'Move to the next season');
   await room.confirm();
   expect(room.peek().error).toBe('');
