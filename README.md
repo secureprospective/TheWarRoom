@@ -559,6 +559,9 @@ make build     # build/bin/thewarroom
 make verify    # lint, race-enabled tests and the frontend build
 ```
 
+For an isolated hosted league and desktop click test, use the development-only
+[`twr-practice`](cmd/twr-practice/README.md) launcher (example directory: `.scratch/practice`).
+
 Set `CFBD_API_KEY` to a free [CollegeFootballData key](https://collegefootballdata.com/key) for the school-tier signal; without one, that one signal is skipped and everything else runs.
 
 ---

@@ -22,6 +22,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -46,22 +47,12 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	t.Helper()
 	store, pools := fixtureStore(t, filepath.Join(t.TempDir(), "server.db"))
 	credentials := accountstore.New(pools)
-	if err := credentials.Initialize(t.Context()); err != nil {
-		t.Fatal(err)
-	}
 	passwords := accounts.New(credentials)
-	account, err := passwords.LocalBootstrap(t.Context(), accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
+	principal, err := hostedfixture.Bootstrap(t.Context(), credentials, accounts.RawCredentials{Username: "commissioner", Password: "private-password"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	principal, err := account.Principal()
-	if err != nil {
-		t.Fatal(err)
-	}
-	create := commissioner.RawCommand{League: "native.hosted", Command: commissioner.Create,
-		Args:   commissioner.RawArgs{Name: "Hosted test", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2},
-		Reason: "Create disposable league", Request: "create", Effective: "now", Visibility: "league"}
-	if _, err := store.ExecuteCommissioner(t.Context(), create, string(principal), nil); err != nil {
+	if err := hostedfixture.CreateLeague(t.Context(), store, principal); err != nil {
 		t.Fatal(err)
 	}
 	policy, err := governance.Apply(governance.State{}, governance.LeagueCreated{Creator: principal, Franchises: []governance.FranchiseID{"franchise.01", "franchise.02"}})
