@@ -32,6 +32,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
+	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse hosted flags: %w", err)
 	}
@@ -57,11 +58,16 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	handler.TrustedProxy = hop
-	stopBackup, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
+	stopBackup, backups, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
 	if err != nil {
 		return err
 	}
 	defer stopBackup()
+	stopStatus, err := startStatusSocket(ctx, *status, statusSource(pools, handler.Store, backups))
+	if err != nil {
+		return err
+	}
+	defer stopStatus()
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
 

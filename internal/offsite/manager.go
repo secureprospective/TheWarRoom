@@ -8,13 +8,15 @@ import (
 	"time"
 )
 
-// Status is a VPN/dashboard port, not a public health endpoint. Captured is the
-// snapshot time, not upload completion; local disk timestamps cannot renew coverage.
+// Status feeds the private console dashboard (internal/serverstatus), never a public
+// route. Captured is the snapshot time, not upload completion; local disk timestamps
+// cannot renew coverage. Failure is the newest attempt's error, kept while changes are
+// paused and cleared by the next verified upload; it may name the bucket or endpoint.
 type Status struct {
-	Captured time.Time `json:"captured"`
-	Verified time.Time `json:"verified"`
-	Writable bool      `json:"writable"`
-	Message  string    `json:"message"`
+	Captured time.Time
+	Verified time.Time
+	Writable bool
+	Failure  string
 }
 type Manager struct {
 	mu            sync.Mutex
@@ -45,20 +47,26 @@ func (m *Manager) Status() Status {
 	s := m.status
 	now := m.now()
 	s.Writable = !s.Captured.IsZero() && !now.Before(s.Captured) && now.Sub(s.Captured) < 14*time.Minute && now.Sub(m.coverageStart) < 14*time.Minute
-	if !s.Writable {
-		s.Message = "Changes paused: no verified off-site backup less than 14 minutes old."
-	}
 	return s
 }
 func (m *Manager) recordFailure(err error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.status.Message = err.Error()
+	m.status.Failure = err.Error()
 }
 
+// Backup records its own failure for the dashboard; coverage changes only on success.
 func (m *Manager) Backup(ctx context.Context) error {
 	m.backupMu.Lock()
 	defer m.backupMu.Unlock()
+	if err := m.backup(ctx); err != nil {
+		m.recordFailure(err)
+		return err
+	}
+	return nil
+}
+
+func (m *Manager) backup(ctx context.Context) error {
 	start := m.now()
 	stage, err := os.MkdirTemp(m.temp, ".offsite-")
 	if err != nil {
@@ -94,11 +102,8 @@ func (m *Manager) Run(ctx context.Context) {
 		m.mu.Unlock()
 		if start.IsZero() || m.now().Sub(start) >= 5*time.Minute {
 			attempt, cancel := context.WithTimeout(ctx, 2*time.Minute)
-			err := m.Backup(attempt)
+			_ = m.Backup(attempt) // recorded in Status for the dashboard; the next tick retries
 			cancel()
-			if err != nil {
-				m.recordFailure(err)
-			}
 		}
 		select {
 		case <-ctx.Done():
