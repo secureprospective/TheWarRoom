@@ -197,7 +197,9 @@ export default function HostedLeague({
     <section className="hosted-league" aria-label="Hosted franchise" aria-busy={state.pending}>
       <h2>{name || 'Your franchise'}</h2>
       <p>Your league server</p>
-      <p>MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules or recorded changes.</p>
+      <p>
+        MFL is reference only. Refreshing MFL cannot replace this league’s roster, rules or recorded changes.
+      </p>
       <p>{reading?.label || 'Checking where your league is managed…'}</p>
       <p role="status">
         {state.stale

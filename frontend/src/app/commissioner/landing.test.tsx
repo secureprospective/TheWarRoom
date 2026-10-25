@@ -81,8 +81,9 @@ describe('League landing wire and search', () => {
     expect(source).toContain("lazy(() => import('../commissioner/LeagueLanding'))");
     expect(source).toContain('<LeagueLanding />');
     expect(source.indexOf('<LeagueLanding')).toBeLessThan(source.indexOf('s.settings &&'));
-    for (const part of ['MFL settings, by-laws and accounting', 's.settings', 's.bylaws', 's.accounting',
-      'Open MFL accounting', 'bylaw-search']) expect(source).toContain(part);
+    for (const part of ['From MFL (reference only): settings, by-laws and accounting',
+      's.settings', 's.bylaws', 's.accounting', 'Open MFL accounting', 'bylaw-search'])
+      expect(source).toContain(part);
     expect(source).not.toContain('<LeagueDesk');
   });
 });
