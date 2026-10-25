@@ -30,6 +30,9 @@ type Desktop struct {
 	proof       string
 	credentials CredentialStore
 	loaded      bool
+	// seats are what the last "enter" read; an AI helper acts for one of them.
+	seats          []DesktopSeat
+	helperCommands []string
 }
 
 func NewDesktop(address, league string, roots *x509.CertPool, storage ...CredentialStore) (*Desktop, error) {
@@ -60,15 +63,25 @@ func (d *Desktop) Close() {
 
 // RawDesktop is the local webview boundary, not a server credential or principal.
 type RawDesktop struct {
-	Action   string `json:"action"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Code     string `json:"code"`
+	Action    string `json:"action"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Code      string `json:"code"`
+	Helper    string `json:"helper"`
+	Franchise string `json:"franchise"`
+	Change    string `json:"change"`
 }
 
 func (r RawDesktop) String() string   { return "[desktop credentials redacted]" }
 func (r RawDesktop) GoString() string { return r.String() }
 func (r RawDesktop) Validate() error {
+	switch r.Action {
+	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":
+		return r.validateHelper()
+	}
+	if r.Helper+r.Franchise+r.Change != "" {
+		return fmt.Errorf("unexpected helper request")
+	}
 	switch r.Action {
 	case "status", "enter", "forget", "revoke-device", "revoke-all":
 		if r.Username != "" || r.Password != "" || r.Code != "" {
@@ -108,13 +121,24 @@ type DesktopView struct {
 	Franchise     string `json:"franchise"`
 	FranchiseName string `json:"franchiseName"`
 	Seed          string `json:"seed"`
+	// Connection is shown once, right after a helper is connected; Confirmation is one change's code.
+	Connection    string        `json:"connection"`
+	HelperID      string        `json:"helperId"`
+	Confirmation  string        `json:"confirmation"`
+	Seats         []DesktopSeat `json:"seats"`
+	HelperPreview string        `json:"helperPreview,omitempty"`
+}
+
+type DesktopSeat struct {
+	Franchise string `json:"franchise"`
+	Name      string `json:"name"`
 }
 
 // Act serializes login/forget/read so a delayed response cannot revive a forgotten session.
 func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	view := DesktopView{Server: d.client.base, League: d.league}
+	view := DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
@@ -134,6 +158,8 @@ func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) 
 		view.Message = "Signed out and removed the saved device session. Server-side device revocation is separate."
 	case "enter":
 		return d.enter(ctx, view)
+	case "helper-issue", "helper-revoke", "helper-check", "helper-confirm":
+		return d.helper(ctx, raw, view)
 	case "login":
 		return d.login(ctx, raw, view)
 	case "recover":

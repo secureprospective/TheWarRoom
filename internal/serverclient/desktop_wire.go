@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -28,7 +29,8 @@ type enrollmentBody struct {
 	Enrollment enrollmentCredentials `json:"enrollment"`
 }
 type desktopPayload interface {
-	serverhttp.RawRecoveryRequest | serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest
+	serverhttp.RawRecoveryRequest | serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest |
+		serverhttp.RawAgentTokenRequest
 }
 
 type rawDesktopRecovery serverhttp.RecoveryResponse
@@ -131,11 +133,14 @@ func (d *Desktop) enter(ctx context.Context, view DesktopView) (DesktopView, err
 		return view, fmt.Errorf("server returned a different league")
 	}
 	view.Name, view.Role, view.Franchise = people.Name, people.YourRole, people.YourFranchise
+	d.seats = d.seats[:0]
 	for _, seat := range people.Seats {
 		if seat.Franchise == people.YourFranchise {
 			view.FranchiseName = seat.Name
 		}
+		d.seats = append(d.seats, DesktopSeat{Franchise: seat.Franchise, Name: seat.Name})
 	}
+	view.Seats = slices.Clone(d.seats)
 	if view.Franchise == "" {
 		view.Message = "No franchise is assigned to this account. Ask your commissioner to check your seat; do not create another account."
 	}
@@ -186,6 +191,12 @@ func desktopRefusal(path string, status int) error {
 		return fmt.Errorf("enrollment refused: the code may be expired, used, or for a different username. Ask your commissioner for a new personally handed code; codes last 48 hours")
 	case serverhttp.LoginPath:
 		return fmt.Errorf("sign-in refused. Check your username and password, or open account recovery")
+	case serverhttp.AgentTokenPath, serverhttp.AgentTokenRevokePath:
+		return fmt.Errorf("the league would not connect or disconnect this AI helper. Verify a fresh authenticator code and try again")
+	case serverhttp.PreviewPath:
+		return fmt.Errorf("the league could not check this change. Verify your access and try again")
+	case serverhttp.ConfirmPath:
+		return fmt.Errorf("the league would not confirm this change. Verify a fresh authenticator code, and check the change is one you may make")
 	case serverhttp.PeoplePath:
 		if status == 401 {
 			return fmt.Errorf("your session expired or was revoked. Sign in again")

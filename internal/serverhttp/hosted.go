@@ -61,6 +61,10 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "request refused", http.StatusBadRequest)
 		return
 	}
+	h.route(w, r)
+}
+
+func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 	switch r.URL.Path {
 	case RecoveryPath:
 		h.recoverAccount(w, r)
@@ -68,6 +72,8 @@ func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
 		EnrollmentHandler(h.Enrollment).ServeHTTP(w, r)
 	case TOTPBeginPath, TOTPConfirmPath, TOTPStepUpPath:
 		h.authenticator(w, r)
+	case AgentTokenPath, AgentTokenRevokePath:
+		h.agentToken(w, r)
 	case RevokePath:
 		h.revoke(w, r)
 	case LoginPath:
@@ -316,7 +322,7 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	return nil
 }
 
-func decodeHosted[T RawRecoveryRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator](w http.ResponseWriter, r *http.Request, raw *T) error {
+func decodeHosted[T RawRecoveryRequest | RawRevoke | RawLogin | RawNativeRequest | RawAuthenticator | RawAgentTokenRequest](w http.ResponseWriter, r *http.Request, raw *T) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 256<<10)
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -340,7 +346,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse](w http.ResponseWriter, body T) {
+func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)

@@ -6,7 +6,8 @@ import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
 
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
-  name: '', role: '', franchise: '', franchiseName: '', seed: '' };
+  name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
+  confirmation: '', seats: [] };
 function reply(value: NativeView) {
   return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => value };
 }
