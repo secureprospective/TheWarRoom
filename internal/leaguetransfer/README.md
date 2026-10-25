@@ -84,23 +84,51 @@ JSON fields:
   `content` set to the empty string (sorted map keys). Includes the epoch, checkpoint,
   evidence and projection digests. Preserve this v1 encoding for retry identity.
 
-## Consumers: inactive import and cutover
+## Inactive import
 
-The import slice can use `(league, sourceEpoch, content)` as its idempotency identity,
-store the original event fields without execution, validate in staging, and record
-an inactive receipt atomically. A different content identity for an already staged
-league/generation must conflict, not append a second history. Preserve the saved
-source checkpoint separately from the target's own audit chain. Rebuild target schema
-with target migrations and its authority/fence state with target-owned operations.
-No `user_version`, authority policy, schema marker, auth epoch, seal or activation flag
-exists in this document; strict decoding rejects injected ones. Trusted account links
-still require the target's identity approval, not automatic enrollment.
+```sh
+twr league-import --db /path/to/target/history.db --file league.twr --key-file move.key
+```
+
+Use an existing destination database prepared by the current application. The command
+never creates or migrates a database. It opens the encrypted input once, checks that
+the opened descriptor is a regular file, authenticates the bounded bytes and validates
+all six replay hashes before acquiring the target writer. No temporary plaintext file,
+path-based check followed by a second archive open, network call or account grant occurs.
+Filesystem access to the destination is required; this is not a remote upload endpoint.
+
+| Responsibility | Input → output; effects and failure |
+| --- | --- |
+| `cmd/twr/transfer_import.go` | Local file + private key + existing database → plain inactive receipt. One archive descriptor; missing destinations refuse without creation. |
+| `leaguetransfer.Import` | Authenticated `RawExport.Validate` → immutable comparison document and validated history-store input. Authentication/domain/replay failures perform no destination writes. |
+| `history.Store.StageTransfer` | Immediate writer transaction → original event text, pinned archive bodies, target audit entries and one append-only `league_import` receipt/document. No command execution, authority policy or account enrollment. Any insert failure rolls everything back. |
+| `stageArchive` | Validated body → insert-or-reuse, then decompress and compare the winning row under that same transaction. Concurrent archive writers cannot substitute unchecked bytes under an existing digest. Damaged/mismatched held bodies refuse the entire import. |
+| Database import guards / `NativeLeagues` | Committed import → excluded from normal league lists and due-worker discovery; SQL triggers refuse every further event append or authority-policy write, including independent stores and direct SQL. Historical reads remain available. |
+
+`(league, sourceEpoch, content)` identifies a retry. Repeating it returns the original
+receipt, including its original timestamp, across restart and independent writers.
+Any different content or generation for that league conflicts. Existing destination
+history or authority settings also conflict; unrelated leagues and valid shared archive
+bodies remain unchanged. SQLite's immediate writer reservation owns the collision check,
+archive guard, event/audit inserts and receipt commit together, not a process-local mutex.
+No observer can see a partial imported league. A crash before commit leaves no import;
+a crash after commit is recovered by the same idempotent retry.
+
+The saved comparison document retains aliases, source checkpoint, stream heads (in
+original events) and six replay hashes for cutover. The target audit is built separately
+from the exact imported SQL bytes; the source-wide checkpoint is never installed as its
+head. The receipt/document is immutable and currently **always inactive**. Slice 41 must
+add target-owned activation/fence state and evolve the SQL guards and league discovery
+in one migration; it must not remove or rewrite this receipt. No activation operation
+exists yet. No `user_version`, authority policy, auth epoch, seal or activation flag is
+accepted from the document. Trusted account links still require the target's identity
+approval, not automatic enrollment.
 
 Seal/activation and fenced reverse transfer must compare source generation, content,
 stream heads and replay hashes, and ensure the exported head still equals the sealed
 head. This unsealed export alone is not permission to write on either target. A source
-can acquire more events immediately after export. Crash-safe staging, race-safe import
-file handling, seal/abort/activate and reverse fencing belong to slices 40–41, not here.
+can acquire more events immediately after export. Source sealing, abort/activation and
+reverse fencing belong to the cutover slice, not this import operation.
 
 ## Evidence
 
@@ -117,5 +145,29 @@ file handling, seal/abort/activate and reverse fencing belong to slices 40–41,
 - `TestCaptureRejectsMissingSelectedEvidenceAndDamagedAudit`: source integrity fails closed.
 - CLI tests save/check, private file permissions, overwrite refusal and missing DB refusal.
 
+- `TestInactiveImportPreservesHistoryAndReplayAcrossRestart`: exact original event and
+  evidence bytes, target audit, six imported replay digests, immutable comparison document,
+  write fences and original retry receipt after restart; unrelated active league preserved.
+- `TestImportConcurrentRetryAndConflictingContent`: independent stores return one receipt;
+  altered content or generation refuses without replacing the original artifact.
+- `TestImportRollbackOnEventFailureAndArchiveCollision`: injected event/receipt failure,
+  poisoned archives, occupied destination and wrong key leave no partial import.
+- `TestArchiveGuardChecksWinnerUnderIndependentWriter`: an independent transaction's
+  poisoned archive winner is checked after acquiring the writer, and import refuses.
+- `TestInactiveImportCrashRecovery`: subprocess exits without rollback after event/audit
+  insertion and after receipt insertion, with dirty WAL pages; reopen recovers no partial
+  events, archives, receipt or audit. Uses the same transaction insert helpers as import.
+- `TestLeagueImportCLIInactiveRetryAndMissingDestination`: terminal save/import/retry,
+  stable inactive receipt, normal league list exclusion and missing DB refusal.
+
 These are automated local proofs, not a live cutover or Christopher's click acceptance.
-The change adds a new transfer boundary; no code-size reduction is claimed.
+Review: the missing destination boundary is now an authenticated replay followed by one
+history-owned writer transaction. Existing source authority, target accounts, unrelated
+leagues, durable event bytes and target audit ownership are preserved. Source-traced callers
+are the local CLI and transfer service; normal app/due-worker discovery uses `NativeLeagues`.
+Removing its inactive filter deliberately failed the CLI integration test; restoring it passed.
+Across the complete affected handwritten production set (CLI root/import, transfer service,
+history migrations/commissioner/import), physical lines increased from 1,255 to 1,508 against
+the slice's starting commit, excluding tests/docs/generated files. This adds a required boundary;
+no code-size reduction is claimed. Live source sealing and activation remain unverified and
+unimplemented here by design.

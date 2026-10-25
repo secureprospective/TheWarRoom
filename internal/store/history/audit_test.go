@@ -91,7 +91,12 @@ func TestLedgerAuditAdoptsExistingHistoryWithoutChangingReceipts(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Reproduce the pre-chain schema, leaving the original event and receipt untouched.
-	if _, err := p.Write().ExecContext(t.Context(), `DROP TABLE audit_chain; DROP TABLE audit_chain_head; PRAGMA user_version=4`); err != nil {
+	if _, err := p.Write().ExecContext(t.Context(), `DROP TABLE audit_chain; DROP TABLE audit_chain_head;
+DROP TRIGGER league_import_event_guard;
+DROP TRIGGER league_import_authority_insert;
+DROP TRIGGER league_import_authority_update;
+DROP TABLE league_import;
+PRAGMA user_version=4`); err != nil {
 		t.Fatal(err)
 	}
 	reopened := New(p, s.Registry())
