@@ -123,12 +123,12 @@ func TestCommissionerMarketBidsRoundTripAndBlindPrivacy(t *testing.T) {
 			t.Fatalf("blind market leaked %q: %s", secret, body)
 		}
 	}
-	if len(reading.Bids) != 0 || len(reading.Players) != 1 || !strings.Contains(reading.Players[0].Words, "Clock running") {
+	if len(reading.Bids) != 0 || len(reading.Players) != 0 {
 		t.Fatalf("undecided market: %+v", reading)
 	}
 	f.advance(25 * time.Hour)
 	reading = marketOf(t, f.waiverFixture, commissioner.BidsProcess, "creator")
-	if !strings.Contains(reading.Players[0].Words, "Tie to settle") {
+	if len(reading.Players) != 1 || !strings.Contains(reading.Players[0].Words, "Tie to settle") {
 		t.Fatal(reading)
 	}
 	for _, p := range reading.Players {
@@ -313,7 +313,12 @@ func TestCommissionerMarketExcludesBidAwardsSupersededByANewAuction(t *testing.T
 	}
 	f.place(t, "owner.three", "franchise.03", "5001", 2*million, 2)
 	got := marketOf(t, f.waiverFixture, commissioner.BidsOverride, "creator")
+	if len(got.Bids) != 0 || len(got.Players) != 0 {
+		t.Fatal("a superseded award and a new running blind auction must both stay hidden", got)
+	}
+	f.advance(25 * time.Hour)
+	got = marketOf(t, f.waiverFixture, commissioner.BidsProcess, "creator")
 	if len(got.Bids) != 0 || len(got.Players) != 1 {
-		t.Fatal("an older auction cannot be corrected once a new auction exists", got)
+		t.Fatal("the new auction must become actionable only when due", got)
 	}
 }
