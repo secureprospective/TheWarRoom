@@ -61,6 +61,18 @@ func nativePreviewValues(raw RawCommand, records []Record, now time.Time, out ma
 	return nil
 }
 
+// rosterStatusWords names a squad the way the owner screens do, never by its stored code.
+func rosterStatusWords(status domain.RosterStatus) string {
+	switch status {
+	case domain.RosterIR:
+		return "Injured reserve"
+	case domain.RosterTaxi:
+		return "Taxi squad"
+	case domain.RosterActive:
+	}
+	return "Active roster"
+}
+
 func acquisitionWords(via string) string {
 	words := map[string]string{"held": "Starting roster", "draft": "Rookie draft", "waiver": "Waivers",
 		"trade": "Trade", "free_agent": "Free agency", "commissioner": "Commissioner ruling"}
@@ -163,7 +175,7 @@ func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out
 		if name == "" {
 			name = "Player " + p.ID
 		}
-		out[name+" roster"] = names[p.Franchise] + ", " + string(p.Status)
+		out[name+" roster"] = names[p.Franchise] + ", " + rosterStatusWords(p.Status)
 		out[name+" contract"] = fmt.Sprintf("%s salary; contract ends in %d; %s", p.Salary, p.ExpirationYear, p.ContractInfo)
 		out[name+" acquisition"] = acquisitionWords(p.AcquiredVia)
 	}
