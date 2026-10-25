@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -344,6 +345,49 @@ func TestRetentionPrunesOnlyExpiredRecoveryObjects(t *testing.T) {
 	for name := range fake.objects {
 		if at, err := objectTime(name); err == nil && at.Before(now.Add(-30*24*time.Hour)) {
 			t.Fatal("expired set retained")
+		}
+	}
+}
+
+func TestSpareHostListsNewestSetAndNamesWrongKey(t *testing.T) {
+	pools, config, checkpoint := testCapture(t)
+	offlineKey, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	r2, fake := testR2(t)
+	path, at, err := Capture(t.Context(), pools, config, t.TempDir(), offlineKey.Recipient().String(), checkpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newest := "sets/" + at.Format(objectFormat) + ".tar.gz.age"
+	older := "sets/" + at.Add(-5*time.Minute).Format(objectFormat) + ".tar.gz.age"
+	for _, name := range []string{older, newest} {
+		if err := r2.upload(t.Context(), name, path); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fake.objects["sets/zz-foreign"] = []byte("keep")
+	sets, err := r2.Sets(t.Context())
+	if err != nil || len(sets) != 2 || sets[0] != newest || sets[1] != older {
+		t.Fatalf("sets %v: %v", sets, err)
+	}
+	if _, err := r2.Open(t.Context(), "sets/zz-foreign"); err == nil {
+		t.Fatal("opened a foreign object")
+	}
+	wrong, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[*age.X25519Identity]error{wrong: ErrRestoreKey, offlineKey: nil} {
+		body, err := r2.Open(t.Context(), newest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = Restore(body, key, filepath.Join(t.TempDir(), "restore"))
+		_ = body.Close()
+		if !errors.Is(err, want) {
+			t.Fatalf("restore with key: got %v want %v", err, want)
 		}
 	}
 }

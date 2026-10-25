@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,9 @@ import (
 
 	"filippo.io/age"
 )
+
+// ErrRestoreKey means the identity cannot unlock the set: the wrong restore key, not damage.
+var ErrRestoreKey = errors.New("the restore key does not unlock this backup")
 
 // Restore decrypts into a new private staging directory, never into live state. The
 // offline restore caller owns the identity and must verify checkpoints/reset auth before activation.
@@ -26,6 +30,10 @@ func Restore(source io.Reader, identity *age.X25519Identity, dest string) (manif
 		}
 	}()
 	plain, err := age.Decrypt(io.LimitReader(source, MaxObject+1), identity)
+	var mismatch *age.NoIdentityMatchError
+	if errors.As(err, &mismatch) {
+		return manifest, ErrRestoreKey
+	}
 	if err != nil {
 		return manifest, fmt.Errorf("unlock recovery set: %w", err)
 	}

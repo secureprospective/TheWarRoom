@@ -48,21 +48,6 @@ func newAuthEpoch() (string, error) {
 	return hex.EncodeToString(epoch[:]), nil
 }
 
-// RotateAuthEpoch is an operator-only restore/incident port. Never expose it as a
-// league command. A restored file must rotate before accepting credentials.
-func (s *Store) RotateAuthEpoch(ctx context.Context) error {
-	epoch, err := newAuthEpoch()
-	if err != nil {
-		return err
-	}
-	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
-		return tx.ExecContext(ctx, `UPDATE account_auth_epoch SET epoch = ? WHERE singleton = 1`, epoch)
-	}); err != nil {
-		return fmt.Errorf("accounts: rotate auth epoch: %w", err)
-	}
-	return nil
-}
-
 func (s *Store) CreateSession(ctx context.Context, credential identity.Credential, digest, device string) (time.Time, error) {
 	if err := credential.Validate(); err != nil {
 		return time.Time{}, fmt.Errorf("accounts: session credential: %w", err)

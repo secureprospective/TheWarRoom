@@ -35,17 +35,29 @@ func main() {
 	}
 }
 
+// subcommand runs an operator mode and reports whether name is one. Console commands read private input from stdin.
+func subcommand(ctx context.Context, name string, args []string, output io.Writer) (bool, error) {
+	switch name {
+	case "backup-check":
+		return true, runBackupCheck(args, output)
+	case "hosted":
+		return true, runHosted(ctx, args, output)
+	case "checkpoint":
+		return true, runCheckpoint(ctx, args, output)
+	case "recover":
+		return true, runRecovery(ctx, args, os.Stdin, output)
+	case "restore":
+		return true, runRestore(ctx, args, os.Stdin, output)
+	case "reset-sign-ins":
+		return true, runResetSignIns(ctx, args, os.Stdin, output)
+	}
+	return false, nil
+}
+
 func run(ctx context.Context, args []string, output io.Writer) error {
 	if len(args) > 0 {
-		switch args[0] {
-		case "backup-check":
-			return runBackupCheck(args[1:], output)
-		case "hosted":
-			return runHosted(ctx, args[1:], output)
-		case "checkpoint":
-			return runCheckpoint(ctx, args[1:], output)
-		case "recover":
-			return runRecovery(ctx, args[1:], os.Stdin, output)
+		if ok, err := subcommand(ctx, args[0], args[1:], output); ok {
+			return err
 		}
 	}
 	flags := flag.NewFlagSet("twr-server", flag.ContinueOnError)
