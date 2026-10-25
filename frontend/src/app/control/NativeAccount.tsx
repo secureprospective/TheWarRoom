@@ -83,7 +83,8 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       {view.franchise && <p>Your assigned franchise: {view.franchise}.
         You are connected to the server; no local league is created.</p>}
     </section>}
-    {signedIn && view.name && view.seats.length > 0 && <NativeHelpers server={initial.server}
+    {signedIn && view.name && view.seats.length > 0 &&
+      <NativeHelpers server={initial.server}
       league={initial.league} seats={view.seats} franchise={view.franchise} />}
     {screen === 'recovery' ? <section aria-labelledby="recovery-title">
       <h2 id="recovery-title">Get back into your account</h2>

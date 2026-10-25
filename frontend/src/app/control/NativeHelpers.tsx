@@ -66,7 +66,8 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
     <label>Confirm request from your helper<textarea value={request} disabled={pending} rows={3}
       onChange={e => setRequest(e.target.value)} /></label>
     {change && <div>
-      <p>You are confirming <strong>{change.command}</strong>{change.reason && <> because “{change.reason}”</>}.</p>
+      <p>You are confirming <strong>{change.command}</strong>
+        {change.reason && <> because “{change.reason}”</>}.</p>
       <p className="native-seed"><code>{change.args}</code></p>
     </div>}
     {request && !change && <p role="alert">That is not a whole confirm request. It starts with twrc1.</p>}

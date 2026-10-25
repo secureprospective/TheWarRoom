@@ -11,12 +11,14 @@ export type NativeView = {
 };
 const textKeys = ['server', 'league', 'message', 'name', 'role', 'franchise', 'franchiseName', 'seed',
   'connection', 'helperId', 'confirmation'];
-const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object' && Object.keys(seat as object).length === 2
+const isSeat = (seat: unknown) => Boolean(seat) && typeof seat === 'object'
+  && Object.keys(seat as object).length === 2
   && typeof (seat as NativeSeat).franchise === 'string' && typeof (seat as NativeSeat).name === 'string';
 export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
-  if (Object.keys(value).length !== textKeys.length + 1 || textKeys.some(key => typeof value[key] !== 'string')
+  if (Object.keys(value).length !== textKeys.length + 1
+    || textKeys.some(key => typeof value[key] !== 'string')
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
     || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))
     throw new Error('Unreadable desktop response.');
@@ -53,7 +55,8 @@ export function readConfirmRequest(text: string): { command: string; reason: str
   if (!trimmed.startsWith('twrc1.')) return null;
   try {
     const json = atob(trimmed.slice(6).replace(/-/g, '+').replace(/_/g, '/'));
-    const change = (JSON.parse(json) as { change?: { command?: unknown; reason?: unknown; args?: unknown } }).change;
+    type Change = { command?: unknown; reason?: unknown; args?: unknown };
+    const change = (JSON.parse(json) as { change?: Change }).change;
     if (!change || typeof change.command !== 'string') return null;
     return { command: change.command, reason: typeof change.reason === 'string' ? change.reason : '',
       args: JSON.stringify(change.args ?? {}) };
