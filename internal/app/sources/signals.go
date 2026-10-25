@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/college"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/feeds"
@@ -76,7 +77,7 @@ func (a Service) LoadSignals(ctx context.Context, link func(context.Context) err
 	rep := SignalsReport{OK: true, StartedAt: time.Now().Format(time.RFC3339),
 		CrosswalkNote: "Player crosswalk reloaded and relinked before signals; its Loaded time records that relink."}
 	if err := link(ctx); err != nil {
-		rep.CrosswalkNote = "Player crosswalk relink failed; its last Loaded time is kept: " + err.Error()
+		rep.CrosswalkNote = "Player crosswalk relink failed; its last Loaded time is kept: " + report.FailureText(err)
 		log.Printf("the war room: signals: directory not refreshed, facts may wait for a match: %v", err)
 	}
 	client := &http.Client{Timeout: RASFetchTimeout, Transport: a.Transport}
@@ -182,7 +183,7 @@ func (a Service) loadCollege(ctx context.Context, client *http.Client, reg *meas
 	}
 	known, err := a.Signals.KnownIDs(ctx, college.IDType)
 	if err != nil {
-		return []SignalLoad{{Feed: college.Source, Status: LoadFailed, Error: err.Error()}}
+		return []SignalLoad{{Feed: college.Source, Status: LoadFailed, Error: report.FailureText(err)}}
 	}
 	var out []SignalLoad
 	for _, season := range seasonRange(CollegeFirstSeason, a.Season) {
@@ -258,7 +259,7 @@ func (a Service) failedLoad(ctx context.Context, l SignalLoad, source string, er
 
 func withError(l SignalLoad, err error) SignalLoad {
 	if err != nil {
-		l.Error = fmt.Sprint(err)
+		l.Error = report.FailureText(err)
 	}
 	return l
 }

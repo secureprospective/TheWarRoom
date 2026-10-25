@@ -9,6 +9,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -65,7 +66,7 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 	}, a.core.FallbackLog)
 	p := snapshot.Provenance{Source: "mfl-players", Kind: "live", Freshness: fresh}
 	if err != nil {
-		p.Freshness = domain.Freshness{State: domain.FreshFail, Note: err.Error()}
+		p.Freshness = domain.Freshness{State: domain.FreshFail, Note: report.FailureText(err)}
 		return snapshot.Directory{Provenance: p}
 	}
 	if fresh.State == domain.FreshLive {

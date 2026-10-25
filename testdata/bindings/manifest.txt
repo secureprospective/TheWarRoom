@@ -1,4 +1,5 @@
 archive.API.TargetArchive
+commissioner.API.TargetBackupNow
 commissioner.API.TargetCommissionerActor
 commissioner.API.TargetCommissionerControls
 commissioner.API.TargetCommissionerDigests

@@ -12,6 +12,7 @@ import (
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
@@ -218,7 +219,7 @@ func (h controlHost) SetKey(key string) (controlapp.MFLKeyStatus, error) {
 		return a.keyStatus("rejected", err.Error()), nil
 	}
 	if err != nil {
-		return a.keyStatus("unreachable", err.Error()+"; nothing was stored"), nil
+		return a.keyStatus("unreachable", report.FailureText(err)+" Nothing was stored."), nil
 	}
 	if err := a.core.KeyStore.Set(ctx, candidate); err != nil {
 		return a.keyStatus("unavailable", err.Error()), nil

@@ -58,6 +58,7 @@ const draftPickName = "draft.pick"
 
 func Commands() []catalog.Command {
 	methods := []struct{ method, role, gravity string }{
+		{"TargetBackupNow", "gm,commish,admin", "G1"},
 		{"TargetCommissionerActor", "gm,commish", "G0"},
 		{"TargetCommissionerControls", "gm,commish", "G0"},
 		{"TargetCommissionerDigests", "gm,commish", "G0"},
@@ -124,6 +125,8 @@ func desktopCommands(methods []struct{ method, role, gravity string }) []catalog
 			command.ID = "lineup.set"
 		case "TargetCommissionerSeat", "TargetCommissionerSeatSignIn":
 			command.Availability = "desktop" // a hosted league signs in on the server
+		case "TargetBackupNow":
+			command.ID, command.Availability = "backup.now", "desktop" // a hosted league backs up on the server
 		}
 		if read, ok := reads[command.Method]; ok {
 			read.Role = command.Role

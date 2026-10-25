@@ -42,7 +42,7 @@ const candidates = searchCandidates(executor, snapshot);
 
 describe('Endpoint map', () => {
   it('freezes the records and targets and resolves every disposition without invention', () => {
-    expect(endpoints).toHaveLength(270);
+    expect(endpoints).toHaveLength(271);
     expect(Object.isFrozen(endpoints)).toBe(true);
     for (const row of endpoints) {
       expect(Object.isFrozen(row)).toBe(true);
@@ -83,7 +83,7 @@ describe('Endpoint map', () => {
   it('distinguishes live-Landed Acts from built Acts and keeps every other row spec', () => {
     const built = [
       'M-001', 'X-01', 'X-02',
-      'S-01', 'S-02', 'S-04', 'S-05', 'S-08', 'S-11', 'S-12', 'S-13',
+      'S-01', 'S-02', 'S-04', 'S-05', 'S-08', 'S-11', 'S-12', 'S-13', 'S-15',
       'M-087', 'M-096', 'M-149', 'M-117', 'M-116', 'M-118', 'M-103', 'M-101', 'M-154',
       'M-151', 'M-159', 'M-167', 'M-169',
       'M-037', 'M-038', 'M-040', 'M-048', 'M-051', 'M-052', 'M-053', 'M-054',
@@ -487,7 +487,7 @@ it('lists no endpoint rows on any screen; the index is only the reveal anchor', 
 it('keeps commissioner rows out of owner indexes, lookups, counts and command search', async () => {
   const { commissionerControls } = await import('./commissioner.gen');
   expect(commissionerControls).toHaveLength(56);
-  expect(endpoints).toHaveLength(270);
+  expect(endpoints).toHaveLength(271);
   const ownerIds = new Set<string>(endpoints.map(row => row.id));
   // Ring 4 (#38) built every control but these (ring 6); see ControlsReading in internal/commissioner.
   const unbuilt = new Set(['CM-048', 'CM-049', 'CM-050', 'CM-055']);

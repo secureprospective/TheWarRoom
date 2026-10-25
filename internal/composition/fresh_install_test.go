@@ -3,6 +3,7 @@ package composition
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"path/filepath"
 	"slices"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -171,5 +173,43 @@ func TestStartupCompletionWithoutFreshMirror(t *testing.T) {
 		if err := a.ready(); (err != nil) != failed {
 			t.Fatalf("startup failure not preserved: %v", err)
 		}
+	}
+}
+
+// refusedTransport fails every fetch the way a computer with no connection does, with no network.
+type refusedTransport struct{ addr string }
+
+func (r refusedTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	conn, err := net.Dial("tcp", r.addr)
+	if err == nil {
+		_ = conn.Close()
+		return nil, errors.New("closed port answered")
+	}
+	return nil, err
+}
+
+// Issue 15: a first start that cannot reach MFL fails with the plain offline sentence, not the
+// network chain, and every screen reads that sentence through ready.
+func TestOfflineFirstStartFailsInPlainWords(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
+	a := restoreDrillApp(t, t.TempDir())
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(refusedTransport{addr: addr}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, a.core.StartupErr = a.initStoreFloor(t.Context(), a.core.History)
+	if a.core.StartupErr == nil || !strings.Contains(a.core.StartupErr.Error(), addr) {
+		t.Fatalf("store floor did not fail on the network: %v", a.core.StartupErr)
+	}
+	a.settleStartupFailure()
+	if _, err := newCommissionerAPI(a).TargetCommissionerSeat(); err == nil || err.Error() != report.Offline {
+		t.Fatalf("screens read: %v", err)
 	}
 }

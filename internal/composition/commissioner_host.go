@@ -148,4 +148,7 @@ func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
 func (h commissionerHost) CommissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
 	return h.app.commissionerSeatSignIn(raw)
 }
+func (h commissionerHost) CommissionerBackupNow() (commissionerapp.BackupResult, error) {
+	return h.app.backupNow()
+}
 func (h commissionerHost) CloseFinishedDrafts(league string) { h.app.closeFinishedDrafts(league) }

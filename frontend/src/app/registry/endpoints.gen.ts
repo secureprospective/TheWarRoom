@@ -270,6 +270,7 @@ export type EndpointId =
   | "M-201"
   | "L-35"
   | "L-36"
+  | "S-15"
 ;
 export type Placement =
   | "Home › Seasonal card"
@@ -4965,6 +4966,24 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     ring: 2,
     status: "landed",
     disposition_note: "kept",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-15",
+    source: "shell",
+    name: "Back up now",
+    kind: "Act",
+    gm_question: "Can I save a copy of my league data now?",
+    gravity: "G1",
+    clock: "none",
+    placement: places[16],
+    verb: "backup.now",
+    disposition: "kept",
+    ring: 4,
+    status: "built",
+    disposition_note: "Desktop only. Saves a matched backup with a local sign-in so league roles surv" +
+      "ive a move to another computer.",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),

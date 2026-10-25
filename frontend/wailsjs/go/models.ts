@@ -111,6 +111,20 @@ export namespace commissioner {
 	        this.reason = source["reason"];
 	    }
 	}
+	export class BackupResult {
+	    set: string;
+	    message: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new BackupResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.set = source["set"];
+	        this.message = source["message"];
+	    }
+	}
 	export class BidResult {
 	    id: string;
 	    refusal?: string;

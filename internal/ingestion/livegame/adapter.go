@@ -2,10 +2,13 @@ package livegame
 
 import (
 	"context"
+
 	"fmt"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
 type Fetch func(context.Context, string, string) ([]byte, error)
@@ -125,10 +128,10 @@ func (a *Adapter) refreshBoard(ctx context.Context, at time.Time) {
 				}
 			}
 		}
-		a.Board = Held{Games: backup, Source: "Yahoo failover", At: at, Failure: err.Error()}
+		a.Board = Held{Games: backup, Source: "Yahoo failover", At: at, Failure: offline.Text(err)}
 		return
 	}
-	a.Board.Failure = err.Error() + "; " + second.Error()
+	a.Board.Failure = offline.Text(err) + "; " + offline.Text(second)
 	a.Board.Stale = true
 }
 func (a *Adapter) fetchBoard(ctx context.Context, source string, parse func([]byte) ([]Game, error)) ([]Game, error) {
@@ -174,7 +177,7 @@ func (a *Adapter) refreshDetail(ctx context.Context, at time.Time, g Game) {
 	}
 	game, err := a.fetchDetail(ctx, g.ID)
 	if err != nil {
-		previous.Failure = err.Error()
+		previous.Failure = offline.Text(err)
 		a.Details[g.ID] = previous
 		a.detailFailures++
 		return

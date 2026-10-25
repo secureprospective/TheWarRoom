@@ -98,7 +98,7 @@ func (s *State) RefreshCommsBoards(ctx context.Context) {
 			if errors.Is(err, errCommsNeedsKey) {
 				s.CommsBoards[i] = HeldFeed[[]ingestion.RawLeaguePost]{}
 			}
-			s.CommsBoards[i].RefreshError = err.Error()
+			s.CommsBoards[i].RefreshError = report.FailureText(err)
 		}
 		s.SeasonMu.Unlock()
 		return

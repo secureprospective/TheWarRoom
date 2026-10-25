@@ -37,7 +37,7 @@ func fileUserVersion(ctx context.Context, path string) (int, error) {
 }
 
 func probeVersion(ctx context.Context, path, options string) (int, error) {
-	p, err := sql.Open("sqlite", "file:"+path+options)
+	p, err := sql.Open("sqlite", fileURI(path)+options)
 	if err != nil {
 		return 0, fmt.Errorf("db: open backup probe: %w", err)
 	}
@@ -51,15 +51,18 @@ func probeVersion(ctx context.Context, path, options string) (int, error) {
 
 // Capture reserves the single writer connection in main, history, what-if order;
 // reservations are the write locks shared by every store, released in reverse order.
-// No VACUUM starts until every writer is stopped. Callers must not hold a writer.
+// No VACUUM starts until every writer is stopped. Callers must not hold a writer. A daily set
+// is taken once a UTC day and returns "" when one exists; a manual set is taken on every call.
 func (b *Backups) Capture(ctx context.Context, pools [3]*Pools, kind string, now time.Time) (string, error) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if kind != "daily" {
-		return "", fmt.Errorf("db: online capture must be daily")
+	if kind != "daily" && kind != "manual" {
+		return "", fmt.Errorf("db: online capture must be daily or manual")
 	}
-	if due, err := b.dailyDue(ctx, now); err != nil || !due {
-		return "", err
+	if kind == "daily" {
+		if due, err := b.dailyDue(ctx, now); err != nil || !due {
+			return "", err
+		}
 	}
 	var conns [3]*sql.Conn
 	defer func() {
@@ -117,7 +120,7 @@ func (b *Backups) BeforeMigrations(ctx context.Context, now time.Time) (string, 
 		return "", fmt.Errorf("db: pre-migration backup requires all three databases")
 	}
 	return b.capture(ctx, "pre-migration", now, func(ctx context.Context, i int, dest string) error {
-		p, err := sql.Open("sqlite", "file:"+filepath.Join(b.dir, b.files[i].Name)+"?mode=ro")
+		p, err := sql.Open("sqlite", fileURI(filepath.Join(b.dir, b.files[i].Name))+"?mode=ro")
 		if err != nil {
 			return fmt.Errorf("db: open startup snapshot: %w", err)
 		}

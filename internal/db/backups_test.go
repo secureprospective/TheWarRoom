@@ -201,7 +201,7 @@ func TestRestoreRefusesInvalidSets(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := b.Restore(t.Context(), set, backupAt().Add(time.Hour)); err == nil {
+			if _, err := b.Restore(t.Context(), set, backupAt().Add(time.Hour)); err == nil {
 				t.Fatalf("accepted %s", test)
 			}
 			if _, err := os.Stat(filepath.Join(b.dir, "restore.journal")); !os.IsNotExist(err) {
@@ -255,7 +255,7 @@ func TestRestoreRecoversEveryJournalStep(t *testing.T) {
 				}
 				return nil
 			}
-			err = b.Restore(t.Context(), set, backupAt().Add(time.Hour))
+			_, err = b.Restore(t.Context(), set, backupAt().Add(time.Hour))
 			if step != "success" && (err == nil || !reached) {
 				t.Fatalf("crash hook %s: %v", step, err)
 			}
@@ -442,5 +442,108 @@ func TestCapturedSetFilesAreOwnerOnly(t *testing.T) {
 				t.Errorf("%s: mode=%v", filepath.Join(set, entry.Name()), info.Mode())
 			}
 		}
+	}
+}
+
+// emptyProfileWithSet copies a captured set into the backups of a home that holds no databases,
+// as a commissioner does on a new computer.
+func emptyProfileWithSet(t *testing.T) (*Backups, string) {
+	t.Helper()
+	source, pools := backupFixture(t)
+	set, err := source.Capture(t.Context(), pools, "daily", backupAt())
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := NewBackups(t.TempDir(), source.build, source.files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	copied := filepath.Join(b.dir, "backups", filepath.Base(set))
+	if err := os.MkdirAll(copied, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range append(b.fileNames(), "manifest.json") {
+		if err := copyBackupFile(filepath.Join(set, name), filepath.Join(copied, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return b, copied
+}
+
+func TestRestoreIntoEmptyProfileRecoversEveryStep(t *testing.T) {
+	steps := []string{"prepared", "installing", "installed:thewarroom.db", "installed:history.db", "installed:whatif.db", "complete", "success"}
+	for _, step := range steps {
+		t.Run(step, func(t *testing.T) {
+			b, set := emptyProfileWithSet(t)
+			b.crash = func(at string) error {
+				if at == step {
+					return fmt.Errorf("injected crash at %s", at)
+				}
+				return nil
+			}
+			safety, err := b.Restore(t.Context(), set, backupAt().Add(time.Hour))
+			if (step == "success") != (err == nil) || safety != "" {
+				t.Fatalf("restore at %s: safety=%q %v", step, safety, err)
+			}
+			fresh, err := NewBackups(b.dir, b.build, b.files)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := fresh.Recover(t.Context()); err != nil {
+				t.Fatal(err)
+			}
+			if step == "complete" || step == "success" {
+				assertMarkers(t, fresh, "old")
+			} else if empty, err := fresh.emptyProfile(); err != nil || !empty {
+				t.Fatalf("rollback left database files: %v %v", empty, err)
+			}
+			entries, err := os.ReadDir(b.dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, e := range entries {
+				if strings.HasPrefix(e.Name(), ".restore-") || e.Name() == "restore.journal" {
+					t.Fatalf("restore left %s", e.Name())
+				}
+			}
+			if sets, _, err := fresh.sets(t.Context()); err != nil || len(sets) != 1 {
+				t.Fatalf("an empty profile has no safety set to add: %v %v", sets, err)
+			}
+		})
+	}
+}
+
+func TestRestoreRefusesPartialProfile(t *testing.T) {
+	for _, stray := range []string{"history.db", "whatif.db-wal"} {
+		b, set := emptyProfileWithSet(t)
+		if err := os.WriteFile(filepath.Join(b.dir, stray), []byte("stray"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := b.Restore(t.Context(), set, backupAt().Add(time.Hour)); err == nil || !strings.Contains(err.Error(), "only some") {
+			t.Fatalf("%s: partial profile restored: %v", stray, err)
+		}
+		if body, err := os.ReadFile(filepath.Join(b.dir, stray)); err != nil || string(body) != "stray" {
+			t.Fatalf("%s changed: %v", stray, err)
+		}
+	}
+}
+
+func TestManualCaptureEveryCall(t *testing.T) {
+	b, pools := backupFixture(t)
+	first, err := b.Capture(t.Context(), pools, "daily", backupAt())
+	if err != nil || first == "" {
+		t.Fatalf("daily: %q %v", first, err)
+	}
+	for i := range 2 {
+		set, err := b.Capture(t.Context(), pools, "manual", backupAt().Add(time.Duration(i+1)*time.Minute))
+		if err != nil || !strings.HasPrefix(filepath.Base(set), "manual-") {
+			t.Fatalf("manual %d after a daily set: %q %v", i, set, err)
+		}
+		if _, err := b.verify(t.Context(), set); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := b.Capture(t.Context(), pools, "pre-restore", backupAt()); err == nil {
+		t.Fatal("online capture accepted a safety kind")
 	}
 }
