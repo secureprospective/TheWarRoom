@@ -3,6 +3,7 @@
 # scripts/check-placement.sh enforces it (make lint, CI). Add the row in the same commit as the file.
 path	feature
 main.go	platform
+cmd/twr-practice	platform
 internal/app/comms	comms
 internal/app/comms/commstest	comms
 internal/app/counterparties	counterparties

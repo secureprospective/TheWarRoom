@@ -6,10 +6,10 @@ Requires the normal desktop build dependencies (Go, WebKitGTK 4.1), OpenSSL, and
 assets. On a fresh worktree: `cd frontend && pnpm install && pnpm build`, then return to the root.
 
 ```sh
-go run ./cmd/twr-sandbox up .scratch/click-test
-# .scratch must already exist; any existing click-test directory must be empty.
-go run ./cmd/twr-sandbox code .scratch/click-test
-go run ./cmd/twr-sandbox down .scratch/click-test
+go run ./cmd/twr-practice up .scratch/practice
+# .scratch must already exist; any existing practice directory must be empty.
+go run ./cmd/twr-practice code .scratch/practice
+go run ./cmd/twr-practice down .scratch/practice
 ```
 
 `up` prints the random loopback HTTPS address, commissioner username, random password,
@@ -43,7 +43,7 @@ No network bootstrap or authorization override is added. The shared league creat
 `internal/hostedfixture` is also used by the hosted transport tests. The hosted server retains
 its normal admission and clock-health checks; this tool does not disable them.
 
-`go test -race ./cmd/twr-sandbox ./internal/serverhttp` exercises the real up → HTTPS password
+`go test -race ./cmd/twr-practice ./internal/serverhttp` exercises the real up → HTTPS password
 sign-in → TOTP step-up → enter league → down lifecycle, verifies nonempty-directory refusal
 preserves the running league, and rejects unowned directories, symlinks and unrelated PIDs.
 An RFC 6238 vector independently checks the disposable code generator. The lifecycle test builds

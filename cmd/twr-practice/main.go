@@ -1,4 +1,4 @@
-// Command twr-sandbox is a development-only launcher, never included in release bundles.
+// Command twr-practice is a development-only launcher, never included in release bundles.
 package main
 
 import (
@@ -22,7 +22,7 @@ func main() {
 
 func run(ctx context.Context, args []string, out io.Writer) error {
 	if len(args) != 2 {
-		return fmt.Errorf("usage: go run ./cmd/twr-sandbox <up|code|down> <throwaway-directory>")
+		return fmt.Errorf("usage: go run ./cmd/twr-practice <up|code|down> <throwaway-directory>")
 	}
 	dir, err := sandboxPath(args[1])
 	if err != nil {
@@ -81,7 +81,7 @@ func quote(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\"'\"'")
 func report(out io.Writer, dir string, state rawState) error {
 	desktop := fmt.Sprintf("env HOME=%s XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_CACHE_HOME=%s XDG_RUNTIME_DIR=%s DBUS_SESSION_BUS_ADDRESS=%s SSL_CERT_FILE=%s %s -native %s native.hosted",
 		quote(filepath.Join(dir, "home")), quote(filepath.Join(dir, "config")), quote(filepath.Join(dir, "data")), quote(filepath.Join(dir, "cache")), quote(filepath.Join(dir, "runtime")), quote("unix:path="+filepath.Join(dir, "no-session-bus")), quote(filepath.Join(dir, "server.pem")), quote(filepath.Join(dir, "thewarroom")), quote(state.Address))
-	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: go run ./cmd/twr-sandbox code %s\nDesktop (inherits DISPLAY):\n%s\nStop and delete: go run ./cmd/twr-sandbox down %s\n", state.Address, state.Password, state.Seed, quote(dir), desktop, quote(dir))
+	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: go run ./cmd/twr-practice code %s\nDesktop (inherits DISPLAY):\n%s\nStop and delete: go run ./cmd/twr-practice down %s\n", state.Address, state.Password, state.Seed, quote(dir), desktop, quote(dir))
 	if err != nil {
 		return fmt.Errorf("print sandbox instructions: %w", err)
 	}

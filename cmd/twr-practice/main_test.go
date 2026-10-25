@@ -20,6 +20,13 @@ func (s *memoryCredentials) Get() (string, error)    { return s.secret, nil }
 func (s *memoryCredentials) Set(secret string) error { s.secret = secret; return nil }
 func (s *memoryCredentials) Delete() error           { s.secret = ""; return nil }
 
+func TestPracticeUsage(t *testing.T) {
+	err := run(t.Context(), nil, &bytes.Buffer{})
+	if err == nil || err.Error() != "usage: go run ./cmd/twr-practice <up|code|down> <throwaway-directory>" {
+		t.Fatalf("unexpected usage: %v", err)
+	}
+}
+
 func TestSandboxHTTPSLifecycle(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
 	defer cancel()
@@ -41,7 +48,7 @@ func TestSandboxHTTPSLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, want := range []string{state.Address, state.Password, state.Seed, "DBUS_SESSION_BUS_ADDRESS=", "SSL_CERT_FILE=", "-native"} {
+	for _, want := range []string{state.Address, state.Password, state.Seed, "DBUS_SESSION_BUS_ADDRESS=", "SSL_CERT_FILE=", "-native", "go run ./cmd/twr-practice code " + quote(dir), "go run ./cmd/twr-practice down " + quote(dir)} {
 		if !strings.Contains(output.String(), want) {
 			t.Fatalf("missing launch instruction %q", want)
 		}

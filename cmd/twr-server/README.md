@@ -180,5 +180,5 @@ plain message. Both forms only read the database. Details: `docs/backend/Audit_C
 ## One-command hosted click tests
 
 For a pre-provisioned throwaway hosted league, TLS, enrolled authenticator and isolated desktop
-launch command, use [`twr-sandbox`](../twr-sandbox/README.md). This is development tooling, not
+launch command, use [`twr-practice`](../twr-practice/README.md). This is development tooling, not
 commissioner installation/bootstrap or a release artifact.
