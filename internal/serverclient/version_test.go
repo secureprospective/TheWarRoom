@@ -7,6 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
@@ -47,7 +48,14 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			desktop.bearer = "session"
 			retry, err := desktop.watchInvalidations(t.Context(), func(_ context.Context) error { t.Fatal("refused stream reread native data"); return nil })
 			assertUpdate(t, err, side)
-			if retry || calls != 3 {
+			request := httptest.NewRequest(http.MethodPost, DesktopPath, strings.NewReader(`{"action":"login","username":"owner","password":"private-password"}`))
+			request.Header.Set("Content-Type", "application/json")
+			response := httptest.NewRecorder()
+			desktop.Handler().ServeHTTP(response, request)
+			if response.Code != http.StatusUpgradeRequired || response.Header().Get(serverhttp.UpdateHeader) != string(side) {
+				t.Fatalf("webview lost update signal: %d %s", response.Code, response.Body.String())
+			}
+			if retry || calls != 4 {
 				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls)
 			}
 		})

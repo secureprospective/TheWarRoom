@@ -142,6 +142,43 @@ PROBE
   grep -F "PROBLEM  Backups and history: Could not be read" /tmp/status-result
   rc-service twr-server start
   sleep 2
+  # The real upgrade wrapper stops/starts OpenRC and verifies TLS. Only Tunnel is stubbed:
+  # this disposable CT has no Cloudflare credentials and never contacts a real account.
+  apk add --no-cache sqlite
+  mkdir /tmp/upgrade-tools
+  cat > /tmp/upgrade-tools/rc-service <<'\''SERVICE'\''
+#!/bin/sh
+if [ "$1" = twr-tunnel ]; then
+  printf "%s\n" "$*" >> /tmp/upgrade-tunnel-calls
+  exit 0
+fi
+exec /sbin/rc-service "$@"
+SERVICE
+  chmod 755 /tmp/upgrade-tools/rc-service
+  rc-service twr-server stop
+  sqlite3 /var/lib/twr/server.db "DROP TABLE server_release; PRAGMA user_version=7;"
+  chown twr:twr /var/lib/twr/server.db
+  PATH=/tmp/upgrade-tools:$PATH sh /root/twr/upgrade.sh /root/twr/twr-server > /tmp/upgrade-result
+  cat /tmp/upgrade-result
+  grep -F "Server upgrade ready" /tmp/upgrade-result
+  rc-service twr-server status
+  saved=$(find /var/lib/twr/upgrades -name checkpoint.json)
+  test -n "$saved"
+  /usr/local/bin/twr-server checkpoint -db /var/lib/twr/server.db -check "$saved"
+  test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 8
+  grep -F "twr-tunnel --ifstopped start" /tmp/upgrade-tunnel-calls
+  # A binary-only downgrade is rejected before services stop or the file changes.
+  rc-service twr-server stop
+  sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=999;"
+  before=$(sha256sum /var/lib/twr/server.db)
+  : > /tmp/upgrade-tunnel-calls
+  if PATH=/tmp/upgrade-tools:$PATH sh /root/twr/upgrade.sh /root/twr/twr-server > /tmp/upgrade-refusal 2>&1; then exit 1; fi
+  grep -F "Reinstall the newer server bundle" /tmp/upgrade-refusal
+  test "$before" = "$(sha256sum /var/lib/twr/server.db)"
+  test ! -s /tmp/upgrade-tunnel-calls
+  sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=1;"
+  rc-service twr-server start
+  sleep 2
   sh /src/deploy/server/test-cloudflare.sh
 '
 echo 'Alpine install, OpenRC start/restart, TLS, loopback-only bind, filesystem/capability sandbox and console dashboard: PASS'

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -10,8 +11,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
+	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -23,6 +28,23 @@ func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 	}
 	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
 	if err != nil {
+		t.Fatal(err)
+	}
+	registry, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records, err := leagueservice.FixtureRecords()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := history.New(pools, registry).ExecuteCommissioner(t.Context(), records[0].Command, "fixture.creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := accounts.New(accountstore.New(pools)).LocalBootstrap(t.Context(), accounts.RawCredentials{Username: "commissioner", Password: "upgrade-test-password"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := accountstore.New(pools).ResetSignIns(t.Context(), "upgrade drill"); err != nil {
 		t.Fatal(err)
 	}
 	if !keepRelease {
@@ -69,6 +91,14 @@ func TestUpgradeBacksUpMigratesAndVerifiesMatchedCheckpoint(t *testing.T) {
 	plan, err := serverversion.Preflight(t.Context(), filepath.Join(save, "server.db"))
 	if err != nil || plan.State != serverversion.Older {
 		t.Fatalf("saved original = %+v %v", plan, err)
+	}
+	body, err := os.ReadFile(filepath.Join(save, "checkpoint.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var checkpoint rawCheckpoint
+	if err := json.Unmarshal(body, &checkpoint); err != nil || checkpoint.Ledger.Size == 0 || checkpoint.Security.Size == 0 {
+		t.Fatalf("empty upgrade evidence: %+v %v", checkpoint, err)
 	}
 	for _, file := range []string{path, filepath.Join(save, "server.db")} {
 		if err := runCheckpoint(t.Context(), []string{"-db", file, "-check", filepath.Join(save, "checkpoint.json")}, io.Discard); err != nil {

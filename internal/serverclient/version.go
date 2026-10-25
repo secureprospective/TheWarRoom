@@ -30,7 +30,9 @@ func (u *UpdateRequired) Is(target error) bool { return target == ErrUpdateRequi
 
 // versionedTransport stamps every request with this build's versions and turns the server's 426
 // refusal into an UpdateRequired error, whichever call or stream made the request.
-type versionedTransport struct{ next http.RoundTripper }
+type versionedTransport struct{ next *http.Transport }
+
+func (t versionedTransport) CloseIdleConnections() { t.next.CloseIdleConnections() }
 
 func (t versionedTransport) RoundTrip(request *http.Request) (*http.Response, error) {
 	request = request.Clone(request.Context())

@@ -16,7 +16,7 @@ rc-service twr-tunnel --ifstarted stop
 rc-service twr-server --ifstarted stop
 # No automatic restart after a failure: a failed restore must never serve partial state.
 save="/var/lib/twr/upgrades/$(date -u +%Y%m%dT%H%M%SZ)-$$"
-install -d -m 700 -o twr -g twr "$save"
+install -d -m 700 -o twr -g twr /var/lib/twr/upgrades "$save"
 cp -p /usr/local/bin/twr-server "$save/twr-server.before"
 cp -Rp /etc/twr "$save/config"
 # Keep the saved secrets private, even if the installed certificate is group-readable.

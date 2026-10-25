@@ -18,7 +18,8 @@ const (
 	UpdateHeader = "X-TWR-Update"
 )
 
-// RawUpdateRequiredResponse is the 426 reply body: who must update, and the sentence to show.
+// RawUpdateRequiredResponse is the stable version-1 refusal envelope, independent of the
+// negotiated protocol major: who must update, and the sentence to show.
 type RawUpdateRequiredResponse struct {
 	Protocol int    `json:"protocol"`
 	Update   string `json:"update"`
@@ -26,7 +27,7 @@ type RawUpdateRequiredResponse struct {
 }
 
 func (r RawUpdateRequiredResponse) Validate() error {
-	if r.Protocol != serverversion.ProtocolMajor || (r.Update != string(serverversion.App) && r.Update != string(serverversion.Server)) ||
+	if r.Protocol != 1 || (r.Update != string(serverversion.App) && r.Update != string(serverversion.Server)) ||
 		r.Message == "" || len(r.Message) > 512 {
 		return fmt.Errorf("invalid update-required reply")
 	}
@@ -37,6 +38,7 @@ func (r RawUpdateRequiredResponse) Validate() error {
 // stream is reached, so a client that never opens the stream still learns it must update.
 func versionGate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
 		protocol, okProtocol := oneHeader(r, ProtocolHeader)
 		commands, okCommands := oneHeader(r, CommandsHeader)
 		err := serverversion.Admit(protocol, commands)
@@ -45,7 +47,7 @@ func versionGate(next http.Handler) http.Handler {
 		case !okProtocol || !okCommands || errors.Is(err, serverversion.ErrMalformed):
 			http.Error(w, "invalid version header", http.StatusBadRequest)
 		case errors.As(err, &update):
-			body, err := json.Marshal(RawUpdateRequiredResponse{Protocol: serverversion.ProtocolMajor, Update: string(update.Update), Message: update.Message})
+			body, err := json.Marshal(RawUpdateRequiredResponse{Protocol: 1, Update: string(update.Update), Message: update.Message})
 			if err != nil {
 				http.Error(w, "response unavailable", http.StatusInternalServerError)
 				return
