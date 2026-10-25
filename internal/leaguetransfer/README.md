@@ -233,10 +233,14 @@ Slice review: source-traced CLI → Move → source writer → destination write
 outcome, including both crash recovery callbacks. No independently usable activation
 proof or network principal endpoint was introduced. Placement stays in the existing
 transfer/history/service packages and existing commissioner Host adapter. Across the
-complete affected handwritten production set, physical lines rose from 1,728 to 2,357
+complete affected handwritten production set, physical lines rose from 1,793 to 2,435
 (excluding tests/docs/generated files); the added responsibilities are durable source
 fencing, destination decision/reverse receive and commissioner orchestration. No size
 reduction is claimed. Removing the source event guard deliberately failed
 `TestMoveSealAbortAndActivation` on a changed persisted head; the guard was restored.
 Reverse abort/reseal and injected reverse insertion failure are also covered; failed
 receive preserves both fences and the original destination history before retry.
+
+Import retries report the **current** location: repeating the original import after
+activation returns the immutable receipt without incorrectly calling the active league
+inactive. The CLI cutover/reverse test checks this alongside the stored-generation export.
