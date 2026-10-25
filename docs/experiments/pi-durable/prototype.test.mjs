@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { drill, fresh, launch, status } from './drill.mjs';
+import { demo } from './demo.mjs';
 
 test('SIGKILL during durable sleep resumes the same bounded goal exactly once', async () => {
   await drill(3000);
@@ -28,4 +29,7 @@ test('stop persists across restart; invalid bounds preserve database bytes', asy
   assert.match(invalid.errors, /Wake delay must/);
   assert.deepEqual(await readFile(resolve(workspace, 'session.db')), before);
   assert.equal((await status(workspace)).task.state.outcome.status, 'aborted');
+});
+test('repair goal killed mid-fix resumes to a review branch; main untouched, no rerun', async () => {
+  await demo();
 });
