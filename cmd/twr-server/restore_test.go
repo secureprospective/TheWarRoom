@@ -23,6 +23,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -325,5 +326,32 @@ func TestRestoreRefusesServerHoldingLeague(t *testing.T) {
 	after, err := os.ReadFile(filepath.Join(dir, "server.db"))
 	if err != nil || !bytes.Equal(before, after) {
 		t.Fatal("refused restore changed the live database")
+	}
+}
+
+func TestRestoreDoesNotSkipNewerReleaseForOlderBackup(t *testing.T) {
+	key, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, config := newHostFiles(t, bytes.Repeat([]byte{7}, 32))
+	host := openLeagueHost(t, dir, config, time.Now)
+	sets := &memorySets{objects: map[string][]byte{}}
+	host.capture(t, sets, key.Recipient().String())
+	if err := host.pools.StampServerRelease(t.Context(), serverversion.Current().Release+1, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	host.capture(t, sets, key.Recipient().String())
+	stage := filepath.Join(t.TempDir(), "restore")
+	target := filepath.Join(t.TempDir(), "server.db")
+	if err := migrateServer(t.Context(), target); err != nil {
+		t.Fatal(err)
+	}
+	err = restoreSpareHost(t.Context(), sets, key, restoreSettings(key), target, stage, io.Discard)
+	if !errors.Is(err, errNewerSet) || sets.opened != 1 {
+		t.Fatalf("silently fell back to an older league: %v (opened %d)", err, sets.opened)
+	}
+	if _, err := os.Stat(filepath.Join(stage, "ready")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatal("newer backup installed state")
 	}
 }

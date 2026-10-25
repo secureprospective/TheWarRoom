@@ -185,3 +185,29 @@ func snapshot(t *testing.T, path string) ([]byte, os.FileInfo) {
 	}
 	return body, info
 }
+
+func TestPreflightSeesNewerSchemaStillInWALWithoutChangingData(t *testing.T) {
+	ctx := t.Context()
+	path := leagueFile(ctx, t, nil)
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	if _, err := pools.Write().ExecContext(ctx, "PRAGMA user_version=999"); err != nil {
+		t.Fatal(err)
+	}
+	before, info := snapshot(t, path)
+	wal, walInfo := snapshot(t, path+"-wal")
+	if len(wal) == 0 {
+		t.Fatal("test did not leave pending WAL frames")
+	}
+	if _, err := Preflight(ctx, path); !errors.Is(err, ErrNewerFile) {
+		t.Fatalf("pending newer WAL accepted: %v", err)
+	}
+	after, afterInfo := snapshot(t, path)
+	afterWAL, afterWALInfo := snapshot(t, path+"-wal")
+	if !bytes.Equal(before, after) || !bytes.Equal(wal, afterWAL) || !info.ModTime().Equal(afterInfo.ModTime()) || !walInfo.ModTime().Equal(afterWALInfo.ModTime()) {
+		t.Fatal("preflight changed the database or its WAL")
+	}
+}
