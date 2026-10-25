@@ -3,7 +3,6 @@ package serverclient
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
@@ -44,9 +43,7 @@ func NewDesktop(address, league string, roots *x509.CertPool, storage ...Credent
 		!strings.HasPrefix(league, "native.") || len(league) <= 7 || len(league) > 128 {
 		return nil, fmt.Errorf("native startup requires an HTTPS origin and native league ID")
 	}
-	transport := &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}
-	client := &Client{base: address, http: &http.Client{Timeout: 15 * time.Second, Transport: transport,
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return fmt.Errorf("native redirects refused") }}}
+	client := &Client{base: address, http: newHTTPClient(roots, 15*time.Second, "native redirects refused")}
 	credentials := newDeviceKeychain(address, league)
 	if len(storage) > 0 && storage[0] != nil {
 		credentials = storage[0]
@@ -215,6 +212,9 @@ func postDesktop[T desktopPayload](ctx context.Context, d *Desktop, path string,
 		request.Header.Set("X-TWR-Recent-Auth", d.proof)
 	}
 	response, err := d.client.http.Do(request)
+	if update, ok := updateRequired(err); ok {
+		return nil, update
+	}
 	if err != nil {
 		return nil, fmt.Errorf("cannot reach the native server securely; check the address, certificate and connection")
 	}

@@ -46,6 +46,7 @@ install -m 600 -o twr -g twr /dev/null /var/lib/twr/server.db
 # An unprivileged CT shares the host's clock. Never run a fake NTP client with -x:
 # it cannot synchronize the kernel state that hosted admission checks.
 install -m 755 backup-setup.sh /usr/local/libexec/twr-backup-setup
+install -m 755 upgrade.sh /usr/local/libexec/twr-upgrade
 install -m 755 restore.sh /usr/local/libexec/twr-restore
 install -m 755 reset-sign-ins.sh /usr/local/libexec/twr-reset-sign-ins
 install -m 755 status.sh /usr/local/libexec/twr-status
