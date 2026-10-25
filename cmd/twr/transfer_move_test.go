@@ -63,6 +63,13 @@ func TestLeagueMoveCLIConfirmedCutoverAndAbort(t *testing.T) {
 	if err := run(append([]string{"league-move", "abort"}, flags...)...); err == nil {
 		t.Fatal("activated target allowed source abort")
 	}
+	out.Reset()
+	if err := run("league-import", "--db", target, "--file", file, "--key-file", key); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "already active here") || strings.Contains(out.String(), "is inactive") {
+		t.Fatal("import retry mislabeled an active league", out.String())
+	}
 	server, closeServer, err := openMoveStore(t.Context(), target)
 	if err != nil {
 		t.Fatal(err)

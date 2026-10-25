@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -58,8 +59,20 @@ func (e env) importLeague(cmd *cobra.Command, database, path, keyPath string) er
 	if err != nil {
 		return fmt.Errorf("copy league to this computer: %w", err)
 	}
-	if _, err := fmt.Fprintf(e.out, "League %s was copied and is inactive. Keep using the source until cutover. Import receipt: %s / %s / %s.\n", receipt.League, receipt.SourceEpoch, receipt.Content, receipt.RecordedAt.Format("2006-01-02T15:04:05.999999999Z07:00")); err != nil {
-		return fmt.Errorf("report inactive import: %w", err)
+	return e.reportImport(cmd.Context(), store, receipt)
+}
+
+func (e env) reportImport(ctx context.Context, store *history.Store, receipt history.ImportReceipt) error {
+	status, err := store.TransferStatus(ctx, receipt.League)
+	if err != nil {
+		return fmt.Errorf("read imported league location: %w", err)
+	}
+	state := "was copied and is inactive"
+	if status.Writable {
+		state = "is already active here"
+	}
+	if _, err := fmt.Fprintf(e.out, "League %s %s. %s. Import receipt: %s / %s / %s.\n", receipt.League, state, status.Label, receipt.SourceEpoch, receipt.Content, receipt.RecordedAt.Format("2006-01-02T15:04:05.999999999Z07:00")); err != nil {
+		return fmt.Errorf("report league import: %w", err)
 	}
 	return nil
 }
