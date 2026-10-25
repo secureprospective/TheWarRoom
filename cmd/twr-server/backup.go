@@ -11,6 +11,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
 )
 
+// backupStatus reports live off-site coverage to the private dashboard; false means unconfigured.
+type backupStatus = func() (offsite.Status, bool)
+
+func noBackups() (offsite.Status, bool) { return offsite.Status{}, false }
+
 func runBackupCheck(args []string, output io.Writer) error {
 	flags := flag.NewFlagSet("backup-check", flag.ContinueOnError)
 	path := flags.String("config", "", "private R2 backup settings")

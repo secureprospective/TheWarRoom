@@ -24,6 +24,9 @@ func TestSignInResetAndRestoreReset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if restore, incident, err := f.store.LastResets(t.Context()); err != nil || !restore.At.IsZero() || !incident.At.IsZero() {
+		t.Fatalf("resets reported before any: %+v %+v %v", restore, incident, err)
+	}
 	session := loginDevice(t, f, service, "before incident")
 	if _, err := f.store.ResetSignIns(t.Context(), "\x00"); err == nil {
 		t.Fatal("unprintable reason accepted")
@@ -66,6 +69,12 @@ func TestSignInResetAndRestoreReset(t *testing.T) {
 	if err := f.pools.Read().QueryRowContext(t.Context(), `SELECT group_concat(operation || ':' || reason) FROM account_security_audit WHERE sequence > ?`, before.Size).Scan(&reasons); err != nil ||
 		!strings.Contains(reasons, "sign_ins_reset:suspected stolen laptop") || !strings.Contains(reasons, "restored_sign_ins_reset:restored from backup") {
 		t.Fatalf("audit reasons %q: %v", reasons, err)
+	}
+	// The dashboard reads both back from the same history.
+	restore, incident, err := f.store.LastResets(t.Context())
+	if err != nil || restore.Reason != "restored from backup" || incident.Reason != "suspected stolen laptop" ||
+		restore.Accounts != 1 || incident.Accounts != 1 || restore.At.Before(incident.At) {
+		t.Fatalf("last resets %+v %+v: %v", restore, incident, err)
 	}
 	if _, err := service.Authenticate(t.Context(), loginDevice(t, f, service, "after restore").RawSession); err != nil {
 		t.Fatal("password sign-in refused after reset:", err)
