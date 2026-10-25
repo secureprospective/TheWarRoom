@@ -62,6 +62,9 @@ func (out *Market) readBids(book bidBook, v bidViewer,
 			continue
 		}
 		closeAt, words := bidClose(stand, a.standingAt(), v.zone)
+		if !v.open && (closeAt == nil || at.Before(*closeAt)) {
+			continue
+		}
 		if closeAt != nil {
 			if at.Before(*closeAt) {
 				words = "Clock running — " + words
@@ -69,19 +72,27 @@ func (out *Market) readBids(book bidBook, v bidViewer,
 				words = "Ready for a decision"
 			}
 		}
-		// Only the reason travels: even the commissioner cannot read an undecided blind bid.
-		live := a.liveBids()
-		if lead, ok := leaderOf(live); ok && closeAt != nil && !at.Before(*closeAt) {
-			tied := 0
-			for _, b := range live {
-				if b.Points == lead.Points {
-					tied++
-				}
-			}
-			if tied > 1 {
-				words = "Tie to settle"
-			}
+		if closeAt != nil && !at.Before(*closeAt) {
+			words = decidedBidWords(a.liveBids())
 		}
+
 		out.Players = append(out.Players, MarketChoice{ID: a.Player, Words: name + " — " + words})
 	}
+}
+
+func decidedBidWords(live []bidRecord) string {
+	lead, ok := leaderOf(live)
+	if !ok {
+		return "Ready for a decision"
+	}
+	tied := 0
+	for _, b := range live {
+		if b.Points == lead.Points {
+			tied++
+		}
+	}
+	if tied > 1 {
+		return "Tie to settle"
+	}
+	return "Ready for a decision"
 }

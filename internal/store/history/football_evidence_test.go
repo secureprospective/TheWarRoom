@@ -155,3 +155,21 @@ func footballRows(t *testing.T, s *Store) [2]int {
 	}
 	return counts
 }
+
+func TestPinnedBidEnvironmentUsesScheduleAndFailsClosedAfterSeason(t *testing.T) {
+	kickoff := time.Date(2026, 10, 25, 17, 0, 0, 0, time.UTC)
+	evidence := &PinnedFootball{raw: RawFootballEvidence{Season: 2026, Weeks: []leagueweek.Week{{Number: 1, Games: []leagueweek.Game{{Teams: [2]string{"DAL", "NYG"}, Kickoff: kickoff}}}}}}
+	before, err := evidence.BidEnvironment(t.Context(), "native.test", kickoff.Add(-time.Hour))
+	if err != nil || !before.Season.WeekKnown || before.Season.Week != 0 {
+		t.Fatalf("before kickoff: %+v %v", before, err)
+	}
+	during, err := evidence.BidEnvironment(t.Context(), "native.test", kickoff)
+	if err != nil || !during.Season.WeekKnown || during.Season.Week != 1 {
+		t.Fatalf("at kickoff: %+v %v", during, err)
+	}
+	evidence.raw.Weeks[0].Games[0].Final = true
+	ended, err := evidence.BidEnvironment(t.Context(), "native.test", kickoff.Add(24*time.Hour))
+	if err != nil || ended.Season.WeekKnown {
+		t.Fatalf("finished schedule guessed a week: %+v %v", ended, err)
+	}
+}

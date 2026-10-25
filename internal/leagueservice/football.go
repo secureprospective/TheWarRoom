@@ -25,7 +25,7 @@ func NewFootballHost(ctx context.Context, host Host, store *history.Store, diges
 	if err != nil {
 		return nil, fmt.Errorf("select hosted football evidence: %w", err)
 	}
-	store.SetLineupEnvironment(evidence)
+	store.SetPinnedFootball(evidence)
 	return WithPinnedFootball(host, evidence)
 }
 

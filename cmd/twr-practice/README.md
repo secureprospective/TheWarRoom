@@ -60,9 +60,11 @@ No real app profile or league archive is opened. Do not remove the printed envir
 Close the desktop window before `down`.
 
 Sign in as the printed commissioner, use **Authenticate** with the code from `code`, then
-click **Open my franchise**. The commissioner owns Practice team 1; the other 31
-franchises are vacant. The league has disposable football evidence, three roster players,
-and a 2027 rookie draft with one available rookie. No MFL data is imported. The confirmation uses the preceding time
+click **Open my franchise**. The commissioner owns Practice team 1. Logins **owner** and **partner** own Practice
+teams 2 and 3; the remaining franchises are vacant. All three use the printed disposable
+password. Ordinary owners need no authenticator step-up. The league has disposable football
+evidence, four roster players, a free agent, a published one-week schedule, and a 2027
+rookie draft with one available rookie. No MFL data is imported. The confirmation uses the preceding time
 step, so the current code is immediately usable. If a code has already been used, wait for the
 next 30-second authenticator step before using `code` again.
 
@@ -132,3 +134,59 @@ rookie selection and revocation. `frontend/src/app/commissioner/hostedRoom.test.
 real Go response fixtures and checks stale mode, reconnect, authority fencing and no replay.
 Regenerate its wire fixture with `TWR_UPDATE_HOSTED_WIRE=1 go test ./internal/serverhttp
 -run TestHostedWorkflowFrontendReadings -count=1` (keep the command on one shell line).
+
+## Bids, waivers, trades, results and next-season walkthrough
+
+Use separate disposable windows or sign out and back in for each named login. Launch only
+with the printed sandbox command; never reuse a real profile. Refresh each window after
+another person records a change. Every action is checked, then held to confirm; a reason
+explains commissioner rulings. No action is sent to MFL.
+
+1. **Free-agent bids**, as `owner`: choose Place a private bid, Practice free agent,
+   annual salary 5000000, one year, and a reason. Check, inspect and confirm. Refresh:
+   only this owner sees the private bid. Try Raise your bid and Withdraw your bid too.
+   As `commissioner`, refresh: neither the rival bid nor its existence/closing time is
+   visible. Commissioner processing/correction choices cannot peek either. Place another
+   bid and leave it standing: practice bids close after **two minutes**, then the real
+   server worker awards them. Refresh to see the public award and the winning roster.
+2. **Waivers**, as `owner`: release Other team receiver. As `commissioner`, refresh,
+   choose Claim a player, select that receiver, check and confirm. The claim is private;
+   the roster does not change yet. The practice window closes after **two minutes**.
+   Refresh for the worker's award. The releasing owner cannot reclaim his own player.
+   Commissioner actions can set priority, process a closed window or correct an award;
+   their choices come from the server, never a pasted transaction identifier.
+3. **Trades**, as `owner`: choose Practice team 3, check the 2027 first-round pick
+   originally belonging to Practice team 2, then Check trade offer and confirm.
+   As `partner`, refresh, choose Accept a trade, select the offer, give a reason and confirm.
+   As `commissioner`, refresh, choose Review a trade and Approve (or Veto), give a reason,
+   inspect the preview, then confirm. Refresh all windows: the pick changes owner only
+   after approval. A veto can be appealed and ruled on; decided awards can be overridden
+   with a recorded reason. Also try withdrawing an unaccepted offer and declining a new
+   offer. The commissioner cannot review a trade in which they are a party.
+4. **Results and standings**: the published games explain missing results rather than
+   inventing NFL statistics or missing lineups. As `commissioner`, choose Adjust a franchise
+   score (season 2026, week 1, points 1.5), or Set a franchise record (season 2026, Practice
+   team 1, one win, zero losses/ties). Check and confirm. Refresh: computed standings remain
+   alongside Commissioner standings and the ruling's explanation. Clear standings
+   corrections to return to the computed record. This sandbox deliberately has no final NFL
+   statistics, so an incomplete game must remain incomplete even after a score adjustment.
+5. **Next season**, last: as `commissioner`, choose Move to the next season, enter 2027
+   and a reason. Check the full plan, including contracts, rules, picks and cap, before
+   holding to confirm. Refresh shows roster season 2027. The old NFL evidence cannot be
+   used to submit a new-season lineup or bid: the operator must explicitly select new
+   season evidence. Other readings remain accessible; lineup states its evidence problem.
+6. Disconnect, refresh and attempt each task: saved readings remain read-only. Reconnect
+   and refresh: only reads run, never a replayed bid/claim/trade/correction/rollover. If a
+   confirmation is interrupted, inspect the refreshed league before choosing another act.
+
+Automated pass evidence: `internal/serverhttp/market_workflow_test.go` drives real HTTPS
+owner/commissioner sessions through bids, releases/claims, offers/acceptance/review,
+corrections and rollover. Every execute is repeated with the identical request and must
+return the same receipt. The privacy test compares whole commissioner response bodies
+and recipient revisions before/after another owner's blind bid. Standings from a fresh
+store and assets from ledger replay must agree with hosted readings. Old-season bid
+evidence is refused without appending. Frontend `hostedRoom.test.tsx` and
+`hostedWorkflows.test.tsx` check all five tasks, named choices, single confirmation,
+read-only stale/reconnect behavior and explicitly unavailable new-season lineups.
+
+These tests do not replace a graphical click acceptance on the final desktop binary.

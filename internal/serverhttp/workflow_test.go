@@ -225,13 +225,28 @@ func TestHostedWorkflowFrontendReadings(t *testing.T) {
 	f := newHostedFixture(t, true)
 	bearer, proof := f.directCommissioner(t)
 	readings := map[string]serverhttp.WorkflowResponse{}
-	for _, command := range []string{"lineup.read", "native.assets.read", "native.reserve.check", "draft.read", "commish.rules.read"} {
+	for _, command := range []string{"lineup.read", "native.assets.read", "native.reserve.check", "draft.read", "commish.rules.read", "bids.read", "waivers.read", "trades.read", "results.read", "standings.read"} {
 		args := `{"league":"native.hosted"}`
 		if command == "lineup.read" {
 			args = `{"league":"native.hosted","franchise":"franchise.01","week":1,"at":""}`
 		}
 		if command == "draft.read" {
 			args = `{"league":"native.hosted","franchise":"franchise.01","season":0,"at":"0001-01-01T00:00:00Z"}`
+		}
+		if command == "bids.read" {
+			args = `{"league":"native.hosted","franchise":"franchise.01"}`
+		}
+		if command == "waivers.read" {
+			args = `{"league":"native.hosted","franchise":"franchise.01","at":"2026-10-25T10:00:00Z"}`
+		}
+		if command == "trades.read" {
+			args = `{"league":"native.hosted","viewer":"franchise.01"}`
+		}
+		if command == "results.read" {
+			args = `{"league":"native.hosted","season":2026,"week":1}`
+		}
+		if command == "standings.read" {
+			args = `{"league":"native.hosted","season":2026}`
 		}
 		raw := workflowRequest(t, command, "read", args, "")
 		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &raw})

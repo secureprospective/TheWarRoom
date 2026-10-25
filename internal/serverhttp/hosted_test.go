@@ -61,6 +61,13 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(workflows) > 0 && workflows[0] {
+		for i, username := range []string{"owner", "partner"} {
+			if err := hostedfixture.AddWorkflowOwner(t.Context(), store, credentials, principal, fmt.Sprintf("franchise.%02d", i+2), accounts.RawCredentials{Username: username, Password: "private-password"}); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
 	policy, err := governance.Apply(governance.State{}, governance.LeagueCreated{Creator: principal, Franchises: []governance.FranchiseID{"franchise.01", "franchise.02"}})
 	if err != nil {
 		t.Fatal(err)
@@ -89,7 +96,7 @@ func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
 		if err != nil {
 			t.Fatal(err)
 		}
-		store.SetLineupEnvironment(handler.Football)
+		store.SetPinnedFootball(handler.Football)
 		handler.Worker = leagueservice.NewDueWorker(store, handler.Football.PlayerFacts, workflowClock{})
 	}
 	f.server = httptest.NewTLSServer(handler.Handler())

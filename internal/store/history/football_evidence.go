@@ -94,3 +94,43 @@ func (p *PinnedFootball) ScheduleDates(ctx context.Context, season int) ([]leagu
 	}
 	return weeks, nil
 }
+
+// BidEnvironment uses the selected schedule, never the host's wall-clock week number.
+// Playoff eligibility remains unknown unless league evidence supplies it.
+func (p *PinnedFootball) BidEnvironment(ctx context.Context, _ string, at time.Time) (commissioner.BidEnvironment, error) {
+	weeks, err := p.ScheduleDates(ctx, p.raw.Season)
+	if err != nil {
+		return commissioner.BidEnvironment{}, err
+	}
+	week, ok := leagueweek.LineupWeek(at, weeks...)
+	if !ok {
+		return commissioner.BidEnvironment{}, nil
+	}
+	number := week.Number
+	if number == 1 && at.Before(leagueweek.FirstLock(week)) {
+		number = 0
+	}
+	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: number, WeekKnown: true}}, nil
+}
+
+// SetPinnedFootball installs one immutable evidence selection for lineups and bids at startup.
+func (s *Store) SetPinnedFootball(evidence *PinnedFootball) {
+	s.SetLineupEnvironment(evidence)
+	s.SetBidEnvironment(pinnedBidEnvironment{store: s, evidence: evidence})
+}
+
+type pinnedBidEnvironment struct {
+	store    *Store
+	evidence *PinnedFootball
+}
+
+func (p pinnedBidEnvironment) BidEnvironment(ctx context.Context, league string, at time.Time) (commissioner.BidEnvironment, error) {
+	assets, err := p.store.NativeAssets(ctx, league)
+	if err != nil {
+		return commissioner.BidEnvironment{}, fmt.Errorf("read bid season: %w", err)
+	}
+	if p.evidence == nil || assets.Snapshot == nil || assets.Snapshot.Season != p.evidence.raw.Season {
+		return commissioner.BidEnvironment{}, fmt.Errorf("select football evidence for the league's current season before bidding")
+	}
+	return p.evidence.BidEnvironment(ctx, league, at)
+}

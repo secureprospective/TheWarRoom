@@ -12,6 +12,7 @@ export type HostedPlayer = {
   words: string;
 };
 export type HostedLineup = {
+  available: boolean;
   league: string;
   franchise: string;
   revision: number;
@@ -60,6 +61,7 @@ export function parseHostedLineup(v: unknown): HostedLineup {
     'flagged',
   ]);
   return {
+    available: true,
     league: text(r.league, 'League'),
     franchise: text(r.franchise, 'Franchise'),
     revision: integer(r.revision, 'Version'),
@@ -72,9 +74,18 @@ export function parseHostedLineup(v: unknown): HostedLineup {
   };
 }
 export type HostedRoster = {
+  league: string;
   revision: number;
   season: number;
-  players: { id: string; name: string; franchise: string; bucket: 'active' | 'ir' | 'taxi' }[];
+  franchises: { value: string; label: string }[];
+  pool: { value: string; label: string }[];
+  picks: { season: number; round: number; original: string; owner: string }[];
+  players: {
+    id: string;
+    name: string;
+    franchise: string;
+    bucket: 'active' | 'ir' | 'taxi';
+  }[];
 };
 export function parseHostedRoster(v: unknown): HostedRoster {
   const r = object(v, 'Roster', [
@@ -103,8 +114,34 @@ export function parseHostedRoster(v: unknown): HostedRoster {
     'pool',
   ]);
   return {
+    league: text(r.league, 'League'),
     revision: integer(r.revision, 'Roster version'),
     season: integer(s.season, 'Roster season'),
+    franchises: array(s.franchises, 'Franchises', (v) => {
+      const f = object(v, 'Franchise', ['id', 'heldId', 'name', 'abbreviation', 'division']);
+      return { value: text(f.id, 'Franchise'), label: text(f.name, 'Name') };
+    }),
+    pool: array(s.pool ?? [], 'Free agents', (v) => {
+      const p = object(v, 'Free agent', ['player', 'name', 'season']);
+      return { value: text(p.player, 'Player'), label: text(p.name, 'Name') };
+    }),
+    picks: array(s.picks, 'Picks', (v) => {
+      const p = object(v, 'Pick', [
+        'season',
+        'round',
+        'slot',
+        'original',
+        'owner',
+        'player',
+        'skipped',
+      ]);
+      return {
+        season: integer(p.season, 'Season'),
+        round: integer(p.round, 'Round'),
+        original: text(p.original, 'Original team'),
+        owner: text(p.owner, 'Owner'),
+      };
+    }),
     players: array(s.players, 'Roster players', (v, p) => {
       const r = object(v, p, [
         'acquiredVia',
