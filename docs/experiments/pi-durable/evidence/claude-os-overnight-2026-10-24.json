@@ -1,0 +1,81 @@
+{
+  "run": ".runs/goal-Fkc3KN",
+  "node": "v24.22.1",
+  "started": "2026-10-24T23:43:22.899Z",
+  "delay": 28800000,
+  "crashed": {
+    "code": null,
+    "signal": "SIGKILL",
+    "output": "{\"event\":\"admitted\",\"taskId\":8}\n",
+    "errors": ""
+  },
+  "before": {
+    "event": "status",
+    "goal": {
+      "taskId": 8,
+      "completed": [
+        "prepared"
+      ]
+    },
+    "task": {
+      "id": 8,
+      "conversationId": 1,
+      "kind": "experiment.checklist",
+      "version": 1,
+      "input": {
+        "wakeAt": 1792914203368,
+        "expiresAt": 1792928603368,
+        "pause": false
+      },
+      "background": false,
+      "abortRequested": false,
+      "state": {
+        "status": "sleeping",
+        "until": 1792914203368,
+        "checkpoint": {
+          "phase": "finish"
+        }
+      },
+      "startedAt": 1792885403376
+    }
+  },
+  "resumed": {
+    "code": 0,
+    "signal": null,
+    "output": "{\"event\":\"admitted\",\"taskId\":8}\n{\"event\":\"finish-entered\",\"taskId\":8}\n{\"event\":\"settled\",\"receipt\":{\"id\":8,\"conversationId\":1,\"kind\":\"experiment.checklist\",\"version\":1,\"input\":{\"wakeAt\":1792914203368,\"expiresAt\":1792928603368,\"pause\":false},\"background\":false,\"abortRequested\":false,\"state\":{\"status\":\"terminal\",\"outcome\":{\"status\":\"completed\",\"result\":\"checklist ready for human review\"}},\"startedAt\":1792885403376,\"endedAt\":1792914203477},\"goal\":{\"taskId\":8,\"completed\":[\"prepared\",\"finished\"]}}\n",
+    "errors": ""
+  },
+  "after": {
+    "event": "status",
+    "goal": {
+      "taskId": 8,
+      "completed": [
+        "prepared",
+        "finished"
+      ]
+    },
+    "task": {
+      "id": 8,
+      "conversationId": 1,
+      "kind": "experiment.checklist",
+      "version": 1,
+      "input": {
+        "wakeAt": 1792914203368,
+        "expiresAt": 1792928603368,
+        "pause": false
+      },
+      "background": false,
+      "abortRequested": false,
+      "state": {
+        "status": "terminal",
+        "outcome": {
+          "status": "completed",
+          "result": "checklist ready for human review"
+        }
+      },
+      "startedAt": 1792885403376,
+      "endedAt": 1792914203477
+    }
+  },
+  "result": "PASS"
+}
