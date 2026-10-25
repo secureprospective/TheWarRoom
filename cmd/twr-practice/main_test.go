@@ -183,7 +183,7 @@ func TestPrebuiltSandboxHTTPSLifecycleWithoutGo(t *testing.T) {
 	t.Chdir("../..")
 	bin := t.TempDir()
 	for _, args := range [][]string{
-		{"build", "-o", filepath.Join(bin, "twr-server"), "./cmd/twr-server"},
+		{"build", "-tags", "practice", "-o", filepath.Join(bin, "twr-server"), "./cmd/twr-server"},
 		{"build", "-tags", "webkit2_41", "-o", filepath.Join(bin, "thewarroom"), "."},
 	} {
 		if output, err := exec.CommandContext(t.Context(), "go", args...).CombinedOutput(); err != nil {

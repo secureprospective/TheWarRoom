@@ -21,7 +21,7 @@ On a Linux build machine with Go, pnpm and the normal WebKitGTK 4.1 development
 libraries, run this one-liner from the repository root:
 
 ```sh
-(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./cmd/twr-practice && go build -o .scratch/practice-bundle/twr-server ./cmd/twr-server && go build -tags desktop,production,webkit2_41 -o .scratch/practice-bundle/thewarroom . && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
+(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./cmd/twr-practice && go build -tags practice -o .scratch/practice-bundle/twr-server ./cmd/twr-server && go build -tags desktop,production,webkit2_41 -o .scratch/practice-bundle/thewarroom . && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
 ```
 
 The desktop embeds the freshly built frontend assets. Use the same Linux architecture
@@ -95,3 +95,13 @@ nonempty-directory refusal and server shutdown. Go cannot be found during any of
 actions. `TestPrebuiltSandboxRefusesInvalidBinaries` checks both binary names for missing,
 non-executable and directory inputs, and verifies cleanup leaves the input bundle untouched.
 The desktop is copied but not launched: graphical click acceptance remains a separate test.
+
+## Off-site backup boundary
+
+The launcher builds its server with `-tags practice`, an explicit disposable-test
+build, not the deployable binary. This variant refuses R2 configuration, validates
+the private sandbox folders and colocated runtime files, and logs that it has no
+off-site protection. The release builder never uses this tag. A normal server
+binary remains paused without verified R2 coverage; there is no runtime switch
+to disable that rule. Prebuilt practice bundles must use the tagged build shown
+above. Never use the practice binary for real league state.
