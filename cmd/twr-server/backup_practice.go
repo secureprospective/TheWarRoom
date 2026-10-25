@@ -29,6 +29,11 @@ func configureHostedBackup(_ context.Context, _ *serverhttp.Hosted, _ *db.Pools,
 	return func() {}, nil
 }
 
+// upgradeOffsite has no R2 in practice builds; upgrades there run without -backup-config.
+func upgradeOffsite(_ context.Context, _ *db.Pools, _, _ string) error {
+	return fmt.Errorf("practice builds cannot run R2 deployment configuration; use the release server")
+}
+
 func practiceFolders(dir string) error {
 	for _, name := range []string{".", "home", "config", "data", "cache", "runtime"} {
 		path := filepath.Join(dir, name)

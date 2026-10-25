@@ -37,6 +37,9 @@ func assertHostedBinary(ctx context.Context, t *testing.T, binary, cert, key str
 	if err := pools.Close(); err != nil {
 		t.Fatal(err)
 	}
+	if err := migrateServer(ctx, path); err != nil {
+		t.Fatal(err)
+	}
 	keyFile := filepath.Join(t.TempDir(), "totp.key")
 	if err := os.WriteFile(keyFile, []byte(strings.Repeat("k", 32)), 0600); err != nil {
 		t.Fatal(err)
