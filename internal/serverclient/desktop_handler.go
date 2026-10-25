@@ -49,26 +49,36 @@ func (d *Desktop) Handler() http.Handler {
 			http.Error(w, "use GET or POST", http.StatusMethodNotAllowed)
 			return
 		}
-		view, err := d.Act(r.Context(), raw)
-		if err != nil {
-			if update, ok := updateRequired(err); ok {
-				w.Header().Set("X-TWR-Update", string(update.Update))
-				http.Error(w, update.Message, http.StatusUpgradeRequired)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		body, err := json.Marshal(view)
-		if err != nil {
-			http.Error(w, "desktop response unavailable", http.StatusInternalServerError)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		if _, err := w.Write(body); err != nil {
-			return
-		}
+		d.desktopActionHTTP(w, r, raw)
 	})
+}
+
+func (d *Desktop) desktopActionHTTP(w http.ResponseWriter, r *http.Request, raw RawDesktop) {
+	view, err := d.Act(r.Context(), raw)
+	if err != nil {
+		if update, ok := updateRequired(err); ok {
+			w.Header().Set("X-TWR-Update", string(update.Update))
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUpgradeRequired)
+			_ = json.NewEncoder(w).Encode(view)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	body, err := json.Marshal(view)
+	if err != nil {
+		http.Error(w, "desktop response unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if view.Update != "" && raw.Action != "status" {
+		w.Header().Set("X-TWR-Update", view.Update)
+		w.WriteHeader(http.StatusUpgradeRequired)
+	}
+	if _, err := w.Write(body); err != nil {
+		return
+	}
 }
 
 func desktopOrigin(origin string) bool {

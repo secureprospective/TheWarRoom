@@ -20,6 +20,7 @@ import (
 // this cache on a verification error: its versions prevent rollback after restart.
 type Client struct {
 	mu        sync.Mutex
+	stageMu   sync.Mutex
 	bootstrap Bootstrap
 	directory string
 	fetcher   fetcher.Fetcher

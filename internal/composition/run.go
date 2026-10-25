@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
@@ -28,6 +29,7 @@ import (
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // Embedded is what the root binary embeds and hands in: embed cannot reach above a package
@@ -189,8 +191,29 @@ func runNative(address, league string, embedded Embedded, stderr io.Writer) int 
 	}
 	defer desktop.Close()
 	desktop.SetHelperCommands(helperCommands())
+	directory, err := os.UserConfigDir()
+	if err != nil {
+		return 2
+	}
+	directory = filepath.Join(directory, "TheWarRoom", "updates")
+	if err := os.MkdirAll(directory, 0700); err != nil {
+		return 2
+	}
+	lock, err := nativeUpdateLock(directory)
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, "Another native window is open. Close it and try again.")
+		return 2
+	}
+	defer releaseInstanceLock(lock)
+	var window context.Context
+	// Missing install trust keeps the screen reachable, but never permits an unsigned update.
+	_ = desktop.ConfigureUpdater(directory, version, func() { wailsruntime.Quit(window) })
+	if version == "dev" && os.Getenv("TWR_PRACTICE_UPDATE") == "app" {
+		desktop.PracticeUpdate()
+	}
 	err = wails.Run(&options.App{
 		Title: "The War Room — Native league", Width: 960, Height: 800,
+		OnStartup:        func(ctx context.Context) { window = ctx },
 		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
 		AssetServer:      &assetserver.Options{Assets: embedded.Assets, Handler: desktop.Handler()},
 	})
@@ -199,4 +222,18 @@ func runNative(address, league string, embedded Embedded, stderr io.Writer) int 
 		return 1
 	}
 	return 0
+}
+
+// A staged child waits for the old window to release its cache lock before opening.
+func nativeUpdateLock(directory string) (*os.File, error) {
+	var last error
+	for range 100 {
+		lock, err := acquireInstanceLock(filepath.Join(directory, "desktop"))
+		if err == nil {
+			return lock, nil
+		}
+		last = err
+		time.Sleep(100 * time.Millisecond)
+	}
+	return nil, fmt.Errorf("open desktop update lock: %w", last)
 }

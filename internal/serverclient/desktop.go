@@ -15,6 +15,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 )
 
 const DesktopPath = "/desktop/native"
@@ -29,6 +30,8 @@ type Desktop struct {
 	proof       string
 	credentials CredentialStore
 	loaded      bool
+	required    serverversion.Side
+	update      func() error
 	// seats are what the last "enter" read; an AI helper acts for one of them.
 	seats          []DesktopSeat
 	helperCommands []string
@@ -80,7 +83,7 @@ func (r RawDesktop) Validate() error {
 		return fmt.Errorf("unexpected helper request")
 	}
 	switch r.Action {
-	case "status", "enter", "forget", "revoke-device", "revoke-all":
+	case "retry", "update", "status", "enter", "forget", "revoke-device", "revoke-all":
 		if r.Username != "" || r.Password != "" || r.Code != "" {
 			return fmt.Errorf("unexpected credentials")
 		}
@@ -113,6 +116,7 @@ type DesktopView struct {
 	Server        string `json:"server"`
 	League        string `json:"league"`
 	Message       string `json:"message"`
+	Update        string `json:"update,omitempty"`
 	Name          string `json:"name"`
 	Role          string `json:"role"`
 	Franchise     string `json:"franchise"`
@@ -132,15 +136,40 @@ type DesktopSeat struct {
 }
 
 // Act serializes login/forget/read so a delayed response cannot revive a forgotten session.
-func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (DesktopView, error) {
+func (d *Desktop) Act(ctx context.Context, raw RawDesktop) (view DesktopView, resultErr error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	view := DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
+	view = DesktopView{Server: d.client.base, League: d.league, Seats: []DesktopSeat{}}
 	if err := raw.Validate(); err != nil {
 		return view, fmt.Errorf("check desktop request: %w", err)
 	}
+	defer func() {
+		if update, ok := updateRequired(resultErr); ok {
+			d.required = update.Update
+			view.Update = string(update.Update)
+		}
+	}()
+	if d.required == serverversion.Server && raw.Action == "retry" {
+		d.required = ""
+		return view, nil
+	}
+	if d.required != "" {
+		view.Update = string(d.required)
+		if raw.Action == "update" {
+			return view, d.installUpdate()
+		}
+		if d.required == serverversion.App || raw.Action == "status" {
+			return view, nil
+		}
+	}
+	return d.actLocked(ctx, raw, view)
+}
+
+func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
 	d.restore()
 	switch raw.Action {
+	case "update", "retry":
+		return view, fmt.Errorf("no desktop update is required")
 	case "status":
 		if d.bearer != "" {
 			view.Message = "Saved device session available. Open your franchise to check access."

@@ -102,7 +102,7 @@ func report(out io.Writer, dir string, state rawState, bin string) error {
 	}
 	desktop := fmt.Sprintf("env HOME=%s XDG_CONFIG_HOME=%s XDG_DATA_HOME=%s XDG_CACHE_HOME=%s XDG_RUNTIME_DIR=%s DBUS_SESSION_BUS_ADDRESS=%s SSL_CERT_FILE=%s %s -native %s native.hosted",
 		quote(filepath.Join(dir, "home")), quote(filepath.Join(dir, "config")), quote(filepath.Join(dir, "data")), quote(filepath.Join(dir, "cache")), quote(filepath.Join(dir, "runtime")), quote("unix:path="+filepath.Join(dir, "no-session-bus")), quote(filepath.Join(dir, "server.pem")), quote(filepath.Join(dir, "thewarroom")), quote(state.Address))
-	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nOther team logins: owner, partner (same disposable password; no authenticator required)\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: %s code %s\nDesktop (inherits DISPLAY):\n%s\nStop and delete: %s down %s\n", state.Address, state.Password, state.Seed, launcher, quote(dir), desktop, launcher, quote(dir))
+	_, err := fmt.Fprintf(out, "Server: %s\nLeague: native.hosted\nCommissioner login: commissioner\nOther team logins: owner, partner (same disposable password; no authenticator required)\nPassword: %s\nTOTP secret: %s\nCurrent TOTP code: %s code %s\nDesktop (inherits DISPLAY):\n%s\nUpdate-required click test (development builds only):\nenv TWR_PRACTICE_UPDATE=app %s\nStop and delete: %s down %s\n", state.Address, state.Password, state.Seed, launcher, quote(dir), desktop, desktop, launcher, quote(dir))
 	if err != nil {
 		return fmt.Errorf("print sandbox instructions: %w", err)
 	}
