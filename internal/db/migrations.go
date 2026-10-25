@@ -92,18 +92,6 @@ func (p *Pools) migrateStep(ctx context.Context, version int, step Migration) er
 	return nil
 }
 
-func (p *Pools) backupMigration(ctx context.Context, version int) (string, error) {
-	dest := fmt.Sprintf("%s.pre-v%d.bak", p.path, version)
-	// VACUUM INTO accepts an empty existing file; a non-empty one still fails it.
-	if err := createOwnerOnly(dest); err != nil {
-		return "", fmt.Errorf("db: pre-migration backup: %w", err)
-	}
-	if _, err := p.write.ExecContext(ctx, "VACUUM INTO ?", dest); err != nil {
-		return "", fmt.Errorf("db: pre-migration backup: %w", err)
-	}
-	return dest, nil
-}
-
 func refuseNewer(version, maxVersion int) error {
 	if version > maxVersion {
 		return fmt.Errorf("db: this database was last written by a NEWER version of TheWarRoom (schema v%d; this build understands up to v%d) — update the app to open it", version, maxVersion)

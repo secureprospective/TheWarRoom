@@ -80,7 +80,10 @@ CREATE TABLE IF NOT EXISTS account_security_audit (
 	if err := s.initializeAliases(ctx); err != nil {
 		return err
 	}
-	return s.initializeTokens(ctx)
+	if err := s.initializeTokens(ctx); err != nil {
+		return err
+	}
+	return s.initializeAudit(ctx)
 }
 
 // Insert serializes uniqueness and first-account bootstrap at the single writer.

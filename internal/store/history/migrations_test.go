@@ -96,7 +96,7 @@ func TestHistoryMigrationQuarantinesOnlyReportedOrphans(t *testing.T) {
 	if err := store.Initialize(t.Context()); err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	backup, err := sql.Open("sqlite", "file:"+path+".pre-v0.bak?mode=ro")
+	backup, err := sql.Open("sqlite", "file:"+findings.Backup+"?mode=ro")
 	if err != nil {
 		t.Fatal(err)
 	}

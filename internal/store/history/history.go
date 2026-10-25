@@ -288,6 +288,9 @@ func (s *Store) Initialize(ctx context.Context) error {
 	if _, err := tx.ExecContext(ctx, `DELETE FROM measures; DELETE FROM sources; DELETE FROM source_fields`); err != nil {
 		return fmt.Errorf("history: clear registry mirrors: %w", err)
 	}
+	if _, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery); err != nil {
+		return fmt.Errorf("history: verify audit: %w", err)
+	}
 	if err := s.loadRegistry(ctx, tx); err != nil {
 		return err
 	}

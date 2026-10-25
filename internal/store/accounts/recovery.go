@@ -106,10 +106,15 @@ func resetCredentials(ctx context.Context, tx *sql.Tx, accountID, passwordHash s
 }
 
 func recoveryAudit(ctx context.Context, tx *sql.Tx, accountID, operation, reason string, now int64) error {
-	if _, err := tx.ExecContext(ctx, `INSERT INTO account_security_audit(account_id, operation, reason, occurred_at) VALUES (?, ?, ?, ?)`, accountID, operation, reason, now); err != nil {
+	result, err := tx.ExecContext(ctx, `INSERT INTO account_security_audit(account_id, operation, reason, occurred_at) VALUES (?, ?, ?, ?)`, accountID, operation, reason, now)
+	if err != nil {
 		return fmt.Errorf("accounts: audit recovery: %w", err)
 	}
-	return nil
+	sequence, err := result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("accounts: audit sequence: %w", err)
+	}
+	return appendSecurityAudit(ctx, tx, sequence)
 }
 
 // AuthGeneration fences every credential/delegation issued before a reset. Future

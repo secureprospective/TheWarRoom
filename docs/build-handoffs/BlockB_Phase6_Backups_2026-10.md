@@ -138,3 +138,44 @@ and the ledger resolves linked identities through the verified-alias map.
 `TestRestoreOnAnotherComputerKeepsCommissionerWithSignIn` replaces the finding test and
 `TestStrangersRestoredCopyWithoutSignInStaysVisitor` keeps a copy without the password
 a Visitor. See `internal/accounts/README.md` → Desktop sign-in and restored copies.
+
+## Repeat-restore startup fix (2026-10-24)
+
+Finding: a second migration from the same schema collided with a non-empty fixed
+`<db>.pre-v<N>.bak`; matched-set VACUUM outputs were also 0644.
+Proposal: reserve each per-file backup exclusively with `os.CreateTemp` as
+`<db>.pre-v<N>-<random>.bak` (0600), snapshot and sync it before pruning or migrating.
+Keep the current successful copy plus the four newest prior copies by modification
+time, with filename as a deterministic tie-breaker, across all versions per database.
+Legacy fixed-name copies count toward the same five-copy limit. Prune only regular
+files matching the numeric legacy/new names; symlinks and foreign names stay untouched.
+Failed VACUUM output is removed without pruning prior copies or changing the schema.
+Permission tightening shares the same matcher. The matched-set capture loop creates
+0600 empty destinations before VACUUM; set retention and restore policies are unchanged.
+
+Per-file snapshots remain necessary for callers outside app startup (store initialization
+and offline tools). Removing them would remove that safety guarantee. The flow is still
+startup recovery → matched pre-migration set → open pools → per-file snapshot → migration;
+backup/sync/prune failure stops before migration. No dependency, schema or IPC change.
+
+Evidence: regression tests first failed on the old names/collision and on all six daily/
+pre-migration database permissions. `TestRepeatedOldSchemaRestoreStartsAndRetainsSafetyCopies`
+restores the same schema-zero matched set twice, opens and initializes the actual app
+stores twice, preserves original marker rows and retains six distinct 0600 per-file copies,
+two pre-migration sets and two pre-restore sets. DB tests cover seven retries capped at five
+copies, legacy preservation until aged out, symlink/foreign preservation, canceled VACUUM
+cleanup, and owner-only daily/pre-migration sets. Existing sixty-day matched retention
+coverage remains unchanged. Desktop live testing and independent Claude review remain
+for the PR gate; tests here use throwaway profiles, not production files.
+
+Final `make verify` passes after updating the history migration test to open the
+backup path returned by findings: full Go race suite, lint, vulnerability and
+binding checks, TypeScript, 1,415 frontend tests, build/budget and browser CSP.
+The earlier full run failed only that fixed-filename assertion; all other Go
+packages passed. A fresh worktree first required the frozen frontend install/build
+before verification could compile the embedded assets.
+
+Impact against `106cab41`, physical lines (`splitlines`, unchanged encoding): all
+affected handwritten production files 535 → 611 (+76), tests 1,403 → 1,620 (+217).
+The production total includes the new migration-backup responsibility file and
+removed original helper; no relocation is counted as a reduction. No debt added.

@@ -221,7 +221,7 @@ func TestOpenTightensExistingFiles(t *testing.T) {
 	if err := fixture.Close(); err != nil {
 		t.Fatal(err)
 	}
-	owned := []string{path, path + "-wal", path + "-shm", path + ".premigration-20261001T000000Z", path + ".pre-v0.bak"}
+	owned := []string{path, path + "-wal", path + "-shm", path + ".premigration-20261001T000000Z", path + ".pre-v0.bak", path + ".pre-v3-123456789.bak"}
 	for _, p := range append(owned[1:], outside) {
 		if err := os.WriteFile(p, nil, 0o644); err != nil { //nolint:gosec // the older build's mode under test
 			t.Fatal(err)
@@ -232,8 +232,10 @@ func TestOpenTightensExistingFiles(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := os.Symlink(outside, path+".premigration-link"); err != nil {
-		t.Fatal(err)
+	for _, link := range []string{path + ".premigration-link", path + ".pre-v99-123.bak"} {
+		if err := os.Symlink(outside, link); err != nil {
+			t.Fatal(err)
+		}
 	}
 	pools, err := Open(t.Context(), path)
 	if err != nil {
