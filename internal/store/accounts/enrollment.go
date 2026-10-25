@@ -39,7 +39,7 @@ func (s *Store) IssueEnrollment(ctx context.Context, digest, username, league st
 	if err != nil || canonicalIssuer != issuer {
 		return time.Time{}, identity.ErrEnrollmentRefused
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("accounts: begin enrollment issue: %w", err)
 	}
@@ -76,7 +76,7 @@ func (s *Store) RedeemEnrollment(ctx context.Context, digest string, credential 
 	if err := validateEnrollment(digest, credential.Username); err != nil {
 		return err
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin enrollment redemption: %w", err)
 	}

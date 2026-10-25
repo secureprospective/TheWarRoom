@@ -13,7 +13,7 @@ const securityAuditColumns = `SELECT CAST(sequence AS TEXT),json_array(sequence,
 const securityAuditQuery = securityAuditColumns + ` ORDER BY sequence`
 
 func (s *Store) initializeAudit(ctx context.Context) error {
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin audit setup: %w", err)
 	}

@@ -25,6 +25,7 @@ const connectionPragmas = "&_pragma=foreign_keys(ON)&_pragma=recursive_triggers(
 
 // Pools is the read/write pool pair for one database. Construct with Open.
 type Pools struct {
+	writeGuard       func() error
 	read             *sql.DB
 	write            *sql.DB
 	path             string

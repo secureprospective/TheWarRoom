@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/netip"
 	"os"
+	"path/filepath"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -29,6 +30,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	key := flags.String("tls-key", "", "TLS private key PEM")
 	totpKey := flags.String("totp-key-file", "", "owner-only 32-byte authenticator encryption key")
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
+	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("parse hosted flags: %w", err)
@@ -55,21 +57,15 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 		return err
 	}
 	handler.TrustedProxy = hop
+	stopBackup, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
+	if err != nil {
+		return err
+	}
+	defer stopBackup()
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
-	listener, err := serverhttp.ListenLoopback(ctx, *address)
-	if err != nil {
-		return fmt.Errorf("listen for account HTTPS: %w", err)
-	}
-	defer func() { _ = listener.Close() }()
-	if _, err := fmt.Fprintf(output, "https://%s\n", listener.Addr()); err != nil {
-		return fmt.Errorf("report server address: %w", err)
-	}
-	if err := serverhttp.ServeHosted(ctx, listener, certificate, handler); err != nil {
-		return fmt.Errorf("serve account HTTPS: %w", err)
-	}
-	return nil
+	return serveHosted(ctx, *address, certificate, handler, output)
 }
 
 // hostedFiles reads the authenticator key, preview registry and TLS pair the server is started with.
@@ -153,4 +149,19 @@ func readPreviewRegistry(path string) ([]byte, error) {
 		return nil, fmt.Errorf("validate preview registry: %w", err)
 	}
 	return catalogue, nil
+}
+
+func serveHosted(ctx context.Context, address string, certificate tls.Certificate, handler serverhttp.Hosted, output io.Writer) error {
+	listener, err := serverhttp.ListenLoopback(ctx, address)
+	if err != nil {
+		return fmt.Errorf("listen for account HTTPS: %w", err)
+	}
+	defer func() { _ = listener.Close() }()
+	if _, err := fmt.Fprintf(output, "https://%s\n", listener.Addr()); err != nil {
+		return fmt.Errorf("report server address: %w", err)
+	}
+	if err := serverhttp.ServeHosted(ctx, listener, certificate, handler); err != nil {
+		return fmt.Errorf("serve account HTTPS: %w", err)
+	}
+	return nil
 }

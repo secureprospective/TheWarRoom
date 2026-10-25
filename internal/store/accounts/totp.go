@@ -26,7 +26,7 @@ func (s *Store) BeginTOTP(ctx context.Context, accountID string, sealedSeed []by
 	if len(sealedSeed) != 48 {
 		return identity.ErrTOTPRequired
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin authenticator setup: %w", err)
 	}
@@ -81,7 +81,7 @@ func (s *Store) ConsumeTOTP(ctx context.Context, accountID string, sealedSeed []
 	if !confirming && !validSecretDigest(proofDigest) {
 		return identity.ErrTOTPRequired
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin authenticator verification: %w", err)
 	}

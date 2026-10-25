@@ -14,7 +14,7 @@ docker exec "$name" sh -ec '
   touch /run/openrc/softlevel
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/test-alpine.sh
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/test-alpine.sh
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
@@ -51,6 +51,21 @@ STUB
   zone=example.org hostname=league-1.example.org token=Abc_123-xyz work=/tmp/json-work sh /tmp/write-input
   jq -e '\''. == {zone:"example.org",hostname:"league-1.example.org",api_token:"Abc_123-xyz"}'\'' /tmp/json-work/input.json
   rc-service twr-server status
+  # Real CT-only settings validation/install, but stub service restart to avoid external R2.
+  mkdir /tmp/backup-tools
+  printf "#!/bin/sh\nprintf \"%%s\\n\" \"\$*\" >> /tmp/backup-service-calls\n" > /tmp/backup-tools/rc-service
+  chmod 755 /tmp/backup-tools/rc-service
+  printf "{\"endpoint\":\"%s.r2.cloudflarestorage.com\",\"bucket\":\"league-backups\",\"access_key\":\"%s\",\"secret_key\":\"%s\",\"recipient\":\"age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p\"}\n" \
+    "$(printf %032d 0)" "$(printf %032d 0)" "$(printf %064d 0)" > /root/twr/backup.json
+  chmod 600 /root/twr/backup.json
+  PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-backup-setup > /tmp/backup-setup-result
+  test "$(stat -c %a /etc/twr/backup.json)" = 600
+  test "$(stat -c %U:%G /etc/twr/backup.json)" = twr:twr
+  test ! -e /root/twr/backup.json
+  grep -F "twr-server --ifstarted stop" /tmp/backup-service-calls
+  grep -F "twr-server start" /tmp/backup-service-calls
+  /usr/local/bin/twr-server backup-check -config /etc/twr/backup.json
+  rm /etc/twr/backup.json
   # A second install refuses without replacing authoritative state or keys.
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   if sh /root/twr/install.sh; then exit 1; fi

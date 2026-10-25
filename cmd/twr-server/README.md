@@ -182,3 +182,11 @@ plain message. Both forms only read the database. Details: `docs/backend/Audit_C
 For a pre-provisioned throwaway hosted league, TLS, enrolled authenticator and isolated desktop
 launch command, use [`twr-practice`](../twr-practice/README.md). This is development tooling, not
 commissioner installation/bootstrap or a release artifact.
+
+## Hosted off-site protection
+
+Hosted mode now starts with writes paused unless `-backup-config` identifies private
+R2 settings and the first matched set passes encrypted upload/read-back. Deployment
+configuration/key/registry files must be colocated under their installed names.
+`backup-check -config <file>` validates settings locally without printing credentials.
+See [CT setup, retention and restore handoff](../../deploy/server/BACKUPS.md).

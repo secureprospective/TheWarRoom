@@ -38,6 +38,8 @@ func main() {
 func run(ctx context.Context, args []string, output io.Writer) error {
 	if len(args) > 0 {
 		switch args[0] {
+		case "backup-check":
+			return runBackupCheck(args[1:], output)
 		case "hosted":
 			return runHosted(ctx, args[1:], output)
 		case "checkpoint":

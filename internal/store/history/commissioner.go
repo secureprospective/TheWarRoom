@@ -135,7 +135,7 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	gathered.players = facts
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("begin league change: %w", err)
 	}

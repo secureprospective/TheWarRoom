@@ -101,7 +101,7 @@ func prepareFiles(ctx context.Context, dir, bin string) error {
 	}
 	commands := [][]string{
 		{"openssl", "req", "-x509", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:P-256", "-nodes", "-keyout", filepath.Join(dir, "server.key"), "-out", filepath.Join(dir, "server.pem"), "-days", "1", "-subj", "/CN=Disposable loopback", "-addext", "subjectAltName=IP:127.0.0.1"},
-		{"go", "build", "-o", filepath.Join(dir, "twr-server"), "./cmd/twr-server"},
+		{"go", "build", "-tags", "practice", "-o", filepath.Join(dir, "twr-server"), "./cmd/twr-server"},
 		{"go", "build", "-tags", "webkit2_41", "-o", filepath.Join(dir, "thewarroom"), "."},
 	}
 	if bin != "" {
@@ -128,14 +128,14 @@ func awaitAddress(ctx context.Context, dir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("read startup log: %w", err)
 		}
-		first, _, _ := strings.Cut(string(data), "\n")
-		if strings.HasPrefix(first, "https://") {
-			parsed, err := url.Parse(first)
-			if err != nil || parsed.Hostname() != "127.0.0.1" || parsed.Port() == "" {
-				return "", fmt.Errorf("server reported invalid loopback origin")
-			}
-			return first, nil
+		address, err := practiceOrigin(string(data))
+		if err != nil {
+			return "", err
 		}
+		if address != "" {
+			return address, nil
+		}
+
 		select {
 		case <-ctx.Done():
 			return "", fmt.Errorf("wait for hosted server: %w", ctx.Err())
@@ -186,4 +186,18 @@ func copyExecutable(dir, name string, source *os.File) error {
 		return fmt.Errorf("close sandbox executable: %w", closeErr)
 	}
 	return nil
+}
+
+func practiceOrigin(output string) (string, error) {
+	for _, line := range strings.Split(output, "\n") {
+		if !strings.HasPrefix(line, "https://") {
+			continue
+		}
+		parsed, err := url.Parse(line)
+		if err != nil || parsed.Hostname() != "127.0.0.1" || parsed.Port() == "" {
+			return "", fmt.Errorf("server reported invalid loopback origin")
+		}
+		return line, nil
+	}
+	return "", nil
 }

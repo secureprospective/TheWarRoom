@@ -1,9 +1,10 @@
-# Pi Durable: bounded overnight goal (slice 28)
+# Pi Durable: bounded overnight goal (slices 28–29)
 
-**Local process-crash drill passes. Claude-OS and eight-hour execution are unproven.**
-This is an experiment, not a league feature or an unattended coding agent.
-B acceptance is supplied by the dispatch brief, not established by this experiment.
-ClaudeBox alone runs the live gate; the builder does not access Claude-OS.
+**Observed on Claude-OS: the eight-hour goal survived a SIGKILL and finished once
+(slice 28), and a repair goal killed mid-fix resumed to a review branch (slice 29).**
+Results and evidence: [`RESULTS.md`](RESULTS.md). This is an experiment, not a league
+feature or an unattended coding agent. B acceptance is supplied by the dispatch brief,
+not established by this experiment.
 
 ## Goal and boundaries
 
@@ -57,7 +58,7 @@ assert compatibility with a fleet Pi CLI or authorize adding it to app runtime.
 ## ClaudeBox live runbook
 
 Run on Claude-OS as a normal user, with Node **24.22.1 or newer**, Corepack and
-`/usr/bin/flock` available. Do not install services or change the live app. Copy
+`/usr/bin/flock` available (and `git` for the slice 29 demo). Do not install services or change the live app. Copy
 **only this experiment's tracked files** from the reviewed candidate into a new
 private disposable directory. Do not copy `.git`, app databases, `.env`, SSH keys,
 GitHub credentials, Pi auth files, `node_modules` or `.runs`. Do not use the live app
@@ -111,21 +112,8 @@ idempotency are not established by either drill.
 
 ### Stop and delete
 
-Ctrl-C (or SIGTERM to the driver) kills its current worker and prevents the driver
-from starting another. Once the driver has exited, optionally make cancellation
-permanent with the printed run directory's basename:
-
-```sh
-node drill.mjs --stop goal-REPLACE_WITH_PRINTED_NAME
-```
-
-Expect terminal `aborted` (or unchanged terminal `completed` if already finished).
-If another writer is alive, stop refuses rather than opening competing storage.
-Do not remove its lock file to bypass this. There is no background schedule to
-uninstall. After all commands have exited and evidence is retained, delete the
-**disposable copy** using the enclosing temporary directory recorded above. Never
-delete the repository checkout or app state. Removing the copy also removes the
-experiment dependencies, caches and all goals. No live app rollback is necessary.
+See [Stop and delete](#stop-and-delete-both-drills-and-the-demo) below; it covers both
+drills and the slice 29 demo.
 
 ### Record the actual live result
 
@@ -135,17 +123,89 @@ and writer-denial results, evidence location, reviewer and date to `RESULTS.md`.
 Record short and overnight runs separately. Failure stays failure; no live acceptance
 until observed on that candidate. No secrets or private host paths in committed evidence.
 
+## Slice 29: failing test → fix → review branch
+
+`demo.mjs` builds a throwaway git repo under `.runs/demo-*/repo` with one helper and
+one failing test, then runs `demo-worker.mjs`, a durable goal with four phases:
+
+| Phase | What it does |
+|---|---|
+| `reproduce` | Runs the test; records the failure. If the test already passes, the goal fails rather than inventing work. |
+| `fix` | Writes a fixed patch (idempotent on replay). The fix is canned, not model output: the demo tests the pipeline's durability and its stop at review, not repair skill. |
+| `verify` | Reruns the test; a still-failing test fails the goal. |
+| `propose` | Commits on a new local branch `durable/fix-slug`, writes `outbox/fix.patch`, switches back to `main`. That branch plus patch is the "PR". |
+
+The driver kills the worker inside `fix`, restarts it, and checks: same task, each step
+once, the failing test ran once (not replayed), `main` unchanged, one commit on the
+branch, no remote, clean tree. A third start changes nothing.
+
+Boundaries. The scratch repo has no remote, so nothing can be pushed; the goal never
+writes `main` and has no merge step; there is no deploy. The worker gets
+`--allow-child-process` so it can run `git` and `node --test`. Node permissions do not
+reach those children, so their limits come from the empty environment (synthetic HOME,
+`GIT_CONFIG_GLOBAL=/dev/null`, no system git config, no credential prompt) and the
+disposable workspace. The test child itself runs with `--permission` and read access to
+the scratch repo only.
+
+Run it from the same disposable copy as above:
+
+```sh
+node demo.mjs
+```
+
+It prints PASS and the `evidence.json` path. To review and merge as the human would:
+
+```sh
+cd .runs/demo-NAME/repo
+git log --oneline main..durable/fix-slug && git diff main durable/fix-slug
+git merge --ff-only durable/fix-slug   # the human's decision; the goal never does this
+```
+
+## Stop and delete (both drills and the demo)
+
+1. Stop: Ctrl-C (or SIGTERM to `drill.mjs`/`demo.mjs`) kills the current worker and
+   prevents another start. Nothing restarts it: there is no cron job, service or supervisor.
+2. Make cancellation permanent (optional): `node drill.mjs --stop goal-NAME` or
+   `node demo.mjs --stop demo-NAME`. Expect `aborted`, or an unchanged `completed`.
+   If a writer is still alive, stop is refused; do not delete `owner.lock` to force it.
+3. Check nothing is left running: `pgrep -af 'drill.mjs|demo.mjs|worker.mjs'` prints nothing.
+4. Copy out any evidence you want to keep, then delete the whole disposable copy:
+   `rm -rf -- "$workspace"` (the `mktemp` directory from the runbook). That removes the
+   dependencies, caches, goals and scratch repos. Never delete a repository checkout or
+   app state; no app rollback is needed.
+
+## Follow-up assessment (CLI and fleet)
+
+Worth doing, in this order, each as its own decision:
+
+1. **A goal runner for the fleet, outside the app.** The pattern holds: durable phases,
+   a sleep that survives a process kill, and a stop at a branch. A `~/fleet` script could
+   wrap a builder brief as a goal with this shape. It belongs in the fleet, not in
+   TheWarRoom's runtime or its `twr` CLI; the app needs none of it.
+2. **A real model in the `fix` phase.** The step that is still unproven. It needs a
+   provider credential, a sandbox stronger than Node permissions (a container or VM user
+   with no network beyond the model API), and a budget cap per goal. That is a panel
+   question before it is a build.
+3. **Pull requests stay human.** If the runner ever pushes, it pushes a branch to a fork
+   or a throwaway remote with a token that cannot merge; merging stays a person's click.
+4. **Host restart.** Only a process kill is proven. Surviving a VM restart needs a
+   supervisor (a systemd user unit) and a test that restarts the VM; add it only if
+   goals are meant to run unattended across restarts.
+
+Not worth doing now: wiring Pi Durable into the app or the `twr` CLI, or replacing the
+existing dispatch scripts. They already work for the current pace of slices.
+
 ## Review disposition and remaining scope
 
 Finding: source-only restart confidence cannot establish durable work.
 Proposal: the smallest credential-free Pi task plus real crash/reopen assertions.
 Preserve: app/runtime/deployment code and human merge authority remain untouched.
-Evidence: local exercised results in `RESULTS.md`; Claude-OS unknown.
-Risk: experimental upstream API, process crash only, no external tools.
+Evidence: local and Claude-OS observed results in `RESULTS.md`, raw JSON in `evidence/`.
+Risk: experimental upstream API, process crash only; the demo's only tools are local
+`git` and `node --test` in a scratch repo.
 Impact: zero changed runtime lines; all prototype, test, lock and documentation files
 are confined to this directory. This is not a production debloat claim.
 
-Debt left: none in app/runtime. Live Claude-OS/overnight evidence is the explicitly
-assigned ClaudeBox acceptance gate, not an agent-reported pass. Slice 29 owns the
-failing-test → fix → PR demonstration and CLI/fleet assessment; no placeholder
-runtime integration or autonomous merge path is left behind.
+Debt left: none in app/runtime. The live gates for slices 28 and 29 are observed and
+recorded. The follow-up assessment above lists proposals only; no runtime integration,
+push path or autonomous merge path is left behind.

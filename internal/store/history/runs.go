@@ -124,7 +124,7 @@ func (s *Store) insertRun(ctx context.Context, p pendingRun, scores func(tx *sql
 	if err != nil {
 		return 0, fmt.Errorf("history: encode missing measures: %w", err)
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("history: write run: %w", err)
 	}

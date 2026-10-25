@@ -119,7 +119,7 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: begin append: %w", err)
 	}
@@ -227,7 +227,9 @@ func (s *Store) SetAuthorityPolicy(ctx context.Context, p AuthorityPolicy) error
 	if p.CutoverAt != nil {
 		cutoff = sql.NullString{String: formatTime(*p.CutoverAt), Valid: true}
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO authority_policy(league,domain,cutover_at) VALUES(?,?,?) ON CONFLICT(league,domain) DO UPDATE SET cutover_at=excluded.cutover_at`, p.League, p.Domain, cutoff); err != nil {
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `INSERT INTO authority_policy(league,domain,cutover_at) VALUES(?,?,?) ON CONFLICT(league,domain) DO UPDATE SET cutover_at=excluded.cutover_at`, p.League, p.Domain, cutoff)
+	}); err != nil {
 		return fmt.Errorf("authority policy: save: %w", err)
 	}
 	return nil

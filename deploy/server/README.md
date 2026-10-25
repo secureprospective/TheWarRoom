@@ -1,4 +1,7 @@
-# Alpine league-server deployment (slices 34–35)
+# Alpine league-server deployment (slices 34–36)
+
+Encrypted Cloudflare R2 recovery and CT-only setup: [BACKUPS.md](BACKUPS.md).
+New installations serve with changes paused until that setup verifies an off-site set.
 
 **Preproduction. Not approved for real owners.** League files are private inside
 the container, not disk-encrypted; see [STORAGE.md](STORAGE.md) for the limits.
@@ -42,6 +45,7 @@ Cloudflare zone/new hostname and API token (hidden input). Token permissions are
 Cloudflare Tunnel Edit for the account, plus DNS Edit and Zone Read for that zone.
 The installer creates the Tunnel, TLS material, DNS record and services itself;
 there is no dashboard ingress editing, certificate copying or manual init setup.
+Complete the documented R2 setup inside the CT before moving an active league.
 It does not change the host's management network, firewall policy or storage
 security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
 storage and synchronized host clock are infrastructure prerequisites, not claims
@@ -80,8 +84,7 @@ bash deploy/server/test-alpine.sh
 The builder uses checksum-pinned GoReleaser OSS 2.19.0 and cloudflared 2026.10.3,
 both from their publishers' GitHub repositories. `goreleaser.yaml` is build
 configuration, not a complete signed release pipeline. `bundle.sh` assembles the
-server, Tunnel binary and deployment files. No third-party Go dependency is
-added to the app. TUF trust/distribution is slice 43, not provided by a checksum
+server, Tunnel binary and deployment files. Backup dependencies and their source checks are documented in BACKUPS.md. TUF trust/distribution is slice 43, not provided by a checksum
 printed next to an unsigned archive.
 
 The test uses a digest-pinned disposable Alpine Docker container, with an init

@@ -29,7 +29,7 @@ func (s *Store) Record(ctx context.Context, f archive.Fetch) error {
 
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: record fetch: %w", err)
 	}
