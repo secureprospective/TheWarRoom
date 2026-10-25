@@ -420,7 +420,7 @@ func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague,
 	}
 	defer func() { _ = tx.Rollback() }()
 	var revision int64
-	if err := tx.QueryRowContext(ctx, `SELECT COALESCE(MAX(rowid),0) FROM league_event`).Scan(&revision); err != nil {
+	if err := tx.QueryRowContext(ctx, `SELECT (SELECT COALESCE(MAX(rowid),0) FROM league_event)+(SELECT COALESCE(MAX(sequence),0) FROM transfer_transition)`).Scan(&revision); err != nil {
 		return nil, fmt.Errorf("read app league revision: %w", err)
 	}
 	s.leaguesMu.Lock()
@@ -428,7 +428,7 @@ func (s *Store) NativeLeagues(ctx context.Context) ([]commissioner.NativeLeague,
 	if s.leagues.loaded && s.leagues.revision == revision {
 		return slices.Clone(s.leagues.names), nil
 	}
-	rows, err := tx.QueryContext(ctx, `SELECT league,json_extract(payload,'$.commissioner.command.args.name') FROM league_event WHERE stream=? AND kind=? AND NOT EXISTS(SELECT 1 FROM league_import WHERE league=league_event.league) ORDER BY league`, commissioner.Stream, commissioner.Create)
+	rows, err := tx.QueryContext(ctx, `SELECT league,json_extract(payload,'$.commissioner.command.args.name') FROM league_event WHERE stream=? AND kind=? AND NOT EXISTS(SELECT 1 FROM transfer_current WHERE league=league_event.league AND state!='active') AND (NOT EXISTS(SELECT 1 FROM league_import WHERE league=league_event.league) OR EXISTS(SELECT 1 FROM transfer_current WHERE league=league_event.league AND state='active')) ORDER BY league`, commissioner.Stream, commissioner.Create)
 	if err != nil {
 		return nil, fmt.Errorf("read app leagues: %w", err)
 	}
