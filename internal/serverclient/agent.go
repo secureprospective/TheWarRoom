@@ -64,13 +64,9 @@ func (a *Agent) Ledger(ctx context.Context) (commissioner.Ledger, error) {
 // Dispatch previews by default; execute needs mode "execute", and a G2/G3 change also needs the
 // person's confirmation code. The expected revision is read fresh when the caller leaves it 0.
 func (a *Agent) Dispatch(ctx context.Context, raw commissioner.RawCommand, mode, confirmation string) (json.RawMessage, error) {
-	raw.League = a.league
-	if raw.Expected == 0 {
-		ledger, err := a.Ledger(ctx)
-		if err != nil {
-			return nil, err
-		}
-		raw.Expected = ledger.Revision
+	raw, err := a.Prepare(ctx, raw)
+	if err != nil {
+		return nil, err
 	}
 	if mode == "" {
 		mode = "preview"
@@ -117,6 +113,20 @@ func (a *Agent) post(ctx context.Context, path string, payload serverhttp.RawNat
 		return nil, fmt.Errorf("the league server sent an unreadable reply; try again")
 	}
 	return body, nil
+}
+
+// Prepare names the league and, when the caller left it 0, the current revision: the exact change
+// a person confirms and the helper then records.
+func (a *Agent) Prepare(ctx context.Context, raw commissioner.RawCommand) (commissioner.RawCommand, error) {
+	raw.League = a.league
+	if raw.Expected == 0 {
+		ledger, err := a.Ledger(ctx)
+		if err != nil {
+			return raw, err
+		}
+		raw.Expected = ledger.Revision
+	}
+	return raw, nil
 }
 
 // AgentKeychain keeps the CLI's token in the system keychain, never in a file.

@@ -2,7 +2,7 @@
 // token a signed-in commissioner made in The War Room, over the same HTTPS dispatch as the
 // desktop. Changes preview by default; bigger changes still need that person to confirm them.
 //
-//	twr connect --address https://league.example --league native.example   (paste the token)
+//	twr connect --address https://league.example --league native.example   (paste the twr1 line)
 //	twr preview change.json      twr execute change.json      twr mcp
 package main
 
@@ -29,6 +29,7 @@ import (
 type connection struct {
 	Address string `json:"address"`
 	League  string `json:"league"`
+	Helper  string `json:"helper"` // the token's public audit ID, named in confirm requests
 }
 
 // env is everything twr touches outside itself, so tests can point it at a throwaway setup.
@@ -75,12 +76,16 @@ func (e env) connectCommand() *cobra.Command {
 	var c connection
 	command := &cobra.Command{Use: "connect", Short: "Save a connection token from The War Room", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			fmt.Fprintln(e.out, "Paste the connection token from The War Room, then press Enter:")
+			fmt.Fprintln(e.out, "Paste the connection line from The War Room, then press Enter:")
 			line, err := bufio.NewReader(e.in).ReadString('\n')
 			if err != nil && !errors.Is(err, io.EOF) {
-				return fmt.Errorf("read the connection token: %w", err)
+				return fmt.Errorf("read the connection line: %w", err)
 			}
-			token := strings.TrimSpace(line)
+			id, token, err := serverclient.ParseHelperLink(line)
+			if err != nil {
+				return err //nolint:wrapcheck // already a plain message for the person
+			}
+			c.Helper = id
 			agent, err := serverclient.NewAgent(c.Address, c.League, token, e.roots)
 			if err != nil {
 				return err //nolint:wrapcheck // already a plain message for the person
@@ -105,7 +110,7 @@ func (e env) connectCommand() *cobra.Command {
 func (e env) ledgerCommand() *cobra.Command {
 	return &cobra.Command{Use: "ledger", Short: "Print the league's recorded changes", Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			agent, err := e.agent()
+			agent, _, err := e.agent()
 			if err != nil {
 				return err
 			}
@@ -130,13 +135,9 @@ func (e env) changeCommand(mode string) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			agent, err := e.agent()
+			reply, err := e.change(cmd.Context(), raw, mode, confirmation)
 			if err != nil {
 				return err
-			}
-			reply, err := agent.Dispatch(cmd.Context(), raw, mode, confirmation)
-			if err != nil {
-				return err //nolint:wrapcheck // already a plain message for the person
 			}
 			return e.print(reply)
 		}}
@@ -164,16 +165,49 @@ func (e env) disconnectCommand() *cobra.Command {
 		}}
 }
 
-func (e env) agent() (*serverclient.Agent, error) {
+func (e env) agent() (*serverclient.Agent, connection, error) {
 	c, err := e.load()
 	if err != nil {
-		return nil, err
+		return nil, c, err
 	}
 	token, err := e.keychain(c.Address, c.League).Get()
 	if err != nil {
-		return nil, err //nolint:wrapcheck // already a plain message for the person
+		return nil, c, err //nolint:wrapcheck // already a plain message for the person
 	}
-	return serverclient.NewAgent(c.Address, c.League, token, e.roots) //nolint:wrapcheck // plain message
+	agent, err := serverclient.NewAgent(c.Address, c.League, token, e.roots)
+	return agent, c, err //nolint:wrapcheck // plain message
+}
+
+// changeReply is a preview or receipt. A preview of a bigger change also carries the one line the
+// commissioner pastes into The War Room to confirm it.
+type changeReply struct {
+	Reply          json.RawMessage `json:"reply"`
+	ConfirmRequest string          `json:"confirmRequest,omitempty"`
+	Next           string          `json:"next,omitempty"`
+}
+
+func (e env) change(ctx context.Context, raw commissioner.RawCommand, mode, confirmation string) (changeReply, error) {
+	agent, c, err := e.agent()
+	if err != nil {
+		return changeReply{}, err
+	}
+	raw, err = agent.Prepare(ctx, raw)
+	if err != nil {
+		return changeReply{}, err //nolint:wrapcheck // already a plain message for the person
+	}
+	reply, err := agent.Dispatch(ctx, raw, mode, confirmation)
+	if err != nil {
+		return changeReply{}, err //nolint:wrapcheck // already a plain message for the person
+	}
+	out := changeReply{Reply: reply}
+	definition, err := raw.EffectiveDefinition()
+	if mode == "preview" && err == nil && (definition.Gravity == "G2" || definition.Gravity == "G3") {
+		if out.ConfirmRequest, err = serverclient.EncodeConfirmRequest(c.Helper, raw); err != nil {
+			return out, err //nolint:wrapcheck // plain message
+		}
+		out.Next = "This change needs the commissioner's confirmation. Ask them to paste confirmRequest into The War Room under AI helpers, then run execute with the code they give you."
+	}
+	return out, nil
 }
 
 func (e env) readChange(name string) (commissioner.RawCommand, error) {

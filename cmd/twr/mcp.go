@@ -46,7 +46,7 @@ func (e env) mcpServer() *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "twr", Version: "1"}, nil)
 	mcp.AddTool(server, &mcp.Tool{Name: "league_ledger", Description: "Read the league's recorded changes."},
 		func(ctx context.Context, _ *mcp.CallToolRequest, _ noInput) (*mcp.CallToolResult, any, error) {
-			agent, err := e.agent()
+			agent, _, err := e.agent()
 			if err != nil {
 				return failed(err), nil, nil
 			}
@@ -63,15 +63,11 @@ func (e env) mcpServer() *mcp.Server {
 		}
 		mcp.AddTool(server, &mcp.Tool{Name: mode + "_change", Description: description},
 			func(ctx context.Context, _ *mcp.CallToolRequest, in changeInput) (*mcp.CallToolResult, any, error) {
-				agent, err := e.agent()
-				if err != nil {
-					return failed(err), nil, nil
-				}
 				confirmation := ""
 				if mode == "execute" {
 					confirmation = in.Confirmation
 				}
-				reply, err := agent.Dispatch(ctx, in.raw(), mode, confirmation)
+				reply, err := e.change(ctx, in.raw(), mode, confirmation)
 				if err != nil {
 					return failed(err), nil, nil
 				}

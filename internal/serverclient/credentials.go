@@ -59,7 +59,7 @@ func (d *Desktop) restore() {
 }
 
 func (d *Desktop) clearCredential() error {
-	d.bearer, d.proof = "", ""
+	d.bearer, d.proof, d.seats = "", "", nil
 	if err := d.credentials.Delete(); err != nil {
 		return fmt.Errorf("local keychain could not be cleared; sign in again and revoke all devices before closing the app")
 	}

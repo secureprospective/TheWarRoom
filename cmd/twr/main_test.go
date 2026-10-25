@@ -15,7 +15,12 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
-const testToken = "twr-agent-token-never-printed" //nolint:gosec // a fake token for the fake league
+// Fake 32-byte values in the token's own encoding, for the fake league.
+const (
+	testID    = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+	testToken = "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+	testLink  = "twr1." + testID + "." + testToken + "\n"
+)
 
 type memoryStore struct{ tokens map[string]string }
 
@@ -88,7 +93,7 @@ func (e env) runTwr(t *testing.T, stdin string, args ...string) error {
 
 func TestTwrConnectsPreviewsByDefaultAndNeverPrintsTheToken(t *testing.T) {
 	e, league, out, address := newTestEnv(t)
-	if err := e.runTwr(t, testToken+"\n", "connect", "--address", address, "--league", "native.test"); err != nil {
+	if err := e.runTwr(t, testLink, "connect", "--address", address, "--league", "native.test"); err != nil {
 		t.Fatal(err)
 	}
 	change := filepath.Join(t.TempDir(), "change.json")
@@ -108,6 +113,9 @@ func TestTwrConnectsPreviewsByDefaultAndNeverPrintsTheToken(t *testing.T) {
 	if first == nil || first.League != "native.test" || first.Expected != 7 || league.confirms[0] != "" || league.confirms[1] != "123456" {
 		t.Fatalf("first = %+v confirms = %q", first, league.confirms)
 	}
+	if err := e.runTwr(t, "", "connect", "--address", address, "--league", "native.test"); err == nil || !strings.Contains(err.Error(), "twr1") {
+		t.Fatalf("empty connection line = %v", err)
+	}
 	saved, err := os.ReadFile(e.configPath())
 	if err != nil || strings.Contains(string(saved), testToken) || strings.Contains(out.String(), testToken) {
 		t.Fatalf("token leaked: config %q output %q (%v)", saved, out.String(), err)
@@ -126,7 +134,7 @@ func TestTwrConnectsPreviewsByDefaultAndNeverPrintsTheToken(t *testing.T) {
 
 func TestTwrMCPOffersLedgerPreviewAndExecute(t *testing.T) {
 	e, league, _, address := newTestEnv(t)
-	if err := e.runTwr(t, testToken+"\n", "connect", "--address", address, "--league", "native.test"); err != nil {
+	if err := e.runTwr(t, testLink, "connect", "--address", address, "--league", "native.test"); err != nil {
 		t.Fatal(err)
 	}
 	serverSide, clientSide := mcp.NewInMemoryTransports()

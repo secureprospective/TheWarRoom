@@ -37,6 +37,29 @@ Recovery revokes old credentials; sign in and enroll the authenticator again.
 Eight one-time printed codes remain the account recovery mechanism, but their
 self-service desktop transport is not supplied by the current hosted API.
 
+## AI helpers (commissioners)
+
+After verifying a fresh authenticator code and opening league access, a
+commissioner sees **AI helpers**:
+
+1. **Connect a helper.** Choose "look and suggest" (read, preview) or "also
+   record" (adds execute), and the franchise it acts for. The scope is every
+   catalog command `accounts.DelegableCommand` allows; roles, seats, credentials
+   and generic corrections are never delegable. The desktop shows the `twr connect`
+   command and a `twr1.` connection line once; the helper ID stays filled in.
+2. **Confirm a helper's change.** Paste the helper's `twrc1.` confirm request. The
+   screen shows the command, reason and arguments before anything is sent; Go
+   decodes and checks it again and posts it to `/v1/native/confirm`. The code
+   covers that exact change for five minutes.
+3. **Disconnect a helper** revokes its token at once.
+
+The connection line is the only agent secret the webview ever shows, and only
+right after it is made. Device bearer and recent-auth proof stay in Go. CLI and
+MCP use: `cmd/twr/README.md`. Evidence:
+`TestDesktopConnectsConfirmsAndRevokesAnAIHelper` (real HTTPS: refused without
+fresh verification or league access, preview, unconfirmed G2 refused, confirmed
+G2 recorded, revoked helper refused) and `nativeHelpers.test.tsx`.
+
 ## Boundary and state ownership
 
 | Flow | Owner / failure |

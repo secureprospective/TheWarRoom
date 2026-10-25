@@ -34,7 +34,7 @@ func (r RawTokenScope) Validate() error {
 	}
 	seen := map[string]bool{}
 	for _, command := range r.Commands {
-		if !tokenName(command) || seen[command] || !delegableCommand(command) {
+		if !tokenName(command) || seen[command] || !DelegableCommand(command) {
 			return ErrTokenRefused
 		}
 		seen[command] = true
@@ -67,7 +67,9 @@ func tokenName(value string) bool {
 	return true
 }
 
-func delegableCommand(command string) bool {
+// DelegableCommand is whether an agent token may carry this command at all. Roles, seats,
+// credentials and generic corrections never are.
+func DelegableCommand(command string) bool {
 	for _, prefix := range []string{"auth.", "account.", "token.", "commish.role.", "commish.seat.", "commish.abilities.", "commish.visibility.", "commish.deputy.", "commish.succession.", "commish.commissioner.", "commish.vote."} {
 		if strings.HasPrefix(command, prefix) {
 			return false
