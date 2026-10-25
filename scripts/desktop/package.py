@@ -3,6 +3,7 @@
 import argparse
 from datetime import datetime, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 import platform
@@ -32,6 +33,8 @@ def artifact_name(name):
 def linux_package(source, output, guide):
     with tempfile.TemporaryDirectory(dir=output.parent) as directory:
         stage = Path(directory)
+        stage.chmod(0o755)
+        version = json.loads((ROOT / "wails.json").read_text(encoding="utf-8"))["info"]["productVersion"]
         binary = stage / "usr/bin/thewarroom"
         binary.parent.mkdir(parents=True)
         shutil.copy2(source, binary)
@@ -47,7 +50,7 @@ def linux_package(source, output, guide):
         control = stage / "DEBIAN"
         control.mkdir()
         (control / "control").write_text(
-            "Package: thewarroom\nVersion: 0.5.0\nArchitecture: amd64\n"
+            f"Package: thewarroom\nVersion: {version}\nArchitecture: amd64\n"
             "Maintainer: Christopher Campbell\nSection: games\nPriority: optional\n"
             "Depends: libgtk-3-0t64, libwebkit2gtk-4.1-0\n"
             "Description: The War Room desktop client\n", encoding="utf-8")

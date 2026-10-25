@@ -1,10 +1,12 @@
 """Packaging and real cross-process platform-lock regressions, without Wails or data."""
 
 import hashlib
+import io
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import tarfile
 import time
 import unittest
 
@@ -34,6 +36,10 @@ class DesktopTests(unittest.TestCase):
             depends = subprocess.check_output(["dpkg-deb", "-f", str(artifact), "Depends"], text=True)
             self.assertIn("libwebkit2gtk-4.1-0", depends)
             self.assertIn("libgtk-3-0t64", depends)
+            payload = subprocess.check_output(["dpkg-deb", "--fsys-tarfile", str(artifact)])
+            with tarfile.open(fileobj=io.BytesIO(payload)) as stream:
+                self.assertEqual(stream.getmember(".").mode, 0o755)
+                self.assertEqual(stream.getmember(".").uid, 0)
             unpacked = root / "unpacked"
             subprocess.run(["dpkg-deb", "-x", str(artifact), str(unpacked)], check=True)
             binary = unpacked / "usr/bin/thewarroom"
