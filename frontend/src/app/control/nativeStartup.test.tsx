@@ -12,7 +12,7 @@ it('mounts hosted account access without mounting any local shell or MFL setup',
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true,
     headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => ({
     server: 'https://league.example', league: 'native.test', message: '', name: '', role: '',
-    franchise: '', franchiseName: '', seed: '',
+    franchise: '', franchiseName: '', seed: '', connection: '', helperId: '', confirmation: '', seats: [],
   }) }));
   const host = await mount(render(NativeStartup));
   await vi.waitFor(async () => {

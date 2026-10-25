@@ -25,7 +25,7 @@ func (d *Desktop) Handler() http.Handler {
 				http.Error(w, "JSON required", http.StatusBadRequest)
 				return
 			}
-			r.Body = http.MaxBytesReader(w, r.Body, 8192)
+			r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
 			decoder := json.NewDecoder(r.Body)
 			decoder.DisallowUnknownFields()
 			if err := decoder.Decode(&raw); err != nil {

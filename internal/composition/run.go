@@ -9,7 +9,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
@@ -166,6 +168,17 @@ func bindings(app *App) []interface{} {
 	}
 }
 
+// helperCommands is every catalog command an AI helper's token may carry.
+func helperCommands() []string {
+	var out []string
+	for _, command := range commissionerapp.NativeCommands() {
+		if accounts.DelegableCommand(command.ID) {
+			out = append(out, command.ID)
+		}
+	}
+	return out
+}
+
 // runNative never constructs the local App: no MFL key, databases, refresh workers
 // or authoritative local mutations are available in a hosted window.
 func runNative(address, league string, embedded Embedded, stderr io.Writer) int {
@@ -175,6 +188,7 @@ func runNative(address, league string, embedded Embedded, stderr io.Writer) int 
 		return 2
 	}
 	defer desktop.Close()
+	desktop.SetHelperCommands(helperCommands())
 	err = wails.Run(&options.App{
 		Title: "The War Room — Native league", Width: 960, Height: 800,
 		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},

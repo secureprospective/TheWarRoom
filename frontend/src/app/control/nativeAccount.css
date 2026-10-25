@@ -6,8 +6,8 @@
 .native-account p { margin: 8px 0; line-height: 1.6; }
 .native-account nav, .native-account .native-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 24px; }
 .native-account label { display: grid; gap: 6px; margin-block: 16px; max-width: 46ch; }
-.native-account input, .native-account button { font: inherit; color: var(--surface-tx1); background: var(--surface-2); border: 1px solid var(--surface-line-hi); padding: 10px 12px; border-radius: 4px; }
-.native-account input { min-width: 0; width: 100%; box-sizing: border-box; caret-color: var(--surface-tx1); }
+.native-account input, .native-account select, .native-account textarea, .native-account button { font: inherit; color: var(--surface-tx1); background: var(--surface-2); border: 1px solid var(--surface-line-hi); padding: 10px 12px; border-radius: 4px; }
+.native-account input, .native-account select, .native-account textarea { min-width: 0; width: 100%; box-sizing: border-box; caret-color: var(--surface-tx1); }
 .native-account button { cursor: pointer; min-height: 44px; }
 .native-account button:hover:not(:disabled), .native-account button[aria-current] { background: var(--surface-4); border-color: var(--surface-tx2); }
 .native-account button:disabled { opacity: .6; cursor: wait; }
@@ -15,5 +15,13 @@
 .native-account [role=alert] { color: var(--signal-red); }
 .native-account .native-address, .native-account footer { color: var(--surface-tx2); overflow-wrap: anywhere; }
 .native-account .native-seed { overflow-wrap: anywhere; }
+.native-account code.native-seed { display: block; white-space: pre-wrap; }
 .native-account footer { margin-top: 40px; }
 .native-account ::selection { background: var(--surface-tx1); color: var(--surface-0); }
+
+.twr-app.native-account select {
+  color-scheme: dark;
+  color: var(--surface-tx1);
+  background-color: var(--surface-2);
+}
+.native-account .native-preview { white-space: pre-line; overflow-wrap: anywhere; }

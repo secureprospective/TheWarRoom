@@ -75,7 +75,8 @@ func newHostedFixture(t *testing.T) *hostedFixture {
 	}
 	f.server = httptest.NewTLSServer(serverhttp.Hosted{Tokens: f.tokens, Confirmations: confirmations, Store: store, Sessions: f.sessions, TOTP: totp, Enrollment: f.enrollment, Worker: worker,
 		Recovery: accounts.NewRecovery(passwords, credentials, [32]byte{}),
-		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n"}.Handler())
+		Registry: "id,name,gm_question,governs\nCM-053,Note,What changed?,\n" +
+			"CM-018,Franchise,What is this franchise called?,\n"}.Handler())
 	t.Cleanup(f.server.Close)
 	return f
 }
