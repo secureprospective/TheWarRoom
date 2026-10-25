@@ -215,9 +215,32 @@ func lineupPreviewValues(raw RawCommand, records []Record) (map[string]string, e
 	}
 	words := "No lineup recorded"
 	if set {
-		words = "Starting players: " + strings.Join(held.Starters, ", ")
+		names, err := lineupPlayerNames(records, held.Starters)
+		if err != nil {
+			return nil, err
+		}
+		words = "Starting players: " + strings.Join(names, ", ")
 	}
 	return map[string]string{fmt.Sprintf("%s, season %d, week %d lineup", c.Franchise, c.Season, c.Week): words}, nil
+}
+
+// lineupPlayerNames shows starters by name; an owner never reads a player id.
+func lineupPlayerNames(records []Record, ids []string) ([]string, error) {
+	assets, err := NativeAssetsReading(records[0].Command.League, records)
+	if err != nil {
+		return nil, err
+	}
+	known := map[string]string{}
+	if assets.Seeded {
+		for _, p := range assets.Snapshot.Players {
+			known[p.ID] = p.Name
+		}
+	}
+	names := make([]string, len(ids))
+	for i, id := range ids {
+		names[i] = cmp.Or(known[id], "A player no longer on the roster")
+	}
+	return names, nil
 }
 
 func UnchangedPreviewFields(raw RawCommand, before, after map[string]string) []PreviewField {

@@ -7,6 +7,7 @@ import { GovernedGlyph } from '../governed/GovernedGlyph';
 import { localTime } from '../clock/localTime';
 import { hostedWords } from './hostedWords';
 import { createHostedRoom, type HostedRoom } from './hostedRoom';
+import { previewChange } from './preview';
 import type { NativeArguments, NativeRequest } from '../commands/native';
 import type { HostedResponse } from './api';
 import './hostedLeague.css';
@@ -257,7 +258,6 @@ export default function HostedLeague({
             Choose a week, then refresh. Your changes below stay on this screen until confirmed.
           </p>
           <p>{reading.lineup.words}</p>
-          <p>{reading.lineup.verdict}</p>
           <fieldset disabled={disabled || !reading.lineup.available || Boolean(state.review)}>
             <legend>Choose your starters</legend>
             {[...reading.lineup.starters, ...reading.lineup.bench].map((p) => (

@@ -193,6 +193,7 @@ export function createHostedRoom(
       if (turn === generation)
         store.setState({
           stale: true,
+          message: '',
           error:
             'Could not refresh your league. Saved readings are read-only. ' +
             'Check your connection, seat and authenticator, then refresh.',
@@ -258,6 +259,7 @@ export function createHostedRoom(
       if (turn === generation)
         store.setState({
           stale: true,
+          message: '',
           error: 'Could not read commissioner choices. Refresh before choosing another action.',
         });
     } finally {
