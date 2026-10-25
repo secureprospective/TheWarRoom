@@ -4,7 +4,8 @@ Status: tooling and throwaway-key tests only. **No production root, hostname, si
 owner installer or custody ceremony has been created or verified.** Christopher must perform
 and record the ceremony below before an owner build. This is free TUF integrity, not Apple
 notarization or Authenticode. Unsigned-app warnings remain; packaging/install drills are slice 45.
-Desktop consumption, persistent update state and staged launch are slice 44.
+The native verification library and persistent trust cache are in `internal/releasetrust`;
+desktop wiring, staged installation and launch are slice 44.
 
 ## Trust boundary and contract
 
@@ -41,8 +42,9 @@ workstation (the hashed binary-wheel lock is for that environment, not owner OS 
 The new dependencies are the upstream reference `tuf` package from
 `github.com/theupdateframework/python-tuf` and `securesystemslib` from
 `github.com/secure-systems-lab/securesystemslib`; package metadata/source identities were checked.
-`cryptography`, `cffi`, `pycparser` and `urllib3` are pinned transitively. No desktop dependency
-was added. Review and re-lock deliberately when updating these tools.
+`cryptography`, `cffi`, `pycparser` and `urllib3` are pinned transitively. The native verifier separately pins `github.com/theupdateframework/go-tuf/v2` v2.4.2.
+Upstream identity, latest release and API were checked against its official GitHub release and
+module source. This release fixes duplicate-public-key threshold counting; do not downgrade it. Review and re-lock deliberately when updating these tools.
 
 ```sh
 scripts/release/test.sh
@@ -146,6 +148,20 @@ cache lifetimes). Keep the last good publication on any failed signing/upload st
 public content for secrets. The tool does not implement hosting credentials or upload automation.
 Record a real reference-client download against the hosted HTTPS repository before owner use;
 local tests do not prove proxy behavior, public TLS, cache policy or outage recovery.
+Use the same native verifier that slice 44 will consume (from the repo root):
+
+```sh
+go run ./scripts/release -root "$PUBLIC/1.root.json" \
+  -config "$PUBLIC/client-config.json" -cache "$VERIFY_CACHE" -target client-config.json
+go run ./scripts/release -root "$PUBLIC/1.root.json" \
+  -config "$PUBLIC/client-config.json" -cache "$VERIFY_CACHE" -target warroom-linux-amd64.tar.gz
+```
+
+`$VERIFY_CACHE` is a dedicated, private persistent folder outside the repository. Keep it for
+subsequent release/rotation checks; never clear it to fix a rejected update. The command only
+verifies/downloads, never installs or starts an application. Run the native race tests with
+`go test -race ./internal/releasetrust/...`; see its README for the slice 44 cache ownership and
+configuration-validation contract.
 
 ## Root rotation and loss
 
@@ -182,6 +198,7 @@ The encrypted-PEM signing path and owner-only permission rejection are exercised
 
 These tests do not invoke the desktop updater, OS trust dialogs, a hosted repository, hardware
 custody or a real offline ceremony. Do not mark those gates passed. Run this test command in
-release review; current Go/frontend CI does not execute Python release-tool tests automatically.
+release review; the release-tools CI job also executes these tests with the hashed Python dependencies.
+The normal Go race shards execute the native verifier tests.
 The plan's slice boundary holds: production offline ceremony requires Christopher, and native
 client integration/clean-machine installation remain slices 44/45.
