@@ -14,7 +14,7 @@ docker exec "$name" sh -ec '
   touch /run/openrc/softlevel
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
@@ -123,6 +123,25 @@ PROBE
   rc-service twr-server restart
   sleep 2
   rc-service twr-server status
+  # The console dashboard (CHECKLIST.md) after a restart: the stale socket is replaced, the
+  # server answers, and the faults this container really has (no backups, no Tunnel) show.
+  test "$(stat -c %a:%U /var/lib/twr/status.sock)" = 600:twr
+  sh /usr/local/libexec/twr-status > /tmp/status-result
+  cat /tmp/status-result
+  grep -F "OK       League server: Running and answering securely" /tmp/status-result
+  grep -F "PROBLEM  Tunnel: Not connected to Cloudflare" /tmp/status-result
+  grep -F "PROBLEM  Backups: Off-site backups are not set up" /tmp/status-result
+  grep -F "OK       History: League history (0 entries)" /tmp/status-result
+  grep -E "^(OK|PROBLEM) +Clock: " /tmp/status-result
+  grep -E "^(OK|PROBLEM) +Disk: " /tmp/status-result
+  if su -s /bin/sh twr -c "sh /usr/local/libexec/twr-status"; then exit 1; fi
+  # A stopped server reads as a problem, not a blank screen.
+  rc-service twr-server stop
+  sh /usr/local/libexec/twr-status > /tmp/status-result
+  grep -F "PROBLEM  League server: Not answering on this machine" /tmp/status-result
+  grep -F "PROBLEM  Backups and history: Could not be read" /tmp/status-result
+  rc-service twr-server start
+  sleep 2
   sh /src/deploy/server/test-cloudflare.sh
 '
-echo 'Alpine install, OpenRC start/restart, TLS, loopback-only bind and filesystem/capability sandbox: PASS'
+echo 'Alpine install, OpenRC start/restart, TLS, loopback-only bind, filesystem/capability sandbox and console dashboard: PASS'

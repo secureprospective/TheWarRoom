@@ -11,4 +11,5 @@ exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop 
   /usr/local/bin/twr-server hosted -listen 127.0.0.1:8443 \
   -db /var/lib/twr/server.db -tls-cert /etc/twr/origin.pem \
   -tls-key /etc/twr/origin.key -totp-key-file /etc/twr/authenticator.key \
-  -backup-config /etc/twr/backup.json -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1
+  -backup-config /etc/twr/backup.json -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1 \
+  -status-socket /var/lib/twr/status.sock

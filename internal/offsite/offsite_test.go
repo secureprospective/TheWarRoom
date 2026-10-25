@@ -286,8 +286,8 @@ func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 			if err := manager.Backup(ctx); err == nil {
 				t.Fatal("bad remote set verified")
 			}
-			if !manager.Status().Captured.Equal(original) {
-				t.Fatal("failure renewed coverage")
+			if status := manager.Status(); !status.Captured.Equal(original) || status.Failure == "" {
+				t.Fatalf("failure renewed coverage or left no reason for the dashboard: %+v", status)
 			}
 		})
 	}
@@ -310,6 +310,12 @@ func TestMissingTamperedAndFailedUploadNeverRenewCoverage(t *testing.T) {
 	restarted := NewManager(r2, t.TempDir(), capture)
 	if restarted.CheckWrite() == nil {
 		t.Fatal("restart trusted old disk receipt")
+	}
+	fake.mu.Lock()
+	fake.failPut = false
+	fake.mu.Unlock()
+	if err := manager.Backup(t.Context()); err != nil || manager.Status().Failure != "" {
+		t.Fatalf("verified upload left a stale failure on the dashboard: %v %+v", err, manager.Status())
 	}
 }
 

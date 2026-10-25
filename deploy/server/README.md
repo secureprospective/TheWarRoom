@@ -2,6 +2,7 @@
 
 Encrypted Cloudflare R2 recovery and CT-only setup: [BACKUPS.md](BACKUPS.md).
 Replacing a lost server, and signing everyone out after an incident: [RESTORE.md](RESTORE.md).
+The daily look at the server's health, and what to do when away: [CHECKLIST.md](CHECKLIST.md).
 New installations serve with changes paused until that setup verifies an off-site set.
 
 **Preproduction. Not approved for real owners.** League files are private inside
@@ -24,6 +25,7 @@ speaks TLS; cloudflared verifies its private origin certificate directly. No
 | `cloudflare.sh` → Cloudflare API | API token is an owner-only transient file/header, not a process argument. Create a locally managed Tunnel and new proxied DNS record; refuse an occupied hostname. Install its separate scoped credential, local ingress rules and origin CA automatically. Delete API token input on exit. |
 | cloudflared → origin | Only the configured hostname's `/v1/` routes reach `https://127.0.0.1:8443`, verified as `localhost` with the installed CA. Everything else is an edge 404. Origin trusts exactly `127.0.0.1` for `CF-Connecting-IP`; missing/forged peer metadata is refused. Metrics/readiness bind `127.0.0.1:20241`, never public ingress. |
 | `restore.sh` → CT (`twr-restore`) | Console answers → `twr-server restore` as the service user → newest usable R2 set, checkpoint compared, sign-ins reset in the staged copy → installed database, authenticator key and new backup settings. Refuses a target holding a league; a failure leaves the fresh install running. [RESTORE.md](RESTORE.md). |
+| `status.sh` → CT (`twr-status`) | Console dashboard: `twr-server status` as the service user reads the owner-only `/var/lib/twr/status.sock` (backups, history chains, resets), the origin's TLS readiness, cloudflared `/ready`, clock and disk. Loopback and socket only; nothing is sent anywhere. [CHECKLIST.md](CHECKLIST.md). |
 | `reset-sign-ins.sh` → CT (`twr-reset-sign-ins`) | Incident reason → new auth epoch for every account; passwords, authenticators and league unchanged. |
 | Installer → reboot | Reboot CT; require both OpenRC services and cloudflared's connected `/ready` before declaring success/enabling on-boot. A dead Tunnel is not a successful installation. |
 
@@ -102,6 +104,9 @@ production databases, Cloudflare credentials or real MFL calls. It executes:
 - 0600 database/key modes, successful state write, refused `/usr` and config
   writes/mounts; no home/Tunnel credential visibility inside the service sandbox;
 - refusal of origin TLS via the CT's non-loopback interface and of wrong CA;
+- the console dashboard `twr-status` after a restart: owner-only socket, healthy
+  server, the container's real faults (no backups, no Tunnel), a stopped server,
+  and refusal when not run as root;
 - automatic Cloudflare configuration against a **simulated API**, parsed/validated
   by the real pinned cloudflared binary; native routes match, admin/metrics/wrong
   hostname do not, occupied DNS is preserved, service cannot read Tunnel secrets;
@@ -112,7 +117,7 @@ production databases, Cloudflare credentials or real MFL calls. It executes:
 ## Evidence and remaining gates
 
 Executed 2026-10-24: Alpine test above passed with OpenRC 0.63-r1 and bubblewrap
-0.12.0-r0. `shellcheck` checks the shell files separately. This is **not** the full
+0.12.0-r0. Re-run 2026-10-25 with the dashboard checks: passed. `shellcheck` checks the shell files separately. This is **not** the full
 slice proving test: Docker privileges are not Proxmox's unprivileged LXC AppArmor
 profile, and service restart is not a CT cold boot.
 
@@ -134,12 +139,13 @@ Cloudflare shared-edge scans cannot prove origin isolation.
   initializes empty hosted storage and directs the commissioner to that next step;
   deployment must not invent accounts or ledger grants.
 - Private container files (35) are described in [STORAGE.md](STORAGE.md).
-  Release integrity (43), encrypted off-host backups (36) and health dashboard
-  (38) remain their own gates. Adopt GoReleaser OSS for
-  artifacts and Gatus + ntfy for health/alerts in those slices per the operator's
-  later ruling; the older plan's “no outbound alerts” conflicts with that ruling.
-  There is currently no hosted `/healthz`; do not invent a static success response
-  in the proxy or point a health dashboard at a nonexistent endpoint.
+  Release integrity (43) remains its own gate; GoReleaser OSS builds the artifacts.
+- Health (38) is the console dashboard in [CHECKLIST.md](CHECKLIST.md). The 10-25
+  ruling is no outbound notifications, so ntfy is not used. Gatus was considered and
+  not adopted: a web dashboard needs a port reachable from the VPN into the isolated
+  VLAN, which means network changes outside this installer, while the Proxmox
+  console is already the LAN/VPN-only admin door. There is still no public
+  `/healthz` or status route; the Tunnel reaches only the owner-facing `/v1/` API.
 
 The origin certificate is private, pinned only to this local Tunnel hop, and has
 a long lifetime to avoid an unattended-expiry outage. It is not desktop/public
