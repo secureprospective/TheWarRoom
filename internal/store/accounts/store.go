@@ -22,9 +22,9 @@ func New(pools *db.Pools) *Store { return &Store{pools: pools, now: time.Now} }
 // SetClock configures the server clock before serving requests.
 func (s *Store) SetClock(now func() time.Time) { s.now = now }
 
-// Initialize adds account-owned tables without changing the shared database's migration version.
-func (s *Store) Initialize(ctx context.Context) error {
-	_, err := s.pools.Write().ExecContext(ctx, `
+func (s *Store) initializeSchema(ctx context.Context) error {
+	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS accounts (
  id TEXT PRIMARY KEY NOT NULL,
  username TEXT NOT NULL UNIQUE,
@@ -71,8 +71,17 @@ CREATE TABLE IF NOT EXISTS account_security_audit (
  reason TEXT NOT NULL,
  occurred_at INTEGER NOT NULL
 ) STRICT;`)
+	})
 	if err != nil {
 		return fmt.Errorf("accounts: initialize schema: %w", err)
+	}
+	return nil
+}
+
+// Initialize adds account-owned tables without changing the shared database's migration version.
+func (s *Store) Initialize(ctx context.Context) error {
+	if err := s.initializeSchema(ctx); err != nil {
+		return err
 	}
 	if err := s.initializeSessions(ctx); err != nil {
 		return err
@@ -91,10 +100,12 @@ func (s *Store) Insert(ctx context.Context, credential identity.Credential, only
 	if err := credential.Validate(); err != nil {
 		return fmt.Errorf("accounts: insert: %w", err)
 	}
-	result, err := s.pools.Write().ExecContext(ctx, `
+	result, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
 INSERT INTO accounts(id, username, password_hash)
  SELECT ?, ?, ? WHERE NOT ? OR NOT EXISTS (SELECT 1 FROM accounts)
  ON CONFLICT(username) DO NOTHING`, credential.ID, credential.Username, credential.PasswordHash, onlyIfEmpty)
+	})
 	if err != nil {
 		return fmt.Errorf("accounts: insert: %w", err)
 	}

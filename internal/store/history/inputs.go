@@ -69,9 +69,11 @@ func (s *Store) HeldBodies(ctx context.Context, shas []string) (map[string]bool,
 func (s *Store) RecordImport(ctx context.Context, source string, files, added int) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Write().ExecContext(ctx, `
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
 INSERT INTO loads (source, loaded_at, facts, added, unresolved) VALUES (?, ?, ?, ?, 0)`,
-		source, formatTime(s.now()), files, added); err != nil {
+			source, formatTime(s.now()), files, added)
+	}); err != nil {
 		return fmt.Errorf("history: record import %s: %w", source, err)
 	}
 	return nil
@@ -89,9 +91,11 @@ type ManifestRecord struct {
 func (s *Store) PublishManifest(ctx context.Context, m ManifestRecord) (published bool, err error) {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	res, err := s.pools.Write().ExecContext(ctx, `
+	res, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
 INSERT OR IGNORE INTO input_manifests (manifest_sha, name, entries, published_at) VALUES (?, ?, ?, ?)`,
-		m.SHA256, m.Name, string(m.Entries), formatTime(s.now()))
+			m.SHA256, m.Name, string(m.Entries), formatTime(s.now()))
+	})
 	if err != nil {
 		return false, fmt.Errorf("history: publish manifest %s: %w", m.Name, err)
 	}
@@ -144,7 +148,7 @@ func (s *Store) RecordSnapshot(ctx context.Context, r SnapshotRecord) error {
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: record snapshot of %s: %w", r.ManifestSHA, err)
 	}

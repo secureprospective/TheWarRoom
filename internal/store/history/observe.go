@@ -50,7 +50,7 @@ func (s *Store) Ingest(ctx context.Context, b measures.Batch) (LoadReport, error
 
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return LoadReport{}, fmt.Errorf("history: ingest %s: %w", b.Source, err)
 	}
@@ -96,9 +96,11 @@ INSERT INTO loads (source, sha256, loaded_at, facts, added, unresolved) VALUES (
 func (s *Store) LoadFailed(ctx context.Context, source string, cause error) error {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	if _, err := s.pools.Write().ExecContext(ctx, `
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
 INSERT INTO loads (source, loaded_at, facts, added, unresolved, error) VALUES (?, ?, 0, 0, 0, ?)`,
-		source, formatTime(s.now()), cause.Error()); err != nil {
+			source, formatTime(s.now()), cause.Error())
+	}); err != nil {
 		return fmt.Errorf("history: record failed load %s: %w", source, err)
 	}
 	return nil
@@ -357,7 +359,7 @@ func (s *Store) LinkPlayerIDs(ctx context.Context, source string, links []Player
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("history: link player ids: %w", err)
 	}

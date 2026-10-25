@@ -20,7 +20,7 @@ func (s *Store) ReplaceRecoveryCodes(ctx context.Context, accountID, proofDigest
 			return identity.ErrRecoveryRefused
 		}
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin recovery codes: %w", err)
 	}
@@ -60,7 +60,7 @@ func (s *Store) ResetAccount(ctx context.Context, username, passwordHash, codeDi
 	if (codeDigest == "" && (reason == "" || len(reason) > 256)) || (codeDigest != "" && (!validSecretDigest(codeDigest) || reason != "")) {
 		return identity.ErrRecoveryRefused
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin recovery: %w", err)
 	}

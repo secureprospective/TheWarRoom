@@ -122,4 +122,5 @@ internal/store/accounts	platform
 internal/offline	platform
 internal/releasetrust	platform
 internal/hostedfixture	platform
+internal/offsite	platform
 internal/leaguetransfer	platform
