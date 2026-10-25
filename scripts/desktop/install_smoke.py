@@ -28,7 +28,6 @@ def install(artifact, directory):
         return destination / "Contents/MacOS/thewarroom"
     subprocess.run(["sudo", "apt-get", "update"], check=True, timeout=180)
     subprocess.run(["sudo", "apt-get", "install", "-y", str(artifact)], check=True, timeout=300)
-    subprocess.run(["gtk-launch", "--version"], check=True, timeout=15)
     return Path("/usr/bin/thewarroom")
 
 

@@ -1,5 +1,6 @@
 Unicode true
 !include "MUI2.nsh"
+!include "LogicLib.nsh"
 Name "The War Room"
 OutFile "${OUTPUT}"
 InstallDir "$LOCALAPPDATA\TheWarRoom"
