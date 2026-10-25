@@ -11,12 +11,25 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 )
 
 func main() {
 	out := flag.String("out", "frontend/src/app/commands/native.gen.ts", "generated TypeScript file")
 	check := flag.Bool("check", false, "refuse stale output without writing")
+	surface := flag.String("surface", "native", "native or mfl catalog")
 	flag.Parse()
+	if *surface == "mfl" {
+		if err := runMFL(*check); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
+	if *surface != "native" {
+		fmt.Fprintln(os.Stderr, "unknown catalog")
+		os.Exit(1)
+	}
 	if err := run(*out, *check); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -147,4 +160,27 @@ func phrase(id string) string {
 		words = append([]string{words[len(words)-1]}, words[:len(words)-1]...)
 	}
 	return strings.Join(words, " ")
+}
+
+func runMFL(check bool) error {
+	const path = "frontend/src/app/commands/mfl.gen.ts"
+	body, err := generate(offers.MFLCommands())
+	if err != nil {
+		return err
+	}
+	body = bytes.Replace(body, []byte("export const nativeCommands"), []byte("export const mflCommands"), 1)
+	if check {
+		held, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read MFL commands: %w", err)
+		}
+		if !bytes.Equal(held, body) {
+			return fmt.Errorf("MFL commands are stale; run go run ./frontend/scripts/nativegen -surface mfl")
+		}
+		return nil
+	}
+	if err := os.WriteFile(path, body, 0o600); err != nil {
+		return fmt.Errorf("write MFL commands: %w", err)
+	}
+	return nil
 }

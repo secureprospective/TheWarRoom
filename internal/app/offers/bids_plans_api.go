@@ -69,7 +69,7 @@ type bidPlanBrief struct{ ID, State string }
 // bidPlan assembles one plan. The rules are read live while the plan can still change; once it
 // is handed off they were what the owner posted against, so none are shown.
 func (a *API) bidPlan(ctx context.Context, r envelope.Receipt, f envelope.BidFacts) BidPlan {
-	line := "Player " + f.Player.String()
+	line := "Player name unavailable"
 	rules := []bid.Result{}
 	var problem string
 	if r.State == envelope.Blocked || r.State == envelope.Ready || r.State == envelope.Draft {
@@ -156,7 +156,7 @@ func (a *API) TargetBidPlans(franchiseID string) report.Reading[BidBoard] {
 	if err := a.host.Ready(); err != nil {
 		return fail(err)
 	}
-	if err := ingestion.FeedFranchise(franchiseID); err != nil {
+	if err := (RawBidOwner{FranchiseID: franchiseID}).Validate(); err != nil {
 		return fail(fmt.Errorf("bid plans: %w", err))
 	}
 	ctx, cancel := context.WithTimeout(a.host.OffersContext(), readTimeout)
@@ -197,6 +197,9 @@ func (a *API) loadBid(ctx context.Context, id string) (envelope.Envelope, envelo
 
 // bidMove runs one locked change to a saved bid plan: load, change, save, tell the screens.
 func (a *API) bidMove(id, what string, change func(context.Context, envelope.Envelope, envelope.BidFacts) (envelope.Envelope, error)) (BidPlan, error) {
+	if err := (RawBidPlanScope{ID: id}).Validate(); err != nil {
+		return BidPlan{}, err
+	}
 	if err := a.host.Ready(); err != nil {
 		return BidPlan{}, fmt.Errorf("bid %s: startup: %w", what, err)
 	}
@@ -266,6 +269,9 @@ func (a *API) TargetBidWithdraw(id string) (BidPlan, error) {
 // TargetBidRevise changes the figures of a plan not yet handed off. A Ready plan goes back
 // through Stale and Draft first, the envelope's only route, and is checked again.
 func (a *API) TargetBidRevise(id string, raw RawBidInput) (BidPlan, error) {
+	if err := (RawBidPlanScope{ID: id}).Validate(); err != nil {
+		return BidPlan{}, err
+	}
 	if err := a.host.Ready(); err != nil {
 		return BidPlan{}, fmt.Errorf("bid revise: startup: %w", err)
 	}

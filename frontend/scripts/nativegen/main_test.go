@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 )
 
 func TestNativeClientCatalogParity(t *testing.T) {
@@ -66,5 +67,17 @@ func TestStaleGenerationRefusedWithoutWriting(t *testing.T) {
 	body, err := os.ReadFile(path)
 	if err != nil || string(body) != old {
 		t.Fatal("check changed the file", err)
+	}
+}
+
+func TestMFLClientCatalogParity(t *testing.T) {
+	body, err := generate(offers.MFLCommands())
+	if err != nil {
+		t.Fatal(err)
+	}
+	body = bytes.Replace(body, []byte("export const nativeCommands"), []byte("export const mflCommands"), 1)
+	held, err := os.ReadFile("../../src/app/commands/mfl.gen.ts")
+	if err != nil || !bytes.Equal(body, held) {
+		t.Fatal("MFL catalog stale: run go run ./frontend/scripts/nativegen -surface mfl", err)
 	}
 }

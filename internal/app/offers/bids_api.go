@@ -114,7 +114,7 @@ func (a *API) bidInput(ctx context.Context, e bidEntry, exclude string) (bid.Inp
 	}
 	facts, ok := lk.Facts(e.facts.Player.String())
 	if !ok {
-		return bid.Input{}, "", fmt.Errorf("player %s is not in the players directory", e.facts.Player)
+		return bid.Input{}, "", fmt.Errorf("this player is not in the players directory; refresh the player names")
 	}
 	active, err := a.activeBids(ctx, e.franchise, exclude)
 	if err != nil {
