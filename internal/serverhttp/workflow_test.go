@@ -110,6 +110,9 @@ func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *test
 	if len(check.Blockers) > 0 {
 		t.Fatalf("eligible reserve blocked: %+v", check)
 	}
+	if !hasPreviewField(check, "Injured prospect roster", "Practice team 1, Active roster", "Practice team 1, Injured reserve") {
+		t.Fatalf("reserve preview is not plain English: %+v", check.Fields)
+	}
 	afterPreview, _ := read()
 	if afterPreview.Revision != assets.Revision {
 		t.Fatal("preview mutated roster")
@@ -177,6 +180,14 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	body, err := json.Marshal(command)
 	if err != nil {
 		t.Fatal(err)
+	}
+	var check commissioner.Preview
+	if err := json.Unmarshal(call(command.Command, "preview", body, lineup.Football).Data, &check); err != nil {
+		t.Fatal(err)
+	}
+	if !hasPreviewField(check, "Practice team 1, season 2026, week 1 lineup", "No lineup recorded", "Starting players: Practice quarterback") ||
+		!hasPreviewField(check, "League ledger", "This change is not recorded", "Set the week 1 lineup of Practice team 1 to 1 starter") {
+		t.Fatalf("lineup preview is not plain English: %+v", check.Fields)
 	}
 	call(command.Command, "execute", body, lineup.Football)
 	reread := call("lineup.read", "read", []byte(`{"league":"native.hosted","franchise":"franchise.01","week":1,"at":""}`), "")
@@ -256,4 +267,13 @@ func TestHostedWorkflowFrontendReadings(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
+
+func hasPreviewField(p commissioner.Preview, label, before, after string) bool {
+	for _, f := range p.Fields {
+		if f.Label == label && f.Before == before && f.After == after {
+			return true
+		}
+	}
+	return false
 }
