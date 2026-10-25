@@ -210,3 +210,22 @@ func VerifyAudit(ctx context.Context, tx *sql.Tx, source, query string) (AuditHe
 	}
 	return head, nil
 }
+
+// CheckAuditAnchor compares an independently retained checkpoint with the verified local prefix.
+// The caller must fully VerifyAudit in this same snapshot first.
+func CheckAuditAnchor(ctx context.Context, tx *sql.Tx, current, anchor AuditHead) error {
+	if anchor.Version != 1 || anchor.Source != current.Source || anchor.Size < 0 ||
+		anchor.Size > current.Size || anchor.Baseline != current.Baseline {
+		return fmt.Errorf("league history no longer matches the saved checkpoint")
+	}
+	hash := ""
+	if anchor.Size > 0 {
+		if err := tx.QueryRowContext(ctx, `SELECT hash FROM audit_chain WHERE source=? AND sequence=?`, anchor.Source, anchor.Size).Scan(&hash); err != nil {
+			return fmt.Errorf("read anchored audit prefix: %w", err)
+		}
+	}
+	if hash != anchor.Hash {
+		return fmt.Errorf("league history no longer matches the saved checkpoint")
+	}
+	return nil
+}
