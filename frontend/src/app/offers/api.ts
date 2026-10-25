@@ -1,3 +1,4 @@
+import { createMFLClient, type MFLContext } from '../commands/mfl';
 import { TargetOffers } from '../../../wailsjs/go/offers/API';
 import type * as Bindings from '../../../wailsjs/go/offers/API';
 import { offers } from '../../../wailsjs/go/models';
@@ -29,19 +30,37 @@ export function rawBid(franchiseId: string, form: BidFormState): offers.RawBidIn
     closes: closes && !Number.isNaN(closes.getTime()) ? closes.toISOString() : '',
   });
 }
+const localOwner: MFLContext = { availability: 'desktop', role: 'gm' };
+const ownerAction: MFLContext = { ...localOwner, ownerAction: true };
+const mflClient = createMFLClient(request => {
+  const go = poolGo();
+  const args = request.arguments;
+  switch (request.command) {
+    case 'mfl.pool.refresh': return go.TargetPoolRefresh(request.arguments.force);
+    case 'mfl.pool.read': return go.TargetPool(offers.RawPoolScope.createFrom(args));
+    case 'mfl.bid.plans': return go.TargetBidPlans(request.arguments.franchiseId);
+    case 'mfl.bid.preview': return go.TargetBidPreview(offers.RawBidInput.createFrom(args));
+    case 'bid.submit': return go.TargetBidDraft(offers.RawBidInput.createFrom(args));
+    case 'mfl.bid.revise': return go.TargetBidRevise(request.arguments.id, offers.RawBidInput.createFrom(
+      Object.fromEntries(Object.entries(args).filter(([key]) => key !== 'id')),
+    ));
+    case 'mfl.bid.handoff': return go.TargetBidHandOff(request.arguments.id);
+    case 'mfl.bid.posted': return go.TargetBidPosted(request.arguments.id);
+    case 'mfl.bid.withdraw': return go.TargetBidWithdraw(request.arguments.id);
+  }
+});
 export const poolWire = {
-  refresh: (force: boolean) => poolGo().TargetPoolRefresh(force),
-  pool: (franchiseId: string, scope: PoolScope) => poolGo().TargetPool(offers.RawPoolScope.createFrom({
-    franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc,
-    showNoTeam: scope.showNoTeam ?? false,
-  })),
-  plans: (mine: string) => poolGo().TargetBidPlans(mine),
-  preview: (mine: string, form: BidFormState) => poolGo().TargetBidPreview(rawBid(mine, form)),
-  draft: (mine: string, form: BidFormState) => poolGo().TargetBidDraft(rawBid(mine, form)),
-  revise: (id: string, mine: string, form: BidFormState) => poolGo().TargetBidRevise(id, rawBid(mine, form)),
-  handOff: (id: string) => poolGo().TargetBidHandOff(id),
-  posted: (id: string) => poolGo().TargetBidPosted(id),
-  withdraw: (id: string) => poolGo().TargetBidWithdraw(id),
+  refresh: (force: boolean) => mflClient.invoke({ command: 'mfl.pool.refresh', mode: 'execute', arguments: { force } }, localOwner),
+  pool: (franchiseId: string, scope: PoolScope) => mflClient.invoke({ command: 'mfl.pool.read', mode: 'read', arguments: {
+    franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc, showNoTeam: scope.showNoTeam ?? false,
+  } }, localOwner),
+  plans: (franchiseId: string) => mflClient.invoke({ command: 'mfl.bid.plans', mode: 'read', arguments: { franchiseId } }, localOwner),
+  preview: (mine: string, form: BidFormState) => mflClient.invoke({ command: 'mfl.bid.preview', mode: 'preview', arguments: rawBid(mine, form) }, localOwner),
+  draft: (mine: string, form: BidFormState) => mflClient.invoke({ command: 'bid.submit', mode: 'execute', arguments: rawBid(mine, form) }, localOwner),
+  revise: (id: string, mine: string, form: BidFormState) => mflClient.invoke({ command: 'mfl.bid.revise', mode: 'execute', arguments: { id, ...rawBid(mine, form) } }, localOwner),
+  handOff: (id: string) => mflClient.invoke({ command: 'mfl.bid.handoff', mode: 'execute', arguments: { id } }, ownerAction),
+  posted: (id: string) => mflClient.invoke({ command: 'mfl.bid.posted', mode: 'execute', arguments: { id } }, ownerAction),
+  withdraw: (id: string) => mflClient.invoke({ command: 'mfl.bid.withdraw', mode: 'execute', arguments: { id } }, ownerAction),
 };
 export const personalWire = {
   read: (mine: string) => personalGo().TargetPersonal(mine),

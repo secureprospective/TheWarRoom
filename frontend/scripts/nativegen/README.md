@@ -36,3 +36,12 @@ never supplies a reason, chooses a stronger mode or infers confirmation from sta
 Evidence: `TestNativeClientCatalogParity`, `TestStaleGenerationRefusedWithoutWriting`,
 `commands/native.test.ts` (including tsc negative type cases), and the existing safeguard/hold/proxy
 tests. Actual hosted capability admission and HTTPS mutation execution belong to later slices.
+
+## Local MFL reference plans
+
+`go run ./frontend/scripts/nativegen -surface mfl` generates `commands/mfl.gen.ts`
+from `offers.MFLCommands()`; add `-check` to refuse stale output. The same schema
+interner preserves modes, roles, desktop-only availability and safeguards.
+`commands/mfl.ts` uses the shared shape checker without importing the native
+catalog. `offers/api.ts` supplies only the existing local Wails adapters. No
+remote route, key handling or hosted capability grant is generated.
