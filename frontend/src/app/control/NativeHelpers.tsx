@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { copyHelperConnection } from './api';
 import { Act } from '../commands/Act';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { helperAction, readConfirmRequest, type HelperAction, type NativeSeat } from './nativeApi';
@@ -36,8 +37,7 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
     if (pending || !connection) return;
     setError(''); setMessage('');
     try {
-      const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');
-      if (!await ClipboardSetText(connection)) throw new Error('Clipboard unavailable');
+      if (!await copyHelperConnection(connection)) throw new Error('Clipboard unavailable');
       setMessage('Connection line copied.');
     } catch {
       setError('Could not copy. Select the connection line and copy it yourself.');
