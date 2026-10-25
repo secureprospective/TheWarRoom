@@ -168,3 +168,11 @@ throttle bucket. The same headers from any other peer are still refused
 (`TestTrustedTunnelHopThrottlesEachClient`). No public exposure
 or target-CT performance acceptance is implied. Limits, proving tests and exact
 CT measurement steps: `docs/build-handoffs/Client_Server_30_Evidence_2026-10.md`.
+
+## History checkpoints
+
+`twr-server checkpoint -db /path/to/server.db` prints a checkpoint of the league and sign-in
+history after verifying both. Keep it away from the server (slice 36 stores one with each
+off-site backup). `twr-server checkpoint -db /path/to/server.db -check checkpoint.json` reports
+whether the server's history still matches it; a rewrite or rollback since then fails with a
+plain message. Both forms only read the database. Details: `docs/backend/Audit_Chain.md`.
