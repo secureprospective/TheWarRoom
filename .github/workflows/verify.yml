@@ -45,6 +45,11 @@ jobs:
           go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
           go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
           go install github.com/zricethezav/gitleaks/v8@v8.30.1
+      - name: Runner Firefox version
+        run: |
+          command -v firefox
+          firefox --version
+          readlink -f "$(command -v firefox)"
       - name: Frontend install
         run: cd frontend && pnpm install --frozen-lockfile && pnpm build
       - name: Secret scan, full history
