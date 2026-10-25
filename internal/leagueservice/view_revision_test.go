@@ -58,7 +58,12 @@ func viewTranscript(t *testing.T, service *Service) []string {
 		}
 		result := reflect.ValueOf(service).MethodByName(tc.name).Call(args)
 		if !result[1].IsNil() {
-			t.Fatalf("%s: %v", tc.name, result[1].Interface())
+			principal, err := service.host.CommissionerPrincipal()
+			if err != nil || principal != "creator" || (tc.name != "TargetNativeBids" && tc.name != "TargetNativeWaivers" && tc.name != "TargetNativeTrades") {
+				t.Fatalf("%s: %v", tc.name, result[1].Interface())
+			}
+			out = append(out, tc.name+": "+result[1].Interface().(error).Error())
+			continue
 		}
 		body, err := json.Marshal(result[0].Interface())
 		if err != nil {
@@ -74,10 +79,7 @@ func TestHiddenBidPreservesRecipientBodiesTokensAndErrors(t *testing.T) {
 	f.execute(t, "creator", commissioner.RulesSet, commissioner.RawArgs{Field: "bids.ufa", Value: json.RawMessage(`"blind"`)})
 	owner, admin := viewService(t, f, "owner.two"), viewService(t, f, "creator")
 	before := viewTranscript(t, owner)
-	beforeAdmin, err := admin.TargetCommissionerLedger(dueLeague)
-	if err != nil {
-		t.Fatal(err)
-	}
+	beforeAdmin := viewTranscript(t, admin)
 	ownBefore, err := viewService(t, f, "owner.one").TargetNativeBids(dueLeague, "franchise.01")
 	if err != nil {
 		t.Fatal(err)
@@ -99,10 +101,7 @@ func TestHiddenBidPreservesRecipientBodiesTokensAndErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	bid := f.bid(t)
-	afterAdmin, err := admin.TargetCommissionerLedger(dueLeague)
-	if err != nil {
-		t.Fatal(err)
-	}
+	afterAdmin := viewTranscript(t, admin)
 	if !reflect.DeepEqual(before, viewTranscript(t, owner)) || !reflect.DeepEqual(beforeAdmin, afterAdmin) {
 		t.Fatal("hidden bid changed an unauthorized response or token")
 	}
@@ -116,7 +115,7 @@ func TestHiddenBidPreservesRecipientBodiesTokensAndErrors(t *testing.T) {
 			args.Salary, args.Years = 600000000, 1
 		}
 		bid = f.execute(t, "owner.one", command, commissioner.RawArgs{Bid: args})
-		if !reflect.DeepEqual(before, viewTranscript(t, owner)) {
+		if !reflect.DeepEqual(before, viewTranscript(t, owner)) || !reflect.DeepEqual(beforeAdmin, viewTranscript(t, admin)) {
 			t.Fatal("hidden bid update changed unauthorized transcript")
 		}
 	}
