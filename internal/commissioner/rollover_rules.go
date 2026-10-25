@@ -101,9 +101,9 @@ func (p *RolloverPlan) dateCalendar(at time.Time, labels map[string]string) {
 	p.Calendar = reading
 	for _, window := range reading.Windows {
 		words := fmt.Sprintf("%s opens %s", rolloverWindowLabel(window.ID, labels),
-			window.Start.In(zone).Format("2 Jan 2006 at 3:04 PM MST"))
+			leagueTimeWords(window.Start, zone))
 		if window.Close != nil {
-			words += " and closes " + window.Close.In(zone).Format("2 Jan 2006 at 3:04 PM MST")
+			words += " and closes " + leagueTimeWords(*window.Close, zone)
 		}
 		p.Lines = append(p.Lines, words+".")
 	}

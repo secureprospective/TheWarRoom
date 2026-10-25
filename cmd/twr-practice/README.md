@@ -183,9 +183,11 @@ explains commissioner rulings. No action is sent to MFL.
    statistics, so an incomplete game must remain incomplete even after a score adjustment.
 5. **Next season**, last: as `commissioner`, choose Move to the next season, enter 2027
    and a reason. Check the full plan, including contracts, rules, picks and cap, before
-   holding to confirm. Refresh shows roster season 2027. The old NFL evidence cannot be
-   used to submit a new-season lineup or bid: the operator must explicitly select new
-   season evidence. Other readings remain accessible; lineup states its evidence problem.
+   holding to confirm. The plan names the awarded free agent and gives its dates in league
+   time (US Central). Refresh, as every login, shows roster season 2027. The old NFL
+   evidence cannot be used to submit a new-season lineup or bid: the operator must
+   explicitly select new season evidence. Other readings remain accessible; lineup states
+   its evidence problem and bids say they wait for new-season evidence.
 6. Disconnect, refresh and attempt each task: saved readings remain read-only. Reconnect
    and refresh: only reads run, never a replayed bid/claim/trade/correction/rollover. If a
    confirmation is interrupted, inspect the refreshed league before choosing another act.
@@ -196,7 +198,8 @@ corrections and rollover. Every execute is repeated with the identical request a
 return the same receipt. The privacy test compares whole commissioner response bodies
 and recipient revisions before/after another owner's blind bid. Standings from a fresh
 store and assets from ledger replay must agree with hosted readings. Old-season bid
-evidence is refused without appending. Frontend `hostedRoom.test.tsx` and
+evidence is refused without appending. `rollover_workflow_test.go` lets the worker award a
+real bid, rolls the season over, then refreshes as commissioner and owner. Frontend `hostedRoom.test.tsx` and
 `hostedWorkflows.test.tsx` check all five tasks, named choices, single confirmation,
 read-only stale/reconnect behavior and explicitly unavailable new-season lineups.
 

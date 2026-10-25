@@ -7,6 +7,7 @@ import type { HostedResponse } from './api';
 import type { NativeRequest } from '../commands/native';
 import wire from './hosted.wire.testdata.json';
 import preview from './preview.wire.testdata.json';
+import rollover from './rollover.wire.testdata.json';
 
 const readings = wire as Record<string, HostedResponse>;
 function fixture() {
@@ -166,6 +167,28 @@ it.each(['bid.place', 'waivers.claim', 'trade.offer', 'commish.score.franchise',
     expect(f.port.mock.calls.filter(([r]) => r.mode === 'execute')).toHaveLength(1);
   },
 );
+
+it('confirms a real rollover receipt and refreshes the new season for the commissioner', async () => {
+  const after = rollover.readings as Record<string, HostedResponse>;
+  let rolled = false;
+  const room = createHostedRoom('native.hosted', 'franchise.01', async request => {
+    if (request.mode === 'preview') return { ...readings['lineup.read'], data: preview.confirm };
+    if (request.mode === 'execute') {
+      rolled = true;
+      return rollover.receipt as HostedResponse;
+    }
+    if (rolled && request.command === 'lineup.read') throw new Error('New season schedule is not selected');
+    return (rolled ? after : readings)[request.command];
+  });
+  await room.refresh();
+  const request = { ...change(), command: 'season.rollover', arguments: { ...change().arguments, command: 'season.rollover' } } as NativeRequest;
+  await room.review(request, 'Move to the next season');
+  await room.confirm();
+  expect(room.peek().error).toBe('');
+  expect(room.peek().stale).toBe(false);
+  expect(room.peek().reading?.roster.season).toBe(2027);
+  expect(room.peek().reading?.lineup.available).toBe(false);
+});
 
 it('keeps other workflows readable when new-season lineup evidence is unavailable', async () => {
   const room = createHostedRoom('native.hosted', 'franchise.01', async request => {

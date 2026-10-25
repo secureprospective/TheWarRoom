@@ -45,8 +45,9 @@ const live: Port = {
   notices: league => bindings().TargetCommissionerNotices(league),
   digests: league => bindings().TargetCommissionerDigests(league),
 };
+// A confirmed rollover receipt also carries the plan it applied; the plan was already reviewed in its preview.
 export function parseReceipt(v: unknown): Receipt {
-  const r = object(v, 'League receipt', ['entry', 'league', 'revision', 'recordedAt', 'message']);
+  const r = object(v, 'League receipt', ['entry', 'league', 'revision', 'recordedAt', 'message', 'plan']);
   return {
     entry: text(r.entry, 'Entry'), league: text(r.league, 'League'),
     revision: integer(r.revision, 'League version', 1), recordedAt: timestamp(r.recordedAt, 'Recorded time'),
