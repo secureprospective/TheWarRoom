@@ -1,4 +1,4 @@
-"""Build native desktop candidates; never sign or publish them."""
+"""Build native installable candidates; never sign or publish them."""
 
 import argparse
 from datetime import datetime, timezone
@@ -8,9 +8,7 @@ from pathlib import Path
 import platform
 import shutil
 import subprocess
-import tarfile
 import tempfile
-import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -26,31 +24,60 @@ def target():
     return targets[system, machine]
 
 
-def archive(source, destination, name):
+def artifact_name(name):
+    extensions = {"windows-amd64": "exe", "darwin-arm64": "dmg", "linux-amd64": "deb"}
+    return f"warroom-{name}.{extensions[name]}"
+
+
+def linux_package(source, output, guide):
+    with tempfile.TemporaryDirectory(dir=output.parent) as directory:
+        stage = Path(directory)
+        binary = stage / "usr/bin/thewarroom"
+        binary.parent.mkdir(parents=True)
+        shutil.copy2(source, binary)
+        binary.chmod(0o755)
+        applications = stage / "usr/share/applications"
+        applications.mkdir(parents=True)
+        (applications / "thewarroom.desktop").write_text(
+            "[Desktop Entry]\nType=Application\nName=The War Room\n"
+            "Exec=/usr/bin/thewarroom\nTerminal=false\nCategories=Game;\n", encoding="utf-8")
+        docs = stage / "usr/share/doc/thewarroom"
+        docs.mkdir(parents=True)
+        shutil.copy2(guide, docs / "INSTALL.md")
+        control = stage / "DEBIAN"
+        control.mkdir()
+        (control / "control").write_text(
+            "Package: thewarroom\nVersion: 0.5.0\nArchitecture: amd64\n"
+            "Maintainer: Christopher Campbell\nSection: games\nPriority: optional\n"
+            "Depends: libgtk-3-0t64, libwebkit2gtk-4.1-0\n"
+            "Description: The War Room desktop client\n", encoding="utf-8")
+        subprocess.run(["dpkg-deb", "--root-owner-group", "--build", str(stage), str(output)],
+                       check=True)
+
+
+def package(source, destination, name):
     destination.mkdir(parents=True, exist_ok=True)
-    if name.startswith("linux-"):
-        output = destination / f"thewarroom-{name}.tar.gz"
-        with tarfile.open(output, "w:gz") as bundle:
-            bundle.add(source, arcname="thewarroom")
-            bundle.add(ROOT / "docs/delivery/Desktop_Install.md", arcname="INSTALL.md")
-    else:
-        output = destination / f"thewarroom-{name}.zip"
+    output = (destination / artifact_name(name)).resolve()
+    guide = ROOT / "docs/delivery/Desktop_Install.md"
+    if name == "linux-amd64":
+        linux_package(source, output, guide)
+    elif name == "darwin-arm64":
         with tempfile.TemporaryDirectory(dir=destination) as directory:
             stage = Path(directory)
-            if source.is_dir():
-                shutil.copytree(source, stage / source.name, symlinks=True)
-            else:
-                shutil.copy2(source, stage / source.name)
-            shutil.copy2(ROOT / "docs/delivery/Desktop_Install.md", stage / "INSTALL.md")
-            if name.startswith("darwin-"):
-                # ditto retains app bundle symlinks and executable modes.
-                subprocess.run(["ditto", "-c", "-k", "--sequesterRsrc", str(stage),
-                                str(output.resolve())], check=True)
-            else:
-                with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as bundle:
-                    for path in stage.rglob("*"):
-                        if path.is_file():
-                            bundle.write(path, path.relative_to(stage))
+            shutil.copytree(source, stage / source.name, symlinks=True)
+            shutil.copy2(guide, stage / "INSTALL.md")
+            (stage / "Applications").symlink_to("/Applications", target_is_directory=True)
+            subprocess.run(["hdiutil", "create", "-volname", "The War Room", "-srcfolder",
+                            str(stage), "-ov", "-format", "UDZO", str(output)], check=True)
+    else:
+        bootstrapper = ROOT / ".tmp/desktop/MicrosoftEdgeWebview2Setup.exe"
+        if not bootstrapper.is_file():
+            raise FileNotFoundError("stage the authenticated Microsoft WebView2 bootstrapper first")
+        makensis = shutil.which("makensis") or str(
+            Path(os.environ.get("ProgramFiles(x86)", "C:/Program Files (x86)")) / "NSIS/makensis.exe")
+        subprocess.run([makensis, f"/DOUTPUT={output}", f"/DBINARY={source.resolve()}",
+                        f"/DBOOTSTRAPPER={bootstrapper.resolve()}", f"/DGUIDE={guide}",
+                        str(ROOT / "scripts/desktop/installer.nsi")], check=True)
     digest = hashlib.sha256(output.read_bytes()).hexdigest()
     output.with_suffix(output.suffix + ".sha256").write_text(
         f"{digest}  {output.name}\n", encoding="utf-8")
@@ -77,39 +104,11 @@ def build():
         source = source.with_suffix(".app")
     if not source.exists():
         raise FileNotFoundError(source)
-    return archive(source, ROOT / ".tmp/desktop/artifacts", name)
-
-
-def smoke(bundle):
-    """Exercise the extracted executable's loader and CLI, without opening any data."""
-    base = ROOT / ".tmp/desktop"
-    base.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=base) as directory:
-        unpacked = Path(directory)
-        if bundle.name.endswith(".tar.gz"):
-            with tarfile.open(bundle) as stream:
-                stream.extractall(unpacked, filter="data")
-        elif platform.system() == "Darwin":
-            subprocess.run(["ditto", "-x", "-k", str(bundle), str(unpacked)], check=True)
-        else:
-            with zipfile.ZipFile(bundle) as stream:
-                stream.extractall(unpacked)
-        executable = unpacked / "thewarroom"
-        if platform.system() == "Windows":
-            executable = executable.with_suffix(".exe")
-        elif platform.system() == "Darwin":
-            executable = unpacked / "thewarroom.app/Contents/MacOS/thewarroom"
-        result = subprocess.run([str(executable), "-version"], check=True,
-                                capture_output=True, text=True, timeout=30)
-        if "cs45-candidate" not in result.stdout:
-            raise ValueError(f"missing candidate build stamp: {result.stdout}")
-        print(result.stdout.strip())
+    return package(source, ROOT / ".tmp/desktop/artifacts", name)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args()
     os.chdir(ROOT)
-    artifact = build()
-    smoke(artifact)
-    print(artifact)
+    print(build())

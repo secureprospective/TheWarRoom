@@ -4,39 +4,45 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-import tarfile
 import tempfile
 import time
 import unittest
-import zipfile
 
 import package
 
 
 class DesktopTests(unittest.TestCase):
-    def test_archive_contents_and_digest(self):
+    def test_release_target_names(self):
+        self.assertEqual(package.artifact_name("windows-amd64"), "warroom-windows-amd64.exe")
+        self.assertEqual(package.artifact_name("darwin-arm64"), "warroom-darwin-arm64.dmg")
+        self.assertEqual(package.artifact_name("linux-amd64"), "warroom-linux-amd64.deb")
+        with self.assertRaises(KeyError):
+            package.artifact_name("linux-arm64")
+
+    @unittest.skipUnless(package.platform.system() == "Linux", "native Debian tooling")
+    def test_debian_install_contract_and_digest(self):
         base = package.ROOT / ".tmp/desktop"
         base.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory(dir=base) as directory:
             root = Path(directory)
-            source = root / "thewarroom.exe"
+            source = root / "thewarroom"
             source.write_bytes(b"fixture executable")
-            source.chmod(0o755)
-            for name in ("windows-amd64", "linux-amd64"):
-                artifact = package.archive(source, root / name, name)
-                digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
-                self.assertEqual(artifact.with_suffix(artifact.suffix + ".sha256").read_text(),
-                                 f"{digest}  {artifact.name}\n")
-                if name.startswith("windows"):
-                    with zipfile.ZipFile(artifact) as stream:
-                        self.assertEqual(set(stream.namelist()), {"thewarroom.exe", "INSTALL.md"})
-                        self.assertEqual(stream.read("thewarroom.exe"), source.read_bytes())
-                else:
-                    with tarfile.open(artifact) as stream:
-                        self.assertEqual(set(stream.getnames()), {"thewarroom", "INSTALL.md"})
-                        self.assertEqual(stream.extractfile("thewarroom").read(), source.read_bytes())
-                        if package.platform.system() != "Windows":
-                            self.assertEqual(stream.getmember("thewarroom").mode & 0o111, 0o111)
+            artifact = package.package(source, root / "artifacts", "linux-amd64")
+            digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+            self.assertEqual(artifact.with_suffix(".deb.sha256").read_text(),
+                             f"{digest}  {artifact.name}\n")
+            depends = subprocess.check_output(["dpkg-deb", "-f", str(artifact), "Depends"], text=True)
+            self.assertIn("libwebkit2gtk-4.1-0", depends)
+            self.assertIn("libgtk-3-0t64", depends)
+            unpacked = root / "unpacked"
+            subprocess.run(["dpkg-deb", "-x", str(artifact), str(unpacked)], check=True)
+            binary = unpacked / "usr/bin/thewarroom"
+            self.assertEqual(binary.read_bytes(), source.read_bytes())
+            self.assertEqual(binary.stat().st_mode & 0o777, 0o755)
+            launcher = (unpacked / "usr/share/applications/thewarroom.desktop").read_text()
+            self.assertIn("Exec=/usr/bin/thewarroom", launcher)
+            self.assertIn("Terminal=false", launcher)
+            self.assertTrue((unpacked / "usr/share/doc/thewarroom/INSTALL.md").is_file())
 
     def test_real_platform_lock_contention_and_crash_release(self):
         base = package.ROOT / ".tmp/desktop"

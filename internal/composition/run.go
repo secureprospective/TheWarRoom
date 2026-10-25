@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
@@ -40,6 +41,9 @@ type Embedded struct {
 // database.
 func Main(args []string, embedded Embedded) int {
 	rulebookMarkdown, commissionerPreviewRegistry = embedded.Rulebook, embedded.EndpointRegistry
+	if len(args) == 2 && args[0] == "-package-smoke" {
+		return packageSmoke(args[1], embedded, os.Stderr)
+	}
 	if len(args) == 3 && args[0] == "-native" {
 		return runNative(args[1], args[2], embedded, os.Stderr)
 	}
@@ -106,6 +110,36 @@ func probe() int {
 	app.startup(context.Background())
 	defer app.shutdown(context.Background())
 	if app.core.StartupErr != nil {
+		return 1
+	}
+	return 0
+}
+
+// packageSmoke initializes the installed WebView without databases, credentials or network
+// workers. The caller supplies a disposable existing directory and kills the ready process.
+func packageSmoke(directory string, embedded Embedded, stderr io.Writer) int {
+	info, err := os.Stat(directory)
+	if err != nil || !info.IsDir() || !filepath.IsAbs(directory) {
+		_, _ = fmt.Fprintln(stderr, "package smoke requires an existing absolute directory")
+		return 2
+	}
+	lock, err := acquireInstanceLock(filepath.Join(directory, "smoke.db"))
+	if err != nil {
+		_, _ = fmt.Fprintln(stderr, err)
+		return 1
+	}
+	defer releaseInstanceLock(lock)
+	err = wails.Run(&options.App{
+		Title: "The War Room — installation check", Width: 640, Height: 480,
+		AssetServer: &assetserver.Options{Assets: embedded.Assets},
+		OnDomReady: func(_ context.Context) {
+			if writeErr := os.WriteFile(filepath.Join(directory, "ready"), []byte("webview ready\n"), 0o600); writeErr != nil {
+				log.Printf("package smoke ready: %v", writeErr)
+			}
+		},
+	})
+	if err != nil {
+		_, _ = fmt.Fprintf(stderr, "package smoke: %v\n", err)
 		return 1
 	}
 	return 0
