@@ -38,7 +38,7 @@ func PrepareWaiverAppend(raw *RawCommand, records []Record, now time.Time, facts
 	}
 	x := waiverExecution{assets: assets, state: state, rules: rules, records: records, now: now, facts: facts, zone: zone}
 	if OwnerWaiverAction(raw.Command) != "" {
-		gate, err := NativeActionGate(raw.League, records, raw.Args.Waiver.Franchise, OwnerWaiverAction(raw.Command), now, zone)
+		gate, err := NativeActionGate(raw.League, records, raw.Args.Waiver.Franchise, x.reserveAction(*raw), now, zone)
 		if err != nil {
 			return err
 		}
@@ -52,6 +52,8 @@ func PrepareWaiverAppend(raw *RawCommand, records []Record, now time.Time, facts
 func (x *waiverExecution) prepare(raw *RawCommand) error {
 	var err error
 	switch raw.Command {
+	case RosterReserve:
+		err = x.reserve(raw)
 	case RosterCut:
 		err = x.cut(raw)
 	case WaiverClaim:
@@ -79,7 +81,7 @@ func (x *waiverExecution) prepare(raw *RawCommand) error {
 			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: w.Winner}, x.now)...)
 		}
 	}
-	if raw.Command == RosterCut {
+	if raw.Command == RosterCut || raw.Command == RosterReserve {
 		return rosterCapAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil

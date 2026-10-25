@@ -1,10 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
 import NativeHelpers from './NativeHelpers';
 import '../look/look.css';
 import './nativeAccount.css';
+
+const HostedLeague = lazy(() => import('../commissioner/HostedLeague'));
 
 type Screen = 'login' | 'join' | 'authenticator' | 'recovery';
 const tabs = [
@@ -71,7 +73,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
   return <main className="twr-app native-account" aria-busy={pending}>
     <header><h1>{view.name || 'Your native league'}</h1>
       <p>Hosted league · No MFL account or key needed</p>
-      <p className="native-address">{initial.server} · {initial.league}</p></header>
+      <p className="native-address">{initial.server}</p></header>
     <nav aria-label="Account access">
       {tabs.map(([id, label]) => <Act key={id} variant="button" verb="commissioner.surface"
         args={args('view', id)} label={label} disabled={pending} current={screen === id}>{label}</Act>)}
@@ -80,9 +82,12 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     {view.message && <p role="status">{view.message}</p>}
     {view.name && <section aria-label="Your league access">
       <h2>{view.franchiseName || 'League access'}</h2><p>{view.role}</p>
-      {view.franchise && <p>Your assigned franchise: {view.franchise}.
-        You are connected to the server; no local league is created.</p>}
+      {view.franchise && <p>You are connected to the server; no local league is created.</p>}
     </section>}
+    {signedIn && view.franchise && <Suspense fallback={<p>Opening your franchise…</p>}>
+      <HostedLeague league={initial.league} franchise={view.franchise}
+        name={view.franchiseName} role={view.role} />
+    </Suspense>}
     {signedIn && view.name && view.seats.length > 0 &&
       <NativeHelpers server={initial.server}
       league={initial.league} seats={view.seats} franchise={view.franchise} />}

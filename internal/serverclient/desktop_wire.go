@@ -197,6 +197,8 @@ func desktopRefusal(path string, status int) error {
 		return fmt.Errorf("the league could not check this change. Verify your access and try again")
 	case serverhttp.ConfirmPath:
 		return fmt.Errorf("the league would not confirm this change. Verify a fresh authenticator code, and check the change is one you may make")
+	case serverhttp.WorkflowPath:
+		return fmt.Errorf("the league could not accept this action; refresh before retrying and check your seat, league rules and authenticator")
 	case serverhttp.PeoplePath:
 		if status == 401 {
 			return fmt.Errorf("your session expired or was revoked. Sign in again")

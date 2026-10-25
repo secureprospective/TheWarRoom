@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -39,14 +38,12 @@ func provision(ctx context.Context, dir string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("bootstrap commissioner: %w", err)
 	}
-	if err := hostedfixture.CreateLeague(ctx, store, principal); err != nil {
-		return "", "", fmt.Errorf("seed league: %w", err)
+	digest, err := hostedfixture.CreateWorkflowLeague(ctx, store, principal)
+	if err != nil {
+		return "", "", fmt.Errorf("seed owner workflows: %w", err)
 	}
-	seat := commissioner.RawCommand{League: "native.hosted", Command: "commish.seat.replace", Expected: 1,
-		Args:   commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Principal: string(principal)}},
-		Reason: "Seat disposable owner", Request: "seat", Effective: "now", Visibility: "league"}
-	if _, err := store.ExecuteCommissioner(ctx, seat, string(principal), nil); err != nil {
-		return "", "", fmt.Errorf("seed owner seat: %w", err)
+	if err := writePrivate(filepath.Join(dir, "football.digest"), []byte(digest)); err != nil {
+		return "", "", err
 	}
 	return enrollAuthenticator(ctx, dir, credentials, passwords, raw)
 }

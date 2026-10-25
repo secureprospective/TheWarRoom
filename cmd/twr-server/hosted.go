@@ -24,7 +24,21 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
-func runHosted(ctx context.Context, args []string, output io.Writer) error {
+type hostedFlags struct {
+	flags    *flag.FlagSet
+	path     *string
+	address  *string
+	cert     *string
+	key      *string
+	totpKey  *string
+	registry *string
+	football *string
+	backup   *string
+	trusted  *string
+	status   *string
+}
+
+func parseHostedFlags(args []string) (hostedFlags, error) {
 	flags := flag.NewFlagSet("twr-server hosted", flag.ContinueOnError)
 	path := flags.String("db", "", "existing server-owned history and accounts database")
 	address := flags.String("listen", "127.0.0.1:0", "literal loopback IP:port; proxy deployment is separate")
@@ -32,25 +46,33 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	key := flags.String("tls-key", "", "TLS private key PEM")
 	totpKey := flags.String("totp-key-file", "", "owner-only 32-byte authenticator encryption key")
 	registry := flags.String("preview-registry", "", "endpoint-registry.csv")
+	football := flags.String("football", "", "pinned server-held football evidence digest for owner workflows")
 	backup := flags.String("backup-config", "", "private R2 backup settings; required for hosted writes")
 	trusted := flags.String("trusted-proxy", "", "loopback IP of a cloudflared hop whose CF-Connecting-IP names each client; empty trusts no proxy")
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	if err := flags.Parse(args); err != nil {
-		return fmt.Errorf("parse hosted flags: %w", err)
+		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 	}
-	info, err := os.Stat(*path)
-	if err != nil || !info.Mode().IsRegular() || flags.NArg() != 0 {
-		return fmt.Errorf("hosted mode requires an existing server database")
-	}
-	encryptionKey, catalogue, certificate, err := hostedFiles(*totpKey, *registry, *cert, *key)
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, status: status}, nil
+}
+
+func runHosted(ctx context.Context, args []string, output io.Writer) error {
+	config, err := parseHostedFlags(args)
 	if err != nil {
 		return err
 	}
-	hop, err := trustedProxy(*trusted)
+	if err := checkHostedDatabase(*config.path, config.flags.NArg()); err != nil {
+		return err
+	}
+	encryptionKey, catalogue, certificate, err := hostedFiles(*config.totpKey, *config.registry, *config.cert, *config.key)
 	if err != nil {
 		return err
 	}
-	pools, err := openHostedFile(ctx, *path)
+	hop, err := trustedProxy(*config.trusted)
+	if err != nil {
+		return err
+	}
+	pools, err := openHostedFile(ctx, *config.path)
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
@@ -59,13 +81,16 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if err := selectHostedFootball(ctx, &handler, *config.football); err != nil {
+		return err
+	}
 	handler.TrustedProxy = hop
-	stopBackup, backups, err := configureHostedBackup(ctx, &handler, pools, *backup, filepath.Dir(*path), *totpKey, *cert, *key, *registry)
+	stopBackup, backups, err := configureHostedBackup(ctx, &handler, pools, *config.backup, filepath.Dir(*config.path), *config.totpKey, *config.cert, *config.key, *config.registry)
 	if err != nil {
 		return err
 	}
 	defer stopBackup()
-	stopStatus, err := startStatusSocket(ctx, *status, statusSource(pools, handler.Store, backups))
+	stopStatus, err := startStatusSocket(ctx, *config.status, statusSource(pools, handler.Store, backups))
 	if err != nil {
 		return err
 	}
@@ -73,7 +98,28 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
-	return serveHosted(ctx, *address, certificate, handler, output)
+	return serveHosted(ctx, *config.address, certificate, handler, output)
+}
+
+func checkHostedDatabase(path string, extraArgs int) error {
+	info, err := os.Stat(path)
+	if err != nil || !info.Mode().IsRegular() || extraArgs != 0 {
+		return fmt.Errorf("hosted mode requires an existing server database")
+	}
+	return nil
+}
+
+func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, digest string) error {
+	if digest == "" {
+		return nil
+	}
+	evidence, err := handler.Store.LoadFootball(ctx, digest)
+	if err != nil {
+		return fmt.Errorf("select hosted football: %w", err)
+	}
+	handler.Football, handler.FootballDigest = evidence, digest
+	handler.Store.SetLineupEnvironment(evidence)
+	return nil
 }
 
 func openHostedFile(ctx context.Context, path string) (*db.Pools, error) {

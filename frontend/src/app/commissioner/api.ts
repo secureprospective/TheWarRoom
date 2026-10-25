@@ -13,3 +13,5 @@ function bindings(message: string): typeof Bindings {
 export const ledgerBindings = () => bindings('The league ledger requires the desktop app.');
 export const nativeBindings = () => bindings('League changes require the desktop app.');
 export const draftBindings = () => bindings('The draft room requires the desktop app.');
+
+export { hostedWorkflow, type HostedResponse } from '../control/nativeApi';

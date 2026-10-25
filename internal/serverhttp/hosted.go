@@ -33,6 +33,8 @@ const (
 // Hosted has no fixture fallback. Accounts and history must share the single writer,
 // so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
+	FootballDigest string
+	Football       *history.PinnedFootball
 	WriteAdmission func() error
 	Tokens         *accounts.TokenService
 	Confirmations  *Confirmations
@@ -78,7 +80,7 @@ func (h Hosted) route(w http.ResponseWriter, r *http.Request) {
 		h.revoke(w, r)
 	case LoginPath:
 		h.login(w, r)
-	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, DispatchPath, LineupPath, PickPath, ConfirmPath:
+	case LedgerPath, PeoplePath, PreviewPath, ExecutePath, DispatchPath, LineupPath, PickPath, ConfirmPath, WorkflowPath:
 		h.native(w, r)
 	default:
 		http.NotFound(w, r)
@@ -125,6 +127,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 }
 
 type RawNativeRequest struct {
+	Workflow *RawWorkflow                 `json:"workflow,omitempty"`
 	Protocol int                          `json:"protocol"`
 	League   string                       `json:"league,omitempty"`
 	Command  *commissioner.RawCommand     `json:"command,omitempty"`
@@ -137,17 +140,17 @@ func (r RawNativeRequest) Validate() error {
 	if r.Protocol != 1 {
 		return fmt.Errorf("unsupported protocol")
 	}
+	if r.Workflow != nil {
+		if r.Command != nil || r.Pick != nil || r.League+r.Mode+r.TokenID != "" {
+			return fmt.Errorf("send only a workflow")
+		}
+		return r.Workflow.Validate()
+	}
 	if !validDispatchMode(r.Mode) {
 		return fmt.Errorf("choose preview or execute")
 	}
 	if r.Pick != nil {
-		if r.Command != nil || r.League != "" || r.Mode != "" || r.TokenID != "" {
-			return fmt.Errorf("send only a draft pick")
-		}
-		if err := r.Pick.Validate(); err != nil {
-			return fmt.Errorf("rookie pick input: %w", err)
-		}
-		return nil
+		return r.validatePick()
 	}
 	if r.Command == nil {
 		if !strings.HasPrefix(r.League, "native.") || len(r.League) <= len("native.") || len(r.League) > 128 {
@@ -160,6 +163,16 @@ func (r RawNativeRequest) Validate() error {
 	}
 	if err := r.Command.ValidatePreview(); err != nil {
 		return fmt.Errorf("invalid command: %w", err)
+	}
+	return nil
+}
+
+func (r RawNativeRequest) validatePick() error {
+	if r.Command != nil || r.League != "" || r.Mode != "" || r.TokenID != "" {
+		return fmt.Errorf("send only a draft pick")
+	}
+	if err := r.Pick.Validate(); err != nil {
+		return fmt.Errorf("rookie pick input: %w", err)
 	}
 	return nil
 }
@@ -182,12 +195,15 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var raw RawNativeRequest
-	if r.Method != http.MethodPost || decodeHosted(w, r, &raw) != nil || raw.Validate() != nil ||
-		!raw.matchesPath(r.URL.Path) {
+	if !decodeNative(w, r, &raw) {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
 		return
 	}
 	if authenticationErr != nil {
+		if raw.Workflow != nil {
+			http.Error(w, "sign in with your own account", http.StatusUnauthorized)
+			return
+		}
 		h.agent(w, r, rawSession, raw)
 		return
 	}
@@ -196,17 +212,44 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		h.writeFailure(w, "session refused", http.StatusUnauthorized)
 		return
 	}
+	if raw.Workflow != nil {
+		r = r.WithContext(leagueservice.WithFootballDigest(r.Context(), raw.Workflow.Football))
+	}
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
 	gate := accountAdmission{host: host, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
 		return
 	}
-	service := leagueservice.NewHosted(h.Worker.Host(host), gate)
+	workflowHost, err := h.workflowHost(host, raw.Workflow != nil)
+	if err != nil {
+		http.Error(w, "football reference unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate)
 	h.dispatch(w, r, service, raw)
 }
 
+func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) bool {
+	return r.Method == http.MethodPost && decodeHosted(w, r, raw) == nil && raw.Validate() == nil && raw.matchesPath(r.URL.Path)
+}
+
+func (h Hosted) workflowHost(host leagueservice.Host, workflow bool) (leagueservice.Host, error) {
+	if workflow && h.FootballDigest != "" {
+		pinned, err := leagueservice.WithPinnedFootball(host, h.Football)
+		if err != nil {
+			return nil, fmt.Errorf("select workflow evidence: %w", err)
+		}
+		return pinned, nil
+	}
+	return host, nil
+}
+
 func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
+	if raw.Workflow != nil {
+		h.workflow(w, r, service, *raw.Workflow)
+		return
+	}
 	path := r.URL.Path
 	if path == DispatchPath {
 		path = PreviewPath
@@ -304,6 +347,10 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	if err := a.totp.CheckPrivileged(ctx, policy, principal, a.proof); err != nil {
 		return fmt.Errorf("privileged authentication: %w", err)
 	}
+	return admitLeagueAccess(access, policy, principal, records)
+}
+
+func admitLeagueAccess(access commissioner.Access, policy governance.State, principal governance.Principal, records []commissioner.Record) error {
 	if access.Mode == "read" {
 		if !hostedMember(policy, principal, records) {
 			return fmt.Errorf("league membership required")
@@ -312,6 +359,12 @@ func (a accountAdmission) Admit(ctx context.Context, access commissioner.Access)
 	}
 	if access.DraftPick != nil {
 		if !policy.HoldsSeat(governance.FranchiseID(access.DraftPick.Franchise), principal) {
+			return fmt.Errorf("only a seated owner or caretaker may pick")
+		}
+		return nil
+	}
+	if access.Raw.Command == commissioner.DraftPick && access.Raw.Args.Draft != nil && access.Raw.Args.Draft.Pick != nil {
+		if !policy.HoldsSeat(governance.FranchiseID(access.Raw.Args.Draft.Pick.Franchise), principal) {
 			return fmt.Errorf("only a seated owner or caretaker may pick")
 		}
 		return nil
@@ -346,7 +399,7 @@ type LoginResponse struct {
 func (r LoginResponse) String() string   { return "[login response redacted]" }
 func (r LoginResponse) GoString() string { return r.String() }
 
-func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse](w http.ResponseWriter, body T) {
+func writeHosted[T RecoveryResponse | RevokeResponse | commissioner.People | commissioner.Ledger | commissioner.Preview | commissioner.Receipt | LoginResponse | AuthenticatorResponse | ConfirmationResponse | AgentTokenResponse | WorkflowResponse](w http.ResponseWriter, body T) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
@@ -377,6 +430,9 @@ func hostedOwner(policy governance.State, principal governance.Principal, record
 func validDispatchMode(mode string) bool { return mode == "" || mode == "preview" || mode == "execute" }
 
 func (r RawNativeRequest) matchesPath(path string) bool {
+	if path == WorkflowPath || r.Workflow != nil {
+		return path == WorkflowPath && r.Workflow != nil
+	}
 	if (path == LedgerPath || path == PeoplePath) != (r.Command == nil && r.Pick == nil) {
 		return false
 	}

@@ -73,7 +73,7 @@ func DefinitionFor(command string) (Definition, error) {
 		TradeReview, TradeAppeal, TradeAppealRule, TradeOverride:
 		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
-		RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
+		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
 		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride,
 		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
 		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,

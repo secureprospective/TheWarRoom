@@ -26,7 +26,7 @@ func NewFootballHost(ctx context.Context, host Host, store *history.Store, diges
 		return nil, fmt.Errorf("select hosted football evidence: %w", err)
 	}
 	store.SetLineupEnvironment(evidence)
-	return footballHost{Host: host, evidence: evidence}, nil
+	return WithPinnedFootball(host, evidence)
 }
 
 type footballHost struct {
@@ -90,4 +90,28 @@ func (a footballAdmission) Admit(ctx context.Context, access commissioner.Access
 		return fmt.Errorf("admit football credential: %w", err)
 	}
 	return a.host.check(ctx)
+}
+
+func (h footballHost) RecordDraftPick(ctx context.Context, permit commissioner.Permit, in commissioner.DraftPickInput, principal string, _ nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
+	if err := h.check(ctx); err != nil {
+		return commissioner.Receipt{}, err
+	}
+	host, ok := h.Host.(draftPickHost)
+	if !ok {
+		return commissioner.Receipt{}, fmt.Errorf("draft room unavailable")
+	}
+	guarded := commissioner.WithCredentialAdmission(ctx, footballAdmission{host: h, credential: func(access commissioner.Access) error { return commissioner.AdmitCredential(ctx, access) }})
+	receipt, err := host.RecordDraftPick(guarded, permit, in, principal, h.NativeFacts(), zone)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("hosted football pick: %w", err)
+	}
+	return receipt, nil
+}
+
+// WithPinnedFootball shares immutable startup evidence across request-scoped hosts.
+func WithPinnedFootball(host Host, evidence *history.PinnedFootball) (Host, error) {
+	if evidence == nil {
+		return nil, fmt.Errorf("select football evidence at startup")
+	}
+	return footballHost{Host: host, evidence: evidence}, nil
 }
