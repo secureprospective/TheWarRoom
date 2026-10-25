@@ -50,17 +50,36 @@ const mflClient = createMFLClient(request => {
   }
 });
 export const poolWire = {
-  refresh: (force: boolean) => mflClient.invoke({ command: 'mfl.pool.refresh', mode: 'execute', arguments: { force } }, localOwner),
-  pool: (franchiseId: string, scope: PoolScope) => mflClient.invoke({ command: 'mfl.pool.read', mode: 'read', arguments: {
-    franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc, showNoTeam: scope.showNoTeam ?? false,
-  } }, localOwner),
-  plans: (franchiseId: string) => mflClient.invoke({ command: 'mfl.bid.plans', mode: 'read', arguments: { franchiseId } }, localOwner),
-  preview: (mine: string, form: BidFormState) => mflClient.invoke({ command: 'mfl.bid.preview', mode: 'preview', arguments: rawBid(mine, form) }, localOwner),
-  draft: (mine: string, form: BidFormState) => mflClient.invoke({ command: 'bid.submit', mode: 'execute', arguments: rawBid(mine, form) }, localOwner),
-  revise: (id: string, mine: string, form: BidFormState) => mflClient.invoke({ command: 'mfl.bid.revise', mode: 'execute', arguments: { id, ...rawBid(mine, form) } }, localOwner),
-  handOff: (id: string) => mflClient.invoke({ command: 'mfl.bid.handoff', mode: 'execute', arguments: { id } }, ownerAction),
-  posted: (id: string) => mflClient.invoke({ command: 'mfl.bid.posted', mode: 'execute', arguments: { id } }, ownerAction),
-  withdraw: (id: string) => mflClient.invoke({ command: 'mfl.bid.withdraw', mode: 'execute', arguments: { id } }, ownerAction),
+  refresh: (force: boolean) => mflClient.invoke({
+    command: 'mfl.pool.refresh', mode: 'execute', arguments: { force },
+  }, localOwner),
+  pool: (franchiseId: string, scope: PoolScope) => mflClient.invoke({
+    command: 'mfl.pool.read', mode: 'read', arguments: {
+      franchiseId, position: scope.position, sort: scope.sort, desc: scope.desc,
+      showNoTeam: scope.showNoTeam ?? false,
+    },
+  }, localOwner),
+  plans: (franchiseId: string) => mflClient.invoke({
+    command: 'mfl.bid.plans', mode: 'read', arguments: { franchiseId },
+  }, localOwner),
+  preview: (mine: string, form: BidFormState) => mflClient.invoke({
+    command: 'mfl.bid.preview', mode: 'preview', arguments: rawBid(mine, form),
+  }, localOwner),
+  draft: (mine: string, form: BidFormState) => mflClient.invoke({
+    command: 'bid.submit', mode: 'execute', arguments: rawBid(mine, form),
+  }, localOwner),
+  revise: (id: string, mine: string, form: BidFormState) => mflClient.invoke({
+    command: 'mfl.bid.revise', mode: 'execute', arguments: { id, ...rawBid(mine, form) },
+  }, localOwner),
+  handOff: (id: string) => mflClient.invoke({
+    command: 'mfl.bid.handoff', mode: 'execute', arguments: { id },
+  }, ownerAction),
+  posted: (id: string) => mflClient.invoke({
+    command: 'mfl.bid.posted', mode: 'execute', arguments: { id },
+  }, ownerAction),
+  withdraw: (id: string) => mflClient.invoke({
+    command: 'mfl.bid.withdraw', mode: 'execute', arguments: { id },
+  }, ownerAction),
 };
 export const personalWire = {
   read: (mine: string) => personalGo().TargetPersonal(mine),

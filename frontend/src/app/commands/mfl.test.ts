@@ -56,8 +56,10 @@ describe('local MFL reference command transport', () => {
 
   it('rejects unknown commands, roles, mode upgrades and server-owned arguments', () => {
     expect(() => mflEnvelope({ ...read, command: 'bids.place' } as unknown as MFLRequest, desktop)).toThrow();
-    expect(() => mflEnvelope(read, { ...desktop, role: 'viewer' } as unknown as MFLContext)).toThrow('not available');
+    expect(() => mflEnvelope(read, { ...desktop, role: 'viewer' } as unknown as MFLContext))
+      .toThrow('not available');
     expect(() => mflEnvelope({ ...read, mode: 'execute' } as unknown as MFLRequest, desktop)).toThrow();
-    expect(() => mflEnvelope({ ...read, arguments: { franchiseId: '0001', principal: 'admin' } } as MFLRequest, desktop)).toThrow();
+    expect(() => mflEnvelope({ ...read, arguments: { franchiseId: '0001', principal: 'admin' } }
+      as MFLRequest, desktop)).toThrow();
   });
 });

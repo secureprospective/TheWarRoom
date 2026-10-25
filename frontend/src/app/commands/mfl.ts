@@ -15,8 +15,10 @@ export function mflEnvelope(request: MFLRequest, context: MFLContext) {
   const definition = mflCommands[request.command]?.definition;
   if (!definition || context.availability !== 'desktop')
     throw new Error('MFL reference plans stay on your computer; they are not hosted league actions.');
-  if (!definition.Role.split(',').includes(context.role)) throw new Error('This action is not available to you.');
-  if (!(definition.Modes as readonly string[]).includes(request.mode)) throw new Error('Choose an available plan action.');
+  if (!definition.Role.split(',').includes(context.role))
+    throw new Error('This action is not available to you.');
+  if (!(definition.Modes as readonly string[]).includes(request.mode))
+    throw new Error('Choose an available plan action.');
   if (definition.Gravity === 'G2' && !context.ownerAction)
     throw new Error('Choose this action on the saved bid plan first. Nothing has changed.');
   validateShape(request.arguments, definition.Arguments, 'MFL reference plan');
