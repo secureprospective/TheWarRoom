@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -86,4 +87,32 @@ func (r *R2) prune(ctx context.Context, now time.Time) error {
 		}
 	}
 	return r.pruneObjects(ctx, names, now)
+}
+
+// Sets lists recovery set names, newest first. Foreign objects are ignored.
+func (r *R2) Sets(ctx context.Context) ([]string, error) {
+	var names []string
+	for object := range r.client.ListObjects(ctx, r.bucket, minio.ListObjectsOptions{Prefix: "sets/", Recursive: true}) {
+		if object.Err != nil {
+			return nil, fmt.Errorf("could not list backups in R2; check the bucket and token")
+		}
+		if _, err := objectTime(object.Key); err == nil {
+			names = append(names, object.Key)
+		}
+	}
+	slices.Sort(names)
+	slices.Reverse(names)
+	return names, nil
+}
+
+// Open streams one recovery set for Restore, which bounds and authenticates it.
+func (r *R2) Open(ctx context.Context, name string) (io.ReadCloser, error) {
+	if _, err := objectTime(name); err != nil {
+		return nil, err
+	}
+	object, err := r.client.GetObject(ctx, r.bucket, name, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("could not download backup %s from R2", name)
+	}
+	return object, nil
 }

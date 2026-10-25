@@ -72,9 +72,8 @@ Success atomically resets the password, removes the authenticator and recent-aut
 proof, invalidates printed codes, advances the account credential generation and
 records the account/time/reason audit. It changes no account ID, username, role,
 seat or league event. Set up the authenticator again before privileged use.
-Device-session/token admission will consume the generation fence in later slices;
-there are no live sessions or delegations to revoke yet. Audit chaining and
-host-replacement recovery are separate later gates.
+Device sessions and helper tokens issued before the reset stop working. To sign
+everyone out at once, or after restoring a lost server, see the section below.
 
 `TestOfflineConsoleRecovery` exercises stdin validation, insecure-key permissions,
 success, preserved identity, new-password login and the persisted audit record.
@@ -176,6 +175,19 @@ history after verifying both. Keep it away from the server (slice 36 stores one 
 off-site backup). `twr-server checkpoint -db /path/to/server.db -check checkpoint.json` reports
 whether the server's history still matches it; a rewrite or rollback since then fails with a
 plain message. Both forms only read the database. Details: `docs/backend/Audit_Chain.md`.
+
+## Spare-host restore and sign-in reset
+
+`twr-server restore -db <fresh server.db> -stage <new folder>` reads one JSON object on
+stdin (`endpoint`, `bucket`, `access_key`, `secret_key`, `restore_key`), opens no
+listener and is driven by the CT script `twr-restore`. It refuses a target holding
+accounts or league entries, takes the newest usable R2 set, compares its saved
+checkpoint, resets sign-ins in the staged copy (`ResetAfterRestore`) and leaves
+`server.db`, `authenticator.key` and a new `backup.json` in `<stage>/ready`.
+
+`twr-server reset-sign-ins -db <server.db>` reads a reason line on stdin and starts a
+new auth epoch (`ResetSignIns`). Stop the service first; run both as the service user.
+Steps for the commissioner and deputy: [RESTORE.md](../../deploy/server/RESTORE.md).
 
 ## One-command hosted click tests
 
