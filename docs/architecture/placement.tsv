@@ -119,3 +119,4 @@ internal/serverhttp	platform
 internal/serverclient	platform
 internal/accounts	platform
 internal/store/accounts	platform
+internal/offline	platform

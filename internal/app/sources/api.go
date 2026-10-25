@@ -94,20 +94,20 @@ type DataSources struct {
 
 func (a *API) LoadCrosswalk() CrosswalkReport {
 	if err := a.host.Ready(); err != nil {
-		return CrosswalkReport{Error: err.Error()}
+		return CrosswalkReport{Error: report.FailureText(err)}
 	}
 	ctx, cancel := context.WithTimeout(a.host.SourcesContext(), RASFetchTimeout)
 	defer cancel()
 	rep, err := linkDirectory(ctx, a.host, a.held)
 	if err != nil {
-		return CrosswalkReport{Error: err.Error()}
+		return CrosswalkReport{Error: report.FailureText(err)}
 	}
 	return rep
 }
 
 func (a *API) GetCrosswalkReport() CrosswalkReport {
 	if err := a.host.Ready(); err != nil {
-		return CrosswalkReport{Error: err.Error()}
+		return CrosswalkReport{Error: report.FailureText(err)}
 	}
 	return a.held.SnapshotCrosswalk()
 }
@@ -136,29 +136,29 @@ func (a *API) TargetDataSources() (DataSources, error) {
 
 func (a *API) TargetDataRefresh(scope string) DataActResult {
 	if err := a.host.Ready(); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	summary, err := a.refreshScope(scope)
 	if err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	return DataActResult{OK: true, Summary: summary}
 }
 
 func (a *API) SetLeagueArchiveDir(dir string) DataActResult {
 	if err := a.host.Ready(); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	dir = filepath.Clean(dir)
 	if err := CheckArchiveDir(dir); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	_, off, err := a.host.SourcesSettings()
 	if err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	if err := a.host.SaveSourcesSettings(dir, off); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	return DataActResult{OK: true, Summary: "League archive folder set to " + dir + "."}
 }
@@ -166,14 +166,14 @@ func (a *API) SetLeagueArchiveDir(dir string) DataActResult {
 // SetPhotos turns player photos on or off; off means no request reaches a photo host.
 func (a *API) SetPhotos(on bool) DataActResult {
 	if err := a.host.Ready(); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	dir, _, err := a.host.SourcesSettings()
 	if err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	if err := a.host.SaveSourcesSettings(dir, !on); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	a.host.SetPhotosOff(!on)
 	if on {
@@ -314,14 +314,14 @@ func (a *API) TargetCacheScopes() []DataScope { return a.host.CacheScopes() }
 // copy held stays and the reason is returned.
 func (a *API) TargetCacheClear(scope string) DataActResult {
 	if err := a.host.Ready(); err != nil {
-		return DataActResult{Error: err.Error()}
+		return DataActResult{Error: report.FailureText(err)}
 	}
 	label, found, err := a.host.ClearCache(scope)
 	if !found {
 		return DataActResult{Error: fmt.Sprintf("unknown held copy %q", scope)}
 	}
 	if err != nil {
-		return DataActResult{Error: fmt.Sprintf("%s could not be read again: %v. The copy held stays.", label, err)}
+		return DataActResult{Error: fmt.Sprintf("%s could not be read again: %v. The copy held stays.", label, report.FailureText(err))}
 	}
 	return DataActResult{OK: true, Summary: "Asked for a fresh copy of " + label +
 		". Each screen shows how fresh what it holds is."}

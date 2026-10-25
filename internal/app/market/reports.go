@@ -23,6 +23,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
 // HeldFeed is one market report kind as the caller holds it: the parsed feed (one, or none before
@@ -229,6 +230,9 @@ func Reports(held map[string]HeldFeed, names map[string]string, week int, zone *
 			}
 			if feed.Feed.RefreshError != "" {
 				r.Note += " Refresh failed; showing the last known data."
+				if sentence := offline.Find(feed.Feed.RefreshError); sentence != "" {
+					r.Note += " " + sentence
+				}
 			}
 			if len(value.Players) == 0 {
 				r.Status = "empty"

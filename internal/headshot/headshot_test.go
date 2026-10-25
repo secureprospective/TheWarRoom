@@ -10,6 +10,7 @@ import (
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,6 +19,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
 // tiny builds a small generated image; no real photo ever appears in tests (spec §7).
@@ -211,5 +214,23 @@ func TestHandlerStatusCodes(t *testing.T) {
 	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/headshot/4009", nil))
 	if rec.Code != http.StatusServiceUnavailable || h.calls.Load() != before {
 		t.Fatalf("photos off: %d with %d new requests", rec.Code, h.calls.Load()-before)
+	}
+}
+
+type refused struct{}
+
+func (refused) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, &net.OpError{Op: "dial", Net: "tcp", Err: errors.New("connect: connection refused")}
+}
+
+// With no network the photo health row reads the offline sentence, not the dial error.
+func TestPhotoFailureOfflineReadsPlainly(t *testing.T) {
+	s := New(t.TempDir(), func(context.Context, string) (string, string, error) { return "1", "2", nil },
+		&http.Client{Transport: refused{}})
+	if _, _, err := s.Photo(context.Background(), "2001"); err == nil {
+		t.Fatal("a refused photo fetch succeeded")
+	}
+	if st, _, _ := s.Stats(); st.LastError != offline.Sentence("a.espncdn.com") {
+		t.Fatalf("last error %q", st.LastError)
 	}
 }

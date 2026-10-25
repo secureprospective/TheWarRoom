@@ -64,8 +64,7 @@ func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
 		a.hydrateResearchFeed(ctx, feeds, "playerScores", strconv.Itoa(w))
 	}
 	if depth.FetchedAt.IsZero() && a.firstArchiveRead("depth") {
-		rows, fresh, err := researchapp.ReadDepthArchive(ctx, a.core.Season, a.core.History.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
-		holdSeasonFeed(&depth, rows, fresh, err)
+		a.hydrateArchivedDepth(ctx, &depth)
 	}
 	if injury.FetchedAt.IsZero() && a.firstArchiveRead("injuries") {
 		injury = archivedOnly(ctx, a, "injuries", true, func(body []byte) ([]leaguefeed.Injury, error) {
@@ -106,8 +105,13 @@ func (a *App) firstArchiveRead(key string) bool {
 }
 func (a *App) hydrateResearchFeed(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed], kind, week string) {
 	key := researchKey(kind, week)
-	if feeds[key].FetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
-		feeds[key] = a.archivedResearchFeed(ctx, kind, week)
+	held := feeds[key]
+	if held.FetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
+		archived := a.archivedResearchFeed(ctx, kind, week)
+		if held.RefreshError != "" {
+			archived.RefreshError = held.RefreshError // a failed live fetch keeps its reason over the archive's
+		}
+		feeds[key] = archived
 	}
 }
 func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed],
@@ -158,5 +162,22 @@ func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSea
 		research.linkError = err.Error()
 	} else {
 		research.links, research.linkError, research.linkVersion = links, "", loaded
+	}
+}
+
+// hydrateArchivedDepth fills depth charts from the archive; a failed live fetch keeps its reason.
+func (a *App) hydrateArchivedDepth(ctx context.Context, depth *heldSeasonFeed[[]researchfeeds.RawDepth]) {
+	rows, fresh, err := researchapp.ReadDepthArchive(ctx, a.core.Season, a.core.History.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
+	if err != nil {
+		if depth.RefreshError == "" {
+			a.core.FallbackLog(err.Error())
+			depth.RefreshError = "No archived copy held"
+		}
+		return
+	}
+	failed := depth.RefreshError
+	holdSeasonFeed(depth, rows, fresh, nil)
+	if failed != "" {
+		depth.RefreshError = failed
 	}
 }

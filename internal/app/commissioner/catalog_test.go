@@ -40,9 +40,10 @@ func TestNativeCatalogPublication(t *testing.T) {
 		}
 	}
 	// Generic dispatch/preview doors cannot be published as commands with one blanket role.
-	// The desktop's local sign-in links an identity; it is not a league command a server could publish.
+	// The desktop's local sign-in links an identity, and its backup copies its own files; neither is
+	// a league command a server could publish.
 	generic := map[string]bool{"TargetCommissionerExecute": true, "TargetCommissionerPreview": true, "TargetNativeScorePreview": true,
-		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true}
+		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetBackupNow": true}
 	typ := reflect.TypeFor[*API]()
 	for i := range typ.NumMethod() {
 		name := typ.Method(i).Name

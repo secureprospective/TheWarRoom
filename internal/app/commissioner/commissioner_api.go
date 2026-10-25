@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -88,27 +89,39 @@ func (a *API) TargetCommissionerSchedule(league string) (commissioner.ManagedSch
 	return a.reads.TargetCommissionerSchedule(league)
 }
 
-// SeatHost links this computer's identity to the desktop's local sign-in.
+// SeatHost links this computer's identity to the desktop's local sign-in, and backs the league up
+// with that sign-in inside.
 type SeatHost interface {
 	CommissionerSeat() (accounts.SeatStatus, error)
 	CommissionerSeatSignIn(accounts.RawCredentials) (accounts.SeatStatus, error)
+	CommissionerBackupNow() (BackupResult, error)
+}
+
+// ErrBackupNeedsSignIn refuses a backup without a local sign-in: restored on another computer,
+// such a backup would keep no one's league roles.
+var ErrBackupNeedsSignIn = errors.New("create a sign-in first, so the backup keeps your league roles on another computer")
+
+// BackupResult is a saved on-demand backup: the set's name, which a restore asks for, and a
+// plain sentence to show.
+type BackupResult struct {
+	Set     string `json:"set"`
+	Message string `json:"message"`
 }
 
 // TargetCommissionerSeat says whether a local sign-in exists and whether this computer uses it.
 func (a *API) TargetCommissionerSeat() (accounts.SeatStatus, error) {
-	status, err := a.host.CommissionerSeat()
-	if err != nil {
-		return accounts.SeatStatus{}, fmt.Errorf("league sign-in: %w", err)
-	}
-	return status, nil
+	return a.host.CommissionerSeat() //nolint:wrapcheck // the seat's errors are already the words shown
 }
 
 // TargetCommissionerSeatSignIn creates the local sign-in, or proves it on a restored copy, and
-// links this computer so the league keeps every role its owner held.
+// links this computer so the league keeps every role its owner held. A refusal is shown as is.
 func (a *API) TargetCommissionerSeatSignIn(username, password string) (accounts.SeatStatus, error) {
-	status, err := a.host.CommissionerSeatSignIn(accounts.RawCredentials{Username: username, Password: password})
-	if err != nil {
-		return accounts.SeatStatus{}, fmt.Errorf("league sign-in: %w", err)
-	}
-	return status, nil
+	//nolint:wrapcheck // the seat's errors are already the words shown
+	return a.host.CommissionerSeatSignIn(accounts.RawCredentials{Username: username, Password: password})
+}
+
+// TargetBackupNow saves a matched backup of all the league data now. It is refused with
+// ErrBackupNeedsSignIn until a local sign-in exists.
+func (a *API) TargetBackupNow() (BackupResult, error) {
+	return a.host.CommissionerBackupNow() //nolint:wrapcheck // the host's errors are already the words shown
 }

@@ -4,6 +4,8 @@ import {commissioner} from '../models';
 import {accounts} from '../models';
 import {time} from '../models';
 
+export function TargetBackupNow():Promise<commissioner.BackupResult>;
+
 export function TargetCommissionerActor():Promise<string>;
 
 export function TargetCommissionerControls():Promise<commissioner.Controls>;

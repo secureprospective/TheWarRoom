@@ -2,10 +2,13 @@ package livegame
 
 import (
 	"context"
+
 	"errors"
 	"fmt"
 	"slices"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
 // Canonical returns a team code in ESPN's form, whichever source supplied it. The week strip is
@@ -81,7 +84,7 @@ func (a *Adapter) Final(ctx context.Context, at time.Time, follow string) {
 	d, err := a.fetchFinal(ctx, at, g)
 	if err != nil {
 		previous := a.Details[g.ID]
-		previous.Failure = "Final game details: " + err.Error() + ". Follow the game again to retry."
+		previous.Failure = "Final game details: " + offline.Text(err) + ". Follow the game again to retry."
 		a.Details[g.ID] = previous
 		return
 	}
@@ -173,9 +176,9 @@ func (a *Adapter) fetchFinal(ctx context.Context, at time.Time, g Game) (Detail,
 	d := Detail{Game: s, At: at, Final: true}
 	if a.Finals != nil {
 		if err := a.Finals.Keep(ctx, "summary", id, summary, at); err != nil {
-			d.Failure = "Held for this session only: " + err.Error()
+			d.Failure = "Held for this session only: " + offline.Text(err)
 		} else if err := a.Finals.Keep(ctx, "plays", id, body, at); err != nil {
-			d.Failure = "Held for this session only: " + err.Error()
+			d.Failure = "Held for this session only: " + offline.Text(err)
 		}
 	}
 	return d, nil

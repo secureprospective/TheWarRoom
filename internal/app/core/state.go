@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -85,7 +86,8 @@ type State struct {
 	History     *history.Store
 	Coordinator *transactions.Coordinator // the only holder of the what-if Writer
 	MFLClient   *mfl.Client               // shared, so rate limit and host discovery are process-wide
-	Fetches     *archive.Transport        // every outbound HTTP request goes through it
+	Fetches     *archive.Transport        // every archived outbound HTTP request goes through it
+	Network     http.RoundTripper         // the connection under every fetch; nil is http.DefaultTransport
 	Season      int                       // mirror season at startup; rollover is picked up next launch
 	StartupErr  error                     // startup failure; shown in the shell through AppInfo
 	Started     chan struct{}             // closed when startup returns; read the fields above through ready

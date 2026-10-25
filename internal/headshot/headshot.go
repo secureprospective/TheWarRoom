@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
 
 const (
@@ -114,7 +116,7 @@ func (s *Service) Photo(ctx context.Context, mflID string) ([]byte, string, erro
 	}
 	if len(failures) > 0 { // a host failed: do not record "no photo", so the next view retries
 		err := errors.Join(failures...)
-		s.count(func(st *Stats) { st.LastFailure, st.LastError = s.now(), err.Error() })
+		s.count(func(st *Stats) { st.LastFailure, st.LastError = s.now(), offline.Text(err) })
 		return nil, "", err
 	}
 	s.count(func(st *Stats) { st.Missing++ })

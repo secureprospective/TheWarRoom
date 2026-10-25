@@ -21,6 +21,7 @@ import (
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -125,11 +126,7 @@ func (a *App) startup(ctx context.Context) {
 	defer func() { a.finishStartup(ctx, refreshed) }()
 	a.core.Ctx = ctx
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
-	defer func() {
-		if a.core.StartupErr != nil {
-			log.Printf("the war room: startup failed: %v", a.core.StartupErr)
-		}
-	}()
+	defer a.settleStartupFailure()
 
 	// Logging starts first so a lock or open failure below reaches the disk log. A logging
 	// failure is not fatal.
@@ -174,6 +171,15 @@ func (a *App) startup(ctx context.Context) {
 	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
 	a.lookupMyFranchise(ctx)
 	a.core.LaunchRefreshDue = !refreshed
+}
+
+// settleStartupFailure logs a failed startup's whole chain. One that could not reach MFL is then
+// kept as the plain offline sentence, which every screen shows through ready.
+func (a *App) settleStartupFailure() {
+	if a.core.StartupErr != nil {
+		log.Printf("the war room: startup failed: %v", a.core.StartupErr)
+		a.core.StartupErr = offline.Plain(a.core.StartupErr)
+	}
 }
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
@@ -230,7 +236,7 @@ func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.S
 	}
 	hist := history.New(a.core.HistPools, reg)
 	a.attachSeat(hist)
-	a.core.Fetches = &archive.Transport{Sink: hist, Judge: ingestion.MFLRefusal}
+	a.core.Fetches = &archive.Transport{Base: a.core.Network, Sink: hist, Judge: ingestion.MFLRefusal}
 	return path, hist, nil
 }
 

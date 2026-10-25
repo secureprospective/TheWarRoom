@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/offline"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -43,7 +44,7 @@ func (h HeldFeed[T]) Provenance(source, feed string) snapshot.Provenance {
 
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {
 	if err != nil {
-		h.RefreshError = err.Error()
+		h.RefreshError = FailureText(err)
 		return
 	}
 	at, parseErr := time.Parse(time.RFC3339, fresh.FetchedAt)
@@ -60,11 +61,17 @@ func LiveFreshness(t time.Time) domain.Freshness {
 }
 
 // StaleFreshness marks a cached result after a failed fetch. The cause is shown so an MFL
-// outage reads differently from a local network fault.
+// outage reads differently from a local network fault, which reads as the offline sentence.
 func StaleFreshness(fetchedAt time.Time, cause error) domain.Freshness {
-	return domain.Freshness{
-		State:     domain.FreshStale,
-		FetchedAt: fetchedAt.UTC().Format(time.RFC3339),
-		Note:      fmt.Sprintf("live fetch failed, showing last known data: %v", cause),
+	note := fmt.Sprintf("live fetch failed, showing last known data: %v", cause)
+	if offline.Is(cause) {
+		note = "Showing the last copy saved. " + FailureText(cause)
 	}
+	return domain.Freshness{State: domain.FreshStale, FetchedAt: fetchedAt.UTC().Format(time.RFC3339), Note: note}
 }
+
+// Offline is what a person sees when a fetch never reached MFL. offline.Sentence words the others.
+const Offline = offline.League
+
+// FailureText is PlainFailure's text, for the held-feed notes a screen shows.
+func FailureText(err error) string { return offline.Text(err) }

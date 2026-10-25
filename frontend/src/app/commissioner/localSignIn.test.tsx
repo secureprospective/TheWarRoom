@@ -33,7 +33,7 @@ describe('League sign-in', () => {
   it('asks a restored copy for the original sign-in and clears a refused password', async () => {
     const { app } = stub({
       TargetCommissionerSeatSignIn: async () => {
-        throw new Error('league sign-in: incorrect username or password');
+        throw new Error('incorrect username or password');
       },
       TargetCommissionerSeat: async () => ({ hasAccount: true }),
     });

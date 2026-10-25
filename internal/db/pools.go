@@ -57,8 +57,8 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 		return nil, err
 	}
 	writeDSN := fmt.Sprintf(
-		"file:%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
-		path, busyTimeoutMS,
+		"%s?_pragma=busy_timeout(%d)&_pragma=journal_mode(WAL)&_txlock=immediate",
+		fileURI(path), busyTimeoutMS,
 	) + connectionPragmas
 	write, err := sql.Open("sqlite", writeDSN)
 	if err != nil {
@@ -82,8 +82,8 @@ func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	}
 
 	readDSN := fmt.Sprintf(
-		"file:%s?_pragma=busy_timeout(%d)&mode=ro",
-		path, busyTimeoutMS,
+		"%s?_pragma=busy_timeout(%d)&mode=ro",
+		fileURI(path), busyTimeoutMS,
 	) + connectionPragmas
 	read, err := sql.Open("sqlite", readDSN)
 	if err != nil {
@@ -174,7 +174,7 @@ func checkUserVersion(ctx context.Context, path string, maxVersion int) (err err
 	} else if err != nil {
 		return fmt.Errorf("db: stat database: %w", err)
 	}
-	probe, err := sql.Open("sqlite", fmt.Sprintf("file:%s?mode=ro", path))
+	probe, err := sql.Open("sqlite", fileURI(path)+"?mode=ro")
 	if err != nil {
 		return fmt.Errorf("db: open version probe: %w", err)
 	}
@@ -220,4 +220,10 @@ func journalMode(ctx context.Context, pool *sql.DB) (string, error) {
 		return "", fmt.Errorf("query journal_mode: %w", err)
 	}
 	return mode, nil
+}
+
+// fileURI makes a SQLite file: URI for path. SQLite reads ? and # as URI delimiters and %
+// as an escape, so a folder named "Bob#2" would otherwise open a different file.
+func fileURI(path string) string {
+	return "file:" + strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23").Replace(path)
 }

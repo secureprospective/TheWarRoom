@@ -168,23 +168,7 @@ func TestBindingManifest(t *testing.T) {
 }
 
 func bindingManifest(bound []interface{}) ([]string, []string) {
-	catalogs := map[reflect.Type][]catalog.Command{
-		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
-		reflect.TypeFor[*commissioner.API]():   commissioner.Commands(),
-		reflect.TypeFor[*comms.API]():          comms.Commands(),
-		reflect.TypeFor[*controlapp.API]():     controlapp.Commands(),
-		reflect.TypeFor[*contractsapp.API]():   contractsapp.Commands(),
-		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
-		reflect.TypeFor[*draft.API]():          draft.Commands(),
-		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
-		reflect.TypeFor[*nowapp.API]():         nowapp.Commands(),
-		reflect.TypeFor[*offers.API]():         offers.Commands(),
-		reflect.TypeFor[*platformapp.API]():    platformapp.Commands(),
-		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
-		reflect.TypeFor[*research.API]():       research.Commands(),
-		reflect.TypeFor[*sources.API]():        sources.Commands(),
-		reflect.TypeFor[*trades.API]():         trades.Commands(),
-	}
+	catalogs := boundCatalogs()
 	seen := map[reflect.Type]bool{}
 	var got, problems []string
 	for _, value := range bound {
@@ -239,5 +223,26 @@ func TestBindingManifestRejectsHeld(t *testing.T) {
 		if len(problems) != 1 || problems[0] != want {
 			t.Fatalf("directly bound holder accepted: %v", problems)
 		}
+	}
+}
+
+// boundCatalogs is each bound API's command catalog, by its type.
+func boundCatalogs() map[reflect.Type][]catalog.Command {
+	return map[reflect.Type][]catalog.Command{
+		reflect.TypeFor[*archiveapp.API]():     archiveapp.Commands(),
+		reflect.TypeFor[*commissioner.API]():   commissioner.Commands(),
+		reflect.TypeFor[*comms.API]():          comms.Commands(),
+		reflect.TypeFor[*controlapp.API]():     controlapp.Commands(),
+		reflect.TypeFor[*contractsapp.API]():   contractsapp.Commands(),
+		reflect.TypeFor[*counterparties.API](): counterparties.Commands(),
+		reflect.TypeFor[*draft.API]():          draft.Commands(),
+		reflect.TypeFor[*marketapp.API]():      marketapp.Commands(),
+		reflect.TypeFor[*nowapp.API]():         nowapp.Commands(),
+		reflect.TypeFor[*offers.API]():         offers.Commands(),
+		reflect.TypeFor[*platformapp.API]():    platformapp.Commands(),
+		reflect.TypeFor[*raceapp.API]():        raceapp.Commands(),
+		reflect.TypeFor[*research.API]():       research.Commands(),
+		reflect.TypeFor[*sources.API]():        sources.Commands(),
+		reflect.TypeFor[*trades.API]():         trades.Commands(),
 	}
 }

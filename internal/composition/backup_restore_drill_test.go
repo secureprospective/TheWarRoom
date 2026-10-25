@@ -2,12 +2,16 @@ package composition
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 
@@ -186,7 +190,7 @@ func TestMatchedRestoreSameHomeKeepsCommissionerAndNativeRoster(t *testing.T) {
 	raw.League = "native.later"
 	executeCommissionerTest(t, a, raw)
 	a.shutdown(t.Context())
-	if err := a.core.Backups.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
+	if _, err := a.core.Backups.Restore(t.Context(), set, at.Add(time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	restored := restoreDrillApp(t, dir)
@@ -310,7 +314,7 @@ func TestRepeatedOldSchemaRestoreStartsAndRetainsSafetyCopies(t *testing.T) {
 	}
 	var copies []string
 	for attempt := range 2 {
-		if err := b.Restore(t.Context(), source, at.Add(time.Duration(attempt+1)*time.Hour)); err != nil {
+		if _, err := b.Restore(t.Context(), source, at.Add(time.Duration(attempt+1)*time.Hour)); err != nil {
 			t.Fatal(err)
 		}
 		a := restoreDrillApp(t, dir)
@@ -372,5 +376,76 @@ func TestRepeatedOldSchemaRestoreStartsAndRetainsSafetyCopies(t *testing.T) {
 	}
 	if counts["daily"] != 1 || counts["pre-migration"] != 2 || counts["pre-restore"] != 2 {
 		t.Fatalf("safety copies: %v", counts)
+	}
+}
+
+// Issue 14, 16, 18: Back up now needs the local sign-in, and its set restores onto a new
+// computer whose profile was never opened, where the app's stores then start from it.
+func TestBackUpNowRestoresIntoNeverOpenedProfile(t *testing.T) {
+	source, raw := restoreDrillLeague(t)
+	api := newCommissionerAPI(source)
+	if _, err := api.TargetBackupNow(); !errors.Is(err, commissionerapp.ErrBackupNeedsSignIn) {
+		t.Fatalf("backup without a sign-in: %v", err)
+	}
+	if entries, _ := os.ReadDir(filepath.Join(source.core.Paths.DataDir, "backups")); len(entries) != 0 {
+		t.Fatalf("a refused backup wrote %d sets", len(entries))
+	}
+	if _, err := api.TargetCommissionerSeatSignIn("Commish", "league-password"); err != nil {
+		t.Fatal(err)
+	}
+	saved, err := api.TargetBackupNow()
+	if err != nil || !strings.HasPrefix(saved.Set, "manual-") || !strings.Contains(saved.Message, saved.Set) {
+		t.Fatalf("back up now: %+v %v", saved, err)
+	}
+	before, err := api.TargetCommissionerRules(raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	home := t.TempDir()
+	copied := filepath.Join(home, "backups", saved.Set)
+	if err := os.MkdirAll(copied, 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{dbFileName("thewarroom", isDevBuild()), dbFileName("history", isDevBuild()),
+		dbFileName("whatif", isDevBuild()), "manifest.json"} {
+		body, err := os.ReadFile(filepath.Join(source.core.Paths.DataDir, "backups", saved.Set, name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		//nolint:gosec // both paths are this test's temp dirs and fixed member names
+		if err := os.WriteFile(filepath.Join(copied, name), body, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	b, err := newDatabaseBackups(home)
+	if err != nil {
+		t.Fatal(err)
+	}
+	safety, err := b.Restore(t.Context(), copied, time.Date(2026, 10, 24, 12, 0, 0, 0, time.UTC))
+	if err != nil || safety != "" {
+		t.Fatalf("restore into a never-opened profile: safety=%q %v", safety, err)
+	}
+	restored := restoreDrillApp(t, home)
+	after, err := newCommissionerAPI(restored).TargetCommissionerRules(raw.League)
+	if err != nil || !reflect.DeepEqual(before, after) {
+		t.Fatalf("restored rules differ: %v", err)
+	}
+	requireRole(t, restored, raw.League, "Visitor")
+	if _, err := newCommissionerAPI(restored).TargetCommissionerSeatSignIn("commish", "league-password"); err != nil {
+		t.Fatal(err)
+	}
+	requireRole(t, restored, raw.League, "Commissioner")
+}
+
+// Issue 17: a refused password reads as the refusal alone, with no internal prefix.
+func TestWrongPasswordMessageIsPlain(t *testing.T) {
+	source, _ := restoreDrillLeague(t)
+	api := newCommissionerAPI(source)
+	if _, err := api.TargetCommissionerSeatSignIn("commish", "league-password"); err != nil {
+		t.Fatal(err)
+	}
+	_, err := newCommissionerAPI(snapshotInto(t, source)).TargetCommissionerSeatSignIn("commish", "guessed")
+	if err == nil || err.Error() != accounts.ErrInvalidCredentials.Error() {
+		t.Fatalf("wrong password: %v", err)
 	}
 }

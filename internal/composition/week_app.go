@@ -10,6 +10,7 @@ import (
 	"time"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -60,7 +61,7 @@ func (a *App) refreshWeek(ctx context.Context) {
 	fetched := time.Now().UTC()
 	a.core.WeekMu.Lock()
 	if err != nil {
-		a.core.WeekRefreshError = err.Error()
+		a.core.WeekRefreshError = report.FailureText(err)
 	} else {
 		a.core.Week, a.core.WeekFetchedAt, a.core.WeekRefreshError = w, fetched, ""
 	}
