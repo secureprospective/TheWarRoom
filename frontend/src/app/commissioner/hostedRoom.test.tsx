@@ -1,6 +1,7 @@
 import { expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import HostedLeague from './HostedLeague';
+import { previewChange } from './preview';
 import { createHostedRoom, type HostedPort } from './hostedRoom';
 import type { HostedResponse } from './api';
 import type { NativeRequest } from '../commands/native';
@@ -180,4 +181,36 @@ it('keeps other workflows readable when new-season lineup evidence is unavailabl
   expect(room.peek().reading?.lineup.available).toBe(false);
   expect(room.peek().reading?.lineup.words).toContain('football evidence');
   expect(room.peek().reading?.markets.standings).toBeDefined();
+});
+
+it('says each previewed change once, in plain words, without a stray timing word', () => {
+  const now = (before: string, after: string, when = 'now') => previewChange({ before, after, when });
+  expect(now('No lineup recorded', 'Starting players: Practice quarterback')).toBe(
+    'No lineup recorded → Starting players: Practice quarterback',
+  );
+  const ledger = 'Set the week 1 lineup of Practice team 1 to 1 starter';
+  expect(now('This change is not recorded', ledger, 'in force now')).toBe(
+    `This change is not recorded → ${ledger}`,
+  );
+  const unset = 'Practice team 1, week 1: No lineup was set.';
+  const set = "Practice team 1's week 1 lineup is set. Valid lineup.";
+  expect(now(unset, set)).toBe(`${unset} → ${set}`);
+  expect(now('Practice team 1, Active roster', 'Practice team 1, Injured reserve')).toBe(
+    'Practice team 1, Active roster → Practice team 1, Injured reserve',
+  );
+  expect(now('20 to 70', '18 to 80', 'from the next rollover')).toBe(
+    '20 to 70 → 18 to 80 (from the next rollover)',
+  );
+});
+
+it('clears the recorded-change notice when the follow-up refresh fails', async () => {
+  const f = fixture();
+  await f.room.refresh();
+  await f.room.review(change(), 'Set lineup');
+  await f.room.confirm();
+  expect(f.room.peek().message).toBe('The server recorded your change. Refreshing the league.');
+  f.disconnect();
+  await f.room.refresh();
+  expect(f.room.peek().error).toContain('Could not refresh your league');
+  expect(f.room.peek().message).toBe('');
 });

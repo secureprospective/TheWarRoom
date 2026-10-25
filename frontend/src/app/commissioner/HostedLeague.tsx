@@ -477,8 +477,7 @@ function Review({ room }: { room: HostedRoom }) {
       <p>This changes your league server, not MFL or a local plan. Nothing is queued while offline.</p>
       {review.preview?.fields.map((field, i) => (
         <p key={i}>
-          <strong>{words(field.label)}</strong>: {words(field.before)} → {words(field.after)}.{' '}
-          {words(field.when)}
+          <strong>{words(field.label)}</strong>: {words(previewChange(field))}
         </p>
       ))}
       {review.preview?.blockers.map((b, i) => (
