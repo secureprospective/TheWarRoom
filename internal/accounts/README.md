@@ -284,6 +284,11 @@ changed commands, revoked credentials and changed league rights fail closed.
 Server restart invalidates outstanding consent; confirmation is not a boolean in
 agent-controlled JSON.
 
+A device session with the same recent privileged proof issues and revokes agent
+tokens at `/v1/auth/agent-token` and `/v1/auth/agent-token/revoke`; a token can do
+neither. The `twr` CLI and its MCP server (`cmd/twr`) carry such a token over
+`/v1/native/dispatch`, preview by default.
+
 `/v1/native/lineup/set` calls `Service.SetLineup`; `/v1/native/draft/pick` carries
 `pick: DraftPickInput` and calls `Service.Pick`. Both use `NativeActionGate`, then
 recheck the calendar against transaction records. Lineup legality/locks and draft
