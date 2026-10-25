@@ -58,7 +58,8 @@ try {
   const failure = new Promise((_, reject) => {
     browser.once('error', reject);
     browser.once('exit', (code) => reject(new Error(`browser exited before proof (${code})`)));
-    timer = setTimeout(() => reject(new Error('browser CSP proof timed out')), 30000);
+    // A cold Firefox profile on a shared CI runner can take well over 30 s to start.
+    timer = setTimeout(() => reject(new Error('browser CSP proof timed out')), 120000);
   });
   const proof = await Promise.race([result, failure]);
   assert.equal(proof.compromised, false, 'injected JavaScript ran');
