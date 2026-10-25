@@ -1,92 +1,139 @@
-# Desktop candidate install and proving drill
+# Install The War Room
 
-Targets pending owner OS/CPU inventory: Windows x64 (Windows 10/11 with WebView2),
-macOS Apple silicon (arm64), Linux x64 with GTK 3 and WebKitGTK 4.1 (Ubuntu 24.04
-baseline). Other CPUs, older OS versions and other Linux distributions are unproved.
-CI uses Windows Server 2022, macOS 15 arm64 and Ubuntu 24.04 native runners; these
-are build environments, not substitutes for clean owner machines.
+These are unsigned **candidate installers**, not approved owner releases. Only open a
+copy Christopher has personally authenticated. A checksum beside a download catches
+copy errors; it does not establish who published it. Stop if the publisher or file
+is unexpected. No paid Apple signing or Windows Authenticode is used.
 
-## Trust and install
+## Windows
 
-These are unsigned **candidate packages**, not approved owner releases. No paid
-signing, Authenticode, Apple Developer account or notarization is used. CI uploads
-ZIPs (Windows/macOS) and a tar.gz (Linux), plus SHA-256 sidecars. Sidecars catch
-copy errors, not malicious replacement. The operator must approve exact package
-bytes and pass them through `scripts/release/release.py` and the offline TUF
-ceremony in `Release_Trust.md` before owner delivery. No production trust root is
-embedded by this packaging slice; enrollment and updater acceptance are separate.
-Never share a tunnel credential, private release key, MFL key or real database.
+Download `warroom-windows-amd64.exe` and double-click it. If Windows says “Windows
+protected your PC”, choose **More info → Run anyway**, but only for the copy you
+have authenticated with Christopher. Do not turn SmartScreen off. If your computer's
+policy does not offer that option, stop and ask Christopher.
 
-Use a disposable clean OS account/VM, without live War Room files. Download the
-exact candidate via the authenticated operator handoff, retain its SHA-256 and
-commit, and disconnect networking for this install/launch drill. Do not enroll,
-configure MFL or import real league state. Stop if the publisher/hash is unexpected.
+Follow the installer's Next/Install prompts. It installs for your account, adds
+**The War Room** to Start, and installs Microsoft's free WebView2 browser component.
+Keep the internet connected for that component's first installation. If installation
+fails, check the connection and retry; ask Christopher if it still fails. Open
+**The War Room** from Start. Remove it later through Windows Settings → Apps.
+Your league data is not removed by uninstalling.
 
-- **Windows:** extract the ZIP to a user-writable folder (not inside the ZIP).
-  Install Microsoft's free Evergreen WebView2 Runtime from Microsoft's official
-  WebView2 download page if missing; the app intentionally does not silently
-  download a runtime. Double-click `thewarroom.exe`. SmartScreen may say
-  “Windows protected your PC”: only after authenticating this candidate, choose
-  More info → Run anyway if offered. Never disable SmartScreen globally. Managed
-  policy may forbid this; ask the operator rather than bypass it. Missing-runtime
-  failure must give the WebView2 prerequisite rather than an empty app window.
-- **macOS:** extract the ZIP and drag `thewarroom.app` to Applications (or your
-  user's Applications folder). Launch from Finder. An unsigned/unnotarized app
-  may be blocked: after authenticating the candidate, try Control-click → Open;
-  if blocked, System Settings → Privacy & Security → Open Anyway, then confirm.
-  On newer macOS the settings step may be required even after Control-click.
-  Do not remove quarantine recursively or disable Gatekeeper. If policy forbids
-  the exception, stop. WebKit is supplied by macOS; no separate WebView install.
-- **Linux:** on Ubuntu 24.04 install runtime dependencies with
-  `sudo apt-get install libgtk-3-0t64 libwebkit2gtk-4.1-0`.
-  Extract with `tar -xzf thewarroom-linux-amd64.tar.gz`, then run `./thewarroom`
-  from a desktop session (Wayland or X11). Do not run as root. The tarball retains
-  its executable bit. Other distributions need equivalent GTK 3/WebKitGTK 4.1
-  runtime packages; older WebKitGTK 4.0 alone is insufficient. A headless shell
-  cannot prove a desktop launch.
+## Mac
+
+Download `warroom-darwin-arm64.dmg` on an Apple silicon Mac. Double-click it, then
+drag **thewarroom** onto **Applications** in the disk window. Eject the disk and
+open the app from Applications.
+
+macOS may block this unsigned, unnotarized app. Only after authenticating it with
+Christopher, go to **System Settings → Privacy & Security**, find the blocked app,
+choose **Open Anyway**, then confirm **Open**. On older systems Control-click →
+Open may also offer an exception. If macOS says the app is damaged or contains
+malware, stop and ask Christopher; do not override that warning. Never disable
+Gatekeeper or remove quarantine with a command. WebKit comes with macOS; there is
+no separate browser component to install. To uninstall, move the app to Trash;
+that does not delete your league data.
+
+## Linux (Ubuntu 24.04, Intel/AMD 64-bit)
+
+Download `warroom-linux-amd64.deb`. In Files, open it with **App Center** or
+**Software Install**, choose **Install**, and approve the system's password prompt.
+The package manager installs GTK 3 and WebKitGTK 4.1 along with the app. Keep the
+internet connected while it installs dependencies. Open **The War Room** from the
+applications menu. Remove it later through your software manager.
+
+If the download opens as an archive, or your software manager cannot install it,
+stop and ask Christopher to arrange installation. Do not extract the binary or
+paste terminal commands. Other distributions and CPUs are not yet supported by
+these candidates. League data is not removed by uninstalling.
+
+## Target inventory and release gate
+
+**Owner OS/CPU inventory has not been supplied.** The inherited provisional build
+matrix is Windows x64 (runner Windows Server 2022), Apple silicon macOS (runner
+macOS 15 arm64), and Ubuntu 24.04 x64. These runners are not proof of Windows 10/11,
+Intel Macs, other Linux distributions, or any particular owner's machine. Christopher
+must record each owner's OS version and CPU before approving the delivery matrix.
+Do not treat these provisional targets as an inventoried owner list.
+
+The exact installer files above are the `--artifact` inputs to slice 43's TUF
+publisher; see `Release_Trust.md`. CI builds no private signing keys, production
+trust root or Tunnel secrets. First-install public-root embedding and updater
+integration are slice 44's boundary, not a claim made by this packaging change.
 
 ## Acceptance on each clean machine
 
-Record OS build, CPU, commit, package SHA-256, tester, date, screenshots and logs.
-Use the *downloaded/extracted package*, never `go run` or a development build.
+Use a disposable clean OS account/VM without live War Room files. Record OS build,
+CPU, candidate commit, package SHA-256, tester, date, screenshots and logs.
 
-1. Exercise the warning path from a browser-downloaded package (macOS quarantine
-   and Windows Mark of the Web must be present). Follow the instructions above.
-   Record the actual warning and controls; inability to proceed is a failure.
-2. Without the optional Windows/Linux WebView dependency, observe a useful failure;
-   install the prerequisite, relaunch, and confirm a rendered, responsive shell.
-   macOS uses its built-in WebKit. The UI must render, not just keep a process alive.
-3. Open a second copy against the same disposable account/data directory. It must
-   refuse with “another instance” while the first stays usable. Close the first
-   normally; relaunch must succeed.
-4. Force-kill the running app (Task Manager / Force Quit / `kill -9`), then relaunch.
-   It must succeed despite a remaining `.lock` file. Never delete the lock as a fix.
-5. Close the app. Retain evidence outside the app folder; remove only disposable
-   package/account/VM state. Do not delete a live installation's databases.
+1. Browser-download the exact authenticated installer. Windows Mark of the Web and
+   macOS quarantine must be present. Follow the warning steps above and record the
+   actual controls. A blocked installation is a failure, not permission to weaken
+   system security.
+2. On Windows test with WebView2 absent, then already installed. On Linux test with
+   GTK/WebKit runtime dependencies absent. The installer must supply prerequisites
+   or provide a useful failure. Retry with internet connected and confirm a rendered,
+   responsive app. macOS supplies WebKit itself.
+3. Open a second copy against the same disposable data directory. It must refuse
+   with “another instance” while the first stays usable. Close the first normally;
+   relaunch must succeed.
+4. Force-kill the app with Task Manager / Force Quit / System Monitor, then relaunch.
+   It must succeed despite the old `.lock` file. Never delete the lock as a fix.
+5. Remove the app through the normal OS mechanism. Confirm unrelated files and
+   retained league data are not deleted.
 
-## Automation and evidence limits
+**No manual warning-path or novice install evidence is recorded yet.** Owner
+inventory, warning dialogs and the full responsive-shell drill remain release
+blockers for slices 51–52. Automated readiness is not a substitute for these steps.
 
-`desktop-packages.yml` installs and builds the frontend on each native runner.
-State modules use distinct names (`contractActState.ts`, `tradeBuilderState.ts`)
-from their React components. Every frontend build rejects case-insensitive path
-and TypeScript module-stem duplicates before TypeScript runs. No shared Linux
-asset bundle is needed.
-The workflow builds native packages without regenerating bindings, extracts them
-and runs `-version` to verify the executable loader/build stamp.
-`python -m unittest discover -s scripts/desktop -v` proves archive bytes/modes/
-checksums and contention, normal close and forced-kill release using the existing
-`flock`/`LockFileEx` implementation compiled into a tiny subprocess probe. It never
-opens a database or makes an MFL call. No new lock implementation is introduced.
+## Automation contract and source trace
 
-The CLI smoke does **not** initialize a WebView, prove GUI launch, exercise OS
-warnings, or prove clean-machine installation. Hosted runners have SDKs and may
-already have WebView dependencies. All three manual drills above remain release
-blockers until their evidence is recorded on the exact candidate; no passes are
-claimed by this document. Owner OS/CPU inventory is still outstanding.
+`.github/workflows/desktop-packages.yml` already owns packaging (there is no package
+job in the current `verify.yml`). It is extended, not duplicated. Its native
+`package` matrix builds the frontend and Wails executable, then creates a per-user
+NSIS installer, drag-to-Applications DMG, or dependency-declaring Debian package.
+The small NSIS recipe follows Wails' bootstrapper approach but avoids its generated
+machine-wide/admin installer and broad recursive uninstall. Only named installed
+files are deleted. CI authenticates the bundled bootstrapper's Microsoft signature;
+Evergreen runtime installation still needs Microsoft's network service.
 
-Local reproduction after frozen frontend install/build on the target host and
-exact-version Wails CLI installation:
-`python scripts/desktop/package.py`. Build tools additionally
-need Go from `go.mod`, Node 24, pnpm from `frontend/package.json`, a native C compiler,
-and Linux GTK/WebKit development headers. Output is under `.tmp/desktop/artifacts`.
-The script refuses non-target hosts rather than silently cross-compiling.
+Flow: reviewed native binary → `scripts/desktop/package.py` → exact TUF target
+installer + checksum → artifact transfer → separate fresh `install` runner → native
+installation → installed executable `-package-smoke <disposable-directory>` → Wails
+WebView DOM ready marker → second-copy refusal → forced kill → successor readiness.
+The smoke flag never constructs the local App or opens league data, credentials or
+refresh workers. It holds the existing `flock`/`LockFileEx` guard beside a disposable
+`smoke.db` path; the database itself must not exist. Errors/timeouts fail the job.
+Linux uses Xvfb but no WebKit sandbox-disabling switch. The install runner does not
+install Go, Node, Wails or development headers. Hosted images still contain other
+software; a fresh runner is not a pristine consumer OS image.
+
+Python tests inspect Debian dependencies, desktop launcher, executable permissions
+and checksum, and exercise normal-close/kill lock release on all native builders.
+`install (windows-amd64)`, `install (darwin-arm64)` and `install (linux-amd64)` exercise
+the **installed** executable's real WebView and cross-process lock. DOM readiness
+proves browser initialization, not the complete signed-in UI, OS security dialogs,
+keychain, enrollment, updater, or an absent-dependency Windows machine. Capture those
+separately in the clean-machine drill above. CI does not disable OS warnings or
+simulate a successful human exception.
+
+### Upstream research
+
+Checked for this slice (2026-10-25):
+- [Wails v2.13 NSIS guide](https://github.com/wailsapp/wails/blob/v2.13.0/website/docs/guides/windows-installer.mdx)
+  and its generated `build/windows/installer/wails_tools.nsh`: NSIS, Evergreen
+  bootstrapper `/silent /install`, native package outputs.
+- [Wails installation requirements](https://github.com/wailsapp/wails/blob/v2.13.0/website/docs/gettingstarted/installation.mdx):
+  Linux GTK/WebKit development dependencies, WebKitGTK 4.1 build tag.
+- [Microsoft WebView2 distribution](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution):
+  Evergreen bootstrapper, per-user installation, online prerequisite installation.
+- [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners):
+  fresh hosted VMs, OS/CPU runner labels and preinstalled-software limits.
+- [Apple unsigned-app guidance](https://support.apple.com/en-us/102445):
+  Privacy & Security exception after a blocked launch; never bypass malware warnings.
+
+Developer reproduction: frozen frontend install/build, exact-version Wails CLI,
+Go from `go.mod`, Node 24, pnpm from `frontend/package.json`, native C compiler and
+platform packaging tools. Run `python scripts/desktop/package.py`. Windows additionally
+requires NSIS and the Microsoft-signature-checked bootstrapper at
+`.tmp/desktop/MicrosoftEdgeWebview2Setup.exe`; output is `.tmp/desktop/artifacts`.

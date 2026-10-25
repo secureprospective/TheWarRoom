@@ -39,6 +39,20 @@ jobs:
       - name: Linux build dependencies
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential pkg-config
+      - name: Windows installer tools
+        if: runner.os == 'Windows'
+        run: choco install nsis --yes --no-progress
+      - name: Stage Microsoft-signed Evergreen WebView2 bootstrapper
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force .tmp/desktop | Out-Null
+          $file = "$PWD/.tmp/desktop/MicrosoftEdgeWebview2Setup.exe"
+          Invoke-WebRequest 'https://go.microsoft.com/fwlink/p/?LinkId=2124703' -OutFile $file
+          $signature = Get-AuthenticodeSignature $file
+          if ($signature.Status -ne 'Valid' -or $signature.SignerCertificate.Subject -notmatch 'O=Microsoft Corporation') {
+            throw 'WebView2 bootstrapper is not authenticated as Microsoft software'
+          }
       - name: Check native target and toolchain
         run: |
           python -c 'import sys; sys.path.insert(0,"scripts/desktop"); import package; assert package.target() == "${{ matrix.target }}", package.target()'
@@ -56,9 +70,9 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Build frontend on native filesystem
         run: cd frontend && pnpm install --frozen-lockfile && pnpm build
-      - name: Archive and platform-lock regressions
+      - name: Package and platform-lock regressions
         run: python -m unittest discover -s scripts/desktop -v
-      - name: Build package and smoke extracted executable
+      - name: Build installable package
         run: python scripts/desktop/package.py
       - name: No bindings or tracked build changes
         run: git diff --exit-code
@@ -68,3 +82,39 @@ jobs:
           path: .tmp/desktop/artifacts/*
           if-no-files-found: error
           retention-days: 14
+
+  install:
+    name: install (${{ matrix.target }})
+    needs: package
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-2022
+            target: windows-amd64
+            extension: exe
+          - runner: macos-15
+            target: darwin-arm64
+            extension: dmg
+          - runner: ubuntu-24.04
+            target: linux-amd64
+            extension: deb
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: desktop-${{ matrix.target }}-${{ github.sha }}
+          path: .tmp/download
+      - name: Linux virtual desktop (runtime libraries come from the package)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y xvfb xauth libgtk-3-bin
+      - name: Install downloaded package and exercise installed WebView and lock
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" = Linux ]; then
+            xvfb-run -a python scripts/desktop/install_smoke.py .tmp/download/warroom-${{ matrix.target }}.${{ matrix.extension }}
+          else
+            python scripts/desktop/install_smoke.py .tmp/download/warroom-${{ matrix.target }}.${{ matrix.extension }}
+          fi
