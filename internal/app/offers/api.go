@@ -112,19 +112,10 @@ func (a *API) serializedMove(run func() (BidPlan, error)) (BidPlan, error) {
 }
 
 func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: "bid.submit", Method: "TargetBidDraft", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidHandOff", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G2", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidPlans", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidPosted", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G2", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidPreview", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidRevise", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetBidWithdraw", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G2", Availability: "both"},
+	return append(MFLCommands(), []catalog.Command{
 		{ID: catalog.Unset, Method: "TargetOffers", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetPersonal", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetPersonalChange", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: catalog.Unset, Method: "TargetPersonalHandOff", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
-		{ID: catalog.Unset, Method: "TargetPool", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPoolRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-	}
+	}...)
 }
