@@ -42,6 +42,12 @@ func provision(ctx context.Context, dir string) (string, string, error) {
 	if err != nil {
 		return "", "", fmt.Errorf("seed owner workflows: %w", err)
 	}
+	for i, username := range []string{"owner", "partner"} {
+		if err := hostedfixture.AddWorkflowOwner(ctx, store, credentials, principal, fmt.Sprintf("franchise.%02d", i+2), accounts.RawCredentials{Username: username, Password: password}); err != nil {
+			return "", "", fmt.Errorf("seed practice owner: %w", err)
+		}
+	}
+
 	if err := writePrivate(filepath.Join(dir, "football.digest"), []byte(digest)); err != nil {
 		return "", "", err
 	}

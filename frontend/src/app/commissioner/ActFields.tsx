@@ -23,7 +23,7 @@ function Choices({ options, value, onChange }: {
   </select>;
 }
 export function ActFields({ fields, values, held, onChange }: {
-  fields: Field[]; values: ActValues; held: ActReadings;
+  fields: Field[]; values: ActValues; held: Pick<ActReadings, 'options'>;
   onChange(path: string, value: ActValues[string]): void;
 }) {
   return <>{fields.map(field => {

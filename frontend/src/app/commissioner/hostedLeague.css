@@ -11,3 +11,9 @@
 .hosted-review .hold-to-fire { display: inline-block; margin: 12px 12px 12px 0; }
 .hosted-review .hold-fill { display: none; }
 .hosted-review .hold-help, .hosted-review .hold-said { display: block; font-size: 13px; }
+.hosted-league table { width: 100%; border-collapse: collapse; margin-block: 20px; }
+.hosted-league th, .hosted-league td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--surface-line); vertical-align: top; }
+.hosted-league td:first-child { font-variant-numeric: tabular-nums; }
+.hosted-league table { display: block; overflow-x: auto; }
+.hosted-league h3 { margin-block: 28px 12px; }
+.hosted-league h4 { margin-block: 20px 8px; }

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -66,7 +67,8 @@ func MarketReading(league, command, principal string, records []Record, at time.
 	if err != nil {
 		return out, err
 	}
-	viewer := bidViewer{zone: zone, teams: directory.seats(), facts: facts}
+	mode, modeErr := nativecheck.BidMode(rules.Bids, leaguerules.UFAProcess)
+	viewer := bidViewer{open: modeErr == nil && mode == leaguerules.Open, zone: zone, teams: directory.seats(), facts: facts}
 	switch command {
 	case WaiverProcess, WaiverOverride:
 		err = out.readWaivers(state, rules.Waivers, viewer, at)

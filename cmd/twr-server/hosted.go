@@ -118,7 +118,7 @@ func selectHostedFootball(ctx context.Context, handler *serverhttp.Hosted, diges
 		return fmt.Errorf("select hosted football: %w", err)
 	}
 	handler.Football, handler.FootballDigest = evidence, digest
-	handler.Store.SetLineupEnvironment(evidence)
+	handler.Store.SetPinnedFootball(evidence)
 	return nil
 }
 

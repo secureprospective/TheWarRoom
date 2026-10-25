@@ -219,7 +219,11 @@ func replaceBidWinner(seed *RawNativeSnapshot, a *bidAuction, outcome *BidOutcom
 		return fmt.Errorf("the winning bid is not a recorded bid of the winner")
 	}
 	bid := a.Bids[won]
-	seed.Players = append(seed.Players, NativePlayer{ID: a.Player, Franchise: bid.Franchise, Status: domain.RosterActive,
+	name := ""
+	if pool := slices.IndexFunc(seed.Pool, func(p NativePoolEntry) bool { return p.Player == a.Player }); pool >= 0 {
+		name = seed.Pool[pool].Name
+	}
+	seed.Players = append(seed.Players, NativePlayer{ID: a.Player, Name: name, Franchise: bid.Franchise, Status: domain.RosterActive,
 		Salary: bid.Salary, ExpirationYear: outcome.Season + bid.Years - 1, ContractStatus: domain.CStatusUFA,
 		ContractInfo: "Won in free-agent bidding: " + nativecheck.ContractWords(bid.Salary, bid.Years)})
 	return nil
