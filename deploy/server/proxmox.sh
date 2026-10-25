@@ -29,7 +29,9 @@ read -rp 'New public hostname (league.example.org): ' hostname
 read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
 stop() { echo "$1 Nothing was changed." >&2; exit 1; }
 [[ $ctid =~ ^[1-9][0-9]{2,8}$ ]] || stop 'The container number must be 100 or higher.'
-[[ $vlan =~ ^[0-9]{1,4}$ ]] && (( vlan >= 1 && vlan <= 4094 )) || stop 'The VLAN number must be between 1 and 4094.'
+if [[ ! $vlan =~ ^[0-9]{1,4}$ ]] || (( 10#$vlan < 1 || 10#$vlan > 4094 )); then
+  stop 'The VLAN number must be between 1 and 4094.'
+fi
 [[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]] || stop "Network bridge $bridge was not found on this host."
 [[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
 [[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'

@@ -37,7 +37,7 @@ func (s *Store) RecordDraftPick(ctx context.Context, permit commissioner.Permit,
 	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("begin rookie pick: %w", err)
 	}

@@ -45,6 +45,7 @@ install -m 640 -o root -g twr-tunnel /etc/twr/origin.pem /etc/cloudflared/origin
 install -m 600 -o twr -g twr /dev/null /var/lib/twr/server.db
 # An unprivileged CT shares the host's clock. Never run a fake NTP client with -x:
 # it cannot synchronize the kernel state that hosted admission checks.
+install -m 755 backup-setup.sh /usr/local/libexec/twr-backup-setup
 rc-update add twr-server default
 # No SSH, HTTP admin listener or public metrics service is installed.
 rc-service twr-server start
@@ -54,7 +55,8 @@ while [ "$attempt" -lt 30 ]; do
   status=$(curl --silent --cacert /etc/twr/origin.pem --max-time 2 -H 'CF-Connecting-IP: 127.0.0.1' \
     --output /dev/null --write-out '%{http_code}' https://127.0.0.1:8443/not-a-route) || status=000
   if [ "$status" = 404 ]; then
-    echo 'Next, move your league to the server from the desktop app.'
+    echo 'Next, complete the R2 backup setup in BACKUPS.md; league changes stay paused until backups verify.'
+    echo 'Then move your league to the server from the desktop app.'
     exit 0
   fi
   attempt=$((attempt + 1))

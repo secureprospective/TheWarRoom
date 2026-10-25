@@ -17,7 +17,8 @@ func (s *Store) initializeSessions(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.pools.Write().ExecContext(ctx, `
+	_, err = s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `
  CREATE TABLE IF NOT EXISTS account_auth_epoch (
  singleton INTEGER PRIMARY KEY CHECK(singleton = 1), epoch TEXT NOT NULL CHECK(length(epoch) = 64)
  ) STRICT;
@@ -28,10 +29,13 @@ func (s *Store) initializeSessions(ctx context.Context) error {
  issued_at INTEGER NOT NULL, last_used_at INTEGER NOT NULL,
  revoked INTEGER NOT NULL DEFAULT 0 CHECK(revoked IN (0,1))
  ) STRICT;`)
+	})
 	if err != nil {
 		return fmt.Errorf("accounts: session schema: %w", err)
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO account_auth_epoch(singleton, epoch) VALUES (1, ?) ON CONFLICT(singleton) DO NOTHING`, epoch); err != nil {
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `INSERT INTO account_auth_epoch(singleton, epoch) VALUES (1, ?) ON CONFLICT(singleton) DO NOTHING`, epoch)
+	}); err != nil {
 		return fmt.Errorf("accounts: initialize auth epoch: %w", err)
 	}
 	return nil
@@ -51,7 +55,9 @@ func (s *Store) RotateAuthEpoch(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if _, err := s.pools.Write().ExecContext(ctx, `UPDATE account_auth_epoch SET epoch = ? WHERE singleton = 1`, epoch); err != nil {
+	if _, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `UPDATE account_auth_epoch SET epoch = ? WHERE singleton = 1`, epoch)
+	}); err != nil {
 		return fmt.Errorf("accounts: rotate auth epoch: %w", err)
 	}
 	return nil
@@ -64,7 +70,7 @@ func (s *Store) CreateSession(ctx context.Context, credential identity.Credentia
 	if !validSecretDigest(digest) || !identity.ValidDeviceName(device) {
 		return time.Time{}, identity.ErrSessionRefused
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("accounts: begin session: %w", err)
 	}
@@ -104,7 +110,7 @@ func (s *Store) SessionAccount(ctx context.Context, digest string, touch bool) (
 	if !touch {
 		return s.readSession(ctx, nil, digest)
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return identity.Account{}, fmt.Errorf("accounts: begin activity: %w", err)
 	}
@@ -150,7 +156,7 @@ func (s *Store) RevokeSession(ctx context.Context, digest string, allDevices boo
 	if !validSecretDigest(digest) {
 		return identity.ErrSessionRefused
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin revoke: %w", err)
 	}

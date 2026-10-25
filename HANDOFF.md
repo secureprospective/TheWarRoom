@@ -1,21 +1,19 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-24. Slice 34 follow-up on `session/cs34`, PR #150. No merge authorized.
+Bee — 2026-10-25. Slice 36 on `session/cs36`; no merge authorized.
 
 ## Where it stands
-- Cloudflare entry completes recorded cleanup before creating resources; cleanup retains failed resources, forgets successful deletions and accepts already-absent resources.
-- DNS identifier is recorded before credential permission changes can fail.
-- README places first-league activation in desktop→server transfer (39–41); install success tells the commissioner to move their league from the desktop app.
-- Rebuilt bundle and disposable Alpine/OpenRC test passed, including simulated outage/retry, exact resource deletion, unrelated occupied DNS preservation, partial cleanup and already-absent Tunnel recovery.
-- PR marked ready for review.
+- Encrypted R2 matched-set capture/read-back, retention, offline staged restore and hosted DB coverage admission implemented.
+- Targeted race tests and disposable Alpine deployment/setup passed; push/CI pending.
+- Setup and limits: `deploy/server/BACKUPS.md`. Source/health/restore seams: `internal/offsite/README.md`.
 
 ## Next move
-Coordinator review; verify CI after push. Do not merge without authorization.
+Review PR/CI. Slice 37 owns spare-host activation/auth-epoch reset and timed recovery; slice 38 consumes private backup status.
 
 ## Blocked on
-Real Proxmox isolation/reboot and Cloudflare connectivity acceptance remain unverified; no disposable node/zone available. Simulated API evidence is not a live deployment claim.
+Real R2 credentials and physical host-loss/spare-host drill are unavailable; no live recoverability or four-hour RTO claim.
 
 ## Tried and rejected
-- No deployment-shell account/league/grant bootstrap: transfer slices own that authority path.
-- No broad remote resource discovery/deletion: cleanup uses only recorded identifiers.
+- Upload success/ETag or persisted local receipt as coverage: full encrypted read-back required; restart begins closed.
+- Private restore key on CT: only public X25519 recipient accepted.

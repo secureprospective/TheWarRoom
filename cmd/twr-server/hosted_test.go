@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
 	"io"
 	"net/http"
 	"os"
@@ -60,28 +59,10 @@ func assertHostedBinary(ctx context.Context, t *testing.T, binary, cert, key str
 	}
 	body, err := io.ReadAll(response.Body)
 	_ = response.Body.Close()
-	if err != nil || response.StatusCode != 200 {
-		t.Fatalf("real hosted login: %d %s %v", response.StatusCode, body, err)
+	if err != nil || response.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), "off-site backups") {
+		t.Fatalf("unprotected real hosted write accepted or unexplained: %d %s %v", response.StatusCode, body, err)
 	}
-	var session serverhttp.LoginResponse
-	if err := json.Unmarshal(body, &session); err != nil || session.Bearer == "" {
-		t.Fatalf("real session: %v", err)
-	}
-	for _, path := range []string{serverhttp.LedgerPath, serverhttp.PreviewPath, serverhttp.ExecutePath, serverhttp.FixturePath, serverhttp.FixtureChangePath} {
-		request, err := http.NewRequestWithContext(ctx, http.MethodPost, origin+path, strings.NewReader(`{"protocol":1,"league":"native.https-fixture"}`))
-		if err != nil {
-			t.Fatal(err)
-		}
-		request.Header.Set("Authorization", "Bearer "+session.Bearer)
-		response, err := client.Do(request)
-		if err != nil {
-			t.Fatal(err)
-		}
-		_ = response.Body.Close()
-		if response.StatusCode < 400 {
-			t.Fatalf("host bootstrap acquired fixture/league authority: %s", path)
-		}
-	}
+
 }
 
 // Hosted admission must use the kernel-backed HostClock, never a fixture or always-trusted clock.
@@ -113,5 +94,17 @@ func TestTrustedProxyFlagAcceptsOnlyLoopback(t *testing.T) {
 		if _, err := trustedProxy(bad); err == nil {
 			t.Errorf("%q accepted as a trusted hop", bad)
 		}
+	}
+}
+
+func TestHostedBackupRequiresActualRuntimeSettings(t *testing.T) {
+	dir := t.TempDir()
+	files := []string{filepath.Join(dir, "authenticator.key"), filepath.Join(dir, "origin.pem"), filepath.Join(dir, "origin.key"), filepath.Join(dir, "endpoint-registry.csv")}
+	if err := checkBackupFiles(dir, files); err != nil {
+		t.Fatal(err)
+	}
+	files[0] = filepath.Join(t.TempDir(), "authenticator.key")
+	if err := checkBackupFiles(dir, files); err == nil {
+		t.Fatal("backup omitted the running authenticator key")
 	}
 }

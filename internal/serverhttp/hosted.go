@@ -33,21 +33,22 @@ const (
 // Hosted has no fixture fallback. Accounts and history must share the single writer,
 // so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
-	Tokens        *accounts.TokenService
-	Confirmations *Confirmations
-	Store         *history.Store
-	Sessions      *accounts.SessionService
-	TOTP          *accounts.TOTPService
-	Enrollment    *accounts.EnrollmentService
-	Recovery      *accounts.RecoveryService
-	Worker        *leagueservice.DueWorker
-	Registry      string
+	WriteAdmission func() error
+	Tokens         *accounts.TokenService
+	Confirmations  *Confirmations
+	Store          *history.Store
+	Sessions       *accounts.SessionService
+	TOTP           *accounts.TOTPService
+	Enrollment     *accounts.EnrollmentService
+	Recovery       *accounts.RecoveryService
+	Worker         *leagueservice.DueWorker
+	Registry       string
 	// TrustedProxy is the loopback address of a cloudflared hop; the zero address trusts none.
 	TrustedProxy netip.Addr
 }
 
 func (h Hosted) Handler() http.Handler {
-	return resourceLimits(h.invalidationHandler(http.HandlerFunc(h.serveHTTP)), h.TrustedProxy)
+	return resourceLimits(h.invalidationHandler(h.backupAdmission(http.HandlerFunc(h.serveHTTP))), h.TrustedProxy)
 }
 
 func (h Hosted) serveHTTP(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +111,7 @@ func (h Hosted) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
-		http.Error(w, "login refused", http.StatusUnauthorized)
+		h.writeFailure(w, "login refused", http.StatusUnauthorized)
 		return
 	}
 	// The bearer crosses HTTPS only here. DeviceSession itself remains redacted.
@@ -166,11 +167,11 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	account, authenticationErr := h.Sessions.Authenticate(r.Context(), rawSession)
 	if authenticationErr != nil {
 		if h.Tokens == nil {
-			http.Error(w, "session refused", http.StatusUnauthorized)
+			h.writeFailure(w, "session refused", http.StatusUnauthorized)
 			return
 		}
 		if _, err := h.Tokens.Authenticate(r.Context(), rawSession); err != nil {
-			http.Error(w, "session refused", http.StatusUnauthorized)
+			h.writeFailure(w, "session refused", http.StatusUnauthorized)
 			return
 		}
 	}
@@ -186,7 +187,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	principal, err := account.Principal()
 	if err != nil {
-		http.Error(w, "session refused", http.StatusUnauthorized)
+		h.writeFailure(w, "session refused", http.StatusUnauthorized)
 		return
 	}
 	host := leagueservice.StoredHost{Store: h.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry}
@@ -237,7 +238,7 @@ func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *league
 	case ExecutePath:
 		receipt, err := service.Execute(r.Context(), *raw.Command)
 		if err != nil {
-			http.Error(w, "native change refused; reread before retrying", http.StatusConflict)
+			h.writeFailure(w, "native change refused; reread before retrying", http.StatusConflict)
 			return
 		}
 		writeHosted(w, receipt)
@@ -379,7 +380,7 @@ func (r RawNativeRequest) matchesPath(path string) bool {
 	return (r.TokenID == "" || path == ConfirmPath) && (r.Mode == "" || path == DispatchPath)
 }
 
-func (Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
+func (h Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
 	var receipt commissioner.Receipt
 	var err error
 	if r.URL.Path == PickPath {
@@ -388,7 +389,7 @@ func (Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *lea
 		receipt, err = service.SetLineup(r.Context(), *raw.Command)
 	}
 	if err != nil {
-		http.Error(w, "owner action refused", http.StatusConflict)
+		h.writeFailure(w, "owner action refused", http.StatusConflict)
 		return
 	}
 	writeHosted(w, receipt)
@@ -397,4 +398,26 @@ func (Hosted) dispatchOwner(w http.ResponseWriter, r *http.Request, service *lea
 func hostedMember(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
 	return policy.HasRole(principal, governance.Commissioner) || policy.HasRole(principal, governance.CoCommissioner) ||
 		hostedOwner(policy, principal, records) || policy.HasRole(principal, governance.DOT)
+}
+
+func (h Hosted) backupAdmission(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && r.TLS != nil && r.Header.Get("Origin") == "" && r.URL.RawQuery == "" && h.WriteAdmission != nil {
+			if err := h.WriteAdmission(); err != nil {
+				http.Error(w, err.Error(), http.StatusServiceUnavailable)
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (h Hosted) writeFailure(w http.ResponseWriter, message string, status int) {
+	if h.WriteAdmission != nil {
+		if err := h.WriteAdmission(); err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+	}
+	http.Error(w, message, status)
 }

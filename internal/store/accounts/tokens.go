@@ -12,7 +12,8 @@ import (
 )
 
 func (s *Store) initializeTokens(ctx context.Context) error {
-	_, err := s.pools.Write().ExecContext(ctx, `CREATE TABLE IF NOT EXISTS account_agent_tokens (
+	_, err := s.pools.ExecWrite(ctx, func(tx *sql.Tx) (sql.Result, error) {
+		return tx.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS account_agent_tokens (
  token_hash TEXT PRIMARY KEY CHECK(length(token_hash) = 64),
  id TEXT UNIQUE NOT NULL, account_id TEXT NOT NULL REFERENCES accounts(id),
  scope TEXT NOT NULL, generation INTEGER NOT NULL, epoch TEXT NOT NULL,
@@ -22,6 +23,7 @@ func (s *Store) initializeTokens(ctx context.Context) error {
  CREATE TRIGGER IF NOT EXISTS agent_token_ceiling_immutable
  BEFORE UPDATE OF token_hash,id,account_id,scope,generation,epoch,issued_at,expires_at ON account_agent_tokens
  BEGIN SELECT RAISE(ABORT, 'agent issuance ceiling is immutable'); END;`)
+	})
 	if err != nil {
 		return fmt.Errorf("accounts: token schema: %w", err)
 	}
@@ -32,7 +34,7 @@ func (s *Store) IssueToken(ctx context.Context, sessionDigest, digest, id string
 	if !validSecretDigest(sessionDigest) || !validSecretDigest(digest) || (identity.RawSession{Bearer: id}).Validate() != nil || scope.Validate() != nil || authorize == nil {
 		return identity.AgentToken{}, identity.ErrTokenRefused
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return identity.AgentToken{}, fmt.Errorf("accounts: begin token: %w", err)
 	}
@@ -96,7 +98,7 @@ func (s *Store) Token(ctx context.Context, digest string) (identity.AgentToken, 
 }
 
 func (s *Store) RevokeToken(ctx context.Context, sessionDigest, id string) error {
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("accounts: begin token revoke: %w", err)
 	}

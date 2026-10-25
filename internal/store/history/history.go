@@ -279,7 +279,7 @@ func (s *Store) Initialize(ctx context.Context) error {
 	if _, err := s.pools.Migrate(ctx, historyMigrations()...); err != nil {
 		return fmt.Errorf("history: migrate schema: %w", err)
 	}
-	tx, err := s.pools.Write().BeginTx(ctx, nil)
+	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
 		return fmt.Errorf("history: initialize: %w", err)
 	}
