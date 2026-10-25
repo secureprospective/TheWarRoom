@@ -4358,6 +4358,7 @@ export namespace commissioner {
 		}
 	}
 	export class RawWaiverArgs {
+	    bucket?: string;
 	    player?: string;
 	    franchise?: string;
 	    window?: string;
@@ -4370,6 +4371,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.bucket = source["bucket"];
 	        this.player = source["player"];
 	        this.franchise = source["franchise"];
 	        this.window = source["window"];
