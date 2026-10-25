@@ -50,6 +50,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runRestore(ctx, args, os.Stdin, output)
 	case "reset-sign-ins":
 		return true, runResetSignIns(ctx, args, os.Stdin, output)
+	case "status":
+		return true, runStatus(ctx, args, output)
 	}
 	return false, nil
 }

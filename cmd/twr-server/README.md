@@ -189,6 +189,23 @@ checkpoint, resets sign-ins in the staged copy (`ResetAfterRestore`) and leaves
 new auth epoch (`ResetSignIns`). Stop the service first; run both as the service user.
 Steps for the commissioner and deputy: [RESTORE.md](../../deploy/server/RESTORE.md).
 
+## Status dashboard (console only)
+
+`twr-server hosted … -status-socket /var/lib/twr/status.sock` also serves an owner-only
+Unix socket, a separate listener from HTTPS, so the Tunnel can never reach it.
+`twr-server status -socket … -origin 127.0.0.1:8443 -origin-cert … -tunnel 127.0.0.1:20241
+-state /var/lib/twr` prints the plain-English dashboard; it refuses any non-loopback
+address and sends nothing anywhere. The CT script `twr-status` runs it as the service
+user. Lines, wording and the daily/away routine: [CHECKLIST.md](../../deploy/server/CHECKLIST.md);
+design: [internal/serverstatus](../../internal/serverstatus/README.md).
+
+`TestFaultsShowOnPrivateDashboardOnly` injects a failing backup carrying a private
+sentinel, a broken history chain, a disconnected Tunnel, an unsynchronised clock, a
+nearly full disk and an expiring origin certificate: each shows as a PROBLEM with its
+action, the stopped server shows as one, the public HTTPS handler answers status-looking
+routes with a plain 404 and a paused write with the fixed explanation (no sentinel), and
+every dial stays on the socket or loopback.
+
 ## One-command hosted click tests
 
 For a pre-provisioned throwaway hosted league, TLS, enrolled authenticator and isolated desktop

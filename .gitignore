@@ -25,3 +25,4 @@ frontend/.csp-browser-*/
 *.db-wal
 *.db-shm
 .DS_Store
+/twr-server
