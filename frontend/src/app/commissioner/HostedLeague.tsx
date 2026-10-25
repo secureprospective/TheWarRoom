@@ -18,8 +18,14 @@ const labels: Record<Tab, string> = {
   roster: 'Roster and reserves',
   draft: 'Draft room',
   rules: 'League rules',
-  bids: 'Free-agent bids', waivers: 'Waivers', trades: 'Trades', results: 'Results and standings', rollover: 'Next season',
+  bids: 'Free-agent bids',
+  waivers: 'Waivers',
+  trades: 'Trades',
+  results: 'Results and standings',
+  rollover: 'Next season',
 };
+const hostedRule = (field: string) =>
+  /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Taxi squad' };
 export default function HostedLeague({
   league,
@@ -150,8 +156,15 @@ export default function HostedLeague({
     if (value === 'skip' && reading.draft.onClock)
       command(
         'draft.skip',
-        { draft: { season: reading.draft.season, act: {
-          round: reading.draft.onClock.round, original: reading.draft.onClock.original } } },
+        {
+          draft: {
+            season: reading.draft.season,
+            act: {
+              round: reading.draft.onClock.round,
+              original: reading.draft.onClock.original,
+            },
+          },
+        },
         'league',
         'Skip the pick on the clock',
       );
@@ -269,7 +282,11 @@ export default function HostedLeague({
               starting roster.
             </p>
           )}
-          {action('lineup', 'Check lineup', disabled || !reading.lineup.available || starters.length === 0)}
+          {action(
+            'lineup',
+            'Check lineup',
+            disabled || !reading.lineup.available || starters.length === 0,
+          )}
         </>
       )}
       {reading && tab === 'roster' && (
@@ -403,7 +420,16 @@ export default function HostedLeague({
           )}
         </>
       )}
-      {reading && ['bids', 'waivers', 'trades', 'results', 'rollover'].includes(tab) && <HostedWorkflows key={`${tab}:${reading.roster.revision}`} task={tab as HostedTask} room={room} reading={reading} franchise={franchise} commissioner={commissioner} />}
+      {reading && ['bids', 'waivers', 'trades', 'results', 'rollover'].includes(tab) && (
+        <HostedWorkflows
+          key={`${tab}:${reading.roster.revision}`}
+          task={tab as HostedTask}
+          room={room}
+          reading={reading}
+          franchise={franchise}
+          commissioner={commissioner}
+        />
+      )}
       {reading && tab === 'rules' && (
         <>
           <h3>Rules in force</h3>
@@ -411,13 +437,13 @@ export default function HostedLeague({
             Your commissioner controls these rules. Ask them for a ruling if a value is missing.
           </p>
           {reading.rules.sections
-            .filter((s) => s.rows.some((r) => /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(r.field)))
+            .filter((s) => s.rows.some((r) => hostedRule(r.field)))
             .map((s) => (
               <section key={s.label}>
                 <h4>{s.label}</h4>
                 <dl>
                   {s.rows
-                    .filter((r) => /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(r.field))
+                    .filter((r) => hostedRule(r.field))
                     .map((r) => (
                       <div key={r.field}>
                         <dt>
@@ -447,7 +473,8 @@ function Review({ room }: { room: HostedRoom }) {
       <p>This changes your hosted league, not a local plan. Nothing is queued while offline.</p>
       {review.preview?.fields.map((field, i) => (
         <p key={i}>
-          <strong>{words(field.label)}</strong>: {words(field.before)} → {words(field.after)}. {words(field.when)}
+          <strong>{words(field.label)}</strong>: {words(field.before)} → {words(field.after)}.{' '}
+          {words(field.when)}
         </p>
       ))}
       {review.preview?.blockers.map((b, i) => (

@@ -27,7 +27,8 @@ function missing(field: Field, raw: ActValues[string]): boolean {
   }
   return false;
 }
-export function actChange(def: ActDefinition, values: ActValues, held: Pick<ActReadings, 'league' | 'revision' | 'principal'>, reason: string,
+export function actChange(def: ActDefinition, values: ActValues,
+  held: Pick<ActReadings, 'league' | 'revision' | 'principal'>, reason: string,
   dryRun = false): Change | null {
   const filled = { ...values };
   for (const field of def.fields) if (field.kind === 'self') filled[field.path] = held.principal ?? '';

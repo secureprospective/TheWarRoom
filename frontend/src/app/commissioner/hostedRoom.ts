@@ -154,7 +154,8 @@ export function createHostedRoom(
                 week,
                 revision: roster.revision,
                 words:
-                  'The lineup could not be read. Ask the server operator to check football evidence for this season, then refresh.',
+                  'The lineup could not be read. Ask the server operator to check football evidence ' +
+                'for this season, then refresh.',
                 verdict: 'Lineup changes are unavailable.',
                 starters: [],
                 bench: [],

@@ -183,6 +183,9 @@ export function HostedWorkflows({
       summary,
     );
   };
+  const teamName = (id: string) =>
+    roster.franchises.find((f) => f.value === id)?.label || 'League team';
+  const destination = (owner: string) => (owner === franchise ? teamName(partner) : 'Your team');
   const tradeAssets = [
     ...roster.players
       .filter((p) => p.franchise === franchise || p.franchise === partner)
@@ -192,7 +195,7 @@ export function HostedWorkflows({
           to: p.franchise === franchise ? partner : franchise,
           player: p.id,
         }),
-        label: `${p.name}: ${roster.franchises.find((f) => f.value === p.franchise)?.label || 'Team'} → ${p.franchise === franchise ? roster.franchises.find((f) => f.value === partner)?.label || 'Choose team' : 'Your team'}`,
+        label: `${p.name}: ${teamName(p.franchise)} → ${destination(p.franchise)}`,
       })),
     ...roster.picks
       .filter((p) => p.owner === franchise || p.owner === partner)
@@ -204,7 +207,7 @@ export function HostedWorkflows({
           round: p.round,
           original: p.original,
         }),
-        label: `${p.season} round ${p.round}, originally ${roster.franchises.find((f) => f.value === p.original)?.label || 'League team'} → ${p.owner === franchise ? roster.franchises.find((f) => f.value === partner)?.label || 'Choose team' : 'Your team'}`,
+        label: `${p.season} round ${p.round}, originally ${teamName(p.original)} → ${destination(p.owner)}`,
       })),
   ];
   useEffect(() =>

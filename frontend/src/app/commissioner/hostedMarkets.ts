@@ -73,7 +73,8 @@ export function parseHostedBids(v: unknown) {
         'words',
         'yours',
       ]);
-      return `${text(a.name, 'Name')}: ${text(a.words, 'Award')}${a.yours ? ` — ${text(a.yours, 'Your result')}` : ''}`;
+      const own = a.yours ? ` — ${text(a.yours, 'Your result')}` : '';
+      return `${text(a.name, 'Name')}: ${text(a.words, 'Award')}${own}`;
     }),
   };
 }
@@ -165,7 +166,11 @@ export function parseHostedTrades(v: unknown) {
             'yearlySalaryCents',
             'contractEndsInSeason',
           ]);
-          return `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ${text(a.toTeam, 'To')}${a.contract ? ` · ${text(a.contract, 'Contract')}` : ''}`;
+          const contract = a.contract ? ` · ${text(a.contract, 'Contract')}` : '';
+          return (
+            `${text(a.label, 'Asset')}: ${text(a.fromTeam, 'From')} → ` +
+            `${text(a.toTeam, 'To')}${contract}`
+          );
         }),
         reasons: ['votes', 'recusals', 'appeals', 'overrides'].flatMap((key) =>
           array(t[key] ?? [], key, (v) => {
