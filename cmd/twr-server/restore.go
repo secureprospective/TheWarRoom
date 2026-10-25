@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/offsite"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -34,6 +35,8 @@ type rawRestoreInput struct {
 
 func (rawRestoreInput) String() string     { return "[restore input redacted]" }
 func (r rawRestoreInput) GoString() string { return r.String() }
+
+var errNewerSet = errors.New("a backup in this bucket was saved by a newer league server than this one. Install the newest server bundle, then run the restore again; nothing was installed")
 
 type recoverySets interface {
 	Sets(context.Context) ([]string, error)
@@ -90,7 +93,7 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 	for i, name := range names[:min(len(names), 64)] {
 		dir := filepath.Join(stage, fmt.Sprintf("set-%02d", i))
 		captured, err := unlockSet(ctx, sets, name, identity, dir)
-		if errors.Is(err, offsite.ErrRestoreKey) {
+		if errors.Is(err, offsite.ErrRestoreKey) || errors.Is(err, errNewerSet) {
 			return err
 		}
 		if err != nil {
@@ -120,6 +123,10 @@ func unlockSet(ctx context.Context, sets recoverySets, name string, identity *ag
 		return time.Time{}, fmt.Errorf("unlock backup: %w", err)
 	}
 	snapshot := filepath.Join(dir, "server.db")
+	// Skipping a newer set would quietly restore an older league instead.
+	if _, err := serverversion.Preflight(ctx, snapshot); errors.Is(err, serverversion.ErrNewerFile) {
+		return time.Time{}, errNewerSet
+	}
 	if err := runCheckpoint(ctx, []string{"-db", snapshot, "-check", filepath.Join(dir, "checkpoint.json")}, io.Discard); err != nil {
 		return time.Time{}, err
 	}

@@ -43,6 +43,11 @@ func (d *Desktop) Handler() http.Handler {
 		}
 		view, err := d.Act(r.Context(), raw)
 		if err != nil {
+			if update, ok := updateRequired(err); ok {
+				w.Header().Set("X-TWR-Update", string(update.Update))
+				http.Error(w, update.Message, http.StatusUpgradeRequired)
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

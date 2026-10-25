@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -18,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
@@ -48,7 +50,7 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	pools, err := db.Open(ctx, *path, history.SchemaVersion())
+	pools, err := openHostedFile(ctx, *path)
 	if err != nil {
 		return fmt.Errorf("open server database: %w", err)
 	}
@@ -72,6 +74,30 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 	defer startHostedDueWorker(ctx, handler.Worker)()
 
 	return serveHosted(ctx, *address, certificate, handler, output)
+}
+
+func openHostedFile(ctx context.Context, path string) (*db.Pools, error) {
+	if err := servePreflight(ctx, path); err != nil {
+		return nil, err
+	}
+	pools, err := db.Open(ctx, path, history.SchemaVersion())
+	if err != nil {
+		return nil, fmt.Errorf("open league file: %w", err)
+	}
+	return pools, nil
+}
+
+// servePreflight refuses, before the file is opened for writing, a league file this release may
+// not serve as it is: newer, damaged, or older and not yet backed up and upgraded.
+func servePreflight(ctx context.Context, path string) error {
+	plan, err := serverversion.Preflight(ctx, path)
+	if err != nil {
+		return fmt.Errorf("check league file: %w", err)
+	}
+	if plan.State == serverversion.Older {
+		return fmt.Errorf("check league file: %w", serverversion.ErrOlderFile)
+	}
+	return nil
 }
 
 // hostedFiles reads the authenticator key, preview registry and TLS pair the server is started with.
@@ -143,6 +169,9 @@ func hostedServices(ctx context.Context, pools *db.Pools, encryptionKey []byte, 
 	handler := serverhttp.Hosted{Tokens: accounts.NewTokens(credentials, serverhttp.TokenPolicy{Store: store}), Confirmations: confirmations, Store: store, Sessions: accounts.NewSessions(passwords, credentials), TOTP: totp,
 		Recovery:   accounts.NewRecovery(passwords, credentials, [32]byte{}),
 		Enrollment: accounts.NewEnrollmentWithPasswordWork(credentials, nil, work), Worker: worker, Registry: catalogue}
+	if err := pools.StampServerRelease(ctx, serverversion.Current().Release, time.Now()); err != nil {
+		return serverhttp.Hosted{}, fmt.Errorf("record server release: %w", err)
+	}
 	return handler, nil
 }
 
