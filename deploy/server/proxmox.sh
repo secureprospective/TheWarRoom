@@ -2,14 +2,19 @@
 # One-command, interactive install from a prepared release bundle on a Proxmox host.
 set -euo pipefail
 umask 077
-[[ $EUID == 0 && $# == 1 && -f $1 ]]
-for tool in pct pveam pvesm pve-firewall chronyc; do command -v "$tool" >/dev/null; done
-if ! command -v jq >/dev/null; then
-  apt-get update
-  apt-get install -y jq
-fi
+[[ $EUID == 0 ]] || { echo 'Run this installer as root on the Proxmox host.' >&2; exit 1; }
+[[ $# == 1 && -f $1 ]] || { echo 'Provide one existing release bundle file.' >&2; exit 1; }
+for tool in pct pveam pvesm pve-firewall chronyc realpath grep mktemp rm awk sort tail ip cat sleep; do
+  command -v "$tool" >/dev/null || {
+    echo "Required Proxmox host tool is missing: $tool. Nothing was changed; ask your host administrator for help." >&2
+    exit 1
+  }
+done
 # CTs inherit the host kernel clock; wait for real host synchronization.
-chronyc waitsync 30 0.5 0 2
+chronyc waitsync 30 0.5 0 2 || {
+  echo 'The Proxmox host clock is not synchronized. Nothing was changed; ask your host administrator for help.' >&2
+  exit 1
+}
 pve-firewall status | grep -q 'Status: enabled/running' || {
   echo 'Proxmox firewall must already protect this host; refusing an unfiltered deployment.' >&2; exit 1;
 }
@@ -22,13 +27,15 @@ read -rp 'Template storage [local]: ' templates; templates=${templates:-local}
 read -rp 'Cloudflare zone (example.org): ' zone
 read -rp 'New public hostname (league.example.org): ' hostname
 read -rsp 'Cloudflare API token (Tunnel Edit, DNS Edit, Zone Read): ' token; echo
-[[ $ctid =~ ^[1-9][0-9]{2,8}$ && $vlan =~ ^[0-9]{1,4}$ ]]
-(( vlan >= 1 && vlan <= 4094 ))
-[[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]]
-[[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]]
-[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]]
-[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $token =~ ^[a-zA-Z0-9_-]+$ ]]
-[[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]]
+stop() { echo "$1 Nothing was changed." >&2; exit 1; }
+[[ $ctid =~ ^[1-9][0-9]{2,8}$ ]] || stop 'The container number must be 100 or higher.'
+[[ $vlan =~ ^[0-9]{1,4}$ ]] && (( vlan >= 1 && vlan <= 4094 )) || stop 'The VLAN number must be between 1 and 4094.'
+[[ $bridge =~ ^[a-zA-Z0-9_-]+$ && -d /sys/class/net/$bridge ]] || stop "Network bridge $bridge was not found on this host."
+[[ $storage =~ ^[a-zA-Z0-9_-]+$ && $templates =~ ^[a-zA-Z0-9_-]+$ ]] || stop 'Storage names may only use letters, numbers, - and _.'
+[[ $zone =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ ]] || stop 'The Cloudflare zone should look like example.org.'
+[[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
+[[ $token =~ ^[a-zA-Z0-9_-]+$ ]] || stop "That Cloudflare API token does not look right; copy it again from Cloudflare."
+[[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]] || stop "Container $ctid already exists; choose another number."
 work=$(mktemp -d)
 created=0
 complete=0
@@ -87,8 +94,9 @@ pct start "$ctid"
 pct exec "$ctid" -- mkdir -m 700 /root/twr
 pct push "$ctid" "$bundle" /root/twr.tar.gz --perms 0600
 pct exec "$ctid" -- tar -xzf /root/twr.tar.gz -C /root/twr
-printf '%s\n' "$token" | jq -Rn --arg zone "$zone" --arg hostname "$hostname" \
-  'input as $api_token | {zone:$zone,hostname:$hostname,api_token:$api_token}' > "$work/input.json"
+# The validated domain/token alphabets contain no JSON escapes or control characters.
+printf '{"zone":"%s","hostname":"%s","api_token":"%s"}\n' \
+  "$zone" "$hostname" "$token" > "$work/input.json"
 unset token
 pct push "$ctid" "$work/input.json" /root/twr-input.json --perms 0600
 pct exec "$ctid" -- sh -ec 'sed -i "s|http://|https://|g" /etc/apk/repositories; sh /root/twr/install.sh; sh /root/twr/cloudflare.sh /root/twr-input.json; /usr/local/bin/cloudflared --config /etc/cloudflared/config.yml tunnel ingress validate; rc-update add twr-tunnel default; rc-service twr-tunnel start'

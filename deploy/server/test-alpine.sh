@@ -13,14 +13,61 @@ docker exec "$name" sh -ec '
   mkdir -p /root/twr /run/openrc
   touch /run/openrc/softlevel
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
+  apk add --no-cache bash shellcheck
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/test-alpine.sh
+  mkdir /tmp/host-tools
+  cat > /tmp/host-tools/stub <<'\''STUB'\''
+#!/bin/sh
+printf "%s\n" "$0" >> /tmp/host-calls
+exit 1
+STUB
+  chmod +x /tmp/host-tools/stub
+  tools="pct pveam pvesm pve-firewall chronyc realpath grep mktemp rm awk sort tail ip cat sleep"
+  for tool in $tools; do ln -s stub "/tmp/host-tools/$tool"; done
+  # Every missing prerequisite is explained before any host command can run.
+  for tool in $tools; do
+    rm "/tmp/host-tools/$tool"
+    : > /tmp/host-calls
+    if PATH=/tmp/host-tools /bin/bash /src/deploy/server/proxmox.sh /src/.scratch/server.tar.gz > /tmp/host-result 2>&1; then exit 1; fi
+    grep -F "Required Proxmox host tool is missing: $tool." /tmp/host-result
+    [ ! -s /tmp/host-calls ]
+    ln -s stub "/tmp/host-tools/$tool"
+  done
+  # No jq exists on this simulated host; preflight reaches the clock check.
+  : > /tmp/host-calls
+  if PATH=/tmp/host-tools /bin/bash /src/deploy/server/proxmox.sh /src/.scratch/server.tar.gz > /tmp/host-result 2>&1; then exit 1; fi
+  grep -F "The Proxmox host clock is not synchronized" /tmp/host-result
+  [ "$(cat /tmp/host-calls)" = /tmp/host-tools/chronyc ]
+  # A prior rotation link must not prevent installation or repeated scheduling.
+  mkdir -p /etc/periodic/hourly
+  ln -s /etc/periodic/daily/logrotate /etc/periodic/hourly/twr-logrotate
   sh /root/twr/install.sh
+  sed -n "/^ln -s/p" /root/twr/install.sh > /tmp/schedule-rotation
+  sh /tmp/schedule-rotation
+  sh /tmp/schedule-rotation
+  # Exercise the deployed JSON writer with the allowed domain/token characters.
+  mkdir /tmp/json-work
+  sed -n "/^printf.*zone.*hostname.*api_token/,/input.json/p" /root/twr/proxmox.sh > /tmp/write-input
+  zone=example.org hostname=league-1.example.org token=Abc_123-xyz work=/tmp/json-work sh /tmp/write-input
+  jq -e '\''. == {zone:"example.org",hostname:"league-1.example.org",api_token:"Abc_123-xyz"}'\'' /tmp/json-work/input.json
   rc-service twr-server status
   # A second install refuses without replacing authoritative state or keys.
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   if sh /root/twr/install.sh; then exit 1; fi
   [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
-  [ "$(stat -c %a /var/lib/twr/server.db)" = 600 ]
+  [ "$(stat -c %a /var/lib/twr)" = 700 ]
+  [ "$(stat -c %U:%G /var/lib/twr)" = twr:twr ]
+  [ "$(readlink /etc/periodic/hourly/twr-logrotate)" = /etc/periodic/daily/logrotate ]
+  for file in server.db server.db-wal server.db-shm server.log; do
+    [ -f "/var/lib/twr/$file" ]
+    [ "$(stat -c %a "/var/lib/twr/$file")" = 600 ]
+  done
   [ "$(stat -c %a /etc/twr/authenticator.key)" = 600 ]
+  printf "rotation probe\n" >> /var/lib/twr/server.log
+  logrotate -f -s /tmp/rotation.state /etc/logrotate.d/twr
+  [ "$(stat -c %a /var/lib/twr/server.log.1)" = 600 ]
+  [ "$(stat -c %a /var/lib/twr/server.log)" = 600 ]
+  rc-service crond status
   # Reuse the exact deployed namespace/mount options, replacing only its payload.
   sed "/  \/usr\/local\/bin\/twr-server hosted/,$ d" /usr/local/libexec/twr-sandbox > /tmp/probe
   cat >> /tmp/probe <<'\''PROBE'\''

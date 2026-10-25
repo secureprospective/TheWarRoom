@@ -1,0 +1,9 @@
+/var/lib/twr/server.log {
+    size 1M
+    rotate 3
+    missingok
+    notifempty
+    copytruncate
+    su twr twr
+    create 0600 twr twr
+}

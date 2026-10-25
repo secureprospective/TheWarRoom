@@ -1,6 +1,8 @@
-# Alpine league-server deployment (slice 34)
+# Alpine league-server deployment (slices 34–35)
 
-**Preproduction. Not approved for real owners.** This is an Alpine 3.23 amd64,
+**Preproduction. Not approved for real owners.** League files are private inside
+the container, not disk-encrypted; see [STORAGE.md](STORAGE.md) for the limits.
+This is an Alpine 3.23 amd64,
 OpenRC, unprivileged Proxmox CT installer. It deliberately replaces the plan's
 systemd service and separate reverse-proxy assumption. The Go origin already
 speaks TLS; cloudflared verifies its private origin certificate directly. No
@@ -43,7 +45,8 @@ there is no dashboard ingress editing, certificate copying or manual init setup.
 It does not change the host's management network, firewall policy or storage
 security. A pre-existing VLAN/DHCP network, firewall-enabled Proxmox node, template
 storage and synchronized host clock are infrastructure prerequisites, not claims
-that this script can safely reconfigure a whole homelab.
+that this script can safely reconfigure a whole homelab. No host packages are installed;
+JSON tooling runs only inside the container.
 
 It installs 2 cores / 1 GiB RAM / 4 GiB disk / no CT swap, unprivileged with
 `nesting=1` for bubblewrap's namespaces. The firewall allows public TCP 443 and
@@ -122,8 +125,9 @@ Cloudflare shared-edge scans cannot prove origin isolation.
   which moves the commissioner's league and grants to the server. `install.sh`
   initializes empty hosted storage and directs the commissioner to that next step;
   deployment must not invent accounts or ledger grants.
-- Release integrity (43), storage encryption/unlock (35), off-host backups (36)
-  and health dashboard (38) remain their own gates. Adopt GoReleaser OSS for
+- Private container files (35) are described in [STORAGE.md](STORAGE.md).
+  Release integrity (43), encrypted off-host backups (36) and health dashboard
+  (38) remain their own gates. Adopt GoReleaser OSS for
   artifacts and Gatus + ntfy for health/alerts in those slices per the operator's
   later ruling; the older plan's “no outbound alerts” conflicts with that ruling.
   There is currently no hosted `/healthz`; do not invent a static success response
