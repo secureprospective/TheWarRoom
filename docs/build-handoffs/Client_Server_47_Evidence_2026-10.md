@@ -40,6 +40,12 @@ read workflows can still operate. Server-selected evidence fences lineups and bi
 - `TestHostedBlindBidIsInvisibleEvenToCommissioner`: ordinary owner can see their own bid;
   commissioner cannot read that seat or infer a running bid through commissioner choices,
   assets or standings. Shared service privacy tests retain the broader read matrix.
+- `TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen` (click-test fix, 2026-10-25): the
+  due worker awards a real bid, the rollover confirms, and the whole desktop refresh opens for
+  the commissioner and a newly signed-in owner. New-season bids say they wait for evidence
+  instead of failing every reading. The rollover preview names the awarded player, words the
+  free-agent route plainly and gives dates in league time; `hostedRoom.test.tsx` confirms
+  the real rollover receipt (which carries its plan) and refreshes into season 2027.
 - `TestPinnedBidEnvironmentUsesScheduleAndFailsClosedAfterSeason`: week zero/first kickoff
   boundary and unknown completed schedule, not a wall-calendar guess.
 - `hostedRoom.test.tsx`, `hostedWorkflows.test.tsx`: real Go wire fixtures, five task screens,

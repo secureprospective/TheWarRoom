@@ -3,6 +3,8 @@ package serverhttp_test
 import (
 	"encoding/json"
 	"reflect"
+	"regexp"
+	"slices"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -17,6 +19,7 @@ type hostedWorkflowClient struct {
 	f             *hostedFixture
 	bearer, proof string
 	football      string
+	previews      map[string][]commissioner.PreviewField
 }
 
 func workflowClient(t *testing.T) hostedWorkflowClient {
@@ -32,7 +35,7 @@ func workflowClient(t *testing.T) hostedWorkflowClient {
 	if err := json.Unmarshal(f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, 200), &response); err != nil {
 		t.Fatal(err)
 	}
-	return hostedWorkflowClient{t, f, bearer, proof, response.Football}
+	return hostedWorkflowClient{t, f, bearer, proof, response.Football, map[string][]commissioner.PreviewField{}}
 }
 func (c hostedWorkflowClient) invoke(command, mode string, args []byte, status int) serverhttp.WorkflowResponse {
 	c.t.Helper()
@@ -72,6 +75,7 @@ func (c hostedWorkflowClient) run(raw commissioner.RawCommand) commissioner.Rece
 	if err := json.Unmarshal(c.invoke(raw.Command, "preview", body, 200).Data, &preview); err != nil {
 		c.t.Fatal(err)
 	}
+	c.previews[raw.Command] = append(c.previews[raw.Command], preview.Fields...)
 	if len(preview.Blockers) > 0 {
 		c.t.Fatalf("%s blocked: %v", raw.Command, preview.Blockers)
 	}
@@ -119,6 +123,7 @@ func TestHostedBidsWaiversTradeCorrectionAndRollover(t *testing.T) {
 		t.Fatal("correction replay disagrees with hosted standings")
 	}
 	c.run(c.command(commissioner.SeasonRollover, commissioner.RawArgs{Rollover: &commissioner.RawRolloverArgs{To: 2027}}, "rollover.once"))
+	requirePlainPreviews(t, c.previews)
 	events, err := c.f.history.Events(t.Context(), "native.hosted", commissioner.Stream, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -182,5 +187,42 @@ func TestHostedBlindBidIsInvisibleEvenToCommissioner(t *testing.T) {
 	}
 	if len(own.Players) != 1 || own.Players[0].YourBid == nil || own.Players[0].Leader != nil {
 		t.Fatal("owner cannot read just their private bid")
+	}
+}
+
+// requirePlainPreviews pins the owner-facing confirm wording: names rather than ledger, account or player
+// ids, no stored status codes, and counts that agree with their nouns.
+func requirePlainPreviews(t *testing.T, previews map[string][]commissioner.PreviewField) {
+	t.Helper()
+	want := []struct{ command, label, before, after string }{
+		{commissioner.BidPlace, "Bids for player 6001", "None recorded", "1 bid awaiting a decision"},
+		{commissioner.RosterCut, "Waivers for Other team receiver", "None recorded", "Waiting for processing"},
+		{commissioner.RosterCut, "Practice team 2 cap charges", "None recorded", "Dead money for released player Other team receiver: $700,000.00"},
+		{commissioner.RosterCut, "Other team receiver contract", "$1,000,000.00 salary; contract ends in 2028", "None recorded"},
+		{commissioner.TradeOffer, "This trade, between Practice team 1 and Practice team 2", "None recorded", "Waiting for every party to accept"},
+		{commissioner.TradeAccept, "This trade, between Practice team 2 and Practice team 3", "Waiting for every party to accept", "Waiting for trade review"},
+		{commissioner.TradeReview, "This trade, between Practice team 2 and Practice team 3", "Waiting for trade review", "Approved; the assets have changed teams; 1 review vote"},
+		{commissioner.TradeReview, "Season 2027, round 1, Practice team 2 pick", "Practice team 2; not used", "Practice team 3; not used"},
+		{commissioner.StandingsRecordAdjust, "Record set by hand for Practice team 1", "None recorded", "1 win, 0 losses, 0 ties"},
+	}
+	for _, w := range want {
+		if !slices.ContainsFunc(previews[w.command], func(f commissioner.PreviewField) bool {
+			return f.Label == w.label && f.Before == w.before && f.After == w.after
+		}) {
+			t.Errorf("%s preview lacks %q: %q -> %q; got %+v", w.command, w.label, w.before, w.after, previews[w.command])
+		}
+	}
+	raw := regexp.MustCompile(`\b(act|acct|proposed)\.|\b1 (bids|review votes|wins)\b|\(slot 0\)|\b(offered|review|approved|withdrawn);|; $`)
+	for command, fields := range previews {
+		for _, f := range fields {
+			if f.Label == "League ledger" {
+				continue
+			}
+			for _, words := range []string{f.Label, f.Before, f.After} {
+				if raw.MatchString(words) {
+					t.Errorf("%s preview shows an internal id, status code or wrong plural: %q", command, words)
+				}
+			}
+		}
 	}
 }
