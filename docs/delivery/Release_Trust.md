@@ -124,8 +124,10 @@ The signed root is public trust material distributed separately, not a secret co
 P=scripts/release/.venv/bin/python
 R=scripts/release/release.py
 "$P" "$R" targets --root "$PUBLIC/1.root.json" --config "$PUBLIC/client-config.json" \
-  --artifact "$PUBLIC/warroom-linux-amd64.tar.gz" --version 1 --out "$STAGE"
-# Repeat --artifact for each reviewed OS/CPU artifact. Basenames must be unique.
+  --artifact "$PUBLIC/warroom-linux-amd64.deb" --version 1 --out "$STAGE"
+# Repeat --artifact for warroom-windows-amd64.exe and warroom-darwin-arm64.dmg.
+# These are the exact desktop-packages.yml outputs; approve the owner inventory first.
+# Basenames must be unique.
 "$P" "$R" sign "$STAGE/metadata/targets.json" --key "$KEYS/targets.pem"
 "$P" "$R" snapshot --root "$PUBLIC/1.root.json" --repo "$STAGE"
 "$P" "$R" sign "$STAGE/metadata/snapshot.json" --key "$KEYS/snapshot.pem"
@@ -154,7 +156,7 @@ Use the same native verifier that slice 44 will consume (from the repo root):
 go run ./scripts/release -root "$PUBLIC/1.root.json" \
   -config "$PUBLIC/client-config.json" -cache "$VERIFY_CACHE" -target client-config.json
 go run ./scripts/release -root "$PUBLIC/1.root.json" \
-  -config "$PUBLIC/client-config.json" -cache "$VERIFY_CACHE" -target warroom-linux-amd64.tar.gz
+  -config "$PUBLIC/client-config.json" -cache "$VERIFY_CACHE" -target warroom-linux-amd64.deb
 ```
 
 `$VERIFY_CACHE` is a dedicated, private persistent folder outside the repository. Keep it for

@@ -28,6 +28,32 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 )
 
+func TestPackageSmokeRejectsInvalidDirectoryAndHeldLock(t *testing.T) {
+	t.Parallel()
+	directory := t.TempDir()
+	for _, path := range []string{"relative", filepath.Join(directory, "missing")} {
+		var stderr bytes.Buffer
+		if code := packageSmoke(path, Embedded{}, &stderr); code != 2 {
+			t.Fatalf("invalid directory returned %d: %s", code, &stderr)
+		}
+	}
+	lock, err := acquireInstanceLock(filepath.Join(directory, "smoke.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer releaseInstanceLock(lock)
+	var stderr bytes.Buffer
+	if code := packageSmoke(directory, Embedded{}, &stderr); code != 1 || !strings.Contains(stderr.String(), "another instance") {
+		t.Fatalf("second smoke returned %d: %s", code, &stderr)
+	}
+	if _, err := os.Stat(filepath.Join(directory, "ready")); !os.IsNotExist(err) {
+		t.Fatalf("rejected smoke wrote readiness: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(directory, "smoke.db")); !os.IsNotExist(err) {
+		t.Fatalf("rejected smoke opened a database: %v", err)
+	}
+}
+
 // TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
 // binary resolves to a SEPARATE -dev database, never the real ledger filename.
 func TestDBFileName_DevBuildSeparateFile(t *testing.T) {
