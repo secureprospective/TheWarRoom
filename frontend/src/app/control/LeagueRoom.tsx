@@ -19,7 +19,8 @@ export function LeagueRoom() {
         <LeagueLanding />
       </Suspense>
       <details className="mfl-reference">
-        <summary>MFL settings, by-laws and accounting</summary>
+        <summary>From MFL (reference only): settings, by-laws and accounting</summary>
+        <p>Refreshing MFL updates this reference, not your league’s recorded rules or roster.</p>
       {s.settings && <ReportView report={s.settings} howLabel="Where this comes from" />}
       <section className="bylaws" data-endpoint="M-185" aria-label="By-laws">
         <h4>By-laws</h4>

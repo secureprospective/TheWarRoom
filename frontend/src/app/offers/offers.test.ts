@@ -43,6 +43,8 @@ it('keeps the L-32 count/owner/cutoff header and HowCounted in all four reading 
             expect(text).not.toContain('class="offer-count"');
     }
     const text = screen(r);
+    expect(text).toContain('From MFL (reference only)');
+    expect(text).toContain('not offers sent to your league server');
     expect(text.match(/offer-bar-track/g)).toHaveLength(8);
     expect(text).toContain('Ending not on record ');
     expect(text).not.toMatch(/\bsolid\b|\brough\b|break-all|Loading/);

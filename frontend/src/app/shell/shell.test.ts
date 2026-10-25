@@ -42,6 +42,7 @@ describe('Shell routes and data', () => {
   });
   it('leaves freshness to the status strip, without a Home summary card', () => {
     const shell = readFileSync(new URL('./TargetApp.tsx', import.meta.url), 'utf8');
+    expect(shell).toContain('From MFL (reference only)');
     expect(shell).not.toContain('Snapshot summary');
     expect(shell).not.toContain('snapshotSummary');
   });

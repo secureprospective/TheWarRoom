@@ -16,6 +16,10 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
   useEffect(() => setPath(data.archiveDir), [data.archiveDir]);
   return <section data-endpoint="S-09" aria-label={w.refresh}>
     <h4>{w.refresh}</h4>
+    <p>
+      MFL refresh updates reference data only. It cannot replace your league server’s roster, rules
+      or recorded changes.
+    </p>
     <div className="archive-folder">
       <label htmlFor="archive-folder">{w.folder}</label>
       <input id="archive-folder" value={path} onChange={e => setPath(e.target.value)} />
