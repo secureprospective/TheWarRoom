@@ -29,7 +29,7 @@ func (e env) transferCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error { return e.saveExport(cmd, options) }}
 	save.Flags().StringVar(&options.path, "db", "", "existing league database on this computer")
 	save.Flags().StringVar(&options.league, "league", "", "league ID (native.…)")
-	save.Flags().StringVar(&options.epoch, "source-generation", "", "source authority generation UUID; keep it for this move")
+	save.Flags().StringVar(&options.epoch, "source-generation", "", "first source generation UUID; omit after a move to use the stored generation")
 	save.Flags().StringVar(&options.football, "football", "", "selected self-contained football evidence digest")
 	save.Flags().StringSliceVar(&options.additional, "past-football", nil, "pinned evidence digests for previous seasons (comma separated)")
 	save.Flags().StringVar(&options.keyFile, "key-file", "", "private file containing a 64-character random hexadecimal key")
@@ -68,6 +68,10 @@ func (e env) saveExport(cmd *cobra.Command, options exportOptions) error {
 	}
 	defer func() { _ = writer.Close() }()
 	store := history.New(pools, registry)
+	options.epoch, err = exportGeneration(cmd, store, options)
+	if err != nil {
+		return err
+	}
 	linked, err := accountstore.New(pools).Aliases(cmd.Context())
 	if err != nil {
 		return fmt.Errorf("read the league's linked identities: %w", err)
@@ -83,7 +87,7 @@ func (e env) saveExport(cmd *cobra.Command, options exportOptions) error {
 	if err := writeExport(cmd, options.output, raw, key); err != nil {
 		return err
 	}
-	_, err = fmt.Fprintln(e.out, "Encrypted league saved. The source is still writable; this file does not activate another server.")
+	_, err = fmt.Fprintln(e.out, "Encrypted league saved. This does not change where the league is managed or activate another server.")
 	if err != nil {
 		return fmt.Errorf("report league export: %w", err)
 	}
@@ -163,4 +167,18 @@ func readExportKey(path string) ([32]byte, error) {
 		return key, fmt.Errorf("use a randomly generated export key, not an empty key")
 	}
 	return key, nil
+}
+
+func exportGeneration(cmd *cobra.Command, store *history.Store, options exportOptions) (string, error) {
+	fence, err := store.TransferFence(cmd.Context(), options.league)
+	if err != nil {
+		return "", fmt.Errorf("read source generation: %w", err)
+	}
+	if fence.Epoch != "" {
+		if options.epoch != "" && options.epoch != fence.Epoch {
+			return "", fmt.Errorf("use the current source generation, or omit it to select the stored generation")
+		}
+		return fence.Epoch, nil
+	}
+	return options.epoch, nil
 }

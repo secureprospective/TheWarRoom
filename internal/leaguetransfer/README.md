@@ -1,8 +1,8 @@
 # League transfer
 
-Exports one league for moving to another computer. It does **not** seal the source,
-import anything, grant a role, or activate a server. Keep using only the source until
-the later cutover workflow explicitly says otherwise. This is not an off-site server
+Exports one league for moving to another computer. An export alone does **not**
+seal the source, import anything, grant a role, or activate a server. Keep using only the source until
+the confirmed cutover workflow below says otherwise. This is not an off-site server
 backup: passwords, sessions, recovery codes, server configuration and other leagues
 are deliberately excluded.
 
@@ -59,8 +59,8 @@ Research reference: the module's `go doc .../chacha20poly1305.NewX` and package 
 
 JSON fields:
 - `version`, `league`, `sourceEpoch` (opaque canonical UUID), `frozenAt` (UTC).
-  The generation is explicit operator input until the seal/activate slice owns its
-  durable lifecycle. It is **not** a schema version, login epoch or activation proof.
+  The initial generation is explicit operator input; later moves use the durably
+  recorded generation. It is **not** a schema version, login epoch or activation proof.
 - `events`: all league streams, ordered by stream/revision. `RawTransferEvent` keeps
   original payload and timestamp **strings**, IDs, actors, request correlation IDs,
   input hashes and nullable supersedes intact. No durable upcast, canonical rewrite,
@@ -117,18 +117,8 @@ a crash after commit is recovered by the same idempotent retry.
 The saved comparison document retains aliases, source checkpoint, stream heads (in
 original events) and six replay hashes for cutover. The target audit is built separately
 from the exact imported SQL bytes; the source-wide checkpoint is never installed as its
-head. The receipt/document is immutable and currently **always inactive**. Slice 41 must
-add target-owned activation/fence state and evolve the SQL guards and league discovery
-in one migration; it must not remove or rewrite this receipt. No activation operation
-exists yet. No `user_version`, authority policy, auth epoch, seal or activation flag is
-accepted from the document. Trusted account links still require the target's identity
-approval, not automatic enrollment.
-
-Seal/activation and fenced reverse transfer must compare source generation, content,
-stream heads and replay hashes, and ensure the exported head still equals the sealed
-head. This unsealed export alone is not permission to write on either target. A source
-can acquire more events immediately after export. Source sealing, abort/activation and
-reverse fencing belong to the cutover slice, not this import operation.
+head. The receipt/document is immutable. Target-owned activation/fence state evolves separately;
+no activation permission is accepted from the export. See confirmed cutover below.
 
 ## Evidence
 
@@ -169,5 +159,88 @@ Removing its inactive filter deliberately failed the CLI integration test; resto
 Across the complete affected handwritten production set (CLI root/import, transfer service,
 history migrations/commissioner/import), physical lines increased from 1,255 to 1,508 against
 the slice's starting commit, excluding tests/docs/generated files. This adds a required boundary;
-no code-size reduction is claimed. Live source sealing and activation remain unverified and
-unimplemented here by design.
+no code-size reduction is claimed. Live hosted cutover remains unverified; the confirmed local cutover below is automated-tested.
+
+## Commissioner-confirmed cutover and reverse
+
+`league-move` runs locally with filesystem custody of **both existing databases**.
+It is not a network activation endpoint. Select the two paths explicitly; never
+copy a live database to make a destination (that also copies its identity).
+Prepare/migrate both databases through the application first. Import the encrypted
+file inactive, then use that same file for each confirmed action:
+
+```sh
+twr league-move seal --source-db SOURCE --target-db TARGET --file league.twr \
+  --key-file move.key --commissioner CURRENT-COMMISSIONER --confirm
+twr league-move activate --source-db SOURCE --target-db TARGET --file league.twr \
+  --key-file move.key --commissioner CURRENT-COMMISSIONER --confirm
+# Instead of activation, cancel and resume the source:
+twr league-move abort --source-db SOURCE --target-db TARGET --file league.twr \
+  --key-file move.key --commissioner CURRENT-COMMISSIONER --confirm
+```
+
+Current source governance must recognize the commissioner; co-commissioners and
+owners cannot move the league. The principal flag is a local operator assertion,
+not remote authentication. No role/account is granted on the destination. Target
+account linking remains a separate, target-owned approval. Never expose this local
+operation directly over HTTP with an untrusted principal argument.
+
+| Owner / boundary | Contract and effects |
+| --- | --- |
+| `leaguetransfer.Move` | Validate/replay artifact, require confirmation and source commissioner; bind to distinct destination database identity. Select seal, activate or abort explicitly. |
+| `SealTransfer` | Immediate source writer transaction compares **all exact event rows**, generation and content before committing the fence. A stale export refuses. Concurrent app/worker/direct SQL appends either precede the comparison (and invalidate it) or encounter the committed fence. |
+| `DecideTransfer` | Hold source writer while committing destination decision, then append source outcome. Serializes abort and activation across stores/processes; does not rely on a process mutex. Source remains fenced if destination commits and source crashes. |
+| `DecideDestination` | Match database identity and inactive receipt, reject cancelled moves; activation atomically receives evidence/history and records new writable generation. Abort first records durable target cancellation, then source resumes. |
+| Reverse | Export from the **current** authority using its `TransferFence.Epoch`, seal that authority, activate the former source with the same confirmed operation. Former source must be `moved` from that generation, with byte-identical held history. Only missing original events are appended with target-owned audit entries, in one transaction. No old snapshot restoration or server-event loss. |
+| Discovery/status | SQL event and policy guards enforce the current fence. `NativeLeagues` excludes non-writable copies; its cache includes authority transitions, not only event additions. `TransferStatus` provides plain owner wording and an explicit writable bit for service/desktop consumers; errors are not permission. |
+
+Ordering is `source sealed → target active → source moved`, or
+`source sealed → target cancelled → source active`. A crash can leave **zero**
+writable copies, never two. Repeat the same action with the original file/paths.
+If activation committed but its reply was lost, abort refuses; activation retry
+finishes source retirement. A cancelled move cannot later activate. A fresh seal
+gets a new move identity, even if the same comparison file is reused.
+
+The generation on activation is the move UUID, not the import's old source epoch.
+For reverse, omit `--source-generation` on `league-export save`: the CLI selects the
+stored current generation. Embedding callers use `TransferFence.Epoch` with Capture. The immutable original import receipt
+and comparison document are retained; authority transitions are separate append-only
+history. Owner labels deliberately contain neither these IDs nor database paths.
+No remote two-host transport, new owner screen, or live hosted cutover is claimed;
+those callers must preserve the source-locked decision contract, not issue an
+independent portable activation token. Loss of the source during a pending decision
+fails closed and needs recovery, not unilateral target activation.
+
+Automated evidence: `TestMoveCrashBoundaries` exits subprocesses before/after seal,
+before target commit, after target activation/cancellation but before source commit,
+and after source retirement/resumption; reopens both databases and retries recovery.
+`TestMoveSealAbortAndActivation` exercises confirmation/roles, SQL write rejection,
+abort, retry and post-activation abort refusal. `TestMoveActivationRacesAbort` proves
+one winning decision. `TestReverseMoveIncludesEveryServerEvent` adds a real server
+command, reverses and compares every original SQL event byte and discovery status.
+`TestMoveRejectsStaleExportAndWrongDestination` rejects stale heads and a second target.
+These are local automated checks, not a physical host-loss or desktop click drill.
+
+Research/ordering: this extends the repository's existing SQLite immediate-writer
+transactions (`db.Pools`, commissioner execution, inactive imports), not a new lease
+or home-grown distributed consensus scheme. SQLite atomic commit and single-writer
+ordering are the underlying guarantees ([transactions](https://sqlite.org/lang_transaction.html),
+[atomic commit](https://sqlite.org/atomiccommit.html)). Source checkpoints are checked
+with existing `db.VerifyAudit` / `db.CheckAuditAnchor` under the seal writer; unrelated
+source events after the checkpoint are permitted, but any changed league row refuses.
+
+Slice review: source-traced CLI → Move → source writer → destination writer → source
+outcome, including both crash recovery callbacks. No independently usable activation
+proof or network principal endpoint was introduced. Placement stays in the existing
+transfer/history/service packages and existing commissioner Host adapter. Across the
+complete affected handwritten production set, physical lines rose from 1,793 to 2,435
+(excluding tests/docs/generated files); the added responsibilities are durable source
+fencing, destination decision/reverse receive and commissioner orchestration. No size
+reduction is claimed. Removing the source event guard deliberately failed
+`TestMoveSealAbortAndActivation` on a changed persisted head; the guard was restored.
+Reverse abort/reseal and injected reverse insertion failure are also covered; failed
+receive preserves both fences and the original destination history before retry.
+
+Import retries report the **current** location: repeating the original import after
+activation returns the immutable receipt without incorrectly calling the active league
+inactive. The CLI cutover/reverse test checks this alongside the stored-generation export.

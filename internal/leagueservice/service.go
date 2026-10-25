@@ -25,6 +25,7 @@ type SessionHost interface {
 	NativeScheduleDates(context.Context, int, time.Time) ([]leagueweek.Week, error)
 }
 type LeagueHost interface {
+	TransferStatus(context.Context, string) (history.TransferStatus, error)
 	CommissionerLedgerFiltered(ctx context.Context, league, principal string,
 		auth commissioner.Authorizer, filter commissioner.RawLedgerFilter) (commissioner.Ledger, error)
 	CommissionerPeople(ctx context.Context, league, principal string) (commissioner.People, error)
@@ -133,3 +134,19 @@ func (a *Service) admitReading(access commissioner.Access) error {
 }
 
 const refreshTimeout = 120 * time.Second
+
+// Location supplies the same authority wording to hosted and desktop callers. It does not
+// enroll a destination or grant mutation permission; SQL fences remain authoritative.
+func (a *Service) Location(league string) (history.TransferStatus, error) {
+	if err := a.host.Ready(); err != nil {
+		return history.TransferStatus{}, fmt.Errorf("read league location: %w", err)
+	}
+	if err := a.admitRead(league, "native.directory.read", ""); err != nil {
+		return history.TransferStatus{}, err
+	}
+	status, err := a.host.TransferStatus(a.requestContext(a.host.CommissionerContext()), league)
+	if err != nil {
+		return history.TransferStatus{}, fmt.Errorf("read league location: %w", err)
+	}
+	return status, nil
+}

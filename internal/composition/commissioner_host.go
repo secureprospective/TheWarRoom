@@ -17,6 +17,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 type localCommissionerSession struct{ installation string }
@@ -152,3 +153,11 @@ func (h commissionerHost) CommissionerBackupNow() (commissionerapp.BackupResult,
 	return h.app.backupNow()
 }
 func (h commissionerHost) CloseFinishedDrafts(league string) { h.app.closeFinishedDrafts(league) }
+
+func (h commissionerHost) TransferStatus(ctx context.Context, league string) (history.TransferStatus, error) {
+	status, err := h.History.TransferStatus(ctx, league)
+	if err != nil {
+		return history.TransferStatus{}, fmt.Errorf("read league location: %w", err)
+	}
+	return status, nil
+}

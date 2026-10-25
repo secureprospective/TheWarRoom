@@ -54,6 +54,7 @@ func TestHostedReadsAndPreviewsRequireCredential(t *testing.T) {
 			args []any
 		}{
 			{"TargetCommissionerLedger", []any{"native.test"}},
+			{"Location", []any{"native.test"}},
 			{"TargetCommissionerLedgerFiltered", []any{"native.test", "{}"}},
 			{"TargetCommissionerPeople", []any{"native.test"}},
 			{"TargetCommissionerLeagues", nil},
@@ -229,5 +230,39 @@ func TestHostedServiceCarriesAdmissionIntoStoreTransaction(t *testing.T) {
 	events, err = store.Events(t.Context(), raw.League, commissioner.Stream, 0)
 	if err != nil || len(events) != 1 {
 		t.Fatalf("retry appended: %d %v", len(events), err)
+	}
+}
+
+func TestLocationUsesSharedOwnerLabel(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.db")
+	pools, err := db.Open(t.Context(), path, history.SchemaVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = pools.Close() }()
+	registry, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	store := history.New(pools, registry)
+	if err := store.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	raw := commissioner.RawCommand{League: "native.location", Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Location", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Request: "create", Reason: "Create league", Effective: "now", Visibility: "league"}
+	if _, err := store.ExecuteCommissioner(t.Context(), raw, "creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	host := StoredHost{Store: store, Context: func() context.Context { return t.Context() }, Principal: "creator"}
+	service := New(host)
+	want, err := store.TransferStatus(t.Context(), raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := service.Location(raw.League)
+	if err != nil || got != want || !got.Writable {
+		t.Fatal(got, want, err)
+	}
+	if got, err := service.Location("native.missing"); err == nil || got.Writable {
+		t.Fatal("missing league claimed authority", got, err)
 	}
 }

@@ -1,4 +1,4 @@
-// Package leaguetransfer produces authenticated, portable league history, never writable authority.
+// Package leaguetransfer moves replay-verified league history with explicit source fencing.
 package leaguetransfer
 
 import (
