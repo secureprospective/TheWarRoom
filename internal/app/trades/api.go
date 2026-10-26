@@ -88,10 +88,4 @@ func (a *API) builderReading(v TradeBuilderView, err error) TradeBuilderReading 
 
 // Commands records existing bindings without inventing publication metadata. The builder can open
 // MFL's trade desk on hand-off, so it is desktop-only.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: "trade.accept", Method: "TargetDraftTradeAccept", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetTradeBuilder", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
-		{ID: catalog.Unset, Method: "TargetTrades", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("trades", nil) }

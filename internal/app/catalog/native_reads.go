@@ -1,28 +1,22 @@
-package commissioner
+package catalog
 
 import (
 	"reflect"
 	"strings"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-// Positional desktop inputs become named JSON arguments in the logical catalog; the shared
-// read service retains their validation and domain checks.
-func queryShape(method, fields string) catalog.Schema {
-	schema := catalog.Schema{Type: "object", Validator: method, Fields: []catalog.Field{}}
+func queryShape(method, fields string) Schema {
+	schema := Schema{Type: "object", Validator: method, Fields: []Field{}}
 	for _, token := range strings.Fields(fields) {
 		name, kind, _ := strings.Cut(token, ":")
-		schema.Fields = append(schema.Fields, catalog.Field{Name: name, Schema: catalog.Schema{Type: kind}})
+		schema.Fields = append(schema.Fields, Field{Name: name, Schema: Schema{Type: kind}})
 	}
 	return schema
 }
-
-// Session/membership policies admit no implicit league role. League/franchise views must filter
-// for the current principal; command-policy also checks the requested command's arguments.
-// Manage policies require the corresponding current league grant, never host-admin status.
-func nativeReads() []catalog.Command {
+func nativeReads() []Command {
 	rows := []struct{ id, method, fields, permission, facts string }{
 		{"commish.actor.read", "TargetCommissionerActor", "", "session", "none"},
 		{"commish.controls.read", "TargetCommissionerControls", "", "session", "none"},
@@ -60,34 +54,33 @@ func nativeReads() []catalog.Command {
 		{"week.read", "TargetNativeWeek", "", "league-view", "ledger,schedule"},
 		{"stats.queue.read", "TargetStatQueue", "league:string season:integer", "statistics.manage", "ledger,stat-evidence"},
 	}
-	out := make([]catalog.Command, 0, len(rows))
+	out := make([]Command, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, catalog.Command{ID: row.id, Method: row.method, Version: "1", Role: "domain",
-			Gravity: "G0", Availability: "both", Arguments: nativeReadShape(row.method, row.fields),
-			Permission: row.permission, Modes: []catalog.Mode{catalog.Read}, Undo: "none", Facts: row.facts, Safeguards: "none"})
+		out = append(out, Command{ID: row.id, Method: row.method, Version: "1", Role: "domain",
+			Gravity: "G0", Availability: "both", Arguments: NativeReadShape(row.method, row.fields),
+			Permission: row.permission, Modes: []Mode{Read}, Undo: "none", Facts: row.facts, Safeguards: "none"})
 	}
 	return out
 }
-
-func nativeReadShape(method, fields string) catalog.Schema {
+func NativeReadShape(method, fields string) Schema {
 	switch method {
 	case "TargetLeagueCalendar":
-		return catalog.Shape(reflect.TypeFor[RawLeagueCalendarScope](), "RawLeagueCalendarScope.Validate")
+		return Shape(reflect.TypeFor[leagueservice.RawLeagueCalendarScope](), "RawLeagueCalendarScope.Validate")
 	case "TargetLeagueSchedule":
-		return catalog.Shape(reflect.TypeFor[RawLeagueScheduleScope](), "RawLeagueScheduleScope.Validate")
+		return Shape(reflect.TypeFor[leagueservice.RawLeagueScheduleScope](), "RawLeagueScheduleScope.Validate")
 	case "TargetNativeContractQuote":
-		return catalog.Shape(reflect.TypeFor[commissioner.RawContractQuote](), "RawContractQuote.Validate")
+		return Shape(reflect.TypeFor[commissioner.RawContractQuote](), "RawContractQuote.Validate")
 	case "TargetNativeDraft":
-		return catalog.Shape(reflect.TypeFor[commissioner.RawNativeDraftScope](), "RawNativeDraftScope.Validate")
+		return Shape(reflect.TypeFor[commissioner.RawNativeDraftScope](), "RawNativeDraftScope.Validate")
 	case "TargetNativeFranchiseSchedule":
-		return catalog.Shape(reflect.TypeFor[RawNativeScheduleScope](), "RawNativeScheduleScope.Validate")
+		return Shape(reflect.TypeFor[leagueservice.RawNativeScheduleScope](), "RawNativeScheduleScope.Validate")
 	case "TargetNativeLineupCheck":
-		return catalog.Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
+		return Shape(reflect.TypeFor[commissioner.RawNativeLineup](), "RawNativeLineup.Validate")
 	case "TargetNativeWeek":
-		return catalog.Shape(reflect.TypeFor[RawNativeWeekScope](), "RawNativeWeekScope.Validate")
+		return Shape(reflect.TypeFor[leagueservice.RawNativeWeekScope](), "RawNativeWeekScope.Validate")
 	case "TargetCommissionerLedgerFiltered":
 		schema := queryShape(method, fields)
-		schema.Fields = append(schema.Fields, catalog.Field{Name: "filter", Schema: catalog.Shape(reflect.TypeFor[commissioner.RawLedgerFilter](), "RawLedgerFilter.Validate")})
+		schema.Fields = append(schema.Fields, Field{Name: "filter", Schema: Shape(reflect.TypeFor[commissioner.RawLedgerFilter](), "RawLedgerFilter.Validate")})
 		return schema
 	default:
 		return queryShape(method, fields)

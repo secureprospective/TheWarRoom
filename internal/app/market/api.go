@@ -267,18 +267,4 @@ func wireSlice[S, T any](in []S, out []T) []T {
 	return out
 }
 
-func Commands() []catalog.Command {
-	read := func(method, gravity string) catalog.Command {
-		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: "gm,commish,admin", Gravity: gravity, Availability: "both"}
-	}
-	return []catalog.Command{
-		read("TargetAssetBoard", "G0"),
-		read("TargetAssetProfile", "G0"),
-		read("TargetMarket", "G0"),
-		read("TargetMarketLists", "G0"),
-		read("TargetMarketReports", "G0"),
-		read("TargetMarketReportsRefresh", "G1"),
-		read("TargetMarketStretches", "G0"),
-		read("TargetPickClock", "G0"),
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("market", nil) }

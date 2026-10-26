@@ -119,10 +119,4 @@ func Read(ctx context.Context, src Source, in Input, scope RawCommsScope) (Board
 }
 
 // Commands is data, not an API method: Wails must not bind the catalog itself.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: "comms.read", Method: "TargetComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.open", Method: "TargetOpenComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("comms", nil) }

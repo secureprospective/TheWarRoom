@@ -128,20 +128,7 @@ func contractReading[T any](a *API, value T, at, source, how string, count int, 
 // Commands is data, not an API method: Wails must not bind the catalog itself. Only the lineup draft
 // has a registry verb (lineup.set); the rest are endpoint.open navigation rows with no backend verb.
 // A release hand-off opens MFL's drop page in the browser, so release plans are desktop-only.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetAcquisition", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCheckLineup", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetContractActs", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetContracts", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "lineup.set", Method: "TargetDraftLineup", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetLineup", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPlayerContract", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetReleasePlans", Version: catalog.Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
-		{ID: catalog.Unset, Method: "TargetRosterReports", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetWhatIf", Version: catalog.Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("contracts", nil) }
 
 func (a *API) requirePlanFranchise(ctx context.Context, id, label string) error {
 	if id == "" {

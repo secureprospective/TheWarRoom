@@ -51,12 +51,7 @@ func wireRace(b Board) RaceBoard {
 	return RaceBoard(b)
 }
 
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetRace", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetRaceRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("race", nil) }
 
 // RaceBoard is League Pulse › Race: the standings on top, then the reports. Week and Team are the
 // choices the lineup and one-team reports follow, as Go accepted them.

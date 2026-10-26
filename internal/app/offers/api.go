@@ -111,11 +111,4 @@ func (a *API) serializedMove(run func() (BidPlan, error)) (BidPlan, error) {
 	return result, err //nolint:wrapcheck // Preserve the existing operation's error text.
 }
 
-func Commands() []catalog.Command {
-	return append(MFLCommands(), []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetOffers", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPersonal", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPersonalChange", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetPersonalHandOff", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
-	}...)
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("offers", MFLCommands()) }

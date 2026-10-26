@@ -77,12 +77,7 @@ func (a *API) TargetCounterpartTeam(raw RawCounterpartTeam) TeamCounterpartReadi
 }
 
 // Commands describes the existing desktop reads, not the endpoint.open navigation verbs.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetCounterpartTeam", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCounterparties", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("counterparties", nil) }
 
 // Concrete wire envelopes let Wails discover the nested feature model types.
 type BoardReading report.Reading[Counterparties]

@@ -97,14 +97,4 @@ func (a *API) TargetPhoto(mflID string) PhotoView {
 }
 
 // Commands is the platform catalog.
-func Commands() []catalog.Command {
-	c := func(method, role, gravity, availability string) catalog.Command {
-		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: role,
-			Gravity: gravity, Availability: availability}
-	}
-	return []catalog.Command{
-		c("TargetCheckMoves", "gm,commish,admin", "G1", "both"), c("TargetClock", "gm,commish,admin", "G0", "both"), c("TargetDraftIR", "gm,commish", "G2", "both"),
-		c("TargetDraftTaxi", "gm,commish", "G2", "both"), c("TargetHandOff", "gm,commish", "G2", "desktop"), c("TargetMoves", "gm,commish,admin", "G0", "both"),
-		c("TargetPhoto", "gm,commish,admin", "G0", "both"), c("TargetSnapshot", "gm,commish,admin", "G0", "both"), c("TargetWithdrawRoster", "gm,commish", "G1", "both"),
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("platform", nil) }

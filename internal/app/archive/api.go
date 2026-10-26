@@ -58,8 +58,4 @@ func wireArchive(b Board) ArchiveBoard {
 }
 
 // Commands describes the compound archive read; registry pages use endpoint.open, not a dedicated verb.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetArchive", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("archive", nil) }
