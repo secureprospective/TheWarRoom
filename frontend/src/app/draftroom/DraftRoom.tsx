@@ -63,7 +63,10 @@ export default function DraftRoom() {
   useEffect(() => surfaceActions.register('draftroom', args => {
     if (args.action === 'close') setTray(undefined);
     if (args.action === 'pick' && people?.yourFranchise)
-      void draftRoom.pick(people.yourFranchise, args.value);
+      return draftRoom.pick(people.yourFranchise, args.value).then(() => {
+        const outcome = draftRoom.peek().pick;
+        if (outcome.status === 'refused') throw new Error(outcome.message);
+      });
     const action = args.action === 'tray' ? parseTrayAction(args.value) : null;
     if (action && may && draft) setTray({ ...action, opener: document.activeElement as HTMLElement });
   }), [may, draft, people]);

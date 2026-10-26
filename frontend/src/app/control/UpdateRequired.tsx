@@ -18,12 +18,14 @@ export default function UpdateRequired({ initial, onRetry }: {
       const result = await nativeAction(app ? 'update' : 'retry');
       if (!app) onRetry(result);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'The update could not be opened. Try again.');
+      const reason = cause instanceof Error ? cause.message : 'The update could not be opened. Try again.';
+      setError(reason);
       setPending(false);
+      throw new Error(reason);
     }
   }
   useEffect(() => surfaceActions.register('desktop-update', args => {
-    if (args.action === 'check') void run();
+    if (args.action === 'check') return run();
   }));
   const label = pending ? 'Checking and opening the update…' : app ? 'Update and reopen' : 'Try again';
   return <main className="twr-app native-account" aria-busy={pending}>

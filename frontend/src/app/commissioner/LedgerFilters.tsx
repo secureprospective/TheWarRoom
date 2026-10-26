@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from './surfaceActions';
 import { readLedgerFiltered, refusalText, type Ledger, type LedgerFilter } from './proxy';
@@ -16,12 +16,16 @@ export function LedgerFilters({ reading, children, read = readLedgerFiltered }: 
   const [applied, setApplied] = useState(empty);
   const [inputError, setInputError] = useState('');
   const [answer, setAnswer] = useState<{ key: string; reading?: Ledger; error?: string }>();
+  const request = useRef<{ key: string; work: Promise<Ledger> }>();
   const filtered = Object.values(applied).some(value => value !== '');
   const key = JSON.stringify([reading.league, reading.revision, applied]);
   useEffect(() => {
     if (!filtered) return;
     let current = true;
-    void read(reading.league, applied).then(result => {
+    const work = request.current?.key === key
+      ? request.current.work : read(reading.league, applied);
+    request.current = undefined;
+    void work.then(result => {
       if (current) setAnswer({ key, reading: result });
     }).catch(cause => {
       if (current) setAnswer({ key, error: refusalText(cause) });
@@ -29,17 +33,25 @@ export function LedgerFilters({ reading, children, read = readLedgerFiltered }: 
     return () => { current = false; };
   }, [reading, applied, filtered, key, read]);
   const apply = useCallback(() => {
+    let next: LedgerFilter;
     try {
-      setApplied({ ...draft, from: iso(draft.from), before: iso(draft.before) });
-      setInputError('');
+      next = { ...draft, from: iso(draft.from), before: iso(draft.before) };
     } catch {
-      setInputError('Choose valid local dates and times.');
+      const message = 'Choose valid local dates and times.';
+      setInputError(message);
+      throw new Error(message);
     }
-  }, [draft]);
+    setInputError('');
+    setApplied(next);
+    if (!Object.values(next).some(value => value !== '')) return;
+    const work = read(reading.league, next);
+    request.current = { key: JSON.stringify([reading.league, reading.revision, next]), work };
+    return work.then(() => {}, cause => { throw new Error(refusalText(cause)); });
+  }, [draft, reading, read]);
   const clear = useCallback(() => { setDraft(empty()); setApplied(empty()); setInputError(''); }, []);
   const screen = `ledger.${reading.league}`;
   useEffect(() => surfaceActions.register(screen, args => {
-    if (args.action === 'find') apply();
+    if (args.action === 'find') return apply();
     if (args.action === 'clear') clear();
   }), [screen, apply, clear]);
   const update = (field: keyof LedgerFilter, value: string) => setDraft({ ...draft, [field]: value });

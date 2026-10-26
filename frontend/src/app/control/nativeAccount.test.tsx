@@ -1,3 +1,4 @@
+import { commands } from '../commands/registry';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { all, button, click, control, mount, render, settle, type, unmount }
@@ -137,4 +138,31 @@ describe('native desktop account access', () => {
     await expect(nativeAction('totp-step-up', 'owner', 'password', '123456'))
       .rejects.toThrow('Fresh code required');
   });
+});
+
+it.each(['done', 'failed'] as const)('records account %s after admission', async status => {
+  let finish!: (value: ReturnType<typeof reply>) => void;
+  let fail!: (cause: Error) => void;
+  const reason = 'Your league cannot be reached. Try again.';
+  vi.stubGlobal('fetch', vi.fn(() => new Promise<ReturnType<typeof reply>>((resolve, reject) => {
+    finish = resolve; fail = reject;
+  })));
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  await mount(render(NativeAccount, { initial }));
+  const before = commands.history();
+  let result: void | Promise<void>;
+  await act(async () => {
+    result = commands.dispatch('commissioner.surface', {
+      screen: 'native-account', action: 'check', value: 'submit',
+    });
+  });
+  expect(commands.history()).toEqual(before);
+  await act(async () => {
+    if (status === 'done') finish(reply(initial));
+    else fail(new Error(reason));
+    await result;
+  });
+  expect(commands.history()[commands.history().length - 1]).toEqual({ id: 'commissioner.surface',
+    args: { screen: 'native-account', action: 'check', value: 'submit' }, status,
+    ...(status === 'failed' ? { reason } : {}) });
 });
