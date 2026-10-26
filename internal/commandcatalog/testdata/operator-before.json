@@ -1,0 +1,9 @@
+[
+  {
+    "Door": "operator-console",
+    "ID": "league.stand_up",
+    "Role": "operator",
+    "Permission": "offline-operator",
+    "Modes": ["execute"]
+  }
+]

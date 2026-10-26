@@ -191,14 +191,30 @@ export function MarketInspector({ kind }: { kind: string }) {
 }
 
 export { prefetchMarket as warm } from './state';
-export const set = (change: import('./contract').MarketFilter) => {
-  if (change.field.startsWith('counterpart-'))
-    return import('../counterparties/state').then((m) => m.counterState.change(change));
-  if (change.field.startsWith('draft-')) return import('./Draft').then((m) => m.set(change));
+export const set = async (change: import('./contract').MarketFilter) => {
+  if (change.field.startsWith('counterpart-')) {
+    const { counterState } = await import('../counterparties/state');
+    await counterState.change(change);
+    if (change.field !== 'counterpart-sort') checkReadings(counterState.peek().reading);
+    return;
+  }
+  if (change.field.startsWith('draft-')) {
+    const { draftState } = await import('./draftState');
+    await draftState.change(change);
+    checkReadings(draftState.peek().reading);
+    return;
+  }
   if (change.field.startsWith('pool-')) return import('../pool/Pool').then((m) => m.set(change));
-  return marketState.change(change);
+  await marketState.change(change);
+  const { lists, clock, stretches } = marketState.peek();
+  checkReadings(lists, clock, stretches);
 };
 
 export function canRetry(...readings: (import('./contract').SurfaceReading | undefined)[]) {
   return readings.some((r) => r?.status === 'failed');
+}
+
+function checkReadings(...readings: (import('./contract').ReadingShell | undefined)[]) {
+  const failed = readings.find(reading => reading?.status === 'failed');
+  if (failed) throw new Error(failed.absenceReason || 'The market could not be read. Try again.');
 }

@@ -1,21 +1,20 @@
-package commissioner
+package catalog
 
 import (
 	"reflect"
 	"slices"
 	"strings"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 // NativeCommands lists logical reads and individual mutations, not generic desktop dispatch doors.
 // A completed declaration is not a live route; hosted registration and credential admission belong
 // to the service. Schemas describe canonical requests, which existing desktop adapters may compose.
-func NativeCommands() []catalog.Command {
+func NativeCommands(seed Schema) []Command {
 	out := nativeReads()
 	for _, row := range nativeMutations() {
-		out = append(out, nativeMutation(row.id, row.args))
+		out = append(out, nativeMutation(row.id, row.args, seed))
 	}
 	return out
 }
@@ -140,24 +139,24 @@ func nativePeopleMutations() []struct{ id, args string } {
 	}
 }
 
-func nativeMutation(id, args string) catalog.Command {
+func nativeMutation(id, args string, seed Schema) Command {
 	gravity := "argument-dependent"
 	if definition, err := commissioner.DefinitionFor(id); err == nil && id != commissioner.ContractActionSet {
 		gravity = definition.Gravity
 	}
-	command := catalog.Command{ID: id, Method: nativeMutationMethod(id), Version: "1", Role: "domain",
+	command := Command{ID: id, Method: nativeMutationMethod(id), Version: "1", Role: "domain",
 		Gravity: gravity, Availability: "both", Permission: "command:" + id,
-		Modes: []catalog.Mode{catalog.Preview, catalog.Execute}, Undo: "checked-reversal",
+		Modes: []Mode{Preview, Execute}, Undo: "checked-reversal",
 		Facts: "ledger", Safeguards: "RawCommand.EffectiveDefinition+MissingReason",
 		Arguments: mutationShape(id, args)}
 	if id == commissioner.DraftPick {
-		command.Arguments = catalog.Shape(reflect.TypeFor[commissioner.DraftPickInput](), "DraftPickInput.Validate")
-		command.Modes = []catalog.Mode{catalog.Execute}
+		command.Arguments = Shape(reflect.TypeFor[commissioner.DraftPickInput](), "DraftPickInput.Validate")
+		command.Modes = []Mode{Execute}
 		command.Safeguards = "on-clock owner selection; server fixes slot and contract"
 	}
 	if id == commissioner.NativeSeed {
 		command.Availability, command.Undo = "desktop", "none"
-		command.Arguments = catalog.Shape(reflect.TypeFor[RawNativeSeedRequest](), "RawNativeSeedRequest.Validate/ValidatePreview")
+		command.Arguments = seed
 		command.Facts = "held-mirror"
 	}
 
@@ -176,8 +175,8 @@ func nativeMutation(id, args string) catalog.Command {
 	return command
 }
 
-func mutationShape(id, args string) catalog.Schema {
-	schema := catalog.Shape(reflect.TypeFor[commissioner.RawCommand](), "RawCommand.Validate/ValidatePreview:"+id)
+func mutationShape(id, args string) Schema {
+	schema := Shape(reflect.TypeFor[commissioner.RawCommand](), "RawCommand.Validate/ValidatePreview:"+id)
 	allowed := strings.Fields(args)
 	for i := range schema.Fields {
 		if schema.Fields[i].Name == "command" {
@@ -187,7 +186,7 @@ func mutationShape(id, args string) catalog.Schema {
 			continue
 		}
 		fields := schema.Fields[i].Schema.Fields
-		schema.Fields[i].Schema.Fields = slices.DeleteFunc(fields, func(field catalog.Field) bool {
+		schema.Fields[i].Schema.Fields = slices.DeleteFunc(fields, func(field Field) bool {
 			return !slices.Contains(allowed, field.Name)
 		})
 	}

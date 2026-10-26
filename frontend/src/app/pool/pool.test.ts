@@ -332,3 +332,23 @@ describe('Reachability', () => {
     expect(poolState.peek().form).toBeUndefined();
   });
 });
+
+it.each(['done', 'failed'] as const)('settles a new bid form only after its preview is %s', async status => {
+  let finish!: (value: ReturnType<typeof parsePreview>) => void;
+  let fail!: (cause: Error) => void;
+  const reason = 'The bid preview cannot be read. Try again.';
+  const { provider } = fakeProvider({ preview: () => new Promise((resolve, reject) => {
+    finish = resolve; fail = reject;
+  }) });
+  const state = createPoolState({ provider, franchise: () => 'franchise.01' });
+  let settled = false;
+  const work = state.change({ field: 'pool-plan', value: '13594' }).then(() => { settled = true; });
+  await Promise.resolve();
+  expect(settled).toBe(false);
+  if (status === 'done') finish(parsePreview(wire.preview));
+  else fail(new Error(reason));
+  await work;
+  expect(settled).toBe(true);
+  if (status === 'failed') expect(state.peek().error).toContain(reason);
+  else expect(state.peek().preview).toEqual(parsePreview(wire.preview));
+});

@@ -34,7 +34,9 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
       if (action === 'helper-issue') { setConnection(result.connection); setHelperId(result.helperId); }
       if (action === 'helper-confirm') { setConfirmation(result.confirmation); setRequest(''); }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not reach your league. Try again.');
+      const reason = e instanceof Error ? e.message : 'Could not reach your league. Try again.';
+      setError(reason);
+      throw new Error(reason);
     } finally { setPending(false); }
   }
   async function copyConnection() {
@@ -44,14 +46,16 @@ export default function NativeHelpers({ server, league, seats, franchise }: {
       if (!await copyHelperConnection(connection)) throw new Error('Clipboard unavailable');
       setMessage('Connection line copied.');
     } catch {
-      setError('Could not copy. Select the connection line and copy it yourself.');
+      const reason = 'Could not copy. Select the connection line and copy it yourself.';
+      setError(reason);
+      throw new Error(reason);
     }
   }
   useEffect(() => surfaceActions.register('native-helpers', args => {
-    if (args.action === 'check' && args.value === 'copy-connection') { void copyConnection(); return; }
+    if (args.action === 'check' && args.value === 'copy-connection') return copyConnection();
     const actions: HelperAction[] = ['helper-issue', 'helper-revoke', 'helper-check', 'helper-confirm'];
     const action = actions.find(value => value === args.value);
-    if (args.action === 'check' && action) void run(action);
+    if (args.action === 'check' && action) return run(action);
   }));
   const args = (value: HelperAction | 'copy-connection') =>
     ({ screen: 'native-helpers', action: 'check' as const, value });

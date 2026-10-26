@@ -9,16 +9,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
-	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/app/offers"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func main() {
 	out := flag.String("out", "frontend/src/app/commands/native.gen.ts", "generated TypeScript file")
 	check := flag.Bool("check", false, "refuse stale output without writing")
-	surface := flag.String("surface", "native", "native, mfl or browser catalog")
+	surface := flag.String("surface", "native", "native, mfl, browser or doors catalog")
 	flag.Parse()
+	if *surface == "doors" {
+		if err := runDoors(".", *check); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if *surface == "browser" {
 		if err := runBrowser("frontend/src/app/commands/browser.gen.ts", *check); err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -44,7 +49,11 @@ func main() {
 }
 
 func run(path string, check bool) error {
-	body, err := generate(app.NativeCommands())
+	commands, err := registryCommands(catalog.NativeDoor)
+	if err != nil {
+		return err
+	}
+	body, err := generate(commands)
 	if err != nil {
 		return err
 	}
@@ -171,7 +180,11 @@ func phrase(id string) string {
 
 func runMFL(check bool) error {
 	const path = "frontend/src/app/commands/mfl.gen.ts"
-	body, err := generate(offers.MFLCommands())
+	commands, err := registryCommands(catalog.MFLDoor)
+	if err != nil {
+		return err
+	}
+	body, err := generate(commands)
 	if err != nil {
 		return err
 	}

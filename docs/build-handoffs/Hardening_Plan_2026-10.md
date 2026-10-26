@@ -38,7 +38,7 @@ A folder you pick is permission to read that place. Its contents stay untrusted.
 
 **One row per operation** records: the code symbol, input and output, what it writes and who owns that
 state, its checks (shape, permission, size), what happens when it fails, its callers and timing
-assumptions, and its evidence. The row extends the existing Go catalog (`internal/app/catalog`).
+assumptions, and its evidence. The row extends the existing Go catalog (`internal/commandcatalog`).
 It is never a second hand-kept list. A row is not permission to publish a command (`catalog.Unset`).
 
 **Evidence** is one of: intent, traced in source, exercised by a named test or run, or unknown.

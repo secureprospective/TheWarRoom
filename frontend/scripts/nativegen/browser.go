@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func generateBrowser(commands []catalog.BrowserCommand) ([]byte, error) {
@@ -25,7 +25,11 @@ func generateBrowser(commands []catalog.BrowserCommand) ([]byte, error) {
 }
 
 func runBrowser(path string, check bool) error {
-	body, err := generateBrowser(catalog.BrowserCommands())
+	commands, err := registryBrowserCommands()
+	if err != nil {
+		return err
+	}
+	body, err := generateBrowser(commands)
 	if err != nil {
 		return err
 	}

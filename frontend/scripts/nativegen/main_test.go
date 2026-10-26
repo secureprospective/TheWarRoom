@@ -6,9 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/app/offers"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func TestNativeClientCatalogParity(t *testing.T) {

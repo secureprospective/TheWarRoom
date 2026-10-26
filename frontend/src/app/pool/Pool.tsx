@@ -397,5 +397,8 @@ export function PoolInspector({ id }: { id: string }) {
     <Suspense fallback={null}><PlayerLists id={id} /></Suspense></>;
 }
 
-export const set = (change: { field: string; value: string }) =>
-  poolState.change(change as PoolFilter);
+export const set = async (change: { field: string; value: string }) => {
+  await poolState.change(change as PoolFilter);
+  const reason = poolState.peek().error;
+  if (reason) throw new Error(reason);
+};

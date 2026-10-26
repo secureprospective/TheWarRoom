@@ -11,13 +11,15 @@ import (
 // Schema describes JSON shape, not business validity. Validator names the existing Raw check;
 // optional means a field may be omitted, not that its zero value is legal for every command.
 type Schema struct {
-	Type      string
-	Enum      []string
-	Format    string
-	Validator string
-	Nullable  bool
-	Fields    []Field
-	Items     *Schema
+	// ClientType names an existing browser-only domain type; it never decodes remote input.
+	ClientType string `json:",omitempty"`
+	Type       string
+	Enum       []string
+	Format     string
+	Validator  string
+	Nullable   bool
+	Fields     []Field
+	Items      *Schema
 }
 
 type Field struct {

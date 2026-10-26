@@ -2,35 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"reflect"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerecovery"
 )
 
-// This executable definition is console-only. Catalog metadata must never
-// automatically publish offline filesystem authority through HTTP or Wails.
-type standUpEntry struct {
-	Metadata catalog.Command
-	Door     string
-	Handler  func(context.Context, leaguerecovery.RawRequest) (string, error)
-}
-
-func standUpDefinition() standUpEntry {
-	return standUpEntry{
-		Metadata: catalog.Command{ID: "league.stand_up", Method: "StandUpRosters", Version: "1", Role: "operator", Gravity: "G3", Availability: "server",
-			Arguments:  catalog.Shape(reflect.TypeFor[leaguerecovery.RawRequest](), "leaguerecovery.RawRequest.Validate"),
-			Permission: "offline-operator", Modes: []catalog.Mode{catalog.Execute}, Undo: "fresh-folder-only", Facts: "validated-rosters-and-contracts", Safeguards: "exclusive-private-folder; no-listener; read-only-league"},
-		Door: "operator-console", Handler: leaguerecovery.StandUp,
-	}
-}
-
 func runStandUp(ctx context.Context, args []string, output io.Writer) error {
-	entry := standUpDefinition()
-	if err := entry.Metadata.ValidatePublication(); err != nil {
+	registry, err := catalog.NewOperatorRegistry()
+	if err != nil {
 		return fmt.Errorf("define offline recovery command: %w", err)
 	}
 	flags := flag.NewFlagSet("twr-server stand-up", flag.ContinueOnError)
@@ -47,9 +30,17 @@ func runStandUp(ctx context.Context, args []string, output io.Writer) error {
 	if err := raw.Validate(); err != nil {
 		return fmt.Errorf("check roster recovery request: %w", err)
 	}
-	message, err := entry.Handler(ctx, raw)
+	body, err := json.Marshal(raw)
+	if err != nil {
+		return fmt.Errorf("encode roster recovery request: %w", err)
+	}
+	answer, err := registry.Invoke(ctx, catalog.ConsoleDoor, "league.stand_up", catalog.Execute, body)
 	if err != nil {
 		return fmt.Errorf("recover league rosters: %w", err)
+	}
+	var message string
+	if err := json.Unmarshal(answer, &message); err != nil {
+		return fmt.Errorf("read roster recovery result: %w", err)
 	}
 	if _, err := fmt.Fprintln(output, message); err != nil {
 		return fmt.Errorf("print roster recovery result (the recovery has already committed): %w", err)

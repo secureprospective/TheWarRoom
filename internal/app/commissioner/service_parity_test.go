@@ -22,7 +22,10 @@ func TestWailsServiceReadParity(t *testing.T) {
 	host := serviceParityHost{Host: app.host}
 	desktop := reflect.ValueOf(New(host))
 	service := reflect.ValueOf(leagueservice.New(host))
-	for _, command := range nativeReads() {
+	for _, command := range NativeCommands() {
+		if len(command.Modes) != 1 || command.Modes[0] != "read" {
+			continue
+		}
 		t.Run(command.ID, func(t *testing.T) {
 			left, right := desktop.MethodByName(command.Method), service.MethodByName(command.Method)
 			if !left.IsValid() || !right.IsValid() {

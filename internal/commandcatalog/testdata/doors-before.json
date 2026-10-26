@@ -1,0 +1,3852 @@
+[
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.actor.read",
+    "Method": "TargetCommissionerActor",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "session",
+    "Schema": "cb060ea60d5a8ad8cbf91eb58370023f26bb2508adb892fc2c904e102d00470a",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.controls.read",
+    "Method": "TargetCommissionerControls",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "session",
+    "Schema": "6dcfa917bd15244c044d026acbbef09c1823476fde53e7ba7ebeb39fcc357cd9",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.digests.read",
+    "Method": "TargetCommissionerDigests",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a7770478d9a19705aff228b07326fc978bb882552165ca96124ae202ebb66e6d",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.jobs.read",
+    "Method": "TargetCommissionerJobs",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "0d0560672a0dd89efe9d525f5d05c08d208a7baa0a7b04f0ebb44fd12ff5c772",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.leagues.read",
+    "Method": "TargetCommissionerLeagues",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-memberships",
+    "Schema": "ec24a8ed9550ba06c77920bd170990fbf672c1aaf1d469450168a9fe042ddadb",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.ledger.read",
+    "Method": "TargetCommissionerLedger",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "34c5d8c34d52a0ce8a96050882e8cf53cf914dbdfe3020a72359d3ab62aa4820",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.ledger.filtered.read",
+    "Method": "TargetCommissionerLedgerFiltered",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "370e34f99bef2f298b1a6e2b4723ffa1137cfaf7234b8e5bf4a5ffc423da0027",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.market.read",
+    "Method": "TargetCommissionerMarket",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "command-policy",
+    "Schema": "9e37321f6314e1de286c116f58a8c2c86d0e19eac01170ce1b947e358e8a573b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.notices.read",
+    "Method": "TargetCommissionerNotices",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "ba852a5aac95e6c021fced6c9d4d5497401b1ea59a72f0dd6f823cbe90168fd0",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.people.read",
+    "Method": "TargetCommissionerPeople",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "aeeb9f3ba63dc8643c441f10f3c277489909da5f7e3a54cc89fafc65e5a10239",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.rules.read",
+    "Method": "TargetCommissionerRules",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "7c7e954b1e3db4dbef690776f93b83761cc92b4e8bb85a53b6d9b42befcc2d96",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.schedule.read",
+    "Method": "TargetCommissionerSchedule",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "schedule.manage",
+    "Schema": "2f7cfccce8caae9d20c082ea8a24b2d5e646b25eef7e61d3f3aa081c513ac2d3",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.corrections.read",
+    "Method": "TargetCorrections",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e6b9b817677f3c72a989cd887dd0766d92dbc402b2dbce409311b918e8ad23a5",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "calendar.read",
+    "Method": "TargetLeagueCalendar",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "7702919044f87b6a553408fc0a9ace48e39f7304e5f9d11259682084ce5d7c64",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "schedule.read",
+    "Method": "TargetLeagueSchedule",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "fff604ab8ae042a941ec1cfade36ad3132fb4c00abbd9b50c64ccf39905a000c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.assets.read",
+    "Method": "TargetNativeAssets",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "563877adaf2ba015b9672666c7ab14e4cd50262c7a6b7c7b6c1ae37fe493e72f",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bids.read",
+    "Method": "TargetNativeBids",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "5fa0cddcdaf351c45574249a2669d1eba0638d0ad98581a2717502237b45f4ff",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.read",
+    "Method": "TargetNativeBracket",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e224d32660ce494a3a22a2577bb3958805d7195178b4cc947081ade033708675",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.cap.check",
+    "Method": "TargetNativeCapCheck",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "cb55ee9eb078a9fc1c1b4269a95dff9919198674af0a4d2d93daf96ab62bc033",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "contract.quote",
+    "Method": "TargetNativeContractQuote",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "bffdd0e0d982532641b8020303b66f912903ba5adc460ce09667040098fc092b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.directory.read",
+    "Method": "TargetNativeDirectory",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "cf4436926c7c6ec592785c5f6f4b18ab8f0cc87fa7c9ecf7594ab0821b409ee1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.read",
+    "Method": "TargetNativeDraft",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "6d6f0b39dd87292c117570c1dc6846e738d1d502a2c42a282b1c1d018927e83c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "schedule.franchise.read",
+    "Method": "TargetNativeFranchiseSchedule",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "846667ee915ad752634bd6a839819b9a13cb459911d83b3513aebf9660c9c1dd",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.rules.read",
+    "Method": "TargetNativeHouseRules",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "4aa9ce0cd1b03fd08ff67f0746fdeb0bd74bce3ec3c7a18bc437f8962092b16b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "lineup.read",
+    "Method": "TargetNativeLineup",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "44dbe5134c02bf54f9b1ca72c1a7d9f623fdfc7e57790f67e48689697d215ba1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "lineup.check",
+    "Method": "TargetNativeLineupCheck",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "baf9d9dd21806b73dfd27b9d78a904790cae7ef424ade7cd0a04f5af398683ab",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "score.player.read",
+    "Method": "TargetNativePlayerScore",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e4740eae0dd34cdc39385adcf40c7b7f2cd7b0d73acc95e160bfc87880125bbe",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.reserve.check",
+    "Method": "TargetNativeReserveCheck",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "1f46c377a14d3502a33daabf8ddcc0fee5560aece9e8465e2fde80123a863556",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "results.read",
+    "Method": "TargetNativeResults",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a874c69d1e70a894e66a50491be3ef7d5832f39fc293c6aebb71f8c2be4335a8",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "native.roster.check",
+    "Method": "TargetNativeRosterCheck",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "191ede5b22e9e45d69db7f0879933b08a0f7b994252ac09c10bfc8a602903dc1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "standings.read",
+    "Method": "TargetNativeStandings",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "be4a57e48ab5171d52d6c610b264c64ed0da04b0da30f4d323702415e2b00e2e",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trades.read",
+    "Method": "TargetNativeTrades",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "e2025417364a9f68abfeed9a322388a9480ad172fe2eace39f63dfb2f84b2a7c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.read",
+    "Method": "TargetNativeWaivers",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "f57834f5a1838117797943d633cfc01346787a8b15ecf68a77f45681ca20a84a",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "week.read",
+    "Method": "TargetNativeWeek",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "ed5999d2cfc9dfad40fd8399717bf69adb58746a079ab181b6bea2c0fe04b8e6",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "stats.queue.read",
+    "Method": "TargetStatQueue",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "statistics.manage",
+    "Schema": "553382b60ea43364eb812dd6ac6970b2375c3a7e14581410415665c684270a25",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.league.create",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.league.create",
+    "Schema": "cf6a0676eebda15b7a3c21d18b6c46375be20e67fe17a565679f37d13153f2c2",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.correction.revert",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.correction.revert",
+    "Schema": "dc996cc7aa8999bf9d78921f3648bc49648618bff9318a7b3a3481868ddbbb7d",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.rules.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "argument-dependent",
+    "Availability": "both",
+    "Permission": "command:commish.rules.set",
+    "Schema": "01b032b51619b3f2737ec99f9f3521ab9f2cbf2fcbdd883f4d0ebab7753825cc",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "contract.action.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "argument-dependent",
+    "Availability": "both",
+    "Permission": "command:contract.action.set",
+    "Schema": "d50cb10bb8ac3a7b32e93c4fc80ce71fd798de1f574bc3673ad51453ee5b7f96",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.league.seed_held",
+    "Method": "TargetNativeSeed",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "desktop",
+    "Permission": "command:commish.league.seed_held",
+    "Schema": "f65710426f5062ed936c8d702296e2613b4b374f362858ca234796b84a8c0171",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "season.rollover",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:season.rollover",
+    "Schema": "94dd0424d8a6b6e5a855fe79207871bed7fe8d78410f8e87c7ae6bef5518f997",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.calendar.exception",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.calendar.exception",
+    "Schema": "cd9058ccaf9cd11fc7eef5dfd2e04ad4f7d22afcddf3a1023d05d8aa94541478",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "correct.roster",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:correct.roster",
+    "Schema": "a5206cf186631f7926670fc66e7520867841f04ce780936c52cdf9c11bf1f460",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "correct.transaction",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:correct.transaction",
+    "Schema": "52eee6a88e5ad34cb8f97ab529eb5866f7bc1d308ccd20df2d0bce038b711993",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "correct.provenance",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:correct.provenance",
+    "Schema": "b5a2758a91b4ae2150bccd609f5fcd63dd7097df39fd486c27db04cccc58ef05",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "correct.pick",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:correct.pick",
+    "Schema": "aff855e89397b1e72a03c5f5686d3eef127fbc32947b4bfbf7cc1f036ddafd2b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "rule.exception",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:rule.exception",
+    "Schema": "d43e9552d375a16cc12f09210f23fa3d3353ece3c871d5b253888b70d6bdf27c",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.order.auto",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:draft.order.auto",
+    "Schema": "e35de22dd400a86c1658200a5420a31b40efe26c80f95e932765f182918efb72",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.order.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:draft.order.set",
+    "Schema": "6bb0599f4b2f854b49443fcf63b1565a7708b3a5840161b5e88e86b8eb2982d1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.order.pattern",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:draft.order.pattern",
+    "Schema": "94569bc3353069a55c4410687cbf81daa013e21236b116daa098ce899a0faeec",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.order.tiebreak",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:draft.order.tiebreak",
+    "Schema": "157bb395abfd79856bccab6cd584cd24b5c37f8fcbbd10896a47db995ece43d4",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.start",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:draft.start",
+    "Schema": "22104c3899f7a3f9eca8211123911c885a8ad36506956f66c97b5377aa123e93",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.pick",
+    "Method": "TargetNativeDraftPick",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:draft.pick",
+    "Schema": "1d44624b27cf54aee0d6ceba72233186d97ea0cd46cc89825372506d263f58d1",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.skip",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.skip",
+    "Schema": "e2311e79a32366f7e9ddf4ffa62452f4e5eacc66fe5b2baf8f5b012d26295883",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.assign",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.assign",
+    "Schema": "74d7a51ebda9a48f50ebd11025eac9a887ed866342bd8e1c4fee3e8be8810fa1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.insert",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.insert",
+    "Schema": "a1696154e1d326e8d5fe6a488b04c38701cb075ef32c3af3ac6f95fe4890719c",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.change",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.change",
+    "Schema": "08730d5671f08d945e2fd24a4ae13c76ecdd850465a58f9f26ab4dcb459da4a4",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.timer",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.timer",
+    "Schema": "005ac6719355931eb8e98d16c670423a80ccd7be4058ef58e2ddb5d8cacb75a2",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.revert",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.revert",
+    "Schema": "bf4ed1ac2a16fe614cf1f345146a25a07ea1cd4493353106dcba9e2661046b82",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.archive",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:draft.archive",
+    "Schema": "74f9b5f6f08871adaa229dcb4a9a1ea8d8a9899968e9f638f63a72a42968006a",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "calendar.window.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:calendar.window.set",
+    "Schema": "0c0ad2ed16ae2c94620c0f4253b1b43379d1a571ae6de01de8778683ecbfca71",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "calendar.window.move",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:calendar.window.move",
+    "Schema": "e626fb4a788a2787be6aefbf334623a461a2650da95dcb5c5dc3fdce3337f80d",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "calendar.window.remove",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:calendar.window.remove",
+    "Schema": "982d60e07215ab4fddab1c93387501c4e7acdd063d17c602de5f12f7539f5eae",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.contract.edit",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.contract.edit",
+    "Schema": "b43f6718018ff49b8e81d46cbb132be776b6eca7a011e5232bf8c8630fb94c07",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.cap.adjust",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.cap.adjust",
+    "Schema": "86527db1745177de6e145062a9af1c3c3899a28f147f98e5d63fc5df5948315e",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.cap.relief",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.cap.relief",
+    "Schema": "64b29a50de56eb799aa01d2d34a5fd7b9cbce37b3befa98e65cb7ef38649dbd6",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.reserve.exception",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.reserve.exception",
+    "Schema": "605c7e9a742b942160598aa37e849c2c7f698fae19e1fb29a3cf753fa0d958ce",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "schedule.generate",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:schedule.generate",
+    "Schema": "7902fef2161bd730e7c6a4bdbd50c015410a2b0c98f95e50ab2fc95a4ed3d6d5",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "schedule.edit",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:schedule.edit",
+    "Schema": "b73fc39630ccd0466f0ee5fa3c1110e7aa1d1fbafc3c14499f83154b287a6c08",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "schedule.publish",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:schedule.publish",
+    "Schema": "51dd3fb7292c371c70f3821e164f3e1a8f63895221f30b6cd4db317fe9bd6ad9",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.build",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bracket.build",
+    "Schema": "64e604b566b6658d49986210e26da95b472a2241224f0fd05133503b818caf44",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.edit",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bracket.edit",
+    "Schema": "ca205c3963bfe3e95774967a45432f3a6d1802a562a86d1f82c2cb97243b4cab",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.seed",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bracket.seed",
+    "Schema": "61a4b445393f1f26f4515773036a97a55d612b19afa490f81d6e9462495d3c20",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.preset.save",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bracket.preset.save",
+    "Schema": "2816a69c11f4ab08edcfbb3ade0b84d179663cdba20df791a8b4c10d839ff9b1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bracket.advance",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:bracket.advance",
+    "Schema": "6051d8095504cbd096f68145fbceee80ba10fbfdefac9222371bf3fb9ba0e345",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.standings.record.adjust",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.standings.record.adjust",
+    "Schema": "1e177e0d0b8ce62fb7a2c3882d994f6b1283141c06683f1d51c9bdd1b31a3a80",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.standings.override",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.standings.override",
+    "Schema": "4ae78774bf5b31a82f36dac7c232a2dba2d1e5aecee46129cf5245797fcb5b69",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.standings.override.clear",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.standings.override.clear",
+    "Schema": "f7db01a3c2cea560c777004b8615296b4cfc8f0726d089530068990c627715cd",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.stat.queue.approve",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.stat.queue.approve",
+    "Schema": "16d3ce3236852ed7383843218a0a673c3ddb91532302752bf602eaabfc78daa0",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.stat.queue.reject",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.stat.queue.reject",
+    "Schema": "746847baecd1fb17ba885ab24efba2964a360f9ae7f5f6c0b0aba70640689aec",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.stat.correct",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.stat.correct",
+    "Schema": "b19c05e8f3515427d12ee2b66605828df4f467cb31e83361f9fb37e927591ce6",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.player.position",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.player.position",
+    "Schema": "f2e0e47ca7613d8798118b7680fb1f564708b197484a0c3a1847eec2851b05a1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.player.position.clear",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.player.position.clear",
+    "Schema": "28fcb7854d071dda15dc61cd2a9d5c6a357ea5f842cd86dd0557f7f37e6ce9a4",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.score.player",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.score.player",
+    "Schema": "eed46528f50d86f8d6c5eaec1b0fbfb4ce219a94a72ed6b839ee305ae9a543fb",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.score.franchise",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.score.franchise",
+    "Schema": "f57f52a646a698ba40d3b3ce9de56905839283b00b635c3e182b39aab52a8e59",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.lineup.set",
+    "Method": "TargetNativeLineupSet",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.lineup.set",
+    "Schema": "3c2b9e04c0bf0a3063dce3327822a60fd53dca91f1284e87f307c68fe69cf16a",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.lineup.correct",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.lineup.correct",
+    "Schema": "557266ab595999b5021e2e6c1db14d03e645e3bb6716a9098723c6c64334f067",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "title.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:title.set",
+    "Schema": "218a42db649dae9c0180bc0d7c1a5b0d5fb4d0abda3c81e2a96350284255f1d3",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "history.link",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:history.link",
+    "Schema": "61c39b52c14b9e54b01950ac03a2c1fc33df23ac43b7dc7cb068e11e14585395",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.notice.publish",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:commish.notice.publish",
+    "Schema": "ea88a24e72caea563cea0c539621d6203935acf3174b91579402692983854cb8",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.whatsnew.post",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:commish.whatsnew.post",
+    "Schema": "3a47a313cfa3cbfbc04f961d884376297756371f37b84a8c730e7daa1cf2d81b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.offer",
+    "Method": "TargetNativeTradeAction",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:trade.offer",
+    "Schema": "381befc9880c017be23b46282c33e60f9a793adcd48ea3029cdc005f45065edd",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.accept",
+    "Method": "TargetNativeTradeAction",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:trade.accept",
+    "Schema": "9f36f386415b37f2b1e4e243f7892e06f43140846f24145ad246f36c58ac2333",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.decline",
+    "Method": "TargetNativeTradeAction",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:trade.decline",
+    "Schema": "ea160a69c8921971fc677cb64223303e803c185278761d4280a76921bb62de4b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.withdraw",
+    "Method": "TargetNativeTradeAction",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:trade.withdraw",
+    "Schema": "615e907b68237b48666c1566701d59447361986cc03d246c8e432f78c05812cc",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.review",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:trade.review",
+    "Schema": "705c20a14f362e91c0c0061544371f1640e17863c36b8fcfbf97d1171957cd47",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.recuse",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:trade.recuse",
+    "Schema": "75b7fc23698c7d17b0129440b65f4959e27d0ae0ab88a05806bf97d4f83b8d66",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.appeal",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:trade.appeal",
+    "Schema": "742689a94d9526ebdfac4ab013f77ad1919cdb5a178b5e16ebca5926820ac002",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.appeal.rule",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:trade.appeal.rule",
+    "Schema": "d4cd70daf65589beecd6e0e3c34a546422b735c8e8183e9ac479650774c69e88",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "trade.override",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:trade.override",
+    "Schema": "a9490f291b0fa525e5c7da0d6b543874faead608fbd3d5241d15b3141398ca11",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "roster.reserve",
+    "Method": "TargetNativeWaiverAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:roster.reserve",
+    "Schema": "13073f7d296c27f8050d9ab7a0440948538883bf728ea0433e15f5806519c468",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "roster.cut",
+    "Method": "TargetNativeWaiverAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:roster.cut",
+    "Schema": "aeda9ba66352a54ad39b1fba62d0026a098a2eca73f6ad3400b581aab8929d22",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.claim",
+    "Method": "TargetNativeWaiverAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:waivers.claim",
+    "Schema": "19fb50f823ede1e7d1857a85adb0cf4d6710e2c1e976729af13ce2b980f9c3e9",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.process",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:waivers.process",
+    "Schema": "2daa9bce7451e7a69db688609078f5cdb022373cd93dd61641d2aa3164cef0d7",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.order.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:waivers.order.set",
+    "Schema": "8aff59f86696d78718e6521200590b4ed64decea1f5d2c33d64fac42d6ec232b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.order.auto",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:waivers.order.auto",
+    "Schema": "9dd325431e30e632413f86a5b519b103852ee3b81f8c73c620a32577fb0c9bc8",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "waivers.award.override",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:waivers.award.override",
+    "Schema": "7a36d3dd668bba9e35dacfdddf7af7458edd09f9174a4414c5c5624fe2d20c0c",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bid.place",
+    "Method": "TargetNativeBidAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bid.place",
+    "Schema": "49b6796b2ba5fe51fffdc40f642974d524ebf16b8af8f3769354339712c07fad",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bid.raise",
+    "Method": "TargetNativeBidAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bid.raise",
+    "Schema": "a28b11833d05bba3f788e428693ddc9191aa2193b851eeb59d6f8754a28d8508",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bid.withdraw",
+    "Method": "TargetNativeBidAction",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bid.withdraw",
+    "Schema": "70ed9c47fb096706dae3ae79f606b87dceaeed0469ee306b3084201d1cbd89f8",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bids.process",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bids.process",
+    "Schema": "c09bb54a875ad17a1e5665bd365d70e774ed76478af8188ebcfe6292bfd5fca5",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "bids.award.override",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:bids.award.override",
+    "Schema": "d3a9ad5af3fc5838121feff9ce4099bb05d2d1a97a3ac64057796ee7b990504b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.caretaker",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.seat.caretaker",
+    "Schema": "116853b44c4afd59234069a715294370c2a632fb0f52d2ba4c5d5942d0bd6ad9",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.franchise.edit",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.franchise.edit",
+    "Schema": "ce9f604562d50dbd08e25de9a74aac1e68cd69fd903604ed2da155f300038828",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.invite",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.seat.invite",
+    "Schema": "1f1ff074a0e99e065efdd1000a2b846119640e16998672a993acda53d2d10813",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.invite.revoke",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.seat.invite.revoke",
+    "Schema": "cb6bcbc0e2aa31335308ab4d2d25cfb64639225df48e901bea1041dbe499f88a",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.invite.redeem",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.seat.invite.redeem",
+    "Schema": "e44d36ccb85975b4b8adc932f89fa7b596a2fa8ecd65c537053ef39774390f92",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.remove",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.seat.remove",
+    "Schema": "b02d91a11901b0158a5a2a6b286a40ed005fc9e2bbd850aceb32059a4fb88280",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.seat.replace",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.seat.replace",
+    "Schema": "1bd67c34eb76d8f8ba95df94061f79cf2e02ce323ff0b5a61df607ff2c01016f",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.abilities.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.abilities.set",
+    "Schema": "b91e8340058d3906ea561dd4baf2a82ae5975aeb1cf3c12bf2f4f8c71f6cbbb6",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.visibility.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.visibility.set",
+    "Schema": "e271a5aef6d32f90cf1a15cf1179e85a8929732e3b523673ecd373d9a92a0681",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.role.grant",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.role.grant",
+    "Schema": "1f6556c9cc48220c2f157c66c623de6469ef66f5c0f71e8bc475a55107e6c330",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.role.revoke",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.role.revoke",
+    "Schema": "07f3d6d91671ad4ff3fdb07b03c257a63b461179f07eb8ebe5a3d9e3c2f91671",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.deputy.order",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.deputy.order",
+    "Schema": "1352c7153d372cf7c78e1497b469690d06bced09fc9eb5c6612c93106dbb705b",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.stepdown",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.stepdown",
+    "Schema": "34ab7b730d7b8d427581d12b3807effe3e0034c886f41ad06b03a80ff7f439b6",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.accept",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.accept",
+    "Schema": "14baac5888f1c8204ebbe4d3650aa130da7c26d2801fbee6597fbe6e21f84fbe",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.decline",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.decline",
+    "Schema": "f00ef33f6b8f9c42388d57002690127e9c86a64b4ec11497016f55f6e1243d71",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.inactivity.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.inactivity.set",
+    "Schema": "ec23d351d58a8fa92d2d9f9ce5260d8b7a83fd6185b63eb7e89dee2b34a2124c",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.activity",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "command:commish.succession.activity",
+    "Schema": "591cf64f3988fc236c3ed3b87283dc251ef666bd4ec60c5bdcb6b772fe862596",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.takeover",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.takeover",
+    "Schema": "5d531e5b5caf809dbb09b085b0d4e97fd9f7e3b7fecbe9967d9fae94833e8cc1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.voteout.open",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.voteout.open",
+    "Schema": "6b466d0b818402c8362bf5a32f43cf1ed26e1043809dcdb669bfc32e2ef3f163",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.election.open",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.election.open",
+    "Schema": "bf8924087bfe82ae5b2315f2577e079911776c97508570f176c9319c4a82020f",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.succession.periods.set",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.succession.periods.set",
+    "Schema": "6952802b2c1cc23ce47741dc4510fcbc45255f0c79163239e8b694c6c3102d4c",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.vote.cast",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:commish.vote.cast",
+    "Schema": "4ba692f9a3c5b4feade2d0b2201441f1853ccce8bfc8b8e835c9af582e08635e",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.vote.close",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.vote.close",
+    "Schema": "e11c451947f27a932d33ae6abdb632e69e61479e07c16ff61d648a7195435edd",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "commish.vote.tiebreak",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:commish.vote.tiebreak",
+    "Schema": "ba4a864a58c040bb6f1492929f58c9413782f2c12245246bc6f3e565e69afae8",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.pool.read",
+    "Method": "TargetPool",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "752fe287536e40543d1f922a766567bbb7ec4e99dbcc5db0e3076752ccfbc8ce",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.pool.refresh",
+    "Method": "TargetPoolRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "5be6a91448f8fdc0372b3d00dc38e19c7cc77498a05c19f72c45223d5541db84",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.plans",
+    "Method": "TargetBidPlans",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "787689525197d6fa51e9790f2b185d8433e03b8abdc9df0172cdd22ea3398f5b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.preview",
+    "Method": "TargetBidPreview",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "359fb2be2e2b7b3260abb4c7ad565f3ab82bf3fb80a486c496e0f8b10330c445",
+    "Modes": [
+      "preview"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.submit",
+    "Method": "TargetBidDraft",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "359fb2be2e2b7b3260abb4c7ad565f3ab82bf3fb80a486c496e0f8b10330c445",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.revise",
+    "Method": "TargetBidRevise",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "096343bbbc443c7bbf6e81d75de7c0f9f742adb6e53f200116dc338e533a9abf",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.handoff",
+    "Method": "TargetBidHandOff",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.posted",
+    "Method": "TargetBidPosted",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "mfl",
+    "Feature": "offers",
+    "ID": "mfl.bid.withdraw",
+    "Method": "TargetBidWithdraw",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "archive",
+    "ID": "unset",
+    "Method": "TargetArchive",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "backup.now",
+    "Method": "TargetBackupNow",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.actor.read",
+    "Method": "TargetCommissionerActor",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "session",
+    "Schema": "cb060ea60d5a8ad8cbf91eb58370023f26bb2508adb892fc2c904e102d00470a",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.controls.read",
+    "Method": "TargetCommissionerControls",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "session",
+    "Schema": "6dcfa917bd15244c044d026acbbef09c1823476fde53e7ba7ebeb39fcc357cd9",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.digests.read",
+    "Method": "TargetCommissionerDigests",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a7770478d9a19705aff228b07326fc978bb882552165ca96124ae202ebb66e6d",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetCommissionerExecute",
+    "Role": "commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.jobs.read",
+    "Method": "TargetCommissionerJobs",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "0d0560672a0dd89efe9d525f5d05c08d208a7baa0a7b04f0ebb44fd12ff5c772",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.leagues.read",
+    "Method": "TargetCommissionerLeagues",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-memberships",
+    "Schema": "ec24a8ed9550ba06c77920bd170990fbf672c1aaf1d469450168a9fe042ddadb",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.ledger.read",
+    "Method": "TargetCommissionerLedger",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "34c5d8c34d52a0ce8a96050882e8cf53cf914dbdfe3020a72359d3ab62aa4820",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.ledger.filtered.read",
+    "Method": "TargetCommissionerLedgerFiltered",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "370e34f99bef2f298b1a6e2b4723ffa1137cfaf7234b8e5bf4a5ffc423da0027",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.market.read",
+    "Method": "TargetCommissionerMarket",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "command-policy",
+    "Schema": "9e37321f6314e1de286c116f58a8c2c86d0e19eac01170ce1b947e358e8a573b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.notices.read",
+    "Method": "TargetCommissionerNotices",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "ba852a5aac95e6c021fced6c9d4d5497401b1ea59a72f0dd6f823cbe90168fd0",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.people.read",
+    "Method": "TargetCommissionerPeople",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "aeeb9f3ba63dc8643c441f10f3c277489909da5f7e3a54cc89fafc65e5a10239",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetCommissionerPreview",
+    "Role": "commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.rules.read",
+    "Method": "TargetCommissionerRules",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "7c7e954b1e3db4dbef690776f93b83761cc92b4e8bb85a53b6d9b42befcc2d96",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.schedule.read",
+    "Method": "TargetCommissionerSchedule",
+    "Role": "commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "schedule.manage",
+    "Schema": "2f7cfccce8caae9d20c082ea8a24b2d5e646b25eef7e61d3f3aa081c513ac2d3",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetCommissionerSeat",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetCommissionerSeatSignIn",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "commish.corrections.read",
+    "Method": "TargetCorrections",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e6b9b817677f3c72a989cd887dd0766d92dbc402b2dbce409311b918e8ad23a5",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "calendar.read",
+    "Method": "TargetLeagueCalendar",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "7702919044f87b6a553408fc0a9ace48e39f7304e5f9d11259682084ce5d7c64",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "schedule.read",
+    "Method": "TargetLeagueSchedule",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "fff604ab8ae042a941ec1cfade36ad3132fb4c00abbd9b50c64ccf39905a000c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.assets.read",
+    "Method": "TargetNativeAssets",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "563877adaf2ba015b9672666c7ab14e4cd50262c7a6b7c7b6c1ae37fe493e72f",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeBidAction",
+    "Role": "gm,commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "bids.read",
+    "Method": "TargetNativeBids",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "5fa0cddcdaf351c45574249a2669d1eba0638d0ad98581a2717502237b45f4ff",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "bracket.read",
+    "Method": "TargetNativeBracket",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e224d32660ce494a3a22a2577bb3958805d7195178b4cc947081ade033708675",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.cap.check",
+    "Method": "TargetNativeCapCheck",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "cb55ee9eb078a9fc1c1b4269a95dff9919198674af0a4d2d93daf96ab62bc033",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "contract.quote",
+    "Method": "TargetNativeContractQuote",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "bffdd0e0d982532641b8020303b66f912903ba5adc460ce09667040098fc092b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.directory.read",
+    "Method": "TargetNativeDirectory",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "cf4436926c7c6ec592785c5f6f4b18ab8f0cc87fa7c9ecf7594ab0821b409ee1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "draft.read",
+    "Method": "TargetNativeDraft",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "6d6f0b39dd87292c117570c1dc6846e738d1d502a2c42a282b1c1d018927e83c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeDraftPick",
+    "Role": "gm,commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "schedule.franchise.read",
+    "Method": "TargetNativeFranchiseSchedule",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "846667ee915ad752634bd6a839819b9a13cb459911d83b3513aebf9660c9c1dd",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.rules.read",
+    "Method": "TargetNativeHouseRules",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "4aa9ce0cd1b03fd08ff67f0746fdeb0bd74bce3ec3c7a18bc437f8962092b16b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "lineup.read",
+    "Method": "TargetNativeLineup",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "44dbe5134c02bf54f9b1ca72c1a7d9f623fdfc7e57790f67e48689697d215ba1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "lineup.check",
+    "Method": "TargetNativeLineupCheck",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "baf9d9dd21806b73dfd27b9d78a904790cae7ef424ade7cd0a04f5af398683ab",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "lineup.set",
+    "Method": "TargetNativeLineupSet",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "score.player.read",
+    "Method": "TargetNativePlayerScore",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "e4740eae0dd34cdc39385adcf40c7b7f2cd7b0d73acc95e160bfc87880125bbe",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.reserve.check",
+    "Method": "TargetNativeReserveCheck",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "1f46c377a14d3502a33daabf8ddcc0fee5560aece9e8465e2fde80123a863556",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "results.read",
+    "Method": "TargetNativeResults",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "a874c69d1e70a894e66a50491be3ef7d5832f39fc293c6aebb71f8c2be4335a8",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "native.roster.check",
+    "Method": "TargetNativeRosterCheck",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "191ede5b22e9e45d69db7f0879933b08a0f7b994252ac09c10bfc8a602903dc1",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeScorePreview",
+    "Role": "commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeSeed",
+    "Role": "commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "standings.read",
+    "Method": "TargetNativeStandings",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "be4a57e48ab5171d52d6c610b264c64ed0da04b0da30f4d323702415e2b00e2e",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeTradeAction",
+    "Role": "gm,commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "trades.read",
+    "Method": "TargetNativeTrades",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "e2025417364a9f68abfeed9a322388a9480ad172fe2eace39f63dfb2f84b2a7c",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "unset",
+    "Method": "TargetNativeWaiverAction",
+    "Role": "gm,commish",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "waivers.read",
+    "Method": "TargetNativeWaivers",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "f57834f5a1838117797943d633cfc01346787a8b15ecf68a77f45681ca20a84a",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "week.read",
+    "Method": "TargetNativeWeek",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "ed5999d2cfc9dfad40fd8399717bf69adb58746a079ab181b6bea2c0fe04b8e6",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "stats.queue.read",
+    "Method": "TargetStatQueue",
+    "Role": "commish",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "statistics.manage",
+    "Schema": "553382b60ea43364eb812dd6ac6970b2375c3a7e14581410415665c684270a25",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "comms",
+    "ID": "comms.read",
+    "Method": "TargetComms",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "comms",
+    "ID": "comms.refresh",
+    "Method": "TargetCommsRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "comms",
+    "ID": "comms.open",
+    "Method": "TargetOpenComms",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetAcquisition",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetCheckLineup",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetContractActs",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetContracts",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "lineup.set",
+    "Method": "TargetDraftLineup",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetLineup",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetPlayerContract",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetReleasePlans",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetRosterReports",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "contracts",
+    "ID": "unset",
+    "Method": "TargetWhatIf",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "DeleteMFLKey",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "GetParams",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "MFLKeyStatus",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "ResetParam",
+    "Role": "admin",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "SetMFLKey",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "SetParam",
+    "Role": "admin",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetAccounting",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetAlerts",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetBylaws",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetLeagueSettings",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetOpenMFLAccounting",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetSeason",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetShellStatus",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetSiteNews",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "control",
+    "ID": "window.set",
+    "Method": "TargetSetWindow",
+    "Role": "commish,admin",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "counterparties",
+    "ID": "unset",
+    "Method": "TargetCounterpartTeam",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "counterparties",
+    "ID": "unset",
+    "Method": "TargetCounterparties",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "draft",
+    "ID": "unset",
+    "Method": "TargetDraftLab",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "draft",
+    "ID": "unset",
+    "Method": "TargetDraftReports",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "draft",
+    "ID": "unset",
+    "Method": "TargetDraftReportsRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "draft",
+    "ID": "unset",
+    "Method": "TargetNFLDraft",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "draft",
+    "ID": "draft.reports",
+    "Method": "TargetOpenMFLDraftRoom",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetAssetBoard",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetAssetProfile",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetMarket",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetMarketLists",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetMarketReports",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetMarketReportsRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetMarketStretches",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetPickClock",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "now",
+    "ID": "game.follow",
+    "Method": "TargetLiveGame",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "now",
+    "ID": "unset",
+    "Method": "TargetNow",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "now",
+    "ID": "unset",
+    "Method": "TargetNowRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.pool.read",
+    "Method": "TargetPool",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "752fe287536e40543d1f922a766567bbb7ec4e99dbcc5db0e3076752ccfbc8ce",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.pool.refresh",
+    "Method": "TargetPoolRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "5be6a91448f8fdc0372b3d00dc38e19c7cc77498a05c19f72c45223d5541db84",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.plans",
+    "Method": "TargetBidPlans",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "787689525197d6fa51e9790f2b185d8433e03b8abdc9df0172cdd22ea3398f5b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.preview",
+    "Method": "TargetBidPreview",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "359fb2be2e2b7b3260abb4c7ad565f3ab82bf3fb80a486c496e0f8b10330c445",
+    "Modes": [
+      "preview"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.submit",
+    "Method": "TargetBidDraft",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "359fb2be2e2b7b3260abb4c7ad565f3ab82bf3fb80a486c496e0f8b10330c445",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.revise",
+    "Method": "TargetBidRevise",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "096343bbbc443c7bbf6e81d75de7c0f9f742adb6e53f200116dc338e533a9abf",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.handoff",
+    "Method": "TargetBidHandOff",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.posted",
+    "Method": "TargetBidPosted",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "mfl.bid.withdraw",
+    "Method": "TargetBidWithdraw",
+    "Role": "gm,commish,admin",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Schema": "3975c556ac936fe9b94cff649c4477974d2eebea313ecef74256f99d7d973cb5",
+    "Modes": [
+      "execute"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "unset",
+    "Method": "TargetOffers",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "unset",
+    "Method": "TargetPersonal",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "unset",
+    "Method": "TargetPersonalChange",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "offers",
+    "ID": "unset",
+    "Method": "TargetPersonalHandOff",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetCheckMoves",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetClock",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetDraftIR",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetDraftTaxi",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetHandOff",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetMoves",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetPhoto",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetSnapshot",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "platform",
+    "ID": "unset",
+    "Method": "TargetWithdrawRoster",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "race",
+    "ID": "unset",
+    "Method": "TargetRace",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "race",
+    "ID": "unset",
+    "Method": "TargetRaceRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetResearch",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetResearchRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetResearchNewsRefresh",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetResearchPlayer",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetResearchStatus",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "research",
+    "ID": "unset",
+    "Method": "TargetOpenResearchArticle",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "GetCrosswalkReport",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "LoadCrosswalk",
+    "Role": "admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "SetLeagueArchiveDir",
+    "Role": "admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "SetPhotos",
+    "Role": "admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "TargetCacheClear",
+    "Role": "gm,commish,admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "TargetCacheScopes",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "TargetCrosswalk",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "refresh.run",
+    "Method": "TargetDataRefresh",
+    "Role": "admin",
+    "Gravity": "G1",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "sources",
+    "ID": "unset",
+    "Method": "TargetDataSources",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "trades",
+    "ID": "trade.accept",
+    "Method": "TargetDraftTradeAccept",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "trades",
+    "ID": "unset",
+    "Method": "TargetTradeBuilder",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
+    "Feature": "trades",
+    "ID": "unset",
+    "Method": "TargetTrades",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  }
+]

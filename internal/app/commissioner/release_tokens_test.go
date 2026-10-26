@@ -12,8 +12,8 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner/commissionertest"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	domain "github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"

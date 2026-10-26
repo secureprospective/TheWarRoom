@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
 import { Act } from '../commands/Act';
+import { commands } from '../commands/registry';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { nativeAction, type NativeAction, type NativeView } from './nativeApi';
 import NativeHelpers from './NativeHelpers';
@@ -43,7 +44,9 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (action === 'recover') setSignedIn(false);
     } catch (e) {
       setView(initial);
-      setError(e instanceof Error ? e.message : 'Could not reach your league. Try again.');
+      const reason = e instanceof Error ? e.message : 'Could not reach your league. Try again.';
+      setError(reason);
+      throw new Error(reason);
     } finally { setPassword(''); setCode(''); setPending(false); }
   }
   // Dispatch carries only action names, never passwords, codes or setup keys.
@@ -53,17 +56,20 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       const tab = tabs.find(([id]) => id === args.value);
       if (tab) changeScreen(tab[0]);
     } else if (args.action === 'check') {
+      if (args.value === 'submit') return run(screen === 'recovery' ? 'recover'
+        : screen === 'join' ? 'enroll' : screen === 'authenticator' ? 'totp-step-up' : 'login');
       const actions: NativeAction[] = [
         'totp-begin', 'totp-confirm', 'enter', 'forget', 'revoke-device', 'revoke-all',
       ];
       const action = actions.find(value => value === args.value);
-      if (action) void run(action);
+      if (action) return run(action);
     }
   }));
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    void run(screen === 'recovery' ? 'recover' : screen === 'join' ? 'enroll'
-      : screen === 'authenticator' ? 'totp-step-up' : 'login');
+    void commands.dispatch('commissioner.surface', {
+      screen: 'native-account', action: 'check', value: 'submit',
+    });
   };
   const title = screen === 'join' ? 'Create your account'
     : screen === 'authenticator' ? 'Protect privileged access' : 'Sign in';

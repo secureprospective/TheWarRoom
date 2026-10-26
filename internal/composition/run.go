@@ -11,18 +11,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
+
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/app/comms"
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
-	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-	"github.com/secureprospective/TheWarRoom/internal/app/counterparties"
-	"github.com/secureprospective/TheWarRoom/internal/app/draft"
-	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
-	"github.com/secureprospective/TheWarRoom/internal/app/offers"
-	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
-	"github.com/secureprospective/TheWarRoom/internal/app/research"
-	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 
@@ -151,23 +142,13 @@ func packageSmoke(directory string, embedded Embedded, stderr io.Writer) int {
 
 // bindings is the runtime surface also inspected by the binding manifest test.
 func bindings(app *App) []interface{} {
-	return []interface{}{
-		archiveapp.New(app.core),
-		newCommissionerAPI(app),
-		comms.New(app.core),
-		controlapp.New(controlHost{State: app.core, app: app}, app.controlHeld),
-		contractsapp.New(contractsHost{State: app.core, app: app}),
-		counterparties.New(app.core),
-		draft.New(draftHost{State: app.core, app: app}),
-		newMarketAPI(app),
-		nowapp.New(nowHost{State: app.core, app: app}, app.nowHeld),
-		offers.New(offersHost{State: app.core, app: app}),
-		app.platformAPI(),
-		raceapp.New(app.core, app.raceHeld),
-		research.New(researchHost{app: app}, app.researchHeld),
-		app.sourcesAPI(),
-		trades.New(tradesHost{State: app.core, app: app}),
+	apis := newCommandAPIs(app)
+	registry, err := catalog.NewRegistry(apis.registryInputs(app))
+	if err != nil {
+		panic(fmt.Sprintf("invalid command registry: %v", err))
 	}
+	app.commands = registry
+	return generatedWailsBindings(apis)
 }
 
 // helperCommands is every catalog command an AI helper's token may carry.

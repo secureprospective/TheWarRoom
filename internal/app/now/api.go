@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 // Host supplies Now's detached held readings and runs the root-owned refresh and live-game poll
@@ -68,10 +68,4 @@ func (a *API) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 
 // Commands records existing bindings without inventing publication metadata. Only following a
 // game has a registry verb (game.follow, X-01).
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: "game.follow", Method: "TargetLiveGame", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetNow", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetNowRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("now", nil) }

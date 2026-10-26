@@ -1,4 +1,4 @@
-package serverhttp
+package catalog
 
 import (
 	"context"
@@ -10,14 +10,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-type workflowCommand struct {
-	validate func(RawWorkflow) error
-	run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
+type WorkflowCommand struct {
+	Validate func(RawWorkflow) error
+	Run      func(context.Context, *leagueservice.Service, RawWorkflow) (json.RawMessage, error)
 }
 
 // Membership is executable: the same entry validates and runs a workflow. This bounded
 // transport does not expose the other native commands supported by generic dispatch.
-func workflowCommands() map[string]workflowCommand {
+func WorkflowCommands() map[string]WorkflowCommand {
 	out := workflowReads()
 	for _, id := range []string{
 		commissioner.LineupSet, commissioner.RosterReserve, commissioner.DraftTimer, commissioner.DraftSkip,
@@ -26,15 +26,15 @@ func workflowCommands() map[string]workflowCommand {
 		commissioner.TradeOffer, commissioner.TradeAccept, commissioner.TradeDecline, commissioner.TradeWithdraw, commissioner.TradeReview, commissioner.TradeRecuse, commissioner.TradeAppeal, commissioner.TradeAppealRule, commissioner.TradeOverride,
 		commissioner.SeasonRollover, commissioner.ScoreFranchise, commissioner.StandingsRecordAdjust, commissioner.StandingsOverrideClear,
 	} {
-		out[id] = workflowCommand{validate: validateWorkflowChange, run: runWorkflowChange}
+		out[id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
 	}
-	out[commissioner.DraftPick] = workflowCommand{validate: validateWorkflowPick, run: runWorkflowPick}
+	out[commissioner.DraftPick] = WorkflowCommand{Validate: validateWorkflowPick, Run: runWorkflowPick}
 	return out
 }
 
-func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawMessage, error)) workflowCommand {
-	return workflowCommand{
-		validate: func(raw RawWorkflow) error {
+func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawMessage, error)) WorkflowCommand {
+	return WorkflowCommand{
+		Validate: func(raw RawWorkflow) error {
 			if raw.Mode != "read" {
 				return fmt.Errorf("this is a reading only")
 			}
@@ -44,7 +44,7 @@ func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawM
 			}
 			return scope.validateCommand(raw.Command)
 		},
-		run: func(_ context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+		Run: func(_ context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 			var scope RawWorkflowScope
 			if err := decodeWorkflow(raw.Arguments, &scope); err != nil {
 				return nil, err
@@ -54,8 +54,8 @@ func workflowRead(read func(*leagueservice.Service, RawWorkflowScope) (json.RawM
 	}
 }
 
-func workflowReads() map[string]workflowCommand {
-	return map[string]workflowCommand{
+func workflowReads() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
 		"commish.market.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetCommissionerMarket(r.League, r.Command))
 		}),

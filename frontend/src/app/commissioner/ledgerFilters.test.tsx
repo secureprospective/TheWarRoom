@@ -1,4 +1,6 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { act } from 'react';
+import { commands } from '../commands/registry';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { button, click, control, mount, render, rerender, settle, type, unmount } from './commissionerDom';
 import { LedgerFilters } from './LedgerFilters';
 import LeagueLedger, { LedgerEntries } from './LeagueLedger';
@@ -124,4 +126,38 @@ describe('Ledger filters over Go readings', () => {
     await settle();
     expect(calls).toBe(3);
   });
+});
+
+it.each(['done', 'failed'] as const)('records ledger filter %s after its read settles', async status => {
+  let finish!: (value: Ledger) => void;
+  let fail!: (cause: Error) => void;
+  const reason = 'The ledger is unavailable. Try again later.';
+  const read = vi.fn(() => new Promise<Ledger>((resolve, reject) => { finish = resolve; fail = reject; }));
+  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const host = await mount(render(LedgerFilters, { reading, children: child, read }));
+    await type(control(host, 'Kind of change'), 'rules');
+    const before = commands.history();
+    let result: void | Promise<void>;
+    await act(async () => {
+      result = commands.dispatch('commissioner.surface', {
+        screen: `ledger.${reading.league}`, action: 'find', value: '',
+      });
+    });
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(commands.history()).toEqual(before);
+    expect(host.textContent).toContain('Finding league changes');
+    await act(async () => {
+      if (status === 'done') finish(parseLedger(wire.rules));
+      else fail(new Error(reason));
+      await result;
+    });
+    expect(commands.history()[commands.history().length - 1]).toMatchObject({
+      id: 'commissioner.surface', status,
+      ...(status === 'failed' ? { reason } : {}) });
+    if (status === 'failed') {
+      expect(host.textContent).toContain(reason);
+      expect(logged).toHaveBeenCalled();
+    } else expect(host.textContent).toContain(wire.rules.entries[0].what);
+  } finally { logged.mockRestore(); }
 });

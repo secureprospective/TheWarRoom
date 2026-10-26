@@ -1,4 +1,4 @@
-import type { Density } from '../cards/Card';
+import type { BrowserArguments, BrowserArgumentMap } from './arguments.gen';
 import { browserCommands } from './browser.gen';
 import { loadMarket } from '../market/load';
 import { prefetchHQ } from '../shell/FranchiseHQMount';
@@ -12,12 +12,10 @@ import {
   resolve,
   placementRoute,
   isSurface,
-  type EndpointId,
   type Placement,
-  type Surface,
 } from '../registry';
 import type { MFLKeyStatus, Snapshot, TradeReading } from '../data/contract';
-import type { EntitySubject, PlayerSubject } from '../shell/state';
+import type { PlayerSubject } from '../shell/state';
 import {
   browserStorage,
   loadFranchise,
@@ -25,10 +23,10 @@ import {
   validFranchise,
   type SettingsStorage,
 } from '../shell/franchise';
-import { presets, presetAllowed, holdsRole, type Role, type PresetId } from '../shell/presets';
+import { presets, presetAllowed, holdsRole, type Role } from '../shell/presets';
 import type { Gravity } from '../look/channels';
 import { createShellState } from '../shell/state';
-import { routeFor, type Node, type Route } from '../shell/nodes';
+import { routeFor } from '../shell/nodes';
 export type { Role } from '../shell/presets';
 export type Undo = 'instant' | 'reversible' | 'irreversible';
 export type Command<A> = {
@@ -42,17 +40,20 @@ export type Command<A> = {
   keys?: readonly { key: string; args: A }[];
   run: (args: A) => void | Promise<unknown>;
 };
-function command<A>(definition: {
-  id: keyof typeof browserCommands; run: (args: A) => void | Promise<unknown>;
-}): Readonly<Command<A>> {
-  const metadata = browserCommands[definition.id];
-  const keys = 'keys' in metadata ? metadata.keys as unknown as Command<A>['keys'] : undefined;
+function command<K extends keyof BrowserArgumentMap>(definition: {
+  id: K; run: (args: BrowserArguments<K>) => void | Promise<unknown>;
+}): Readonly<Command<BrowserArguments<K>>> {
+  const metadata = browserCommands[definition.id as keyof typeof browserCommands];
+  const keys = 'keys' in metadata
+    ? metadata.keys as unknown as Command<BrowserArguments<K>>['keys'] : undefined;
   return Object.freeze({
     ...metadata,
     aliases: Object.freeze([...metadata.aliases]),
     roles: Object.freeze([...metadata.roles]),
-    args: Object.freeze([...metadata.args]) as readonly (keyof A)[],
-    keys: keys && Object.freeze(keys.map(k => Object.freeze({ ...k, args: Object.freeze(k.args) }))),
+    args: Object.freeze([...metadata.args]) as readonly (keyof BrowserArguments<K>)[],
+    keys: keys && Object.freeze(keys.map(k => Object.freeze({
+      ...k, args: Object.freeze(k.args) as BrowserArguments<K>,
+    }))),
     run: definition.run,
   });
 }
@@ -111,7 +112,7 @@ export function createCommands(
   function rosterCommand(intent: 'roster.ir' | 'roster.taxi') {
     return command({
       id: intent,
-      run: ({ subject }: { subject: PlayerSubject }) => {
+      run: ({ subject }: BrowserArguments<'roster.ir'>) => {
         return draftRoster(subject, intent);
       },
     });
@@ -176,12 +177,15 @@ export function createCommands(
         runLineupAction(action, state, moves, lineups, provider, snapshot),
       );
   }
-  function editCommand<A>(
-    kind: import('./lineupEdit').LineupAction['kind'],
+  function editCommand<K extends
+    'lineup.edit' | 'lineup.toggle' | 'lineup.reset' | 'lineup.cancel' |
+    'lineup.draft' | 'move.withdraw' | 'move.handoff'>(
+    id: K, kind: import('./lineupEdit').LineupAction['kind'],
   ) {
     return command({
-      id: kind === 'withdraw' ? 'move.withdraw' : kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
-      run: (values: A) => lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
+      id,
+      run: (values: BrowserArguments<K>) =>
+        lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
     });
   }
   const dataRun = (action: import('../datasources/state').Action) => {
@@ -200,7 +204,7 @@ export function createCommands(
     return command({
       id: kind === 'watch' ? 'watch.add' : kind === 'bait' ? 'bait.set'
         : kind === 'note' ? 'note.add' : 'draft.list',
-      run: (change: import('../personal/contract').ListChange) => {
+      run: (change: BrowserArguments<'watch.add'>) => {
         const mine = state.read().franchiseId;
         if (!mine) {
           const message = 'Choose my franchise before keeping a private list';
@@ -219,25 +223,25 @@ export function createCommands(
     'draft.list': personalCommand('draft'),
     'personal.handoff': command({
       id: 'personal.handoff',
-      run: ({ kind }: { kind: import('../personal/contract').ListKind | 'ir' }) => {
+      run: ({ kind }: BrowserArguments<'personal.handoff'>) => {
         return import('../personal/state').then(m => m.personalState.handoff(kind));
       },
     }),
     'window.set': command({
       id: 'window.set',
-      run: ({ kind, at }: { kind: import('../data/contract').WindowKind; at: string }) => {
+      run: ({ kind, at }: BrowserArguments<'window.set'>) => {
         return import('../clock/windowState').then(m => m.setWindow(provider, kind, at));
       },
     }),
     'window.edit': command({
       id: 'window.edit',
-      run: ({ kind }: { kind: import('../data/contract').WindowKind }) => {
+      run: ({ kind }: BrowserArguments<'window.edit'>) => {
         return import('../clock/windowState').then(m => m.editWindow(kind));
       },
     }),
     'phase.goto': command({
       id: 'phase.goto',
-      run: ({ phase }: { phase: keyof typeof phaseRoutes }) => {
+      run: ({ phase }: BrowserArguments<'phase.goto'>) => {
         const route = phaseRoutes[phase];
         if (!route) throw new Error('phase.goto: unknown phase');
         state.navigate(route);
@@ -245,7 +249,7 @@ export function createCommands(
     }),
     'inspector.pin': command({
       id: 'inspector.pin',
-      run: ({ entity }: { entity: EntitySubject | PlayerSubject }) => {
+      run: ({ entity }: BrowserArguments<'inspector.pin'>) => {
         if (entity.kind === 'player') {
           const roster = snapshot?.rosters.value.find(r => r.players.some(p => p.id === entity.id));
           if (roster) state.write({ subject: { ...entity, franchiseId: roster.franchiseId },
@@ -262,40 +266,42 @@ export function createCommands(
     }),
     'refresh.run': command({
       id: 'refresh.run',
-      run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
+      run: ({ scope }: BrowserArguments<'refresh.run'>) => dataRun({ kind: 'refresh', scope }),
     }),
     'cache.run': command({
       id: 'cache.run',
-      run: ({ scope }: { scope: string }) => {
+      run: ({ scope }: BrowserArguments<'cache.run'>) => {
         return import('../datasources/cacheState').then(m =>
           completed(m.cacheState.run(scope), () => m.cacheState.peek().error));
       },
     }),
     'data.run': command({
       id: 'data.run',
-      run: (action: import('../datasources/state').DataAction) => dataRun(action),
+      run: (action: BrowserArguments<'data.run'>) => dataRun(action),
     }),
     'data.parameter': command({
       id: 'data.parameter',
-      run: (action: import('../datasources/state').ParamAction) => dataRun(action),
+      run: (action: BrowserArguments<'data.parameter'>) => dataRun(action),
     }),
     'contracts.set': command({
       id: 'contracts.set',
-      run: (change: import('../contracts/state').ContractsAction) => {
+      run: (change: BrowserArguments<'contracts.set'>) => {
         return import('../contracts/state').then(m => m.runContractsAction(change));
       },
     }),
     'offers.filter': command({
       id: 'offers.filter',
-      run: (change: import('../offers/state').OfferFilter) => {
-        return import('../offers/state').then(
-          m => m.offerState.change(change),
-        );
+      run: (change: BrowserArguments<'offers.filter'>) => {
+        return import('../offers/state').then(m => completed(m.offerState.change(change), () => {
+          const reading = m.offerState.peek().reading;
+          return reading?.status === 'failed'
+            ? reading.absenceReason || 'The offer history could not be read. Try again.' : undefined;
+        }));
       },
     }),
     market: command({
       id: 'market',
-      run: (change: import('../market/contract').MarketFilter) => {
+      run: (change: BrowserArguments<'market'>) => {
         if (['pool-plan', 'pool-open'].includes(change.field))
           state.navigate({ node: 'war', workspace: 'valuations-and-pool' });
         if (change.field === 'inspect' || change.field === 'asset')
@@ -308,14 +314,14 @@ export function createCommands(
     }),
     'trade.builder': command({
       id: 'trade.builder',
-      run: (action: import('../shell/tradeBuilderState').BuilderAction) => {
+      run: (action: BrowserArguments<'trade.builder'>) => {
         return import('../shell/tradeBuilderState').then(m =>
           completed(m.builderAction(action), () => m.useBuilder.getState().error));
       },
     }),
     acquisition: command({
       id: 'acquisition',
-      run: (action: import('../contracts/acquisition').AcquisitionRequest) => {
+      run: (action: BrowserArguments<'acquisition'>) => {
         state.navigate({ node: 'hq', workspace: 'contracts-and-cap' });
         return import('../contracts/acquisition').then(m =>
           completed(m.openAcquisition(action), () => m.useAcquisition.getState().error));
@@ -323,7 +329,7 @@ export function createCommands(
     }),
     'trade.accept.plan': command({
       id: 'trade.accept.plan',
-      run: ({ tradeId }: { tradeId: string }) => {
+      run: ({ tradeId }: BrowserArguments<'trade.accept.plan'>) => {
         const franchiseId = state.read().franchiseId;
         if (franchiseId)
           return import('./tradeAccept').then(
@@ -340,22 +346,20 @@ export function createCommands(
           );
       },
     }),
-    'lineup.edit': editCommand<{ franchiseId: string }>('edit'),
-    'lineup.toggle': editCommand<{ playerId: string }>('toggle'),
-    'lineup.reset': editCommand<Record<string, never>>('reset'),
-    'lineup.cancel': editCommand<Record<string, never>>('cancel'),
-    'lineup.draft': editCommand<Record<string, never>>('draft'),
-    'move.withdraw': editCommand<{ correlationId: string }>(
-      'withdraw',
-    ),
-    'move.handoff': editCommand<{ correlationId: string }>('handoff'),
+    'lineup.edit': editCommand('lineup.edit', 'edit'),
+    'lineup.toggle': editCommand('lineup.toggle', 'toggle'),
+    'lineup.reset': editCommand('lineup.reset', 'reset'),
+    'lineup.cancel': editCommand('lineup.cancel', 'cancel'),
+    'lineup.draft': editCommand('lineup.draft', 'draft'),
+    'move.withdraw': editCommand('move.withdraw', 'withdraw'),
+    'move.handoff': editCommand('move.handoff', 'handoff'),
     'mflkey.connect': command({
       id: 'mflkey.connect',
-      run: (_args: Record<string, never>) => connectMFL(),
+      run: (_args: BrowserArguments<'mflkey.connect'>) => connectMFL(),
     }),
     'mflkey.forget': command({
       id: 'mflkey.forget',
-      run: (_args: Record<string, never>) => {
+      run: (_args: BrowserArguments<'mflkey.forget'>) => {
         if (!mflReason(true)) {
           return completed(requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…'),
             () => mflKey.read().error);
@@ -366,21 +370,21 @@ export function createCommands(
     'roster.taxi': rosterCommand('roster.taxi'),
     'surface.open': command({
       id: 'surface.open',
-      run: (args: { place: Surface }) => openPlace(args.place),
+      run: (args: BrowserArguments<'surface.open'>) => openPlace(args.place),
     }),
     'surface.close': command({
       id: 'surface.close',
-      run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
+      run: (_args: BrowserArguments<'surface.close'>) => state.write({ endpointSurface: null }),
     }),
     'report.sort': command({
       id: 'report.sort',
-      run: (args: { id: string; column: number }) => {
+      run: (args: BrowserArguments<'report.sort'>) => {
         return import('../reports/sortState').then(m => m.reportSort.set(args));
       },
     }),
     'market.reports': command({
       id: 'market.reports',
-      run: (args: { action: 'refresh' }) => {
+      run: (args: BrowserArguments<'market.reports'>) => {
         if (args.action !== 'refresh') throw new Error('Player market reports: invalid action');
         return import('../reports/marketState').then(m => completed(m.marketReportState.refresh(true),
           () => m.marketReportState.peek().error));
@@ -388,7 +392,7 @@ export function createCommands(
     }),
     'comms.read': command({
       id: 'comms.read',
-      run: (args: { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string }) => {
+      run: (args: BrowserArguments<'comms.read'>) => {
         if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
           throw new Error('Comms: invalid action');
         return import('../comms/state').then(m => completed(m.commsState.choose(args.action, args.value),
@@ -397,7 +401,7 @@ export function createCommands(
     }),
     'backup.now': command({
       id: 'backup.now',
-      run: (_args: Record<string, never>) => {
+      run: (_args: BrowserArguments<'backup.now'>) => {
         state.navigate({ node: 'control', workspace: 'app' });
         return import('../commissioner/backupState').then(m =>
           completed(m.backupState.run(), () => m.backupState.peek().error));
@@ -405,33 +409,33 @@ export function createCommands(
     }),
     'commissioner.surface': command({
       id: 'commissioner.surface',
-      run: (args: import('../commissioner/surfaceActions').SurfaceAction) => {
+      run: (args: BrowserArguments<'commissioner.surface'>) => {
         return import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args));
       },
     }),
     'commissioner.read': command({
       id: 'commissioner.read',
-      run: (args: { league: string }) => {
+      run: (args: BrowserArguments<'commissioner.read'>) => {
         return import('../commissioner/proxy').then(m =>
           completed(m.leagueState.choose(args.league), () => m.leagueState.peek().error));
       },
     }),
     'commissioner.draft': command({
       id: 'commissioner.draft',
-      run: (args: { action: 'add' | 'remove'; path: string; index: number }) => {
+      run: (args: BrowserArguments<'commissioner.draft'>) => {
         return import('../commissioner/draftEditor').then(m => m.draftEditor.run(args));
       },
     }),
     'commissioner.execute': command({
       id: 'commissioner.execute',
-      run: (args: { body: string }) => {
+      run: (args: BrowserArguments<'commissioner.execute'>) => {
         return import('../commissioner/proxy').then(m => m.execute(args.body))
           .then(receipt => state.write({ notice: receipt.message }));
       },
     }),
     'control.read': command({
       id: 'control.read',
-      run: (args: { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }) => {
+      run: (args: BrowserArguments<'control.read'>) => {
         if (!['league', 'news', 'search', 'open-accounting'].includes(args.action))
           throw new Error('Control Room: invalid action');
         return import('../control/state').then(m => completed(m.controlState.choose(args.action, args.value),
@@ -440,7 +444,7 @@ export function createCommands(
     }),
     'research.read': command({
       id: 'research.read',
-      run: (args: { action: string; value: string }) => {
+      run: (args: BrowserArguments<'research.read'>) => {
         return import('../research/state').then(m =>
           completed(m.researchState.choose(args.action, args.value),
           () => ['more', 'open'].includes(args.action) ? undefined : m.researchState.peek().error));
@@ -448,14 +452,14 @@ export function createCommands(
     }),
     'archive.reports': command({
       id: 'archive.reports',
-      run: (args: { action: string; value: string }) => {
+      run: (args: BrowserArguments<'archive.reports'>) => {
         return import('../archive/state').then(m =>
           completed(m.archiveState.choose(args.action, args.value), () => m.archiveState.peek().error));
       },
     }),
     'race.reports': command({
       id: 'race.reports',
-      run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {
+      run: (args: BrowserArguments<'race.reports'>) => {
         if (!['refresh', 'week', 'team'].includes(args.action))
           throw new Error('League race: invalid action');
         return import('../race/state').then(m =>
@@ -464,14 +468,14 @@ export function createCommands(
     }),
     'game.follow': command({
       id: 'game.follow',
-      run: ({ id }: { id: string }) => {
+      run: ({ id }: BrowserArguments<'game.follow'>) => {
         state.navigate({ node: 'pulse', workspace: 'now' });
         return import('../now/liveState').then(m => m.liveState.follow(id));
       },
     }),
     'now.reports': command({
       id: 'now.reports',
-      run: (args: { action: 'refresh' | 'week' | 'reports-week'; value: string }) => {
+      run: (args: BrowserArguments<'now.reports'>) => {
         if (!['refresh', 'week', 'reports-week'].includes(args.action))
           throw new Error('League Pulse: invalid action');
         return import('../now/state').then(m =>
@@ -480,7 +484,7 @@ export function createCommands(
     }),
     'draft.reports': command({
       id: 'draft.reports',
-      run: (args: { action: 'refresh' | 'mfl' }) => {
+      run: (args: BrowserArguments<'draft.reports'>) => {
         if (!['refresh', 'mfl'].includes(args.action)) throw new Error('Draft reports: invalid action');
         return import('../draftreports/state').then(m =>
           completed(m.reportState.action(args.action), () => m.reportState.peek().error));
@@ -488,7 +492,7 @@ export function createCommands(
     }),
     'endpoint.open': command({
       id: 'endpoint.open',
-      run: (args: { id: EndpointId }) => {
+      run: (args: BrowserArguments<'endpoint.open'>) => {
         const target = resolve(args.id);
         if (target.kind === 'retired') throw new Error(`endpoint.open: retired ${args.id}`);
         const ids = target.kind === 'merged' && 'into' in target ? target.into : [args.id];
@@ -505,7 +509,7 @@ export function createCommands(
     }),
     'franchise.set': command({
       id: 'franchise.set',
-      run: (args: { franchiseId: string }) => {
+      run: (args: BrowserArguments<'franchise.set'>) => {
         if (!snapshot || !validFranchise(snapshot, args.franchiseId)) {
           throw new Error('franchise.set: unknown franchise');
         }
@@ -524,7 +528,7 @@ export function createCommands(
     }),
     'preset.apply': command({
       id: 'preset.apply',
-      run: (args: { preset: PresetId }) => {
+      run: (args: BrowserArguments<'preset.apply'>) => {
         if (!presetAllowed(args.preset, roles)) throw new Error('preset.apply: GM permission denied');
         const p = presets[args.preset];
         state.navigate(p.route);
@@ -533,7 +537,7 @@ export function createCommands(
     }),
     'inspector.open': command({
       id: 'inspector.open',
-      run: (args: { subject: PlayerSubject }) => {
+      run: (args: BrowserArguments<'inspector.open'>) => {
         const subject = args.subject;
         if (
           !snapshot?.rosters.value.some(
@@ -549,15 +553,15 @@ export function createCommands(
     }),
     'inspector.collapse': command({
       id: 'inspector.collapse',
-      run: (_args: Record<string, never>) => state.write({ inspector: 'rest' }),
+      run: (_args: BrowserArguments<'inspector.collapse'>) => state.write({ inspector: 'rest' }),
     }),
     'commandbar.close': command({
       id: 'commandbar.close',
-      run: (_args: Record<string, never>) => state.write({ commandbar: false }),
+      run: (_args: BrowserArguments<'commandbar.close'>) => state.write({ commandbar: false }),
     }),
     'nav.open': command({
       id: 'nav.open',
-      run: (args: Route | { node: Node; workspace?: undefined }) => {
+      run: (args: BrowserArguments<'nav.open'>) => {
         const route = routeFor(args.node, args.workspace ?? state.read().workspace[args.node]);
         if (!route) throw new Error(`nav.open: invalid workspace for ${args.node}`);
         state.navigate(route);
@@ -565,35 +569,35 @@ export function createCommands(
     }),
     'density.set': command({
       id: 'density.set',
-      run: (args: { density: Density }) => state.write({ density: args.density }),
+      run: (args: BrowserArguments<'density.set'>) => state.write({ density: args.density }),
     }),
     'inspector.expand': command({
       id: 'inspector.expand',
-      run: (_args: Record<string, never>) => state.write({ inspector: 'expanded' }),
+      run: (_args: BrowserArguments<'inspector.expand'>) => state.write({ inspector: 'expanded' }),
     }),
     'inspector.toggle': command({
       id: 'inspector.toggle',
-      run: (_args: Record<string, never>) =>
+      run: (_args: BrowserArguments<'inspector.toggle'>) =>
         state.write({
           inspector: state.read().inspector === 'closed' ? 'rest' : 'closed',
         }),
     }),
     'inspector.close': command({
       id: 'inspector.close',
-      run: (_args: Record<string, never>) => state.write({ inspector: 'closed' }),
+      run: (_args: BrowserArguments<'inspector.close'>) => state.write({ inspector: 'closed' }),
     }),
     'calendar.summon': command({
       id: 'calendar.summon',
-      run: (_args: Record<string, never>) =>
+      run: (_args: BrowserArguments<'calendar.summon'>) =>
         state.write({ summoned: state.read().summoned ? null : 'calendar' }),
     }),
     'comms.toggle': command({
       id: 'comms.toggle',
-      run: (_args: Record<string, never>) => state.write({ comms: !state.read().comms }),
+      run: (_args: BrowserArguments<'comms.toggle'>) => state.write({ comms: !state.read().comms }),
     }),
     'overlays.close': command({
       id: 'overlays.close',
-      run: (_args: Record<string, never>) =>
+      run: (_args: BrowserArguments<'overlays.close'>) =>
         state.write({
           inspector: 'closed',
           summoned: null,
@@ -605,7 +609,7 @@ export function createCommands(
     }),
     'commandbar.open': command({
       id: 'commandbar.open',
-      run: (_args: Record<string, never>) => state.write({ commandbar: true }),
+      run: (_args: BrowserArguments<'commandbar.open'>) => state.write({ commandbar: true }),
     }),
   } satisfies Record<keyof typeof browserCommands, { id: string }>);
   type Id = keyof typeof registry;
@@ -742,5 +746,5 @@ export function createCommands(
 }
 export const commands = createCommands();
 export type CommandId = keyof typeof commands.registry;
-export type CommandArgs<K extends CommandId> = Parameters<(typeof commands.registry)[K]['run']>[0];
+export type CommandArgs<K extends CommandId> = BrowserArguments<K>;
 export const dispatch = commands.dispatch;

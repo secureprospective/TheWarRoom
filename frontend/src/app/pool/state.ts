@@ -130,13 +130,13 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
     clearTimeout(timer);
     timer = setTimeout(() => void runPreview(), deps.delay);
   }
-  function openForm(form: BidFormState) {
+  async function openForm(form: BidFormState) {
     if (!deps.franchise()) {
       set({ error: 'Choose my franchise first; a bid plan belongs to a franchise.' });
       return;
     }
     set({ form, preview: undefined, error: '', notice: '' });
-    void runPreview();
+    await runPreview();
   }
   function plan(id: string): Plan {
     const found = store.getState().board?.value.plans.find((p) => p.id === id);
@@ -209,19 +209,18 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
           show(held);
           return Promise.resolve();
         }
-        openForm({ ...blank, planId: '', playerId: filter.value, playerName: row?.name ?? filter.value });
-        return Promise.resolve();
+        return openForm({ ...blank, planId: '', playerId: filter.value,
+          playerName: row?.name ?? filter.value });
       }
       case 'pool-revise': {
         const p = plan(filter.value);
         const closes = localInput(p.closes).split('T');
-        openForm({
+        return openForm({
           conditionalDrop: p.conditionalDrop, conditionalOpen: false,
           planId: p.id, playerId: p.playerId, playerName: p.player, salary: p.form.salary, years: p.years,
           snipe: p.snipe, beat: p.form.beat, evidence: p.evidence, closesOpen: Boolean(p.closes),
           closesDate: closes[0], closesTime: closes[1] ?? '',
         });
-        return Promise.resolve();
       }
       case 'pool-open':
         show(filter.value);
@@ -267,6 +266,7 @@ export function createPoolState(supplied: Partial<Deps> = {}) {
   }
   // Every filter lands here; a failure becomes the screen's error, never an unhandled rejection.
   async function change(filter: PoolFilter) {
+    set({ error: '' });
     try {
       await run(filter);
     } catch (cause) {

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -293,19 +293,7 @@ func CompileFacts(ctx context.Context, host Host, readings lab.Curated) (string,
 	return host.SerializeSourcesCompile(func() (string, error) { return ServiceFor(host).CompileFactsWith(ctx, readings) }) //nolint:wrapcheck // Preserve the serializer's existing error.
 }
 
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "GetCrosswalkReport", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "LoadCrosswalk", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "SetLeagueArchiveDir", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "SetPhotos", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCacheClear", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCacheScopes", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetCrosswalk", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "refresh.run", Method: "TargetDataRefresh", Version: catalog.Unset, Role: "admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetDataSources", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("sources", nil) }
 
 // TargetCacheScopes lists the held copies a person can ask the app to read afresh.
 func (a *API) TargetCacheScopes() []DataScope { return a.host.CacheScopes() }

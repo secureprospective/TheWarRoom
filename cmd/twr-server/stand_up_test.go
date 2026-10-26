@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -16,11 +17,15 @@ import (
 
 func TestStandUpCommandLocalDoorAndResult(t *testing.T) {
 	t.Parallel()
-	definition := standUpDefinition()
-	if err := definition.Metadata.ValidatePublication(); err != nil {
+	registry, err := catalog.NewOperatorRegistry()
+	if err != nil {
 		t.Fatal(err)
 	}
-	if definition.Door != "operator-console" || definition.Handler == nil || definition.Metadata.Permission != "offline-operator" {
+	definition := registry.Entries()[0]
+	if err := definition.Definition.ValidatePublication(); err != nil {
+		t.Fatal(err)
+	}
+	if definition.Console[catalog.Execute] == nil || definition.Native != nil || definition.Definition.Permission != "offline-operator" {
 		t.Fatal("offline recovery lost its explicit console boundary")
 	}
 	source := filepath.Join(t.TempDir(), "history.db")

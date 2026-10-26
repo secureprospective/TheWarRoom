@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -26,6 +25,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/app/trades"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func TestPackageSmokeRejectsInvalidDirectoryAndHeldLock(t *testing.T) {

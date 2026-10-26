@@ -73,8 +73,82 @@ and direct command-bar exposure (372 assertions). Removing a handler or naming a
 undeclared action fails TypeScript checking. Nine MFL transport IDs use `mfl.*`;
 saved bid receipts still use their original intent. Hosted workflow exposure remains 42.
 
-This is not yet one cross-transport executable registry. Native/MFL schemas remain in
-feature catalogs, browser argument values remain typed in handlers, Wails methods
-retain their feature catalogs, and CLI/MCP registration remains separate. The complete
-old-inventory × door × role fixture and shared native/Wails/CLI handler migration are
-still required; browser parity does not establish those guarantees.
+Native (136), local MFL (9), desktop (136), hosted workflow (42), and browser (62)
+metadata now feed `catalog.Registry` in `internal/commandcatalog`.
+Relocation: `internal/app/catalog` → `internal/commandcatalog`; transport-neutral
+metadata and execution must sit below both the app and hosted transports. Native and MFL definitions and desktop exposure
+live beside the browser declarations in `internal/commandcatalog`; feature `Commands`,
+`NativeCommands` and `MFLCommands` functions are compatibility views, not separate lists.
+All JSON shapes use `catalog.Schema`. Raw-derived schemas stay tied to their existing
+request types; shape metadata never replaces their validators.
+
+`internal/composition/command_bindings.go` injects typed method values for the 136
+existing desktop signatures. Generic binders decode positional arguments and call those
+values directly, without reflective invocation. Native handlers use the existing shared
+service for preview/execute, preserving the separate lineup/pick gates and held-seed
+adapter. Browser handlers remain typed TypeScript functions, not server authority.
+
+| Boundary | Current flow / failure |
+| --- | --- |
+| Desktop startup | Build APIs → bind registry → retain the unchanged Wails API objects. Missing/extra methods or absent handlers refuse startup. |
+| Native/MFL registry calls | Look up ID, declared door and mode → checked argument adapter → existing Raw validation and service/API admission → checked JSON result. |
+| Hosted workflow | The existing HTTP envelope aliases catalog-owned Raw types; its compatibility table and dispatch derive from catalog-owned executable workflows. The 42-command boundary is unchanged. |
+| Evidence | `doors-before.json` freezes 281 native/MFL/Wails records, including schema hashes. Composition tests compare both compatibility views and executable entries; existing workflow/browser fixtures retain their own coverage. |
+
+`frontend/scripts/nativegen -surface doors` inspects the same bound registry without
+starting the app. It generates the Wails object surface and 136-method manifest,
+99 named CLI mutation verbs, the 12 direct command-bar candidates, and unified
+TypeScript argument maps for native, MFL, browser, Wails and workflow doors.
+Wails still generates its JavaScript adapters and model declarations from the original
+API signatures; the registry-derived manifest rejects missing or extra reflected methods.
+Existing JSON CLI verbs and credential/confirmation admission remain unchanged. Named
+verbs only wrap the existing generic RawCommand transport; reads, held seed and the
+special draft-pick transport do not acquire new CLI routes.
+
+Browser argument schemas name existing TypeScript domain types (or inline local shapes)
+through `Schema.ClientType`. These browser-only references are not remote input schemas;
+Go Raw validators still own every remote boundary. The generated browser argument map
+now types handlers and dispatch, replacing their handwritten command argument annotations.
+Search uses the generated direct-candidate list, while places, players and other dynamic
+arguments retain their current sources. The four hidden bar-plumbing actions remain hidden.
+
+The generator tests compare every output byte-for-byte and intentionally stale each new
+file, checking refusal without a write. Existing native/MFL/browser freshness tests and
+`make bindings-fresh` cover the remaining generated TypeScript and Wails JavaScript/models.
+The frozen parity matrix in `internal/composition/command_matrix_test.go` covers all
+300 executable entries × eight doors × four roles (9,600 cells), including
+absent exposure. It combines the original native/MFL/Wails, browser and workflow
+fixtures plus the console entry introduced by main PR #183, preserves mode and permission metadata, and intentionally rejects an
+unregistered door and a missing declared door. CLI exposure retains the original
+generic preview/execute boundary; its 99 named verbs are new aliases, not new authority.
+Domain-role cells preserve the domain policy, not a grant to any display role;
+existing credential/league/franchise admission tests remain authoritative.
+
+Mounted handlers return their work through dispatch. Ledger filtering shares the
+command's read with its rendering effect; account, helper, update and draft-pick
+operations wait for admission/results. Market, offer-history and pool adapters turn
+stored failures into failed receipts; opening a bid form awaits its first preview.
+Only settled operations enter the bounded history, and failures retain a readable
+reason, notice and log. Navigation and ordinary local view changes remain synchronous;
+unrequested refresh/polling work does not manufacture command receipts.
+
+The test-only hosted workflow compatibility inventory and its duplicate parity helper
+were removed (no callers); production workflow validation/dispatch already uses the
+catalog directly. The former native grammar/client and read-preview publication were
+already removed before this branch; source searches remain empty. The unused Draft
+command adapter was also removed after market dispatch moved to its state owner.
+
+Compatibility views live beside their feature APIs; local MFL and Wails declarations
+share `internal/commandcatalog/desktop.go`. The Wails generator emits both the typed
+API holder and the binding surface, so their membership cannot drift. Generator
+registry construction stays with composition's command bindings; named CLI dispatch
+stays with its root command. These consolidations preserve the tiny-file ratchet
+without raising its baseline.
+
+
+The merged `league.stand_up` recovery definition now lives in the same registry,
+with `operator-console` exposure only. `twr-server stand-up` binds the operator-only
+registry and invokes its checked handler; it never starts listeners or app services.
+The application registry knows the operation but supplies no native/MFL/Wails/
+workflow/browser/agent-CLI handler for it. The operator fixture preserves main's
+execute-only/offline-operator boundary; tests refuse every other door and mode.

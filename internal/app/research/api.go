@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -97,16 +97,7 @@ func (a *API) TargetOpenResearchArticle(id, article string) error {
 	return nil
 }
 
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: catalog.Unset, Method: "TargetResearch", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetResearchRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetResearchNewsRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetResearchPlayer", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetResearchStatus", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: catalog.Unset, Method: "TargetOpenResearchArticle", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("research", nil) }
 
 type RawResearchScope struct {
 	Mine     string `json:"mine"`

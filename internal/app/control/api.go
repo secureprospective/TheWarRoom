@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews"
@@ -335,17 +335,4 @@ func (a *API) TargetSetWindow(kind, at string) error {
 // accounting page opens a browser, so it is desktop-only; the key lives in the OS keyring. League
 // dates copy the desktop window.set command's roles and gravity; the alert tray, season feeds and
 // status strip have no registry verb.
-func Commands() []catalog.Command {
-	c := func(method, role, gravity, availability string) catalog.Command {
-		return catalog.Command{ID: catalog.Unset, Method: method, Version: catalog.Unset, Role: role,
-			Gravity: gravity, Availability: availability}
-	}
-	return []catalog.Command{
-		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), c("GetParams", "gm,commish,admin", "G0", "both"), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
-		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), c("TargetAccounting", "gm,commish,admin", "G0", "both"), c("TargetAlerts", "gm,commish,admin", "G0", "both"),
-		c("TargetBylaws", "gm,commish,admin", "G0", "both"), c("TargetLeagueSettings", "gm,commish,admin", "G0", "both"), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),
-		c("TargetSeason", "gm,commish,admin", "G0", "both"), c("TargetShellStatus", "gm,commish,admin", "G0", "both"), c("TargetSiteNews", "gm,commish,admin", "G0", "both"),
-		{ID: "window.set", Method: "TargetSetWindow", Version: catalog.Unset, Role: "commish,admin",
-			Gravity: "G2", Availability: "both"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("control", nil) }

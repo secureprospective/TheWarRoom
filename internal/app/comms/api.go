@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -119,10 +119,4 @@ func Read(ctx context.Context, src Source, in Input, scope RawCommsScope) (Board
 }
 
 // Commands is data, not an API method: Wails must not bind the catalog itself.
-func Commands() []catalog.Command {
-	return []catalog.Command{
-		{ID: "comms.read", Method: "TargetComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "comms.open", Method: "TargetOpenComms", Version: catalog.Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
-	}
-}
+func Commands() []catalog.Command { return catalog.DesktopCommands("comms", nil) }
