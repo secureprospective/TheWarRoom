@@ -63,3 +63,18 @@ Schema validation does not replace Raw validation or current credential admissio
 Delete obsolete catalogs and tests only when their unique behavior is covered by the
 registry parity/dispatch tests. Endpoint documentation remains separate navigation
 information until its command links can be generated without changing destinations.
+
+## Current implementation
+
+Browser metadata now comes from `catalog.BrowserCommands()` and generates
+`browser.gen.ts`; typed browser handlers must exhaust its generated IDs. The frozen
+62-command browser fixture exercises all three display roles and both local admission
+and direct command-bar exposure (372 assertions). Removing a handler or naming an
+undeclared action fails TypeScript checking. Nine MFL transport IDs use `mfl.*`;
+saved bid receipts still use their original intent. Hosted workflow exposure remains 42.
+
+This is not yet one cross-transport executable registry. Native/MFL schemas remain in
+feature catalogs, browser argument values remain typed in handlers, Wails methods
+retain their feature catalogs, and CLI/MCP registration remains separate. The complete
+old-inventory × door × role fixture and shared native/Wails/CLI handler migration are
+still required; browser parity does not establish those guarantees.
