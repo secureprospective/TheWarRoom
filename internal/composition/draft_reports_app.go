@@ -7,6 +7,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // draftHost composes the clock and shared engine-value read without a feature import in core.
@@ -21,16 +23,7 @@ func (h draftHost) DraftValues(ctx context.Context) (map[string]float64, string)
 }
 
 func (h draftHost) DraftNext() string {
-	next := "Next draft: no date set by the commissioner."
-	if h.Whatif != nil {
-		clock, err := h.app.targetClock(h.app.core.Ctx)
-		if err != nil {
-			next = "Next draft date unavailable: " + err.Error()
-		} else {
-			next = draftapp.NextDate(clock.Value.Windows, time.Now(), time.Local)
-		}
-	}
-	return next
+	return draftapp.NextDraft(h.Whatif != nil, func() (snapshot.Sourced[leagueclock.Reading], error) { return h.app.targetClock(h.app.core.Ctx) }, time.Now, time.Local)
 }
 
 // draftReportValues reads the engine values the draft and pool screens show, through the service.

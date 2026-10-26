@@ -205,7 +205,7 @@ func (v researchView) search() ([]PlayerInfo, []string) {
 func (v researchView) feed(kind, week string) Feed[[]researchfeeds.Feed] {
 	return v.Held.Feeds[Key(kind, week)]
 }
-func researchRows(feed Feed[[]researchfeeds.Feed]) []researchfeeds.Entry {
+func Rows(feed Feed[[]researchfeeds.Feed]) []researchfeeds.Entry {
 	if len(feed.Value) == 0 {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (v researchView) stats(id string, mine, group bool) report.Report {
 		r.Note = "Choose your franchise to see your top performers."
 		return r
 	}
-	rows := append([]researchfeeds.Entry{}, researchRows(feed)...)
+	rows := append([]researchfeeds.Entry{}, Rows(feed)...)
 	sort.SliceStable(rows, func(i, j int) bool { return rows[i].Value > rows[j].Value })
 	missing := 0
 	for _, entry := range rows {
@@ -271,7 +271,7 @@ func (v researchView) weekScores(r *report.Report) map[int]map[string]float64 {
 		r.Columns = append(r.Columns, fmt.Sprintf("W%d", w))
 		h := v.feed("playerScores", strconv.Itoa(w))
 		weekly[w] = map[string]float64{}
-		for _, p := range researchRows(h) {
+		for _, p := range Rows(h) {
 			weekly[w][p.ID.String()] = p.Value
 		}
 		base := v.feed("playerScores", "1")
@@ -368,7 +368,7 @@ func (v researchView) trends() report.Report {
 	feed := v.feed(v.scope.Trend, "")
 	r := researchShell("M-052", "MFL-wide activity", "The order and percentages are exactly MFL’s selected export. This is activity across MFL, not transactions in this league. Percentages are as MFL supplies them; no league-specific inference.", feed, v.Zone, "Rank", "Player", "Pos", "NFL", "Percent")
 	r.Source = "Source: MFL " + FeedLabel(v.scope.Trend) + " · MFL-wide, not this league"
-	for i, p := range researchRows(feed) {
+	for i, p := range Rows(feed) {
 		name := v.player(p.ID.String())
 		r.Rows = append(r.Rows, report.Row{Cells: []string{strconv.Itoa(i + 1), name.Name, name.Position, name.Team, fmt.Sprintf("%.2f%%", p.Value)}, Mine: v.mine[name.ID]})
 	}

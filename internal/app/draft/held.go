@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -105,4 +106,18 @@ func NextDate(windows []leagueclock.Window, now time.Time, zone *time.Location) 
 		}
 	}
 	return "Next draft: no date set by the commissioner."
+}
+
+// NextDraft only reads the clock when a local what-if store exists.
+func NextDraft(available bool, read func() (snapshot.Sourced[leagueclock.Reading], error), now func() time.Time, zone *time.Location) string {
+	next := "Next draft: no date set by the commissioner."
+	if available {
+		clock, err := read()
+		if err != nil {
+			next = "Next draft date unavailable: " + err.Error()
+		} else {
+			next = NextDate(clock.Value.Windows, now(), zone)
+		}
+	}
+	return next
 }

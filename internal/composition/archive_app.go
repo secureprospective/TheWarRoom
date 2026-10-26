@@ -10,8 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
-// archiveOpponentFallback reads Race's held weeks under the caller's SeasonMu.
-
 // readArchiveFacts reads the verified archive snapshot through the service and keeps it on App.
 // The caller holds factsMu, which guards archiveCache.
 func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, error) {

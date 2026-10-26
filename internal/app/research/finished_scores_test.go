@@ -5,10 +5,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 func TestFinishedScoresScopeAndCounts(t *testing.T) {
@@ -60,5 +62,37 @@ func TestFinishedScoresUsesOnlyFirstFeed(t *testing.T) {
 	got := FinishedScores(in)
 	if got.Rows["0042"].Sum != 3 || got.Rows["0042"].Games != 2 || got.Rows["0042"].Position != "Unknown" {
 		t.Fatalf("first feed: %+v", got.Rows["0042"])
+	}
+}
+
+func TestPrepareSnapshotOwnsEnrichmentAndKeepsObservation(t *testing.T) {
+	t.Parallel()
+	at := time.Unix(1800000000, 0)
+	for _, provided := range []time.Time{{}, at.Add(-time.Hour)} {
+		oldScores := map[string]*Score{"old": {Sum: 1}}
+		oldCharges := map[string]domain.Money{"old": 2}
+		in := Snapshot{Now: provided, Finished: oldScores, CutCharges: oldCharges, Mirror: state.MirrorSnapshot{Season: 2026, Players: []state.MirrorPlayer{{MFLID: "0042"}, {MFLID: "0099"}}}}
+		var calls []string
+		got := PrepareSnapshot(in, func() time.Time { calls = append(calls, "now"); return at }, func(p state.MirrorPlayer, season int) (domain.Money, bool) {
+			if season != 2026 {
+				t.Fatal(season)
+			}
+			calls = append(calls, p.MFLID)
+			return 12, p.MFLID == "0042"
+		})
+		wantAt := provided
+		wantCalls := []string{"0042", "0099"}
+		if wantAt.IsZero() {
+			wantAt = at
+			wantCalls = append([]string{"now"}, wantCalls...)
+		}
+		if got.Now != wantAt || !reflect.DeepEqual(calls, wantCalls) || !reflect.DeepEqual(got.CutCharges, map[string]domain.Money{"0042": 12}) || len(got.Finished) != 0 || got.Finished == nil {
+			t.Fatalf("enrichment: %+v calls %v", got, calls)
+		}
+		got.Finished["new"] = &Score{}
+		got.CutCharges["new"] = 3
+		if len(oldScores) != 1 || oldScores["old"].Sum != 1 || len(oldCharges) != 1 || oldCharges["old"] != 2 {
+			t.Fatal("mutated original enrichment")
+		}
 	}
 }

@@ -80,3 +80,58 @@ func TestDepthArchiveExactURLAndFallbackErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestArchiveFeedHydrationReadsOnceAndPreservesLiveFailure(t *testing.T) {
+	t.Parallel()
+	at := time.Unix(1800000000, 0)
+	for _, tc := range []struct {
+		name      string
+		held      Feed[[]researchfeeds.Feed]
+		archived  bool
+		reads     int
+		wantError string
+	}{
+		{name: "missing absent archive", reads: 1},
+		{name: "missing held archive", archived: true, reads: 1},
+		{name: "live failure", held: Feed[[]researchfeeds.Feed]{RefreshError: "live failed"}, archived: true, reads: 1, wantError: "live failed"},
+		{name: "held live", held: Feed[[]researchfeeds.Feed]{FetchedAt: at}, archived: true, reads: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			key := Key("playerScores", "2")
+			feeds := map[string]Feed[[]researchfeeds.Feed]{key: tc.held}
+			var seen map[string]bool
+			reads := 0
+			marks := 0
+			first := func(key string) bool {
+				marks++
+				if key != "feed:playerScores:2" {
+					t.Fatal(key)
+				}
+				return FirstArchiveRead(&seen, key)
+			}
+			read := func(kind, week string) Feed[[]researchfeeds.Feed] {
+				reads++
+				if kind != "playerScores" || week != "2" {
+					t.Fatal(kind, week)
+				}
+				if tc.archived {
+					return Feed[[]researchfeeds.Feed]{FetchedAt: at, Value: []researchfeeds.Feed{{Players: []researchfeeds.Entry{{Value: 12}}}}}
+				}
+				return Feed[[]researchfeeds.Feed]{}
+			}
+			HydrateFeed(feeds, "playerScores", "2", first, read)
+			HydrateFeed(feeds, "playerScores", "2", first, read)
+			if reads != tc.reads || feeds[key].RefreshError != tc.wantError {
+				t.Fatalf("reads %d feed %+v", reads, feeds[key])
+			}
+			if tc.reads == 0 && marks != 0 {
+				t.Fatal("existing held feed was marked for archive lookup")
+			}
+		})
+	}
+	var seen map[string]bool
+	if !FirstArchiveRead(&seen, "one") || FirstArchiveRead(&seen, "one") || !FirstArchiveRead(&seen, "two") {
+		t.Fatal("lookup marker did not track distinct keys")
+	}
+}

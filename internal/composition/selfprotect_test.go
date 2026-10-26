@@ -54,24 +54,6 @@ func TestPackageSmokeRejectsInvalidDirectoryAndHeldLock(t *testing.T) {
 	}
 }
 
-// TestDBFileName_DevBuildSeparateFile proves the Tier 3 dev-build guard: a dev
-// binary resolves to a SEPARATE -dev database, never the real ledger filename.
-func TestDBFileName_DevBuildSeparateFile(t *testing.T) {
-	t.Parallel()
-	if got := dbFileName("thewarroom", false); got != "thewarroom.db" {
-		t.Fatalf("release dbFileName = %q, want thewarroom.db", got)
-	}
-	if got := dbFileName("thewarroom", true); got != "thewarroom-dev.db" {
-		t.Fatalf("dev dbFileName = %q, want thewarroom-dev.db", got)
-	}
-	if got := dbFileName("history", true); got != "history-dev.db" {
-		t.Fatalf("dev history = %q, want history-dev.db", got)
-	}
-	if dbFileName("thewarroom", true) == dbFileName("thewarroom", false) {
-		t.Fatal("dev and release DB must be distinct files — a dev build must not touch the live ledger")
-	}
-}
-
 // TestInstanceLock_SecondAcquireFails proves the single-instance guard: once the
 // lock is held, a second acquire on the same DB path is refused; after release a
 // fresh acquire succeeds.

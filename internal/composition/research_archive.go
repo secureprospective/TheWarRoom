@@ -94,25 +94,12 @@ func (a *App) firstArchiveRead(key string) bool {
 	research := a.snapshotResearch()
 	defer a.core.SeasonMu.Unlock()
 	defer func() { a.publishResearch(research) }()
-	if research.archiveRead[key] {
-		return false
-	}
-	if research.archiveRead == nil {
-		research.archiveRead = map[string]bool{}
-	}
-	research.archiveRead[key] = true
-	return true
+	return researchapp.FirstArchiveRead(&research.archiveRead, key)
 }
 func (a *App) hydrateResearchFeed(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed], kind, week string) {
-	key := researchKey(kind, week)
-	held := feeds[key]
-	if held.FetchedAt.IsZero() && a.firstArchiveRead("feed:"+key) {
-		archived := a.archivedResearchFeed(ctx, kind, week)
-		if held.RefreshError != "" {
-			archived.RefreshError = held.RefreshError // a failed live fetch keeps its reason over the archive's
-		}
-		feeds[key] = archived
-	}
+	researchapp.HydrateFeed(feeds, kind, week, a.firstArchiveRead, func(kind, week string) researchapp.Feed[[]researchfeeds.Feed] {
+		return a.archivedResearchFeed(ctx, kind, week)
+	})
 }
 func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed],
 	depth heldSeasonFeed[[]researchfeeds.RawDepth], injury heldSeasonFeed[[]leaguefeed.Injury],

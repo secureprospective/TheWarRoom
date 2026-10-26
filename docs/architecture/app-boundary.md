@@ -2,8 +2,9 @@
 
 ## Resume here
 
-Part 2 in progress: twenty units moved in two batches; 22/126 done cumulatively.
+Part 2 in progress: twenty-four units moved in three batches; 26/126 done cumulatively.
 Batch 1: 3, 5, 20–22, 51, 81, 97, 120. Batch 2: 4, 6–10, 39, 46, 55, 59, 78.
+Batch 3: 12, 64, 66, 93.
 Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
 Next: band 1 pure helpers (opponent fallback, period selection, bye inputs, move predicates),
@@ -61,7 +62,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 9 | 1 | `internal/composition/control_alerts.go` — `byeInputsNote`:194, `byeRoster`:211 | 39 | `control` | W:control | Require held byes/current week/current own roster; join player identity and active status to team bye weeks.  MOVED (part 2, batch 2). |
 | 10 | 3 | `internal/composition/control_alerts.go` — `byeAlerts`:149, `byeWeekLock`:235 | 60 | `control` | W:control | Rules/week failures override availability note; unknown active-player facts abort; alert only current/next week shortfalls with local archived lock or unavailable-lock note.  MOVED (part 2, batch 2). |
 | 11 | 2 | `internal/composition/control_alerts.go` — `Alerts`:24 | 18 | `control` | W:control | Acquire lineup then trades, stop on either failure; gather IR, lineup, bye, trade alerts in order with one clock reading. |
-| 12 | 1 | `internal/composition/draft_reports_app.go` — `DraftNext`:23 | 12 | `draft` | W:draft | No what-if store means no date; otherwise clock failure text or next configured date. |
+| 12 | 1 | `internal/composition/draft_reports_app.go` — `DraftNext`:23 | 12 | `draft` | W:draft | No what-if store means no date; otherwise clock failure text or next configured date.  MOVED (part 2, batch 3). |
 | 13 | 3 | `internal/composition/engine_refresh.go` — `refreshEngine`:16 | 20 | `scoring` | B | Skip missing params/busy model; load signals and points before pool refresh and due check; point failure aborts; health event remains under original span. |
 | 14 | 4 | `internal/composition/engine_refresh.go` — `checkEngine`:38 | 32 | `scoring` | B | Read prior run/input changes, apply EngineDue and dirty flag, fetch directory; clear dirty before run and restore on failure so concurrent changes survive. |
 | 15 | 5 | `internal/composition/engine_refresh.go` — `engineFinished`:71, `sourceHealthChanged`:80 | 13 | `scoring` | B,W | Log run totals/duration and emit health event only if callback exists (runtime policy). |
@@ -113,9 +114,9 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 61 | 5 | `internal/composition/refresh_app.go` — `refreshInBackground`:141, `launchRefresh`:172 | 44 | `control` | startup,B | Start due clock and move watcher once after readiness; optional launch refresh then hourly work; stopping prevents worker admission; report failures while preserving league. |
 | 62 | 2 | `internal/composition/research_archive.go` — `archivedResearchFeed`:24 | 7 | `research` | B,W:research,market,offers | Weekly feed selects scoped archive; unscoped kinds read all archived bodies. |
 | 63 | 3 | `internal/composition/research_archive.go` — `hydrateResearchContext`:41 | 49 | `research` | W:research,market,offers,trades | One archive hydrate at a time; missing held feeds/weekly scores/depth/injuries/news only; roster+extra IDs define news scope; archived injury marked pending; merge without overwriting live data. |
-| 64 | 2 | `internal/composition/research_archive.go` — `firstArchiveRead`:92, `hydrateResearchFeed`:106 | 25 | `research` | W:research,market,offers,trades | Each archive key tried once; only missing feeds hydrate; live failure reason overrides archived pending note. |
+| 64 | 2 | `internal/composition/research_archive.go` — `firstArchiveRead`:92, `hydrateResearchFeed`:106 | 25 | `research` | W:research,market,offers,trades | Each archive key tried once; only missing feeds hydrate; live failure reason overrides archived pending note.  MOVED (part 2, batch 3). |
 | 65 | 3 | `internal/composition/research_archive.go` — `mergeResearchArchive`:117, `hydrateArchivedDepth`:169 | 65 | `research` | W:research,market,offers,trades | Refresh links when crosswalk version changes; fill only absent held data; old-day news becomes pending; preserve earlier live errors over archive fallback. |
-| 66 | 2 | `internal/composition/research_reading.go` — `researchRows`:33, `snapshot`:45 | 26 | `research` | W:research,market,offers,trades | Use first feed's rows; choose now if unset; finish-score totals and held cut charges become research input, with detached indexes. |
+| 66 | 2 | `internal/composition/research_reading.go` — `researchRows`:33, `snapshot`:45 | 26 | `research` | W:research,market,offers,trades | Use first feed's rows; choose now if unset; finish-score totals and held cut charges become research input, with detached indexes.  MOVED (part 2, batch 3). |
 | 67 | 3 | `internal/composition/research_reading.go` — `PrepareResearchDepth`:73 | 8 | `research` | W:research | No fetch transport means no depth preparation; otherwise bounded nonforced refresh. |
 | 68 | 3 | `internal/composition/research_runtime.go` — `refreshResearchFeed`:33, `researchLinks`:69, `refreshResearchDepth`:84 | 77 | `research` | W:research | Five-minute feed/daily depth freshness unless forced; weekly archive scoping; link only known MFL IDs for gsis/espn; publish links/errors and held feeds. |
 | 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. |
@@ -142,7 +143,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 90 | 5 | `internal/composition/app.go` — `startup`:126, `settleStartupFailure`:180, `finishStartup`:187, `initStoreFloor`:255 | 131 | `platform` | startup/probe | Logging failure nonfatal; acquire protected DB floor before client; initialize ordered stores; refresh only empty mirror; coordinator owns Writer; publish complete floor/readiness before revalidation; plain offline failure; launch refresh only if not seeded. |
 | 91 | 5 | `internal/composition/app.go` — `openDatabases`:209, `logMigrationFindings`:319 | 48 | `platform` | startup/probe | Instance lock before recovery and pre-migration backup; open matched stores at schema versions, archive subsequent fetches; log only present pools. |
 | 92 | 5 | `internal/composition/app.go` — `shutdown`:334, `startWorker`:355 | 32 | `platform` | shutdown,B | Mark stopping/cancel workers under admission lock; join before closing pools/releasing instance lock; no new worker after stopping. |
-| 93 | 1 | `internal/composition/app.go` — `configDir`:370, `isDevBuild`:386, `dbFileName`:390 | 21 | `platform` | startup,CLI | Owner-only config dir; dev stamp routes to separate dev databases, never production ledger. |
+| 93 | 1 | `internal/composition/app.go` — `configDir`:370, `isDevBuild`:386, `dbFileName`:390 | 21 | `platform` | startup,CLI | Owner-only config dir; dev stamp routes to separate dev databases, never production ledger.  MOVED (part 2, batch 3). |
 | 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. |
 | 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. |
 | 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. |
@@ -336,3 +337,24 @@ archive URL and first-body/conversion policy; current-week locks do not read the
 - Test fixture corrections, not production changes: time.Time instant comparisons use Equal;
   native test now expects the pre-existing legacy-L URL acceptance; new Now test needs its own
   package declaration. No changed permissions, binding methods, schemas or role data.
+
+## Part 2 — batch 3
+
+Four further units (84 baseline function LOC): draft clock/date availability, read-once archive
+markers and feed hydration, Research snapshot enrichment, build/config isolation. Platform owns
+owner-only config directory creation/tightening and dev database names; ldflags variables remain
+at their original composition symbols. Draft preserves no-store/no-clock/no-now refusal order.
+Research accepts the existing shared cut-charge function as a port, rather than copying that
+rule or importing a sibling feature; it owns default observation time and new enrichment maps.
+The first-feed rows rule is now shared inward, with a compatibility forwarding helper for the
+remaining composition adapters/tests. No business rule was forked.
+
+- Moved standalone database filename test inward; retained config/log integration in composition.
+  Added Platform mode-tightening/blocker-preservation/dev-stamp cases, Draft read-order/failure
+  cases, Research time/enrichment isolation and archive read-once/live-error precedence cases.
+- Targeted Platform/Draft/Research/composition race tests passed. Composition batch included
+  DBFileName/ConfigDir, DraftWire, PlayerForm, ResearchWire/ResearchHeld and command-door parity.
+- Initial new hydration fixture named a nonexistent Feed field; fixed fixture, not production.
+  Lint found the deliberate historical 0750 test chmod; narrowly documented its purpose.
+- Pure snapshot enrichment no longer lives in composition. Joint held capture/publication,
+  archive resource ownership and the original locks still do.

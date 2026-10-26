@@ -6,11 +6,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -365,38 +366,15 @@ func (a *App) startWorker(work func()) {
 	}()
 }
 
-// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it
-// owner-only. A dir left by an older build (0750) is tightened, since it holds the ledger.
-func configDir() (string, error) {
-	cfg, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("user config dir: %w", err)
-	}
-	dir := filepath.Join(cfg, "TheWarRoom")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("create data dir %q: %w", dir, err)
-	}
-	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // a directory needs its x bit; 0700 is owner-only
-		return "", fmt.Errorf("restrict data dir %q: %w", dir, err)
-	}
-	return dir, nil
-}
-
-// isDevBuild reports an un-stamped build (plain go build or wails dev).
-func isDevBuild() bool { return version == "dev" }
-
-// dbFileName gives dev builds their own databases, so development can never migrate or
-// corrupt the real league ledger or its history.
-func dbFileName(base string, devBuild bool) string {
-	if devBuild {
-		return base + "-dev.db"
-	}
-	return base + ".db"
-}
-
 type desktopRuntime struct{}
 
 func (desktopRuntime) EventsEmit(ctx context.Context, event string) { runtime.EventsEmit(ctx, event) }
 func (desktopRuntime) BrowserOpenURL(ctx context.Context, target string) {
 	runtime.BrowserOpenURL(ctx, target)
+}
+
+func configDir() (string, error) { return platformapp.ConfigDir() } //nolint:wrapcheck // Preserve startup/config directory errors.
+func isDevBuild() bool           { return platformapp.IsDevBuild(version) }
+func dbFileName(base string, devBuild bool) string {
+	return platformapp.DatabaseFileName(base, devBuild)
 }

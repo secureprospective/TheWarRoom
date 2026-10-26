@@ -5,7 +5,6 @@ import (
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
@@ -31,10 +30,7 @@ func (v researchView) feed(kind, week string) heldSeasonFeed[[]researchfeeds.Fee
 	return v.held.feeds[researchKey(kind, week)]
 }
 func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Entry {
-	if len(feed.Value) == 0 {
-		return nil
-	}
-	return feed.Value[0].Players
+	return researchapp.Rows(feed)
 }
 func (v researchView) player(id string) researchapp.ResearchPlayer {
 	return researchapp.ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
@@ -43,21 +39,7 @@ func (v researchView) player(id string) researchapp.ResearchPlayer {
 // snapshot detaches mutable indexes. Feed payloads, directory lookups, roster views and
 // rulebook configs are published values: refresh replaces them rather than mutating them.
 func (in researchInput) snapshot() researchapp.Snapshot {
-	if in.now.IsZero() {
-		in.now = time.Now()
-	}
-	v := researchView{researchInput: in}
-	finished := researchapp.FinishedScores(v.scoreInput())
-	scores, latest := finished.Rows, finished.Latest
-	charges := map[string]domain.Money{}
-	for _, p := range in.mirror.Players {
-		if charge, ok := heldCutCharge(p, in.mirror.Season); ok {
-			charges[p.MFLID] = charge
-		}
-	}
-	return researchapp.Snapshot{Held: researchapp.Values{Feeds: in.held.feeds, Depth: in.held.depth, Links: in.held.links, LinkError: in.held.linkError, News: in.held.news},
-		Lookup: in.lookup, Mirror: in.mirror, Injuries: in.injuries, Schedules: in.schedules, Config: in.config, Week: in.week, Zone: in.zone, Now: in.now,
-		Finished: scores, Latest: latest, CutCharges: charges}
+	return researchapp.PrepareSnapshot(researchapp.Snapshot{Held: researchapp.Values{Feeds: in.held.feeds, Depth: in.held.depth, Links: in.held.links, LinkError: in.held.linkError, News: in.held.news}, Lookup: in.lookup, Mirror: in.mirror, Injuries: in.injuries, Schedules: in.schedules, Config: in.config, Week: in.week, Zone: in.zone, Now: in.now}, time.Now, heldCutCharge)
 }
 
 // researchHost composes private Research state with Market and Now's shared capture.

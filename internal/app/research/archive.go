@@ -67,3 +67,28 @@ func ReadDepthArchive(ctx context.Context, season int, bodies ArchivedBodies, fe
 	}
 	return rows, fresh, nil
 }
+
+// FirstArchiveRead marks a key before attempting its read, including absent archive copies.
+// The caller owns serialization and publication of the map.
+func FirstArchiveRead(reads *map[string]bool, key string) bool {
+	if (*reads)[key] {
+		return false
+	}
+	if *reads == nil {
+		*reads = map[string]bool{}
+	}
+	(*reads)[key] = true
+	return true
+}
+
+func HydrateFeed(feeds map[string]Feed[[]researchfeeds.Feed], kind, week string, first func(string) bool, read func(string, string) Feed[[]researchfeeds.Feed]) {
+	key := Key(kind, week)
+	held := feeds[key]
+	if held.FetchedAt.IsZero() && first("feed:"+key) {
+		archived := read(kind, week)
+		if held.RefreshError != "" {
+			archived.RefreshError = held.RefreshError
+		}
+		feeds[key] = archived
+	}
+}
