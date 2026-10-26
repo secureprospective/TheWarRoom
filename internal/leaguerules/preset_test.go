@@ -134,14 +134,14 @@ func TestLegacyCensusDefaults(t *testing.T) {
 }
 func TestCompleteScoring(t *testing.T) {
 	catalogue := LegacyNFL().Scoring.Catalogue.Value
-	if len(catalogue) != 53 {
+	if len(catalogue) != 56 {
 		t.Fatalf("scoring catalogue has %d entries", len(catalogue))
 	}
 	for id, want := range map[StatID]Decimal{
 		"passing_td": 50000, "passing_yards": 500, "rushing_attempt": 1500, "kickoff_return_td": 100000,
 		"pass_defensed": 25000, "tackle": 15000, "tackle_line": 25000, "assist": 10000,
 		"assist_line": 15000, "tackle_for_loss": 25000, "sack": 45000, "fg_missed_0_29": -30000,
-		"fg_missed_30_99": -10000,
+		"fg_missed_30_99": -10000, "other_return_td": 60000, "blocked_fg_td": 70000, "blocked_punt_td": 70000,
 	} {
 		stat, ok := catalogue[id]
 		if !ok || stat.Points.State != IsKnown || stat.Points.Value != want {

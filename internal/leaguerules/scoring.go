@@ -39,7 +39,8 @@ func legacyRanges() map[StatID]StatRange {
 		"receiving_td", "receiving_two_point", "punt_return_td", "kickoff_return_td", "fumbles_total",
 		"fumble_recovery_tds", "pat_made", "pat_missed", "pat_blocked", "opponent_fumble_recovery",
 		"forced_fumble", "interception_return_td", "interception_caught", "interception_caught_secondary",
-		"qb_hit", "blocked_fg", "blocked_punt", "blocked_extra_point", "safety"} {
+		"qb_hit", "blocked_fg", "blocked_punt", "blocked_extra_point", "safety", "other_return_td",
+		"blocked_fg_td", "blocked_punt_td"} {
 		result[id] = ten
 	}
 	return result
@@ -156,6 +157,17 @@ func installLongPlays(catalogue map[StatID]Stat) {
 		catalogue[row.id] = stat
 	}
 }
+
+// installKickTouchdowns adds MFL's #UT other returns and the IDP-only #BF/#BP blocked-kick TDs.
+func installKickTouchdowns(catalogue map[StatID]Stat) {
+	catalogue["other_return_td"] = scoringStat("Other return touchdown (such as a missed field goal)", "Returns", 60000)
+	for id, label := range map[StatID]string{"blocked_fg_td": "Blocked field goal touchdown", "blocked_punt_td": "Blocked punt touchdown"} {
+		stat := scoringStat(label, "Defense", 70000)
+		stat.Positions = cited([]Position{DT, DE, LB, CB, S}, "MFL league scoring settings")
+		catalogue[id] = stat
+	}
+}
+
 func installPositionSplit(catalogue map[StatID]Stat) {
 	for _, id := range []StatID{"tackle_line", "assist_line"} {
 		stat := catalogue[id]
@@ -192,6 +204,7 @@ func UnusedStat(label, group string) Stat {
 }
 
 func installCountingRules(catalogue map[StatID]Stat) {
+	installKickTouchdowns(catalogue)
 	stat := catalogue["own_fumble_recovery"]
 	stat.Once = cited(true, "MFL league scoring settings")
 	catalogue["own_fumble_recovery"] = stat

@@ -23,7 +23,9 @@ func Default32Scoring() ScoringRules {
 	lost.Used = cited(false, default32Citation)
 	catalogue["fumble_lost"] = lost
 	// EM is one rule over missed and blocked extra points; the parts are counted only through it.
-	for id, label := range map[StatID]string{"pat_missed": "Extra point missed", "pat_blocked": "Extra point blocked"} {
+	// #UT likewise is one rule over punt returns and other returns (such as a missed field goal).
+	for id, label := range map[StatID]string{"pat_missed": "Extra point missed", "pat_blocked": "Extra point blocked",
+		"punt_return_td": "Punt return touchdown", "other_return_td": "Other return touchdown"} {
 		part := scoringStatCited(label, "Kicking", 0, default32Citation)
 		part.Used = cited(false, default32Citation)
 		catalogue[id] = part
@@ -35,7 +37,8 @@ func Default32Scoring() ScoringRules {
 		Ranges:          cited(ranges, default32Citation),
 		Scales:          cited(default32Scales(), default32Citation),
 		Totals: cited(map[StatID][]StatID{"touches": {"rushing_attempt", "reception"},
-			"pat_missed_or_blocked": {"pat_missed", "pat_blocked"}}, default32Citation),
+			"pat_missed_or_blocked":   {"pat_missed", "pat_blocked"},
+			"punt_or_other_return_td": {"punt_return_td", "other_return_td"}}, default32Citation),
 		LineUnit: cited(default32LineUnit(), default32Citation),
 	}
 	return r
@@ -72,7 +75,7 @@ func default32Rows() []default32Row {
 		{"kickoff_return_yards", "Kickoff return yards", "Returns", 500, true, -50, 999, false, nil},
 		{"punt_return_yards", "Punt return yards", "Returns", 500, true, -50, 999, false, nil},
 		{"kickoff_return_td", "Kickoff return touchdown", "Returns", 100000, true, 0, 10, false, nil},
-		{"punt_return_td", "Punt or other return touchdown", "Returns", 60000, true, 0, 10, false, nil},
+		{"punt_or_other_return_td", "Punt or other return touchdown", "Returns", 60000, true, 0, 10, false, nil},
 		{"fumbles_total", "All fumbles", "Fumbles", -20000, true, 0, 10, false, nil},
 		{"own_fumble_recovery", "Own fumble recovery", "Fumbles", 20000, true, 1, 10, true, nil},
 		{"fg_made_distance", "Field goal made, by distance", "Kicking", 10000, true, 0, 999, false, nil},

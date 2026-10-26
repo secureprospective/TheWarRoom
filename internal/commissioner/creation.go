@@ -175,5 +175,5 @@ func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 			New: setting, Effective: leaguerules.Effective{Kind: leaguerules.Now},
 			RecordedAt: r.Receipt.RecordedAt, Season: season})
 	}
-	return changes, nil
+	return leaguerules.UpgradeSeed(changes), nil
 }

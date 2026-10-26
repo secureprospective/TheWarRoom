@@ -41,7 +41,7 @@ func TestDefault32SpecRows(t *testing.T) {
 		{"receiving_yards", wr, 1000000, 100000}, {"reception", wr, 20000, 20000},
 		{"receiving_td", wr, 20000, 120000}, {"receiving_two_point", wr, 20000, 40000},
 		{"kickoff_return_yards", wr, 1000000, 50000}, {"punt_return_yards", wr, 1000000, 50000},
-		{"kickoff_return_td", wr, 20000, 200000}, {"punt_return_td", wr, 20000, 120000},
+		{"kickoff_return_td", wr, 20000, 200000},
 		{"fumbles_total", rb, 20000, -40000}, {"own_fumble_recovery", rb, 10000, 20000},
 		{"own_fumble_recovery", rb, 30000, 20000}, {"pat_made", pk, 20000, 20000},
 		{"sack", de, 5000, 22500}, {"sack", de, 20000, 90000}, {"tackle_for_loss", lb, 20000, 50000},
@@ -247,5 +247,18 @@ func TestDefault32MissedExtraPointsAreOneRule(t *testing.T) {
 		{0, 0, 0}, {2, 0, -20000}, {1, 1, -20000}, {6, 4, -100000}, {6, 5, 0},
 	} {
 		assertScore(t, rules, pk, line(tc.missed, tc.blocked), tc.want)
+	}
+}
+
+// #UT is one rule over punt returns and other returns such as a missed field goal (§4.2).
+func TestDefault32PuntAndOtherReturnsAreOneRule(t *testing.T) {
+	rules := leaguerules.Default32Scoring()
+	line := func(punt, other leaguerules.Decimal) StatLine {
+		return StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"punt_return_td": punt * 10000, "other_return_td": other * 10000}}
+	}
+	for _, tc := range []struct{ punt, other, want leaguerules.Decimal }{
+		{0, 0, 0}, {2, 0, 120000}, {1, 1, 120000}, {0, 1, 60000}, {6, 5, 0},
+	} {
+		assertScore(t, rules, wr, line(tc.punt, tc.other), tc.want)
 	}
 }
