@@ -14,6 +14,9 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
   `fg_made_list`), `fg_missed_distance` (`fg_missed_list` + `fg_blocked_list`) and `chunk_play`
   (every counted rush and catch distance from play-by-play, same credits as Legacy's long plays).
   Every held week scores under the default (`TestHeldWeeksScoreUnderTheDefault`).
+- **O-Line scorer golden, done:** all 1,164 played 2023–25 team-games (weeks 1–13) from the study's
+  frozen components score exactly its Set B values; the clamp binds the reported 16 times
+  (`internal/fantasyscore/oline_golden_test.go`).
 - **Next part starts at:** the O-Line team-game feed — a `source` reader that builds
   `fantasyscore.UnitLine` from play-by-play (spec §4.6 component definitions; needs `play_type`,
   `rush_attempt`, `qb_kneel`, `down`, `ydstogo`, `third/fourth_down_converted`, `tackled_for_loss`,
