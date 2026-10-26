@@ -27,14 +27,14 @@ const said = (host: Element) => all(host, 'span').find(s => s.getAttribute('role
 describe('Hold to fire', () => {
   it('fires once after a full hold and never when released early', () => {
     const fired = vi.fn();
-    const hold = createHold(fired, 700);
+    const hold = createHold(fired);
     hold.start();
-    vi.advanceTimersByTime(699);
+    vi.advanceTimersByTime(599);
     expect(hold.release()).toBe('early');
     vi.advanceTimersByTime(5000);
     expect(fired).not.toHaveBeenCalled();
     hold.start(); hold.start();
-    vi.advanceTimersByTime(700);
+    vi.advanceTimersByTime(600);
     expect(fired).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(5000);
     expect(fired).toHaveBeenCalledTimes(1);
@@ -43,7 +43,7 @@ describe('Hold to fire', () => {
     expect(fired).toHaveBeenCalledTimes(1);
     expect(hold.release()).toBe('done');
     hold.start();
-    vi.advanceTimersByTime(700);
+    vi.advanceTimersByTime(600);
     expect(fired).toHaveBeenCalledTimes(2);
   });
   it('does not fire when the pointer is let go early, and says so', async () => {
@@ -59,7 +59,7 @@ describe('Hold to fire', () => {
   it('fires once when the pointer is held for the full time', async () => {
     const { host, button } = await press();
     await fire(button, 'onPointerDown');
-    await wait(700);
+    await wait(600);
     await flush();
     expect(fired()).toEqual([['commissioner.execute', { body: 'B' }]]);
     await fire(button, 'onPointerUp');
@@ -73,7 +73,7 @@ describe('Hold to fire', () => {
       await fire(button, 'onKeyDown', { key, repeat: false });
       await wait(300);
       await fire(button, 'onKeyDown', { key, repeat: true });
-      await wait(300);
+      await wait(299);
       await fire(button, 'onKeyUp', { key });
     }
     expect(fired()).toHaveLength(0);
@@ -122,19 +122,19 @@ describe('Hold presentation and lifetime', () => {
   it('clears confirmation when an answer arrives or the inputs change; cancels an edited hold', async () => {
     const { host, button } = await press();
     await fire(button, 'onPointerDown');
-    await wait(700);
+    await wait(600);
     expect(said(host)).toContain('Confirmed');
     await rerender(render(HoldToFire, { label: 'Confirm', body: 'B', answer: 'done' }));
     expect(said(host)).toBe('');
     await fire(button, 'onPointerDown');
-    await wait(700);
+    await wait(600);
     expect(said(host)).toContain('Confirmed');
     await rerender(render(HoldToFire, { label: 'Confirm', body: 'C', answer: 'done' }));
     expect(said(host)).toBe('');
     await fire(button, 'onPointerDown');
     await wait(300);
     await rerender(render(HoldToFire, { label: 'Confirm', body: 'D', answer: 'done' }));
-    await wait(700);
+    await wait(600);
     expect(fired()).toHaveLength(2);
     expect(said(host)).toBe('');
   });

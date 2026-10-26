@@ -1,5 +1,5 @@
 // The hold-to-fire timer behind HoldToFire: held long enough it fires once; released early it does not.
-export const holdMs = 700;
+export const holdMs = 600;
 type Timers = { set(run: () => void, ms: number): unknown; clear(timer: unknown): void };
 const browser: Timers = {
   set: (run, ms) => setTimeout(run, ms),
