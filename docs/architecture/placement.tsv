@@ -126,3 +126,4 @@ internal/offsite	platform
 internal/serverstatus	platform
 internal/leaguetransfer	platform
 internal/serverversion	platform
+internal/store/playeridentity	core

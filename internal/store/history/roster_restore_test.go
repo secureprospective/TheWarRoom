@@ -90,10 +90,18 @@ func TestRosterRestoreMigrationBackfillsWithoutChangingEventBytes(t *testing.T) 
 	t.Parallel()
 	s, seed := seededRecoveryStore(t)
 	before := historyJSON(t, s.pools.Read(), `SELECT json_group_array(payload) FROM (SELECT payload FROM league_event ORDER BY revision)`)
-	if _, err := s.pools.Write().ExecContext(t.Context(), `DROP TABLE league_roster_restore; DROP TABLE league_recovery_log; PRAGMA user_version=8`); err != nil {
+	if _, err := s.pools.Write().ExecContext(t.Context(), `DROP TABLE league_roster_restore; DROP TABLE league_recovery_log`); err != nil {
 		t.Fatal(err)
 	}
-	if err := s.Initialize(t.Context()); err != nil {
+	tx, err := s.pools.BeginWrite(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	if err := addRosterRestorePoints(t.Context(), tx); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
 	point, err := s.RosterRestorePoint(t.Context(), seed.League)

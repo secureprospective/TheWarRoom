@@ -58,12 +58,15 @@ func saveRosterRestorePoint(ctx context.Context, tx *sql.Tx, league string, reco
 	if !seeded {
 		return nil
 	}
+	if err := saveRosterIdentity(ctx, tx, &point); err != nil {
+		return err
+	}
 	body, err := json.Marshal(point)
 	if err != nil {
 		return fmt.Errorf("encode roster restore point: %w", err)
 	}
 	var unchanged bool
-	err = tx.QueryRowContext(ctx, `SELECT json_extract(payload,'$.snapshot')=json_extract(?,'$.snapshot')
+	err = tx.QueryRowContext(ctx, `SELECT json_extract(payload,'$.snapshot')=json_extract(?1,'$.snapshot') AND json_extract(payload,'$.identities') IS json_extract(?1,'$.identities')
  FROM league_roster_restore WHERE league=?`, string(body), league).Scan(&unchanged)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return fmt.Errorf("compare league roster restore point: %w", err)
@@ -96,4 +99,30 @@ func (s *Store) RosterRestorePoint(ctx context.Context, league string) (commissi
 		return point, fmt.Errorf("league roster restore point does not match its saved identity")
 	}
 	return point, nil
+}
+
+func saveRosterIdentity(ctx context.Context, tx *sql.Tx, point *commissioner.RawRosterRestorePoint) error {
+	var installed bool
+	if err := tx.QueryRowContext(ctx, `SELECT EXISTS(SELECT 1 FROM sqlite_schema WHERE name='canonical_player')`).Scan(&installed); err != nil {
+		return fmt.Errorf("check player identity schema: %w", err)
+	}
+	if !installed {
+		return nil
+	}
+	owners := make([]db.RosterOwner, 0, len(point.Snapshot.Players))
+	for _, player := range point.Snapshot.Players {
+		owners = append(owners, db.RosterOwner{MFL: player.ID, Franchise: player.Franchise})
+	}
+	if err := db.ReplaceRosterOwnership(ctx, tx, point.League, owners); err != nil {
+		return fmt.Errorf("save league ownership: %w", err)
+	}
+	identities, err := db.RosterIdentities(ctx, tx, point.League)
+	if err != nil {
+		return fmt.Errorf("capture league identities: %w", err)
+	}
+	point.Identities = identities
+	if err := point.Validate(); err != nil {
+		return fmt.Errorf("validate captured identities: %w", err)
+	}
+	return nil
 }

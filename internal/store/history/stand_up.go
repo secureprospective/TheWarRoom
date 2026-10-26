@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
 // StandUpRosters is an offline recovery operation, not a hosted permission. The
@@ -29,6 +30,9 @@ func (s *Store) StandUpRosters(ctx context.Context, point commissioner.RawRoster
 	}
 	if occupied {
 		return "", fmt.Errorf("roster recovery requires a fresh database")
+	}
+	if err := db.InstallRosterIdentities(ctx, tx, point.Identities); err != nil {
+		return "", fmt.Errorf("install recovered player identities: %w", err)
 	}
 	records, err := s.standUpRecords(ctx, tx, point)
 	if err != nil {
