@@ -43,6 +43,11 @@ Evidence, responsibility split and justified debt:
 
 Tooling outside the features: `cmd/fit` (writes the fitted params), `cmd/fixtures`, `cmd/twr-practice` (development-only hosted click-test launcher; `cmd/twr-practice/README.md`), `tools/ifaceguard`, `tools/labparity`, `scripts/`.
 
+Current boundary-extraction inventory and resume point: `docs/architecture/app-boundary.md`.
+Finished-score finality is in `internal/app/now/finished_scores.go`; local database-check report
+policy is in `internal/app/platform/database_checks.go`. Composition retains their resource
+capture/refresh coordination, not those decisions.
+
 ## Where new code goes
 
 Wails binds the legacy App plus each extracted feature API. App has a named core.State field;

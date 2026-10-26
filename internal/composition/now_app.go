@@ -408,12 +408,6 @@ func heldFeed[T any](f nowapp.Feed[T]) heldSeasonFeed[T] {
 func liveWeek(l leaguefeed.Lineups, base leaguefeed.WeekResult) leaguefeed.WeekResult {
 	return nowapp.LiveWeek(l, base)
 }
-func nflGames(w []nflschedule.RawWeek, at time.Time) map[string]nowapp.NFLGame {
-	return nowapp.NFLGames(w, at)
-}
-func weekKickedOff(g map[string]nowapp.NFLGame, at time.Time) bool {
-	return nowapp.WeekKickedOff(g, at)
-}
 func liveWeekUnplayed(l heldSeasonFeed[leaguefeed.Lineups], s map[int]heldSeasonFeed[[]nflschedule.RawWeek], at time.Time) bool {
 	schedules := make(map[int]nowapp.Feed[[]nflschedule.RawWeek], len(s))
 	for k, v := range s {

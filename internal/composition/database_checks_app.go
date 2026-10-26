@@ -9,6 +9,7 @@ import (
 	"time"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -138,36 +139,13 @@ func (a *App) databaseChecksReport() *Report {
 }
 
 func (a *App) databaseChecksReading() *report.Report {
-	r := &report.Report{ID: "database-checks", Title: "Local database checks", Status: "ok",
-		Columns: []string{"File", "Last checked", "Result"}, Rows: []report.Row{},
-		How: "SQLite integrity_check and foreign_key_check run after launch and weekly while open. The last attempt is held for this launch."}
+	checks := []platformapp.DatabaseCheck{}
 	for _, file := range a.databaseFiles() {
-		at, words := "Not checked this launch", "Waiting for checks"
+		check := platformapp.DatabaseCheck{Name: file.name}
 		if file.pools != nil {
-			result := file.pools.LastCheck()
-			if !result.At.IsZero() {
-				at = result.At.Format(time.RFC3339)
-				words = databaseCheckWords(result)
-				if words != "OK" {
-					r.Status = "failed"
-				}
-			} else if r.Status == "ok" {
-				r.Status = "empty"
-			}
-		} else if r.Status == "ok" {
-			r.Status = "empty"
+			check.Result = file.pools.LastCheck()
 		}
-		r.Rows = append(r.Rows, report.Row{Cells: []string{file.name, at, words}})
+		checks = append(checks, check)
 	}
-	return r
-}
-
-func databaseCheckWords(result db.RoutineCheck) string {
-	if result.Error != "" {
-		return result.Error
-	}
-	if len(result.Findings.Integrity) == 1 && result.Findings.Integrity[0] == "ok" && len(result.Findings.ForeignKeys) == 0 {
-		return "OK"
-	}
-	return fmt.Sprintf("Integrity: %v; foreign key violations: %d", result.Findings.Integrity, len(result.Findings.ForeignKeys))
+	return platformapp.DatabaseChecksReading(checks)
 }

@@ -5,37 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 )
-
-// finishedGameAllowance allows four hours from kickoff when MFL holds no final flag.
-const finishedGameAllowance = 4 * time.Hour
-
-func finishedScoreCutoff(schedule heldSeasonFeed[[]nflschedule.RawWeek], now time.Time) (time.Time, bool) {
-	games := nflGames(schedule.Value, now)
-	if len(games) == 0 || !weekKickedOff(games, now) {
-		return time.Time{}, false
-	}
-	end := time.Time{}
-	for _, raw := range schedule.Value[0].Matchups {
-		kickoff, _ := strconv.ParseInt(raw.Kickoff, 10, 64)
-		at := time.Unix(kickoff, 0).Add(finishedGameAllowance)
-		switch raw.GameSecondsRemaining {
-		case "0":
-			at = schedule.FetchedAt
-		case "":
-		default:
-			return time.Time{}, false
-		}
-		if now.Before(at) {
-			return time.Time{}, false
-		}
-		if at.After(end) {
-			end = at
-		}
-	}
-	return end, !end.IsZero()
-}
 
 func (a *App) refreshFinishedScores(ctx context.Context) {
 	a.core.RefreshMu.Lock()
@@ -54,7 +25,7 @@ func (a *App) refreshFinishedScores(ctx context.Context) {
 	if held.FetchedAt.IsZero() {
 		held = a.archivedResearchFeed(ctx, "playerScores", strconv.Itoa(week))
 	}
-	end, finished := finishedScoreCutoff(schedule, a.timeNow())
+	end, finished := nowapp.FinishedScoreCutoff(nowFeed(schedule), a.timeNow())
 	if !finished {
 		return
 	}
