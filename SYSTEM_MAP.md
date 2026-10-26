@@ -32,7 +32,7 @@ Paths are relative to the repo root. `frontend/src/app/` is shortened to `app/`.
 | `core` (app state, shared domain, transport, stores) | — | `internal/app/core`, `internal/app/core/coretest`, `internal/app/catalog`, `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/envelope`, `internal/snapshot`, `internal/normalize`, `internal/mfl`, `internal/ingestion`, `internal/store/state`, `internal/store/history`, `internal/store/playeridentity` | — | in each package; binding manifest in `internal/composition/selfprotect_test.go` | `docs/data-layer/MFL_API_Specification.md`, `docs/data-layer/MFL_Scoring_Rules_Decode.md` | `internal/ingestion/testdata`, tables: `internal/store/state`, `internal/store/history`, `internal/store/playeridentity` |
 
 Roster/contract recovery: `internal/leaguerecovery` (offline orchestration),
-`internal/store/history/roster_restore.go` and `stand_up.go` (atomic capture/rebuild),
+`internal/store/history/roster_restore.go` and `internal/store/history/stand_up.go` (atomic capture/rebuild),
 `internal/commissioner/roster_restore.go` (checked private format),
 `internal/db/league_recovery.go` (point/log SQL). History v10 also delegates
 permanent player identity to `internal/store/playeridentity` with SQL migration
