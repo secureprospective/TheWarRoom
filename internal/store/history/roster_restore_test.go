@@ -152,3 +152,26 @@ func TestRosterRestoreTracksContractChangeAndReversal(t *testing.T) {
 		t.Fatalf("reversal not captured: %+v %v", point, err)
 	}
 }
+
+func TestInactiveTransferKeepsRosterRestorePointWithoutActivatingLeague(t *testing.T) {
+	t.Parallel()
+	source, seed := seededRecoveryStore(t)
+	events, blobs, _, err := source.CaptureTransfer(t.Context(), seed.League, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	target, _, _ := newStore(t)
+	receipt := ImportReceipt{League: seed.League, SourceEpoch: "source-generation", Content: "checked-document"}
+	if _, err := target.StageTransfer(t.Context(), receipt, []byte("checked-document"), events, blobs); err != nil {
+		t.Fatal(err)
+	}
+	point, err := target.RosterRestorePoint(t.Context(), seed.League)
+	if err != nil || !reflect.DeepEqual(point.Snapshot.Players, seed.Args.Native.Players) {
+		t.Fatalf("inactive import lost recovery data: %+v %v", point, err)
+	}
+	event := eventFixture("forbidden-import-append")
+	event.League, event.Stream = seed.League, "recovery-test"
+	if _, err := target.AppendEvent(t.Context(), event, 0); err == nil {
+		t.Fatal("recovery capture activated an inactive import")
+	}
+}

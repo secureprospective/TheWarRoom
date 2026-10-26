@@ -82,6 +82,9 @@ func (s *Store) StageTransfer(ctx context.Context, receipt ImportReceipt, docume
 			return ImportReceipt{}, err
 		}
 	}
+	if err := s.captureRosterRestorePoint(ctx, tx, receipt.League); err != nil {
+		return ImportReceipt{}, err
+	}
 	receipt.RecordedAt = s.now().UTC()
 	if _, err := tx.ExecContext(ctx, `INSERT INTO league_import VALUES(?,?,?,?,?)`, receipt.League, receipt.SourceEpoch, receipt.Content, receipt.RecordedAt.Format(time.RFC3339Nano), document); err != nil {
 		return ImportReceipt{}, fmt.Errorf("save inactive league receipt: %w", err)

@@ -47,6 +47,10 @@ func (s *Store) captureRosterRestorePoint(ctx context.Context, tx *sql.Tx, leagu
 	if err != nil {
 		return err
 	}
+	return saveRosterRestorePoint(ctx, tx, league, records)
+}
+
+func saveRosterRestorePoint(ctx context.Context, tx *sql.Tx, league string, records []commissioner.Record) error {
 	point, seeded, err := commissioner.RosterRestorePoint(league, records)
 	if err != nil {
 		return fmt.Errorf("capture roster restore point: %w", err)

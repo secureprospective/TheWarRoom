@@ -73,3 +73,14 @@ passing compile constitutes that proof.
 This is the intended complete flow, not a completion claim. Each implementation
 commit must name the exercised slice; unfinished recovery, identity conversion
 or command exposure must be reported explicitly rather than advertised as live.
+
+### Implemented slice
+
+History v9 now backfills and transactionally maintains roster/contract restore
+points and a per-league log, including inactive imports. Unchanged roster state
+does not add log noise. The append path reuses its already-read records and their
+closed-season summaries rather than rereading the ledger for capture. Main and
+what-if remain v2. Every prefix of all three migration lists has a convergence
+test. Account schema consolidation, the history split, fresh-league restore,
+command wiring and canonical identity remain unfinished. No headline round-trip
+or big-league identity-count proof is claimed.
