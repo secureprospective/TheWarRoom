@@ -73,8 +73,31 @@ and direct command-bar exposure (372 assertions). Removing a handler or naming a
 undeclared action fails TypeScript checking. Nine MFL transport IDs use `mfl.*`;
 saved bid receipts still use their original intent. Hosted workflow exposure remains 42.
 
-This is not yet one cross-transport executable registry. Native/MFL schemas remain in
-feature catalogs, browser argument values remain typed in handlers, Wails methods
-retain their feature catalogs, and CLI/MCP registration remains separate. The complete
-old-inventory × door × role fixture and shared native/Wails/CLI handler migration are
-still required; browser parity does not establish those guarantees.
+Native (136), local MFL (9), desktop (136), hosted workflow (42), and browser (62)
+metadata now feed `catalog.Registry` in `internal/commandcatalog`.
+Relocation: `internal/app/catalog` → `internal/commandcatalog`; transport-neutral
+metadata and execution must sit below both the app and hosted transports. Native and MFL definitions and desktop exposure
+live beside the browser declarations in `internal/commandcatalog`; feature `Commands`,
+`NativeCommands` and `MFLCommands` functions are compatibility views, not separate lists.
+All JSON shapes use `catalog.Schema`. Raw-derived schemas stay tied to their existing
+request types; shape metadata never replaces their validators.
+
+`internal/composition/command_bindings.go` injects typed method values for the 136
+existing desktop signatures. Generic binders decode positional arguments and call those
+values directly, without reflective invocation. Native handlers use the existing shared
+service for preview/execute, preserving the separate lineup/pick gates and held-seed
+adapter. Browser handlers remain typed TypeScript functions, not server authority.
+
+| Boundary | Current flow / failure |
+| --- | --- |
+| Desktop startup | Build APIs → bind registry → retain the unchanged Wails API objects. Missing/extra methods or absent handlers refuse startup. |
+| Native/MFL registry calls | Look up ID, declared door and mode → checked argument adapter → existing Raw validation and service/API admission → checked JSON result. |
+| Hosted workflow | The existing HTTP envelope aliases catalog-owned Raw types; its compatibility table and dispatch derive from catalog-owned executable workflows. The 42-command boundary is unchanged. |
+| Evidence | `doors-before.json` freezes 281 native/MFL/Wails records, including schema hashes. Composition tests compare both compatibility views and executable entries; existing workflow/browser fixtures retain their own coverage. |
+
+Generation of the Wails binding surface, CLI verbs, chat/command-bar inventory and
+unified TypeScript argument types remains the next slice. Wails still calls its original
+API objects; this slice binds and checks those same methods but does not replace their
+signatures. The full command × door × role parity matrix, complete freshness gates and
+remaining asynchronous outcome tracking are still required before calling the migration
+complete.

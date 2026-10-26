@@ -144,6 +144,7 @@ func (r RawNativeRequest) Validate() error {
 		if r.Command != nil || r.Pick != nil || r.League+r.Mode+r.TokenID != "" {
 			return fmt.Errorf("send only a workflow")
 		}
+		//nolint:wrapcheck // Preserve the catalog-owned workflow refusal text.
 		return r.Workflow.Validate()
 	}
 	if !validDispatchMode(r.Mode) {

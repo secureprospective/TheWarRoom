@@ -4,9 +4,9 @@ package race
 import (
 	"fmt"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 // Host captures the private and shared season data together and owns refresh serialization.

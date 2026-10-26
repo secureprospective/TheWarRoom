@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func generateBrowser(commands []catalog.BrowserCommand) ([]byte, error) {

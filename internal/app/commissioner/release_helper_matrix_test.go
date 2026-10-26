@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	domain "github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"

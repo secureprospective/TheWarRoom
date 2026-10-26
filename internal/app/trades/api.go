@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"

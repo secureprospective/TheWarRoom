@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func TestBrowserGenerationFreshnessAndRefusal(t *testing.T) {

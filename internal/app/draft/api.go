@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/lab"

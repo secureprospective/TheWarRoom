@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 // Host supplies Now's detached held readings and runs the root-owned refresh and live-game poll

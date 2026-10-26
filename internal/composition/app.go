@@ -21,6 +21,7 @@ import (
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/offline"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -47,6 +48,7 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
+	commands     *catalog.Registry
 	core         *core.State
 	archiveCache archiveapp.Snapshot
 	controlHeld  *controlapp.Held

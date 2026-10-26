@@ -3,7 +3,7 @@ package commissioner
 import (
 	"reflect"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 func NativeCommands() []catalog.Command {

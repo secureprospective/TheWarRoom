@@ -92,7 +92,7 @@ linters:
             - github.com/secureprospective/TheWarRoom/internal/app/report/
             - github.com/secureprospective/TheWarRoom/internal/app/season$
             - github.com/secureprospective/TheWarRoom/internal/app/season/
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
               desc: "core cannot import features; compose feature ports in main"
@@ -169,7 +169,7 @@ linters:
           files:
             - "**/internal/app/archive/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/archive$
             - github.com/secureprospective/TheWarRoom/internal/app/archive/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -185,7 +185,7 @@ linters:
           files:
             - "**/internal/app/commissioner/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/commissioner$
             - github.com/secureprospective/TheWarRoom/internal/app/commissioner/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -201,7 +201,7 @@ linters:
           files:
             - "**/internal/app/contracts/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/contracts$
             - github.com/secureprospective/TheWarRoom/internal/app/contracts/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -217,7 +217,7 @@ linters:
           files:
             - "**/internal/app/comms/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/comms$
             - github.com/secureprospective/TheWarRoom/internal/app/comms/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -233,7 +233,7 @@ linters:
           files:
             - "**/internal/app/counterparties/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/counterparties$
             - github.com/secureprospective/TheWarRoom/internal/app/counterparties/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -264,7 +264,7 @@ linters:
           files:
             - "**/internal/app/platform/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/platform$
             - github.com/secureprospective/TheWarRoom/internal/app/platform/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -280,7 +280,7 @@ linters:
           files:
             - "**/internal/app/race/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/race$
             - github.com/secureprospective/TheWarRoom/internal/app/race/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -296,7 +296,7 @@ linters:
           files:
             - "**/internal/app/control/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/control$
             - github.com/secureprospective/TheWarRoom/internal/app/control/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -312,7 +312,7 @@ linters:
           files:
             - "**/internal/app/now/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/now$
             - github.com/secureprospective/TheWarRoom/internal/app/now/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -328,7 +328,7 @@ linters:
           files:
             - "**/internal/app/offers/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/offers$
             - github.com/secureprospective/TheWarRoom/internal/app/offers/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -357,7 +357,7 @@ linters:
           files:
             - "**/internal/app/sources/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/sources$
             - github.com/secureprospective/TheWarRoom/internal/app/sources/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -373,7 +373,7 @@ linters:
           files:
             - "**/internal/app/draft/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/draft$
             - github.com/secureprospective/TheWarRoom/internal/app/draft/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -389,7 +389,7 @@ linters:
           files:
             - "**/internal/app/trades/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/trades$
             - github.com/secureprospective/TheWarRoom/internal/app/trades/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -405,7 +405,7 @@ linters:
           files:
             - "**/internal/app/market/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/market$
             - github.com/secureprospective/TheWarRoom/internal/app/market/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
@@ -421,7 +421,7 @@ linters:
           files:
             - "**/internal/app/research/**"
           allow:
-            - github.com/secureprospective/TheWarRoom/internal/app/catalog$
+            - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/research$
             - github.com/secureprospective/TheWarRoom/internal/app/research/
             - github.com/secureprospective/TheWarRoom/internal/app/report$

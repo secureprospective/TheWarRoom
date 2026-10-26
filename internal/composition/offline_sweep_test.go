@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflkey"

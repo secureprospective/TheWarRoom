@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
 // Host supplies detached archive facts and resolves the live opponent under its owning locks.
