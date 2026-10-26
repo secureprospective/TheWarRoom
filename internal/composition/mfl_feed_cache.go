@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
@@ -23,10 +24,6 @@ func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedF
 func readArchivedFeed[T any](ctx context.Context, season int, f archivedFeed[T]) ([]T, time.Time, bool, error) {
 	return core.ReadArchivedFeed(ctx, season, f) //nolint:wrapcheck // Preserve the shared fallback error text.
 }
-func sameExport(raw, export string, season int, leagueless bool) bool {
-	return core.SameExport(raw, export, season, leagueless)
-}
-
 func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {
 	return liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguestandings.RawStanding]{
 		Export: leaguestandings.Export,
@@ -50,3 +47,21 @@ func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.Raw
 }
 
 const fallbackTimeout = core.FallbackTimeout
+
+// Freshness is the one contract for any IPC result that depends on a network read: a surface
+// degrades honestly instead of failing or lying.
+//
+//	live   fetched just now
+//	stale  the fetch failed; this is the last good copy, and FetchedAt says how old it is
+//	fail   no data
+//
+// Offseason is not a fourth state. It is a season-phase question, carried separately.
+type Freshness = domain.Freshness
+
+const (
+	FreshLive  = domain.FreshLive
+	FreshStale = domain.FreshStale
+	FreshFail  = domain.FreshFail
+)
+
+func liveFreshness(t time.Time) Freshness { return core.LiveFreshness(t) }

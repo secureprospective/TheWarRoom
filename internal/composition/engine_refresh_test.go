@@ -135,7 +135,6 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 	}{
 		{"refresh_app.go", []string{"a.launchRefresh(parent)", "a.refreshWeeksInBackground(parent)"}},
 		{"week_app.go", []string{"a.refreshSeason(ctx)", "a.refreshFinishedScores(ctx)", "a.refreshEngine(parent)", "case <-ticker.C:", "a.launchRefresh(parent)"}},
-		{"engine_refresh.go", []string{"a.loadSignals(ctx)", "a.loadSeasonPoints(ctx)", "a.refreshFreeAgents(ctx)", "a.checkEngine(ctx)"}},
 	} {
 		body, err := os.ReadFile("internal/composition/" + tc.path)
 		if err != nil {
@@ -148,6 +147,15 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 				t.Fatalf("%s: missing or out-of-order %s", tc.path, call)
 			}
 			from += index + len(call)
+		}
+	}
+	body, err := os.ReadFile("internal/composition/engine_refresh.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, port := range []string{"scoringapp.RefreshEngine(parent", "a.loadSignals(ctx)", "a.loadSeasonPoints", "a.refreshFreeAgents(ctx)", "a.checkEngine"} {
+		if !strings.Contains(string(body), port) {
+			t.Fatalf("engine input port not wired: %s", port)
 		}
 	}
 }

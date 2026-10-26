@@ -3,7 +3,6 @@ package composition
 import (
 	"context"
 	"fmt"
-	"slices"
 	"strconv"
 	"time"
 
@@ -13,8 +12,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
-
-const poolFreshFor = 5 * time.Minute
 
 // refreshFreeAgents pulls MFL's free-agent list live, with the archive as fallback, and holds
 // the last good copy like the other season feeds. The caller holds refreshMu.
@@ -39,17 +36,11 @@ func (a *App) refreshFreeAgents(ctx context.Context) {
 			},
 			Bodies: a.core.History.ArchivedBodies,
 		}, a.core.FallbackLog)
-	var value []playerid.PlayerID
-	if err == nil {
-		value, err = freeagents.ToPlayerIDs(rows)
-		sortFreeAgentIDs(value)
-	}
+	value, err := poolapp.FreeAgentIDs(rows, err)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	if err == nil && !slices.Equal(a.core.SeasonFreeAgents.Value, value) {
-		a.core.ModelDirty.Store(true)
-	}
-	holdSeasonFeed(&a.core.SeasonFreeAgents, value, fresh, err)
+	poolapp.HoldFreeAgents(&a.core.SeasonFreeAgents, value, fresh, err, func() { a.core.ModelDirty.Store(true) })
+
 }
 
 // restoreFreeAgents makes the first refresh compare with the last held list across launches.
@@ -57,51 +48,33 @@ func (a *App) restoreFreeAgents(ctx context.Context) {
 	a.core.SeasonMu.Lock()
 	held := !a.core.SeasonFreeAgents.FetchedAt.IsZero()
 	a.core.SeasonMu.Unlock()
-	if held {
-		return
-	}
-	_, err := a.core.History.ArchivedBodies(ctx, "TYPE="+freeagents.Export, func(src string, body []byte, at time.Time) bool {
-		if !sameExport(src, freeagents.Export, a.core.Season, false) {
-			return false
-		}
-		rows, err := freeagents.Parse(body)
-		if err != nil {
-			return false
-		}
-		ids, err := freeagents.ToPlayerIDs(rows)
-		if err != nil {
-			return false
-		}
-		sortFreeAgentIDs(ids)
-		a.core.SeasonMu.Lock()
-		holdSeasonFeed(&a.core.SeasonFreeAgents, ids, liveFreshness(at), nil)
-		a.core.SeasonMu.Unlock()
-		return true
-	})
-	if err != nil {
-		a.core.FallbackLog("engine: previous free-agent list unavailable: " + err.Error())
-	}
+	poolapp.RestoreFreeAgents(ctx, held, a.core.Season, a.core.History.ArchivedBodies,
+		func(ids []playerid.PlayerID, at time.Time) {
+			a.core.SeasonMu.Lock()
+			holdSeasonFeed(&a.core.SeasonFreeAgents, ids, liveFreshness(at), nil)
+			a.core.SeasonMu.Unlock()
+		}, a.core.FallbackLog)
+
 }
 
 // refreshOffersPool fetches the free-agent list from MFL. Without force it skips a copy fetched
 // in the last few minutes, so opening the pool twice asks MFL once.
 func (a *App) refreshOffersPool(force bool) error {
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("target pool refresh: startup: %w", err)
-	}
-	a.core.SeasonMu.Lock()
-	held := a.core.SeasonFreeAgents
-	a.core.SeasonMu.Unlock()
-	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < poolFreshFor {
-		return newMarketAPI(a).TargetMarketReportsRefresh(false) //nolint:wrapcheck // The API preserves the existing refresh error.
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
-	defer cancel()
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	a.refreshFreeAgents(ctx)
-	a.refreshMarketFeeds(ctx, force)
-	return nil
+	//nolint:wrapcheck // Preserve the pool refresh refusal.
+	return poolapp.RefreshPool(force, a.ready, func() (time.Time, string) {
+		a.core.SeasonMu.Lock()
+		held := a.core.SeasonFreeAgents
+		a.core.SeasonMu.Unlock()
+		return held.FetchedAt, held.RefreshError
+	}, time.Since, func() error { return newMarketAPI(a).TargetMarketReportsRefresh(false) }, func() {
+		ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
+		defer cancel()
+		a.core.RefreshMu.Lock()
+		defer a.core.RefreshMu.Unlock()
+		a.refreshFreeAgents(ctx)
+		a.refreshMarketFeeds(ctx, force)
+	})
+
 }
 
 func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
@@ -110,5 +83,3 @@ func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at t
 	return marketapp.PoolAssetValues(researchView{researchInput: a.heldResearchInput()}.onField(), model, ids, at)
 
 }
-
-func sortFreeAgentIDs(ids []playerid.PlayerID) { poolapp.SortIDs(ids) }

@@ -67,13 +67,13 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 10 | 3 | `internal/composition/control_alerts.go` — `byeAlerts`:149, `byeWeekLock`:235 | 60 | `control` | W:control | Rules/week failures override availability note; unknown active-player facts abort; alert only current/next week shortfalls with local archived lock or unavailable-lock note.  MOVED (part 2, batch 2). |
 | 11 | 2 | `internal/composition/control_alerts.go` — `Alerts`:24 | 18 | `control` | W:control | Acquire lineup then trades, stop on either failure; gather IR, lineup, bye, trade alerts in order with one clock reading. MOVED (part 3, batch 3). |
 | 12 | 1 | `internal/composition/draft_reports_app.go` — `DraftNext`:23 | 12 | `draft` | W:draft | No what-if store means no date; otherwise clock failure text or next configured date.  MOVED (part 2, batch 3). |
-| 13 | 3 | `internal/composition/engine_refresh.go` — `refreshEngine`:16 | 20 | `scoring` | B | Skip missing params/busy model; load signals and points before pool refresh and due check; point failure aborts; health event remains under original span. |
-| 14 | 4 | `internal/composition/engine_refresh.go` — `checkEngine`:38 | 32 | `scoring` | B | Read prior run/input changes, apply EngineDue and dirty flag, fetch directory; clear dirty before run and restore on failure so concurrent changes survive. |
-| 15 | 5 | `internal/composition/engine_refresh.go` — `engineFinished`:71, `sourceHealthChanged`:80 | 13 | `scoring` | B,W | Log run totals/duration and emit health event only if callback exists (runtime policy). |
+| 13 | 3 | `internal/composition/engine_refresh.go` — `refreshEngine`:16 | 20 | `scoring` | B | Skip missing params/busy model; load signals and points before pool refresh and due check; point failure aborts; health event remains under original span. MOVED (part 3, batch 4). |
+| 14 | 4 | `internal/composition/engine_refresh.go` — `checkEngine`:38 | 32 | `scoring` | B | Read prior run/input changes, apply EngineDue and dirty flag, fetch directory; clear dirty before run and restore on failure so concurrent changes survive. MOVED (part 3, batch 4). |
+| 15 | 5 | `internal/composition/engine_refresh.go` — `engineFinished`:71, `sourceHealthChanged`:80 | 13 | `scoring` | B,W | Log run totals/duration and emit health event only if callback exists (runtime policy). MOVED (part 3, batch 4). |
 | 16 | 2 | `internal/composition/engine_refresh.go` — `modelFreeAgents`:94 | 9 | `scoring` | B,W:scoring | Capture held free-agent IDs as engine input under season lock.  MOVED (part 2, batch 5). |
 | 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. |
-| 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. |
-| 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. |
+| 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. MOVED (part 3, batch 4). |
+| 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. MOVED (part 3, batch 4). |
 | 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior.  MOVED (part 2, batch 1). |
 | 21 | 1 | `internal/composition/moves_app.go` — `movePredicate`:87 | 14 | `platform` | B,W:platform | Intent-to-landing-predicate registry, unknown intent has no predicate.  MOVED (part 2, batch 1). |
 | 22 | 1 | `internal/composition/moves_app.go` — `watchableMove`:441, `skipMoveRefresh`:445, `saveMoveEvidence`:476 | 16 | `platform` | B,W:platform | Require unchanged listed state; don't watch handed-off contract; roster refresh covers contracts; save state changes or new trade audit evidence only.  MOVED (part 2, batch 1). |
@@ -106,8 +106,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 49 | 2 | `internal/composition/now_app.go` — `liveGameSpines`:327, `spinePlayers`:356, `inspectLiveBox`:381 | 72 | `now` | W:now | No detail work without held/followed games; require history/crosswalk; only known ESPN IDs and directory facts become spines/photos; attach box entities for matched IDs only. MOVED (part 3, batch 2). |
 | 50 | 3 | `internal/composition/offers_reading.go` — `recordOffers`:103 | 14 | `offers` | B,W:control | Skip failed reads/missing pools; save pending offers with transaction-ending evidence for archive owner; history save failure is separate from MFL read failure. |
 | 51 | 1 | `internal/composition/offers_reading.go` — `personalSnapshot`:122 | 12 | `offers` | W:offers,contracts,trades | Require loaded snapshot and franchise membership; otherwise exact personal refusal.  MOVED (part 2, batch 1). |
-| 52 | 3 | `internal/composition/pool_app.go` — `refreshFreeAgents`:20, `restoreFreeAgents`:55 | 62 | `offers` | B,W:offers | Restore archive before first refresh for cross-launch comparison; parse/normalize/sort IDs, set model dirty only for successful changed list; retain good held data on failure. |
-| 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. |
+| 52 | 3 | `internal/composition/pool_app.go` — `refreshFreeAgents`:20, `restoreFreeAgents`:55 | 62 | `offers` | B,W:offers | Restore archive before first refresh for cross-launch comparison; parse/normalize/sort IDs, set model dirty only for successful changed list; retain good held data on failure. MOVED (part 3, batch 4). |
+| 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. MOVED (part 3, batch 4). |
 | 54 | 2 | `internal/composition/pool_app.go` — `poolAssetValues`:106 | 14 | `offers` | W:offers | Hydrate Research, value requested IDs in Market model, index board values and preserve source note. MOVED (part 3, batch 3). |
 | 55 | 1 | `internal/composition/power_rankings_app.go` — `remainingSchedule`:120, `ages`:130, `seasonWeeks`:146 | 29 | `scoring` | B,W:race | Schedule failure removes column; missing directory/birthdate means NaN age; age uses 365.2425-day years; unreadable season length gives zero.  MOVED (part 2, batch 2). |
 | 56 | 3 | `internal/composition/race_app.go` — `refreshRace`:22 | 46 | `race` | B,W:race,now | Read/publish weeks→brackets→standings with spacing; successful standings builds season/franchise power using one cached remaining schedule; publish power only on success. |
@@ -510,3 +510,38 @@ Accounting startup/unknown-host no-open; alert order/single clock; pool leading-
 missing pick model; roster scope order/detachment/empty; archive empty/error retain-good;
 trade selection failure avoids pending read; failed-board assets remain unvalued. Targeted feature
 race tests and composition alert/value/trade landing/cache/parameter/parity batch passed.
+
+### Part 3 footprint consolidation
+
+After batch 3, bloat caught five newly tiny composition adapters (29 versus baseline 24).
+Consolidated by responsibility without raising the baseline; tests keep descriptive names:
+
+| Old path | Current home |
+|---|---|
+| internal/composition/native_owner_app.go | internal/composition/native_gate.go |
+| internal/composition/native_draft_app.go | internal/composition/native_gate.go |
+| internal/composition/native_lineup_app.go | internal/composition/native_gate.go |
+| internal/composition/native_schedule_app.go | internal/composition/commissioner_host.go |
+| internal/composition/cache_app.go | internal/composition/sources_runtime.go |
+
+These are adapter-only relocations; inventory paths remain historical baseline references.
+
+## Part 3 — batch 4: background model and market/pool refresh
+
+Seven units (13–15, 18–19, 52–53), 202 baseline function LOC. Scoring owns model admission,
+input ordering, due/evidence checks, dirty consumption/restoration and completion wording/events.
+Original model/refresh mutex spans and dirty atomics remain caller-owned ports; new inward tests
+exercise success/failure and changes arriving during a run. Market owns per-kind daily/weekly
+refresh admission, pacing, archive projection-week validation and wrong-week clearing before
+publication. Pool owns archived first-good restore, sorted/normalized IDs, changed-list dirtiness,
+last-good retention and fresh-pool Market-only refresh. No new transport, authority or schema.
+
+Initial filtered composition batch found the old source-text order test still looking for calls
+now owned inward. Kept worker/startup ordering assertions and adapter-port wiring assertions;
+new inward runtime tests now prove actual execution order rather than source spelling. Other
+new tests cover model early failure and health event, pool scope/no-fetch-on-held, free-agent
+failure preservation/dedup, freshness/force paths and Market wrong-week failure behavior.
+
+Batch 4 consolidation: `internal/composition/freshness.go` →
+`internal/composition/mfl_feed_cache.go`, beside its live/archive read adapters; the last unused
+SameExport forwarding helper was removed. No rule was copied and no ratchet baseline changed.

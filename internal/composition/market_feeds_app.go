@@ -7,7 +7,6 @@ import (
 	"time"
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
-	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 )
@@ -41,34 +40,19 @@ func (a *App) marketWeek() int { return a.core.MarketWeek() }
 func (a *App) refreshMarketFeeds(ctx context.Context, force bool) {
 	week := a.marketWeek()
 	held := a.heldMarketForWeek(week)
-	for _, kind := range marketKinds() {
-		feed := held[kind]
-		sameWeek := kind != marketfeeds.Projections || (len(feed.Value) == 1 && feed.Value[0].Week == week)
-		if !force && sameWeek && feed.RefreshError == "" && time.Since(feed.FetchedAt) < 24*time.Hour {
-			continue
-		}
-		pause := a.core.SeasonPause
-		if pause == nil {
-			pause = seasonPause
-		}
-		if err := pause(ctx, time.Second); err != nil {
-			return
-		}
-		a.refreshMarketFeed(ctx, kind, week)
-	}
+	marketapp.RefreshFeeds(ctx, force, week, marketHeld(held), time.Since,
+		func(ctx context.Context, wait time.Duration) error {
+			pause := a.core.SeasonPause
+			if pause == nil {
+				pause = seasonPause
+			}
+			return pause(ctx, wait)
+		}, a.refreshMarketFeed)
+
 }
 
 func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
-	parse := func(body []byte) ([]marketfeeds.Feed, error) {
-		feed, err := marketfeeds.Parse(kind, body)
-		if err != nil {
-			return nil, fmt.Errorf("market archive: %w", err)
-		}
-		if kind == marketfeeds.Projections && feed.Week != week {
-			return nil, fmt.Errorf("projection archive: wrong week")
-		}
-		return []marketfeeds.Feed{feed}, nil
-	}
+	parse := func(body []byte) ([]marketfeeds.Feed, error) { return marketapp.ParseArchiveFeed(kind, week, body) }
 	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[marketfeeds.Feed]{
 		Export: kind, Leagueless: kind != marketfeeds.Projections,
 		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
@@ -89,12 +73,9 @@ func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
 	}, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	held := heldSeasonFeed[[]marketfeeds.Feed](a.marketHeld.SnapshotFeeds()[kind])
-	if kind == marketfeeds.Projections && len(held.Value) == 1 && held.Value[0].Week != week {
-		held = heldSeasonFeed[[]marketfeeds.Feed]{}
-	}
-	holdSeasonFeed(&held, rows, fresh, err)
-	a.marketHeld.PublishFeed(kind, season.Feed[[]marketfeeds.Feed](held))
+	held := a.marketHeld.SnapshotFeeds()[kind]
+	a.marketHeld.PublishFeed(kind, marketapp.RefreshedFeed(kind, week, held, rows, fresh, err))
+
 }
 
 func marketArchiveScope(src, kind string, week int) bool {

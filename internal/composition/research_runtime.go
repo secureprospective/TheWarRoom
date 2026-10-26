@@ -29,6 +29,8 @@ type researchHeld struct {
 	archiveRead map[string]bool
 }
 
+const researchFeedFreshFor = 5 * time.Minute
+
 func researchKey(kind, week string) string { return kind + ":" + week }
 func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force bool) {
 	key := researchKey(kind, week)
@@ -36,7 +38,7 @@ func (a *App) refreshResearchFeed(ctx context.Context, kind, week string, force 
 	research := a.snapshotResearch()
 	held := research.feeds[key]
 	a.core.SeasonMu.Unlock()
-	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < poolFreshFor {
+	if !force && held.RefreshError == "" && time.Since(held.FetchedAt) < researchFeedFreshFor {
 		return
 	}
 	bodies := a.core.History.ArchivedBodies
