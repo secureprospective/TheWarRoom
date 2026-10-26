@@ -2,13 +2,10 @@ package composition
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -25,55 +22,26 @@ import (
 type localCommissionerSession struct{ installation string }
 
 func (s localCommissionerSession) Principal() (string, error) {
-	if s.installation == "" {
-		return "", fmt.Errorf("local identity is unavailable")
-	}
-	identity := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%d", s.installation, os.Getuid())))
-	return "local." + hex.EncodeToString(identity[:]), nil
+	return commissionerapp.LocalPrincipal(s.installation, os.Getuid()) //nolint:wrapcheck // Preserve missing local identity refusal.
 }
 
 func (a *App) commissionerPrincipal() (string, error) {
-	session := a.core.CommissionerSession
-	if session == nil {
-		session = localCommissionerSession{installation: a.core.Paths.DataDir}
-	}
-	principal, err := session.Principal()
-	if err != nil {
-		return "", fmt.Errorf("read local identity: %w", err)
-	}
-	if strings.TrimSpace(principal) == "" {
-		return "", fmt.Errorf("local identity is unavailable")
-	}
-	return principal, nil
+	return commissionerapp.ResolvePrincipal(a.core.CommissionerSession, func() (string, error) { //nolint:wrapcheck // Preserve local identity errors.
+		return (localCommissionerSession{installation: a.core.Paths.DataDir}).Principal()
+	})
 }
-
-// commissionerSeat reads whether this computer is linked to the local sign-in.
+func (a *App) localSeat() commissionerapp.LocalSeat {
+	return commissionerapp.LocalSeat{Ready: a.ready, Principal: a.commissionerPrincipal, Context: func() context.Context { return a.core.Ctx },
+		Status: func(ctx context.Context, local string) (accounts.SeatStatus, error) { return a.seat.Status(ctx, local) },
+		SignIn: func(ctx context.Context, raw accounts.RawCredentials, local string) (accounts.Account, error) {
+			return a.seat.SignIn(ctx, raw, local)
+		}}
+}
 func (a *App) commissionerSeat() (accounts.SeatStatus, error) {
-	if err := a.ready(); err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	local, err := a.commissionerPrincipal()
-	if err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	//nolint:wrapcheck // the seat names its own failure
-	return a.seat.Status(a.core.Ctx, local)
+	return a.localSeat().Read() //nolint:wrapcheck // Preserve seat errors.
 }
-
-// commissionerSeatSignIn links this computer's identity to the local sign-in. On the computer that
-// made the league it protects the commissioner; on a restored copy it proves the same person.
 func (a *App) commissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
-	if err := a.ready(); err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	local, err := a.commissionerPrincipal()
-	if err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	if _, err := a.seat.SignIn(a.core.Ctx, raw, local); err != nil {
-		return accounts.SeatStatus{}, err //nolint:wrapcheck // the seat names its own failure
-	}
-	return a.commissionerSeat()
+	return a.localSeat().Login(raw, a.commissionerSeat) //nolint:wrapcheck // Preserve sign-in errors and re-read status.
 }
 
 // commissionerPreviewRegistry is docs/ui/endpoint-registry.csv, embedded by the root binary.

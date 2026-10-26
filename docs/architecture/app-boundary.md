@@ -142,18 +142,18 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. |
 | 81 | 1 | `internal/composition/snapshot_app.go` — `rosterMoveTarget`:121 | 11 | `platform` | W:platform,contracts,offers,trades | Unknown discovered host gives unmapped target/block; otherwise encode league/options URL, never submit.  MOVED (part 2, batch 1). |
 | 82 | 4 | `internal/composition/snapshot_app.go` — `draftRosterMove`:133, `listMoves`:186 | 71 | `platform` | W:platform | Require own franchise/player/held snapshot; taxi vs IR chooses target/ID prefix/envelope; save local plan only; rail labels trade receipts but omits bid/release/contract plans. |
-| 83 | 3 | `internal/composition/sources_runtime.go` — `compileFactsInBackground`:47, `warmArchive`:79 | 38 | `sources` | startup | Only existing manifest permits republish/compile/warm/model-fit; failures stop later steps; bounded worker and archive cache lock. |
+| 83 | 3 | `internal/composition/sources_runtime.go` — `compileFactsInBackground`:47, `warmArchive`:79 | 38 | `sources` | startup | Only existing manifest permits republish/compile/warm/model-fit; failures stop later steps; bounded worker and archive cache lock. MOVED (part 4, batch 4). |
 | 84 | 2 | `internal/composition/sources_runtime.go` — `readSettings`:102, `writeSettings`:117 | 28 | `sources` | startup,W:sources | Missing file means defaults; JSON decode errors remain visible; write indented owner-only temp file then rename atomically. MOVED (part 3, batch 3). |
-| 85 | 3 | `internal/composition/asset_board.go` — `fitAssetModel`:133 | 17 | `market` | startup | No verified cache means no fit; compile error logs without publishing; success publishes model and season event. |
+| 85 | 3 | `internal/composition/asset_board.go` — `fitAssetModel`:133 | 17 | `market` | startup | No verified cache means no fit; compile error logs without publishing; success publishes model and season event. MOVED (part 4, batch 4). |
 | 86 | 5 | `internal/composition/platform_host.go` — `startHeadshots`:61, `photoHandler`:83 | 30 | `platform` | startup,W photo HTTP | History/crosswalk failures preserve error; lazy cache plus photo-off setting; unavailable cache returns 503, off switch denies request. |
 | 87 | 5 | `internal/composition/database_checks_app.go` — `checkDatabases`:31, `startDatabaseChecks`:43 | 38 | `platform` | startup,B | Skip missing pools/canceled context; log findings; start one ready-gated hourly worker with bounded check/backup cycle and joined shutdown. |
 | 88 | 4 | `internal/composition/database_checks_app.go` — `newDatabaseBackups`:71, `backupDatabases`:83, `backupNow`:99, `pruneBackups`:125 | 55 | `platform` | B,W:commissioner;restore CLI | Build-stamped dev/prod matched-set schema limits; daily capture before retention; manual capture requires local account and configured backups; private logs/public generic failure; prune findings best-effort. |
-| 89 | 3 | `internal/composition/app.go` — `directory`:73 | 17 | `sources` | startup,B,W many | Cache season directory after first successful normalized player fetch; failure never publishes partial lookup. |
+| 89 | 3 | `internal/composition/app.go` — `directory`:73 | 17 | `sources` | startup,B,W many | Cache season directory after first successful normalized player fetch; failure never publishes partial lookup. MOVED (part 4, batch 4). |
 | 90 | 5 | `internal/composition/app.go` — `startup`:126, `settleStartupFailure`:180, `finishStartup`:187, `initStoreFloor`:255 | 131 | `platform` | startup/probe | Logging failure nonfatal; acquire protected DB floor before client; initialize ordered stores; refresh only empty mirror; coordinator owns Writer; publish complete floor/readiness before revalidation; plain offline failure; launch refresh only if not seeded. |
 | 91 | 5 | `internal/composition/app.go` — `openDatabases`:209, `logMigrationFindings`:319 | 48 | `platform` | startup/probe | Instance lock before recovery and pre-migration backup; open matched stores at schema versions, archive subsequent fetches; log only present pools. |
 | 92 | 5 | `internal/composition/app.go` — `shutdown`:334, `startWorker`:355 | 32 | `platform` | shutdown,B | Mark stopping/cancel workers under admission lock; join before closing pools/releasing instance lock; no new worker after stopping. |
 | 93 | 1 | `internal/composition/app.go` — `configDir`:370, `isDevBuild`:386, `dbFileName`:390 | 21 | `platform` | startup,CLI | Owner-only config dir; dev stamp routes to separate dev databases, never production ledger.  MOVED (part 2, batch 3). |
-| 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. |
+| 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. MOVED (part 4, batch 4). |
 | 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. |
 | 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. |
 | 97 | 1 | `internal/composition/version.go` — `buildLabel`:14 | 6 | `platform` | startup,CLI,W stamps | Append parenthesized commit only for stamped builds; ldflags globals must stay compatible.  MOVED (part 2, batch 1). |
@@ -166,7 +166,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 103 | 2 | `internal/composition/control_host.go` — `OpenMFLAccounting`:102 | 16 | `control` | W:control | Require startup; discovered host or empty host passes through AccountingURL admission before browser open. MOVED (part 3, batch 3). |
 | 104 | 4 | `internal/composition/control_host.go` — `Params`:119, `SetParam`:149, `ResetParam`:162 | 53 | `control` | W:control | Read definitions/current overrides, fail on missing position value; word labels/groups and sort group→label→position; bounded admin override/reset stores return explicit success/failure. MOVED (part 3, batch 3). |
 | 105 | 4 | `internal/composition/control_host.go` — `keyStatus`:175, `KeyStatus`:183, `SetKey`:201, `DeleteKey`:234, `lookupMyFranchise`:255 | 84 | `control` | W:control;startup | Trim/plausibility 16–256-byte key, verify before storage, distinguish rejected/unreachable/keyring unavailable; store and resolve franchise only after verification, bump generation and refresh. Delete clears identity/verified time/trades and fences older work. Lookup failure denies owner actions. |
-| 106 | 4 | `internal/composition/commissioner_host.go` — `Principal`:25, `commissionerPrincipal`:33, `commissionerSeat`:49, `commissionerSeatSignIn`:63 | 45 | `commissioner` | W:commissioner;local service host | Nonempty installation plus OS uid hashes stable local identity; injected session overrides fallback; reject blank identity. Ready-gated local seat/status/sign-in preserve account aliases and re-read status after sign-in. |
+| 106 | 4 | `internal/composition/commissioner_host.go` — `Principal`:25, `commissionerPrincipal`:33, `commissionerSeat`:49, `commissionerSeatSignIn`:63 | 45 | `commissioner` | W:commissioner;local service host | Nonempty installation plus OS uid hashes stable local identity; injected session overrides fallback; reject blank identity. Ready-gated local seat/status/sign-in preserve account aliases and re-read status after sign-in. MOVED (part 4, batch 4). |
 | 107 | 2 | `internal/composition/commissioner_host.go` — `nativeFacts`:90 | 13 | `commissioner` | W:commissioner;store callbacks | Held directory contributes player facts only when loaded; only held injuries supply NFL designations; no network.  MOVED (part 2, batch 5). |
 | 108 | 2 | `internal/composition/archive_app.go` — `readArchiveFacts`:32 | 13 | `archive` | W:archive,comms;startup | Read verified snapshot with curated readings/compiler/manifest; retain cached snapshot only when returned SHA is nonempty; preserve service errors. MOVED (part 3, batch 3). |
 | 109 | 4 | `internal/composition/trades_app.go` — `DraftTradeAccept`:42 | 25 | `trades` | W:trades | Build request/check from held offer; missing MFL host blocks; draft accept, supersede older moves, then save receipt under moves lock. |
@@ -710,7 +710,7 @@ trade deadline. Removed the now-unused dailyShellReading composition forwarder.
 
 ## Part 4 — batch 3: local move actions and evidence watcher
 
-Eight units (23–26, 29–32), 378 baseline function LOC. Platform owns ownership/preflight and
+Eight units (23–26, 29–32), 368 baseline function LOC. Platform owns ownership/preflight and
 save-before-browser handoff/withdrawal, predicate-specific facts and unknown-intent logging,
 refresh-before-locked-reread evidence observation, source order/pacing/recent evidence, ready-plan
 verdict/rebase, wake admission/audit wording and restart/fast-poll scheduling. Store ports expose
@@ -730,3 +730,20 @@ internal/composition/moves_watcher.go → internal/composition/moves_app.go. Upd
 removed unused source/fast-mode forwarders, without changing a baseline. Inventory paths are
 historical references. Unit 27 observation assembly and unit 28 cross-feature plan revalidation
 remain open, not counted as moved.
+
+## Part 4 — batch 4: startup evidence, identity and logs
+
+Five units (83, 85, 89, 94, 106), 142 baseline function LOC. Sources owns imported-only startup
+compile/warm/fit ordering and publish-only-normalized directory caching; Market owns verified-only
+model fit and success-only publication/event; Commissioner owns stable local identity and local
+seat read/sign-in/re-read admission; Platform owns private per-launch logging/retention.
+All resource captures remain lazy across readiness, especially the local seat created by startup.
+FactsMu still spans archive read and both success/failure logging. Logging installation remains
+an App startup adapter; source file internal/composition/logging.go is now internal/app/platform/logging.go.
+Moved the standalone log-retention test inward; composition keeps config/log permissions integration.
+
+New inward startup short-circuit/order, directory failed-fetch/failed-normalize preservation/cache,
+verified-fit failure/no-publication/order, identity UID isolation/lazy fallback and sign-in/re-read/
+startup-refusal tests pass. Feature/composition filtered race batch passed (1.8 seconds composition),
+including real local identity, logging permissions/retention, Sources lock and door parity. The first
+build found a callback type mismatch (Model interface versus LabModel); corrected the service port.

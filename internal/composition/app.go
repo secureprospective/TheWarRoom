@@ -74,19 +74,13 @@ func (a *App) attachSeat(hist *history.Store) {
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.core.LookupMu.Lock()
 	defer a.core.LookupMu.Unlock()
-	if a.core.HasLookup {
-		return a.core.Lookup, nil
-	}
-	raws, err := players.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if err != nil {
-		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
-	}
-	lk, err := normalize.NewLookup(raws)
-	if err != nil {
-		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
-	}
-	a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lk, true, time.Now().UTC()
-	return lk, nil
+	return sourcesapp.Directory(ctx, a.core.Lookup, a.core.HasLookup, //nolint:wrapcheck // Preserve directory fetch/normalize errors.
+		func(ctx context.Context) ([]players.RawPlayer, error) {
+			return players.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+		},
+		func(lookup normalize.Lookup, at time.Time) {
+			a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lookup, true, at
+		})
 }
 
 // NewApp is cheap; resources are acquired in startup.
@@ -390,3 +384,5 @@ var (
 )
 
 func buildLabel() string { return platformapp.BuildLabel(version, commit) }
+
+func setupLogging(dir string) error { return platformapp.SetupLogging(dir) } //nolint:wrapcheck // Logging already provides its resource context.

@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -70,5 +71,33 @@ func TestDevBuildClassification(t *testing.T) {
 		if got := IsDevBuild(tc.version); got != tc.want {
 			t.Errorf("%q: %v", tc.version, got)
 		}
+	}
+}
+
+// TestSetupLogging_PrunesToMax proves disk logging creates the logs dir and keeps
+// at most MaxLogFiles files.
+func TestSetupLogging_PrunesToMax(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	logDir := filepath.Join(dir, "logs")
+	if err := os.MkdirAll(logDir, 0o750); err != nil {
+		t.Fatalf("mkdir logs: %v", err)
+	}
+
+	// Seed more than the cap of uniquely-named stale log files, then prune.
+	for i := 0; i < MaxLogFiles+5; i++ {
+		name := filepath.Join(logDir, fmt.Sprintf("thewarroom-2020%06dT000000Z.log", i))
+		if err := os.WriteFile(name, []byte("stub"), 0o600); err != nil {
+			t.Fatalf("seed stub: %v", err)
+		}
+	}
+	PruneLogs(logDir)
+
+	matches, err := filepath.Glob(filepath.Join(logDir, "thewarroom-*.log"))
+	if err != nil {
+		t.Fatalf("glob: %v", err)
+	}
+	if len(matches) > MaxLogFiles {
+		t.Fatalf("PruneLogs kept %d files, want <= %d", len(matches), MaxLogFiles)
 	}
 }

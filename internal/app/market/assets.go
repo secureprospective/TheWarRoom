@@ -2,12 +2,14 @@ package market
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"math"
 	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -234,4 +236,21 @@ func PickValue(model Model, year, round int, original string, at time.Time) *Ass
 	cell, _, _ := ValueCells(model.Pick(year, round, original, at))
 	out := AssetCell(cell)
 	return &out
+}
+
+// FitAssetModel compiles only verified facts and publishes only a successful model.
+func FitAssetModel(ctx context.Context, began time.Time, cache report.ArchiveSnapshot,
+	build func(context.Context, facts.Facts, labcompile.Evidence) (*labcompile.Model, []byte, error),
+	publish func(Model), changed func(context.Context), logLine func(string)) {
+	if cache.SHA == "" {
+		return
+	}
+	model, _, err := build(ctx, cache.Facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.Through})
+	if err != nil {
+		logLine(fmt.Sprintf("the war room: value model: %v", err))
+		return
+	}
+	publish(LabModel{Model: model})
+	logLine(fmt.Sprintf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond)))
+	changed(ctx)
 }

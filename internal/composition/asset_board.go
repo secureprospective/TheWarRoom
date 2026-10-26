@@ -92,15 +92,5 @@ func (a *App) fitAssetModel(ctx context.Context) {
 	a.core.FactsMu.Lock()
 	cache := a.archiveCache
 	a.core.FactsMu.Unlock()
-	if cache.SHA == "" {
-		return
-	}
-	m, _, err := labcompile.Build(ctx, cache.Facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.Through})
-	if err != nil {
-		log.Printf("the war room: value model: %v", err)
-		return
-	}
-	a.marketHeld.PublishModel(marketapp.LabModel{Model: m})
-	log.Printf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond))
-	a.core.SeasonChanged(ctx)
+	marketapp.FitAssetModel(ctx, began, cache, labcompile.Build, a.marketHeld.PublishModel, a.core.SeasonChanged, func(text string) { log.Print(text) })
 }

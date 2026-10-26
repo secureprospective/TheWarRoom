@@ -98,34 +98,6 @@ func TestInstanceLock_DevAndRealDoNotContend(t *testing.T) {
 	releaseInstanceLock(dev)
 }
 
-// TestSetupLogging_PrunesToMax proves disk logging creates the logs dir and keeps
-// at most maxLogFiles files.
-func TestSetupLogging_PrunesToMax(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	logDir := filepath.Join(dir, "logs")
-	if err := os.MkdirAll(logDir, 0o750); err != nil {
-		t.Fatalf("mkdir logs: %v", err)
-	}
-
-	// Seed more than the cap of uniquely-named stale log files, then prune.
-	for i := 0; i < maxLogFiles+5; i++ {
-		name := filepath.Join(logDir, fmt.Sprintf("thewarroom-2020%06dT000000Z.log", i))
-		if err := os.WriteFile(name, []byte("stub"), 0o600); err != nil {
-			t.Fatalf("seed stub: %v", err)
-		}
-	}
-	pruneLogs(logDir)
-
-	matches, err := filepath.Glob(filepath.Join(logDir, "thewarroom-*.log"))
-	if err != nil {
-		t.Fatalf("glob: %v", err)
-	}
-	if len(matches) > maxLogFiles {
-		t.Fatalf("pruneLogs kept %d files, want <= %d", len(matches), maxLogFiles)
-	}
-}
-
 // TestRunFlag_UnknownArgumentNeverOpensAWindow: an unknown argument exits 2 with usage instead
 // of falling through to a window on the real database; -version prints the build label.
 func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {

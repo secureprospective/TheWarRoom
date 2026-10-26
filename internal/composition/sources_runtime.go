@@ -56,21 +56,11 @@ func (a *App) compileFactsInBackground() {
 		}
 		ctx, cancel := context.WithTimeout(parent, factsTimeout)
 		defer cancel()
-		// A manifest published by an older build may lack an input this build pins (the curated
-		// readings); re-publishing is idempotent and only ever follows an archive import.
-		if _, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs); err != nil || !ok {
-			return
-		}
-		if _, _, err := a.publishLabManifest(ctx); err != nil {
-			log.Printf("the war room: checked facts: %v", err)
-			return
-		}
-		if _, err := a.compileFacts(ctx); err != nil {
-			log.Printf("the war room: checked facts: %v", err)
-			return
-		}
-		a.warmArchive(ctx)
-		a.fitAssetModel(ctx)
+		sourcesapp.StartupFacts(ctx, func(ctx context.Context) (bool, error) {
+			_, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs)
+			return ok, err //nolint:wrapcheck // Startup compilation silently skips failed manifest reads as before.
+		}, func(ctx context.Context) error { _, _, err := a.publishLabManifest(ctx); return err },
+			func(ctx context.Context) error { _, err := a.compileFacts(ctx); return err }, a.warmArchive, a.fitAssetModel, func(text string) { log.Print(text) })
 	})
 }
 
@@ -81,11 +71,7 @@ func (a *App) warmArchive(ctx context.Context) {
 	began := time.Now()
 	a.core.FactsMu.Lock()
 	defer a.core.FactsMu.Unlock()
-	if _, _, err := a.readArchiveFacts(ctx); err != nil {
-		log.Printf("the war room: league archive: %v", err)
-		return
-	}
-	log.Printf("the war room: league archive read in %s", time.Since(began).Round(time.Millisecond))
+	sourcesapp.WarmArchive(ctx, began, func(ctx context.Context) error { _, _, err := a.readArchiveFacts(ctx); return err }, func(text string) { log.Print(text) })
 }
 
 func (a *App) compileFacts(ctx context.Context) (string, error) {

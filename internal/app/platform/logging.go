@@ -1,4 +1,4 @@
-package composition
+package platform
 
 import (
 	"fmt"
@@ -10,13 +10,13 @@ import (
 	"time"
 )
 
-// maxLogFiles is how many per-launch logs are kept.
-const maxLogFiles = 10
+// MaxLogFiles is how many per-launch logs are kept.
+const MaxLogFiles = 10
 
-// setupLogging tees the log to a per-launch file under <dir>/logs as well as stderr, because a
+// SetupLogging tees the log to a per-launch file under <dir>/logs as well as stderr, because a
 // launcher start has no terminal. A failure is returned, not fatal: logging must never block
 // startup.
-func setupLogging(dir string) error {
+func SetupLogging(dir string) error {
 	logDir := filepath.Join(dir, "logs")
 	if err := os.MkdirAll(logDir, 0o700); err != nil {
 		return fmt.Errorf("create log dir %q: %w", logDir, err)
@@ -28,19 +28,19 @@ func setupLogging(dir string) error {
 		return fmt.Errorf("open log file: %w", err)
 	}
 	log.SetOutput(io.MultiWriter(os.Stderr, f))
-	pruneLogs(logDir)
+	PruneLogs(logDir)
 	return nil
 }
 
-// pruneLogs keeps the newest maxLogFiles. UTC timestamps in the names sort chronologically.
+// PruneLogs keeps the newest MaxLogFiles. UTC timestamps in the names sort chronologically.
 // Best-effort.
-func pruneLogs(logDir string) {
+func PruneLogs(logDir string) {
 	matches, err := filepath.Glob(filepath.Join(logDir, "thewarroom-*.log"))
-	if err != nil || len(matches) <= maxLogFiles {
+	if err != nil || len(matches) <= MaxLogFiles {
 		return
 	}
 	sort.Strings(matches)
-	for _, old := range matches[:len(matches)-maxLogFiles] {
+	for _, old := range matches[:len(matches)-MaxLogFiles] {
 		_ = os.Remove(old)
 	}
 }
