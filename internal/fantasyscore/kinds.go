@@ -94,7 +94,7 @@ func scaledQuantity(scale leaguerules.DistanceScale, events []leaguerules.Decima
 // extraItems prices each position extra that applies as its own line, rounded on its own as MFL
 // rounds each overlapping rule.
 func extraItems(rules leaguerules.ScoringRules, base LineItem, position leaguerules.Position) ([]LineItem, error) {
-	if base.Unused || base.OutOfRange || base.Points.State != leaguerules.IsKnown {
+	if base.Unused || base.Points.State != leaguerules.IsKnown {
 		return nil, nil
 	}
 	quantity := base.Quantity
@@ -103,15 +103,22 @@ func extraItems(rules leaguerules.ScoringRules, base LineItem, position leagueru
 	}
 	var result []LineItem
 	for _, extra := range rules.Extras.Value[base.Rule] {
-		if !slices.Contains(extra.Positions, position) {
+		if !slices.Contains(extra.Positions, position) || (base.OutOfRange && !extra.Ranged) {
+			continue
+		}
+		item := LineItem{Stat: base.Stat, Rule: base.Rule, Quantity: base.Quantity, Extra: true,
+			Label: base.Label + " (" + string(position) + " extra)"}
+		if extra.Ranged && (base.Quantity < extra.Range.Min || base.Quantity > extra.Range.Max) {
+			item.Points, item.OutOfRange = leaguerules.Known[leaguerules.Decimal](0), true
+			result = append(result, item)
 			continue
 		}
 		points, err := multiply(quantity, extra.Points)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, LineItem{Stat: base.Stat, Rule: base.Rule, Quantity: base.Quantity, Extra: true,
-			Label: base.Label + " (" + string(position) + " extra)", Points: leaguerules.Known(points)})
+		item.Points = leaguerules.Known(points)
+		result = append(result, item)
 	}
 	return result, nil
 }

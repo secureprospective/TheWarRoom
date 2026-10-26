@@ -6,10 +6,13 @@ import "fmt"
 // that never uses one records it as empty; Legacy records every one as empty.
 
 // PositionExtra adds a rate on top of a stat's base rate for the listed positions. Overlapping rows
-// add up and each row's award is rounded on its own, as MFL does.
+// add up and each row's award is rounded on its own, as MFL does. A Ranged extra is its own MFL rule
+// with its own range; otherwise it shares the base row's range.
 type PositionExtra struct {
 	Positions []Position
 	Points    Decimal
+	Ranged    bool
+	Range     StatRange
 }
 
 // StatRange is MFL's inclusive scoring range: a week whose value falls outside it scores nothing
@@ -70,6 +73,9 @@ func validateScoringKinds(r ScoringRules) error {
 			}
 		}
 	}
+	if err := validateExtras(r.Extras); err != nil {
+		return err
+	}
 	if r.Scales.State == IsKnown {
 		for id, scale := range r.Scales.Value {
 			if !scale.Capped && scale.Cap != 0 {
@@ -84,6 +90,20 @@ func validateScoringKinds(r ScoringRules) error {
 		}
 		if _, weighted := unit.Weights[unit.Sacks]; unit.NoSack != 0 && !weighted {
 			return fmt.Errorf("the no-sack bonus needs a weighted sack stat")
+		}
+	}
+	return nil
+}
+
+func validateExtras(extras Value[map[StatID][]PositionExtra]) error {
+	if extras.State != IsKnown {
+		return nil
+	}
+	for id, rows := range extras.Value {
+		for _, extra := range rows {
+			if extra.Range.Min > extra.Range.Max || (!extra.Ranged && extra.Range != (StatRange{})) {
+				return fmt.Errorf("%s: an extra's range must start at or below its end and be set only when ranged", id)
+			}
 		}
 	}
 	return nil

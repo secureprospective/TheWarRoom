@@ -2348,7 +2348,180 @@
     },
     "Ranges": {
       "State": 1,
-      "Value": {},
+      "Value": {
+        "assist": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "assist_line": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "blocked_extra_point": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "blocked_fg": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "blocked_punt": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "forced_fumble": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "fumble_recovery_tds": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "fumbles_total": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "interception_caught": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "interception_caught_secondary": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "interception_return_td": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "interception_return_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "interception_thrown": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "kickoff_return_td": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "kickoff_return_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "opponent_fumble_recovery": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "opponent_fumble_recovery_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "own_fumble_recovery": {
+          "Min": 10000,
+          "Max": 100000
+        },
+        "pass_defensed": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "pass_defensed_secondary": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "passing_td": {
+          "Min": 0,
+          "Max": 200000
+        },
+        "passing_two_point": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "passing_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "pat_blocked": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "pat_made": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "pat_missed": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "punt_return_td": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "punt_return_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "qb_hit": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "receiving_td": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "receiving_two_point": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "receiving_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "reception": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "rushing_attempt": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "rushing_td": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "rushing_two_point": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "rushing_yards": {
+          "Min": -500000,
+          "Max": 9990000
+        },
+        "sack": {
+          "Min": 0,
+          "Max": 250000
+        },
+        "safety": {
+          "Min": 0,
+          "Max": 100000
+        },
+        "tackle": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "tackle_for_loss": {
+          "Min": 0,
+          "Max": 250000
+        },
+        "tackle_line": {
+          "Min": 0,
+          "Max": 990000
+        },
+        "tackle_secondary": {
+          "Min": 0,
+          "Max": 990000
+        }
+      },
       "Citation": "MFL league scoring settings"
     },
     "Scales": {

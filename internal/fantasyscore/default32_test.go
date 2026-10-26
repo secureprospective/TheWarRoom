@@ -44,7 +44,6 @@ func TestDefault32SpecRows(t *testing.T) {
 		{"kickoff_return_td", wr, 20000, 200000}, {"punt_return_td", wr, 20000, 120000},
 		{"fumbles_total", rb, 20000, -40000}, {"own_fumble_recovery", rb, 10000, 20000},
 		{"own_fumble_recovery", rb, 30000, 20000}, {"pat_made", pk, 20000, 20000},
-		{"pat_missed", pk, 20000, -20000}, {"pat_blocked", pk, 20000, -20000},
 		{"sack", de, 5000, 22500}, {"sack", de, 20000, 90000}, {"tackle_for_loss", lb, 20000, 50000},
 		{"qb_hit", de, 20000, 20000}, {"forced_fumble", lb, 20000, 80000},
 		{"opponent_fumble_recovery", lb, 20000, 60000}, {"opponent_fumble_recovery_yards", lb, 1000000, 100000},
@@ -78,6 +77,9 @@ func TestDefault32CatchValueByPosition(t *testing.T) {
 	if err != nil || len(items) != 2 || !items[1].Extra || items[1].Points.Value != 10000 {
 		t.Fatalf("TE extra breakdown %+v %v", items, err)
 	}
+	// The TE extra is its own 0..999 rule: 100 catches fall outside the base 0..99 row, not the extra.
+	assertScore(t, rules, te, quantity("reception", 1000000), 200000)
+	assertScore(t, rules, wr, quantity("reception", 1000000), 0)
 }
 
 // Tackle lift and positional extras (§4.4).
@@ -232,5 +234,18 @@ func TestDefault32IsCommissionerSettings(t *testing.T) {
 	unset.Scales = leaguerules.Needs[map[leaguerules.StatID]leaguerules.DistanceScale]("not chosen")
 	if points, _, err := Score(unset, wr, quantity("reception", 10000)); err != nil || points.State != leaguerules.NeedsRuling {
 		t.Fatalf("unset distance scales guessed: %+v %v", points, err)
+	}
+}
+
+// EM is one rule over missed and blocked extra points, ranged 0..10 on their sum (§4.3).
+func TestDefault32MissedExtraPointsAreOneRule(t *testing.T) {
+	rules := leaguerules.Default32Scoring()
+	line := func(missed, blocked leaguerules.Decimal) StatLine {
+		return StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"pat_missed": missed * 10000, "pat_blocked": blocked * 10000}}
+	}
+	for _, tc := range []struct{ missed, blocked, want leaguerules.Decimal }{
+		{0, 0, 0}, {2, 0, -20000}, {1, 1, -20000}, {6, 4, -100000}, {6, 5, 0},
+	} {
+		assertScore(t, rules, pk, line(tc.missed, tc.blocked), tc.want)
 	}
 }

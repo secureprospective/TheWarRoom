@@ -152,7 +152,7 @@ func TestEveryUnresolvedSettingReturnsReasonNotPartialTotal(t *testing.T) {
 
 func TestExactArithmeticRejectsOverflowAndLostPrecision(t *testing.T) {
 	for _, line := range []StatLine{
-		{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"passing_td": math.MaxInt64}},
+		{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"fg_made_0_39": math.MaxInt64}},
 		{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"passing_yards": 1}},
 		{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"long_rush": 10000}},
 		{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"reception": 10000},
@@ -269,5 +269,32 @@ func TestRoundEachStatToCentIsOptional(t *testing.T) {
 	}
 	if got, err := roundCent(math.MaxInt64); err != nil || got != math.MaxInt64-7 {
 		t.Fatalf("range edge rounding: %d %v", got, err)
+	}
+}
+
+// Legacy applies MFL's per-rule ranges: a week outside a rule's range scores 0 for that rule.
+func TestLegacyAppliesMFLRanges(t *testing.T) {
+	rules := leaguerules.LegacyNFL().Scoring
+	for _, tc := range []struct {
+		id       leaguerules.StatID
+		position leaguerules.Position
+		qty      leaguerules.Decimal
+		want     leaguerules.Decimal
+	}{
+		{"rushing_yards", leaguerules.RB, -510000, 0}, {"rushing_yards", leaguerules.RB, -500000, -50000},
+		{"passing_yards", leaguerules.QB, -510000, 0}, {"kickoff_return_yards", leaguerules.WR, -510000, 0},
+		{"passing_td", leaguerules.QB, 200000, 1000000}, {"passing_td", leaguerules.QB, 210000, 0},
+		{"rushing_td", leaguerules.RB, 110000, 0}, {"sack", leaguerules.DE, 260000, 0},
+		{"tackle", leaguerules.LB, 1000000, 0}, {"tackle_line", leaguerules.DT, 990000, 2475000},
+		{"own_fumble_recovery", leaguerules.RB, 0, 0}, {"own_fumble_recovery", leaguerules.RB, 10000, 20000},
+	} {
+		id := tc.id
+		if id == "tackle_line" {
+			id = "tackle"
+		}
+		points, _, err := Score(rules, tc.position, StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{id: tc.qty}})
+		if err != nil || points.State != leaguerules.IsKnown || points.Value != tc.want {
+			t.Errorf("%s %s %d: %+v %v, want %d", tc.id, tc.position, tc.qty, points, err, tc.want)
+		}
 	}
 }

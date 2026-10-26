@@ -65,7 +65,7 @@ func TestDefault32MatchesReferenceOn2024Weeks(t *testing.T) {
 	rules := leaguerules.Default32Scoring()
 	for _, row := range fixture.Rows {
 		t.Run(row.Source, func(t *testing.T) {
-			line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"rushing_attempt": 0, "reception": 0},
+			line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"rushing_attempt": 0, "reception": 0, "pat_missed": 0, "pat_blocked": 0},
 				Events: map[leaguerules.StatID][]leaguerules.Decimal{"chunk_play": distances(row.ChunkPlays),
 					"long_pass": distances(row.Passes40), "fg_made_distance": distances(row.FGMade),
 					"fg_missed_distance": distances(row.FGMissed)}}

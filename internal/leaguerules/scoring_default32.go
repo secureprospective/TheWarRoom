@@ -22,14 +22,21 @@ func Default32Scoring() ScoringRules {
 	lost := scoringStatCited("Fumbles lost", "Fumbles", -20000, default32Citation)
 	lost.Used = cited(false, default32Citation)
 	catalogue["fumble_lost"] = lost
+	// EM is one rule over missed and blocked extra points; the parts are counted only through it.
+	for id, label := range map[StatID]string{"pat_missed": "Extra point missed", "pat_blocked": "Extra point blocked"} {
+		part := scoringStatCited(label, "Kicking", 0, default32Citation)
+		part.Used = cited(false, default32Citation)
+		catalogue[id] = part
+	}
 	r := ScoringRules{
 		Catalogue:       cited(catalogue, default32Citation),
 		RoundStatPoints: cited(true, default32Citation),
 		Extras:          cited(default32Extras(), default32Citation),
 		Ranges:          cited(ranges, default32Citation),
 		Scales:          cited(default32Scales(), default32Citation),
-		Totals:          cited(map[StatID][]StatID{"touches": {"rushing_attempt", "reception"}}, default32Citation),
-		LineUnit:        cited(default32LineUnit(), default32Citation),
+		Totals: cited(map[StatID][]StatID{"touches": {"rushing_attempt", "reception"},
+			"pat_missed_or_blocked": {"pat_missed", "pat_blocked"}}, default32Citation),
+		LineUnit: cited(default32LineUnit(), default32Citation),
 	}
 	return r
 }
@@ -71,8 +78,7 @@ func default32Rows() []default32Row {
 		{"fg_made_distance", "Field goal made, by distance", "Kicking", 10000, true, 0, 999, false, nil},
 		{"fg_missed_distance", "Field goal missed or blocked, by distance", "Kicking", 10000, true, -999, 0, false, nil},
 		{"pat_made", "Extra point made", "Kicking", 10000, true, 0, 10, false, nil},
-		{"pat_missed", "Extra point missed", "Kicking", -10000, true, 0, 10, false, nil},
-		{"pat_blocked", "Extra point blocked", "Kicking", -10000, true, 0, 10, false, nil},
+		{"pat_missed_or_blocked", "Extra point missed or blocked", "Kicking", -10000, true, 0, 10, false, nil},
 		{"tackle", "Tackle", "Defense", 20000, true, 0, 99, false, nil},
 		{"assist", "Assisted tackle", "Defense", 12500, true, 0, 99, false, nil},
 		{"sack", "Sack", "Defense", 45000, true, 0, 25, false, nil},
@@ -97,7 +103,7 @@ func default32Rows() []default32Row {
 
 func default32Extras() map[StatID][]PositionExtra {
 	return map[StatID][]PositionExtra{
-		"reception":           {{Positions: []Position{TE}, Points: 2000}},
+		"reception":           {{Positions: []Position{TE}, Points: 2000, Ranged: true, Range: StatRange{Min: 0, Max: 9990000}}},
 		"tackle":              {{Positions: []Position{DT, DE}, Points: 10000}, {Positions: []Position{CB, S}, Points: 5000}},
 		"assist":              {{Positions: []Position{DT, DE}, Points: 5000}},
 		"interception_caught": {{Positions: []Position{CB, S}, Points: 10000}},

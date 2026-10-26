@@ -16,7 +16,33 @@ func legacyScoring() ScoringRules {
 		RoundStatPoints: cited(true, "MFL league scoring settings"),
 	}
 	emptyScoringKinds(&r, "MFL league scoring settings")
+	r.Ranges = cited(legacyRanges(), "MFL league scoring settings")
 	return r
+}
+
+// legacyRanges are MFL's per-rule ranges for the league (2024–26 rule table): a week outside one
+// scores 0 for that rule. The long-play bands are per-play bonuses here and need no count range.
+func legacyRanges() map[StatID]StatRange {
+	yards := StatRange{Min: -500000, Max: 9990000}
+	ten, many, twentyFive := StatRange{Max: 100000}, StatRange{Max: 990000}, StatRange{Max: 250000}
+	result := map[StatID]StatRange{"passing_td": {Max: 200000}, "own_fumble_recovery": {Min: 10000, Max: 100000},
+		"sack": twentyFive, "tackle_for_loss": twentyFive}
+	for _, id := range []StatID{"passing_yards", "rushing_yards", "receiving_yards", "punt_return_yards",
+		"kickoff_return_yards", "opponent_fumble_recovery_yards", "interception_return_yards"} {
+		result[id] = yards
+	}
+	for _, id := range []StatID{"rushing_attempt", "reception", "tackle", "tackle_line", "tackle_secondary",
+		"assist", "assist_line", "pass_defensed", "pass_defensed_secondary"} {
+		result[id] = many
+	}
+	for _, id := range []StatID{"interception_thrown", "passing_two_point", "rushing_td", "rushing_two_point",
+		"receiving_td", "receiving_two_point", "punt_return_td", "kickoff_return_td", "fumbles_total",
+		"fumble_recovery_tds", "pat_made", "pat_missed", "pat_blocked", "opponent_fumble_recovery",
+		"forced_fumble", "interception_return_td", "interception_caught", "interception_caught_secondary",
+		"qb_hit", "blocked_fg", "blocked_punt", "blocked_extra_point", "safety"} {
+		result[id] = ten
+	}
+	return result
 }
 
 func scoringFields() []ruleField {
