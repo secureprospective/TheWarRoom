@@ -362,6 +362,9 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 	if _, err := s.insertEvent(ctx, tx, event, int64(len(req.records))); err != nil {
 		return commissioner.Receipt{}, err
 	}
+	if err := s.captureRosterRestorePoint(ctx, tx, raw.League); err != nil {
+		return commissioner.Receipt{}, err
+	}
 	return receipt, nil
 }
 

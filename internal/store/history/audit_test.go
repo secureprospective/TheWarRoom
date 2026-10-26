@@ -98,6 +98,7 @@ DROP TRIGGER league_import_authority_update;
 DROP TABLE league_import;
 DROP VIEW transfer_current; DROP TABLE transfer_transition; DROP TABLE transfer_identity;
 DROP TABLE server_release;
+DROP TABLE league_roster_restore; DROP TABLE league_recovery_log;
 PRAGMA user_version=4`); err != nil {
 		t.Fatal(err)
 	}
