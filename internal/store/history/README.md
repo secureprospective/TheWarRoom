@@ -1,37 +1,41 @@
-# History database
+# Shared history file
 
-`migrations.go` owns the history-file `user_version` list. The hosted server uses
-this same file for league events, football evidence and account data. The account
-store still initializes its tables separately; consolidating that schema remains
-unfinished.
+`migrations.go` owns the history-file `user_version` list (v10). Hosted `server.db`
+uses the same list. Main and what-if are independently v2. Account schema adoption
+remains separate and is explicit debt, not completed consolidation.
 
-Responsibilities currently grouped here:
+## Jobs and owners
 
-- `archive.go`, `observe.go`, `features.go`: fetched bodies and measured facts.
-- `modelruns.go`, `runs.go`, `inputs.go`: model runs and reproducible inputs.
-- `events.go`, `commissioner.go`, `native_*.go`: league authority and replay.
-- `transfer*.go`: inactive imports and fenced league transfers.
-- `roster_restore.go`: checked, standalone roster/contract capture and migration
-  backfill, using the existing league transaction. `internal/db/league_recovery.go`
-  owns its SQL persistence; `internal/commissioner/roster_restore.go` owns the
-  versioned private data format. These are not transport APIs.
+- History retains fetched evidence/observations, model runs/inputs, snapshots,
+  native ledger replay and fenced transfers. Original evidence is append-only.
+- `internal/store/playeridentity` independently owns canonical IDs, provider links
+  and side-qualified ownership. V10 migrates the old player map into these tables;
+  the `player_ids` view is an explicit MFL compatibility adapter, not another map.
+- `internal/leaguerecovery` owns offline request/destination handling.
+  `internal/commissioner/roster_restore.go` owns the checked document;
+  `internal/db/league_recovery.go` owns recovery tables/log SQL.
+- `roster_restore.go` captures points inside native transactions; `stand_up.go`
+  rebuilds and checks native rosters/contracts, then fences the result read-only.
 
-History v9 saves the latest roster/contract snapshot when its contents change,
-and appends a per-league plain-English log entry. Event, audit, restore point and
-log commit together. Transfers capture recovery data without activating the
-import. Existing whole-file encrypted R2 backups include both new tables;
-no backup transport or encryption mechanism has been replaced.
+All jobs stay in the physical file for shared atomicity and existing encrypted R2
+coverage. This does not claim that evidence, models and ledger became separate
+packages. Stores do not import sibling stores.
 
-**Not implemented:** rebuilding a fresh working league from a point, restoring
-rules/authority, a recovery command, canonical player identity, or the broader
-history package split. These points are a capture foundation, not a replacement
-for the existing complete server recovery procedure in
-`deploy/server/RESTORE.md`. They omit draft and historical results.
+Every roster/contract change, its audit entry, restore point, permanent ownership
+and recovery log commit together. Unchanged points add no log noise. Inactive
+imports also retain points without gaining authority. New transfer documents
+preserve canonical identities; conflicts fail rather than silently merge people.
 
-Evidence: `roster_restore_test.go` checks exact contract cents, edits/reversals,
-rollback when either recovery write fails, private-document validation, migration
-backfill without changing event bytes, and inactive-transfer fencing.
-`migration_prefix_test.go` checks every history migration prefix against the
-empty-database final schema. Main and what-if have corresponding prefix tests.
-The requested fresh-database round-trip and big-league identity counts are not
-yet established.
+## Recovery
+
+Use the offline `twr-server stand-up` command described in `cmd/twr-server/README.md`.
+Its source can be a decrypted R2 server.db. It creates a new private folder, never
+overwrites one, verifies exact roster/contract equality and logs the result.
+The recovered copy is **read-only**. It does not reconstruct rules, accounts,
+credentials or authority; use `deploy/server/RESTORE.md` for full server recovery.
+
+Proof and the two justified deferrals are recorded in
+`docs/architecture/storage-recovery-identity.md`. Tests include every migration
+prefix, atomic-capture rollback, big-league migration counts/unchanged bytes,
+roster round trips through encrypted offsite backups, immutable identities,
+provider-link collision rollback, and side-qualified ownership uniqueness.

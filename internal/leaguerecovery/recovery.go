@@ -17,7 +17,11 @@ import (
 )
 
 // RawRequest is local operator input; a league role or network token cannot invoke it.
-type RawRequest struct{ Source, League, Destination string }
+type RawRequest struct {
+	Source      string `json:"sourceDatabase"`
+	League      string `json:"league"`
+	Destination string `json:"destinationFolder"`
+}
 
 func (r RawRequest) Validate() error {
 	if r.Source == "" || r.Destination == "" || !strings.HasPrefix(r.League, "native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League {

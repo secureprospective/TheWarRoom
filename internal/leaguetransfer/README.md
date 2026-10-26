@@ -244,3 +244,12 @@ receive preserves both fences and the original destination history before retry.
 Import retries report the **current** location: repeating the original import after
 activation returns the immutable receipt without incorrectly calling the active league
 inactive. The CLI cutover/reverse test checks this alongside the stored-generation export.
+
+## Permanent player identity
+
+New exports include authenticated canonical player identities and outside-ID links
+for current and historical league players. These are captured in the same source
+read transaction as events and evidence. Old exports omit the optional field and
+remain readable. Import and reverse transfer preserve matching IDs; conflicting
+permanent identities at a destination fail without reassignment. Use a fresh
+destination rather than guessing that two different permanent IDs are one person.
