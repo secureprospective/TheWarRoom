@@ -140,22 +140,7 @@ func RosterIdentities(ctx context.Context, tx *sql.Tx, league string) ([]playeri
 		return nil, fmt.Errorf("read roster identities: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
-	var out []playerid.RawIdentity
-	for rows.Next() {
-		var id string
-		var link playerid.RawOutsideID
-		if err := rows.Scan(&id, &link.Provider, &link.Value); err != nil {
-			return nil, fmt.Errorf("read player link: %w", err)
-		}
-		if len(out) == 0 || out[len(out)-1].Canonical != id {
-			out = append(out, playerid.RawIdentity{Canonical: id})
-		}
-		out[len(out)-1].Links = append(out[len(out)-1].Links, link)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("read roster identities: %w", err)
-	}
-	return out, nil
+	return scanPlayerIdentities(rows)
 }
 
 func InstallRosterIdentities(ctx context.Context, tx *sql.Tx, identities []playerid.RawIdentity) error {
@@ -200,22 +185,7 @@ func LeagueIdentities(ctx context.Context, tx *sql.Tx, league string) ([]playeri
 		return nil, fmt.Errorf("read league player identities: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
-	var out []playerid.RawIdentity
-	for rows.Next() {
-		var id string
-		var link playerid.RawOutsideID
-		if err := rows.Scan(&id, &link.Provider, &link.Value); err != nil {
-			return nil, fmt.Errorf("read league player link: %w", err)
-		}
-		if len(out) == 0 || out[len(out)-1].Canonical != id {
-			out = append(out, playerid.RawIdentity{Canonical: id})
-		}
-		out[len(out)-1].Links = append(out[len(out)-1].Links, link)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("read league player identities: %w", err)
-	}
-	return out, nil
+	return scanPlayerIdentities(rows)
 }
 
 // MergePlayerIdentities accepts the same immutable links on a reverse transfer,
@@ -242,4 +212,23 @@ func MergePlayerIdentities(ctx context.Context, tx *sql.Tx, identities []playeri
 		}
 	}
 	return nil
+}
+
+func scanPlayerIdentities(rows *sql.Rows) ([]playerid.RawIdentity, error) {
+	var out []playerid.RawIdentity
+	for rows.Next() {
+		var id string
+		var link playerid.RawOutsideID
+		if err := rows.Scan(&id, &link.Provider, &link.Value); err != nil {
+			return nil, fmt.Errorf("read player link: %w", err)
+		}
+		if len(out) == 0 || out[len(out)-1].Canonical != id {
+			out = append(out, playerid.RawIdentity{Canonical: id})
+		}
+		out[len(out)-1].Links = append(out[len(out)-1].Links, link)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read roster identities: %w", err)
+	}
+	return out, nil
 }
