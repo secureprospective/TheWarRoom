@@ -131,12 +131,12 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. MOVED (part 4, batch 1). |
 | 70 | 3 | `internal/composition/research_runtime.go` — `refreshResearchNews`:176 | 45 | `research` | W:research | Validate optional mine and franchise; reject concurrent refresh; order roster IDs with directory; bounded news batches, merge result even on error. MOVED (part 4, batch 1). |
 | 71 | 3 | `internal/composition/research_runtime.go` — `researchDepthOrArchive`:227 | 9 | `research` | W:research | Live depth success returns live freshness; otherwise log and use fallback archive preserving original error. MOVED (part 4, batch 1). |
-| 72 | 3 | `internal/composition/season_app.go` — `refreshSeason`:31 | 49 | `control` | B | Fixed transactions/comms/shell/lineups/trades/injuries/draft/market/race/firsts/current-schedule order; pace/cancel, notify early for lineups, revalidate plans, always wake watcher. |
-| 73 | 3 | `internal/composition/season_app.go` — `refreshInjuries`:83, `heldInjuries`:116, `refreshSeasonTransactions`:129 | 71 | `control` | B,W:research,platform | Live/archive parse and convert; publish last-good on error; injury ID→status/provenance view; injury export is leagueless. |
-| 74 | 3 | `internal/composition/season_app.go` — `refreshSeasonLineups`:158, `lineupWeekParam`:208 | 55 | `control` | B,W:now | Zero week uses blank W; live and archived results scoped to selected week; reject mismatches and clear old week before publishing. |
-| 75 | 4 | `internal/composition/season_app.go` — `refreshPendingTrades`:215, `clearPendingTrades`:258 | 44 | `control` | B,W:control | Keyring read precedes even host discovery; generation fences key deletion; no-key clears data, unavailable/timeout retains data with failure; observe offers separately before hold publication. |
-| 76 | 5 | `internal/composition/season_app.go` — `refreshPendingTradesInBackground`:264 | 14 | `control` | W:control | Key-change refresh uses cancellable worker context else fallback; refresh lock then season notification. |
-| 77 | 3 | `internal/composition/shell_feeds_app.go` — `readShellFeed`:16, `dailyShellReading`:33, `refreshDailyShellFeed`:43 | 40 | `control` | B,W:control,offers | Read archive only when absent; old local date marks pending; at most one network attempt per export/local day (also skip today's successful held read); publish result under season lock. |
+| 72 | 3 | `internal/composition/season_app.go` — `refreshSeason`:31 | 49 | `control` | B | Fixed transactions/comms/shell/lineups/trades/injuries/draft/market/race/firsts/current-schedule order; pace/cancel, notify early for lineups, revalidate plans, always wake watcher. MOVED (part 4, batch 2). |
+| 73 | 3 | `internal/composition/season_app.go` — `refreshInjuries`:83, `heldInjuries`:116, `refreshSeasonTransactions`:129 | 71 | `control` | B,W:research,platform | Live/archive parse and convert; publish last-good on error; injury ID→status/provenance view; injury export is leagueless. MOVED (part 4, batch 2). |
+| 74 | 3 | `internal/composition/season_app.go` — `refreshSeasonLineups`:158, `lineupWeekParam`:208 | 55 | `control` | B,W:now | Zero week uses blank W; live and archived results scoped to selected week; reject mismatches and clear old week before publishing. MOVED (part 4, batch 2). |
+| 75 | 4 | `internal/composition/season_app.go` — `refreshPendingTrades`:215, `clearPendingTrades`:258 | 44 | `control` | B,W:control | Keyring read precedes even host discovery; generation fences key deletion; no-key clears data, unavailable/timeout retains data with failure; observe offers separately before hold publication. MOVED (part 4, batch 2). |
+| 76 | 5 | `internal/composition/season_app.go` — `refreshPendingTradesInBackground`:264 | 14 | `control` | W:control | Key-change refresh uses cancellable worker context else fallback; refresh lock then season notification. MOVED (part 4, batch 2). |
+| 77 | 3 | `internal/composition/shell_feeds_app.go` — `readShellFeed`:16, `dailyShellReading`:33, `refreshDailyShellFeed`:43 | 40 | `control` | B,W:control,offers | Read archive only when absent; old local date marks pending; at most one network attempt per export/local day (also skip today's successful held read); publish result under season lock. MOVED (part 4, batch 2). |
 | 78 | 2 | `internal/composition/shell_feeds_app.go` — `mergeMFLCalendar`:89 | 44 | `control` | W:platform,control | Map held event timestamps/title fallback; discard past deadlines; sort urgency/time/ID; append calendar provenance/unavailability note.  MOVED (part 2, batch 2). |
 | 79 | 3 | `internal/composition/snapshot_app.go` — `takeSnapshot`:23, `targetDirectory`:44, `targetInjuries`:85, `injuriesHeld`:94 | 70 | `platform` | W:platform | Ready gate, serialized directory/injuries snapshot; first-use injury refresh; live directory time uses original lookup timestamp, archive/fail provenance explicit; publish only built snapshot. |
 | 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. |
@@ -179,12 +179,12 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 116 | 4 | `internal/composition/trades_app.go` — `tradeProjection`:349 | 54 | `trades` | W:trades | Detect newer MFL stamps with reset reasons; collect clock/roster/pick/leg blocks; execute local trade only with nonempty valid legs; project each franchise's rich roster/cap and deal text. |
 | 117 | 4 | `internal/composition/trades_app.go` — `tradeBuilderHandOff`:403, `checkTradeExitPending`:454 | 65 | `trades` | W:trades | Recompute saved plan preview; refuse blocks/out-of-scope receipt/nonpending exit/unsafe URL; save handoff before browser/event/wake; proposal skips pending-exit check. |
 | 118 | 2 | `internal/composition/trades_app.go` — `tradePickReason`:470, `tradeClockReasons`:484 | 20 | `trades` | W:trades | FP_ token requires held fresh ownership; unreadable clock blocks with explicit reason; otherwise shared deadline rule.  MOVED (part 2, batch 5). |
-| 119 | 3 | `internal/composition/week_app.go` — `refreshWeeksInBackground`:21, `refreshWeek`:56 | 55 | `control` | B | Hourly week→season→clock-rule schedules→finished scores→engine; re-launch league refresh on tick. Week failure preserves prior week/time with failure note; success may derive phase; always revalidate release and notify. |
+| 119 | 3 | `internal/composition/week_app.go` — `refreshWeeksInBackground`:21, `refreshWeek`:56 | 55 | `control` | B | Hourly week→season→clock-rule schedules→finished scores→engine; re-launch league refresh on tick. Week failure preserves prior week/time with failure note; success may derive phase; always revalidate release and notify. MOVED (part 4, batch 2). |
 | 120 | 1 | `internal/composition/week_app.go` — `lineupWeekFrom`:85 | 22 | `control` | B,startup | Fetch default week then advance until lineup week available; reject >18/mismatched requested week; final week18 ends with no lineup; wrap fetch/conversion errors unchanged.  MOVED (part 2, batch 1). |
-| 121 | 3 | `internal/composition/week_app.go` — `seedCurrentWeek`:109 | 35 | `control` | startup | Apply identical lineup-week algorithm to archived schedules; require exactly one matching scoped result; log failure without replacing held state. |
-| 122 | 4 | `internal/composition/week_app.go` — `deriveWeekPhase`:145 | 30 | `control` | B | Parse configured bounds, stop on invalid/season-over phase; only changed valid phase runs coordinator AdvancePhase with NFL-week/fetched evidence note. |
+| 121 | 3 | `internal/composition/week_app.go` — `seedCurrentWeek`:109 | 35 | `control` | startup | Apply identical lineup-week algorithm to archived schedules; require exactly one matching scoped result; log failure without replacing held state. MOVED (part 4, batch 2). |
+| 122 | 4 | `internal/composition/week_app.go` — `deriveWeekPhase`:145 | 30 | `control` | B | Parse configured bounds, stop on invalid/season-over phase; only changed valid phase runs coordinator AdvancePhase with NFL-week/fetched evidence note. MOVED (part 4, batch 2). |
 | 123 | 2 | `internal/composition/week_app.go` — `lastRegularWeek`:188, `windowSnapshot`:196, `timeNow`:215 | 26 | `control` | W:control,platform;B | Last-regular week must parse within 2–18 else zero; snapshot only rule weeks with detached matchups; injected clock else wall time.  MOVED (part 2, batch 5). |
-| 124 | 3 | `internal/composition/shell_feeds_app.go` — `refreshShellFeeds`:63 | 25 | `control` | B | Pace calendar before trade bait; stop on pause cancellation; season/league-specific live fetch and reference archive for both daily feeds. |
+| 124 | 3 | `internal/composition/shell_feeds_app.go` — `refreshShellFeeds`:63 | 25 | `control` | B | Pace calendar before trade bait; stop on pause cancellation; season/league-specific live fetch and reference archive for both daily feeds. MOVED (part 4, batch 2). |
 | 125 | 3 | `internal/composition/now_app.go` — `refreshScoreFirsts`:42 | 13 | `now` | B,W:now | Read missing first scores from held archive; failed read logs and leaves old holder; publish only successful result under season lock. MOVED (part 3, batch 2). |
 | 126 | 2 | `internal/composition/asset_board.go` — `assetInput`:120 | 9 | `market` | W:market,offers,trades | Hydrate Research before input capture; add every rostered mirror ID to board's value scope, even without finished score. MOVED (part 3, batch 3). |
 
@@ -688,3 +688,22 @@ Initial compile errors (name collision with existing FinishedScores and unused c
 were corrected before the passing batch. No skipped test is counted as passing.
 Frontend prerequisite install/build passed (existing large-chunk warning). Pull --ff-only failed
 because this stacked branch tracks origin/main; no merge/rebase/upstream rewrite performed.
+
+## Part 4 — batch 2: seasonal Control refresh and week policy
+
+Ten units (72–77, 119, 121–122, 124), 518 baseline function LOC. Control owns fixed refresh
+ordering, cancellation and early lineup notification; injury/transaction conversion and held
+injury views; requested-lineup week admission/reset; key-first pending reads, generation fencing,
+key failure wording and separate history-save logging; daily shell archive/attempt admission;
+bounded weekly worker scheduling, week publication/phase derivation and held-week seed admission.
+Composition retains exactly the original RefreshMu, KeyMu/SeasonMu and WeekMu spans, tickers,
+worker joining and raw transport/archive adapters. A stale key generation never enters SeasonMu.
+No network with no key, no stale generation republish, and no history failure relabeled as MFL loss.
+
+New inward order/cancellation, no-key/no-fetch, stale-generation/no-publication, key failure
+retention, daily retry/last-good, week reset/phase refusal, worker schedule and absent/ambiguous
+seed tests pass. Filtered Control/composition race batch passed (11.3 seconds composition),
+including key deletion during fetch, shutdown cancellation, real refresh order, lineup archive
+isolation, weekly refresh transitions and command-door parity. Initial worker test incorrectly
+assumed no windows for missing regular-season bounds; corrected to preserve the fixed Week 9
+trade deadline. Removed the now-unused dailyShellReading composition forwarder.
