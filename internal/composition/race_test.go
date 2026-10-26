@@ -311,3 +311,11 @@ func TestRaceJointCaptureConsistency(t *testing.T) {
 	}
 	<-done
 }
+
+func racePower(in map[string]PowerRankingsResult) map[string]season.PowerRankingsResult {
+	out := make(map[string]season.PowerRankingsResult, len(in))
+	for key, power := range in {
+		out[key] = racePowerResult(power)
+	}
+	return out
+}

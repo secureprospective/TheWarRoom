@@ -2,16 +2,21 @@
 
 ## Resume here
 
-Part 2 in progress: 31 units moved in five batches; 33/126 done cumulatively.
-Batch 1: 3, 5, 20–22, 51, 81, 97, 120. Batch 2: 4, 6–10, 39, 46, 55, 59, 78.
-Batch 3: 12, 64, 66, 93. Batch 4: 62, 63, 65. Batch 5: 16, 107, 118, 123.
-Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
-Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
-All band 1 units are now inward. Next: remaining band 2 joint reads (11 alert acquisition,
-54 poolAssetValues, 58 raceSnapshot, 108 readArchiveFacts, 111 trade inputs, 126 assetInput),
-then refresh/evidence orchestration. The readArchiveFacts adapter now lives in sources_runtime.go.
-93 composition units / 3,732 baseline function LOC remain; core audit is additional.
-Keep all public APIs/permissions/schemas and lock spans unchanged.
+Part 2 in progress: **35 units / 1,064 baseline function LOC moved this part** in five batches.
+Cumulative **68/126 units / 1,866/4,534 baseline function LOC**; 58 units / 2,668 LOC remain.
+Part 3 here means this brief/session, **not** the frontend plan stage: shared read/cache work has not started.
+Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
+
+Next: remaining refresh/evidence units (17 finished scores; 50 offer recording; 67–71 Research;
+72–77 and 119–122 Control/season/week), then write-side move/trade workflows (23–30, 79–82,
+109–117). Large lifecycle/platform units and core audit remain; do not count retained lock/resource
+adapters as removed decisions. Native gate/schedule adapters now live in native_gate.go and
+commissioner_host.go; cache/settings/freshness adapters were consolidated (tables below).
+All band 1 and 2 units are inward. Continue batches with filtered composition race tests and
+command-door parity. Keep readiness-dependent resources lazy, exact lock spans and error text.
+
+Still required for Part 2 completion: core Host policy extraction and negative composition/core
+ratchet, full CI and disposable-profile live review. No permission/role/binding/schema change here.
 
 ## Boundary and preserved slice
 
@@ -95,7 +100,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 38 | 4 | `internal/composition/native_lineup_app.go` — `runLineupSet`:30, `LineupFacts`:63 | 39 | `commissioner` | W:commissioner | Decode lineup and require matching permit; construct private immediate command; find selected week's held NFL locks, no network. MOVED (part 3, batch 1). |
 | 39 | 2 | `internal/composition/native_schedule_app.go` — `nativeScheduleDates`:18 | 27 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Read reference NFL schedules only for requested season; ignore bad bodies/conversion; first valid row per week wins.  MOVED (part 2, batch 2). |
 | 40 | 3 | `internal/composition/native_schedule_app.go` — `BidEnvironment`:48 | 35 | `commissioner` | W:commissioner;store callbacks | Replay season, derive week/offseason fallback; only known week loads playoff bracket/directory; build shared bid environment. MOVED (part 3, batch 1). |
-| 41 | 4 | `internal/composition/native_seed_app.go` — `nativeSeedCommand`:12, `heldNativeSnapshot`:33 | 54 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Retry must match original seed/expected/reason; require season-aligned held rosters/settings, parse roster date, assemble/validate snapshot with held draft and directory facts. |
+| 41 | 4 | `internal/composition/native_seed_app.go` — `nativeSeedCommand`:12, `heldNativeSnapshot`:33 | 54 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Retry must match original seed/expected/reason; require season-aligned held rosters/settings, parse roster date, assemble/validate snapshot with held draft and directory facts. MOVED (part 3, batch 5). |
 | 42 | 3 | `internal/composition/now_app.go` — `refreshNowWeek`:58, `feedFresh`:152 | 44 | `now` | B,W:now,research | Five-minute schedule and daily bye TTL, forced refresh override; preserve last good copy; pace schedule before bye fetch. MOVED (part 3, batch 2). |
 | 43 | 2 | `internal/composition/now_app.go` — `scheduleFeed`:100, `checkScheduleWeek`:145 | 27 | `now` | B,W:now,research | Both live and archive must match requested week; scope archived URL by W. MOVED (part 3, batch 2). |
 | 44 | 3 | `internal/composition/now_app.go` — `seedClockSchedules`:122 | 22 | `now` | startup | Seed current week plus nonzero clock rule weeks from archive only; log failed reads and skip missing. MOVED (part 3, batch 2). |
@@ -110,8 +115,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. MOVED (part 3, batch 4). |
 | 54 | 2 | `internal/composition/pool_app.go` — `poolAssetValues`:106 | 14 | `offers` | W:offers | Hydrate Research, value requested IDs in Market model, index board values and preserve source note. MOVED (part 3, batch 3). |
 | 55 | 1 | `internal/composition/power_rankings_app.go` — `remainingSchedule`:120, `ages`:130, `seasonWeeks`:146 | 29 | `scoring` | B,W:race | Schedule failure removes column; missing directory/birthdate means NaN age; age uses 365.2425-day years; unreadable season length gives zero.  MOVED (part 2, batch 2). |
-| 56 | 3 | `internal/composition/race_app.go` — `refreshRace`:22 | 46 | `race` | B,W:race,now | Read/publish weeks→brackets→standings with spacing; successful standings builds season/franchise power using one cached remaining schedule; publish power only on success. |
-| 57 | 3 | `internal/composition/race_app.go` — `scopedBodies`:71, `bracketsOrArchive`:85 | 47 | `race` | B,W:race,now,research | Archive must match URL scope; bracket list plus each bracket required; paced failure aborts all; last nonlive part sets aggregate freshness. |
+| 56 | 3 | `internal/composition/race_app.go` — `refreshRace`:22 | 46 | `race` | B,W:race,now | Read/publish weeks→brackets→standings with spacing; successful standings builds season/franchise power using one cached remaining schedule; publish power only on success. MOVED (part 3, batch 5). |
+| 57 | 3 | `internal/composition/race_app.go` — `scopedBodies`:71, `bracketsOrArchive`:85 | 47 | `race` | B,W:race,now,research | Archive must match URL scope; bracket list plus each bracket required; paced failure aborts all; last nonlive part sets aggregate freshness. MOVED (part 3, batch 5). |
 | 58 | 2 | `internal/composition/race_app.go` — `raceSnapshot`:123 | 15 | `race` | W:race,now | Capture joint live/held state; detect unplayed live week; apply live overlay only to matching week. MOVED (part 3, batch 2). |
 | 59 | 1 | `internal/composition/refresh_app.go` — `seasonGuess`:44 | 6 | `control` | startup,B,W:sources | Use held season else wall-clock year for discovery.  MOVED (part 2, batch 2). |
 | 60 | 4 | `internal/composition/refresh_app.go` — `refreshLeague`:53, `refreshLeagueLocked`:70, `fetchLeague`:104 | 78 | `control` | startup,B,W:sources;move watcher | Discover current season, normalize roster/money; stage rules+mirror and atomically commit; release prepared rules on mirror-stage failure; update checked times/model dirty; successful outer refresh updates draft feeds/revalidates plans. |
@@ -545,3 +550,22 @@ failure preservation/dedup, freshness/force paths and Market wrong-week failure 
 Batch 4 consolidation: `internal/composition/freshness.go` →
 `internal/composition/mfl_feed_cache.go`, beside its live/archive read adapters; the last unused
 SameExport forwarding helper was removed. No rule was copied and no ratchet baseline changed.
+
+## Part 3 — batch 5: native seed and Race refresh
+
+Three units (41, 56–57), 147 baseline function LOC. Commissioner owns retry identity and lazy
+seed capture; Native owns held-store/season/date admission and seed construction/validation.
+Composition still holds RefreshMu and the original separate season/target snapshot captures;
+invalid or retry requests never acquire later inputs. Race owns week→bracket→standing publication
+order, cancellation, success-only power replacement and the one lazy schedule shared by both
+power views. Bracket reads preserve all-or-nothing errors and last-nonlive freshness precedence.
+The generic URL-parameter archive filter lives in shared Report rather than introducing a sibling
+feature dependency; live/archive transport and permission checks are unchanged.
+
+Added inward tests for retry mismatch/no-recapture/error/new-command fields, missing/mixed/bad-date
+seed early exits, Race read/publication order and one schedule, failed standings no power replace,
+bracket aggregate freshness/partial refusal/cancellation, and scoped archive acceptance.
+Feature and filtered composition race batches passed (6.2 seconds composition), including real
+seed capture/retry/missing-input tests, Race goldens/concurrent/joint snapshots and command-door
+parity. The single-result power representation adapter is production code; its map fixture adapter
+now lives with Race's composition tests. No public wire, permission, schema or dependency change.

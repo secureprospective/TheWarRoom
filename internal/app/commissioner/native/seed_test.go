@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
@@ -68,5 +70,24 @@ func TestTheStartingSnapshotNumbersFranchisesAndKeepsHeldAssets(t *testing.T) {
 		{Season: 2027, Round: 2, Original: "franchise.01", Owner: "franchise.02"}}
 	if !reflect.DeepEqual(seed.Picks, wantPicks) {
 		t.Fatalf("made picks keep their slot and rookie, future picks their original owner: %+v", seed.Picks)
+	}
+}
+
+func TestSeedCaptureStopsBeforeReadingUnusableHeldInputs(t *testing.T) {
+	t.Parallel()
+	if _, err := CaptureSeed(SeedSource{Available: func() bool { return false }}); err == nil {
+		t.Fatal("missing stores accepted")
+	}
+	for _, tc := range []struct {
+		season int
+		stamp  string
+	}{{2025, "bad"}, {2026, "bad"}} {
+		source := SeedSource{Available: func() bool { return true }, Roster: func() (state.MirrorSnapshot, string) { return state.MirrorSnapshot{Season: tc.season}, tc.stamp }, Season: func() int { return 2026 }, Draft: func() (season.Feed[[]draftreports.Pick], season.Feed[[]draftreports.FuturePick]) {
+			t.Fatal("unusable roster read draft")
+			return season.Feed[[]draftreports.Pick]{}, season.Feed[[]draftreports.FuturePick]{}
+		}}
+		if _, err := CaptureSeed(source); err == nil {
+			t.Fatal("mixed season or bad roster time accepted")
+		}
 	}
 }

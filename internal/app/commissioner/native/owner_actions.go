@@ -27,27 +27,23 @@ type OwnerFamily struct {
 
 // RecordOwnerAction is the Run of a registered owner action: it records a command the gate has cleared. The
 // store asks the gate again inside its own transaction, where it also judges the action itself.
-func RecordOwnerAction(family OwnerFamily) func(context.Context, ExecuteOwner, commissioner.Permit,
-	json.RawMessage) (commissioner.Receipt, error) {
-	return func(ctx context.Context, execute ExecuteOwner, permit commissioner.Permit,
-		input json.RawMessage) (commissioner.Receipt, error) {
-		var raw commissioner.RawCommand
-		if err := json.Unmarshal(input, &raw); err != nil {
-			return commissioner.Receipt{}, fmt.Errorf("choose %s", family.choose)
-		}
-		franchise, action, ok := family.seat(raw)
-		if !ok {
-			return commissioner.Receipt{}, fmt.Errorf("choose %s", family.choose)
-		}
-		if permit.League() != raw.League || permit.Franchise() != franchise || permit.Action() != action {
-			return commissioner.Receipt{}, fmt.Errorf("ask the league calendar before acting")
-		}
-		receipt, err := execute(ctx, raw)
-		if err != nil {
-			return commissioner.Receipt{}, fmt.Errorf("record %s: %w", family.label, err)
-		}
-		return receipt, nil
+func RecordOwnerAction(ctx context.Context, family OwnerFamily, execute ExecuteOwner, permit commissioner.Permit, input json.RawMessage) (commissioner.Receipt, error) {
+	var raw commissioner.RawCommand
+	if err := json.Unmarshal(input, &raw); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("choose %s", family.choose)
 	}
+	franchise, action, ok := family.seat(raw)
+	if !ok {
+		return commissioner.Receipt{}, fmt.Errorf("choose %s", family.choose)
+	}
+	if permit.League() != raw.League || permit.Franchise() != franchise || permit.Action() != action {
+		return commissioner.Receipt{}, fmt.Errorf("ask the league calendar before acting")
+	}
+	receipt, err := execute(ctx, raw)
+	if err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("record %s: %w", family.label, err)
+	}
+	return receipt, nil
 }
 
 func TradeFamily() OwnerFamily {

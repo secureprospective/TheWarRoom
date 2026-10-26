@@ -25,7 +25,6 @@ func (a *App) refreshEngine(parent context.Context) {
 		},
 		Check: a.checkEngine, Log: func(message string) { log.Print(message) },
 	})
-
 }
 
 // checkEngine is called with modelMu held.
@@ -41,7 +40,6 @@ func (a *App) checkEngine(ctx context.Context) {
 		},
 		Finished: a.engineFinished, Log: func(message string) { log.Print(message) },
 	})
-
 }
 
 func (a *App) engineFinished(ctx context.Context, started time.Time, rep modelrun.Report) {

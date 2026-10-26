@@ -1,7 +1,9 @@
 package report
 
 import (
+	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -75,3 +77,16 @@ const Offline = offline.League
 
 // FailureText is PlainFailure's text, for the held-feed notes a screen shows.
 func FailureText(err error) string { return offline.Text(err) }
+
+// ScopedBodies admits only bodies whose archive URL carries the requested parameter value.
+func ScopedBodies(bodies func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error), param, value string) func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error) {
+	return func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		return bodies(ctx, part, func(src string, body []byte, at time.Time) bool {
+			u, err := url.Parse(src)
+			if err != nil || u.Query().Get(param) != value {
+				return false
+			}
+			return accept(src, body, at)
+		})
+	}
+}

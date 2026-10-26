@@ -18,7 +18,7 @@ func TestOwnerFamiliesRefuseBeforeExecuting(t *testing.T) {
 	for _, family := range []OwnerFamily{TradeFamily(), WaiverFamily(), BidFamily()} {
 		for _, body := range []string{`{`, `{}`, `{"league":"other","command":"trade.offer","args":{"trade":{"franchise":"other"}}}`} {
 			calls := 0
-			_, err := RecordOwnerAction(family)(t.Context(), func(context.Context, commissioner.RawCommand) (commissioner.Receipt, error) {
+			_, err := RecordOwnerAction(t.Context(), family, func(context.Context, commissioner.RawCommand) (commissioner.Receipt, error) {
 				calls++
 				return commissioner.Receipt{}, nil
 			}, commissioner.Permit{}, json.RawMessage(body))

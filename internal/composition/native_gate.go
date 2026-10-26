@@ -76,7 +76,7 @@ func (a *App) runNativeAction(registry []NativeOwnerAction, league, franchise, n
 
 func recordOwnerAction(family nativeapp.OwnerFamily) func(context.Context, *App, commissioner.Permit, json.RawMessage) (commissioner.Receipt, error) {
 	return func(ctx context.Context, a *App, permit commissioner.Permit, input json.RawMessage) (commissioner.Receipt, error) {
-		return nativeapp.RecordOwnerAction(family)(ctx, leagueservice.New(commissionerHost{State: a.core, app: a}).Execute, permit, input)
+		return nativeapp.RecordOwnerAction(ctx, family, leagueservice.New(commissionerHost{State: a.core, app: a}).Execute, permit, input)
 	}
 }
 func tradeAction(command string) NativeOwnerAction {

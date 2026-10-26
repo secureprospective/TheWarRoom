@@ -45,7 +45,6 @@ func (a *App) refreshScoreFirsts(ctx context.Context) {
 		defer a.core.SeasonMu.Unlock()
 		a.nowHeld.PublishFirsts(next)
 	}, a.core.FallbackLog)
-
 }
 
 // refreshNowWeek reads the chosen week's NFL schedule and the season's byes, each live or from
@@ -86,7 +85,6 @@ func (a *App) refreshNowWeek(ctx context.Context, week int, force bool) {
 			holdSeasonFeed(&next, rows, fresh, err)
 			a.nowHeld.PublishByes(nowFeed(next))
 		}})
-
 }
 
 func (a *App) scheduleFeed(week int) archivedFeed[nflschedule.RawWeek] {
@@ -123,12 +121,10 @@ func (a *App) seedClockSchedules(ctx context.Context) {
 			a.now.schedules[week] = heldSeasonFeed[[]nflschedule.RawWeek]{Value: rows, FetchedAt: at}
 			a.core.SeasonMu.Unlock()
 		}, a.core.FallbackLog)
-
 }
 
 func checkScheduleWeek(raw nflschedule.RawWeek, week int) ([]nflschedule.RawWeek, error) {
 	return nowapp.CheckScheduleWeek(raw, week) //nolint:wrapcheck // Preserve requested-week refusal text.
-
 }
 
 // KnownFranchise reports whether id is one of the rulebook's franchises.
@@ -165,7 +161,6 @@ func (h nowHost) NowRefresh(week int, force bool) error {
 			a.core.SeasonMu.Unlock()
 			return nowapp.RefreshSelectedWeek(ctx, week, weeks, a.marketWeek(), force, a.refreshNowWeek)
 		})
-
 }
 
 // NowInput is the joint capture: under SeasonMu it snapshots Now's holder, then copies the shared
@@ -209,7 +204,6 @@ func (h nowHost) LiveGame(open bool, follow, mine string) (nowapp.LiveGameView, 
 		Start: a.startLiveGame, Now: time.Now, Windows: h.liveGameWindows, Week: a.marketWeek,
 		Seed: a.seedLiveGames, Poll: a.pollLiveMFL, Spines: a.liveGameSpines,
 	})
-
 }
 
 func (a *App) startLiveGame(adapter *livegame.Adapter) error {
@@ -220,13 +214,12 @@ func (a *App) startLiveGame(adapter *livegame.Adapter) error {
 			return nil, nil, err //nolint:wrapcheck // LiveEndpoints supplies its existing refusal.
 		}
 		fetch := livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second, Transport: a.core.Network}, endpoints)
-		var finals livegame.Finals
+		finals := adapter.Finals
 		if a.core.History != nil {
 			finals = nowapp.HeldFinals{Store: a.core.History, Endpoints: endpoints}
 		}
 		return fetch, finals, nil
 	})
-
 }
 
 func (a *App) pollLiveMFL(ctx context.Context, live *nowapp.LiveGame, now time.Time, active bool) {
@@ -239,7 +232,6 @@ func (a *App) pollLiveMFL(ctx context.Context, live *nowapp.LiveGame, now time.T
 		a.core.SeasonMu.Unlock()
 		return failed
 	})
-
 }
 
 func (a *App) seedLiveGames(at time.Time) livegame.Held {
@@ -269,7 +261,6 @@ func (a *App) liveGameSpines(ctx context.Context, v *nowapp.LiveGameView, adapte
 	return nowapp.FillLiveSpines(ctx, v, adapter, mine, nowapp.SpineSource{Available: a.core.History != nil,
 		Known:   func(ctx context.Context) (map[string]bool, error) { return a.core.History.KnownIDs(ctx, "espn") },
 		Inspect: a.inspectLiveBox, Players: a.spinePlayers})
-
 }
 
 func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]nowapp.SpinePlayer, error) {
@@ -285,7 +276,6 @@ func (a *App) spinePlayers(ctx context.Context, mine string) (map[string]nowapp.
 		func(id, name string, off bool) nowapp.PhotoView {
 			return nowapp.PhotoView(platformapp.Photo(id, name, off))
 		}), nil
-
 }
 
 func (a *App) inspectLiveBox(ctx context.Context, v *nowapp.LiveGameView) error {
@@ -295,7 +285,6 @@ func (a *App) inspectLiveBox(ctx context.Context, v *nowapp.LiveGameView) error 
 	}
 	nowapp.InspectLiveBox(v, ids)
 	return nil
-
 }
 
 func nowFeed[T any](f heldSeasonFeed[T]) nowapp.Feed[T] {

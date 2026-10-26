@@ -40,7 +40,6 @@ func (a *App) refreshFreeAgents(ctx context.Context) {
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
 	poolapp.HoldFreeAgents(&a.core.SeasonFreeAgents, value, fresh, err, func() { a.core.ModelDirty.Store(true) })
-
 }
 
 // restoreFreeAgents makes the first refresh compare with the last held list across launches.
@@ -54,7 +53,6 @@ func (a *App) restoreFreeAgents(ctx context.Context) {
 			holdSeasonFeed(&a.core.SeasonFreeAgents, ids, liveFreshness(at), nil)
 			a.core.SeasonMu.Unlock()
 		}, a.core.FallbackLog)
-
 }
 
 // refreshOffersPool fetches the free-agent list from MFL. Without force it skips a copy fetched
@@ -74,12 +72,10 @@ func (a *App) refreshOffersPool(force bool) error {
 		a.refreshFreeAgents(ctx)
 		a.refreshMarketFeeds(ctx, force)
 	})
-
 }
 
 func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
 	a.hydrateResearchContext(ctx)
 	model := a.marketHeld.SnapshotModel()
 	return marketapp.PoolAssetValues(researchView{researchInput: a.heldResearchInput()}.onField(), model, ids, at)
-
 }
