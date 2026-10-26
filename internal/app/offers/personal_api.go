@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
@@ -127,4 +128,20 @@ func PersonalSnapshot(snap snapshot.Snapshot, loaded bool, mine string) (snapsho
 		return snap, fmt.Errorf("personal: unknown franchise")
 	}
 	return snap, nil
+}
+
+// RecordOffers keeps a history-save failure separate from a failed pending-offer read.
+func RecordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error, available bool,
+	owner func() (string, error), save func(context.Context, string, []leaguefeed.PendingTrade, time.Time) error) error {
+	if readErr != nil || !available {
+		return readErr
+	}
+	mine, err := owner()
+	if err != nil {
+		return fmt.Errorf("offers: archive owner: %w", err)
+	}
+	if err := save(ctx, mine, pending, at); err != nil {
+		return fmt.Errorf("offers: save live read: %w", err)
+	}
+	return nil
 }

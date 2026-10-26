@@ -13,13 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
-func researchKinds() []string {
-	return researchapp.Kinds()
-}
-func researchFeedLabel(kind string) string {
-	return researchapp.FeedLabel(kind)
-}
-
 func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {
 	return a.researchArchiveFeeds().Read(ctx, a.core.Season, kind, week)
 }

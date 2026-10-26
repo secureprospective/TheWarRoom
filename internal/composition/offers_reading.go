@@ -2,7 +2,6 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"time"
 
@@ -101,18 +100,17 @@ func poolMarketLines(facts []MarketFact) []string {
 
 // The caller holds seasonMu, so the ending evidence and the pending read form one observation.
 func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error) error {
-	if readErr != nil || a.core.Pools == nil {
-		return readErr
-	}
-	d, err := a.lab()
-	if err != nil {
-		return fmt.Errorf("offers: archive owner: %w", err)
-	}
-	if err := personal.New(a.core.Pools).ObserveOffers(ctx, lab.OfferOwner(d), a.core.Season, pending,
-		a.core.SeasonTransactions.Value, at); err != nil {
-		return fmt.Errorf("offers: save live read: %w", err)
-	}
-	return nil
+	return offersapp.RecordOffers(ctx, pending, at, readErr, a.core.Pools != nil, //nolint:wrapcheck // Preserve original read/save errors.
+		func() (string, error) {
+			d, err := a.lab()
+			if err != nil {
+				return "", err
+			}
+			return lab.OfferOwner(d), nil
+		}, func(ctx context.Context, owner string, pending []leaguefeed.PendingTrade, at time.Time) error {
+			return personal.New(a.core.Pools).ObserveOffers(ctx, owner, a.core.Season, pending, a.core.SeasonTransactions.Value, at)
+		})
+
 }
 
 func counterProvenance(d *lab.Data) snapshot.Provenance {

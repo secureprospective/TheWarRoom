@@ -105,11 +105,7 @@ type ArchiveFeeds struct {
 }
 
 func (s ArchiveFeeds) Read(ctx context.Context, season int, kind, week string) Feed[[]researchfeeds.Feed] {
-	bodies := s.Bodies
-	if week != "" {
-		bodies = s.Scoped("W", week)
-	}
-	return ReadArchivedFeed(ctx, bodies, season, kind, week)
+	return ReadArchivedFeed(ctx, s.ForWeek(week), season, kind, week)
 }
 
 type ArchiveInput struct {
@@ -229,4 +225,11 @@ func MergeArchive(current Values, injury Feed[[]leaguefeed.Injury], archived Arc
 		current.Links, current.LinkError, current.LinkVersion = links, "", version
 	}
 	return current, injury
+}
+
+func (s ArchiveFeeds) ForWeek(week string) ArchivedBodies {
+	if week != "" {
+		return s.Scoped("W", week)
+	}
+	return s.Bodies
 }

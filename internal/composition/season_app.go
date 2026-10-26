@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/injuries"
@@ -274,4 +275,8 @@ func (a *App) refreshPendingTradesInBackground() {
 		a.refreshPendingTrades(ctx)
 		a.core.SeasonChanged(ctx)
 	})
+}
+
+func (a *App) seasonPauseFunc() func(context.Context, time.Duration) error {
+	return report.RefreshPause(a.core.SeasonPause)
 }

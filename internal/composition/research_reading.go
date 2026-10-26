@@ -1,7 +1,6 @@
 package composition
 
 import (
-	"context"
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
@@ -50,12 +49,7 @@ func (h researchHost) Ready() error                     { return h.app.ready() }
 func (h researchHost) ResearchNames() map[string]string { return h.app.core.ResearchNames() }
 func (h researchHost) HydrateResearch(ids ...string)    { h.app.hydrateResearch(ids...) }
 func (h researchHost) PrepareResearchDepth() {
-	if h.app.core.Fetches == nil {
-		return
-	}
-	ctx, cancel := context.WithTimeout(h.app.fallbackParent(), rasFetchTimeout)
-	defer cancel()
-	h.app.refreshResearchDepth(ctx, false)
+	researchapp.PrepareDepth(h.app.core.Fetches != nil, h.app.fallbackParent, rasFetchTimeout, h.app.refreshResearchDepth)
 }
 func (h researchHost) ResearchSnapshot() researchapp.Snapshot {
 	return h.app.heldResearchInput().snapshot()

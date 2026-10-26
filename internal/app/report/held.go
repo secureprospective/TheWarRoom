@@ -90,3 +90,21 @@ func ScopedBodies(bodies func(context.Context, string, func(string, []byte, time
 		})
 	}
 }
+
+func RefreshPause(pause func(context.Context, time.Duration) error) func(context.Context, time.Duration) error {
+	if pause != nil {
+		return pause
+	}
+	return Pause
+}
+
+func Pause(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return fmt.Errorf("season refresh pause: %w", ctx.Err())
+	case <-timer.C:
+		return nil
+	}
+}

@@ -175,14 +175,7 @@ type Runtime interface {
 type HeldFeed[T any] = report.HeldFeed[T]
 
 func Pause(ctx context.Context, duration time.Duration) error {
-	timer := time.NewTimer(duration)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return fmt.Errorf("season refresh pause: %w", ctx.Err())
-	case <-timer.C:
-		return nil
-	}
+	return report.Pause(ctx, duration) //nolint:wrapcheck // Preserve pause cancellation context.
 }
 
 func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error) {

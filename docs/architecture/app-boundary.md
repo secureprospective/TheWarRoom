@@ -76,7 +76,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 14 | 4 | `internal/composition/engine_refresh.go` — `checkEngine`:38 | 32 | `scoring` | B | Read prior run/input changes, apply EngineDue and dirty flag, fetch directory; clear dirty before run and restore on failure so concurrent changes survive. MOVED (part 3, batch 4). |
 | 15 | 5 | `internal/composition/engine_refresh.go` — `engineFinished`:71, `sourceHealthChanged`:80 | 13 | `scoring` | B,W | Log run totals/duration and emit health event only if callback exists (runtime policy). MOVED (part 3, batch 4). |
 | 16 | 2 | `internal/composition/engine_refresh.go` — `modelFreeAgents`:94 | 9 | `scoring` | B,W:scoring | Capture held free-agent IDs as engine input under season lock.  MOVED (part 2, batch 5). |
-| 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. |
+| 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. MOVED (part 4, batch 1). |
 | 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. MOVED (part 3, batch 4). |
 | 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. MOVED (part 3, batch 4). |
 | 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior.  MOVED (part 2, batch 1). |
@@ -109,7 +109,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 47 | 4 | `internal/composition/now_app.go` — `LiveGame`:235 | 37 | `now` | W:now | Initialize adapter; reset on week change retaining fetch/finals; seed empty board; reject absent follow ID; refresh/final and MFL poll, attach detail failure without losing view. MOVED (part 3, batch 2). |
 | 48 | 3 | `internal/composition/now_app.go` — `startLiveGame`:273, `pollLiveMFL`:288 | 30 | `now` | W:now | Lazy endpoint/cache setup; active due MFL polling only; success resets failures, failure uses exponential delay capped at 16×30 seconds. MOVED (part 3, batch 2). |
 | 49 | 2 | `internal/composition/now_app.go` — `liveGameSpines`:327, `spinePlayers`:356, `inspectLiveBox`:381 | 72 | `now` | W:now | No detail work without held/followed games; require history/crosswalk; only known ESPN IDs and directory facts become spines/photos; attach box entities for matched IDs only. MOVED (part 3, batch 2). |
-| 50 | 3 | `internal/composition/offers_reading.go` — `recordOffers`:103 | 14 | `offers` | B,W:control | Skip failed reads/missing pools; save pending offers with transaction-ending evidence for archive owner; history save failure is separate from MFL read failure. |
+| 50 | 3 | `internal/composition/offers_reading.go` — `recordOffers`:103 | 14 | `offers` | B,W:control | Skip failed reads/missing pools; save pending offers with transaction-ending evidence for archive owner; history save failure is separate from MFL read failure. MOVED (part 4, batch 1). |
 | 51 | 1 | `internal/composition/offers_reading.go` — `personalSnapshot`:122 | 12 | `offers` | W:offers,contracts,trades | Require loaded snapshot and franchise membership; otherwise exact personal refusal.  MOVED (part 2, batch 1). |
 | 52 | 3 | `internal/composition/pool_app.go` — `refreshFreeAgents`:20, `restoreFreeAgents`:55 | 62 | `offers` | B,W:offers | Restore archive before first refresh for cross-launch comparison; parse/normalize/sort IDs, set model dirty only for successful changed list; retain good held data on failure. MOVED (part 3, batch 4). |
 | 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. MOVED (part 3, batch 4). |
@@ -126,11 +126,11 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 64 | 2 | `internal/composition/research_archive.go` — `firstArchiveRead`:92, `hydrateResearchFeed`:106 | 25 | `research` | W:research,market,offers,trades | Each archive key tried once; only missing feeds hydrate; live failure reason overrides archived pending note.  MOVED (part 2, batch 3). |
 | 65 | 3 | `internal/composition/research_archive.go` — `mergeResearchArchive`:117, `hydrateArchivedDepth`:169 | 65 | `research` | W:research,market,offers,trades | Refresh links when crosswalk version changes; fill only absent held data; old-day news becomes pending; preserve earlier live errors over archive fallback.  MOVED (part 2, batch 4). |
 | 66 | 2 | `internal/composition/research_reading.go` — `researchRows`:33, `snapshot`:45 | 26 | `research` | W:research,market,offers,trades | Use first feed's rows; choose now if unset; finish-score totals and held cut charges become research input, with detached indexes.  MOVED (part 2, batch 3). |
-| 67 | 3 | `internal/composition/research_reading.go` — `PrepareResearchDepth`:73 | 8 | `research` | W:research | No fetch transport means no depth preparation; otherwise bounded nonforced refresh. |
-| 68 | 3 | `internal/composition/research_runtime.go` — `refreshResearchFeed`:33, `researchLinks`:69, `refreshResearchDepth`:84 | 77 | `research` | W:research | Five-minute feed/daily depth freshness unless forced; weekly archive scoping; link only known MFL IDs for gsis/espn; publish links/errors and held feeds. |
-| 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. |
-| 70 | 3 | `internal/composition/research_runtime.go` — `refreshResearchNews`:176 | 45 | `research` | W:research | Validate optional mine and franchise; reject concurrent refresh; order roster IDs with directory; bounded news batches, merge result even on error. |
-| 71 | 3 | `internal/composition/research_runtime.go` — `researchDepthOrArchive`:227 | 9 | `research` | W:research | Live depth success returns live freshness; otherwise log and use fallback archive preserving original error. |
+| 67 | 3 | `internal/composition/research_reading.go` — `PrepareResearchDepth`:73 | 8 | `research` | W:research | No fetch transport means no depth preparation; otherwise bounded nonforced refresh. MOVED (part 4, batch 1). |
+| 68 | 3 | `internal/composition/research_runtime.go` — `refreshResearchFeed`:33, `researchLinks`:69, `refreshResearchDepth`:84 | 77 | `research` | W:research | Five-minute feed/daily depth freshness unless forced; weekly archive scoping; link only known MFL IDs for gsis/espn; publish links/errors and held feeds. MOVED (part 4, batch 1). |
+| 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. MOVED (part 4, batch 1). |
+| 70 | 3 | `internal/composition/research_runtime.go` — `refreshResearchNews`:176 | 45 | `research` | W:research | Validate optional mine and franchise; reject concurrent refresh; order roster IDs with directory; bounded news batches, merge result even on error. MOVED (part 4, batch 1). |
+| 71 | 3 | `internal/composition/research_runtime.go` — `researchDepthOrArchive`:227 | 9 | `research` | W:research | Live depth success returns live freshness; otherwise log and use fallback archive preserving original error. MOVED (part 4, batch 1). |
 | 72 | 3 | `internal/composition/season_app.go` — `refreshSeason`:31 | 49 | `control` | B | Fixed transactions/comms/shell/lineups/trades/injuries/draft/market/race/firsts/current-schedule order; pace/cancel, notify early for lineups, revalidate plans, always wake watcher. |
 | 73 | 3 | `internal/composition/season_app.go` — `refreshInjuries`:83, `heldInjuries`:116, `refreshSeasonTransactions`:129 | 71 | `control` | B,W:research,platform | Live/archive parse and convert; publish last-good on error; injury ID→status/provenance view; injury export is leagueless. |
 | 74 | 3 | `internal/composition/season_app.go` — `refreshSeasonLineups`:158, `lineupWeekParam`:208 | 55 | `control` | B,W:now | Zero week uses blank W; live and archived results scoped to selected week; reject mismatches and clear old week before publishing. |
@@ -668,3 +668,23 @@ then Research units 67–71. Preserve cancellation/pacing, first-finish pinning 
 latest-held re-read/publication spans; callbacks must not accidentally capture startup-dependent
 stores before readiness or replace live data with a stale detached capture. After that, move
 local plan save/handoff workflows with their existing ownership checks and save-before-browser order.
+
+## Part 4 — batch 1: finished scores, Offers history and Research
+
+Finding/proposal: refresh admission, ordered reads, first-finish pinning, news concurrency/scope
+and depth fallback still lived in composition. Move those rules inward; composition retains
+RefreshMu/NewsMu/SeasonMu and the latest-held publication spans, actual network/archive wiring,
+and startup-dependent resources. Finished scores capture the held score timestamp and schedule
+under the same original lock; first finish merges against current held state. News publishes
+partial results even on read failure and refuses concurrent/scope-invalid work before capture.
+Seven units (17, 50, 67–71), 243 baseline function LOC. Shared pause selection/cancellation now
+has its single owner in Report; Core keeps a compatibility forwarder. No public/schema/role change.
+
+Targeted feature and composition race batch passed: inward pin/cancellation, feed last-good and
+force, depth links/error retention, ordered refresh/cancellation, lazy transport preparation,
+news admission/failure publication and Offers read/save-error separation; existing real Research
+refresh/news concurrency, finished-score reread, pending history/save-failure and door parity.
+Initial compile errors (name collision with existing FinishedScores and unused context import)
+were corrected before the passing batch. No skipped test is counted as passing.
+Frontend prerequisite install/build passed (existing large-chunk warning). Pull --ff-only failed
+because this stacked branch tracks origin/main; no merge/rebase/upstream rewrite performed.
