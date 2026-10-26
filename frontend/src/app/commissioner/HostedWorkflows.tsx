@@ -165,7 +165,7 @@ export function HostedWorkflows({
     summary: string,
     visibility: 'league' | 'private' = 'league',
   ) => {
-    void room.review(
+    return room.review(
       {
         command,
         mode: 'preview',
@@ -181,7 +181,7 @@ export function HostedWorkflows({
         },
       } as NativeRequest,
       summary,
-    );
+    ).then(() => { if (room.peek().error) throw new Error(room.peek().error); });
   };
   const teamName = (id: string) =>
     roster.franchises.find((f) => f.value === id)?.label || 'League team';
@@ -213,7 +213,7 @@ export function HostedWorkflows({
   useEffect(() =>
     surfaceActions.register('hosted-workflows', ({ value }) => {
       if (value === 'offer' && partner && assets.length)
-        review(
+        return review(
           'trade.offer',
           {
             trade: {
@@ -226,7 +226,7 @@ export function HostedWorkflows({
         );
       if (value !== 'workflow' || !change || !definition || !reason.trim()) return;
       const args = change.args as Record<string, object>;
-      review(
+      return review(
         definition.command,
         ownerActs.includes(definition)
           ? {

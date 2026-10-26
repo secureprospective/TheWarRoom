@@ -47,12 +47,12 @@ export function CommissionerActForm({ definition, league }: { definition: ActDef
       await nativeRolloverDryRun(bodyOf({ ...change,
         args: { rollover: { to: Number(values.to), dry_run: true } } }, `${request}.dry`));
       setDry(signature);
-    } catch (cause) { setDryError(refusalText(cause)); }
+    } catch (cause) { setDryError(refusalText(cause)); throw cause; }
     finally { setReadingDry(false); }
   };
   const latestDry = useRef(runDry);
   latestDry.current = runDry;
-  useEffect(() => surfaceActions.register('act-dry-run', () => void latestDry.current()), []);
+  useEffect(() => surfaceActions.register('act-dry-run', () => latestDry.current()), []);
   const blocked = error || (!change ? 'Complete each field to review this change.' : wait) ||
     (!dryReady ? 'Run the season check before recording the rollover.' : '');
   return <section className="league-form" aria-label={definition.label}>

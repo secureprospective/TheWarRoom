@@ -122,7 +122,7 @@ it('opens, expands, collapses and closes a real player via dispatch', () => {
 });
 
 it('presets reference real workspaces, apply all four fields, and deny Admin for GM', () => {
-  const c = createCommands(() => undefined);
+  const c = createCommands(() => undefined, undefined, undefined, ['gm']);
   for (const id of presetIds) {
     const p = presets[id];
     expect(routeFor(p.route.node, p.route.workspace)).toEqual(p.route);

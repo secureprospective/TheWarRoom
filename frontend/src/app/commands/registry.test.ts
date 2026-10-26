@@ -119,3 +119,18 @@ it('shows, logs and records an unknown mounted league action as failed', async (
     expect(logged).toHaveBeenCalled();
   } finally { logged.mockRestore(); }
 });
+
+it('records a stored read failure instead of successful completion', async () => {
+  const { cacheState } = await import('../datasources/cacheState');
+  const reason = 'The saved reading could not be read again. Try again later.';
+  const run = vi.spyOn(cacheState, 'run').mockImplementation(async () => {});
+  const peek = vi.spyOn(cacheState, 'peek').mockReturnValue({ scopes: [], busy: '',
+    error: reason, outcomes: { race: reason } });
+  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    const c = createCommands();
+    await c.dispatch('cache.run', { scope: 'race' });
+    expect(c.history()).toEqual([{ id: 'cache.run', args: { scope: 'race' }, status: 'failed', reason }]);
+    expect(c.read().notice).toBe(reason);
+  } finally { run.mockRestore(); peek.mockRestore(); logged.mockRestore(); }
+});

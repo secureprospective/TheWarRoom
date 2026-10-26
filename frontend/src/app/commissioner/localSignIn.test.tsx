@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { all, control, mount, present, render, settle, type, unmount } from './commissionerDom';
 import { stub } from './commissionerStub';
+import { commands } from '../commands/registry';
 import { LocalSignIn } from './LocalSignIn';
 
 afterEach(unmount);
@@ -46,5 +47,8 @@ describe('League sign-in', () => {
     await settle();
     expect(present(host, 'incorrect username or password')).toBe(true);
     expect(control(host, 'Password').props().value).toBe('');
+    expect(commands.history().at(-1)).toMatchObject({ status: 'failed',
+      reason: 'incorrect username or password', args: { screen: 'local-sign-in' } });
+    expect(JSON.stringify(commands.history())).not.toContain('guessed');
   });
 });

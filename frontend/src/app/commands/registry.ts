@@ -138,6 +138,11 @@ export function createCommands(
       });
     }
   }
+  async function completed(work: Promise<unknown>, failure: () => string | undefined) {
+    await work;
+    const reason = failure();
+    if (reason) throw new Error(reason);
+  }
   function mflReason(forget = false): string | undefined {
     if (provider.kind === 'fixture') return 'Connecting MFL needs the desktop app';
     if (mflKey.read().pending) return 'Checking MFL…';
@@ -171,7 +176,10 @@ export function createCommands(
       setTimeout(mflField.focus, 0);
       return;
     }
-    return requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
+    return completed(requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…'),
+      () => mflKey.read().error || (['rejected', 'unreachable'].includes(mflKey.read().state)
+        ? mflKey.read().detail || 'MFL did not accept the connection. Check your key and try again.'
+        : undefined));
   }
   function lineupAction(action: import('./lineupEdit').LineupAction) {
     return import('./lineupEdit')
@@ -218,7 +226,8 @@ export function createCommands(
           state.write({ notice: message });
           throw new Error(message);
         }
-        return import('../personal/state').then(m => m.personalState.change(mine, kind, change));
+        return import('../personal/state').then(m => completed(m.personalState.change(mine, kind, change),
+          () => m.personalState.peek(mine).error));
       },
     });
   }
@@ -279,7 +288,8 @@ export function createCommands(
     'cache.run': command({
       ...ambient, id: 'cache.run', label: 'Read data again', gravity: 'G1', args: ['scope'],
       run: ({ scope }: { scope: string }) => {
-        return import('../datasources/cacheState').then(m => m.cacheState.run(scope));
+        return import('../datasources/cacheState').then(m =>
+          completed(m.cacheState.run(scope), () => m.cacheState.peek().error));
       },
     }),
     'data.run': command({
@@ -331,14 +341,16 @@ export function createCommands(
       ...ambient, id: 'trade.builder', label: 'Trade builder', gravity: 'G3', undo: 'irreversible',
       args: ['action'],
       run: (action: import('../shell/tradeBuilderState').BuilderAction) => {
-        return import('../shell/tradeBuilderState').then(m => m.builderAction(action));
+        return import('../shell/tradeBuilderState').then(m =>
+          completed(m.builderAction(action), () => m.useBuilder.getState().error));
       },
     }),
     acquisition: command({
       ...ambient, id: 'acquisition', label: 'What does the add cost me?', args: ['mine'],
       run: (action: import('../contracts/acquisition').AcquisitionRequest) => {
         state.navigate({ node: 'hq', workspace: 'contracts-and-cap' });
-        return import('../contracts/acquisition').then(m => m.openAcquisition(action));
+        return import('../contracts/acquisition').then(m =>
+          completed(m.openAcquisition(action), () => m.useAcquisition.getState().error));
       },
     }),
     'trade.accept.plan': command({
@@ -394,7 +406,8 @@ export function createCommands(
       undo: 'reversible',
       run: (_args: Record<string, never>) => {
         if (!mflReason(true)) {
-          return requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…');
+          return completed(requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…'),
+            () => mflKey.read().error);
         }
       },
     }),
@@ -424,7 +437,8 @@ export function createCommands(
       ...ambient, id: 'market.reports', label: 'Player market reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' }) => {
         if (args.action !== 'refresh') throw new Error('Player market reports: invalid action');
-        return import('../reports/marketState').then(m => m.marketReportState.refresh(true));
+        return import('../reports/marketState').then(m => completed(m.marketReportState.refresh(true),
+          () => m.marketReportState.peek().error));
       },
     }),
     'comms.read': command({
@@ -432,7 +446,8 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string }) => {
         if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
           throw new Error('Comms: invalid action');
-        return import('../comms/state').then(m => m.commsState.choose(args.action, args.value));
+        return import('../comms/state').then(m => completed(m.commsState.choose(args.action, args.value),
+          () => ['more', 'open'].includes(args.action) ? undefined : m.commsState.peek().error));
       },
     }),
     'backup.now': command({
@@ -440,7 +455,8 @@ export function createCommands(
       // Control Room › App holds the result, and the sign-in form when a backup needs one first.
       run: (_args: Record<string, never>) => {
         state.navigate({ node: 'control', workspace: 'app' });
-        return import('../commissioner/backupState').then(m => m.backupState.run());
+        return import('../commissioner/backupState').then(m =>
+          completed(m.backupState.run(), () => m.backupState.peek().error));
       },
     }),
     'commissioner.surface': command({
@@ -453,7 +469,8 @@ export function createCommands(
     'commissioner.read': command({
       ...ambient, id: 'commissioner.read', label: 'Read the league ledger', args: ['league'],
       run: (args: { league: string }) => {
-        return import('../commissioner/proxy').then(m => m.leagueState.choose(args.league));
+        return import('../commissioner/proxy').then(m =>
+          completed(m.leagueState.choose(args.league), () => m.leagueState.peek().error));
       },
     }),
     'commissioner.draft': command({
@@ -475,20 +492,24 @@ export function createCommands(
       run: (args: { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }) => {
         if (!['league', 'news', 'search', 'open-accounting'].includes(args.action))
           throw new Error('Control Room: invalid action');
-        return import('../control/state').then(m => m.controlState.choose(args.action, args.value));
+        return import('../control/state').then(m => completed(m.controlState.choose(args.action, args.value),
+          () => args.action === 'search' ? undefined : m.controlState.peek().error));
       },
     }),
     'research.read': command({
       ...ambient, id: 'research.read', label: 'Player research', aliases: [], args: ['action', 'value'],
       run: (args: { action: string; value: string }) => {
-        return import('../research/state').then(m => m.researchState.choose(args.action, args.value));
+        return import('../research/state').then(m =>
+          completed(m.researchState.choose(args.action, args.value),
+          () => ['more', 'open'].includes(args.action) ? undefined : m.researchState.peek().error));
       },
     }),
     'archive.reports': command({
       ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [],
       args: ['action', 'value'],
       run: (args: { action: string; value: string }) => {
-        return import('../archive/state').then(m => m.archiveState.choose(args.action, args.value));
+        return import('../archive/state').then(m =>
+          completed(m.archiveState.choose(args.action, args.value), () => m.archiveState.peek().error));
       },
     }),
     'race.reports': command({
@@ -496,7 +517,8 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {
         if (!['refresh', 'week', 'team'].includes(args.action))
           throw new Error('League race: invalid action');
-        return import('../race/state').then(m => m.raceState.choose(args.action, args.value));
+        return import('../race/state').then(m =>
+          completed(m.raceState.choose(args.action, args.value), () => m.raceState.peek().error));
       },
     }),
     'game.follow': command({
@@ -511,14 +533,16 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'week' | 'reports-week'; value: string }) => {
         if (!['refresh', 'week', 'reports-week'].includes(args.action))
           throw new Error('League Pulse: invalid action');
-        return import('../now/state').then(m => m.nowState.choose(args.action, args.value));
+        return import('../now/state').then(m =>
+          completed(m.nowState.choose(args.action, args.value), () => m.nowState.peek().error));
       },
     }),
     'draft.reports': command({
       ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' | 'mfl' }) => {
         if (!['refresh', 'mfl'].includes(args.action)) throw new Error('Draft reports: invalid action');
-        return import('../draftreports/state').then(m => m.reportState.action(args.action));
+        return import('../draftreports/state').then(m =>
+          completed(m.reportState.action(args.action), () => m.reportState.peek().error));
       },
     }),
     'endpoint.open': command({
@@ -562,6 +586,7 @@ export function createCommands(
           scrollRevision:
             state.read().scrollRevision + Number(state.read().franchiseId !== args.franchiseId),
         });
+
       },
     }),
     'preset.apply': command({

@@ -16,9 +16,10 @@ export async function planTradeAccept(
     moves.write({ moves: orderReceipts([
       receipt, ...moves.read().moves.filter((r) => r.correlationId !== receipt.correlationId),
     ]) });
-    await loadSessionMoves(moves, provider, franchiseId);
+    await loadSessionMoves(moves, provider, franchiseId, true);
   } catch (cause) {
     moves.write({ draftErrors: { ...moves.read().draftErrors, [key]: String(cause) } });
+    throw cause;
   } finally {
     moves.write({ drafting: { ...moves.read().drafting, [key]: false } });
   }
