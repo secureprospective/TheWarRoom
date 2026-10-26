@@ -5,9 +5,10 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"net/url"
 	"slices"
 	"time"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -118,18 +119,6 @@ func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.
 	return clock, nil
 }
 
-func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
-	host := ""
-	if a.core.MFLClient != nil {
-		host = a.core.MFLClient.LeagueHost()
-	}
-	if host == "" {
-		return envelope.Target{Kind: envelope.Unmapped}, []string{"MFL host not yet known"}
-	}
-	return envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
-		"https://%s/%d/options?L=%s&O=%s", host, a.core.Season, url.QueryEscape(ingestion.LeagueID), option)}, nil
-}
-
 func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target draft: startup: %w", err)
@@ -201,4 +190,12 @@ func (a *App) listMoves(franchiseID string) ([]envelope.Receipt, error) {
 	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool {
 		return r.Spec.Intent == envelope.BidIntent || envelope.IsRelease(r.Spec.Intent) || envelope.IsContract(r.Spec.Intent)
 	}), nil
+}
+
+func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
+	host := ""
+	if a.core.MFLClient != nil {
+		host = a.core.MFLClient.LeagueHost()
+	}
+	return platformapp.RosterMoveTarget(host, a.core.Season, ingestion.LeagueID, option)
 }

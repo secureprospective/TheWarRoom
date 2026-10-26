@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -129,7 +131,7 @@ func TestTargetDraftLineupLanding(t *testing.T) {
 				t.Fatalf("draft: %+v %v", r, err)
 			}
 			const target = "https://www47.myfantasyleague.com/2026/lineup?L=14432&WEEK=5&F=0025"
-			if err := validateMoveURL(target); err != nil {
+			if err := platformapp.ValidateMoveURL(target); err != nil {
 				t.Fatal(err)
 			}
 			opens := 0

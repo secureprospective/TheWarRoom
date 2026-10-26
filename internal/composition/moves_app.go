@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
-	"strings"
 	"time"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -42,7 +42,7 @@ func (a *App) handOffMove(correlationID string) (envelope.Receipt, error) {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off: %w", err)
 	}
 	target := next.Receipt().Spec.Target.URL
-	if err := validateMoveURL(target); err != nil {
+	if err := platformapp.ValidateMoveURL(target); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("target hand-off from %s: %w", e.State(), err)
 	}
 	if err := a.core.Moves.Save(ctx, next); err != nil {
@@ -53,19 +53,6 @@ func (a *App) handOffMove(correlationID string) (envelope.Receipt, error) {
 	a.core.MovesChanged(a.core.Ctx)
 	a.wakeMoves()
 	return next.Receipt(), nil
-}
-
-func validateMoveURL(target string) error {
-	u, err := url.Parse(target)
-	if err != nil {
-		return fmt.Errorf("move URL: %w", err)
-	}
-	host := strings.ToLower(u.Hostname())
-	if u.Scheme != "https" || u.User != nil ||
-		(host != "myfantasyleague.com" && !strings.HasSuffix(host, ".myfantasyleague.com")) {
-		return fmt.Errorf("move URL: HTTPS MFL host without user info required")
-	}
-	return nil
 }
 
 func (a *App) requestMovesPass() error {
@@ -82,21 +69,6 @@ func (a *App) logMove(e envelope.Envelope) {
 	r := e.Receipt()
 	entry := r.Audit[len(r.Audit)-1]
 	a.core.MovesLog(fmt.Sprintf("move %s %s → %s: %s", e.ID(), entry.From, entry.To, entry.Note))
-}
-
-func movePredicate(intent string) envelope.Predicate {
-	registry := map[string]envelope.Predicate{
-		"roster.ir":           envelope.IRPredicate{},
-		envelope.CutIntent:    envelope.ReleasePredicate{},
-		envelope.BuyoutIntent: envelope.ReleasePredicate{},
-		"rfa.tender":          envelope.ContractPredicate{}, "fa.resign": envelope.ContractPredicate{}, "contract.tag": envelope.ContractPredicate{}, "contract.extend": envelope.ContractPredicate{}, "contract.restructure": envelope.ContractPredicate{},
-		"roster.taxi":   envelope.TaxiPredicate{},
-		"lineup.set":    envelope.LineupPredicate{},
-		"trade.accept":  envelope.TradePredicate{},
-		"trade.propose": envelope.TradeActPredicate{}, "trade.reject": envelope.TradeActPredicate{}, "trade.revoke": envelope.TradeActPredicate{},
-		"bid.submit": envelope.BidPredicate{},
-	}
-	return registry[intent]
 }
 
 // withBidFacts gives a bid plan's predicate the contract it looks for, which lives in bid_facts.
@@ -122,7 +94,7 @@ func (a *App) moveSources(entries []envelope.Envelope) map[envelope.Source]bool 
 	sources := make(map[envelope.Source]bool)
 	for _, e := range entries {
 		intent := e.Receipt().Spec.Intent
-		predicate := movePredicate(intent)
+		predicate := platformapp.MovePredicate(intent)
 		if predicate == nil {
 			if !a.core.MovesUnknown[intent] {
 				a.core.MovesUnknown[intent] = true
@@ -163,7 +135,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		}
 	}()
 	for _, listed := range entries {
-		predicate := movePredicate(listed.Receipt().Spec.Intent)
+		predicate := platformapp.MovePredicate(listed.Receipt().Spec.Intent)
 		if predicate == nil {
 			continue
 		}
@@ -175,7 +147,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if predicate, err = a.withBidFacts(ctx, e.ID(), predicate); err != nil {
 			return err
 		}
-		if !watchableMove(e, listed.State()) {
+		if !platformapp.WatchableMove(e, listed.State()) {
 			continue
 		}
 		next, err := e.Observe(a.core.MovesNow(), obs, predicate)
@@ -185,7 +157,7 @@ func (a *App) checkMoves(ctx context.Context) error {
 		if err != nil {
 			return fmt.Errorf("watch moves: observe %s: %w", e.ID(), err)
 		}
-		if !saveMoveEvidence(e, next) {
+		if !platformapp.SaveMoveEvidence(e, next) {
 			continue
 		}
 		if err := a.core.Moves.Save(ctx, next); err != nil {
@@ -229,7 +201,7 @@ func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Sourc
 	for _, source := range []envelope.Source{
 		envelope.Rosters, envelope.Contracts, envelope.Transactions, envelope.Lineups, envelope.PendingTrades,
 	} {
-		if skipMoveRefresh(source, sources) || a.recentMoveSource(source, latest) {
+		if platformapp.SkipMoveRefresh(source, sources) || a.recentMoveSource(source, latest) {
 			continue
 		}
 		if !first {
@@ -438,14 +410,6 @@ func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
 	}
 }
 
-func watchableMove(e envelope.Envelope, listed envelope.State) bool {
-	return e.State() == listed && (!envelope.IsContract(e.Receipt().Spec.Intent) || e.State() != envelope.HandedOff)
-}
-
-func skipMoveRefresh(source envelope.Source, sources map[envelope.Source]bool) bool {
-	return !sources[source] || (source == envelope.Contracts && sources[envelope.Rosters])
-}
-
 func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error) {
 	if err := a.ready(); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("withdraw roster: startup: %w", err)
@@ -471,15 +435,4 @@ func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error)
 	a.logMove(next)
 	a.core.MovesChanged(a.core.Ctx)
 	return next.Receipt(), nil
-}
-
-func saveMoveEvidence(before, after envelope.Envelope) bool {
-	if before.State() != after.State() {
-		return true
-	}
-	old, next := before.Receipt(), after.Receipt()
-	if !envelope.IsTrade(old.Spec.Intent) || old.Spec.Intent == "trade.accept" || len(next.Audit) == 0 {
-		return false
-	}
-	return len(old.Audit) == 0 || old.Audit[len(old.Audit)-1].Note != next.Audit[len(next.Audit)-1].Note
 }

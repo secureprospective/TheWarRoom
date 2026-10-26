@@ -3,7 +3,6 @@ package composition
 import (
 	"context"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
@@ -12,20 +11,6 @@ import (
 )
 
 // archiveOpponentFallback reads Race's held weeks under the caller's SeasonMu.
-func (a *App) archiveOpponentFallback(week int, team string) string {
-	for _, w := range a.raceHeld.Snapshot().Weeks.Value {
-		if w.Week != week {
-			continue
-		}
-		if g, ok := season.FindGame(w, team); ok {
-			if g.Home.Franchise == team {
-				return g.Away.Franchise
-			}
-			return g.Home.Franchise
-		}
-	}
-	return ""
-}
 
 // readArchiveFacts reads the verified archive snapshot through the service and keeps it on App.
 // The caller holds factsMu, which guards archiveCache.
@@ -53,4 +38,8 @@ func (a *App) configureArchive() {
 	a.core.ArchiveOpponentFallback = a.archiveOpponentFallback
 	a.core.ReadArchive = a.readArchiveFacts
 	a.core.ReadCommsArchive = a.readCommsArchive
+}
+
+func (a *App) archiveOpponentFallback(week int, team string) string {
+	return archiveapp.OpponentFallback(a.raceHeld.Snapshot().Weeks.Value, week, team)
 }

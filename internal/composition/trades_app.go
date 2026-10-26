@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
@@ -435,8 +437,8 @@ func (a *App) tradeBuilderHandOff(ctx context.Context, r tradesapp.RawTradeBuild
 	if err := a.checkTradeExitPending(r.Mine, spec); err != nil {
 		return err
 	}
-	if err := validateMoveURL(spec.Target.URL); err != nil {
-		return err
+	if err := platformapp.ValidateMoveURL(spec.Target.URL); err != nil {
+		return err //nolint:wrapcheck // Preserve the shared move URL refusal.
 	}
 	next, err := e.HandOff(a.core.MovesNow())
 	if err != nil {

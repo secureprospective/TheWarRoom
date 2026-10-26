@@ -119,21 +119,15 @@ func counterProvenance(d *lab.Data) snapshot.Provenance {
 	return (counterpartiesapp.Service{}).Provenance(d)
 }
 
-func (a *App) personalSnapshot(mine string) (snapshot.Snapshot, error) {
-	a.core.TargetSnapshotMu.Lock()
-	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
-	a.core.TargetSnapshotMu.Unlock()
-	if !loaded {
-		return snap, fmt.Errorf("personal: snapshot not loaded")
-	}
-	if !slices.ContainsFunc(snap.Franchises.Value, func(f snapshot.Franchise) bool { return f.ID == mine }) {
-		return snap, fmt.Errorf("personal: unknown franchise")
-	}
-	return snap, nil
-}
-
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.
 func archivedOnly[T any](ctx context.Context, a *App, export string, leagueless bool,
 	parse func([]byte) ([]T, error)) heldSeasonFeed[[]T] {
 	return core.ArchivedOnly(ctx, a.core, export, leagueless, parse)
+}
+
+func (a *App) personalSnapshot(mine string) (snapshot.Snapshot, error) {
+	a.core.TargetSnapshotMu.Lock()
+	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
+	a.core.TargetSnapshotMu.Unlock()
+	return offersapp.PersonalSnapshot(snap, loaded, mine) //nolint:wrapcheck // Preserve the personal snapshot refusal.
 }

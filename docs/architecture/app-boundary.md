@@ -2,7 +2,8 @@
 
 ## Resume here
 
-Part 1: two low-risk decisions extracted in `98ea8cf7`; rest inventoried below against base `dda866b8`.
+Part 2 in progress: first batch moves nine more units (3, 5, 20–22, 51, 81, 97, 120).
+Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
 Next: band 1 pure helpers (opponent fallback, period selection, bye inputs, move predicates),
 then inward services for joint reads. Keep all public APIs/permissions/schemas and lock spans unchanged.
@@ -50,9 +51,9 @@ The first two rows are complete; row order within subsequent bands is advisory.
 |---|---|---|---:|---|---|---|
 | 1 | 1 | `internal/composition/finished_scores.go` — `finishedScoreCutoff`:14 | 25 | `now` | B,W | Week must have begun; final flag uses observation time, absent flag allows four hours, playing/future games refuse; latest finish wins. MOVED. |
 | 2 | 1 | `internal/composition/database_checks_app.go` — `databaseChecksReading`:140, `databaseCheckWords`:165 | 33 | `platform` | W:sources | Unchecked/healthy/failed precedence, integrity and FK verdicts, report rows and failure wording. MOVED. |
-| 3 | 1 | `internal/composition/archive_app.go` — `archiveOpponentFallback`:15 | 14 | `archive` | W:archive,comms | Find matching week's game and choose the other franchise, otherwise blank. |
+| 3 | 1 | `internal/composition/archive_app.go` — `archiveOpponentFallback`:15 | 14 | `archive` | W:archive,comms | Find matching week's game and choose the other franchise, otherwise blank.  MOVED (part 2, batch 1). |
 | 4 | 1 | `internal/composition/asset_board.go` — `finishedScores`:42, `onField`:70 | 34 | `research` | W:research,market,offers,trades | Count only prior held weeks, accumulate per-player points/games and newest timestamp; define total finished-week scope for Market. |
-| 5 | 1 | `internal/composition/contracts_host.go` — `scorePeriod`:60 | 18 | `contracts` | W:contracts | Accept only requested score period, reject archive without that period; preserve parse errors. |
+| 5 | 1 | `internal/composition/contracts_host.go` — `scorePeriod`:60 | 18 | `contracts` | W:contracts | Accept only requested score period, reject archive without that period; preserve parse errors.  MOVED (part 2, batch 1). |
 | 6 | 2 | `internal/composition/control_alerts.go` — `lineupAlert`:43 | 37 | `control` | W:control | Unknown week/feed/rules becomes unavailable; no alert after last lock or for full/legal lineup; otherwise next-lock urgency and trimmed problems. |
 | 7 | 2 | `internal/composition/control_alerts.go` — `tradeAlert`:81 | 25 | `control` | W:control | Reject unavailable evidence; count only incoming nonexpired offers; earliest nonzero expiry controls urgency. |
 | 8 | 2 | `internal/composition/control_alerts.go` — `irAlerts`:107 | 41 | `control` | W:control | Require current roster and live injuries; deduplicate my IR players; warn only on ineligible verdict with name fallback and IR target. |
@@ -67,9 +68,9 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. |
 | 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. |
 | 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. |
-| 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior. |
-| 21 | 1 | `internal/composition/moves_app.go` — `movePredicate`:87 | 14 | `platform` | B,W:platform | Intent-to-landing-predicate registry, unknown intent has no predicate. |
-| 22 | 1 | `internal/composition/moves_app.go` — `watchableMove`:441, `skipMoveRefresh`:445, `saveMoveEvidence`:476 | 16 | `platform` | B,W:platform | Require unchanged listed state; don't watch handed-off contract; roster refresh covers contracts; save state changes or new trade audit evidence only. |
+| 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior.  MOVED (part 2, batch 1). |
+| 21 | 1 | `internal/composition/moves_app.go` — `movePredicate`:87 | 14 | `platform` | B,W:platform | Intent-to-landing-predicate registry, unknown intent has no predicate.  MOVED (part 2, batch 1). |
+| 22 | 1 | `internal/composition/moves_app.go` — `watchableMove`:441, `skipMoveRefresh`:445, `saveMoveEvidence`:476 | 16 | `platform` | B,W:platform | Require unchanged listed state; don't watch handed-off contract; roster refresh covers contracts; save state changes or new trade audit evidence only.  MOVED (part 2, batch 1). |
 | 23 | 4 | `internal/composition/moves_app.go` — `handOffMove`:19 | 38 | `platform` | W:platform | Ready/startup and own-franchise checks; refuse trade-desk/release-only acts; validate URL, persist handoff before browser/event/wake. |
 | 24 | 4 | `internal/composition/moves_app.go` — `withBidFacts`:103, `moveSources`:121 | 35 | `platform` | B,W:platform | Load predicate-specific contract/bid facts; union required sources; log each unknown intent once. |
 | 25 | 4 | `internal/composition/moves_app.go` — `checkMoves`:140, `refreshedObservation`:200 | 69 | `platform` | B,W:platform | Refresh only with awaiting work and known sources; reread under moves lock, skip stale observations/state races, save changed evidence; emit once if changed. |
@@ -98,7 +99,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 48 | 3 | `internal/composition/now_app.go` — `startLiveGame`:273, `pollLiveMFL`:288 | 30 | `now` | W:now | Lazy endpoint/cache setup; active due MFL polling only; success resets failures, failure uses exponential delay capped at 16×30 seconds. |
 | 49 | 2 | `internal/composition/now_app.go` — `liveGameSpines`:327, `spinePlayers`:356, `inspectLiveBox`:381 | 72 | `now` | W:now | No detail work without held/followed games; require history/crosswalk; only known ESPN IDs and directory facts become spines/photos; attach box entities for matched IDs only. |
 | 50 | 3 | `internal/composition/offers_reading.go` — `recordOffers`:103 | 14 | `offers` | B,W:control | Skip failed reads/missing pools; save pending offers with transaction-ending evidence for archive owner; history save failure is separate from MFL read failure. |
-| 51 | 1 | `internal/composition/offers_reading.go` — `personalSnapshot`:122 | 12 | `offers` | W:offers,contracts,trades | Require loaded snapshot and franchise membership; otherwise exact personal refusal. |
+| 51 | 1 | `internal/composition/offers_reading.go` — `personalSnapshot`:122 | 12 | `offers` | W:offers,contracts,trades | Require loaded snapshot and franchise membership; otherwise exact personal refusal.  MOVED (part 2, batch 1). |
 | 52 | 3 | `internal/composition/pool_app.go` — `refreshFreeAgents`:20, `restoreFreeAgents`:55 | 62 | `offers` | B,W:offers | Restore archive before first refresh for cross-launch comparison; parse/normalize/sort IDs, set model dirty only for successful changed list; retain good held data on failure. |
 | 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. |
 | 54 | 2 | `internal/composition/pool_app.go` — `poolAssetValues`:106 | 14 | `offers` | W:offers | Hydrate Research, value requested IDs in Market model, index board values and preserve source note. |
@@ -128,7 +129,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 78 | 2 | `internal/composition/shell_feeds_app.go` — `mergeMFLCalendar`:89 | 44 | `control` | W:platform,control | Map held event timestamps/title fallback; discard past deadlines; sort urgency/time/ID; append calendar provenance/unavailability note. |
 | 79 | 3 | `internal/composition/snapshot_app.go` — `takeSnapshot`:23, `targetDirectory`:44, `targetInjuries`:85, `injuriesHeld`:94 | 70 | `platform` | W:platform | Ready gate, serialized directory/injuries snapshot; first-use injury refresh; live directory time uses original lookup timestamp, archive/fail provenance explicit; publish only built snapshot. |
 | 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. |
-| 81 | 1 | `internal/composition/snapshot_app.go` — `rosterMoveTarget`:121 | 11 | `platform` | W:platform,contracts,offers,trades | Unknown discovered host gives unmapped target/block; otherwise encode league/options URL, never submit. |
+| 81 | 1 | `internal/composition/snapshot_app.go` — `rosterMoveTarget`:121 | 11 | `platform` | W:platform,contracts,offers,trades | Unknown discovered host gives unmapped target/block; otherwise encode league/options URL, never submit.  MOVED (part 2, batch 1). |
 | 82 | 4 | `internal/composition/snapshot_app.go` — `draftRosterMove`:133, `listMoves`:186 | 71 | `platform` | W:platform | Require own franchise/player/held snapshot; taxi vs IR chooses target/ID prefix/envelope; save local plan only; rail labels trade receipts but omits bid/release/contract plans. |
 | 83 | 3 | `internal/composition/sources_runtime.go` — `compileFactsInBackground`:47, `warmArchive`:79 | 38 | `sources` | startup | Only existing manifest permits republish/compile/warm/model-fit; failures stop later steps; bounded worker and archive cache lock. |
 | 84 | 2 | `internal/composition/sources_runtime.go` — `readSettings`:102, `writeSettings`:117 | 28 | `sources` | startup,W:sources | Missing file means defaults; JSON decode errors remain visible; write indented owner-only temp file then rename atomically. |
@@ -144,7 +145,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. |
 | 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. |
 | 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. |
-| 97 | 1 | `internal/composition/version.go` — `buildLabel`:14 | 6 | `platform` | startup,CLI,W stamps | Append parenthesized commit only for stamped builds; ldflags globals must stay compatible. |
+| 97 | 1 | `internal/composition/version.go` — `buildLabel`:14 | 6 | `platform` | startup,CLI,W stamps | Append parenthesized commit only for stamped builds; ldflags globals must stay compatible.  MOVED (part 2, batch 1). |
 | 98 | 5 | `internal/composition/restore_cli.go` — `listBackups`:20, `restoreBackup`:51, `restoreFailure`:86 | 80 | `platform` | offline CLI | List manifest directories sorted; lock before basename-confined matched restore; distinguish newer journal/no prior data; private technical log with temp fallback, public recovery wording/exit codes. |
 | 99 | 5 | `internal/composition/run.go` — `Main`:37, `runFlag`:86, `probe`:103, `packageSmoke`:115 | 96 | `platform` | CLI/desktop entry | Known argument shapes only, unknown args never fall into production GUI; probe exits based on startup; smoke requires absolute existing disposable dir/lock and no stores/credentials/workers. |
 | 100 | 5 | `internal/composition/run.go` — `helperCommands`:155, `runNative`:167, `nativeUpdateLock`:209 | 61 | `platform` | hosted desktop entry | Only delegable helper catalog IDs; hosted startup excludes local App; HTTPS/league admission; update-cache lock retries 100×100ms; unsigned trust failure does not prevent screen; dev-only practice update flag. |
@@ -168,7 +169,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 117 | 4 | `internal/composition/trades_app.go` — `tradeBuilderHandOff`:403, `checkTradeExitPending`:454 | 65 | `trades` | W:trades | Recompute saved plan preview; refuse blocks/out-of-scope receipt/nonpending exit/unsafe URL; save handoff before browser/event/wake; proposal skips pending-exit check. |
 | 118 | 2 | `internal/composition/trades_app.go` — `tradePickReason`:470, `tradeClockReasons`:484 | 20 | `trades` | W:trades | FP_ token requires held fresh ownership; unreadable clock blocks with explicit reason; otherwise shared deadline rule. |
 | 119 | 3 | `internal/composition/week_app.go` — `refreshWeeksInBackground`:21, `refreshWeek`:56 | 55 | `control` | B | Hourly week→season→clock-rule schedules→finished scores→engine; re-launch league refresh on tick. Week failure preserves prior week/time with failure note; success may derive phase; always revalidate release and notify. |
-| 120 | 1 | `internal/composition/week_app.go` — `lineupWeekFrom`:85 | 22 | `control` | B,startup | Fetch default week then advance until lineup week available; reject >18/mismatched requested week; final week18 ends with no lineup; wrap fetch/conversion errors unchanged. |
+| 120 | 1 | `internal/composition/week_app.go` — `lineupWeekFrom`:85 | 22 | `control` | B,startup | Fetch default week then advance until lineup week available; reject >18/mismatched requested week; final week18 ends with no lineup; wrap fetch/conversion errors unchanged.  MOVED (part 2, batch 1). |
 | 121 | 3 | `internal/composition/week_app.go` — `seedCurrentWeek`:109 | 35 | `control` | startup | Apply identical lineup-week algorithm to archived schedules; require exactly one matching scoped result; log failure without replacing held state. |
 | 122 | 4 | `internal/composition/week_app.go` — `deriveWeekPhase`:145 | 30 | `control` | B | Parse configured bounds, stop on invalid/season-over phase; only changed valid phase runs coordinator AdvancePhase with NFL-week/fetched evidence note. |
 | 123 | 2 | `internal/composition/week_app.go` — `lastRegularWeek`:188, `windowSnapshot`:196, `timeNow`:215 | 26 | `control` | W:control,platform;B | Last-regular week must parse within 2–18 else zero; snapshot only rule weeks with detached matchups; injected clock else wall time. |
@@ -276,3 +277,26 @@ permissions, Raw validation, lock ordering or schema, stop and surface it rather
 
 Debt left: all open inventory units; core Host policy audit; composition ratchet implementation
 and negative test; broad/final verification and live review; all shared frontend read-tool work.
+
+## Part 2 — batch 1
+
+Finding/proposal: pure opponent, score-period, move, roster admission, label and lineup-week
+selection decisions still lived in composition. Move them into their existing feature packages;
+composition captures held resources and forwards values/callbacks. Preserve error text, raw input
+validation, lock spans, callback order, URL behavior and every command door. No new exposure.
+
+- Units 3/5/20/21/22/51/81/97/120: 137 baseline function LOC relocated (unit 5 retains
+  the archive adapter; unit 51 retains locked capture; unit 120 accepts the same read callback).
+- Moved URL allow/deny and taxi registration tests to Platform, retained invalid-envelope
+  construction integration in composition. Build-label test now tests values inward without
+  mutating ldflags globals. Added opponent, period, personal-snapshot, lineup-week selection,
+  move intent registry, watch/evidence/refresh and target URL checks.
+- Frontend install/build passed (unchanged large-chunk warning); no frontend sources changed.
+- Full Archive/Contracts/Control/Offers feature race suites passed; Archive took 148 seconds.
+  Initial combined run failed compiling a new Platform test (wrong state constant), corrected.
+  Initial move-evidence test fixture omitted required scope; corrected to validated restored
+  envelopes with legal audits. Final targeted Platform/Control race tests passed.
+- Targeted composition race tests passed for handoff, roster targets, week refresh, personal
+  reads, held score periods, Archive/Contracts wire goldens and command-door parity.
+- First lint found four newly cross-package error returns; preserve exact refusal text with
+  narrowly explained wrapcheck annotations (no blanket suppression or changed error chains).

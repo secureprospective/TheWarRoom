@@ -45,7 +45,9 @@ Tooling outside the features: `cmd/fit` (writes the fitted params), `cmd/fixture
 
 Current boundary-extraction inventory and resume point: `docs/architecture/app-boundary.md`.
 Finished-score finality is in `internal/app/now/finished_scores.go`; local database-check report
-policy is in `internal/app/platform/database_checks.go`. Composition retains their resource
+policy is in `internal/app/platform/database_checks.go`. Pure move/URL rules are in Platform,
+score-period admission in Contracts, personal-snapshot admission in Offers, opponent fallback in
+Archive and lineup-week selection in Control. Composition retains their resource
 capture/refresh coordination, not those decisions.
 
 ## Where new code goes

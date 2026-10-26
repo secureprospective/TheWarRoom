@@ -77,38 +77,15 @@ func (a *App) refreshWeek(ctx context.Context) {
 
 func (a *App) fetchLineupWeek(ctx context.Context, now time.Time) (leagueweek.Week, error) {
 	year := strconv.Itoa(a.core.League.Season())
-	return lineupWeekFrom(now, func(requested int) (nflschedule.RawWeek, error) {
+	return controlapp.LineupWeekFrom(now, func(requested int) (nflschedule.RawWeek, error) { //nolint:wrapcheck // The service retains the week refresh context.
 		return nflschedule.Fetch(ctx, a.core.MFLClient, year, requested)
 	})
-}
-
-func lineupWeekFrom(now time.Time, read func(int) (nflschedule.RawWeek, error)) (leagueweek.Week, error) {
-	for requested := 0; ; {
-		raw, err := read(requested)
-		if err != nil {
-			return leagueweek.Week{}, fmt.Errorf("week refresh: %w", err)
-		}
-		w, err := nflschedule.ToWeek(raw, now)
-		if err != nil {
-			return leagueweek.Week{}, fmt.Errorf("week refresh: convert: %w", err)
-		}
-		if w.Number > 18 || (requested != 0 && w.Number != requested) {
-			return leagueweek.Week{}, fmt.Errorf("week refresh: requested %d, received %d", requested, w.Number)
-		}
-		if lineup, ok := leagueweek.LineupWeek(now, w); ok {
-			return lineup, nil
-		}
-		if w.Number == 18 {
-			return leagueweek.Week{}, nil
-		}
-		requested = w.Number + 1
-	}
 }
 
 // seedCurrentWeek applies the live refresh's finality rule to held schedules, without fetching.
 func (a *App) seedCurrentWeek(ctx context.Context) {
 	var fetched time.Time
-	w, err := lineupWeekFrom(a.timeNow().UTC(), func(requested int) (nflschedule.RawWeek, error) {
+	w, err := controlapp.LineupWeekFrom(a.timeNow().UTC(), func(requested int) (nflschedule.RawWeek, error) {
 		week := ""
 		if requested != 0 {
 			week = strconv.Itoa(requested)
