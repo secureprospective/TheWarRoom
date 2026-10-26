@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // RawTransferEvent preserves SQL text exactly; importing must not re-execute its command.
@@ -85,12 +87,37 @@ func TransferRecords(rows []RawTransferEvent) ([]commissioner.Record, error) {
 
 // CaptureTransfer reads audit, original event text and selected self-contained evidence from one
 // SQLite snapshot. It never copies schema/authority markers, credentials or unrelated archives.
+type TransferCapture struct {
+	Events     []RawTransferEvent
+	Blobs      map[string][]byte
+	Checkpoint db.AuditHead
+	Identities []playerid.RawIdentity
+}
+
 func (s *Store) CaptureTransfer(ctx context.Context, league string, digests []string) ([]RawTransferEvent, map[string][]byte, db.AuditHead, error) {
+	captured, err := s.CaptureTransferSnapshot(ctx, league, digests)
+	return captured.Events, captured.Blobs, captured.Checkpoint, err
+}
+
+func (s *Store) CaptureTransferSnapshot(ctx context.Context, league string, digests []string) (TransferCapture, error) {
+	var out TransferCapture
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
-		return nil, nil, db.AuditHead{}, fmt.Errorf("start league export: %w", err)
+		return out, fmt.Errorf("start league export: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	out.Events, out.Blobs, out.Checkpoint, err = captureTransferRows(ctx, tx, league, digests)
+	if err != nil {
+		return out, err
+	}
+	out.Identities, err = db.LeagueIdentities(ctx, tx, league)
+	if err != nil {
+		return out, fmt.Errorf("capture league player identities: %w", err)
+	}
+	return out, nil
+}
+
+func captureTransferRows(ctx context.Context, tx *sql.Tx, league string, digests []string) ([]RawTransferEvent, map[string][]byte, db.AuditHead, error) {
 	head, err := db.VerifyAudit(ctx, tx, ledgerAuditSource, ledgerAuditQuery)
 	if err != nil {
 		return nil, nil, head, fmt.Errorf("check league history before exporting: %w", err)

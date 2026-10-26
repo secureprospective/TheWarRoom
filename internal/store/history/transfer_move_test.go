@@ -45,7 +45,7 @@ func TestMoveCrashBoundaries(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if _, err := target.StageTransfer(t.Context(), ImportReceipt{League: "native.test", SourceEpoch: "epoch", Content: "content"}, []byte("document"), events, nil); err != nil {
+			if _, err := target.StageTransfer(t.Context(), ImportReceipt{League: "native.test", SourceEpoch: "epoch", Content: "content"}, []byte("document"), events, nil, nil); err != nil {
 				t.Fatal(err)
 			}
 			if err := sp.Close(); err != nil {
@@ -85,7 +85,7 @@ func TestMoveCrashBoundaries(t *testing.T) {
 			}
 			if f.State == "sealed" {
 				activate := point != "target-cancelled"
-				err = source.DecideTransfer(t.Context(), f, activate, func() error { return target.DecideDestination(t.Context(), f, activate, events, nil) })
+				err = source.DecideTransfer(t.Context(), f, activate, func() error { return target.DecideDestination(t.Context(), f, activate, events, nil, nil) })
 				if err != nil {
 					t.Fatal("crash recovery", err)
 				}
@@ -145,7 +145,7 @@ func crashMove(t *testing.T, dir, point string) {
 	}
 	activate := point != "target-cancelled" && point != "source-unsealed"
 	err = source.DecideTransfer(t.Context(), f, activate, func() error {
-		if err := target.DecideDestination(t.Context(), f, activate, events, nil); err != nil {
+		if err := target.DecideDestination(t.Context(), f, activate, events, nil, nil); err != nil {
 			return err
 		}
 		if point == "target-active" || point == "target-cancelled" {

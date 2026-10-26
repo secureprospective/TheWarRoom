@@ -219,3 +219,28 @@ R2 settings and the first matched set passes encrypted upload/read-back. Deploym
 configuration/key/registry files must be colocated under their installed names.
 `backup-check -config <file>` validates settings locally without printing credentials.
 See [CT setup, retention and restore handoff](../../deploy/server/BACKUPS.md).
+
+## Stand the league's rosters and contracts back up
+
+Offline operator console only; no listener, HTTP/Wails route, account enrollment or
+league activation. Use an existing `history.db` or a `server.db` decrypted by the
+normal R2 restore procedure. The source must already contain a roster restore
+point (history v9 or newer); this command never migrates or writes the source.
+
+```sh
+twr-server stand-up -from-db /private/decrypted/server.db \
+  -league native.example -to-dir /private/new-recovered-league
+```
+
+The destination folder must not exist. The command creates it with owner-only
+permissions, builds `history.db`, checks exact rosters/contracts, and writes a
+plain-English per-league recovery entry. Damaged inputs fail before creating the
+folder; failed rebuilding removes only the new folder. Existing folders are never
+overwritten. Keep this private: it contains league salary and roster information.
+
+**The result is read-only.** Draft/results history, rules, credentials and authority
+are not reconstructed from rosters. Use `deploy/server/RESTORE.md` for the complete
+working-server restore. `league.stand_up` has catalog metadata plus a typed handler
+and explicit `operator-console` exposure; it is deliberately absent from hosted
+command publication. Its wiring is isolated in `stand_up.go` for command-spine
+integration.

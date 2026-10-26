@@ -135,6 +135,11 @@ func (s *Store) AppendEvent(ctx context.Context, e LeagueEvent, expected int64) 
 	if err != nil {
 		return LeagueEvent{}, err
 	}
+	if e.Stream == commissioner.Stream && e.Payload.Commissioner != nil {
+		if err := s.captureRosterRestorePoint(ctx, tx, e.League); err != nil {
+			return LeagueEvent{}, err
+		}
+	}
 	if err := tx.Commit(); err != nil {
 		return LeagueEvent{}, fmt.Errorf("league event: commit: %w", err)
 	}

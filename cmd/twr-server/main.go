@@ -46,6 +46,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runCheckpoint(ctx, args, output)
 	case "recover":
 		return true, runRecovery(ctx, args, os.Stdin, output)
+	case "stand-up":
+		return true, runStandUp(ctx, args, output)
 	case "restore":
 		return true, runRestore(ctx, args, os.Stdin, output)
 	case "reset-sign-ins":

@@ -49,7 +49,7 @@ func decideMove(ctx context.Context, source, target *history.Store, raw RawExpor
 	}
 	activate := action == "activate"
 	if err := source.DecideTransfer(ctx, held, activate, func() error {
-		if err := target.DecideDestination(ctx, held, activate, raw.Events, raw.Blobs); err != nil {
+		if err := target.DecideDestination(ctx, held, activate, raw.Events, raw.Blobs, raw.Identities); err != nil {
 			return fmt.Errorf("decide destination: %w", err)
 		}
 		return nil

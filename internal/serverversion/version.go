@@ -25,6 +25,8 @@ type Contract struct {
 func releases() []Contract {
 	return []Contract{
 		{Release: 1, Schema: 8, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
+		{Release: 2, Schema: 9, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
+		{Release: 3, Schema: 10, ProtocolMinor: 1, SecurityFloor: 0, Commands: 1},
 	}
 }
 
