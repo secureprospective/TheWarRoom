@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -107,4 +109,26 @@ func Teams(snap snapshot.Snapshot, m state.MirrorSnapshot, picks []draftreports.
 		out = append(out, team)
 	}
 	return out
+}
+
+func PickOwnershipReason(give, get []string, read func() (time.Time, string)) string {
+	if !slices.ContainsFunc(append(slices.Clone(give), get...), func(token string) bool { return strings.HasPrefix(token, "FP_") }) {
+		return ""
+	}
+	fetchedAt, refreshError := read()
+	if fetchedAt.IsZero() {
+		return "Draft-pick ownership unavailable; refresh before handing off."
+	}
+	if refreshError != "" {
+		return "Draft-pick ownership unavailable: " + refreshError
+	}
+	return ""
+}
+
+func ClockReasons(read func() (snapshot.Sourced[leagueclock.Reading], error), now func() time.Time, zone *time.Location) []string {
+	clock, err := read()
+	if err != nil {
+		return []string{"Trade deadline cannot be checked: " + err.Error()}
+	}
+	return DeadlineReasons(now(), clock.Value.Windows, zone)
 }

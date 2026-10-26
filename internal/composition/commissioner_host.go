@@ -88,17 +88,10 @@ func (a *App) leagueRecords(parent context.Context, league string) ([]commission
 // nativeFacts reads the football facts the app already holds, with no network: positions and draft years
 // from the held players directory under its lock, NFL listings from the held injuries feed.
 func (a *App) nativeFacts() nativecheck.Facts {
-	facts := nativecheck.Facts{}
 	a.core.LookupMu.Lock()
-	if a.core.HasLookup {
-		facts = nativeapp.PlayerFacts(a.core.Lookup)
-	}
+	facts := nativeapp.HeldPlayerFacts(a.core.Lookup, a.core.HasLookup)
 	a.core.LookupMu.Unlock()
-	if !a.injuriesHeld() {
-		return facts
-	}
-	nativeapp.Designate(facts, a.heldInjuries().Status)
-	return facts
+	return nativeapp.HeldDesignations(facts, a.injuriesHeld(), func() map[string]string { return a.heldInjuries().Status })
 }
 
 type RawLeagueCalendarScope = commissionerapp.RawLeagueCalendarScope

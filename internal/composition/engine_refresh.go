@@ -94,9 +94,5 @@ func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set param
 func (a *App) modelFreeAgents() []string {
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	var free []string
-	for _, id := range a.core.SeasonFreeAgents.Value {
-		free = append(free, id.String())
-	}
-	return free
+	return scoringapp.FreeAgentIDs(a.core.SeasonFreeAgents.Value)
 }

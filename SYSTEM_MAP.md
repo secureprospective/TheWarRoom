@@ -50,7 +50,9 @@ score-period admission in Contracts, personal-snapshot admission in Offers, oppo
 Archive and lineup-week selection in Control. Alert/bye/calendar policy is in Control; finished
 score aggregation in Research; held native schedule selection in Commissioner/native; scoring
 context fallbacks in Scoring. Archive hydration/merge policy is in Research; installation config
-and dev database naming are in Platform; draft-date availability is in Draft. Composition retains their resource
+and dev database naming are in Platform; draft-date availability is in Draft. Native held-facts
+availability is in Commissioner/native, model ID scope in Scoring, trade evidence refusals in
+Trades, and rule-week capture/clock selection in Control. Composition retains their resource
 capture/refresh coordination, not those decisions.
 
 ## Where new code goes

@@ -163,25 +163,14 @@ func (a *App) weekClock(now time.Time) (*leagueclock.LineupLock, Freshness) {
 }
 
 func (a *App) lastRegularWeek() int {
-	last, err := strconv.Atoi(a.core.Rulebook.ActiveConfig().LastRegularSeasonWeek)
-	if err != nil || last < 2 || last > 18 {
-		return 0
-	}
-	return last
+	return controlapp.LastRegularWeek(a.core.Rulebook.ActiveConfig().LastRegularSeasonWeek)
 }
 
 func (a *App) windowSnapshot() controlapp.WindowSnapshot {
-	in := controlapp.WindowSnapshot{LastRegular: a.lastRegularWeek(), Schedules: map[int][]nflschedule.RawWeek{}}
+	last := a.lastRegularWeek()
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	for _, rule := range leagueclock.Rules(in.LastRegular) {
-		rows := slices.Clone(a.now.schedules[rule.Week].Value)
-		for i := range rows {
-			rows[i].Matchups = slices.Clone(rows[i].Matchups)
-		}
-		in.Schedules[rule.Week] = rows
-	}
-	return in
+	return controlapp.CaptureWindows(last, a.now.schedules)
 }
 
 func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
@@ -190,8 +179,5 @@ func (a *App) windowInputs(now time.Time) leagueclock.WindowInputs {
 
 // timeNow is the league clock's current time: the wall clock unless a test pins it.
 func (a *App) timeNow() time.Time {
-	if a.core.ClockNow != nil {
-		return a.core.ClockNow()
-	}
-	return time.Now()
+	return controlapp.TimeNow(a.core.ClockNow)
 }

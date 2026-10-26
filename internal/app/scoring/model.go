@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -46,4 +47,12 @@ func (a ModelSource) RunModel(ctx context.Context, lk normalize.Lookup, set para
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)
 	}
 	return rep, nil
+}
+
+func FreeAgentIDs(ids []playerid.PlayerID) []string {
+	var free []string
+	for _, id := range ids {
+		free = append(free, id.String())
+	}
+	return free
 }

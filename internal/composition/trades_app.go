@@ -470,25 +470,11 @@ func (a *App) checkTradeExitPending(mine string, spec envelope.Spec) error {
 }
 
 func (a *App) tradePickReason(r tradesapp.RawTradeBuilder) string {
-	if !slices.ContainsFunc(append(slices.Clone(r.Give), r.Get...), func(token string) bool { return strings.HasPrefix(token, "FP_") }) {
-		return ""
-	}
-	fetchedAt, refreshError := a.core.TradeFuturePicksFeed()
-	if fetchedAt.IsZero() {
-		return "Draft-pick ownership unavailable; refresh before handing off."
-	}
-	if refreshError != "" {
-		return "Draft-pick ownership unavailable: " + refreshError
-	}
-	return ""
+	return tradesapp.PickOwnershipReason(r.Give, r.Get, a.core.TradeFuturePicksFeed)
 }
 
 func (a *App) tradeClockReasons(ctx context.Context) []string {
-	clock, err := a.targetClock(ctx)
-	if err != nil {
-		return []string{"Trade deadline cannot be checked: " + err.Error()}
-	}
-	return tradeDeadlineReasons(time.Now(), clock.Value.Windows)
+	return tradesapp.ClockReasons(func() (snapshot.Sourced[leagueclock.Reading], error) { return a.targetClock(ctx) }, time.Now, time.Local)
 }
 
 func tradeCentsCorrection(p state.MirrorPlayer, afterOwner string, s state.WhatIfSession) domain.Money {

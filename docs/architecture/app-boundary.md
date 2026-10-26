@@ -2,15 +2,15 @@
 
 ## Resume here
 
-Part 2 in progress: twenty-seven units moved in four batches; 29/126 done cumulatively.
+Part 2 in progress: 31 units moved in five batches; 33/126 done cumulatively.
 Batch 1: 3, 5, 20–22, 51, 81, 97, 120. Batch 2: 4, 6–10, 39, 46, 55, 59, 78.
-Batch 3: 12, 64, 66, 93. Batch 4: 62, 63, 65.
+Batch 3: 12, 64, 66, 93. Batch 4: 62, 63, 65. Batch 5: 16, 107, 118, 123.
 Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
-All band 1 units are now inward. Next: remaining band 2 joint reads (16 modelFreeAgents,
-54 poolAssetValues, 58 raceSnapshot, 107 nativeFacts, 108 readArchiveFacts, 111 trade inputs,
-118 trade clock reasons, 123 window capture, 126 assetInput), then refresh/evidence orchestration.
-97 composition units / 3,800 baseline function LOC remain; core audit is additional.
+All band 1 units are now inward. Next: remaining band 2 joint reads (11 alert acquisition,
+54 poolAssetValues, 58 raceSnapshot, 108 readArchiveFacts, 111 trade inputs, 126 assetInput),
+then refresh/evidence orchestration. The readArchiveFacts adapter now lives in sources_runtime.go.
+93 composition units / 3,732 baseline function LOC remain; core audit is additional.
 Keep all public APIs/permissions/schemas and lock spans unchanged.
 
 ## Boundary and preserved slice
@@ -70,7 +70,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 13 | 3 | `internal/composition/engine_refresh.go` — `refreshEngine`:16 | 20 | `scoring` | B | Skip missing params/busy model; load signals and points before pool refresh and due check; point failure aborts; health event remains under original span. |
 | 14 | 4 | `internal/composition/engine_refresh.go` — `checkEngine`:38 | 32 | `scoring` | B | Read prior run/input changes, apply EngineDue and dirty flag, fetch directory; clear dirty before run and restore on failure so concurrent changes survive. |
 | 15 | 5 | `internal/composition/engine_refresh.go` — `engineFinished`:71, `sourceHealthChanged`:80 | 13 | `scoring` | B,W | Log run totals/duration and emit health event only if callback exists (runtime policy). |
-| 16 | 2 | `internal/composition/engine_refresh.go` — `modelFreeAgents`:94 | 9 | `scoring` | B,W:scoring | Capture held free-agent IDs as engine input under season lock. |
+| 16 | 2 | `internal/composition/engine_refresh.go` — `modelFreeAgents`:94 | 9 | `scoring` | B,W:scoring | Capture held free-agent IDs as engine input under season lock.  MOVED (part 2, batch 5). |
 | 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. |
 | 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. |
 | 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. |
@@ -162,7 +162,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 104 | 4 | `internal/composition/control_host.go` — `Params`:119, `SetParam`:149, `ResetParam`:162 | 53 | `control` | W:control | Read definitions/current overrides, fail on missing position value; word labels/groups and sort group→label→position; bounded admin override/reset stores return explicit success/failure. |
 | 105 | 4 | `internal/composition/control_host.go` — `keyStatus`:175, `KeyStatus`:183, `SetKey`:201, `DeleteKey`:234, `lookupMyFranchise`:255 | 84 | `control` | W:control;startup | Trim/plausibility 16–256-byte key, verify before storage, distinguish rejected/unreachable/keyring unavailable; store and resolve franchise only after verification, bump generation and refresh. Delete clears identity/verified time/trades and fences older work. Lookup failure denies owner actions. |
 | 106 | 4 | `internal/composition/commissioner_host.go` — `Principal`:25, `commissionerPrincipal`:33, `commissionerSeat`:49, `commissionerSeatSignIn`:63 | 45 | `commissioner` | W:commissioner;local service host | Nonempty installation plus OS uid hashes stable local identity; injected session overrides fallback; reject blank identity. Ready-gated local seat/status/sign-in preserve account aliases and re-read status after sign-in. |
-| 107 | 2 | `internal/composition/commissioner_host.go` — `nativeFacts`:90 | 13 | `commissioner` | W:commissioner;store callbacks | Held directory contributes player facts only when loaded; only held injuries supply NFL designations; no network. |
+| 107 | 2 | `internal/composition/commissioner_host.go` — `nativeFacts`:90 | 13 | `commissioner` | W:commissioner;store callbacks | Held directory contributes player facts only when loaded; only held injuries supply NFL designations; no network.  MOVED (part 2, batch 5). |
 | 108 | 2 | `internal/composition/archive_app.go` — `readArchiveFacts`:32 | 13 | `archive` | W:archive,comms;startup | Read verified snapshot with curated readings/compiler/manifest; retain cached snapshot only when returned SHA is nonempty; preserve service errors. |
 | 109 | 4 | `internal/composition/trades_app.go` — `DraftTradeAccept`:42 | 25 | `trades` | W:trades | Build request/check from held offer; missing MFL host blocks; draft accept, supersede older moves, then save receipt under moves lock. |
 | 110 | 4 | `internal/composition/trades_app.go` — `TradeBuilder`:69 | 44 | `trades` | W:trades | Validate saved-plan ownership before any action; capture state/catalog, preview/save/reject/revoke dispatch; run remove/handoff then return current saved plans under what-if→refresh locks. |
@@ -173,12 +173,12 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 115 | 4 | `internal/composition/trades_app.go` — `tradeSimulation`:298, `tradeProjectionInput`:499 | 64 | `trades` | W:trades | Own what-if vs counterparty mirror; fresh isolated generations; merge only currently-owned players/adjustments, seed separate preview store; derive before/seed/live cap inputs without mutating authoritative mirror. |
 | 116 | 4 | `internal/composition/trades_app.go` — `tradeProjection`:349 | 54 | `trades` | W:trades | Detect newer MFL stamps with reset reasons; collect clock/roster/pick/leg blocks; execute local trade only with nonempty valid legs; project each franchise's rich roster/cap and deal text. |
 | 117 | 4 | `internal/composition/trades_app.go` — `tradeBuilderHandOff`:403, `checkTradeExitPending`:454 | 65 | `trades` | W:trades | Recompute saved plan preview; refuse blocks/out-of-scope receipt/nonpending exit/unsafe URL; save handoff before browser/event/wake; proposal skips pending-exit check. |
-| 118 | 2 | `internal/composition/trades_app.go` — `tradePickReason`:470, `tradeClockReasons`:484 | 20 | `trades` | W:trades | FP_ token requires held fresh ownership; unreadable clock blocks with explicit reason; otherwise shared deadline rule. |
+| 118 | 2 | `internal/composition/trades_app.go` — `tradePickReason`:470, `tradeClockReasons`:484 | 20 | `trades` | W:trades | FP_ token requires held fresh ownership; unreadable clock blocks with explicit reason; otherwise shared deadline rule.  MOVED (part 2, batch 5). |
 | 119 | 3 | `internal/composition/week_app.go` — `refreshWeeksInBackground`:21, `refreshWeek`:56 | 55 | `control` | B | Hourly week→season→clock-rule schedules→finished scores→engine; re-launch league refresh on tick. Week failure preserves prior week/time with failure note; success may derive phase; always revalidate release and notify. |
 | 120 | 1 | `internal/composition/week_app.go` — `lineupWeekFrom`:85 | 22 | `control` | B,startup | Fetch default week then advance until lineup week available; reject >18/mismatched requested week; final week18 ends with no lineup; wrap fetch/conversion errors unchanged.  MOVED (part 2, batch 1). |
 | 121 | 3 | `internal/composition/week_app.go` — `seedCurrentWeek`:109 | 35 | `control` | startup | Apply identical lineup-week algorithm to archived schedules; require exactly one matching scoped result; log failure without replacing held state. |
 | 122 | 4 | `internal/composition/week_app.go` — `deriveWeekPhase`:145 | 30 | `control` | B | Parse configured bounds, stop on invalid/season-over phase; only changed valid phase runs coordinator AdvancePhase with NFL-week/fetched evidence note. |
-| 123 | 2 | `internal/composition/week_app.go` — `lastRegularWeek`:188, `windowSnapshot`:196, `timeNow`:215 | 26 | `control` | W:control,platform;B | Last-regular week must parse within 2–18 else zero; snapshot only rule weeks with detached matchups; injected clock else wall time. |
+| 123 | 2 | `internal/composition/week_app.go` — `lastRegularWeek`:188, `windowSnapshot`:196, `timeNow`:215 | 26 | `control` | W:control,platform;B | Last-regular week must parse within 2–18 else zero; snapshot only rule weeks with detached matchups; injected clock else wall time.  MOVED (part 2, batch 5). |
 | 124 | 3 | `internal/composition/shell_feeds_app.go` — `refreshShellFeeds`:63 | 25 | `control` | B | Pace calendar before trade bait; stop on pause cancellation; season/league-specific live fetch and reference archive for both daily feeds. |
 | 125 | 3 | `internal/composition/now_app.go` — `refreshScoreFirsts`:42 | 13 | `now` | B,W:now | Read missing first scores from held archive; failed read logs and leaves old holder; publish only successful result under season lock. |
 | 126 | 2 | `internal/composition/asset_board.go` — `assetInput`:120 | 9 | `market` | W:market,offers,trades | Hydrate Research before input capture; add every rostered mirror ID to board's value scope, even without finished score. |
@@ -404,7 +404,7 @@ Current responsibility homes after consolidation (tests keep their descriptive f
 All previous-file entries in this table are relative to internal/. Inventory baseline paths and
 Part 1 measurement sets above are historical references, not stale current placement claims.
 
-## Part 2 — final candidate before push
+## Part 2 — four-batch checkpoint (pushed before batch 5)
 
 - All 27 moved units this part total **676 baseline function LOC**. Cumulative: 29/126 units,
   734/4,534 baseline function LOC; all band 1 units done. Remaining composition scope: 97 units,
@@ -431,3 +431,34 @@ Owner ruling: none. No changed role/permission/binding/schema/lock ordering, liv
 GUI, production profile, PR or merge. No new package or dependency.
 Debt left: remaining 97 composition units; core decision audit and extraction; composition/core
 negative ratchet; full hook/CI and live review; shared frontend read/cache tool and store migration.
+
+## Part 2 — batch 5 / last implementation batch
+
+Four further joint-read units (68 baseline function LOC): model free-agent ID scope, native
+held-directory/injury availability, trade pick/clock evidence refusals, configured-week capture
+and injected/wall clock selection. Each original lock/read/time-sampling span stays in composition;
+feature functions own the availability/range/scope choices. Leading zeros, duplicates, nil/empty
+semantics and clock-read failure ordering stay unchanged. Native directory transformation still
+runs under LookupMu, and injury state is read afterward, only when observed as held.
+
+- Added inward tests for model ID order/duplicates/nil, loaded native facts/lazy injury callbacks,
+  pick-only ownership reads and missing-date precedence, failed-clock refusal without sampling
+  time, configured-week selection/deep slice detachment, last-regular-week bounds and clock fallback.
+- Targeted feature race batch passed (Scoring, Native, Trades, Control); composition race batch
+  passed (94.6 seconds) for actual model refresh/read, native legality/lineup, trade deadline,
+  configured windows and command-door parity. This slower filtered batch demonstrates real
+  expensive fixture/model work, but still does not identify the prior broad timeout's exact cause.
+- Full make lint passed on this candidate: all guards, bloat 24/24, zero lint issues.
+- The four-batch checkpoint e101f00f was pushed successfully; its pre-push changed-package lint,
+  shuffled tests/importer tests and binding generation passed. No PR was opened.
+
+Final relocation total for this session: **31 units / 744 baseline function LOC**. Cumulative:
+**33/126 units / 802/4,534 baseline function LOC**. Whole affected production union against
+`98ea8cf7`: **44 paths**, **7,405 → 7,671 physical LOC**,
+**267,190 → 277,927 Unicode code points including LF**. Tests/docs/generated output
+excluded. Relocation is not savings; footprint grows by **266 LOC / 10,737 code points**.
+
+Next owner verification remains live review on a disposable profile: same Control alert labels,
+Research/Market finished-week values and trade deadline refusals before/after refresh. No live
+GUI/MFL/prod-profile operation was performed here. Remaining work is the Resume list plus the
+other open inventory rows, core host policy/ratchet work and all Part 3 frontend read-tool work.

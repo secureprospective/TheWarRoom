@@ -108,3 +108,18 @@ func DecodeLineupSet(body []byte) (LineupSet, error) {
 	}
 	return in, nil
 }
+
+func HeldPlayerFacts(lookup Lookup, loaded bool) nativecheck.Facts {
+	if loaded {
+		return PlayerFacts(lookup)
+	}
+	return nativecheck.Facts{}
+}
+
+func HeldDesignations(facts nativecheck.Facts, held bool, read func() map[string]string) nativecheck.Facts {
+	if !held {
+		return facts
+	}
+	Designate(facts, read())
+	return facts
+}

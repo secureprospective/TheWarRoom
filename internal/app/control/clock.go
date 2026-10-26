@@ -2,9 +2,11 @@ package control
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -125,4 +127,32 @@ func LineupWeekFrom(now time.Time, read func(int) (nflschedule.RawWeek, error)) 
 		}
 		requested = w.Number + 1
 	}
+}
+
+func LastRegularWeek(raw string) int {
+	last, err := strconv.Atoi(raw)
+	if err != nil || last < 2 || last > 18 {
+		return 0
+	}
+	return last
+}
+
+// CaptureWindows detaches only configured rule weeks while the caller holds the season lock.
+func CaptureWindows(last int, schedules map[int]report.HeldFeed[[]nflschedule.RawWeek]) WindowSnapshot {
+	in := WindowSnapshot{LastRegular: last, Schedules: map[int][]nflschedule.RawWeek{}}
+	for _, rule := range leagueclock.Rules(in.LastRegular) {
+		rows := slices.Clone(schedules[rule.Week].Value)
+		for i := range rows {
+			rows[i].Matchups = slices.Clone(rows[i].Matchups)
+		}
+		in.Schedules[rule.Week] = rows
+	}
+	return in
+}
+
+func TimeNow(clock func() time.Time) time.Time {
+	if clock != nil {
+		return clock()
+	}
+	return time.Now()
 }
