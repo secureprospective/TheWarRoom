@@ -2,7 +2,8 @@
 
 ## Resume here
 
-Part 2 in progress: first batch moves nine more units (3, 5, 20–22, 51, 81, 97, 120).
+Part 2 in progress: twenty units moved in two batches; 22/126 done cumulatively.
+Batch 1: 3, 5, 20–22, 51, 81, 97, 120. Batch 2: 4, 6–10, 39, 46, 55, 59, 78.
 Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
 Next: band 1 pure helpers (opponent fallback, period selection, bye inputs, move predicates),
@@ -52,13 +53,13 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 1 | 1 | `internal/composition/finished_scores.go` — `finishedScoreCutoff`:14 | 25 | `now` | B,W | Week must have begun; final flag uses observation time, absent flag allows four hours, playing/future games refuse; latest finish wins. MOVED. |
 | 2 | 1 | `internal/composition/database_checks_app.go` — `databaseChecksReading`:140, `databaseCheckWords`:165 | 33 | `platform` | W:sources | Unchecked/healthy/failed precedence, integrity and FK verdicts, report rows and failure wording. MOVED. |
 | 3 | 1 | `internal/composition/archive_app.go` — `archiveOpponentFallback`:15 | 14 | `archive` | W:archive,comms | Find matching week's game and choose the other franchise, otherwise blank.  MOVED (part 2, batch 1). |
-| 4 | 1 | `internal/composition/asset_board.go` — `finishedScores`:42, `onField`:70 | 34 | `research` | W:research,market,offers,trades | Count only prior held weeks, accumulate per-player points/games and newest timestamp; define total finished-week scope for Market. |
+| 4 | 1 | `internal/composition/asset_board.go` — `finishedScores`:42, `onField`:70 | 34 | `research` | W:research,market,offers,trades | Count only prior held weeks, accumulate per-player points/games and newest timestamp; define total finished-week scope for Market.  MOVED (part 2, batch 2). |
 | 5 | 1 | `internal/composition/contracts_host.go` — `scorePeriod`:60 | 18 | `contracts` | W:contracts | Accept only requested score period, reject archive without that period; preserve parse errors.  MOVED (part 2, batch 1). |
-| 6 | 2 | `internal/composition/control_alerts.go` — `lineupAlert`:43 | 37 | `control` | W:control | Unknown week/feed/rules becomes unavailable; no alert after last lock or for full/legal lineup; otherwise next-lock urgency and trimmed problems. |
-| 7 | 2 | `internal/composition/control_alerts.go` — `tradeAlert`:81 | 25 | `control` | W:control | Reject unavailable evidence; count only incoming nonexpired offers; earliest nonzero expiry controls urgency. |
-| 8 | 2 | `internal/composition/control_alerts.go` — `irAlerts`:107 | 41 | `control` | W:control | Require current roster and live injuries; deduplicate my IR players; warn only on ineligible verdict with name fallback and IR target. |
-| 9 | 1 | `internal/composition/control_alerts.go` — `byeInputsNote`:194, `byeRoster`:211 | 39 | `control` | W:control | Require held byes/current week/current own roster; join player identity and active status to team bye weeks. |
-| 10 | 3 | `internal/composition/control_alerts.go` — `byeAlerts`:149, `byeWeekLock`:235 | 60 | `control` | W:control | Rules/week failures override availability note; unknown active-player facts abort; alert only current/next week shortfalls with local archived lock or unavailable-lock note. |
+| 6 | 2 | `internal/composition/control_alerts.go` — `lineupAlert`:43 | 37 | `control` | W:control | Unknown week/feed/rules becomes unavailable; no alert after last lock or for full/legal lineup; otherwise next-lock urgency and trimmed problems.  MOVED (part 2, batch 2). |
+| 7 | 2 | `internal/composition/control_alerts.go` — `tradeAlert`:81 | 25 | `control` | W:control | Reject unavailable evidence; count only incoming nonexpired offers; earliest nonzero expiry controls urgency.  MOVED (part 2, batch 2). |
+| 8 | 2 | `internal/composition/control_alerts.go` — `irAlerts`:107 | 41 | `control` | W:control | Require current roster and live injuries; deduplicate my IR players; warn only on ineligible verdict with name fallback and IR target.  MOVED (part 2, batch 2). |
+| 9 | 1 | `internal/composition/control_alerts.go` — `byeInputsNote`:194, `byeRoster`:211 | 39 | `control` | W:control | Require held byes/current week/current own roster; join player identity and active status to team bye weeks.  MOVED (part 2, batch 2). |
+| 10 | 3 | `internal/composition/control_alerts.go` — `byeAlerts`:149, `byeWeekLock`:235 | 60 | `control` | W:control | Rules/week failures override availability note; unknown active-player facts abort; alert only current/next week shortfalls with local archived lock or unavailable-lock note.  MOVED (part 2, batch 2). |
 | 11 | 2 | `internal/composition/control_alerts.go` — `Alerts`:24 | 18 | `control` | W:control | Acquire lineup then trades, stop on either failure; gather IR, lineup, bye, trade alerts in order with one clock reading. |
 | 12 | 1 | `internal/composition/draft_reports_app.go` — `DraftNext`:23 | 12 | `draft` | W:draft | No what-if store means no date; otherwise clock failure text or next configured date. |
 | 13 | 3 | `internal/composition/engine_refresh.go` — `refreshEngine`:16 | 20 | `scoring` | B | Skip missing params/busy model; load signals and points before pool refresh and due check; point failure aborts; health event remains under original span. |
@@ -87,14 +88,14 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 36 | 4 | `internal/composition/native_owner_app.go` — `recordOwnerAction`:24, `tradeFamily`:47, `waiverFamily`:62, `bidFamily`:77 | 49 | `commissioner` | W:commissioner | Decode owner command, require family args and matching permit league/franchise/action, then shared service execution with existing refusal text. |
 | 37 | 4 | `internal/composition/native_draft_app.go` — `runDraftPick`:27, `closeFinishedDrafts`:52 | 29 | `commissioner` | W:commissioner | Decode/validate pick, resolve identity, record under permit/deadline; close finished drafts best-effort without undoing pick. |
 | 38 | 4 | `internal/composition/native_lineup_app.go` — `runLineupSet`:30, `LineupFacts`:63 | 39 | `commissioner` | W:commissioner | Decode lineup and require matching permit; construct private immediate command; find selected week's held NFL locks, no network. |
-| 39 | 2 | `internal/composition/native_schedule_app.go` — `nativeScheduleDates`:18 | 27 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Read reference NFL schedules only for requested season; ignore bad bodies/conversion; first valid row per week wins. |
+| 39 | 2 | `internal/composition/native_schedule_app.go` — `nativeScheduleDates`:18 | 27 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Read reference NFL schedules only for requested season; ignore bad bodies/conversion; first valid row per week wins.  MOVED (part 2, batch 2). |
 | 40 | 3 | `internal/composition/native_schedule_app.go` — `BidEnvironment`:48 | 35 | `commissioner` | W:commissioner;store callbacks | Replay season, derive week/offseason fallback; only known week loads playoff bracket/directory; build shared bid environment. |
 | 41 | 4 | `internal/composition/native_seed_app.go` — `nativeSeedCommand`:12, `heldNativeSnapshot`:33 | 54 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Retry must match original seed/expected/reason; require season-aligned held rosters/settings, parse roster date, assemble/validate snapshot with held draft and directory facts. |
 | 42 | 3 | `internal/composition/now_app.go` — `refreshNowWeek`:58, `feedFresh`:152 | 44 | `now` | B,W:now,research | Five-minute schedule and daily bye TTL, forced refresh override; preserve last good copy; pace schedule before bye fetch. |
 | 43 | 2 | `internal/composition/now_app.go` — `scheduleFeed`:100, `checkScheduleWeek`:145 | 27 | `now` | B,W:now,research | Both live and archive must match requested week; scope archived URL by W. |
 | 44 | 3 | `internal/composition/now_app.go` — `seedClockSchedules`:122 | 22 | `now` | startup | Seed current week plus nonzero clock rule weeks from archive only; log failed reads and skip missing. |
 | 45 | 3 | `internal/composition/now_app.go` — `NowRefresh`:175 | 31 | `now` | W:now | Race refresh first; choose market week for zero; only current or listed league week accepted; positive week triggers schedule refresh under original lock. |
-| 46 | 1 | `internal/composition/now_app.go` — `KnownFranchise`:157 | 4 | `now` | W:now | Rulebook membership determines known franchise. |
+| 46 | 1 | `internal/composition/now_app.go` — `KnownFranchise`:157 | 4 | `now` | W:now | Rulebook membership determines known franchise.  MOVED (part 2, batch 2). |
 | 47 | 4 | `internal/composition/now_app.go` — `LiveGame`:235 | 37 | `now` | W:now | Initialize adapter; reset on week change retaining fetch/finals; seed empty board; reject absent follow ID; refresh/final and MFL poll, attach detail failure without losing view. |
 | 48 | 3 | `internal/composition/now_app.go` — `startLiveGame`:273, `pollLiveMFL`:288 | 30 | `now` | W:now | Lazy endpoint/cache setup; active due MFL polling only; success resets failures, failure uses exponential delay capped at 16×30 seconds. |
 | 49 | 2 | `internal/composition/now_app.go` — `liveGameSpines`:327, `spinePlayers`:356, `inspectLiveBox`:381 | 72 | `now` | W:now | No detail work without held/followed games; require history/crosswalk; only known ESPN IDs and directory facts become spines/photos; attach box entities for matched IDs only. |
@@ -103,11 +104,11 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 52 | 3 | `internal/composition/pool_app.go` — `refreshFreeAgents`:20, `restoreFreeAgents`:55 | 62 | `offers` | B,W:offers | Restore archive before first refresh for cross-launch comparison; parse/normalize/sort IDs, set model dirty only for successful changed list; retain good held data on failure. |
 | 53 | 3 | `internal/composition/pool_app.go` — `refreshOffersPool`:87 | 18 | `offers` | W:offers | Startup gate; fresh unforced pool still refreshes Market reports; otherwise pool then Market under refresh lock. |
 | 54 | 2 | `internal/composition/pool_app.go` — `poolAssetValues`:106 | 14 | `offers` | W:offers | Hydrate Research, value requested IDs in Market model, index board values and preserve source note. |
-| 55 | 1 | `internal/composition/power_rankings_app.go` — `remainingSchedule`:120, `ages`:130, `seasonWeeks`:146 | 29 | `scoring` | B,W:race | Schedule failure removes column; missing directory/birthdate means NaN age; age uses 365.2425-day years; unreadable season length gives zero. |
+| 55 | 1 | `internal/composition/power_rankings_app.go` — `remainingSchedule`:120, `ages`:130, `seasonWeeks`:146 | 29 | `scoring` | B,W:race | Schedule failure removes column; missing directory/birthdate means NaN age; age uses 365.2425-day years; unreadable season length gives zero.  MOVED (part 2, batch 2). |
 | 56 | 3 | `internal/composition/race_app.go` — `refreshRace`:22 | 46 | `race` | B,W:race,now | Read/publish weeks→brackets→standings with spacing; successful standings builds season/franchise power using one cached remaining schedule; publish power only on success. |
 | 57 | 3 | `internal/composition/race_app.go` — `scopedBodies`:71, `bracketsOrArchive`:85 | 47 | `race` | B,W:race,now,research | Archive must match URL scope; bracket list plus each bracket required; paced failure aborts all; last nonlive part sets aggregate freshness. |
 | 58 | 2 | `internal/composition/race_app.go` — `raceSnapshot`:123 | 15 | `race` | W:race,now | Capture joint live/held state; detect unplayed live week; apply live overlay only to matching week. |
-| 59 | 1 | `internal/composition/refresh_app.go` — `seasonGuess`:44 | 6 | `control` | startup,B,W:sources | Use held season else wall-clock year for discovery. |
+| 59 | 1 | `internal/composition/refresh_app.go` — `seasonGuess`:44 | 6 | `control` | startup,B,W:sources | Use held season else wall-clock year for discovery.  MOVED (part 2, batch 2). |
 | 60 | 4 | `internal/composition/refresh_app.go` — `refreshLeague`:53, `refreshLeagueLocked`:70, `fetchLeague`:104 | 78 | `control` | startup,B,W:sources;move watcher | Discover current season, normalize roster/money; stage rules+mirror and atomically commit; release prepared rules on mirror-stage failure; update checked times/model dirty; successful outer refresh updates draft feeds/revalidates plans. |
 | 61 | 5 | `internal/composition/refresh_app.go` — `refreshInBackground`:141, `launchRefresh`:172 | 44 | `control` | startup,B | Start due clock and move watcher once after readiness; optional launch refresh then hourly work; stopping prevents worker admission; report failures while preserving league. |
 | 62 | 2 | `internal/composition/research_archive.go` — `archivedResearchFeed`:24 | 7 | `research` | B,W:research,market,offers | Weekly feed selects scoped archive; unscoped kinds read all archived bodies. |
@@ -126,7 +127,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 75 | 4 | `internal/composition/season_app.go` — `refreshPendingTrades`:215, `clearPendingTrades`:258 | 44 | `control` | B,W:control | Keyring read precedes even host discovery; generation fences key deletion; no-key clears data, unavailable/timeout retains data with failure; observe offers separately before hold publication. |
 | 76 | 5 | `internal/composition/season_app.go` — `refreshPendingTradesInBackground`:264 | 14 | `control` | W:control | Key-change refresh uses cancellable worker context else fallback; refresh lock then season notification. |
 | 77 | 3 | `internal/composition/shell_feeds_app.go` — `readShellFeed`:16, `dailyShellReading`:33, `refreshDailyShellFeed`:43 | 40 | `control` | B,W:control,offers | Read archive only when absent; old local date marks pending; at most one network attempt per export/local day (also skip today's successful held read); publish result under season lock. |
-| 78 | 2 | `internal/composition/shell_feeds_app.go` — `mergeMFLCalendar`:89 | 44 | `control` | W:platform,control | Map held event timestamps/title fallback; discard past deadlines; sort urgency/time/ID; append calendar provenance/unavailability note. |
+| 78 | 2 | `internal/composition/shell_feeds_app.go` — `mergeMFLCalendar`:89 | 44 | `control` | W:platform,control | Map held event timestamps/title fallback; discard past deadlines; sort urgency/time/ID; append calendar provenance/unavailability note.  MOVED (part 2, batch 2). |
 | 79 | 3 | `internal/composition/snapshot_app.go` — `takeSnapshot`:23, `targetDirectory`:44, `targetInjuries`:85, `injuriesHeld`:94 | 70 | `platform` | W:platform | Ready gate, serialized directory/injuries snapshot; first-use injury refresh; live directory time uses original lookup timestamp, archive/fail provenance explicit; publish only built snapshot. |
 | 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. |
 | 81 | 1 | `internal/composition/snapshot_app.go` — `rosterMoveTarget`:121 | 11 | `platform` | W:platform,contracts,offers,trades | Unknown discovered host gives unmapped target/block; otherwise encode league/options URL, never submit.  MOVED (part 2, batch 1). |
@@ -285,7 +286,7 @@ selection decisions still lived in composition. Move them into their existing fe
 composition captures held resources and forwards values/callbacks. Preserve error text, raw input
 validation, lock spans, callback order, URL behavior and every command door. No new exposure.
 
-- Units 3/5/20/21/22/51/81/97/120: 137 baseline function LOC relocated (unit 5 retains
+- Units 3/5/20/21/22/51/81/97/120: 125 baseline function LOC relocated (unit 5 retains
   the archive adapter; unit 51 retains locked capture; unit 120 accepts the same read callback).
 - Moved URL allow/deny and taxi registration tests to Platform, retained invalid-envelope
   construction integration in composition. Build-label test now tests values inward without
@@ -300,3 +301,38 @@ validation, lock spans, callback order, URL behavior and every command door. No 
   reads, held score periods, Archive/Contracts wire goldens and command-door parity.
 - First lint found four newly cross-package error returns; preserve exact refusal text with
   narrowly explained wrapcheck annotations (no blanket suppression or changed error chains).
+
+## Part 2 — batch 2
+
+Finding/proposal: composition still selected alerts, finished-score scope, calendar deadlines,
+local native schedules and scoring fallback columns. Move those decisions to feature functions
+on published values and narrow archive/clock callbacks. Typed Control alert inputs avoid sibling
+feature imports; composition converts Contracts/Trades representations without policy.
+
+Preserved slice: composition takes each original lock and archive read, in original order →
+Control applies lineup/trade/IR/bye eligibility, precedence and horizon policy → composition
+still returns the same unsorted reading for the existing API to sort. IR target reads stay lazy,
+only for known ineligible own players. Bye rules parse and failed-freshness choice are inward;
+invalid rules still short-circuit the freshness callback. Other-week lock reads keep the same
+archive URL and first-body/conversion policy; current-week locks do not read the archive.
+
+- Eleven units, 346 baseline function LOC. Finished scores are shared by Research and the
+  Market adapter without feature-to-feature imports. Market retains only conversion into its
+  Scored values. Research snapshot enrichment (unit 66) is still open, not double-counted.
+- Calendar merge preserves fallback titles, urgency/time/ID sorting, unknown-date behavior,
+  provenance text and local-zone wording. Native schedule selection preserves first valid row
+  per week and the existing compatibility allowance for old reference URLs carrying this league's L.
+- Scoring age time is still sampled after directory I/O; missing directory/date stays NaN,
+  schedule read failures omit the column, and parseable out-of-range season lengths stay accepted.
+- Added inward cases for alert refusals/precedence, locks/horizon, IR dedup/ownership/name fallback,
+  finished-week scope/counts/latest/zero scores/first-feed-only/detachment, calendar ordering,
+  native schedule season/duplicates/invalid bodies/read errors, ages/schedule/season fallback,
+  calendar-year discovery and franchise-key membership (not display-name availability).
+- Final targeted feature race tests passed (Control, Research, Scoring, Native, Now).
+  Targeted composition race batch passed (5.6 seconds): TargetAlerts, ByeAlert*, CalendarMerge*,
+  DailyShell*, AssetBoardOnField*, PlayerForm*, ResearchWire*, MarketWire*, Race*, ScoringWire*,
+  NativeSchedule*, EveryCommandDoorRoleParity*. Follow-up bye-rule inward extraction also passed
+  all inward alert and composition TargetAlerts/ByeAlert tests.
+- Test fixture corrections, not production changes: time.Time instant comparisons use Equal;
+  native test now expects the pre-existing legacy-L URL acceptance; new Now test needs its own
+  package declaration. No changed permissions, binding methods, schemas or role data.

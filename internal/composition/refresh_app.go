@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -42,10 +44,7 @@ func (s discoverSource) Fetch(ctx context.Context) (league.RawConfig, error) {
 
 // seasonGuess is where season discovery starts: the season held, else the calendar year.
 func (a *App) seasonGuess() int {
-	if a.core.Season != 0 {
-		return a.core.Season
-	}
-	return time.Now().Year()
+	return controlapp.SeasonGuess(a.core.Season, time.Now())
 }
 
 // refreshLeague stages the rules and mirror from MFL's rosters and salary

@@ -155,8 +155,7 @@ func feedFresh(at time.Time, refreshError string) bool {
 
 // KnownFranchise reports whether id is one of the rulebook's franchises.
 func (h nowHost) KnownFranchise(id string) bool {
-	_, ok := h.Rulebook.FranchiseNames()[id]
-	return ok
+	return nowapp.KnownFranchise(h.Rulebook.FranchiseNames(), id)
 }
 
 // liveGameWindows copies the held week's NFL game windows under the week lock.

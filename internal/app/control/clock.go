@@ -95,3 +95,11 @@ func WindowInputs(in WindowSnapshot, now time.Time) leagueclock.WindowInputs {
 	}
 	return out
 }
+
+// SeasonGuess starts discovery at the held season, falling back to the calendar year.
+func SeasonGuess(held int, now time.Time) int {
+	if held != 0 {
+		return held
+	}
+	return now.Year()
+}

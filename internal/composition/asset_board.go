@@ -3,11 +3,11 @@ package composition
 import (
 	"context"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
 )
 
@@ -32,48 +32,14 @@ func buildAssetBoard(v researchView, model assetModel, at time.Time, also []stri
 	return marketapp.WireAssetBoard(marketapp.BuildBoard(v.onField(), model, at, also))
 }
 
-type onFieldRow struct {
-	id, position string
-	sum          float64
-	games        int
-}
-
-// finishedScores is the one finished-week scope shared by cards and player research.
-func (v researchView) finishedScores() (map[string]*onFieldRow, int, time.Time) {
-	last := max(v.week-1, 0)
-	rows := map[string]*onFieldRow{}
-	held, latest := 0, time.Time{}
-	for w := 1; w <= last; w++ {
-		feed := v.feed("playerScores", strconv.Itoa(w))
-		if len(feed.Value) == 0 {
-			continue
-		}
-		held++
-		if feed.FetchedAt.After(latest) {
-			latest = feed.FetchedAt
-		}
-		for _, e := range researchRows(feed) {
-			id := e.ID.String()
-			r := rows[id]
-			if r == nil {
-				r = &onFieldRow{id: id, position: v.player(id).Position}
-				rows[id] = r
-			}
-			r.sum += e.Value
-			r.games++
-		}
-	}
-	return rows, held, latest
-}
-
 // onField is each scored player's points per game and rank at his position, in the service.
 func (v researchView) onField() marketapp.OnField {
-	rows, held, latest := v.finishedScores()
-	scored := make([]marketapp.Scored, 0, len(rows))
-	for _, r := range rows {
-		scored = append(scored, marketapp.Scored{ID: r.id, Position: r.position, Sum: r.sum, Games: r.games})
+	finished := researchapp.FinishedScores(v.scoreInput())
+	scored := make([]marketapp.Scored, 0, len(finished.Rows))
+	for id, r := range finished.Rows {
+		scored = append(scored, marketapp.Scored{ID: id, Position: r.Position, Sum: r.Sum, Games: r.Games})
 	}
-	return marketapp.OnFieldNow(scored, held, max(v.week-1, 0), latest, v.zone)
+	return marketapp.OnFieldNow(scored, finished.Held, finished.Weeks, finished.Latest, v.zone)
 }
 
 // onFieldNow is onField as wire cells.

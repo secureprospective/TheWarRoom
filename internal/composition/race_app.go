@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -52,7 +54,9 @@ func (a *App) refreshRace(ctx context.Context) {
 	standings, sf, serr := a.standingsOrArchive(ctx)
 	power := map[string]PowerRankingsResult{}
 	if serr == nil {
-		schedule := sync.OnceValue(func() []leagueschedule.RawScheduleWeek { return a.remainingSchedule(ctx) })
+		schedule := sync.OnceValue(func() []leagueschedule.RawScheduleWeek {
+			return scoringapp.RemainingSchedule(ctx, a.leagueScheduleOrArchive)
+		})
 		for _, view := range []string{ViewSeason, ViewFranchise} {
 			power[view] = a.powerRankings(ctx, standings, sf,
 				func(context.Context) []leagueschedule.RawScheduleWeek { return schedule() },

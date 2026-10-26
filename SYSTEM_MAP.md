@@ -47,7 +47,9 @@ Current boundary-extraction inventory and resume point: `docs/architecture/app-b
 Finished-score finality is in `internal/app/now/finished_scores.go`; local database-check report
 policy is in `internal/app/platform/database_checks.go`. Pure move/URL rules are in Platform,
 score-period admission in Contracts, personal-snapshot admission in Offers, opponent fallback in
-Archive and lineup-week selection in Control. Composition retains their resource
+Archive and lineup-week selection in Control. Alert/bye/calendar policy is in Control; finished
+score aggregation in Research; held native schedule selection in Commissioner/native; scoring
+context fallbacks in Scoring. Composition retains their resource
 capture/refresh coordination, not those decisions.
 
 ## Where new code goes

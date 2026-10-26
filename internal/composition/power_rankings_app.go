@@ -2,8 +2,6 @@ package composition
 
 import (
 	"context"
-	"math"
-	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
@@ -115,41 +113,18 @@ func (a *App) powerRankings(ctx context.Context, standings []leaguestandings.Raw
 
 func defaultAgg(view string) string { return scoringapp.DefaultAgg(view) }
 
-// remainingSchedule is the league schedule for the projected record, nil when it cannot be read:
-// a missing column must not stop the board.
-func (a *App) remainingSchedule(ctx context.Context) []leagueschedule.RawScheduleWeek {
-	weeks, _, err := a.leagueScheduleOrArchive(ctx)
-	if err != nil {
-		return nil
-	}
-	return weeks
-}
-
 // ages reads each player's age today from the players directory. When the directory cannot be
 // read every age is unknown (NaN), and the board counts none.
 func (a *App) ages(ctx context.Context) func(mflID string) float64 {
 	lk, err := a.directory(ctx)
 	today := time.Now()
-	return func(mflID string) float64 {
-		if err != nil {
-			return math.NaN()
-		}
-		f, ok := lk.Facts(mflID)
-		if !ok || !f.HasBirthdate {
-			return math.NaN()
-		}
-		return today.Sub(time.Unix(f.Birthdate, 0)).Hours() / (24 * 365.2425)
-	}
+	return scoringapp.PlayerAges(lk, err, today)
 }
 
 // seasonWeeks is the league's last regular-season week, 0 when unreadable.
 func (a *App) seasonWeeks() int {
 	last, _ := a.core.Rulebook.GetSetting("lastRegularSeasonWeek")
-	n, err := strconv.Atoi(last)
-	if err != nil {
-		return 0
-	}
-	return n
+	return scoringapp.SeasonWeeks(last)
 }
 
 func wirePower(b season.PowerRankingsResult) PowerRankingsResult {

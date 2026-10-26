@@ -69,3 +69,8 @@ func (a *API) TargetLiveGame(open bool, follow, mine string) (LiveGameView, erro
 // Commands records existing bindings without inventing publication metadata. Only following a
 // game has a registry verb (game.follow, X-01).
 func Commands() []catalog.Command { return catalog.DesktopCommands("now", nil) }
+
+func KnownFranchise(names map[string]string, id string) bool {
+	_, ok := names[id]
+	return ok
+}

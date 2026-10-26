@@ -47,11 +47,8 @@ func (in researchInput) snapshot() researchapp.Snapshot {
 		in.now = time.Now()
 	}
 	v := researchView{researchInput: in}
-	rows, _, latest := v.finishedScores()
-	scores := make(map[string]*researchapp.Score, len(rows))
-	for id, r := range rows {
-		scores[id] = &researchapp.Score{Position: r.position, Sum: r.sum, Games: r.games}
-	}
+	finished := researchapp.FinishedScores(v.scoreInput())
+	scores, latest := finished.Rows, finished.Latest
 	charges := map[string]domain.Money{}
 	for _, p := range in.mirror.Players {
 		if charge, ok := heldCutCharge(p, in.mirror.Season); ok {
@@ -104,4 +101,8 @@ func (a *App) publishResearch(value researchHeld) {
 	a.researchHeld.Publish(researchapp.Values{Feeds: value.feeds, Depth: value.depth,
 		Links: value.links, LinkError: value.linkError, LinkVersion: value.linkVersion,
 		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead})
+}
+
+func (v researchView) scoreInput() researchapp.Snapshot {
+	return researchapp.Snapshot{Held: researchapp.Values{Feeds: v.held.feeds}, Lookup: v.lookup, Mirror: v.mirror, Config: v.config, Week: v.week}
 }

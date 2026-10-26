@@ -8,7 +8,6 @@ import (
 
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -19,28 +18,7 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 	error) {
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
-	var weeks []leagueweek.Week
-	seen := make(map[int]bool)
-	_, err := a.core.History.ReferenceBodies(ctx, "TYPE="+nflschedule.Export,
-		func(src string, body []byte, _ time.Time) bool {
-			if !sameExport(src, nflschedule.Export, season, true) {
-				return false
-			}
-			raw, err := nflschedule.Parse(body)
-			if err != nil {
-				return false
-			}
-			week, err := nflschedule.ToWeek(raw, at)
-			if err == nil && !seen[week.Number] {
-				weeks = append(weeks, week)
-				seen[week.Number] = true
-			}
-			return false
-		})
-	if err != nil {
-		return nil, fmt.Errorf("read held NFL week dates: %w", err)
-	}
-	return weeks, nil
+	return nativeapp.ScheduleDates(ctx, a.core.History.ReferenceBodies, season, at) //nolint:wrapcheck // Preserve the held NFL week dates refusal.
 }
 
 type appBidEnv struct{ app *App }
