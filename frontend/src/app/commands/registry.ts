@@ -1,3 +1,5 @@
+import type { Density } from '../cards/Card';
+import { browserCommands } from './browser.gen';
 import { loadMarket } from '../market/load';
 import { prefetchHQ } from '../shell/FranchiseHQMount';
 import { createLineups, createReadings } from '../shell/lineups';
@@ -24,7 +26,6 @@ import {
   type SettingsStorage,
 } from '../shell/franchise';
 import { presets, presetAllowed, holdsRole, type Role, type PresetId } from '../shell/presets';
-import type { Density } from '../cards/Card';
 import type { Gravity } from '../look/channels';
 import { createShellState } from '../shell/state';
 import { routeFor, type Node, type Route } from '../shell/nodes';
@@ -41,17 +42,18 @@ export type Command<A> = {
   keys?: readonly { key: string; args: A }[];
   run: (args: A) => void | Promise<unknown>;
 };
-function command<A>(definition: Command<A>): Readonly<Command<A>> {
+function command<A>(definition: {
+  id: keyof typeof browserCommands; run: (args: A) => void | Promise<unknown>;
+}): Readonly<Command<A>> {
+  const metadata = browserCommands[definition.id];
+  const keys = 'keys' in metadata ? metadata.keys as unknown as Command<A>['keys'] : undefined;
   return Object.freeze({
-    ...definition,
-    aliases: Object.freeze([...definition.aliases]),
-    roles: Object.freeze([...definition.roles]),
-    args: Object.freeze([...definition.args]),
-    keys:
-      definition.keys &&
-      Object.freeze(
-        definition.keys.map((k) => Object.freeze({ ...k, args: Object.freeze(k.args) })),
-      ),
+    ...metadata,
+    aliases: Object.freeze([...metadata.aliases]),
+    roles: Object.freeze([...metadata.roles]),
+    args: Object.freeze([...metadata.args]) as readonly (keyof A)[],
+    keys: keys && Object.freeze(keys.map(k => Object.freeze({ ...k, args: Object.freeze(k.args) }))),
+    run: definition.run,
   });
 }
 export function createCommands(
@@ -70,13 +72,6 @@ export function createCommands(
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();
   const hqFailure = (cause: unknown) => console.error('HQ prefetch failed:', cause);
-  const ambient = {
-    aliases: [] as const,
-    roles: ['gm', 'commish', 'admin'] as const,
-    gravity: 'G0' as const,
-    undo: 'instant' as const,
-    args: [] as const,
-  };
   function openPlace(place: Placement) {
     const route = placementRoute(place);
     if (route) state.navigate(route);
@@ -113,15 +108,9 @@ export function createCommands(
       throw cause;
     }
   }
-  function rosterCommand(intent: 'roster.ir' | 'roster.taxi', label: string) {
+  function rosterCommand(intent: 'roster.ir' | 'roster.taxi') {
     return command({
       id: intent,
-      label,
-      aliases: [],
-      roles: ['gm'],
-      gravity: 'G2',
-      undo: 'reversible',
-      args: ['subject'],
       run: ({ subject }: { subject: PlayerSubject }) => {
         return draftRoster(subject, intent);
       },
@@ -189,17 +178,9 @@ export function createCommands(
   }
   function editCommand<A>(
     kind: import('./lineupEdit').LineupAction['kind'],
-    label: string,
-    args: readonly (keyof A)[],
   ) {
-    const remote = kind === 'draft' || kind === 'handoff';
     return command({
-      ...ambient,
       id: kind === 'withdraw' ? 'move.withdraw' : kind === 'handoff' ? 'move.handoff' : `lineup.${kind}`,
-      label,
-      args,
-      gravity: remote ? 'G1' : 'G0',
-      undo: remote ? 'reversible' : 'instant',
       run: (values: A) => lineupAction({ kind, ...values } as import('./lineupEdit').LineupAction),
     });
   }
@@ -215,10 +196,10 @@ export function createCommands(
     REGULAR_SEASON: { node: 'hq', workspace: 'lineup-and-roster' },
     PLAYOFFS: { node: 'pulse', workspace: 'race' },
   } as const;
-  function personalCommand(kind: import('../personal/contract').ListKind, label: string) {
+  function personalCommand(kind: import('../personal/contract').ListKind) {
     return command({
-      ...ambient, id: kind === 'watch' ? 'watch.add' : kind === 'bait' ? 'bait.set'
-        : kind === 'note' ? 'note.add' : 'draft.list', label, args: ['id', 'entity', 'action', 'text'],
+      id: kind === 'watch' ? 'watch.add' : kind === 'bait' ? 'bait.set'
+        : kind === 'note' ? 'note.add' : 'draft.list',
       run: (change: import('../personal/contract').ListChange) => {
         const mine = state.read().franchiseId;
         if (!mine) {
@@ -232,32 +213,30 @@ export function createCommands(
     });
   }
   const registry = Object.freeze({
-    'watch.add': personalCommand('watch', 'Watch player'),
-    'bait.set': personalCommand('bait', 'Mark trade bait'),
-    'note.add': personalCommand('note', 'Keep note'),
-    'draft.list': personalCommand('draft', 'Change draft list'),
+    'watch.add': personalCommand('watch'),
+    'bait.set': personalCommand('bait'),
+    'note.add': personalCommand('note'),
+    'draft.list': personalCommand('draft'),
     'personal.handoff': command({
-      ...ambient, id: 'personal.handoff', label: 'Open MFL list', args: ['kind'],
+      id: 'personal.handoff',
       run: ({ kind }: { kind: import('../personal/contract').ListKind | 'ir' }) => {
         return import('../personal/state').then(m => m.personalState.handoff(kind));
       },
     }),
     'window.set': command({
-      ...ambient, id: 'window.set', label: 'Commissioner: set a league date',
-      gravity: 'G2', undo: 'reversible', args: ['kind', 'at'],
-      // There is no commissioner sign-in yet; keep the shared command roles until there is.
+      id: 'window.set',
       run: ({ kind, at }: { kind: import('../data/contract').WindowKind; at: string }) => {
         return import('../clock/windowState').then(m => m.setWindow(provider, kind, at));
       },
     }),
     'window.edit': command({
-      ...ambient, id: 'window.edit', label: 'Commissioner: choose a league date', args: ['kind'],
+      id: 'window.edit',
       run: ({ kind }: { kind: import('../data/contract').WindowKind }) => {
         return import('../clock/windowState').then(m => m.editWindow(kind));
       },
     }),
     'phase.goto': command({
-      ...ambient, id: 'phase.goto', label: 'Open phase workspace', args: ['phase'],
+      id: 'phase.goto',
       run: ({ phase }: { phase: keyof typeof phaseRoutes }) => {
         const route = phaseRoutes[phase];
         if (!route) throw new Error('phase.goto: unknown phase');
@@ -265,7 +244,7 @@ export function createCommands(
       },
     }),
     'inspector.pin': command({
-      ...ambient, id: 'inspector.pin', label: 'Inspect entity', args: ['entity'],
+      id: 'inspector.pin',
       run: ({ entity }: { entity: EntitySubject | PlayerSubject }) => {
         if (entity.kind === 'player') {
           const roster = snapshot?.rosters.value.find(r => r.players.some(p => p.id === entity.id));
@@ -282,39 +261,32 @@ export function createCommands(
       },
     }),
     'refresh.run': command({
-      ...ambient, id: 'refresh.run', label: 'Refresh data', gravity: 'G1', args: ['scope'],
+      id: 'refresh.run',
       run: ({ scope }: { scope: string }) => dataRun({ kind: 'refresh', scope }),
     }),
     'cache.run': command({
-      ...ambient, id: 'cache.run', label: 'Read data again', gravity: 'G1', args: ['scope'],
+      id: 'cache.run',
       run: ({ scope }: { scope: string }) => {
         return import('../datasources/cacheState').then(m =>
           completed(m.cacheState.run(scope), () => m.cacheState.peek().error));
       },
     }),
     'data.run': command({
-      ...ambient, id: 'data.run', label: 'Data settings', gravity: 'G1', args: ['kind'],
+      id: 'data.run',
       run: (action: import('../datasources/state').DataAction) => dataRun(action),
     }),
     'data.parameter': command({
-      ...ambient, id: 'data.parameter', label: 'Change engine parameter', gravity: 'G1',
-      roles: ['admin'], args: ['key', 'position', 'value'],
+      id: 'data.parameter',
       run: (action: import('../datasources/state').ParamAction) => dataRun(action),
     }),
     'contracts.set': command({
-      ...ambient,
       id: 'contracts.set',
-      label: 'Filter or sort contracts',
-      args: ['field', 'value'],
       run: (change: import('../contracts/state').ContractsAction) => {
         return import('../contracts/state').then(m => m.runContractsAction(change));
       },
     }),
     'offers.filter': command({
-      ...ambient,
       id: 'offers.filter',
-      label: 'Filter Offers',
-      args: ['field', 'value'],
       run: (change: import('../offers/state').OfferFilter) => {
         return import('../offers/state').then(
           m => m.offerState.change(change),
@@ -322,10 +294,7 @@ export function createCommands(
       },
     }),
     market: command({
-      ...ambient,
       id: 'market',
-      label: 'Market',
-      args: ['field', 'value'],
       run: (change: import('../market/contract').MarketFilter) => {
         if (['pool-plan', 'pool-open'].includes(change.field))
           state.navigate({ node: 'war', workspace: 'valuations-and-pool' });
@@ -338,15 +307,14 @@ export function createCommands(
       },
     }),
     'trade.builder': command({
-      ...ambient, id: 'trade.builder', label: 'Trade builder', gravity: 'G3', undo: 'irreversible',
-      args: ['action'],
+      id: 'trade.builder',
       run: (action: import('../shell/tradeBuilderState').BuilderAction) => {
         return import('../shell/tradeBuilderState').then(m =>
           completed(m.builderAction(action), () => m.useBuilder.getState().error));
       },
     }),
     acquisition: command({
-      ...ambient, id: 'acquisition', label: 'What does the add cost me?', args: ['mine'],
+      id: 'acquisition',
       run: (action: import('../contracts/acquisition').AcquisitionRequest) => {
         state.navigate({ node: 'hq', workspace: 'contracts-and-cap' });
         return import('../contracts/acquisition').then(m =>
@@ -354,13 +322,7 @@ export function createCommands(
       },
     }),
     'trade.accept.plan': command({
-      ...ambient,
       id: 'trade.accept.plan',
-      label: 'Plan accept',
-      roles: ['gm'],
-      gravity: 'G2',
-      undo: 'reversible',
-      args: ['tradeId'],
       run: ({ tradeId }: { tradeId: string }) => {
         const franchiseId = state.read().franchiseId;
         if (franchiseId)
@@ -378,32 +340,21 @@ export function createCommands(
           );
       },
     }),
-    'lineup.edit': editCommand<{ franchiseId: string }>('edit', 'Edit lineup', ['franchiseId']),
-    'lineup.toggle': editCommand<{ playerId: string }>('toggle', 'Toggle starter', ['playerId']),
-    'lineup.reset': editCommand<Record<string, never>>('reset', 'Reset', []),
-    'lineup.cancel': editCommand<Record<string, never>>('cancel', 'Cancel', []),
-    'lineup.draft': editCommand<Record<string, never>>('draft', 'Check and save plan', []),
+    'lineup.edit': editCommand<{ franchiseId: string }>('edit'),
+    'lineup.toggle': editCommand<{ playerId: string }>('toggle'),
+    'lineup.reset': editCommand<Record<string, never>>('reset'),
+    'lineup.cancel': editCommand<Record<string, never>>('cancel'),
+    'lineup.draft': editCommand<Record<string, never>>('draft'),
     'move.withdraw': editCommand<{ correlationId: string }>(
-      'withdraw', 'Remove roster plan', ['correlationId'],
+      'withdraw',
     ),
-    'move.handoff': editCommand<{ correlationId: string }>('handoff', 'Open MFL page', [
-      'correlationId',
-    ]),
+    'move.handoff': editCommand<{ correlationId: string }>('handoff'),
     'mflkey.connect': command({
-      ...ambient,
       id: 'mflkey.connect',
-      label: 'Connect MFL',
-      aliases: ['mfl', 'api key'],
-      gravity: 'G1',
-      undo: 'reversible',
       run: (_args: Record<string, never>) => connectMFL(),
     }),
     'mflkey.forget': command({
-      ...ambient,
       id: 'mflkey.forget',
-      label: 'Forget MFL key',
-      gravity: 'G1',
-      undo: 'reversible',
       run: (_args: Record<string, never>) => {
         if (!mflReason(true)) {
           return completed(requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…'),
@@ -411,30 +362,24 @@ export function createCommands(
         }
       },
     }),
-    'roster.ir': rosterCommand('roster.ir', 'Draft IR move'),
-    'roster.taxi': rosterCommand('roster.taxi', 'Draft move to taxi squad'),
+    'roster.ir': rosterCommand('roster.ir'),
+    'roster.taxi': rosterCommand('roster.taxi'),
     'surface.open': command({
-      ...ambient,
       id: 'surface.open',
-      label: 'Open shell surface',
-      aliases: ['surface'],
-      args: ['place'],
       run: (args: { place: Surface }) => openPlace(args.place),
     }),
     'surface.close': command({
-      ...ambient,
       id: 'surface.close',
-      label: 'Close endpoint surface',
       run: (_args: Record<string, never>) => state.write({ endpointSurface: null }),
     }),
     'report.sort': command({
-      ...ambient, id: 'report.sort', label: 'Sort report', aliases: [], args: ['id', 'column'],
+      id: 'report.sort',
       run: (args: { id: string; column: number }) => {
         return import('../reports/sortState').then(m => m.reportSort.set(args));
       },
     }),
     'market.reports': command({
-      ...ambient, id: 'market.reports', label: 'Player market reports', aliases: [], args: ['action'],
+      id: 'market.reports',
       run: (args: { action: 'refresh' }) => {
         if (args.action !== 'refresh') throw new Error('Player market reports: invalid action');
         return import('../reports/marketState').then(m => completed(m.marketReportState.refresh(true),
@@ -442,7 +387,7 @@ export function createCommands(
       },
     }),
     'comms.read': command({
-      ...ambient, id: 'comms.read', label: 'League communications', aliases: [], args: ['action', 'value'],
+      id: 'comms.read',
       run: (args: { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string }) => {
         if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
           throw new Error('Comms: invalid action');
@@ -451,8 +396,7 @@ export function createCommands(
       },
     }),
     'backup.now': command({
-      ...ambient, id: 'backup.now', label: 'Back up now', aliases: ['backup', 'save a backup'], gravity: 'G1',
-      // Control Room › App holds the result, and the sign-in form when a backup needs one first.
+      id: 'backup.now',
       run: (_args: Record<string, never>) => {
         state.navigate({ node: 'control', workspace: 'app' });
         return import('../commissioner/backupState').then(m =>
@@ -460,35 +404,33 @@ export function createCommands(
       },
     }),
     'commissioner.surface': command({
-      ...ambient, id: 'commissioner.surface', label: 'Change the league view',
-      args: ['screen', 'action', 'value'],
+      id: 'commissioner.surface',
       run: (args: import('../commissioner/surfaceActions').SurfaceAction) => {
         return import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args));
       },
     }),
     'commissioner.read': command({
-      ...ambient, id: 'commissioner.read', label: 'Read the league ledger', args: ['league'],
+      id: 'commissioner.read',
       run: (args: { league: string }) => {
         return import('../commissioner/proxy').then(m =>
           completed(m.leagueState.choose(args.league), () => m.leagueState.peek().error));
       },
     }),
     'commissioner.draft': command({
-      ...ambient, id: 'commissioner.draft', label: 'Edit a rule value', args: ['action', 'path', 'index'],
+      id: 'commissioner.draft',
       run: (args: { action: 'add' | 'remove'; path: string; index: number }) => {
         return import('../commissioner/draftEditor').then(m => m.draftEditor.run(args));
       },
     }),
     'commissioner.execute': command({
-      ...ambient, id: 'commissioner.execute', label: 'Record a league change', args: ['body'],
+      id: 'commissioner.execute',
       run: (args: { body: string }) => {
         return import('../commissioner/proxy').then(m => m.execute(args.body))
           .then(receipt => state.write({ notice: receipt.message }));
       },
     }),
     'control.read': command({
-      ...ambient, id: 'control.read', label: 'Control Room league and site news', aliases: [],
-      args: ['action', 'value'],
+      id: 'control.read',
       run: (args: { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }) => {
         if (!['league', 'news', 'search', 'open-accounting'].includes(args.action))
           throw new Error('Control Room: invalid action');
@@ -497,7 +439,7 @@ export function createCommands(
       },
     }),
     'research.read': command({
-      ...ambient, id: 'research.read', label: 'Player research', aliases: [], args: ['action', 'value'],
+      id: 'research.read',
       run: (args: { action: string; value: string }) => {
         return import('../research/state').then(m =>
           completed(m.researchState.choose(args.action, args.value),
@@ -505,15 +447,14 @@ export function createCommands(
       },
     }),
     'archive.reports': command({
-      ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [],
-      args: ['action', 'value'],
+      id: 'archive.reports',
       run: (args: { action: string; value: string }) => {
         return import('../archive/state').then(m =>
           completed(m.archiveState.choose(args.action, args.value), () => m.archiveState.peek().error));
       },
     }),
     'race.reports': command({
-      ...ambient, id: 'race.reports', label: 'League race reports', aliases: [], args: ['action', 'value'],
+      id: 'race.reports',
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {
         if (!['refresh', 'week', 'team'].includes(args.action))
           throw new Error('League race: invalid action');
@@ -522,14 +463,14 @@ export function createCommands(
       },
     }),
     'game.follow': command({
-      ...ambient, id: 'game.follow', label: 'Follow NFL game', args: ['id'],
+      id: 'game.follow',
       run: ({ id }: { id: string }) => {
         state.navigate({ node: 'pulse', workspace: 'now' });
         return import('../now/liveState').then(m => m.liveState.follow(id));
       },
     }),
     'now.reports': command({
-      ...ambient, id: 'now.reports', label: 'This week in the league', aliases: [], args: ['action', 'value'],
+      id: 'now.reports',
       run: (args: { action: 'refresh' | 'week' | 'reports-week'; value: string }) => {
         if (!['refresh', 'week', 'reports-week'].includes(args.action))
           throw new Error('League Pulse: invalid action');
@@ -538,7 +479,7 @@ export function createCommands(
       },
     }),
     'draft.reports': command({
-      ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
+      id: 'draft.reports',
       run: (args: { action: 'refresh' | 'mfl' }) => {
         if (!['refresh', 'mfl'].includes(args.action)) throw new Error('Draft reports: invalid action');
         return import('../draftreports/state').then(m =>
@@ -546,11 +487,7 @@ export function createCommands(
       },
     }),
     'endpoint.open': command({
-      ...ambient,
       id: 'endpoint.open',
-      label: 'Open endpoint',
-      aliases: ['endpoint'],
-      args: ['id'],
       run: (args: { id: EndpointId }) => {
         const target = resolve(args.id);
         if (target.kind === 'retired') throw new Error(`endpoint.open: retired ${args.id}`);
@@ -567,11 +504,7 @@ export function createCommands(
       },
     }),
     'franchise.set': command({
-      ...ambient,
       id: 'franchise.set',
-      label: 'View a franchise',
-      aliases: ['view team'],
-      args: ['franchiseId'],
       run: (args: { franchiseId: string }) => {
         if (!snapshot || !validFranchise(snapshot, args.franchiseId)) {
           throw new Error('franchise.set: unknown franchise');
@@ -590,11 +523,7 @@ export function createCommands(
       },
     }),
     'preset.apply': command({
-      ...ambient,
       id: 'preset.apply',
-      label: 'Apply preset',
-      aliases: ['view'],
-      args: ['preset'],
       run: (args: { preset: PresetId }) => {
         if (!presetAllowed(args.preset, roles)) throw new Error('preset.apply: GM permission denied');
         const p = presets[args.preset];
@@ -603,11 +532,7 @@ export function createCommands(
       },
     }),
     'inspector.open': command({
-      ...ambient,
       id: 'inspector.open',
-      label: 'Inspect player',
-      aliases: ['player'],
-      args: ['subject'],
       run: (args: { subject: PlayerSubject }) => {
         const subject = args.subject;
         if (
@@ -623,24 +548,15 @@ export function createCommands(
       },
     }),
     'inspector.collapse': command({
-      ...ambient,
       id: 'inspector.collapse',
-      label: 'Collapse inspector',
-      aliases: ['collapse'],
       run: (_args: Record<string, never>) => state.write({ inspector: 'rest' }),
     }),
     'commandbar.close': command({
-      ...ambient,
       id: 'commandbar.close',
-      label: 'Close command bar',
       run: (_args: Record<string, never>) => state.write({ commandbar: false }),
     }),
     'nav.open': command({
-      ...ambient,
       id: 'nav.open',
-      label: 'Open workspace',
-      args: ['node', 'workspace'],
-      aliases: ['goto', 'navigate'],
       run: (args: Route | { node: Node; workspace?: undefined }) => {
         const route = routeFor(args.node, args.workspace ?? state.read().workspace[args.node]);
         if (!route) throw new Error(`nav.open: invalid workspace for ${args.node}`);
@@ -648,67 +564,35 @@ export function createCommands(
       },
     }),
     'density.set': command({
-      ...ambient,
       id: 'density.set',
-      label: 'Set density',
-      args: ['density'],
-      aliases: ['density'],
-      keys: [
-        { key: 'N', args: { density: 'narrative' as Density } },
-        { key: 'T', args: { density: 'tactical' as Density } },
-        { key: 'M', args: { density: 'matrix' as Density } },
-        { key: '1', args: { density: 'narrative' as Density } },
-        { key: '2', args: { density: 'tactical' as Density } },
-        { key: '3', args: { density: 'matrix' as Density } },
-      ],
       run: (args: { density: Density }) => state.write({ density: args.density }),
     }),
     'inspector.expand': command({
-      ...ambient,
       id: 'inspector.expand',
-      label: 'Expand inspector',
-      aliases: ['expand'],
       run: (_args: Record<string, never>) => state.write({ inspector: 'expanded' }),
     }),
     'inspector.toggle': command({
-      ...ambient,
       id: 'inspector.toggle',
-      label: 'Toggle inspector',
-      aliases: ['inspect'],
-      keys: [{ key: 'I', args: {} }],
       run: (_args: Record<string, never>) =>
         state.write({
           inspector: state.read().inspector === 'closed' ? 'rest' : 'closed',
         }),
     }),
     'inspector.close': command({
-      ...ambient,
       id: 'inspector.close',
-      label: 'Close inspector',
-      aliases: ['close inspector'],
       run: (_args: Record<string, never>) => state.write({ inspector: 'closed' }),
     }),
     'calendar.summon': command({
-      ...ambient,
       id: 'calendar.summon',
-      label: 'Summon calendar',
-      aliases: ['calendar'],
       run: (_args: Record<string, never>) =>
         state.write({ summoned: state.read().summoned ? null : 'calendar' }),
     }),
     'comms.toggle': command({
-      ...ambient,
       id: 'comms.toggle',
-      label: 'Toggle comms',
-      aliases: ['comms', 'chat'],
       run: (_args: Record<string, never>) => state.write({ comms: !state.read().comms }),
     }),
     'overlays.close': command({
-      ...ambient,
       id: 'overlays.close',
-      label: 'Close overlays',
-      aliases: ['escape'],
-      keys: [{ key: 'Escape', args: {} }],
       run: (_args: Record<string, never>) =>
         state.write({
           inspector: 'closed',
@@ -720,20 +604,12 @@ export function createCommands(
         }),
     }),
     'commandbar.open': command({
-      ...ambient,
       id: 'commandbar.open',
-      label: 'Type a command',
-      aliases: ['command', '/'],
-      keys: [
-        { key: '/', args: {} },
-        { key: 'Ctrl+K', args: {} },
-      ],
       run: (_args: Record<string, never>) => state.write({ commandbar: true }),
     }),
-  });
+  } satisfies Record<keyof typeof browserCommands, { id: string }>);
   type Id = keyof typeof registry;
   type Args<K extends Id> = Parameters<(typeof registry)[K]['run']>[0];
-  type Entry = { [K in Id]: { id: K; args: Args<K> } }[Id];
   function teamActionFranchise(id: Id, args: Args<Id>): string | null | undefined {
     let mine = state.read().franchiseId;
     if (id === 'contracts.set' && 'field' in args) {
@@ -761,7 +637,7 @@ export function createCommands(
     if (mine && mine === status.myFranchise) return undefined;
     return status.teamActionRefusal || 'Checking MFL…';
   }
-  type Receipt = Entry & { status: 'done' | 'failed'; reason?: string };
+  type Receipt = { id: Id; args: Readonly<Args<Id>>; status: 'done' | 'failed'; reason?: string };
   const history: Readonly<Receipt>[] = [];
   function dispatch<K extends Id>(id: K, args: Args<K>): void | Promise<void> {
     const selected = registry[id] as Command<Args<K>> | undefined;
@@ -773,7 +649,7 @@ export function createCommands(
       const reason = status === 'failed'
         ? cause instanceof Error ? cause.message : String(cause) : undefined;
       history.push(Object.freeze({ id, args: savedArgs, status,
-        ...(reason === undefined ? {} : { reason }) }) as Receipt);
+        ...(reason === undefined ? {} : { reason }) }));
       if (history.length > 32) history.shift();
       if (reason !== undefined) {
         if (show) state.write({ notice: reason });

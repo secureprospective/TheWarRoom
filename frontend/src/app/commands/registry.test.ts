@@ -1,31 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 import { dataState } from '../datasources/state';
 import { createCommands } from './registry';
-import type { Command, CommandId, CommandArgs } from './registry';
+import type { CommandId, CommandArgs } from './registry';
 
-function validGravity(c: Pick<Command<{}>, 'gravity' | 'undo'>) {
-  return (c.gravity === 'G3') === (c.undo === 'irreversible');
-}
 describe('Command registry', () => {
-  it('has unique IDs, immutable metadata and consistent gravity/undo', () => {
-    const { registry } = createCommands();
-    const entries = Object.values(registry);
-    expect(new Set(entries.map((c) => c.id)).size).toBe(entries.length);
-    expect(Object.isFrozen(registry)).toBe(true);
-    for (const [id, command] of Object.entries(registry)) {
-      expect(command.id).toBe(id);
-      expect(validGravity(command)).toBe(true);
-      expect(Object.isFrozen(command)).toBe(true);
-      expect(Object.isFrozen(command.roles)).toBe(true);
-      expect(Object.isFrozen(command.args)).toBe(true);
-      expect(Object.isFrozen(command.aliases)).toBe(true);
-      if (id === 'data.parameter') expect(command.roles).toEqual(['admin']);
-      else expect(command.roles).toContain('gm');
-    }
-    expect(validGravity({ gravity: 'G3', undo: 'instant' })).toBe(false);
-    expect(validGravity({ gravity: 'G0', undo: 'irreversible' })).toBe(false);
-    expect(validGravity({ gravity: 'G3', undo: 'irreversible' })).toBe(true);
-  });
   it('records completed and failed dispatches in a bounded immutable log', () => {
     const c = createCommands();
     const args: CommandArgs<'density.set'> = { density: 'matrix' };

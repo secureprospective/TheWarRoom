@@ -35,3 +35,11 @@ interner preserves modes, roles, desktop-only availability and safeguards.
 `commands/mfl.ts` uses the shared shape checker without importing the native
 catalog. `offers/api.ts` supplies only the existing local Wails adapters. No
 remote route, key handling or hosted capability grant is generated.
+
+Browser command labels, aliases, role sets, effects, argument names and keyboard bindings
+come from `catalog.BrowserCommands()`. Run `go run ./frontend/scripts/nativegen -surface browser`.
+The generator test refuses stale output in CI. `browser-before.json` freezes the old 62 browser
+entries; the role/door table checks local admission and direct command-bar exposure. Typed
+browser handlers remain in `commands/registry.ts`; its exhaustive generated-ID map refuses
+missing handlers and undeclared command IDs during TypeScript checking. Browser argument
+values remain typed by those handlers; this is not yet the unified cross-transport schema.

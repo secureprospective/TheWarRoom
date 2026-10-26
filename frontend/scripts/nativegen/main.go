@@ -17,8 +17,15 @@ import (
 func main() {
 	out := flag.String("out", "frontend/src/app/commands/native.gen.ts", "generated TypeScript file")
 	check := flag.Bool("check", false, "refuse stale output without writing")
-	surface := flag.String("surface", "native", "native or mfl catalog")
+	surface := flag.String("surface", "native", "native, mfl or browser catalog")
 	flag.Parse()
+	if *surface == "browser" {
+		if err := runBrowser("frontend/src/app/commands/browser.gen.ts", *check); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if *surface == "mfl" {
 		if err := runMFL(*check); err != nil {
 			fmt.Fprintln(os.Stderr, err)
