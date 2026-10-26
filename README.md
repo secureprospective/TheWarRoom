@@ -59,10 +59,11 @@
 | | | |
 |:--|:--|:--|
 | ⚡ [The Hook](#-the-hook) | 🧠 [Two Numbers Per Player](#-two-numbers-per-player) | 🏟️ [The League Server](#-the-league-server) |
-| 🏈 [The Native League](#-the-native-league) | 🆚 [Two Ways to Play](#-two-ways-to-play) | 🛡️ [The Vault Door](#-the-vault-door) |
-| 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | ⌨️ [CLI & AI Helpers](#-the-command-line-and-ai-helpers) | 🎛️ [The Console](#-the-console) |
-| 🔧 [The Revamp](#-the-revamp-season-two-of-the-build) | 🏛️ [Architecture](#-the-architecture) | 🗺️ [The Road to the Draft](#-the-road-to-the-draft) |
-| 🤖 [The AI Owners](#-horizon-the-ai-owners) | 🤝 [How It Gets Built](#-how-it-gets-built) | 🛠️ [Running It](#-running-it) |
+| 🏈 [The Native League](#-the-native-league) | 🆚 [Two Ways to Play](#-two-ways-to-play) | 🔥 [The 32-Team Default](#-the-32-team-default-built-from-the-data) |
+| 🛡️ [The Vault Door](#-the-vault-door) | 💾 [It Cannot Lose the League](#-it-cannot-lose-the-league) | ⌨️ [CLI & AI Helpers](#-the-command-line-and-ai-helpers) |
+| 🎛️ [The Console](#-the-console) | 🔧 [The Revamp](#-the-revamp-season-two-of-the-build) | 🏛️ [Architecture](#-the-architecture) |
+| 🗺️ [The Road to the Draft](#-the-road-to-the-draft) | 🤖 [The AI Owners](#-horizon-the-ai-owners) | 🤝 [How It Gets Built](#-how-it-gets-built) |
+| 🛠️ [Running It](#-running-it) |  |  |
 
 ---
 
@@ -214,7 +215,104 @@ It's the simplest way into 32-team dynasty and the format built to bring new peo
 
 ### 🏛️ The Legacy Mode
 
-The second mode grows out of the Legacy league this whole project was born in: deep contracts, per-year caps and the full rulebook, with refinements to come. Details are on the way.
+The flagship grows out of the Legacy league this whole project was born in. It keeps the deep contracts, per-year caps and full rulebook, and adds a default lineup, roster and scoring rebuilt from three seasons of play-by-play data. **See [The 32-Team Default](#-the-32-team-default-built-from-the-data) below.**
+
+---
+
+## 🔥 The 32-Team Default: Built From the Data
+
+**Most fantasy defaults are a guess, copied from the last platform's guess. Ours came out of the data.**
+
+We rescored three full NFL seasons (2023–2025) play by play from free public stats. The rescoring matched our own league's archived scores on **99.9% of more than 35,000 player-weeks**. Then we tested scoring rules one lever at a time against a single question: *how many truly startable players does a 32-team league really have, and is a defender's week worth as much as a receiver's?*
+
+Three rules came out of it:
+
+> 🧨 **Big plays stay big.** Sacks, picks and forced fumbles keep their full value. Special players get to come up big.
+> ⚖️ **Match them, don't dampen them.** Defensive splash plays are offset by offensive splash plays: long gains and workhorse games.
+> 🧱 **Scarcity does the balancing.** The lineup and roster make good starters hard to find. Scoring is left free to be fun.
+
+### 📋 The lineup: 19 starters, lots of flex
+
+```
+  OFFENSE  ·6   [QB] [RB] [WR] [FLEX] [FLEX] [FLEX]          flex = RB / WR / TE
+  SPECIAL  ·2   [O-LINE] [K]
+  DEFENSE  ·11  [DT] [DE] [LB] [CB] [CB] [S] [FLEX]×5      flex = any defender
+```
+
+There are no caps on what fills a flex. Four tight ends? Six safeties? Your call.
+
+### 👥 The roster: up to 64 deep
+
+| 👥 Active | 🌱 Taxi | 🩹 IR |
+|:--:|:--:|:--:|
+| **44**, with your O-Line counting as one | **8**, for a player's first 3 NFL seasons only (CFL years don't count) | **12**, official NFL IR or PUP only |
+| About 1.3 backups per starter, so byes are covered from your own bench | Moves in-season, and promotes automatically when his time is up | Tradeable, and he returns to active automatically when healthy |
+
+### 🧱 New position: Team O-Line
+
+You start a real NFL team's **entire offensive line**: one unit, scored as a group.
+
+| 🏃 +1 per 25 yards before contact | 💨 +1 per 10+ yard run | 🙌 +1 per rushing TD | 📏 +1 per short-yardage conversion |
+|:--:|:--:|:--:|:--:|
+| 🛡️ **+2 for a clean game (no sacks)** | 💥 −1 per sack allowed | 🤕 −¼ per QB hit allowed | ⛔ −½ per run stuffed for a loss |
+
+- **It's built to add flavour, not decide your week.** Nine games in ten land between −10 and +10, and every game is capped at ±15.
+- **Every team owns exactly one O-Line**, on a 1-year deal. They're traded one for one, and a bye week scores zero, so you have to plan ahead.
+- **It's also an early warning for the commissioner.** An owner who never manages his line is an owner drifting away.
+
+### 🚀 Chunk plays pay by the yard
+
+Legacy paid long plays in two flat steps. Now **every yard past 20 adds to the bonus**: +1 at 20 yards, +1.5 at 40 and +2 at 60, and a 99-yard house call earns almost +3.
+
+```mermaid
+xychart-beta
+    title "Long-play bonus by yards gained"
+    x-axis "yards" [20, 30, 40, 50, 60, 70, 80, 90, 99]
+    y-axis "bonus points" 0 --> 3
+    line [1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 2.975]
+```
+
+### 🦶 Kickers pay by distance
+
+**Field goals score 3 points up to 40 yards, then +0.1 for every yard past it.** A miss costs −0.1 for every yard short of 60, so shanking a chip shot hurts and missing a 58-yarder barely stings.
+
+| FG distance | 30 | 40 | 45 | 50 | 55 | 60 |
+|:--|:--:|:--:|:--:|:--:|:--:|:--:|
+| ✅ **Made** | 3.0 | 3.0 | 3.5 | 4.0 | 4.5 | 5.0 |
+| ❌ **Missed** | −3.0 | −2.0 | −1.5 | −1.0 | −0.5 | 0 |
+
+### 📊 The scorecard
+
+| 🏈 Offense | Pts | | 🛡️ Defense | Pts |
+|:--|:--:|:-:|:--|:--:|
+| Rush/rec TD · pass TD | 6 · 5 | | 💥 Sack | **4.5** |
+| Catch · **TE catch** 🆕 | 1 · **1.2** | | 🧤 Interception (CB/S 6) | **5** |
+| Rush/rec yards | 1 per 10 | | 👊 Forced fumble | **4** |
+| 🚀 20+ yard play 🆕 | **+1 → +3** | | ⛔ Tackle for loss | 2.5 |
+| 🐎 20+ touches in a game 🆕 | **+3** | | 🤼 Tackle (DT/DE 3, CB/S 2.5) ⬆️ | **2** |
+| ↩️ Return yards ⬆️ | **1 per 20** | | 🤝 Assist (DT/DE 1.75) ⬆️ | **1.25** |
+| INT thrown · fumble | −2 | | 🙅 Pass defended | 2.5 |
+| | | | 🏆 Safety | 10 |
+
+### ⚖️ Offense and defense, finally even
+
+| Average points per starter | 🏈 Offense | 🛡️ Defense | Defense vs offense |
+|:--|:--:|:--:|:--:|
+| Legacy scoring | 12.9 | 11.6 | 🟥🟥🟥🟥🟥🟥🟥🟥🟥⬜ **0.90** |
+| **The new default** | **13.4** | **13.5** | 🟩🟩🟩🟩🟩🟩🟩🟩🟩🟩 **1.00** |
+
+### 🌟 What it means for real players (2024, weeks 1–13)
+
+| Player | Role | Legacy | **Default** | |
+|:--|:--|:--:|:--:|:--|
+| Saquon Barkley | RB · workhorse | 350 | **379** | 🟦 +29 from 20-touch games and long runs |
+| Zaire Franklin | LB · tackle machine | 223 | **276** | 🟥 +53, the defensive match for a star RB |
+| A'Shawn Robinson | DT · run stuffer | 166 | **190** | 🟥 +24 |
+| Trey Hendrickson | DE · pass rusher | 195 | **209** | 🟥 his 51-point sack-fest is now **53** |
+| Ja'Marr Chase | WR · deep threat | 298 | **300** | 🟦 every 20–39 yard catch now pays more |
+| Chris Boswell | K · long-range leg | 151 | 142 | 🟩 still the #1 kicker |
+
+**Stars stay stars.** Contenders stock up. Rebuilders take their zeros. That's 32-team football. And like everything in TheWarRoom, **every number here is a default the commissioner can change.**
 
 ---
 
