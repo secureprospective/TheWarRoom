@@ -7,8 +7,10 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
 - **Part 1 (2026-10-26), done:** five new scoring rule kinds as commissioner settings in
   `internal/leaguerules`, the scorer for them in `internal/fantasyscore`, the locked DEFAULT-32
   spec shipped as `leaguerules.Default32Scoring()`, table tests for every spec row.
-- **Next part starts at:** the golden test against real 2024 player-weeks (see "Golden test" below),
-  then the stats pipeline: `internal/fantasyscore/source` must emit `chunk_play`,
+- **Golden, done:** 21 real 2024 player-weeks (every position, Barkley, Chase, McBride, Boswell,
+  the 98-yard Westbrook-Ikhine week …) match the reference scorer to the cent
+  (`internal/fantasyscore/default32_golden_test.go`, fixture `testdata/default32_2024.json`).
+- **Next part starts at:** the stats pipeline: `internal/fantasyscore/source` must emit `chunk_play`,
   `fg_made_distance`, `fg_missed_distance` events and the `line_*` team-game components.
 - **Open rulings** are listed at the bottom; do not resolve them by guessing.
 
@@ -78,13 +80,17 @@ sums to the total.
 Exact integer ten-thousandths throughout (spec §7.3: no floats). Each item is rounded to the cent
 when `RoundStatPoints` is on; per-play values are summed for the week before rounding (§4.1).
 
-## Golden test (next part)
+## Golden test
 
 Real 2024 player-weeks scored by the reference `legacy_scorer.score` under
 `study4c.VARIANTS["C2 continuous + dyn kicker"]`, with per-play chunk distances pulled from
 `play_by_play_2024` (rusher yards; receiver yards where `complete_pass = 1`) and FG lists from the
-weekly `fg_made_list` / `fg_missed_list` / `fg_blocked_list`. Fixture under
-`internal/fantasyscore/testdata/`, each row citing season/week/gsis id.
+weekly `fg_made_list` / `fg_missed_list` / `fg_blocked_list`. Fixture
+`internal/fantasyscore/testdata/default32_2024.json`; each row cites week, gsis and MFL id. The
+extractor (kept out of the repo, run once with `python3 -I` against the study's held data) dropped any
+row whose per-play chunk sum differed from the study's `CK2` or whose 40+ completions differed from
+weekly `passing_40`; none did. The fixture keeps the study's event codes, and the test fails on any
+code it does not map, so a silently dropped stat cannot pass.
 
 ## Needs a ruling
 
@@ -103,5 +109,7 @@ weekly `fg_made_list` / `fg_missed_list` / `fg_blocked_list`. Fixture under
    adapter does not yet classify missed-FG returns.
 5. **Legacy ranges.** Legacy's Go preset never applied MFL ranges (a −51-yard week scores
    −2.55, not 0). The default applies them. Whether Legacy should too is a parity question.
-6. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
+6. **TE catch extra range.** The study's TE +0.2 row is ranged 0..999; the base CC row 0..99. In
+   this model an extra shares its base row's range. They differ only above 99 catches.
+7. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
    open as written there.
