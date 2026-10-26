@@ -2,10 +2,9 @@ package composition
 
 import (
 	"context"
-	"fmt"
-	"maps"
-	"strconv"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 
@@ -22,11 +21,7 @@ func researchFeedLabel(kind string) string {
 }
 
 func (a *App) archivedResearchFeed(ctx context.Context, kind, week string) heldSeasonFeed[[]researchfeeds.Feed] {
-	bodies := a.core.History.ArchivedBodies
-	if week != "" {
-		bodies = a.scopedBodies("W", week)
-	}
-	return researchapp.ReadArchivedFeed(ctx, bodies, a.core.Season, kind, week)
+	return a.researchArchiveFeeds().Read(ctx, a.core.Season, kind, week)
 }
 
 // Opening Research reads disk, never the network or the launch refresh lock.
@@ -46,46 +41,17 @@ func (a *App) hydrateResearchContext(ctx context.Context, extraIDs ...string) {
 	}
 	a.core.SeasonMu.Lock()
 	research := a.snapshotResearch()
-	feeds := maps.Clone(research.feeds)
-	depth, injury := research.depth, a.core.SeasonInjuries
-	news := maps.Clone(research.news)
+	input := researchapp.ArchiveInput{Feeds: research.feeds, Depth: research.depth, Injuries: a.core.SeasonInjuries, News: research.news}
 	a.core.SeasonMu.Unlock()
-	if feeds == nil {
-		feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{}
-	}
-	for _, kind := range researchKinds() {
-		week := ""
-		if kind == "playerScores" {
-			week = "YTD"
-		}
-		a.hydrateResearchFeed(ctx, feeds, kind, week)
-	}
-	for w := 1; w <= a.marketWeek(); w++ {
-		a.hydrateResearchFeed(ctx, feeds, "playerScores", strconv.Itoa(w))
-	}
-	if depth.FetchedAt.IsZero() && a.firstArchiveRead("depth") {
-		a.hydrateArchivedDepth(ctx, &depth)
-	}
-	if injury.FetchedAt.IsZero() && a.firstArchiveRead("injuries") {
-		injury = archivedOnly(ctx, a, "injuries", true, func(body []byte) ([]leaguefeed.Injury, error) {
-			return injuries.ParseToInjuries(ctx, body)
-		})
-		if !injury.FetchedAt.IsZero() {
-			injury.RefreshError = "Archived copy; refresh pending"
-		}
-	}
-	mirror, _, _ := a.core.League.ContractsView()
-	missing := []string{}
-	for _, id := range append(researchapp.RosterIDs(mirror, ""), extraIDs...) {
-		if news[id].FetchedAt.IsZero() && a.firstArchiveRead("news:"+id) {
-			missing = append(missing, id)
-		}
-	}
-	cached, err := researchapp.ArchivedNews(ctx, a.core.History.ArchivedBodies, a.core.Season, missing, func(time.Time) bool { return true })
-	if err != nil {
-		a.core.FallbackLog(err.Error())
-	}
-	a.mergeResearchArchive(ctx, feeds, depth, injury, cached)
+	input = researchapp.HydrateArchive(ctx, input, extraIDs, researchapp.ArchiveSource{
+		Feeds: a.researchArchiveFeeds(), Season: a.core.Season, Week: a.marketWeek, FirstRead: a.firstArchiveRead,
+		Roster: func() state.MirrorSnapshot { mirror, _, _ := a.core.League.ContractsView(); return mirror },
+		Injuries: func() researchapp.Feed[[]leaguefeed.Injury] {
+			return archivedOnly(ctx, a, "injuries", true, func(body []byte) ([]leaguefeed.Injury, error) { return injuries.ParseToInjuries(ctx, body) })
+		},
+		Log: a.core.FallbackLog,
+	})
+	a.mergeResearchArchive(ctx, input.Feeds, input.Depth, input.Injuries, input.News)
 }
 
 // firstArchiveRead reports whether key has not been looked up in the archive yet, and marks it.
@@ -96,11 +62,7 @@ func (a *App) firstArchiveRead(key string) bool {
 	defer func() { a.publishResearch(research) }()
 	return researchapp.FirstArchiveRead(&research.archiveRead, key)
 }
-func (a *App) hydrateResearchFeed(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed], kind, week string) {
-	researchapp.HydrateFeed(feeds, kind, week, a.firstArchiveRead, func(kind, week string) researchapp.Feed[[]researchfeeds.Feed] {
-		return a.archivedResearchFeed(ctx, kind, week)
-	})
-}
+
 func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSeasonFeed[[]researchfeeds.Feed],
 	depth heldSeasonFeed[[]researchfeeds.RawDepth], injury heldSeasonFeed[[]leaguefeed.Injury],
 	news map[string]heldSeasonFeed[[]researchfeeds.News]) {
@@ -112,59 +74,16 @@ func (a *App) mergeResearchArchive(ctx context.Context, feeds map[string]heldSea
 	links, version := research.links, research.linkVersion
 	a.core.SeasonMu.Unlock()
 	loaded := a.researchCrosswalkVersion()
-	var err error
-	if links == nil || version != loaded {
-		links, err = a.researchLinks(ctx, lookup)
-	}
+	links, err := researchapp.ArchiveLinks(links, version, loaded, func() (map[string]string, error) { return a.researchLinks(ctx, lookup) })
 	a.core.SeasonMu.Lock()
 	research = a.snapshotResearch()
 	defer a.core.SeasonMu.Unlock()
 	defer func() { a.publishResearch(research) }()
-	if research.feeds == nil {
-		research.feeds = map[string]heldSeasonFeed[[]researchfeeds.Feed]{}
-	}
-	for key, h := range feeds {
-		if research.feeds[key].FetchedAt.IsZero() {
-			research.feeds[key] = h
-		}
-	}
-	if research.depth.FetchedAt.IsZero() {
-		research.depth = depth
-	}
-	if a.core.SeasonInjuries.FetchedAt.IsZero() {
-		a.core.SeasonInjuries = injury
-	}
-	if research.news == nil {
-		research.news = map[string]heldSeasonFeed[[]researchfeeds.News]{}
-	}
-	for id, h := range news {
-		if research.news[id].FetchedAt.IsZero() {
-			if h.FetchedAt.In(time.Local).Format("2006-01-02") != time.Now().In(time.Local).Format("2006-01-02") {
-				h.RefreshError = "Archived copy; refresh pending"
-			}
-			research.news[id] = h
-		}
-	}
-	if err != nil {
-		research.linkError = err.Error()
-	} else {
-		research.links, research.linkError, research.linkVersion = links, "", loaded
-	}
+	value, heldInjuries := researchapp.MergeArchive(research.values(), a.core.SeasonInjuries, researchapp.ArchiveInput{Feeds: feeds, Depth: depth, Injuries: injury, News: news}, links, loaded, err, time.Now)
+	research = researchFromValues(value)
+	a.core.SeasonInjuries = heldInjuries
 }
 
-// hydrateArchivedDepth fills depth charts from the archive; a failed live fetch keeps its reason.
-func (a *App) hydrateArchivedDepth(ctx context.Context, depth *heldSeasonFeed[[]researchfeeds.RawDepth]) {
-	rows, fresh, err := researchapp.ReadDepthArchive(ctx, a.core.Season, a.core.History.ArchivedBodies, fmt.Errorf("archived copy; refresh pending"))
-	if err != nil {
-		if depth.RefreshError == "" {
-			a.core.FallbackLog(err.Error())
-			depth.RefreshError = "No archived copy held"
-		}
-		return
-	}
-	failed := depth.RefreshError
-	holdSeasonFeed(depth, rows, fresh, nil)
-	if failed != "" {
-		depth.RefreshError = failed
-	}
+func (a *App) researchArchiveFeeds() researchapp.ArchiveFeeds {
+	return researchapp.ArchiveFeeds{Bodies: a.core.History.ArchivedBodies, Scoped: a.scopedBodies}
 }

@@ -378,3 +378,15 @@ func isDevBuild() bool           { return platformapp.IsDevBuild(version) }
 func dbFileName(base string, devBuild bool) string {
 	return platformapp.DatabaseFileName(base, devBuild)
 }
+
+// Build stamp, set at link time by -ldflags -X from git describe (see the Makefile). The
+// defaults make an un-stamped binary read as a DEV build, never a release.
+//
+//nolint:gochecknoglobals // ldflags -X requires package-level string vars.
+var (
+	version   = "dev"
+	commit    = ""
+	buildDate = ""
+)
+
+func buildLabel() string { return platformapp.BuildLabel(version, commit) }

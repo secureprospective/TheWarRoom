@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"time"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 
@@ -160,3 +163,35 @@ const labFrozenInputs = sourcesapp.LabFrozenInputs
 func (a *App) researchCrosswalkVersion() string { return a.sourcesHeld.SnapshotCrosswalk().LoadedAt }
 
 const dynastyProcessSource = sourcesapp.DynastyProcessSource
+
+// readArchiveFacts reads the verified archive snapshot through the service and keeps it on App.
+// The caller holds factsMu, which guards archiveCache.
+func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, error) {
+	notes := lab.NoteReadings()
+	src := archiveapp.Source{History: a.core.History, Bodies: sourcesapp.CuratedBodies{Archive: a.core.History, Curated: map[string][]byte{notes.SHA256: notes.Body}},
+		Manifest: labFrozenInputs, Compiler: factsCompiler}
+	cache, stale, err := archiveapp.Read(ctx, src, a.archiveCache)
+	if err != nil {
+		return archiveapp.Snapshot{}, false, err //nolint:wrapcheck // the service's errors already start "archive:"
+	}
+	if cache.SHA != "" {
+		a.archiveCache = cache
+	}
+	return cache, stale, nil
+}
+
+// readCommsArchive borrows the snapshot under its caller's FactsMu; core detaches the columns.
+func (a *App) readCommsArchive(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
+	cache, _, err := a.readArchiveFacts(ctx)
+	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
+}
+
+func (a *App) configureArchive() {
+	a.core.ArchiveOpponentFallback = a.archiveOpponentFallback
+	a.core.ReadArchive = a.readArchiveFacts
+	a.core.ReadCommsArchive = a.readCommsArchive
+}
+
+func (a *App) archiveOpponentFallback(week int, team string) string {
+	return archiveapp.OpponentFallback(a.raceHeld.Snapshot().Weeks.Value, week, team)
+}

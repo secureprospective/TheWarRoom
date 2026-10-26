@@ -74,17 +74,24 @@ func (h researchHost) OpenBrowser(target string)          { h.app.core.OpenBrows
 // snapshotResearch and publishResearch require SeasonMu: the same lock also guards
 // injuries and Now's schedules. The detached compatibility value is still read by Market.
 func (a *App) snapshotResearch() researchHeld {
-	value := a.researchHeld.Snapshot()
-	return researchHeld{feeds: value.Feeds, depth: value.Depth,
-		links: value.Links, linkError: value.LinkError, linkVersion: value.LinkVersion,
-		finishedAt: value.FinishedAt, status: value.Status, news: value.News, archiveRead: value.ArchiveRead}
+	return researchFromValues(a.researchHeld.Snapshot())
 }
 func (a *App) publishResearch(value researchHeld) {
-	a.researchHeld.Publish(researchapp.Values{Feeds: value.feeds, Depth: value.depth,
-		Links: value.links, LinkError: value.linkError, LinkVersion: value.linkVersion,
-		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead})
+	a.researchHeld.Publish(value.values())
 }
 
 func (v researchView) scoreInput() researchapp.Snapshot {
 	return researchapp.Snapshot{Held: researchapp.Values{Feeds: v.held.feeds}, Lookup: v.lookup, Mirror: v.mirror, Config: v.config, Week: v.week}
+}
+
+func researchFromValues(value researchapp.Values) researchHeld {
+	return researchHeld{feeds: value.Feeds, depth: value.Depth,
+		links: value.Links, linkError: value.LinkError, linkVersion: value.LinkVersion,
+		finishedAt: value.FinishedAt, status: value.Status, news: value.News, archiveRead: value.ArchiveRead}
+}
+
+func (value researchHeld) values() researchapp.Values {
+	return researchapp.Values{Feeds: value.feeds, Depth: value.depth,
+		Links: value.links, LinkError: value.linkError, LinkVersion: value.linkVersion,
+		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead}
 }

@@ -2,19 +2,23 @@
 
 ## Resume here
 
-Part 2 in progress: twenty-four units moved in three batches; 26/126 done cumulatively.
+Part 2 in progress: twenty-seven units moved in four batches; 29/126 done cumulatively.
 Batch 1: 3, 5, 20–22, 51, 81, 97, 120. Batch 2: 4, 6–10, 39, 46, 55, 59, 78.
-Batch 3: 12, 64, 66, 93.
+Batch 3: 12, 64, 66, 93. Batch 4: 62, 63, 65.
 Part 1 extracted two units in `98ea8cf7`; inventory references base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
-Next: band 1 pure helpers (opponent fallback, period selection, bye inputs, move predicates),
-then inward services for joint reads. Keep all public APIs/permissions/schemas and lock spans unchanged.
+All band 1 units are now inward. Next: remaining band 2 joint reads (16 modelFreeAgents,
+54 poolAssetValues, 58 raceSnapshot, 107 nativeFacts, 108 readArchiveFacts, 111 trade inputs,
+118 trade clock reasons, 123 window capture, 126 assetInput), then refresh/evidence orchestration.
+97 composition units / 3,800 baseline function LOC remain; core audit is additional.
+Keep all public APIs/permissions/schemas and lock spans unchanged.
 
 ## Boundary and preserved slice
 
 Desktop Wails → existing feature API → composition capture → transport-free feature function.
-The function receives values, not App/core/Wails. It does not acquire resources, mutate held state,
-change door admission, or introduce a new binding. HTTP/CLI may call the same feature function,
+The service receives values or narrow resource-read callbacks, not App/core/Wails. Composition
+retains resource lifetime and locks; services may enrich caller-owned detached values and read
+local archives through ports, but do not acquire shared state or change door admission/bindings. HTTP/CLI may call the same feature function,
 but no new exposure is added in this part. Existing shared native commands already use
 `internal/leagueservice`; this is not evidence that the desktop MFL reads exist over HTTP.
 
@@ -112,10 +116,10 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 59 | 1 | `internal/composition/refresh_app.go` — `seasonGuess`:44 | 6 | `control` | startup,B,W:sources | Use held season else wall-clock year for discovery.  MOVED (part 2, batch 2). |
 | 60 | 4 | `internal/composition/refresh_app.go` — `refreshLeague`:53, `refreshLeagueLocked`:70, `fetchLeague`:104 | 78 | `control` | startup,B,W:sources;move watcher | Discover current season, normalize roster/money; stage rules+mirror and atomically commit; release prepared rules on mirror-stage failure; update checked times/model dirty; successful outer refresh updates draft feeds/revalidates plans. |
 | 61 | 5 | `internal/composition/refresh_app.go` — `refreshInBackground`:141, `launchRefresh`:172 | 44 | `control` | startup,B | Start due clock and move watcher once after readiness; optional launch refresh then hourly work; stopping prevents worker admission; report failures while preserving league. |
-| 62 | 2 | `internal/composition/research_archive.go` — `archivedResearchFeed`:24 | 7 | `research` | B,W:research,market,offers | Weekly feed selects scoped archive; unscoped kinds read all archived bodies. |
-| 63 | 3 | `internal/composition/research_archive.go` — `hydrateResearchContext`:41 | 49 | `research` | W:research,market,offers,trades | One archive hydrate at a time; missing held feeds/weekly scores/depth/injuries/news only; roster+extra IDs define news scope; archived injury marked pending; merge without overwriting live data. |
+| 62 | 2 | `internal/composition/research_archive.go` — `archivedResearchFeed`:24 | 7 | `research` | B,W:research,market,offers | Weekly feed selects scoped archive; unscoped kinds read all archived bodies.  MOVED (part 2, batch 4). |
+| 63 | 3 | `internal/composition/research_archive.go` — `hydrateResearchContext`:41 | 49 | `research` | W:research,market,offers,trades | One archive hydrate at a time; missing held feeds/weekly scores/depth/injuries/news only; roster+extra IDs define news scope; archived injury marked pending; merge without overwriting live data.  MOVED (part 2, batch 4). |
 | 64 | 2 | `internal/composition/research_archive.go` — `firstArchiveRead`:92, `hydrateResearchFeed`:106 | 25 | `research` | W:research,market,offers,trades | Each archive key tried once; only missing feeds hydrate; live failure reason overrides archived pending note.  MOVED (part 2, batch 3). |
-| 65 | 3 | `internal/composition/research_archive.go` — `mergeResearchArchive`:117, `hydrateArchivedDepth`:169 | 65 | `research` | W:research,market,offers,trades | Refresh links when crosswalk version changes; fill only absent held data; old-day news becomes pending; preserve earlier live errors over archive fallback. |
+| 65 | 3 | `internal/composition/research_archive.go` — `mergeResearchArchive`:117, `hydrateArchivedDepth`:169 | 65 | `research` | W:research,market,offers,trades | Refresh links when crosswalk version changes; fill only absent held data; old-day news becomes pending; preserve earlier live errors over archive fallback.  MOVED (part 2, batch 4). |
 | 66 | 2 | `internal/composition/research_reading.go` — `researchRows`:33, `snapshot`:45 | 26 | `research` | W:research,market,offers,trades | Use first feed's rows; choose now if unset; finish-score totals and held cut charges become research input, with detached indexes.  MOVED (part 2, batch 3). |
 | 67 | 3 | `internal/composition/research_reading.go` — `PrepareResearchDepth`:73 | 8 | `research` | W:research | No fetch transport means no depth preparation; otherwise bounded nonforced refresh. |
 | 68 | 3 | `internal/composition/research_runtime.go` — `refreshResearchFeed`:33, `researchLinks`:69, `refreshResearchDepth`:84 | 77 | `research` | W:research | Five-minute feed/daily depth freshness unless forced; weekly archive scoping; link only known MFL IDs for gsis/espn; publish links/errors and held feeds. |
@@ -358,3 +362,72 @@ remaining composition adapters/tests. No business rule was forked.
   Lint found the deliberate historical 0750 test chmod; narrowly documented its purpose.
 - Pure snapshot enrichment no longer lives in composition. Joint held capture/publication,
   archive resource ownership and the original locks still do.
+
+## Part 2 — batch 4
+
+Three archive units (121 baseline function LOC): weekly archive scoping, hydrate-missing/read-order
+policy and latest-held merge/depth fallback policy. Research now owns them via ArchiveFeeds,
+ArchiveSource and ArchiveInput. Composition still owns History lifetime, ResearchArchiveMu,
+SeasonMu, LookupMu, the exact capture/re-read/publication spans and the crosswalk read callback.
+Hydration never fetches; merge runs on the latest detached capture so live feeds/depth/injuries/news
+win over archive copies. Existing per-row local-date clock sampling and error precedence remain.
+Season/History are startup-owned; reading those into the service source does not introduce a
+mutable-season capture (traced: production Season assignment occurs only at startup).
+
+- Added inward scope-selection, complete hydration call-order/absent-read markers/injury-pending,
+  news-failure handling, retry suppression, depth live-error preservation, crosswalk-version
+  refresh, latest-live-wins and other-held-state preservation tests. Existing real-fixture
+  cold-open, full Research refresh, concurrent read/news and joint-capture composition tests pass.
+- HydrateArchive returns newly archived news, not a replacement for held live news. Its test now
+  exercises the real merge before the next read, rather than incorrectly treating that output
+  as already published. Removed an unused wrapcheck annotation caught by lint.
+- make lint caught tiny-file growth (33 versus 24). Fixed the footprint, not the baseline:
+  pure helpers joined their existing responsibility files (table below); startup stamp wiring
+  joined app.go (ldflags package symbols unchanged); shared archive adapter joined sources_runtime.go,
+  beside its existing archive compile/warm work. Offers' existing API now calls the same personal
+  snapshot admission function instead of retaining an identical copy of the rule.
+
+Current responsibility homes after consolidation (tests keep their descriptive file names):
+
+| Previous file | Current home |
+|---|---|
+| app/archive/opponent.go | internal/app/archive/board.go |
+| app/contracts/score_period.go | internal/app/contracts/roster.go |
+| app/control/lineup_week.go | internal/app/control/clock.go |
+| app/offers/snapshot.go | internal/app/offers/personal_api.go |
+| app/now/finished_scores.go | internal/app/now/nfl_reading.go |
+| app/scoring/context.go | internal/app/scoring/power.go |
+| app/commissioner/native/schedules.go | internal/app/commissioner/native/season.go |
+| composition/archive_app.go | internal/composition/sources_runtime.go |
+| composition/version.go | internal/composition/app.go |
+
+All previous-file entries in this table are relative to internal/. Inventory baseline paths and
+Part 1 measurement sets above are historical references, not stale current placement claims.
+
+## Part 2 — final candidate before push
+
+- All 27 moved units this part total **676 baseline function LOC**. Cumulative: 29/126 units,
+  734/4,534 baseline function LOC; all band 1 units done. Remaining composition scope: 97 units,
+  3,800 baseline function LOC, plus the separately identified core host decision work.
+- Full `make lint` passed after the cohesion/placement fixes: ifaceguard, file-length report,
+  bloat (comment share 5%, provenance 0, tiny files 24/24, duplication 0), placement (126 paths /
+  17 features), root ratchet, frontend transport guard and golangci-lint (zero issues).
+  Only existing >600-line files reported: internal/leaguerules/catalogue.go and internal/facts/columns.go;
+  neither was changed. No baseline was raised.
+- Final affected-feature race batch passed for Archive/Contracts/Control/Draft/Native/Now/Offers/
+  Platform/Research/Scoring, filtered to the extracted responsibilities and their regression cases.
+- Final composition race batch passed in 12.3 seconds, filtered to all moved callers and relevant
+  wire goldens, refresh, cancellation, archive/live publication, Research concurrent/joint capture,
+  native schedule lifecycle and EveryCommandDoorRoleParity. No permission metadata changed.
+- Whole affected handwritten production union against `98ea8cf7`: **39 paths**, **6,871 → 7,098
+  physical LOC**, **247,784 → 257,100 Unicode code points including LF** (+227 LOC / +9,316 code
+  points). Tests/docs/generated output excluded. This is relocation/ownership, not compression.
+- Prior broad composition timeout is still not diagnosed by these passing filtered runs; the
+  full Archive feature suite took 148 seconds earlier, so large fixture work is a plausible cost,
+  not a proven explanation for that separate timeout. Do not label it a deadlock without a stack.
+
+Estimated remaining one-hour parts: Part 2 **8–10**, Part 3 **4–6** (still not started).
+Owner ruling: none. No changed role/permission/binding/schema/lock ordering, live MFL fetch,
+GUI, production profile, PR or merge. No new package or dependency.
+Debt left: remaining 97 composition units; core decision audit and extraction; composition/core
+negative ratchet; full hook/CI and live review; shared frontend read/cache tool and store migration.

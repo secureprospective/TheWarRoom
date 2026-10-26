@@ -116,6 +116,10 @@ func snapshotNames(snap snapshot.Snapshot) (map[string]string, map[string]string
 func (a *API) personalSnapshot(mine string) (snapshot.Snapshot, error) {
 	players, franchises, loaded := a.host.OffersSnapshotNames()
 	snap := snapshot.Snapshot{Players: snapshot.Sourced[[]snapshot.Player]{Value: players}, Franchises: snapshot.Sourced[[]snapshot.Franchise]{Value: franchises}}
+	return PersonalSnapshot(snap, loaded, mine)
+}
+
+func PersonalSnapshot(snap snapshot.Snapshot, loaded bool, mine string) (snapshot.Snapshot, error) {
 	if !loaded {
 		return snap, fmt.Errorf("personal: snapshot not loaded")
 	}
