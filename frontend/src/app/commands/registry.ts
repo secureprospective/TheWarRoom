@@ -292,9 +292,11 @@ export function createCommands(
     'offers.filter': command({
       id: 'offers.filter',
       run: (change: BrowserArguments<'offers.filter'>) => {
-        return import('../offers/state').then(
-          m => m.offerState.change(change),
-        );
+        return import('../offers/state').then(m => completed(m.offerState.change(change), () => {
+          const reading = m.offerState.peek().reading;
+          return reading?.status === 'failed'
+            ? reading.absenceReason || 'The offer history could not be read. Try again.' : undefined;
+        }));
       },
     }),
     market: command({

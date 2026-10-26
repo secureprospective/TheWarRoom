@@ -156,4 +156,3 @@ export default function Draft({ kind, snapshot }: { kind?: string; snapshot?: Sn
     </div>
   );
 }
-export const set = draftState.change;

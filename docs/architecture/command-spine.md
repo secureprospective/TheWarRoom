@@ -115,5 +115,25 @@ arguments retain their current sources. The four hidden bar-plumbing actions rem
 The generator tests compare every output byte-for-byte and intentionally stale each new
 file, checking refusal without a write. Existing native/MFL/browser freshness tests and
 `make bindings-fresh` cover the remaining generated TypeScript and Wails JavaScript/models.
-The full command × door × role parity matrix and remaining asynchronous outcome tracking
-are still required before calling the migration complete.
+The frozen parity matrix in `internal/composition/command_matrix_test.go` covers all
+299 executable entries × seven doors × three display roles (6,279 cells), including
+absent exposure. It combines the original native/MFL/Wails, browser and workflow
+fixtures, preserves mode and permission metadata, and intentionally rejects an
+unregistered door and a missing declared door. CLI exposure retains the original
+generic preview/execute boundary; its 99 named verbs are new aliases, not new authority.
+Domain-role cells preserve the domain policy, not a grant to any display role;
+existing credential/league/franchise admission tests remain authoritative.
+
+Mounted handlers return their work through dispatch. Ledger filtering shares the
+command's read with its rendering effect; account, helper, update and draft-pick
+operations wait for admission/results. Market, offer-history and pool adapters turn
+stored failures into failed receipts; opening a bid form awaits its first preview.
+Only settled operations enter the bounded history, and failures retain a readable
+reason, notice and log. Navigation and ordinary local view changes remain synchronous;
+unrequested refresh/polling work does not manufacture command receipts.
+
+The test-only hosted workflow compatibility inventory and its duplicate parity helper
+were removed (no callers); production workflow validation/dispatch already uses the
+catalog directly. The former native grammar/client and read-preview publication were
+already removed before this branch; source searches remain empty. The unused Draft
+command adapter was also removed after market dispatch moved to its state owner.
