@@ -52,7 +52,12 @@ func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 			t.Fatal(err)
 		}
 	}
-	if _, err := pools.Write().ExecContext(t.Context(), "DROP TABLE league_roster_restore; DROP TABLE league_recovery_log; PRAGMA user_version=7"); err != nil {
+	if _, err := pools.Write().ExecContext(t.Context(), `DROP TABLE league_roster_restore; DROP TABLE league_recovery_log;
+DROP TRIGGER observations_player_identity; DROP TRIGGER run_scores_player_identity; DROP TRIGGER model_scores_player_identity;
+CREATE TABLE legacy_player_ids AS SELECT * FROM player_ids;
+DROP VIEW player_ids; ALTER TABLE legacy_player_ids RENAME TO player_ids;
+DROP TABLE player_ownership; DROP TABLE player_external_id; DROP TABLE canonical_player;
+PRAGMA user_version=7`); err != nil {
 		t.Fatal(err)
 	}
 	if err := pools.Close(); err != nil {
