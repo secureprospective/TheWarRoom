@@ -21,6 +21,11 @@ func repoPath(parts ...string) string {
 }
 func checkWire(t *testing.T, path string, body []byte, name string) {
 	t.Helper()
+	if os.Getenv("TWR_WRITE_WIRE") == "1" {
+		if err := os.WriteFile(repoPath(path), append(bytes.TrimSpace(body), '\n'), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	held, err := os.ReadFile(repoPath(path))
 	if err != nil {
 		t.Fatal(err)

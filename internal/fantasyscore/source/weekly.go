@@ -171,7 +171,8 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 			"pat_made": "Extra points made", "pat_missed": "Extra points missed",
 			"pat_blocked": "Extra points blocked", "fg_blocked": "Field goals blocked",
 			"fumbles_total": "Fumbles", "fumble_recovery_tds": "Fumble recovery touchdowns",
-			"def_tds": "Defensive touchdowns"}}
+			"def_tds": "Defensive touchdowns", "fg_made_distance": "Field goals made, by distance",
+			"fg_missed_distance": "Field goals missed or blocked, by distance"}}
 	for id, fields := range mappings() {
 		var sum leaguerules.Decimal
 		for _, field := range fields {

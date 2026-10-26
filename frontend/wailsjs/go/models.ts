@@ -10390,6 +10390,30 @@ export namespace leaguerules {
 		    return a;
 		}
 	}
+	export class DistanceScale {
+	    From: number;
+	    Base: number;
+	    Pivot: number;
+	    Above: number;
+	    Below: number;
+	    Capped: boolean;
+	    Cap: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new DistanceScale(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.From = source["From"];
+	        this.Base = source["Base"];
+	        this.Pivot = source["Pivot"];
+	        this.Above = source["Above"];
+	        this.Below = source["Below"];
+	        this.Capped = source["Capped"];
+	        this.Cap = source["Cap"];
+	    }
+	}
 	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_TieRule_ {
 	    State: number;
 	    Value: string;
@@ -10905,6 +10929,30 @@ export namespace leaguerules {
 		    return a;
 		}
 	}
+	export class LineUnit {
+	    Used: boolean;
+	    Weights: Record<string, number>;
+	    Labels: Record<string, string>;
+	    NoSack: number;
+	    Sacks: string;
+	    Clamped: boolean;
+	    Clamp: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new LineUnit(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Used = source["Used"];
+	        this.Weights = source["Weights"];
+	        this.Labels = source["Labels"];
+	        this.NoSack = source["NoSack"];
+	        this.Sacks = source["Sacks"];
+	        this.Clamped = source["Clamped"];
+	        this.Clamp = source["Clamp"];
+	    }
+	}
 	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Penalty_ {
 	    State: number;
 	    Value: string;
@@ -11138,6 +11186,56 @@ export namespace leaguerules {
 	        this.FinalWeek = this.convertValues(source["FinalWeek"], Value_int_);
 	        this.HomeBonus = this.convertValues(source["HomeBonus"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_Decimal_);
 	        this.Graph = this.convertValues(source["Graph"], null);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class StatRange {
+	    Min: number;
+	    Max: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StatRange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Min = source["Min"];
+	        this.Max = source["Max"];
+	    }
+	}
+	export class PositionExtra {
+	    Positions: string[];
+	    Points: number;
+	    Ranged: boolean;
+	    Range: StatRange;
+	
+	    static createFrom(source: any = {}) {
+	        return new PositionExtra(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Positions = source["Positions"];
+	        this.Points = source["Points"];
+	        this.Ranged = source["Ranged"];
+	        this.Range = this.convertValues(source["Range"], StatRange);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -11506,6 +11604,158 @@ export namespace leaguerules {
 		    return a;
 		}
 	}
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineUnit_ {
+	    State: number;
+	    Value: LineUnit;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineUnit_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], LineUnit);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_ {
+	    State: number;
+	    Value: Record<string, Array<string>>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_DistanceScale_ {
+	    State: number;
+	    Value: Record<string, DistanceScale>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_DistanceScale_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], DistanceScale, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatRange_ {
+	    State: number;
+	    Value: Record<string, StatRange>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatRange_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], StatRange, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_PositionExtra_ {
+	    State: number;
+	    Value: Record<string, Array<PositionExtra>>;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_PositionExtra_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = this.convertValues(source["Value"], Array<PositionExtra>, true);
+	        this.Citation = source["Citation"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Value___github_com_secureprospective_TheWarRoom_internal_leaguerules_Position_ {
 	    State: number;
 	    Value: string[];
@@ -11637,6 +11887,13 @@ export namespace leaguerules {
 	export class ScoringRules {
 	    Catalogue: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_;
 	    RoundStatPoints: Value_bool_;
+	    // Go type: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_PositionExtra_
+	    Extras: any;
+	    Ranges: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatRange_;
+	    Scales: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_DistanceScale_;
+	    // Go type: Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID___github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_
+	    Totals: any;
+	    LineUnit: Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineUnit_;
 	
 	    static createFrom(source: any = {}) {
 	        return new ScoringRules(source);
@@ -11646,6 +11903,11 @@ export namespace leaguerules {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Catalogue = this.convertValues(source["Catalogue"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_Stat_);
 	        this.RoundStatPoints = this.convertValues(source["RoundStatPoints"], Value_bool_);
+	        this.Extras = this.convertValues(source["Extras"], null);
+	        this.Ranges = this.convertValues(source["Ranges"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatRange_);
+	        this.Scales = this.convertValues(source["Scales"], Value_map_github_com_secureprospective_TheWarRoom_internal_leaguerules_StatID_github_com_secureprospective_TheWarRoom_internal_leaguerules_DistanceScale_);
+	        this.Totals = this.convertValues(source["Totals"], null);
+	        this.LineUnit = this.convertValues(source["LineUnit"], Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_LineUnit_);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -11844,6 +12106,12 @@ export namespace leaguerules {
 		    return a;
 		}
 	}
+	
+	
+	
+	
+	
+	
 	
 	
 	

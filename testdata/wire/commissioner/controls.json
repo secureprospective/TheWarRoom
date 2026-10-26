@@ -115,6 +115,26 @@
       {
        "field": "scoring.catalogue",
        "label": "Scoring values"
+      },
+      {
+       "field": "scoring.extras",
+       "label": "Extra points by position"
+      },
+      {
+       "field": "scoring.ranges",
+       "label": "Scoring ranges"
+      },
+      {
+       "field": "scoring.scales",
+       "label": "Points by play distance"
+      },
+      {
+       "field": "scoring.totals",
+       "label": "Stats counted as a total of others"
+      },
+      {
+       "field": "scoring.lineUnit",
+       "label": "Team offensive line scoring"
       }
      ]
     },
