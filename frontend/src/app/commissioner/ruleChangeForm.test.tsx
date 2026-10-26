@@ -18,7 +18,7 @@ const hold = async (host: Element, label = confirm) => {
   const b = holder(host, label);
   await act(async () => { (b.props().onKeyDown as (e: object) => void)({ key: 'Enter', repeat: false,
     preventDefault() {} }); });
-  await act(async () => { vi.advanceTimersByTime(700); });
+  await act(async () => { vi.advanceTimersByTime(600); });
   await act(async () => { (b.props().onKeyUp as (e: object) => void)({ key: 'Enter' }); });
   await flush();
   vi.useRealTimers();

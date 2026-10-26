@@ -6,6 +6,7 @@ export async function loadSessionMoves(
   state: ReturnType<typeof createMovesState>,
   provider: Provider,
   franchiseId: string,
+  propagate = false,
 ) {
   if (state.read().movesLoading[franchiseId]) return;
   state.write({
@@ -26,6 +27,7 @@ export async function loadSessionMoves(
     }
   } catch (cause) {
     state.write({ movesErrors: { ...state.read().movesErrors, [franchiseId]: String(cause) } });
+    if (propagate) throw cause;
   } finally {
     state.write({ movesLoading: { ...state.read().movesLoading, [franchiseId]: false } });
   }
@@ -44,6 +46,7 @@ export async function finishDraft(
     state.write({ moves: orderReceipts([receipt, ...state.read().moves]) });
   } catch (cause) {
     state.write({ draftErrors: { ...state.read().draftErrors, [key]: String(cause) } });
+    throw cause;
   } finally {
     state.write({ drafting: { ...state.read().drafting, [key]: false } });
   }

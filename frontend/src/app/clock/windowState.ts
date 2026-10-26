@@ -24,6 +24,7 @@ export async function setWindow(provider: Provider, kind: WindowKind, at: string
     write(kind, {});
   } catch (cause) {
     write(kind, { error: cause instanceof Error ? cause.message : String(cause) });
+    throw cause;
   }
 }
 export function editWindow(kind: WindowKind) {

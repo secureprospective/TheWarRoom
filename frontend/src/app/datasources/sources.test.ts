@@ -8,7 +8,7 @@ import { RefreshScopes, Parameters, HeldRead } from './DataSources';
 import { report } from '../reports/contract';
 import { ReportView } from '../reports/ReportView';
 import { endpointById, placementRoute } from '../registry';
-import { commands } from '../commands/registry';
+import { commands, createCommands } from '../commands/registry';
 import wire from './wire.testdata.json';
 const data = () => parseSources(wire.data);
 const provider = (): DataProvider => ({
@@ -55,8 +55,9 @@ describe('Control Room data and sources', () => {
     expect(markup).toContain('Overridden');
     expect(markup).toContain('Reset');
     expect(markup).toContain(`aria-label="${data().words.clear}"`);
-    expect(markup).toContain('values are read-only');
-    expect(() => commands.dispatch('data.parameter', { kind: 'parameter', key: 'test.weight',
+    expect(markup).not.toContain('values are read-only');
+    const gm = createCommands(undefined, undefined, undefined, ['gm']);
+    expect(() => gm.dispatch('data.parameter', { kind: 'parameter', key: 'test.weight',
       position: 'WR', value: 0.7 })).toThrow(/permission denied/);
   });
   it('routes all five built rows to the lazy workspace', () => {

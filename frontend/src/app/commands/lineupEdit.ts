@@ -100,5 +100,5 @@ export async function runLineupAction(
     provider.draftLineup(draft.franchiseId, [...draft.starters]));
   if (!receipt) return;
   if (state.read().lineupDraft === draft) state.write({ lineupReceiptId: receipt.correlationId });
-  await loadSessionMoves(moves, provider, draft.franchiseId);
+  await loadSessionMoves(moves, provider, draft.franchiseId, true);
 }

@@ -190,9 +190,9 @@ export const mflCommands = {
   },
   phrase: "preview mfl bid",
 },
-"bid.submit": {
+"mfl.bid.submit": {
   definition: {
-    "ID": "bid.submit",
+    "ID": "mfl.bid.submit",
     "Method": "TargetBidDraft",
     "Version": "1",
     "Role": "gm,commish,admin",
@@ -207,7 +207,7 @@ export const mflCommands = {
     "Safeguards": "Raw-validation+local-plan-state; no MFL submissions",
     "Arguments": schema6
   },
-  phrase: "submit bid",
+  phrase: "submit mfl bid",
 },
 "mfl.bid.revise": {
   definition: {

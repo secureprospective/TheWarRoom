@@ -22,6 +22,7 @@ export function createReportState(reader: ReportProvider) {
   }
   async function action(action: 'refresh' | 'mfl') {
     if (action === 'refresh') return refresh(true);
+    store.setState({ error: '' });
     try { await reader.openMFL(); }
     catch (cause) { store.setState({ error: String(cause) }); }
   }

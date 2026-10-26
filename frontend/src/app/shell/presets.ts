@@ -1,6 +1,12 @@
 import type { Density } from '../cards/Card';
 import type { Route } from './nodes';
 
+export type Role = 'gm' | 'commish' | 'admin';
+
+export function holdsRole(required: readonly Role[], held: readonly Role[]): boolean {
+  return required.some(role => held.includes(role));
+}
+
 type Preset = {
   label: string;
   route: Route;
@@ -56,7 +62,7 @@ export const presets = {
 export type PresetId = keyof typeof presets;
 export const presetIds = Object.keys(presets) as PresetId[];
 
-export function presetAllowed(id: PresetId): boolean {
+export function presetAllowed(id: PresetId, held: readonly Role[] = ['gm']): boolean {
   const preset: Preset = presets[id];
-  return preset.roles.includes('gm');
+  return holdsRole(preset.roles, held);
 }

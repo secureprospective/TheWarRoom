@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { commands } from '../commands/registry';
 import { Act } from '../commands/Act';
 import { object, text } from '../data/parseValues';
 import { ledgerBindings as bindings } from './api';
@@ -42,10 +43,14 @@ export function LocalSignIn({ onSeat }: { onSeat?: (seat: Seat) => void } = {}) 
       await leagueState.choose();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+      throw cause;
     } finally { setPassword(''); setPending(false); }
   }
-  useEffect(() => surfaceActions.register('local-sign-in', () => { void signIn(); }));
-  const submit = (event: FormEvent) => { event.preventDefault(); void signIn(); };
+  useEffect(() => surfaceActions.register('local-sign-in', () => signIn()));
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    void commands.dispatch('commissioner.surface', args);
+  };
   if (!seat) return error ? <p role="alert">{error}</p> : null;
   if (seat.username) return <p>This computer is signed in as {seat.username}. A backup restored on another
     computer keeps your league roles once you sign in there with the same username and password.</p>;

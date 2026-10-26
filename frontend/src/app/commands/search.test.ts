@@ -62,7 +62,7 @@ it('maps places, named presets, density and rostered players to registered verbs
     args: { density: 'matrix' },
   });
   expect(results.some((r) => r.invocation.verb === 'franchise.set')).toBe(false);
-  expect(results.some((r) => r.label === 'Preset: Admin')).toBe(false);
+  expect(results.some((r) => r.label === 'Preset: Admin')).toBe(true);
   for (const result of results) {
     const command = c.registry[result.invocation.verb];
     expect(command.roles).toContain('gm');
@@ -106,4 +106,14 @@ it('keeps the workspace for every player and treats pointer and Enter alike', ()
   c.dispatch('commandbar.open', {});
   c.dispatch(own.invocation.verb, own.invocation.args);
   expect(c.read()).toMatchObject({ node: 'war', inspector: 'rest', commandbar: false });
+});
+
+it('uses held roles for preset discovery and dispatch', () => {
+  const gm = createCommands(undefined, undefined, undefined, ['gm']);
+  expect(searchCandidates(gm).some(r => r.label === 'Preset: Admin')).toBe(false);
+  expect(() => gm.dispatch('preset.apply', { preset: 'admin' })).toThrow('permission denied');
+  const admin = createCommands(undefined, undefined, undefined, ['admin']);
+  expect(searchCandidates(admin).some(r => r.label === 'Preset: Admin')).toBe(true);
+  admin.dispatch('preset.apply', { preset: 'admin' });
+  expect(admin.read().node).toBe('control');
 });

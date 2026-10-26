@@ -1,0 +1,282 @@
+[
+  {
+    "command": "lineup.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "draft.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "native.assets.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "native.reserve.check",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "native.roster.check",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "commish.rules.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "bids.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "waivers.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "trades.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "results.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "standings.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "commish.corrections.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "commish.market.read",
+    "modes": [
+      "read"
+    ]
+  },
+  {
+    "command": "commish.lineup.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "roster.reserve",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.timer",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.skip",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bid.place",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bid.raise",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bid.withdraw",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bids.process",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "bids.award.override",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "roster.cut",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "waivers.claim",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "waivers.process",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "waivers.order.set",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "waivers.order.auto",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "waivers.award.override",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.offer",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.accept",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.decline",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.withdraw",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.review",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.recuse",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.appeal",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.appeal.rule",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "trade.override",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "season.rollover",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.score.franchise",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.standings.record.adjust",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "commish.standings.override.clear",
+    "modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "command": "draft.pick",
+    "modes": [
+      "execute"
+    ]
+  }
+]

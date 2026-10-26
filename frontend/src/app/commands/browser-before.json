@@ -1,0 +1,1021 @@
+[
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id",
+      "entity",
+      "action",
+      "text"
+    ],
+    "id": "watch.add",
+    "label": "Watch player"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id",
+      "entity",
+      "action",
+      "text"
+    ],
+    "id": "bait.set",
+    "label": "Mark trade bait"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id",
+      "entity",
+      "action",
+      "text"
+    ],
+    "id": "note.add",
+    "label": "Keep note"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id",
+      "entity",
+      "action",
+      "text"
+    ],
+    "id": "draft.list",
+    "label": "Change draft list"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "kind"
+    ],
+    "id": "personal.handoff",
+    "label": "Open MFL list"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G2",
+    "undo": "reversible",
+    "args": [
+      "kind",
+      "at"
+    ],
+    "id": "window.set",
+    "label": "Commissioner: set a league date"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "kind"
+    ],
+    "id": "window.edit",
+    "label": "Commissioner: choose a league date"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "phase"
+    ],
+    "id": "phase.goto",
+    "label": "Open phase workspace"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "entity"
+    ],
+    "id": "inspector.pin",
+    "label": "Inspect entity"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "instant",
+    "args": [
+      "scope"
+    ],
+    "id": "refresh.run",
+    "label": "Refresh data"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "instant",
+    "args": [
+      "scope"
+    ],
+    "id": "cache.run",
+    "label": "Read data again"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "instant",
+    "args": [
+      "kind"
+    ],
+    "id": "data.run",
+    "label": "Data settings"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "instant",
+    "args": [
+      "key",
+      "position",
+      "value"
+    ],
+    "id": "data.parameter",
+    "label": "Change engine parameter"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "field",
+      "value"
+    ],
+    "id": "contracts.set",
+    "label": "Filter or sort contracts"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "field",
+      "value"
+    ],
+    "id": "offers.filter",
+    "label": "Filter Offers"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "field",
+      "value"
+    ],
+    "id": "market",
+    "label": "Market"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G3",
+    "undo": "irreversible",
+    "args": [
+      "action"
+    ],
+    "id": "trade.builder",
+    "label": "Trade builder"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "mine"
+    ],
+    "id": "acquisition",
+    "label": "What does the add cost me?"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm"
+    ],
+    "gravity": "G2",
+    "undo": "reversible",
+    "args": [
+      "tradeId"
+    ],
+    "id": "trade.accept.plan",
+    "label": "Plan accept"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "franchiseId"
+    ],
+    "id": "lineup.edit",
+    "label": "Edit lineup"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "playerId"
+    ],
+    "id": "lineup.toggle",
+    "label": "Toggle starter"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "lineup.reset",
+    "label": "Reset"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "lineup.cancel",
+    "label": "Cancel"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "reversible",
+    "args": [],
+    "id": "lineup.draft",
+    "label": "Check and save plan"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "correlationId"
+    ],
+    "id": "move.withdraw",
+    "label": "Remove roster plan"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "reversible",
+    "args": [
+      "correlationId"
+    ],
+    "id": "move.handoff",
+    "label": "Open MFL page"
+  },
+  {
+    "aliases": [
+      "mfl",
+      "api key"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "reversible",
+    "args": [],
+    "id": "mflkey.connect",
+    "label": "Connect MFL"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "reversible",
+    "args": [],
+    "id": "mflkey.forget",
+    "label": "Forget MFL key"
+  },
+  {
+    "id": "roster.ir",
+    "label": "Draft IR move",
+    "aliases": [],
+    "roles": [
+      "gm"
+    ],
+    "gravity": "G2",
+    "undo": "reversible",
+    "args": [
+      "subject"
+    ]
+  },
+  {
+    "id": "roster.taxi",
+    "label": "Draft move to taxi squad",
+    "aliases": [],
+    "roles": [
+      "gm"
+    ],
+    "gravity": "G2",
+    "undo": "reversible",
+    "args": [
+      "subject"
+    ]
+  },
+  {
+    "aliases": [
+      "surface"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "place"
+    ],
+    "id": "surface.open",
+    "label": "Open shell surface"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "surface.close",
+    "label": "Close endpoint surface"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id",
+      "column"
+    ],
+    "id": "report.sort",
+    "label": "Sort report"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action"
+    ],
+    "id": "market.reports",
+    "label": "Player market reports"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "comms.read",
+    "label": "League communications"
+  },
+  {
+    "aliases": [
+      "backup",
+      "save a backup"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G1",
+    "undo": "instant",
+    "args": [],
+    "id": "backup.now",
+    "label": "Back up now"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "screen",
+      "action",
+      "value"
+    ],
+    "id": "commissioner.surface",
+    "label": "Change the league view"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "league"
+    ],
+    "id": "commissioner.read",
+    "label": "Read the league ledger"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "path",
+      "index"
+    ],
+    "id": "commissioner.draft",
+    "label": "Edit a rule value"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "body"
+    ],
+    "id": "commissioner.execute",
+    "label": "Record a league change"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "control.read",
+    "label": "Control Room league and site news"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "research.read",
+    "label": "Player research"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "archive.reports",
+    "label": "League archive reports"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "race.reports",
+    "label": "League race reports"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id"
+    ],
+    "id": "game.follow",
+    "label": "Follow NFL game"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action",
+      "value"
+    ],
+    "id": "now.reports",
+    "label": "This week in the league"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "action"
+    ],
+    "id": "draft.reports",
+    "label": "Draft reports"
+  },
+  {
+    "aliases": [
+      "endpoint"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "id"
+    ],
+    "id": "endpoint.open",
+    "label": "Open endpoint"
+  },
+  {
+    "aliases": [
+      "view team"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "franchiseId"
+    ],
+    "id": "franchise.set",
+    "label": "View a franchise"
+  },
+  {
+    "aliases": [
+      "view"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "preset"
+    ],
+    "id": "preset.apply",
+    "label": "Apply preset"
+  },
+  {
+    "aliases": [
+      "player"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "subject"
+    ],
+    "id": "inspector.open",
+    "label": "Inspect player"
+  },
+  {
+    "aliases": [
+      "collapse"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "inspector.collapse",
+    "label": "Collapse inspector"
+  },
+  {
+    "aliases": [],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "commandbar.close",
+    "label": "Close command bar"
+  },
+  {
+    "aliases": [
+      "goto",
+      "navigate"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "node",
+      "workspace"
+    ],
+    "id": "nav.open",
+    "label": "Open workspace"
+  },
+  {
+    "aliases": [
+      "density"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [
+      "density"
+    ],
+    "id": "density.set",
+    "label": "Set density",
+    "keys": [
+      {
+        "key": "N",
+        "args": {
+          "density": "narrative"
+        }
+      },
+      {
+        "key": "T",
+        "args": {
+          "density": "tactical"
+        }
+      },
+      {
+        "key": "M",
+        "args": {
+          "density": "matrix"
+        }
+      },
+      {
+        "key": "1",
+        "args": {
+          "density": "narrative"
+        }
+      },
+      {
+        "key": "2",
+        "args": {
+          "density": "tactical"
+        }
+      },
+      {
+        "key": "3",
+        "args": {
+          "density": "matrix"
+        }
+      }
+    ]
+  },
+  {
+    "aliases": [
+      "expand"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "inspector.expand",
+    "label": "Expand inspector"
+  },
+  {
+    "aliases": [
+      "inspect"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "inspector.toggle",
+    "label": "Toggle inspector",
+    "keys": [
+      {
+        "key": "I",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "aliases": [
+      "close inspector"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "inspector.close",
+    "label": "Close inspector"
+  },
+  {
+    "aliases": [
+      "calendar"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "calendar.summon",
+    "label": "Summon calendar"
+  },
+  {
+    "aliases": [
+      "comms",
+      "chat"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "comms.toggle",
+    "label": "Toggle comms"
+  },
+  {
+    "aliases": [
+      "escape"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "overlays.close",
+    "label": "Close overlays",
+    "keys": [
+      {
+        "key": "Escape",
+        "args": {}
+      }
+    ]
+  },
+  {
+    "aliases": [
+      "command",
+      "/"
+    ],
+    "roles": [
+      "gm",
+      "commish",
+      "admin"
+    ],
+    "gravity": "G0",
+    "undo": "instant",
+    "args": [],
+    "id": "commandbar.open",
+    "label": "Type a command",
+    "keys": [
+      {
+        "key": "/",
+        "args": {}
+      },
+      {
+        "key": "Ctrl+K",
+        "args": {}
+      }
+    ]
+  }
+]

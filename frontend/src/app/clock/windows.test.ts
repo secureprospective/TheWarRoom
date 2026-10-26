@@ -95,10 +95,10 @@ describe('league window editing and destinations', () => {
     const provider = new FixtureProvider();
     const save = vi.spyOn(provider, 'setWindow').mockRejectedValue(new Error('Date could not be saved'));
     const commands = createCommands(() => undefined, provider);
-    commands.dispatch('window.set', { kind: 'cut_day', at });
-    await new Promise(resolve => setTimeout(resolve, 30));
+    await commands.dispatch('window.set', { kind: 'cut_day', at });
+    expect(commands.history().at(-1)).toMatchObject({ status: 'failed', reason: 'Date could not be saved' });
     expect(save).toHaveBeenCalledWith('cut_day', at);
-    await setWindow(provider, 'draft', at);
+    await expect(setWindow(provider, 'draft', at)).rejects.toThrow('Date could not be saved');
     const html = renderToStaticMarkup(createElement(CalendarPanel, { reading: moved() }));
     expect(html).toContain('role="alert">Date could not be saved');
     expect(commands.registry['window.set'].gravity).toBe('G2');

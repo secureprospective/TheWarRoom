@@ -7,7 +7,7 @@ import { searchCandidates, runResult } from './search';
 const snapshot = await new FixtureProvider().snapshot();
 type Invocation = { [K in CommandId]: { verb: K; args: CommandArgs<K> } }[CommandId];
 
-it('dispatches the verb each phase registry row promises, using one table', () => {
+it('dispatches the verb each phase registry row promises, using one table', async () => {
   const player = snapshot.rosters.value[0].players[0].id;
   const franchiseId = snapshot.franchises.value[0].id;
   const cases: { row: EndpointId; invocation: Invocation }[] = [
@@ -35,8 +35,13 @@ it('dispatches the verb each phase registry row promises, using one table', () =
     const c = createCommands(() => undefined);
     c.loadSnapshot(snapshot);
     expect(endpointById(row).verb.split(/[ =]/)[0]).toBe(invocation.verb);
-    c.dispatch(invocation.verb, invocation.args);
-    expect(c.history().at(-1)).toEqual({ id: invocation.verb, args: invocation.args });
+    if (['watch.add', 'bait.set', 'note.add'].includes(invocation.verb)) {
+      expect(() => c.dispatch(invocation.verb, invocation.args)).toThrow('Choose my franchise');
+      expect(c.history().at(-1)).toMatchObject({ id: invocation.verb, status: 'failed' });
+      continue;
+    }
+    await c.dispatch(invocation.verb, invocation.args);
+    expect(c.history().at(-1)).toEqual({ id: invocation.verb, args: invocation.args, status: 'done' });
     if (invocation.verb === 'calendar.summon') expect(c.read().summoned).toBe('calendar');
     if (invocation.verb === 'commandbar.open') expect(c.read().commandbar).toBe(true);
     if (invocation.verb === 'inspector.pin') expect(c.read().subject?.id).toBe(player);

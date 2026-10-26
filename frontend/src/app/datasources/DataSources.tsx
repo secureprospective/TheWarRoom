@@ -52,7 +52,7 @@ export function RefreshScopes({ data, busy, outcomes = {} }:
 }
 export function Parameters({ params, busy, words: w }:
   { params: ParamsResult; busy: string; words: Record<string, string> }) {
-  const canEdit = commands.registry['data.parameter'].roles.includes('gm');
+  const canEdit = commands.canDispatch('data.parameter');
   const [filter, setFilter] = useState('');
   const [edits, setEdits] = useState<Record<string, string>>({});
   const rows = (params.params ?? []).filter(p =>

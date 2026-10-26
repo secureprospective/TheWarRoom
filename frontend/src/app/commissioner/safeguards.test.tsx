@@ -48,7 +48,7 @@ describe.each(wire.filter(row => row.safeguard !== 'confirm'))(
         }
         expect(sent).not.toHaveBeenCalled();
         await event(holder(host, 'Record this change'), 'onKeyDown', { key: 'Enter' });
-        await wait(699);
+        await wait(599);
         expect(sent).not.toHaveBeenCalled();
         await wait(1);
         await flush();

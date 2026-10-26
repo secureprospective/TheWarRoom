@@ -37,7 +37,7 @@ function ActButton<K extends CommandId>({
   submit = false,
   densityKey,
 }: ActProps<K> & { refusal?: string }) {
-  disabled = disabled || Boolean(refusal);
+  disabled = disabled || Boolean(refusal) || !commands.canDispatch(verb);
   const accessibleLabel = refusal ?? label ?? commands.registry[verb].label;
   const content = refusal ?? children ?? accessibleLabel;
   const title = (disabled && variant !== 'command' && variant !== 'rail') ||

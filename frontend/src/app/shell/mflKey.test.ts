@@ -232,7 +232,7 @@ describe('MFL connection surface', () => {
     await settle();
     expect(preventDefault).toHaveBeenCalledTimes(1);
     expect(connect).toHaveBeenCalledWith('candidate');
-    expect(c.history()).toEqual([{ id: 'mflkey.connect', args: {} }]);
+    expect(c.history()).toEqual([{ id: 'mflkey.connect', args: {}, status: 'done' }]);
     expect(button('Connect MFL')?.disabled).toBe(true);
   });
   it('forgets only when connected, through Act', async () => {

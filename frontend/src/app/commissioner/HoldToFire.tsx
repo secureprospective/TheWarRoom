@@ -8,7 +8,7 @@ type Props = { label: string; body: string; disabled?: boolean; ms?: number; ans
 const holdKey = (key: string) => key === ' ' || key === 'Enter';
 
 // HoldToFire confirms a change that needs a deliberate act: hold the pointer, Space or Enter for about
-// 700 ms. Releasing early cancels. Held long enough it sends `body` through commissioner.execute, once.
+// 600 ms. Releasing early cancels. Held long enough it sends `body` through commissioner.execute, once.
 // It is self-contained so chunk 4 can move it to the shared shell.
 export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '', onConfirm }: Props) {
   const latest = useRef(body);

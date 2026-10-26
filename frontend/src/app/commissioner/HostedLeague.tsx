@@ -88,7 +88,7 @@ export default function HostedLeague({
         visibility,
       },
     } as NativeRequest;
-    void room.review(request, summary);
+    return room.review(request, summary);
   };
   async function act(value: string) {
     if (value === 'refresh') {
@@ -105,7 +105,7 @@ export default function HostedLeague({
     }
     if (!reading) return;
     if (value === 'lineup')
-      command(
+      await command(
         'commish.lineup.set',
         {
           lineup: { season: reading.lineup.season, franchise, week: reading.lineup.week, starters },
@@ -116,7 +116,7 @@ export default function HostedLeague({
     if (value === 'reserve') {
       const p = reading.roster.players.find((p) => p.id === player && p.franchise === franchise);
       if (p)
-        command(
+        await command(
           'roster.reserve',
           { waiver: { player, franchise, bucket } },
           'league',
@@ -143,7 +143,7 @@ export default function HostedLeague({
         );
     }
     if (value === 'pause' || value === 'resume')
-      command(
+      await command(
         'draft.timer',
         {
           draft: {
@@ -155,7 +155,7 @@ export default function HostedLeague({
         `${value === 'pause' ? 'Pause' : 'Resume'} the draft clock`,
       );
     if (value === 'skip' && reading.draft.onClock)
-      command(
+      await command(
         'draft.skip',
         {
           draft: {
@@ -171,11 +171,14 @@ export default function HostedLeague({
       );
   }
   useEffect(() =>
-    surfaceActions.register('hosted-league', (args) => {
+    surfaceActions.register('hosted-league', async (args) => {
       if (args.action === 'view' && args.value in labels) {
         setTab(args.value as Tab);
         room.cancel();
-      } else if (args.action === 'check') void act(args.value);
+      } else if (args.action === 'check') {
+        await act(args.value);
+        if (room.peek().error) throw new Error(room.peek().error);
+      }
     }),
   );
   const action = (value: string, label: string, off = disabled) => (

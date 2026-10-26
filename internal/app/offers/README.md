@@ -2,8 +2,8 @@
 
 `MFLCommands()` is the completed, desktop-only catalog for the free-agent player
 pool and bid plans. `Commands()` also retains the other desktop binding inventory;
-unset declarations are not publishable. `bid.submit` retains its existing command
-ID, but **saves a local plan**, never submits a bid.
+unset declarations are not publishable. `mfl.bid.submit` **saves a local plan**,
+never submits a bid. Saved receipts retain the existing `bid.submit` intent.
 
 Flow: pool form or command action → `offers/api.ts` → catalog-generated
 `commands/mfl.ts` preflight → existing Wails adapter → Raw validation → serialized
