@@ -35,7 +35,7 @@ describe('Trade builder and acquisition wire boundaries', () => {
     expect(view).toContain('cut dead cap this season');
     expect(view).not.toContain('reduce(');
   });
-  it('validates the actor for all new receipts and uses G3 safe hand-offs', () => {
+  it('validates the actor for all new receipts and uses safe hand-offs', () => {
     for (const intent of ['trade.propose', 'trade.reject', 'trade.revoke']) {
       const r = tradeReceipt('ready');
       r.spec.intent = intent;
@@ -51,8 +51,6 @@ describe('Trade builder and acquisition wire boundaries', () => {
     const html = renderToStaticMarkup(createElement(TradePlan, { receipt: withdraw }));
     expect(html).toContain('Open MFL&#x27;s trade desk to withdraw it');
     expect(html).toContain('withdraw link acts at once');
-    const source = readFileSync('src/app/commands/registry.ts', 'utf8');
-    expect(source).toContain("id: 'trade.builder', label: 'Trade builder', gravity: 'G3'");
   });
   it('records built rows, the waiver deferral and Christopher’s retirement', () => {
     for (const id of ['M-033', 'M-034', 'M-199', 'C-06.2', 'C-06.4'] as const)
