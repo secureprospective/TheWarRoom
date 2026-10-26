@@ -82,16 +82,16 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior.  MOVED (part 2, batch 1). |
 | 21 | 1 | `internal/composition/moves_app.go` — `movePredicate`:87 | 14 | `platform` | B,W:platform | Intent-to-landing-predicate registry, unknown intent has no predicate.  MOVED (part 2, batch 1). |
 | 22 | 1 | `internal/composition/moves_app.go` — `watchableMove`:441, `skipMoveRefresh`:445, `saveMoveEvidence`:476 | 16 | `platform` | B,W:platform | Require unchanged listed state; don't watch handed-off contract; roster refresh covers contracts; save state changes or new trade audit evidence only.  MOVED (part 2, batch 1). |
-| 23 | 4 | `internal/composition/moves_app.go` — `handOffMove`:19 | 38 | `platform` | W:platform | Ready/startup and own-franchise checks; refuse trade-desk/release-only acts; validate URL, persist handoff before browser/event/wake. |
-| 24 | 4 | `internal/composition/moves_app.go` — `withBidFacts`:103, `moveSources`:121 | 35 | `platform` | B,W:platform | Load predicate-specific contract/bid facts; union required sources; log each unknown intent once. |
-| 25 | 4 | `internal/composition/moves_app.go` — `checkMoves`:140, `refreshedObservation`:200 | 69 | `platform` | B,W:platform | Refresh only with awaiting work and known sources; reread under moves lock, skip stale observations/state races, save changed evidence; emit once if changed. |
-| 26 | 3 | `internal/composition/moves_app.go` — `refreshMoveSources`:211, `refreshMoveSource`:251, `recentMoveSource`:305 | 80 | `platform` | B,W:platform | Latest handoff sets evidence floor; fixed refresh order/spacing; skip recent successful post-handoff feeds and duplicate contracts; injectable refresh or normal source routes, log roster failure. |
+| 23 | 4 | `internal/composition/moves_app.go` — `handOffMove`:19 | 38 | `platform` | W:platform | Ready/startup and own-franchise checks; refuse trade-desk/release-only acts; validate URL, persist handoff before browser/event/wake. MOVED (part 4, batch 3). |
+| 24 | 4 | `internal/composition/moves_app.go` — `withBidFacts`:103, `moveSources`:121 | 35 | `platform` | B,W:platform | Load predicate-specific contract/bid facts; union required sources; log each unknown intent once. MOVED (part 4, batch 3). |
+| 25 | 4 | `internal/composition/moves_app.go` — `checkMoves`:140, `refreshedObservation`:200 | 69 | `platform` | B,W:platform | Refresh only with awaiting work and known sources; reread under moves lock, skip stale observations/state races, save changed evidence; emit once if changed. MOVED (part 4, batch 3). |
+| 26 | 3 | `internal/composition/moves_app.go` — `refreshMoveSources`:211, `refreshMoveSource`:251, `recentMoveSource`:305 | 80 | `platform` | B,W:platform | Latest handoff sets evidence floor; fixed refresh order/spacing; skip recent successful post-handoff feeds and duplicate contracts; injectable refresh or normal source routes, log roster failure. MOVED (part 4, batch 3). |
 | 27 | 4 | `internal/composition/moves_app.go` — `moveObservation`:273 | 29 | `platform` | B,W:platform | Build roster/season/contract evidence; successful unchanged roster refresh advances observation time without lying about content change. |
 | 28 | 4 | `internal/composition/moves_app.go` — `revalidateReadyRosterMoves`:330, `revalidateReleaseAfterRefresh`:430 | 57 | `platform` | B,W:control,sources | Revalidate release/contract plans, then only ready IR/taxi candidates; rebuild eligibility, batch state changes and notify. |
-| 29 | 4 | `internal/composition/moves_app.go` — `planDecision`:380, `returnPlanToDraft`:398 | 46 | `platform` | B,W:control,sources | Select taxi/IR verdict only for still-ready held player; ineligible only follows invalidate→rebase→save, unknown verdict leaves plan unchanged. |
-| 30 | 4 | `internal/composition/moves_app.go` — `withdrawRosterMove`:449 | 26 | `platform` | W:platform | Require startup and ownership; withdraw through envelope, save before audit/event. |
-| 31 | 5 | `internal/composition/moves_app.go` — `requestMovesPass`:71, `logMove`:81 | 12 | `platform` | W:platform;B | Ready gate before wake; log last audit transition (runtime adapter policy). |
-| 32 | 4 | `internal/composition/moves_watcher.go` — `watchMoves`:17, `movesFastUntil`:57 | 62 | `platform` | B | Restart pass; wake/poll share minute rate limit; consume queued wake in same pass; fast mode lasts 30 minutes after latest handoff; cancellation stops timer. |
+| 29 | 4 | `internal/composition/moves_app.go` — `planDecision`:380, `returnPlanToDraft`:398 | 46 | `platform` | B,W:control,sources | Select taxi/IR verdict only for still-ready held player; ineligible only follows invalidate→rebase→save, unknown verdict leaves plan unchanged. MOVED (part 4, batch 3). |
+| 30 | 4 | `internal/composition/moves_app.go` — `withdrawRosterMove`:449 | 26 | `platform` | W:platform | Require startup and ownership; withdraw through envelope, save before audit/event. MOVED (part 4, batch 3). |
+| 31 | 5 | `internal/composition/moves_app.go` — `requestMovesPass`:71, `logMove`:81 | 12 | `platform` | W:platform;B | Ready gate before wake; log last audit transition (runtime adapter policy). MOVED (part 4, batch 3). |
+| 32 | 4 | `internal/composition/moves_watcher.go` — `watchMoves`:17, `movesFastUntil`:57 | 62 | `platform` | B | Restart pass; wake/poll share minute rate limit; consume queued wake in same pass; fast mode lasts 30 minutes after latest handoff; cancellation stops timer. MOVED (part 4, batch 3). |
 | 33 | 4 | `internal/composition/native_gate.go` — `nativeOwnerActions`:32, `startContractAction`:57 | 28 | `commissioner` | W:commissioner | Register only priced contract actions with owner window; before starting require action enabled in held ledger. MOVED (part 3, batch 1). |
 | 34 | 4 | `internal/composition/native_gate.go` — `runNativeAction`:79 | 25 | `commissioner` | W:commissioner | Reject unknown action/startup failure; replay ledger, ask calendar at owner time/zone; only permit executes; preserve closed/refused error chain. MOVED (part 3, batch 1). |
 | 35 | 5 | `internal/composition/native_gate.go` — `ownerZone`:70 | 6 | `commissioner` | W:commissioner;B | Injected owner zone else OS local zone. MOVED (part 3, batch 1). |
@@ -707,3 +707,26 @@ including key deletion during fetch, shutdown cancellation, real refresh order, 
 isolation, weekly refresh transitions and command-door parity. Initial worker test incorrectly
 assumed no windows for missing regular-season bounds; corrected to preserve the fixed Week 9
 trade deadline. Removed the now-unused dailyShellReading composition forwarder.
+
+## Part 4 — batch 3: local move actions and evidence watcher
+
+Eight units (23–26, 29–32), 378 baseline function LOC. Platform owns ownership/preflight and
+save-before-browser handoff/withdrawal, predicate-specific facts and unknown-intent logging,
+refresh-before-locked-reread evidence observation, source order/pacing/recent evidence, ready-plan
+verdict/rebase, wake admission/audit wording and restart/fast-poll scheduling. Store ports expose
+only the local envelope ledger; they never write MFL. Composition keeps startup/context/resource
+admission and supplies the original locks, cross-feature roster/season observation and release/
+contract adapters. Refused ownership or failed persistence causes no browser/event/wake effect.
+
+Added inward real-envelope/memory-ledger tests for save-before-effects/failed-save retention,
+ownership refusal, withdrawal effects, declared source order/contract dedup/spacing cancellation,
+post-handoff recency, facts failure/unknown once, unknown eligibility retention and exact
+Invalidate→Rebase route, fast-mode cutoff and ready-gated wake. Existing real-store composition
+handoff/watch/revalidation/cancellation/parity race batch passed (3.6 seconds composition).
+An invalid unknown-intent fixture omitted its required player/status; corrected the fixture.
+
+Bloat found the shortened watcher adapter became tiny; consolidated by responsibility:
+internal/composition/moves_watcher.go → internal/composition/moves_app.go. Updated placement/map;
+removed unused source/fast-mode forwarders, without changing a baseline. Inventory paths are
+historical references. Unit 27 observation assembly and unit 28 cross-feature plan revalidation
+remain open, not counted as moved.

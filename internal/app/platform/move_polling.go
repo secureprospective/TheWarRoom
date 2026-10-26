@@ -1,4 +1,4 @@
-package composition
+package platform
 
 import (
 	"context"
@@ -8,59 +8,65 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 )
 
-func newMovesTimer(delay time.Duration) (<-chan time.Time, func()) {
-	timer := time.NewTimer(delay)
-	return timer.C, func() { timer.Stop() }
+type MovePolling struct {
+	Now          func() time.Time
+	Timer        func(time.Duration) (<-chan time.Time, func())
+	Wake         <-chan struct{}
+	Timeout      time.Duration
+	Check        func(context.Context) error
+	Log          func(string)
+	Lock, Unlock func()
+	Awaiting     func(context.Context) ([]envelope.Envelope, error)
 }
 
 // A restart checks persisted work once; wakes and fast polling share the same rate limit.
-func (a *App) watchMoves(parent context.Context) {
+func (s MovePolling) Run(parent context.Context) {
 	var last, fastUntil time.Time
 	pending := true
 	for parent.Err() == nil {
-		now := a.core.MovesNow()
+		now := s.Now()
 		var tick <-chan time.Time
 		stop := func() {}
 		if pending || now.Before(fastUntil) {
 			delay := max(time.Duration(0), last.Add(time.Minute).Sub(now))
-			tick, stop = a.core.MovesTimer(delay)
+			tick, stop = s.Timer(delay)
 		}
 		select {
 		case <-parent.Done():
 			stop()
 			return
-		case <-a.core.MovesWake:
+		case <-s.Wake:
 			stop()
 			pending = true
 		case <-tick:
 			stop()
-			now = a.core.MovesNow()
+			now = s.Now()
 			if !pending && !now.Before(fastUntil) {
 				continue
 			}
 			// A queued wake belongs to this pass, not to another pass a minute later.
 			select {
-			case <-a.core.MovesWake:
+			case <-s.Wake:
 			default:
 			}
 			last, pending = now, false
-			ctx, cancel := context.WithTimeout(parent, refreshTimeout)
-			if err := a.checkMoves(ctx); err != nil && parent.Err() == nil {
-				a.core.MovesLog(err.Error())
+			ctx, cancel := context.WithTimeout(parent, s.Timeout)
+			if err := s.Check(ctx); err != nil && parent.Err() == nil {
+				s.Log(err.Error())
 			}
-			fastUntil = a.movesFastUntil(ctx)
+			fastUntil = s.FastUntil(ctx)
 			cancel()
 		}
 	}
 }
 
-func (a *App) movesFastUntil(ctx context.Context) time.Time {
-	a.core.MovesMu.Lock()
-	defer a.core.MovesMu.Unlock()
-	entries, err := a.core.Moves.Awaiting(ctx)
+func (s MovePolling) FastUntil(ctx context.Context) time.Time {
+	s.Lock()
+	defer s.Unlock()
+	entries, err := s.Awaiting(ctx)
 	if err != nil {
 		if ctx.Err() == nil {
-			a.core.MovesLog(fmt.Sprintf("watch moves: fast mode: %v", err))
+			s.Log(fmt.Sprintf("watch moves: fast mode: %v", err))
 		}
 		return time.Time{}
 	}
