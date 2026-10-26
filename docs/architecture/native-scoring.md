@@ -4,6 +4,17 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
+- **BLOCKER (part 1 end, not pushed):** `leaguerules.RuleSet` crosses the Wails binding, so the five
+  new `ScoringRules` fields regenerate `frontend/wailsjs/go/models.ts` (+246 lines) and break seven
+  wire fixtures: `internal/app/commissioner` `TestCommissionerControlsWire`, and in
+  `internal/composition` `TestCommissionerReplacedRulesWire`, `TestCommissionerLegacyRulesWire`,
+  `TestCommissionerRulesWire`, `TestCommissionerJobsWire`, `TestNativeScoreWireFixtureMatchesGo`,
+  `TestNativeStatQueueWireFixtureMatchesGo`. The part-1 brief forbids binding changes and
+  composition edits, so the push gate failed and the branch is local only. Needs Christopher's
+  ruling: (a) accept the additive binding/wire change and regenerate after branch B lands, or
+  (b) keep the new kinds off the wire shape. (a) is the design's intent: they are commissioner
+  settings, so the UI must see them.
+
 - **Part 1 (2026-10-26), done:** five new scoring rule kinds as commissioner settings in
   `internal/leaguerules`, the scorer for them in `internal/fantasyscore`, the locked DEFAULT-32
   spec shipped as `leaguerules.Default32Scoring()`, table tests for every spec row.
