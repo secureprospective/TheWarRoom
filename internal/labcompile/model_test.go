@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
@@ -136,4 +137,27 @@ func provePlayerLegs(t *testing.T, m *Model, data *lab.Data) {
 		t.Fatalf("insufficient player API coverage: legs=%d classes=%d", count, len(strata))
 	}
 	t.Logf("player API: %d trade legs across %d classes equal xValue/xClass/xPrice; %d historical zero-placeholder legs correctly unvalued", count, len(strata), unavailable)
+}
+
+func TestAssetValueCalendarRollover(t *testing.T) {
+	l, err := newLab(facts.Facts{}, time.Date(2027, time.January, 1, 12, 0, 0, 0, time.UTC).Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := newWins(l)
+	f := newForecast(w, nil)
+	p := &picksModel{rounds: map[int64][]int{1: {1}}, curve: [][]float64{{1, 1, 1, 1, 1}}}
+	m := &Model{valuer: newValuer(w, f, p, nil, nil, 0)}
+	for year := 2013; year <= 2027; year++ {
+		at := time.Date(year, time.January, 1, 12, 0, 0, 0, time.UTC)
+		got := m.Pick(year, 1, 0, "0001", at)
+		if !got.Valued || got.Reason != "" || len(got.Forecast) != horizon || got.Discounted != pythonRound(discounted([]float64{13, 13, 13, 13, 13}, discount), 3) {
+			t.Fatalf("year %d: %+v", year, got)
+		}
+	}
+	// The clock admits later live years even with an older archive capture.
+	current := time.Now().Year()
+	if got := m.Pick(current, 1, 0, "0001", time.Date(current, time.July, 1, 12, 0, 0, 0, time.UTC)); !got.Valued {
+		t.Fatalf("clock year %d: %+v", current, got)
+	}
 }
