@@ -170,7 +170,7 @@ func TestInactiveTransferKeepsRosterRestorePointWithoutActivatingLeague(t *testi
 	}
 	target, _, _ := newStore(t)
 	receipt := ImportReceipt{League: seed.League, SourceEpoch: "source-generation", Content: "checked-document"}
-	if _, err := target.StageTransfer(t.Context(), receipt, []byte("checked-document"), events, blobs); err != nil {
+	if _, err := target.StageTransfer(t.Context(), receipt, []byte("checked-document"), events, blobs, nil); err != nil {
 		t.Fatal(err)
 	}
 	point, err := target.RosterRestorePoint(t.Context(), seed.League)

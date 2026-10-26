@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/archive"
+	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // ImportReceipt identifies the immutable staged copy, not permission to activate it.
@@ -48,7 +50,7 @@ BEGIN SELECT RAISE(ABORT,'this imported league is inactive'); END;`
 // StageTransfer is called only after the transfer service validates and replays the document.
 // The immediate transaction serializes collision checks, archive reuse, original rows and receipt
 // across processes. The receipt is installed last so its trigger fences every subsequent append.
-func (s *Store) StageTransfer(ctx context.Context, receipt ImportReceipt, document []byte, events []RawTransferEvent, blobs map[string][]byte) (ImportReceipt, error) {
+func (s *Store) StageTransfer(ctx context.Context, receipt ImportReceipt, document []byte, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) (ImportReceipt, error) {
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
@@ -69,18 +71,8 @@ func (s *Store) StageTransfer(ctx context.Context, receipt ImportReceipt, docume
 	if err := checkEmptyImport(ctx, tx, receipt.League); err != nil {
 		return ImportReceipt{}, err
 	}
-	for key, body := range blobs {
-		if err := stageArchive(ctx, tx, key, body); err != nil {
-			return ImportReceipt{}, err
-		}
-	}
-	for _, event := range events {
-		if event.League != receipt.League {
-			return ImportReceipt{}, fmt.Errorf("the import contains another league")
-		}
-		if err := stageEvent(ctx, tx, event); err != nil {
-			return ImportReceipt{}, err
-		}
+	if err := stageTransferContent(ctx, tx, receipt.League, events, blobs, identities); err != nil {
+		return ImportReceipt{}, err
 	}
 	if err := s.captureRosterRestorePoint(ctx, tx, receipt.League); err != nil {
 		return ImportReceipt{}, err
@@ -170,4 +162,24 @@ func (s *Store) ImportDocument(ctx context.Context, league string) ([]byte, erro
 		return nil, fmt.Errorf("read inactive league document: %w", err)
 	}
 	return body, nil
+}
+
+func stageTransferContent(ctx context.Context, tx *sql.Tx, league string, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
+	if err := db.MergePlayerIdentities(ctx, tx, identities); err != nil {
+		return fmt.Errorf("import permanent player identities: %w", err)
+	}
+	for key, body := range blobs {
+		if err := stageArchive(ctx, tx, key, body); err != nil {
+			return err
+		}
+	}
+	for _, event := range events {
+		if event.League != league {
+			return fmt.Errorf("the import contains another league")
+		}
+		if err := stageEvent(ctx, tx, event); err != nil {
+			return err
+		}
+	}
+	return nil
 }

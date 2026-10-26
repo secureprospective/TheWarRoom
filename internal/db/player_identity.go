@@ -186,3 +186,60 @@ func NewPlayerIdentity(ctx context.Context, tx *sql.Tx, links []playerid.RawOuts
 	}
 	return identity.Canonical, nil
 }
+
+// LeagueIdentities includes historical players as well as the current roster;
+// moving a league must not assign a new identity to a player it later reacquires.
+func LeagueIdentities(ctx context.Context, tx *sql.Tx, league string) ([]playerid.RawIdentity, error) {
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT e.player,e.provider,e.value FROM player_external_id e
+ JOIN player_external_id m ON m.player=e.player AND m.provider='mfl'
+ WHERE m.value IN (
+ SELECT CAST(j.atom AS TEXT) FROM league_event l,json_tree(l.payload) j WHERE l.league=?
+ AND j.type='text' AND (j.key IN ('player','playerId') OR j.fullkey LIKE '%.players[%].id') AND j.atom<>''
+ ) ORDER BY e.player,e.provider,e.value`, league)
+	if err != nil {
+		return nil, fmt.Errorf("read league player identities: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []playerid.RawIdentity
+	for rows.Next() {
+		var id string
+		var link playerid.RawOutsideID
+		if err := rows.Scan(&id, &link.Provider, &link.Value); err != nil {
+			return nil, fmt.Errorf("read league player link: %w", err)
+		}
+		if len(out) == 0 || out[len(out)-1].Canonical != id {
+			out = append(out, playerid.RawIdentity{Canonical: id})
+		}
+		out[len(out)-1].Links = append(out[len(out)-1].Links, link)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("read league player identities: %w", err)
+	}
+	return out, nil
+}
+
+// MergePlayerIdentities accepts the same immutable links on a reverse transfer,
+// but never guesses that conflicting permanent identities are the same person.
+func MergePlayerIdentities(ctx context.Context, tx *sql.Tx, identities []playerid.RawIdentity) error {
+	for _, identity := range identities {
+		if err := identity.Validate(); err != nil {
+			return fmt.Errorf("validate transferred player identity: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO canonical_player(id) VALUES(?) ON CONFLICT(id) DO NOTHING`, identity.Canonical); err != nil {
+			return fmt.Errorf("receive canonical player: %w", err)
+		}
+		for _, link := range identity.Links {
+			if _, err := tx.ExecContext(ctx, `INSERT INTO player_external_id(provider,value,player) VALUES(?,?,?) ON CONFLICT(provider,value) DO NOTHING`, link.Provider, link.Value, identity.Canonical); err != nil {
+				return fmt.Errorf("receive outside player link: %w", err)
+			}
+			var held string
+			if err := tx.QueryRowContext(ctx, `SELECT player FROM player_external_id WHERE provider=? AND value=?`, link.Provider, link.Value).Scan(&held); err != nil {
+				return fmt.Errorf("check transferred player link: %w", err)
+			}
+			if held != identity.Canonical {
+				return fmt.Errorf("destination holds a conflicting permanent player identity; use a fresh destination")
+			}
+		}
+	}
+	return nil
+}

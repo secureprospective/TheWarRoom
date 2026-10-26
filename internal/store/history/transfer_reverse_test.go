@@ -19,7 +19,7 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := target.StageTransfer(t.Context(), ImportReceipt{League: "native.test", SourceEpoch: "epoch", Content: "content"}, []byte("document"), original, nil); err != nil {
+	if _, err := target.StageTransfer(t.Context(), ImportReceipt{League: "native.test", SourceEpoch: "epoch", Content: "content"}, []byte("document"), original, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 	peer, err := target.TransferIdentity(t.Context())
@@ -30,7 +30,7 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := source.DecideTransfer(t.Context(), f, true, func() error { return target.DecideDestination(t.Context(), f, true, original, nil) }); err != nil {
+	if err := source.DecideTransfer(t.Context(), f, true, func() error { return target.DecideDestination(t.Context(), f, true, original, nil, nil) }); err != nil {
 		t.Fatal(err)
 	}
 	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`100000000000`)}, Expected: 1, Request: "server.change", Reason: "Change on server", Effective: "now", Visibility: "league"}
@@ -53,7 +53,7 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 		t.Fatal(err)
 	}
 	decide := func() error {
-		return target.DecideTransfer(t.Context(), reverse, true, func() error { return source.DecideDestination(t.Context(), reverse, true, events, nil) })
+		return target.DecideTransfer(t.Context(), reverse, true, func() error { return source.DecideDestination(t.Context(), reverse, true, events, nil, nil) })
 	}
 	if err := decide(); err == nil {
 		t.Fatal("injected reverse failure ignored")
