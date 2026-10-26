@@ -3,10 +3,9 @@ package composition
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"log"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -26,25 +25,14 @@ func draftPickAction() NativeOwnerAction {
 // the pick only for that franchise's seated owner, and only under this permit.
 func runDraftPick(ctx context.Context, a *App, permit commissioner.Permit,
 	body json.RawMessage) (commissioner.Receipt, error) {
-	var input commissioner.DraftPickInput
-	if err := json.Unmarshal(body, &input); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick: %w",
-			commissioner.Refused(errors.New("choose a rookie for your pick")))
-	}
-	if err := input.Validate(); err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("rookie pick input: %w", commissioner.Refused(err))
-	}
-	principal, err := a.commissionerPrincipal()
-	if err != nil {
-		return commissioner.Receipt{}, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
-	defer cancel()
-	receipt, err := a.core.History.RecordDraftPick(ctx, permit, input, principal, a.nativeFacts(), a.ownerZone())
-	if err != nil {
-		return commissioner.Receipt{}, fmt.Errorf("record rookie pick: %w", err)
-	}
-	return receipt, nil
+	//nolint:wrapcheck // Preserve the rookie pick refusal.
+	return nativeapp.RecordDraftPick(ctx, permit, body, a.commissionerPrincipal,
+		func(ctx context.Context, permit commissioner.Permit, input commissioner.DraftPickInput, principal string) (commissioner.Receipt, error) {
+			ctx, cancel := context.WithTimeout(ctx, refreshTimeout)
+			defer cancel()
+			return a.core.History.RecordDraftPick(ctx, permit, input, principal, a.nativeFacts(), a.ownerZone())
+		})
+
 }
 
 // closeFinishedDrafts closes a draft whose last pick has just been used, so it does not wait for the clock's
@@ -52,7 +40,7 @@ func runDraftPick(ctx context.Context, a *App, permit commissioner.Permit,
 func (a *App) closeFinishedDrafts(league string) {
 	ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 	defer cancel()
-	if err := a.core.History.CloseFinishedDrafts(ctx, league, a.nativeFacts()); err != nil {
-		log.Printf("the war room: close finished rookie drafts for %s: %v", league, err)
-	}
+	nativeapp.CloseFinishedDrafts(ctx, league, func(ctx context.Context, league string) error {
+		return a.core.History.CloseFinishedDrafts(ctx, league, a.nativeFacts())
+	}, func(message string) { log.Print(message) })
 }

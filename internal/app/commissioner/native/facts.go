@@ -1,7 +1,4 @@
-// Package native is the native league's pure logic, moved out of package main: the football facts a
-// native check reads, the owner's lineup request, the NFL week a bid is judged in and the starting
-// snapshot shaped from held data. Who is calling, the action gate and every ledger write stay at the
-// root adapters; nothing here reads a session, takes a lock or opens a database.
+// Package native applies native owner admission and held-football policy through resource ports.
 package native
 
 import (

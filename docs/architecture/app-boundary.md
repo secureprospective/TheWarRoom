@@ -87,14 +87,14 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 30 | 4 | `internal/composition/moves_app.go` — `withdrawRosterMove`:449 | 26 | `platform` | W:platform | Require startup and ownership; withdraw through envelope, save before audit/event. |
 | 31 | 5 | `internal/composition/moves_app.go` — `requestMovesPass`:71, `logMove`:81 | 12 | `platform` | W:platform;B | Ready gate before wake; log last audit transition (runtime adapter policy). |
 | 32 | 4 | `internal/composition/moves_watcher.go` — `watchMoves`:17, `movesFastUntil`:57 | 62 | `platform` | B | Restart pass; wake/poll share minute rate limit; consume queued wake in same pass; fast mode lasts 30 minutes after latest handoff; cancellation stops timer. |
-| 33 | 4 | `internal/composition/native_gate.go` — `nativeOwnerActions`:32, `startContractAction`:57 | 28 | `commissioner` | W:commissioner | Register only priced contract actions with owner window; before starting require action enabled in held ledger. |
-| 34 | 4 | `internal/composition/native_gate.go` — `runNativeAction`:79 | 25 | `commissioner` | W:commissioner | Reject unknown action/startup failure; replay ledger, ask calendar at owner time/zone; only permit executes; preserve closed/refused error chain. |
-| 35 | 5 | `internal/composition/native_gate.go` — `ownerZone`:70 | 6 | `commissioner` | W:commissioner;B | Injected owner zone else OS local zone. |
-| 36 | 4 | `internal/composition/native_owner_app.go` — `recordOwnerAction`:24, `tradeFamily`:47, `waiverFamily`:62, `bidFamily`:77 | 49 | `commissioner` | W:commissioner | Decode owner command, require family args and matching permit league/franchise/action, then shared service execution with existing refusal text. |
-| 37 | 4 | `internal/composition/native_draft_app.go` — `runDraftPick`:27, `closeFinishedDrafts`:52 | 29 | `commissioner` | W:commissioner | Decode/validate pick, resolve identity, record under permit/deadline; close finished drafts best-effort without undoing pick. |
-| 38 | 4 | `internal/composition/native_lineup_app.go` — `runLineupSet`:30, `LineupFacts`:63 | 39 | `commissioner` | W:commissioner | Decode lineup and require matching permit; construct private immediate command; find selected week's held NFL locks, no network. |
+| 33 | 4 | `internal/composition/native_gate.go` — `nativeOwnerActions`:32, `startContractAction`:57 | 28 | `commissioner` | W:commissioner | Register only priced contract actions with owner window; before starting require action enabled in held ledger. MOVED (part 3, batch 1). |
+| 34 | 4 | `internal/composition/native_gate.go` — `runNativeAction`:79 | 25 | `commissioner` | W:commissioner | Reject unknown action/startup failure; replay ledger, ask calendar at owner time/zone; only permit executes; preserve closed/refused error chain. MOVED (part 3, batch 1). |
+| 35 | 5 | `internal/composition/native_gate.go` — `ownerZone`:70 | 6 | `commissioner` | W:commissioner;B | Injected owner zone else OS local zone. MOVED (part 3, batch 1). |
+| 36 | 4 | `internal/composition/native_owner_app.go` — `recordOwnerAction`:24, `tradeFamily`:47, `waiverFamily`:62, `bidFamily`:77 | 49 | `commissioner` | W:commissioner | Decode owner command, require family args and matching permit league/franchise/action, then shared service execution with existing refusal text. MOVED (part 3, batch 1). |
+| 37 | 4 | `internal/composition/native_draft_app.go` — `runDraftPick`:27, `closeFinishedDrafts`:52 | 29 | `commissioner` | W:commissioner | Decode/validate pick, resolve identity, record under permit/deadline; close finished drafts best-effort without undoing pick. MOVED (part 3, batch 1). |
+| 38 | 4 | `internal/composition/native_lineup_app.go` — `runLineupSet`:30, `LineupFacts`:63 | 39 | `commissioner` | W:commissioner | Decode lineup and require matching permit; construct private immediate command; find selected week's held NFL locks, no network. MOVED (part 3, batch 1). |
 | 39 | 2 | `internal/composition/native_schedule_app.go` — `nativeScheduleDates`:18 | 27 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Read reference NFL schedules only for requested season; ignore bad bodies/conversion; first valid row per week wins.  MOVED (part 2, batch 2). |
-| 40 | 3 | `internal/composition/native_schedule_app.go` — `BidEnvironment`:48 | 35 | `commissioner` | W:commissioner;store callbacks | Replay season, derive week/offseason fallback; only known week loads playoff bracket/directory; build shared bid environment. |
+| 40 | 3 | `internal/composition/native_schedule_app.go` — `BidEnvironment`:48 | 35 | `commissioner` | W:commissioner;store callbacks | Replay season, derive week/offseason fallback; only known week loads playoff bracket/directory; build shared bid environment. MOVED (part 3, batch 1). |
 | 41 | 4 | `internal/composition/native_seed_app.go` — `nativeSeedCommand`:12, `heldNativeSnapshot`:33 | 54 | `commissioner` | W:commissioner;desktop registry service host (H/C use separate hosts) | Retry must match original seed/expected/reason; require season-aligned held rosters/settings, parse roster date, assemble/validate snapshot with held draft and directory facts. |
 | 42 | 3 | `internal/composition/now_app.go` — `refreshNowWeek`:58, `feedFresh`:152 | 44 | `now` | B,W:now,research | Five-minute schedule and daily bye TTL, forced refresh override; preserve last good copy; pace schedule before bye fetch. |
 | 43 | 2 | `internal/composition/now_app.go` — `scheduleFeed`:100, `checkScheduleWeek`:145 | 27 | `now` | B,W:now,research | Both live and archive must match requested week; scope archived URL by W. |
@@ -462,3 +462,16 @@ Next owner verification remains live review on a disposable profile: same Contro
 Research/Market finished-week values and trade deadline refusals before/after refresh. No live
 GUI/MFL/prod-profile operation was performed here. Remaining work is the Resume list plus the
 other open inventory rows, core host policy/ratchet work and all Part 3 frontend read-tool work.
+
+## Part 3 — batch 1: native owner boundary
+
+Finding: native owner gate/permit checks, command-family selection, lineup/pick construction,
+bid-season evidence and owner-zone policy remained in composition. Proposal/preserved slice:
+composition retains original locks, readiness callback, identity and bounded History adapters;
+Native now owns gate order and refusal identity, permit matching, command construction and
+held schedule/bidding decisions. Ledger validation and transaction authorization remain unchanged.
+Seven units (33–38, 40), 211 baseline function LOC. No binding/schema/role changes.
+Targeted Native/composition race batch passed (50.4 seconds), including command-door parity,
+all registered gate actions, lineup recording/restart, pick, owner waiver/bid admission and bid
+season/playoff/offseason cases. New inward tests cover refusal ordering, no execution on bad
+family/permit, lazy identity, best-effort draft closing, held locks and local-zone fallback.

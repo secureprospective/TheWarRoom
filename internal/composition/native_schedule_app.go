@@ -2,7 +2,6 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
-	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // This is a local reference read. It has no fetch path and never reads a fantasy league's schedule.
@@ -25,38 +23,9 @@ type appBidEnv struct{ app *App }
 
 func (e appBidEnv) BidEnvironment(ctx context.Context, league string,
 	at time.Time) (commissioner.BidEnvironment, error) {
-	records, err := e.app.leagueRecords(ctx, league)
-	if err != nil {
-		return commissioner.BidEnvironment{}, err
-	}
-	season, err := commissioner.SeasonAt(records, commissioner.ReadingInstant(records, at))
-	if err != nil {
-		return commissioner.BidEnvironment{}, fmt.Errorf("read the league season: %w", err)
-	}
-	weeks, err := e.app.nativeScheduleDates(ctx, season, at)
-	if err != nil {
-		return commissioner.BidEnvironment{}, err
-	}
-	phase := nativeapp.WeekAt(weeks, at)
-	if !phase.WeekKnown && !phase.Offseason {
-		phase.Offseason, err = commissioner.BidOffseasonAt(records, at, season)
-		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
-		}
-	}
-	field := map[string]nativecheck.PlayoffStanding{}
-	if phase.WeekKnown {
-		bracket, err := e.app.core.History.NativeBracket(ctx, league, season)
-		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
-		}
-		directory, err := commissioner.NativeDirectoryReading(league, records, at)
-		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
-		}
-		field = nativeapp.PlayoffField(bracket, directory)
-	}
-	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
+	//nolint:wrapcheck // Preserve the bidding refusal.
+	return nativeapp.ReadBidEnvironment(ctx, nativeapp.BidSource{Records: e.app.leagueRecords,
+		Schedule: e.app.nativeScheduleDates, Bracket: e.app.core.History.NativeBracket}, league, at)
 }
 
 type nativeDueClock struct{ now func() time.Time }
