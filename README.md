@@ -239,7 +239,7 @@ Three rules came out of it:
   DEFENSE  ·11  [DT] [DE] [LB] [CB] [CB] [S] [FLEX]×5      flex = any defender
 ```
 
-There are no caps on what fills a flex. Four tight ends? Six safeties? Your call.
+There are no caps on what fills a flex. Three tight ends? Six safeties? Your call. And like every setting here, it is only the default: a commissioner can reshape the lineup any way they like.
 
 ### 👥 The roster: up to 64 deep
 
