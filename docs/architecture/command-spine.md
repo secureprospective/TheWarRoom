@@ -116,9 +116,9 @@ The generator tests compare every output byte-for-byte and intentionally stale e
 file, checking refusal without a write. Existing native/MFL/browser freshness tests and
 `make bindings-fresh` cover the remaining generated TypeScript and Wails JavaScript/models.
 The frozen parity matrix in `internal/composition/command_matrix_test.go` covers all
-299 executable entries × seven doors × three display roles (6,279 cells), including
+300 executable entries × eight doors × four roles (9,600 cells), including
 absent exposure. It combines the original native/MFL/Wails, browser and workflow
-fixtures, preserves mode and permission metadata, and intentionally rejects an
+fixtures plus the console entry introduced by main PR #183, preserves mode and permission metadata, and intentionally rejects an
 unregistered door and a missing declared door. CLI exposure retains the original
 generic preview/execute boundary; its 99 named verbs are new aliases, not new authority.
 Domain-role cells preserve the domain policy, not a grant to any display role;
@@ -144,3 +144,11 @@ API holder and the binding surface, so their membership cannot drift. Generator
 registry construction stays with composition's command bindings; named CLI dispatch
 stays with its root command. These consolidations preserve the tiny-file ratchet
 without raising its baseline.
+
+
+The merged `league.stand_up` recovery definition now lives in the same registry,
+with `operator-console` exposure only. `twr-server stand-up` binds the operator-only
+registry and invokes its checked handler; it never starts listeners or app services.
+The application registry knows the operation but supplies no native/MFL/Wails/
+workflow/browser/agent-CLI handler for it. The operator fixture preserves main's
+execute-only/offline-operator boundary; tests refuse every other door and mode.

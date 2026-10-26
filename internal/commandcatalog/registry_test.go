@@ -44,3 +44,27 @@ func TestCommandLabelsDoNotExposeMachineSyntax(t *testing.T) {
 		}
 	}
 }
+
+func TestOperatorRegistryKeepsOfflineAuthorityConsoleOnly(t *testing.T) {
+	registry, err := NewOperatorRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, door := range []Door{NativeDoor, MFLDoor, WailsDoor, WorkflowDoor, BrowserDoor, "unknown"} {
+		if _, err := registry.Invoke(t.Context(), door, "league.stand_up", Execute, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not available") {
+			t.Fatalf("offline command leaked into %s: %v", door, err)
+		}
+	}
+	for _, mode := range []Mode{Read, Preview, "unknown"} {
+		if _, err := registry.Invoke(t.Context(), ConsoleDoor, "league.stand_up", mode, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not available") {
+			t.Fatalf("offline command accepted %s: %v", mode, err)
+		}
+	}
+	if _, err := registry.Invoke(t.Context(), ConsoleDoor, "league.stand_up", Execute, json.RawMessage(`{"unexpected":true}`)); err == nil || !strings.Contains(err.Error(), "unknown field") {
+		t.Fatalf("offline command bypassed Raw decoding: %v", err)
+	}
+	registry.entries[0].Console[Execute] = nil
+	if err := registry.Validate(); err == nil || !strings.Contains(err.Error(), "missing execute handler") {
+		t.Fatalf("offline entry accepted a missing handler: %v", err)
+	}
+}

@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"reflect"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerecovery"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -166,4 +169,21 @@ func callBinding(ctx context.Context, b Binding, args []json.RawMessage) (json.R
 		return nil, fmt.Errorf("encode desktop arguments: %w", err)
 	}
 	return b.Handler(ctx, body)
+}
+
+func operatorEntries() []Entry {
+	definition := Command{ID: "league.stand_up", Method: "StandUpRosters", Version: "1", Role: "operator", Gravity: "G3", Availability: "server",
+		Arguments:  Shape(reflect.TypeFor[leaguerecovery.RawRequest](), "leaguerecovery.RawRequest.Validate"),
+		Permission: "offline-operator", Modes: []Mode{Execute}, Undo: "fresh-folder-only", Facts: "validated-rosters-and-contracts", Safeguards: "exclusive-private-folder; no-listener; read-only-league"}
+	handler := func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
+		var raw leaguerecovery.RawRequest
+		if err := decodeJSON(body, &raw); err != nil {
+			return nil, err
+		}
+		if err := raw.Validate(); err != nil {
+			return nil, fmt.Errorf("check roster recovery request: %w", err)
+		}
+		return result(leaguerecovery.StandUp(ctx, raw))
+	}
+	return []Entry{{ID: definition.ID, Label: "Restore league rosters and contracts offline", Definition: definition, Console: map[Mode]Handler{Execute: handler}}}
 }

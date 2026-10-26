@@ -19,6 +19,7 @@ const (
 	WailsDoor    Door = "wails"
 	WorkflowDoor Door = "workflow"
 	BrowserDoor  Door = "browser"
+	ConsoleDoor  Door = "operator-console"
 )
 
 // Entry owns one operation and its explicit transport exposure. Display roles never replace admission.
@@ -29,6 +30,7 @@ type Entry struct {
 	CLI        bool
 	Native     map[Mode]Handler
 	MFL        map[Mode]Handler
+	Console    map[Mode]Handler
 	Desktop    []DesktopExposure
 	Browser    *BrowserCommand
 	Workflow   *WorkflowCommand
@@ -57,7 +59,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	if in.Service == nil {
 		return nil, fmt.Errorf("command registry needs the league service")
 	}
-	r := &Registry{service: in.Service}
+	r := &Registry{entries: operatorEntries(), service: in.Service}
 	native := NativeCommands(in.Seed)
 	mfl := MFLCommands(in.MFL)
 	for _, c := range native {
@@ -163,13 +165,11 @@ func (e Entry) validate() error {
 	if err := e.validateGeneratedDoors(); err != nil {
 		return err
 	}
-	if e.Native != nil || e.MFL != nil {
-		handlers := e.Native
-		if e.MFL != nil {
-			handlers = e.MFL
-		}
-		if err := validateHandlers(e.Definition, handlers); err != nil {
-			return err
+	for _, handlers := range []map[Mode]Handler{e.Native, e.MFL, e.Console} {
+		if handlers != nil {
+			if err := validateHandlers(e.Definition, handlers); err != nil {
+				return err
+			}
 		}
 	}
 	for _, d := range e.Desktop {
@@ -208,10 +208,15 @@ func (r *Registry) Invoke(ctx context.Context, door Door, id string, mode Mode, 
 			}
 			return entry.Workflow.Run(ctx, r.service, raw)
 		}
-		handlers := entry.Native
-		if door == MFLDoor {
+		var handlers map[Mode]Handler
+		switch door {
+		case ConsoleDoor:
+			handlers = entry.Console
+		case MFLDoor:
 			handlers = entry.MFL
-		} else if door != NativeDoor {
+		case NativeDoor:
+			handlers = entry.Native
+		case WailsDoor, WorkflowDoor, BrowserDoor:
 			handlers = nil
 		}
 		if handler := handlers[mode]; handler != nil {
@@ -275,7 +280,7 @@ func validateHandlers(c Command, handlers map[Mode]Handler) error {
 }
 
 func (e Entry) hasDoor() bool {
-	return e.Native != nil || e.MFL != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
+	return e.Native != nil || e.MFL != nil || e.Console != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
 }
 
 func (e Entry) validateGeneratedDoors() error {
@@ -286,4 +291,13 @@ func (e Entry) validateGeneratedDoors() error {
 		return fmt.Errorf("missing browser argument type")
 	}
 	return nil
+}
+
+// NewOperatorRegistry binds only offline operator commands, without application services.
+func NewOperatorRegistry() (*Registry, error) {
+	registry := &Registry{entries: operatorEntries()}
+	if err := registry.Validate(); err != nil {
+		return nil, err
+	}
+	return registry, nil
 }

@@ -21,7 +21,7 @@ type parityCell struct {
 type parityMatrix map[string]parityCell
 
 func (m parityMatrix) add(id, door, role, permission string, modes []catalog.Mode) {
-	for _, held := range []string{"gm", "commish", "admin"} {
+	for _, held := range []string{"gm", "commish", "admin", "operator"} {
 		// Domain admission is argument-aware, not a display-role grant.
 		allowed := role == "domain" || slices.Contains(strings.Split(role, ","), held)
 		m[id+"/"+door+"/"+held] = parityCell{role, permission, modes, allowed}
@@ -50,6 +50,9 @@ func frozenCommandMatrix(t *testing.T) parityMatrix {
 		Modes   []catalog.Mode
 	}](t, "internal/serverhttp/testdata/workflow-before.json")
 	m := parityMatrix{}
+	for _, row := range readParityFixture[[]doorBefore](t, "internal/commandcatalog/testdata/operator-before.json") {
+		m.add(row.ID, row.Door, row.Role, row.Permission, row.Modes)
+	}
 	shared := map[string]string{}
 	native := map[string]doorBefore{}
 	for _, row := range rows {
@@ -88,6 +91,9 @@ func executableCommandMatrix(registry *catalog.Registry) parityMatrix {
 	m := parityMatrix{}
 	for _, e := range registry.Entries() {
 		c := e.Definition
+		if e.Console != nil {
+			m.add(e.ID, "operator-console", c.Role, c.Permission, c.Modes)
+		}
 		if e.Native != nil {
 			m.add(e.ID, "native", c.Role, c.Permission, c.Modes)
 		}
@@ -131,8 +137,8 @@ func compareCommandMatrix(before, after parityMatrix) error {
 		ids[strings.Split(key, "/")[0]] = true
 	}
 	for id := range ids {
-		for _, door := range []string{"native", "mfl", "wails", "workflow", "browser", "cli", "commandbar"} {
-			for _, role := range []string{"gm", "commish", "admin"} {
+		for _, door := range []string{"native", "mfl", "wails", "workflow", "browser", "cli", "commandbar", "operator-console"} {
+			for _, role := range []string{"gm", "commish", "admin", "operator"} {
 				key := id + "/" + door + "/" + role
 				want, declared := before[key]
 				got, exposed := after[key]
@@ -154,7 +160,7 @@ func TestEveryCommandDoorRoleParity(t *testing.T) {
 	if err := compareCommandMatrix(before, after); err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("%d entries × 7 doors × 3 roles; %d exposed role cells", len(registry.Entries()), len(after))
+	t.Logf("%d entries × 8 doors × 4 roles; %d exposed role cells", len(registry.Entries()), len(after))
 	for _, defect := range []string{"door without entry", "entry missing declared door"} {
 		t.Run(defect, func(t *testing.T) {
 			bad := executableCommandMatrix(registry)
