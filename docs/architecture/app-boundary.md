@@ -617,3 +617,54 @@ and held-data retention, no network or writes caused by a refused action.
 Debt left: 58 open composition units; core Host policy audit/extraction; negative composition/core
 ratchet; final full CI and disposable-profile live review; all registry-driven frontend read/cache
 work and store migration. No permission/role/binding/schema or lock-order change was needed.
+
+### Part 3 relocation ledger (baseline decision-function LOC, adapters retained)
+
+Paths below are relative to `internal/`; named groups include the contributing files.
+
+| Source in composition | Service home in app | Units | Baseline LOC |
+|---|---|---:|---:|
+| native_gate, native_owner_app, native_draft_app, native_lineup_app, native_schedule_app, native_seed_app | commissioner/native/{owner_actions,season,seed}.go; commissioner/native_seed_api.go | 8 | 265 |
+| now_app.go | now/{live_runtime,firsts}.go | 8 | 276 |
+| race_app.go | race/refresh.go; now/live_runtime.go; report/held.go | 3 | 108 |
+| control_alerts.go; control_host.go | control/{alert_reading,reading,parameters}.go | 3 | 87 |
+| engine_refresh.go | scoring/model.go | 3 | 65 |
+| market_feeds_app.go | market/reports.go | 2 | 57 |
+| pool_app.go | offers/pool/refresh.go; market/assets.go | 3 | 94 |
+| sources_runtime.go; cache_app.go | sources/settings.go | 2 | 56 |
+| sources_runtime.go (baseline archive_app.go) | archive/read.go | 1 | 13 |
+| trades_app.go | trades/builder.go; market/assets.go | 1 | 34 |
+| asset_board.go | research/reading.go | 1 | 9 |
+
+Read-only final source trace checked readiness before lazy store/context/host capture, exact
+model defer order (cancel → health event → unlock), conditional dirty Load and failure restoration,
+latest-held re-read before publication, archive scope and last-good retention, per-player photo
+switch sampling, lazy live transport/finals, native permit and ledger revalidation, and Race's
+shared lazy schedule. Core Season/History and SeasonChanged are startup-owned in production.
+All five feature API constructors used by cache wiring and leagueservice.New are allocation-only;
+eagerly forming their refresh callbacks does not perform admission, I/O or a write. No additional
+behavior defect was found after the Finals retention correction. This is source trace plus the
+named exercised evidence, not a substitute for the deferred live review.
+
+### Push checkpoint
+
+`47f12f24` and all six commits this part were pushed to
+`origin/session/revamp-B-app-boundary`. The real pre-push hook passed binding generation,
+full lint and shuffled changed-package/importer tests. No generated/tracked build change remained.
+Git status was clean and local/remote branch refs matched. No PR or merge.
+Full CI for `47f12f24` **passed**: verify run `40415875098` (checks, all four race
+shards, release-tools and aggregate verify) and desktop packages run `40415875107`
+(Linux/Windows/macOS packages and installation jobs). These are automated package/install checks,
+not Christopher's deferred live feature review. The closing commit after this checkpoint is docs-only.
+
+Full composition package timings from those CI race jobs: **194.260, 261.870, 411.862 and
+478.298 seconds**; Archive took **287.340 s** in one shard. This establishes that a 200-second
+tool timeout can cut off legitimate passing fixture work. Together with the locally measured
+106.63-second real trade-builder test, the evidence supports an undersized broad-run budget,
+not a demonstrated deadlock. It does not reconstruct the exact earlier timed-out process.
+
+Next batch's first concrete slice: `finished_scores.go` unit 17 and `offers_reading.go` unit 50,
+then Research units 67–71. Preserve cancellation/pacing, first-finish pinning and the original
+latest-held re-read/publication spans; callbacks must not accidentally capture startup-dependent
+stores before readiness or replace live data with a stale detached capture. After that, move
+local plan save/handoff workflows with their existing ownership checks and save-before-browser order.
