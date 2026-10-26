@@ -2,7 +2,7 @@
 
 ## Resume here
 
-Part 1: two low-risk decisions extracted; rest inventoried below against base `dda866b8`.
+Part 1: two low-risk decisions extracted in `98ea8cf7`; rest inventoried below against base `dda866b8`.
 Branch: `session/revamp-B-app-boundary`. No PR or merge this part. HANDOFF.md untouched.
 Next: band 1 pure helpers (opponent fallback, period selection, bye inputs, move predicates),
 then inward services for joint reads. Keep all public APIs/permissions/schemas and lock spans unchanged.
@@ -254,6 +254,16 @@ core or siblings to evade the existing depguard. Shared view contracts already l
 - `internal/composition/command_matrix_test.go` untouched; no permission/role/binding/schema changes.
 - First commit hook caught two newly unused composition forwarding helpers (`nflGames`,
   `weekKickedOff`); removed them rather than suppressing lint. No remaining callers.
+- Final implementation rerun: Now/Platform package race tests, the five targeted composition
+  race tests and vet all passed. Commit hooks passed golangci-lint, gitleaks and ifaceguard;
+  `scripts/check-placement.sh` passed (126 paths / 17 features).
+- Measured relocation: cutoff 25 baseline function LOC → 38-line Now production file;
+  database report/wording 33 baseline function LOC → 47-line Platform production file plus
+  retained composition capture. Removed two unused forwarding functions (6 LOC).
+- Whole affected handwritten production set (`composition/{database_checks_app,finished_scores,now_app}.go`,
+  `app/now/finished_scores.go`, `app/platform/database_checks.go`): 683 → 711 physical LOC,
+  22,895 → 23,609 Unicode code points including LF. This grows by 28 LOC / 714 code points;
+  the gain is two decisions with inward ownership, not source compression. Tests/docs excluded.
 - No full `make verify`, push, PR, merge, GUI or live-data operations this part.
 
 Estimated remaining one-hour parts: Part 2 **8–12** (including core audit, lock-aware lifecycle
