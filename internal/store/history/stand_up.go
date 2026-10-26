@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -50,10 +51,10 @@ func (s *Store) StandUpRosters(ctx context.Context, point commissioner.RawRoster
 		return "", fmt.Errorf("encode recovery source: %w", err)
 	}
 	const message = "Rosters and contracts restored and checked exactly. Historical results were not restored. This copy is read-only until rules and authority are recovered through the full server restore procedure."
-	if _, err := tx.ExecContext(ctx, `INSERT INTO league_import VALUES(?,?,?,?,?)`, point.League, "roster-recovery", "roster-recovery", point.CapturedAt.Format("2006-01-02T15:04:05.999999999Z07:00"), body); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO league_import VALUES(?,?,?,?,?)`, point.League, "roster-recovery", "roster-recovery", point.CapturedAt.Format(time.RFC3339Nano), body); err != nil {
 		return "", fmt.Errorf("fence recovered league: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO league_recovery_log(league,revision,recorded_at,message) VALUES(?,?,?,?)`, point.League, point.Revision, point.CapturedAt.Format("2006-01-02T15:04:05.999999999Z07:00"), message); err != nil {
+	if _, err := tx.ExecContext(ctx, `INSERT INTO league_recovery_log(league,revision,recorded_at,message) VALUES(?,?,?,?)`, point.League, restored.Revision, s.now().UTC().Format(time.RFC3339Nano), message); err != nil {
 		return "", fmt.Errorf("record roster recovery: %w", err)
 	}
 	if err := tx.Commit(); err != nil {

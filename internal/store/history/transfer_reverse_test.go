@@ -1,18 +1,21 @@
 package history
 
 import (
-	"encoding/json"
 	"path/filepath"
 	"reflect"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	source, sp := openMoveTest(t, filepath.Join(t.TempDir(), "source.db"))
 	target, _ := openMoveTest(t, filepath.Join(t.TempDir(), "target.db"))
-	if _, err := source.ExecuteCommissioner(t.Context(), createCommand(), "creator", nil); err != nil {
+	if _, err := source.ExecuteCommissioner(t.Context(), createWith(commissioner.PresetLegacy, 0), "creator", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := source.ExecuteCommissioner(t.Context(), heldSeedCommand(t), "creator", nil); err != nil {
 		t.Fatal(err)
 	}
 	original, _, anchor, err := source.CaptureTransfer(t.Context(), "native.test", nil)
@@ -33,7 +36,8 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	if err := source.DecideTransfer(t.Context(), f, true, func() error { return target.DecideDestination(t.Context(), f, true, original, nil, nil) }); err != nil {
 		t.Fatal(err)
 	}
-	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "cap.amount", Value: json.RawMessage(`100000000000`)}, Expected: 1, Request: "server.change", Reason: "Change on server", Effective: "now", Visibility: "league"}
+	salary := domain.Money(123456789)
+	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.ContractEdit, Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{Player: "0099", Salary: &salary}}, Expected: 2, Request: "server.change", Reason: "Correct contract on server", Effective: "now", Visibility: "league"}
 	if _, err := target.ExecuteCommissioner(t.Context(), raw, "creator", nil); err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +53,7 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := sp.Write().ExecContext(t.Context(), `CREATE TRIGGER fail_reverse BEFORE INSERT ON league_event WHEN NEW.revision>1 BEGIN SELECT RAISE(ABORT,'injected reverse failure'); END`); err != nil {
+	if _, err := sp.Write().ExecContext(t.Context(), `CREATE TRIGGER fail_reverse BEFORE INSERT ON league_event WHEN NEW.revision>2 BEGIN SELECT RAISE(ABORT,'injected reverse failure'); END`); err != nil {
 		t.Fatal(err)
 	}
 	decide := func() error {
@@ -77,5 +81,9 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 	held, _, _, err = source.CaptureTransfer(t.Context(), "native.test", nil)
 	if err != nil || !reflect.DeepEqual(held, events) {
 		t.Fatal("reverse retry lost server history", err)
+	}
+	point, err := source.RosterRestorePoint(t.Context(), "native.test")
+	if err != nil || point.Revision != 3 || point.Snapshot.Players[0].Salary != salary {
+		t.Fatalf("reverse move left stale recovery contracts: %+v %v", point, err)
 	}
 }

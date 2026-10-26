@@ -36,7 +36,7 @@ func (s *Store) DecideDestination(ctx context.Context, f TransferFence, activate
 		return nil
 	}
 	if activate {
-		if err := receiveTransfer(ctx, tx, f, held, events, blobs, identities); err != nil {
+		if err := s.receiveTransfer(ctx, tx, f, held, events, blobs, identities); err != nil {
 			return err
 		}
 		f.State = "active"
@@ -91,7 +91,7 @@ func checkInactiveDestination(ctx context.Context, tx *sql.Tx, f, held TransferF
 	return nil
 }
 
-func receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
+func (s *Store) receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
 	if err := db.MergePlayerIdentities(ctx, tx, identities); err != nil {
 		return fmt.Errorf("receive permanent player identities: %w", err)
 	}
@@ -132,7 +132,7 @@ func receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, eve
 			}
 		}
 	}
-	return nil
+	return s.captureRosterRestorePoint(ctx, tx, f.League)
 }
 
 // TransferStatus is shared wording for desktop and hosted services. IDs stay in the protocol,
