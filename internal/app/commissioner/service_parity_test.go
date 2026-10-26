@@ -3,11 +3,9 @@ package commissioner
 import (
 	"encoding/json"
 	"reflect"
-	"slices"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
@@ -137,31 +135,5 @@ func TestWailsServicePreviewParityAndNoEvents(t *testing.T) {
 	}
 	if _, err := leagueservice.New(nil).TargetLeagueCalendar(leagueservice.RawLeagueCalendarScope{}); err == nil {
 		t.Fatal("invalid Raw calendar accepted")
-	}
-}
-
-func TestServicePublicationOnlyCompletedReadPreviewEntries(t *testing.T) {
-	entries, err := ReadPreviewCommands()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != len(NativeCommands()) {
-		t.Fatal("service catalog omitted a native family")
-	}
-	typ := reflect.TypeFor[*leagueservice.Service]()
-	for _, entry := range entries {
-		if err := entry.ValidatePublication(); err != nil {
-			t.Fatal(err)
-		}
-		if slices.Contains(entry.Modes, catalog.Execute) {
-			t.Fatalf("slice exposed execution: %s", entry.ID)
-		}
-		if _, ok := typ.MethodByName(entry.Method); !ok {
-			t.Fatalf("registered unimplemented method: %s", entry.Method)
-		}
-	}
-	// The legacy generic desktop execute/preview entries still have unset metadata.
-	if _, err := catalog.Publication(Commands()); err == nil {
-		t.Fatal("unfinished desktop doors became publishable")
 	}
 }

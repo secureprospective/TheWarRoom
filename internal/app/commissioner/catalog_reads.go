@@ -1,9 +1,7 @@
 package commissioner
 
 import (
-	"fmt"
 	"reflect"
-	"slices"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/catalog"
@@ -94,21 +92,4 @@ func nativeReadShape(method, fields string) catalog.Schema {
 	default:
 		return queryShape(method, fields)
 	}
-}
-
-// ReadPreviewCommands is the completed service surface. Execution remains on the desktop gates
-// until mutation dispatch is unified; generic desktop doors are never published.
-func ReadPreviewCommands() ([]catalog.Command, error) {
-	commands, err := catalog.Publication(NativeCommands())
-	if err != nil {
-		return nil, fmt.Errorf("register native service: %w", err)
-	}
-	for i := range commands {
-		if slices.Contains(commands[i].Modes, catalog.Read) {
-			continue
-		}
-		commands[i].Modes = []catalog.Mode{catalog.Preview}
-		commands[i].Method = "Preview"
-	}
-	return commands, nil
 }

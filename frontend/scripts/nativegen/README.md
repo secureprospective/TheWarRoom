@@ -15,27 +15,17 @@ permission, mode and safeguard without repeating nested mutation envelopes. Type
 request types from those literal schemas, rather than keeping a second argument list. The Go freshness test compares the complete
 output byte-for-byte and rejects an intentionally incomplete declaration. No Wails bindings change.
 
-Flow: Go catalog → generated schema and plain-word phrases → `commands/native.ts` typed requests,
-capability display rows and named-argument grammar → injected native transport. Invalid shapes,
-missing/denied/duplicate capabilities, unsupported modes and desktop-only imports fail before the
-transport runs. The grammar only describes choices; it never executes a string or skips a form.
+Flow: Go catalog → generated schema and plain-word phrases → `commands/native.ts`
+typed requests → `nativeEnvelope` → hosted workflow transport. The envelope checks
+shape, declared modes and hosted availability. It does not infer capability grants;
+the server rechecks credentials, current grants, arguments, deadlines and revisions.
+Existing commissioner forms, `ChangeBar`, Go previews and `HoldToFire` retain ownership
+of reasons, confirmation and retry keys. The envelope never supplies these itself.
 
-`nativeGrammar` supplies labels, named required/optional arguments, enabled flags and plain refusal
-text to client command pickers. `createNativeClient` needs a fresh, argument-scoped capability
-answer for each invocation. Catalog permission strings and local GM/admin display roles never
-become grants. These client checks are not authorization: the server must recheck credentials,
-current grants, arguments, deadlines and revisions, including inside append.
-
-This is the client seam, not hosted route publication. No capability endpoint or hosted workflow is
-invented in this slice. A future desktop native adapter supplies the transport and current scoped
-answers; do not feed it credentials from the webview. Keep this module lazy with native workflows,
-not in the shell entry bundle. Existing commissioner forms, `ChangeBar`, Go previews and
-`HoldToFire` still own reasons, confirmation and retry keys, without changes here. The native client
-never supplies a reason, chooses a stronger mode or infers confirmation from static gravity.
-
-Evidence: `TestNativeClientCatalogParity`, `TestStaleGenerationRefusedWithoutWriting`,
-`commands/native.test.ts` (including tsc negative type cases), and the existing safeguard/hold/proxy
-tests. Actual hosted capability admission and HTTPS mutation execution belong to later slices.
+The unused grammar, capability-display client and injected transport were removed.
+The live hosted envelope and its negative TypeScript cases remain tested alongside
+the generator freshness/parity tests and hosted admission tests. The executable
+cross-door migration is described in `docs/architecture/command-spine.md`.
 
 ## Local MFL reference plans
 
