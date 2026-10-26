@@ -10,8 +10,17 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
 - **Golden, done:** 21 real 2024 player-weeks (every position, Barkley, Chase, McBride, Boswell,
   the 98-yard Westbrook-Ikhine week …) match the reference scorer to the cent
   (`internal/fantasyscore/default32_golden_test.go`, fixture `testdata/default32_2024.json`).
-- **Next part starts at:** the stats pipeline: `internal/fantasyscore/source` must emit `chunk_play`,
-  `fg_made_distance`, `fg_missed_distance` events and the `line_*` team-game components.
+- **Held adapter, done:** `internal/fantasyscore/source` now emits `fg_made_distance` (weekly
+  `fg_made_list`), `fg_missed_distance` (`fg_missed_list` + `fg_blocked_list`) and `chunk_play`
+  (every counted rush and catch distance from play-by-play, same credits as Legacy's long plays).
+  Every held week scores under the default (`TestHeldWeeksScoreUnderTheDefault`).
+- **Next part starts at:** the O-Line team-game feed — a `source` reader that builds
+  `fantasyscore.UnitLine` from play-by-play (spec §4.6 component definitions; needs `play_type`,
+  `rush_attempt`, `qb_kneel`, `down`, `ydstogo`, `third/fourth_down_converted`, `tackled_for_loss`,
+  `sack`, `qb_hit_1/2_player_id`, `td_team`, `posteam`, `lateral_rushing_yards`) plus PFR
+  `rushing_yards_before_contact` for RBs. Then wiring: a league choosing the default at creation
+  (`internal/commissioner/creation.go` seeds `LegacyNFLForTeams`), and the O-Line unit in the
+  lineup/roster (spec §1–3), which needs a position or slot kind the model does not have yet.
 - **Open rulings** are listed at the bottom; do not resolve them by guessing.
 
 ## Owner framing

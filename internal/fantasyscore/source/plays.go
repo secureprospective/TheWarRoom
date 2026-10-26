@@ -107,7 +107,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 	for i, week := range weeks {
 		index[playKey(week.GSIS, week.Season, week.Week)] = i
 		week.Line.Quantities["fumble_recovery_tds"] = week.RecoveryTDs
-		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception"} {
+		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception", "chunk_play"} {
 			week.Line.Events[id] = []leaguerules.Decimal{}
 		}
 		for _, id := range []leaguerules.StatID{"interception_return_td", "punt_return_td", "kickoff_return_td"} {
@@ -169,6 +169,10 @@ func attachDistances(weeks []PlayerWeek, index map[string]int, play RawPlay, sea
 		}
 		distance, _ := decimal(row.distance)
 		weeks[i].Line.Events[row.stat] = append(weeks[i].Line.Events[row.stat], distance)
+		// A chunk play is any rush or catch, priced by the league's distance scale.
+		if row.stat != "long_pass" {
+			weeks[i].Line.Events["chunk_play"] = append(weeks[i].Line.Events["chunk_play"], distance)
+		}
 	}
 }
 

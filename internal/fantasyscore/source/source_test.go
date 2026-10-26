@@ -39,7 +39,7 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 		"fg_made_list": "19;29;39;49;59;60;99", "fg_missed_0_19": "1",
 		"fg_missed_20_29": "1", "fg_missed_30_39": "1", "fg_missed_40_49": "1",
 		"fg_missed_50_59": "1", "fg_missed_60_": "1", "pat_made": "3",
-		"fg_blocked": "2", "fg_blocked_list": "29;30",
+		"fg_blocked": "2", "fg_blocked_list": "29;30", "fg_missed_list": "18;25;31;45;55;61",
 	} {
 		raw.Fields[field] = value
 	}
@@ -55,6 +55,14 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 	} {
 		if week.Line.Quantities[id] != want {
 			t.Errorf("%s: got %d want %d", id, week.Line.Quantities[id], want)
+		}
+	}
+	for id, want := range map[leaguerules.StatID][]leaguerules.Decimal{
+		"fg_made_distance":   {190000, 290000, 390000, 490000, 590000, 600000, 990000},
+		"fg_missed_distance": {180000, 250000, 310000, 450000, 550000, 610000, 290000, 300000},
+	} {
+		if !reflect.DeepEqual(week.Line.Events[id], want) {
+			t.Errorf("%s: got %v want %v", id, week.Line.Events[id], want)
 		}
 	}
 }
@@ -150,7 +158,12 @@ func TestPlayDistancesTouchdownKindsAndScope(t *testing.T) {
 	if !reflect.DeepEqual(weeks[0].Line.Events["long_rush"], []leaguerules.Decimal{250000, 250000, 250000}) {
 		t.Fatal("distance lost or deleted/2-point/wrong-game play counted")
 	}
-	if err := AttachPlays(weeks, plays); err != nil || len(weeks[0].Line.Events["long_rush"]) != 3 {
+	if !reflect.DeepEqual(weeks[0].Line.Events["chunk_play"],
+		[]leaguerules.Decimal{250000, 410000, 250000, 410000, 250000, 410000, 410000}) {
+		t.Fatalf("chunk plays are every counted rush and catch, never a pass: %v", weeks[0].Line.Events["chunk_play"])
+	}
+	if err := AttachPlays(weeks, plays); err != nil || len(weeks[0].Line.Events["long_rush"]) != 3 ||
+		len(weeks[0].Line.Events["chunk_play"]) != 7 {
 		t.Fatal("re-attaching held plays counted twice", err)
 	}
 }
@@ -163,9 +176,10 @@ func TestMissingOrMalformedPlayEvidenceFailsBeforeMutation(t *testing.T) {
 	base := RawPlay{GameID: week.GameID, PlayID: "1", Season: "2025", Week: "1", SeasonType: "REG"}
 	bad := base
 	bad.Passing = "NaN"
+	converted := len(week.Line.Events)
 	for _, plays := range [][]RawPlay{nil, {bad}, {base, base}} {
 		weeks := []PlayerWeek{week}
-		if err := AttachPlays(weeks, plays); err == nil || len(weeks[0].Line.Events) != 0 {
+		if err := AttachPlays(weeks, plays); err == nil || len(weeks[0].Line.Events) != converted {
 			t.Fatalf("bad evidence accepted or partially mutated: %v", err)
 		}
 	}
