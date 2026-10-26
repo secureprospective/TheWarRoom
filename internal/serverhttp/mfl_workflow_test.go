@@ -10,7 +10,7 @@ import (
 func TestHostedWorkflowRefusesLocalMFLPlans(t *testing.T) {
 	c := workflowClient(t)
 	before := c.invoke("native.assets.read", "read", []byte(`{"league":"native.hosted"}`), 200).Data
-	for _, command := range []string{"mfl.pool.read", "mfl.pool.refresh", "mfl.bid.plans", "mfl.bid.preview", "bid.submit", "mfl.bid.revise", "mfl.bid.handoff", "mfl.bid.posted", "mfl.bid.withdraw", "SetMFLKey"} {
+	for _, command := range []string{"mfl.pool.read", "mfl.pool.refresh", "mfl.bid.plans", "mfl.bid.preview", "bid.submit", "mfl.bid.submit", "mfl.bid.revise", "mfl.bid.handoff", "mfl.bid.posted", "mfl.bid.withdraw", "SetMFLKey"} {
 		raw := serverhttp.RawWorkflow{Command: command, Version: "1", Mode: "execute", Arguments: json.RawMessage(`{}`)}
 		if err := raw.Validate(); err == nil {
 			t.Fatalf("hosted workflow accepts %s", command)

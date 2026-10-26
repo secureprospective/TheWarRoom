@@ -40,7 +40,7 @@ const mflClient = createMFLClient(request => {
     case 'mfl.pool.read': return go.TargetPool(offers.RawPoolScope.createFrom(args));
     case 'mfl.bid.plans': return go.TargetBidPlans(request.arguments.franchiseId);
     case 'mfl.bid.preview': return go.TargetBidPreview(offers.RawBidInput.createFrom(args));
-    case 'bid.submit': return go.TargetBidDraft(offers.RawBidInput.createFrom(args));
+    case 'mfl.bid.submit': return go.TargetBidDraft(offers.RawBidInput.createFrom(args));
     case 'mfl.bid.revise': return go.TargetBidRevise(request.arguments.id, offers.RawBidInput.createFrom(
       Object.fromEntries(Object.entries(args).filter(([key]) => key !== 'id')),
     ));
@@ -66,7 +66,7 @@ export const poolWire = {
     command: 'mfl.bid.preview', mode: 'preview', arguments: rawBid(mine, form),
   }, localOwner),
   draft: (mine: string, form: BidFormState) => mflClient.invoke({
-    command: 'bid.submit', mode: 'execute', arguments: rawBid(mine, form),
+    command: 'mfl.bid.submit', mode: 'execute', arguments: rawBid(mine, form),
   }, localOwner),
   revise: (id: string, mine: string, form: BidFormState) => mflClient.invoke({
     command: 'mfl.bid.revise', mode: 'execute', arguments: { id, ...rawBid(mine, form) },

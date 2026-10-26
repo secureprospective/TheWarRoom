@@ -25,7 +25,7 @@ func MFLCommands() []catalog.Command {
 		mflCommand("mfl.bid.plans", "TargetBidPlans", "G1", catalog.Read,
 			catalog.Shape(reflect.TypeFor[RawBidOwner](), "RawBidOwner.Validate"), "none", "local-bid-plans"),
 		mflCommand("mfl.bid.preview", "TargetBidPreview", "G1", catalog.Preview, bid, "none", "held-roster,player-directory,local-bid-plans"),
-		mflCommand("bid.submit", "TargetBidDraft", "G1", catalog.Execute, bid, "withdraw-local-plan", "held-roster,player-directory,local-bid-plans"),
+		mflCommand("mfl.bid.submit", "TargetBidDraft", "G1", catalog.Execute, bid, "withdraw-local-plan", "held-roster,player-directory,local-bid-plans"),
 		mflCommand("mfl.bid.revise", "TargetBidRevise", "G1", catalog.Execute, revise, "revise-local-plan", "held-roster,player-directory,local-bid-plans"),
 		mflCommand("mfl.bid.handoff", "TargetBidHandOff", "G2", catalog.Execute, plan, "withdraw-local-plan", "current-bid-rules,local-bid-plan"),
 		mflCommand("mfl.bid.posted", "TargetBidPosted", "G2", catalog.Execute, plan, "withdraw-local-plan", "owner-statement,local-bid-plan"),
