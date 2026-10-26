@@ -213,7 +213,11 @@ export function createCommands(
         : kind === 'note' ? 'note.add' : 'draft.list', label, args: ['id', 'entity', 'action', 'text'],
       run: (change: import('../personal/contract').ListChange) => {
         const mine = state.read().franchiseId;
-        if (!mine) throw new Error('Choose my franchise before keeping a private list');
+        if (!mine) {
+          const message = 'Choose my franchise before keeping a private list';
+          state.write({ notice: message });
+          throw new Error(message);
+        }
         return import('../personal/state').then(m => m.personalState.change(mine, kind, change));
       },
     });
@@ -740,14 +744,14 @@ export function createCommands(
     if (!selected.roles.some(role => roles.includes(role))) throw new Error(`${id}: permission denied`);
     const fromBar = state.read().commandbar;
     const savedArgs = Object.freeze({ ...args });
-    function record(status: 'done' | 'failed', cause?: unknown) {
+    function record(status: 'done' | 'failed', cause?: unknown, show = false) {
       const reason = status === 'failed'
         ? cause instanceof Error ? cause.message : String(cause) : undefined;
       history.push(Object.freeze({ id, args: savedArgs, status,
         ...(reason === undefined ? {} : { reason }) }) as Receipt);
       if (history.length > 32) history.shift();
       if (reason !== undefined) {
-        state.write({ notice: reason });
+        if (show) state.write({ notice: reason });
         console.error(`Command ${id} failed:`, reason);
       }
     }
@@ -758,7 +762,7 @@ export function createCommands(
         state.write({ commandbar: false });
       }
       if (result instanceof Promise) {
-        return result.then(() => record('done'), cause => record('failed', cause));
+        return result.then(() => record('done'), cause => record('failed', cause, true));
       }
       record('done');
     } catch (cause) {
