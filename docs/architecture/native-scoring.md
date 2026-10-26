@@ -17,13 +17,20 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
 - **O-Line scorer golden, done:** all 1,164 played 2023–25 team-games (weeks 1–13) from the study's
   frozen components score exactly its Set B values; the clamp binds the reported 16 times
   (`internal/fantasyscore/oline_golden_test.go`).
-- **Next part starts at:** the O-Line team-game feed — a `source` reader that builds
-  `fantasyscore.UnitLine` from play-by-play (spec §4.6 component definitions; needs `play_type`,
-  `rush_attempt`, `qb_kneel`, `down`, `ydstogo`, `third/fourth_down_converted`, `tackled_for_loss`,
-  `sack`, `qb_hit_1/2_player_id`, `td_team`, `posteam`, `lateral_rushing_yards`) plus PFR
-  `rushing_yards_before_contact` for RBs. Then wiring: a league choosing the default at creation
-  (`internal/commissioner/creation.go` seeds `LegacyNFLForTeams`), and the O-Line unit in the
-  lineup/roster (spec §1–3), which needs a position or slot kind the model does not have yet.
+- **O-Line held feed, done:** `source.ReadLinePlays` / `ReadLineRushing` / `LineGames`
+  (`internal/fantasyscore/source/line.go`) build each team-game's `UnitLine` from held play-by-play
+  plus PFR yards before contact, counting only players the caller's `isRB` says the league lists at
+  RB. Two real 2024 games (`testdata/line_plays.csv`, `line_rushing.csv`) reproduce the study's
+  components and Set B scores; a table test pins each §4.6 definition (kneels, laterals, defensive
+  TDs, 3rd/4th and ≤ 2, both hitters, deleted and 2-point plays). A game with no advanced rushing
+  rows yet leaves ybc absent, so the score is "not recorded yet", not a guessed zero.
+- **Next part starts at:** wiring. (a) Store: the history store (`internal/store/history/
+  football_stats.go`) must hold and serve the line plays and advanced rushing, and the
+  per-player RB designation for `isRB`. (b) A league choosing the default at creation
+  (`internal/commissioner/creation.go` seeds `LegacyNFLForTeams`): a `Default32` preset, with the
+  spec's lineup (§1), roster 44/8/12, taxi and IR (§2). (c) The O-Line unit as a rosterable,
+  startable thing (§3), which needs a position or slot kind the model does not have yet; that is
+  a model change to plan, not to slip in. (d) Live feeds (spec §5/§7.1) are not mapped.
 - **Open rulings** are listed at the bottom; do not resolve them by guessing.
 
 ## Owner framing
