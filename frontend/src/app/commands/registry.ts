@@ -23,12 +23,12 @@ import {
   validFranchise,
   type SettingsStorage,
 } from '../shell/franchise';
-import { presets, presetAllowed, type PresetId } from '../shell/presets';
+import { presets, presetAllowed, holdsRole, type Role, type PresetId } from '../shell/presets';
 import type { Density } from '../cards/Card';
 import type { Gravity } from '../look/channels';
 import { createShellState } from '../shell/state';
 import { routeFor, type Node, type Route } from '../shell/nodes';
-export type Role = 'gm' | 'commish' | 'admin';
+export type { Role } from '../shell/presets';
 export type Undo = 'instant' | 'reversible' | 'irreversible';
 export type Command<A> = {
   id: string;
@@ -571,7 +571,7 @@ export function createCommands(
       aliases: ['view'],
       args: ['preset'],
       run: (args: { preset: PresetId }) => {
-        if (!presetAllowed(args.preset)) throw new Error('preset.apply: GM permission denied');
+        if (!presetAllowed(args.preset, roles)) throw new Error('preset.apply: GM permission denied');
         const p = presets[args.preset];
         state.navigate(p.route);
         state.write({ density: p.density, inspector: p.inspector, comms: p.comms });
@@ -741,7 +741,7 @@ export function createCommands(
   function dispatch<K extends Id>(id: K, args: Args<K>): void | Promise<void> {
     const selected = registry[id] as Command<Args<K>> | undefined;
     if (!selected) throw new Error('This action is not available. Refresh the app and try again.');
-    if (!selected.roles.some(role => roles.includes(role))) throw new Error(`${id}: permission denied`);
+    if (!holdsRole(selected.roles, roles)) throw new Error(`${id}: permission denied`);
     const fromBar = state.read().commandbar;
     const savedArgs = Object.freeze({ ...args });
     function record(status: 'done' | 'failed', cause?: unknown, show = false) {
@@ -786,6 +786,8 @@ export function createCommands(
   }
   return {
     registry,
+    canDispatch: (id: Id) => holdsRole(registry[id].roles, roles),
+    hasRoles: (required: readonly Role[]) => holdsRole(required, roles),
     teamActionReason,
     isTeamAction: (id: Id, args: Args<Id>) =>
       provider.kind === 'live' && teamActionFranchise(id, args) !== undefined,

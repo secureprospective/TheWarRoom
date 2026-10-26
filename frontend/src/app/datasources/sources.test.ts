@@ -55,7 +55,7 @@ describe('Control Room data and sources', () => {
     expect(markup).toContain('Overridden');
     expect(markup).toContain('Reset');
     expect(markup).toContain(`aria-label="${data().words.clear}"`);
-    expect(markup).toContain('values are read-only');
+    expect(markup).not.toContain('values are read-only');
     const gm = createCommands(undefined, undefined, undefined, ['gm']);
     expect(() => gm.dispatch('data.parameter', { kind: 'parameter', key: 'test.weight',
       position: 'WR', value: 0.7 })).toThrow(/permission denied/);

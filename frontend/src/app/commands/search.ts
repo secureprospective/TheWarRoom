@@ -1,7 +1,7 @@
 import { endpoints } from '../registry';
 import type { Snapshot, Position } from '../data/contract';
 import { nodes, nodeKeys } from '../shell/nodes';
-import { presetIds, presets, presetAllowed } from '../shell/presets';
+import { presetIds, presets } from '../shell/presets';
 import type { createCommands, CommandId, CommandArgs } from './registry';
 
 // The bar's own plumbing is never a search result: offering "Close command bar" inside the open
@@ -38,7 +38,7 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
   const results: SearchResult[] = [];
   for (const id of Object.keys(executor.registry) as CommandId[]) {
     const command = executor.registry[id];
-    if (command.args.length || !command.roles.includes('gm') || UNSEARCHABLE.has(id)) continue;
+    if (command.args.length || !executor.canDispatch(id) || UNSEARCHABLE.has(id)) continue;
     results.push({
       label: command.label + (command.keys?.length ? ` · ${command.keys.map((k) => k.key).join(', ')}` : ''),
       aliases: command.aliases,
@@ -46,7 +46,7 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
       invocation: { verb: id, args: {} } as Invocation,
     });
   }
-  for (const preset of presetIds.filter(presetAllowed)) {
+  for (const preset of presetIds.filter(id => executor.hasRoles(presets[id].roles))) {
     results.push({
       label: `Preset: ${presets[preset].label}`,
       aliases: [presets[preset].label],
