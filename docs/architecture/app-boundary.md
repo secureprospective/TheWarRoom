@@ -569,3 +569,51 @@ Feature and filtered composition race batches passed (6.2 seconds composition), 
 seed capture/retry/missing-input tests, Race goldens/concurrent/joint snapshots and command-door
 parity. The single-result power representation adapter is production code; its map fixture adapter
 now lives with Race's composition tests. No public wire, permission, schema or dependency change.
+
+## Part 3 — final implementation checkpoint
+
+- This part: **35/126 units, 1,064 baseline function LOC**. Cumulative **68/126,
+  1,866/4,534 LOC**; remaining **58 units / 2,668 LOC**, plus core policy/ratchet work.
+- Whole affected handwritten production union against `1b0e5059`: **42 paths**, **5,523 →
+  6,037 physical LOC**, **205,021 → 228,273 Unicode code points including LF**: growth of
+  **514 LOC / 23,252 code points**, not compression. Tests separately: **20 paths**, **1,432 →
+  2,417 LOC** (+985). Generated/frontend/docs excluded from both measurements.
+- Final affected-feature race batch passed in all 13 packages: Commissioner, Native, Now,
+  Control, Market, Pool, Race, Report, Research, Scoring, Sources, Trades and Archive; filtered
+  to all newly extracted responsibilities and regression cases. Final composition race batch:
+  **85 test/subtest results passed, 160.776 seconds**, including command-door parity, real native
+  owner/seed writes, Now/Race concurrent snapshots, pool/market publication, source events,
+  cache wiring and real trade-builder ownership/deadline/handoff paths.
+- Timeout evidence: that filtered run's slowest individual test was
+  `TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff` (**106.63 s**); other real trade
+  fixture tests took 22.54–36.82 s, registered gate test 26.96 s. These are measured expensive
+  integration paths, not a demonstrated deadlock. The earlier broad run's exact timeout cause
+  is still unknown; do not claim these timings prove its full explanation. Keep filtered runs.
+- Full `make lint` passed on the final implementation: ifaceguard, placement (126 paths /
+  17 features), root/frontend transport ratchets, bloat (comment 5%, provenance 0, tiny 24/24,
+  duplication 0) and golangci-lint (zero issues). The two pre-existing >600-line files were
+  untouched. A separate attempt and one commit hook collided with another worktree's linter;
+  retried normally after it released the lock, no bypass or baseline change.
+- Review found the lazy live adapter must retain an existing Finals port when History is absent.
+  Preserved it and added `TestLiveAdapterKeepsExistingFinalsWithoutHistory`. The moved gate
+  sentinel now has one owner inward; removed the composition global alias rather than adding
+  a new global. New test references the same service sentinel and still checks error identity.
+- Two one-at-a-time mutation checks were rejected: dirty restoration set false after failed
+  model run; lazy adapter discarded existing Finals. Sources were restored before the final
+  passing batches. No mutant was committed. Native family execution lost an unnecessary
+  curried forwarding closure during review; permit/refusal behavior is unchanged.
+- Frontend prerequisite install/build passed (existing large-chunk warning); no frontend,
+  generated binding, command registry, command bindings or command-door parity test changes.
+  No live MFL, GUI, production-profile operation, PR or merge. Push/hook evidence, if run,
+  belongs in the next checkpoint; not claimed here.
+
+Estimated remaining one-hour parts: Part 2 **6–8**, including core extraction/ratchet and final
+verification; frontend plan Part 3 **4–6**, not started and still not inventoried this part.
+Owner ruling: none. Christopher's next live verification on a disposable profile: unchanged
+Now refresh/week selection and held game detail, native closed/open owner actions, Sources
+read-again scopes and saved trade deadline refusals/handoff. Passing means same labels/refusals
+and held-data retention, no network or writes caused by a refused action.
+
+Debt left: 58 open composition units; core Host policy audit/extraction; negative composition/core
+ratchet; final full CI and disposable-profile live review; all registry-driven frontend read/cache
+work and store migration. No permission/role/binding/schema or lock-order change was needed.

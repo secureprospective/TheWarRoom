@@ -22,9 +22,6 @@ type NativeOwnerAction struct {
 	Run   func(ctx context.Context, app *App, permit commissioner.Permit, input json.RawMessage) (commissioner.Receipt, error)
 }
 
-// errActionClosed marks the gate's no, so a caller can tell a shut window from an action that failed.
-var errActionClosed = nativeapp.ErrActionClosed
-
 // nativeOwnerActions is the registry. Each chunk that adds an owner action to the app-owned league adds
 // it here; native_gate_test.go holds every entry to the gate. The contract actions an owner takes under a
 // window are registered from the shared list of priced actions, so a new one cannot be priced without being

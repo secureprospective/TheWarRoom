@@ -11,6 +11,7 @@ import (
 	"time"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -63,12 +64,12 @@ func TestEveryRegisteredNativeActionAsksTheGate(t *testing.T) {
 		one := []NativeOwnerAction{entry}
 		// The guard is about the gate, not the action's own work: an action handed no request fails inside
 		// its body, and that must not be mistaken for the gate's no.
-		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); !errors.Is(err, errActionClosed) || ran != 0 {
+		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); !errors.Is(err, nativeapp.ErrActionClosed) || ran != 0 {
 			t.Fatalf("%s ran with its window shut (ran %d, %v)", entry.Name, ran, err)
 		}
 		app.core.ClockNow = func() time.Time { return time.Date(2026, 6, 2, 12, 0, 0, 0, time.UTC) }
 		// A real action may refuse for want of its own details; it must still have been let through the gate.
-		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); errors.Is(err, errActionClosed) || ran != 1 {
+		if _, err := app.runNativeAction(one, raw.League, "franchise.01", entry.Name, nil); errors.Is(err, nativeapp.ErrActionClosed) || ran != 1 {
 			t.Fatalf("%s did not run in its window (ran %d, %v)", entry.Name, ran, err)
 		}
 		app.core.ClockNow = func() time.Time { return shut }
