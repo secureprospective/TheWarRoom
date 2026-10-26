@@ -4,16 +4,38 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
-- **BLOCKER (part 1 end, not pushed):** `leaguerules.RuleSet` crosses the Wails binding, so the five
-  new `ScoringRules` fields regenerate `frontend/wailsjs/go/models.ts` (+246 lines) and break seven
-  wire fixtures: `internal/app/commissioner` `TestCommissionerControlsWire`, and in
-  `internal/composition` `TestCommissionerReplacedRulesWire`, `TestCommissionerLegacyRulesWire`,
-  `TestCommissionerRulesWire`, `TestCommissionerJobsWire`, `TestNativeScoreWireFixtureMatchesGo`,
-  `TestNativeStatQueueWireFixtureMatchesGo`. The part-1 brief forbids binding changes and
-  composition edits, so the push gate failed and the branch is local only. Needs Christopher's
-  ruling: (a) accept the additive binding/wire change and regenerate after branch B lands, or
-  (b) keep the new kinds off the wire shape. (a) is the design's intent: they are commissioner
-  settings, so the UI must see them.
+- **Part 2 (2026-10-26), done:** the owner's rulings applied and the branch pushed.
+  - Binding/wire (approved, additive): `models.ts` regenerated with `make bindings`; every wire
+    fixture rewritten by its own `TWR_WRITE_WIRE` writer (`TestCommissionerControlsWire` gained one).
+  - Existing leagues upgrade automatically: `leaguerules.UpgradeSeed` (`seed_upgrade.go`), a
+    versioned, append-only step run by `commissioner.seedChanges` on every read. A seed holding
+    `scoring.catalogue` but none of the five kinds gets them recorded empty, so it scores exactly as
+    before and nothing waits for a ruling (`internal/commissioner/seed_upgrade_test.go`). It runs on
+    read, not as a database migration, because league records are hash-chained and their canonical
+    requests must stay unchanged for retries; rewriting stored seeds would break both.
+  - Legacy applies MFL's per-rule ranges (`legacyRanges`, the 2024–26 `scoring_rule` table) and
+    carries #BF/#BP (IDP ×7) and #UT other returns (×6). Applying the ranges changes **0** of 35,551
+    study player-weeks (2023–25, weeks 1–13, the study's own scorer with and without ranges); the held
+    Go comparison stays 1775/1783.
+  - EM and #UT are each one rule over their parts (`totals`: `pat_missed_or_blocked`,
+    `punt_or_other_return_td`); the TE +0.2 catch extra is its own 0..999 rule (`PositionExtra.Ranged`).
+  - The held adapter classifies blocked-punt, blocked-FG and missed-FG-return touchdowns from
+    `posteam`, `punt_blocked`, `field_goal_attempt`, `field_goal_result` (optional columns: an older
+    held file without them keeps its older credit), proved on real 2024 plays.
+  - Fixture extractors live in `internal/fantasyscore/testdata/tools/` and reproduce both fixtures
+    byte for byte.
+- **Next part starts at:** wiring. (a) Store: the history store (`internal/store/history/
+  football_stats.go`) must hold and serve the line plays and advanced rushing, and the per-player
+  RB designation for `isRB`. (b) A `Default32` preset at league creation (`internal/commissioner/
+  creation.go` seeds `LegacyNFLForTeams`), with the spec's lineup (§1), roster 44/8/12, taxi and IR
+  (§2). (c) The O-Line unit as a rosterable, startable thing (§3), which needs a position or slot
+  kind the model does not have yet; a model change to plan, not to slip in. (d) Live feeds (spec
+  §5/§7.1) wait on the week-8 ESPN/Sleeper/nflverse accuracy study; do not build a Sleeper mapping
+  before it reports.
+- **Old seeds and the kick-TD rows:** an upgraded pre-kinds Legacy league has no #BF/#BP/other-return
+  catalogue rows, so with the new play columns a blocked-kick TD reads as unused there (before, the
+  adapter credited it as a fumble-recovery TD, which MFL never did). Only a commissioner change, or a
+  later seed step, adds the rows.
 
 - **Part 1 (2026-10-26), done:** five new scoring rule kinds as commissioner settings in
   `internal/leaguerules`, the scorer for them in `internal/fantasyscore`, the locked DEFAULT-32
@@ -72,14 +94,13 @@ them like any other rule and Legacy records each as an empty, cited value (`inte
 
 | Field path | Type | Expresses |
 |---|---|---|
-| `scoring.extras` | `map[StatID][]PositionExtra` | additive per-position rates on a catalogue row (TE catch +0.2, DT/DE tackle +1, CB/S IC +1 …). Each extra is its own line item, rounded on its own, as MFL rounds overlapping rows. |
+| `scoring.extras` | `map[StatID][]PositionExtra` | additive per-position rates on a catalogue row (TE catch +0.2, DT/DE tackle +1, CB/S IC +1 …). Each extra is its own line item, rounded on its own, as MFL rounds overlapping rows; a `Ranged` extra has its own range, otherwise it shares its base row's. |
 | `scoring.ranges` | `map[StatID]StatRange` | MFL's inclusive range: a week value outside it scores 0 for that rule (TCH 20..99, OFC 1..10, yards −50..999). |
 | `scoring.scales` | `map[StatID]DistanceScale` | per-play distance pricing: plays shorter than `From` score 0, others `Base + Above·max(0,d−Pivot) + Below·max(0,Pivot−d)`, optional `Cap`. The week's sum is the stat's value, priced by its catalogue rate (×1) and rounded once. Chunk (From 20, Base 1, Pivot 20, Above 0.025), FG made (Base 3, Pivot 40, Above 0.1), FG missed/blocked (Pivot 60, Below −0.1), 40+ completions (From 40, Base 1). |
 | `scoring.totals` | `map[StatID][]StatID` | a stat counted as the sum of recorded stats (touches = carries + receptions). Absent when any part is absent; recording it directly is an error. |
 | `scoring.lineUnit` | `LineUnit` | the team O-Line unit: `Weights` per component, `NoSack` bonus keyed to the `Sacks` component, `Clamped`/`Clamp`, `Labels`. |
 
-Legacy is unchanged (golden `internal/leaguerules/testdata/legacy.json` grew only by the empty
-fields; the two commissioner wire fixtures grew by the same fields plus their rules digest).
+Legacy records extras, scales, totals and the line unit empty; its ranges are MFL's (part 2).
 
 ### The default rule set
 
@@ -117,29 +138,27 @@ Real 2024 player-weeks scored by the reference `legacy_scorer.score` under
 `play_by_play_2024` (rusher yards; receiver yards where `complete_pass = 1`) and FG lists from the
 weekly `fg_made_list` / `fg_missed_list` / `fg_blocked_list`. Fixture
 `internal/fantasyscore/testdata/default32_2024.json`; each row cites week, gsis and MFL id. The
-extractor (kept out of the repo, run once with `python3 -I` against the study's held data) dropped any
+extractor (`testdata/tools/default32_golden.py`, run with `python3 -I` against the study's held data) dropped any
 row whose per-play chunk sum differed from the study's `CK2` or whose 40+ completions differed from
 weekly `passing_40`; none did. The fixture keeps the study's event codes, and the test fails on any
 code it does not map, so a silently dropped stat cannot pass.
 
-## Needs a ruling
+## Rulings (2026-10-26)
 
-1. **Negative half-cent rounding.** Spec §4.1 says half-up toward +∞ (−0.125 → −0.12, as the
-   reference `floor(x·100+0.5)/100`). The existing `roundCent` rounds half away from zero
-   (−0.125 → −0.13) and `TestRoundsEachStat…` pins `-250 → -300`. Unreachable under the default
-   (no negative multiplier yields a half-cent from integer inputs), but reachable under Legacy for
-   negative odd return yards ×0.025. Left unchanged.
-2. **Existing seeded leagues.** A ledger seeded before these fields existed resolves them as
-   Needs-a-ruling, and the scorer then reports the whole score as Needs-a-ruling. Options: a seed
-   migration that records Legacy's empty values, or the commissioner records them. Not chosen here.
-3. **EM range.** The spec's EM row is one rule over missed + blocked PATs (range 0..10); the
-   catalogue keeps `pat_missed` and `pat_blocked` as two rows each ranged 0..10. They differ only
-   above 10 combined. Could be expressed exactly with a `totals` stat; not done without a ruling.
-4. **#UT "other return TD"** (e.g. missed-FG return) is mapped to `punt_return_td`; the source
-   adapter does not yet classify missed-FG returns.
-5. **Legacy ranges.** Legacy's Go preset never applied MFL ranges (a −51-yard week scores
-   −2.55, not 0). The default applies them. Whether Legacy should too is a parity question.
-6. **TE catch extra range.** The study's TE +0.2 row is ranged 0..999; the base CC row 0..99. In
-   this model an extra shares its base row's range. They differ only above 99 catches.
-7. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
+1. **Negative half-cent rounding: away from zero stays.** `roundCent` rounds −0.125 to −0.13; the
+   spec's round-toward-+∞ (§4.1) is overruled by the owner. Unreachable under the default.
+2. **Existing seeded leagues upgrade automatically** (`UpgradeSeed`, above).
+3. **EM** is one rule over missed + blocked PATs, ranged 0..10 on the sum, as the spec says.
+   Legacy keeps two rows each ranged 0..10 (they differ only above 10 combined).
+4. **#UT other returns** are classified by the adapter (`other_return_td`), and the default prices
+   punt and other returns as one 0..10 rule. Blocked-punt and blocked-FG TDs are #BP/#BF.
+5. **Legacy applies MFL's ranges.** The long-play bands are per-play bonuses here and carry no
+   count range (MFL's 0..99 on R20/C20 counts cannot bind).
+6. **TE catch extra** is its own 0..999 rule.
+7. **Yards before contact is published** for a team-game when any PFR advanced-rushing row exists
+   for that game; with none, ybc is absent and the O-Line score is "not recorded yet".
+
+## Still open
+
+1. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
    open as written there.
