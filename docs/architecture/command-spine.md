@@ -137,3 +137,10 @@ were removed (no callers); production workflow validation/dispatch already uses 
 catalog directly. The former native grammar/client and read-preview publication were
 already removed before this branch; source searches remain empty. The unused Draft
 command adapter was also removed after market dispatch moved to its state owner.
+
+Compatibility views live beside their feature APIs; local MFL and Wails declarations
+share `internal/commandcatalog/desktop.go`. The Wails generator emits both the typed
+API holder and the binding surface, so their membership cannot drift. Generator
+registry construction stays with composition's command bindings; named CLI dispatch
+stays with its root command. These consolidations preserve the tiny-file ratchet
+without raising its baseline.

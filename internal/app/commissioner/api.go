@@ -3,6 +3,7 @@ package commissioner
 import (
 	"context"
 	"encoding/json"
+	"reflect"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -57,3 +58,7 @@ const refreshTimeout = 120 * time.Second
 const draftPickName = "draft.pick"
 
 func Commands() []catalog.Command { return catalog.DesktopCommands("commissioner", NativeCommands()) }
+
+func NativeCommands() []catalog.Command {
+	return catalog.NativeCommands(catalog.Shape(reflect.TypeFor[RawNativeSeedRequest](), "RawNativeSeedRequest.Validate/ValidatePreview"))
+}

@@ -1,6 +1,7 @@
 package composition
 
 import (
+	"fmt"
 	"reflect"
 
 	archiveapi "github.com/secureprospective/TheWarRoom/internal/app/archive"
@@ -219,24 +220,6 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 	}
 }
 
-type commandAPIs struct {
-	archive        *archiveapi.API
-	commissioner   *commissionerapi.API
-	comms          *commsapi.API
-	contracts      *contractsapi.API
-	control        *controlapi.API
-	counterparties *counterpartiesapi.API
-	draft          *draftapi.API
-	market         *marketapi.API
-	now            *nowapi.API
-	offers         *offersapi.API
-	platform       *platformapi.API
-	race           *raceapi.API
-	research       *researchapi.API
-	sources        *sourcesapi.API
-	trades         *tradesapi.API
-}
-
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
 		archive:        archiveapi.New(app.core),
@@ -284,4 +267,15 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 			"trades":         tradesCommandBindings(a.trades),
 		},
 	}
+}
+
+// CommandRegistry binds the real ports without starting workers, opening stores or reading secrets.
+// Generators inspect this same executable registry used by desktop startup.
+func CommandRegistry() (*catalog.Registry, error) {
+	app := NewApp()
+	registry, err := catalog.NewRegistry(newCommandAPIs(app).registryInputs(app))
+	if err != nil {
+		return nil, fmt.Errorf("bind command registry for generation: %w", err)
+	}
+	return registry, nil
 }
