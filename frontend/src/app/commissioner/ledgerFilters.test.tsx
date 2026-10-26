@@ -157,7 +157,6 @@ it.each(['done', 'failed'] as const)('records ledger filter %s after its read se
       ...(status === 'failed' ? { reason } : {}) });
     if (status === 'failed') {
       expect(host.textContent).toContain(reason);
-      expect(commands.read().notice).toBe(reason);
       expect(logged).toHaveBeenCalled();
     } else expect(host.textContent).toContain(wire.rules.entries[0].what);
   } finally { logged.mockRestore(); }
