@@ -66,7 +66,9 @@ func (m *Model) asset(a Asset, at time.Time) AssetValue {
 		return AssetValue{Reason: "A valuation moment is required"}
 	}
 	year := int64(dayOf(at.Unix()).Year())
-	if year < firstYear || year > lastYear {
+	// The archive ends at lastYear; live valuations also follow the clock and capture.
+	latest := max(int64(time.Now().Year()), int64(dayOf(m.valuer.wins.lab.Capture).Year()))
+	if year < firstYear || year > max(int64(lastYear), latest) {
 		return AssetValue{Reason: "The valuation moment is outside the archive calendar"}
 	}
 	if a.Kind == "pick" && (value(a.Year) <= 0 || value(a.Round) <= 0 || value(a.Slot) < 0) {

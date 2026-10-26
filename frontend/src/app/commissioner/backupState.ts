@@ -14,6 +14,7 @@ export const NEEDS_SIGN_IN = 'Before the first backup, create a sign-in. A backu
 // asks for one first, so a person never meets that refusal.
 export const backupState = {
   use: () => useStore(store),
+  peek: store.getState,
   signedIn(hasAccount: boolean) { store.setState({ hasAccount, error: '' }); },
   async seat() {
     try {

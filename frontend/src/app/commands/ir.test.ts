@@ -69,8 +69,10 @@ describe.each([
     const provider = new LiveProvider();
     vi.spyOn(provider, method).mockRejectedValue(new Error('desktop disconnected'));
     const c = setup(provider);
-    c.dispatch(intent, { subject });
-    await settled(c);
+    await c.dispatch(intent, { subject });
+    expect(c.history().at(-1)).toMatchObject({ id: intent, status: 'failed',
+      reason: 'desktop disconnected' });
+    expect(c.read().notice).toBe('desktop disconnected');
     expect(c.readMoves().draftErrors['0001:11675']).toContain('desktop disconnected');
     expect(c.readMoves().moves).toEqual([]);
   });

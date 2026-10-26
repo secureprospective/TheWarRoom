@@ -41,9 +41,10 @@ function createCacheState(provider: CacheProvider) {
     try {
       const result = await provider.clear(scope);
       const said = result.ok ? result.summary : result.error;
-      store.setState(s => ({ outcomes: { ...s.outcomes, [scope]: said } }));
+      store.setState(s => ({ outcomes: { ...s.outcomes, [scope]: said },
+        error: result.ok ? '' : result.error }));
     } catch (cause) {
-      store.setState(s => ({ outcomes: { ...s.outcomes, [scope]: String(cause) } }));
+      store.setState(s => ({ outcomes: { ...s.outcomes, [scope]: String(cause) }, error: String(cause) }));
     } finally {
       store.setState({ busy: '' });
     }

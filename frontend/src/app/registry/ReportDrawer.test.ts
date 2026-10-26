@@ -81,7 +81,7 @@ it('typing narrows the drawer; a report Act opens its id and closes the drawer',
     expect(host.textContent).toContain(report.name);
     expect(host.textContent).not.toContain(endpointById('M-002').name);
     await act(async () => { props(buttons()[0]).onClick(); });
-    expect(commands.history().at(-1)).toEqual({ id: 'endpoint.open', args: { id: 'C-02' } });
+    expect(commands.history().at(-1)).toEqual({ id: 'endpoint.open', args: { id: 'C-02' }, status: 'done' });
     expect(commands.read()).toMatchObject({ node: 'pulse', workspace: { pulse: 'race' },
       endpointSurface: null, endpointIds: ['C-02'] });
     await act(async () => { props(input()).onChange({ target: { value: 'no such report 123' } }); });

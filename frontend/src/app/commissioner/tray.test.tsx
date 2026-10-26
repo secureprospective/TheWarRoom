@@ -135,7 +135,7 @@ describe('Commissioner tray', () => {
     expect(disabled(button(host, confirm))).toBe(true);
     expect(calls.sent).toHaveLength(0);
   });
-  it('cancels an early hold release; Space and Enter each need the full 700 ms', async () => {
+  it('cancels an early hold release; Space and Enter each need the full 600 ms', async () => {
     const { host, calls } = await mountForm();
     await open();
     for (const name of [' ', 'Enter']) {
@@ -143,13 +143,13 @@ describe('Commissioner tray', () => {
       const wrapper = holder(host, confirm);
       const event = { key: name, preventDefault() {} };
       await act(async () => { (wrapper.props().onKeyDown as (e: object) => void)(event); });
-      await act(async () => { vi.advanceTimersByTime(699); });
+      await act(async () => { vi.advanceTimersByTime(599); });
       expect(calls.sent).toHaveLength(name === ' ' ? 0 : 1);
       await act(async () => { (wrapper.props().onKeyUp as (e: object) => void)(event); });
       await act(async () => { vi.advanceTimersByTime(1); });
       expect(calls.sent).toHaveLength(name === ' ' ? 0 : 1);
       await act(async () => { (wrapper.props().onKeyDown as (e: object) => void)(event); });
-      await act(async () => { vi.advanceTimersByTime(700); });
+      await act(async () => { vi.advanceTimersByTime(600); });
       await flush();
       vi.useRealTimers();
       await settle();

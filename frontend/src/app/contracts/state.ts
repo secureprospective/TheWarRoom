@@ -35,7 +35,9 @@ export async function runContractsAction(action: ContractsAction) {
   } else if (action.field === 'contract-open') {
     (await import('./contractActState')).openContractMove(action.value.mine, action.value.player);
   } else if (action.field === 'contract-keep') {
-    await (await import('./contractActState')).keepContractMove(action.value);
+    const m = await import('./contractActState');
+    await m.keepContractMove(action.value);
+    if (m.useContractMove.getState().error) throw new Error(m.useContractMove.getState().error);
   } else if (action.field === 'contract-act') {
     await (await import('./contractActState')).runContractAct(action.value);
   } else if (action.field === 'contract-reveal') {

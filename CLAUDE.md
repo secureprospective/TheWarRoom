@@ -14,12 +14,12 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 - **Current plan:** `docs/build-handoffs/Hardening_Plan_2026-10.md`, with its Method section.
 - **Engine plan:** `docs/build-handoffs/Core_Build_Plan_2026-10.md`: stages 0–8, each with a gate, and
   the binding rulings R1–R12. The reasoning behind it: `Core_Build_Reasoning_2026-10.md`.
-- **Latest state:** `HANDOFF.md`. (The old RESUME files were removed on 2026-10-20; see
-  `docs/architecture/removed-code.md` to recover one from git.)
-- **What exists:** `SYSTEM_MAP.md`, a one-page feature directory; the long narrative is
-  `docs/architecture/system-narrative.md`.
+- **Latest state:** `HANDOFF.md`.
+- **What exists:** `SYSTEM_MAP.md`, a feature directory; the long narrative is
+  `docs/architecture/system-narrative.md`. CI's `scripts/check-root-ratchet.sh` caps root Go
+  files at **1** (`docs/architecture/root-go-baseline.txt`); feature code goes in `internal/app/`.
 - **UI target track:** built in rings (`docs/build-handoffs/UI_Target_Roadmap_2026-10.md`), each
-  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 2 on 2026-10-11).
+  ending with a spec revision (`docs/ui/Target_UI_Spec_2026-10.md`, revision 4 on 2026-10-13).
   Every endpoint is a row in `docs/ui/endpoint-registry.csv`; `frontend/scripts/gen-endpoints.mjs`
   generates `registry/endpoints.gen.ts` from it (never hand-edit the generated file).
   Ring 1 merged 2026-10-10 (PR #15). Ring 2, the decision layer, merged 2026-10-11 (PR #17,
@@ -31,17 +31,20 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 ## Session start
 
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
-2. Read the plan's current stage and the latest RESUME.
-3. Toolchain (Go 1.26.4 is not on the default PATH; the git hooks need this too):
-   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOMEMLIMIT=1500MiB
+2. Read the plan's current stage and `HANDOFF.md`.
+3. Toolchain (Go 1.26.10; the git hooks need this too):
+   `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.10 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
    Always pass `VERSION=dev COMMIT=<ring> BUILD_DATE=<ring>` to make. The commit gates are
    `timeout 600 nice -n 10 make verify …` and `make build …`, both exit 0.
    The entry bundle cap is **321,818 B** (ring 2 ended at 317,727): keep new screens lazy.
 4. Gates: `make lint` (ifaceguard, filelen report, bloat ratchet, golangci-lint), `make test`
-   (`go test -race ./...`), `make verify` (both plus the frontend build; the pre-push hook runs
-   it). `make setup` once per clone wires the hooks. Pushing needs Go on PATH too, because the
-   pre-push hook runs `make verify`.
+   (`go test -race ./...`), `make verify` (lint, race tests, vulnerability/bindings checks and
+   frontend checks/build). `make setup` once per clone wires the hooks. Pre-push runs
+   `scripts/prepush.sh`: docs-only skips; Go changes run lint and shuffled tests on changed
+   packages and importers (race runs in CI); frontend changes run typecheck, tests, build and
+   bundle budget. Build/config changes or no usable diff base fall back to `make verify`.
+   Pushing needs Go on PATH too; CI runs the full gate on every push.
 5. Live tests are opt-in: `TWR_LIVE_MFL=1`, `TWR_LIVE_NFLVERSE=1`, `TWR_LIVE_CFBD=1`,
    `TWR_LIVE_EA=1`. MFL's players endpoint allows one call a day; leave its live test alone
    unless that call is the point.

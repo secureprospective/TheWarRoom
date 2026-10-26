@@ -92,41 +92,11 @@ func (r RawWorkflow) Validate() error {
 	if r.Version != "1" {
 		return fmt.Errorf("update the app before using this league action")
 	}
-	switch r.Command {
-	case "lineup.read", "draft.read", "native.assets.read", "native.reserve.check", "native.roster.check", "commish.rules.read", "bids.read", "waivers.read", "trades.read", "results.read", "standings.read", "commish.corrections.read", "commish.market.read":
-		if r.Mode != "read" {
-			return fmt.Errorf("this is a reading only")
-		}
-		var scope RawWorkflowScope
-		if err := decodeWorkflow(r.Arguments, &scope); err != nil {
-			return err
-		}
-		return scope.validateCommand(r.Command)
-	case commissioner.LineupSet, commissioner.RosterReserve, commissioner.DraftTimer, commissioner.DraftSkip,
-		commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw, commissioner.BidsProcess, commissioner.BidsOverride,
-		commissioner.RosterCut, commissioner.WaiverClaim, commissioner.WaiverProcess, commissioner.WaiverOrderSet, commissioner.WaiverOrderAuto, commissioner.WaiverOverride,
-		commissioner.TradeOffer, commissioner.TradeAccept, commissioner.TradeDecline, commissioner.TradeWithdraw, commissioner.TradeReview, commissioner.TradeRecuse, commissioner.TradeAppeal, commissioner.TradeAppealRule, commissioner.TradeOverride,
-		commissioner.SeasonRollover, "commish.score.franchise", "commish.standings.record.adjust", "commish.standings.override.clear":
-		if r.Mode != "preview" && r.Mode != "execute" {
-			return fmt.Errorf("check or confirm the change")
-		}
-		var raw commissioner.RawCommand
-		if err := decodeWorkflow(r.Arguments, &raw); err != nil {
-			return err
-		}
-		if raw.Command != r.Command {
-			return fmt.Errorf("choose one league action")
-		}
-		return nil
-	case commissioner.DraftPick:
-		if r.Mode != "execute" {
-			return fmt.Errorf("confirm your rookie pick")
-		}
-		var pick commissioner.DraftPickInput
-		return decodeWorkflow(r.Arguments, &pick)
-	default:
+	entry, ok := workflowCommands()[r.Command]
+	if !ok {
 		return fmt.Errorf("this league action is not available here")
 	}
+	return entry.validate(r)
 }
 
 type workflowInput interface {
@@ -234,64 +204,8 @@ func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error)
 }
 
 func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
-	if raw.Command == commissioner.DraftPick {
-		var pick commissioner.DraftPickInput
-		if err := decodeWorkflow(raw.Arguments, &pick); err != nil {
-			return nil, err
-		}
-		return workflowJSON(service.Pick(ctx, pick))
-	}
-	if raw.Mode != "read" {
-		var command commissioner.RawCommand
-		if err := decodeWorkflow(raw.Arguments, &command); err != nil {
-			return nil, err
-		}
-		if raw.Mode == "preview" {
-			//nolint:contextcheck // Preview reads through the request-scoped host.
-			return workflowJSON(service.Preview(command))
-		}
-		if command.Command == commissioner.LineupSet {
-			return workflowJSON(service.SetLineup(ctx, command))
-		}
-		return workflowJSON(service.Execute(ctx, command))
-	}
-	var scope RawWorkflowScope
-	if err := decodeWorkflow(raw.Arguments, &scope); err != nil {
+	if err := raw.Validate(); err != nil {
 		return nil, err
 	}
-	//nolint:contextcheck // Read APIs use the request-scoped host.
-	return readWorkflow(service, raw.Command, scope)
-}
-
-func readWorkflow(service *leagueservice.Service, command string, scope RawWorkflowScope) (json.RawMessage, error) {
-	switch command {
-	case "commish.market.read":
-		return workflowJSON(service.TargetCommissionerMarket(scope.League, scope.Command))
-	case "bids.read":
-		return workflowJSON(service.TargetNativeBids(scope.League, scope.Franchise))
-	case "waivers.read":
-		return workflowJSON(service.TargetNativeWaivers(scope.League, scope.Franchise, time.Now().UTC()))
-	case "trades.read":
-		return workflowJSON(service.TargetNativeTrades(scope.League, scope.Viewer))
-	case "results.read":
-		return workflowJSON(service.TargetNativeResults(scope.League, scope.Season, scope.Week))
-	case "standings.read":
-		return workflowJSON(service.TargetNativeStandings(scope.League, scope.Season))
-	case "commish.corrections.read":
-		return workflowJSON(service.TargetCorrections(scope.League))
-	case "commish.rules.read":
-		return workflowJSON(service.TargetCommissionerRules(scope.League))
-	case "native.assets.read":
-		return workflowJSON(service.TargetNativeAssets(scope.League))
-	case "native.reserve.check":
-		return workflowJSON(service.TargetNativeReserveCheck(scope.League))
-	case "native.roster.check":
-		return workflowJSON(service.TargetNativeRosterCheck(scope.League))
-	case "lineup.read":
-		return workflowJSON(service.TargetNativeLineup(scope.League, scope.Franchise, scope.Week, scope.At))
-	case "draft.read":
-		return workflowJSON(service.TargetNativeDraft(commissioner.RawNativeDraftScope{League: scope.League, Franchise: scope.Franchise, Season: scope.Season}))
-	default:
-		return nil, fmt.Errorf("unknown league reading")
-	}
+	return workflowCommands()[raw.Command].run(ctx, service, raw)
 }
