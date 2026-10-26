@@ -52,7 +52,7 @@ func oldUpgradeFile(t *testing.T, keepRelease bool) string {
 			t.Fatal(err)
 		}
 	}
-	if _, err := pools.Write().ExecContext(t.Context(), "PRAGMA user_version=7"); err != nil {
+	if _, err := pools.Write().ExecContext(t.Context(), "DROP TABLE league_roster_restore; DROP TABLE league_recovery_log; PRAGMA user_version=7"); err != nil {
 		t.Fatal(err)
 	}
 	if err := pools.Close(); err != nil {
