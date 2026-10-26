@@ -26,19 +26,21 @@ describe('Command registry', () => {
     expect(validGravity({ gravity: 'G0', undo: 'irreversible' })).toBe(false);
     expect(validGravity({ gravity: 'G3', undo: 'irreversible' })).toBe(true);
   });
-  it('records only successful dispatches in a bounded immutable log', () => {
+  it('records completed and failed dispatches in a bounded immutable log', () => {
     const c = createCommands();
     const args: CommandArgs<'density.set'> = { density: 'matrix' };
     c.dispatch('density.set', args);
     args.density = 'narrative';
-    expect(c.history()[0]).toEqual({ id: 'density.set', args: { density: 'matrix' } });
+    expect(c.history()[0]).toEqual({ id: 'density.set', args: { density: 'matrix' }, status: 'done' });
     expect(() =>
       c.dispatch('nav.open', {
         node: 'home',
         workspace: 'market',
       } as unknown as CommandArgs<'nav.open'>),
     ).toThrow('invalid workspace');
-    expect(c.history()).toHaveLength(1);
+    expect(c.history()).toHaveLength(2);
+    expect(c.history()[1]).toMatchObject({ id: 'nav.open', status: 'failed',
+      reason: 'nav.open: invalid workspace for home' });
     for (let i = 0; i < 40; i++) c.dispatch('inspector.close', {});
     expect(c.history()).toHaveLength(32);
     expect(Object.isFrozen(c.history())).toBe(true);
@@ -50,9 +52,9 @@ describe('Command registry', () => {
       const action = { kind: 'parameter' as const, key: 'dynasty.discount',
         position: '', value: 0.75 };
       const admin = createCommands(undefined, undefined, undefined, ['admin']);
-      admin.dispatch('data.parameter', action);
+      await admin.dispatch('data.parameter', action);
       await vi.waitFor(() => expect(run).toHaveBeenCalledWith(action));
-      expect(admin.history()).toEqual([{ id: 'data.parameter', args: action }]);
+      expect(admin.history()).toEqual([{ id: 'data.parameter', args: action, status: 'done' }]);
       const gm = createCommands(undefined, undefined, undefined, ['gm']);
       expect(() => gm.dispatch('data.parameter', action)).toThrow('permission denied');
       expect(gm.history()).toHaveLength(0);
@@ -76,4 +78,44 @@ describe('Command registry', () => {
     const badRoute: CommandArgs<'nav.open'> = { node: 'home', workspace: 'market' };
     expect([badId, badArgs, badRoute]).toHaveLength(3);
   });
+});
+
+it('records async success/failure only after completion, with a visible failure reason', async () => {
+  let finish!: () => void;
+  let fail!: (cause: Error) => void;
+  const run = vi.spyOn(dataState, 'run');
+  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    for (const status of ['done', 'failed'] as const) {
+      const c = createCommands();
+      run.mockImplementationOnce(() => new Promise<void>((resolve, reject) => {
+        finish = resolve; fail = reject;
+      }));
+      const result = c.dispatch('refresh.run', { scope: 'players' });
+      await vi.waitFor(() => expect(run).toHaveBeenCalled());
+      expect(c.history()).toEqual([]);
+      if (status === 'done') finish();
+      else fail(new Error('The data source is unavailable. Try again later.'));
+      await result;
+      expect(c.history()).toEqual([expect.objectContaining({ id: 'refresh.run', status })]);
+      if (status === 'failed') {
+        expect(c.history()[0].reason).toBe('The data source is unavailable. Try again later.');
+        expect(c.read().notice).toBe(c.history()[0].reason);
+        expect(logged).toHaveBeenCalled();
+      }
+      run.mockClear();
+    }
+  } finally { run.mockRestore(); logged.mockRestore(); }
+});
+
+it('shows, logs and records an unknown mounted league action as failed', async () => {
+  const c = createCommands();
+  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
+  try {
+    await c.dispatch('commissioner.surface', { screen: 'unmounted', action: 'open', value: '' });
+    expect(c.history()).toEqual([expect.objectContaining({ status: 'failed',
+      reason: 'This league view is no longer open. Open it again and retry your action.' })]);
+    expect(c.read().notice).toBe(c.history()[0].reason);
+    expect(logged).toHaveBeenCalled();
+  } finally { logged.mockRestore(); }
 });

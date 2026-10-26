@@ -39,7 +39,7 @@ export type Command<A> = {
   undo: Undo;
   args: readonly (keyof A)[];
   keys?: readonly { key: string; args: A }[];
-  run: (args: A) => void;
+  run: (args: A) => void | Promise<unknown>;
 };
 function command<A>(definition: Command<A>): Readonly<Command<A>> {
   return Object.freeze({
@@ -110,6 +110,7 @@ export function createCommands(
         drafting: { ...moves.read().drafting, [key]: false },
         draftErrors: { ...moves.read().draftErrors, [key]: String(cause) },
       });
+      throw cause;
     }
   }
   function rosterCommand(intent: 'roster.ir' | 'roster.taxi', label: string) {
@@ -122,7 +123,7 @@ export function createCommands(
       undo: 'reversible',
       args: ['subject'],
       run: ({ subject }: { subject: PlayerSubject }) => {
-        void draftRoster(subject, intent);
+        return draftRoster(subject, intent);
       },
     });
   }
@@ -170,14 +171,13 @@ export function createCommands(
       setTimeout(mflField.focus, 0);
       return;
     }
-    void requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
+    return requestMFL(() => provider.connectMFL(mflField.take()), 'Checking the key with MFL…');
   }
   function lineupAction(action: import('./lineupEdit').LineupAction) {
     return import('./lineupEdit')
       .then(({ runLineupAction }) =>
         runLineupAction(action, state, moves, lineups, provider, snapshot),
-      )
-      .catch((cause) => state.write({ notice: `Lineup: ${String(cause)}` }));
+      );
   }
   function editCommand<A>(
     kind: import('./lineupEdit').LineupAction['kind'],
@@ -196,8 +196,10 @@ export function createCommands(
     });
   }
   const dataRun = (action: import('../datasources/state').Action) => {
-    void import('../datasources/state').then(m => m.dataState.run(action))
-      .catch(cause => state.write({ notice: String(cause) }));
+    return import('../datasources/state').then(async m => {
+      await m.dataState.run(action);
+      if (m.dataState.read().error) throw new Error(m.dataState.read().error);
+    });
   };
   const phaseRoutes = {
     OFFSEASON: { node: 'hq', workspace: 'contracts-and-cap' },
@@ -211,9 +213,8 @@ export function createCommands(
         : kind === 'note' ? 'note.add' : 'draft.list', label, args: ['id', 'entity', 'action', 'text'],
       run: (change: import('../personal/contract').ListChange) => {
         const mine = state.read().franchiseId;
-        if (!mine) { state.write({ notice: 'Choose my franchise before keeping a private list' }); return; }
-        void import('../personal/state').then(m => m.personalState.change(mine, kind, change))
-          .catch(cause => state.write({ notice: String(cause) }));
+        if (!mine) throw new Error('Choose my franchise before keeping a private list');
+        return import('../personal/state').then(m => m.personalState.change(mine, kind, change));
       },
     });
   }
@@ -225,8 +226,7 @@ export function createCommands(
     'personal.handoff': command({
       ...ambient, id: 'personal.handoff', label: 'Open MFL list', args: ['kind'],
       run: ({ kind }: { kind: import('../personal/contract').ListKind | 'ir' }) => {
-        void import('../personal/state').then(m => m.personalState.handoff(kind))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../personal/state').then(m => m.personalState.handoff(kind));
       },
     }),
     'window.set': command({
@@ -234,15 +234,13 @@ export function createCommands(
       gravity: 'G2', undo: 'reversible', args: ['kind', 'at'],
       // There is no commissioner sign-in yet; keep the shared command roles until there is.
       run: ({ kind, at }: { kind: import('../data/contract').WindowKind; at: string }) => {
-        void import('../clock/windowState').then(m => m.setWindow(provider, kind, at))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../clock/windowState').then(m => m.setWindow(provider, kind, at));
       },
     }),
     'window.edit': command({
       ...ambient, id: 'window.edit', label: 'Commissioner: choose a league date', args: ['kind'],
       run: ({ kind }: { kind: import('../data/contract').WindowKind }) => {
-        void import('../clock/windowState').then(m => m.editWindow(kind))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../clock/windowState').then(m => m.editWindow(kind));
       },
     }),
     'phase.goto': command({
@@ -277,8 +275,7 @@ export function createCommands(
     'cache.run': command({
       ...ambient, id: 'cache.run', label: 'Read data again', gravity: 'G1', args: ['scope'],
       run: ({ scope }: { scope: string }) => {
-        void import('../datasources/cacheState').then(m => m.cacheState.run(scope))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../datasources/cacheState').then(m => m.cacheState.run(scope));
       },
     }),
     'data.run': command({
@@ -296,12 +293,7 @@ export function createCommands(
       label: 'Filter or sort contracts',
       args: ['field', 'value'],
       run: (change: import('../contracts/state').ContractsAction) => {
-        void import('../contracts/state').then(
-          (m) => {
-            void m.runContractsAction(change).catch(cause => state.write({ notice: String(cause) }));
-          },
-          (cause) => state.write({ notice: String(cause) }),
-        );
+        return import('../contracts/state').then(m => m.runContractsAction(change));
       },
     }),
     'offers.filter': command({
@@ -310,9 +302,9 @@ export function createCommands(
       label: 'Filter Offers',
       args: ['field', 'value'],
       run: (change: import('../offers/state').OfferFilter) => {
-        void import('../offers/state').then(
+        return import('../offers/state').then(
           m => m.offerState.change(change),
-        ).catch(cause => state.write({ notice: String(cause) }));
+        );
       },
     }),
     market: command({
@@ -326,9 +318,8 @@ export function createCommands(
         if (change.field === 'inspect' || change.field === 'asset')
           state.write({ asset: change.value, entity: null, subject: null, inspector: 'rest' });
         if (change.field !== 'inspect')
-          void loadMarket().then(
+          return loadMarket().then(
             (m) => m.set(change),
-            (cause) => state.write({ notice: String(cause) }),
           );
       },
     }),
@@ -336,16 +327,14 @@ export function createCommands(
       ...ambient, id: 'trade.builder', label: 'Trade builder', gravity: 'G3', undo: 'irreversible',
       args: ['action'],
       run: (action: import('../shell/tradeBuilderState').BuilderAction) => {
-        void import('../shell/tradeBuilderState').then(m => m.builderAction(action))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../shell/tradeBuilderState').then(m => m.builderAction(action));
       },
     }),
     acquisition: command({
       ...ambient, id: 'acquisition', label: 'What does the add cost me?', args: ['mine'],
       run: (action: import('../contracts/acquisition').AcquisitionRequest) => {
         state.navigate({ node: 'hq', workspace: 'contracts-and-cap' });
-        void import('../contracts/acquisition').then(m => m.openAcquisition(action))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../contracts/acquisition').then(m => m.openAcquisition(action));
       },
     }),
     'trade.accept.plan': command({
@@ -359,15 +348,17 @@ export function createCommands(
       run: ({ tradeId }: { tradeId: string }) => {
         const franchiseId = state.read().franchiseId;
         if (franchiseId)
-          void import('./tradeAccept').then(
+          return import('./tradeAccept').then(
             ({ planTradeAccept }) => planTradeAccept(moves, provider, franchiseId, tradeId),
-            (cause) =>
+            (cause) => {
               moves.write({
                 draftErrors: {
                   ...moves.read().draftErrors,
                   [`trade:${franchiseId}:${tradeId}`]: String(cause),
                 },
-              }),
+              });
+              throw cause;
+            },
           );
       },
     }),
@@ -399,7 +390,7 @@ export function createCommands(
       undo: 'reversible',
       run: (_args: Record<string, never>) => {
         if (!mflReason(true)) {
-          void requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…');
+          return requestMFL(() => provider.forgetMFL(), 'Removing the key from the keyring…');
         }
       },
     }),
@@ -422,14 +413,14 @@ export function createCommands(
     'report.sort': command({
       ...ambient, id: 'report.sort', label: 'Sort report', aliases: [], args: ['id', 'column'],
       run: (args: { id: string; column: number }) => {
-        void import('../reports/sortState').then(m => m.reportSort.set(args));
+        return import('../reports/sortState').then(m => m.reportSort.set(args));
       },
     }),
     'market.reports': command({
       ...ambient, id: 'market.reports', label: 'Player market reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' }) => {
         if (args.action !== 'refresh') throw new Error('Player market reports: invalid action');
-        void import('../reports/marketState').then(m => m.marketReportState.refresh(true));
+        return import('../reports/marketState').then(m => m.marketReportState.refresh(true));
       },
     }),
     'comms.read': command({
@@ -437,8 +428,7 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'team' | 'kind' | 'more' | 'open'; value: string }) => {
         if (!['refresh', 'team', 'kind', 'more', 'open'].includes(args.action))
           throw new Error('Comms: invalid action');
-        void import('../comms/state').then(m => m.commsState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../comms/state').then(m => m.commsState.choose(args.action, args.value));
       },
     }),
     'backup.now': command({
@@ -446,38 +436,33 @@ export function createCommands(
       // Control Room › App holds the result, and the sign-in form when a backup needs one first.
       run: (_args: Record<string, never>) => {
         state.navigate({ node: 'control', workspace: 'app' });
-        void import('../commissioner/backupState').then(m => m.backupState.run())
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../commissioner/backupState').then(m => m.backupState.run());
       },
     }),
     'commissioner.surface': command({
       ...ambient, id: 'commissioner.surface', label: 'Change the league view',
       args: ['screen', 'action', 'value'],
       run: (args: import('../commissioner/surfaceActions').SurfaceAction) => {
-        void import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../commissioner/surfaceActions').then(m => m.surfaceActions.run(args));
       },
     }),
     'commissioner.read': command({
       ...ambient, id: 'commissioner.read', label: 'Read the league ledger', args: ['league'],
       run: (args: { league: string }) => {
-        void import('../commissioner/proxy').then(m => m.leagueState.choose(args.league))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../commissioner/proxy').then(m => m.leagueState.choose(args.league));
       },
     }),
     'commissioner.draft': command({
       ...ambient, id: 'commissioner.draft', label: 'Edit a rule value', args: ['action', 'path', 'index'],
       run: (args: { action: 'add' | 'remove'; path: string; index: number }) => {
-        void import('../commissioner/draftEditor').then(m => m.draftEditor.run(args))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../commissioner/draftEditor').then(m => m.draftEditor.run(args));
       },
     }),
     'commissioner.execute': command({
       ...ambient, id: 'commissioner.execute', label: 'Record a league change', args: ['body'],
       run: (args: { body: string }) => {
-        void import('../commissioner/proxy').then(m => m.execute(args.body))
-          .then(receipt => state.write({ notice: receipt.message }))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../commissioner/proxy').then(m => m.execute(args.body))
+          .then(receipt => state.write({ notice: receipt.message }));
       },
     }),
     'control.read': command({
@@ -486,23 +471,20 @@ export function createCommands(
       run: (args: { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }) => {
         if (!['league', 'news', 'search', 'open-accounting'].includes(args.action))
           throw new Error('Control Room: invalid action');
-        void import('../control/state').then(m => m.controlState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../control/state').then(m => m.controlState.choose(args.action, args.value));
       },
     }),
     'research.read': command({
       ...ambient, id: 'research.read', label: 'Player research', aliases: [], args: ['action', 'value'],
       run: (args: { action: string; value: string }) => {
-        void import('../research/state').then(m => m.researchState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../research/state').then(m => m.researchState.choose(args.action, args.value));
       },
     }),
     'archive.reports': command({
       ...ambient, id: 'archive.reports', label: 'League archive reports', aliases: [],
       args: ['action', 'value'],
       run: (args: { action: string; value: string }) => {
-        void import('../archive/state').then(m => m.archiveState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../archive/state').then(m => m.archiveState.choose(args.action, args.value));
       },
     }),
     'race.reports': command({
@@ -510,16 +492,14 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'week' | 'team'; value: string }) => {
         if (!['refresh', 'week', 'team'].includes(args.action))
           throw new Error('League race: invalid action');
-        void import('../race/state').then(m => m.raceState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../race/state').then(m => m.raceState.choose(args.action, args.value));
       },
     }),
     'game.follow': command({
       ...ambient, id: 'game.follow', label: 'Follow NFL game', args: ['id'],
       run: ({ id }: { id: string }) => {
         state.navigate({ node: 'pulse', workspace: 'now' });
-        void import('../now/liveState').then(m => m.liveState.follow(id))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../now/liveState').then(m => m.liveState.follow(id));
       },
     }),
     'now.reports': command({
@@ -527,15 +507,14 @@ export function createCommands(
       run: (args: { action: 'refresh' | 'week' | 'reports-week'; value: string }) => {
         if (!['refresh', 'week', 'reports-week'].includes(args.action))
           throw new Error('League Pulse: invalid action');
-        void import('../now/state').then(m => m.nowState.choose(args.action, args.value))
-          .catch(cause => state.write({ notice: String(cause) }));
+        return import('../now/state').then(m => m.nowState.choose(args.action, args.value));
       },
     }),
     'draft.reports': command({
       ...ambient, id: 'draft.reports', label: 'Draft reports', aliases: [], args: ['action'],
       run: (args: { action: 'refresh' | 'mfl' }) => {
         if (!['refresh', 'mfl'].includes(args.action)) throw new Error('Draft reports: invalid action');
-        void import('../draftreports/state').then(m => m.reportState.action(args.action));
+        return import('../draftreports/state').then(m => m.reportState.action(args.action));
       },
     }),
     'endpoint.open': command({
@@ -753,21 +732,39 @@ export function createCommands(
     if (mine && mine === status.myFranchise) return undefined;
     return status.teamActionRefusal || 'Checking MFL…';
   }
-  const history: Readonly<Entry>[] = [];
-  function dispatch<K extends Id>(id: K, args: Args<K>) {
-    const selected = registry[id] as Command<Args<K>>;
+  type Receipt = Entry & { status: 'done' | 'failed'; reason?: string };
+  const history: Readonly<Receipt>[] = [];
+  function dispatch<K extends Id>(id: K, args: Args<K>): void | Promise<void> {
+    const selected = registry[id] as Command<Args<K>> | undefined;
+    if (!selected) throw new Error('This action is not available. Refresh the app and try again.');
     if (!selected.roles.some(role => roles.includes(role))) throw new Error(`${id}: permission denied`);
     const fromBar = state.read().commandbar;
-    selected.run(args);
-    if (
-      fromBar &&
-      id !== 'commandbar.open' &&
-      !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')
-    ) {
-      state.write({ commandbar: false });
+    const savedArgs = Object.freeze({ ...args });
+    function record(status: 'done' | 'failed', cause?: unknown) {
+      const reason = status === 'failed'
+        ? cause instanceof Error ? cause.message : String(cause) : undefined;
+      history.push(Object.freeze({ id, args: savedArgs, status,
+        ...(reason === undefined ? {} : { reason }) }) as Receipt);
+      if (history.length > 32) history.shift();
+      if (reason !== undefined) {
+        state.write({ notice: reason });
+        console.error(`Command ${id} failed:`, reason);
+      }
     }
-    history.push(Object.freeze({ id, args: Object.freeze({ ...args }) }) as Entry);
-    if (history.length > 32) history.shift();
+    try {
+      const result = selected.run(args);
+      if (fromBar && id !== 'commandbar.open' &&
+        !(id === 'endpoint.open' && state.read().endpointSurface === 'Command bar')) {
+        state.write({ commandbar: false });
+      }
+      if (result instanceof Promise) {
+        return result.then(() => record('done'), cause => record('failed', cause));
+      }
+      record('done');
+    } catch (cause) {
+      record('failed', cause);
+      throw cause;
+    }
   }
   function key(key: string): boolean {
     for (const id of Object.keys(registry) as Id[]) {

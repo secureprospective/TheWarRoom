@@ -38,6 +38,7 @@ it('keeps nested commissioner density buttons independent of the owner shell', (
     expect(root.getAttribute('data-density')).toBe('narrative');
     expect(nestedButton.getAttribute('aria-pressed')).toBe('false');
   } finally { stopScreen(); stopOwner(); }
-  surfaceActions.run({ screen: 'density.ledger', action: 'view', value: 'narrative' });
+  expect(() => surfaceActions.run({ screen: 'density.ledger', action: 'view', value: 'narrative' }))
+    .toThrow('This league view is no longer open');
   expect(nested.getAttribute('data-density')).toBe('matrix');
 });
