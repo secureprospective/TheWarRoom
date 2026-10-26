@@ -6,6 +6,9 @@ import { all, button, click, control, mount, render, settle, type, unmount }
 import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
 
+// Franchise workflow requests are covered by the hosted-room tests, not account admission.
+vi.mock('../commissioner/HostedLeague', () => ({ default: () => null }));
+
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
   confirmation: '', seats: [] };
