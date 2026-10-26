@@ -17,12 +17,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // RawExport is versioned independently of SQLite, commands and transport. Content identifies an
 // inactive import; SourceEpoch identifies the source authority generation, not a schema marker.
 type RawExport struct {
+	Identities  []playerid.RawIdentity     `json:"playerIdentities,omitempty"`
 	Version     int                        `json:"version"`
 	League      string                     `json:"league"`
 	SourceEpoch string                     `json:"sourceEpoch"`
@@ -43,13 +45,13 @@ type ProjectionDigests struct {
 // Capture does not seal or retire the source. A commissioner must use the same epoch until cutover.
 func Capture(ctx context.Context, store *history.Store, league, epoch, football string, at time.Time, aliases []governance.VerifiedAlias, additional ...string) (RawExport, error) {
 	out := RawExport{Version: 1, League: league, SourceEpoch: epoch, FrozenAt: at.UTC(), Football: football, Aliases: aliases}
-	events, blobs, head, err := store.CaptureTransfer(ctx, league, append([]string{football}, additional...))
+	captured, err := store.CaptureTransferSnapshot(ctx, league, append([]string{football}, additional...))
 	if err != nil {
 		return out, fmt.Errorf("export league: %w", err)
 	}
-	out.Events, out.Checkpoint = events, head
-	out.Blobs = blobs
-	out.Aliases = leagueAliases(events, aliases)
+	out.Events, out.Checkpoint = captured.Events, captured.Checkpoint
+	out.Blobs, out.Identities = captured.Blobs, captured.Identities
+	out.Aliases = leagueAliases(captured.Events, aliases)
 	if err := out.validateHistory(); err != nil {
 		return out, err
 	}
@@ -82,6 +84,9 @@ func (r RawExport) validateHistory() error {
 	}
 	if _, err := governance.NewPrincipals(r.League, r.Aliases); err != nil {
 		return fmt.Errorf("check exported linked identities: %w", err)
+	}
+	if err := r.validatePlayerIdentities(); err != nil {
+		return err
 	}
 	if err := r.validateManifest(); err != nil {
 		return err
@@ -290,9 +295,30 @@ func Import(ctx context.Context, store *history.Store, input io.Reader, key [32]
 	if err != nil {
 		return history.ImportReceipt{}, fmt.Errorf("save league import document: %w", err)
 	}
-	receipt, err := store.StageTransfer(ctx, history.ImportReceipt{League: raw.League, SourceEpoch: raw.SourceEpoch, Content: raw.Content}, document, raw.Events, raw.Blobs)
+	receipt, err := store.StageTransfer(ctx, history.ImportReceipt{League: raw.League, SourceEpoch: raw.SourceEpoch, Content: raw.Content}, document, raw.Events, raw.Blobs, raw.Identities)
 	if err != nil {
 		return receipt, fmt.Errorf("import inactive league: %w", err)
 	}
 	return receipt, nil
+}
+
+func (r RawExport) validatePlayerIdentities() error {
+	seen := make(map[string]bool)
+	links := make(map[playerid.RawOutsideID]bool)
+	for _, identity := range r.Identities {
+		if err := identity.Validate(); err != nil {
+			return fmt.Errorf("check exported player identity: %w", err)
+		}
+		if seen[identity.Canonical] {
+			return fmt.Errorf("repeated exported player identity")
+		}
+		seen[identity.Canonical] = true
+		for _, link := range identity.Links {
+			if links[link] {
+				return fmt.Errorf("repeated exported outside player link")
+			}
+			links[link] = true
+		}
+	}
+	return nil
 }

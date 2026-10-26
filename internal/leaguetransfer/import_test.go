@@ -66,6 +66,10 @@ func TestInactiveImportPreservesHistoryAndReplayAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	captured, err := target.CaptureTransferSnapshot(t.Context(), raw.League, []string{raw.Football})
+	if err != nil || len(raw.Identities) == 0 || !reflect.DeepEqual(captured.Identities, raw.Identities) {
+		t.Fatalf("transfer changed permanent player IDs or provider links: %v", err)
+	}
 	if !reflect.DeepEqual(events, raw.Events) || !reflect.DeepEqual(blobs, raw.Blobs) {
 		t.Fatal("original event or evidence bytes changed")
 	}

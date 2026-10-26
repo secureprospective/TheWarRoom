@@ -5,11 +5,14 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+
+	"github.com/secureprospective/TheWarRoom/internal/db"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // DecideDestination is only called while the source's durable sealed decision is locked.
 // It is deliberately not a transport endpoint or a portable activation-token consumer.
-func (s *Store) DecideDestination(ctx context.Context, f TransferFence, activate bool, events []RawTransferEvent, blobs map[string][]byte) error {
+func (s *Store) DecideDestination(ctx context.Context, f TransferFence, activate bool, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
 	tx, err := s.pools.Write().BeginTx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin destination decision: %w", err)
@@ -33,7 +36,7 @@ func (s *Store) DecideDestination(ctx context.Context, f TransferFence, activate
 		return nil
 	}
 	if activate {
-		if err := receiveTransfer(ctx, tx, f, held, events, blobs); err != nil {
+		if err := s.receiveTransfer(ctx, tx, f, held, events, blobs, identities); err != nil {
 			return err
 		}
 		f.State = "active"
@@ -88,7 +91,11 @@ func checkInactiveDestination(ctx context.Context, tx *sql.Tx, f, held TransferF
 	return nil
 }
 
-func receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent, blobs map[string][]byte) error {
+func (s *Store) receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, events []RawTransferEvent, blobs map[string][]byte, identities []playerid.RawIdentity) error {
+	if err := db.MergePlayerIdentities(ctx, tx, identities); err != nil {
+		return fmt.Errorf("receive permanent player identities: %w", err)
+	}
+
 	rows, err := transferEvents(ctx, tx, f.League)
 	if err != nil {
 		return err
@@ -125,7 +132,7 @@ func receiveTransfer(ctx context.Context, tx *sql.Tx, f, held TransferFence, eve
 			}
 		}
 	}
-	return nil
+	return s.captureRosterRestorePoint(ctx, tx, f.League)
 }
 
 // TransferStatus is shared wording for desktop and hosted services. IDs stay in the protocol,

@@ -13,7 +13,7 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity}
 }
 
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {
@@ -149,6 +149,40 @@ func guardHistoryJSON(ctx context.Context, tx *sql.Tx) error {
 		db.JSONColumn{Table: "snapshot_checks", Column: "checks"},
 	); err != nil {
 		return fmt.Errorf("history: JSON guards: %w", err)
+	}
+	return nil
+}
+
+func addPlayerIdentity(ctx context.Context, tx *sql.Tx) error {
+	if err := db.CreatePlayerIdentity(ctx, tx); err != nil {
+		return fmt.Errorf("history: migrate player identities: %w", err)
+	}
+	if err := db.GuardPlayerEvidence(ctx, tx); err != nil {
+		return fmt.Errorf("history: guard player evidence: %w", err)
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT league FROM league_roster_restore ORDER BY league`)
+	if err != nil {
+		return fmt.Errorf("find identity rosters: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	var leagues []string
+	for rows.Next() {
+		var league string
+		if err := rows.Scan(&league); err != nil {
+			return fmt.Errorf("read identity roster: %w", err)
+		}
+		leagues = append(leagues, league)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("read identity rosters: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return fmt.Errorf("close identity rosters: %w", err)
+	}
+	for _, league := range leagues {
+		if err := (&Store{}).captureRosterRestorePoint(ctx, tx, league); err != nil {
+			return err
+		}
 	}
 	return nil
 }

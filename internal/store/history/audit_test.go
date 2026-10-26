@@ -98,6 +98,12 @@ DROP TRIGGER league_import_authority_update;
 DROP TABLE league_import;
 DROP VIEW transfer_current; DROP TABLE transfer_transition; DROP TABLE transfer_identity;
 DROP TABLE server_release;
+DROP TABLE league_roster_restore; DROP TABLE league_recovery_log;
+DROP TRIGGER observations_player_identity; DROP TRIGGER run_scores_player_identity; DROP TRIGGER model_scores_player_identity;
+CREATE TABLE legacy_player_ids AS SELECT * FROM player_ids;
+DROP VIEW player_ids;
+ALTER TABLE legacy_player_ids RENAME TO player_ids;
+DROP TABLE player_ownership; DROP TABLE player_external_id; DROP TABLE canonical_player;
 PRAGMA user_version=4`); err != nil {
 		t.Fatal(err)
 	}

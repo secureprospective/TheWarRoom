@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -364,13 +365,6 @@ func (s *Store) LinkPlayerIDs(ctx context.Context, source string, links []Player
 		return 0, fmt.Errorf("history: link player ids: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	stmt, err := tx.PrepareContext(ctx, `
-INSERT INTO player_ids (id_type, id_value, player_id) VALUES (?, ?, ?)
-ON CONFLICT (id_type, id_value) DO UPDATE SET player_id = excluded.player_id`)
-	if err != nil {
-		return 0, fmt.Errorf("history: link player ids: %w", err)
-	}
-	defer func() { _ = stmt.Close() }()
 	for _, l := range links {
 		id, err := playerid.New(l.PlayerID)
 		if err != nil {
@@ -379,7 +373,7 @@ ON CONFLICT (id_type, id_value) DO UPDATE SET player_id = excluded.player_id`)
 		if l.IDType == "" || l.IDType == measures.IDTypeMFL || l.IDValue == "" {
 			return 0, fmt.Errorf("history: cannot link id type %q value %q", l.IDType, l.IDValue)
 		}
-		if _, err := stmt.ExecContext(ctx, l.IDType, l.IDValue, id.String()); err != nil {
+		if err := db.LinkPlayerExternalID(ctx, tx, l.IDType, l.IDValue, id.String()); err != nil {
 			return 0, fmt.Errorf("history: link %s %s: %w", l.IDType, l.IDValue, err)
 		}
 	}
