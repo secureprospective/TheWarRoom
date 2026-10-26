@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // Board is C-01: what each player is worth on the field now and as a dynasty asset; it is
@@ -211,4 +212,26 @@ func Signed(v float64) string {
 		return "−" + text
 	}
 	return fmt.Sprintf("%.2f", math.Abs(v))
+}
+
+func PoolAssetValues(now OnField, model Model, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
+	also := make([]string, 0, len(ids))
+	for _, id := range ids {
+		also = append(also, id.String())
+	}
+	board := WireAssetBoard(BuildBoard(now, model, at, also))
+	out := make(map[string]AssetValue, len(board.Values))
+	for _, v := range board.Values {
+		out[v.ID] = v
+	}
+	return out, board.NowSource
+}
+
+func PickValue(model Model, year, round int, original string, at time.Time) *AssetCell {
+	if model == nil {
+		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
+	}
+	cell, _, _ := ValueCells(model.Pick(year, round, original, at))
+	out := AssetCell(cell)
+	return &out
 }

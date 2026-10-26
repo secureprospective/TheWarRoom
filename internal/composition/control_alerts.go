@@ -15,21 +15,26 @@ import (
 // Each held input is read under its own lock, in the binding's original order.
 func (h controlHost) Alerts(franchiseID string) (controlapp.AlertReading, error) {
 	a := h.app
-	saved, err := a.contracts().TargetLineup(franchiseID)
-	if err != nil {
-		return controlapp.AlertReading{}, err //nolint:wrapcheck // control.API prefixes the refusal
-	}
-	trades, err := a.tradesAPI().TargetTrades(franchiseID)
-	if err != nil {
-		return controlapp.AlertReading{}, err //nolint:wrapcheck // control.API prefixes the refusal
-	}
-	now := a.core.MovesNow()
-	r := controlapp.AlertReading{Alerts: []controlapp.Alert{}, Unavailable: []controlapp.Unavailable{}}
-	a.irAlerts(&r, franchiseID)
-	a.lineupAlert(&r, saved, now)
-	a.byeAlerts(&r, franchiseID, now)
-	tradeAlert(&r, trades, now)
-	return r, nil
+	var saved contractsapp.LineupReading
+	var trades tradesapp.TradeReading
+	//nolint:wrapcheck // Preserve existing feature refusal text.
+	return controlapp.GatherAlerts(controlapp.AlertSource{
+		Lineup: func() error {
+			var err error
+			saved, err = a.contracts().TargetLineup(franchiseID)
+			return err //nolint:wrapcheck // The Control API supplies the refusal context.
+		},
+		Trades: func() error {
+			var err error
+			trades, err = a.tradesAPI().TargetTrades(franchiseID)
+			return err //nolint:wrapcheck // The Control API supplies the refusal context.
+		},
+		Now: a.core.MovesNow, IR: func(r *controlapp.AlertReading) { a.irAlerts(r, franchiseID) },
+		SavedLineup: func(r *controlapp.AlertReading, now time.Time) { a.lineupAlert(r, saved, now) },
+		Byes:        func(r *controlapp.AlertReading, now time.Time) { a.byeAlerts(r, franchiseID, now) },
+		TradeOffers: func(r *controlapp.AlertReading, now time.Time) { tradeAlert(r, trades, now) },
+	})
+
 }
 
 func (a *App) lineupAlert(r *controlapp.AlertReading, saved contractsapp.LineupReading, now time.Time) {

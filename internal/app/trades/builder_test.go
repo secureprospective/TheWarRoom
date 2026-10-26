@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -90,5 +92,38 @@ func TestClockReasonsPreservesFailureAndObservationOrder(t *testing.T) {
 	}, func() time.Time { calls = append(calls, "now"); return now }, time.UTC)
 	if len(got) != 0 || got == nil || !reflect.DeepEqual(calls, []string{"clock", "now"}) {
 		t.Fatal(got, calls)
+	}
+}
+
+func TestTradeStateStopsBeforePendingOnSelectionFailure(t *testing.T) {
+	t.Parallel()
+	failure := errors.New("selection failed")
+	snap, held, err := ReadState("0001", func(id string) (snapshot.Snapshot, error) {
+		if id != "0001" {
+			t.Fatal(id)
+		}
+		return snapshot.Snapshot{}, failure
+	}, func() snapshot.Sourced[[]leaguefeed.PendingTrade] {
+		t.Fatal("failed selection read pending trades")
+		return snapshot.Sourced[[]leaguefeed.PendingTrade]{}
+	})
+	if !errors.Is(err, failure) || len(snap.Players.Value) != 0 || held.Value != nil {
+		t.Fatalf("failure returned partial state: %v", err)
+	}
+}
+
+func TestBuilderTeamsDiscardsValuesOnBoardFailure(t *testing.T) {
+	t.Parallel()
+	snap := snapshot.Snapshot{}
+	snap.Franchises.Value = []snapshot.Franchise{{ID: "0001", Name: "One"}}
+	mirror := state.MirrorSnapshot{Season: 2026, Players: []state.MirrorPlayer{{MFLID: "0099", FranchiseID: "0001"}}}
+	board := []Value{{ID: "0099", Now: Cell{Text: "12 PPG"}, Dynasty: Cell{Text: "1 win"}}}
+	teams := BuilderTeams(snap, mirror, nil, board, errors.New("board failed"), nil)
+	if len(teams) != 1 || len(teams[0].Assets) != 1 || teams[0].Assets[0].Now.Text != "No score" {
+		t.Fatalf("failed board valued players: %+v", teams)
+	}
+	teams = BuilderTeams(snap, mirror, nil, board, nil, nil)
+	if teams[0].Assets[0].Now.Text != "12 PPG" {
+		t.Fatal("successful board lost value")
 	}
 }

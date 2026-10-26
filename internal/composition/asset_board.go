@@ -52,12 +52,6 @@ func (v researchView) onFieldNow() (map[string]AssetCell, map[string]float64, st
 	return cells, now.PPG, now.Source
 }
 
-// dynastyValueCells words one Lab answer in the service, as wire cells.
-func dynastyValueCells(d dynastyValue) (AssetCell, AssetCell, float64) {
-	dynasty, market, wins := marketapp.ValueCells(d)
-	return AssetCell(dynasty), AssetCell(market), wins
-}
-
 // marketHost composes Market's Host: shared state from core, and the Research scores and the
 // build stamp still held at the root. It is never bound.
 type marketHost struct {
@@ -86,11 +80,8 @@ func (a *App) assetBoard(ctx context.Context) (AssetBoard, error) {
 func (a *App) assetInput(ctx context.Context) (marketapp.OnField, []string) {
 	a.hydrateResearchContext(ctx)
 	in := a.heldResearchInput()
-	rostered := make([]string, 0, len(in.mirror.Players))
-	for _, p := range in.mirror.Players {
-		rostered = append(rostered, p.MFLID)
-	}
-	return researchView{researchInput: in}.onField(), rostered
+	return researchView{researchInput: in}.onField(), researchapp.RosteredAssetIDs(in.mirror)
+
 }
 
 // fitAssetModel fits the Lab's value model on the verified facts warmArchive just read, so C-01

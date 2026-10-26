@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 func TestResearchWeekRunsNameEachDifferingRunOnce(t *testing.T) {
@@ -90,5 +92,18 @@ func TestConcurrentConstructionLeavesSnapshotUntouched(t *testing.T) {
 				t.Fatal("reading lost held inputs")
 			}
 		})
+	}
+}
+
+func TestRosteredAssetScopeKeepsUnscoredIDsAndOrder(t *testing.T) {
+	t.Parallel()
+	mirror := state.MirrorSnapshot{Players: []state.MirrorPlayer{{MFLID: "0099"}, {MFLID: "0100"}, {MFLID: "0099"}}}
+	ids := RosteredAssetIDs(mirror)
+	if len(ids) != 3 || ids[0] != "0099" || ids[1] != "0100" || ids[2] != "0099" {
+		t.Fatal(ids)
+	}
+	ids[0] = "changed"
+	if mirror.Players[0].MFLID != "0099" || RosteredAssetIDs(state.MirrorSnapshot{}) == nil {
+		t.Fatal("scope aliases input or lost empty slice")
 	}
 }

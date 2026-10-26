@@ -482,3 +482,12 @@ func Player(lookup normalize.Lookup, mirror state.MirrorSnapshot, config league.
 func ReadPlayer(in Snapshot, id string, names map[string]string, how string) PlayerReading {
 	return (researchView{Snapshot: in}).playerReading(id, names, how)
 }
+
+// RosteredAssetIDs includes every held rostered player, even without a finished score.
+func RosteredAssetIDs(mirror state.MirrorSnapshot) []string {
+	ids := make([]string, 0, len(mirror.Players))
+	for _, p := range mirror.Players {
+		ids = append(ids, p.MFLID)
+	}
+	return ids
+}

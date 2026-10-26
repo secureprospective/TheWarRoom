@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -117,13 +118,12 @@ func (h tradesHost) TradeBuilder(r tradesapp.RawTradeBuilder, out tradesapp.Trad
 func (a *App) tradeState(franchiseID string) (
 	snapshot.Snapshot, snapshot.Sourced[[]leaguefeed.PendingTrade], error,
 ) {
-	// Reuse the held-snapshot franchise validation, with no player selection to parse.
-	snap, _, err := contractsapp.LineupSelection(a.core, franchiseID, nil)
-	if err != nil {
-		return snapshot.Snapshot{}, snapshot.Sourced[[]leaguefeed.PendingTrade]{},
-			fmt.Errorf("trade state: %w", err)
-	}
-	return snap, a.core.PendingTrades(), nil
+	//nolint:wrapcheck // Preserve existing feature refusal text.
+	return tradesapp.ReadState(franchiseID, func(id string) (snapshot.Snapshot, error) {
+		snap, _, err := contractsapp.LineupSelection(a.core, id, nil)
+		return snap, err //nolint:wrapcheck // The shared service supplies trade-state context.
+	}, a.core.PendingTrades)
+
 }
 
 func labelTradeReceipts(receipts []envelope.Receipt, snap snapshot.Snapshot) {
@@ -136,16 +136,16 @@ func (a *App) tradeBuilderTeams(ctx context.Context, snap snapshot.Snapshot) []t
 	m, _, _ := a.core.League.ContractsView()
 	picks := a.core.TradeFuturePicks()
 	board, err := a.assetBoard(ctx)
-	values := map[string]tradesapp.Value{}
-	if err == nil {
-		for _, v := range board.Values {
-			values[v.ID] = tradesapp.Value{ID: v.ID, Now: tradesapp.Cell(v.Now), Dynasty: tradesapp.Cell(v.Dynasty)}
-		}
+	values := make([]tradesapp.Value, len(board.Values))
+	for i, v := range board.Values {
+		values[i] = tradesapp.Value{ID: v.ID, Now: tradesapp.Cell(v.Now), Dynasty: tradesapp.Cell(v.Dynasty)}
 	}
-	return tradesapp.WireTeams(tradesapp.Teams(snap, m, picks, values, func(year, round int, original string) *tradesapp.Cell {
-		cell := tradesapp.Cell(*a.builderPickValue(year, round, original, time.Now()))
-		return &cell
-	}))
+	return tradesapp.BuilderTeams(snap, m, picks, values, err,
+		func(year, round int, original string) *tradesapp.Cell {
+			cell := tradesapp.Cell(*a.builderPickValue(year, round, original, time.Now()))
+			return &cell
+		})
+
 }
 func tradeID() (string, error) {
 	var bytes [16]byte
@@ -250,12 +250,8 @@ func (a *App) savedTradePlans(ctx context.Context, mine string, snap snapshot.Sn
 }
 
 func (a *App) builderPickValue(year, round int, original string, at time.Time) *AssetCell {
-	model := a.marketHeld.SnapshotModel()
-	if model == nil {
-		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
-	}
-	cell, _, _ := dynastyValueCells(model.Pick(year, round, original, at))
-	return &cell
+	return marketapp.PickValue(a.marketHeld.SnapshotModel(), year, round, original, at)
+
 }
 
 func (a *App) removeTradePlan(ctx context.Context, r tradesapp.RawTradeBuilder) error {

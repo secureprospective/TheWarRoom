@@ -2,12 +2,7 @@ package composition
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -94,42 +89,14 @@ func (a *App) compileFacts(ctx context.Context) (string, error) {
 	return sourcesapp.CompileFacts(ctx, sourcesHost{State: a.core, app: a}, lab.NoteReadings()) //nolint:wrapcheck // Preserve the existing compile error.
 }
 
-// appSettings is the app's own configuration, kept as settings.json in its data directory.
-type appSettings struct {
-	LeagueArchiveDir string `json:"leagueArchiveDir"`
-	PhotosOff        bool   `json:"photosOff,omitempty"`
-}
+type appSettings = sourcesapp.Settings
 
 func (a *App) settingsPath() string { return filepath.Join(a.core.Paths.DataDir, "settings.json") }
-
 func (a *App) readSettings() (appSettings, error) {
-	var s appSettings
-	b, err := os.ReadFile(a.settingsPath())
-	if errors.Is(err, fs.ErrNotExist) {
-		return s, nil
-	}
-	if err != nil {
-		return s, fmt.Errorf("app: read settings: %w", err)
-	}
-	if err := json.Unmarshal(b, &s); err != nil {
-		return s, fmt.Errorf("app: settings.json: %w", err)
-	}
-	return s, nil
+	return sourcesapp.ReadSettings(a.settingsPath()) //nolint:wrapcheck // Keep settings refusal text.
 }
-
 func (a *App) writeSettings(s appSettings) error {
-	b, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("app: encode settings: %w", err)
-	}
-	tmp := a.settingsPath() + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return fmt.Errorf("app: write settings: %w", err)
-	}
-	if err := os.Rename(tmp, a.settingsPath()); err != nil {
-		return fmt.Errorf("app: write settings: %w", err)
-	}
-	return nil
+	return sourcesapp.WriteSettings(a.settingsPath(), s) //nolint:wrapcheck // Keep settings refusal text.
 }
 
 func (a *App) publishLabManifest(ctx context.Context) (manifest.Manifest, bool, error) {
@@ -170,14 +137,8 @@ func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, 
 	notes := lab.NoteReadings()
 	src := archiveapp.Source{History: a.core.History, Bodies: sourcesapp.CuratedBodies{Archive: a.core.History, Curated: map[string][]byte{notes.SHA256: notes.Body}},
 		Manifest: labFrozenInputs, Compiler: factsCompiler}
-	cache, stale, err := archiveapp.Read(ctx, src, a.archiveCache)
-	if err != nil {
-		return archiveapp.Snapshot{}, false, err //nolint:wrapcheck // the service's errors already start "archive:"
-	}
-	if cache.SHA != "" {
-		a.archiveCache = cache
-	}
-	return cache, stale, nil
+	return archiveapp.ReadCached(ctx, src, &a.archiveCache) //nolint:wrapcheck // Archive's errors already name the step.
+
 }
 
 // readCommsArchive borrows the snapshot under its caller's FactsMu; core detaches the columns.

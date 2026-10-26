@@ -1,11 +1,8 @@
 package composition
 
 import (
-	"cmp"
 	"context"
 	"errors"
-	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -101,75 +98,24 @@ func (h controlHost) SetWindow(kind, at string) error {
 
 func (h controlHost) OpenMFLAccounting() error {
 	a := h.app
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("open accounting: %w", err)
-	}
-	host := ""
-	if a.core.MFLClient != nil {
-		host = a.core.MFLClient.LeagueHost()
-	}
-	target, err := controlapp.AccountingURL(host, a.core.Season)
-	if err != nil {
-		return err //nolint:wrapcheck // preserve the binding error text
-	}
-	a.core.OpenURL(a.core.Ctx, target)
-	return nil
+	//nolint:wrapcheck // Preserve existing feature refusal text.
+	return controlapp.OpenAccounting(a.ready, func() string {
+		if a.core.MFLClient != nil {
+			return a.core.MFLClient.LeagueHost()
+		}
+		return ""
+	}, func() int { return a.core.Season }, func(target string) { a.core.OpenURL(a.core.Ctx, target) })
+
 }
 
 func (h controlHost) Params() controlapp.ParamsResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.ParamsResult{OK: false, Error: err.Error()}
-	}
-	values := a.core.Params.Snapshot()
-	defs := a.core.Params.Definitions()
-	out := make([]controlapp.ParamView, len(defs))
-	for i, d := range defs {
-		v, err := values.GetPosition(d.Key, d.Position)
-		if err != nil {
-			return controlapp.ParamsResult{OK: false, Error: err.Error()}
-		}
-		label, group := controlapp.ParameterWords(d.Key, d.Description)
-		out[i] = controlapp.ParamView{Key: d.Key, Label: label, Group: group, Position: d.Position, Description: d.Description,
-			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
-			Overridden: a.core.Params.Overridden(d.Key, d.Position)}
-	}
-	slices.SortFunc(out, func(a, b controlapp.ParamView) int {
-		if n := cmp.Compare(a.Group, b.Group); n != 0 {
-			return n
-		}
-		if n := cmp.Compare(a.Label, b.Label); n != 0 {
-			return n
-		}
-		return cmp.Compare(a.Position, b.Position)
-	})
-	return controlapp.ParamsResult{OK: true, Params: out}
+	return controlapp.ReadParams(h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params })
 }
-
 func (h controlHost) SetParam(key, position string, value float64) controlapp.SetParamResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
-	defer cancel()
-	if err := a.core.Params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	return controlapp.SetParamResult{OK: true}
+	return controlapp.SetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position, value)
 }
-
 func (h controlHost) ResetParam(key, position string) controlapp.SetParamResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
-	defer cancel()
-	if err := a.core.Params.ClearOverride(ctx, key, position); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	return controlapp.SetParamResult{OK: true}
+	return controlapp.ResetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position)
 }
 
 func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {

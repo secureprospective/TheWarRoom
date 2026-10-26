@@ -234,3 +234,29 @@ func ByeWeekLock(current leagueweek.Week, week int, now time.Time, read func(int
 	lock, _ := leagueweek.NextLock(now, current)
 	return lock
 }
+
+type AlertSource struct {
+	Lineup      func() error
+	Trades      func() error
+	Now         func() time.Time
+	IR          func(*AlertReading)
+	SavedLineup func(*AlertReading, time.Time)
+	Byes        func(*AlertReading, time.Time)
+	TradeOffers func(*AlertReading, time.Time)
+}
+
+func GatherAlerts(source AlertSource) (AlertReading, error) {
+	if err := source.Lineup(); err != nil {
+		return AlertReading{}, err
+	}
+	if err := source.Trades(); err != nil {
+		return AlertReading{}, err
+	}
+	now := source.Now()
+	r := AlertReading{Alerts: []Alert{}, Unavailable: []Unavailable{}}
+	source.IR(&r)
+	source.SavedLineup(&r, now)
+	source.Byes(&r, now)
+	source.TradeOffers(&r, now)
+	return r, nil
+}

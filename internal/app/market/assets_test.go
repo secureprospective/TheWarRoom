@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
+
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
 )
 
@@ -91,5 +93,20 @@ func TestDynastyDisplayNeverShowsMinusZero(t *testing.T) {
 	cell, _, _ := DynastyCells(fakeAssets{"1": {Valued: true, Discounted: -0.01}}, "1", time.Now())
 	if cell.Text != "−0.01 wins" {
 		t.Fatal(cell.Text)
+	}
+}
+
+func TestPoolValuesPreserveIDsAndMissingPickModel(t *testing.T) {
+	t.Parallel()
+	id, err := playerid.New("0099")
+	if err != nil {
+		t.Fatal(err)
+	}
+	values, source := PoolAssetValues(OnField{Cells: map[string]Cell{}, Source: "held source"}, nil, []playerid.PlayerID{id, id}, time.Now())
+	if len(values) != 1 || values["0099"].ID != "0099" || values["0099"].Now.Text != "No score" || source != "held source" {
+		t.Fatalf("pool values: %v %q", values, source)
+	}
+	if cell := PickValue(nil, 2027, 1, "0001", time.Now()); cell.Text != "Not valued" || cell.Sub != "Lab model not compiled" || cell.Held {
+		t.Fatal(cell)
 	}
 }

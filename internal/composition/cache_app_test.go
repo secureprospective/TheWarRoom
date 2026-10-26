@@ -7,9 +7,10 @@ import (
 
 func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
 	t.Parallel()
+	app := commissionerTestApp(t)
 	seen := map[string]bool{}
-	for _, c := range cacheScopes() {
-		if c.run == nil || c.ID == "" || seen[c.ID] || c.Label == "" || c.Note == "" || c.Action == "" ||
+	for _, c := range app.cacheScopes() {
+		if c.Run == nil || c.ID == "" || seen[c.ID] || c.Label == "" || c.Note == "" || c.Action == "" ||
 			c.Progress == "" {
 			t.Fatalf("incomplete held copy: %+v", c)
 		}
@@ -20,9 +21,8 @@ func TestEveryHeldCopyIsWiredToARefreshTheAppAlreadyHas(t *testing.T) {
 			}
 		}
 	}
-	app := commissionerTestApp(t)
 	listed := app.sourcesAPI().TargetCacheScopes()
-	if len(listed) != len(cacheScopes()) || len(listed) < 5 {
+	if len(listed) != len(app.cacheScopes()) || len(listed) < 5 {
 		t.Fatalf("the screen lists what Go can read again: %+v", listed)
 	}
 }

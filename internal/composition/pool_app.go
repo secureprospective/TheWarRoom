@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	poolapp "github.com/secureprospective/TheWarRoom/internal/app/offers/pool"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
@@ -106,16 +107,8 @@ func (a *App) refreshOffersPool(force bool) error {
 func (a *App) poolAssetValues(ctx context.Context, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
 	a.hydrateResearchContext(ctx)
 	model := a.marketHeld.SnapshotModel()
-	also := make([]string, 0, len(ids))
-	for _, id := range ids {
-		also = append(also, id.String())
-	}
-	board := buildAssetBoard(researchView{researchInput: a.heldResearchInput()}, model, at, also)
-	out := make(map[string]AssetValue, len(board.Values))
-	for _, v := range board.Values {
-		out[v.ID] = v
-	}
-	return out, board.NowSource
+	return marketapp.PoolAssetValues(researchView{researchInput: a.heldResearchInput()}.onField(), model, ids, at)
+
 }
 
 func sortFreeAgentIDs(ids []playerid.PlayerID) { poolapp.SortIDs(ids) }

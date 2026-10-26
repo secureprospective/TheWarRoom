@@ -227,3 +227,15 @@ func AccountingReport() report.Report {
 			"MFL's own accounting page opens from here.",
 		How: "Checked against every archived accounting.json in the league archive."}
 }
+
+func OpenAccounting(ready func() error, host func() string, season func() int, open func(string)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("open accounting: %w", err)
+	}
+	target, err := AccountingURL(host(), season())
+	if err != nil {
+		return err
+	}
+	open(target)
+	return nil
+}

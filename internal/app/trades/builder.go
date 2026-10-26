@@ -132,3 +132,21 @@ func ClockReasons(read func() (snapshot.Sourced[leagueclock.Reading], error), no
 	}
 	return DeadlineReasons(now(), clock.Value.Windows, zone)
 }
+
+func ReadState(franchiseID string, selection func(string) (snapshot.Snapshot, error), pending func() snapshot.Sourced[[]leaguefeed.PendingTrade]) (snapshot.Snapshot, snapshot.Sourced[[]leaguefeed.PendingTrade], error) {
+	snap, err := selection(franchiseID)
+	if err != nil {
+		return snapshot.Snapshot{}, snapshot.Sourced[[]leaguefeed.PendingTrade]{}, fmt.Errorf("trade state: %w", err)
+	}
+	return snap, pending(), nil
+}
+
+func BuilderTeams(snap snapshot.Snapshot, mirror state.MirrorSnapshot, picks []draftreports.FuturePick, board []Value, boardErr error, pickValue func(int, int, string) *Cell) []TradeBuilderTeam {
+	values := map[string]Value{}
+	if boardErr == nil {
+		for _, v := range board {
+			values[v.ID] = v
+		}
+	}
+	return WireTeams(Teams(snap, mirror, picks, values, pickValue))
+}
