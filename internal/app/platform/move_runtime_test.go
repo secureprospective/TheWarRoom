@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 type memoryMoves struct {
@@ -178,4 +179,64 @@ func TestMovePollingFastUntilAndReadyWake(t *testing.T) {
 	if err := RequestMovesPass(func() error { return errors.New("startup failed") }, func() { t.Fatal("woke before ready") }); err == nil {
 		t.Fatal("startup error lost")
 	}
+}
+
+func TestMoveObservationConfirmationAndFailures(t *testing.T) {
+	at := time.Now().UTC().Truncate(time.Second)
+	held := snapshot.Snapshot{Rosters: snapshot.Sourced[[]snapshot.Roster]{Provenance: snapshot.Provenance{Freshness: domain.Freshness{State: domain.FreshLive, FetchedAt: at.Add(-time.Hour).Format(time.RFC3339)}}}}
+	s := MoveObservation{Snapshot: func(context.Context) (snapshot.Snapshot, error) { return held, nil }, Season: func() (envelope.Observation, error) { return envelope.Observation{}, nil }, Checked: func() time.Time { return at }, Contracts: func() []envelope.ContractEvidence { return nil }, League: "1"}
+	observation, err := s.Read(context.Background())
+	if err != nil || observation.Rosters.Provenance.Freshness.FetchedAt != at.Format(time.RFC3339) || observation.Contracts.Provenance != observation.Rosters.Provenance {
+		t.Fatal(observation, err)
+	}
+	held.Rosters.Provenance.Freshness.State = domain.FreshFail
+	observation, err = s.Read(context.Background())
+	if err != nil || observation.Rosters.Provenance.Freshness.FetchedAt == at.Format(time.RFC3339) {
+		t.Fatal("failed roster relabeled confirmed", observation, err)
+	}
+	failure := errors.New("build failed")
+	s.Snapshot = func(context.Context) (snapshot.Snapshot, error) { return snapshot.Snapshot{}, failure }
+	s.Season = func() (envelope.Observation, error) {
+		t.Fatal("read season after failed roster snapshot")
+		return envelope.Observation{}, nil
+	}
+	if _, err := s.Read(context.Background()); !errors.Is(err, failure) {
+		t.Fatal(err)
+	}
+}
+
+func TestRosterRevalidationOrderingAndCandidateAdmission(t *testing.T) {
+	calls := []string{}
+	s := RosterRevalidation{Release: func(context.Context) { calls = append(calls, "release") }, ContractsAvailable: true, Contracts: func(context.Context) error { calls = append(calls, "contracts"); return nil }, Ready: func() error { return nil },
+		List: func(context.Context) ([]envelope.Receipt, error) {
+			return []envelope.Receipt{{CorrelationID: "ready", State: envelope.Ready, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "blocked", State: envelope.Blocked, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "trade", State: envelope.Ready, Spec: envelope.Spec{Intent: "trade.accept"}}}, nil
+		},
+		Snapshot: func(context.Context) (snapshot.Snapshot, error) {
+			calls = append(calls, "snapshot")
+			return snapshot.Snapshot{}, nil
+		},
+		Lock: func() { calls = append(calls, "lock") }, Unlock: func() { calls = append(calls, "unlock") },
+		Decision: func(_ context.Context, _ snapshot.Snapshot, id string) (eligibility.Decision, bool) {
+			if id != "ready" {
+				t.Fatal(id)
+			}
+			calls = append(calls, "decision")
+			return eligibility.Decision{}, true
+		},
+		Return: func(context.Context, string, eligibility.Decision, bool) bool {
+			calls = append(calls, "return")
+			return true
+		}, Changed: func(context.Context) { calls = append(calls, "changed") }, Log: func(string) {}}
+	s.Run(context.Background())
+	want := []string{"release", "contracts", "snapshot", "lock", "decision", "return", "changed", "unlock"}
+	if !reflect.DeepEqual(calls, want) {
+		t.Fatal(calls)
+	}
+	calls = nil
+	s.List = func(context.Context) ([]envelope.Receipt, error) { return nil, nil }
+	s.Run(context.Background())
+	if !reflect.DeepEqual(calls, []string{"release", "contracts"}) {
+		t.Fatal("built snapshot for no candidates", calls)
+	}
+	RevalidateRelease(context.Background(), false, func(context.Context) error { t.Fatal("validated missing stores"); return nil }, nil)
 }

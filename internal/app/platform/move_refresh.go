@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 type MoveRefresh struct {
@@ -108,4 +110,32 @@ func ReadMoveObservation(ctx context.Context, sources map[envelope.Source]bool,
 		return envelope.Observation{}, err
 	}
 	return read(ctx)
+}
+
+// MoveObservation keeps the confirmation time distinct from the mirror's last content change.
+type MoveObservation struct {
+	Snapshot  func(context.Context) (snapshot.Snapshot, error)
+	Season    func() (envelope.Observation, error)
+	Checked   func() time.Time
+	Contracts func() []envelope.ContractEvidence
+	League    string
+}
+
+func (s MoveObservation) Read(ctx context.Context) (envelope.Observation, error) {
+	snap, err := s.Snapshot(ctx)
+	if err != nil {
+		return envelope.Observation{}, fmt.Errorf("watch moves: roster snapshot: %w", err)
+	}
+	season, err := s.Season()
+	if err != nil {
+		return envelope.Observation{}, fmt.Errorf("watch moves: held season: %w", err)
+	}
+	rosters := snap.Rosters
+	fresh := &rosters.Provenance.Freshness
+	if changed, err := time.Parse(time.RFC3339, fresh.FetchedAt); err == nil && fresh.State != domain.FreshFail && s.Checked().After(changed) {
+		fresh.FetchedAt = s.Checked().UTC().Format(time.RFC3339)
+	}
+	season.Contracts = snapshot.Sourced[[]envelope.ContractEvidence]{Value: s.Contracts(), Provenance: rosters.Provenance}
+	season.LeagueID, season.Rosters = s.League, rosters
+	return season, nil
 }

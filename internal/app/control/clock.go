@@ -1,6 +1,7 @@
 package control
 
 import (
+	"context"
 	"fmt"
 	"slices"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // WeekSnapshot owns its Games slice; the root copies it while holding weekMu.
@@ -155,4 +157,37 @@ func TimeNow(clock func() time.Time) time.Time {
 		return clock()
 	}
 	return time.Now()
+}
+
+// ClockRead builds a held-only clock after startup/state admission; no callback fetches MFL.
+type ClockRead struct {
+	Ready, StateError func() error
+	Timeout           time.Duration
+	Now               func() time.Time
+	Season            func() int
+	Source            func() snapshot.ClockSource
+	Lineup            func(time.Time) (*leagueclock.LineupLock, domain.Freshness)
+	Windows           func(time.Time) leagueclock.WindowInputs
+	Merge             func(context.Context, time.Time, *snapshot.Sourced[leagueclock.Reading])
+}
+
+func (s ClockRead) Read(parent context.Context) (snapshot.Sourced[leagueclock.Reading], error) {
+	if err := s.Ready(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
+	}
+	if err := s.StateError(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: state: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(parent, s.Timeout)
+	defer cancel()
+	now := s.Now()
+	lineup, fresh := s.Lineup(now)
+	clock, err := snapshot.BuildClock(ctx, now.UTC(), s.Season(), s.Source(), lineup, s.Windows(now), snapshot.Provenance{
+		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
+	})
+	if err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
+	}
+	s.Merge(ctx, now, &clock)
+	return clock, nil
 }

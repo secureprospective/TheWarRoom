@@ -64,3 +64,69 @@ func (s RosterPlanReview) ReturnToDraft(ctx context.Context, id string, decision
 	s.Audit(drafted)
 	return true
 }
+
+type RosterRevalidation struct {
+	Release            func(context.Context)
+	Contracts          func(context.Context) error
+	ContractsAvailable bool
+	Ready              func() error
+	List               func(context.Context) ([]envelope.Receipt, error)
+	Snapshot           func(context.Context) (snapshot.Snapshot, error)
+	Lock, Unlock       func()
+	Decision           func(context.Context, snapshot.Snapshot, string) (eligibility.Decision, bool)
+	Return             func(context.Context, string, eligibility.Decision, bool) bool
+	Changed            func(context.Context)
+	Log                func(string)
+}
+
+func (s RosterRevalidation) Run(ctx context.Context) {
+	s.Release(ctx)
+	if s.ContractsAvailable {
+		if err := s.Contracts(ctx); err != nil {
+			s.Log(fmt.Sprintf("contract validation: %v", err))
+		}
+	}
+	if err := s.Ready(); err != nil {
+		return
+	}
+	receipts, err := s.List(ctx)
+	if err != nil {
+		s.Log(fmt.Sprintf("revalidate moves: list: %v", err))
+		return
+	}
+	candidates := []string{}
+	for _, r := range receipts {
+		if r.State == envelope.Ready && (r.Spec.Intent == "roster.ir" || r.Spec.Intent == "roster.taxi") {
+			candidates = append(candidates, r.CorrelationID)
+		}
+	}
+	if len(candidates) == 0 {
+		return
+	}
+	snap, err := s.Snapshot(ctx)
+	if err != nil {
+		s.Log(fmt.Sprintf("revalidate moves: build: %v", err))
+		return
+	}
+	s.Lock()
+	defer s.Unlock()
+	changed := false
+	for _, id := range candidates {
+		decision, found := s.Decision(ctx, snap, id)
+		if s.Return(ctx, id, decision, found) {
+			changed = true
+		}
+	}
+	if changed {
+		s.Changed(ctx)
+	}
+}
+
+func RevalidateRelease(ctx context.Context, available bool, validate func(context.Context) error, logLine func(string)) {
+	if !available {
+		return
+	}
+	if err := validate(ctx); err != nil {
+		logLine(fmt.Sprintf("release validation: %v", err))
+	}
+}

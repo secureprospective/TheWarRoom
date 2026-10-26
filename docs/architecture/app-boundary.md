@@ -86,8 +86,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 24 | 4 | `internal/composition/moves_app.go` — `withBidFacts`:103, `moveSources`:121 | 35 | `platform` | B,W:platform | Load predicate-specific contract/bid facts; union required sources; log each unknown intent once. MOVED (part 4, batch 3). |
 | 25 | 4 | `internal/composition/moves_app.go` — `checkMoves`:140, `refreshedObservation`:200 | 69 | `platform` | B,W:platform | Refresh only with awaiting work and known sources; reread under moves lock, skip stale observations/state races, save changed evidence; emit once if changed. MOVED (part 4, batch 3). |
 | 26 | 3 | `internal/composition/moves_app.go` — `refreshMoveSources`:211, `refreshMoveSource`:251, `recentMoveSource`:305 | 80 | `platform` | B,W:platform | Latest handoff sets evidence floor; fixed refresh order/spacing; skip recent successful post-handoff feeds and duplicate contracts; injectable refresh or normal source routes, log roster failure. MOVED (part 4, batch 3). |
-| 27 | 4 | `internal/composition/moves_app.go` — `moveObservation`:273 | 29 | `platform` | B,W:platform | Build roster/season/contract evidence; successful unchanged roster refresh advances observation time without lying about content change. |
-| 28 | 4 | `internal/composition/moves_app.go` — `revalidateReadyRosterMoves`:330, `revalidateReleaseAfterRefresh`:430 | 57 | `platform` | B,W:control,sources | Revalidate release/contract plans, then only ready IR/taxi candidates; rebuild eligibility, batch state changes and notify. |
+| 27 | 4 | `internal/composition/moves_app.go` — `moveObservation`:273 | 29 | `platform` | B,W:platform | Build roster/season/contract evidence; successful unchanged roster refresh advances observation time without lying about content change. MOVED (part 4, batch 5). |
+| 28 | 4 | `internal/composition/moves_app.go` — `revalidateReadyRosterMoves`:330, `revalidateReleaseAfterRefresh`:430 | 57 | `platform` | B,W:control,sources | Revalidate release/contract plans, then only ready IR/taxi candidates; rebuild eligibility, batch state changes and notify. MOVED (part 4, batch 5). |
 | 29 | 4 | `internal/composition/moves_app.go` — `planDecision`:380, `returnPlanToDraft`:398 | 46 | `platform` | B,W:control,sources | Select taxi/IR verdict only for still-ready held player; ineligible only follows invalidate→rebase→save, unknown verdict leaves plan unchanged. MOVED (part 4, batch 3). |
 | 30 | 4 | `internal/composition/moves_app.go` — `withdrawRosterMove`:449 | 26 | `platform` | W:platform | Require startup and ownership; withdraw through envelope, save before audit/event. MOVED (part 4, batch 3). |
 | 31 | 5 | `internal/composition/moves_app.go` — `requestMovesPass`:71, `logMove`:81 | 12 | `platform` | W:platform;B | Ready gate before wake; log last audit transition (runtime adapter policy). MOVED (part 4, batch 3). |
@@ -138,10 +138,10 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 76 | 5 | `internal/composition/season_app.go` — `refreshPendingTradesInBackground`:264 | 14 | `control` | W:control | Key-change refresh uses cancellable worker context else fallback; refresh lock then season notification. MOVED (part 4, batch 2). |
 | 77 | 3 | `internal/composition/shell_feeds_app.go` — `readShellFeed`:16, `dailyShellReading`:33, `refreshDailyShellFeed`:43 | 40 | `control` | B,W:control,offers | Read archive only when absent; old local date marks pending; at most one network attempt per export/local day (also skip today's successful held read); publish result under season lock. MOVED (part 4, batch 2). |
 | 78 | 2 | `internal/composition/shell_feeds_app.go` — `mergeMFLCalendar`:89 | 44 | `control` | W:platform,control | Map held event timestamps/title fallback; discard past deadlines; sort urgency/time/ID; append calendar provenance/unavailability note.  MOVED (part 2, batch 2). |
-| 79 | 3 | `internal/composition/snapshot_app.go` — `takeSnapshot`:23, `targetDirectory`:44, `targetInjuries`:85, `injuriesHeld`:94 | 70 | `platform` | W:platform | Ready gate, serialized directory/injuries snapshot; first-use injury refresh; live directory time uses original lookup timestamp, archive/fail provenance explicit; publish only built snapshot. |
-| 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. |
+| 79 | 3 | `internal/composition/snapshot_app.go` — `takeSnapshot`:23, `targetDirectory`:44, `targetInjuries`:85, `injuriesHeld`:94 | 70 | `platform` | W:platform | Ready gate, serialized directory/injuries snapshot; first-use injury refresh; live directory time uses original lookup timestamp, archive/fail provenance explicit; publish only built snapshot. MOVED (part 4, batch 5). |
+| 80 | 3 | `internal/composition/snapshot_app.go` — `targetClock`:100 | 20 | `control` | W:platform,control,draft,trades | Require ready/healthy what-if; derive clock from phase/calendar/NFL week windows; merge held MFL calendar, no fetch. MOVED (part 4, batch 5). |
 | 81 | 1 | `internal/composition/snapshot_app.go` — `rosterMoveTarget`:121 | 11 | `platform` | W:platform,contracts,offers,trades | Unknown discovered host gives unmapped target/block; otherwise encode league/options URL, never submit.  MOVED (part 2, batch 1). |
-| 82 | 4 | `internal/composition/snapshot_app.go` — `draftRosterMove`:133, `listMoves`:186 | 71 | `platform` | W:platform | Require own franchise/player/held snapshot; taxi vs IR chooses target/ID prefix/envelope; save local plan only; rail labels trade receipts but omits bid/release/contract plans. |
+| 82 | 4 | `internal/composition/snapshot_app.go` — `draftRosterMove`:133, `listMoves`:186 | 71 | `platform` | W:platform | Require own franchise/player/held snapshot; taxi vs IR chooses target/ID prefix/envelope; save local plan only; rail labels trade receipts but omits bid/release/contract plans. MOVED (part 4, batch 5). |
 | 83 | 3 | `internal/composition/sources_runtime.go` — `compileFactsInBackground`:47, `warmArchive`:79 | 38 | `sources` | startup | Only existing manifest permits republish/compile/warm/model-fit; failures stop later steps; bounded worker and archive cache lock. MOVED (part 4, batch 4). |
 | 84 | 2 | `internal/composition/sources_runtime.go` — `readSettings`:102, `writeSettings`:117 | 28 | `sources` | startup,W:sources | Missing file means defaults; JSON decode errors remain visible; write indented owner-only temp file then rename atomically. MOVED (part 3, batch 3). |
 | 85 | 3 | `internal/composition/asset_board.go` — `fitAssetModel`:133 | 17 | `market` | startup | No verified cache means no fit; compile error logs without publishing; success publishes model and season event. MOVED (part 4, batch 4). |
@@ -747,3 +747,23 @@ verified-fit failure/no-publication/order, identity UID isolation/lazy fallback 
 startup-refusal tests pass. Feature/composition filtered race batch passed (1.8 seconds composition),
 including real local identity, logging permissions/retention, Sources lock and door parity. The first
 build found a callback type mismatch (Model interface versus LabModel); corrected the service port.
+
+## Part 4 — batch 5: held snapshots and plan revalidation
+
+Five units (27–28, 79–80, 82), 247 baseline function LOC. Platform owns roster confirmation
+freshness, ordered snapshot acquisition/success-only publication, directory provenance and
+first-use injuries, roster-draft admission/IR-versus-taxi envelope construction/rail filtering,
+and release→contract→eligible-roster plan revalidation. Control owns ready/state-gated held clock
+construction and calendar merge. Composition retains the original resource/lock/context spans,
+including Build using the app context (not the bounded directory context), lookup timestamp
+sampling under LookupMu, and save/notification under MovesMu. Cross-feature contract evidence,
+season conversion and eligibility snapshot construction remain representation/resource adapters.
+
+Added inward capture failure/no-publish, directory original-time/archive/failure provenance,
+injury lazy/bounded refresh, roster authorization/player/snapshot early refusal, rail filtering,
+confirmed-versus-failed roster evidence, candidate admission/revalidation order and held-clock
+startup/state/merge tests. Filtered Platform/Control/Research/composition race batch passed
+(3.4 seconds composition), including real snapshot cache/archive, roster writes/restart,
+concurrent draft, eligibility rebasing, weekly clock and door parity. Full make lint passed:
+all guards, bloat 24/24 and zero golangci-lint issues. Source review also preserved news pause
+selection before the held news capture, matching its original sampling order.

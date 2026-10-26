@@ -121,6 +121,7 @@ func (a *App) heldResearchInput() researchInput {
 }
 
 func (a *App) refreshResearchNews(mine string) error {
+	var pause func(context.Context, time.Duration) error
 	return (researchapp.NewsRefresh{ //nolint:wrapcheck // Preserve original news refresh errors.
 		Ready: a.ready, Names: func() map[string]string { return a.core.Rulebook.FranchiseNames() },
 		Parent: a.core.ResearchContext, TryLock: a.core.NewsMu.TryLock, Unlock: a.core.NewsMu.Unlock,
@@ -129,7 +130,9 @@ func (a *App) refreshResearchNews(mine string) error {
 			a.core.LookupMu.Lock()
 			lookup := a.core.Lookup
 			a.core.LookupMu.Unlock()
-			return researchapp.PlayerIDs(researchapp.RosterIDs(mirror, mine), lookup)
+			ordered := researchapp.PlayerIDs(researchapp.RosterIDs(mirror, mine), lookup)
+			pause = a.seasonPauseFunc()
+			return ordered
 		},
 		Held: func() map[string]researchapp.Feed[[]researchfeeds.News] {
 			a.core.SeasonMu.Lock()
@@ -137,7 +140,7 @@ func (a *App) refreshResearchNews(mine string) error {
 			return maps.Clone(a.snapshotResearch().news)
 		},
 		Read: func(ctx context.Context, held map[string]researchapp.Feed[[]researchfeeds.News], ordered []string) error {
-			return researchapp.ReadNewsBatches(ctx, held, a.core.Season, ordered, time.Now(), a.core.History.ArchivedBodies, a.seasonPauseFunc(),
+			return researchapp.ReadNewsBatches(ctx, held, a.core.Season, ordered, time.Now(), a.core.History.ArchivedBodies, pause,
 				func(ctx context.Context, ids []string) (map[string][]researchfeeds.News, error) {
 					return researchfeeds.FetchNews(ctx, a.core.MFLClient, a.core.Season, ids)
 				}, a.core.FallbackLog)
