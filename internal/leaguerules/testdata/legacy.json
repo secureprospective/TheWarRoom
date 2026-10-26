@@ -2340,6 +2340,39 @@
       "State": 1,
       "Value": true,
       "Citation": "MFL league scoring settings"
+    },
+    "Extras": {
+      "State": 1,
+      "Value": {},
+      "Citation": "MFL league scoring settings"
+    },
+    "Ranges": {
+      "State": 1,
+      "Value": {},
+      "Citation": "MFL league scoring settings"
+    },
+    "Scales": {
+      "State": 1,
+      "Value": {},
+      "Citation": "MFL league scoring settings"
+    },
+    "Totals": {
+      "State": 1,
+      "Value": {},
+      "Citation": "MFL league scoring settings"
+    },
+    "LineUnit": {
+      "State": 1,
+      "Value": {
+        "Used": false,
+        "Weights": {},
+        "Labels": {},
+        "NoSack": 0,
+        "Sacks": "",
+        "Clamped": false,
+        "Clamp": 0
+      },
+      "Citation": "MFL league scoring settings"
     }
   },
   "Standings": {

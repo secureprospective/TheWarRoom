@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "566a3da3118f4a0cad3f5564588faa3646a7f00f72ef19bc9c95f66ed932b659",
+  "beforeDigest": "0f81f3a551c6aa3c26831d96fcd5e4f601c4e6d0b710cd198306b47c2f826026",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -2657,6 +2657,39 @@
       "RoundStatPoints": {
         "State": 1,
         "Value": true,
+        "Citation": "MFL league scoring settings"
+      },
+      "Extras": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "Ranges": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "Scales": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "Totals": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "LineUnit": {
+        "State": 1,
+        "Value": {
+          "Used": false,
+          "Weights": {},
+          "Labels": {},
+          "NoSack": 0,
+          "Sacks": "",
+          "Clamped": false,
+          "Clamp": 0
+        },
         "Citation": "MFL league scoring settings"
       }
     },

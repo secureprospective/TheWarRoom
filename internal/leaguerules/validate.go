@@ -117,7 +117,7 @@ func validateRules(r RuleSet) error {
 		r.Playoffs.StartWeek.Value > r.Playoffs.FinalWeek.Value {
 		return fmt.Errorf("first playoff week cannot follow the final week")
 	}
-	return nil
+	return validateScoringKinds(r.Scoring)
 }
 func validateMenu(kind, value string) error {
 	menus := map[string][]string{

@@ -3,13 +3,20 @@ package leaguerules
 type ScoringRules struct {
 	Catalogue       Value[map[StatID]Stat]
 	RoundStatPoints Value[bool]
+	Extras          Value[map[StatID][]PositionExtra]
+	Ranges          Value[map[StatID]StatRange]
+	Scales          Value[map[StatID]DistanceScale]
+	Totals          Value[map[StatID][]StatID]
+	LineUnit        Value[LineUnit]
 }
 
 func legacyScoring() ScoringRules {
-	return ScoringRules{
+	r := ScoringRules{
 		Catalogue:       cited[map[StatID]Stat](legacyCatalogue(), "MFL league scoring settings"),
 		RoundStatPoints: cited(true, "MFL league scoring settings"),
 	}
+	emptyScoringKinds(&r, "MFL league scoring settings")
+	return r
 }
 
 func scoringFields() []ruleField {
@@ -96,9 +103,12 @@ func legacyCatalogue() map[StatID]Stat {
 	return result
 }
 func scoringStat(label, group string, points Decimal) Stat {
-	return Stat{Label: cited(label, "MFL league scoring settings"), Group: cited(group, "MFL league scoring settings"),
-		Used: cited(true, "MFL league scoring settings"), Points: cited(points, "MFL league scoring settings"),
-		Once: cited(false, "MFL league scoring settings"), Bonuses: cited([]Bonus{}, "MFL league scoring settings"), Positions: cited([]Position{}, "MFL league scoring settings")}
+	return scoringStatCited(label, group, points, "MFL league scoring settings")
+}
+func scoringStatCited(label, group string, points Decimal, citation string) Stat {
+	return Stat{Label: cited(label, citation), Group: cited(group, citation),
+		Used: cited(true, citation), Points: cited(points, citation),
+		Once: cited(false, citation), Bonuses: cited([]Bonus{}, citation), Positions: cited([]Position{}, citation)}
 }
 func installLongPlays(catalogue map[StatID]Stat) {
 	rows := []struct {
