@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>TheWarRoom Revamp Map</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--bg:#0f1216;--panel:#171b21;--line:#262c35;--text:#e6e9ee;--dim:#9aa3ae;
+--a:#e0a43c;--b:#4fa3e0;--c:#5cc28a;--d:#8a8f98;--e:#c06fd8;--f:#e06a6a;--g:#5fc7c7}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:32px 20px 80px}
+h1{margin:0 0 4px;font-size:28px}h2{margin:40px 0 12px;font-size:19px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.sub{color:var(--dim);margin:0 0 20px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--dim);font-size:13px}
+.core{background:var(--panel);border-left:4px solid var(--a);padding:14px 16px;border-radius:6px}
+.layers{display:grid;gap:8px}
+.layer{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:stretch}
+.layer>.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);display:flex;align-items:center}
+.blocks{display:flex;flex-wrap:wrap;gap:6px}
+.blk{flex:1 1 140px;padding:10px;border-radius:6px;background:var(--panel);border-top:3px solid;font-size:13px;text-decoration:none;color:var(--text)}
+.blk:hover{background:#1e242c}.blk i{font-style:normal;color:var(--dim)}
+details{background:var(--panel);border:1px solid var(--line);border-left:4px solid;border-radius:6px;margin:8px 0}
+summary{cursor:pointer;padding:12px 14px;font-weight:600;list-style:none;display:flex;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}summary::before{content:"▸";color:var(--dim)}details[open] summary::before{content:"▾"}
+summary .tag{margin-left:auto;font-weight:400;font-size:12px;color:var(--dim)}
+.body{padding:0 16px 14px 34px}.body p{margin:6px 0}.body b{color:#fff}
+.rule{background:#1d2318;border:1px solid #3a4a2a;border-radius:4px;padding:6px 10px;margin-top:8px;font-size:14px}
+ol.order{padding-left:22px}ol.order li{margin:5px 0}ol.order em{color:var(--dim);font-style:normal}
+.rulings li{margin:6px 0}
+.A{border-color:var(--a)}.B{border-color:var(--b)}.C{border-color:var(--c)}.D{border-color:var(--d)}.E{border-color:var(--e)}.F{border-color:var(--f)}.G{border-color:var(--g)}
+footer{color:var(--dim);font-size:13px;margin-top:40px}
+</style></head><body><main>
+
+<h1>TheWarRoom Revamp Map</h1>
+<p class="sub">16 parts, locked one at a time with Christopher · 2026-10-26 · mapped from main 3110ab39</p>
+
+<div class="stats">
+<div class="stat"><b>122k</b><span>Go app lines (+106k test)</span></div>
+<div class="stat"><b>38k</b><span>Frontend lines (+18k test; 13.8k generated)</span></div>
+<div class="stat"><b>4</b><span>separate command lists today</span></div>
+<div class="stat"><b>21.6k</b><span>lines in one league package</span></div>
+</div>
+
+<div class="core"><b>Core finding.</b> Every button is drawn the same way, but four command lists drift apart: 62 UI, 136 native, 9 MFL, 136 desktop methods. The server accepts only 42 of the 136 native commands. One standard command system is the spine every other part builds on.</div>
+
+<h2>The system at a glance</h2>
+<div class="layers">
+<div class="layer"><div class="lbl">Spine</div><div class="blocks">
+<a class="blk A" href="#p1">1 · Command spine<br><i>one standard, every door</i></a>
+<a class="blk A" href="#p2">2 · App boundary<br><i>one shared brain</i></a>
+<a class="blk A" href="#p3">3 · Frontend data<br><i>one read tool</i></a>
+<a class="blk A" href="#p4">4 · Storage + recovery<br><i>rosters + contracts first</i></a>
+<a class="blk A" href="#p5">5 · Player identity<br><i>our own IDs</i></a></div></div>
+<div class="layer"><div class="lbl">Native league</div><div class="blocks">
+<a class="blk B" href="#p6">6 · League core split<br><i>market · people · rules · draft · competition · season</i></a></div></div>
+<div class="layer"><div class="lbl">Data + value</div><div class="blocks">
+<a class="blk C" href="#p7">7 · Valuation + scoring<br><i>heavy tinkering</i></a>
+<a class="blk C" href="#p8">8 · Stats pipeline<br><i>widest stat suite</i></a></div></div>
+<div class="layer"><div class="lbl">MFL</div><div class="blocks">
+<a class="blk D" href="#p9">9 · MFL reference app<br><i>fence + freeze</i></a></div></div>
+<div class="layer"><div class="lbl">Server + ops</div><div class="blocks">
+<a class="blk E" href="#p10">10 · Transport</a>
+<a class="blk E" href="#p11">11 · Accounts + security</a>
+<a class="blk E" href="#p12">12 · Operations</a></div></div>
+<div class="layer"><div class="lbl">Screens</div><div class="blocks">
+<a class="blk F" href="#p13">13 · Screens + scorecard</a>
+<a class="blk F" href="#p14">14 · Read screens + visual</a></div></div>
+<div class="layer"><div class="lbl">Hygiene</div><div class="blocks">
+<a class="blk G" href="#p15">15 · Detach tools</a>
+<a class="blk G" href="#p16">16 · Docs + gates</a></div></div>
+</div>
+
+<h2>The 16 parts</h2>
+
+<details id="p1" class="A"><summary>1 · Command spine<span class="tag">XL · do first</span></summary><div class="body">
+<p><b>What:</b> the pipe every action runs through. A button, CLI line, chat, AI helper or server request all land on the same named command.</p>
+<p><b>Today:</b> four lists that have drifted apart. The server accepts only 42 of the native commands, and the CLI/MCP have just 3 generic verbs. Bugs: the "change engine parameter" button can never run (dispatch demands GM, the command is admin-only). A catch-all command silently drops actions. History logs "pressed", not "done".</p>
+<p><b>Better:</b> one registry in Go that runs commands, with every door generated from it. The UI keeps a small list for screen-only actions. CI fails the build if a button has no command.</p>
+<p><b>Why:</b> commands make CLI, chat and AI first-class. One standard keeps every door telling the same truth.</p></div></details>
+
+<details id="p2" class="A"><summary>2 · App boundary<span class="tag">XL</span></summary><div class="body">
+<p><b>What:</b> where the real work lives: refresh, trade plans, valuation runs.</p>
+<p><b>Today:</b> stuck inside the desktop's startup wiring (<code>composition</code>, 7k lines + 26.7k test lines) and one giant shared State with many locks.</p>
+<p><b>Better:</b> small per-feature services that know nothing about desktop or transport. Desktop, server and CLI all call them. Tests move with the behaviour.</p>
+<p><b>Why:</b> the server owns the league, every door must share one brain, and a part can only be rebuilt in isolation if it lives in one place.</p></div></details>
+
+<details id="p3" class="A"><summary>3 · Frontend data handling<span class="tag">L</span></summary><div class="body">
+<p><b>Today:</b> 30 stores each re-write loading flags, late-reply protection, error handling and refresh, plus three different polling styles.</p>
+<p><b>Better:</b> one shared "read this" tool, written and tested once. Each screen just asks for what it needs.</p>
+<p><b>Why:</b> no copy of the same bug in 30 places, no stale screens, safe league/account switching once owners connect.</p></div></details>
+
+<details id="p4" class="A"><summary>4 · Storage + league recovery<span class="tag">XL</span></summary><div class="body">
+<p><b>Today:</b> three databases with three ways of changing their layout, one of them unversioned. The history store does five jobs. Recovery is spread across backups, transfer and restore scripts.</p>
+<p><b>Better:</b> one versioned upgrade path per database, and a split history store. A <b>standalone rosters + contracts restore point</b>, a <b>per-league recovery log</b>, and a tested <b>"stand the league back up"</b> command. Steps: restore rosters/contracts → check cap totals → commish signs in → owners sign in → attach history.</p>
+<div class="rule">Ruling: the league is rosters + contracts. History is secondary.</div></div></details>
+
+<details id="p5" class="A"><summary>5 · Player identity<span class="tag">L/XL</span></summary><div class="body">
+<p><b>Today:</b> the MFL player ID is the identity everywhere (165+ files). Other sources get matched to it, and bad matches already happen.</p>
+<p><b>Better:</b> our own player ID as the master, with MFL, GSIS, ESPN, Sleeper and CFBD as stored links. Existing MFL IDs map one-to-one, so nothing stored today breaks.</p>
+<div class="rule">Ruling: we run our own system. Ownership is keyed by <b>side + player</b> for the mirrored league.</div></div></details>
+
+<details id="p6" class="B"><summary>6 · Native league core split<span class="tag">XL · 6 sessions</span></summary><div class="body">
+<p><b>Today:</b> one 21.6k-line <code>commissioner</code> package with the thinnest tests. Everything goes through one switch and one bundled arguments type.</p>
+<p><b>Better:</b> split into domains, one session each: <b>Market</b> (trades, bids, waivers; first, to prove the pattern) · <b>Governance + people</b> · <b>Rules</b> (absorbs the old rulebook) · <b>Draft</b> · <b>Competition</b> (scoring, standings, schedule, lineups, playoffs) · <b>Season</b>. A small shared core keeps old records readable.</p>
+<p><b>Why:</b> this is where rosters and contracts change, and the default league modes build on it.</p></div></details>
+
+<details id="p7" class="C"><summary>7 · Valuation + scoring<span class="tag">XL · heavy tinkering</span></summary><div class="body">
+<p><b>Today:</b> six unnamed ways to value a player. Settings for the removed six-layer engine are still editable but do nothing. Prior seasons get rescored under current rules. The Lab retrains at every startup and <b>stops valuing on Jan 1, 2027</b>.</p>
+<p><b>Better:</b> named, versioned value products, native-first. Remove the dead settings, train once and load fast, and rewrite the spec to match reality.</p>
+<p><b>Why tinkering:</b> there's no agreed target yet. "Right" is judged against real outcomes, not unit tests. Many hand-tuned settings, new native inputs, two league modes and per-position behaviour all shift the numbers.</p>
+<div class="rule">Rulings: lean native · the Lab leaves the app and becomes an R&amp;D bench for data fields, never direct reporting · a small 2027 stopgap until then.</div></div></details>
+
+<details id="p8" class="C"><summary>8 · Stats pipeline<span class="tag">L</span></summary><div class="body">
+<p><b>Today:</b> nflverse (deep, not live), ESPN/Yahoo live (box-score level), and players, injuries and NFL schedule <b>from MFL</b>. Ingestion mixes MFL league data with football facts.</p>
+<p><b>Better:</b> a first-class native stats feed, split into MFL import vs football facts. One standard result per feed, with freshness shown. The saved-download fingerprint chain stays intact.</p>
+<div class="rule">Rulings: MFL data is unreliable, so it's never the source of football facts · widest stat suite possible (QB hits, first downs, IDP, play-level, snaps, live, corrections) · compare providers first, Christopher picks.</div></div></details>
+
+<details id="p9" class="D"><summary>9 · MFL reference app<span class="tag">L · low attention</span></summary><div class="body">
+<p><b>Today:</b> a full second engine: an imported MFL copy, a what-if copy, plans watched against MFL, MFL rule checks. It shares command names with native but they mean different things.</p>
+<p><b>Better:</b> fence it into its own labelled area with its own names (<code>mfl.*</code>). No new features; share only the pure math. Freeze it.</p>
+<div class="rule">Ruling: MFL import keeps working, but it gets less attention than native.</div></div></details>
+
+<details id="p10" class="E"><summary>10 · Server/client transport<span class="tag">L</span></summary><div class="body">
+<p><b>Today:</b> 19 routes, with four doors for the same action. A hand-typed 42-command allowlist. The client imports the server's own code. Error formats differ by door.</p>
+<p><b>Better:</b> a shared protocol package and one league command door generated from Part 1. Split the client. One error format: plain words for owners, stable codes for experts.</p>
+<div class="rule">Ruling: non-technical users come first, and experts are never limited.</div></div></details>
+
+<details id="p11" class="E"><summary>11 · Accounts + security<span class="tag">L</span></summary><div class="body">
+<p><b>Today:</b> a strong core (hashing, TOTP, scoped AI tokens, a shared writer that stops revoked users). But there are two sign-in worlds, an unversioned schema, and security code tied to league details.</p>
+<p><b>Better:</b> one simple sign-in path (invite → password → scan QR), a versioned schema, and a small security↔league check. Split membership from succession. No secrets anywhere in logs.</p></div></details>
+
+<details id="p12" class="E"><summary>12 · Operations<span class="tag">L</span></summary><div class="body">
+<p><b>Today:</b> encrypted and verified R2 backups, TUF-signed updates, guarded transfer. But install, serve, upgrade and restore are four separate paths across Go and ~1,600 lines of shell, and the real-world drills haven't been run.</p>
+<p><b>Better:</b> one deployment state machine where Go does the checks. Backups feed Part 4's recovery. Guided install, and plain status like "Backed up 4 min ago ✓". Run the drills.</p></div></details>
+
+<details id="p13" class="F"><summary>13 · Screens<span class="tag">L · tinkering</span></summary><div class="body">
+<p><b>Today:</b> two apps in one window. The real hosted native app is buried in a commissioner folder. The shell does feature work, and Market routes five other pages.</p>
+<p><b>Better:</b> the hosted native app becomes the main app. Features own their screens, the shell is just the frame, and there's one route table.</p>
+<div class="rule">First step: a <b>screen scorecard</b>. Tools rate every screen on: every button a command · speed and bundle size · minimal code · plain language · no dead space (screenshots) · accessibility · all states shown.</div></div></details>
+
+<details id="p14" class="F"><summary>14 · Read screens + visual system<span class="tag">M each</span></summary><div class="body">
+<p><b>Screens:</b> Now, Race, Archive, Research, Comms, Reports, Counterparties, Market analytics.</p>
+<p><b>Better:</b> a shared report kit (moved out of draft), one refresh policy, and clean tokens and cards. The specimen page is the reference. The <b>hold timer is fixed to 600 ms</b>. Lab figures switch to native values or get dropped. Archive goes first to prove the pattern.</p></div></details>
+
+<details id="p15" class="G"><summary>15 · Detach<span class="tag">M</span></summary><div class="body">
+<p><b>Moves out of the shipping app:</b> Lab + labcompile, <code>cmd/fit</code>, labparity → research zone · fixtures, practice/hostedfixture → dev tools · the pi-durable experiment and normalize.py → out of docs.</p>
+<p><b>Keeps:</b> FixtureProvider + snapshot.json (ruling), the specimen page, the wire-contract tests.</p>
+<p><b>Better:</b> two zones. CI blocks the app from importing tools.</p></div></details>
+
+<details id="p16" class="G"><summary>16 · Docs + gates<span class="tag">M · ongoing</span></summary><div class="body">
+<p><b>Stale today:</b> Go version, a removed RESUME, UI spec revision, the pre-push claim, the SYSTEM_MAP limit target, the six-layer engine in North Star and the README.</p>
+<p><b>Gate gaps:</b> release-tools is outside the required check, coverage never runs, tool tests run nowhere, the 195 wire files have no list, composition tests run at 3.7:1.</p>
+<p><b>Better:</b> every doc labelled, and each session fixes its own docs. New gates: every button has a command, the app never imports tools, scorecard thresholds.</p></div></details>
+
+<h2>Suggested session order</h2>
+<ol class="order" start="0">
+<li><b>Quick fixes</b> <em>— Lab 2027 stopgap · GM/admin button bug · 600 ms hold · CLAUDE.md/README truth pass</em></li>
+<li>Command spine <em>(Part 1)</em></li>
+<li>App boundary <em>(Part 2)</em></li>
+<li>Frontend data handling <em>(Part 3)</em></li>
+<li>Storage + recovery <em>(Part 4)</em></li>
+<li>Player identity <em>(Part 5)</em></li>
+<li>Stats pipeline <em>(Part 8; native scoring depends on it)</em></li>
+<li>Native domains <em>(Part 6, ~6 sessions): market → governance → rules → draft → competition → season</em></li>
+<li><b>Default league mode 1:</b> mirrored AFC/NFC <em>(mode 2 is scoped with you first)</em></li>
+<li>Valuation + scoring tinkering <em>(Part 7) + Lab unwiring</em></li>
+<li>Detach <em>(Part 15)</em></li>
+<li>MFL fence <em>(Part 9)</em></li>
+<li>Transport → accounts → ops <em>(Parts 10–12)</em></li>
+<li>Screen scorecard + screens → read screens + visual <em>(Parts 13–14)</em></li>
+<li>Docs + gates close-out <em>(Part 16)</em></li>
+</ol>
+
+<h2>Rulings from this session</h2>
+<ul class="rulings">
+<li><b>The league is rosters + contracts.</b> Recovery restores those first, and each league keeps a recovery log.</li>
+<li><b>Default mode 1:</b> 32 teams, 16 AFC + 16 NFC. Each side has its own full player pool (a player is owned once per side). No cross-side moves, normal cross-side schedule, side champions meet in a final.</li>
+<li><b>Default mode 2:</b> a modified version of the current Legacy league, to be discussed later.</li>
+<li><b>Lean native.</b> The MFL harness gets less attention but keeps working.</li>
+<li><b>The Lab leaves the app.</b> It becomes an R&amp;D bench for data fields, with a small 2027 stopgap until then.</li>
+<li><b>Widest stat suite possible</b>, fast and reliable. Compare providers; Christopher picks.</li>
+<li><b>Non-technical first</b>, experts never limited.</li>
+<li><b>Screens get a scorecard</b> that rates them against the build philosophy.</li>
+</ul>
+
+<footer>Source: three Sol 6.1 medium mapping runs (Beelink ~/fleet/runs/sol61-revamp-map-*), read in full, key claims spot-checked against the code.</footer>
+</main></body></html>
