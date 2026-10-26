@@ -37,7 +37,8 @@ func TestReverseReceiveFailurePreservesBothFences(t *testing.T) {
 		t.Fatal(err)
 	}
 	salary := domain.Money(123456789)
-	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.ContractEdit, Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{Player: "0099", Salary: &salary}}, Expected: 2, Request: "server.change", Reason: "Correct contract on server", Effective: "now", Visibility: "league"}
+	years := 4
+	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.ContractEdit, Args: commissioner.RawArgs{Override: &commissioner.RawNativeOverride{Player: "0099", Salary: &salary, Years: &years}}, Expected: 2, Request: "server.change", Reason: "Correct contract on server", Effective: "now", Visibility: "league"}
 	if _, err := target.ExecuteCommissioner(t.Context(), raw, "creator", nil); err != nil {
 		t.Fatal(err)
 	}
