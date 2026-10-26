@@ -26,6 +26,7 @@ const (
 type Entry struct {
 	ID, Label  string
 	Definition Command
+	CLI        bool
 	Native     map[Mode]Handler
 	MFL        map[Mode]Handler
 	Desktop    []DesktopExposure
@@ -64,7 +65,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		if err != nil {
 			return nil, err
 		}
-		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, Native: handlers})
+		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, CLI: strings.HasPrefix(c.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
 	}
 	for _, c := range mfl {
 		b, ok := in.Desktop["offers"][c.Method]
@@ -159,6 +160,9 @@ func (r *Registry) Validate() error {
 }
 
 func (e Entry) validate() error {
+	if err := e.validateGeneratedDoors(); err != nil {
+		return err
+	}
 	if e.Native != nil || e.MFL != nil {
 		handlers := e.Native
 		if e.MFL != nil {
@@ -272,4 +276,14 @@ func validateHandlers(c Command, handlers map[Mode]Handler) error {
 
 func (e Entry) hasDoor() bool {
 	return e.Native != nil || e.MFL != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
+}
+
+func (e Entry) validateGeneratedDoors() error {
+	if e.CLI && (e.Native == nil || !strings.HasPrefix(e.Definition.Arguments.Validator, "RawCommand.Validate/ValidatePreview:")) {
+		return fmt.Errorf("CLI requires the generic native change handler")
+	}
+	if e.Browser != nil && e.Browser.Arguments.ClientType == "" {
+		return fmt.Errorf("missing browser argument type")
+	}
+	return nil
 }

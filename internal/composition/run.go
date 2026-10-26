@@ -148,23 +148,7 @@ func bindings(app *App) []interface{} {
 		panic(fmt.Sprintf("invalid command registry: %v", err))
 	}
 	app.commands = registry
-	return []interface{}{
-		apis.archive,
-		apis.commissioner,
-		apis.comms,
-		apis.control,
-		apis.contracts,
-		apis.counterparties,
-		apis.draft,
-		apis.market,
-		apis.now,
-		apis.offers,
-		apis.platform,
-		apis.race,
-		apis.research,
-		apis.sources,
-		apis.trades,
-	}
+	return generatedWailsBindings(apis)
 }
 
 // helperCommands is every catalog command an AI helper's token may carry.

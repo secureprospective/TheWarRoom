@@ -11,13 +11,15 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 	handler := func(context.Context, json.RawMessage) (json.RawMessage, error) { return json.RawMessage(`null`), nil }
 	valid := Entry{ID: "test.read", Label: "Read the test", Definition: completeCommand(), Native: map[Mode]Handler{Read: handler}}
 	tests := map[string]func(*Registry){
-		"duplicate ID":             func(r *Registry) { r.entries = append(r.entries, r.entries[0]) },
-		"missing native handler":   func(r *Registry) { r.entries[0].Native[Read] = nil },
-		"unsupported mode":         func(r *Registry) { r.entries[0].Native[Execute] = handler },
-		"missing desktop handler":  func(r *Registry) { r.entries[0].Desktop = []DesktopExposure{{}} },
-		"missing workflow handler": func(r *Registry) { r.entries[0].Workflow = &WorkflowCommand{} },
-		"empty label":              func(r *Registry) { r.entries[0].Label = "" },
-		"no door":                  func(r *Registry) { r.entries[0].Native = nil },
+		"duplicate ID":                  func(r *Registry) { r.entries = append(r.entries, r.entries[0]) },
+		"missing native handler":        func(r *Registry) { r.entries[0].Native[Read] = nil },
+		"unsupported mode":              func(r *Registry) { r.entries[0].Native[Execute] = handler },
+		"missing desktop handler":       func(r *Registry) { r.entries[0].Desktop = []DesktopExposure{{}} },
+		"missing workflow handler":      func(r *Registry) { r.entries[0].Workflow = &WorkflowCommand{} },
+		"empty label":                   func(r *Registry) { r.entries[0].Label = "" },
+		"unsupported CLI":               func(r *Registry) { r.entries[0].CLI = true },
+		"missing browser argument type": func(r *Registry) { r.entries[0].Browser = &BrowserCommand{ID: "test.read"} },
+		"no door":                       func(r *Registry) { r.entries[0].Native = nil },
 	}
 	for name, mutate := range tests {
 		t.Run(name, func(t *testing.T) {

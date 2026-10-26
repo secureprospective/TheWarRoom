@@ -57,3 +57,14 @@ leagues, undelegable commands and revoked retries must leave both histories
 unchanged. The fixture inventory is checked against `NativeCommands` in
 `internal/app/commissioner`; release evidence is in
 `docs/build-handoffs/Release_Blocker_Matrix_2026-10.md`.
+
+## Named league verbs
+
+`twr --help` lists registry-generated mutation names, such as
+`twr commish.rules.set CHANGE.json`. These use the same JSON file as `twr preview`
+(the command name can be omitted). The default is preview; recording needs
+`--mode execute` and, where required, `--confirmation CODE`. A file naming a different
+action is refused. The existing `preview`, `execute`, `ledger` and helper/MCP verbs
+remain available. These names do not grant access: the server still checks the token,
+current permissions and human confirmation. Read-only workflows, held seed and the
+special draft-pick door are not published as generic mutation verbs.

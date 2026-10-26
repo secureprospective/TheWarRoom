@@ -1,3 +1,4 @@
+import type { CommandArguments } from './arguments.gen';
 import { describe, expect, it } from 'vitest';
 import { nativeCommands } from './native.gen';
 import { nativeEnvelope, type NativeArguments, type NativeRequest } from './native';
@@ -15,7 +16,15 @@ function typeChecks() {
   const badCommand: NativeArguments<'commish.league.create'>['command'] = 'bids.place';
   // @ts-expect-error Server-owned outcomes are not client arguments.
   const outcome: NativeArguments<'commish.league.create'>['args'] = { tradeOutcome: {} };
-  return [upgrade, badLeague, badCommand, outcome];
+  // @ts-expect-error Browser arguments preserve the local domain choices.
+  const browser: CommandArguments<'browser', 'density.set'> = { density: 'unknown' };
+  // @ts-expect-error Wails keeps positional arguments and their original scalar types.
+  const desktop: CommandArguments<'wails', 'archive.TargetArchive'> = ['2026', 'team', 'other'];
+  // @ts-expect-error A local MFL command cannot acquire a hosted workflow door.
+  const remote: CommandArguments<'workflow', 'mfl.bid.revise'> = {};
+  // @ts-expect-error MFL plan IDs stay text.
+  const mfl: CommandArguments<'mfl', 'mfl.bid.withdraw'> = { id: 1 };
+  return [upgrade, badLeague, badCommand, outcome, browser, desktop, remote, mfl];
 }
 void typeChecks;
 

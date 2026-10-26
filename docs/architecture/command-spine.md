@@ -95,9 +95,25 @@ adapter. Browser handlers remain typed TypeScript functions, not server authorit
 | Hosted workflow | The existing HTTP envelope aliases catalog-owned Raw types; its compatibility table and dispatch derive from catalog-owned executable workflows. The 42-command boundary is unchanged. |
 | Evidence | `doors-before.json` freezes 281 native/MFL/Wails records, including schema hashes. Composition tests compare both compatibility views and executable entries; existing workflow/browser fixtures retain their own coverage. |
 
-Generation of the Wails binding surface, CLI verbs, chat/command-bar inventory and
-unified TypeScript argument types remains the next slice. Wails still calls its original
-API objects; this slice binds and checks those same methods but does not replace their
-signatures. The full command × door × role parity matrix, complete freshness gates and
-remaining asynchronous outcome tracking are still required before calling the migration
-complete.
+`frontend/scripts/nativegen -surface doors` inspects the same bound registry without
+starting the app. It generates the Wails object surface and 136-method manifest,
+99 named CLI mutation verbs, the 12 direct command-bar candidates, and unified
+TypeScript argument maps for native, MFL, browser, Wails and workflow doors.
+Wails still generates its JavaScript adapters and model declarations from the original
+API signatures; the registry-derived manifest rejects missing or extra reflected methods.
+Existing JSON CLI verbs and credential/confirmation admission remain unchanged. Named
+verbs only wrap the existing generic RawCommand transport; reads, held seed and the
+special draft-pick transport do not acquire new CLI routes.
+
+Browser argument schemas name existing TypeScript domain types (or inline local shapes)
+through `Schema.ClientType`. These browser-only references are not remote input schemas;
+Go Raw validators still own every remote boundary. The generated browser argument map
+now types handlers and dispatch, replacing their handwritten command argument annotations.
+Search uses the generated direct-candidate list, while places, players and other dynamic
+arguments retain their current sources. The four hidden bar-plumbing actions remain hidden.
+
+The generator tests compare every output byte-for-byte and intentionally stale each new
+file, checking refusal without a write. Existing native/MFL/browser freshness tests and
+`make bindings-fresh` cover the remaining generated TypeScript and Wails JavaScript/models.
+The full command × door × role parity matrix and remaining asynchronous outcome tracking
+are still required before calling the migration complete.
