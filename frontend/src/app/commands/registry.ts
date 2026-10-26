@@ -58,6 +58,8 @@ export function createCommands(
   storage: () => SettingsStorage | undefined = browserStorage,
   provider: Provider = selectProvider(),
   mflField = createMFLKeyField(),
+  // The local desktop operator holds all roles; restricted callers supply their own.
+  roles: readonly Role[] = ['gm', 'commish', 'admin'],
 ) {
   let snapshot: Snapshot | undefined;
   const state = createShellState();
@@ -754,7 +756,7 @@ export function createCommands(
   const history: Readonly<Entry>[] = [];
   function dispatch<K extends Id>(id: K, args: Args<K>) {
     const selected = registry[id] as Command<Args<K>>;
-    if (!selected.roles.includes('gm')) throw new Error(`${id}: GM permission denied`);
+    if (!selected.roles.some(role => roles.includes(role))) throw new Error(`${id}: permission denied`);
     const fromBar = state.read().commandbar;
     selected.run(args);
     if (
