@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -131,13 +132,8 @@ func (a *App) raceSnapshot(snapshot func() season.Held) season.Snapshot {
 	live.Value = core.CloneLineups(live.Value)
 	unplayed := liveWeekUnplayed(live, a.now.schedules, time.Now())
 	a.core.SeasonMu.Unlock()
-	overlays := map[int]leaguefeed.WeekResult{}
-	for _, w := range held.Weeks.Value {
-		if w.Week == live.Value.Week {
-			overlays[w.Week] = liveWeek(live.Value, w)
-		}
-	}
-	return season.Snapshot{Held: held, Live: raceFeed(live), LiveUnplayed: unplayed, LiveWeeks: overlays}
+	return nowapp.RaceSnapshot(held, nowFeed(live), unplayed)
+
 }
 
 func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
