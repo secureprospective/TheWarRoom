@@ -1,6 +1,6 @@
 export { nativeBindings } from './api';
 import { nativeBindings } from './api';
-import type { commissioner } from './api';
+import type { commissioner, market } from './api';
 import type { FieldKind } from './actTable';
 import { readCompetitionOptions } from './competitionReadings';
 import { leagueState } from './proxy';
@@ -53,7 +53,7 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
     const reading = await app.TargetCommissionerMarket(league, command);
     if (reading.league !== league || reading.revision !== assets.revision)
       throw new Error('The league changed while reading its market. Reopen the change.');
-    const choices = (rows: commissioner.MarketChoice[]) => rows.map(r => ({ value: r.id, label: r.words }));
+    const choices = (rows: market.Choice[]) => rows.map(r => ({ value: r.id, label: r.words }));
     options.window = choices(reading.windows);
     options.claim = choices(reading.claims);
     options.bidPlayer = choices(reading.players);
