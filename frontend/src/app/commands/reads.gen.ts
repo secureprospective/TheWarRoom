@@ -250,6 +250,32 @@ export const readCommands = {
     "Items": null
   }
 },
+"contracts.TargetLineup": {
+  "command": "desktop.contracts.TargetLineup",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "franchiseID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "control.GetParams": {
   "command": "desktop.control.GetParams",
   "arguments": {
@@ -271,6 +297,32 @@ export const readCommands = {
     "Validator": "desktop adapter Raw validation",
     "Nullable": false,
     "Fields": [],
+    "Items": null
+  }
+},
+"control.TargetAlerts": {
+  "command": "desktop.control.TargetAlerts",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "franchiseID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
     "Items": null
   }
 },
@@ -1466,6 +1518,32 @@ export const readCommands = {
     "Validator": "desktop adapter Raw validation",
     "Nullable": false,
     "Fields": [],
+    "Items": null
+  }
+},
+"trades.TargetTrades": {
+  "command": "desktop.trades.TargetTrades",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "franchiseID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
     "Items": null
   }
 },

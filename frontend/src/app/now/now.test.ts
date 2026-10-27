@@ -93,7 +93,7 @@ it('says the league\'s weeks are still being read instead of drawing an empty we
   expect(body(now())).toContain('Weekly reports');
 });
 
-it('captures weeks before refresh but samples franchise afterward, and retains the last good view on failure', async () => {
+it('captures weeks before refresh, samples franchise after, keeps last good view on failure', async () => {
   let mine = '0001';
   let finish!: () => void;
   const reader: NowReader = { read: vi.fn(async () => now()), refresh: async () => {} };

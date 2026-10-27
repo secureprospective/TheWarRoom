@@ -219,7 +219,10 @@ it('publishes sources before parallel details, retaining both old details if eit
   let fail!: (cause: Error) => void;
   const calls: string[] = [];
   p.read = async () => { calls.push('sources'); return new Promise(resolve => { finish = resolve; }); };
-  p.crosswalk = async () => { calls.push('crosswalk'); return new Promise((_, reject) => { fail = reject; }); };
+  p.crosswalk = async () => {
+    calls.push('crosswalk');
+    return new Promise((_, reject) => { fail = reject; });
+  };
   p.params = async () => { calls.push('params'); return wire.params as ParamsResult; };
   const pending = state.run({ kind: 'read' });
   expect(calls).toEqual(['sources']);
