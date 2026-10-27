@@ -4,18 +4,17 @@
 Bee — 2026-10-27, `session/revamp-P6-market`. Local only; do not push.
 
 ## Where it stands
-- Step 3b and staged Frame seam committed through `9a5ce1ac`; keep the seam.
-- Step 4 moves the market judgment layer and its tests into `internal/commissioner/market`. Fold, persisted types and visibility predicates stay in commissioner; the closed-books round-trip uses an external test and test-only bridge. Body goldens are byte-identical R100 renames.
-- Commissioner/history/leagueservice targeted tests, build, vet, `TestMarketBodies` and `make lint` pass. Boundary fingerprints were reviewed for moved return types in core host and composition host.
+- Sealed-bid visibility is pinned through the command and ledger-reading paths in `cc966d1c`; both inverted-decision and missing-privilege mutants fail, and the restored rule passes.
+- Step 5 cleanup is committed as `c6219ee5`; commissioner package race tests, targeted history/leagueservice/composition/hosted tests, build, lint, placement and bloat passed. Body goldens remain R100 renames.
+- Step 5 does not match the design literally: raise/withdraw and projection look up a specific bid ID, so replacing those checks with `ActiveFor` can select a different bid. The shared indexed check preserves that distinction. The proposed `TradeState.voted` cannot also scan recusals as written; a market-local helper accepts the actual vote slice. The cleanup adds 22 net lines, rather than the predicted reduction.
 
 ## Next move
-- Address the sealed-bid composition test gap before continuing to steps 5–6. The requested mutant was not detected; do not proceed until the proof goes red with the mutant and green after restoration.
+- Review the step 5 design deviations before step 6. Retire frame wrappers only with authorization before folding, and keep the quote path staged.
 
 ## Blocked on
-- The mandated composition filter passed after inverting `privileged && decidedBidRecord(...)` to `privileged && !decidedBidRecord(...)` in `internal/commissioner/ledger.go`. This is a test gap, not a pass. Mutant restored; the same filter passed again (106.071s). Steps 5–6 not started. Do not run the full test suite or push; push runs full verification later.
+- Step 6 not started: the brief says to stop if the design does not fit a symbol. Step 5's `ActiveFor` and `TradeState.voted` assumptions differ from the current code as noted above; the cleanup was committed before that mismatch was flagged.
 
 ## Tried and rejected
-- Eager rules/governance construction changes error precedence; staged readers retain ordering. Quote's `ReadNativeBase` remains staged for governance → directory → fold → rules.
-- Same-package commissioner tests importing market create a cycle; market tests moved, core round-trip uses an external test.
-- Wrapcheck errors at the new boundary cannot be wrapped without changing user-visible refusals; annotated individual returns.
-- Contract action writes rules fields; leave it in core for the rules session.
+- The original inverted mutant fails `TestLedgerVisibilityMatchesChainWalk` and `TestHostedBlindBidIsInvisibleEvenToCommissioner`; the composition filter alone still missed it.
+- Do not eagerly construct frames: owner and commissioner market readings authorize first, trade replay handles non-trade reversals separately, and quote loads governance → directory → fold → rules.
+- `contract_actions.go` writes rules fields and remains in core for the rules session.
