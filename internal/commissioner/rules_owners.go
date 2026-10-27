@@ -59,10 +59,8 @@ func ownerFor(path leaguerules.FieldPath) (ruleOwner, error) {
 }
 
 func catalogueField(path string) (leaguerules.CatalogueField, error) {
-	for _, f := range leaguerules.Catalogue() {
-		if string(f.Path) == path {
-			return f, nil
-		}
+	if field, ok := leaguerules.Field(leaguerules.FieldPath(path)); ok {
+		return field, nil
 	}
 	return leaguerules.CatalogueField{}, fmt.Errorf("choose a recognised league rule")
 }

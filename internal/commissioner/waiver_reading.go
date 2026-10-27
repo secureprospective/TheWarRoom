@@ -57,7 +57,7 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	}
 	out := NativeWaivers{Corrections: changes.Items, League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
 		Players: []NativeWaiverPlayer{}, Claims: []NativeWaiverClaim{}, Order: []string{},
-		Method: fieldWords(rules, "waivers.method")}
+		Method: ruleValueWords(rules, "waivers.method")}
 	if !f.Assets.Seeded {
 		out.OrderSource = "No starting rosters recorded"
 		return out, nil
