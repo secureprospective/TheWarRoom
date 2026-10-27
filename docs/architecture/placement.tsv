@@ -25,6 +25,7 @@ internal/db	platform
 internal/domain	core
 internal/engine	scoring
 internal/engine/bid	offers
+internal/engine/competition	commissioner
 internal/engine/contractacts	contracts
 internal/engine/eligibility	contracts
 internal/engine/l4	scoring

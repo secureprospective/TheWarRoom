@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
@@ -14,7 +14,7 @@ type picked struct {
 	words    string
 }
 
-func (s shapeSlot) pass() int {
+func (s ShapeSlot) pass() int {
 	switch {
 	case s.Seed > 0:
 		return 0
@@ -26,13 +26,13 @@ func (s shapeSlot) pass() int {
 
 // round pairs one scope's games for a round. Fixed seeds are placed first, then the games a place names,
 // and the places that take whoever is left last, so the teams left are exactly those nobody else claimed.
-func (b *bracketBuilder) round(index int, scope string, nodes []shapeNode, used map[string]bool) ([]BracketGame, string) {
-	mine := slices.DeleteFunc(slices.Clone(nodes), func(n shapeNode) bool { return n.leagueWide() != (scope == "") })
+func (b *bracketBuilder) round(index int, scope string, nodes []ShapeNode, used map[string]bool) ([]BracketGame, string) {
+	mine := slices.DeleteFunc(slices.Clone(nodes), func(n ShapeNode) bool { return n.LeagueWide() != (scope == "") })
 	games := make([]BracketGame, len(mine))
 	for i, n := range mine {
-		id := gameID(scope, n.ID)
+		id := GameID(scope, n.ID)
 		games[i] = BracketGame{ID: id, Node: n.ID, Conference: scope, Week: n.Week, HomeSlot: id + "/home",
-			AwaySlot: id + "/away", HomeBonus: b.in.rules.HomeBonus}
+			AwaySlot: id + "/away", HomeBonus: b.in.Rules.HomeBonus}
 	}
 	for pass := range 3 {
 		for i, n := range mine {
@@ -62,7 +62,7 @@ func (b *bracketBuilder) round(index int, scope string, nodes []shapeNode, used 
 }
 
 // fill resolves one place and applies a hand edit to it. A team may play only once a round.
-func (b *bracketBuilder) fill(index int, scope string, slot shapeSlot, slotID string, used map[string]bool) (*BracketSide, string) {
+func (b *bracketBuilder) fill(index int, scope string, slot ShapeSlot, slotID string, used map[string]bool) (*BracketSide, string) {
 	p := b.resolve(index, scope, slot, used)
 	if p.words != "" {
 		return nil, p.words
@@ -70,12 +70,12 @@ func (b *bracketBuilder) fill(index int, scope string, slot shapeSlot, slotID st
 	if p.consumed != "" {
 		used[p.consumed] = true
 	}
-	team, edited := b.in.edits[slotID]
+	team, edited := b.in.Edits[slotID]
 	if !edited {
 		return p.side, ""
 	}
 	if used[team] && team != p.consumed {
-		return nil, fmt.Sprintf("%s is placed in two games of the same round", b.in.names[team])
+		return nil, fmt.Sprintf("%s is placed in two games of the same round", b.in.Names[team])
 	}
 	used[team] = true
 	side := b.side(team)
@@ -83,7 +83,7 @@ func (b *bracketBuilder) fill(index int, scope string, slot shapeSlot, slotID st
 	return side, ""
 }
 
-func (b *bracketBuilder) resolve(index int, scope string, slot shapeSlot, used map[string]bool) picked {
+func (b *bracketBuilder) resolve(index int, scope string, slot ShapeSlot, used map[string]bool) picked {
 	switch {
 	case slot.Seed > 0:
 		return b.seeded(scope, slot.Seed, used)
@@ -108,7 +108,7 @@ func (b *bracketBuilder) seeded(scope string, seed int, used map[string]bool) pi
 
 // followed is the winner of a named game, or nobody while that game is undecided.
 func (b *bracketBuilder) followed(scope, target string) picked {
-	id := gameID(scope, target)
+	id := GameID(scope, target)
 	if strings.Contains(target, "/") {
 		id = target
 	}
@@ -125,7 +125,7 @@ func (b *bracketBuilder) followed(scope, target string) picked {
 
 // fromPool takes a team from those who reached this round and have no place yet. A reseeded round orders
 // them by seed (by league standing across conferences); an unseeded one keeps the order they arrived in.
-func (b *bracketBuilder) fromPool(index int, scope string, slot shapeSlot, used map[string]bool) picked {
+func (b *bracketBuilder) fromPool(index int, scope string, slot ShapeSlot, used map[string]bool) picked {
 	if index == 0 {
 		return picked{words: "The first round cannot pair teams by who is left; name a seed in each place"}
 	}
@@ -136,7 +136,7 @@ func (b *bracketBuilder) fromPool(index int, scope string, slot shapeSlot, used 
 	if len(pool) == 0 {
 		return picked{words: "The bracket has no team left for a place that takes whoever is left"}
 	}
-	if b.in.rules.Reseed {
+	if b.in.Rules.Reseed {
 		slices.SortStableFunc(pool, func(x, y *BracketSide) int { return b.order(scope, x) - b.order(scope, y) })
 	}
 	choice := *pool[0]

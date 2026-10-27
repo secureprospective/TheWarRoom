@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
@@ -8,43 +8,43 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-type rankTeam struct{ ID, Name, Division, Conference string }
+type RankTeam struct{ ID, Name, Division, Conference string }
 
-type rankGame struct {
+type RankGame struct {
 	Home, Away             string
 	HomePoints, AwayPoints leaguerules.Decimal
 }
 
-// tally is a win-loss-tie record.
-type tally struct{ W, L, T int }
+// Tally is a win-loss-tie record.
+type Tally struct{ W, L, T int }
 
-func (t tally) games() int { return t.W + t.L + t.T }
+func (t Tally) games() int { return t.W + t.L + t.T }
 
-func (t tally) words() string {
+func (t Tally) Words() string {
 	if t.T == 0 {
 		return fmt.Sprintf("%d-%d", t.W, t.L)
 	}
 	return fmt.Sprintf("%d-%d-%d", t.W, t.L, t.T)
 }
 
-// rankInput is everything the tie-breakers read. Only decided games are in it.
-type rankInput struct {
-	teams    []rankTeam
-	games    []rankGame
-	allPlay  map[string]tally
-	stands   map[string]tally
-	points   map[string]leaguerules.Decimal
-	criteria []leaguerules.Criterion
+// RankInput is everything the tie-breakers read. Only decided games are in it.
+type RankInput struct {
+	Teams    []RankTeam
+	Games    []RankGame
+	AllPlay  map[string]Tally
+	Stands   map[string]Tally
+	Points   map[string]leaguerules.Decimal
+	Criteria []leaguerules.Criterion
 }
 
-// ranking is the order the criteria produce and the plain line behind every tie they broke.
-type ranking struct {
-	order   []string
-	records map[string]tally
-	why     map[string][]string
-	skipped []string
-	// level lists each group of teams every tie-breaker left level, which the order only keeps in league order.
-	level [][]string
+// Ranking is the order the criteria produce and the plain line behind every tie they broke.
+type Ranking struct {
+	Order   []string
+	Records map[string]Tally
+	Why     map[string][]string
+	Skipped []string
+	// Level lists each group of teams every tie-breaker left Level, which the order only keeps in league order.
+	Level [][]string
 }
 
 // rankKey is a comparable value: a fraction, so a record compares exactly.
@@ -61,11 +61,11 @@ type evaluation struct {
 }
 
 type ranker struct {
-	in      rankInput
-	teams   map[string]rankTeam
-	overall map[string]tally
-	within  map[string]map[string]tally
-	out     ranking
+	in      RankInput
+	teams   map[string]RankTeam
+	overall map[string]Tally
+	within  map[string]map[string]Tally
+	out     Ranking
 }
 
 // criterionLabels are the plain names of the tie-breakers an owner reads.
@@ -78,78 +78,78 @@ func criterionLabels() map[leaguerules.Criterion]string {
 	}
 }
 
-func criterionLabel(c leaguerules.Criterion) string {
+func CriterionLabel(c leaguerules.Criterion) string {
 	if label, ok := criterionLabels()[c]; ok {
 		return label
 	}
 	return string(c)
 }
 
-func rankStandings(in rankInput) ranking {
-	r := &ranker{in: in, teams: map[string]rankTeam{}, overall: map[string]tally{},
-		within: map[string]map[string]tally{"division": {}, "conference": {}},
-		out:    ranking{why: map[string][]string{}, skipped: []string{}}}
-	ids := make([]string, 0, len(in.teams))
-	for _, t := range in.teams {
+func RankStandings(in RankInput) Ranking {
+	r := &ranker{in: in, teams: map[string]RankTeam{}, overall: map[string]Tally{},
+		within: map[string]map[string]Tally{"division": {}, "conference": {}},
+		out:    Ranking{Why: map[string][]string{}, Skipped: []string{}}}
+	ids := make([]string, 0, len(in.Teams))
+	for _, t := range in.Teams {
 		r.teams[t.ID] = t
 		ids = append(ids, t.ID)
 	}
 	r.count()
-	r.out.records = r.overall
-	r.out.order = r.rank(ids, 0)
+	r.out.Records = r.overall
+	r.out.Order = r.rank(ids, 0)
 	return r.out
 }
 
 // groupings are the shared groups a record can be counted within.
-func groupings() map[string]func(rankTeam) string {
-	return map[string]func(rankTeam) string{"division": func(t rankTeam) string { return t.Division },
-		"conference": func(t rankTeam) string { return t.Conference }}
+func groupings() map[string]func(RankTeam) string {
+	return map[string]func(RankTeam) string{"division": func(t RankTeam) string { return t.Division },
+		"conference": func(t RankTeam) string { return t.Conference }}
 }
 
 // count tallies each decided game for both sides: overall, and within a division or conference they share.
 // An adjusted record replaces only the overall record.
 func (r *ranker) count() {
-	for _, g := range r.in.games {
+	for _, g := range r.in.Games {
 		for _, side := range [][2]string{{g.Home, g.Away}, {g.Away, g.Home}} {
 			mine, theirs := g.HomePoints, g.AwayPoints
 			if side[0] == g.Away {
 				mine, theirs = theirs, mine
 			}
-			result := resultOf(mine, theirs)
-			r.overall[side[0]] = result.add(r.overall[side[0]])
+			result := ResultOf(mine, theirs)
+			r.overall[side[0]] = result.Add(r.overall[side[0]])
 			for kind, attr := range groupings() {
 				if a := attr(r.teams[side[0]]); a != "" && a == attr(r.teams[side[1]]) {
-					r.within[kind][side[0]] = result.add(r.within[kind][side[0]])
+					r.within[kind][side[0]] = result.Add(r.within[kind][side[0]])
 				}
 			}
 		}
 	}
-	for id, t := range r.in.stands {
+	for id, t := range r.in.Stands {
 		r.overall[id] = t
 	}
 }
 
-func resultOf(mine, theirs leaguerules.Decimal) tally {
+func ResultOf(mine, theirs leaguerules.Decimal) Tally {
 	switch {
 	case mine > theirs:
-		return tally{W: 1}
+		return Tally{W: 1}
 	case mine < theirs:
-		return tally{L: 1}
+		return Tally{L: 1}
 	}
-	return tally{T: 1}
+	return Tally{T: 1}
 }
 
-func (t tally) add(o tally) tally { return tally{t.W + o.W, t.L + o.L, t.T + o.T} }
+func (t Tally) Add(o Tally) Tally { return Tally{t.W + o.W, t.L + o.L, t.T + o.T} }
 
 // A missing record skips the criterion rather than inventing a losing percentage.
-func (r *ranker) percentage(group []string, records map[string]tally) evaluation {
+func (r *ranker) percentage(group []string, records map[string]Tally) evaluation {
 	ev := evaluation{keys: map[string]rankKey{}, words: map[string]string{}}
 	for _, id := range group {
 		t := records[id]
 		if t.games() == 0 {
 			return evaluation{skip: r.teams[id].Name + " has no games yet"}
 		}
-		ev.keys[id], ev.words[id] = rankKey{int64(2*t.W + t.T), int64(2 * t.games())}, t.words()
+		ev.keys[id], ev.words[id] = rankKey{int64(2*t.W + t.T), int64(2 * t.games())}, t.Words()
 	}
 	return ev
 }
@@ -160,14 +160,14 @@ func (r *ranker) headToHead(group []string) evaluation {
 	for _, id := range group {
 		in[id] = true
 	}
-	records, met := map[string]tally{}, map[[2]string]bool{}
-	for _, g := range r.in.games {
+	records, met := map[string]Tally{}, map[[2]string]bool{}
+	for _, g := range r.in.Games {
 		if !in[g.Home] || !in[g.Away] {
 			continue
 		}
 		met[[2]string{min(g.Home, g.Away), max(g.Home, g.Away)}] = true
-		records[g.Home] = resultOf(g.HomePoints, g.AwayPoints).add(records[g.Home])
-		records[g.Away] = resultOf(g.AwayPoints, g.HomePoints).add(records[g.Away])
+		records[g.Home] = ResultOf(g.HomePoints, g.AwayPoints).Add(records[g.Home])
+		records[g.Away] = ResultOf(g.AwayPoints, g.HomePoints).Add(records[g.Away])
 	}
 	for i, a := range group {
 		for _, b := range group[i+1:] {
@@ -180,7 +180,7 @@ func (r *ranker) headToHead(group []string) evaluation {
 }
 
 // shared reads a division or conference record, which only compares teams that share one.
-func (r *ranker) shared(group []string, kind string, attr func(rankTeam) string) evaluation {
+func (r *ranker) shared(group []string, kind string, attr func(RankTeam) string) evaluation {
 	first := attr(r.teams[group[0]])
 	for _, id := range group {
 		switch value := attr(r.teams[id]); {
@@ -196,11 +196,11 @@ func (r *ranker) shared(group []string, kind string, attr func(rankTeam) string)
 func (r *ranker) byPoints(group []string) evaluation {
 	ev := evaluation{keys: map[string]rankKey{}, words: map[string]string{}}
 	for _, id := range group {
-		points, ok := r.in.points[id]
+		points, ok := r.in.Points[id]
 		if !ok {
 			return evaluation{skip: r.teams[id].Name + " has no complete weekly score yet"}
 		}
-		ev.keys[id], ev.words[id] = rankKey{int64(points), 1}, scorePointsWords(points)+" points scored"
+		ev.keys[id], ev.words[id] = rankKey{int64(points), 1}, PointsWords(points)+" points scored"
 	}
 	return ev
 }
@@ -212,11 +212,11 @@ func (r *ranker) evaluate(c leaguerules.Criterion, group []string) evaluation {
 	case leaguerules.HeadToHeadRecord:
 		return r.headToHead(group)
 	case leaguerules.DivisionPercentage:
-		return r.shared(group, "division", func(t rankTeam) string { return t.Division })
+		return r.shared(group, "division", func(t RankTeam) string { return t.Division })
 	case leaguerules.ConferencePercentage:
-		return r.shared(group, "conference", func(t rankTeam) string { return t.Conference })
+		return r.shared(group, "conference", func(t RankTeam) string { return t.Conference })
 	case leaguerules.AllPlayPercentage:
-		return r.percentage(group, r.in.allPlay)
+		return r.percentage(group, r.in.AllPlay)
 	case leaguerules.Points:
 		return r.byPoints(group)
 	case leaguerules.PowerRank:
@@ -232,23 +232,23 @@ type trail struct{ level, skipped []string }
 // that is still tied starts again from the first criterion.
 func (r *ranker) rank(group []string, depth int) []string {
 	var seen trail
-	for _, c := range r.in.criteria {
+	for _, c := range r.in.Criteria {
 		ev := r.evaluate(c, group)
 		if ev.skip != "" {
-			line := fmt.Sprintf("%s did not apply: %s", criterionLabel(c), ev.skip)
+			line := fmt.Sprintf("%s did not apply: %s", CriterionLabel(c), ev.skip)
 			seen.skipped = append(seen.skipped, line)
 			if depth == 0 {
-				r.out.skipped = append(r.out.skipped, capital(line)+".")
+				r.out.Skipped = append(r.out.Skipped, Capital(line)+".")
 			}
 			continue
 		}
 		tiers := splitTiers(group, ev.keys)
 		if len(tiers) == 1 {
-			seen.level = append(seen.level, criterionLabel(c))
+			seen.level = append(seen.level, CriterionLabel(c))
 			continue
 		}
 		r.note(group, strings.Join(append(seen.levelLines(group, r), seen.skippedLines()...), " ")+
-			fmt.Sprintf(" %s put %s.", capital(criterionLabel(c)), r.tiersText(tiers, ev)))
+			fmt.Sprintf(" %s put %s.", Capital(CriterionLabel(c)), r.tiersText(tiers, ev)))
 		ordered := []string{}
 		for _, tier := range tiers {
 			if len(tier) > 1 {
@@ -259,10 +259,10 @@ func (r *ranker) rank(group []string, depth int) []string {
 		return ordered
 	}
 	if len(group) > 1 {
-		r.out.level = append(r.out.level, append([]string{}, group...))
+		r.out.Level = append(r.out.Level, append([]string{}, group...))
 		r.note(group, strings.Join(seen.skippedLines(), " ")+fmt.Sprintf(
 			" %s remain level on the available tie-breakers, so they are listed in the league's franchise order.",
-			capital(r.namesOf(group))))
+			Capital(r.namesOf(group))))
 	}
 	return group
 }
@@ -271,13 +271,13 @@ func (s trail) levelLines(group []string, r *ranker) []string {
 	if len(s.level) == 0 {
 		return nil
 	}
-	return []string{fmt.Sprintf("%s were level on %s.", capital(r.namesOf(group)), joinAnd(s.level))}
+	return []string{fmt.Sprintf("%s were level on %s.", Capital(r.namesOf(group)), JoinAnd(s.level))}
 }
 
 func (s trail) skippedLines() []string {
 	lines := make([]string, len(s.skipped))
 	for i, line := range s.skipped {
-		lines[i] = capital(line) + "."
+		lines[i] = Capital(line) + "."
 	}
 	return lines
 }
@@ -285,7 +285,7 @@ func (s trail) skippedLines() []string {
 func (r *ranker) note(group []string, line string) {
 	line = strings.TrimSpace(line)
 	for _, id := range group {
-		r.out.why[id] = append(r.out.why[id], line)
+		r.out.Why[id] = append(r.out.Why[id], line)
 	}
 }
 
@@ -321,10 +321,10 @@ func (r *ranker) namesOf(group []string) string {
 	for i, id := range group {
 		names[i] = r.teams[id].Name
 	}
-	return joinAnd(names)
+	return JoinAnd(names)
 }
 
-func joinAnd(items []string) string {
+func JoinAnd(items []string) string {
 	switch len(items) {
 	case 0:
 		return ""
@@ -334,7 +334,7 @@ func joinAnd(items []string) string {
 	return strings.Join(items[:len(items)-1], ", ") + " and " + items[len(items)-1]
 }
 
-func capital(s string) string {
+func Capital(s string) string {
 	if s == "" {
 		return s
 	}

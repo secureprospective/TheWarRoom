@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
 )
 
 const (
@@ -74,7 +76,7 @@ func standingsLabel(command string, change RawStandingsChange) string {
 	switch command {
 	case StandingsRecordAdjust:
 		return fmt.Sprintf("Set the record of %s to %s for season %d", change.Franchise,
-			tally{W: change.Wins, L: change.Losses, T: change.Ties}.words(), change.Season)
+			competition.Tally{W: change.Wins, L: change.Losses, T: change.Ties}.Words(), change.Season)
 	case StandingsOverride:
 		return fmt.Sprintf("Set the standings order by hand for season %d", change.Season)
 	default:

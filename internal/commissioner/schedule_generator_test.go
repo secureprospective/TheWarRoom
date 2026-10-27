@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -19,7 +21,7 @@ func TestScheduleEveryTeamCount(t *testing.T) {
 			}
 			original := append([]string{}, teams...)
 			rules := leaguerules.ScheduleRules{Pattern: leaguerules.Known(leaguerules.DivisionWeighted)}
-			weeks, err := GenerateSchedule(teams, divisions, rules)
+			weeks, err := competition.GenerateSchedule(teams, divisions, rules)
 			if err != nil || len(weeks) != 13 {
 				t.Fatal(weeks, err)
 			}
@@ -53,7 +55,7 @@ func TestScheduleEveryTeamCount(t *testing.T) {
 			if !reflect.DeepEqual(original, teams) {
 				t.Fatal("generator mutated caller teams")
 			}
-			again, err := GenerateSchedule(teams, divisions, rules)
+			again, err := competition.GenerateSchedule(teams, divisions, rules)
 			if err != nil || !reflect.DeepEqual(weeks, again) {
 				t.Fatal("non-deterministic schedule", err)
 			}
@@ -75,7 +77,7 @@ func TestScheduleDivisionWeightAndPatternRefusal(t *testing.T) {
 	divisions := map[string]string{"a": "one", "b": "one", "c": "two", "d": "two"}
 	rules := leaguerules.ScheduleRules{RegularWeeks: leaguerules.Known(52),
 		Pattern: leaguerules.Known(leaguerules.DivisionWeighted)}
-	weeks, err := GenerateSchedule(teams, divisions, rules)
+	weeks, err := competition.GenerateSchedule(teams, divisions, rules)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +96,7 @@ func TestScheduleDivisionWeightAndPatternRefusal(t *testing.T) {
 		t.Fatal("division opponents must meet twice as often", meetings)
 	}
 	rules.Pattern = leaguerules.Needs[leaguerules.SchedulePattern]("choose")
-	if _, err := GenerateSchedule(teams, divisions, rules); err == nil ||
+	if _, err := competition.GenerateSchedule(teams, divisions, rules); err == nil ||
 		err.Error() != "Choose how often teams meet in this smaller league." {
 		t.Fatal(err)
 	}
@@ -103,20 +105,20 @@ func TestScheduleDivisionWeightAndPatternRefusal(t *testing.T) {
 func TestScheduleRejectsInvalidInputs(t *testing.T) {
 	rules := leaguerules.ScheduleRules{Pattern: leaguerules.Known(leaguerules.DivisionWeighted)}
 	for _, teams := range [][]string{{"a"}, make([]string, 33), {"a", "a"}, {"a", ""}, {"a", "b"}} {
-		if _, err := GenerateSchedule(teams, map[string]string{"a": "one"}, rules); err == nil {
+		if _, err := competition.GenerateSchedule(teams, map[string]string{"a": "one"}, rules); err == nil {
 			t.Fatal("accepted invalid franchises or alignment", teams)
 		}
 	}
 	for _, weeks := range []int{0, -1, 53} {
 		rules.RegularWeeks = leaguerules.Known(weeks)
-		if _, err := GenerateSchedule([]string{"a", "b"}, map[string]string{"a": "one", "b": "one"},
+		if _, err := competition.GenerateSchedule([]string{"a", "b"}, map[string]string{"a": "one", "b": "one"},
 			rules); err == nil {
 			t.Fatal("accepted invalid week count", weeks)
 		}
 	}
 	rules.RegularWeeks = leaguerules.Known(13)
 	rules.Pattern = leaguerules.Known(leaguerules.SchedulePattern("unknown"))
-	if _, err := GenerateSchedule([]string{"a", "b"}, map[string]string{"a": "one", "b": "one"},
+	if _, err := competition.GenerateSchedule([]string{"a", "b"}, map[string]string{"a": "one", "b": "one"},
 		rules); err == nil {
 		t.Fatal("accepted unknown pattern")
 	}
@@ -129,7 +131,7 @@ func TestLegacyScheduleBalanceAndMeetings(t *testing.T) {
 		teams[i] = fmt.Sprintf("franchise.%02d", i+1)
 		divisions[teams[i]] = fmt.Sprint(i / 4)
 	}
-	weeks, err := GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
+	weeks, err := competition.GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
 		RegularWeeks: leaguerules.Known(13), Pattern: leaguerules.Known(leaguerules.DivisionWeighted),
 	})
 	if err != nil {
@@ -180,7 +182,7 @@ func TestScheduleHomesBalancedAcrossSizesAndLengths(t *testing.T) {
 			divisions[teams[i]] = fmt.Sprint(i / 4)
 		}
 		for length := 1; length <= 52; length++ {
-			weeks, err := GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
+			weeks, err := competition.GenerateSchedule(teams, divisions, leaguerules.ScheduleRules{
 				RegularWeeks: leaguerules.Known(length), Pattern: leaguerules.Known(leaguerules.DivisionWeighted),
 			})
 			if err != nil {

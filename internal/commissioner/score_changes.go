@@ -2,9 +2,6 @@ package commissioner
 
 import (
 	"fmt"
-	"math"
-	"strconv"
-	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -87,29 +84,6 @@ func scoreChangesFrom(records []Record, active map[string]bool, player, franchis
 			What: scoreChangeLabel(command, change), Reason: r.Command.Reason, Status: status})
 	}
 	return out, nil
-}
-
-func addScoreDelta(a, b leaguerules.Decimal) (leaguerules.Decimal, error) {
-	if (b > 0 && a > math.MaxInt64-b) || (b < 0 && a < math.MinInt64-b) {
-		return 0, fmt.Errorf("points adjustments exceed the supported range")
-	}
-	return a + b, nil
-}
-
-func scorePointsWords(points leaguerules.Decimal) string {
-	whole := strconv.FormatInt(int64(points/10000), 10)
-	if points < 0 && points/10000 == 0 {
-		whole = "-0"
-	}
-	remainder := points % 10000
-	if remainder < 0 {
-		remainder = -remainder
-	}
-	fraction := strings.TrimRight(fmt.Sprintf("%04d", remainder), "0")
-	if fraction == "" {
-		return whole
-	}
-	return whole + "." + fraction
 }
 
 func checkScoreAppend(raw RawCommand, records []Record) error {

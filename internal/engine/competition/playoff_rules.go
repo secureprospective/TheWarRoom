@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
@@ -20,25 +20,25 @@ const (
 	fromWinnerOf = "winner of "
 )
 
-func (s shapeSlot) seedBased() bool {
+func (s ShapeSlot) seedBased() bool {
 	return slices.Contains([]string{fromLowest, fromHighest, fromOther}, s.From)
 }
 
-// shapeSlot is where one side of a game comes from: a fixed seed, or a rule for who is left.
-type shapeSlot struct {
+// ShapeSlot is where one side of a game comes from: a fixed seed, or a rule for who is left.
+type ShapeSlot struct {
 	Seed int
 	From string
 }
 
-// shapeNode is one game of the bracket's shape. A conference's games are repeated in each conference,
+// ShapeNode is one game of the bracket's shape. A conference's games are repeated in each conference,
 // except a game that takes conference winners, which is played once.
-type shapeNode struct {
+type ShapeNode struct {
 	ID         string
 	Week       int
-	Home, Away shapeSlot
+	Home, Away ShapeSlot
 }
 
-func (n shapeNode) leagueWide() bool {
+func (n ShapeNode) LeagueWide() bool {
 	return n.Home.From == fromConf || n.Away.From == fromConf
 }
 
@@ -53,7 +53,7 @@ type PlayoffRules struct {
 	StartWeek       int
 	FinalWeek       int
 	HomeBonus       leaguerules.Decimal
-	Shape           []shapeNode
+	Shape           []ShapeNode
 	Words           string
 }
 
@@ -95,7 +95,7 @@ func ResolvePlayoffRules(rules leaguerules.RuleSet, graph []leaguerules.BracketN
 	if out.ByeSeeds < 0 || out.ByeSeeds >= out.PerConference || out.HomeBonus < 0 {
 		return needsRuling("the byes or home field points, which cannot be negative or leave no team to play")
 	}
-	shape, words := shapeFrom(graph)
+	shape, words := ShapeFrom(graph)
 	if words != "" {
 		return PlayoffRules{Words: words}
 	}
@@ -104,12 +104,12 @@ func ResolvePlayoffRules(rules leaguerules.RuleSet, graph []leaguerules.BracketN
 	return out
 }
 
-// shapeFrom reads a bracket graph into nodes, refusing a slot that names neither a seed nor a source.
-func shapeFrom(graph []leaguerules.BracketNode) ([]shapeNode, string) {
+// ShapeFrom reads a bracket graph into nodes, refusing a slot that names neither a seed nor a source.
+func ShapeFrom(graph []leaguerules.BracketNode) ([]ShapeNode, string) {
 	if len(graph) == 0 {
 		return nil, "Needs a ruling: the playoff bracket shape"
 	}
-	nodes := make([]shapeNode, 0, len(graph))
+	nodes := make([]ShapeNode, 0, len(graph))
 	for _, n := range graph {
 		id := strings.TrimSpace(n.ID.Value)
 		if n.ID.State != leaguerules.IsKnown || id == "" || strings.Contains(id, "/") ||
@@ -121,22 +121,22 @@ func shapeFrom(graph []leaguerules.BracketNode) ([]shapeNode, string) {
 		if !homeOK || !awayOK {
 			return nil, fmt.Sprintf("Needs a ruling: where each team in %s comes from, a seed or a rule", id)
 		}
-		nodes = append(nodes, shapeNode{ID: id, Week: n.Week.Value, Home: home, Away: away})
+		nodes = append(nodes, ShapeNode{ID: id, Week: n.Week.Value, Home: home, Away: away})
 	}
 	return nodes, ""
 }
 
-func slotOf(seed leaguerules.Value[int], from leaguerules.Value[string]) (shapeSlot, bool) {
+func slotOf(seed leaguerules.Value[int], from leaguerules.Value[string]) (ShapeSlot, bool) {
 	word := strings.ToLower(strings.TrimSpace(from.Value))
 	fixed := seed.State == leaguerules.IsKnown && seed.Value > 0
 	named := from.State == leaguerules.IsKnown && word != ""
 	if fixed == named {
-		return shapeSlot{}, false
+		return ShapeSlot{}, false
 	}
 	if fixed {
-		return shapeSlot{Seed: seed.Value}, true
+		return ShapeSlot{Seed: seed.Value}, true
 	}
-	return shapeSlot{From: word}, true
+	return ShapeSlot{From: word}, true
 }
 
 // checkShape says what is wrong with the shape beside the rest of the rules, or nothing.
@@ -149,7 +149,7 @@ func (r PlayoffRules) checkShape() string {
 		}
 		seen[n.ID] = true
 		first, last = min(first, n.Week), max(last, n.Week)
-		for _, slot := range []shapeSlot{n.Home, n.Away} {
+		for _, slot := range []ShapeSlot{n.Home, n.Away} {
 			if words := r.checkSlot(slot, n.ID); words != "" {
 				return words
 			}
@@ -165,7 +165,7 @@ func (r PlayoffRules) checkShape() string {
 	return ""
 }
 
-func (r PlayoffRules) checkSlot(slot shapeSlot, game string) string {
+func (r PlayoffRules) checkSlot(slot ShapeSlot, game string) string {
 	switch {
 	case slot.Seed > r.PerConference:
 		return fmt.Sprintf("Needs a ruling: %s names seed %d but only %d teams per conference qualify", game, slot.Seed,
@@ -183,7 +183,7 @@ func (r PlayoffRules) checkSlot(slot shapeSlot, game string) string {
 }
 
 // rounds groups the shape's games by week, earliest first, keeping the order the shape lists them in.
-func (r PlayoffRules) rounds() [][]shapeNode {
+func (r PlayoffRules) rounds() [][]ShapeNode {
 	weeks := []int{}
 	for _, n := range r.Shape {
 		if !slices.Contains(weeks, n.Week) {
@@ -191,7 +191,7 @@ func (r PlayoffRules) rounds() [][]shapeNode {
 		}
 	}
 	slices.Sort(weeks)
-	out := make([][]shapeNode, len(weeks))
+	out := make([][]ShapeNode, len(weeks))
 	for i, week := range weeks {
 		for _, n := range r.Shape {
 			if n.Week == week {

@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 const (
 	kindDivisionWinner = "Division winner"
 	kindWildCard       = "Wild card"
-	kindByHand         = "Set by the commissioner"
+	KindByHand         = "Set by the commissioner"
 )
 
 // FieldSeed is one team in a conference's playoff field.
@@ -31,31 +31,31 @@ type ConferenceField struct {
 	Seeds      []FieldSeed `json:"seeds"`
 }
 
-type fieldTeam struct{ Name, Division, Conference string }
+type FieldTeam struct{ Name, Division, Conference string }
 
-// fieldInput is the final standings order with each team's place in the league, and the seeds the
+// FieldInput is the final standings order with each team's place in the league, and the seeds the
 // commissioner set by hand for each conference.
-type fieldInput struct {
-	order       []string
-	teams       map[string]fieldTeam
-	conferences []string
-	rules       PlayoffRules
-	hand        map[string]map[int]string
+type FieldInput struct {
+	Order       []string
+	Teams       map[string]FieldTeam
+	Conferences []string
+	Rules       PlayoffRules
+	Hand        map[string]map[int]string
 }
 
-// seedField builds every conference's field from the final standings: division winners take the first
+// SeedField builds every conference's field from the final standings: division winners take the first
 // seeds in standings order, the best of the rest take the wild cards, and a hand seed replaces one slot.
 // It returns plain words instead of a field when the standings cannot fill the rules' field.
-func seedField(in fieldInput) ([]ConferenceField, string) {
+func SeedField(in FieldInput) ([]ConferenceField, string) {
 	rank := map[string]int{}
-	for i, id := range in.order {
+	for i, id := range in.Order {
 		rank[id] = i + 1
 	}
-	out := make([]ConferenceField, 0, len(in.conferences))
-	for _, conference := range in.conferences {
+	out := make([]ConferenceField, 0, len(in.Conferences))
+	for _, conference := range in.Conferences {
 		members := []string{}
-		for _, id := range in.order {
-			if in.teams[id].Conference == conference {
+		for _, id := range in.Order {
+			if in.Teams[id].Conference == conference {
 				members = append(members, id)
 			}
 		}
@@ -69,11 +69,11 @@ func seedField(in fieldInput) ([]ConferenceField, string) {
 		}
 		field := ConferenceField{Conference: conference}
 		for i, id := range seeds {
-			seed := FieldSeed{Seed: i + 1, Franchise: id, Name: in.teams[id].Name, Division: in.teams[id].Division,
-				Rank: rank[id], Kind: in.kindOf(id, ordered), Bye: i < in.rules.ByeSeeds}
-			seed.ByHand = in.hand[conference][i+1] == id
+			seed := FieldSeed{Seed: i + 1, Franchise: id, Name: in.Teams[id].Name, Division: in.Teams[id].Division,
+				Rank: rank[id], Kind: in.kindOf(id, ordered), Bye: i < in.Rules.ByeSeeds}
+			seed.ByHand = in.Hand[conference][i+1] == id
 			if seed.ByHand {
-				seed.Kind = kindByHand
+				seed.Kind = KindByHand
 			}
 			field.Seeds = append(field.Seeds, seed)
 		}
@@ -83,19 +83,19 @@ func seedField(in fieldInput) ([]ConferenceField, string) {
 }
 
 // policyOrder lists a conference's teams in seeding order: its division winners, best first, then everyone else.
-func (in fieldInput) policyOrder(conference string, members []string) ([]string, string) {
+func (in FieldInput) policyOrder(conference string, members []string) ([]string, string) {
 	winners, seenDivision := []string{}, map[string]bool{}
 	for _, id := range members {
-		if division := in.teams[id].Division; !seenDivision[division] {
+		if division := in.Teams[id].Division; !seenDivision[division] {
 			seenDivision[division] = true
 			winners = append(winners, id)
 		}
 	}
-	if len(members) < in.rules.PerConference || len(winners) < in.rules.DivisionWinners {
+	if len(members) < in.Rules.PerConference || len(winners) < in.Rules.DivisionWinners {
 		return nil, fmt.Sprintf("The %s conference has %d teams in %d divisions, too few for %d playoff teams with %d division winners",
-			conference, len(members), len(winners), in.rules.PerConference, in.rules.DivisionWinners)
+			conference, len(members), len(winners), in.Rules.PerConference, in.Rules.DivisionWinners)
 	}
-	winners = winners[:in.rules.DivisionWinners]
+	winners = winners[:in.Rules.DivisionWinners]
 	ordered := slices.Clone(winners)
 	for _, id := range members {
 		if !slices.Contains(winners, id) {
@@ -106,9 +106,9 @@ func (in fieldInput) policyOrder(conference string, members []string) ([]string,
 }
 
 // placeHand puts each hand-set team in its slot and fills the other slots, in order, from the rest.
-func (in fieldInput) placeHand(conference string, ordered, members []string) ([]string, string) {
-	hand := in.hand[conference]
-	seeds := make([]string, in.rules.PerConference)
+func (in FieldInput) placeHand(conference string, ordered, members []string) ([]string, string) {
+	hand := in.Hand[conference]
+	seeds := make([]string, in.Rules.PerConference)
 	taken := map[string]bool{}
 	for _, slot := range slices.Sorted(maps.Keys(hand)) {
 		id := hand[slot]
@@ -132,8 +132,8 @@ func (in fieldInput) placeHand(conference string, ordered, members []string) ([]
 	return seeds, ""
 }
 
-func (in fieldInput) kindOf(id string, ordered []string) string {
-	if slices.Index(ordered, id) < in.rules.DivisionWinners {
+func (in FieldInput) kindOf(id string, ordered []string) string {
+	if slices.Index(ordered, id) < in.Rules.DivisionWinners {
 		return kindDivisionWinner
 	}
 	return kindWildCard

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -57,8 +59,8 @@ type NativeStandings struct {
 
 // seasonGames is every decided game and complete score of the counted weeks.
 type seasonGames struct {
-	games   []rankGame
-	allPlay map[string]tally
+	games   []competition.RankGame
+	allPlay map[string]competition.Tally
 	points  map[string]leaguerules.Decimal
 	decided int
 	pending int
@@ -105,7 +107,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 		return out, nil
 	}
 	for _, c := range rules.Standings.Criteria.Value {
-		out.Criteria = append(out.Criteria, criterionLabel(c))
+		out.Criteria = append(out.Criteria, competition.CriterionLabel(c))
 	}
 	directory, err := NativeDirectoryReading(league, records, now)
 	if err != nil {
@@ -123,7 +125,7 @@ func NativeStandingsReading(ctx context.Context, league string, records []Record
 // countSeason reads each counted week's results once.
 func countSeason(ctx context.Context, league string, records []Record, src ResultSources, lineup leaguerules.LineupRules,
 	directory NativeDirectory, weeks []ScheduleWeek, season int) (seasonGames, error) {
-	out := seasonGames{allPlay: map[string]tally{}, points: map[string]leaguerules.Decimal{}}
+	out := seasonGames{allPlay: map[string]competition.Tally{}, points: map[string]leaguerules.Decimal{}}
 	for _, week := range weeks {
 		results, err := weekResults(ctx, league, records, src, lineup, directory, weeks, season, week.Week)
 		if err != nil {
@@ -135,7 +137,7 @@ func countSeason(ctx context.Context, league string, records []Record, src Resul
 				continue
 			}
 			out.decided++
-			out.games = append(out.games, rankGame{Home: g.Home, Away: g.Away, HomePoints: *g.HomePoints, AwayPoints: *g.AwayPoints})
+			out.games = append(out.games, competition.RankGame{Home: g.Home, Away: g.Away, HomePoints: *g.HomePoints, AwayPoints: *g.AwayPoints})
 		}
 		for _, score := range results.Scores {
 			if score.Points != nil {
@@ -160,7 +162,7 @@ func (s *seasonGames) addAllPlay(scores []FranchiseWeekScore) {
 	for _, mine := range scores {
 		for _, theirs := range scores {
 			if mine.Franchise != theirs.Franchise {
-				s.allPlay[mine.Franchise] = resultOf(*mine.Points, *theirs.Points).add(s.allPlay[mine.Franchise])
+				s.allPlay[mine.Franchise] = competition.ResultOf(*mine.Points, *theirs.Points).Add(s.allPlay[mine.Franchise])
 			}
 		}
 	}
@@ -168,20 +170,20 @@ func (s *seasonGames) addAllPlay(scores []FranchiseWeekScore) {
 
 func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirectory, counted seasonGames,
 	adjustments StandingsAdjustments, conferences conferenceLayout) (NativeStandings, error) {
-	teams := make([]rankTeam, 0, len(directory.Franchises))
+	teams := make([]competition.RankTeam, 0, len(directory.Franchises))
 	for _, seat := range directory.Franchises {
 		division := ""
 		if rules.League.Alignment.State == leaguerules.IsKnown {
 			division = rules.League.Alignment.Value[seat.Franchise]
 		}
-		teams = append(teams, rankTeam{ID: seat.Franchise, Name: seat.Name, Division: division,
+		teams = append(teams, competition.RankTeam{ID: seat.Franchise, Name: seat.Name, Division: division,
 			Conference: conferences.Of[seat.Franchise]})
 	}
-	input := rankInput{teams: teams, games: counted.games, allPlay: counted.allPlay, points: counted.points,
-		criteria: rules.Standings.Criteria.Value}
-	computed := rankStandings(input)
-	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.level
-	out.NoData = computed.skipped
+	input := competition.RankInput{Teams: teams, Games: counted.games, AllPlay: counted.allPlay, Points: counted.points,
+		Criteria: rules.Standings.Criteria.Value}
+	computed := competition.RankStandings(input)
+	out.Computed, out.level = standingRows(computed, teams, counted.points, nil), computed.Level
+	out.NoData = computed.Skipped
 	out.Decided, out.Pending, out.Status = counted.decided, counted.pending, "Ranked"
 	out.Words = fmt.Sprintf("Standings through week %d: %d games have a result, %d do not yet", out.Through,
 		counted.decided, counted.pending)
@@ -192,11 +194,11 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 	if len(adjustments.Records) == 0 && adjustments.Order == nil {
 		return out, nil
 	}
-	input.stands = map[string]tally{}
+	input.Stands = map[string]competition.Tally{}
 	for id, r := range adjustments.Records {
-		input.stands[id] = tally{W: r.Wins, L: r.Losses, T: r.Ties}
+		input.Stands[id] = competition.Tally{W: r.Wins, L: r.Losses, T: r.Ties}
 	}
-	stands := rankStandings(input)
+	stands := competition.RankStandings(input)
 	view := &StandingsOverrideView{Records: adjustments.Records, Order: adjustments.Order}
 	view.Rows = standingRows(stands, teams, counted.points, &computed)
 	view.Words = "The commissioner's records stand beside the computed standings"
@@ -204,25 +206,25 @@ func (out NativeStandings) rank(rules leaguerules.RuleSet, directory NativeDirec
 		view.Rows = overrideOrderRows(view.Rows, *adjustments.Order)
 		view.Words = "The commissioner set the order by hand: " + adjustments.Order.Reason
 	}
-	out.Override, out.overrideLevel = view, stands.level
+	out.Override, out.overrideLevel = view, stands.Level
 	return out, nil
 }
 
 // standingRows lists the ranking's order with each record and the lines behind its ties. When a computed
 // ranking is given, a record the commissioner changed shows the computed one beside it.
-func standingRows(r ranking, teams []rankTeam, points map[string]leaguerules.Decimal, computed *ranking) []StandingRow {
-	byID := map[string]rankTeam{}
+func standingRows(r competition.Ranking, teams []competition.RankTeam, points map[string]leaguerules.Decimal, computed *competition.Ranking) []StandingRow {
+	byID := map[string]competition.RankTeam{}
 	for _, t := range teams {
 		byID[t.ID] = t
 	}
-	rows := make([]StandingRow, 0, len(r.order))
-	for i, id := range r.order {
-		record := r.records[id]
+	rows := make([]StandingRow, 0, len(r.Order))
+	for i, id := range r.Order {
+		record := r.Records[id]
 		row := StandingRow{Rank: i + 1, Franchise: id, Name: byID[id].Name, Division: byID[id].Division, Wins: record.W,
-			Losses: record.L, Ties: record.T, Record: record.words(), PointsFor: points[id],
-			PointsWords: scorePointsWords(points[id]) + " points scored", Why: append([]string{}, r.why[id]...)}
-		if computed != nil && computed.records[id] != record {
-			row.ComputedRecord = computed.records[id].words()
+			Losses: record.L, Ties: record.T, Record: record.Words(), PointsFor: points[id],
+			PointsWords: scorePointsWords(points[id]) + " points scored", Why: append([]string{}, r.Why[id]...)}
+		if computed != nil && computed.Records[id] != record {
+			row.ComputedRecord = computed.Records[id].Words()
 		}
 		rows = append(rows, row)
 	}

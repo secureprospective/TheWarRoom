@@ -5,6 +5,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -38,15 +40,15 @@ type places struct {
 	slots map[string]string
 }
 
-func (r PlayoffRules) places(conferences []string) places {
+func playoffPlaces(r PlayoffRules, conferences []string) places {
 	out := places{games: map[string]bool{}, slots: map[string]string{}}
 	for _, n := range r.Shape {
 		scopes := conferences
-		if n.leagueWide() {
+		if n.LeagueWide() {
 			scopes = []string{""}
 		}
 		for _, scope := range scopes {
-			id := gameID(scope, n.ID)
+			id := competition.GameID(scope, n.ID)
 			out.games[id] = true
 			out.slots[id+"/home"], out.slots[id+"/away"] = scope, scope
 		}
@@ -165,7 +167,7 @@ func checkPlace(command string, change RawBracketChange, state bracketState, pr 
 	if !state.Built {
 		return fmt.Errorf("build the playoff bracket before changing it")
 	}
-	known := pr.places(layout.Conferences)
+	known := playoffPlaces(pr, layout.Conferences)
 	if command == BracketAdvance {
 		if !known.games[change.Game] {
 			return fmt.Errorf("%s is not a game in this bracket", change.Game)
@@ -199,7 +201,7 @@ func checkBuild(change RawBracketChange, state bracketState, rules leaguerules.R
 }
 
 func checkPresetSave(change RawBracketChange, state bracketState) error {
-	if _, words := shapeFrom(nodesOf(change.Shape)); words != "" {
+	if _, words := competition.ShapeFrom(nodesOf(change.Shape)); words != "" {
 		return fmt.Errorf("%s", words)
 	}
 	ids := make([]string, len(change.Shape))

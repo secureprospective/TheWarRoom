@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -143,10 +145,10 @@ func (f finalOrder) tied(group []string, tie leaguerules.Value[leaguerules.TieRu
 	for i, id := range group {
 		names[i] = f.names[id]
 	}
-	together := joinAnd(names)
+	together := competition.JoinAnd(names)
 	if tie.State != leaguerules.IsKnown {
 		return nil, plainWords(fmt.Sprintf("Needs a ruling: how a tie in the draft order is broken. %s finished "+
-			"level in the standings.", capital(together)))
+			"level in the standings.", competition.Capital(together)))
 	}
 	ordered := slices.SortedFunc(slices.Values(group), func(a, b string) int {
 		return slices.Index(f.league, a) - slices.Index(f.league, b)

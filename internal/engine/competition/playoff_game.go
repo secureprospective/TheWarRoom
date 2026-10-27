@@ -1,7 +1,9 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -15,8 +17,8 @@ func (b *bracketBuilder) decide(g *BracketGame) {
 		g.Status, g.Words = gameWaiting, b.waitingWords(g)
 		return
 	}
-	hp, homeWhy := b.in.points(g.Home.Franchise, g.Week)
-	ap, awayWhy := b.in.points(g.Away.Franchise, g.Week)
+	hp, homeWhy := b.in.Points(g.Home.Franchise, g.Week)
+	ap, awayWhy := b.in.Points(g.Away.Franchise, g.Week)
 	g.HomePoints, g.AwayPoints = hp, ap
 	var winner *BracketSide
 	if hp == nil || ap == nil {
@@ -24,7 +26,7 @@ func (b *bracketBuilder) decide(g *BracketGame) {
 	} else {
 		winner = b.settle(g, *hp, *ap)
 	}
-	if team, ok := b.in.advance[g.ID]; ok {
+	if team, ok := b.in.Advance[g.ID]; ok {
 		winner = b.advanced(g, team, winner)
 	}
 	if winner != nil {
@@ -37,7 +39,7 @@ func (b *bracketBuilder) decide(g *BracketGame) {
 
 // settle gives the home team its bonus and compares the totals.
 func (b *bracketBuilder) settle(g *BracketGame, home, away leaguerules.Decimal) *BracketSide {
-	homeTotal, err := addScoreDelta(home, g.HomeBonus)
+	homeTotal, err := AddPoints(home, g.HomeBonus)
 	if err != nil {
 		g.Status, g.Words = GameNoResult, "No result yet: the home field points overflow the score."
 		return nil
@@ -46,7 +48,7 @@ func (b *bracketBuilder) settle(g *BracketGame, home, away leaguerules.Decimal) 
 	switch {
 	case homeTotal == away:
 		g.Status, g.Words = GameTie, fmt.Sprintf("%s and %s tied at %s; the commissioner decides who advances",
-			g.Home.Name, g.Away.Name, scorePointsWords(away))
+			g.Home.Name, g.Away.Name, PointsWords(away))
 		return nil
 	case homeTotal > away:
 		g.Status, g.Words = GameFinal, g.finalWords(g.Home, g.Away, homeTotal, away)
@@ -57,9 +59,9 @@ func (b *bracketBuilder) settle(g *BracketGame, home, away leaguerules.Decimal) 
 }
 
 func (g *BracketGame) finalWords(winner, loser *BracketSide, high, low leaguerules.Decimal) string {
-	words := finalWords(winner.Name, loser.Name, high, low)
+	words := FinalWords(winner.Name, loser.Name, high, low)
 	if g.HomeBonus != 0 {
-		words += fmt.Sprintf(", counting %s home field points for %s", scorePointsWords(g.HomeBonus), g.Home.Name)
+		words += fmt.Sprintf(", counting %s home field points for %s", PointsWords(g.HomeBonus), g.Home.Name)
 	}
 	return words
 }
@@ -74,7 +76,7 @@ func (b *bracketBuilder) advanced(g *BracketGame, team string, computed *Bracket
 		}
 	}
 	if chosen == nil {
-		g.Words += "; the commissioner's choice of " + b.in.names[team] + " is set aside because that team no longer plays in this game"
+		g.Words += "; the commissioner's choice of " + b.in.Names[team] + " is set aside because that team no longer plays in this game"
 		return computed
 	}
 	g.ByHand = true
@@ -83,7 +85,7 @@ func (b *bracketBuilder) advanced(g *BracketGame, team string, computed *Bracket
 	} else {
 		g.Words = fmt.Sprintf("The commissioner advanced %s despite the computed result. %s", chosen.Name, g.Words)
 	}
-	g.Status = gameByHand
+	g.Status = GameByHand
 	return chosen
 }
 
@@ -98,7 +100,7 @@ func (b *bracketBuilder) waitingWords(g *BracketGame) string {
 }
 
 // roundName reads a round's name from the game names it holds: wildcard_2 and wildcard_3 are the Wildcard round.
-func roundName(nodes []shapeNode) string {
+func roundName(nodes []ShapeNode) string {
 	base := strings.TrimRight(nodes[0].ID, "0123456789")
 	if base != nodes[0].ID {
 		base = strings.TrimSuffix(base, "_")
@@ -113,4 +115,41 @@ func roundName(nodes []shapeNode) string {
 		return name
 	}
 	return name + " round"
+}
+
+// Game statuses: a result needs both scores complete; a level score is a tie, never a coin toss.
+const (
+	GameFinal    = "Final"
+	GameTie      = "Tie"
+	GameNoResult = "No result yet"
+)
+
+// FinalWords says who won a decided game and by what score.
+func FinalWords(winner, loser string, high, low leaguerules.Decimal) string {
+	return fmt.Sprintf("%s beat %s, %s to %s", winner, loser, PointsWords(high), PointsWords(low))
+}
+
+// AddPoints adds two point values, refusing a total outside the supported range.
+func AddPoints(a, b leaguerules.Decimal) (leaguerules.Decimal, error) {
+	if (b > 0 && a > math.MaxInt64-b) || (b < 0 && a < math.MinInt64-b) {
+		return 0, fmt.Errorf("points adjustments exceed the supported range")
+	}
+	return a + b, nil
+}
+
+// PointsWords writes a point value the way the league reads it: 12.5, -0.25, 7.
+func PointsWords(points leaguerules.Decimal) string {
+	whole := strconv.FormatInt(int64(points/10000), 10)
+	if points < 0 && points/10000 == 0 {
+		whole = "-0"
+	}
+	remainder := points % 10000
+	if remainder < 0 {
+		remainder = -remainder
+	}
+	fraction := strings.TrimRight(fmt.Sprintf("%04d", remainder), "0")
+	if fraction == "" {
+		return whole
+	}
+	return whole + "." + fraction
 }
