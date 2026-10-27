@@ -222,7 +222,7 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
-		archive:        archiveapi.New(app.core),
+		archive:        archiveapi.New(archiveHost{app.core}),
 		commissioner:   newCommissionerAPI(app),
 		comms:          commsapi.New(app.core),
 		contracts:      contractsapi.New(contractsHost{State: app.core, app: app}),

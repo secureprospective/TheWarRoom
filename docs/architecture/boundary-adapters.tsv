@@ -1,6 +1,5 @@
 # Function identity	SHA-256 of comment/whitespace-free Go tokens	classification
 # adapter: resource, transport, representation or synchronization only; legacy: frozen core policy debt.
-internal/app/core/host_archive.go:(*State).ArchiveOpponent	3038d97d54b7f1154ac5de8fd01c181d5534ca42fed6e3ae7a2861b8e5c96aa3	legacy
 internal/app/core/host_comms.go:(*State).CommsArchive	207d446dc31e28c94895b36a885677bf69fdf45adae2f8be72fcfee684dbd024	adapter
 internal/app/core/host_comms.go:(*State).CommsContext	4933a89dc58dba9925a94cfd6b9ffb21abdec1b54f8678d4c1c15ddec4c31cfb	adapter
 internal/app/core/host_comms.go:(*State).CommsDestination	0a36cc03f888366a8a19216f7681096c27cb70ce6616bd97fb231475ec72cb17	adapter
@@ -14,7 +13,6 @@ internal/app/core/host_comms.go:clonePtr	1969adf3016ec595c92f11ca18759aa95675e5d
 internal/app/core/host_comms.go:cloneTransactions	ed5d0e587a9657a27a98353cefb59b6f9a4c9e7db9fa0b0f3f8e12900f1086ac	adapter
 internal/app/core/host_contracts.go:(*State).ContractsLeagueHost	c5a7cc5a4f51d6bc37becc10085b41b451c78b23d6e8f4c87998f419fddbc5a5	adapter
 internal/app/core/host_contracts.go:(*State).ContractsLineups	6534eeb6656c4f21d796c032c12228399668178b3f9c8739b8b363e1b0c67476	adapter
-internal/app/core/host_contracts.go:(*State).RulesFreshness	9d450bc77d0f02649bcba052e733e581e6676e2feff6185305b05ad031212184	legacy
 internal/app/core/host_contracts.go:(*State).WakeMoves	e167be68c831c3ce665fa77b1705ec7d55d7644a2ba25ed88ea7f84d56d4ce3b	adapter
 internal/app/core/host_contracts.go:cloneSnapshot	ea240229bfa6105e885a0691d0b6509cc0c468662d816d2b5ac9c30058807a57	adapter
 internal/app/core/host_counterparties.go:(*State).CounterpartiesFacts	58d9b56558a9118e969fda8d734fbb98c09a4f1b1d02fe208b24a5c0dab4e3fe	adapter
@@ -33,7 +31,6 @@ internal/app/core/host_draft.go:(*State).RefreshDraftReportsFeeds	acb97276ae8666
 internal/app/core/host_market.go:(*State).LabFacts	d911d2d6b86b1eeb66e98431f96b86ccc59e868146e2599d4d62e632016550c4	adapter
 internal/app/core/host_market.go:(*State).MarketZone	f88476fc307fb72c62ef49cf5197c5ff71660fa8ec8521bcbb3992fbecc0f47b	adapter
 internal/app/core/host_market.go:(*State).RefreshMarket	b1d9065d9cc176c405e66fd5cfc945b25cff20dc0acb9d090fc697645491284b	adapter
-internal/app/core/host_offers.go:(*State).OffersCapRoom	86d568bb89cd93d159175cb157901fe8309edbdbb8b2d60405e37fb399227a54	legacy
 internal/app/core/host_offers.go:(*State).OffersSnapshotNames	f861edd0333429b3f16d0ea8cb510ce98b343e25d1fbdfa7377abf0e1b1bb325	adapter
 internal/app/core/host_offers.go:(*State).OffersWeek	6c63e7677dccbec88054a7e627dcc5b4ffe92a43b805fb9895342394d4ec3c6b	adapter
 internal/app/core/host_offers.go:(*State).OffersZone	b3f4c56aa711433d9738ebe56895e3b77cc34215fa7577002fbc8aba82742cfa	adapter
@@ -41,14 +38,11 @@ internal/app/core/host_race.go:(*State).RaceInput	81cf6ddcf7e1b62e8d7de0c8f6ed9b
 internal/app/core/host_race.go:(*State).RefreshRace	6f0e8e94db886679d99558b967d80916d3ea333343d0a98a9724874d5d40ff54	legacy
 internal/app/core/host_race.go:CloneLineups	1d6fdf2b3528f974e538d4831d89ec3d59c9d27296cd77c3a85d5c78feb5ddf7	adapter
 internal/app/core/host_research.go:(*State).ResearchZone	29b1832b38475179f6cefa827a2a24f65d81c3292134e11f8df78f34ae1d0983	adapter
-internal/app/core/host_sources.go:(*State).SerializeSourcesCompile	0b8a9e197ffb4398b90ed72b80719b02c0622f11ca0dbfc43f98cb53ec283a44	legacy
 internal/app/core/host_sources.go:(*State).SerializeSourcesLoad	e8040ffb281db607f523ebaf24a5e71fe27e18f38c7a77390f722fee050b3cc5	adapter
 internal/app/core/host_sources.go:(*State).SourcesPhotos	9404f29fa251d56974c767e3f3e13b46f5ff8a89f3dbed496e1fbd0e0fcfb4da	adapter
-internal/app/core/host_sources.go:(*State).SourcesPositions	f076e5a410b6353ee52b15db5b0c989e3ad25ff7aa010ea1c5645683116bcc40	legacy
 internal/app/core/host_sources.go:(*State).SourcesRostered	cb7900f0d8fdc9b464cddf9f88457cfcafea132c8b95c89b8ed411cdf6ff8ac4	adapter
 internal/app/core/host_sources.go:(*State).SourcesZone	6f74c325b1a5cf38988d0a68c1ffc57e87af988631974e792e076885caf63f4a	adapter
-internal/app/core/host_trades.go:(*State).PendingTrades	54350f91ad955e1ceb74cbdeff974c7723008602593459030b3389e3a8b83af3	adapter
-internal/app/core/host_trades.go:(*State).TradeRequest	1831ed33dacca1484b2cc31268b6fd064bd02ba577e80bdb1f1b6b6e1cae5421	legacy
+internal/app/core/host_contracts.go:(*State).PendingTrades	54350f91ad955e1ceb74cbdeff974c7723008602593459030b3389e3a8b83af3	adapter
 internal/app/core/state.go:(*State).RequireOwnFranchise	3fa0dce939808a501b2af004e73ad2acfb247e7990909da050a67a3153944757	legacy
 internal/app/core/state.go:ArchivedOnly	bc47debe9ea9f112b932d24cc9d96d2227f1913f737b34b11963211e30f18d35	adapter
 internal/app/core/state.go:OwnFranchiseRefusal	527dba1aabc06feb483132311ec1c78d973d7960eee77a25f44275e6abc05d3d	legacy

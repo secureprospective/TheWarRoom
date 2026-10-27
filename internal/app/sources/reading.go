@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/facts"
@@ -493,4 +495,17 @@ func itemClass(class string) string {
 		return "For review"
 	}
 	return "Not explained"
+}
+
+func Positions(lk normalize.Lookup, ok bool, rostered func() map[string]string) map[string]string {
+	out := map[string]string{}
+	if !ok {
+		return out
+	}
+	for id := range rostered() {
+		if f, ok := lk.Facts(id); ok {
+			out[id] = string(f.Position)
+		}
+	}
+	return out
 }

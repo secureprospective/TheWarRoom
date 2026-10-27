@@ -44,14 +44,14 @@ func reducedArchive(t *testing.T) archiveapp.Snapshot {
 // Root retains a small composition golden; feature cases live beside the API.
 func TestArchiveCompositionWireMatchesGolden(t *testing.T) {
 	a := targetTestApp(t)
-	bound, err := archiveapp.New(a.core).TargetArchive(0, "", "")
+	bound, err := archiveapp.New(archiveHost{a.core}).TargetArchive(0, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
 	checkGolden(t, "archive", "unimported", bound)
 }
 
-func (a *App) archiveOpponent(team string) string { return a.core.ArchiveOpponent(team) }
+func (a *App) archiveOpponent(team string) string { return (archiveHost{a.core}).ArchiveOpponent(team) }
 
 // TestReportWireTwinsMatch proves wireBoard and wireChoices lose nothing: a board with every
 // field set, and one left empty, encode the same before and after conversion. A field added to
@@ -148,7 +148,7 @@ func TestArchiveWireDuringRefreshPublication(t *testing.T) {
 	}
 	// The real refresh has published lineups and holds RefreshMu during pending-trade I/O.
 	read := make(chan error, 1)
-	go func() { _, err := archiveapp.New(a.core).TargetArchive(0, "0001", ""); read <- err }()
+	go func() { _, err := archiveapp.New(archiveHost{a.core}).TargetArchive(0, "0001", ""); read <- err }()
 	select {
 	case err := <-read:
 		if err != nil {
@@ -164,7 +164,7 @@ func TestArchiveWireDuringRefreshPublication(t *testing.T) {
 		t.Fatal("lineups were not published")
 	}
 	match := published.Value.Matchups[0]
-	b, err := archiveapp.New(a.core).TargetArchive(0, match.Home, "")
+	b, err := archiveapp.New(archiveHost{a.core}).TargetArchive(0, match.Home, "")
 	if err != nil || b.Other != match.Away {
 		t.Fatal(b.Other, err)
 	}

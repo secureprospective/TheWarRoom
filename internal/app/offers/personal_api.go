@@ -145,3 +145,17 @@ func RecordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at tim
 	}
 	return nil
 }
+
+func CapRoom(raw string, usedFor func() (domain.Money, bool)) *domain.Money {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	limit, err := domain.ParseMoneyMillions(raw)
+	used, ok := usedFor()
+	if err != nil || !ok {
+		return nil
+	}
+	room := limit - used
+	return &room
+}

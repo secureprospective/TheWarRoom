@@ -129,3 +129,7 @@ func (a *App) personalSnapshot(mine string) (snapshot.Snapshot, error) {
 	a.core.TargetSnapshotMu.Unlock()
 	return offersapp.PersonalSnapshot(snap, loaded, mine) //nolint:wrapcheck // Preserve the personal snapshot refusal.
 }
+
+func (h offersHost) OffersCapRoom(franchise string) *domain.Money {
+	return offersapp.CapRoom(h.Rulebook.GetSalaryCap(), func() (domain.Money, bool) { return h.League.CapUsed(franchise) })
+}

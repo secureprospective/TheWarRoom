@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
@@ -70,7 +72,7 @@ func (a *App) byeAlerts(r *controlapp.AlertReading, mine string, now time.Time) 
 	ctx, cancel := context.WithTimeout(a.core.Ctx, m4Timeout)
 	defer cancel()
 	byes := archivedOnly(ctx, a, nflschedule.ByeExport, true, nflschedule.ParseByes)
-	controlapp.ByeAlerts(r, controlapp.ByeAlertInput{Snapshot: snap, Franchise: mine, Byes: byes, Week: week, WeekFailure: failed, Starters: a.core.Rulebook.ActiveConfig().Starters, RulesFreshness: a.core.RulesFreshness, Now: now}, func(w int) time.Time { return a.byeWeekLock(ctx, week, w, now) })
+	controlapp.ByeAlerts(r, controlapp.ByeAlertInput{Snapshot: snap, Franchise: mine, Byes: byes, Week: week, WeekFailure: failed, Starters: a.core.Rulebook.ActiveConfig().Starters, RulesFreshness: func() domain.Freshness { return contractsapp.RulesFreshness(a.core.RulesCheckedAt.Load()) }, Now: now}, func(w int) time.Time { return a.byeWeekLock(ctx, week, w, now) })
 }
 
 func (a *App) byeWeekLock(ctx context.Context, current leagueweek.Week, week int, now time.Time) time.Time {

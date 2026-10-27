@@ -95,3 +95,7 @@ func scorePeriod(ctx context.Context, a *App, period string) heldSeasonFeed[[]in
 		return contractsapp.ParseScorePeriod(body, period)
 	})
 }
+
+func (h contractsHost) RulesFreshness() domain.Freshness {
+	return contractsapp.RulesFreshness(h.RulesCheckedAt.Load())
+}

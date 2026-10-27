@@ -1005,3 +1005,17 @@ Next session: preserve these commits, diagnose/run the real pre-push gate with a
 observable budget before claiming full verification or CI. Do not infer a specific timeout cause
 from this buffered attempt. Named targeted race batches, full lint and the two negative boundary
 mutations above are the available exercised evidence. CI and live review remain outstanding.
+
+## Part 5 — batch 1: held selection and availability
+
+Six frozen core functions moved: ArchiveOpponent → Archive.Opponent (original WeekMu release
+then SeasonMu-held fallback retained); OffersCapRoom → Offers.CapRoom (blank avoids cap read,
+malformed nonblank still reads cap usage); RulesFreshness → Contracts.RulesFreshness;
+TradeRequest → Trades.Request; SourcesPositions → Sources.Positions; SerializeSourcesCompile →
+Sources.CompileAvailable. Composition supplies ports, not policy. Legacy rows fall from 17 to 11.
+Trade target policy test moved inward; lock-span/detachment integration checks moved from core to
+composition. Added inward cap/read-order, stored/live freshness and absent-lookup/no-roster cases.
+Filtered core/service/composition race tests and door parity pass. No public/schema/role changes.
+Resource consolidation: internal/app/core/host_trades.go → internal/app/core/host_contracts.go
+(pending/future trade reads beside shared ledger reads); fingerprint keys relocate unchanged.
+No running app/unit tied to these paths was found; no repository or installed data moved.

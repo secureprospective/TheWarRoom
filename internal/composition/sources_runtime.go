@@ -175,3 +175,17 @@ func (h sourcesHost) CacheScopes() []sourcesapp.DataScope {
 func (h sourcesHost) ClearCache(scope string) (string, bool, error) {
 	return sourcesapp.ClearCache(h.app.cacheScopes(), scope) //nolint:wrapcheck // Preserve the selected refresh error.
 }
+
+func (h sourcesHost) SourcesPositions() map[string]string {
+	lookup, held := h.SourcesLookup()
+	return sourcesapp.Positions(lookup, held, h.SourcesRostered)
+}
+func (h sourcesHost) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
+	return sourcesapp.CompileAvailable(h.FactsMu.TryLock, h.FactsMu.Unlock, compile) //nolint:wrapcheck // Preserve compile errors and the busy result.
+}
+
+type archiveHost struct{ *core.State }
+
+func (h archiveHost) ArchiveOpponent(team string) string {
+	return h.ReadArchiveOpponent(team, archiveapp.Opponent)
+}

@@ -40,22 +40,6 @@ func (s *State) SourcesRostered() map[string]string {
 	return out
 }
 
-func (s *State) SourcesPositions() map[string]string {
-	s.LookupMu.Lock()
-	lk, ok := s.Lookup, s.HasLookup
-	s.LookupMu.Unlock()
-	out := map[string]string{}
-	if !ok {
-		return out
-	}
-	for id := range s.SourcesRostered() {
-		if f, ok := lk.Facts(id); ok {
-			out[id] = string(f.Position)
-		}
-	}
-	return out
-}
-
 func (s *State) SourcesNames() map[string]string { return s.Rulebook.FranchiseNames() }
 
 func (s *State) SourcesPhotos() (headshot.Stats, int, int64, bool, bool) {
@@ -88,10 +72,8 @@ func (s *State) SerializeSourcesLoad(ctx context.Context, load func()) {
 	load()
 }
 
-func (s *State) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
-	if !s.FactsMu.TryLock() {
-		return "The checked facts are already compiling.", nil
-	}
-	defer s.FactsMu.Unlock()
-	return compile()
+func (s *State) SourcesLookup() (normalize.Lookup, bool) {
+	s.LookupMu.Lock()
+	defer s.LookupMu.Unlock()
+	return s.Lookup, s.HasLookup
 }

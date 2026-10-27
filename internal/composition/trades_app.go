@@ -166,7 +166,7 @@ func (a *App) requireTradePlanFranchise(ctx context.Context, r tradesapp.RawTrad
 }
 
 func (a *App) tradePlans() tradesapp.PlanWorkflow {
-	return tradesapp.PlanWorkflow{Receipts: a.core.Moves, Request: a.core.TradeRequest, Now: a.core.MovesNow, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock,
+	return tradesapp.PlanWorkflow{Receipts: a.core.Moves, Request: (tradesHost{State: a.core, app: a}).TradeRequest, Now: a.core.MovesNow, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock,
 		SavePlan: func(ctx context.Context, plan state.TradePlan) error {
 			return state.NewTradePlans(a.core.WhatifPools).Save(ctx, plan)
 		},
@@ -176,4 +176,9 @@ func (a *App) tradePlans() tradesapp.PlanWorkflow {
 		Own: a.core.RequireOwnFranchise, Project: a.tradeProjection, Supersede: func(ctx context.Context, e envelope.Envelope, now time.Time) error {
 			return contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now)
 		}, Audit: a.logMove, Changed: a.core.MovesChanged, HandOff: a.tradeBuilderHandOff, State: a.tradeState, ValidateURL: platformapp.ValidateMoveURL, OpenURL: a.core.OpenURL, Wake: a.wakeMoves}
+}
+
+func (h tradesHost) TradeRequest(franchise string, offer leaguefeed.PendingTrade) envelope.TradeRequest {
+	host, season := h.ContractsLeagueHost()
+	return tradesapp.Request(franchise, offer, host, season)
 }

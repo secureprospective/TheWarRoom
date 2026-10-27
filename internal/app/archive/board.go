@@ -554,3 +554,21 @@ func OpponentFallback(weeks []leaguefeed.WeekResult, week int, team string) stri
 	}
 	return ""
 }
+
+func Opponent(week int, team string, lineups leaguefeed.Lineups, fallback func(int, string) string) string {
+	for _, m := range lineups.Matchups {
+		if lineups.Week != week {
+			break
+		}
+		if m.Home == team {
+			return m.Away
+		}
+		if m.Away == team {
+			return m.Home
+		}
+	}
+	if fallback != nil {
+		return fallback(week, team)
+	}
+	return ""
+}

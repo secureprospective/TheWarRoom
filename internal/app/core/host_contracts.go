@@ -8,7 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -118,13 +118,6 @@ func (s *State) ContractsLeagueHost() (string, int) {
 
 // RulesFreshness is live from the last successful rules sync; before one, the stored rulebook
 // is the last good copy and says so.
-func (s *State) RulesFreshness() domain.Freshness {
-	checked := s.RulesCheckedAt.Load()
-	if checked == 0 {
-		return domain.Freshness{State: domain.FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
-	}
-	return LiveFreshness(time.Unix(checked, 0))
-}
 
 func cloneSnapshot(in snapshot.Snapshot) snapshot.Snapshot {
 	out := in
@@ -150,4 +143,35 @@ func cloneSnapshot(in snapshot.Snapshot) snapshot.Snapshot {
 	out.Eligibility.Players = maps.Clone(in.Eligibility.Players)
 	out.Eligibility.Feeds = maps.Clone(in.Eligibility.Feeds)
 	return out
+}
+
+// PendingTrades copies the held pendingTrades feed under SeasonMu. The value is never nil, as
+// before, and every offer's assets are detached from the held feed.
+func (s *State) PendingTrades() snapshot.Sourced[[]leaguefeed.PendingTrade] {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	held := s.SeasonPendingTrades
+	out := make([]leaguefeed.PendingTrade, len(held.Value))
+	for i, t := range held.Value {
+		t.Gives, t.Gets = cloneAssets(t.Gives), cloneAssets(t.Gets)
+		out[i] = t
+	}
+	return snapshot.Sourced[[]leaguefeed.PendingTrade]{
+		Value:      out,
+		Provenance: held.Provenance("pendingTrades", "pending trades"),
+	}
+}
+
+// TradeFuturePicks copies the held futureDraftPicks value under SeasonMu, keeping nil nil.
+func (s *State) TradeFuturePicks() []draftreports.FuturePick {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	return slices.Clone(s.SeasonFuturePicks.Value)
+}
+
+// TradeFuturePicksFeed reads when futureDraftPicks was last fetched and its last refresh error.
+func (s *State) TradeFuturePicksFeed() (time.Time, string) {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	return s.SeasonFuturePicks.FetchedAt, s.SeasonFuturePicks.RefreshError
 }

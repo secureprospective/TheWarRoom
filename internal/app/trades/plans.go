@@ -5,11 +5,13 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -327,4 +329,24 @@ func (s PlanWorkflow) CheckExitPending(mine string, spec envelope.Spec) error {
 		return fmt.Errorf("offer no longer available; refresh the trade desk")
 	}
 	return nil
+}
+
+func Request(franchiseID string, offer leaguefeed.PendingTrade, host string, season int) envelope.TradeRequest {
+	req := envelope.TradeRequest{
+		LeagueID: ingestion.LeagueID, FranchiseID: franchiseID,
+		Trade: envelope.ExpectedTrade{
+			TradeID: offer.ID, Offering: offer.Offering, Accepting: offer.OfferedTo,
+			OfferingGives: leaguefeed.AssetTokens(offer.Gives), AcceptingGives: leaguefeed.AssetTokens(offer.Gets),
+		},
+		Target: envelope.Target{Kind: envelope.Unmapped},
+	}
+	if !offer.Expires.IsZero() {
+		req.Deadline = &offer.Expires
+	}
+	if host != "" {
+		req.Target = envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
+			"https://%s/%d/options?L=%s&O=05", host, season,
+			url.QueryEscape(req.LeagueID))}
+	}
+	return req
 }

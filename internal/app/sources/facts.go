@@ -170,3 +170,11 @@ func WarmArchive(ctx context.Context, began time.Time, read func(context.Context
 	}
 	logLine(fmt.Sprintf("the war room: league archive read in %s", time.Since(began).Round(time.Millisecond)))
 }
+
+func CompileAvailable(lock func() bool, unlock func(), compile func() (string, error)) (string, error) {
+	if !lock() {
+		return "The checked facts are already compiling.", nil
+	}
+	defer unlock()
+	return compile()
+}

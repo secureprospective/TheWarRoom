@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/facts"
@@ -234,4 +236,11 @@ func cell(r report.Report, key string) string {
 		}
 	}
 	return ""
+}
+
+func TestPositionsWithoutLookupDoesNotReadRoster(t *testing.T) {
+	got := Positions(normalize.Lookup{}, false, func() map[string]string { t.Fatal("read absent lookup"); return nil })
+	if got == nil || len(got) != 0 {
+		t.Fatal(got)
+	}
 }

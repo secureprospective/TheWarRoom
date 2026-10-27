@@ -4,7 +4,9 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -161,4 +163,11 @@ func ParseScorePeriod(body []byte, period string) ([]ingestion.RawPlayerScore, e
 		return nil, fmt.Errorf("player scores: period %s not held", period)
 	}
 	return out, nil
+}
+
+func RulesFreshness(checked int64) domain.Freshness {
+	if checked == 0 {
+		return domain.Freshness{State: domain.FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
+	}
+	return report.LiveFreshness(time.Unix(checked, 0))
 }
