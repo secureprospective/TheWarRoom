@@ -29,6 +29,11 @@ func PrepareWaiverAppend(raw *RawCommand, records []Record, now time.Time, facts
 	if err != nil {
 		return err
 	}
+	return prepareWaiverFrame(f, raw)
+}
+
+func prepareWaiverFrame(f Frame, raw *RawCommand) error {
+	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
 	if err := f.Seeded("record starting assets before waiver actions"); err != nil {
 		return err
 	}

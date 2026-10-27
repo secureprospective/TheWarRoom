@@ -40,6 +40,11 @@ func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts na
 	if err != nil {
 		return err
 	}
+	return prepareBidFrame(f, raw, env)
+}
+
+func prepareBidFrame(f Frame, raw *RawCommand, env BidEnvironment) error {
+	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
 	if err := f.Seeded("record starting assets before bid actions"); err != nil {
 		return err
 	}

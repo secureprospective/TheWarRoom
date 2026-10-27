@@ -28,6 +28,11 @@ func NativeTradesReading(league, viewer, principal string, records []Record, now
 	if err != nil {
 		return NativeTrades{}, err
 	}
+	return nativeTradesFrame(f, viewer)
+}
+
+func nativeTradesFrame(f Frame, viewer string) (NativeTrades, error) {
+	league, records, now, zone := f.League, f.Records, f.At, f.Zone
 	assets, state := f.Assets, f.Book
 	if err := f.readRules(); err != nil {
 		return NativeTrades{}, err

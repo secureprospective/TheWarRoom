@@ -116,6 +116,11 @@ func NativeBidsReading(league, franchise, principal string, records []Record, at
 	if err != nil {
 		return NativeBids{}, err
 	}
+	return nativeBidsFrame(f, franchise, principal)
+}
+
+func nativeBidsFrame(f Frame, franchise, principal string) (NativeBids, error) {
+	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
 	assets, state := f.Assets, f.Book
 	if err := f.readRules(); err != nil {
 		return NativeBids{}, err

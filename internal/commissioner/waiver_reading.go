@@ -47,6 +47,11 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err != nil {
 		return NativeWaivers{}, err
 	}
+	return nativeWaiversFrame(f, franchise, principal)
+}
+
+func nativeWaiversFrame(f Frame, franchise, principal string) (NativeWaivers, error) {
+	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
 	if err := f.readRules(); err != nil {
 		return NativeWaivers{}, err
 	}
@@ -129,6 +134,11 @@ func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, 
 	if err != nil {
 		return nil, err
 	}
+	return dueWaiverWindowsFrame(f)
+}
+
+func dueWaiverWindowsFrame(f Frame) ([]string, error) {
+	at := f.At
 	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no waivers; its season may not even be named yet.
 	due := []string{}

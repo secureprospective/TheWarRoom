@@ -30,6 +30,12 @@ func PrepareTradeAppend(raw *RawCommand, principal string, records []Record, now
 	if err != nil {
 		return err
 	}
+	return prepareTradeFrame(f, raw, principal)
+}
+
+func prepareTradeFrame(f Frame, raw *RawCommand, principal string) error {
+	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
+	var err error
 	if err := f.Seeded("record starting rosters and picks before trading"); err != nil {
 		return err
 	}

@@ -15,6 +15,11 @@ func NextDueDeadline(league string, records []Record, at time.Time) (time.Time, 
 	if err != nil {
 		return time.Time{}, err
 	}
+	return nextDueDeadlineFrame(f)
+}
+
+func nextDueDeadlineFrame(f Frame) (time.Time, error) {
+	at := f.At
 	assets, state := f.Assets, f.Book
 	if !assets.Seeded {
 		return time.Time{}, nil

@@ -16,6 +16,11 @@ func DueBids(league string, records []Record, at time.Time, facts nativecheck.Fa
 	if err != nil {
 		return nil, err
 	}
+	return dueBidsFrame(f)
+}
+
+func dueBidsFrame(f Frame) ([]string, error) {
+	records, at, facts := f.Records, f.At, f.Facts
 	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no bids; its season may not even be named yet.
 	due := []string{}

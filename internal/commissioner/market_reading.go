@@ -56,6 +56,11 @@ func MarketReading(league, command, principal string, records []Record, at time.
 	if err != nil {
 		return out, err
 	}
+	return marketReadingFrame(f, out, command, principal)
+}
+
+func marketReadingFrame(f Frame, out Market, command, principal string) (Market, error) {
+	league, held, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
 	assets, state := f.Assets, f.Book
 	if !assets.Seeded {
 		return out, nil
