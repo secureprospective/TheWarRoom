@@ -1,0 +1,12 @@
+{
+ "draft": {
+  "season": 2027,
+  "at": "0001-01-01T00:00:00Z",
+  "act": {
+   "round": 1,
+   "original": "franchise.02",
+   "player": "5004",
+   "replaces": "5002"
+  }
+ }
+}

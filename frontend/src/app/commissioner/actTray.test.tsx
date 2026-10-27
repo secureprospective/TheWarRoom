@@ -263,7 +263,7 @@ it('every table field is a field on its Go Raw argument, including nested pick a
     override: ['native_override.go', 'RawNativeOverride'], waiver: ['market_wire.go', 'RawWaiverArgs'],
     bid: ['market_wire.go', 'RawBidArgs'], trade: ['market_wire.go', 'RawTradeArgs'],
     schedule: ['schedule.go', 'RawScheduleArgs'], bracket: ['bracket_commands.go', 'RawBracketChange'],
-    draft: ['draft_commands.go', 'RawDraftArgs'], '': ['command.go', 'RawArgs'],
+    draft: ['draft_wire.go', 'RawDraftArgs'], '': ['command.go', 'RawArgs'],
   };
   for (const def of actTable) {
     const [file, name] = structs[def.root];

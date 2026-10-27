@@ -27,7 +27,7 @@ const receipt = parseEnvelopeDemo(JSON.parse(readFileSync(
   'src/app/data/fixtures/envelope-demo.json', 'utf8',
 ))).receipt;
 const subject = { kind: 'player' as const, id: '11675', franchiseId: '0001' };
-// The demo receipt describes its own player — cmd/fixtures picks the first one the held rules
+// The demo receipt describes its own player — tools/fixtures picks the first one the held rules
 // leave unchecked, 11675 in franchise 0001 — so the inspector
 // tests need a receipt for the player under inspection.
 function forSubject(r: typeof receipt, spec: Partial<typeof receipt.spec> = {}): typeof receipt {

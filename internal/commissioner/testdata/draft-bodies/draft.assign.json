@@ -1,0 +1,20 @@
+{
+ "draft": {
+  "season": 2027,
+  "at": "0001-01-01T00:00:00Z",
+  "act": {
+   "round": 1,
+   "original": "franchise.02",
+   "player": "5002"
+  }
+ },
+ "draftOutcome": {
+  "terms": {
+   "salaryCents": 300000000,
+   "years": 5,
+   "rfaAfter": false
+  },
+  "franchise": "franchise.02",
+  "slot": 2
+ }
+}

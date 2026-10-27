@@ -67,6 +67,13 @@ type NativePlayer struct {
 	ContractInfo   string                `json:"contractInfo"`
 }
 
+// NativePoolEntry is an unassigned free agent in the league's player pool.
+type NativePoolEntry struct {
+	Player string `json:"player"`
+	Name   string `json:"name,omitempty"`
+	Season int    `json:"season"`
+}
+
 type NativePick struct {
 	Compensatory bool   `json:"compensatory,omitempty"`
 	Correction   string `json:"correction,omitempty"`

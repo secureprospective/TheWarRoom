@@ -1,5 +1,5 @@
 // Package engine is what is left live of the layer 1-6 scoring engine: Layer 3 age decay and
-// the per-position peak ages, which cmd/fit reads. The rest of the engine was removed on
+// the per-position peak ages, which tools/fit reads. The rest of the engine was removed on
 // 2026-10-20 (docs/architecture/removed-code.md). It imports no store or I/O (depguard engine-is-pure).
 package engine
 

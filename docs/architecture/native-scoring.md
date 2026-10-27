@@ -63,7 +63,7 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
     with the held file after normalising run-to-run values (`internal/serverhttp/hosted_wire_test.go`:
     instants in ISO and in words, SHA-256s, account UUIDs, revisions, the deadline countdown). Checked:
     fixtures from earlier runs pass, in the local zone and `TZ=UTC`; the stale fixture fails Under `-race`
-    (`6653b284`) the practice draft (start = provisioning + 2 s, `internal/hostedfixture/workflows.go`)
+    (`6653b284`) the practice draft (start = provisioning + 2 s, `tools/hostedfixture/workflows.go`)
     read "running" instead of "waiting", so both writers now wait for its start and the pick-clock
     `remaining` (ns) is normalised; passes with and without `-race`.
   - **Line games stay pinned-evidence only (not built, by design for now).** The fetch archive

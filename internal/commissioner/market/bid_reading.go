@@ -131,7 +131,7 @@ func nativeBidsFrame(f commissioner.Frame, franchise, principal string) (NativeB
 	}
 	rules := f.Rules
 	out := NativeBids{League: league, Franchise: franchise, Revision: commissioner.RecipientRevision(records, principal, at), Season: rules.Season,
-		Mode: commissioner.FieldWords(rules, "bids.ufa"), ActiveLimit: commissioner.FieldWords(rules, "bids.maximumActive"),
+		Mode: commissioner.RuleValueWords(rules, "bids.ufa"), ActiveLimit: commissioner.RuleValueWords(rules, "bids.maximumActive"),
 		Players: []NativeBidPlayer{}, Awards: []NativeBidAward{}, Notes: []string{}}
 	if !assets.Seeded {
 		out.Notes = append(out.Notes, "No starting rosters recorded")
