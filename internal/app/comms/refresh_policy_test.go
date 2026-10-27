@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 )
 
 func TestMemberBoardRefusalAndOrderedReads(t *testing.T) {
@@ -61,5 +62,52 @@ func TestCommsRefreshFreshnessAndStartupAdmission(t *testing.T) {
 	}
 	if err := RefreshReading(true, func() error { return errors.New("failed") }, func() (report.Feed, [2]report.Feed) { t.Fatal("early capture"); return fresh, [2]report.Feed{} }, nil, nil, nil, nil); err == nil || err.Error() != "comms refresh: failed" {
 		t.Fatal(err)
+	}
+}
+
+func TestMemberKeyMissingPresentAndCanceledRing(t *testing.T) {
+	store := mflkey.NewMemory("fixture", "2026")
+	if err := MemberKey(t.Context(), store); !errors.Is(err, ErrNeedsKey) {
+		t.Fatal(err)
+	}
+	if err := store.Set(t.Context(), "private-fixture"); err != nil {
+		t.Fatal(err)
+	}
+	if err := MemberKey(t.Context(), store); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	err := MemberKey(ctx, store)
+	if err == nil || errors.Is(err, ErrNeedsKey) || err.Error() != "MFL keyring is locked or unavailable" {
+		t.Fatal(err)
+	}
+	boards := [2]report.HeldFeed[[]ingestion.RawLeaguePost]{{Value: []ingestion.RawLeaguePost{{Title: "held"}}}}
+	RefuseBoards(&boards, err)
+	if len(boards[0].Value) != 1 {
+		t.Fatal("canceled ring erased held member data")
+	}
+	RefreshBoards(ctx, func(context.Context) error { return nil }, func(error) { t.Fatal("key refused") }, func() func(context.Context, time.Duration) error { return nil }, func(context.Context, int, string) { t.Fatal("read after canceled default pause") })
+}
+
+func TestCommsRefreshTreatsTransactionAndBoardFreshnessIndependently(t *testing.T) {
+	for _, tc := range []struct {
+		txError, boardError string
+		txRuns, boardRuns   int
+	}{
+		{"", "", 0, 0}, {"failed", "", 1, 0}, {"", "failed", 0, 1}, {"failed", "failed", 1, 1},
+	} {
+		tx, boards := 0, 0
+		fresh := report.Feed{FetchedAt: time.Now()}
+		err := RefreshReading(false, func() error { return nil }, func() (report.Feed, [2]report.Feed) {
+			transaction := fresh
+			transaction.RefreshError = tc.txError
+			member := fresh
+			member.RefreshError = tc.boardError
+			return transaction, [2]report.Feed{fresh, member}
+		}, func() context.Context { return t.Context() }, func(run func()) { run() }, func(context.Context) { tx++ }, func(context.Context) { boards++ })
+		if err != nil || tx != tc.txRuns || boards != tc.boardRuns {
+			t.Fatal(tc, tx, boards, err)
+		}
 	}
 }

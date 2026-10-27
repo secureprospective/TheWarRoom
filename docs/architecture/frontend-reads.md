@@ -103,3 +103,10 @@ No new dependency, generated Wails binding, endpoint, UI layout, permission, rol
 Deferred live test on a disposable profile: choose Archive/Race teams and weeks, Comms filters,
 refresh Draft/Market reports, cause a read failure and retry. Passing means unchanged accepted
 selections, labels/refusals and last-good views; no browser/network/write action merely from reading.
+
+
+### Regression checkpoint
+
+Affected batch: 11 files / 101 tests pass, plus TypeScript no-emit. Two one-at-a-time actual-source
+mutations were rejected (late publication without revision fencing; stale same-scope cache after
+explicit refresh). Both restored before the final passing run. No production mutation committed.

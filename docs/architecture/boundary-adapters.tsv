@@ -1,5 +1,6 @@
-# Function identity	SHA-256 of comment/whitespace-free Go tokens	classification
-# adapter: resource, transport, representation or synchronization only; legacy: frozen core policy debt.
+# Boundary identity (function or #source)	SHA-256 of Go tokens and semantic source directives	classification
+# adapter: resource, transport, representation or synchronization only; fixture source rows freeze test helpers.
+# No legacy policy entries remain. Ordinary comments and formatting are not fingerprinted.
 internal/app/core/host_comms.go:(*State).CommsArchive	207d446dc31e28c94895b36a885677bf69fdf45adae2f8be72fcfee684dbd024	adapter
 internal/app/core/host_comms.go:(*State).CommsContext	4933a89dc58dba9925a94cfd6b9ffb21abdec1b54f8678d4c1c15ddec4c31cfb	adapter
 internal/app/core/host_comms.go:(*State).CommsDestination	0a36cc03f888366a8a19216f7681096c27cb70ce6616bd97fb231475ec72cb17	adapter

@@ -161,3 +161,47 @@ it('does not erase unexpected undefined fields before runtime validation', async
   expect(read).not.toHaveBeenCalled();
   expect(query.peek().error).toContain('unknown argument injected');
 });
+
+it('keeps the latest failure instead of replacing it with an older success', async () => {
+  const old = deferred<string>(), newer = deferred<string>();
+  const query = archiveQuery(vi.fn().mockReturnValueOnce(old.promise).mockReturnValueOnce(newer.promise));
+  const first = query.load([2025, '', '']);
+  const second = query.load([2026, '', '']);
+  newer.reject(new Error('current failure'));
+  await second;
+  old.resolve('stale success');
+  await first;
+  expect(query.peek()).toEqual({ selection: 0, pending: false, error: 'Error: current failure' });
+});
+
+it('does not cache a failed publication adapter and fences an awaited action after reset', async () => {
+  const read = vi.fn(async () => 'held');
+  let reject = true;
+  const query = createReadQuery('draft.TargetDraftReports', {
+    initial: (): { value?: string } => ({}), read,
+    accept: value => { if (reject) throw new Error('bad parsed view'); return { value }; },
+  });
+  await query.load([]);
+  reject = false;
+  await query.load([], { policy: 'cache-first' });
+  expect(read).toHaveBeenCalledTimes(2);
+  const gate = deferred<void>();
+  const waiting = query.load([], { before: () => gate.promise });
+  query.reset();
+  gate.resolve();
+  await waiting;
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(query.peek()).toEqual({ pending: false, error: '' });
+});
+
+it('does not reuse the same-scope cache after an explicit refresh action', async () => {
+  const read = vi.fn(async () => 'before refresh');
+  const query = archiveQuery(read);
+  await query.load([2026, '0001', '']);
+  read.mockResolvedValueOnce('after refresh');
+  const before = vi.fn(async () => {});
+  await query.load([2026, '0001', ''], { before, policy: 'cache-first' });
+  expect(before).toHaveBeenCalledOnce();
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(query.peek().value).toBe('after refresh');
+});

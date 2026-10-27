@@ -1,4 +1,4 @@
-// boundarycheck freezes reviewed decision-bearing adapters and unresolved core policy.
+// boundarycheck freezes reviewed boundary wiring, including declarations and semantic directives.
 package main
 
 import (
@@ -191,7 +191,7 @@ func fingerprint(fn ast.Node) (string, error) {
 	if err := format.Node(&formatted, token.NewFileSet(), fn); err != nil {
 		return "", fmt.Errorf("format function: %w", err)
 	}
-	// Hash tokens, not line positions or comments, so formatting-only edits remain free.
+	// Hash Go tokens; semantic source directives are included separately.
 	var scan scanner.Scanner
 	files := token.NewFileSet()
 	scan.Init(files.AddFile("", -1, formatted.Len()), formatted.Bytes(), nil, 0)

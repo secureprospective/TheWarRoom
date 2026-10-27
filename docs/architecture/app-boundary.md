@@ -1176,3 +1176,20 @@ production source digest changed; added only the two explicitly reviewed fixture
 New race tests prove fixture edits/new helpers and semantic directives fail. Gate total returns to
 **120 adapters + 48 sources = 168**, zero legacy entries. This is expanded checking, not relaxed
 approval or a semantic proof of purity.
+
+
+## Part 5 — regression and mutation checkpoint
+
+Additional inward Comms tests cover real memory-key missing/present/canceled-ring classification,
+retention after a canceled key read, default canceled pause/no-fetch and independent transaction/
+member-board freshness. Full Comms and Market race suites pass (2.539s / 3.907s). Filtered real
+composition Market refresh/archive/concurrent publication, canceled feed, Lab decode-once, key
+change/delete, Comms wire and door-parity batch passes (3.752s).
+
+Frontend affected batch now passes **11 files / 101 tests** and TypeScript no-emit. New cases cover
+newest-failure/older-success, failed publication adapters not entering cache, reset while awaiting
+an explicit refresh and same-scope refresh invalidating cache-first data. Two sequential actual
+query mutations were rejected: removing post-read revision fencing failed three semantic tests;
+removing refresh cache invalidation failed the same-scope refresh test. Both source mutations were
+restored before the passing batch; no mutant/scratch file is committed. No new production behavior
+was introduced by these tests. Existing wrappers still default to revalidation, not cache-first.
