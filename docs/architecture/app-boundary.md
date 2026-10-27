@@ -2,16 +2,18 @@
 
 ## Resume here
 
-Part 2 in progress: **56 units / 2,602 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and twenty-one units completed afterward.
-Cumulative **124/126 units / 4,468/4,534 baseline function LOC**; 2 units / 66 LOC remain.
+Composition inventory resolved: **125 units / 4,498 baseline function LOC relocated**, plus
+**one 36-LOC read-adapter unit reclassified after audit** (102). All 126 inventory rows are resolved;
+this is not a claim that core or the complete boundary is finished. Part 4 moved **57 units /
+2,632 baseline LOC** (35 before the usage-limit resume, 22 afterward), plus the adapter audit.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
-Next: remaining Control read unit 102; Platform lifecycle/entry/resource
-unit 86; then core policy audit/extraction and negative boundary ratchet.
-Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
-composition race batches with command-door parity; broad fixture runs need >200 seconds.
+Next: core policy audit/extraction and negative boundary ratchet. Core archive fallback and window
+mutation policy are now inward; remaining core examples include Comms refresh/key policy, own-team
+refusals, RulesFreshness, Offers cap availability and Sources compile admission/wording. Preserve
+readiness-dependent capture, locks and errors. Use filtered composition race batches plus parity;
+legitimate broad fixtures need >200 seconds. Finish with CI and disposable-profile live review.
 
 Still required for Part 2 completion: core Host policy extraction and negative composition/core
 ratchet, full CI and disposable-profile live review. No permission/role/binding/schema change here.
@@ -143,7 +145,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 83 | 3 | `internal/composition/sources_runtime.go` — `compileFactsInBackground`:47, `warmArchive`:79 | 38 | `sources` | startup | Only existing manifest permits republish/compile/warm/model-fit; failures stop later steps; bounded worker and archive cache lock. MOVED (part 4, batch 4). |
 | 84 | 2 | `internal/composition/sources_runtime.go` — `readSettings`:102, `writeSettings`:117 | 28 | `sources` | startup,W:sources | Missing file means defaults; JSON decode errors remain visible; write indented owner-only temp file then rename atomically. MOVED (part 3, batch 3). |
 | 85 | 3 | `internal/composition/asset_board.go` — `fitAssetModel`:133 | 17 | `market` | startup | No verified cache means no fit; compile error logs without publishing; success publishes model and season event. MOVED (part 4, batch 4). |
-| 86 | 5 | `internal/composition/platform_host.go` — `startHeadshots`:61, `photoHandler`:83 | 30 | `platform` | startup,W photo HTTP | History/crosswalk failures preserve error; lazy cache plus photo-off setting; unavailable cache returns 503, off switch denies request. |
+| 86 | 5 | `internal/composition/platform_host.go` — `startHeadshots`:61, `photoHandler`:83 | 30 | `platform` | startup,W photo HTTP | History/crosswalk failures preserve error; lazy cache plus photo-off setting; unavailable cache returns 503, off switch denies request. MOVED (part 4, batch 12); HTTP absence/status dispatch remains a transport adapter. |
 | 87 | 5 | `internal/composition/database_checks_app.go` — `checkDatabases`:31, `startDatabaseChecks`:43 | 38 | `platform` | startup,B | Skip missing pools/canceled context; log findings; start one ready-gated hourly worker with bounded check/backup cycle and joined shutdown. MOVED (part 4, batch 8). |
 | 88 | 4 | `internal/composition/database_checks_app.go` — `newDatabaseBackups`:71, `backupDatabases`:83, `backupNow`:99, `pruneBackups`:125 | 55 | `platform` | B,W:commissioner;restore CLI | Build-stamped dev/prod matched-set schema limits; daily capture before retention; manual capture requires local account and configured backups; private logs/public generic failure; prune findings best-effort. MOVED (part 4, batch 8). |
 | 89 | 3 | `internal/composition/app.go` — `directory`:73 | 17 | `sources` | startup,B,W many | Cache season directory after first successful normalized player fetch; failure never publishes partial lookup. MOVED (part 4, batch 4). |
@@ -160,7 +162,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 100 | 5 | `internal/composition/run.go` — `helperCommands`:155, `runNative`:167, `nativeUpdateLock`:209 | 61 | `platform` | hosted desktop entry | Only delegable helper catalog IDs; hosted startup excludes local App; HTTPS/league admission; update-cache lock retries 100×100ms; unsigned trust failure does not prevent screen; dev-only practice update flag. MOVED (part 4, batch 11). |
 | 101 | 2 | `internal/composition/cache_app.go` — `cacheScopes`:23, `ClearCache`:63 | 28 | `sources` | W:sources | Ordered five-scope labels/actions; scope selects corresponding forced feature refresh; unknown scope returns not found without effects. MOVED (part 3, batch 3). |
 
-| 102 | 3 | `internal/composition/control_host.go` — `FetchRuleNames`:51, `FetchSiteNews`:65, `SourceHealth`:79 | 36 | `control` | W:control | Bounded live/archive rule dictionary and news; source health fails explicitly rather than fabricating state. |
+| 102 | 3 | `internal/composition/control_host.go` — `FetchRuleNames`:51, `FetchSiteNews`:65, `SourceHealth`:79 | 36 | `control` | W:control | Bounded live/archive rule dictionary and news; source health fails explicitly rather than fabricating state. ADAPTER-ONLY after audit (part 4, batch 12): bounded I/O/error propagation and representation mapping; fallback policy is now Report, source standing is Sources. |
 | 103 | 2 | `internal/composition/control_host.go` — `OpenMFLAccounting`:102 | 16 | `control` | W:control | Require startup; discovered host or empty host passes through AccountingURL admission before browser open. MOVED (part 3, batch 3). |
 | 104 | 4 | `internal/composition/control_host.go` — `Params`:119, `SetParam`:149, `ResetParam`:162 | 53 | `control` | W:control | Read definitions/current overrides, fail on missing position value; word labels/groups and sort group→label→position; bounded admin override/reset stores return explicit success/failure. MOVED (part 3, batch 3). |
 | 105 | 4 | `internal/composition/control_host.go` — `keyStatus`:175, `KeyStatus`:183, `SetKey`:201, `DeleteKey`:234, `lookupMyFranchise`:255 | 84 | `control` | W:control;startup | Trim/plausibility 16–256-byte key, verify before storage, distinguish rejected/unreachable/keyring unavailable; store and resolve franchise only after verification, bump generation and refresh. Delete clears identity/verified time/trades and fences older work. Lookup failure denies owner actions. MOVED (part 4, batch 7). |
@@ -889,3 +891,36 @@ lock failure/no-updater and 100×100ms retry tests pass. Platform/composition sm
 parity race batch passed (1.601 seconds composition). Gosec G602 incorrectly flags indices inside
 exact-length cases; the two precise annotations state the proven bounds (no unchecked index or
 permission change). No actual GUI, update, network or installed-profile operation was performed.
+
+## Part 4 — batch 12: photo startup and first core policy extraction
+
+Unit 86 (30 baseline LOC) moves lazy history/ESPN/Sleeper ID admission and error ordering plus
+cache-before-settings/success-only switch publication into Platform. HTTP route/cache absence
+and status encoding remain transport adapters. New inward tests cover no eager ID reads, absent
+history, failed settings retaining switch, ordered IDs and wrapped crosswalk failure.
+
+Unit 102 audit: its 36 LOC are already bounded resource-read adapters and representation mapping;
+source standing policy lives in Sources, league.RuleNames is the existing dictionary converter.
+The actual live/archive policy was in core, not these functions. Reclassified this row explicitly
+rather than adding meaningless forwarding services or claiming those 36 LOC relocated. Composition
+now uses the shared Report fallback directly. All composition inventory rows are resolved, but
+non-inventory core policy remains open. Totals distinguish 125 moved rows from this one adapter row.
+
+Core follow-up begins: live/archive failure precedence, league/season/body selection, unreadable/
+missing reference wording and held-only admission move to Report; date reset/schedule/reschedule/
+cancel selection and execute-before-clock-notification move to Control's WindowSetter. Core retains
+resource snapshots/locks and compatibility forwards, never imports a feature to evade depguard.
+Moved archive fallback tests inward; added missing/failed reference-body and window reset refusal/
+no-execute/no-notify, cancel-original-date and failed-execute/no-notify cases. Core's nil-history
+forwarder has a direct regression test. Existing held-season lock/detachment/race tests remain core.
+
+Service/core race batch passed; filtered composition Photo/Control/window/held-shell/failure/parity
+batch passed (4.106 seconds). Full make lint passes with bloat 24/24 and zero lint findings.
+One mechanical replacement initially renamed a.core in mfl_feed_cache; compilation caught it,
+corrected before the passing batch. No public/schema/permission or lock-span change.
+
+Source relocation ledger: internal/app/core/fallback.go policy → internal/app/report/held.go;
+remaining fallback aliases/forwarders → internal/app/core/state.go. internal/app/core/fallback_test.go
+→ internal/app/report/fallback_test.go. internal/app/core/host_control.go date policy →
+internal/app/control/calendar.go; held SeasonFeeds capture → internal/app/core/state.go. Consolidation
+keeps resource/shared-state responsibilities together and does not raise the tiny-file baseline.

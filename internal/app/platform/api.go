@@ -3,6 +3,9 @@
 package platform
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -98,3 +101,34 @@ func (a *API) TargetPhoto(mflID string) PhotoView {
 
 // Commands is the platform catalog.
 func Commands() []catalog.Command { return catalog.DesktopCommands("platform", nil) }
+
+// PhotoRuntime resolves IDs lazily; installing the cache never reads the crosswalk.
+type PhotoRuntime struct {
+	Available func() bool
+	SourceID  func(context.Context, string, string) (string, error)
+	Install   func(func(context.Context, string) (string, string, error))
+	Settings  func() (bool, error)
+	SetOff    func(bool)
+}
+
+func (s PhotoRuntime) Initialize() {
+	s.Install(s.IDs)
+	if off, err := s.Settings(); err == nil {
+		s.SetOff(off)
+	}
+}
+
+func (s PhotoRuntime) IDs(ctx context.Context, mflID string) (string, string, error) {
+	if !s.Available() {
+		return "", "", fmt.Errorf("history unavailable")
+	}
+	espn, err := s.SourceID(ctx, mflID, "espn")
+	if err != nil {
+		return "", "", fmt.Errorf("app: photo ids: %w", err)
+	}
+	sleeper, err := s.SourceID(ctx, mflID, "sleeper")
+	if err != nil {
+		return "", "", fmt.Errorf("app: photo ids: %w", err)
+	}
+	return espn, sleeper, nil
+}

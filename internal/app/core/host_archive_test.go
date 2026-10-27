@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
@@ -164,5 +165,13 @@ func TestArchiveConcurrentCachePublicationAndRead(t *testing.T) {
 	workers.Wait()
 	if held.Facts.Season.Year[0] != 2126 {
 		t.Fatal("reader mutated held facts")
+	}
+}
+
+func TestArchivedOnlyWithoutHistoryStaysUnavailable(t *testing.T) {
+	s := &core.State{}
+	got := core.ArchivedOnly(context.Background(), s, "injuries", true, func([]byte) ([]string, error) { t.Fatal("parsed absent history"); return nil, nil })
+	if got.RefreshError != "No held archive" || got.Value != nil {
+		t.Fatal(got)
 	}
 }

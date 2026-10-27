@@ -90,7 +90,10 @@ func (h controlHost) Now() time.Time { return h.app.timeNow() }
 func (h controlHost) SetWindow(kind, at string) error {
 	ctx, cancel := context.WithTimeout(h.app.core.Ctx, m2Timeout)
 	defer cancel()
-	return h.app.core.SetLeagueWindow(ctx, kind, at) //nolint:wrapcheck // keeps the binding's refusal text
+	//nolint:wrapcheck // Preserve window refusals and coordinator errors.
+	return (controlapp.WindowSetter{StateError: h.app.core.Whatif.Err, TradeDeadline: h.app.core.Whatif.TradeDeadline,
+		CalendarEvents: h.app.core.Whatif.CalendarEvents, Season: h.app.core.League.Season, Execute: h.app.core.Coordinator.Execute,
+		Changed: h.app.core.ClockChanged}).Set(ctx, kind, at)
 }
 
 func (h controlHost) OpenMFLAccounting() error {

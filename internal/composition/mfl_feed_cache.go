@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -16,13 +16,13 @@ import (
 // fallbackParent uses the application lifetime so a timed-out live request can still read history.
 func (a *App) fallbackParent() context.Context { return a.core.CommsContext() }
 
-type archivedFeed[T any] = core.ArchivedFeed[T]
+type archivedFeed[T any] = report.ArchivedFeed[T]
 
 func liveOrArchive[T any](ctx, fallback context.Context, season int, f archivedFeed[T], logLine func(string)) ([]T, Freshness, error) {
-	return core.LiveOrArchive(ctx, fallback, season, f, logLine) //nolint:wrapcheck // Preserve the shared fallback error text.
+	return report.LiveOrArchive(ctx, fallback, season, f, logLine) //nolint:wrapcheck // Preserve the shared fallback error text.
 }
 func readArchivedFeed[T any](ctx context.Context, season int, f archivedFeed[T]) ([]T, time.Time, bool, error) {
-	return core.ReadArchivedFeed(ctx, season, f) //nolint:wrapcheck // Preserve the shared fallback error text.
+	return report.ReadArchivedFeed(ctx, season, f) //nolint:wrapcheck // Preserve the shared fallback error text.
 }
 func (a *App) standingsOrArchive(ctx context.Context) ([]leaguestandings.RawStanding, Freshness, error) {
 	return liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[leaguestandings.RawStanding]{
@@ -46,7 +46,7 @@ func (a *App) leagueScheduleOrArchive(ctx context.Context) ([]leagueschedule.Raw
 	}, a.core.FallbackLog)
 }
 
-const fallbackTimeout = core.FallbackTimeout
+const fallbackTimeout = report.FallbackTimeout
 
 // Freshness is the one contract for any IPC result that depends on a network read: a surface
 // degrades honestly instead of failing or lying.
@@ -64,4 +64,4 @@ const (
 	FreshFail  = domain.FreshFail
 )
 
-func liveFreshness(t time.Time) Freshness { return core.LiveFreshness(t) }
+func liveFreshness(t time.Time) Freshness { return report.LiveFreshness(t) }

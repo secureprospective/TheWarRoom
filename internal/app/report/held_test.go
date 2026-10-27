@@ -85,3 +85,21 @@ func TestScopedArchiveBodiesRetainOnlyRequestedParameter(t *testing.T) {
 		t.Fatalf("scope %v %v reads %d", found, err, reads)
 	}
 }
+
+func TestReadHeldArchiveAvailabilityAndFailedBody(t *testing.T) {
+	source := ArchivedFeed[string]{Export: "injuries", Leagueless: true,
+		Parse: func([]byte) ([]string, error) { return nil, errors.New("bad body") },
+		Bodies: func(_ context.Context, _ string, accept func(string, []byte, time.Time) bool) (bool, error) {
+			if accept("https://api.myfantasyleague.com/2026/export?TYPE=injuries", nil, time.Now()) {
+				t.Fatal("accepted failed parse")
+			}
+			return false, nil
+		},
+	}
+	if got := ReadHeldArchive(context.Background(), false, 2026, source); got.RefreshError != "No held archive" {
+		t.Fatal(got)
+	}
+	if got := ReadHeldArchive(context.Background(), true, 2026, source); got.RefreshError != "No usable held injuries export" {
+		t.Fatal(got)
+	}
+}

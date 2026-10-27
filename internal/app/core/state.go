@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -204,4 +205,44 @@ func OwnFranchiseRefusal(mine, acting string) string {
 		return "You can only act for your own team."
 	}
 	return ""
+}
+
+// SeasonFeeds copies the held transactions, lineups (with the week they were asked for) and
+// pending trades under SeasonMu. The slices, each lineup row's players and starters are copied
+// and nil stays nil; a refresh replaces the published rows, never edits them in place.
+func (s *State) SeasonFeeds() (HeldFeed[[]leaguefeed.Transaction], HeldFeed[leaguefeed.Lineups], int,
+	HeldFeed[[]leaguefeed.PendingTrade]) {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	txs, lineups, trades := s.SeasonTransactions, s.SeasonLineups, s.SeasonPendingTrades
+	txs.Value = slices.Clone(txs.Value)
+	trades.Value = slices.Clone(trades.Value)
+	lineups.Value = CloneLineups(lineups.Value)
+	return txs, lineups, s.LineupsWeek, trades
+}
+
+// FallbackTimeout bounds a fallback read of the fetch archive.
+const FallbackTimeout = report.FallbackTimeout
+
+type ArchivedFeed[T any] = report.ArchivedFeed[T]
+
+func LiveOrArchive[T any](ctx, fallback context.Context, season int, source ArchivedFeed[T], logLine func(string)) ([]T, domain.Freshness, error) {
+	return report.LiveOrArchive(ctx, fallback, season, source, logLine) //nolint:wrapcheck // Preserve shared fallback errors.
+}
+func ReadArchivedFeed[T any](ctx context.Context, season int, source ArchivedFeed[T]) ([]T, time.Time, bool, error) {
+	return report.ReadArchivedFeed(ctx, season, source) //nolint:wrapcheck // Preserve shared archive errors.
+}
+func SameExport(raw, export string, season int, leagueless bool) bool {
+	return report.SameExport(raw, export, season, leagueless)
+}
+
+// LiveFreshness marks a successful fetch without changing its wire provenance.
+func LiveFreshness(t time.Time) domain.Freshness { return report.LiveFreshness(t) }
+
+func StaleFreshness(at time.Time, cause error) domain.Freshness {
+	return report.StaleFreshness(at, cause)
+}
+
+func ArchivedOnly[T any](ctx context.Context, s *State, export string, leagueless bool, parse func([]byte) ([]T, error)) HeldFeed[[]T] {
+	return report.ReadHeldArchive(ctx, s.History != nil, s.Season, report.ArchivedFeed[T]{Export: export, Leagueless: leagueless, Parse: parse, Bodies: s.History.ReferenceBodies})
 }
