@@ -2,7 +2,6 @@ package serverhttp_test
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -264,13 +263,9 @@ func TestHostedWorkflowFrontendReadings(t *testing.T) {
 		}
 		readings[command] = reading
 	}
-	if os.Getenv("TWR_UPDATE_HOSTED_WIRE") == "1" {
-		body, err := json.MarshalIndent(readings, "", "  ")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile("../../frontend/src/app/commissioner/hosted.wire.testdata.json", body, 0600); err != nil {
-			t.Fatal(err)
-		}
+	body, err := json.MarshalIndent(readings, "", "  ")
+	if err != nil {
+		t.Fatal(err)
 	}
+	checkHostedWire(t, "../../frontend/src/app/commissioner/hosted.wire.testdata.json", body)
 }
