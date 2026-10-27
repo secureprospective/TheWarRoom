@@ -159,17 +159,6 @@ func issuedPicks(holds draftHolds, franchises []string, season int) []NativePick
 	return out
 }
 
-// applyDraftClose puts a closed draft's outcome into the native assets: the released rookies join the
-// free-agent pool and the issued picks join the franchises' picks.
-func applyDraftClose(seed *RawNativeSnapshot, record Record) {
-	outcome := record.Command.Args.DraftOutcome
-	if outcome == nil {
-		return
-	}
-	seed.Pool = append(seed.Pool, outcome.Pool...)
-	seed.Picks = append(seed.Picks, outcome.Issued...)
-}
-
 // DueDrafts are the seasons whose draft has used every pick and has not been closed: the app closes them.
 // A league with no live draft change recorded has no draft to look at.
 func DueDrafts(records []Record, at time.Time, standings DraftStandings) []int {
