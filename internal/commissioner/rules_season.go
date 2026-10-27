@@ -1,3 +1,5 @@
+// Package commissioner keeps the ledger clock over the rulebook in internal/leaguerules.
+// This season fold is shared core, not a separate rules domain.
 package commissioner
 
 import (
