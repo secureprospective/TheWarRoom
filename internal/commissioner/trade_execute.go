@@ -26,36 +26,30 @@ func PrepareTradeAppend(raw *RawCommand, principal string, records []Record, now
 	if !TradeCommand(raw.Command) {
 		return checkTradeReplay(*raw, records, now)
 	}
-	assets, book, err := nativeAssetsState(raw.League, records)
+	f, err := marketFrame(raw.League, records, now, facts, zone, false)
 	if err != nil {
 		return err
 	}
-	if !assets.Seeded {
-		return fmt.Errorf("record starting rosters and picks before trading")
-	}
-	state, err := GovernanceState(records)
-	if err != nil {
+	if err := f.Seeded("record starting rosters and picks before trading"); err != nil {
 		return err
 	}
-	rules, err := RulesNow(records, now)
-	if err != nil {
+	if err := f.readGovernance(); err != nil {
 		return err
 	}
-	x := tradeExecution{records: records, seed: assets.Snapshot, state: state, rules: rules, now: now, facts: facts, zone: zone, principal: principal}
+	if err := f.readRules(); err != nil {
+		return err
+	}
+	x := tradeExecution{records: records, seed: f.Assets.Snapshot, state: f.Govern, rules: f.Rules, now: now, facts: facts, zone: zone, principal: principal}
 	if action := OwnerTradeAction(raw.Command); action != "" {
-		gate, gateErr := NativeActionGate(raw.League, records, raw.Args.Trade.Franchise, action, now, zone)
-		if gateErr != nil {
-			return gateErr
-		}
-		if !gate.Open {
-			return fmt.Errorf("%s", gate.Sentence)
+		if err := f.Gate(raw.Args.Trade.Franchise, action); err != nil {
+			return err
 		}
 	}
 	var t TradeState
 	if raw.Command == TradeOffer {
 		t, err = x.offer(*raw)
 	} else {
-		t, err = tradeByID(book.Trades, raw.Args.Trade.ID)
+		t, err = tradeByID(f.Book.Trades, raw.Args.Trade.ID)
 		if err == nil {
 			prior := tradeDigest(t)
 			err = x.act(*raw, &t)
@@ -66,8 +60,7 @@ func PrepareTradeAppend(raw *RawCommand, principal string, records []Record, now
 		return err
 	}
 	raw.Args.TradeOutcome = &t
-	trial := append(slices.Clone(records), Record{Command: *raw, Principal: principal, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: now}})
-	if _, err := NativeAssetsReading(raw.League, trial); err != nil {
+	if _, err := f.Trial(*raw, principal); err != nil {
 		return err
 	}
 	return nil

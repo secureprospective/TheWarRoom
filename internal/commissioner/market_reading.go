@@ -52,17 +52,18 @@ func MarketReading(league, command, principal string, records []Record, at time.
 	if _, err := AuthorizeRecords(RawCommand{League: league, Command: command}, principal, held); err != nil {
 		return out, err
 	}
-	assets, state, err := nativeAssetsState(league, held, at)
+	f, err := marketFrame(league, held, at, facts, zone, true)
 	if err != nil {
 		return out, err
 	}
+	assets, state := f.Assets, f.Book
 	if !assets.Seeded {
 		return out, nil
 	}
-	rules, err := RulesNow(held, at)
-	if err != nil {
+	if err := f.readRules(); err != nil {
 		return out, err
 	}
+	rules := f.Rules
 	directory, err := NativeDirectoryReading(league, held, at)
 	if err != nil {
 		return out, err

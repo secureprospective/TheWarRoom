@@ -36,34 +36,26 @@ func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts na
 	if !BidCommand(raw.Command) {
 		return nil
 	}
-	assets, state, err := nativeAssetsState(raw.League, records)
+	f, err := marketFrame(raw.League, records, now, facts, zone, false)
 	if err != nil {
 		return err
 	}
-	if !assets.Seeded {
-		return fmt.Errorf("record starting assets before bid actions")
-	}
-	rules, err := RulesNow(records, now)
-	if err != nil {
+	if err := f.Seeded("record starting assets before bid actions"); err != nil {
 		return err
 	}
-	x := bidExecution{assets: assets, state: state, rules: rules, records: records, now: now, facts: facts,
-		zone: zone, env: env}
+	if err := f.readRules(); err != nil {
+		return err
+	}
+	x := bidExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone, env: env}
 	if action := OwnerBidAction(raw.Command); action != "" && !startingCardLot(records, bidPlayerOf(Record{Command: *raw}, records)) {
-		gate, err := NativeActionGate(raw.League, records, raw.Args.Bid.Franchise, action, now, zone)
-		if err != nil {
+		if err := f.Gate(raw.Args.Bid.Franchise, action); err != nil {
 			return err
-		}
-		if !gate.Open {
-			return fmt.Errorf("%s", gate.Sentence)
 		}
 	}
 	if err := x.prepare(raw); err != nil {
 		return err
 	}
-	trial := append(slices.Clone(records), Record{Command: *raw, Principal: "proposed",
-		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: now}})
-	if _, err := NativeAssetsReading(raw.League, trial); err != nil {
+	if _, err := f.Trial(*raw, "proposed"); err != nil {
 		return err
 	}
 	return nil

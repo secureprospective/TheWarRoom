@@ -25,25 +25,20 @@ func PrepareWaiverAppend(raw *RawCommand, records []Record, now time.Time, facts
 	if !WaiverCommand(raw.Command) {
 		return nil
 	}
-	assets, state, err := nativeAssetsState(raw.League, records)
+	f, err := marketFrame(raw.League, records, now, facts, zone, false)
 	if err != nil {
 		return err
 	}
-	if !assets.Seeded {
-		return fmt.Errorf("record starting assets before waiver actions")
-	}
-	rules, err := RulesNow(records, now)
-	if err != nil {
+	if err := f.Seeded("record starting assets before waiver actions"); err != nil {
 		return err
 	}
-	x := waiverExecution{assets: assets, state: state, rules: rules, records: records, now: now, facts: facts, zone: zone}
+	if err := f.readRules(); err != nil {
+		return err
+	}
+	x := waiverExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone}
 	if OwnerWaiverAction(raw.Command) != "" {
-		gate, err := NativeActionGate(raw.League, records, raw.Args.Waiver.Franchise, x.reserveAction(*raw), now, zone)
-		if err != nil {
+		if err := f.Gate(raw.Args.Waiver.Franchise, x.reserveAction(*raw)); err != nil {
 			return err
-		}
-		if !gate.Open {
-			return fmt.Errorf("%s", gate.Sentence)
 		}
 	}
 	return x.prepare(raw)
@@ -66,9 +61,8 @@ func (x *waiverExecution) prepare(raw *RawCommand) error {
 	if err != nil {
 		return err
 	}
-	trial := append(slices.Clone(x.records), Record{Command: *raw,
-		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: x.now}})
-	assets, err := NativeAssetsReading(raw.League, trial)
+	f := Frame{League: raw.League, Records: x.records, At: x.now}
+	assets, err := f.Trial(*raw, "")
 	if err != nil {
 		return err
 	}

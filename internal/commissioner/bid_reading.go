@@ -112,14 +112,15 @@ func NativeBidsReading(league, franchise, principal string, records []Record, at
 	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return NativeBids{}, err
 	}
-	assets, state, err := nativeAssetsState(league, records)
+	f, err := marketFrame(league, records, at, facts, zone, false)
 	if err != nil {
 		return NativeBids{}, err
 	}
-	rules, err := RulesNow(records, at)
-	if err != nil {
+	assets, state := f.Assets, f.Book
+	if err := f.readRules(); err != nil {
 		return NativeBids{}, err
 	}
+	rules := f.Rules
 	out := NativeBids{League: league, Franchise: franchise, Revision: RecipientRevision(records, principal, at), Season: rules.Season,
 		Mode: fieldWords(rules, "bids.ufa"), ActiveLimit: fieldWords(rules, "bids.maximumActive"),
 		Players: []NativeBidPlayer{}, Awards: []NativeBidAward{}, Notes: []string{}}

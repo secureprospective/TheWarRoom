@@ -24,14 +24,15 @@ func NativeTradesReading(league, viewer, principal string, records []Record, now
 	if err := AuthorizeFranchiseOwner(records, principal, viewer); err != nil {
 		return NativeTrades{}, err
 	}
-	assets, state, err := nativeAssetsState(league, records)
+	f, err := marketFrame(league, records, now, nil, zone, false)
 	if err != nil {
 		return NativeTrades{}, err
 	}
-	rules, err := RulesNow(records, now)
-	if err != nil {
+	assets, state := f.Assets, f.Book
+	if err := f.readRules(); err != nil {
 		return NativeTrades{}, err
 	}
+	rules := f.Rules
 	out := NativeTrades{League: league, Viewer: viewer, Revision: int64(len(records)), Offers: []NativeTradeOffer{}, Notes: []string{},
 		Rules: ruleLines(rules, "trades.review", "trades.dotSeats", "trades.decideAt", "trades.futureYears", "trades.rounds",
 			"trades.rosterGate", "trades.offerExpiry", "trades.maximumParties")}

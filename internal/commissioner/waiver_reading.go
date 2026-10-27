@@ -43,14 +43,14 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return NativeWaivers{}, err
 	}
-	assets, state, err := nativeAssetsState(league, records, at)
+	f, err := marketFrame(league, records, at, facts, zone, true)
 	if err != nil {
 		return NativeWaivers{}, err
 	}
-	rules, err := RulesNow(records, at)
-	if err != nil {
+	if err := f.readRules(); err != nil {
 		return NativeWaivers{}, err
 	}
+	rules := f.Rules
 	changes, err := CorrectionsReading(league, records, at)
 	if err != nil {
 		return NativeWaivers{}, err
@@ -58,11 +58,11 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	out := NativeWaivers{Corrections: changes.Items, League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
 		Players: []NativeWaiverPlayer{}, Claims: []NativeWaiverClaim{}, Order: []string{},
 		Method: fieldWords(rules, "waivers.method")}
-	if !assets.Seeded {
+	if !f.Assets.Seeded {
 		out.OrderSource = "No starting rosters recorded"
 		return out, nil
 	}
-	x := waiverExecution{assets: assets, state: state, rules: rules, records: records, now: at}
+	x := waiverExecution{assets: f.Assets, state: f.Book, rules: rules, records: records, now: at}
 	order, source, err := x.priority(league)
 	if err != nil {
 		out.OrderSource = err.Error()
@@ -73,7 +73,7 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err != nil {
 		return NativeWaivers{}, fmt.Errorf("read waiver rules: %w", err)
 	}
-	for _, w := range state.Windows {
+	for _, w := range f.Book.Windows {
 		closeAt, err := policy.Close(w.CutAt)
 		if err != nil {
 			return NativeWaivers{}, fmt.Errorf("read waiver close: %w", err)
@@ -125,19 +125,20 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, p
 
 // DueWaiverWindows is shared by the clock worker and the explicit processing command.
 func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, error) {
-	assets, state, err := nativeAssetsState(league, records, at)
+	f, err := marketFrame(league, records, at, nil, nil, true)
 	if err != nil {
 		return nil, err
 	}
+	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no waivers; its season may not even be named yet.
 	due := []string{}
 	if !assets.Seeded || len(state.Windows) == 0 {
 		return due, nil
 	}
-	rules, err := RulesNow(records, at)
-	if err != nil {
+	if err := f.readRules(); err != nil {
 		return nil, err
 	}
+	rules := f.Rules
 	policy, err := nativecheck.NewWaiverPolicy(rules.Waivers)
 	if err != nil {
 		return nil, fmt.Errorf("read waiver rules: %w", err)

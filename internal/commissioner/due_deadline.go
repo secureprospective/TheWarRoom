@@ -11,17 +11,18 @@ import (
 // NextDueDeadline returns the nearest future auction or waiver close. Already-closed,
 // blocked awards are retried on reconciliation, not in a busy loop at their old deadline.
 func NextDueDeadline(league string, records []Record, at time.Time) (time.Time, error) {
-	assets, state, err := nativeAssetsState(league, records, at)
+	f, err := marketFrame(league, records, at, nil, nil, true)
 	if err != nil {
 		return time.Time{}, err
 	}
+	assets, state := f.Assets, f.Book
 	if !assets.Seeded {
 		return time.Time{}, nil
 	}
-	rules, err := RulesNow(records, at)
-	if err != nil {
+	if err := f.readRules(); err != nil {
 		return time.Time{}, err
 	}
+	rules := f.Rules
 	var next time.Time
 	consider := func(deadline time.Time) {
 		next = nearerFutureDeadline(next, deadline, at)

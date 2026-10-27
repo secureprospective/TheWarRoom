@@ -12,19 +12,20 @@ import (
 // DueBids uses the manual decision policy, including current roster and cap checks. A tie remains
 // undecided for the commissioner; waivers must clear before any automatic award.
 func DueBids(league string, records []Record, at time.Time, facts nativecheck.Facts) ([]string, error) {
-	assets, state, err := nativeAssetsState(league, records)
+	f, err := marketFrame(league, records, at, facts, time.UTC, false)
 	if err != nil {
 		return nil, err
 	}
+	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no bids; its season may not even be named yet.
 	due := []string{}
 	if !assets.Seeded {
 		return due, nil
 	}
-	rules, err := RulesNow(records, at)
-	if err != nil {
+	if err := f.readRules(); err != nil {
 		return nil, err
 	}
+	rules := f.Rules
 	stand := bidStandFor(rules)
 	if stand.State != leaguerules.IsKnown || stand.Value <= 0 {
 		return due, nil
