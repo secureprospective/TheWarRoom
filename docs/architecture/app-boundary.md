@@ -1164,7 +1164,7 @@ those lifetimes are exercised. Next concrete slice is in Resume here and fronten
 Finding: `refreshMarketFeed` still selected league-less exports, filtered archive URLs by report
 kind/week and wrapped live failures in composition. `market.ReadFeed` now owns that workflow;
 composition supplies the raw fetch/archive ports and retains the original latest-held reread and
-SeasonMu publication. This is one additional audited function (31 baseline physical LOC), not a
+SeasonMu publication. This is one additional audited function (26 baseline physical LOC), not a
 second relocation of the original inventory. Remaining decision fingerprints in that file are
 representation conversion and the refresh pause resource fallback. Ratchet: 119 adapters / 48
 sources, zero legacy. Only the reviewed changed source fingerprint was updated; unrelated digests
@@ -1174,3 +1174,16 @@ New inward tests exercise live success/no archive and live failure with wrong-we
 archive rejection before correct-scope parse; full Market race suite passes (4.601s). Filtered real
 composition Market refresh/fallback/concurrent reads/wire plus frozen-door and every-door parity
 pass (3.127s). Frontend prerequisite install/build passed (existing large lazy-chunk warning).
+
+## Part 6 — Research refresh admission/status audit
+
+`refreshResearch` (19 baseline physical function LOC) still owned refresh refusal wording, bounded context and waiting/clear status
+order. Those now live in `research.RefreshReading`; composition retains the exact RefreshMu span
+and lazily supplies RefreshSteps (including pause selection only after lock acquisition). Clear
+status still precedes unlock, and cancellation follows unlock. No store/context captured before
+readiness, no callback import into core or sibling feature. Ratchet: **118 adapters / 48 sources**.
+
+New inward failure-before-resource and status→lock→capture→failed pause→clear→unlock→cancel tests
+pass. Full Research and nativegen race suites pass (3.162s / 2.041s); filtered real composition
+Research cold-open/status/concurrency/refresh/goldens and frozen-door/every-door parity pass
+(2.788s). Only the reviewed changed source fingerprint and removed decision row changed.

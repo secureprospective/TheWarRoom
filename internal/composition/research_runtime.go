@@ -8,6 +8,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
@@ -80,23 +81,16 @@ func (a *App) refreshResearchDepth(ctx context.Context, force bool) {
 }
 
 func (a *App) refreshResearch(force bool) error {
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("research refresh: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.ResearchContext(), refreshTimeout)
-	defer cancel()
-	a.researchStatus("Waiting for the MFL refresh to finish")
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	defer a.researchStatus("")
-	pause := a.core.SeasonPause
-	if pause == nil {
-		pause = seasonPause
-	}
-	return (researchapp.RefreshSteps{ //nolint:wrapcheck // Preserve refresh cancellation errors.
-		Week: a.marketWeek, Status: a.researchStatus, Pause: pause,
-		Feed: a.refreshResearchFeed, Injuries: a.refreshInjuries, Schedule: a.refreshNowWeek, Depth: a.refreshResearchDepth}).Run(ctx, force)
-
+	//nolint:wrapcheck // Preserve research startup and refresh cancellation errors.
+	return researchapp.RefreshReading(force, a.ready, a.core.ResearchContext, a.researchStatus,
+		func(run func() error) error {
+			a.core.RefreshMu.Lock()
+			defer a.core.RefreshMu.Unlock()
+			return run()
+		}, func() researchapp.RefreshSteps {
+			return researchapp.RefreshSteps{Week: a.marketWeek, Status: a.researchStatus, Pause: report.RefreshPause(a.core.SeasonPause),
+				Feed: a.refreshResearchFeed, Injuries: a.refreshInjuries, Schedule: a.refreshNowWeek, Depth: a.refreshResearchDepth}
+		})
 }
 
 func (a *App) heldResearchInput() researchInput {

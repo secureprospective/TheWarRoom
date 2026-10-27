@@ -218,3 +218,19 @@ func (s NewsRefresh) Run(mine string) error {
 	s.Publish(held)
 	return err
 }
+
+// RefreshReading admits the request before capturing resources; refresh status is cleared
+// while still serialized, before releasing the caller's refresh lock.
+func RefreshReading(force bool, ready func() error, parent func() context.Context, status func(string),
+	serialize func(func() error) error, steps func() RefreshSteps) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("research refresh: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	status("Waiting for the MFL refresh to finish")
+	return serialize(func() error {
+		defer status("")
+		return steps().Run(ctx, force)
+	})
+}

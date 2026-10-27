@@ -195,3 +195,53 @@ func TestReadDepthLiveAvoidsArchive(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRefreshReadingKeepsAdmissionCaptureAndCleanupOrder(t *testing.T) {
+	failure := errors.New("canceled pause")
+	var calls []string
+	var observed context.Context
+	err := RefreshReading(true,
+		func() error { calls = append(calls, "ready"); return nil },
+		func() context.Context { calls = append(calls, "context"); return t.Context() },
+		func(text string) {
+			if text == "" {
+				calls = append(calls, "clear")
+				return
+			}
+			calls = append(calls, "status:"+text)
+		}, func(run func() error) error {
+			calls = append(calls, "lock")
+			defer func() { calls = append(calls, "unlock") }()
+			return run()
+		}, func() RefreshSteps {
+			calls = append(calls, "capture")
+			return RefreshSteps{
+				Week: func() int { return 0 }, Status: func(string) { calls = append(calls, "step") },
+				Pause: func(ctx context.Context, _ time.Duration) error {
+					observed = ctx
+					deadline, ok := ctx.Deadline()
+					if !ok || time.Until(deadline) > 2*time.Minute {
+						t.Fatal("missing refresh bound")
+					}
+					calls = append(calls, "pause")
+					return failure
+				}, Feed: func(context.Context, string, string, bool) { t.Fatal("feed after failed pause") },
+			}
+		})
+	want := []string{"ready", "context", "status:Waiting for the MFL refresh to finish", "lock", "capture", "step", "pause", "clear", "unlock"}
+	if !errors.Is(err, failure) || !reflect.DeepEqual(calls, want) || !errors.Is(observed.Err(), context.Canceled) {
+		t.Fatal(calls, err, observed)
+	}
+}
+
+func TestRefreshReadingRefusesBeforeAnyResourceCapture(t *testing.T) {
+	failure := errors.New("offline startup")
+	err := RefreshReading(false, func() error { return failure },
+		func() context.Context { t.Fatal("context before admission"); return nil },
+		func(string) { t.Fatal("status before admission") },
+		func(func() error) error { t.Fatal("lock before admission"); return nil },
+		func() RefreshSteps { t.Fatal("steps before admission"); return RefreshSteps{} })
+	if !errors.Is(err, failure) || err.Error() != "research refresh: offline startup" {
+		t.Fatal(err)
+	}
+}
