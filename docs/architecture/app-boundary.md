@@ -12,20 +12,24 @@ representation or wiring. Ratchet: **118 decision-bearing adapters / 1,527 funct
 whole-source fingerprints**, down from 120 / 1,572 + 48; zero legacy entries. This is reviewed source,
 not semantic proof or live feature acceptance.
 
-Frontend plan Part 3 (after part 7): **18 lifecycle modules on 30 registry read adapters**. Part 7
-moved Sources joint view, Assets, Now, Offers, Personal, Draft room, hosted league bundle, shell
-held readings and the Research board (see `frontend-reads.md` § Part 7 — close). Main reads still
-revalidate; no cache-first, polling, write or session invalidation was added.
+Frontend plan Part 3 (after part 8): **19 lifecycle modules on 37 registry read adapters**. Part 8
+moved commissioner `leagueState` (proxy.ts; seven audited commissioner reads admitted) and added
+`data/session.ts`, an explicit read-session end (shared → invalidate, private → reset), tested but
+**not yet wired** to any identity boundary (see `frontend-reads.md` § Part 8). No cache-first,
+polling or write change.
 
-Next Part 3: commissioner `leagueState` (proxy.ts), then provider/session invalidation design and
-tests. Blocked pending an owner ruling: Pool (G1 `offers.TargetPool`) and the trade builder
-(one read/preview/save command). Live game stays with its polling lifetime.
+Next Part 3: wire session end at the three identity boundaries (MFL key change, native account
+enter/forget/revoke, commissioner seat sign-in), each followed by the owner's existing reread, per
+the join table in `frontend-reads.md` § Part 8. Blocked pending an owner ruling: Pool (G1
+`offers.TargetPool`) and the trade builder (one read/preview/save command). Live game stays with
+its polling lifetime.
 Next Part 2: owner-run pre-push/full CI and disposable-profile live review (R12 on Claude-OS).
 
 Branch: `session/revamp-B-app-boundary`. **Local commits only; owner pushes.** No push, PR, merge,
 rebase, generated Wails binding change or HANDOFF.md edit. No permission/role/schema/lock-order
 change. Full verify/pre-push/CI and live profile review remain unclaimed. Estimates: Part 2 **one
-verification/review part**; Part 3 **2–3 one-hour parts**, including lifetime/invalidation integration.
+verification/review part**; Part 3 **1–2 one-hour parts** (session wiring, then the command
+moves/key audit and close).
 Owner ruling needed for the Pool and trade-builder blockers above.
 
 ## Boundary and preserved slice
@@ -1333,3 +1337,26 @@ Final frontend batch after the receiver/projection follow-ups: **30 files / 332 
 TypeScript, production build, budget, static CSP and frontend transport guard PASS. The full Go
 lint/guards and race evidence above covers unchanged Go sources. Closing commit is docs-only.
 No push/pre-push/CI, PR, merge or HANDOFF.md edit; no uncommitted implementation remains.
+
+
+## Part 8 — commissioner league state and read sessions
+
+Frontend-only part; no Go source outside the generator's audited list changed. Commits (local):
+- `8d81d723` — admit seven commissioner held reads; `proxy.ts` leagueState onto `createReadQuery`.
+- `7cae7d6d` — `data/session.ts` explicit read-session end (not yet wired).
+
+Handler audit for the admitted reads (`internal/leagueservice/commissioner_api.go`): Leagues,
+Ledger, Rules, People, Jobs, Notices, Digests each admit a read operation, check readiness and
+read under a bounded context; none writes, refreshes or opens a browser. Execute, Preview and
+Controls stay out (Controls is read once and has no league argument). No role/mode/schema/binding
+change; generated freshness check passes.
+
+Tests: leagueState 13/13 (3 new: superseded choice, vanished league, late old-league reading);
+session 3/3 new; targeted batch commissioner + controls readability + query: 33 files / 457 PASS
+(after splitting two >110-char lines the readability gate caught); nativegen read tests PASS;
+TypeScript no-emit PASS. Five planted mutants rejected (failure no longer clears readings; picker
+published unfenced in the pre-read step; session never resets private; session iterates live
+members; session never invalidates shared). The new superseded-choice test fails on the
+pre-migration store only on its call-count line: the old store still issued a superseded choice's
+(already discarded) readings; publication is identical. Not run: full verify, pre-push, CI, live.
+

@@ -2,14 +2,11 @@
 
 ## Resume here
 
-Shared primitive: `frontend/src/app/data/query.ts`. **Nine handwritten lifecycle implementations
-now use it, serving ten store consumers**: Archive, Race, Comms, Draft reports, Market reports,
-Control, Sources cache scopes, historical Market, historical Draft and Counterparties. The registry
-projection contains 17 audited read adapters. Writes, polling and session invalidation are unchanged.
-Next: Sources' compound sources/crosswalk/params view (ordered initial read, parallel independent
-subreads and partial failures), then Assets and Now held reads. Leave live polling and write-plan
-state for their separate invalidation/lifetime requirements. Do not replace UI/action state merely
-to inflate migration counts.
+Shared primitive: `frontend/src/app/data/query.ts`. After part 8: **37 registry read adapters / 19
+lifecycle modules** (§ Part 8). `data/session.ts` adds an explicit session end, tested but not wired.
+Next: wire it at the three identity boundaries in § Part 8, each followed by the owner's existing
+reread, then audit `commands/{moves,sessionMoves,mflKey}.ts`. Pool and the trade builder await an
+owner ruling. Live polling stays out. Do not replace UI/action state merely to inflate counts.
 
 ## Contract
 
@@ -81,7 +78,7 @@ relative to `frontend/src/app/`. Query-neutral/action-only state is explicitly o
 | Shell `shell/lineups.ts` | lineup/trades/alerts per franchise | MOVED (part 7); one query per franchise, pending unpublished; `roster.ts` is pure projection |
 | Shell `shell/tradeBuilderState.ts` | builder reading and isolated preview | BLOCKED; read/preview/save share one `TargetTradeBuilder` command |
 | Commissioner `commissioner/hostedRoom.ts` | hosted league bundle | MOVED (part 7); keyed by native-lineup scope |
-| Commissioner `commissioner/proxy.ts` (`leagueState`) | leagues picker + core/landing/ops settled reads | OPEN; next slice, see Part 7 close |
+| Commissioner `commissioner/proxy.ts` (`leagueState`) | leagues picker + core/landing/ops settled reads | MOVED (part 8); picker in pre-read step, bundle keyed by league; controls read once |
 | Commissioner `commissioner/{actReadings,competitionReadings}.ts` | one-shot option reads for an act form | NOT a read store: write-admission inputs, revision-checked per open |
 | Commands `commands/{moves,sessionMoves,mflKey}.ts` | moves/key/session state | OPEN audit; split read state from action state first |
 | `contracts/{contractActState,releases}.ts`, `commissioner/{backupState,surfaceActions,controls}.ts` | action results / previews / controls | MIXED; migrate only audited reads, not mutation admission |
@@ -214,3 +211,41 @@ settled groups (core, landing, ops) and returns them whole; failure must also cl
 readings (today's catch) — the query's `failure` is string-only, so either the wrapper resets
 readings on error or the bundle read never rejects (settled groups already word their failures).
 Controls stay read-once. Then provider/session invalidation design (brief step 2) once reads close.
+
+## Part 8 — commissioner league state
+
+One query on `commissioner.TargetCommissionerLedger` with Rules/People/Jobs/Notices/Digests as
+companions, keyed by `[selected league]`. `choose` clears readings itself when another league is
+named, then loads with a `before` step that reads the leagues and resolves/validates the
+selection; the lazy argument function (sampled only for the current request) publishes the picker
+and returns the league. The bundle read runs the three settled groups unchanged, so only the
+picker/selection can reject; `failure` clears the six readings (hosted-room precedent) and keeps
+the picker. Pending stays true from start to final publication (no flicker between stages).
+Execute/forget/outcome stay in the wrapper on the same store. Difference: a superseded choice no
+longer issues its discarded readings.
+
+## Part 8 — provider/session invalidation (design)
+
+A read session is one account/league/provider lifetime. `createReadSession()` returns
+`join(query, 'shared' | 'private')` → leave, and `end()`. Shared members are invalidated (displayed
+last-good view kept; caches dropped; old-session replies fenced). Private members are reset to their
+initial state because the view held another identity's data. `end()` snapshots members, so a query
+joining during end belongs to the next session. No listener, timer, transport, retry or reread is
+installed; the code that changes identity calls `end()` and then its existing reread.
+
+Not wired yet (next part). Owner of the session: one instance created beside the live provider
+(`data/provider.ts` `getProvider`) and passed to feature constructors that already take a
+provider — no new module global inside query.ts. Join table:
+
+| Boundary (caller) | End when | Then |
+|---|---|---|
+| MFL key (`commands/registry.ts` `requestMFL`) | key league/season changes, or connected → absent | existing shell/now rereads |
+| Native account (`control/NativeAccount.tsx`) | enter, forget, revoke-device, revoke-all accepted | its existing view reread |
+| Commissioner seat (`commissioner/LocalSignIn.tsx`) | sign-in accepted | `leagueState.choose()` |
+
+Private: Personal, shell lineups/trades/alerts, Offers, Draft room, hosted room, commissioner
+leagueState. Shared: Archive, Race, Comms, reports, Control, Sources, Research, Assets, Now, Market,
+Counterparties and historical details. `target:season` is not a session boundary (features already
+reread on it). Ending without a following reread would blank private screens: wiring must test the
+pair together. Tests exist for the primitive (3, three mutants rejected); wiring tests do not.
+
