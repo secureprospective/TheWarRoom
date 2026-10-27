@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"slices"
 	"testing"
@@ -75,6 +74,8 @@ func TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen(t *testing.T) {
 	}
 	receipt := c.invoke(rollover.Command, "execute", body, 200)
 	requirePlainRollover(t, c.previews[commissioner.SeasonRollover])
+	// The practice draft starts two seconds after provisioning; read it running, however fast the test is.
+	time.Sleep(2 * time.Second)
 	readings := c.refreshReads("franchise.01")
 	fresh := c
 	fresh.bearer, fresh.proof = c.f.login(t, "owner", "private-password"), ""
@@ -86,15 +87,11 @@ func TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen(t *testing.T) {
 	if want := "Bids for the 2027 season open once the server operator selects football players and schedule for that season."; !slices.Contains(bids.Notes, want) {
 		t.Fatalf("new-season bids do not say why bidding waits: %q", bids.Notes)
 	}
-	if os.Getenv("TWR_UPDATE_HOSTED_WIRE") == "1" {
-		out, err := json.MarshalIndent(map[string]any{"receipt": receipt, "readings": readings}, "", "  ")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile("../../frontend/src/app/commissioner/rollover.wire.testdata.json", out, 0600); err != nil {
-			t.Fatal(err)
-		}
+	out, err := json.MarshalIndent(map[string]any{"receipt": receipt, "readings": readings}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
 	}
+	checkHostedWire(t, "../../frontend/src/app/commissioner/rollover.wire.testdata.json", out)
 }
 
 // requirePlainRollover pins the owner-facing rollover wording: the awarded free agent by name, the free-agent

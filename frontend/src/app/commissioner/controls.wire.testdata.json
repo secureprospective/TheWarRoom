@@ -115,6 +115,26 @@
             {
               "field": "scoring.catalogue",
               "label": "Scoring values"
+            },
+            {
+              "field": "scoring.extras",
+              "label": "Extra points by position"
+            },
+            {
+              "field": "scoring.ranges",
+              "label": "Scoring ranges"
+            },
+            {
+              "field": "scoring.scales",
+              "label": "Points by play distance"
+            },
+            {
+              "field": "scoring.totals",
+              "label": "Stats counted as a total of others"
+            },
+            {
+              "field": "scoring.lineUnit",
+              "label": "Team offensive line scoring"
             }
           ]
         },
@@ -237,6 +257,10 @@
           "note": "",
           "fields": [
             {
+              "field": "ir.autoReturn",
+              "label": "Automatically return ineligible IR players"
+            },
+            {
               "field": "ir.slots",
               "label": "IR spots"
             },
@@ -255,6 +279,10 @@
           "built": true,
           "note": "",
           "fields": [
+            {
+              "field": "taxi.autoPromote",
+              "label": "Automatically promote ineligible taxi players"
+            },
             {
               "field": "taxi.slots",
               "label": "Taxi spots"

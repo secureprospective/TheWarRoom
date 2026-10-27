@@ -37,6 +37,10 @@ func TestPlayerFactsMarkOnlyARealDraftYearAsHeld(t *testing.T) {
 		"0043": {Name: "Backer, B", Team: "BBB", Position: leaguerules.Position("LB"), DraftYear: 1970},
 		"0044": {Name: "Safety, C", Team: "CCC", Position: leaguerules.Position("S")},
 	}
+	nativecheck.AddLineCards(want)
+	if len(want) != 35 || want["990003"].Name != "BAL O-Line" || want["990003"].Position != leaguerules.OL {
+		t.Fatalf("the 32 O-Line cards join the pool: %+v", want["990003"])
+	}
 	if !reflect.DeepEqual(facts, want) {
 		t.Fatalf("an id the directory cannot resolve is skipped, and MFL's 1970 is no draft year:\n got %+v\nwant %+v", facts, want)
 	}
@@ -97,8 +101,14 @@ func TestHeldNativeFactsRequireDirectoryAndInjuryObservation(t *testing.T) {
 		t.Fatal("unloaded directory must give an allocated empty fact set")
 	}
 	facts := HeldPlayerFacts(heldLookup{"0042": {Name: "Held", Position: domain.PosQB}}, true)
-	if len(facts) != 1 || facts["0042"].Name != "Held" {
+	if len(facts) != 33 || facts["0042"].Name != "Held" {
 		t.Fatal(facts)
+	}
+	for _, team := range nativecheck.LineCardTeams() {
+		id, ok := nativecheck.LineCardID(team)
+		if !ok || facts[id].Name != team+" O-Line" || facts[id].Position != leaguerules.OL {
+			t.Fatalf("missing O-Line card for %s: %+v", team, facts[id])
+		}
 	}
 	got := HeldDesignations(facts, false, func() map[string]string { t.Fatal("unheld injuries must not be read"); return nil })
 	if got["0042"].DesignationHeld {

@@ -406,6 +406,10 @@
         {
          "value": "S",
          "label": "S"
+        },
+        {
+         "value": "OL",
+         "label": "OL"
         }
        ],
        "fields": []
@@ -505,6 +509,10 @@
         {
          "value": "S",
          "label": "S"
+        },
+        {
+         "value": "OL",
+         "label": "OL"
         }
        ],
        "fields": []
@@ -752,7 +760,7 @@
     {
      "field": "scoring.catalogue",
      "label": "Scoring values",
-     "value": "Assist: Label: Assisted tackle; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: LB; CB; S; QB; RB; WR; TE; PK; Once: Off; Assist line: Label: Defensive line assisted tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: DT; DE; Once: Off; Blocked extra point: Label: Blocked extra point; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked fg: Label: Blocked field goal; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked punt: Label: Blocked punt; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Fg made 0 39: Label: Field goal made from 0 to 39 yards; Group: Kicking; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Fg made 40 49: Label: Field goal made from 40 to 49 yards; Group: Kicking; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fg made 50 59: Label: Field goal made from 50 to 59 yards; Group: Kicking; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Fg made 60 99: Label: Field goal made from 60 to 99 yards; Group: Kicking; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fg missed 0 29: Label: Field goal missed from 0 to 29 yards; Group: Kicking; Used: On; Points: -3; Bonuses: None; Positions: None; Once: Off; Fg missed 30 99: Label: Field goal missed from 30 yards or longer; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Forced fumble: Label: Forced fumble; Group: Fumbles; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fumble lost: Label: Fumbles lost; Group: Fumbles; Used: Off; Points: -2; Bonuses: None; Positions: None; Once: Off; Fumble recovery tds: Label: Fumble recovery touchdown; Group: Fumbles; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fumbles total: Label: All fumbles; Group: Fumbles; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Interception caught: Label: Interception caught; Group: Defense; Used: On; Points: 5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Interception caught secondary: Label: Interception caught (cornerbacks and safeties); Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: CB; S; Once: Off; Interception return td: Label: Interception return touchdown; Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Interception return yards: Label: Interception return yards; Group: Defense; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Interception thrown: Label: Interception thrown; Group: Passing; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Kickoff return td: Label: Kickoff return touchdown; Group: Returns; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Kickoff return yards: Label: Kickoff return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Long pass: Label: Long pass; Group: Passing; Used: On; Points: 0; Bonuses: At: 40; Points: 1; Positions: None; Once: Off; Long reception: Label: Long reception; Group: Receiving; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Long rush: Label: Long rush; Group: Rushing; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Opponent fumble recovery: Label: Opponent fumble recovery; Group: Fumbles; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Opponent fumble recovery yards: Label: Opponent fumble recovery yards; Group: Fumbles; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Own fumble recovery: Label: Own fumble recovery; Group: Fumbles; Used: On; Points: 2; Bonuses: None; Positions: None; Once: On; Pass defensed: Label: Pass defensed; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Pass defensed secondary: Label: Pass defensed (cornerbacks and safeties); Group: Defense; Used: On; Points: 3; Bonuses: None; Positions: CB; S; Once: Off; Passing td: Label: Passing touchdown; Group: Passing; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Passing two point: Label: Passing two point conversion; Group: Passing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Passing yards: Label: Passing yards; Group: Passing; Used: On; Points: 0.05; Bonuses: None; Positions: None; Once: Off; Pat blocked: Label: Extra point blocked; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Pat made: Label: Extra point made; Group: Kicking; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Pat missed: Label: Extra point missed; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Punt return td: Label: Punt return touchdown; Group: Returns; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Punt return yards: Label: Punt return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Qb hit: Label: Quarterback hit; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Receiving td: Label: Receiving touchdown; Group: Receiving; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Receiving two point: Label: Receiving two point conversion; Group: Receiving; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Receiving yards: Label: Receiving yards; Group: Receiving; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Reception: Label: Reception; Group: Receiving; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Rushing attempt: Label: Rushing attempt; Group: Rushing; Used: On; Points: 0.15; Bonuses: None; Positions: None; Once: Off; Rushing td: Label: Rushing touchdown; Group: Rushing; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Rushing two point: Label: Rushing two point conversion; Group: Rushing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Rushing yards: Label: Rushing yards; Group: Rushing; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Sack: Label: Sack; Group: Defense; Used: On; Points: 4.5; Bonuses: None; Positions: None; Once: Off; Safety: Label: Safety; Group: Defense; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Tackle: Label: Tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: LB; QB; RB; WR; TE; PK; Once: Off; Tackle for loss: Label: Tackle for loss; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: None; Once: Off; Tackle line: Label: Defensive line tackle; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; Once: Off; Tackle secondary: Label: Tackle (cornerbacks and safeties); Group: Defense; Used: On; Points: 2; Bonuses: None; Positions: CB; S; Once: Off",
+     "value": "Assist: Label: Assisted tackle; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: LB; CB; S; QB; RB; WR; TE; PK; Once: Off; Assist line: Label: Defensive line assisted tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: DT; DE; Once: Off; Blocked extra point: Label: Blocked extra point; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked fg: Label: Blocked field goal; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked fg td: Label: Blocked field goal touchdown; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: DT; DE; LB; CB; S; Once: Off; Blocked punt: Label: Blocked punt; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked punt td: Label: Blocked punt touchdown; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: DT; DE; LB; CB; S; Once: Off; Fg made 0 39: Label: Field goal made from 0 to 39 yards; Group: Kicking; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Fg made 40 49: Label: Field goal made from 40 to 49 yards; Group: Kicking; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fg made 50 59: Label: Field goal made from 50 to 59 yards; Group: Kicking; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Fg made 60 99: Label: Field goal made from 60 to 99 yards; Group: Kicking; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fg missed 0 29: Label: Field goal missed from 0 to 29 yards; Group: Kicking; Used: On; Points: -3; Bonuses: None; Positions: None; Once: Off; Fg missed 30 99: Label: Field goal missed from 30 yards or longer; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Forced fumble: Label: Forced fumble; Group: Fumbles; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fumble lost: Label: Fumbles lost; Group: Fumbles; Used: Off; Points: -2; Bonuses: None; Positions: None; Once: Off; Fumble recovery tds: Label: Fumble recovery touchdown; Group: Fumbles; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fumbles total: Label: All fumbles; Group: Fumbles; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Interception caught: Label: Interception caught; Group: Defense; Used: On; Points: 5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Interception caught secondary: Label: Interception caught (cornerbacks and safeties); Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: CB; S; Once: Off; Interception return td: Label: Interception return touchdown; Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Interception return yards: Label: Interception return yards; Group: Defense; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Interception thrown: Label: Interception thrown; Group: Passing; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Kickoff return td: Label: Kickoff return touchdown; Group: Returns; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Kickoff return yards: Label: Kickoff return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Long pass: Label: Long pass; Group: Passing; Used: On; Points: 0; Bonuses: At: 40; Points: 1; Positions: None; Once: Off; Long reception: Label: Long reception; Group: Receiving; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Long rush: Label: Long rush; Group: Rushing; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Opponent fumble recovery: Label: Opponent fumble recovery; Group: Fumbles; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Opponent fumble recovery yards: Label: Opponent fumble recovery yards; Group: Fumbles; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Other return td: Label: Other return touchdown (such as a missed field goal); Group: Returns; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Own fumble recovery: Label: Own fumble recovery; Group: Fumbles; Used: On; Points: 2; Bonuses: None; Positions: None; Once: On; Pass defensed: Label: Pass defensed; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Pass defensed secondary: Label: Pass defensed (cornerbacks and safeties); Group: Defense; Used: On; Points: 3; Bonuses: None; Positions: CB; S; Once: Off; Passing td: Label: Passing touchdown; Group: Passing; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Passing two point: Label: Passing two point conversion; Group: Passing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Passing yards: Label: Passing yards; Group: Passing; Used: On; Points: 0.05; Bonuses: None; Positions: None; Once: Off; Pat blocked: Label: Extra point blocked; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Pat made: Label: Extra point made; Group: Kicking; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Pat missed: Label: Extra point missed; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Punt return td: Label: Punt return touchdown; Group: Returns; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Punt return yards: Label: Punt return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Qb hit: Label: Quarterback hit; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Receiving td: Label: Receiving touchdown; Group: Receiving; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Receiving two point: Label: Receiving two point conversion; Group: Receiving; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Receiving yards: Label: Receiving yards; Group: Receiving; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Reception: Label: Reception; Group: Receiving; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Rushing attempt: Label: Rushing attempt; Group: Rushing; Used: On; Points: 0.15; Bonuses: None; Positions: None; Once: Off; Rushing td: Label: Rushing touchdown; Group: Rushing; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Rushing two point: Label: Rushing two point conversion; Group: Rushing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Rushing yards: Label: Rushing yards; Group: Rushing; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Sack: Label: Sack; Group: Defense; Used: On; Points: 4.5; Bonuses: None; Positions: None; Once: Off; Safety: Label: Safety; Group: Defense; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Tackle: Label: Tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: LB; QB; RB; WR; TE; PK; Once: Off; Tackle for loss: Label: Tackle for loss; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: None; Once: Off; Tackle line: Label: Defensive line tackle; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; Once: Off; Tackle secondary: Label: Tackle (cornerbacks and safeties); Group: Defense; Used: On; Points: 2; Bonuses: None; Positions: CB; S; Once: Off",
      "state": "Set",
      "citation": "Legacy NFL rules (the league’s MFL scoring)",
      "changedAt": "",
@@ -887,6 +895,10 @@
             {
              "value": "S",
              "label": "S"
+            },
+            {
+             "value": "OL",
+             "label": "OL"
             }
            ],
            "fields": []
@@ -956,6 +968,21 @@
        "Positions": [],
        "Used": true
       },
+      "blocked_fg_td": {
+       "Bonuses": [],
+       "Group": "Defense",
+       "Label": "Blocked field goal touchdown",
+       "Once": false,
+       "Points": 70000,
+       "Positions": [
+        "DT",
+        "DE",
+        "LB",
+        "CB",
+        "S"
+       ],
+       "Used": true
+      },
       "blocked_punt": {
        "Bonuses": [],
        "Group": "Defense",
@@ -963,6 +990,21 @@
        "Once": false,
        "Points": 70000,
        "Positions": [],
+       "Used": true
+      },
+      "blocked_punt_td": {
+       "Bonuses": [],
+       "Group": "Defense",
+       "Label": "Blocked punt touchdown",
+       "Once": false,
+       "Points": 70000,
+       "Positions": [
+        "DT",
+        "DE",
+        "LB",
+        "CB",
+        "S"
+       ],
        "Used": true
       },
       "fg_made_0_39": {
@@ -1195,6 +1237,15 @@
        "Label": "Opponent fumble recovery yards",
        "Once": false,
        "Points": 1000,
+       "Positions": [],
+       "Used": true
+      },
+      "other_return_td": {
+       "Bonuses": [],
+       "Group": "Returns",
+       "Label": "Other return touchdown (such as a missed field goal)",
+       "Once": false,
+       "Points": 60000,
        "Positions": [],
        "Used": true
       },
@@ -1457,6 +1508,632 @@
        ],
        "Used": true
       }
+     },
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "scoring.extras",
+     "label": "Extra points by position",
+     "value": "None",
+     "state": "Set",
+     "citation": "Legacy NFL rules (the league’s MFL scoring)",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "list",
+       "choices": [],
+       "fields": [],
+       "element": {
+        "kind": "record",
+        "choices": [],
+        "fields": [
+         {
+          "name": "Positions",
+          "label": "Positions",
+          "schema": {
+           "kind": "list",
+           "choices": [],
+           "fields": [],
+           "element": {
+            "kind": "string",
+            "choices": [
+             {
+              "value": "QB",
+              "label": "QB"
+             },
+             {
+              "value": "RB",
+              "label": "RB"
+             },
+             {
+              "value": "WR",
+              "label": "WR"
+             },
+             {
+              "value": "TE",
+              "label": "TE"
+             },
+             {
+              "value": "PK",
+              "label": "PK"
+             },
+             {
+              "value": "DT",
+              "label": "DT"
+             },
+             {
+              "value": "DE",
+              "label": "DE"
+             },
+             {
+              "value": "LB",
+              "label": "LB"
+             },
+             {
+              "value": "CB",
+              "label": "CB"
+             },
+             {
+              "value": "S",
+              "label": "S"
+             },
+             {
+              "value": "OL",
+              "label": "OL"
+             }
+            ],
+            "fields": []
+           }
+          }
+         },
+         {
+          "name": "Points",
+          "label": "Points",
+          "schema": {
+           "kind": "ten_thousandths",
+           "choices": [],
+           "fields": []
+          }
+         },
+         {
+          "name": "Ranged",
+          "label": "Ranged",
+          "schema": {
+           "kind": "boolean",
+           "choices": [],
+           "fields": []
+          }
+         },
+         {
+          "name": "Range",
+          "label": "Range",
+          "schema": {
+           "kind": "record",
+           "choices": [],
+           "fields": [
+            {
+             "name": "Min",
+             "label": "Minimum",
+             "schema": {
+              "kind": "ten_thousandths",
+              "choices": [],
+              "fields": []
+             }
+            },
+            {
+             "name": "Max",
+             "label": "Maximum",
+             "schema": {
+              "kind": "ten_thousandths",
+              "choices": [],
+              "fields": []
+             }
+            }
+           ]
+          }
+         }
+        ]
+       }
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {},
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "scoring.ranges",
+     "label": "Scoring ranges",
+     "value": "Assist: Minimum: 0; Maximum: 99; Assist line: Minimum: 0; Maximum: 99; Blocked extra point: Minimum: 0; Maximum: 10; Blocked fg: Minimum: 0; Maximum: 10; Blocked fg td: Minimum: 0; Maximum: 10; Blocked punt: Minimum: 0; Maximum: 10; Blocked punt td: Minimum: 0; Maximum: 10; Forced fumble: Minimum: 0; Maximum: 10; Fumble recovery tds: Minimum: 0; Maximum: 10; Fumbles total: Minimum: 0; Maximum: 10; Interception caught: Minimum: 0; Maximum: 10; Interception caught secondary: Minimum: 0; Maximum: 10; Interception return td: Minimum: 0; Maximum: 10; Interception return yards: Minimum: -50; Maximum: 999; Interception thrown: Minimum: 0; Maximum: 10; Kickoff return td: Minimum: 0; Maximum: 10; Kickoff return yards: Minimum: -50; Maximum: 999; Opponent fumble recovery: Minimum: 0; Maximum: 10; Opponent fumble recovery yards: Minimum: -50; Maximum: 999; Other return td: Minimum: 0; Maximum: 10; Own fumble recovery: Minimum: 1; Maximum: 10; Pass defensed: Minimum: 0; Maximum: 99; Pass defensed secondary: Minimum: 0; Maximum: 99; Passing td: Minimum: 0; Maximum: 20; Passing two point: Minimum: 0; Maximum: 10; Passing yards: Minimum: -50; Maximum: 999; Pat blocked: Minimum: 0; Maximum: 10; Pat made: Minimum: 0; Maximum: 10; Pat missed: Minimum: 0; Maximum: 10; Punt return td: Minimum: 0; Maximum: 10; Punt return yards: Minimum: -50; Maximum: 999; Qb hit: Minimum: 0; Maximum: 10; Receiving td: Minimum: 0; Maximum: 10; Receiving two point: Minimum: 0; Maximum: 10; Receiving yards: Minimum: -50; Maximum: 999; Reception: Minimum: 0; Maximum: 99; Rushing attempt: Minimum: 0; Maximum: 99; Rushing td: Minimum: 0; Maximum: 10; Rushing two point: Minimum: 0; Maximum: 10; Rushing yards: Minimum: -50; Maximum: 999; Sack: Minimum: 0; Maximum: 25; Safety: Minimum: 0; Maximum: 10; Tackle: Minimum: 0; Maximum: 99; Tackle for loss: Minimum: 0; Maximum: 25; Tackle line: Minimum: 0; Maximum: 99; Tackle secondary: Minimum: 0; Maximum: 99",
+     "state": "Set",
+     "citation": "Legacy NFL rules (the league’s MFL scoring)",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "record",
+       "choices": [],
+       "fields": [
+        {
+         "name": "Min",
+         "label": "Minimum",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Max",
+         "label": "Maximum",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        }
+       ]
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {
+      "assist": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "assist_line": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "blocked_extra_point": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "blocked_fg": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "blocked_fg_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "blocked_punt": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "blocked_punt_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "forced_fumble": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "fumble_recovery_tds": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "fumbles_total": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "interception_caught": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "interception_caught_secondary": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "interception_return_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "interception_return_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "interception_thrown": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "kickoff_return_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "kickoff_return_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "opponent_fumble_recovery": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "opponent_fumble_recovery_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "other_return_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "own_fumble_recovery": {
+       "Max": 100000,
+       "Min": 10000
+      },
+      "pass_defensed": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "pass_defensed_secondary": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "passing_td": {
+       "Max": 200000,
+       "Min": 0
+      },
+      "passing_two_point": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "passing_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "pat_blocked": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "pat_made": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "pat_missed": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "punt_return_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "punt_return_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "qb_hit": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "receiving_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "receiving_two_point": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "receiving_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "reception": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "rushing_attempt": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "rushing_td": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "rushing_two_point": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "rushing_yards": {
+       "Max": 9990000,
+       "Min": -500000
+      },
+      "sack": {
+       "Max": 250000,
+       "Min": 0
+      },
+      "safety": {
+       "Max": 100000,
+       "Min": 0
+      },
+      "tackle": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "tackle_for_loss": {
+       "Max": 250000,
+       "Min": 0
+      },
+      "tackle_line": {
+       "Max": 990000,
+       "Min": 0
+      },
+      "tackle_secondary": {
+       "Max": 990000,
+       "Min": 0
+      }
+     },
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "scoring.scales",
+     "label": "Points by play distance",
+     "value": "None",
+     "state": "Set",
+     "citation": "Legacy NFL rules (the league’s MFL scoring)",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "record",
+       "choices": [],
+       "fields": [
+        {
+         "name": "From",
+         "label": "From",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Base",
+         "label": "Base",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Pivot",
+         "label": "Pivot",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Above",
+         "label": "Above",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Below",
+         "label": "Below",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Capped",
+         "label": "Capped",
+         "schema": {
+          "kind": "boolean",
+          "choices": [],
+          "fields": []
+         }
+        },
+        {
+         "name": "Cap",
+         "label": "Cap",
+         "schema": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        }
+       ]
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {},
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "scoring.totals",
+     "label": "Stats counted as a total of others",
+     "value": "None",
+     "state": "Set",
+     "citation": "Legacy NFL rules (the league’s MFL scoring)",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "list",
+       "choices": [],
+       "fields": [],
+       "element": {
+        "kind": "string",
+        "choices": [],
+        "fields": []
+       }
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {},
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "scoring.lineUnit",
+     "label": "Team offensive line scoring",
+     "value": "Used: Off; Weights: None; Labels: None; No sack: 0; Sacks: None; Clamped: Off; Clamp: 0",
+     "state": "Set",
+     "citation": "Legacy NFL rules (the league’s MFL scoring)",
+     "changedAt": "",
+     "schema": {
+      "kind": "record",
+      "choices": [],
+      "fields": [
+       {
+        "name": "Used",
+        "label": "Used",
+        "schema": {
+         "kind": "boolean",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Weights",
+        "label": "Weights",
+        "schema": {
+         "kind": "map",
+         "choices": [],
+         "fields": [],
+         "key": {
+          "kind": "string",
+          "choices": [],
+          "fields": []
+         },
+         "element": {
+          "kind": "ten_thousandths",
+          "choices": [],
+          "fields": []
+         }
+        }
+       },
+       {
+        "name": "Labels",
+        "label": "Labels",
+        "schema": {
+         "kind": "map",
+         "choices": [],
+         "fields": [],
+         "key": {
+          "kind": "string",
+          "choices": [],
+          "fields": []
+         },
+         "element": {
+          "kind": "string",
+          "choices": [],
+          "fields": []
+         }
+        }
+       },
+       {
+        "name": "NoSack",
+        "label": "No sack",
+        "schema": {
+         "kind": "ten_thousandths",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Sacks",
+        "label": "Sacks",
+        "schema": {
+         "kind": "string",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Clamped",
+        "label": "Clamped",
+        "schema": {
+         "kind": "boolean",
+         "choices": [],
+         "fields": []
+        }
+       },
+       {
+        "name": "Clamp",
+        "label": "Clamp",
+        "schema": {
+         "kind": "ten_thousandths",
+         "choices": [],
+         "fields": []
+        }
+       }
+      ]
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {
+      "Clamp": 0,
+      "Clamped": false,
+      "Labels": {},
+      "NoSack": 0,
+      "Sacks": "",
+      "Used": false,
+      "Weights": {}
      },
      "unit": "",
      "safeguards": {
@@ -2191,6 +2868,10 @@
            {
             "value": "S",
             "label": "S"
+           },
+           {
+            "value": "OL",
+            "label": "OL"
            }
           ],
           "fields": []
@@ -2841,6 +3522,28 @@
    "label": "IR",
    "rows": [
     {
+     "field": "ir.autoReturn",
+     "label": "Automatically return ineligible IR players",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "ir.slots",
      "label": "IR spots",
      "value": "12",
@@ -2945,6 +3648,28 @@
    "label": "Taxi squad",
    "rows": [
     {
+     "field": "taxi.autoPromote",
+     "label": "Automatically promote ineligible taxi players",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "taxi.slots",
      "label": "Taxi spots",
      "value": "8",
@@ -3007,6 +3732,10 @@
        {
         "value": "career_games",
         "label": "Career games"
+       },
+       {
+        "value": "nfl_seasons",
+        "label": "NFL seasons"
        }
       ],
       "fields": []

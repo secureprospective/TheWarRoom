@@ -225,3 +225,25 @@ func TestPickOnlyRefusesARosterItPushesOverALimit(t *testing.T) {
 		t.Fatalf("a rookie at another position was refused for an unrelated limit: %v", err)
 	}
 }
+
+// A franchise's O-Line card never moves through the draft, and holding one does not block a rookie.
+func TestDraftNeverMovesAnOLineCard(t *testing.T) {
+	r := previewRules()
+	r.Roster.Limits.Value.Max = leaguerules.Known(3)
+	r.Roster.PositionBounds = leaguerules.Known(map[leaguerules.Position]leaguerules.Bounds{
+		leaguerules.OL: {Min: leaguerules.Known(1), Max: leaguerules.Known(1)}})
+	d, err := Replay(r.Draft, testOrder(t, r.Draft), fixedStart(), fixedStart(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	basis := testSelectionBasis()
+	basis.Players = append(basis.Players, PlayerContract{ID: "990003", Franchise: "b", Status: domain.RosterActive})
+	basis.Facts = nativecheck.Facts{"0001": {Position: leaguerules.WR}, "0002": {Position: leaguerules.QB}}
+	if _, err := PreviewSelection(r, d, "b", Candidate{ID: "0001", EntrySeason: 2031}, basis); err != nil {
+		t.Fatalf("a rookie onto a roster holding its card was refused: %v", err)
+	}
+	if _, err := PreviewSelection(r, d, "b", Candidate{ID: "990001", EntrySeason: 2031}, basis); err == nil ||
+		!strings.Contains(err.Error(), "O-Line card") {
+		t.Fatalf("a second card was drafted: %v", err)
+	}
+}

@@ -185,3 +185,26 @@ func TestOrdinals(t *testing.T) {
 		}
 	}
 }
+
+// The 32-Team Default counts only NFL seasons (spec §2.2): a CFL veteran drafted years ago in his 3rd NFL
+// season may stay, his 4th must leave, and without the count held the check cannot tell.
+func TestTaxiExperienceByNFLSeasons(t *testing.T) {
+	rules := leaguerules.Default32().Taxi
+	if rules.Basis.Value != leaguerules.NFLSeasons || legacyTaxi().Basis.Value != leaguerules.CalendarYears {
+		t.Fatalf("basis: default %q, Legacy %q", rules.Basis.Value, legacyTaxi().Basis.Value)
+	}
+	for _, c := range []struct {
+		seasons int
+		stand   Standing
+	}{{1, Stays}, {3, Stays}, {4, MustLeave}} {
+		// The draft year says a 7th-year veteran; only the NFL seasons decide.
+		got := taxiVerdict(rules, PlayerFacts{DraftYear: 2020, DraftYearHeld: true, NFLSeasons: c.seasons, NFLSeasonsHeld: true})
+		if got.Standing != c.stand {
+			t.Errorf("%d NFL seasons: %+v", c.seasons, got)
+		}
+	}
+	if got := taxiVerdict(rules, PlayerFacts{DraftYear: 2026, DraftYearHeld: true}); got.Standing != Unclear ||
+		!strings.Contains(got.Words, "NFL seasons are not held") {
+		t.Fatalf("a held draft year stood in for NFL seasons: %+v", got)
+	}
+}

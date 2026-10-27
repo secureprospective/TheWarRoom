@@ -90,7 +90,7 @@ func (f *resultsFixture) install() {
 		switch "franchise." + strings.TrimPrefix(scope.Player, "10") {
 		case f.a:
 			if scope.Week == 1 {
-				quantity = 1000000
+				quantity = 990000 // 99 tackles: the top of MFL's 0..99 tackle range
 			}
 		case f.b:
 			if scope.Week > 1 {

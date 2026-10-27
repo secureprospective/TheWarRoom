@@ -3,6 +3,7 @@ package source_test
 import (
 	"encoding/csv"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -133,4 +134,33 @@ func integer(t *testing.T, raw string) leaguerules.Decimal {
 		t.Fatal(err)
 	}
 	return leaguerules.Decimal(n)
+}
+
+// The held weeks carry everything the default needs: every line scores, and the default's per-play
+// stats are priced from play distances rather than Legacy's bands.
+func TestHeldWeeksScoreUnderTheDefault(t *testing.T) {
+	rules := leaguerules.Default32Scoring()
+	chunks := 0
+	for _, w := range heldWeeks(t) {
+		position := leaguerules.Position(w.Position)
+		if !slices.Contains([]leaguerules.Position{leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE,
+			leaguerules.PK, leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S}, position) {
+			continue
+		}
+		points, items, err := fantasyscore.Score(rules, position, w.Line)
+		if err != nil || points.State != leaguerules.IsKnown {
+			t.Fatalf("%s week %d: %+v %v", w.GSIS, w.Week, points, err)
+		}
+		for _, item := range items {
+			if item.Stat == "chunk_play" && item.Points.Value != 0 {
+				chunks++
+			}
+			if (item.Stat == "long_rush" || item.Stat == "fg_made_0_39") && !item.Unused {
+				t.Fatalf("%s: a Legacy band scored under the default", item.Stat)
+			}
+		}
+	}
+	if chunks == 0 {
+		t.Fatal("no held week priced a chunk play")
+	}
 }

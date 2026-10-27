@@ -2,7 +2,6 @@ package serverhttp_test
 
 import (
 	"encoding/json"
-	"os"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -226,6 +225,8 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 func TestHostedWorkflowFrontendReadings(t *testing.T) {
 	f := newHostedFixture(t, true)
 	bearer, proof := f.directCommissioner(t)
+	// The practice draft starts two seconds after provisioning; read it running, however fast the test is.
+	time.Sleep(2 * time.Second)
 	readings := map[string]serverhttp.WorkflowResponse{}
 	for _, command := range []string{"lineup.read", "native.assets.read", "native.reserve.check", "draft.read", "commish.rules.read", "bids.read", "waivers.read", "trades.read", "results.read", "standings.read"} {
 		args := `{"league":"native.hosted"}`
@@ -264,13 +265,9 @@ func TestHostedWorkflowFrontendReadings(t *testing.T) {
 		}
 		readings[command] = reading
 	}
-	if os.Getenv("TWR_UPDATE_HOSTED_WIRE") == "1" {
-		body, err := json.MarshalIndent(readings, "", "  ")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile("../../frontend/src/app/commissioner/hosted.wire.testdata.json", body, 0600); err != nil {
-			t.Fatal(err)
-		}
+	body, err := json.MarshalIndent(readings, "", "  ")
+	if err != nil {
+		t.Fatal(err)
 	}
+	checkHostedWire(t, "../../frontend/src/app/commissioner/hosted.wire.testdata.json", body)
 }

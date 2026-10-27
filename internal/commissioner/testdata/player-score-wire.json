@@ -62,6 +62,10 @@
         "points": 0
       },
       {
+        "stat": "fg_made_distance",
+        "words": "Field goals made, by distance: 0 recorded; not used for league scoring"
+      },
+      {
         "stat": "fg_missed_0_29",
         "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
         "points": 0
@@ -70,6 +74,10 @@
         "stat": "fg_missed_30_99",
         "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
         "points": 0
+      },
+      {
+        "stat": "fg_missed_distance",
+        "words": "Field goals missed or blocked, by distance: 0 recorded; not used for league scoring"
       },
       {
         "stat": "forced_fumble",
@@ -310,6 +318,10 @@
         "points": 0
       },
       {
+        "stat": "fg_made_distance",
+        "words": "Field goals made, by distance: 0 recorded; not used for league scoring"
+      },
+      {
         "stat": "fg_missed_0_29",
         "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
         "points": 0
@@ -318,6 +330,10 @@
         "stat": "fg_missed_30_99",
         "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
         "points": 0
+      },
+      {
+        "stat": "fg_missed_distance",
+        "words": "Field goals missed or blocked, by distance: 0 recorded; not used for league scoring"
       },
       {
         "stat": "forced_fumble",
@@ -545,6 +561,10 @@
         "points": 0
       },
       {
+        "stat": "fg_made_distance",
+        "words": "Field goals made, by distance: 0 recorded; not used for league scoring"
+      },
+      {
         "stat": "fg_missed_0_29",
         "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
         "points": 0
@@ -553,6 +573,10 @@
         "stat": "fg_missed_30_99",
         "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
         "points": 0
+      },
+      {
+        "stat": "fg_missed_distance",
+        "words": "Field goals missed or blocked, by distance: 0 recorded; not used for league scoring"
       },
       {
         "stat": "forced_fumble",
@@ -794,6 +818,10 @@
         "points": 0
       },
       {
+        "stat": "fg_made_distance",
+        "words": "Field goals made, by distance: 0 recorded; not used for league scoring"
+      },
+      {
         "stat": "fg_missed_0_29",
         "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
         "points": 0
@@ -802,6 +830,10 @@
         "stat": "fg_missed_30_99",
         "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
         "points": 0
+      },
+      {
+        "stat": "fg_missed_distance",
+        "words": "Field goals missed or blocked, by distance: 0 recorded; not used for league scoring"
       },
       {
         "stat": "forced_fumble",
@@ -1043,6 +1075,10 @@
         "points": 0
       },
       {
+        "stat": "fg_made_distance",
+        "words": "Field goals made, by distance: 0 recorded; not used for league scoring"
+      },
+      {
         "stat": "fg_missed_0_29",
         "words": "Field goal missed from 0 to 29 yards: 0 recorded; 0 points",
         "points": 0
@@ -1051,6 +1087,10 @@
         "stat": "fg_missed_30_99",
         "words": "Field goal missed from 30 yards or longer: 0 recorded; 0 points",
         "points": 0
+      },
+      {
+        "stat": "fg_missed_distance",
+        "words": "Field goals missed or blocked, by distance: 0 recorded; not used for league scoring"
       },
       {
         "stat": "forced_fumble",

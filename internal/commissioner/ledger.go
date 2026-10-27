@@ -300,8 +300,11 @@ func recordLabel(r Record) string {
 	}
 	if r.Command.Command == Create {
 		preset := "every rule waiting for a ruling"
-		if r.Command.Args.Preset == PresetLegacy {
+		switch r.Command.Args.Preset {
+		case PresetLegacy:
 			preset = "the Legacy NFL rules"
+		case PresetDefault32:
+			preset = "the 32-Team Default rules"
 		}
 		return fmt.Sprintf("Created league “%s” with %d franchises and %s", r.Command.Args.Name,
 			len(r.Command.Args.Franchises), preset)

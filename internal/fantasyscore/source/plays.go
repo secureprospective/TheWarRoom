@@ -31,6 +31,11 @@ type RawPlay struct {
 	Kickoff      string
 	Deleted      string
 	TwoPoint     string
+	// Optional: older held play files lack these, and their kick TDs keep the older credits.
+	PosTeam     string
+	PuntBlocked string
+	FieldGoal   string
+	FieldResult string
 }
 
 func (r RawPlay) Validate() error {
@@ -46,7 +51,7 @@ func (r RawPlay) Validate() error {
 	if r.SeasonType != "REG" && r.SeasonType != "POST" {
 		return fmt.Errorf("play needs a season type")
 	}
-	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint} {
+	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal} {
 		if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
@@ -95,7 +100,8 @@ func rawPlay(f map[string]string) RawPlay {
 		Touchdown: f["touchdown"], Scorer: f["td_player_id"], ScoringTeam: f["td_team"],
 		ReturnTeam: f["return_team"], Interception: f["interception"],
 		Punt: f["punt_attempt"], Kickoff: f["kickoff_attempt"], Deleted: f["play_deleted"],
-		TwoPoint: f["two_point_attempt"]}
+		TwoPoint: f["two_point_attempt"], PosTeam: f["posteam"], PuntBlocked: f["punt_blocked"],
+		FieldGoal: f["field_goal_attempt"], FieldResult: f["field_goal_result"]}
 }
 
 // AttachPlays completes the week lines in place using held play-by-play.
@@ -107,10 +113,11 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 	for i, week := range weeks {
 		index[playKey(week.GSIS, week.Season, week.Week)] = i
 		week.Line.Quantities["fumble_recovery_tds"] = week.RecoveryTDs
-		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception"} {
+		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception", "chunk_play"} {
 			week.Line.Events[id] = []leaguerules.Decimal{}
 		}
-		for _, id := range []leaguerules.StatID{"interception_return_td", "punt_return_td", "kickoff_return_td"} {
+		for _, id := range []leaguerules.StatID{"interception_return_td", "punt_return_td", "kickoff_return_td",
+			"other_return_td", "blocked_punt_td", "blocked_fg_td"} {
 			week.Line.Quantities[id] = 0
 		}
 	}
@@ -123,6 +130,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 		attachDistances(weeks, index, play, season, week)
 		attachTouchdown(weeks, index, play, season, week)
 		attachKickRecovery(weeks, index, play, season, week)
+		attachFieldGoalTouchdown(weeks, index, play, season, week)
 	}
 	return nil
 }
@@ -169,6 +177,10 @@ func attachDistances(weeks []PlayerWeek, index map[string]int, play RawPlay, sea
 		}
 		distance, _ := decimal(row.distance)
 		weeks[i].Line.Events[row.stat] = append(weeks[i].Line.Events[row.stat], distance)
+		// A chunk play is any rush or catch, priced by the league's distance scale.
+		if row.stat != "long_pass" {
+			weeks[i].Line.Events["chunk_play"] = append(weeks[i].Line.Events["chunk_play"], distance)
+		}
 	}
 }
 
@@ -185,12 +197,19 @@ func attachTouchdown(weeks []PlayerWeek, index map[string]int, play RawPlay, sea
 	for _, row := range []struct {
 		flag string
 		stat leaguerules.StatID
-	}{{play.Interception, "interception_return_td"}, {play.Punt, "punt_return_td"},
+	}{{play.Interception, "interception_return_td"}, {play.Punt, puntTouchdown(play)},
 		{play.Kickoff, "kickoff_return_td"}} {
 		if row.flag == "1" {
 			weeks[i].Line.Quantities[row.stat] += 10000
 		}
 	}
+}
+
+func puntTouchdown(play RawPlay) leaguerules.StatID {
+	if play.PuntBlocked == "1" {
+		return "blocked_punt_td"
+	}
+	return "punt_return_td"
 }
 
 func playKey(player string, season, week int) string {
@@ -202,8 +221,30 @@ func attachKickRecovery(weeks []PlayerWeek, index map[string]int, play RawPlay, 
 		(play.Kickoff != "1" && play.Punt != "1") {
 		return
 	}
+	stat := leaguerules.StatID("fumble_recovery_tds")
+	if play.Punt == "1" && play.PuntBlocked == "1" && play.PosTeam != "" && play.ScoringTeam != play.PosTeam {
+		stat = "blocked_punt_td"
+	}
+	credit(weeks, index, play, season, week, stat)
+}
+
+// A field goal try the defense scores on is a blocked-FG TD when blocked, otherwise a return of the
+// miss. Blocked kicks are not flagged as returns, so the scoring team decides.
+func attachFieldGoalTouchdown(weeks []PlayerWeek, index map[string]int, play RawPlay, season, week int) {
+	if play.Touchdown != "1" || play.FieldGoal != "1" || play.PosTeam == "" || play.ScoringTeam == "" ||
+		play.ScoringTeam == play.PosTeam {
+		return
+	}
+	stat := leaguerules.StatID("other_return_td")
+	if play.FieldResult == "blocked" {
+		stat = "blocked_fg_td"
+	}
+	credit(weeks, index, play, season, week, stat)
+}
+
+func credit(weeks []PlayerWeek, index map[string]int, play RawPlay, season, week int, stat leaguerules.StatID) {
 	i, exists := index[playKey(play.Scorer, season, week)]
 	if exists && weeks[i].GameID == play.GameID && weeks[i].SeasonType == play.SeasonType {
-		weeks[i].Line.Quantities["fumble_recovery_tds"] += 10000
+		weeks[i].Line.Quantities[stat] += 10000
 	}
 }

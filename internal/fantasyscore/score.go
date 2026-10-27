@@ -27,6 +27,10 @@ type LineItem struct {
 	Points   Points
 	Label    string
 	Unused   bool
+	// Rule is the catalogue row that priced the stat; Extra marks a position's added rate on it.
+	Rule       leaguerules.StatID
+	Extra      bool
+	OutOfRange bool
 }
 
 // Score totals a true position's stat line. Any unset rule a recorded stat needs makes the total
@@ -41,22 +45,45 @@ func Score(rules leaguerules.ScoringRules, position leaguerules.Position, line S
 	if rules.RoundStatPoints.State != leaguerules.IsKnown {
 		return leaguerules.Needs[leaguerules.Decimal]("Choose whether to round each stat’s points to the cent"), nil, nil
 	}
+	if reason := kindsReason(rules); reason != "" {
+		return leaguerules.Needs[leaguerules.Decimal](reason), nil, nil
+	}
+	line, err := withTotals(rules.Totals.Value, line)
+	if err != nil {
+		return Points{}, nil, err
+	}
+	return countLine(rules, position, line)
+}
+
+// countLine prices every recorded stat and its position extras, each rounded on its own.
+func countLine(rules leaguerules.ScoringRules, position leaguerules.Position, line StatLine) (Points, []LineItem, error) {
 	ids := statIDs(line)
 	items := make([]LineItem, 0, len(ids))
-	total := leaguerules.Decimal(0)
-	var reasons []string
 	for _, id := range ids {
-		item, err := countStat(id, rules.Catalogue.Value, position, line)
+		item, err := countStat(id, rules, position, line)
 		if err != nil {
 			return Points{}, nil, fmt.Errorf("count %s: %w", id, err)
 		}
-		if rules.RoundStatPoints.Value && item.Points.State == leaguerules.IsKnown {
-			item.Points.Value, err = roundCent(item.Points.Value)
-			if err != nil {
-				return Points{}, nil, err
-			}
+		extras, err := extraItems(rules, item, position)
+		if err != nil {
+			return Points{}, nil, fmt.Errorf("count %s: %w", id, err)
 		}
-		items = append(items, item)
+		for _, item := range append([]LineItem{item}, extras...) {
+			if rules.RoundStatPoints.Value && item.Points.State == leaguerules.IsKnown {
+				if item.Points.Value, err = roundCent(item.Points.Value); err != nil {
+					return Points{}, nil, err
+				}
+			}
+			items = append(items, item)
+		}
+	}
+	return totalItems(items)
+}
+
+func totalItems(items []LineItem) (Points, []LineItem, error) {
+	total := leaguerules.Decimal(0)
+	var reasons []string
+	for _, item := range items {
 		if item.Unused {
 			continue
 		}
@@ -64,8 +91,8 @@ func Score(rules leaguerules.ScoringRules, position leaguerules.Position, line S
 			reasons = append(reasons, item.Points.Citation)
 			continue
 		}
-		total, err = add(total, item.Points.Value)
-		if err != nil {
+		var err error
+		if total, err = add(total, item.Points.Value); err != nil {
 			return Points{}, nil, fmt.Errorf("total fantasy points: %w", err)
 		}
 	}
@@ -91,8 +118,9 @@ func statIDs(line StatLine) []leaguerules.StatID {
 	return ids
 }
 
-func countStat(id leaguerules.StatID, catalogue map[leaguerules.StatID]leaguerules.Stat,
+func countStat(id leaguerules.StatID, rules leaguerules.ScoringRules,
 	position leaguerules.Position, line StatLine) (LineItem, error) {
+	catalogue := rules.Catalogue.Value
 	quantity, err := recordedQuantity(id, line)
 	if err != nil {
 		return LineItem{}, err
@@ -122,6 +150,27 @@ func countStat(id leaguerules.StatID, catalogue map[leaguerules.StatID]leaguerul
 	}
 	if !stat.Used.Value || (len(stat.Positions.Value) != 0 && !slices.Contains(stat.Positions.Value, position)) {
 		item.Unused = true
+		return item, nil
+	}
+	item.Rule = ruleID
+	return priceStat(rules, stat, item, quantity, events, hasEvents)
+}
+
+// priceStat applies a stat's distance scale and range, then its rate, once and play bonuses.
+func priceStat(rules leaguerules.ScoringRules, stat leaguerules.Stat, item LineItem, quantity leaguerules.Decimal,
+	events []leaguerules.Decimal, hasEvents bool) (LineItem, error) {
+	if scale, scaled := rules.Scales.Value[item.Rule]; scaled {
+		if !hasEvents {
+			return LineItem{}, fmt.Errorf("play distances required for a distance scale")
+		}
+		var err error
+		if quantity, err = scaledQuantity(scale, events); err != nil {
+			return LineItem{}, err
+		}
+		item.Quantity, events = quantity, nil
+	}
+	if bounds, ranged := rules.Ranges.Value[item.Rule]; ranged && (quantity < bounds.Min || quantity > bounds.Max) {
+		item.Points, item.OutOfRange = leaguerules.Known[leaguerules.Decimal](0), true
 		return item, nil
 	}
 	points, err := contribution(stat, quantity, events, hasEvents)

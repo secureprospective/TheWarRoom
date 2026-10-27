@@ -20,15 +20,19 @@ type PlayerFacts struct {
 	DraftYearHeld   bool
 	CareerGames     int
 	CareerGamesHeld bool
+	// NFLSeasons counts distinct NFL season labels with an NFL roster appearance, including this season.
+	// Games played, accrued-season credit, other leagues and years out do not count.
+	NFLSeasons     int
+	NFLSeasonsHeld bool
 }
 
 // Facts holds PlayerFacts by canonical player id.
 type Facts map[string]PlayerFacts
 
-// positionRank orders positions the way a lineup is read: offense, kicker, defense, then any other.
+// positionRank orders positions the way a lineup is read: offense, kicker, O-Line, defense, then any other.
 func positionRank(p leaguerules.Position) int {
 	order := []leaguerules.Position{leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE,
-		leaguerules.PK, leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S}
+		leaguerules.PK, leaguerules.OL, leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S}
 	for i, o := range order {
 		if o == p {
 			return i

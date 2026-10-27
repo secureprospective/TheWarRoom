@@ -103,6 +103,9 @@ func TestDueWorkerSystemPrincipalCannotUpgradeAuthority(t *testing.T) {
 		principal, command string
 		want               bool
 	}{
+		{commissioner.ReserveClockPrincipal, commissioner.RosterReserve, true},
+		{commissioner.ReserveClockPrincipal, commissioner.RosterCut, false},
+		{commissioner.ReserveClockPrincipal, commissioner.RulesSet, false},
 		{"native.bid.clock", commissioner.BidsProcess, true},
 		{"native.waiver.clock", commissioner.WaiverProcess, true},
 		{commissioner.DraftClockPrincipal, commissioner.DraftArchive, true},

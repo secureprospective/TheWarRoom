@@ -13,11 +13,13 @@ import (
 )
 
 const (
-	PresetLegacy  = "legacy_nfl"
-	PresetEmpty   = "empty"
-	legacyTeams   = 32
-	minFranchises = 2
-	maxFranchises = 32
+	PresetLegacy = "legacy_nfl"
+	PresetEmpty  = "empty"
+	// PresetDefault32 is the 32-Team Default (DEFAULT-32 spec), offered only at 32 teams.
+	PresetDefault32 = "default_32"
+	legacyTeams     = 32
+	minFranchises   = 2
+	maxFranchises   = 32
 	// firstNFLSeason is the NFL's first season; a league cannot start before it.
 	firstNFLSeason = 1920
 	lastSeason     = 9999
@@ -38,10 +40,16 @@ func franchiseIDs(count int) []string {
 }
 
 func presetSeed(preset string, count, season int) ([]SeedValue, error) {
-	if preset != PresetLegacy {
+	var rules leaguerules.RuleSet
+	switch preset {
+	case PresetLegacy:
+		rules = leaguerules.LegacyNFLForTeams(count)
+	case PresetDefault32:
+		rules = leaguerules.Default32()
+	default:
 		return nil, nil
 	}
-	changes := leaguerules.SeedChanges(leaguerules.LegacyNFLForTeams(count), "preset", season, time.Unix(1, 0).UTC())
+	changes := leaguerules.SeedChanges(rules, "preset", season, time.Unix(1, 0).UTC())
 	seed := make([]SeedValue, len(changes))
 	for i, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
@@ -74,7 +82,7 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, nil
 	}
 	a := r.Args
-	if a.Preset == PresetLegacy && a.FranchiseCount == 0 {
+	if (a.Preset == PresetLegacy || a.Preset == PresetDefault32) && a.FranchiseCount == 0 {
 		a.FranchiseCount = legacyTeams
 	}
 	if err := a.validatePreset(); err != nil {
@@ -102,8 +110,12 @@ func (a RawArgs) validatePreset() error {
 		if a.FranchiseCount < minFranchises || a.FranchiseCount > maxFranchises {
 			return fmt.Errorf("choose between 2 and 32 franchises")
 		}
+	case PresetDefault32:
+		if a.FranchiseCount != legacyTeams {
+			return fmt.Errorf("the 32-Team Default needs exactly 32 franchises")
+		}
 	default:
-		return fmt.Errorf("start from the Legacy NFL preset or an empty league")
+		return fmt.Errorf("start from the 32-Team Default, the Legacy NFL preset or an empty league")
 	}
 	return nil
 }
@@ -133,8 +145,8 @@ func (a RawArgs) validateCreation() error {
 	if a.Preset == PresetEmpty && len(a.Seed) != 0 {
 		return fmt.Errorf("an empty league starts with every rule waiting for a ruling")
 	}
-	if a.Preset == PresetLegacy && len(a.Seed) == 0 {
-		return fmt.Errorf("the Legacy NFL preset needs its starting values")
+	if (a.Preset == PresetLegacy || a.Preset == PresetDefault32) && len(a.Seed) == 0 {
+		return fmt.Errorf("a preset league needs its starting values")
 	}
 	seen := make(map[string]bool, len(a.Seed))
 	for _, s := range a.Seed {
@@ -175,5 +187,5 @@ func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 			New: setting, Effective: leaguerules.Effective{Kind: leaguerules.Now},
 			RecordedAt: r.Receipt.RecordedAt, Season: season})
 	}
-	return changes, nil
+	return leaguerules.UpgradeSeed(changes), nil
 }

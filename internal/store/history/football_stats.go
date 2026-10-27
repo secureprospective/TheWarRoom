@@ -13,23 +13,45 @@ import (
 )
 
 // RawFootballStats embeds the exact source bodies, newest revision first. Keeping
-// them inside the selected evidence makes fetch-archive retention irrelevant.
+// them inside the selected evidence makes fetch-archive retention irrelevant. Rushing is
+// PFR advanced weekly rushing; with it the plays body must carry the line columns and the
+// revision holds offensive line facts (football_line.go). A revision too large for one pinned item
+// lists its week parts by digest instead (Parts, football_week.go); it carries no inline bodies.
 type RawFootballStats struct {
-	AsOf   time.Time `json:"asOf"`
-	Weekly string    `json:"weekly"`
-	Plays  string    `json:"plays"`
+	AsOf    time.Time `json:"asOf"`
+	Weekly  string    `json:"weekly,omitempty"`
+	Plays   string    `json:"plays,omitempty"`
+	Rushing string    `json:"rushing,omitempty"`
+	Parts   []string  `json:"parts,omitempty"`
 }
 
 func (r RawFootballStats) Validate() error {
-	if r.AsOf.IsZero() || r.Weekly == "" || r.Plays == "" {
+	if r.AsOf.IsZero() {
+		return fmt.Errorf("statistics need a source instant")
+	}
+	if len(r.Parts) != 0 {
+		if r.Weekly != "" || r.Plays != "" || r.Rushing != "" || len(r.Parts) > 22 {
+			return fmt.Errorf("split statistics list one to 22 week parts and embed no bodies")
+		}
+		for _, digest := range r.Parts {
+			if len(digest) != 64 {
+				return fmt.Errorf("a week part is named by its digest")
+			}
+		}
+		return nil
+	}
+	if r.Weekly == "" || r.Plays == "" {
 		return fmt.Errorf("statistics need a source instant, weekly CSV and play-by-play CSV")
 	}
 	return nil
 }
 
-func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
+func (r RawFootballEvidence) scoringFiles(parts partSource) ([]heldFile, error) {
 	if len(r.Stats) > 100 {
 		return nil, fmt.Errorf("football evidence exceeds 100 statistic revisions")
+	}
+	if err := r.validatePFR(); err != nil {
+		return nil, err
 	}
 	files := make([]heldFile, 0, len(r.Stats))
 	for i, raw := range r.Stats {
@@ -39,23 +61,11 @@ func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
 		if raw.AsOf.After(r.AsOf) || (i > 0 && !raw.AsOf.Before(r.Stats[i-1].AsOf)) {
 			return nil, fmt.Errorf("statistic revisions must be newest first, no later than the import")
 		}
-		weeks, err := source.ReadWeeks(strings.NewReader(raw.Weekly))
+		file, err := r.scoringFile(raw, parts)
 		if err != nil {
-			return nil, fmt.Errorf("read pinned weekly statistics: %w", err)
+			return nil, err
 		}
-		for _, week := range weeks {
-			if week.Season != r.Season {
-				return nil, fmt.Errorf("statistics name a different season")
-			}
-		}
-		plays, err := source.ReadPlays(strings.NewReader(raw.Plays))
-		if err != nil {
-			return nil, fmt.Errorf("read pinned plays: %w", err)
-		}
-		if err := source.AttachPlays(weeks, plays); err != nil {
-			return nil, fmt.Errorf("complete pinned statistics: %w", err)
-		}
-		files = append(files, heldFile{sha: footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays))), at: raw.AsOf, weeks: weeks, index: source.IndexHeldWeeks(weeks)})
+		files = append(files, file)
 	}
 	if len(files) != 0 {
 		for _, player := range r.Players {
@@ -65,6 +75,52 @@ func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
 		}
 	}
 	return files, nil
+}
+
+// scoringFile reads one statistic revision: its completed player weeks and, when it carries
+// advanced rushing, its offensive line games. Inline and split revisions read the same bodies.
+func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource) (heldFile, error) {
+	bodies, sha, err := r.revisionBodies(raw, parts)
+	if err != nil {
+		return heldFile{}, err
+	}
+	var weeks []source.PlayerWeek
+	var plays []source.RawPlay
+	for _, body := range bodies {
+		w, p, err := body.weekFiles()
+		if err != nil {
+			return heldFile{}, err
+		}
+		weeks, plays = append(weeks, w...), append(plays, p...)
+	}
+	for _, week := range weeks {
+		if week.Season != r.Season {
+			return heldFile{}, fmt.Errorf("statistics name a different season")
+		}
+	}
+	if err := source.AttachPlays(weeks, plays); err != nil {
+		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
+	}
+	lineSHA, lines, err := lineFile(bodies, r.leagueRB())
+	if err != nil {
+		return heldFile{}, err
+	}
+	return heldFile{sha: sha, at: raw.AsOf,
+		weeks: weeks, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
+}
+
+// revisionBodies returns a revision's bodies and its statistics SHA. An inline revision is one
+// unchecked-week body with its SHA as before; a split revision's SHA covers its part digests.
+func (r RawFootballEvidence) revisionBodies(raw RawFootballStats, parts partSource) ([]RawFootballWeek, string, error) {
+	if len(raw.Parts) == 0 {
+		return []RawFootballWeek{{Season: r.Season, Weekly: raw.Weekly, Plays: raw.Plays, Rushing: raw.Rushing}},
+			footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays))), nil
+	}
+	weeks, err := r.readParts(raw, parts)
+	if err != nil {
+		return nil, "", err
+	}
+	return weeks, footballDigest([]byte("parts:" + strings.Join(raw.Parts, ","))), nil
 }
 
 func (p *PinnedFootball) SourceID(ctx context.Context, player, kind string) (string, error) {

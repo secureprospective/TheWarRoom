@@ -55,7 +55,7 @@ type DraftOutcome struct {
 	Issued    []NativePick      `json:"issued,omitempty"`
 }
 
-// NativePoolEntry is a rookie nobody drafted, released to the free-agent pool when his draft closed.
+// NativePoolEntry is an unassigned free agent in the league's player pool.
 type NativePoolEntry struct {
 	Player string `json:"player"`
 	Name   string `json:"name,omitempty"`

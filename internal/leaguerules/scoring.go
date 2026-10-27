@@ -3,13 +3,47 @@ package leaguerules
 type ScoringRules struct {
 	Catalogue       Value[map[StatID]Stat]
 	RoundStatPoints Value[bool]
+	Extras          Value[map[StatID][]PositionExtra]
+	Ranges          Value[map[StatID]StatRange]
+	Scales          Value[map[StatID]DistanceScale]
+	Totals          Value[map[StatID][]StatID]
+	LineUnit        Value[LineUnit]
 }
 
 func legacyScoring() ScoringRules {
-	return ScoringRules{
+	r := ScoringRules{
 		Catalogue:       cited[map[StatID]Stat](legacyCatalogue(), "MFL league scoring settings"),
 		RoundStatPoints: cited(true, "MFL league scoring settings"),
 	}
+	emptyScoringKinds(&r, "MFL league scoring settings")
+	r.Ranges = cited(legacyRanges(), "MFL league scoring settings")
+	return r
+}
+
+// legacyRanges are MFL's per-rule ranges for the league (2024–26 rule table): a week outside one
+// scores 0 for that rule. The long-play bands are per-play bonuses here and need no count range.
+func legacyRanges() map[StatID]StatRange {
+	yards := StatRange{Min: -500000, Max: 9990000}
+	ten, many, twentyFive := StatRange{Max: 100000}, StatRange{Max: 990000}, StatRange{Max: 250000}
+	result := map[StatID]StatRange{"passing_td": {Max: 200000}, "own_fumble_recovery": {Min: 10000, Max: 100000},
+		"sack": twentyFive, "tackle_for_loss": twentyFive}
+	for _, id := range []StatID{"passing_yards", "rushing_yards", "receiving_yards", "punt_return_yards",
+		"kickoff_return_yards", "opponent_fumble_recovery_yards", "interception_return_yards"} {
+		result[id] = yards
+	}
+	for _, id := range []StatID{"rushing_attempt", "reception", "tackle", "tackle_line", "tackle_secondary",
+		"assist", "assist_line", "pass_defensed", "pass_defensed_secondary"} {
+		result[id] = many
+	}
+	for _, id := range []StatID{"interception_thrown", "passing_two_point", "rushing_td", "rushing_two_point",
+		"receiving_td", "receiving_two_point", "punt_return_td", "kickoff_return_td", "fumbles_total",
+		"fumble_recovery_tds", "pat_made", "pat_missed", "pat_blocked", "opponent_fumble_recovery",
+		"forced_fumble", "interception_return_td", "interception_caught", "interception_caught_secondary",
+		"qb_hit", "blocked_fg", "blocked_punt", "blocked_extra_point", "safety", "other_return_td",
+		"blocked_fg_td", "blocked_punt_td"} {
+		result[id] = ten
+	}
+	return result
 }
 
 func scoringFields() []ruleField {
@@ -96,9 +130,12 @@ func legacyCatalogue() map[StatID]Stat {
 	return result
 }
 func scoringStat(label, group string, points Decimal) Stat {
-	return Stat{Label: cited(label, "MFL league scoring settings"), Group: cited(group, "MFL league scoring settings"),
-		Used: cited(true, "MFL league scoring settings"), Points: cited(points, "MFL league scoring settings"),
-		Once: cited(false, "MFL league scoring settings"), Bonuses: cited([]Bonus{}, "MFL league scoring settings"), Positions: cited([]Position{}, "MFL league scoring settings")}
+	return scoringStatCited(label, group, points, "MFL league scoring settings")
+}
+func scoringStatCited(label, group string, points Decimal, citation string) Stat {
+	return Stat{Label: cited(label, citation), Group: cited(group, citation),
+		Used: cited(true, citation), Points: cited(points, citation),
+		Once: cited(false, citation), Bonuses: cited([]Bonus{}, citation), Positions: cited([]Position{}, citation)}
 }
 func installLongPlays(catalogue map[StatID]Stat) {
 	rows := []struct {
@@ -120,6 +157,17 @@ func installLongPlays(catalogue map[StatID]Stat) {
 		catalogue[row.id] = stat
 	}
 }
+
+// installKickTouchdowns adds MFL's #UT other returns and the IDP-only #BF/#BP blocked-kick TDs.
+func installKickTouchdowns(catalogue map[StatID]Stat) {
+	catalogue["other_return_td"] = scoringStat("Other return touchdown (such as a missed field goal)", "Returns", 60000)
+	for id, label := range map[StatID]string{"blocked_fg_td": "Blocked field goal touchdown", "blocked_punt_td": "Blocked punt touchdown"} {
+		stat := scoringStat(label, "Defense", 70000)
+		stat.Positions = cited([]Position{DT, DE, LB, CB, S}, "MFL league scoring settings")
+		catalogue[id] = stat
+	}
+}
+
 func installPositionSplit(catalogue map[StatID]Stat) {
 	for _, id := range []StatID{"tackle_line", "assist_line"} {
 		stat := catalogue[id]
@@ -156,6 +204,7 @@ func UnusedStat(label, group string) Stat {
 }
 
 func installCountingRules(catalogue map[StatID]Stat) {
+	installKickTouchdowns(catalogue)
 	stat := catalogue["own_fumble_recovery"]
 	stat.Once = cited(true, "MFL league scoring settings")
 	catalogue["own_fumble_recovery"] = stat

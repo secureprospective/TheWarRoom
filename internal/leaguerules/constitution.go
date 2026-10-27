@@ -1,5 +1,11 @@
 package leaguerules
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+)
+
 type LeagueRules struct {
 	Teams          Value[int]
 	Conferences    Value[int]
@@ -123,6 +129,7 @@ type IRRules struct {
 	Slots            Value[int]
 	Eligible         Value[[]NFLStatus]
 	MustLeaveHealthy Value[bool]
+	AutoReturn       AutoMoveValue `json:",omitzero"`
 }
 
 func legacyIR() IRRules {
@@ -130,11 +137,13 @@ func legacyIR() IRRules {
 		Slots:            cited[int](12, "fact 4a; Census CM-010"),
 		Eligible:         cited[[]NFLStatus]([]NFLStatus{InjuredReserve, PUP, NFI, Out, Suspended}, "fact 4a"),
 		MustLeaveHealthy: cited[bool](true, "fact 4a"),
+		AutoReturn:       legacyAutoMove(),
 	}
 }
 
 func irFields() []ruleField {
 	return []ruleField{
+		field[bool]{path: "ir.autoReturn", label: "Automatically return ineligible IR players", access: func(r *RuleSet) *Value[bool] { return (*Value[bool])(&r.IR.AutoReturn) }},
 		field[int]{path: "ir.slots", label: "IR spots", access: func(r *RuleSet) *Value[int] { return &r.IR.Slots }},
 		field[[]NFLStatus]{path: "ir.eligible", label: "IR eligible designations", access: func(r *RuleSet) *Value[[]NFLStatus] { return &r.IR.Eligible }},
 		field[bool]{path: "ir.mustLeaveHealthy", label: "Leave IR when healthy", access: func(r *RuleSet) *Value[bool] { return &r.IR.MustLeaveHealthy }},
@@ -145,10 +154,12 @@ type TaxiRules struct {
 	Slots        Value[int]
 	MaximumYears Value[int]
 	Basis        Value[ExperienceBasis]
+	AutoPromote  AutoMoveValue `json:",omitzero"`
 }
 
 func legacyTaxi() TaxiRules {
 	return TaxiRules{
+		AutoPromote:  legacyAutoMove(),
 		Slots:        cited[int](8, "Rulebook §2"),
 		MaximumYears: cited[int](3, "fact 4b"),
 		Basis:        cited[ExperienceBasis](CalendarYears, "fact 4b"),
@@ -157,6 +168,7 @@ func legacyTaxi() TaxiRules {
 
 func taxiFields() []ruleField {
 	return []ruleField{
+		field[bool]{path: "taxi.autoPromote", label: "Automatically promote ineligible taxi players", access: func(r *RuleSet) *Value[bool] { return (*Value[bool])(&r.Taxi.AutoPromote) }},
 		field[int]{path: "taxi.slots", label: "Taxi spots", access: func(r *RuleSet) *Value[int] { return &r.Taxi.Slots }},
 		field[int]{path: "taxi.maximumYears", label: "Taxi experience limit", access: func(r *RuleSet) *Value[int] { return &r.Taxi.MaximumYears }},
 		field[ExperienceBasis]{path: "taxi.basis", label: "Taxi experience measure", access: func(r *RuleSet) *Value[ExperienceBasis] { return &r.Taxi.Basis }},
@@ -207,4 +219,39 @@ func notifyFields() []ruleField {
 		field[bool]{path: "notify.transactions", label: "Tell the league about transactions", access: func(r *RuleSet) *Value[bool] { return &r.Notify.Transactions }},
 		field[bool]{path: "notify.reminders", label: "Remind owners of deadlines", access: func(r *RuleSet) *Value[bool] { return &r.Notify.Reminders }},
 	}
+}
+
+// AutoMoveValue omits only the unchanged Legacy off default from rule-set JSON. Seeds and
+// commissioner edits still encode explicit Value[bool] settings, including their citations.
+type AutoMoveValue Value[bool]
+
+func legacyAutoMove() AutoMoveValue {
+	return AutoMoveValue(cited(false, "Automatic reserve moves off in Legacy"))
+}
+
+func (v AutoMoveValue) IsZero() bool { return v == legacyAutoMove() }
+
+// UnmarshalJSON restores the omitted Legacy default; other values retain their recorded citation.
+func (r *IRRules) UnmarshalJSON(body []byte) error {
+	type plain IRRules
+	value := plain{AutoReturn: legacyAutoMove()}
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&value); err != nil {
+		return fmt.Errorf("read IR rules: %w", err)
+	}
+	*r = IRRules(value)
+	return nil
+}
+
+func (r *TaxiRules) UnmarshalJSON(body []byte) error {
+	type plain TaxiRules
+	value := plain{AutoPromote: legacyAutoMove()}
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&value); err != nil {
+		return fmt.Errorf("read taxi rules: %w", err)
+	}
+	*r = TaxiRules(value)
+	return nil
 }

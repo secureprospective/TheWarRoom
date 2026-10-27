@@ -5,6 +5,7 @@ import (
 	"os"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 		"fg_made_list": "19;29;39;49;59;60;99", "fg_missed_0_19": "1",
 		"fg_missed_20_29": "1", "fg_missed_30_39": "1", "fg_missed_40_49": "1",
 		"fg_missed_50_59": "1", "fg_missed_60_": "1", "pat_made": "3",
-		"fg_blocked": "2", "fg_blocked_list": "29;30",
+		"fg_blocked": "2", "fg_blocked_list": "29;30", "fg_missed_list": "18;25;31;45;55;61",
 	} {
 		raw.Fields[field] = value
 	}
@@ -55,6 +56,14 @@ func TestWeeklyMappingPreservesDirectStatsAndFieldGoalBands(t *testing.T) {
 	} {
 		if week.Line.Quantities[id] != want {
 			t.Errorf("%s: got %d want %d", id, week.Line.Quantities[id], want)
+		}
+	}
+	for id, want := range map[leaguerules.StatID][]leaguerules.Decimal{
+		"fg_made_distance":   {190000, 290000, 390000, 490000, 590000, 600000, 990000},
+		"fg_missed_distance": {180000, 250000, 310000, 450000, 550000, 610000, 290000, 300000},
+	} {
+		if !reflect.DeepEqual(week.Line.Events[id], want) {
+			t.Errorf("%s: got %v want %v", id, week.Line.Events[id], want)
 		}
 	}
 }
@@ -150,7 +159,12 @@ func TestPlayDistancesTouchdownKindsAndScope(t *testing.T) {
 	if !reflect.DeepEqual(weeks[0].Line.Events["long_rush"], []leaguerules.Decimal{250000, 250000, 250000}) {
 		t.Fatal("distance lost or deleted/2-point/wrong-game play counted")
 	}
-	if err := AttachPlays(weeks, plays); err != nil || len(weeks[0].Line.Events["long_rush"]) != 3 {
+	if !reflect.DeepEqual(weeks[0].Line.Events["chunk_play"],
+		[]leaguerules.Decimal{250000, 410000, 250000, 410000, 250000, 410000, 410000}) {
+		t.Fatalf("chunk plays are every counted rush and catch, never a pass: %v", weeks[0].Line.Events["chunk_play"])
+	}
+	if err := AttachPlays(weeks, plays); err != nil || len(weeks[0].Line.Events["long_rush"]) != 3 ||
+		len(weeks[0].Line.Events["chunk_play"]) != 7 {
 		t.Fatal("re-attaching held plays counted twice", err)
 	}
 }
@@ -163,9 +177,10 @@ func TestMissingOrMalformedPlayEvidenceFailsBeforeMutation(t *testing.T) {
 	base := RawPlay{GameID: week.GameID, PlayID: "1", Season: "2025", Week: "1", SeasonType: "REG"}
 	bad := base
 	bad.Passing = "NaN"
+	converted := len(week.Line.Events)
 	for _, plays := range [][]RawPlay{nil, {bad}, {base, base}} {
 		weeks := []PlayerWeek{week}
-		if err := AttachPlays(weeks, plays); err == nil || len(weeks[0].Line.Events) != 0 {
+		if err := AttachPlays(weeks, plays); err == nil || len(weeks[0].Line.Events) != converted {
 			t.Fatalf("bad evidence accepted or partially mutated: %v", err)
 		}
 	}
@@ -230,5 +245,50 @@ func TestReadWeeksLeavesOutTeamRowsThatNameNoPlayer(t *testing.T) {
 	}
 	if _, err := ReadWeeks(strings.NewReader(withRow("00-abcdefg"))); err == nil {
 		t.Fatal("a malformed player id entered the scorer")
+	}
+}
+
+// Real held 2024 plays: a blocked punt (2024_01_TEN_CHI play 2487, Owens) and a blocked field goal
+// (2024_05_ARI_SF play 1740, Lenoir) returned for touchdowns are #BP and #BF, not fumble recoveries;
+// a defense touchdown on a missed field goal try is another return (#UT). Without the kick columns,
+// an older held file keeps its older credit.
+func TestBlockedAndMissedKickTouchdownsAreClassified(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		play RawPlay
+		want leaguerules.StatID
+	}{
+		{"blocked punt", RawPlay{GameID: "2024_01_TEN_CHI", PlayID: "2487", Week: "1", Scorer: "00-0034485",
+			ScoringTeam: "CHI", PosTeam: "TEN", Punt: "1", PuntBlocked: "1", FieldGoal: "0"}, "blocked_punt_td"},
+		{"blocked field goal", RawPlay{GameID: "2024_05_ARI_SF", PlayID: "1740", Week: "5", Scorer: "00-0036563",
+			ScoringTeam: "SF", PosTeam: "ARI", Punt: "0", PuntBlocked: "0", FieldGoal: "1", FieldResult: "blocked"}, "blocked_fg_td"},
+		{"missed field goal return", RawPlay{GameID: "2024_05_ARI_SF", PlayID: "9", Week: "5", Scorer: "00-0036563",
+			ScoringTeam: "SF", ReturnTeam: "SF", PosTeam: "ARI", Punt: "0", FieldGoal: "1", FieldResult: "missed"}, "other_return_td"},
+		{"older file, blocked punt", RawPlay{GameID: "2024_01_TEN_CHI", PlayID: "2487", Week: "1", Scorer: "00-0034485",
+			ScoringTeam: "CHI", Punt: "1"}, "fumble_recovery_tds"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			week, err := rawFixture(t).Convert()
+			if err != nil {
+				t.Fatal(err)
+			}
+			week.GSIS, week.GameID, week.Season, week.SeasonType, week.RecoveryTDs = tc.play.Scorer, tc.play.GameID, 2024, "REG", 0
+			week.Week, _ = strconv.Atoi(tc.play.Week)
+			tc.play.Season, tc.play.SeasonType, tc.play.Touchdown = "2024", "REG", "1"
+			weeks := []PlayerWeek{week}
+			if err := AttachPlays(weeks, []RawPlay{tc.play}); err != nil {
+				t.Fatal(err)
+			}
+			for _, id := range []leaguerules.StatID{"blocked_punt_td", "blocked_fg_td", "other_return_td",
+				"fumble_recovery_tds", "punt_return_td"} {
+				want := leaguerules.Decimal(0)
+				if id == tc.want {
+					want = 10000
+				}
+				if got := weeks[0].Line.Quantities[id]; got != want {
+					t.Errorf("%s = %d, want %d", id, got, want)
+				}
+			}
+		})
 	}
 }

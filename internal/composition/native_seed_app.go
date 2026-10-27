@@ -15,7 +15,7 @@ import (
 
 func (a *App) nativeSeedCommand(ctx context.Context,
 	input RawNativeSeedRequest) (commissioner.RawCommand, error) {
-	return commissionerapp.BuildSeedCommand(ctx, input, a.core.History.NativeSeedRetry, a.heldNativeSnapshot) //nolint:wrapcheck // Preserve the seed request refusal.
+	return commissionerapp.BuildLeagueSeedCommand(ctx, input, a.leagueRecords, a.timeNow, a.heldNativeSnapshot) //nolint:wrapcheck // Preserve the seed request refusal.
 }
 
 func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {

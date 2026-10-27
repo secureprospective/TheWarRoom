@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -41,5 +42,27 @@ func TestSeedCommandRetryDoesNotRecapture(t *testing.T) {
 	})
 	if err != nil || raw.League != input.League || raw.Args.Native.Season != 2026 || raw.Visibility != "league" || raw.Effective != "now" || raw.Request != input.Request {
 		t.Fatalf("seed command: %+v %v", raw, err)
+	}
+}
+
+func TestLeagueSeedUsesHeldCaptureAndPreservesFailure(t *testing.T) {
+	t.Parallel()
+	input := RawNativeSeedRequest{League: "native.held", Expected: 1, Request: "start", Reason: "Start"}
+	failure := errors.New("held data unavailable")
+	for _, captureErr := range []error{nil, failure} {
+		calls := 0
+		raw, err := BuildLeagueSeedCommand(t.Context(), input,
+			func(context.Context, string) ([]commissioner.Record, error) { return nil, nil },
+			func() time.Time { t.Fatal("held capture read the default clock"); return time.Time{} },
+			func() (commissioner.RawNativeSnapshot, error) {
+				calls++
+				return commissioner.RawNativeSnapshot{Season: 2026}, captureErr
+			})
+		if calls != 1 || !errors.Is(err, captureErr) {
+			t.Fatalf("capture calls=%d, error=%v", calls, err)
+		}
+		if err == nil && (raw.Args.Native.Season != 2026 || raw.Request != input.Request) {
+			t.Fatalf("held seed changed: %+v", raw)
+		}
 	}
 }

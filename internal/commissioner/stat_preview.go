@@ -17,7 +17,7 @@ func StatChangePreview(ctx context.Context, league string, records []Record, src
 	if err != nil {
 		return ScorePreview{}, err
 	}
-	if err := CheckStatAppend(raw, records, StatFacts{Versions: week.Evidence.Versions()}, now); err != nil {
+	if err := CheckStatAppend(raw, records, StatFacts{Versions: week.Evidence.Versions(), OLine: week.Evidence.OLine}, now); err != nil {
 		return ScorePreview{}, err
 	}
 	rules, err := RulesInForce(records, change.key().season, ReadingInstant(records, now))
@@ -100,11 +100,10 @@ func (b queueBuilder) correctionPreview(ctx context.Context, change RawStatChang
 
 // enteredQuantity is the value the league counts for a stat now, in words.
 func (b queueBuilder) enteredQuantity(week StatWeek, key statKey, stat leaguerules.StatID) string {
-	counted, err := countedVersion(week.Evidence.Versions(), b.effects.baselines[key])
-	var played source.PlayerWeek
-	if err == nil && counted != nil {
-		played = *counted.Held.Week
+	facts := StatFacts{Versions: week.Evidence.Versions(), OLine: week.Evidence.OLine}
+	quantity, recorded, err := standingQuantity(key, stat, facts, b.effects)
+	if err != nil {
+		return quantityWords(0, false)
 	}
-	quantity, recorded := withCorrections(played, b.effects.corrections[key]).Line.Quantities[stat]
 	return quantityWords(quantity, recorded)
 }

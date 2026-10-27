@@ -52,6 +52,7 @@ func ruleFields() []ruleField {
 	result = append(result, rosterFields()...)
 	result = append(result, lineupFields()...)
 	result = append(result, scoringFields()...)
+	result = append(result, scoringKindFields()...)
 	result = append(result, standingsFields()...)
 	result = append(result, capFields()...)
 	result = append(result, contractsFields()...)

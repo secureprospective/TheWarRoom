@@ -150,7 +150,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 	facts := w.facts()
 	// Waivers clear before bids are evaluated; a draft is closed once its clock has used the last pick.
 	for _, process := range []func(context.Context, string, nativecheck.Facts) error{
-		w.store.ProcessDueWaivers, w.store.ProcessDueBids, w.store.CloseFinishedDrafts,
+		w.store.ProcessDueReserves, w.store.ProcessDueWaivers, w.store.ProcessDueBids, w.store.CloseFinishedDrafts,
 	} {
 		if err := process(ctx, league, facts); err != nil {
 			return time.Time{}, fmt.Errorf("record due work: %w", err)

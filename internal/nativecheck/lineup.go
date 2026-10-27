@@ -127,15 +127,15 @@ func positionProblems(limits map[leaguerules.Position]leaguerules.Bounds, counts
 	return problems
 }
 
-// sideOf is the football fact that splits a lineup: the kicker is on neither side, so a kicker counts
-// toward the total only.
+// sideOf is the football fact that splits a lineup: the kicker and the O-Line card are on neither side,
+// so each counts toward the total only (the offense count is the skill players and their flex).
 func sideOf(p leaguerules.Position) leaguerules.LineupGroup {
 	switch p {
 	case leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE:
 		return leaguerules.Offense
 	case leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S:
 		return leaguerules.Defense
-	case leaguerules.PK:
+	case leaguerules.PK, leaguerules.OL:
 		return leaguerules.Total
 	}
 	return leaguerules.Total

@@ -35,6 +35,8 @@ func (a dueAdmission) Admit(ctx context.Context, access commissioner.Access) err
 
 func systemDueCommand(principal, command string) bool {
 	switch principal {
+	case commissioner.ReserveClockPrincipal:
+		return command == commissioner.RosterReserve
 	case "native.bid.clock":
 		return command == commissioner.BidsProcess
 	case "native.waiver.clock":

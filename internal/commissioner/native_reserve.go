@@ -43,8 +43,8 @@ func NativeReserveCheckReading(league string, records []Record, now time.Time, f
 	}
 	out := NativeReserveCheck{Corrections: changes.Items, League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		RulesSeason: base.rules.Season, Seeded: base.assets.Seeded, Source: base.source(),
-		Rules: ruleLines(base.rules, "ir.slots", "ir.eligible", "ir.mustLeaveHealthy", "taxi.slots",
-			"taxi.maximumYears", "taxi.basis"),
+		Rules: ruleLines(base.rules, "ir.slots", "ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.slots",
+			"taxi.maximumYears", "taxi.basis", "taxi.autoPromote"),
 		Franchises: []NativeReserveFranchise{}}
 	if !base.assets.Seeded {
 		return out, nil

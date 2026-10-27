@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "566a3da3118f4a0cad3f5564588faa3646a7f00f72ef19bc9c95f66ed932b659",
+  "beforeDigest": "6f945f03edbdd743454594727499351cf9d170226f35035ac9aeca23a5e4b2df",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -738,6 +738,49 @@
               "Citation": "MFL league scoring settings"
             }
           },
+          "blocked_fg_td": {
+            "Label": {
+              "State": 1,
+              "Value": "Blocked field goal touchdown",
+              "Citation": "MFL league scoring settings"
+            },
+            "Group": {
+              "State": 1,
+              "Value": "Defense",
+              "Citation": "MFL league scoring settings"
+            },
+            "Used": {
+              "State": 1,
+              "Value": true,
+              "Citation": "MFL league scoring settings"
+            },
+            "Points": {
+              "State": 1,
+              "Value": 70000,
+              "Citation": "MFL league scoring settings"
+            },
+            "Bonuses": {
+              "State": 1,
+              "Value": [],
+              "Citation": "MFL league scoring settings"
+            },
+            "Positions": {
+              "State": 1,
+              "Value": [
+                "DT",
+                "DE",
+                "LB",
+                "CB",
+                "S"
+              ],
+              "Citation": "MFL league scoring settings"
+            },
+            "Once": {
+              "State": 1,
+              "Value": false,
+              "Citation": "MFL league scoring settings"
+            }
+          },
           "blocked_punt": {
             "Label": {
               "State": 1,
@@ -767,6 +810,49 @@
             "Positions": {
               "State": 1,
               "Value": [],
+              "Citation": "MFL league scoring settings"
+            },
+            "Once": {
+              "State": 1,
+              "Value": false,
+              "Citation": "MFL league scoring settings"
+            }
+          },
+          "blocked_punt_td": {
+            "Label": {
+              "State": 1,
+              "Value": "Blocked punt touchdown",
+              "Citation": "MFL league scoring settings"
+            },
+            "Group": {
+              "State": 1,
+              "Value": "Defense",
+              "Citation": "MFL league scoring settings"
+            },
+            "Used": {
+              "State": 1,
+              "Value": true,
+              "Citation": "MFL league scoring settings"
+            },
+            "Points": {
+              "State": 1,
+              "Value": 70000,
+              "Citation": "MFL league scoring settings"
+            },
+            "Bonuses": {
+              "State": 1,
+              "Value": [],
+              "Citation": "MFL league scoring settings"
+            },
+            "Positions": {
+              "State": 1,
+              "Value": [
+                "DT",
+                "DE",
+                "LB",
+                "CB",
+                "S"
+              ],
               "Citation": "MFL league scoring settings"
             },
             "Once": {
@@ -1646,6 +1732,43 @@
             "Points": {
               "State": 1,
               "Value": 1000,
+              "Citation": "MFL league scoring settings"
+            },
+            "Bonuses": {
+              "State": 1,
+              "Value": [],
+              "Citation": "MFL league scoring settings"
+            },
+            "Positions": {
+              "State": 1,
+              "Value": [],
+              "Citation": "MFL league scoring settings"
+            },
+            "Once": {
+              "State": 1,
+              "Value": false,
+              "Citation": "MFL league scoring settings"
+            }
+          },
+          "other_return_td": {
+            "Label": {
+              "State": 1,
+              "Value": "Other return touchdown (such as a missed field goal)",
+              "Citation": "MFL league scoring settings"
+            },
+            "Group": {
+              "State": 1,
+              "Value": "Returns",
+              "Citation": "MFL league scoring settings"
+            },
+            "Used": {
+              "State": 1,
+              "Value": true,
+              "Citation": "MFL league scoring settings"
+            },
+            "Points": {
+              "State": 1,
+              "Value": 60000,
               "Citation": "MFL league scoring settings"
             },
             "Bonuses": {
@@ -2657,6 +2780,224 @@
       "RoundStatPoints": {
         "State": 1,
         "Value": true,
+        "Citation": "MFL league scoring settings"
+      },
+      "Extras": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "Ranges": {
+        "State": 1,
+        "Value": {
+          "assist": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "assist_line": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "blocked_extra_point": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "blocked_fg": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "blocked_fg_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "blocked_punt": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "blocked_punt_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "forced_fumble": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "fumble_recovery_tds": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "fumbles_total": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "interception_caught": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "interception_caught_secondary": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "interception_return_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "interception_return_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "interception_thrown": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "kickoff_return_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "kickoff_return_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "opponent_fumble_recovery": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "opponent_fumble_recovery_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "other_return_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "own_fumble_recovery": {
+            "Min": 10000,
+            "Max": 100000
+          },
+          "pass_defensed": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "pass_defensed_secondary": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "passing_td": {
+            "Min": 0,
+            "Max": 200000
+          },
+          "passing_two_point": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "passing_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "pat_blocked": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "pat_made": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "pat_missed": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "punt_return_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "punt_return_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "qb_hit": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "receiving_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "receiving_two_point": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "receiving_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "reception": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "rushing_attempt": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "rushing_td": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "rushing_two_point": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "rushing_yards": {
+            "Min": -500000,
+            "Max": 9990000
+          },
+          "sack": {
+            "Min": 0,
+            "Max": 250000
+          },
+          "safety": {
+            "Min": 0,
+            "Max": 100000
+          },
+          "tackle": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "tackle_for_loss": {
+            "Min": 0,
+            "Max": 250000
+          },
+          "tackle_line": {
+            "Min": 0,
+            "Max": 990000
+          },
+          "tackle_secondary": {
+            "Min": 0,
+            "Max": 990000
+          }
+        },
+        "Citation": "MFL league scoring settings"
+      },
+      "Scales": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "Totals": {
+        "State": 1,
+        "Value": {},
+        "Citation": "MFL league scoring settings"
+      },
+      "LineUnit": {
+        "State": 1,
+        "Value": {
+          "Used": false,
+          "Weights": {},
+          "Labels": {},
+          "NoSack": 0,
+          "Sacks": "",
+          "Clamped": false,
+          "Clamp": 0
+        },
         "Citation": "MFL league scoring settings"
       }
     },

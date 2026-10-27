@@ -20,7 +20,8 @@ type experience struct {
 }
 
 // taxiExperience measures a player by the rule's basis: calendar years counts the season he was drafted
-// as his first; career games counts each season's worth of games played, rounding up.
+// as his first; career games counts each season's worth of games played, rounding up; NFL seasons
+// counts only his seasons in the NFL (DEFAULT-32 spec §2.2), and says it cannot tell until they are held.
 func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exceptions ...DecisionException) experience {
 	if why, allowed := ExceptionReason(exceptions, "taxi.maximumYears"); allowed {
 		return experience{known: true, words: why}
@@ -44,6 +45,13 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 		}
 		e.years = (f.CareerGames + gamesPerSeason - 1) / gamesPerSeason
 		e.words = fmt.Sprintf("with %d career games, which is %d seasons of %d games", f.CareerGames, e.years, gamesPerSeason)
+	case leaguerules.NFLSeasons:
+		if !f.NFLSeasonsHeld || f.NFLSeasons < 0 {
+			e.reason = "his NFL seasons are not held"
+			return e
+		}
+		e.years = f.NFLSeasons
+		e.words = fmt.Sprintf("with %d NFL roster seasons", e.years)
 	}
 	e.known = true
 	return e

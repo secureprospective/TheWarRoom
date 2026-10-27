@@ -1,19 +1,19 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-25. Slice 36 on `session/cs36`; no merge authorized.
+Christopher — 2026-10-27, `session/revamp-D-scoring-engine`. Local only; do not auto-push.
 
 ## Where it stands
-- Encrypted R2 matched-set capture/read-back, retention, offline staged restore and hosted DB coverage admission implemented.
-- Targeted race tests and disposable Alpine deployment/setup passed; push/CI pending.
-- Setup and limits: `deploy/server/BACKUPS.md`. Source/health/restore seams: `internal/offsite/README.md`.
+- Trade builder timeout remains 120 seconds in production; real builder test fixtures use 30 minutes per operation to tolerate loaded race runs. Timeout override and unchanged what-if assertions tested.
+- Merged `origin/main` through `2eae4ebd`; prior full verify passed. This change has focused race, build and lint verification only.
+- Reviewed boundary fingerprints updated for the timeout resource wiring; no decision entries added.
 
 ## Next move
-Review PR/CI. Slice 37 owns spare-host activation/auth-epoch reset and timed recovery; slice 38 consumes private backup status.
+Christopher pushes PR #187; check fresh CI and perform outstanding live browser/feed gates.
 
 ## Blocked on
-Real R2 credentials and physical host-loss/spare-host drill are unavailable; no live recoverability or four-hour RTO claim.
+No push authorized. Real NFL roster-season feed acquisition and previous live-browser follow-ups remain unverified.
 
 ## Tried and rejected
-- Upload success/ETag or persisted local receipt as coverage: full encrypted read-back required; restart begins closed.
-- Private restore key on CT: only public X25519 recipient accepted.
+- A zero-value timeout fallback added a new composition decision and failed the boundary gate. Default is instead initialized in `NewApp`; the fixture overrides it per app.
+- Initial lint retry encountered another golangci-lint process; retry after it exits.

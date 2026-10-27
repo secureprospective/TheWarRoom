@@ -26,16 +26,18 @@ type OrderPattern string
 type TieRule string
 
 const (
-	QB                   Position        = "QB"
-	RB                   Position        = "RB"
-	WR                   Position        = "WR"
-	TE                   Position        = "TE"
-	PK                   Position        = "PK"
-	DT                   Position        = "DT"
-	DE                   Position        = "DE"
-	LB                   Position        = "LB"
-	CB                   Position        = "CB"
-	S                    Position        = "S"
+	QB Position = "QB"
+	RB Position = "RB"
+	WR Position = "WR"
+	TE Position = "TE"
+	PK Position = "PK"
+	DT Position = "DT"
+	DE Position = "DE"
+	LB Position = "LB"
+	CB Position = "CB"
+	S  Position = "S"
+	// OL is a team's offensive line as one card (DEFAULT-32 spec §3), never a person.
+	OL                   Position        = "OL"
 	Offense              LineupGroup     = "offense"
 	Defense              LineupGroup     = "defense"
 	Total                LineupGroup     = "total"
@@ -62,6 +64,8 @@ const (
 	Suspended            NFLStatus       = "suspended"
 	CalendarYears        ExperienceBasis = "calendar_years"
 	CareerGames          ExperienceBasis = "career_games"
+	// NFLSeasons counts only seasons the player spent in the NFL: no other league, no year out of it.
+	NFLSeasons           ExperienceBasis = "nfl_seasons"
 	OnCut                WaiverTrigger   = "cut"
 	ReverseStandings     WaiverMethod    = "reverse_standings"
 	Rolling              WaiverMethod    = "rolling"

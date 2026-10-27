@@ -82,7 +82,8 @@ func (x *waiverExecution) prepare(raw *RawCommand) error {
 		}
 	}
 	if raw.Command == RosterCut || raw.Command == RosterReserve {
-		return rosterCapAllows(assets.Snapshot, x.rules, raw.Args.Waiver.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
+		rules := allowDebtReduction(x.assets.Snapshot, assets.Snapshot, x.records, x.rules, raw.Args.Waiver.Franchise)
+		return rosterCapAllows(assets.Snapshot, rules, raw.Args.Waiver.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil
 }

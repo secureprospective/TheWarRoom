@@ -102,9 +102,8 @@ func (h commissionerHost) RunNativeOwnerAction(league, franchise, name string,
 	body json.RawMessage) (commissioner.Receipt, error) {
 	return h.app.runNativeAction(nativeOwnerActions(), league, franchise, name, body)
 }
-func (h commissionerHost) NativeSeedCommand(ctx context.Context,
-	input commissionerapp.RawNativeSeedRequest) (commissioner.RawCommand, error) {
-	return h.app.nativeSeedCommand(ctx, input)
+func (h commissionerHost) CaptureNativeSeed() (commissioner.RawNativeSnapshot, error) {
+	return h.app.heldNativeSnapshot()
 }
 func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
 	return h.app.commissionerSeat()

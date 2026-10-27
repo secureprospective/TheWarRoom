@@ -1,0 +1,497 @@
+{
+ "reference": "legacy_scorer.score under study4c.VARIANTS['C2 continuous + dyn kicker'] (config-study p5, 2026-10-26)",
+ "rows": [
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 4, gsis 00-0036937, mfl 15394",
+   "name": "Adebo, Paulson",
+   "position": "CB",
+   "week": 4,
+   "codes": {
+    "IC": 1.0,
+    "ICY": 1.0,
+    "PD": 3.0,
+    "TK": 10.0,
+    "AS": 2.0
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 42.6
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 7, gsis 00-0033935, mfl 13284",
+   "name": "Hendrickson, Trey",
+   "position": "DE",
+   "week": 7,
+   "codes": {
+    "PD": 1.0,
+    "TK": 2.0,
+    "AS": 1.0,
+    "SK": 2.0,
+    "QH": 5.0,
+    "TKL": 2
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 29.25
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 9, gsis 00-0033935, mfl 13284",
+   "name": "Hendrickson, Trey",
+   "position": "DE",
+   "week": 9,
+   "codes": {
+    "FF": 1.0,
+    "PD": 1.0,
+    "TK": 4.0,
+    "SK": 4.0,
+    "QH": 7.0,
+    "TKL": 4
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 53.5
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 13, gsis 00-0031933, mfl 12225",
+   "name": "Williams, Leonard",
+   "position": "DT",
+   "week": 13,
+   "codes": {
+    "IC": 1.0,
+    "ICY": 92.0,
+    "PD": 1.0,
+    "BLE": 1.0,
+    "TK": 3.0,
+    "AS": 1.0,
+    "SK": 2.0,
+    "QH": 2.0,
+    "TKL": 3,
+    "#IR": 1
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 58.95
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 4, gsis 00-0037810, mfl 15858",
+   "name": "Andersen, Troy",
+   "position": "LB",
+   "week": 4,
+   "codes": {
+    "IC": 1.0,
+    "ICY": 47.0,
+    "PD": 1.0,
+    "TK": 10.0,
+    "AS": 7.0,
+    "TKL": 1,
+    "#IR": 1
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 49.45
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 12, gsis 00-0034431, mfl 13837",
+   "name": "Franklin, Zaire",
+   "position": "LB",
+   "week": 12,
+   "codes": {
+    "TK": 8.0,
+    "AS": 5.0,
+    "SK": 1.0,
+    "QH": 1.0,
+    "TKL": 1
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 30.25
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 13, gsis 00-0034431, mfl 13837",
+   "name": "Franklin, Zaire",
+   "position": "LB",
+   "week": 13,
+   "codes": {
+    "FF": 1.0,
+    "PD": 1.0,
+    "TK": 10.0,
+    "AS": 2.0,
+    "SK": 1.5,
+    "QH": 1.0,
+    "TKL": 1
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 39.25
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 1, gsis 00-0031136, mfl 11936",
+   "name": "Boswell, Chris",
+   "position": "PK",
+   "week": 1,
+   "codes": {},
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [
+    57.0,
+    51.0,
+    44.0,
+    56.0,
+    40.0,
+    25.0
+   ],
+   "fg_missed": [],
+   "expected": 22.8
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 1, gsis 00-0038562, mfl 16286",
+   "name": "Moody, Jake",
+   "position": "PK",
+   "week": 1,
+   "codes": {
+    "EP": 2.0
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [
+    46.0,
+    51.0,
+    31.0,
+    53.0,
+    23.0,
+    42.0
+   ],
+   "fg_missed": [],
+   "expected": 23.2
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 11, gsis 00-0031136, mfl 11936",
+   "name": "Boswell, Chris",
+   "position": "PK",
+   "week": 11,
+   "codes": {},
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [
+    32.0,
+    52.0,
+    32.0,
+    57.0,
+    27.0,
+    50.0
+   ],
+   "fg_missed": [],
+   "expected": 21.9
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 11, gsis 00-0033357, mfl 13424",
+   "name": "Hill, Taysom",
+   "position": "QB",
+   "week": 11,
+   "codes": {
+    "PY": 18.0,
+    "IN": 1.0,
+    "RY": 138.0,
+    "RA": 7.0,
+    "#R": 3.0,
+    "R20": 2.0,
+    "R40": 1.0,
+    "CY": 50.0,
+    "CC": 8.0,
+    "KY": 42.0,
+    "FU": 1.0,
+    "RFD": 4.0,
+    "CFD": 2.0,
+    "PFD": 1.0,
+    "R10": 4.0,
+    "C10": 1.0,
+    "pR20": 2.0,
+    "pR40": 1.0,
+    "TCH": 15.0
+   },
+   "chunk_plays": [
+    33.0,
+    75.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 48.55
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 11, gsis 00-0034844, mfl 13604",
+   "name": "Barkley, Saquon",
+   "position": "RB",
+   "week": 11,
+   "codes": {
+    "RY": 146.0,
+    "RA": 26.0,
+    "#R": 2.0,
+    "R20": 2.0,
+    "CY": 52.0,
+    "CC": 2.0,
+    "C20": 1.0,
+    "C40": 1.0,
+    "RFD": 7.0,
+    "CFD": 1.0,
+    "R10": 2.0,
+    "C10": 1.0,
+    "pR20": 2.0,
+    "pC20": 1.0,
+    "pC40": 1.0,
+    "TCH": 28.0
+   },
+   "chunk_plays": [
+    43.0,
+    23.0,
+    39.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 44.83
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 12, gsis 00-0034844, mfl 13604",
+   "name": "Barkley, Saquon",
+   "position": "RB",
+   "week": 12,
+   "codes": {
+    "RY": 255.0,
+    "RA": 26.0,
+    "#R": 2.0,
+    "R20": 2.0,
+    "R40": 2.0,
+    "CY": 47.0,
+    "CC": 4.0,
+    "C20": 1.0,
+    "RFD": 7.0,
+    "CFD": 2.0,
+    "R10": 3.0,
+    "C10": 2.0,
+    "pR20": 2.0,
+    "pR40": 2.0,
+    "pC20": 1.0,
+    "TCH": 30.0
+   },
+   "chunk_plays": [
+    70.0,
+    31.0,
+    72.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 58.93
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 4, gsis 00-0038135, mfl 15835",
+   "name": "Brisker, Jaquan",
+   "position": "S",
+   "week": 4,
+   "codes": {
+    "IC": 1.0,
+    "PD": 1.0,
+    "TK": 8.0,
+    "AS": 4.0,
+    "SK": 1.0,
+    "QH": 1.0,
+    "TKL": 2
+   },
+   "chunk_plays": [],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 44.5
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 8, gsis 00-0037744, mfl 15794",
+   "name": "McBride, Trey",
+   "position": "TE",
+   "week": 8,
+   "codes": {
+    "CY": 124.0,
+    "CC": 9.0,
+    "C20": 1.0,
+    "CFD": 6.0,
+    "C10": 5.0,
+    "pC20": 1.0,
+    "TCH": 9.0
+   },
+   "chunk_plays": [
+    37.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 24.63
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 12, gsis 00-0037744, mfl 15794",
+   "name": "McBride, Trey",
+   "position": "TE",
+   "week": 12,
+   "codes": {
+    "CY": 133.0,
+    "CC": 12.0,
+    "C20": 1.0,
+    "CFD": 8.0,
+    "C10": 7.0,
+    "pC20": 1.0,
+    "TCH": 12.0
+   },
+   "chunk_plays": [
+    20.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 28.7
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 13, gsis 00-0039338, mfl 16641",
+   "name": "Bowers, Brock",
+   "position": "TE",
+   "week": 13,
+   "codes": {
+    "RY": 2.0,
+    "RA": 1.0,
+    "CY": 140.0,
+    "CC": 10.0,
+    "#C": 1.0,
+    "C20": 3.0,
+    "RFD": 1.0,
+    "CFD": 5.0,
+    "C10": 5.0,
+    "pC20": 3.0,
+    "TCH": 11.0
+   },
+   "chunk_plays": [
+    29.0,
+    33.0,
+    25.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 36.03
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 5, gsis 00-0036900, mfl 15281",
+   "name": "Chase, Ja'Marr",
+   "position": "WR",
+   "week": 5,
+   "codes": {
+    "CY": 193.0,
+    "CC": 10.0,
+    "#C": 2.0,
+    "C20": 2.0,
+    "C40": 2.0,
+    "TK": 1.0,
+    "CFD": 8.0,
+    "C10": 6.0,
+    "pC20": 2.0,
+    "pC40": 2.0,
+    "TCH": 10.0
+   },
+   "chunk_plays": [
+    41.0,
+    70.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 47.08
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 10, gsis 00-0036900, mfl 15281",
+   "name": "Chase, Ja'Marr",
+   "position": "WR",
+   "week": 10,
+   "codes": {
+    "CY": 264.0,
+    "CC": 11.0,
+    "#C": 3.0,
+    "C20": 4.0,
+    "C40": 2.0,
+    "CFD": 11.0,
+    "C10": 8.0,
+    "pC20": 4.0,
+    "pC40": 2.0,
+    "TCH": 11.0
+   },
+   "chunk_plays": [
+    26.0,
+    67.0,
+    70.0,
+    21.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 62.0
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 11, gsis 00-0036182, mfl 15109",
+   "name": "Westbrook-Ikhine, Nick",
+   "position": "WR",
+   "week": 11,
+   "codes": {
+    "CY": 117.0,
+    "CC": 2.0,
+    "#C": 1.0,
+    "C20": 1.0,
+    "C40": 1.0,
+    "CFD": 1.0,
+    "C10": 2.0,
+    "pC20": 1.0,
+    "pC40": 1.0,
+    "TCH": 2.0
+   },
+   "chunk_plays": [
+    98.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 22.65
+  },
+  {
+   "source": "nflverse stats_player_week_2024 + play_by_play_2024, REG week 13, gsis 00-0036182, mfl 15109",
+   "name": "Westbrook-Ikhine, Nick",
+   "position": "WR",
+   "week": 13,
+   "codes": {
+    "CY": 61.0,
+    "CC": 3.0,
+    "#C": 2.0,
+    "C20": 1.0,
+    "CFD": 3.0,
+    "C10": 3.0,
+    "pC20": 1.0,
+    "TCH": 3.0
+   },
+   "chunk_plays": [
+    27.0
+   ],
+   "passes_40": [],
+   "fg_made": [],
+   "fg_missed": [],
+   "expected": 22.28
+  }
+ ]
+}

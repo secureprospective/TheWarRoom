@@ -31,11 +31,11 @@ func (s *Store) LoadFootball(ctx context.Context, digest string) (*PinnedFootbal
 	if footballDigest(body) != digest {
 		return nil, fmt.Errorf("held football evidence digest mismatch")
 	}
-	raw, err := decodeFootball(body)
+	raw, err := decodeFootball(body, s.storeParts(ctx))
 	if err != nil {
 		return nil, err
 	}
-	stats, err := raw.scoringFiles()
+	stats, err := raw.scoringFiles(s.storeParts(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -55,8 +55,13 @@ func (p *PinnedFootball) CheckDigest(digest string) error {
 func (p *PinnedFootball) PlayerFacts() nativecheck.Facts {
 	facts := make(nativecheck.Facts, len(p.raw.Players))
 	for id, player := range p.raw.Players {
-		facts[id] = player.Facts
+		f := player.Facts
+		if player.NFLRosterSeasons != nil {
+			f.NFLSeasons, f.NFLSeasonsHeld = len(*player.NFLRosterSeasons), true
+		}
+		facts[id] = f
 	}
+	nativecheck.AddLineCards(facts)
 	return facts
 }
 

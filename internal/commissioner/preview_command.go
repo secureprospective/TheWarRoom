@@ -67,8 +67,11 @@ func createPreview(raw RawCommand, catalogue PreviewCatalogue) (Preview, error) 
 		return Preview{}, err
 	}
 	rules := "Every rule waits for a ruling"
-	if raw.Args.Preset == PresetLegacy {
+	switch raw.Args.Preset {
+	case PresetLegacy:
 		rules = "Legacy NFL rules"
+	case PresetDefault32:
+		rules = "32-Team Default rules"
 	}
 	none := 0
 	return Preview{Question: catalogue.questions["CM-001"], Safeguard: safeguard, Blockers: []string{},

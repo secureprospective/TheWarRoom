@@ -23,8 +23,9 @@ type Lookup interface {
 	Facts(id string) (normalize.PlayerFacts, bool)
 }
 
-// PlayerFacts reads positions and draft years from the held players directory. A fact that is not held is
-// left unmarked as held, so a check says it cannot tell rather than guessing.
+// PlayerFacts reads positions and draft years from the held players directory, plus the O-Line cards,
+// which no feed lists. A fact that is not held is left unmarked as held, so a check says it cannot tell
+// rather than guessing.
 func PlayerFacts(lookup Lookup) nativecheck.Facts {
 	facts := nativecheck.Facts{}
 	for _, id := range lookup.IDs() {
@@ -33,6 +34,7 @@ func PlayerFacts(lookup Lookup) nativecheck.Facts {
 				DraftYear: f.DraftYear, DraftYearHeld: f.HasDraftYear && f.DraftYear > mflNoDraftYear}
 		}
 	}
+	nativecheck.AddLineCards(facts)
 	return facts
 }
 

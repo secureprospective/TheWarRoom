@@ -1,0 +1,396 @@
+# Native scoring: the 32-team default as commissioner settings
+
+## Resume here
+
+Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
+
+- **Part 7 (2026-10-27), owner rulings:**
+  - **Start auction:** `Default32Start` now records empty rosters and all 32 cards as pool lots,
+    not creation-order ownership. `NativeBidsReading` offers unbid lots and shows their leaders
+    publicly even if ordinary UFA bidding is blind. The existing bid policy, clock, cap check,
+    award and replay own the auction. Initial lots admit 1-year bids, bypass the unrelated UFA
+    season/window and the not-yet-built roster minimum, but retain the maximum, cap and one-card
+    checks. Prior recorded starts are not rewritten.
+  - **NFL roster seasons:** optional `RawFootballPlayer.NFLRosterSeasons` pins the distinct NFL
+    season labels with an NFL roster appearance. Validate rejects duplicates, non-NFL-era labels,
+    future labels and unsubstantiated/precomputed counts. `PinnedFootball.PlayerFacts` derives the
+    count; calendar gaps, other leagues and game/accrued-season thresholds do not count. Missing
+    history remains unknown; known empty history counts zero. Live roster acquisition is not built.
+  - **IR/PUP:** pinned facts retain the reported official designation unchanged; the default accepts
+    IR and PUP only. No inference from games missed, injury description or NFI was added.
+  - **Automatic moves:** `taxi.autoPromote` / `ir.autoReturn` are on in Default32, off in Legacy;
+    append-only seed step 3 records them off for older seeds. Legacy's existing JSON golden is
+    byte-identical. `AutoMoveValue` omits only that specific Legacy default from rule-set JSON and
+    the reserve decoders restore it; explicit edits retain their citations and all seed settings
+    remain explicit. Both Legacy and Default32 roundtrip, including recorded rollover before-state.
+  - **Flow / boundaries:** pinned, validated football facts → `DueWorker` reconciliation →
+    `Store.ProcessDueReserves` → versioned roster.reserve append. The private clock authorizer
+    admits only reserve returns. `PrepareDueReserve` repeats eligibility and scoped-exception checks
+    under the append lock, using the same reserve verdict as the public check. Missing facts never
+    move a player. Automatic returns intentionally bypass owner windows and roster/cap refusal,
+    and record the original player plus the clock source; retries/restarts see the committed move.
+  - **Must-cut / activity:** `JobsReading` exposes a live `must_cut.<franchise>` team-activity job
+    while an automatic-return franchise exceeds the counted roster maximum. No deadline, automatic
+    cut or acknowledgement clears it. A human roster fix clears it. Sequential reducing cuts may
+    remain above the maximum between cuts; other roster/cap checks stay in force. There is no
+    existing owner AWOL score (the governance inactivity clock is for commissioners), so this uses
+    the commissioner's existing jobs surface rather than misusing that clock.
+  - **Proof:** changed commissioner, rules, nativecheck, app/commissioner, history and leagueservice
+    package suites pass with `-race`; hosted/composition wire writers pass. Added worker tests cover
+    open bidding and actual timed award, one-card/one-year refusal, IR return despite closed owner
+    windows, unknown facts, taxi expiry, restart, alert persistence after a year, human resolution,
+    stale eligibility and restricted authority. The full changed-package/importer and frontend
+    pre-push gate passed through `37cc890b`; the first attempts caught stale generated wire files
+    and the governed-reading edge, all corrected without bypassing the gate. Six planted mutants were killed: hide the open
+    leader, inflate NFL seasons, reclassify PUP as IR, invert automatic-move flags, omit the must-cut
+    job and disable seed step 3. NFL-roster/official-status examples are synthetic: no real roster
+    history feed is held here; existing real scoring evidence was not changed.
+- **Next part:** live feed registration/acquisition after the week-8 source study; feed freshness and
+  season rollover of selected football evidence; browser click-through of auction lots and must-cut
+  jobs. No owner ruling is needed for the five behaviors above.
+
+- **Part 6 (2026-10-26), debt sweep:**
+  - **Card corrections read the held line game** (`787a02cd`): `StatFacts` carries the season's held
+    line games (`OLine`), so a card correction's preview "before" and the no-op refusal read the card's
+    held line game with earlier corrections (`standingQuantity`), as a player's read the counted NFL
+    version. Line components read under the line unit's plain-English labels ("quarterback hits
+    allowed"). Test: `TestLineCardCorrectionReadsTheHeldLineGame`; mutants (no label, no card branch)
+    each fail it.
+  - **OL is offered** (`9ded0ed6`): the accepted menus are one list (`menus()`), and
+    `TestEveryMenuOptionIsOffered` holds every accepted option to be a `catalogueChoices` choice.
+  - **Hosted and rollover wires held to their writers** (`368706e2`): both were stale (scoring kinds,
+    OL, NFL seasons had not reached them). Regenerated by their own writers; each writer now compares
+    with the held file after normalising run-to-run values (`internal/serverhttp/hosted_wire_test.go`:
+    instants in ISO and in words, SHA-256s, account UUIDs, revisions, the deadline countdown). Checked:
+    fixtures from earlier runs pass, in the local zone and `TZ=UTC`; the stale fixture fails Under `-race`
+    (`6653b284`) the practice draft (start = provisioning + 2 s, `internal/hostedfixture/workflows.go`)
+    read "running" instead of "waiting", so both writers now wait for its start and the pick-clock
+    `remaining` (ns) is normalised; passes with and without `-race`.
+  - **Line games stay pinned-evidence only (not built, by design for now).** The fetch archive
+    (`Store.PlayerWeekStats`, feeds in `internal/measures/feeds.csv`) holds per-player-week feeds keyed
+    by a player id column; play-by-play is per play (nflverse `play_by_play_{season}`, about 100 MB a
+    season raw) and PFR advanced rushing is a second feed, neither registered. Adding them means a new
+    feed grain in the fetcher, a source registration, and storage well past the 8 MiB item cap, so it
+    belongs with the live-feed work after the week-8 accuracy study (spec §5/§7.1), not a sweep. Until
+    then a card in a league reading the fetch archive says "No O-Line statistics are held for this
+    season", never a guessed 0; Legacy's long-play bonuses already report play-by-play as Missing there.
+- **Next part starts at:** unchanged from part 5, and still parked for the owner: auto-promote / IR
+  auto-return (must-cut deadline ruling), card assignment order, the NFL-seasons and NFI/PUP feeds.
+
+- **Part 5 (2026-10-26):**
+  - **League start for the 32-Team Default** (`46b129d3`): the same starting-snapshot request
+    (`TargetNativeSeed` and its preview) builds a 32-Team Default league's start from its own
+    franchises (`commissioner.Default32SeedCommand` / `Default32Start`), not from held MFL data:
+    franchise N (creation order) gets the Nth card of `LineCardTeams()`, active, on a 1-year contract
+    (expires the league season, UFA) at the lowest recorded minimum salary. `CheckNativeAppend`
+    (`checkSeedPreset`) admits exactly one active 1-year card per franchise and nothing else, and a
+    Legacy start may not hold a card. Retries reuse the recorded body. The cards join the player
+    facts every screen reads (`nativecheck.AddLineCards` in `native.PlayerFacts`). Must-cut-to-receive
+    is the existing roster gate: a card trade that leaves the receiver at 45 is refused until it cuts.
+    Tests: `internal/commissioner/default32_start_test.go`, `internal/app/commissioner/
+    default32_start_test.go` (through the API with the held-data port nil). Mutant: dropping the start
+    check fails the refusal table.
+  - **Commissioner control over card scores** (`8ee8bcd1`): a card's score reads the ledger first;
+    `commish.stat.correct` may name a line component (`line_*`) for a card only, where the league
+    scores the line unit, and replaces the held component; `commish.score.player` adds to the total
+    after the clamp; both are listed in the score's changes. A corrected week the held games do not
+    reach counts from the corrections alone. Test: `line_card_correction_test.go` (real PIT 2024 game).
+    Mutants: ignoring corrections, ignoring the delta; each fails.
+  - **Taxi by NFL seasons** (`e9981736`): `taxi.basis` gains `nfl_seasons` ("NFL seasons"; CFL and
+    years out don't count); the 32-Team Default sets it, Legacy keeps calendar years. The fact
+    (`PlayerFacts.NFLSeasons`) has no feed yet, so the check says "Can't tell", never reads the draft
+    year instead.
+  - **Already true, no field added:** IR players are tradeable in every league (no trade check reads
+    roster status); taxi moves both ways (active → taxi is `CanEnterTaxi`, taxi → active is open).
+- **Next part starts at:** auto-promote at taxi eligibility end and IR auto-return (spec §2.2/§2.3)
+  as real moves: two rule fields (`taxi.autoPromote`, `ir.autoReturn`), a seed-upgrade step 3
+  recording them off for older seeds, Legacy off, the 32-Team Default on, and the job that moves the
+  player, which then needs the must-cut deadline ruling (spec §7 item 6). The NFL-seasons feed and
+  the official IR/PUP feed (spec §7 items 5, 7) wait on the week-8 study with the live feeds.
+
+- **Part 4 (2026-10-26):**
+  - **32-Team Default preset** (`a6bba706`): `commissioner.PresetDefault32` seeds
+    `leaguerules.Default32()` (spec §1 lineup with the O-Line card, 44 active incl. the card, taxi 8 /
+    3 years, IR 12 official IR or PUP, `Default32Scoring()`, the rest Legacy's), 32 teams only. The
+    create form offers the 32-Team Default and Empty; Legacy stays the import/recovery preset.
+  - **Evidence split by week** (`ac0670e1`): pinned football evidence is stored in per-week parts
+    under the existing 8 MiB per-item cap; inline (old) evidence still loads. A full real 2024 season
+    (weekly + play-by-play + PFR rushing) loads as week parts (`TestFullRealSeasonLoadsAsWeekParts`,
+    opt-in `TWR_STUDY_CACHE`).
+  - **O-Line card** (this commit; model below): ids, facts from the id, exactly one card per
+    franchise on every move path, and the score reader scoring a started card from the pinned line
+    games. Tests: `internal/nativecheck/linecard_test.go`, `internal/commissioner/line_card_test.go`
+    (trade 1-for-1 with the roster gate on and off; cut, IR, taxi, claim; real 2024 PIT/ATL/BUF/MIA
+    games score the study's Set B; bye 0; unheld week; Legacy off),
+    `internal/engine/rookiedraft/selection_test.go` (draft), `internal/store/history/
+    line_card_score_test.go` (the Store's reader end to end). Mutants: dropping the trade card check,
+    and dropping the reader's card dispatch, each fail a test.
+- **Next part starts at:** the league-start build for a non-Legacy league (`NativeSeed` accepts
+  Legacy only): auto-assign each franchise its card at league start, the card's 1-year contract
+  (commish-changeable), must-cut-to-receive, the card joining the player pool/directory for screens.
+  Then the taxi/IR rule fields the spec needs and the model lacks: taxi "NFL seasons only, CFL years
+  don't count", move both ways, auto-promote at eligibility end; IR tradeable and auto-return. Live
+  feeds wait on the week-8 study.
+
+- **Part 3 (2026-10-26):**
+  - **Old Legacy leagues reach MFL parity automatically** (owner ruling 2026-10-26). Seed step
+    version 2 (`leaguerules.seedUpgrades`): a seed recorded before the scoring kinds whose catalogue
+    is exactly the Legacy catalogue as then recorded gets today's Legacy catalogue (#UT other returns,
+    #BF/#BP IDP ×7) and kinds (MFL ranges; extras, scales, totals, line unit empty), replacing its
+    recorded catalogue on read. Any other pre-kinds seed (edited or imported catalogue) keeps its own
+    catalogue and gets only step 1's empty kinds. Each step decides from the seed as recorded, before
+    any step ran. Proof: `TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague` reads the real preset
+    main dda866b8's own `Prepared()` recorded (`internal/commissioner/testdata/legacy-seed-dda866b8.json`)
+    and its rules in force deep-equal a new Legacy league's; it fails with step 2 disabled.
+  - Study weeks (`TestStudyWeeksUnderTheLegacyUpgrade`, opt-in `TWR_STUDY_CACHE` = config-study p3
+    `cache/`): 35,498 2023–25 weeks 1–13 player-weeks (nflverse positions mapped to league positions;
+    P, OL and unlisted skipped) score unchanged except 9, every one a blocked-kick TD at an IDP
+    position, +7.00 each (no missed-FG return TD falls in those weeks; ranges changed none):
+
+    | Player (gsis) | Season wk | Pos | Before → after | Rule |
+    |---|---|---|---|---|
+    | Noah Igbinoghene (00-0036287) | 2023 w1 | CB | 0.00 → 7.00 | #BF |
+    | Grant Stuard (00-0036672) | 2023 w13 | LB | 0.00 → 7.00 | #BP |
+    | Jonathan Owens (00-0034485) | 2024 w1 | S | 0.00 → 7.00 | #BP |
+    | Deommodore Lenoir (00-0036563) | 2024 w5 | CB | 14.00 → 21.00 | #BF |
+    | Rodney McLeod Jr. (00-0028899) | 2024 w6 | S | 19.00 → 26.00 | #BF |
+    | Jordan Davis (00-0037073) | 2025 w3 | DT | 26.50 → 33.50 | #BF |
+    | Will McDonald IV (00-0039142) | 2025 w3 | DE | 9.50 → 16.50 | #BF |
+    | Sydney Brown (00-0039002) | 2025 w4 | S | 3.00 → 10.00 | #BP |
+    | Marshawn Kneeland (00-0039900) | 2025 w9 | DE | 0.00 → 7.00 | #BP |
+
+    "Before" is the old seed after step 1 with today's adapter (a blocked-kick TD is unused there).
+  - A commissioner who changed the catalogue after an old seed keeps their change: it is a later
+    rule change, and it still overrides the upgraded seed.
+  - **Stats pipeline: the history store holds and serves line facts.** The pinned football evidence
+    (`internal/store/history`, the commissioner's import that already embeds weekly and play-by-play
+    bodies) gains two optional, `omitempty` fields: `RawFootballStats.Rushing` (PFR advanced weekly
+    rushing CSV) and `RawFootballPlayer.PFR` (the player's PFR id). A revision with `Rushing` must
+    carry the line columns in its plays body and is built at load with `source.LineGames`;
+    `PinnedFootball.LineGames(ctx, season)` serves the newest revision holding line facts (`HeldLines`:
+    its own SHA over plays + rushing, instant, defensive copies). The RB designation is the league's:
+    a rushing row counts toward ybc only when its PFR id belongs to a player whose held position is
+    RB (the study's crosswalk rule; an unmapped PFR id is not an RB). Evidence without `Rushing` gains
+    no keys, keeps its digest and player weeks, and holds no line facts, so Legacy is unchanged.
+    Tests: `internal/store/history/football_line_test.go` (components per definition, WR and
+    unlisted PFR ids excluded, unpublished game leaves ybc absent → not recorded, newest revision,
+    five rejected imports, unchanged evidence). The fetch-archive path (`Store.PlayerWeekStats`)
+    still loads no play-by-play, as before.
+  - **Size (measured, not changed):** pinned evidence is capped at 8 MiB. One 2024 regular season's
+    play-by-play with the line columns is 4.6 MiB (3.4 MiB without them), PFR rushing 0.2 MiB, but
+    the full nflverse weekly file alone is 8.1 MiB, so a whole season already needed trimming or
+    splitting before line facts. The cap is a storage decision for the owner, left as it is.
+- **Next part starts at:** (b) the `Default32` preset and (c) the O-Line slot kind, both waiting on
+  planning with the owner (do not start them unprompted); (d) live feeds wait on the week-8 accuracy
+  study. Remaining unprompted work: none in the engine; wiring `LineGames` into a scoring reader comes
+  with (c).
+
+- **Part 2 (2026-10-26), done:** the owner's rulings applied and the branch pushed.
+  - Binding/wire (approved, additive): `models.ts` regenerated with `make bindings`; every wire
+    fixture rewritten by its own `TWR_WRITE_WIRE` writer (`TestCommissionerControlsWire` gained one).
+  - Existing leagues upgrade automatically: `leaguerules.UpgradeSeed` (`seed_upgrade.go`), a
+    versioned, append-only step run by `commissioner.seedChanges` on every read. A seed holding
+    `scoring.catalogue` but none of the five kinds gets them recorded empty, so it scores exactly as
+    before and nothing waits for a ruling (`internal/commissioner/seed_upgrade_test.go`). It runs on
+    read, not as a database migration, because league records are hash-chained and their canonical
+    requests must stay unchanged for retries; rewriting stored seeds would break both.
+  - Legacy applies MFL's per-rule ranges (`legacyRanges`, the 2024–26 `scoring_rule` table) and
+    carries #BF/#BP (IDP ×7) and #UT other returns (×6). Applying the ranges changes **0** of 35,551
+    study player-weeks (2023–25, weeks 1–13, the study's own scorer with and without ranges); the held
+    Go comparison stays 1775/1783.
+  - EM and #UT are each one rule over their parts (`totals`: `pat_missed_or_blocked`,
+    `punt_or_other_return_td`); the TE +0.2 catch extra is its own 0..999 rule (`PositionExtra.Ranged`).
+  - The held adapter classifies blocked-punt, blocked-FG and missed-FG-return touchdowns from
+    `posteam`, `punt_blocked`, `field_goal_attempt`, `field_goal_result` (optional columns: an older
+    held file without them keeps its older credit), proved on real 2024 plays.
+  - Fixture extractors live in `internal/fantasyscore/testdata/tools/` and reproduce both fixtures
+    byte for byte.
+- **Next part starts at:** wiring. (a) Store: the history store (`internal/store/history/
+  football_stats.go`) must hold and serve the line plays and advanced rushing, and the per-player
+  RB designation for `isRB`. (b) A `Default32` preset at league creation (`internal/commissioner/
+  creation.go` seeds `LegacyNFLForTeams`), with the spec's lineup (§1), roster 44/8/12, taxi and IR
+  (§2). (c) The O-Line unit as a rosterable, startable thing (§3), which needs a position or slot
+  kind the model does not have yet; a model change to plan, not to slip in. (d) Live feeds (spec
+  §5/§7.1) wait on the week-8 ESPN/Sleeper/nflverse accuracy study; do not build a Sleeper mapping
+  before it reports.
+- **Old seeds and the kick-TD rows:** resolved in part 3 (seed step 2 below).
+
+- **Part 1 (2026-10-26), done:** five new scoring rule kinds as commissioner settings in
+  `internal/leaguerules`, the scorer for them in `internal/fantasyscore`, the locked DEFAULT-32
+  spec shipped as `leaguerules.Default32Scoring()`, table tests for every spec row.
+- **Golden, done:** 21 real 2024 player-weeks (every position, Barkley, Chase, McBride, Boswell,
+  the 98-yard Westbrook-Ikhine week …) match the reference scorer to the cent
+  (`internal/fantasyscore/default32_golden_test.go`, fixture `testdata/default32_2024.json`).
+- **Held adapter, done:** `internal/fantasyscore/source` now emits `fg_made_distance` (weekly
+  `fg_made_list`), `fg_missed_distance` (`fg_missed_list` + `fg_blocked_list`) and `chunk_play`
+  (every counted rush and catch distance from play-by-play, same credits as Legacy's long plays).
+  Every held week scores under the default (`TestHeldWeeksScoreUnderTheDefault`).
+- **O-Line scorer golden, done:** all 1,164 played 2023–25 team-games (weeks 1–13) from the study's
+  frozen components score exactly its Set B values; the clamp binds the reported 16 times
+  (`internal/fantasyscore/oline_golden_test.go`).
+- **O-Line held feed, done:** `source.ReadLinePlays` / `ReadLineRushing` / `LineGames`
+  (`internal/fantasyscore/source/line.go`) build each team-game's `UnitLine` from held play-by-play
+  plus PFR yards before contact, counting only players the caller's `isRB` says the league lists at
+  RB. Two real 2024 games (`testdata/line_plays.csv`, `line_rushing.csv`) reproduce the study's
+  components and Set B scores; a table test pins each §4.6 definition (kneels, laterals, defensive
+  TDs, 3rd/4th and ≤ 2, both hitters, deleted and 2-point plays). A game with no advanced rushing
+  rows yet leaves ybc absent, so the score is "not recorded yet", not a guessed zero.
+- **Next part starts at:** wiring. (a) Store: the history store (`internal/store/history/
+  football_stats.go`) must hold and serve the line plays and advanced rushing, and the
+  per-player RB designation for `isRB`. (b) A league choosing the default at creation
+  (`internal/commissioner/creation.go` seeds `LegacyNFLForTeams`): a `Default32` preset, with the
+  spec's lineup (§1), roster 44/8/12, taxi and IR (§2). (c) The O-Line unit as a rosterable,
+  startable thing (§3), which needs a position or slot kind the model does not have yet; that is
+  a model change to plan, not to slip in. (d) Live feeds (spec §5/§7.1) are not mapped.
+- **Open rulings** are listed at the bottom; do not resolve them by guessing.
+
+## The O-Line card (model plan, part 4, owner ruling 2026-10-26)
+
+Each NFL team's line is a player-like **card** ("BAL O-Line", position `OL`), so rosters, trades,
+cuts, lineups and contracts reuse the existing player paths instead of a new slot kind.
+
+- **Identity.** Card ids are numeric strings, as every player id (`playerid.New`): `9900NN`, NN the
+  team's place (01–32) in the fixed nflverse team list (`nativecheck.LineCardTeams()`). No MFL player id
+  uses the 99xxxx block (MFL ids are ≤ 5 digits today). A team relocation keeps its card id by keeping
+  its list place; the list is append-only.
+- **Facts.** A card's `PlayerFacts` (Position `OL`, Team, Name "BAL O-Line") follow from its id
+  (`nativecheck.LineCardFacts`, read through `Facts.Of`), so roster, reserve and lineup checks place a
+  card without any player feed. Football evidence never lists cards: they are the league's own.
+- **One per franchise** is the roster rule `roster.positionBounds {OL: 1..1}` in the 32-Team
+  Default, judged by the existing `nativecheck.CheckRoster`. Every move path that runs the roster
+  gate (trade, waiver claim) therefore refuses a franchise with zero or two cards; a 1-for-1 card
+  trade passes, a card-for-player trade fails on both sides. Because a trade's roster refusal can be
+  turned off and a decision exception can waive position limits, `nativecheck.LineCardsHeld` (exactly
+  one card held, reserve included) also runs on every trade and in `rosterCapAllows` whatever is
+  turned off. A card on IR or taxi leaves the active OL count at 0 and is refused. The draft never
+  moves a card (`rookiedraft.PreviewSelection` refuses one). Legacy has no `OL` bound: OFF in Legacy.
+- **Lineup.** `lineup.positions {OL: 1..1}`; the card counts toward the total only, like the kicker.
+- **Scoring.** A started card scores the line unit (Set B, `scoring.lineUnit`) from the pinned
+  evidence's `LineGames` for its team's game that week (the `WW` of nflverse `SSSS_WW_AWAY_HOME`; the
+  held games are already one season's). A week the held games reach in which the team has no game is
+  a bye: 0. A week they do not reach is "not held", never a guessed 0. A game without yards before
+  contact is Incomplete ("not recorded yet"). A league whose line unit is not used (Legacy) says "This
+  league does not score an O-Line".
+- **Not in this part (needs the league-start path):** a non-Legacy league has no assets yet
+  (`NativeSeed` accepts Legacy only), so auto-assignment at league start, the 1-year card contract,
+  must-cut-to-receive, and the card facts joining the player pool wait for the league-start build.
+
+## Owner framing
+
+The 32-team default is a default scoring setting inside the existing commissioner rules. It is not
+a separate engine. Everything below extends `leaguerules.ScoringRules` (data) and
+`fantasyscore.Score` (the pure scorer). Neither package imports composition, Wails or a store.
+
+## What already existed
+
+| Piece | Path | Role |
+|---|---|---|
+| Rule data model | `internal/leaguerules/scoring.go` | `ScoringRules{Catalogue, RoundStatPoints}`; `Stat` = rate, flat-or-not (`Once`), positions, per-play threshold `Bonuses` |
+| Rule ledger | `internal/leaguerules/resolve.go`, `rules.go` | every `ruleField` is a commissioner setting, seeded explicitly per league, changed by `Change` |
+| Scorer | `internal/fantasyscore/score.go` | `Score(rules, position, StatLine)` → points + per-stat `LineItem` breakdown, exact ten-thousandths |
+| Held nflverse adapter | `internal/fantasyscore/source/` | weekly stat lines + PBP distances/return TDs for Legacy |
+| MFL rulebook mirror | `internal/store/rulebook` | raw MFL scoring rows (MFL-era, not the native engine) |
+| MFL-era model | `internal/app/scoring` | ranking-side model, not the rules engine; untouched |
+
+Callers: `internal/commissioner/player_score.go`, `stat_queue.go`, `stat_check.go`.
+
+## Design
+
+### Rule kinds (each its own commissioner setting)
+
+New fields on `ScoringRules`, each a `Value[...]` with its own field path, so the commissioner edits
+them like any other rule and Legacy records each as an empty, cited value (`internal/leaguerules/scoring_kinds.go`):
+
+| Field path | Type | Expresses |
+|---|---|---|
+| `scoring.extras` | `map[StatID][]PositionExtra` | additive per-position rates on a catalogue row (TE catch +0.2, DT/DE tackle +1, CB/S IC +1 …). Each extra is its own line item, rounded on its own, as MFL rounds overlapping rows; a `Ranged` extra has its own range, otherwise it shares its base row's. |
+| `scoring.ranges` | `map[StatID]StatRange` | MFL's inclusive range: a week value outside it scores 0 for that rule (TCH 20..99, OFC 1..10, yards −50..999). |
+| `scoring.scales` | `map[StatID]DistanceScale` | per-play distance pricing: plays shorter than `From` score 0, others `Base + Above·max(0,d−Pivot) + Below·max(0,Pivot−d)`, optional `Cap`. The week's sum is the stat's value, priced by its catalogue rate (×1) and rounded once. Chunk (From 20, Base 1, Pivot 20, Above 0.025), FG made (Base 3, Pivot 40, Above 0.1), FG missed/blocked (Pivot 60, Below −0.1), 40+ completions (From 40, Base 1). |
+| `scoring.totals` | `map[StatID][]StatID` | a stat counted as the sum of recorded stats (touches = carries + receptions). Absent when any part is absent; recording it directly is an error. |
+| `scoring.lineUnit` | `LineUnit` | the team O-Line unit: `Weights` per component, `NoSack` bonus keyed to the `Sacks` component, `Clamped`/`Clamp`, `Labels`. |
+
+Legacy records extras, scales, totals and the line unit empty; its ranges are MFL's (part 2).
+
+### The default rule set
+
+`leaguerules.Default32Scoring()` (`internal/leaguerules/scoring_default32.go`) is the spec's §4
+as data, cited "DEFAULT-32 spec §4, locked 2026-10-26": Legacy's IDs where the rule is the same
+stat, new IDs where the stat is new (`chunk_play`, `touches`, `fg_made_distance`,
+`fg_missed_distance`, `blocked_fg_td`, `blocked_punt_td`, `line_*`). Removed Legacy rows (R20/R40/
+C20/C40, the FG buckets, MG) are simply absent, so a recorded bucket scores nothing.
+
+### Inputs
+
+- Player-week: `fantasyscore.StatLine` — `Quantities` per stat (ten-thousandths, so half sacks
+  work) and `Events` per stat = the distance of every play/kick (chunk plays, made FGs, missed and
+  blocked FGs, completions for 40+).
+- Team-game: `fantasyscore.UnitLine{Played, Quantities}` with the seven `line_*` components.
+  `Played=false` (bye / no game) scores 0. An absent component (e.g. ybc not yet published) makes
+  the result Needs-a-ruling with the reason, never a guessed zero.
+
+### Outputs
+
+`(Points, []LineItem, error)`. Each `LineItem` carries the stat, the rule row that priced it
+(`Rule`), the quantity, the label, the points, and flags `Extra`, `OutOfRange`, `Unused`. For the
+O-Line, the no-sack bonus and the clamp adjustment are their own lines so the breakdown always
+sums to the total.
+
+### Arithmetic
+
+Exact integer ten-thousandths throughout (spec §7.3: no floats). Each item is rounded to the cent
+when `RoundStatPoints` is on; per-play values are summed for the week before rounding (§4.1).
+
+## Golden test
+
+Real 2024 player-weeks scored by the reference `legacy_scorer.score` under
+`study4c.VARIANTS["C2 continuous + dyn kicker"]`, with per-play chunk distances pulled from
+`play_by_play_2024` (rusher yards; receiver yards where `complete_pass = 1`) and FG lists from the
+weekly `fg_made_list` / `fg_missed_list` / `fg_blocked_list`. Fixture
+`internal/fantasyscore/testdata/default32_2024.json`; each row cites week, gsis and MFL id. The
+extractor (`testdata/tools/default32_golden.py`, run with `python3 -I` against the study's held data) dropped any
+row whose per-play chunk sum differed from the study's `CK2` or whose 40+ completions differed from
+weekly `passing_40`; none did. The fixture keeps the study's event codes, and the test fails on any
+code it does not map, so a silently dropped stat cannot pass.
+
+## Rulings (2026-10-26)
+
+1. **Negative half-cent rounding: away from zero stays.** `roundCent` rounds −0.125 to −0.13; the
+   spec's round-toward-+∞ (§4.1) is overruled by the owner. Unreachable under the default.
+2. **Existing seeded leagues upgrade automatically** (`UpgradeSeed`, above).
+3. **EM** is one rule over missed + blocked PATs, ranged 0..10 on the sum, as the spec says.
+   Legacy keeps two rows each ranged 0..10 (they differ only above 10 combined).
+4. **#UT other returns** are classified by the adapter (`other_return_td`), and the default prices
+   punt and other returns as one 0..10 rule. Blocked-punt and blocked-FG TDs are #BP/#BF.
+5. **Legacy applies MFL's ranges.** The long-play bands are per-play bonuses here and carry no
+   count range (MFL's 0..99 on R20/C20 counts cannot bind).
+6. **TE catch extra** is its own 0..999 rule.
+7. **Yards before contact is published** for a team-game when any PFR advanced-rushing row exists
+   for that game; with none, ybc is absent and the O-Line score is "not recorded yet".
+
+## Still open
+
+1. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
+   open as written there.
+
+## Main integration — part 8
+
+Seed preparation lives in `internal/app/commissioner`: read the league records, check the request
+replay through `BuildSeedCommand`, then choose its start. A replay returns the recorded command
+before reading the clock or capturing held state; execution still checks the current principal.
+A new Default32 request uses `Default32SeedCommand` (own franchises, empty rosters, 32 unassigned
+O-Line lots). Other leagues use the host's held-data capture; capture failure records nothing.
+Preview uses the same preparation path.
+
+The host port now exposes only `CaptureNativeSeed`, not seed-command policy. Composition's
+`nativeSeedCommand` remains a straight delegate for existing internal callers. The two source
+fingerprints in `boundary-adapters.tsv` were refreshed only for this inward routing/port change;
+no decision-function allowances were added or widened. Main's other placements and ratchets stay.
+
+Regression evidence: Default32 API start/retry after clock advance and changed-reason refusal;
+held-path capture and failure; existing composition tests for held assets, refresh/retry,
+unauthorized retry, missing/mixed inputs and generic-IPC refusal.
+
+The auto-merged `TestHeldNativeFactsRequireDirectoryAndInjuryObservation` initially failed: main
+expected one held player, while this branch also supplies 32 synthetic O-Line facts. Its exact
+cardinality is now 33, with every O-Line name/position checked; the unloaded-directory and held
+injury callback assertions remain unchanged. No production fact behavior was relaxed.

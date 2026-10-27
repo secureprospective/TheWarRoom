@@ -49,7 +49,7 @@ func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts na
 	}
 	x := bidExecution{assets: assets, state: state, rules: rules, records: records, now: now, facts: facts,
 		zone: zone, env: env}
-	if action := OwnerBidAction(raw.Command); action != "" {
+	if action := OwnerBidAction(raw.Command); action != "" && !startingCardLot(records, bidPlayerOf(Record{Command: *raw}, records)) {
 		gate, err := NativeActionGate(raw.League, records, raw.Args.Bid.Franchise, action, now, zone)
 		if err != nil {
 			return err
@@ -177,16 +177,27 @@ func (x *bidExecution) judge(player, franchise string, auction *bidAuction, p na
 	if err := x.auctionOpen(auction); err != nil {
 		return nil, err
 	}
-	policy, err := nativecheck.NewBidPolicy(x.rules)
+	rules := x.rules
+	startCard := startingCardLot(x.records, player)
+	if startCard {
+		if p.Years != 1 {
+			return nil, fmt.Errorf("a starting O-Line card has a 1-year contract")
+		}
+		rules.Bids.UFA = leaguerules.Known(leaguerules.Open)
+	}
+	policy, err := nativecheck.NewBidPolicy(rules)
 	if err != nil {
 		return nil, fmt.Errorf("read bid rules: %w", err)
 	}
-	mode, err := nativecheck.BidMode(x.rules.Bids, leaguerules.UFAProcess)
+	mode, err := nativecheck.BidMode(rules.Bids, leaguerules.UFAProcess)
 	if err != nil {
 		return nil, fmt.Errorf("read bid mode: %w", err)
 	}
 	facts := nativecheck.BidFacts{Now: x.now, ExperienceYears: experienceYears(x.rules.Season, x.facts[player]),
 		Season: x.env.Season, Playoff: x.env.Playoff[franchise], LateRule: mode == leaguerules.Open}
+	if startCard {
+		facts.Season = nativecheck.BidSeason{Offseason: true}
+	}
 	facts.Active = x.state.Bids.activeCount(franchise, player)
 	if auction != nil {
 		facts.Standing = standingBid(auction, mode, franchise)
@@ -221,7 +232,11 @@ func (x *bidExecution) rosterAllowsContract(player, franchise string, salary dom
 	candidate.Players = append(slices.Clone(candidate.Players), NativePlayer{ID: player, Franchise: franchise,
 		Status: domain.RosterActive, Salary: salary, ExpirationYear: x.rules.Season + years - 1,
 		ContractStatus: domain.CStatusUFA})
-	return rosterCapAllows(&candidate, x.rules, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
+	rules := x.rules
+	if startingCardLot(x.records, player) {
+		rules.Roster.Limits.Value.Min = leaguerules.Known(0)
+	}
+	return rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
 }
 
 // experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.

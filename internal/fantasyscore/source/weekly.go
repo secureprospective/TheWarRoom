@@ -124,7 +124,23 @@ func (r RawWeek) validateDistances() error {
 	if n != count {
 		return fmt.Errorf("field goal distances disagree with the 60-yard count")
 	}
+	if err := r.validateMissedKicks(); err != nil {
+		return err
+	}
 	return r.validateBlockedKicks()
+}
+
+func (r RawWeek) validateMissedKicks() error {
+	missed, err := distances(r.Fields["fg_missed_list"])
+	if err != nil {
+		return fmt.Errorf("field goals missed: %w", err)
+	}
+	for _, distance := range missed {
+		if distance < 0 || distance > 990000 {
+			return fmt.Errorf("missed field goal distance is outside 0–99 yards")
+		}
+	}
+	return nil
 }
 
 func (r RawWeek) validateBlockedKicks() error {
@@ -155,7 +171,8 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 			"pat_made": "Extra points made", "pat_missed": "Extra points missed",
 			"pat_blocked": "Extra points blocked", "fg_blocked": "Field goals blocked",
 			"fumbles_total": "Fumbles", "fumble_recovery_tds": "Fumble recovery touchdowns",
-			"def_tds": "Defensive touchdowns"}}
+			"def_tds": "Defensive touchdowns", "fg_made_distance": "Field goals made, by distance",
+			"fg_missed_distance": "Field goals missed or blocked, by distance"}}
 	for id, fields := range mappings() {
 		var sum leaguerules.Decimal
 		for _, field := range fields {
@@ -172,7 +189,12 @@ func (r RawWeek) Convert() (PlayerWeek, error) {
 		line.Quantities[leaguerules.StatID(field)], _ = decimal(r.Fields[field])
 	}
 	line.Quantities["fg_made_60_99"], _ = decimal(r.Fields["fg_made_60_"])
+	made, _ := distances(r.Fields["fg_made_list"])
+	missed, _ := distances(r.Fields["fg_missed_list"])
 	blocked, _ := distances(r.Fields["fg_blocked_list"])
+	// Distance kicking prices every kick by its own distance; a blocked kick is a miss at its distance.
+	line.Events["fg_made_distance"] = append([]leaguerules.Decimal{}, made...)
+	line.Events["fg_missed_distance"] = append(append([]leaguerules.Decimal{}, missed...), blocked...)
 	for _, distance := range blocked {
 		id := leaguerules.StatID("fg_missed_30_99")
 		if distance < 300000 {

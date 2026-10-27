@@ -11,8 +11,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // heldWeeklyFiles offers each held copy of a season's weekly file to accept, newest first, parsed once. A
@@ -73,6 +74,9 @@ type heldFile struct {
 	at    time.Time
 	weeks []source.PlayerWeek
 	index source.HeldWeekIndex // built only by readings that look up many players
+	// lines are the revision's offensive line games, nil when it holds no advanced rushing.
+	lineSHA string
+	lines   map[source.LineGame]fantasyscore.UnitLine
 }
 
 // heldSeason reads every held copy of a season's weekly file once, newest first.
@@ -149,7 +153,11 @@ func nativeSeeded(records []commissioner.Record) bool {
 // evidence.
 func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 	scope source.RawNativeScope) (source.NativeEvidence, error) {
-	if pinned, ok := s.lineupEnv.(*PinnedFootball); ok {
+	pinned, isPinned := s.lineupEnv.(*PinnedFootball)
+	if _, card := nativecheck.LineCardTeam(scope.Player); card {
+		return lineCardEvidence(ctx, pinned, isPinned, scope.Season)
+	}
+	if isPinned {
 		out, err := source.ReadNativeEvidence(ctx, pinned, pinned, scope)
 		if err != nil {
 			return out, fmt.Errorf("read pinned native evidence: %w", err)
@@ -164,6 +172,19 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
 	return out, nil
+}
+
+// lineCardEvidence reads an O-Line card's evidence: the season's held line games. A card has no NFL
+// statistics identity; only pinned evidence with advanced rushing holds line games.
+func lineCardEvidence(ctx context.Context, pinned *PinnedFootball, isPinned bool, season int) (source.NativeEvidence, error) {
+	if !isPinned {
+		return source.NativeEvidence{}, nil
+	}
+	held, ok, err := pinned.LineGames(ctx, season)
+	if err != nil || !ok {
+		return source.NativeEvidence{}, err
+	}
+	return source.NativeEvidence{OLine: &source.HeldLineGames{SHA256: held.SHA, FetchedAt: held.At, Games: held.Games}}, nil
 }
 
 type weeklyFile struct {

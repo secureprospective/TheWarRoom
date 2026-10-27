@@ -117,24 +117,29 @@ func validateRules(r RuleSet) error {
 		r.Playoffs.StartWeek.Value > r.Playoffs.FinalWeek.Value {
 		return fmt.Errorf("first playoff week cannot follow the final week")
 	}
-	return nil
+	return validateScoringKinds(r.Scoring)
 }
-func validateMenu(kind, value string) error {
-	menus := map[string][]string{
+
+// menus is every closed list of options a rule value may take, by the value's type name.
+func menus() map[string][]string {
+	return map[string][]string{
 		"Format": {"head_to_head"}, "InitialRosters": {"draft"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
-		"ExperienceBasis": {"calendar_years", "career_games"}, "WaiverTrigger": {"cut"},
+		"ExperienceBasis": {"calendar_years", "career_games", "nfl_seasons"}, "WaiverTrigger": {"cut"},
 		"WaiverMethod": {"reverse_standings", "rolling"}, "BidMode": {"blind", "open"},
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
 		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",
 			"all_play_percentage", "points", "power_rank"},
-		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S"},
+		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},
 		"LineupGroup": {"offense", "defense", "total"},
 	}
-	choices, found := menus[kind]
+}
+
+func validateMenu(kind, value string) error {
+	choices, found := menus()[kind]
 	if !found {
 		return nil
 	}
