@@ -24,7 +24,7 @@ func NativeTradesReading(league, viewer, principal string, records []Record, now
 	if err := AuthorizeFranchiseOwner(records, principal, viewer); err != nil {
 		return NativeTrades{}, err
 	}
-	f, err := marketFrame(league, records, now, nil, zone, false)
+	f, err := NewFrame(league, records, now, nil, zone)
 	if err != nil {
 		return NativeTrades{}, err
 	}
@@ -34,7 +34,7 @@ func NativeTradesReading(league, viewer, principal string, records []Record, now
 func nativeTradesFrame(f Frame, viewer string) (NativeTrades, error) {
 	league, records, now, zone := f.League, f.Records, f.At, f.Zone
 	assets, state := f.Assets, f.Book
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return NativeTrades{}, err
 	}
 	rules := f.Rules

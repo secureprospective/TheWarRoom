@@ -52,7 +52,7 @@ func MarketReading(league, command, principal string, records []Record, at time.
 	if _, err := AuthorizeRecords(RawCommand{League: league, Command: command}, principal, held); err != nil {
 		return out, err
 	}
-	f, err := marketFrame(league, held, at, facts, zone, true)
+	f, err := NewFrame(league, held, at, facts, zone, at)
 	if err != nil {
 		return out, err
 	}
@@ -65,7 +65,7 @@ func marketReadingFrame(f Frame, out Market, command, principal string) (Market,
 	if !assets.Seeded {
 		return out, nil
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return out, err
 	}
 	rules := f.Rules

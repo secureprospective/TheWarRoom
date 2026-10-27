@@ -26,7 +26,7 @@ func PrepareTradeAppend(raw *RawCommand, principal string, records []Record, now
 	if !TradeCommand(raw.Command) {
 		return checkTradeReplay(*raw, records, now)
 	}
-	f, err := marketFrame(raw.League, records, now, facts, zone, false)
+	f, err := NewFrame(raw.League, records, now, facts, zone)
 	if err != nil {
 		return err
 	}
@@ -39,10 +39,10 @@ func prepareTradeFrame(f Frame, raw *RawCommand, principal string) error {
 	if err := f.Seeded("record starting rosters and picks before trading"); err != nil {
 		return err
 	}
-	if err := f.readGovernance(); err != nil {
+	if err := f.ReadGovernance(); err != nil {
 		return err
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return err
 	}
 	x := tradeExecution{records: records, seed: f.Assets.Snapshot, state: f.Govern, rules: f.Rules, now: now, facts: facts, zone: zone, principal: principal}

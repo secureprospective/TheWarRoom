@@ -43,7 +43,7 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
 		return NativeWaivers{}, err
 	}
-	f, err := marketFrame(league, records, at, facts, zone, true)
+	f, err := NewFrame(league, records, at, facts, zone, at)
 	if err != nil {
 		return NativeWaivers{}, err
 	}
@@ -52,7 +52,7 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 
 func nativeWaiversFrame(f Frame, franchise, principal string) (NativeWaivers, error) {
 	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return NativeWaivers{}, err
 	}
 	rules := f.Rules
@@ -130,7 +130,7 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, p
 
 // DueWaiverWindows is shared by the clock worker and the explicit processing command.
 func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, error) {
-	f, err := marketFrame(league, records, at, nil, nil, true)
+	f, err := NewFrame(league, records, at, nil, nil, at)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func dueWaiverWindowsFrame(f Frame) ([]string, error) {
 	if !assets.Seeded || len(state.Windows) == 0 {
 		return due, nil
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return nil, err
 	}
 	rules := f.Rules

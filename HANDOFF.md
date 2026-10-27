@@ -15,3 +15,12 @@ The proposed eager `NewFrame` cannot represent the existing correction-time and 
 
 ## Tried and rejected
 - Unconditionally calling eager `NewFrame` changes authorization/error precedence and correction timing; retained staged loading instead.
+
+## Staged Frame contract
+- Callers authorize and filter records before NewFrame; command guards remain before folding.
+- NewFrame folds once, loading neither rules nor governance.
+- Optional correctionAt preserves requested correction time; omission uses the final record time.
+- Operations call ReadRules/ReadGovernance at their existing stages, including early returns.
+- Trades load governance before rules; Gate and Trial retain their existing timing.
+- Records are transaction-held inputs; Frame does not write them or register callbacks.
+- The fold, wire bodies, visibility predicates and core-called book helpers stay in commissioner.

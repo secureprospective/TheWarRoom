@@ -21,6 +21,12 @@ func TestMarketFrame(t *testing.T) {
 	if !reflect.DeepEqual(f.Assets, assets) || !reflect.DeepEqual(f.Book, book) {
 		t.Fatal("frame differs from native fold")
 	}
+	if err := f.ReadRules(); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.ReadGovernance(); err != nil {
+		t.Fatal(err)
+	}
 	rules, err := RulesNow(records, fixture.now)
 	if err != nil {
 		t.Fatal(err)
@@ -66,5 +72,45 @@ func TestMarketDueWithoutSeed(t *testing.T) {
 	}
 	if got, err := NextDueDeadline("native.test", records, noChangeTime()); err != nil || !got.IsZero() {
 		t.Fatalf("deadline: %v %v", got, err)
+	}
+}
+
+func TestFrameDefersRulesAndPreservesEarlyReturns(t *testing.T) {
+	records := legacyLeague(t)
+	records = append(records, Record{Command: RawCommand{League: "native.test", Command: RulesSet,
+		Args: RawArgs{Field: "cap.amount", Value: []byte(`"invalid"`)}, Effective: "now"},
+		Receipt: Receipt{Entry: "bad-rule", RecordedAt: noChangeTime()}})
+	f, err := NewFrame("native.test", records, noChangeTime(), nil, time.UTC)
+	if err != nil {
+		t.Fatalf("fold loaded rules: %v", err)
+	}
+	if err := f.ReadRules(); err == nil {
+		t.Fatal("invalid rules accepted")
+	}
+	if got, err := dueBidsFrame(f); err != nil || len(got) != 0 {
+		t.Fatalf("unseeded bids loaded rules: %v %v", got, err)
+	}
+	if got, err := dueWaiverWindowsFrame(f); err != nil || len(got) != 0 {
+		t.Fatalf("unseeded waivers loaded rules: %v %v", got, err)
+	}
+	if got, err := nextDueDeadlineFrame(f); err != nil || !got.IsZero() {
+		t.Fatalf("unseeded deadline loaded rules: %v %v", got, err)
+	}
+}
+
+func TestFrameCorrectionTime(t *testing.T) {
+	fixture := newMarketFixture(t)
+	records := fixture.b.records
+	at := fixture.now.Add(24 * time.Hour)
+	f, err := NewFrame(rolloverLeague, records, at, fixture.facts, time.UTC, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, book, err := nativeAssetsState(rolloverLeague, records, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(f.Assets, assets) || !reflect.DeepEqual(f.Book, book) {
+		t.Fatal("requested correction time differs from native fold")
 	}
 }

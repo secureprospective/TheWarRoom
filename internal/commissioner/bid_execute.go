@@ -36,7 +36,7 @@ func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts na
 	if !BidCommand(raw.Command) {
 		return nil
 	}
-	f, err := marketFrame(raw.League, records, now, facts, zone, false)
+	f, err := NewFrame(raw.League, records, now, facts, zone)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func prepareBidFrame(f Frame, raw *RawCommand, env BidEnvironment) error {
 	if err := f.Seeded("record starting assets before bid actions"); err != nil {
 		return err
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
 		return err
 	}
 	x := bidExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone, env: env}

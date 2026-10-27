@@ -23,38 +23,25 @@ type Frame struct {
 	Zone    *time.Location
 }
 
-// NewFrame folds the ledger and reads its current rules and governance.
-func NewFrame(league string, records []Record, at time.Time, facts nativecheck.Facts, zone *time.Location) (Frame, error) {
-	f, err := marketFrame(league, records, at, facts, zone, false)
-	if err != nil {
-		return f, err
-	}
-	if err = f.readRules(); err != nil {
-		return f, err
-	}
-	if err = f.readGovernance(); err != nil {
-		return f, err
-	}
-	return f, nil
-}
-
-func marketFrame(league string, records []Record, at time.Time, facts nativecheck.Facts, zone *time.Location, correctionsAt bool) (Frame, error) {
+// NewFrame folds only the ledger. Callers authorize before construction and load
+// rules and governance at their operation's original stage. correctionAt, when
+// present, dates correction readings rather than using the last record's time.
+func NewFrame(league string, records []Record, at time.Time, facts nativecheck.Facts, zone *time.Location, correctionAt ...time.Time) (Frame, error) {
 	f := Frame{League: league, Records: records, At: at, Facts: facts, Zone: zone}
 	var err error
-	if correctionsAt {
-		f.Assets, f.Book, err = nativeAssetsState(league, records, at)
-	} else {
-		f.Assets, f.Book, err = nativeAssetsState(league, records)
-	}
+	f.Assets, f.Book, err = nativeAssetsState(league, records, correctionAt...)
 	return f, err
 }
 
-func (f *Frame) readRules() error {
+// ReadRules loads rules only when the operation reaches its rules check.
+func (f *Frame) ReadRules() error {
 	var err error
 	f.Rules, err = RulesNow(f.Records, f.At)
 	return err
 }
-func (f *Frame) readGovernance() error {
+
+// ReadGovernance loads governance independently, so trade checks can precede rules.
+func (f *Frame) ReadGovernance() error {
 	var err error
 	f.Govern, err = GovernanceState(f.Records)
 	return err
