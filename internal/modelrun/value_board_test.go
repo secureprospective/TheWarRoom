@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"os"
 	"slices"
@@ -17,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -30,16 +32,25 @@ type RawBoardRequest struct {
 	Overrides map[string]float64
 }
 
-func (r RawBoardRequest) Validate(t *testing.T) {
-	t.Helper()
+func (r RawBoardRequest) Validate() error {
 	if r.Season < 2000 || r.Season > 2100 || r.LastWeek < 1 || r.LastWeek > 18 || r.AsOf.IsZero() || len(r.Roster) == 0 {
-		t.Fatal("value board: invalid replay period or empty roster")
+		return fmt.Errorf("value board: invalid replay period or empty roster")
+	}
+	for _, p := range r.Roster {
+		id, err := playerid.New(p.MFLID)
+		if err != nil {
+			return fmt.Errorf("value board: roster ID: %w", err)
+		}
+		if id.String() != p.MFLID {
+			return fmt.Errorf("value board: non-canonical roster ID %q", p.MFLID)
+		}
 	}
 	for _, v := range r.Overrides {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
-			t.Fatal("value board: non-finite override")
+			return fmt.Errorf("value board: non-finite override")
 		}
 	}
+	return nil
 }
 
 type boardCapture struct {
@@ -76,7 +87,9 @@ func TestValueBoardReplay(t *testing.T) {
 	root := boardRoot(t)
 	var req RawBoardRequest
 	boardReadJSON(t, root, &req)
-	req.Validate(t)
+	if err := req.Validate(); err != nil {
+		t.Fatal(err)
+	}
 	body, err := root.ReadFile("players.json")
 	if err != nil {
 		t.Fatal(err)
@@ -302,5 +315,30 @@ func TestValueBoardFreeAgentArchiveUsesProductionParser(t *testing.T) {
 	}
 	if got := boardFreeAgents(t, root); !slices.Equal(got, []string{"0001", "0002"}) {
 		t.Fatalf("parsed free agents = %v", got)
+	}
+}
+
+func TestValueBoardRequestValidation(t *testing.T) {
+	valid := RawBoardRequest{Season: 2026, LastWeek: 17, AsOf: time.Date(2026, 10, 5, 0, 0, 0, 0, time.UTC),
+		Roster: []state.PlayerState{{MFLID: "0816"}}}
+	if err := valid.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for name, mutate := range map[string]func(*RawBoardRequest){
+		"season":       func(r *RawBoardRequest) { r.Season = 0 },
+		"last week":    func(r *RawBoardRequest) { r.LastWeek = 19 },
+		"cutoff":       func(r *RawBoardRequest) { r.AsOf = time.Time{} },
+		"empty roster": func(r *RawBoardRequest) { r.Roster = nil },
+		"short ID":     func(r *RawBoardRequest) { r.Roster = []state.PlayerState{{MFLID: "816"}} },
+		"invalid ID":   func(r *RawBoardRequest) { r.Roster = []state.PlayerState{{MFLID: "not-a-player"}} },
+		"non-finite":   func(r *RawBoardRequest) { r.Overrides = map[string]float64{"dynasty.discount": math.NaN()} },
+	} {
+		t.Run(name, func(t *testing.T) {
+			request := valid
+			mutate(&request)
+			if err := request.Validate(); err == nil {
+				t.Fatal("invalid replay request accepted")
+			}
+		})
 	}
 }

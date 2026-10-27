@@ -7,8 +7,8 @@ No valuation, fitted parameter, scoring-rule or real-profile changes. No MFL req
 
 Source: the real `~/.config/TheWarRoom/history.db` and `thewarroom.db`, copied with SQLite's
 backup API through read-only connections. Copies, raw exports, extracted features, exact effective
-parameters, replay output and source hashes stay in the ignored `.scratch/valuation-review-delivery/`.
-The board is `.scratch/valuation-review-delivery/warroom-value-board.html` (open directly in a browser).
+parameters, replay output and source hashes stay in the ignored `.scratch/valuation-review-board/`.
+The board is `.scratch/valuation-review-board/warroom-value-board.html` (open directly in a browser).
 The operator restricted writes to this worktree, so neither `/tmp` snapshots nor the requested
 Downloads destination were used.
 
@@ -124,7 +124,8 @@ bounded archive decoding, exact export matching and source-priority/as-of select
 race tests (including the held free-agent parser path), real-data race replay and tagged lint pass. All **456,370 extracted features**
 match the engine-created season/week feature views by SHA-256. Two complete generations produced
 byte-identical replay JSON and HTML; both source DB files' SHA-256 values stayed unchanged.
-Commit hooks run without bypasses.
+Canonical-ID request validation also has a negative test: removing the guard lets `816` through
+instead of requiring `0816`, and the test fails. The restored guard passes. Commit hooks run without bypasses.
 
 Firefox headless exercised search, candidates-only, empty state and contract/age-pull expansion;
 all 1,450 rows/ten positions were present. Desktop 1440×1000 and mobile 390×844 were visually
