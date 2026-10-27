@@ -189,3 +189,40 @@ describe('Landing reading lifecycle', () => {
     expect(state.peek().pending).toBe(false);
   });
 });
+
+describe('League seat change (read session end, then reread)', () => {
+  it('clears the old seat at once, fences its reply and rereads the same league and its controls', async () => {
+    let release: () => void = () => undefined;
+    let hold = false;
+    let controls = 0;
+    const seen: string[] = [];
+    const { state } = port({
+      ledger: async league => {
+        if (!hold) return { ...ledger, league };
+        await new Promise<void>(resolve => { release = resolve; });
+        return { ...ledger, league, revision: 99 };
+      },
+      controls: async () => { controls++; return controlsWire; },
+      leagues: async () => [{ id: 'native.one', name: 'One' }, { id: 'native.two', name: 'Two' }],
+      people: async league => { seen.push(league); return { ...people.owner, league }; },
+    });
+    await state.choose('native.two');
+    state.forget();
+    hold = true;
+    const old = state.choose();
+    const oldRelease = release;
+    hold = false;
+    const change = state.changeSeat();
+    expect(state.peek().ledger).toBeUndefined();
+    expect(state.peek().rules).toBeUndefined();
+    expect(state.peek().controls).toBeUndefined();
+    await change;
+    oldRelease();
+    await old;
+    expect(state.peek().selected).toBe('native.two');
+    expect(state.peek().ledger).toMatchObject({ league: 'native.two', revision: 2 });
+    expect(state.peek().pending).toBe(false);
+    expect(controls).toBe(2);
+    expect(seen.at(-1)).toBe('native.two');
+  });
+});

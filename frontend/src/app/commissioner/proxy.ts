@@ -7,6 +7,7 @@ import { parsePeople, type People } from './people';
 import { parseRules, type Rules } from './rules';
 import { parsePreview } from './preview';
 import { createReadQuery } from '../data/query';
+import { createReadSession } from '../data/session';
 
 type Receipt = {
   entry: string; league: string; revision: number; recordedAt: string; message: string;
@@ -227,8 +228,17 @@ export function createLeagueState(proxy = createProxy(live)) {
       throw new Error(message);
     }
   }
+  // A seat is one read session: another seat may see other leagues, roles and controls, so its sign-in
+  // clears the old seat's readings and fences their replies, then rereads the same league as before.
+  const seat = createReadSession();
+  seat.join(query, 'private');
+  async function changeSeat() {
+    const was = store.getState().selected;
+    seat.end();
+    await choose(was);
+  }
   const forget = () => store.setState({ outcome: { status: 'idle' } });
-  return { choose, execute, forget, use: query.use, peek: store.getState };
+  return { choose, changeSeat, execute, forget, use: query.use, peek: store.getState };
 }
 export const leagueState = createLeagueState();
 export const execute = leagueState.execute;
