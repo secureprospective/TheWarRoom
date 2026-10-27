@@ -88,6 +88,26 @@ describe('Player research', () => {
     expect(state.peek().research).toBe(newer);
     expect(state.peek().pending).toBe(false);
   });
+  it('keeps a refresh status failure after the read succeeds and stops polling', async () => {
+    vi.useFakeTimers();
+    try {
+      const r = reader();
+      let finish!: () => void;
+      r.refresh = vi.fn(() => new Promise<void>(resolve => { finish = resolve; }));
+      r.status = vi.fn(async () => { throw new Error('status unavailable'); });
+      const state = createResearchState(r, () => '0001');
+      const pending = state.choose('refresh', '');
+      expect(state.peek().status).toBe('Waiting for the MFL refresh to finish');
+      await vi.advanceTimersByTimeAsync(250);
+      expect(state.peek().error).toContain('status unavailable');
+      finish();
+      await pending;
+      expect(state.peek()).toMatchObject({ research: fixture, pending: false });
+      expect(state.peek().error).toContain('status unavailable');
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(r.status).toHaveBeenCalledTimes(1);
+    } finally { vi.useRealTimers(); }
+  });
   it('sorts the actual Go points and names instead of formatted numeric text', () => {
     const stats = fixture.board.reports.find(r => r.id === 'M-037')!;
     const asc = sortedRows(stats.rows, { column: 3, desc: false });

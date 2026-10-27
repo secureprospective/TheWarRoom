@@ -3,44 +3,45 @@ import { useStore } from 'zustand';
 import { commands } from '../commands/registry';
 import type { Research, Scope } from './contract';
 import { researchAPI, type ResearchReader } from './api';
+import { createReadQuery, type ReadStatus } from '../data/query';
 export type { ResearchReader } from './api';
 
 export function createResearchState(reader: ResearchReader, mine: () => string) {
   const initial: Scope = { mine: '', search: '', team: '', position: '', group: 'QB',
     trend: 'topAdds', depth: 'team', injuries: 'all' };
   type State = {
-    research?: Research; pending: boolean; error: string; status: string;
+    research?: Research; error: string; status: string;
     scope: Scope; pages: Record<string, number>;
   };
-  const store = createStore<State>(() => ({
-    pending: false, error: '', status: '', scope: initial, pages: {},
-  }));
-  let revision = 0;
+  // A status-poll failure during refresh survives the read's success, as before the shared query.
+  const empty = (): State => ({ error: '', status: '', scope: initial, pages: {} });
+  const store = createStore<State & ReadStatus>(() => ({ ...empty(), pending: false }));
+  const query = createReadQuery('research.TargetResearch', {
+    initial: empty, store, read: scope => reader.read(scope),
+    accept: research => ({ research, error: store.getState().error }),
+  });
+  let polls = 0;
   async function load(refresh = false, news = false, league = false, force = false) {
-    const request = ++revision;
-    store.setState({ pending: true, error: '', status: '' });
+    const request = ++polls;
     let polling: ReturnType<typeof setInterval> | undefined;
-    if (refresh && reader.status) {
-      store.setState({ status: 'Waiting for the MFL refresh to finish' });
-      polling = setInterval(() => {
-        void reader.status!().then(status => {
-          if (request === revision && store.getState().pending) store.setState({ status });
-        }).catch(cause => {
-          if (request === revision) store.setState({ error: String(cause) });
-        });
-      }, 250);
-    }
-    try {
+    store.setState({ status: '' });
+    // Only refresh/news are steps before the read; a plain scope change reads immediately.
+    const before = refresh || news ? async () => {
+      if (refresh && reader.status) {
+        store.setState({ status: 'Waiting for the MFL refresh to finish' });
+        polling = setInterval(() => {
+          void reader.status!().then(status => {
+            if (request === polls && store.getState().pending) store.setState({ status });
+          }).catch(cause => {
+            if (request === polls) store.setState({ error: String(cause) });
+          });
+        }, 250);
+      }
       if (refresh) await reader.refresh(force);
       if (news) await reader.news(league ? '' : mine());
-      const research = await reader.read({ ...store.getState().scope, mine: mine() });
-      if (request === revision) store.setState({ research });
-    } catch (cause) {
-      if (request === revision) store.setState({ error: String(cause) });
-    } finally {
-      if (polling) clearInterval(polling);
-      if (request === revision) store.setState({ pending: false });
-    }
+    } : undefined;
+    const reading = query.load(() => [{ ...store.getState().scope, mine: mine() }], { before });
+    try { await reading; } finally { if (polling) clearInterval(polling); }
   }
   async function choose(action: string, value: string) {
     if (action === 'more') {

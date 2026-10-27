@@ -21,7 +21,7 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 	}
 	for _, key := range []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
-		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts",
+		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
 		"commissioner.TargetNativeLineup",
 		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
 		"market.TargetAssetBoard", "now.TargetNow",
@@ -62,7 +62,7 @@ func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
 	}
 	for _, key := range []string{
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
-		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts",
+		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
 		"commissioner.TargetNativeLineup",
 		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
 		"market.TargetAssetBoard", "now.TargetNow",

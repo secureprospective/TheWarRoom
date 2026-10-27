@@ -1485,6 +1485,137 @@ export const readCommands = {
     "Items": null
   }
 },
+"research.TargetResearch": {
+  "command": "desktop.research.TargetResearch",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "mine",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "search",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "position",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "team",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "group",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "trend",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "depth",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "injuries",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "sources.TargetCacheScopes": {
   "command": "desktop.sources.TargetCacheScopes",
   "arguments": {
