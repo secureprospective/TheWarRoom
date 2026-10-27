@@ -41,7 +41,7 @@ view. Stand-up produces a checked **read-only** league, never authority grants.
 Evidence, responsibility split and justified debt:
 `docs/architecture/storage-recovery-identity.md` and `internal/store/history/README.md`.
 
-Tooling outside the features: `cmd/fit` (writes the fitted params), `cmd/fixtures`, `cmd/twr-practice` (development-only hosted click-test launcher; `cmd/twr-practice/README.md`), `tools/ifaceguard`, `tools/labparity`, `scripts/`.
+Tooling outside the features: `cmd/fit` (writes the fitted params), `cmd/fixtures`, `cmd/twr-practice` (development-only hosted click-test launcher; `cmd/twr-practice/README.md`), `tools/ifaceguard`, `tools/labparity`, `tools/boundarycheck` (decision-syntax ratchet), `scripts/`.
 
 Current boundary-extraction inventory and resume point: `docs/architecture/app-boundary.md`.
 Finished-score finality is in `internal/app/now/nfl_reading.go`; local database-check report
@@ -73,6 +73,7 @@ features follow the Feature API template in `docs/architecture/feature-extractio
 |---|---|
 | Root-file ratchet (`make placement`) | Root `internal/composition/*.go` count exceeds `docs/architecture/root-go-baseline.txt`: extract logic and tests into their feature; lower the baseline as files leave, never raise it to hide growth. |
 | Placement (`make placement`) | A root file or internal package is missing, duplicated, stale or unindexed in `docs/architecture/placement.tsv`: correct its feature row and this map; remove obsolete paths. |
+| Decision syntax (`make boundary`, in `make lint`) | New/changed decision-bearing functions in composition/core fail against `docs/architecture/boundary-adapters.tsv`; reviewed adapters are frozen, legacy core policy is explicit debt, and removal requires tightening the allowlist. This is a syntax ratchet, not semantic proof; review is still required. |
 | Import boundaries (`make lint`, `.golangci.yml` depguard) | Non-app internals cannot import `internal/app` or root; services cannot import root or any Wails package. Features can import their own subtree (including test helpers) and the explicit shared set **`internal/app/report` and `internal/app/season`**, plus catalog where declared, not siblings. Core imports no features/Wails; features never import core. Inject dependencies at root or move shared view models to season and wording to report. Declare a newly extracted feature's own subtree in depguard; undeclared features default to shared-only imports. Existing engine, transport and store rules still apply. |
 | Binding freshness (`make bindings-fresh`) | `scripts/check-bindings-fresh.sh` regenerates in a private temporary source copy and diffs all of `frontend/wailsjs`, without overwriting local edits. Run `make bindings`, review and commit the generated changes. Both `make verify` and CI's required verify/checks job run this guard. |
 | Binding manifest (root Wire/Manifest tests) | Every reflected method on App and comms.API must match `testdata/bindings/manifest.txt`; every non-App method needs a package-level catalog entry. No promoted core helpers. |

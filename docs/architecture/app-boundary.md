@@ -9,14 +9,16 @@ this is not a claim that core or the complete boundary is finished. Part 4 moved
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
-Next: core policy audit/extraction and negative boundary ratchet. Core archive fallback and window
+Next: extract the **17 frozen legacy core functions** in boundary-adapters.tsv, then finish the
+core audit and final boundary verification. The negative syntax ratchet is now implemented and
+exercised through make lint. Core archive fallback and window
 mutation policy are now inward; remaining core examples include Comms refresh/key policy, own-team
 refusals, RulesFreshness, Offers cap availability and Sources compile admission/wording. Preserve
 readiness-dependent capture, locks and errors. Use filtered composition race batches plus parity;
 legitimate broad fixtures need >200 seconds. Finish with CI and disposable-profile live review.
 
-Still required for Part 2 completion: core Host policy extraction and negative composition/core
-ratchet, full CI and disposable-profile live review. No permission/role/binding/schema change here.
+Still required for Part 2 completion: remaining core Host policy extraction/audit, tightening the
+legacy allowlist, full CI and disposable-profile live review. No permission/role/binding/schema change here.
 
 ## Boundary and preserved slice
 
@@ -35,8 +37,8 @@ but no new exposure is added in this part. Existing shared native commands alrea
 **Done looks like:** CI permits only an explicit composition adapter/lifecycle allowlist and rejects
 new domain-data branches there; feature services import neither composition/core nor Wails;
 command-door parity stays unchanged. A ratchet must also cover core host decision code,
-not merely empty composition by relocating it into core. This part documents the gate target;
-it does not claim a new enforced ratchet.
+not merely empty composition by relocating it into core. The decision-syntax ratchet below now enforces reviewed fingerprints, with legacy core policy
+explicitly frozen rather than mislabeled complete.
 
 ## Inventory conventions
 
@@ -238,7 +240,7 @@ are excluded from business-decision LOC. `command_bindings.go` is registry wirin
 
 ## Core-style glue follow-up (not included in composition counts)
 
-`internal/app/core` still contains 2,225 handwritten production LOC. Its `State` carries
+`internal/app/core` now contains 1,917 handwritten production LOC (Part 4 closing measurement). Its `State` carries
 locks/stores and many Host implementations; it is not the final transport-free service boundary.
 Known follow-up: `host_control.go` SetLeagueWindow/setTradeWindow/setCalendarWindow,
 `fallback.go` archive/live fallback decisions, `host_offers.go` own-franchise/target policy,
@@ -924,3 +926,67 @@ remaining fallback aliases/forwarders → internal/app/core/state.go. internal/a
 → internal/app/report/fallback_test.go. internal/app/core/host_control.go date policy →
 internal/app/control/calendar.go; held SeasonFeeds capture → internal/app/core/state.go. Consolidation
 keeps resource/shared-state responsibilities together and does not raise the tiny-file baseline.
+
+## Part 4 — batch 13: negative composition/core decision ratchet
+
+Finding/proposal: depguard prevents reverse imports but does not stop policy creeping back into
+composition or core. `tools/boundarycheck` parses both handwritten production directories on all
+OS paths and freezes complete token fingerprints for decision-bearing functions (branches,
+loops/selects, binary expressions and boolean negation, including nested callbacks). The sole
+excluded generated source is the known Wails surface; inventing a .gen.go filename or generated
+comment does not bypass it. Tests are outside the production boundary. Comments/formatting do not
+change fingerprints. Missing/new/changed/stale entries fail with a specific diagnostic.
+
+`docs/architecture/boundary-adapters.tsv` has **138 functions: 121 adapters and 17 legacy core
+policy functions**, including 86 composition adapters. Adapter means resource/transport/snapshot/
+representation/synchronization wiring; legacy is frozen debt, not permission for new policy.
+Inventory mode emits `review`, which is deliberately invalid as an approved baseline. Remove
+entries as extraction eliminates their last decision syntax. Do not regenerate fingerprints to
+hide policy changes. make lint now invokes make boundary, so the existing verify/CI lint path
+runs this gate; no CI bypass or baseline increase elsewhere.
+
+This is a structural ratchet, **not a semantic proof**: policy can be hidden in a straight-line
+call or a declaration the syntax detector does not classify. Review and depguard remain necessary.
+It also deliberately flags representation arithmetic/concatenation, and any meaningful edit to
+an existing decision-bearing adapter needs review. The initial 17 legacy rows are a concrete
+starting list, not a claim that every remaining core responsibility has been fully audited.
+
+Tests prove reviewed adapters pass, cosmetic edits pass, new comparison-only core/composition
+policy and callback branches fail, fake generated files fail, same-branch-count threshold changes
+fail, stale rows require removal and inventory output cannot approve itself. Race suite passed.
+Two one-at-a-time actual repository mutations added `boundaryProbe(cap) { return cap > 0 }` to
+composition and then core: **make boundary rejected both with their exact new-decision diagnostic**.
+Each probe was removed before the next attempt; final make boundary and full make lint passed.
+Neither mutation nor scratch log remains committed. No new dependency or internal package.
+
+### Part 4 closing measurements before push
+
+- Inventory: 126 units / 223 baseline named functions / 4,534 baseline decision-function LOC.
+  **125 units / 4,498 LOC moved; 1 unit / 36 LOC confirmed adapter-only.** Part 4 moved 57 units /
+  2,632 LOC (35 / 1,418 before usage-limit resume; **22 / 1,214 during resume**). The earlier
+  100-LOC arithmetic correction is explained above. Core extractions are additional, not double-counted:
+  four fallback functions / 72 baseline LOC and three date functions / 70 baseline LOC.
+- Resume-only handwritten production union against `fbdf683c`: **25 paths**, **2,515 → 3,518
+  physical LOC**, **94,928 → 130,306 Unicode code points including LF** (+1,003 LOC / +35,378 CP).
+  Includes the new production ratchet tool; generated/frontend/docs excluded. Tests separately:
+  **16 paths**, **787 → 2,019 LOC**, **26,892 → 73,689 CP** (+1,232 LOC / +46,797 CP).
+- Whole Part 4 union against `1a168a99`: production **55 paths**, **5,893 → 7,738 LOC**,
+  **215,699 → 284,302 CP** (+1,845 LOC / +68,603 CP). Tests separately: **26 paths**,
+  **889 → 3,172 LOC**, **30,228 → 118,151 CP** (+2,283 LOC / +87,923 CP).
+  These are relocation/safety costs, not compression claims.
+- Current core production footprint: 1,917 LOC; 17 explicitly frozen decision functions remain.
+  Next concrete slice: core `host_comms.go` key/board/refresh policy, followed by Draft feed
+  refresh/admission; then own-team refusal, Offers cap availability, Archive opponent preference,
+  RulesFreshness, Sources compile/positions and trade target construction. Keep raw lock/state
+  ownership stable; feature services must not import core or siblings.
+
+Estimated one-hour parts remaining: Part 2 **2–4**, including core extraction/audit, allowlist
+ratcheting, full CI and disposable-profile live review; frontend plan Part 3 **4–6**, still not
+started or fully inventoried. Owner ruling: none needed. No permission/role/binding/schema change,
+live network, GUI, production-profile operation, PR or merge. HANDOFF.md unchanged.
+
+Debt left: the 17 frozen legacy core functions and further core audit; syntax ratchet semantic
+blind spots; final CI and disposable-profile live verification; registry-driven frontend read/cache
+primitive and store/event/invalidation migration. Passing live review means unchanged refusals,
+held-data retention, trade exact-cents/local-only writes, startup readiness and restore/backup
+ordering on a throwaway profile. Windows lock runtime remains untested here; cross-compile passed.
