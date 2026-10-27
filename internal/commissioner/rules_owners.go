@@ -35,6 +35,9 @@ func ruleOwners() []ruleOwner {
 		{"notify.", "CM-051", "G1"}, {"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
 		{"draft.orderSource", "CM-041", "G2"}, {"draft.order", "CM-041", "G2"},
 		{"draft.laterPattern", "CM-041", "G2"}, {"draft.tieRule", "CM-041", "G2"},
+		{"draft.startupRounds", "CM-040", "G2"}, {"draft.startupYears", "CM-040", "G2"},
+		{"draft.startupSalary", "CM-040", "G2"}, {"draft.startupOrder", "CM-041", "G2"},
+		{"draft.startupList", "CM-041", "G2"}, {"draft.startupPattern", "CM-041", "G2"},
 	}
 }
 

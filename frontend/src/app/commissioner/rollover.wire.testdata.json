@@ -3,11 +3,11 @@
     "bids.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "franchise": "franchise.01",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "season": 2027,
         "mode": "Blind",
         "activeBids": 0,
@@ -21,7 +21,7 @@
             "team": "Practice team 2",
             "contract": "1 year at $5,000,000 a year",
             "points": "5.000",
-            "decided": "2026-10-27T23:39:00.703463743Z",
+            "decided": "2026-10-28T00:16:47.146205253Z",
             "words": "Awarded to Practice team 2 for 1 year at $5,000,000 a year"
           }
         ],
@@ -33,11 +33,11 @@
     "commish.rules.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "name": "Practice league",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "rollover": "The next rollover has no date yet; the commissioner sets it.",
         "sections": [
           {
@@ -158,6 +158,10 @@
                     {
                       "value": "draft",
                       "label": "Draft"
+                    },
+                    {
+                      "value": "free_agency",
+                      "label": "Free agency"
                     }
                   ],
                   "fields": []
@@ -178,7 +182,7 @@
                 "value": "Practice team 1: Practice division 1; Practice team 2: Practice division 1; Practice team 3: Practice division 1; Practice team 4: Practice division 1; Practice team 5: Practice division 2; Practice team 6: Practice division 2; Practice team 7: Practice division 2; Practice team 8: Practice division 2; Practice team 9: Practice division 3; Practice team 10: Practice division 3; Practice team 11: Practice division 3; Practice team 12: Practice division 3; Practice team 13: Practice division 4; Practice team 14: Practice division 4; Practice team 15: Practice division 4; Practice team 16: Practice division 4; Practice team 17: Practice division 5; Practice team 18: Practice division 5; Practice team 19: Practice division 5; Practice team 20: Practice division 5; Practice team 21: Practice division 6; Practice team 22: Practice division 6; Practice team 23: Practice division 6; Practice team 24: Practice division 6; Practice team 25: Practice division 7; Practice team 26: Practice division 7; Practice team 27: Practice division 7; Practice team 28: Practice division 7; Practice team 29: Practice division 8; Practice team 30: Practice division 8; Practice team 31: Practice division 8; Practice team 32: Practice division 8",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.319130699Z",
+                "changedAt": "2026-10-28T00:13:45.666723844Z",
                 "schema": {
                   "kind": "map",
                   "choices": [],
@@ -237,8 +241,8 @@
                 },
                 "governed": {
                   "entry": "act.c9c0ba5421a91016d6f7b0a827ee5b152f34e3d6be649a58b456247e5ae0c9c6",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.319130699Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.666723844Z",
                   "change": "Division alignment: Needs a ruling → Franchise.01: Practice division 1; Franchise.02: Practice division 1; Franchise.03: Practice division 1; Franchise.04: Practice division 1; Franchise.05: Practice division 2; Franchise.06: Practice division 2; Franchise.07: Practice division 2; Franchise.08: Practice division 2; Franchise.09: Practice division 3; Franchise.10: Practice division 3; Franchise.11: Practice division 3; Franchise.12: Practice division 3; Franchise.13: Practice division 4; Franchise.14: Practice division 4; Franchise.15: Practice division 4; Franchise.16: Practice division 4; Franchise.17: Practice division 5; Franchise.18: Practice division 5; Franchise.19: Practice division 5; Franchise.20: Practice division 5; Franchise.21: Practice division 6; Franchise.22: Practice division 6; Franchise.23: Practice division 6; Franchise.24: Practice division 6; Franchise.25: Practice division 7; Franchise.26: Practice division 7; Franchise.27: Practice division 7; Franchise.28: Practice division 7; Franchise.29: Practice division 8; Franchise.30: Practice division 8; Franchise.31: Practice division 8; Franchise.32: Practice division 8, in force now"
                 }
               },
@@ -361,7 +365,7 @@
                 "value": "0 to 100",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:58.95457446Z",
+                "changedAt": "2026-10-28T00:13:45.303509893Z",
                 "schema": {
                   "kind": "record",
                   "choices": [],
@@ -401,8 +405,8 @@
                 },
                 "governed": {
                   "entry": "act.907570f6d675a2a0dfb9e47d187d4bc5917983bf29f34214ad7bfed72702e114",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:58.95457446Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.303509893Z",
                   "change": "Active roster size: 18 to 80 → 0 to 100, in force now"
                 }
               },
@@ -537,7 +541,7 @@
                 "value": "QB: Exactly 1; WR: 0 to 2",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.094073434Z",
+                "changedAt": "2026-10-28T00:13:45.439990271Z",
                 "schema": {
                   "kind": "map",
                   "choices": [],
@@ -638,8 +642,8 @@
                 },
                 "governed": {
                   "entry": "act.b37ab91fed0844482e94534fd4566d493162f2908f1a55bc718866c125f824cd",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.094073434Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.439990271Z",
                   "change": "Starting position limits: CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5 → QB: Exactly 1; WR: 0 to 2, in force now"
                 }
               },
@@ -649,7 +653,7 @@
                 "value": "Total: 1 to 3",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.123893673Z",
+                "changedAt": "2026-10-28T00:13:45.467871371Z",
                 "schema": {
                   "kind": "map",
                   "choices": [],
@@ -714,8 +718,8 @@
                 },
                 "governed": {
                   "entry": "act.275c8b11774ebcaf71c0b0b49b873d5acd445440cc1ab89ac1f5ed0b5c3eef2a",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.123893673Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.467871371Z",
                   "change": "Starting group limits: Defense: Exactly 12; Offense: At most 8; Total: Exactly 21 → Total: 1 to 3, in force now"
                 }
               },
@@ -2272,7 +2276,7 @@
                 "value": "$1,000,000,000",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:58.986773444Z",
+                "changedAt": "2026-10-28T00:13:45.332493523Z",
                 "schema": {
                   "kind": "cents",
                   "minimum": 0,
@@ -2289,8 +2293,8 @@
                 },
                 "governed": {
                   "entry": "act.3f23986e78deed11facbac78f94a933e4fcc9371b6c1a825dfbe54afac4ef2db",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:58.986773444Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.332493523Z",
                   "change": "Salary cap: $125,000,000 → $1,000,000,000, in force now"
                 }
               },
@@ -3834,7 +3838,7 @@
                 "value": "2 minutes",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.178272521Z",
+                "changedAt": "2026-10-28T00:13:45.520812151Z",
                 "schema": {
                   "kind": "nanoseconds",
                   "minimum": 0,
@@ -3851,8 +3855,8 @@
                 },
                 "governed": {
                   "entry": "act.b0019d5e618882fe3c1d04c0c5473d6b68a5602f474fda5c95f6b356fa901cad",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.178272521Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.520812151Z",
                   "change": "Waiver period: 1 day → 2 minutes, in force now"
                 }
               },
@@ -3898,7 +3902,7 @@
                 "value": "Blind",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.204254829Z",
+                "changedAt": "2026-10-28T00:13:45.550983333Z",
                 "schema": {
                   "kind": "string",
                   "choices": [
@@ -3923,8 +3927,8 @@
                 },
                 "governed": {
                   "entry": "act.ed483e9223472762a2a7323dbe302afd1348454e65be025b1024b332c112cb7e",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.204254829Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.550983333Z",
                   "change": "Unrestricted free agent bidding: Open → Blind, in force now"
                 }
               },
@@ -4169,7 +4173,7 @@
                 "value": "2 minutes",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.152222292Z",
+                "changedAt": "2026-10-28T00:13:45.492472145Z",
                 "schema": {
                   "kind": "nanoseconds",
                   "minimum": 0,
@@ -4186,8 +4190,8 @@
                 },
                 "governed": {
                   "entry": "act.8b9f677e31f3cc1e279789d78db1293cfa5cb30e997d2070453b4c5974e0d268",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.152222292Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.492472145Z",
                   "change": "Time a bid must stand to win: 1 day → 2 minutes, in force now"
                 }
               },
@@ -4361,7 +4365,7 @@
                 "value": "Commissioner",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.232547788Z",
+                "changedAt": "2026-10-28T00:13:45.577766172Z",
                 "schema": {
                   "kind": "string",
                   "choices": [
@@ -4390,8 +4394,8 @@
                 },
                 "governed": {
                   "entry": "act.c8271a213a1cc0ea5f057d1585b6ea0eb7932e7ce4a05e539bf8f36ed5acaa64",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.232547788Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.577766172Z",
                   "change": "Trade review: DOT → Commissioner, in force now"
                 }
               },
@@ -5089,7 +5093,7 @@
                 "value": "Rookie draft: Start: 1 January; End: Needs a ruling; Opens: Draft pick; Lineup; Ir; Taxi; Cut; Waiver claim; Ufa bid; Trade; Dated start: Needs a ruling; Dated end: Needs a ruling",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.066229621Z",
+                "changedAt": "2026-10-28T00:13:45.414158199Z",
                 "schema": {
                   "kind": "map",
                   "choices": [],
@@ -5225,8 +5229,8 @@
                 },
                 "governed": {
                   "entry": "act.65fc1bd7442d7d354b839272a7226309dd126b2dbff2c0a76680885dc93f6fec",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.066229621Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.414158199Z",
                   "change": "League action windows: Contracts: Start: 1 March; End: 30 April; Opens: Needs a ruling; Dated start: Needs a ruling; Dated end: Needs a ruling; Cut buyout: Start: 25 August; End: 1 September; Opens: Cut; Buyout; Dated start: Needs a ruling; Dated end: Needs a ruling; Lineups: Start: 1 March; End: Needs a ruling; Opens: Lineup; Dated start: Needs a ruling; Dated end: Needs a ruling; Open fa: Start: 19 May; End: Needs a ruling; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Resign: Start: 10 May; End: 15 May; Opens: Resign; Dated start: Needs a ruling; Dated end: Needs a ruling; Rfa tenders: Start: 1 May; End: 3 May; Opens: Rfa tender; Dated start: Needs a ruling; Dated end: Needs a ruling; Rookie draft: Start: 14 July; End: Needs a ruling; Opens: Draft pick; Dated start: Needs a ruling; Dated end: Needs a ruling; Ufa: Start: 3 May; End: 10 May; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Waivers: Start: 1 March; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling → Rookie draft: Start: 1 January; End: Needs a ruling; Opens: Draft pick; Lineup; Ir; Taxi; Cut; Waiver claim; Ufa bid; Trade; Dated start: Needs a ruling; Dated end: Needs a ruling, in force now"
                 }
               },
@@ -5236,7 +5240,7 @@
                 "value": "America/Chicago",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.015035604Z",
+                "changedAt": "2026-10-28T00:13:45.359274627Z",
                 "schema": {
                   "kind": "string",
                   "choices": [],
@@ -5252,8 +5256,8 @@
                 },
                 "governed": {
                   "entry": "act.6120353cb9ebbe72d26285a57d9057327c2843bb76930b95e1c228b3c1e38095",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.015035604Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.359274627Z",
                   "change": "League timezone: America/New_York → America/Chicago, in force now"
                 }
               },
@@ -5263,7 +5267,7 @@
                 "value": "Start of day",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.041108056Z",
+                "changedAt": "2026-10-28T00:13:45.384354878Z",
                 "schema": {
                   "kind": "string",
                   "choices": [
@@ -5288,8 +5292,8 @@
                 },
                 "governed": {
                   "entry": "act.1a7e4c5667c5cf556fbf90e53669bb89994cb836a4269a38f89b375e6949cd47",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.041108056Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.384354878Z",
                   "change": "Shared date boundary: Needs a ruling → Start of day, in force now"
                 }
               },
@@ -5364,10 +5368,10 @@
               {
                 "field": "calendar.tradeDeadline",
                 "label": "Trade deadline",
-                "value": "26 Nov 2027 23:35 UTC",
+                "value": "27 Nov 2027 00:13 UTC",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.34677712Z",
+                "changedAt": "2026-10-28T00:13:45.695941465Z",
                 "schema": {
                   "kind": "date",
                   "choices": [],
@@ -5375,7 +5379,7 @@
                 },
                 "competitive": true,
                 "pending": [],
-                "current": "2027-11-26T23:35:58.884427772Z",
+                "current": "2027-11-27T00:13:45.227463477Z",
                 "unit": "",
                 "safeguards": {
                   "nextRollover": "hold",
@@ -5383,9 +5387,9 @@
                 },
                 "governed": {
                   "entry": "act.2af067ba5a9b4d221bd883a34935cdcaaedcafd3bffbf54dbd6b374aabdb9888",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.34677712Z",
-                  "change": "Trade deadline: Needs a ruling → 26 Nov 2026 23:35 UTC, in force now"
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.695941465Z",
+                  "change": "Trade deadline: Needs a ruling → 27 Nov 2026 00:13 UTC, in force now"
                 }
               },
               {
@@ -5453,7 +5457,7 @@
                 "value": "1 day",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.286182249Z",
+                "changedAt": "2026-10-28T00:13:45.637290587Z",
                 "schema": {
                   "kind": "nanoseconds",
                   "minimum": 0,
@@ -5470,8 +5474,8 @@
                 },
                 "governed": {
                   "entry": "act.3aa20fe701788589e378da1898e4a781f422d87ee256ed2a2706cdfd4a28903b",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.286182249Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.637290587Z",
                   "change": "Draft pick clock: 6 hours → 1 day, in force now"
                 }
               },
@@ -5556,7 +5560,7 @@
                 "value": "1",
                 "state": "Set",
                 "citation": "Changed in the league ledger",
-                "changedAt": "2026-10-27T23:35:59.260146517Z",
+                "changedAt": "2026-10-28T00:13:45.609333621Z",
                 "schema": {
                   "kind": "count",
                   "minimum": 0,
@@ -5573,8 +5577,8 @@
                 },
                 "governed": {
                   "entry": "act.4344f9eba3d48fe1885170566b305bbd20505acc1aefaa514b0d0b20098881b7",
-                  "who": "acct.70e73f44-29f4-4b8a-ac0b-4580dcd75f67",
-                  "when": "2026-10-27T23:35:59.260146517Z",
+                  "who": "acct.564a77af-5a0c-49d8-9dae-70661d5af41a",
+                  "when": "2026-10-28T00:13:45.609333621Z",
                   "change": "Draft rounds: 5 → 1, in force now"
                 }
               },
@@ -5986,6 +5990,164 @@
                   "now": "reason"
                 },
                 "governed": null
+              },
+              {
+                "field": "draft.startupRounds",
+                "label": "Startup draft rounds",
+                "value": "80",
+                "state": "Set",
+                "citation": "Legacy NFL rules",
+                "changedAt": "",
+                "schema": {
+                  "kind": "count",
+                  "minimum": 0,
+                  "choices": [],
+                  "fields": []
+                },
+                "competitive": true,
+                "pending": [],
+                "current": 80,
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
+              },
+              {
+                "field": "draft.startupOrder",
+                "label": "Startup draft first round order",
+                "value": "Random",
+                "state": "Set",
+                "citation": "Legacy NFL rules",
+                "changedAt": "",
+                "schema": {
+                  "kind": "string",
+                  "choices": [
+                    {
+                      "value": "commissioner",
+                      "label": "Commissioner"
+                    },
+                    {
+                      "value": "random",
+                      "label": "Random"
+                    }
+                  ],
+                  "fields": []
+                },
+                "competitive": true,
+                "pending": [],
+                "current": "random",
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
+              },
+              {
+                "field": "draft.startupList",
+                "label": "Startup draft order set by the commissioner",
+                "value": "None",
+                "state": "Set",
+                "citation": "Legacy NFL rules",
+                "changedAt": "",
+                "schema": {
+                  "kind": "list",
+                  "choices": [],
+                  "fields": [],
+                  "element": {
+                    "kind": "string",
+                    "choices": [],
+                    "fields": []
+                  }
+                },
+                "competitive": true,
+                "pending": [],
+                "current": [],
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
+              },
+              {
+                "field": "draft.startupPattern",
+                "label": "Startup draft later round pattern",
+                "value": "Snake",
+                "state": "Set",
+                "citation": "Legacy NFL rules",
+                "changedAt": "",
+                "schema": {
+                  "kind": "string",
+                  "choices": [
+                    {
+                      "value": "linear",
+                      "label": "Linear"
+                    },
+                    {
+                      "value": "snake",
+                      "label": "Snake"
+                    }
+                  ],
+                  "fields": []
+                },
+                "competitive": true,
+                "pending": [],
+                "current": "snake",
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
+              },
+              {
+                "field": "draft.startupYears",
+                "label": "Startup draft contract years",
+                "value": "1",
+                "state": "Set",
+                "citation": "Legacy NFL rules",
+                "changedAt": "",
+                "schema": {
+                  "kind": "count",
+                  "minimum": 0,
+                  "choices": [],
+                  "fields": []
+                },
+                "competitive": true,
+                "pending": [],
+                "current": 1,
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
+              },
+              {
+                "field": "draft.startupSalary",
+                "label": "Startup draft salary",
+                "value": "$330,000",
+                "state": "Set",
+                "citation": "Legacy NFL rules (rulebook section 6)",
+                "changedAt": "",
+                "schema": {
+                  "kind": "cents",
+                  "minimum": 0,
+                  "choices": [],
+                  "fields": []
+                },
+                "competitive": true,
+                "pending": [],
+                "current": 33000000,
+                "unit": "",
+                "safeguards": {
+                  "nextRollover": "hold",
+                  "now": "reason"
+                },
+                "governed": null
               }
             ]
           },
@@ -6044,11 +6206,11 @@
     "draft.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "season": 2027,
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "rules": [
           {
             "label": "Draft pace",
@@ -6439,7 +6601,7 @@
         ],
         "words": "The rookie draft is running.",
         "draft": {
-          "start": "2026-10-27T23:36:01.501375144Z",
+          "start": "2026-10-28T00:13:47.863412639Z",
           "started": true,
           "exhausted": false,
           "picks": [
@@ -6705,15 +6867,15 @@
             "original": "franchise.01",
             "owner": "franchise.01",
             "slot": 1,
-            "openedAt": "2026-10-27T23:36:01.501375144Z",
-            "deadline": "2026-10-28T23:36:01.501375144Z",
+            "openedAt": "2026-10-28T00:13:47.863412639Z",
+            "deadline": "2026-10-29T00:13:47.863412639Z",
             "contract": {
               "salaryCents": 300000000,
               "years": 5,
               "rfaAfter": false
             },
             "paused": false,
-            "remaining": 86398193015509
+            "remaining": 86398061468906
           }
         },
         "nextOwnedPick": {
@@ -6742,8 +6904,8 @@
         "checkpoints": [
           {
             "entry": "act.7182228327cee98314c6f50cc26d8332001b116174600b321d3fcb46627cc709",
-            "words": "Set the 2027 rookie draft to start at 2026-10-27T23:36:01Z",
-            "at": "2026-10-27T23:35:59.501814102Z"
+            "words": "Set the 2027 rookie draft to start at 2026-10-28T00:13:47Z",
+            "at": "2026-10-28T00:13:45.863852198Z"
           }
         ]
       }
@@ -6751,18 +6913,18 @@
     "native.assets.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "seeded": true,
         "entry": "act.20aa32f1baab4d4b10edb568ee0319ed89bb57600584bcc7640662e2576b01a8",
         "source": "App league; starting snapshot recorded from held data, never synced with MFL",
         "snapshot": {
           "season": 2027,
-          "rosterAt": "2026-10-27T23:35:58.884427772Z",
-          "draftAt": "2026-10-27T23:35:58.884427772Z",
-          "futureAt": "2026-10-27T23:35:58.884427772Z",
+          "rosterAt": "2026-10-28T00:13:45.227463477Z",
+          "draftAt": "2026-10-28T00:13:45.227463477Z",
+          "futureAt": "2026-10-28T00:13:45.227463477Z",
           "franchises": [
             {
               "id": "franchise.01",
@@ -7346,11 +7508,11 @@
     "native.reserve.check": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "name": "Practice league",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "rosterSeason": 2027,
         "rulesSeason": 2027,
         "seeded": true,
@@ -7972,12 +8134,12 @@
     "results.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "season": 2027,
         "week": 1,
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "published": false,
         "words": "The league schedule is not published yet, so there are no games to score",
         "games": [],
@@ -7988,12 +8150,12 @@
     "standings.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "name": "Practice league",
         "season": 2027,
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "status": "Unavailable",
         "words": "The league schedule is not published yet, so there are no games to rank",
         "through": 0,
@@ -8008,11 +8170,11 @@
     "trades.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "viewer": "franchise.01",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "rules": [
           {
             "label": "Trade review",
@@ -8054,11 +8216,11 @@
     "waivers.read": {
       "label": "This league is managed here",
       "writable": true,
-      "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+      "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
       "data": {
         "league": "native.hosted",
         "franchise": "franchise.01",
-        "revision": 346685017307120,
+        "revision": 60311716359403,
         "season": 2027,
         "players": [],
         "claims": [],
@@ -8071,17 +8233,17 @@
   "receipt": {
     "label": "This league is managed here",
     "writable": true,
-    "football": "e09ecdc7bc3fd69aaeb160e6f69b0b32443115290dbd8c6d0a1e88a3d1cb41e8",
+    "football": "0e1500f92433ac2f788e91c59d89f251ad98ae5b92b37f07e5b85861d44628ab",
     "data": {
-      "entry": "act.f2e2cc628c41e23fb786d8c97bd4111c1bb01b114a65482ec0246422e07cacf0",
+      "entry": "act.05df671acf251723c26b56773543c441244738f7178ee5150cea3f54efce356a",
       "league": "native.hosted",
-      "revision": 346685017307120,
-      "recordedAt": "2026-10-27T23:39:00.924979579Z",
+      "revision": 60311716359403,
+      "recordedAt": "2026-10-28T00:16:47.360984097Z",
       "message": "Recorded in the league ledger.",
       "plan": {
         "from": 2026,
         "to": 2027,
-        "beforeDigest": "00ce7555c645e565d78af45ef1dcc2770dafa33ead202f5324ae1e2a3f071bd8",
+        "beforeDigest": "a6d853f8994e70cef838a9d97742a2dabf3ba136cabec574bab6f8146dbde6ec",
         "blocked": false,
         "reasons": [],
         "lines": [
@@ -8093,7 +8255,7 @@
           "Practice free agent is pending a contract decision, not released. The app cannot say yet whether he becomes a restricted or unrestricted free agent: no rookie draft round is recorded for his contract.",
           "No champion is decided for season 2026, so none is archived.",
           "No salary adjustments or dead money are recorded, so none carries.",
-          "Trade deadline takes effect: Fri, Nov 26, 2027 at 5:35 PM CST.",
+          "Trade deadline takes effect: Fri, Nov 26, 2027 at 6:13 PM CST.",
           "The rookie draft window opens Fri, Jan 1, 2027 at 12:00 AM CST.",
           "The new season's salary cap resets to $1,000,000,000.",
           "Salaries stay as recorded.",
@@ -8102,9 +8264,9 @@
         ],
         "after": {
           "season": 2027,
-          "rosterAt": "2026-10-27T23:35:58.884427772Z",
-          "draftAt": "2026-10-27T23:35:58.884427772Z",
-          "futureAt": "2026-10-27T23:35:58.884427772Z",
+          "rosterAt": "2026-10-28T00:13:45.227463477Z",
+          "draftAt": "2026-10-28T00:13:45.227463477Z",
+          "futureAt": "2026-10-28T00:13:45.227463477Z",
           "franchises": [
             {
               "id": "franchise.01",
@@ -12708,7 +12870,7 @@
             },
             "TradeDeadline": {
               "State": 1,
-              "Value": "2027-11-26T23:35:58.884427772Z",
+              "Value": "2027-11-27T00:13:45.227463477Z",
               "Citation": ""
             },
             "TradeDeadlineWeek": {
@@ -13070,6 +13232,36 @@
               "State": 0,
               "Value": "",
               "Citation": "Census CM-041 Q-E1"
+            },
+            "StartupRounds": {
+              "State": 1,
+              "Value": 80,
+              "Citation": "Startup draft ruling R1, 2026-10-27; fact R"
+            },
+            "StartupOrder": {
+              "State": 1,
+              "Value": "random",
+              "Citation": "Startup draft ruling R1, 2026-10-27"
+            },
+            "StartupList": {
+              "State": 1,
+              "Value": [],
+              "Citation": "Startup draft ruling R1, 2026-10-27"
+            },
+            "StartupPattern": {
+              "State": 1,
+              "Value": "snake",
+              "Citation": "Startup draft ruling R1, 2026-10-27"
+            },
+            "StartupYears": {
+              "State": 1,
+              "Value": 1,
+              "Citation": "Startup draft ruling R1, 2026-10-27"
+            },
+            "StartupSalary": {
+              "State": 1,
+              "Value": 33000000,
+              "Citation": "Startup draft ruling R1, 2026-10-27; Rulebook §6"
             }
           },
           "Notify": {
@@ -13106,7 +13298,7 @@
             }
           ],
           "exceptions": null,
-          "tradeDeadline": "2027-11-26T23:35:58.884427772Z",
+          "tradeDeadline": "2027-11-27T00:13:45.227463477Z",
           "secondsToTradeDeadline": 34127817
         }
       }

@@ -25,6 +25,9 @@ type OrderSource string
 type OrderPattern string
 type TieRule string
 
+// StartupOrderSource is where a startup draft's first round order comes from.
+type StartupOrderSource string
+
 const (
 	QB Position = "QB"
 	RB Position = "RB"
@@ -37,12 +40,14 @@ const (
 	CB Position = "CB"
 	S  Position = "S"
 	// OL is a team's offensive line as one card (DEFAULT-32 spec §3), never a person.
-	OL                   Position        = "OL"
-	Offense              LineupGroup     = "offense"
-	Defense              LineupGroup     = "defense"
-	Total                LineupGroup     = "total"
-	HeadToHead           Format          = "head_to_head"
-	ByDraft              InitialRosters  = "draft"
+	OL         Position       = "OL"
+	Offense    LineupGroup    = "offense"
+	Defense    LineupGroup    = "defense"
+	Total      LineupGroup    = "total"
+	HeadToHead Format         = "head_to_head"
+	ByDraft    InitialRosters = "draft"
+	// ByFreeAgency starts a league with no startup draft: owners fill their rosters by free-agent bids.
+	ByFreeAgency         InitialRosters  = "free_agency"
 	CarryAll             CarryPolicy     = "all"
 	KeepSome             CarryPolicy     = "keepers"
 	ZeroTopStarter       Penalty         = "zero_top_starter"
@@ -85,6 +90,10 @@ const (
 	WorstStandingsFirst  OrderSource     = "standings"
 	Linear               OrderPattern    = "linear"
 	Snake                OrderPattern    = "snake"
+	// RandomOrder draws the startup draft's first round from a seed recorded when the draft opens.
+	RandomOrder StartupOrderSource = "random"
+	// CommissionerOrder takes the startup draft's first round from the order the commissioner set.
+	CommissionerOrder StartupOrderSource = "commissioner"
 )
 
 type Bounds struct {

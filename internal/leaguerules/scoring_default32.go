@@ -36,6 +36,8 @@ func Default32() RuleSet {
 	r.Roster.Limits = cited(Bounds{Min: r.Roster.Limits.Value.Min, Max: cited(44, default32Roster)}, default32Roster)
 	r.Roster.ReserveExcluded = cited(true, default32Roster)
 	r.Roster.PositionBounds = cited(map[Position]Bounds{OL: bounds(1, 1, default32OLine)}, default32OLine)
+	// A startup draft fills the active roster except the O-Line card, which is auctioned.
+	r.Draft.StartupRounds = cited(43, default32Roster+"; "+startupRuling)
 	r.Taxi.Slots = cited(8, default32Roster)
 	r.Taxi.MaximumYears = cited(3, default32Roster)
 	r.Taxi.Basis = cited(NFLSeasons, default32Roster)

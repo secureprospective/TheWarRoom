@@ -743,6 +743,18 @@
             {
               "field": "draft.rfaAfter",
               "label": "Rookie restricted free agency"
+            },
+            {
+              "field": "draft.startupRounds",
+              "label": "Startup draft rounds"
+            },
+            {
+              "field": "draft.startupYears",
+              "label": "Startup draft contract years"
+            },
+            {
+              "field": "draft.startupSalary",
+              "label": "Startup draft salary"
             }
           ]
         },
@@ -766,6 +778,18 @@
             {
               "field": "draft.tieRule",
               "label": "Draft order tie breaker"
+            },
+            {
+              "field": "draft.startupOrder",
+              "label": "Startup draft first round order"
+            },
+            {
+              "field": "draft.startupList",
+              "label": "Startup draft order set by the commissioner"
+            },
+            {
+              "field": "draft.startupPattern",
+              "label": "Startup draft later round pattern"
             }
           ]
         },

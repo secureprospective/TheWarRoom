@@ -187,3 +187,22 @@ func TestEveryMenuOptionIsOffered(t *testing.T) {
 		}
 	}
 }
+
+func TestFirstRostersAndStartupOrderOfferChoices(t *testing.T) {
+	for _, row := range []struct {
+		kind  string
+		value string
+		ok    bool
+	}{
+		{"InitialRosters", "draft", true}, {"InitialRosters", "free_agency", true}, {"InitialRosters", "auction", false},
+		{"StartupOrderSource", "random", true}, {"StartupOrderSource", "commissioner", true},
+		{"StartupOrderSource", "standings", false},
+	} {
+		if err := validateMenu(row.kind, row.value); (err == nil) != row.ok {
+			t.Fatalf("%s %s: %v", row.kind, row.value, err)
+		}
+	}
+	if got := catalogueChoices("InitialRosters"); len(got) != 2 {
+		t.Fatalf("first rosters choices %v", got)
+	}
+}

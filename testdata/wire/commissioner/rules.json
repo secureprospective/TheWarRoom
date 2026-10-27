@@ -21,6 +21,7 @@
       "fields": []
      },
      "competitive": true,
+     "nowOnly": true,
      "pending": [],
      "current": 32,
      "unit": "",
@@ -67,6 +68,7 @@
       "fields": []
      },
      "competitive": true,
+     "nowOnly": true,
      "pending": [],
      "current": 1,
      "unit": "",
@@ -120,6 +122,10 @@
        {
         "value": "draft",
         "label": "Draft"
+       },
+       {
+        "value": "free_agency",
+        "label": "Free agency"
        }
       ],
       "fields": []
@@ -137,7 +143,7 @@
     {
      "field": "league.alignment",
      "label": "Division alignment",
-     "value": "Franchise.01: division.1; Franchise.02: division.1; Franchise.03: division.1; Franchise.04: division.1; Franchise.05: division.1; Franchise.06: division.1; Franchise.07: division.1; Franchise.08: division.1; Franchise.09: division.1; Franchise.10: division.1; Franchise.11: division.1; Franchise.12: division.1; Franchise.13: division.1; Franchise.14: division.1; Franchise.15: division.1; Franchise.16: division.1; Franchise.17: division.1; Franchise.18: division.1; Franchise.19: division.1; Franchise.20: division.1; Franchise.21: division.1; Franchise.22: division.1; Franchise.23: division.1; Franchise.24: division.1; Franchise.25: division.1; Franchise.26: division.1; Franchise.27: division.1; Franchise.28: division.1; Franchise.29: division.1; Franchise.30: division.1; Franchise.31: division.1; Franchise.32: division.1",
+     "value": "Held team 1: division.1; Held team 2: division.1; Held team 3: division.1; Held team 4: division.1; Held team 5: division.1; Held team 6: division.1; Held team 7: division.1; Held team 8: division.1; Held team 9: division.1; Held team 10: division.1; Held team 11: division.1; Held team 12: division.1; Held team 13: division.1; Held team 14: division.1; Held team 15: division.1; Held team 16: division.1; Held team 17: division.1; Held team 18: division.1; Held team 19: division.1; Held team 20: division.1; Held team 21: division.1; Held team 22: division.1; Held team 23: division.1; Held team 24: division.1; Held team 25: division.1; Held team 26: division.1; Held team 27: division.1; Held team 28: division.1; Held team 29: division.1; Held team 30: division.1; Held team 31: division.1; Held team 32: division.1",
      "state": "Set",
      "citation": "Legacy NFL rules",
      "changedAt": "",
@@ -5920,6 +5926,164 @@
      "competitive": true,
      "pending": [],
      "current": null,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupRounds",
+     "label": "Startup draft rounds",
+     "value": "80",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "count",
+      "minimum": 0,
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": 80,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupOrder",
+     "label": "Startup draft first round order",
+     "value": "Random",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "commissioner",
+        "label": "Commissioner"
+       },
+       {
+        "value": "random",
+        "label": "Random"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "random",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupList",
+     "label": "Startup draft order set by the commissioner",
+     "value": "None",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "list",
+      "choices": [],
+      "fields": [],
+      "element": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": [],
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupPattern",
+     "label": "Startup draft later round pattern",
+     "value": "Snake",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "linear",
+        "label": "Linear"
+       },
+       {
+        "value": "snake",
+        "label": "Snake"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": "snake",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupYears",
+     "label": "Startup draft contract years",
+     "value": "1",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "count",
+      "minimum": 0,
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": 1,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
+     "field": "draft.startupSalary",
+     "label": "Startup draft salary",
+     "value": "$330,000",
+     "state": "Set",
+     "citation": "Legacy NFL rules (rulebook section 6)",
+     "changedAt": "",
+     "schema": {
+      "kind": "cents",
+      "minimum": 0,
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": 33000000,
      "unit": "",
      "safeguards": {
       "nextRollover": "hold",

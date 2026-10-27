@@ -9,7 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // PlayerContract is recorded native ownership and contract data, not an imported owner roster.
@@ -28,6 +27,8 @@ type Candidate struct {
 }
 
 type SelectionBasis struct {
+	// Pool is who this draft may take; the zero value is the season's rookie class.
+	Pool       Pool
 	Exceptions []nativecheck.DecisionException
 	Season     int
 	Players    []PlayerContract
@@ -49,12 +50,8 @@ func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Ca
 	if d.OnClock == nil || d.OnClock.Owner != owner {
 		return SelectionPreview{}, fmt.Errorf("it is not your turn to pick")
 	}
-	id, err := playerid.New(candidate.ID)
-	if err != nil || id.String() != candidate.ID || basis.Season < 1 || candidate.EntrySeason != basis.Season {
-		return SelectionPreview{}, fmt.Errorf("choose a rookie from this season's player pool")
-	}
-	if _, card := nativecheck.LineCardTeam(candidate.ID); card {
-		return SelectionPreview{}, fmt.Errorf("an O-Line card is assigned, never drafted")
+	if err := admits(basis.Pool, basis.Season, candidate); err != nil {
+		return SelectionPreview{}, err
 	}
 	if slices.ContainsFunc(basis.Players, func(p PlayerContract) bool { return p.ID == candidate.ID }) ||
 		slices.ContainsFunc(d.Picks, func(p Result) bool { return p.Player == candidate.ID }) {

@@ -146,7 +146,7 @@ func validateNames(names Value[map[string]string]) error {
 // menus is every closed list of options a rule value may take, by the value's type name.
 func menus() map[string][]string {
 	return map[string][]string{
-		"Format": {"head_to_head"}, "InitialRosters": {"draft"}, "CarryPolicy": {"all", "keepers"},
+		"Format": {"head_to_head"}, "InitialRosters": {"draft", "free_agency"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
 		"ExperienceBasis": {"calendar_years", "career_games", "nfl_seasons"}, "WaiverTrigger": {"cut"},
@@ -154,6 +154,7 @@ func menus() map[string][]string {
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
 		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
+		"StartupOrderSource": {"random", "commissioner"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",
 			"all_play_percentage", "points", "power_rank"},
 		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},

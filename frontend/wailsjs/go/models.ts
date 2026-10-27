@@ -11602,6 +11602,22 @@ export namespace leaguerules {
 	
 	
 	
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_StartupOrderSource_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_StartupOrderSource_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
 	
 	
 	
