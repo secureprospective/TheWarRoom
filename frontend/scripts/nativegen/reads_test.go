@@ -19,12 +19,16 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace"} {
+	for _, key := range []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
+		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
+		"market.TargetMarketStretches", "market.TargetAssetProfile",
+		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam"} {
 		if !strings.Contains(string(body), `"`+key+`":`) {
 			t.Fatal("missing read", key)
 		}
 	}
-	for _, method := range []string{"TargetCommsRefresh", "TargetOpenComms", "TargetDraftReportsRefresh", "TargetOpenMFLDraftRoom", "TargetRaceRefresh"} {
+	for _, method := range []string{"TargetCommsRefresh", "TargetOpenComms", "TargetDraftReportsRefresh", "TargetOpenMFLDraftRoom", "TargetRaceRefresh", "TargetCacheClear", "TargetDataRefresh", "TargetOpenMFLAccounting"} {
 		if strings.Contains(string(body), method) {
 			t.Fatal("action admitted to query catalog", method)
 		}

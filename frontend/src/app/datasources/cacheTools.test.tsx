@@ -83,3 +83,15 @@ describe('Read data again (Control Room › Data and sources)', () => {
     expect(commands.registry['cache.run'].label).toBe('Read data again');
   });
 });
+
+it('does not republish an old scope-list read after forgetting the held view', async () => {
+  let finish!: (value: unknown) => void;
+  await mount(render(CacheTools), {}, goes(async () => ok(''), () => new Promise(resolve => {
+    finish = resolve;
+  })));
+  await settle();
+  cacheState.forget();
+  finish(scopes);
+  await settle();
+  expect(cacheState.peek()).toEqual({ scopes: [], busy: '', error: '', outcomes: {}, pending: false });
+});

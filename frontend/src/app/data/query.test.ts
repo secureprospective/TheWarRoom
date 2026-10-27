@@ -129,6 +129,11 @@ it('does not leak another pending request through an older finally block', async
 
 // These expressions must remain compile-time errors, without executing a transport.
 function typeChecks() {
+  const query = archiveQuery();
+  // @ts-expect-error query loads retain the registry's complete positional tuple
+  void query.load([2026]);
+  // @ts-expect-error query arguments cannot substitute numbers for string franchise ids
+  void query.load([2026, 1, '']);
   // @ts-expect-error writes are not query commands
   readKey('draft.TargetOpenMFLDraftRoom', []);
   // @ts-expect-error a read's argument tuple comes from the registry binding
@@ -206,4 +211,71 @@ it('does not reuse the same-scope cache after an explicit refresh action', async
   expect(before).toHaveBeenCalledOnce();
   expect(read).toHaveBeenCalledTimes(2);
   expect(query.peek().value).toBe('after refresh');
+});
+
+it('fences pending detail publication while keeping the single last-scope cache', async () => {
+  const delayed = deferred<string>();
+  const read = vi.fn().mockResolvedValueOnce('held').mockReturnValueOnce(delayed.promise)
+    .mockResolvedValueOnce('another');
+  const accepted = vi.fn(value => ({ value }));
+  const query = createReadQuery('archive.TargetArchive', {
+    initial: (): { value?: string } => ({}), cacheSize: 1, read, accept: accepted,
+  });
+  await query.load([2025, '', '']);
+  const pending = query.load([2026, '', '']);
+  query.fence();
+  delayed.resolve('late');
+  await pending;
+  expect(query.peek()).toMatchObject({ value: 'held', pending: false });
+  expect(accepted).toHaveBeenCalledTimes(1);
+  await query.load([2025, '', ''], { policy: 'cache-first' });
+  expect(read).toHaveBeenCalledTimes(2);
+  await query.load([2024, '', ''], { policy: 'cache-first' });
+  await query.load([2025, '', ''], { policy: 'cache-first' });
+  expect(read).toHaveBeenCalledTimes(4);
+});
+
+it('validates every same-scope companion before reading a compound view', async () => {
+  const read = vi.fn(async () => 'never');
+  const query = createReadQuery('draft.TargetDraftReports', {
+    initial: () => ({}), companions: ['archive.TargetArchive'], read, accept: () => ({}),
+  });
+  await query.load([]);
+  expect(read).not.toHaveBeenCalled();
+  expect(query.peek().error).toContain('archive.TargetArchive: wrong argument count');
+});
+
+it('shares a wrapper-owned view without losing independently accepted fields', async () => {
+  const league = createReadQuery('control.TargetAccounting', {
+    initial: (): { accounting?: string; news?: string } => ({}),
+    read: async () => 'ledger', accept: accounting => ({ accounting }),
+  });
+  const news = createReadQuery('control.TargetSiteNews', {
+    initial: (): { accounting?: string; news?: string } => ({}), store: league.store,
+    read: async () => 'news', accept: value => ({ news: value }),
+  });
+  await Promise.all([league.load([]), news.load([])]);
+  expect(league.peek()).toEqual({ accounting: 'ledger', news: 'news', pending: false, error: '' });
+});
+
+it('projects frontend scopes to registry arguments without collapsing their cache identity', async () => {
+  type Selection = { from: number; to: number; phases: string[] | null; assets: string[]; byAge: boolean };
+  const read = vi.fn(async (scope: Selection) => scope.phases);
+  const query = createReadQuery('market.TargetMarketLists', {
+    initial: (): { phases?: string[] | null } => ({}), read,
+    arguments: ([scope]: [Selection]): [{ from: number; to: number; phases: string[];
+      assets: string[]; byAge: boolean }] => [{ ...scope, phases: scope.phases ?? [] }],
+    accept: phases => ({ phases }),
+  });
+  const scope: Selection = { from: 2017, to: 2026, phases: null, assets: [], byAge: false };
+  await query.load([scope], { policy: 'cache-first' });
+  await query.load([{ ...scope, phases: [] }], { policy: 'cache-first' });
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(query.peek().phases).toEqual([]);
+  await query.load([scope], { policy: 'cache-first' });
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(query.peek().phases).toBeNull();
+  await query.load([{ ...scope, from: NaN }]);
+  expect(read).toHaveBeenCalledTimes(2);
+  expect(query.peek().error).toContain('expected integer');
 });

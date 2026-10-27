@@ -2,13 +2,14 @@
 
 ## Resume here
 
-Shared primitive: `frontend/src/app/data/query.ts`. Four handwritten lifecycle implementations
-now use it, serving **five store consumers**: Archive, Race, Comms, Draft reports and Market reports
-(the last two already shared a factory). Selection/actions and public wrapper methods are preserved.
-Next: migrate Control's simple held reads and Sources cache-scope reads, then the scoped historical
-Market/Draft/Counterparties reads. Leave live polling and write-plan state until their separate
-invalidation/lifetime requirements are covered. Do not replace UI/action state merely to inflate
-migration counts.
+Shared primitive: `frontend/src/app/data/query.ts`. **Nine handwritten lifecycle implementations
+now use it, serving ten store consumers**: Archive, Race, Comms, Draft reports, Market reports,
+Control, Sources cache scopes, historical Market, historical Draft and Counterparties. The registry
+projection contains 17 audited read adapters. Writes, polling and session invalidation are unchanged.
+Next: Sources' compound sources/crosswalk/params view (ordered initial read, parallel independent
+subreads and partial failures), then Assets and Now held reads. Leave live polling and write-plan
+state for their separate invalidation/lifetime requirements. Do not replace UI/action state merely
+to inflate migration counts.
 
 ## Contract
 
@@ -17,7 +18,7 @@ migration counts.
   Its `ReadArguments<K>` selects the existing generated `DesktopArgumentMap`, not another manual
   argument interface. Runtime shape validation uses those same registry binding schemas.
 - Legacy desktop declarations do **not** consistently publish `Modes: [read]`: G0 includes
-  Comms refresh and browser opening. Therefore the generator has a conservative five-adapter
+  Comms refresh and browser opening. Therefore the generator has a conservative 17-adapter
   migration list of audited held reads. Every entry must exist in the registry, have G0 and have
   no conflicting declared modes. Do not infer purity from gravity, method spelling or availability.
   Expand this list only after reading its handler. No registry role/mode/schema/binding changed.
@@ -36,8 +37,9 @@ migration counts.
 - Keys contain registry logical ID, qualified adapter and all validated positional arguments.
   Object property order is normalized; array order is retained. Leading-zero IDs, season, team,
   viewer identity and scope values are not coerced. Inputs are detached before asynchronous reads.
-- Each query instance owns a bounded 32-entry last-success cache. There is no process-global or
-  cross-provider cache. `cache-first` is explicit opt-in; none of the migrated wrappers opt in yet.
+- Each query instance owns a bounded last-success cache (32 entries by default, one for historical details). There is no process-global or
+  cross-provider cache. `cache-first` is explicit opt-in; only historical details opt in, preserving their pre-existing
+  one-last-scope-per-kind/team caches. Main/compound views still always revalidate.
   Explicit refresh clears cached scopes before the action; failure cannot turn an old entry into
   fresh evidence. No TTL, timer, automatic retry, write replay or in-flight coalescing is introduced.
 - `invalidate()` clears cached values and fences pending publication, retaining the displayed
@@ -60,12 +62,12 @@ relative to `frontend/src/app/`. Query-neutral/action-only state is explicitly o
 | Comms `comms/state.ts` | TargetComms; team/kind, local pagination, explicit open/refresh | MOVED; open/more are not reads |
 | Draft reports `draftreports/state.ts` | TargetDraftReports; refresh-before-read | MOVED |
 | Market reports `reports/marketState.ts` | TargetMarketReports; shared report factory | MOVED; explicitly supplies its own registry key, never Draft's |
-| Control `control/state.ts` | league/settings/news/accounting reads | OPEN; independent readings and action outcomes |
-| Sources `datasources/cacheState.ts` | TargetCacheScopes; clear outcomes | OPEN; clear is an action, not a cached read |
+| Control `control/state.ts` | league/settings/news/accounting reads | MOVED; joint league publication, independent news; accounting open remains an action |
+| Sources `datasources/cacheState.ts` | TargetCacheScopes; clear outcomes | MOVED; clear/busy/outcomes remain action state; forget fences reads |
 | Sources `datasources/state.ts` | sources/crosswalk/params joint view | OPEN; preserve read-before-parallel-subreads and partial results |
-| Counterparties `counterparties/state.ts` | historical scope/details | OPEN; scoped detail cache and persisted filters |
-| Market `market/state.ts` | lists/clock/stretches/profiles | OPEN; joint publication and per-profile scope |
-| Historical Draft `market/draftState.ts` | DraftLab / pick-kind details | OPEN; scope revision plus per-kind cache |
+| Counterparties `counterparties/state.ts` | historical scope/details | MOVED; per-team last-scope cache/tokens and pending dedup; filters/sort unchanged |
+| Market `market/state.ts` | lists/clock/stretches/profiles | MOVED; joint publication and per-kind last-scope cache |
+| Historical Draft `market/draftState.ts` | DraftLab / pick-kind details | MOVED; pending details fenced by refresh, retry invalidates per-kind cache |
 | Assets `assets/state.ts` | asset board/profile | OPEN; selection and detail identity |
 | Now `now/state.ts` | week/team live-season view | OPEN; refresh and held snapshot interplay |
 | Live game `now/liveState.ts` | game/player live detail | OPEN; polling/revision lifetime |
@@ -114,3 +116,43 @@ explicit refresh). Both restored before the final passing run. No production mut
 
 Final importer/readability extension: 14 files / 312 tests pass. The source readability test first
 caught two new >110-character query/test lines; split them without changing behavior or the gate.
+
+
+## Part 6 — compound and scoped reads
+
+Flow: existing feature reader/parser → registry-validated query → wrapper-owned view. No new
+transport call or parser moved into the query tool. Control's league bundle uses settings as its
+primary read plus By-laws/Accounting companion registry IDs; Market's bundle uses lists plus
+clock/stretches IDs. All companions validate the same positional scope and participate in the key;
+publication stays all-or-nothing after the existing Promise.all (Market still words each failed
+subread separately). Control's independent news query shares its wrapper's view, not its cache;
+search and open-accounting remain outside the query lifecycle. Sources clear is not a query and
+cannot be replayed; its busy/outcome guard is unchanged.
+
+`arguments` optionally projects a parsed frontend scope to the existing typed Go binding tuple.
+Both the projection and original full scope are keyed, so Market's null/all versus empty-list UI
+selections do not collapse even though its existing api.ts normalizes both to Go arrays. The reader
+and accept port receive detached original inputs; validation still uses registry argument schemas.
+Overloads require a typed projection for a differing reader input; ordinary queries retain the
+registry tuple directly. No second response schema, route or capability is generated.
+
+Historical detail queries have one entry per kind/team, matching the old signature maps rather than
+introducing 32-scope history reuse. `fence()` stops pending publication but retains the last success;
+Market/Draft call it when refreshing their main view, preserving their old revision spans. Retry
+clears Draft/Counterparties detail caches. Counterparties retains its different original lifetime:
+main refresh alone does not cancel a team read; a newer request for that same team fences the older
+scope, different teams remain independent, and an already-pending identical panel is not duplicated.
+The teamPending map observes the detail query status rather than implementing another read lifecycle.
+Unavailable/failed parsed readings remain worded values (and cacheable where they were before), not
+silently converted to generic errors. Existing global provider/session lifetimes remain unchanged;
+this is not permission to enable cache-first for other reads before lifetime integration.
+
+New tests cover Control's no-half-league publication/failure retention, Sources forget during a
+read, compound Market publication, per-kind last-scope eviction, detail fences, Counterparties
+same-scope pending dedup/per-team independence/latest scope/provider isolation, shared Control
+view fields, companion validation and typed input projection preserving null versus empty scopes.
+Three sequential actual-source mutations were rejected by their intended assertions: removing the
+detail revision fence; collapsing original scope identity; replacing one-entry detail eviction with
+32 entries. Restored between attempts; no mutant or scratch file remains. Skipped tests in focused
+mutation runs are not counted as passes. Final targeted batch and production checks are recorded
+in app-boundary.md. No UI layout/event listener, write/polling/session invalidation or dependency change.

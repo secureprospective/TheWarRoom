@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla';
+import { createStore, type StoreApi } from 'zustand/vanilla';
 import { useStore } from 'zustand';
 import { readCommands, type ReadArguments, type ReadCommandId } from '../commands/reads.gen';
 import { validateShape } from '../commands/shape';
@@ -25,38 +25,65 @@ export function readKey<K extends ReadCommandId>(command: K, args: ReadArguments
   return JSON.stringify([definition.command, command, canonical(args)]);
 }
 
-// Feature wrappers retain selection and actions; this is the sole read/cache lifecycle.
-export function createReadQuery<K extends ReadCommandId, T, S extends object>(command: K, options: {
+type QueryOptions<T, S extends object, A extends unknown[]> = {
   initial: () => S;
-  read: (...args: ReadArguments<K>) => Promise<T>;
-  accept: (value: T) => Partial<S>;
-}) {
+  store?: StoreApi<S & ReadStatus>;
+  companions?: ReadCommandId[];
+  cacheSize?: 1 | 32;
+  read: (...args: A) => Promise<T>;
+  accept: (value: T, args: A) => Partial<S>;
+};
+type ReadQuery<A extends unknown[], S extends object> = {
+  store: StoreApi<S & ReadStatus>;
+  use: () => S & ReadStatus;
+  peek: StoreApi<S & ReadStatus>['getState'];
+  set: StoreApi<S & ReadStatus>['setState'];
+  load: (input: A | (() => A), config?: LoadOptions) => Promise<void>;
+  fence: () => void;
+  invalidate: () => void;
+  reset: () => void;
+};
+
+// A wrapper may project its parsed scope to the existing binding arguments, never a new schema.
+export function createReadQuery<K extends ReadCommandId, T, S extends object>(command: K,
+  options: QueryOptions<T, S, ReadArguments<K>> & { arguments?: never }): ReadQuery<ReadArguments<K>, S>;
+export function createReadQuery<K extends ReadCommandId, T, S extends object, A extends unknown[]>(command: K,
+  options: QueryOptions<T, S, A> & { arguments: (args: A) => ReadArguments<K> }): ReadQuery<A, S>;
+export function createReadQuery<K extends ReadCommandId, T, S extends object, A extends unknown[]>(command: K,
+  options: QueryOptions<T, S, A> & { arguments?: (args: A) => ReadArguments<K> }): ReadQuery<A, S> {
   const initial = () => ({ ...options.initial(), pending: false, error: '' });
-  const store = createStore<S & ReadStatus>(initial);
+  const store = options.store ?? createStore<S & ReadStatus>(initial);
   const cache = new Map<string, T>();
   let revision = 0;
 
-  async function load(input: ReadArguments<K> | (() => ReadArguments<K>), config: LoadOptions = {}) {
+  function key(input: A) {
+    const args = options.arguments
+      ? options.arguments(input) : input as unknown as ReadArguments<K>;
+    const companions = (options.companions ?? []).map(id => readKey(id, args as ReadArguments<typeof id>));
+    return JSON.stringify([readKey(command, args), ...companions, canonical(input)]);
+  }
+
+  async function load(input: A | (() => A), config: LoadOptions = {}) {
     const request = ++revision;
     store.setState({ pending: true, error: '' } as Partial<S & ReadStatus>);
     try {
-      let captured: ReadArguments<K> | undefined;
+      let captured: A | undefined;
       if (typeof input !== 'function') {
-        readKey(command, input);
-        captured = canonical(input) as ReadArguments<K>;
+        key(input);
+        captured = canonical(input) as A;
       }
       if (config.before) { cache.clear(); await config.before(); }
       if (request !== revision) return;
       const requested = typeof input === 'function' ? input() : captured!;
-      const key = readKey(command, requested);
-      const args = canonical(requested) as ReadArguments<K>;
-      const value = config.policy === 'cache-first' && cache.has(key)
-        ? cache.get(key)! : await options.read(...args);
+      const cacheKey = key(requested);
+      const args = canonical(requested) as A;
+      const value = config.policy === 'cache-first' && cache.has(cacheKey)
+        ? cache.get(cacheKey)! : await options.read(...args);
       if (request !== revision) return;
-      const accepted = options.accept(value);
-      cache.delete(key);
-      cache.set(key, value);
-      if (cache.size > 32) cache.delete(cache.keys().next().value!);
+      const accepted = options.accept(value, args);
+      cache.delete(cacheKey);
+      cache.set(cacheKey, value);
+      if (cache.size > (options.cacheSize ?? 32)) cache.delete(cache.keys().next().value!);
       store.setState(accepted as Partial<S & ReadStatus>);
     } catch (cause) {
       if (request === revision) store.setState({ error: String(cause) } as Partial<S & ReadStatus>);
@@ -65,17 +92,21 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object>(co
     }
   }
 
+  function fence() {
+    revision++;
+    store.setState({ pending: false } as Partial<S & ReadStatus>);
+  }
   function reset() {
     revision++;
     cache.clear();
     store.setState(initial(), true);
   }
   return {
+    store, fence,
     use: () => useStore(store), peek: store.getState, set: store.setState, load,
     invalidate: () => {
-      revision++;
+      fence();
       cache.clear();
-      store.setState({ pending: false } as Partial<S & ReadStatus>);
     }, reset,
   };
 }

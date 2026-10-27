@@ -106,6 +106,460 @@ export const readCommands = {
     "Items": null
   }
 },
+"control.TargetAccounting": {
+  "command": "desktop.control.TargetAccounting",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"control.TargetBylaws": {
+  "command": "desktop.control.TargetBylaws",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"control.TargetLeagueSettings": {
+  "command": "desktop.control.TargetLeagueSettings",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"control.TargetSiteNews": {
+  "command": "desktop.control.TargetSiteNews",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"counterparties.TargetCounterpartTeam": {
+  "command": "desktop.counterparties.TargetCounterpartTeam",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "scope",
+              "Optional": false,
+              "Schema": {
+                "Type": "object",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": [
+                  {
+                    "Name": "from",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "integer",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  },
+                  {
+                    "Name": "to",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "integer",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  },
+                  {
+                    "Name": "tiers",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "array",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": {
+                        "Type": "string",
+                        "Enum": null,
+                        "Format": "",
+                        "Validator": "",
+                        "Nullable": false,
+                        "Fields": null,
+                        "Items": null
+                      }
+                    }
+                  },
+                  {
+                    "Name": "windows",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "array",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": {
+                        "Type": "string",
+                        "Enum": null,
+                        "Format": "",
+                        "Validator": "",
+                        "Nullable": false,
+                        "Fields": null,
+                        "Items": null
+                      }
+                    }
+                  },
+                  {
+                    "Name": "postures",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "array",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": {
+                        "Type": "string",
+                        "Enum": null,
+                        "Format": "",
+                        "Validator": "",
+                        "Nullable": false,
+                        "Fields": null,
+                        "Items": null
+                      }
+                    }
+                  },
+                  {
+                    "Name": "team",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "string",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  }
+                ],
+                "Items": null
+              }
+            },
+            {
+              "Name": "fid",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"counterparties.TargetCounterparties": {
+  "command": "desktop.counterparties.TargetCounterparties",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "from",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "to",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "tiers",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "windows",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "postures",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "team",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"draft.TargetDraftLab": {
+  "command": "desktop.draft.TargetDraftLab",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "from",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "to",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "seasons",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "segments",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "nfl",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "group",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "draft.TargetDraftReports": {
   "command": "desktop.draft.TargetDraftReports",
   "arguments": {
@@ -118,6 +572,249 @@ export const readCommands = {
     "Items": null
   }
 },
+"market.TargetAssetProfile": {
+  "command": "desktop.market.TargetAssetProfile",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "scope",
+              "Optional": false,
+              "Schema": {
+                "Type": "object",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": [
+                  {
+                    "Name": "from",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "integer",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  },
+                  {
+                    "Name": "to",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "integer",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  },
+                  {
+                    "Name": "phases",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "array",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": {
+                        "Type": "string",
+                        "Enum": null,
+                        "Format": "",
+                        "Validator": "",
+                        "Nullable": false,
+                        "Fields": null,
+                        "Items": null
+                      }
+                    }
+                  },
+                  {
+                    "Name": "assets",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "array",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": {
+                        "Type": "string",
+                        "Enum": null,
+                        "Format": "",
+                        "Validator": "",
+                        "Nullable": false,
+                        "Fields": null,
+                        "Items": null
+                      }
+                    }
+                  },
+                  {
+                    "Name": "byAge",
+                    "Optional": false,
+                    "Schema": {
+                      "Type": "boolean",
+                      "Enum": null,
+                      "Format": "",
+                      "Validator": "",
+                      "Nullable": false,
+                      "Fields": null,
+                      "Items": null
+                    }
+                  }
+                ],
+                "Items": null
+              }
+            },
+            {
+              "Name": "kind",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"market.TargetMarketLists": {
+  "command": "desktop.market.TargetMarketLists",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "from",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "to",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "phases",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "assets",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "byAge",
+              "Optional": false,
+              "Schema": {
+                "Type": "boolean",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "market.TargetMarketReports": {
   "command": "desktop.market.TargetMarketReports",
   "arguments": {
@@ -127,6 +824,222 @@ export const readCommands = {
     "Validator": "desktop adapter Raw validation",
     "Nullable": false,
     "Fields": [],
+    "Items": null
+  }
+},
+"market.TargetMarketStretches": {
+  "command": "desktop.market.TargetMarketStretches",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "from",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "to",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "phases",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "assets",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "byAge",
+              "Optional": false,
+              "Schema": {
+                "Type": "boolean",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"market.TargetPickClock": {
+  "command": "desktop.market.TargetPickClock",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "from",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "to",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "phases",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "assets",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "byAge",
+              "Optional": false,
+              "Schema": {
+                "Type": "boolean",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
     "Items": null
   }
 },
@@ -179,6 +1092,18 @@ export const readCommands = {
         }
       }
     ],
+    "Items": null
+  }
+},
+"sources.TargetCacheScopes": {
+  "command": "desktop.sources.TargetCacheScopes",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
     "Items": null
   }
 },
