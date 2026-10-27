@@ -53,6 +53,9 @@ func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Ca
 	if err != nil || id.String() != candidate.ID || basis.Season < 1 || candidate.EntrySeason != basis.Season {
 		return SelectionPreview{}, fmt.Errorf("choose a rookie from this season's player pool")
 	}
+	if _, card := nativecheck.LineCardTeam(candidate.ID); card {
+		return SelectionPreview{}, fmt.Errorf("an O-Line card is assigned, never drafted")
+	}
 	if slices.ContainsFunc(basis.Players, func(p PlayerContract) bool { return p.ID == candidate.ID }) ||
 		slices.ContainsFunc(d.Picks, func(p Result) bool { return p.Player == candidate.ID }) {
 		return SelectionPreview{}, fmt.Errorf("this player already belongs to a team")

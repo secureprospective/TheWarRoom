@@ -4,6 +4,30 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
+- **Part 4 (2026-10-26):**
+  - **32-Team Default preset** (`a6bba706`): `commissioner.PresetDefault32` seeds
+    `leaguerules.Default32()` (spec §1 lineup with the O-Line card, 44 active incl. the card, taxi 8 /
+    3 years, IR 12 official IR or PUP, `Default32Scoring()`, the rest Legacy's), 32 teams only. The
+    create form offers the 32-Team Default and Empty; Legacy stays the import/recovery preset.
+  - **Evidence split by week** (`ac0670e1`): pinned football evidence is stored in per-week parts
+    under the existing 8 MiB per-item cap; inline (old) evidence still loads. A full real 2024 season
+    (weekly + play-by-play + PFR rushing) loads as week parts (`TestFullRealSeasonLoadsAsWeekParts`,
+    opt-in `TWR_STUDY_CACHE`).
+  - **O-Line card** (this commit; model below): ids, facts from the id, exactly one card per
+    franchise on every move path, and the score reader scoring a started card from the pinned line
+    games. Tests: `internal/nativecheck/linecard_test.go`, `internal/commissioner/line_card_test.go`
+    (trade 1-for-1 with the roster gate on and off; cut, IR, taxi, claim; real 2024 PIT/ATL/BUF/MIA
+    games score the study's Set B; bye 0; unheld week; Legacy off),
+    `internal/engine/rookiedraft/selection_test.go` (draft), `internal/store/history/
+    line_card_score_test.go` (the Store's reader end to end). Mutants: dropping the trade card check,
+    and dropping the reader's card dispatch, each fail a test.
+- **Next part starts at:** the league-start build for a non-Legacy league (`NativeSeed` accepts
+  Legacy only): auto-assign each franchise its card at league start, the card's 1-year contract
+  (commish-changeable), must-cut-to-receive, the card joining the player pool/directory for screens.
+  Then the taxi/IR rule fields the spec needs and the model lacks: taxi "NFL seasons only, CFL years
+  don't count", move both ways, auto-promote at eligibility end; IR tradeable and auto-return. Live
+  feeds wait on the week-8 study.
+
 - **Part 3 (2026-10-26):**
   - **Old Legacy leagues reach MFL parity automatically** (owner ruling 2026-10-26). Seed step
     version 2 (`leaguerules.seedUpgrades`): a seed recorded before the scoring kinds whose catalogue
@@ -115,6 +139,37 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
   startable thing (§3), which needs a position or slot kind the model does not have yet; that is
   a model change to plan, not to slip in. (d) Live feeds (spec §5/§7.1) are not mapped.
 - **Open rulings** are listed at the bottom; do not resolve them by guessing.
+
+## The O-Line card (model plan, part 4, owner ruling 2026-10-26)
+
+Each NFL team's line is a player-like **card** ("BAL O-Line", position `OL`), so rosters, trades,
+cuts, lineups and contracts reuse the existing player paths instead of a new slot kind.
+
+- **Identity.** Card ids are numeric strings, as every player id (`playerid.New`): `9900NN`, NN the
+  team's place (01–32) in the fixed nflverse team list (`nativecheck.LineCardTeams()`). No MFL player id
+  uses the 99xxxx block (MFL ids are ≤ 5 digits today). A team relocation keeps its card id by keeping
+  its list place; the list is append-only.
+- **Facts.** A card's `PlayerFacts` (Position `OL`, Team, Name "BAL O-Line") follow from its id
+  (`nativecheck.LineCardFacts`, read through `Facts.Of`), so roster, reserve and lineup checks place a
+  card without any player feed. Football evidence never lists cards: they are the league's own.
+- **One per franchise** is the roster rule `roster.positionBounds {OL: 1..1}` in the 32-Team
+  Default, judged by the existing `nativecheck.CheckRoster`. Every move path that runs the roster
+  gate (trade, waiver claim) therefore refuses a franchise with zero or two cards; a 1-for-1 card
+  trade passes, a card-for-player trade fails on both sides. Because a trade's roster refusal can be
+  turned off and a decision exception can waive position limits, `nativecheck.LineCardsHeld` (exactly
+  one card held, reserve included) also runs on every trade and in `rosterCapAllows` whatever is
+  turned off. A card on IR or taxi leaves the active OL count at 0 and is refused. The draft never
+  moves a card (`rookiedraft.PreviewSelection` refuses one). Legacy has no `OL` bound: OFF in Legacy.
+- **Lineup.** `lineup.positions {OL: 1..1}`; the card counts toward the total only, like the kicker.
+- **Scoring.** A started card scores the line unit (Set B, `scoring.lineUnit`) from the pinned
+  evidence's `LineGames` for its team's game that week (the `WW` of nflverse `SSSS_WW_AWAY_HOME`; the
+  held games are already one season's). A week the held games reach in which the team has no game is
+  a bye: 0. A week they do not reach is "not held", never a guessed 0. A game without yards before
+  contact is Incomplete ("not recorded yet"). A league whose line unit is not used (Legacy) says "This
+  league does not score an O-Line".
+- **Not in this part (needs the league-start path):** a non-Legacy league has no assets yet
+  (`NativeSeed` accepts Legacy only), so auto-assignment at league start, the 1-year card contract,
+  must-cut-to-receive, and the card facts joining the player pool wait for the league-start build.
 
 ## Owner framing
 

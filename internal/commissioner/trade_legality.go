@@ -65,6 +65,9 @@ func (x tradeExecution) legal(t TradeState) error {
 			return fmt.Errorf("pick trading is turned off for a party")
 		}
 		rules := x.rules
+		if err := lineCardsHeld(&candidate, rules, id); err != nil {
+			return err
+		}
 		if !t.Policy.RosterGate {
 			// Keep salary enforcement even when the commissioner disables the roster refusal.
 			capState, err := nativeFranchiseCap(&candidate, rules, id, x.zone)

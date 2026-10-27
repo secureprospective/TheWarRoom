@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 type NativeScoreItem struct {
@@ -57,21 +58,12 @@ func (m *RulesMemo) Score(league string, scope source.RawNativeScope, records []
 func nativePlayerScore(league string, scope source.RawNativeScope, records []Record,
 	evidence source.NativeEvidence, now time.Time, resolve RulesFunc,
 	fold func([]Record) ledgerFold) (NativePlayerScore, error) {
-	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
-		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
-	if err := scope.Validate(); err != nil {
-		return out, fmt.Errorf("read player score: %w", err)
-	}
-	if len(records) == 0 {
-		return out, fmt.Errorf("this app league has not been created")
-	}
-	if !seeded(records) {
-		out.Words = "Record the starting snapshot first"
-		return out, nil
-	}
-	rules, err := resolve(records, scope.Season, ReadingInstant(records, now))
-	if err != nil {
+	out, rules, ready, err := scoreRules(league, scope, records, now, resolve)
+	if err != nil || !ready {
 		return out, err
+	}
+	if team, ok := nativecheck.LineCardTeam(scope.Player); ok {
+		return out.countLineCard(rules.Scoring, team, evidence)
 	}
 	folded := fold(records)
 	changes, err := playerScoreChanges(records, folded.active, scope.Player, scope.Season, scope.Week)
@@ -107,6 +99,29 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 		return out, nil
 	}
 	return out.count(rules.Scoring, week.Line, changes.Delta)
+}
+
+// scoreRules opens a score reading: the scope checked, the league seeded and its rules resolved. ready is
+// false when the reading stops before any statistics are counted.
+func scoreRules(league string, scope source.RawNativeScope, records []Record, now time.Time,
+	resolve RulesFunc) (NativePlayerScore, leaguerules.RuleSet, bool, error) {
+	out := NativePlayerScore{League: league, Player: scope.Player, Season: scope.Season, Week: scope.Week,
+		Status: "Unavailable", Missing: []string{}, Items: []NativeScoreItem{}, Changes: []ScoreChange{}}
+	if err := scope.Validate(); err != nil {
+		return out, leaguerules.RuleSet{}, false, fmt.Errorf("read player score: %w", err)
+	}
+	if len(records) == 0 {
+		return out, leaguerules.RuleSet{}, false, fmt.Errorf("this app league has not been created")
+	}
+	if !seeded(records) {
+		out.Words = "Record the starting snapshot first"
+		return out, leaguerules.RuleSet{}, false, nil
+	}
+	rules, err := resolve(records, scope.Season, ReadingInstant(records, now))
+	if err != nil {
+		return out, leaguerules.RuleSet{}, false, err
+	}
+	return out, rules, true, nil
 }
 
 // withoutStatistics says why no statistics are counted for the week; no zero line is made up.

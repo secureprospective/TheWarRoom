@@ -117,7 +117,7 @@ func judgePositions(v *RosterVerdict, bounds leaguerules.Value[map[leaguerules.P
 	}
 	byPosition, unplaced := map[leaguerules.Position]int{}, 0
 	for _, p := range counted {
-		if f, ok := facts[p.ID]; ok && f.Position != "" {
+		if f, ok := facts.Of(p.ID); ok && f.Position != "" {
 			byPosition[f.Position]++
 		} else {
 			unplaced++

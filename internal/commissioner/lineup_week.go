@@ -231,7 +231,7 @@ func judgeStarters(rules leaguerules.LineupRules, submitted bool, ids []string,
 	facts nativecheck.Facts) (nativecheck.LineupVerdict, []NativeStarter) {
 	starters, listed, unplaced := []nativecheck.Starter{}, []NativeStarter{}, 0
 	for _, id := range ids {
-		f := facts[id]
+		f, _ := facts.Of(id)
 		if f.Position == "" {
 			unplaced++
 		}

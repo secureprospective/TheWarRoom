@@ -54,7 +54,7 @@ func CheckReserves(ir leaguerules.IRRules, taxi leaguerules.TaxiRules, season in
 	check := ReserveCheck{Players: []ReserveVerdict{}}
 	var onIR, onTaxi int
 	for _, p := range players {
-		f := facts[p.ID]
+		f, _ := facts.Of(p.ID)
 		switch p.Status {
 		case domain.RosterIR:
 			onIR++

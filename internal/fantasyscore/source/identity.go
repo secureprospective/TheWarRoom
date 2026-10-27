@@ -3,6 +3,9 @@ package source
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -40,6 +43,15 @@ type NativeEvidence struct {
 	Held    *HeldWeek
 	Lines   []LineRevision
 	Missing []string
+	// OLine is the season's held O-Line games, read only for an O-Line card; nil when none are held.
+	OLine *HeldLineGames
+}
+
+// HeldLineGames is one held revision's O-Line team-games and where they came from.
+type HeldLineGames struct {
+	SHA256    string
+	FetchedAt time.Time
+	Games     map[LineGame]fantasyscore.UnitLine
 }
 
 // Versions are the versions of the player's week. Evidence supplied as one held week has just that one.

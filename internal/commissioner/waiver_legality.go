@@ -28,6 +28,9 @@ func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchi
 			charges = append(charges, c.Amount)
 		}
 	}
+	if err := lineCardsHeld(seed, rules, franchise); err != nil {
+		return err
+	}
 	verdict := nativecheck.CheckRoster(rules.Roster, franchise, roster, facts, exceptions...)
 	if !verdict.Fits {
 		return fmt.Errorf("roster would not be legal: %s", strings.Join(append([]string{verdict.Words},
@@ -137,4 +140,19 @@ func RecordedStandingsOrder(league string, records []Record, season int, at time
 		}
 	}
 	return nil, fmt.Errorf("%s", "Waiver order needs the standings, which are not built yet.")
+}
+
+// lineCardsHeld holds a franchise to exactly one O-Line card in a league that has them, on every move
+// path and whatever roster refusal or decision exception is in force.
+func lineCardsHeld(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string) error {
+	roster := []nativecheck.RosterPlayer{}
+	for _, p := range seed.Players {
+		if p.Franchise == franchise {
+			roster = append(roster, nativecheck.RosterPlayer{ID: p.ID, Status: p.Status})
+		}
+	}
+	if err := nativecheck.LineCardsHeld(rules.Roster, roster); err != nil {
+		return fmt.Errorf("roster would not be legal: %w", err)
+	}
+	return nil
 }
