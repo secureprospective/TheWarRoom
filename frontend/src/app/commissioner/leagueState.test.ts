@@ -114,6 +114,56 @@ describe('League state', () => {
   });
 });
 
+describe('League reading lifecycle (shared query)', () => {
+  it('publishes neither the picker nor the readings of a superseded choice', async () => {
+    let release: (list: { id: string; name: string }[]) => void = () => undefined;
+    let first = true;
+    const { state, calls } = port({ leagues: () => {
+      if (!first) return Promise.resolve([{ id: 'native.two', name: 'Two' }]);
+      first = false;
+      return new Promise(resolve => { release = resolve; });
+    } });
+    const older = state.choose('native.one');
+    await state.choose('native.two');
+    release([{ id: 'native.one', name: 'One' }]);
+    await older;
+    expect(state.peek().choices.map(c => c.id)).toEqual(['native.two']);
+    expect(state.peek().selected).toBe('native.two');
+    expect(calls.ledger).toEqual(['native.two']);
+    expect(state.peek().pending).toBe(false);
+  });
+  it('clears the readings but keeps the picker when the chosen league is gone', async () => {
+    let gone = false;
+    const { state } = port({ leagues: async () => gone ? [{ id: 'native.two', name: 'Two' }]
+      : [{ id: 'native.one', name: 'One' }, { id: 'native.two', name: 'Two' }] });
+    await state.choose('native.one');
+    gone = true;
+    await state.choose();
+    const now = state.peek();
+    expect(now.error).toBe('Error: This app league is no longer available. Choose another league.');
+    expect([now.ledger, now.rules, now.people, now.jobs, now.notes, now.digests])
+      .toEqual(Array(6).fill(undefined));
+    expect(now.choices.map(c => c.id)).toEqual(['native.one', 'native.two']);
+    expect(now.controls?.groups).toHaveLength(8);
+    expect(now.pending).toBe(false);
+  });
+  it('drops a late reading of the old league once another league is chosen', async () => {
+    let release: () => void = () => undefined;
+    const slow = new Promise<void>(resolve => { release = resolve; });
+    const { state } = port({ rules: async league => {
+      if (league === 'native.one') await slow;
+      return { ...rules, league };
+    } });
+    const older = state.choose('native.one');
+    await Promise.resolve();
+    await state.choose('native.two');
+    release();
+    await older;
+    expect(state.peek().rules?.league).toBe('native.two');
+    expect(state.peek().ledger?.league).toBe('native.two');
+  });
+});
+
 describe('Landing reading lifecycle', () => {
   it('reads controls without a league, and reloads jobs on each recorded receipt', async () => {
     let reads = 0;

@@ -24,6 +24,10 @@ func generateReadCommands(entries []catalog.Entry) ([]byte, error) {
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
 		"market.TargetMarketStretches", "market.TargetAssetProfile",
 		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam", "research.TargetResearch",
+		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
+		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
+		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
+		"commissioner.TargetCommissionerDigests",
 	}
 	found := map[string]bool{}
 	var out strings.Builder

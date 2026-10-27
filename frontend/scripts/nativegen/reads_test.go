@@ -28,12 +28,18 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
 		"market.TargetMarketStretches", "market.TargetAssetProfile",
-		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam"} {
+		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
+		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
+		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
+		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
+		"commissioner.TargetCommissionerDigests",
+	} {
 		if !strings.Contains(string(body), `"`+key+`":`) {
 			t.Fatal("missing read", key)
 		}
 	}
-	for _, method := range []string{"TargetCommsRefresh", "TargetOpenComms", "TargetDraftReportsRefresh", "TargetOpenMFLDraftRoom", "TargetRaceRefresh", "TargetCacheClear", "TargetDataRefresh", "TargetOpenMFLAccounting"} {
+	for _, method := range []string{"TargetCommsRefresh", "TargetOpenComms", "TargetDraftReportsRefresh", "TargetOpenMFLDraftRoom", "TargetRaceRefresh", "TargetCacheClear", "TargetDataRefresh", "TargetOpenMFLAccounting",
+		"TargetCommissionerExecute", "TargetCommissionerPreview", "TargetCommissionerControls"} {
 		if strings.Contains(string(body), method) {
 			t.Fatal("action admitted to query catalog", method)
 		}
@@ -70,6 +76,10 @@ func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
 		"market.TargetMarketStretches", "market.TargetAssetProfile",
 		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
+		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
+		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
+		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
+		"commissioner.TargetCommissionerDigests",
 	} {
 		for _, change := range []string{"mode", "gravity", "missing"} {
 			t.Run(key+"/"+change, func(t *testing.T) {
