@@ -30,22 +30,24 @@ describe('Start an app league', () => {
     const [sent] = calls.sent;
     expect(sent).toMatchObject({ command: 'commish.league.create',
       reason: 'Owners voted to move the league here', expected: 0, effective: 'now', visibility: 'league',
-      args: { name: 'Our league', preset: 'legacy_nfl', franchiseCount: 32, season: thisYear } });
+      args: { name: 'Our league', preset: 'default_32', franchiseCount: 32, season: thisYear } });
     expect(sent.league).toMatch(/^native\.[0-9a-f]{16}$/);
     expect(sent.request).toMatch(/^[0-9a-f]{32}$/);
   });
-  it.each([2, 6, 12, 32])('offers %i franchises with the Legacy template', async count => {
+  it('offers the 32-Team Default at 32 franchises only', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
     await type(control(host, 'League name'), 'Our league');
-    await type(control(host, 'Number of franchises'), String(count));
     await type(control(host, 'Reason'), 'Start');
+    await type(control(host, 'Number of franchises'), '12');
     await settle();
-    expect(host.textContent).not.toContain('are for 32 franchises');
-    expect(host.textContent).toContain('Both starting choices work with 2 to 32 franchises.');
+    expect(disabled(button(host, start))).toBe(true);
+    expect(present(host, 'The 32-Team Default is for exactly 32 franchises.')).toBe(true);
+    await type(control(host, 'Number of franchises'), '32');
+    await settle();
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
-    expect(calls.sent[0].args).toEqual({ name: 'Our league', preset: 'legacy_nfl', franchiseCount: count,
+    expect(calls.sent[0].args).toEqual({ name: 'Our league', preset: 'default_32', franchiseCount: 32,
       season: thisYear });
   });
   it('offers an empty league of any size and sends that preset', async () => {
@@ -104,6 +106,7 @@ describe('Start an app league', () => {
     await open();
     calls.ledger.length = calls.rules.length = calls.people.length = 0;
     await type(control(host, 'League name'), 'Our league');
+    await type(control(host, 'Starting rules'), 'empty');
     await type(control(host, 'Number of franchises'), '12');
     await type(control(host, 'Reason'), 'Start');
     await settle();

@@ -75,11 +75,8 @@ func (r RawFootballPlayer) Validate() error {
 		(f.DraftYearHeld && (f.DraftYear < 1920 || f.DraftYear > 9999)) {
 		return fmt.Errorf("invalid identity or player facts")
 	}
-	switch f.Position {
-	case leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE, leaguerules.PK,
-		leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S:
-	default:
-		return fmt.Errorf("unknown player position")
+	if err := footballPosition(f.Position); err != nil {
+		return err
 	}
 	switch f.Designation {
 	case "", leaguerules.InjuredReserve, leaguerules.PUP, leaguerules.NFI, leaguerules.Out, leaguerules.Suspended:
@@ -90,6 +87,19 @@ func (r RawFootballPlayer) Validate() error {
 		return fmt.Errorf("injury designation is not held")
 	}
 	return nil
+}
+
+func footballPosition(p leaguerules.Position) error {
+	switch p {
+	case leaguerules.QB, leaguerules.RB, leaguerules.WR, leaguerules.TE, leaguerules.PK,
+		leaguerules.DT, leaguerules.DE, leaguerules.LB, leaguerules.CB, leaguerules.S:
+		return nil
+	case leaguerules.OL:
+		// A team's O-Line card is the league's own, not a football person the evidence describes.
+		return fmt.Errorf("football evidence lists people, not O-Line cards")
+	default:
+		return fmt.Errorf("unknown player position")
+	}
 }
 
 func footballTeam(team string) bool {

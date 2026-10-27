@@ -131,7 +131,7 @@ func validateMenu(kind, value string) error {
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",
 			"all_play_percentage", "points", "power_rank"},
-		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S"},
+		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},
 		"LineupGroup": {"offense", "defense", "total"},
 	}
 	choices, found := menus[kind]
