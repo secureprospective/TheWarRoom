@@ -13,6 +13,7 @@ import (
 	"go/scanner"
 	"go/token"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -48,6 +49,9 @@ func run(root string, inventory bool, output io.Writer) error {
 		return err
 	}
 	for _, key := range keys {
+		if strings.HasSuffix(key, ":#source") {
+			continue
+		}
 		approved, found := baseline[key]
 		if !found {
 			return fmt.Errorf("%s: new decision syntax; move policy into its service (or explicitly review resource/transport wiring)", key)
@@ -61,9 +65,28 @@ func run(root string, inventory bool, output io.Writer) error {
 			return fmt.Errorf("%s: stale allowlist entry; remove it to tighten the boundary", key)
 		}
 	}
-	_, err = fmt.Fprintf(output, "boundarycheck: %d reviewed/frozen functions; no new decision syntax in composition/core\n", len(current))
+	if err := checkSources(keys, current, baseline); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(output, "boundarycheck: %d frozen functions/sources; no unreviewed composition/core changes\n", len(current))
 	if err != nil {
 		return fmt.Errorf("write result: %w", err)
+	}
+	return nil
+}
+
+func checkSources(keys []string, current, baseline map[string]string) error {
+	for _, key := range keys {
+		if !strings.HasSuffix(key, ":#source") {
+			continue
+		}
+		approved, found := baseline[key]
+		if !found {
+			return fmt.Errorf("%s: unreviewed boundary source; review declarations and straight-line wiring", key)
+		}
+		if approved != current[key] {
+			return fmt.Errorf("%s: changed boundary source; review declarations and straight-line wiring, not just branches", key)
+		}
 	}
 	return nil
 }
@@ -71,16 +94,18 @@ func run(root string, inventory bool, output io.Writer) error {
 func decisions(root string) (map[string]string, error) {
 	out := map[string]string{}
 	for _, directory := range []string{"internal/composition", "internal/app/core"} {
-		paths, err := filepath.Glob(filepath.Join(root, directory, "*.go"))
+		paths, err := boundaryPaths(filepath.Join(root, directory))
 		if err != nil {
-			return nil, fmt.Errorf("list boundary sources: %w", err)
+			return nil, err
 		}
-		if len(paths) == 0 {
-			return nil, fmt.Errorf("%s: no boundary sources", directory)
-		}
+
 		for _, path := range paths {
-			relative := filepath.ToSlash(filepath.Join(directory, filepath.Base(path)))
-			if strings.HasSuffix(path, "_test.go") || relative == "internal/composition/wails_surface.gen.go" {
+			relative, err := filepath.Rel(root, path)
+			if err != nil {
+				return nil, fmt.Errorf("boundary relative path: %w", err)
+			}
+			relative = filepath.ToSlash(relative)
+			if strings.HasSuffix(path, "_test.go") || strings.HasPrefix(relative, "internal/app/core/coretest/") || relative == "internal/composition/wails_surface.gen.go" {
 				continue
 			}
 			if err := inspectFile(path, relative, out); err != nil {
@@ -91,11 +116,36 @@ func decisions(root string) (map[string]string, error) {
 	return out, nil
 }
 
+func boundaryPaths(directory string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(directory, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return fmt.Errorf("walk boundary: %w", err)
+		}
+		if !entry.IsDir() && strings.HasSuffix(path, ".go") {
+			paths = append(paths, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("list boundary sources: %w", err)
+	}
+	if len(paths) == 0 {
+		return nil, fmt.Errorf("%s: no boundary sources", directory)
+	}
+	return paths, nil
+}
+
 func inspectFile(path, relative string, out map[string]string) error {
 	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", relative, err)
 	}
+	digest, err := fingerprint(file)
+	if err != nil {
+		return fmt.Errorf("fingerprint source %s: %w", relative, err)
+	}
+	out[relative+":#source"] = digest
 	for _, declaration := range file.Decls {
 		fn, ok := declaration.(*ast.FuncDecl)
 		if !ok || !hasDecision(fn) {
@@ -132,7 +182,7 @@ func hasDecision(fn *ast.FuncDecl) bool {
 	return found
 }
 
-func fingerprint(fn *ast.FuncDecl) (string, error) {
+func fingerprint(fn ast.Node) (string, error) {
 	var formatted bytes.Buffer
 	if err := format.Node(&formatted, token.NewFileSet(), fn); err != nil {
 		return "", fmt.Errorf("format function: %w", err)

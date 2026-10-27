@@ -1047,3 +1047,22 @@ Source trace preserved pause-field sampling after results and before each board 
 context capture after readiness/freshness, original serializer/capture order, KeyMu scope, and
 SeasonMu around both member-data refusal and feed publication. No permission, schema, binding,
 identity interpretation or remote-write changes. No live app/network/profile operation.
+
+## Part 5 — batch 3: ratchet blind spots
+
+The original function-decision fingerprints remain intact, but now a second token fingerprint
+freezes each complete handwritten production source (47 files). This catches package initializers,
+constants/type declarations, lookup tables, new straight-line calls/functions and edits to previously
+unclassified code. The walker is recursive, so a nested core/composition directory cannot evade
+inspection. Exact existing exclusions: test files, core/coretest fixture directory and the known
+generated Wails surface. No generic generated-name/comment or nested-directory exemption.
+The 47 source rows are explicitly reviewed wiring snapshots, not a regenerated decision baseline;
+all 121 existing adapter-function digests were retained. Future source-row changes require review,
+even when a legitimate straight-line adapter changes; do not automate approval in lint/CI.
+
+Checker race tests pass for straight-line changes, constants/types/maps/initializers and nested
+sources as well as previous syntax/cosmetic/stale/fake-generated tests. Two sequential repository
+mutations were rejected by make boundary: a core constant added to state.go and a new straight-line
+composition function. Both were removed; the final boundary gate passes at 168 function/source
+rows. This closes detection gaps, not semantic review: approved wiring could still call existing
+misplaced policy elsewhere. Depguard and the remaining boundary audit remain necessary.

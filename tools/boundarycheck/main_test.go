@@ -78,7 +78,7 @@ func TestBoundaryRejectsChangedPolicyAndRequiresRatchetRemoval(t *testing.T) {
 	if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "stale allowlist entry") {
 		t.Fatal(err)
 	}
-	fixtureWrite(t, root, "docs/architecture/boundary-adapters.tsv", "")
+	approveFixture(t, root)
 	if err := run(root, false, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
@@ -93,5 +93,35 @@ func TestBoundaryInventoryIsNotAutomaticApproval(t *testing.T) {
 	fixtureWrite(t, root, "docs/architecture/boundary-adapters.tsv", inventory.String())
 	if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "invalid allowlist row") {
 		t.Fatal(err)
+	}
+}
+
+func TestBoundaryRejectsStraightLineAndDeclarationChanges(t *testing.T) {
+	for _, source := range []string{
+		"package composition\nfunc adapter() int { return policy() }\nfunc policy() int { return 2 }",
+		"package composition\nvar policy = func(cap int) bool { return cap > 1 }",
+		"package composition\nconst minimum = 2\nfunc adapter() int { return minimum }",
+		"package composition\ntype rule struct { minimum int }; var thresholds = map[string]int{\"cap\":2}",
+	} {
+		root := boundaryFixture(t, "package composition\nfunc adapter() int { return 1 }")
+		approveFixture(t, root)
+		fixtureWrite(t, root, "internal/composition/adapter.go", source)
+		err := run(root, false, &bytes.Buffer{})
+		if err == nil || (!strings.Contains(err.Error(), "changed boundary source") && !strings.Contains(err.Error(), "new decision syntax")) {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestBoundaryRejectsNestedSourcesAndPackageInitializers(t *testing.T) {
+	for _, directory := range []string{"internal/composition/nested", "internal/app/core/nested"} {
+		root := boundaryFixture(t, "package composition\n")
+		approveFixture(t, root)
+		path := directory + "/policy.go"
+		fixtureWrite(t, root, path, "package nested\nvar rule = func(cap int) bool { return cap > 1 }")
+		err := run(root, false, &bytes.Buffer{})
+		if err == nil || !strings.Contains(err.Error(), path) || !strings.Contains(err.Error(), "unreviewed boundary source") {
+			t.Fatal(err)
+		}
 	}
 }
