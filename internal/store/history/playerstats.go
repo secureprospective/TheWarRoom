@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
-
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
@@ -73,6 +73,9 @@ type heldFile struct {
 	at    time.Time
 	weeks []source.PlayerWeek
 	index source.HeldWeekIndex // built only by readings that look up many players
+	// lines are the revision's offensive line games, nil when it holds no advanced rushing.
+	lineSHA string
+	lines   map[source.LineGame]fantasyscore.UnitLine
 }
 
 // heldSeason reads every held copy of a season's weekly file once, newest first.

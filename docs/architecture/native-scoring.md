@@ -34,6 +34,24 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
     "Before" is the old seed after step 1 with today's adapter (a blocked-kick TD is unused there).
   - A commissioner who changed the catalogue after an old seed keeps their change: it is a later
     rule change, and it still overrides the upgraded seed.
+  - **Stats pipeline: the history store holds and serves line facts.** The pinned football evidence
+    (`internal/store/history`, the commissioner's import that already embeds weekly and play-by-play
+    bodies) gains two optional, `omitempty` fields: `RawFootballStats.Rushing` (PFR advanced weekly
+    rushing CSV) and `RawFootballPlayer.PFR` (the player's PFR id). A revision with `Rushing` must
+    carry the line columns in its plays body and is built at load with `source.LineGames`;
+    `PinnedFootball.LineGames(ctx, season)` serves the newest revision holding line facts (`HeldLines`:
+    its own SHA over plays + rushing, instant, defensive copies). The RB designation is the league's:
+    a rushing row counts toward ybc only when its PFR id belongs to a player whose held position is
+    RB (the study's crosswalk rule; an unmapped PFR id is not an RB). Evidence without `Rushing` gains
+    no keys, keeps its digest and player weeks, and holds no line facts, so Legacy is unchanged.
+    Tests: `internal/store/history/football_line_test.go` (components per definition, WR and
+    unlisted PFR ids excluded, unpublished game leaves ybc absent → not recorded, newest revision,
+    five rejected imports, unchanged evidence). The fetch-archive path (`Store.PlayerWeekStats`)
+    still loads no play-by-play, as before.
+- **Next part starts at:** (b) the `Default32` preset and (c) the O-Line slot kind, both waiting on
+  planning with the owner (do not start them unprompted); (d) live feeds wait on the week-8 accuracy
+  study. Remaining unprompted work: none in the engine; wiring `LineGames` into a scoring reader comes
+  with (c).
 
 - **Part 2 (2026-10-26), done:** the owner's rulings applied and the branch pushed.
   - Binding/wire (approved, additive): `models.ts` regenerated with `make bindings`; every wire

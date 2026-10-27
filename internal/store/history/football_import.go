@@ -31,9 +31,12 @@ type RawFootballEvidence struct {
 	Stats   []RawFootballStats           `json:"stats,omitempty"`
 }
 
+// RawFootballPlayer: PFR is the player's Pro Football Reference id, needed only to count an RB's
+// yards before contact for the offensive line unit.
 type RawFootballPlayer struct {
 	Identity string                  `json:"identity"`
 	Facts    nativecheck.PlayerFacts `json:"facts"`
+	PFR      string                  `json:"pfr,omitempty"`
 }
 
 func (r RawFootballEvidence) Validate() error {

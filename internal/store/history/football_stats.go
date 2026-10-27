@@ -13,11 +13,14 @@ import (
 )
 
 // RawFootballStats embeds the exact source bodies, newest revision first. Keeping
-// them inside the selected evidence makes fetch-archive retention irrelevant.
+// them inside the selected evidence makes fetch-archive retention irrelevant. Rushing is
+// PFR advanced weekly rushing; with it the plays body must carry the line columns and the
+// revision holds offensive line facts (football_line.go).
 type RawFootballStats struct {
-	AsOf   time.Time `json:"asOf"`
-	Weekly string    `json:"weekly"`
-	Plays  string    `json:"plays"`
+	AsOf    time.Time `json:"asOf"`
+	Weekly  string    `json:"weekly"`
+	Plays   string    `json:"plays"`
+	Rushing string    `json:"rushing,omitempty"`
 }
 
 func (r RawFootballStats) Validate() error {
@@ -31,6 +34,9 @@ func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
 	if len(r.Stats) > 100 {
 		return nil, fmt.Errorf("football evidence exceeds 100 statistic revisions")
 	}
+	if err := r.validatePFR(); err != nil {
+		return nil, err
+	}
 	files := make([]heldFile, 0, len(r.Stats))
 	for i, raw := range r.Stats {
 		if err := raw.Validate(); err != nil {
@@ -39,23 +45,11 @@ func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
 		if raw.AsOf.After(r.AsOf) || (i > 0 && !raw.AsOf.Before(r.Stats[i-1].AsOf)) {
 			return nil, fmt.Errorf("statistic revisions must be newest first, no later than the import")
 		}
-		weeks, err := source.ReadWeeks(strings.NewReader(raw.Weekly))
+		file, err := r.scoringFile(raw)
 		if err != nil {
-			return nil, fmt.Errorf("read pinned weekly statistics: %w", err)
+			return nil, err
 		}
-		for _, week := range weeks {
-			if week.Season != r.Season {
-				return nil, fmt.Errorf("statistics name a different season")
-			}
-		}
-		plays, err := source.ReadPlays(strings.NewReader(raw.Plays))
-		if err != nil {
-			return nil, fmt.Errorf("read pinned plays: %w", err)
-		}
-		if err := source.AttachPlays(weeks, plays); err != nil {
-			return nil, fmt.Errorf("complete pinned statistics: %w", err)
-		}
-		files = append(files, heldFile{sha: footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays))), at: raw.AsOf, weeks: weeks, index: source.IndexHeldWeeks(weeks)})
+		files = append(files, file)
 	}
 	if len(files) != 0 {
 		for _, player := range r.Players {
@@ -65,6 +59,33 @@ func (r RawFootballEvidence) scoringFiles() ([]heldFile, error) {
 		}
 	}
 	return files, nil
+}
+
+// scoringFile reads one statistic revision: its completed player weeks and, when it carries
+// advanced rushing, its offensive line games.
+func (r RawFootballEvidence) scoringFile(raw RawFootballStats) (heldFile, error) {
+	weeks, err := source.ReadWeeks(strings.NewReader(raw.Weekly))
+	if err != nil {
+		return heldFile{}, fmt.Errorf("read pinned weekly statistics: %w", err)
+	}
+	for _, week := range weeks {
+		if week.Season != r.Season {
+			return heldFile{}, fmt.Errorf("statistics name a different season")
+		}
+	}
+	plays, err := source.ReadPlays(strings.NewReader(raw.Plays))
+	if err != nil {
+		return heldFile{}, fmt.Errorf("read pinned plays: %w", err)
+	}
+	if err := source.AttachPlays(weeks, plays); err != nil {
+		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
+	}
+	lineSHA, lines, err := lineFile(raw, r.leagueRB())
+	if err != nil {
+		return heldFile{}, err
+	}
+	return heldFile{sha: footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays))), at: raw.AsOf,
+		weeks: weeks, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
 }
 
 func (p *PinnedFootball) SourceID(ctx context.Context, player, kind string) (string, error) {
