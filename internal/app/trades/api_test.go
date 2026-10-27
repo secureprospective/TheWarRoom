@@ -140,17 +140,17 @@ func TestTargetTradeBuilderOrderAndReading(t *testing.T) {
 		return out, nil
 	}
 	api := New(h)
-	if got := api.TargetTradeBuilder(RawTradeBuilder{Mine: "invalid", Action: "read"}); got.Status != report.ReadingFailed ||
+	if got := api.TargetTradeBuilderRead("invalid"); got.Status != report.ReadingFailed ||
 		*got.AbsenceReason != `trade builder scope: contracts scope: invalid franchise "invalid"` || len(h.calls) != 0 {
 		t.Fatal(got, h.calls)
 	}
 	h.ready = errors.New("startup failed")
-	if got := api.TargetTradeBuilder(RawTradeBuilder{Mine: "0001", Action: "read"}); *got.AbsenceReason != "startup failed" ||
+	if got := api.TargetTradeBuilderRead("0001"); *got.AbsenceReason != "startup failed" ||
 		!slices.Equal(h.calls, []string{"ready"}) || got.Value.Teams == nil || got.Value.Plans == nil {
 		t.Fatal(got, h.calls)
 	}
 	h.ready, h.calls = nil, nil
-	got := api.TargetTradeBuilder(RawTradeBuilder{Mine: "0001", Action: "read"})
+	got := api.TargetTradeBuilderRead("0001")
 	if got.Status != report.ReadingOK || got.Count != 2 || got.BuildStamp != "dev stamp" || got.Value.Teams[0].ID != "0001" ||
 		got.Provenance.Source != "whatif.db; held MFL rosters and futureDraftPicks" || !slices.Equal(h.calls, []string{"ready", "builder"}) {
 		t.Fatal(got, h.calls)
@@ -159,11 +159,53 @@ func TestTargetTradeBuilderOrderAndReading(t *testing.T) {
 		out.Teams, out.Plans = []TradeBuilderTeam{{ID: "kept"}}, nil
 		return out, errors.New("saved trade plans: closed")
 	}
-	got = api.TargetTradeBuilder(RawTradeBuilder{Mine: "0001", Action: "read"})
+	got = api.TargetTradeBuilderRead("0001")
 	body, err := json.Marshal(got.Value)
 	if err != nil || got.Status != report.ReadingFailed || *got.AbsenceReason != "saved trade plans: closed" ||
 		got.Provenance.Freshness.State != domain.FreshFail || !strings.Contains(string(body), `"plans":null`) || got.Value.Teams[0].ID != "kept" {
 		t.Fatal(got, string(body), err)
+	}
+}
+
+// Each builder command accepts only its own actions, and a refusal reaches no host call.
+func TestTradeBuilderCommandsOwnTheirActions(t *testing.T) {
+	t.Parallel()
+	h := tradeHost(t)
+	var actions []string
+	h.builder = func(r RawTradeBuilder, out TradeBuilderView) (TradeBuilderView, error) {
+		actions = append(actions, r.Action)
+		return out, nil
+	}
+	api := New(h)
+	deal := RawTradeBuilder{Mine: "0001", Other: "0002", Give: []string{"11675"}, Get: []string{"15761"}}
+	for _, action := range []string{"read", "preview"} {
+		r := deal
+		r.Action = action
+		if got := api.TargetTradeBuilder(r); got.Status != report.ReadingFailed ||
+			*got.AbsenceReason != "trade builder: "+action+" has its own command" {
+			t.Fatal(action, got)
+		}
+	}
+	for _, action := range []string{"save", "read", ""} {
+		r := deal
+		r.Action = action
+		if got := api.TargetTradeBuilderPreview(r); got.Status != report.ReadingFailed ||
+			*got.AbsenceReason != "trade builder preview: action must be preview" {
+			t.Fatal(action, got)
+		}
+	}
+	if len(h.calls)+len(actions) != 0 {
+		t.Fatal("a refused builder command reached the host", h.calls, actions)
+	}
+	preview, save := deal, deal
+	preview.Action, save.Action = "preview", "save"
+	for _, got := range []TradeBuilderReading{api.TargetTradeBuilderRead("0001"), api.TargetTradeBuilderPreview(preview), api.TargetTradeBuilder(save)} {
+		if got.Status != report.ReadingOK {
+			t.Fatal(got)
+		}
+	}
+	if !slices.Equal(actions, []string{"read", "preview", "save"}) {
+		t.Fatal(actions)
 	}
 }
 

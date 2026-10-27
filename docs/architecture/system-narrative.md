@@ -179,7 +179,7 @@ Offers, Personal and Pool. No API opens a database or starts a worker.
 | `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom`, `TargetNFLDraft` (held detailed players only) |
 | `internal/app/comms/api.go` | `TargetComms`, `TargetCommsRefresh(force)`, `TargetOpenComms` on the feature API |
 | `research_app.go` | `TargetResearchStatus` |
-| `acquisitions_app.go`, `contract_acts_app.go`, `release_app.go`, `trade_builder_app.go` | `TargetAcquisition(RawAcquisition)`, `TargetContractActs(RawContractAct)`, `TargetReleasePlans(RawReleaseRequest)`, `TargetTradeBuilder(RawTradeBuilder)`: validated what-if readings in the `Reading` shell |
+| `acquisitions_app.go`, `contract_acts_app.go`, `release_app.go`, `trade_builder_app.go` | `TargetAcquisition(RawAcquisition)`, `TargetContractActs(RawContractAct)`, `TargetReleasePlans(RawReleaseRequest)`, `TargetTradeBuilder(RawTradeBuilder)` (save and plan actions; read is `TargetTradeBuilderRead(franchiseID)`, preview `TargetTradeBuilderPreview(RawTradeBuilder)`, both writing nothing): validated what-if readings in the `Reading` shell |
 | `commissioner_app.go` | `TargetCommissionerLeagues`, `TargetCommissionerLedger(league)`, `TargetCommissionerRules(league)` (see the Composition row) |
 
 Every method that takes frontend input validates it before acting. Bindings in

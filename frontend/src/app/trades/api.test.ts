@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { targetDraftTradeAccept, targetTradeBuilder, targetTrades } from './api';
+import {
+  targetDraftTradeAccept, targetTradeBuilder, targetTradeBuilderPreview, targetTradeBuilderRead, targetTrades,
+} from './api';
 import { draftTradeAccept, trades } from '../data/tradeProvider';
 import { parseTrades } from '../data/parseTrades';
 import { parseReceipt } from '../data/parseEnvelope';
@@ -17,7 +19,7 @@ const request = {
   mine: '0001', other: '0025', action: 'preview', id: '', give: ['0099'], get: [], rationale: 'why',
 };
 
-it('routes all three calls through trades.API and parses their wire output', async () => {
+it('routes every call through trades.API and parses their wire output', async () => {
   const reading = golden('TargetTrades');
   const receipt = golden('TargetDraftTradeAccept');
   const builder = golden('TargetTradeBuilder-preview');
@@ -25,6 +27,8 @@ it('routes all three calls through trades.API and parses their wire output', asy
     TargetTrades: vi.fn(async () => reading),
     TargetDraftTradeAccept: vi.fn(async () => receipt),
     TargetTradeBuilder: vi.fn(async () => builder),
+    TargetTradeBuilderRead: vi.fn(async () => builder),
+    TargetTradeBuilderPreview: vi.fn(async () => builder),
   };
   vi.stubGlobal('window', { go: { trades: { API } } });
   expect(await trades('0025')).toEqual(parseTrades(reading));
@@ -33,6 +37,10 @@ it('routes all three calls through trades.API and parses their wire output', asy
   expect(API.TargetDraftTradeAccept).toHaveBeenCalledWith('0025', '77');
   expect(parseBuilder(await targetTradeBuilder(request))).toEqual(parseBuilder(builder));
   expect(API.TargetTradeBuilder).toHaveBeenCalledWith(request);
+  expect(parseBuilder(await targetTradeBuilderRead('0001'))).toEqual(parseBuilder(builder));
+  expect(API.TargetTradeBuilderRead).toHaveBeenCalledWith('0001');
+  expect(parseBuilder(await targetTradeBuilderPreview(request))).toEqual(parseBuilder(builder));
+  expect(API.TargetTradeBuilderPreview).toHaveBeenCalledWith(request);
   API.TargetTrades.mockRejectedValueOnce(new Error('target trades: offline'));
   await expect(trades('0025')).rejects.toThrow('target trades: offline');
 });
@@ -43,5 +51,7 @@ it('preserves the plain-browser refusal without substituting fixtures', async ()
     await expect(targetTrades('0025')).rejects.toThrow('Trades require the desktop app');
     await expect(targetDraftTradeAccept('0025', '77')).rejects.toThrow('Trades require the desktop app');
     await expect(targetTradeBuilder(request)).rejects.toThrow('Trades require the desktop app');
+    await expect(targetTradeBuilderRead('0001')).rejects.toThrow('Trades require the desktop app');
+    await expect(targetTradeBuilderPreview(request)).rejects.toThrow('Trades require the desktop app');
   }
 });

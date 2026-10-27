@@ -9,9 +9,16 @@ func DesktopCommands(feature string, related []Command) []Command {
 	return nil
 }
 
+// heldRead marks an audited legacy adapter as a held reading; the shared frontend read catalog
+// is generated from these marks (frontend/scripts/nativegen/reads.go).
+func heldRead(c Command) Command {
+	c.Modes = []Mode{Read}
+	return c
+}
+
 func archiveDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetArchive", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetArchive", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
 
@@ -100,7 +107,7 @@ func desktopCommands(methods []struct{ method, role, gravity string }, related [
 
 func commsDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: "comms.read", Method: "TargetComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: "comms.read", Method: "TargetComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: "comms.refresh", Method: "TargetCommsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: "comms.open", Method: "TargetOpenComms", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},
 	}
@@ -113,7 +120,7 @@ func contractsDesktop(_ []Command) []Command {
 		{ID: Unset, Method: "TargetContractActs", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
 		{ID: Unset, Method: "TargetContracts", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: "lineup.set", Method: "TargetDraftLineup", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
-		{ID: Unset, Method: "TargetLineup", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetLineup", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPlayerContract", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetReleasePlans", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
 		{ID: Unset, Method: "TargetRosterReports", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
@@ -127,10 +134,10 @@ func controlDesktop(_ []Command) []Command {
 			Gravity: gravity, Availability: availability}
 	}
 	return []Command{
-		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), c("GetParams", "gm,commish,admin", "G0", "both"), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
-		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), c("TargetAccounting", "gm,commish,admin", "G0", "both"), c("TargetAlerts", "gm,commish,admin", "G0", "both"),
-		c("TargetBylaws", "gm,commish,admin", "G0", "both"), c("TargetLeagueSettings", "gm,commish,admin", "G0", "both"), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),
-		c("TargetSeason", "gm,commish,admin", "G0", "both"), c("TargetShellStatus", "gm,commish,admin", "G0", "both"), c("TargetSiteNews", "gm,commish,admin", "G0", "both"),
+		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), heldRead(c("GetParams", "gm,commish,admin", "G0", "both")), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
+		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), heldRead(c("TargetAccounting", "gm,commish,admin", "G0", "both")), heldRead(c("TargetAlerts", "gm,commish,admin", "G0", "both")),
+		heldRead(c("TargetBylaws", "gm,commish,admin", "G0", "both")), heldRead(c("TargetLeagueSettings", "gm,commish,admin", "G0", "both")), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),
+		c("TargetSeason", "gm,commish,admin", "G0", "both"), c("TargetShellStatus", "gm,commish,admin", "G0", "both"), heldRead(c("TargetSiteNews", "gm,commish,admin", "G0", "both")),
 		{ID: "window.set", Method: "TargetSetWindow", Version: Unset, Role: "commish,admin",
 			Gravity: "G2", Availability: "both"},
 	}
@@ -138,15 +145,15 @@ func controlDesktop(_ []Command) []Command {
 
 func counterpartiesDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetCounterpartTeam", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: Unset, Method: "TargetCounterparties", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetCounterpartTeam", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
+		{ID: Unset, Method: "TargetCounterparties", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
 
 func draftDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetDraftLab", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: Unset, Method: "TargetDraftReports", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetDraftLab", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
+		{ID: Unset, Method: "TargetDraftReports", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetDraftReportsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetNFLDraft", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: "draft.reports", Method: "TargetOpenMFLDraftRoom", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
@@ -158,29 +165,29 @@ func marketDesktop(_ []Command) []Command {
 		return Command{ID: Unset, Method: method, Version: Unset, Role: "gm,commish,admin", Gravity: gravity, Availability: "both"}
 	}
 	return []Command{
-		read("TargetAssetBoard", "G0"),
-		read("TargetAssetProfile", "G0"),
+		heldRead(read("TargetAssetBoard", "G0")),
+		heldRead(read("TargetAssetProfile", "G0")),
 		read("TargetMarket", "G0"),
-		read("TargetMarketLists", "G0"),
-		read("TargetMarketReports", "G0"),
+		heldRead(read("TargetMarketLists", "G0")),
+		heldRead(read("TargetMarketReports", "G0")),
 		read("TargetMarketReportsRefresh", "G1"),
-		read("TargetMarketStretches", "G0"),
-		read("TargetPickClock", "G0"),
+		heldRead(read("TargetMarketStretches", "G0")),
+		heldRead(read("TargetPickClock", "G0")),
 	}
 }
 
 func nowDesktop(_ []Command) []Command {
 	return []Command{
 		{ID: "game.follow", Method: "TargetLiveGame", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: Unset, Method: "TargetNow", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetNow", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetNowRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 	}
 }
 
 func offersDesktop(related []Command) []Command {
 	return append(related, []Command{
-		{ID: Unset, Method: "TargetOffers", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: Unset, Method: "TargetPersonal", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetOffers", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
+		{ID: Unset, Method: "TargetPersonal", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalChange", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetPersonalHandOff", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
 	}...)
@@ -200,14 +207,14 @@ func platformDesktop(_ []Command) []Command {
 
 func raceDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetRace", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetRace", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetRaceRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 	}
 }
 
 func researchDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetResearch", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetResearch", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetResearchRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchNewsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchPlayer", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
@@ -223,10 +230,10 @@ func sourcesDesktop(_ []Command) []Command {
 		{ID: Unset, Method: "SetLeagueArchiveDir", Version: Unset, Role: "admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "SetPhotos", Version: Unset, Role: "admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetCacheClear", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
-		{ID: Unset, Method: "TargetCacheScopes", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: Unset, Method: "TargetCrosswalk", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetCacheScopes", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
+		{ID: Unset, Method: "TargetCrosswalk", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: "refresh.run", Method: "TargetDataRefresh", Version: Unset, Role: "admin", Gravity: "G1", Availability: "both"},
-		{ID: Unset, Method: "TargetDataSources", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetDataSources", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
 
@@ -234,7 +241,9 @@ func tradesDesktop(_ []Command) []Command {
 	return []Command{
 		{ID: "trade.accept", Method: "TargetDraftTradeAccept", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
 		{ID: Unset, Method: "TargetTradeBuilder", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
-		{ID: Unset, Method: "TargetTrades", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
+		{ID: Unset, Method: "TargetTradeBuilderPreview", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "desktop", Modes: []Mode{Preview}},
+		heldRead(Command{ID: Unset, Method: "TargetTradeBuilderRead", Version: Unset, Role: "gm,commish", Gravity: "G0", Availability: "desktop"}),
+		{ID: Unset, Method: "TargetTrades", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
 

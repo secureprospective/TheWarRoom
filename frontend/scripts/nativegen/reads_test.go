@@ -9,7 +9,26 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/composition"
 )
 
-func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
+// auditedReads are the adapters audited onto the shared read tool before the catalog was generated.
+func auditedReads() []string {
+	return []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
+		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
+		"commissioner.TargetNativeLineup",
+		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
+		"market.TargetAssetBoard", "now.TargetNow",
+		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
+		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
+		"market.TargetMarketStretches", "market.TargetAssetProfile",
+		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
+		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
+		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
+		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
+		"commissioner.TargetCommissionerDigests",
+	}
+}
+
+func TestQueryCatalogIsTheRegistrysHeldDesktopReads(t *testing.T) {
 	registry, err := composition.CommandRegistry()
 	if err != nil {
 		t.Fatal(err)
@@ -19,69 +38,32 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
-		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
-		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
-		"commissioner.TargetNativeLineup",
-		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
-		"market.TargetAssetBoard", "now.TargetNow",
-		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
-		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
-		"market.TargetMarketStretches", "market.TargetAssetProfile",
-		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
-		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
-		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
-		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
-		"commissioner.TargetCommissionerDigests",
-	} {
+	for _, key := range auditedReads() {
 		if !strings.Contains(string(body), `"`+key+`":`) {
 			t.Fatal("missing read", key)
 		}
 	}
-	for _, method := range []string{"TargetCommsRefresh", "TargetOpenComms", "TargetDraftReportsRefresh", "TargetOpenMFLDraftRoom", "TargetRaceRefresh", "TargetCacheClear", "TargetDataRefresh", "TargetOpenMFLAccounting",
-		"TargetCommissionerExecute", "TargetCommissionerPreview", "TargetCommissionerControls"} {
-		if strings.Contains(string(body), method) {
-			t.Fatal("action admitted to query catalog", method)
+	// Actions, refreshes, browser openers, unmarked legacy reads and the G1 free-agent pool stay out.
+	for _, key := range []string{"comms.TargetCommsRefresh", "comms.TargetOpenComms", "draft.TargetDraftReportsRefresh", "draft.TargetOpenMFLDraftRoom",
+		"race.TargetRaceRefresh", "sources.TargetCacheClear", "sources.TargetDataRefresh", "control.TargetOpenMFLAccounting",
+		"commissioner.TargetCommissionerExecute", "commissioner.TargetCommissionerPreview", "trades.TargetTradeBuilder",
+		"market.TargetMarket", "offers.TargetPool", "offers.TargetBidPlans"} {
+		if strings.Contains(string(body), `"`+key+`":`) {
+			t.Fatal("non-read admitted to query catalog", key)
 		}
 	}
-	for i, entry := range entries {
-		for j, d := range entry.Desktop {
-			if d.Command.Method != "TargetComms" {
-				continue
-			}
-			entries[i].Desktop = slices.Clone(entry.Desktop)
-			entries[i].Desktop[j].Command.Modes = []catalog.Mode{catalog.Execute}
-		}
-	}
-	if _, err := generateReadCommands(entries); err == nil || !strings.Contains(err.Error(), "not a held reading") {
-		t.Fatal(err)
-	}
-	if _, err := generateReadCommands(nil); err == nil || !strings.Contains(err.Error(), "absent from registry") {
+	if _, err := generateReadCommands(nil); err == nil || !strings.Contains(err.Error(), "no held desktop reads") {
 		t.Fatal(err)
 	}
 }
 
-func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
+func TestReadCatalogDropsAdaptersThatLoseTheirReadMark(t *testing.T) {
 	registry, err := composition.CommandRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{
-		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
-		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
-		"commissioner.TargetNativeLineup",
-		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
-		"market.TargetAssetBoard", "now.TargetNow",
-		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
-		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
-		"market.TargetMarketStretches", "market.TargetAssetProfile",
-		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
-		"commissioner.TargetCommissionerLeagues", "commissioner.TargetCommissionerLedger",
-		"commissioner.TargetCommissionerRules", "commissioner.TargetCommissionerPeople",
-		"commissioner.TargetCommissionerJobs", "commissioner.TargetCommissionerNotices",
-		"commissioner.TargetCommissionerDigests",
-	} {
-		for _, change := range []string{"mode", "gravity", "missing"} {
+	for _, key := range auditedReads() {
+		for _, change := range []string{"mode", "unmarked", "gravity"} {
 			t.Run(key+"/"+change, func(t *testing.T) {
 				entries := registry.Entries()
 				for i, entry := range entries {
@@ -93,20 +75,19 @@ func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
 						switch change {
 						case "mode":
 							entries[i].Desktop[j].Command.Modes = []catalog.Mode{catalog.Execute}
+						case "unmarked":
+							entries[i].Desktop[j].Command.Modes = nil
 						case "gravity":
 							entries[i].Desktop[j].Command.Gravity = "G1"
-						case "missing":
-							entries[i].Desktop = slices.Delete(entries[i].Desktop, j, j+1)
 						}
 					}
 				}
-				_, err := generateReadCommands(entries)
-				want := "not a held reading"
-				if change == "missing" {
-					want = "absent from registry"
+				body, err := generateReadCommands(entries)
+				if err != nil {
+					t.Fatal(err)
 				}
-				if err == nil || !strings.Contains(err.Error(), key) || !strings.Contains(err.Error(), want) {
-					t.Fatal("wrong query admission", key, change, err)
+				if strings.Contains(string(body), `"`+key+`":`) {
+					t.Fatal("query catalog kept", key, change)
 				}
 			})
 		}

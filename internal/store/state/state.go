@@ -151,13 +151,18 @@ func (s *Store) seed(ctx context.Context, rosters []domain.Roster) error {
 		return fmt.Errorf("state: seed begin: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
+	st, err := prepareSeed(ctx, tx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = st.close() }()
 
 	for _, r := range rosters {
 		for _, p := range r.Players {
-			if err := seedPlayer(ctx, tx, s.leagueID, s.season, now, r.FranchiseID, p); err != nil {
+			if err := st.seedPlayer(ctx, s.leagueID, s.season, now, r.FranchiseID, p); err != nil {
 				return err
 			}
-			if err := seedLedgerPlayer(ctx, tx, s.leagueID, s.season, now, p); err != nil {
+			if err := st.seedLedgerPlayer(ctx, s.leagueID, s.season, now, p); err != nil {
 				return err
 			}
 		}

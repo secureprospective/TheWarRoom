@@ -175,7 +175,40 @@ func (a *API) changeWhatIf(ctx context.Context, s state.WhatIfSession, raw RawWh
 	return next, store, nil
 }
 
+// ScratchWhatIf rebuilds a franchise's what-if in a throwaway scratch pool for a trade projection.
+// It reads the saved session (or starts one from the mirror) but writes nothing to whatif.db: the
+// ledger and its moves are replayed into scratch, and a new session is not published.
+func ScratchWhatIf(ctx context.Context, st Stores, scratch *db.Pools, mine string) (state.WhatIfSession, *state.Store, error) {
+	session, found, err := state.NewWhatIfSessions(st.WhatifPools).Load(ctx, mine)
+	if err != nil {
+		return session, nil, fmt.Errorf("what-if session: %w", err)
+	}
+	if !found {
+		if session, err = MirrorWhatIf(ctx, st, mine); err != nil {
+			return session, nil, err
+		}
+		return replayLedger(ctx, scratch, session)
+	}
+	// The saved session already holds each move's charge; replay only rebuilds its ledger.
+	replay := session
+	replay.Moves = slices.Clone(session.Moves)
+	_, store, err := replayLedger(ctx, scratch, replay)
+	return session, store, err
+}
+
 func replayWhatIf(ctx context.Context, pools *db.Pools, s state.WhatIfSession) (state.WhatIfSession, *state.Store, error) {
+	s, store, err := replayLedger(ctx, pools, s)
+	if err != nil {
+		return s, nil, err
+	}
+	if err := state.NewWhatIfSessions(pools).Save(ctx, s); err != nil {
+		return s, nil, fmt.Errorf("what-if publish: %w", err)
+	}
+	return s, store, nil
+}
+
+// replayLedger seeds a new generation from the session's baseline and executes its moves in order.
+func replayLedger(ctx context.Context, pools *db.Pools, s state.WhatIfSession) (state.WhatIfSession, *state.Store, error) {
 	s.Generation = "whatif:" + s.Mine + ":" + fmt.Sprint(time.Now().UnixNano())
 	store, err := LoadWhatIf(ctx, pools, s)
 	if err != nil {
@@ -207,9 +240,6 @@ func replayWhatIf(ctx context.Context, pools *db.Pools, s state.WhatIfSession) (
 			s.Moves[i].Charge = receipt.CapDeltas[0].Cents
 		}
 		s.Moves[i].Explanation = Rule(m.Kind, player, s.Snapshot.Season)
-	}
-	if err := state.NewWhatIfSessions(pools).Save(ctx, s); err != nil {
-		return s, nil, fmt.Errorf("what-if publish: %w", err)
 	}
 	return s, store, nil
 }

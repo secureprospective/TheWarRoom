@@ -29,6 +29,7 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	scratchDir       string // set by OpenScratch; Close deletes it
 	checkRunMu       sync.Mutex
 	checkMu          sync.Mutex
 	lastCheck        RoutineCheck
@@ -39,7 +40,7 @@ type Pools struct {
 }
 
 // Open refuses newer files before opening a writer. The optional version is the file's
-// newest known migration; the default is MainVersion (also the current what-if version).
+// newest known migration; the default is MainVersion, so what-if and history files must pass theirs.
 func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	maxVersion := MainVersion()
 	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
@@ -210,6 +211,11 @@ func (p *Pools) Close() error {
 			errs = append(errs, fmt.Errorf("db: close write pool: %w", err))
 		}
 	}
+	if p.scratchDir != "" {
+		if err := os.RemoveAll(p.scratchDir); err != nil {
+			errs = append(errs, fmt.Errorf("db: remove scratch: %w", err))
+		}
+	}
 	return errors.Join(errs...)
 }
 
@@ -227,4 +233,22 @@ func journalMode(ctx context.Context, pool *sql.DB) (string, error) {
 // as an escape, so a folder named "Bob#2" would otherwise open a different file.
 func fileURI(path string) string {
 	return "file:" + strings.NewReplacer("%", "%25", "?", "%3f", "#", "%23").Replace(path)
+}
+
+// OpenScratch opens a throwaway database for one computation, so a projection never writes a real
+// file. It lives in a private directory under the OS temp dir (tmpfs on most Linux systems) and
+// Close deletes it. It is a normal WAL file rather than an in-memory one: SQLite's memdb has no
+// WAL, and its readers block behind any open write, which the state store's reads inside its write
+// transactions would deadlock on. A scratch file takes no pre-migration backup.
+func OpenScratch(ctx context.Context) (*Pools, error) {
+	dir, err := os.MkdirTemp("", "twr-scratch-")
+	if err != nil {
+		return nil, fmt.Errorf("db: scratch dir: %w", err)
+	}
+	pools, err := Open(ctx, filepath.Join(dir, "scratch.db"))
+	if err != nil {
+		return nil, errors.Join(err, os.RemoveAll(dir))
+	}
+	pools.scratchDir = dir
+	return pools, nil
 }

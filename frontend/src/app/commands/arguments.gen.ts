@@ -2058,6 +2058,20 @@ string
 "rationale": string
 }
 ];
+"trades.TargetTradeBuilderPreview": [
+{
+"mine": string;
+"other": string;
+"action": string;
+"id": string;
+"give": (string)[];
+"get": (string)[];
+"rationale": string
+}
+];
+"trades.TargetTradeBuilderRead": [
+string
+];
 "trades.TargetTrades": [
 string
 ];

@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -85,21 +86,58 @@ func seedPlayerCount(rosters []domain.Roster) int {
 	return n
 }
 
+// seedStatements are the seed's four inserts, prepared once per seed transaction: a league seed
+// runs them for every rostered player and year, and re-parsing each one dominated trade projections.
+type seedStatements struct{ roster, contract, cell, change *sql.Stmt }
+
+func prepareSeed(ctx context.Context, tx *sql.Tx) (*seedStatements, error) {
+	var st seedStatements
+	for _, q := range []struct {
+		dst  **sql.Stmt
+		text string
+	}{
+		{&st.roster, `INSERT INTO rosters (id, league_id, mfl_id, franchise_id, roster_status, season, as_of)
+		 VALUES (?, ?, ?, ?, ?, ?, ?)`},
+		// Only the base salary goes in contracts; the cap figure lives in the ledger cells.
+		{&st.contract, `INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
+		   expiration_year, contract_status, is_restructured, is_tagged, season, last_updated)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`},
+		{&st.cell, `INSERT INTO contract_years (league_id, mfl_id, league_year, salary_cents, year_status,
+		   contract_id, source, last_updated)
+		 VALUES (?, ?, ?, ?, ?, ?, 'seed', ?)`},
+		{&st.change, `INSERT INTO contract_year_changes (id, league_id, mfl_id, league_year, old_cents, new_cents,
+		   reason, source, changed_at)
+		 VALUES (?, ?, ?, ?, 0, ?, 'seed: flat-fill from MFL annual salary + expiration', 'seed', ?)`},
+	} {
+		stmt, err := tx.PrepareContext(ctx, q.text) //nolint:sqlclosecheck // closed by close, and by the tx's end
+		if err != nil {
+			return nil, errors.Join(fmt.Errorf("state: seed prepare: %w", err), st.close())
+		}
+		*q.dst = stmt
+	}
+	return &st, nil
+}
+
+func (st *seedStatements) close() error {
+	var errs []error
+	for _, stmt := range []*sql.Stmt{st.roster, st.contract, st.cell, st.change} {
+		if stmt != nil {
+			errs = append(errs, stmt.Close())
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // seedPlayer inserts one player's roster and contract rows.
-func seedPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, now, franchiseID string, p domain.PlayerRecord) error {
+func (st *seedStatements) seedPlayer(ctx context.Context, leagueID string, season int, now string,
+	franchiseID string, p domain.PlayerRecord) error {
 	mflID := p.MFLID.String()
 	key := fmt.Sprintf("%s:%d:%s", leagueID, season, mflID)
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO rosters (id, league_id, mfl_id, franchise_id, roster_status, season, as_of)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+	if _, err := st.roster.ExecContext(ctx,
 		"r:"+key, leagueID, mflID, franchiseID, string(p.RosterStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed roster %q: %w", mflID, err)
 	}
-	// Only the base salary goes in contracts; the cap figure lives in the ledger cells.
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO contracts (id, league_id, mfl_id, franchise_id, annual_salary_cents,
-		   expiration_year, contract_status, is_restructured, is_tagged, season, last_updated)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`,
+	if _, err := st.contract.ExecContext(ctx,
 		"c:"+key, leagueID, mflID, franchiseID, p.Salary.Cents(), p.ContractYear,
 		string(p.ContractStatus), season, now); err != nil {
 		return fmt.Errorf("state: seed contract %q: %w", mflID, err)

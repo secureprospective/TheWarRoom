@@ -68,7 +68,8 @@ const moved = new Map([
     'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),
   ...['GetCrosswalkReport', 'LoadCrosswalk', 'SetLeagueArchiveDir', 'SetPhotos', 'TargetCacheClear',
     'TargetCacheScopes', 'TargetCrosswalk', 'TargetDataRefresh', 'TargetDataSources'].map(name => [name, 'sources']),
-  ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTrades'].map(name => [name, 'trades']),
+  ...['TargetDraftTradeAccept', 'TargetTradeBuilder', 'TargetTradeBuilderPreview', 'TargetTradeBuilderRead',
+    'TargetTrades'].map(name => [name, 'trades']),
 ]);
 let failures = 0;
 for (const feature of features) {
