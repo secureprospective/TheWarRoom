@@ -39,7 +39,9 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
     package suites pass with `-race`; hosted/composition wire writers pass. Added worker tests cover
     open bidding and actual timed award, one-card/one-year refusal, IR return despite closed owner
     windows, unknown facts, taxi expiry, restart, alert persistence after a year, human resolution,
-    stale eligibility and restricted authority. Six planted mutants were killed: hide the open
+    stale eligibility and restricted authority. The full changed-package/importer and frontend
+    pre-push gate passed through `37cc890b`; the first attempts caught stale generated wire files
+    and the governed-reading edge, all corrected without bypassing the gate. Six planted mutants were killed: hide the open
     leader, inflate NFL seasons, reclassify PUP as IR, invert automatic-move flags, omit the must-cut
     job and disable seed step 3. NFL-roster/official-status examples are synthetic: no real roster
     history feed is held here; existing real scoring evidence was not changed.
