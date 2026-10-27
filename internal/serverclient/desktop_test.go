@@ -58,6 +58,14 @@ func TestDesktopBoundaryAndTLS(t *testing.T) {
 			t.Fatalf("boundary %s: %d %s", tc.body, w.Code, w.Body.String())
 		}
 	}
+	// The shell's startup probe: native mode answers GET /desktop/native with a JSON view, never 404.
+	r := httptest.NewRequest(http.MethodGet, DesktopPath, nil)
+	r.Header.Set("Origin", "http://wails.localhost")
+	w := httptest.NewRecorder()
+	trusted.Handler().ServeHTTP(w, r)
+	if w.Code != http.StatusOK || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
+		t.Fatalf("native startup probe: %d %q %s", w.Code, w.Header().Get("Content-Type"), w.Body.String())
+	}
 }
 
 func TestDesktopRejectsMalformedSuccessfulRepliesAndRedirects(t *testing.T) {
