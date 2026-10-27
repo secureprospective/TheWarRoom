@@ -37,6 +37,8 @@ type RawFootballPlayer struct {
 	Identity string                  `json:"identity"`
 	Facts    nativecheck.PlayerFacts `json:"facts"`
 	PFR      string                  `json:"pfr,omitempty"`
+	// Sleeper bridges directly to this map entry's canonical MFL id; GSIS is optional for it.
+	Sleeper string `json:"sleeper,omitempty"`
 	// NFLRosterSeasons lists NFL season labels in which he appeared on an NFL roster, not games or accrued seasons.
 	NFLRosterSeasons *[]int `json:"nflRosterSeasons,omitempty"`
 }
@@ -64,7 +66,10 @@ func (r RawFootballPlayer) Validate() error {
 	if err := r.validateRosterSeasons(); err != nil {
 		return err
 	}
-	if strings.TrimSpace(r.Identity) == "" || len(r.Identity) > 200 || strings.TrimSpace(f.Name) == "" || len(f.Name) > 200 ||
+	if err := r.validateSourceIDs(); err != nil {
+		return err
+	}
+	if strings.TrimSpace(f.Name) == "" || len(f.Name) > 200 ||
 		!footballTeam(f.Team) || f.CareerGames < 0 || f.CareerGames > 2000 ||
 		(f.DraftYearHeld && (f.DraftYear < 1920 || f.DraftYear > 9999)) {
 		return fmt.Errorf("invalid identity or player facts")
@@ -230,6 +235,7 @@ func (r RawFootballPlayer) validateRosterThrough(season int) error {
 
 func (r RawFootballEvidence) validatePlayers() error {
 	identities := make(map[string]bool, len(r.Players))
+	sleepers := make(map[string]bool, len(r.Players))
 	for id, player := range r.Players {
 		canonical, err := playerid.New(id)
 		if err != nil || canonical.String() != id {
@@ -241,10 +247,18 @@ func (r RawFootballEvidence) validatePlayers() error {
 		if err := player.validateRosterThrough(r.Season); err != nil {
 			return err
 		}
-		if identities[player.Identity] {
-			return fmt.Errorf("football identity maps to multiple players")
+		if player.Identity != "" {
+			if identities[player.Identity] {
+				return fmt.Errorf("football identity maps to multiple players")
+			}
+			identities[player.Identity] = true
 		}
-		identities[player.Identity] = true
+		if player.Sleeper != "" {
+			if sleepers[player.Sleeper] {
+				return fmt.Errorf("sleeper identity maps to multiple players")
+			}
+			sleepers[player.Sleeper] = true
+		}
 	}
 	return nil
 }
