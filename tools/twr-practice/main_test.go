@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
+	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
 type memoryCredentials struct{ secret string }
@@ -42,7 +42,7 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	dir := filepath.Join(t.TempDir(), "sandbox")
 	var output bytes.Buffer
 	args := []string{"up", dir}
-	launcher := "go run ./cmd/twr-practice"
+	launcher := "go run ./tools/twr-practice"
 	if bin != "" {
 		args = []string{"up", "-bin", bin, dir}
 		executable, err := os.Executable()

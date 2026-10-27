@@ -19,7 +19,7 @@ Claude (CT105) — 2026-10-27, `session/revamp-P6-draft`, after merging main (E 
 - Unknown Sleeper IDs need identity and roster coverage; do not assume they are irrelevant.
 - Held play bodies without a `sack` column can count red-zone sacks as attempts. Repin those
   bodies before requiring the column; requiring it now rejects pinned evidence.
-- The red-zone boundary includes the 20-yard line; Christopher has not confirmed it.
+- Part 15 slice A: dev tools live in `tools/`; depguard blocks app imports. Lab detach waits for Part 7.
 - Market step 6 (retire frame wrappers) not started; the quote path stays staged.
 - `contract_actions.go` writes rules fields and remains in core for the rules session.
 

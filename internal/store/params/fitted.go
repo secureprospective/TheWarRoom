@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// FittedFile is the fit tool's output (cmd/fit): every fitted value, with when and on which
+// FittedFile is the fit tool's output (tools/fit): every fitted value, with when and on which
 // seasons it was fitted.
 type FittedFile struct {
 	Fitted  string        `json:"fitted"`

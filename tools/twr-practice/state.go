@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
+	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
 type rawState struct {

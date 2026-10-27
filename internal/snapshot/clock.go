@@ -12,7 +12,7 @@ import (
 )
 
 // ClockSource is the league state the clock reads: the phase log and the commissioner calendar.
-// The live binding and cmd/fixtures both pass a *state.Store, so they share this one builder.
+// The live binding and tools/fixtures both pass a *state.Store, so they share this one builder.
 type ClockSource interface {
 	CurrentPhase(context.Context) (domain.Phase, error)
 	CalendarEvents(context.Context) ([]state.CalendarEvent, error)

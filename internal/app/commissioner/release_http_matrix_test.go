@@ -13,9 +13,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	domain "github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
-	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
+	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
 type releaseHTTP struct {

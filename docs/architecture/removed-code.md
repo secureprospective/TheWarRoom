@@ -101,7 +101,7 @@ the board-run read in source health (`healthInput.boardRun`, `missing`, the "Boa
 alarm and the "Running reduced" / "Feeding the board" row text). Source health now words a measured
 source's row by the engine run, the path it already took when no board run existed.
 
-Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`cmd/fit` reads it).
+Copied, not moved: `composition.PeakLimit` is now also `engine.PeakLimit` (`tools/fit` reads it).
 
 Kept on purpose, unreached (until the leftovers pass, below): `internal/engine/l4` (its settings table is the `l4.*` params the
 Data and sources parameter editor lists, R7; the rubric math in it is unreached), the engine's types

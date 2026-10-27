@@ -81,6 +81,18 @@ linters:
 
     depguard:
       rules:
+        app-no-tools-imports:
+          list-mode: lax
+          files:
+            - "$all"
+            - "!**/tools/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/secureprospective/TheWarRoom/tools$
+              desc: "app code cannot import tools"
+            - pkg: github.com/secureprospective/TheWarRoom/tools/
+              desc: "app code cannot import tools"
+
         core-no-features:
           list-mode: lax
           files:

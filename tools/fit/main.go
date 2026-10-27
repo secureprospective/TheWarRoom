@@ -1,7 +1,7 @@
 // Command fit fits the model's parameters from a history database (plan Stage 6). It writes the
 // fitted params the app ships with and the fit report:
 //
-//	go run ./cmd/fit -db ~/scratch/history.db -players ~/scratch/players.json
+//	go run ./tools/fit -db ~/scratch/history.db -players ~/scratch/players.json
 //
 // Run it against a copy of history.db, never the live file: opening the store initializes it.
 // -players is MFL's league players export (TYPE=players&DETAILS=1) as MFL sent it; every player

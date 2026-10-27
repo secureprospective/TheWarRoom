@@ -66,20 +66,20 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 | Analytics | `internal/labcompile` | Pure facts-to-Lab compiler: calendar, production, contracts, trades/draft, directories, ledger/source proofs and full wins/replacement, five-season forecast, pick curves, market and rolling backtest analysis. `Build` produces the complete document and an immutable `Model` whose `Player`/`Pick` API uses the trade-leg valuer at a supplied moment, with explicit unvalued reasons. Passive Python kernel/method/analysis goldens and reduced conservative smoke run in verify; opt-in full archive parity covers all 18 keys and player API/leg equality, while recorded-analysis document parity remains isolated. The app fits the model after launch (`fitAssetModel`, after `warmArchive`) and C-01 reads `Model.Player` through `market.LabModel` (`internal/app/market/assets.go`); the Lab screens still read the frozen document. |
 | Analytics | `internal/lab` | Frozen fingerprint-checked compiled Lab facts, typed columnar decoder, pure Market fitting, delivery, calendar, Draft slot returns, team-side Counterparties profiles and owner-scoped offer endings. Offline JS goldens in `tools/labparity` pin the reference engine and data hashes; Node is never required at runtime or by verify. Exact missing-input exceptions live in `testdata/missing-inputs.csv`; `facts-reference.py` independently rebuilds the Python facts oracle in a disposable directory, with its source-row proof and provenance under `internal/lab/testdata/facts`. The reduced three-season golden retains every reference relation; full parity is opt-in. Reference relations no screen reads (price list, contender trades, draft map, the evidence grade) live in `reference_test.go`. |
 | Policy | `internal/governance` | Pure typed-event fold for principals, seats, private invites, abilities, role permissions, DOT recusal and succession; standard library only, no I/O or stores. Census permission data, a single co-commissioner seat and explicit activity/ballot evidence; locked all-franchise election majority, timed recorded runoff closure and candidate-recused tie rulings. |
-| Engine | `internal/engine` | L3 age decay (`ApplyDecay`, `PeakLimit`), which `cmd/fit` reads. The L1–L6 pipeline and its types were removed (`docs/architecture/removed-code.md`). |
+| Engine | `internal/engine` | L3 age decay (`ApplyDecay`, `PeakLimit`), which `tools/fit` reads. The L1–L6 pipeline and its types were removed (`docs/architecture/removed-code.md`). |
 | Engine | `internal/engine/rookiedraft` | Pure native rookie-draft setup, slot contracts, order/ownership planning, selection preview and fixed-instant clock replay. `FinalStandings.FirstRound` is the typed worst-first standings seam; `MissingFinalStandings` refuses absent results with "The draft order needs the final standings, which are not built yet." Unset later patterns and tie rules never default. Rules, owned picks, accepted selections (each carrying the contract fixed when it was made) and native roster/cap facts arrive as values; a pick is refused only for pushing a roster over a limit, never for a roster still short of its minimum. The ledger, calendar and gate wiring is in `internal/commissioner` (below). |
 | Engine | `internal/engine/bid` | The free-agent auction's arithmetic and rules (rulebook §6) as pure functions: bid points in exact thousandths, the minimum salary by experience (`freeagency` reads the same table), eleven named rule checks with Go-written reasons (including cap coverage by one conditional drop), and the ProBoards post text. |
 | Engine | `internal/engine/race` | The league race as pure functions over weekly results: records, all-play, streaks, games back, MFL's standingsSort applied step by step with a trace, playoff seeding (division leaders first), the opening round and the bubble. Proved against the real 2025 and 2026 seasons in `internal/app/race/reading_test.go`. |
 | Engine | `internal/engine/eligibility` | MFL's IR and taxi rules as pure verdicts: per player and direction, eligible / ineligible (reason) / unknown (reason), from held feeds only (injuries status, players draft year, roster status, league capacities). The captured 2026-10-10 owner pages are its committed test oracle (`testdata/answer-key.csv`). |
 | Engine | `internal/model` | The measurable's model: a player's league-points percentile blended with a prior from pre-NFL facts, the talent and survival arcs, and `Params`, the fitted values per position (`model.*@POS`). Pure. |
-| Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `cmd/fit` runs it. |
+| Engine | `internal/model/fit` | Fits `model.Params` from stored seasons, scoring every choice on a holdout season. Pure; `tools/fit` runs it. |
 | Engine | `internal/engine/l4` | Layer 4's per-position settings table only. Its adjustable numbers are params (`l4.film.cap@WR` and so on), listed in the Data and sources parameter editor (R7) under areas marked "inert, no run reads it": the rubric math that read them was removed with the layer 1–4 engine. |
 | Composition | `internal/app/scoring`, `internal/m2service`, `internal/powerrankings` | M2: counts each roster's model values (on-field-now or dynasty, league points per game) as the best legal lineup, the top N or the whole roster, and z-blends them: this season with the results (all-play when MFL reports it, otherwise points for) at 4 ÷ (4 + weeks played) or the slider's weight; the franchise with the roster's age. `m2service.Outlooks` adds the context columns (cap room, schedule luck, projected record), never in the score. |
-| Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `cmd/fit` does the same from MFL's players export. |
+| Composition | `internal/modelrun` | The measurables: values every rostered player and held MFL free agent exactly once with `internal/model` and the run's params, and writes a model run beside the board. `AtLeaguePositions` puts every player MFL lists at MFL's position before the scales are built; `tools/fit` does the same from MFL's players export. |
 | Composition | `internal/snapshot` | Pure, deterministic target UI snapshot builder over a read-only source; shared freshness is `domain.Freshness`. Its `eligibility` section holds the IR/taxi verdicts for every rostered player plus each input feed's provenance. |
-| Tooling | `cmd/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
+| Tooling | `tools/fixtures` | Copies league and history snapshots to disposable databases, initializes the app stores offline and exports the shared snapshot. |
 | Mutation | `internal/transactions` | The `Coordinator`: every league-state change runs here, in one transaction. Handler subpackages (`acquisitions`, `contracts`, `deadcap`, `freeagency`) are reachable only through it. |
-| Tooling | `cmd/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
+| Tooling | `tools/fit` | Reads a history database, runs `model/fit`, and writes `internal/store/params/fitted.json` (shipped as calibrated defaults) and `docs/fit/Fit_Report.md`. |
 | Tooling | `tools/ifaceguard` | Vet tool: no `interface{}`/`any` in exported signatures. |
 
 **(depguard)**
@@ -306,7 +306,7 @@ unknown.
 and per-feed observations, including unmapped IR drafts; `internal/store/moves` owns append-only
 SQLite persistence. Neither core does I/O.
 `snapshot.BuildClock` is the one clock builder: `TargetClock` (in `snapshot_app.go`) passes the what-if store, and
-`cmd/fixtures -whatif` passes a backup of it. Move fixtures stay outside the entry chunk.
+`tools/fixtures -whatif` passes a backup of it. Move fixtures stay outside the entry chunk.
 
 `frontend/src/app/clock/` renders the league clock; one DOM ticker owns countdowns and urgency,
 independently of React. Clock and snapshot providers load in parallel, never falling back live to fixtures.
@@ -1067,7 +1067,7 @@ additional generated commands through this same bounded envelope without a local
 Evidence: `internal/serverhttp/workflow_test.go` (HTTPS/desktop reads, writes, refusals,
 retry, revocation) and `frontend/src/app/commissioner/hostedRoom.test.tsx` (real Go wire
 parsing, disconnected views, reconnect without replay). Graphical acceptance is separate;
-`cmd/twr-practice/README.md` provides the disposable click walkthrough.
+`tools/twr-practice/README.md` provides the disposable click walkthrough.
 
 ### MFL reference and hosted-server screen boundary
 
@@ -1084,4 +1084,4 @@ A failed refresh preserves the last reading, marks it stale, removes the preview
 writes; reconnect reads do not replay changes. Only an explicit checked confirmation may
 record a server change. The MFL mirror remains separate from the native event ledger: a mirror
 replacement cannot replace recorded native assets or cap. The fixture boundary tests and
-Christopher’s separate Block E acceptance walk are listed in `cmd/twr-practice/README.md`.
+Christopher’s separate Block E acceptance walk are listed in `tools/twr-practice/README.md`.
