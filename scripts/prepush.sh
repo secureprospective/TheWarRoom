@@ -22,7 +22,7 @@ for f in "${changed[@]}"; do
   case "$f" in
     frontend/*) front=1 ;;
     *.go|go.mod|go.sum|.golangci.yml|.bloat-baseline|tools/*|internal/*/testdata/*|*/testdata/*) go_changed+=("$f") ;;
-    Makefile|scripts/*|.pre-commit-config.yaml|.github/*) build=1 ;;
+    Makefile|scripts/*.sh|scripts/*.mjs|.pre-commit-config.yaml) build=1 ;; # the gate's own scripts; CI checks .github and the rest
   esac
 done
 [[ $build -eq 0 ]] || exec make verify
