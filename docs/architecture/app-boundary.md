@@ -990,3 +990,18 @@ blind spots; final CI and disposable-profile live verification; registry-driven 
 primitive and store/event/invalidation migration. Passing live review means unchanged refusals,
 held-data retention, trade exact-cents/local-only writes, startup readiness and restore/backup
 ordering on a throwaway profile. Windows lock runtime remains untested here; cross-compile passed.
+
+### Part 4 push attempt / resume-required verification
+
+Push of ca6e12ed to origin/session/revamp-B-app-boundary entered the real pre-push hook.
+Because Makefile changed, scripts/prepush.sh selects full make verify. The 1,200-second tool
+budget expired before the hook returned; its buffered output contains only the running hook
+label, not a test result or stack. **This is not a passing verify or push.** Process inspection
+afterward found no remaining git push, make verify, pre-push or go test process. The remote still
+points to **1a168a99**; all Part 4 implementation commits remain local. No bypass or retry was used.
+The scratch push log contained no additional diagnostics and was removed to leave the tree clean.
+
+Next session: preserve these commits, diagnose/run the real pre-push gate with a sufficient
+observable budget before claiming full verification or CI. Do not infer a specific timeout cause
+from this buffered attempt. Named targeted race batches, full lint and the two negative boundary
+mutations above are the available exercised evidence. CI and live review remain outstanding.
