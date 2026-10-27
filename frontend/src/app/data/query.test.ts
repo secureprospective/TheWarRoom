@@ -8,7 +8,9 @@ function deferred<T>() {
   const promise = new Promise<T>((yes, no) => { resolve = yes; reject = no; });
   return { promise, resolve, reject };
 }
-function archiveQuery(read: (season: number, team: string, other: string) => Promise<string> = async () => 'held') {
+function archiveQuery(
+  read: (season: number, team: string, other: string) => Promise<string> = async () => 'held',
+) {
   return createReadQuery('archive.TargetArchive', {
     initial: (): { value?: string; selection: number } => ({ selection: 0 }), read,
     accept: value => ({ value }),

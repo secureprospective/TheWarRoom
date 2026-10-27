@@ -4,7 +4,8 @@
 
 Composition inventory remains resolved: **125 units / 4,498 baseline function LOC relocated**,
 plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally extracted all
-**17 frozen core policy functions / 278 baseline function LOC**; no legacy entries remain.
+**17 frozen core policy functions / 278 baseline function LOC**, plus one audited Market
+refresh-admission function / 11 LOC (**18 / 289 total**); no legacy entries remain.
 Boundary gate now freezes **120 decision-bearing adapters + 48 complete sources** and detects
 straight-line/declaration/nested-path changes as well as the original branch syntax. This is a
 review ratchet, not semantic proof that every approved adapter is policy-free.
@@ -1013,87 +1014,14 @@ observable budget before claiming full verification or CI. Do not infer a specif
 from this buffered attempt. Named targeted race batches, full lint and the two negative boundary
 mutations above are the available exercised evidence. CI and live review remain outstanding.
 
-## Part 5 — batch 1: held selection and availability
 
-Six frozen core functions moved: ArchiveOpponent → Archive.Opponent (original WeekMu release
-then SeasonMu-held fallback retained); OffersCapRoom → Offers.CapRoom (blank avoids cap read,
-malformed nonblank still reads cap usage); RulesFreshness → Contracts.RulesFreshness;
-TradeRequest → Trades.Request; SourcesPositions → Sources.Positions; SerializeSourcesCompile →
-Sources.CompileAvailable. Composition supplies ports, not policy. Legacy rows fall from 17 to 11.
-Trade target policy test moved inward; lock-span/detachment integration checks moved from core to
-composition. Added inward cap/read-order, stored/live freshness and absent-lookup/no-roster cases.
-Filtered core/service/composition race tests and door parity pass. No public/schema/role changes.
-Resource consolidation: internal/app/core/host_trades.go → internal/app/core/host_contracts.go
-(pending/future trade reads beside shared ledger reads); fingerprint keys relocate unchanged.
-No running app/unit tied to these paths was found; no repository or installed data moved.
+## Part 5 — closing state
 
-## Part 5 — batch 2: remaining frozen core workflows
-
-The other 11 frozen functions now live inward: Comms key admission/member-data clearing,
-board pacing and ready/freshness refresh orchestration → app/comms/api.go; Draft destination,
-detailed-player admission/parser, open-room ordering, report refresh and results→pause→future
-workflow → app/draft/held.go; Race ready/freshness refresh → app/race/refresh.go; shared own-team
-refusal and ready-before-locked-identity admission → app/platform/moves.go. Core retains bounded
-transport reads, snapshots and lock/resource adapters. Composition hosts wire these services.
-All **17 legacy entries are removed; 121 decision-bearing adapter entries remain**, unchanged
-fingerprints except the batch-1 path-only consolidation. No gate baseline was raised.
-
-New inward tests exercise readiness/no-early-capture, exact refusal text, detailed-player refusal,
-absent destination/no browser, lazy pause selection, ordered/canceled feed reads, fresh versus
-forced admission, bounded contexts/release, missing-key clearing versus locked-key retention.
-Real lock/publication/concurrency integration tests moved outward rather than importing core into
-features: core/host_comms_test.go → composition/comms_policy_test.go; refresh cases from
-core/host_draft_test.go and core/host_race_test.go → composition/{draft,race}_policy_test.go.
-Core retains detachment/resource tests. Feature race batch and filtered composition batch pass
-(12.239 seconds), including new workflow integrations, Control/Offers/Draft wire and command-door
-parity. Full make lint passes (24/24 tiny files; zero issues). The initial new player fixture lacked
-its mandatory position; corrected fixture only. The composition fixture loader now uses repo-root
-paths because its existing TestMain changes directory; this was not a production failure.
-
-Source trace preserved pause-field sampling after results and before each board pause, parent
-context capture after readiness/freshness, original serializer/capture order, KeyMu scope, and
-SeasonMu around both member-data refusal and feed publication. No permission, schema, binding,
-identity interpretation or remote-write changes. No live app/network/profile operation.
-
-## Part 5 — batch 3: ratchet blind spots
-
-The original function-decision fingerprints remain intact, but now a second token fingerprint
-freezes each complete handwritten production source (47 files). This catches package initializers,
-constants/type declarations, lookup tables, new straight-line calls/functions and edits to previously
-unclassified code. The walker is recursive, so a nested core/composition directory cannot evade
-inspection. Exact existing exclusions: test files, core/coretest fixture directory and the known
-generated Wails surface. No generic generated-name/comment or nested-directory exemption.
-The 47 source rows are explicitly reviewed wiring snapshots, not a regenerated decision baseline;
-all 121 existing adapter-function digests were retained. Future source-row changes require review,
-even when a legitimate straight-line adapter changes; do not automate approval in lint/CI.
-
-Checker race tests pass for straight-line changes, constants/types/maps/initializers and nested
-sources as well as previous syntax/cosmetic/stale/fake-generated tests. Two sequential repository
-mutations were rejected by make boundary: a core constant added to state.go and a new straight-line
-composition function. Both were removed; the final boundary gate passes at 168 function/source
-rows. This closes detection gaps, not semantic review: approved wiring could still call existing
-misplaced policy elsewhere. Depguard and the remaining boundary audit remain necessary.
-
-## Part 5 — inward policy coverage follow-up
-
-Added pure Archive first-current-match/away/stale-week/absent-fallback tests and Sources busy-compile/
-failed-compile unlock tests; retained outward checks proving the real shared mutex spans. Full race
-suites pass in the nine affected non-Archive packages: Core 11.402s, Comms 2.360s, Draft 2.498s,
-Race 5.586s, Platform 1.020s, Contracts 7.008s, Offers 6.450s, Sources 6.455s, Trades 1.082s.
-Archive's new inward opponent policy suite passes under a focused filter; its expensive full facts
-suite was not redundantly run. This is targeted/package evidence, not full verify/CI or live review.
-
-### Part 5 review correction: trade host sampling
-
-Source review found the original trade request intentionally samples the discovered host for
-admission and again for URL construction. The first extraction had eagerly captured one value;
-MFL can rediscover its host after TTL, so "client set at startup" does not mean its host is fixed.
-Request now receives a lazy host port and preserves both samples, including the absent-host short
-circuit. Added inward two-sample/second-value URL and one-sample-unmapped tests; service and door
-parity race tests pass. Reviewed only the corresponding composition whole-source fingerprint
-update: the adapter now supplies a straight-line read callback; no decision-function fingerprint
-changed or new composition policy was approved. No remote discovery was performed here.
-
+All 17 frozen core policy functions moved, plus Market refresh admission found in the follow-up
+adapter audit: **18 source functions / 289 baseline function LOC**. Original composition inventory
+remains 125 units / 4,498 LOC moved and one 36-LOC adapter-only unit; no double counting below.
+No permission/role/binding/schema/lock-order or remote-write change. Services import neither core
+nor sibling features; composition owns resources, serializers and cross-feature ports.
 
 ## Part 5 — frozen core inventory (baseline 6cefc359)
 
@@ -1119,77 +1047,114 @@ new composition relocations. Paths below are relative to `internal/`.
 | app/core/host_trades.go: TradeRequest | app/trades/plans.go: Request | 19 | MOVED; lazy two-host-sample port |
 | app/core/state.go: RequireOwnFranchise | app/platform/moves.go: AuthorizeTeam | 11 | MOVED; identity lock retained |
 | app/core/state.go: OwnFranchiseRefusal | app/platform/moves.go: OwnFranchiseRefusal | 9 | MOVED |
-| **Total** | | **278** | **17/17 moved** |
+| **Frozen subtotal** | | **278** | **17/17 moved** |
+| app/core/host_market.go: RefreshMarket (audit follow-up) | app/market/reports.go: RefreshReports | 11 | MOVED; not in the original frozen 17 |
+| **Total this part** | | **289** | **18/18 moved** |
 
-## Part 5 — frontend shared read/cache start
+### Preserved ownership and source review
 
-`nativegen -surface doors` now generates the conservative read projection from registry desktop
-exposures/binding argument shapes; it is not a new transport or authority declaration. Five audited
-held read adapters are selected because legacy desktop Modes are incomplete and G0 alone also
-includes effects. Generator tests reject conflicting execute modes/missing selections and exclude
-refresh/open methods. The existing generated-door freshness gate covers reads.gen.ts.
+- Original readiness-before-resource capture; capture-before-refresh serialization; bounded context
+  lifetime/defer ordering; KeyMu, WeekMu, SeasonMu, RefreshMu and FactsMu spans stay intact.
+- Missing Comms credentials clear member data; locked/unavailable/canceled key reads retain last
+  good data. Board order and pause-field sampling before each board remain. Draft samples its pause
+  after results, then conditionally reads future picks. Freshness/refusal decisions now live inward.
+- Archive current-week first-match preference and SeasonMu-held fallback; cap blank/no-read versus
+  malformed/nonblank-still-read; atomic rules freshness and busy compile/unlock semantics preserved.
+- Review corrected the first trade extraction's eager host capture: MFL may rediscover after TTL.
+  Request receives a lazy port, samples once for admission and again for URL, and short-circuits
+  absent host. Inward tests prove second-sample URL/one-sample unmapped behavior. The reviewed source
+  fingerprint update changes only that straight-line adapter port, not a decision approval.
+- Resource consolidation ledger: `internal/app/core/host_trades.go` →
+  `internal/app/core/host_contracts.go`; `internal/app/core/host_market.go` held readers →
+  `internal/app/core/host_research.go`. Existing resource-function fingerprints relocate unchanged.
+  Process/unit inspection found no running app tied to these paths; no installed path/repo moved.
+- Integration test relocation: `internal/app/core/host_comms_test.go` →
+  `internal/composition/comms_policy_test.go`; refresh cases from core's Draft/Race/Market host tests
+  → `internal/composition/{draft,race,market}_policy_test.go`. Core retains resource/detachment tests;
+  feature tests own the pure refusal/availability/order/failure rules. The trade target test moved
+  inward to `internal/app/trades/request_test.go`. No core import was added to a feature.
 
-`frontend/src/app/data/query.ts` owns typed keys, runtime argument validation, request fencing,
-pending/error/last-good handling, bounded instance-private cache, explicit refresh-before-read,
-invalidate/reset and the React hook. `archive/state.ts`, `race/state.ts`, `comms/state.ts` and
-`draftreports/state.ts` lose their duplicate lifecycle code; `reports/marketState.ts` supplies its
-own registry key to the shared reports factory. Selection/echo/action behavior stays in wrappers.
-No transport code moved outside api.ts. No dependency, schema, role or binding changed.
+### Boundary gate
 
-Frontend affected batch passes: **11 files / 98 tests** (query + Archive/Race/Comms/Draft reports/
-Market reports). TypeScript no-emit, generator race/freshness tests, frontend transport guard,
-frontend production build, bundle budget and static CSP check pass. Eager bundle: 148,709 bytes
-against 321,818 limit. Existing >500KB lazy-chunk warning remains. New tests include compile-time
-write/wrong-tuple rejection; canonical full scopes; runtime malformed/undefined-extra rejection;
-last-good and retry; per-reader bounded cache; explicit refresh/lazy scope; older success/failure/
-finally fencing; invalidation/reset; and detachment across awaited refresh. Browser/GUI live review
-is deferred, not claimed. Design and remaining consumer inventory: frontend-reads.md.
+**120 decision-bearing adapters + 48 source fingerprints = 168 rows; zero legacy entries.**
+The source layer detects declarations/initializers/maps, straight-line edits and nested paths,
+including changes in the two coretest fixture files. Fixture branches are not production policy,
+but fixture sources cannot change unnoticed. Only *_test.go and the exact known generated Wails
+surface are excluded entirely; arbitrary generated comments/names do not bypass the gate.
+Semantic //go:, legacy build and //line directives are fingerprinted; ordinary comments/formatting
+are free. Existing decision digests were never regenerated to hide a policy edit. Source snapshots
+were explicitly reviewed for initial coverage, resource consolidation and the lazy-host correction.
+This remains a review ratchet, not a semantic purity proof of every approved call.
 
+Checker race tests pass for all old syntax/cosmetic/stale/fake-generated cases plus straight-line,
+package declaration/initializer, nested path, fixture and semantic-directive cases. Two sequential
+actual repository mutations were rejected with the intended diagnostics: a core constant added to
+state.go, then a new straight-line composition function. Both removed before the final passing gate.
 
-## Part 5 — remaining adapter audit: Market admission
+### Frontend plan Part 3 start
 
-The follow-up audit found Market's ready→bounded-context→serialized refresh workflow still marked
-as an adapter. It is the same kind of application admission moved for Draft/Comms/Race, so moved
-it too: core/host_market.go:RefreshMarket → app/market/reports.go:RefreshReports (11 baseline
-function LOC, additional to the frozen 17 / 278). Core's held resource readers from host_market.go
-joined host_research.go, which already owns the shared directory/season/zone reads. No policy or
-cross-feature import moved into core. Removed the admission fingerprint and old whole-source row;
-remaining resource-function fingerprints relocate unchanged. Explicitly reviewed source snapshots
-for the consolidated core reader and the new straight-line composition Market callback.
+Design and consumer inventory: **`docs/architecture/frontend-reads.md`**. The single typed
+`frontend/src/app/data/query.ts` hook replaces four lifecycle implementations serving five consumers:
+Archive, Race, Comms, Draft reports and Market reports. Wrappers retain selectors/server echoes,
+actions and public methods; transport/parsing/events remain in existing feature api.ts adapters.
+The reports factory explicitly receives Market's own registry key, not Draft's.
 
-Added inward ready/no-context/no-run, force propagation, bounded lifetime/cancel tests. Existing
-real serializer/blocked-I/O/read-through and startup-refusal integrations moved from core to
-composition/market_policy_test.go and pass, along with filtered core/Market and door parity race
-tests. The now-unused core wait helper was removed; composition retains its used helper. No actual
-app/unit references these source paths; no installed path or repository moved. Boundary count is
-now **120 adapters + 46 sources = 166**, with zero legacy rows. No baseline rose.
+`nativegen -surface doors` generates `commands/reads.gen.ts` from the real registry desktop/binding
+argument shapes. Legacy desktop Modes are incomplete and G0 also includes effects, so five audited
+held read adapters are explicitly opted in; conflicting execute modes/missing entries fail generation.
+This is a frontend projection, not a new command door/schema/authority grant. The existing generated-
+door freshness gate covers it. No generic Wails reflection, hosted fallback, dependency or binding added.
 
+Query owns full-scope canonical keys, runtime/compile-time argument checks, detached inputs,
+latest-request fencing, pending/error/last-good state and bounded instance-private caches. Revalidate
+remains the default; cache-first is opt-in and disabled in all migrated wrappers. Explicit refresh
+invalidates cached scopes before its action; lazy scope is sampled afterward. Invalidate/reset fence
+pending publication; no new automatic retry, timer, listener, write or transport cancellation.
 
-### Part 5 ratchet review follow-up
+### Exercised verification
 
-Closed two further source-freeze gaps found in review. core/coretest is no longer an unguarded
-source-path exemption: its two fixture files are source-frozen without classifying test fixture
-branches as production policy. New or changed fixture helper sources now fail too. Only *_test.go
-and the exact generated Wails surface are excluded entirely. Meaningful //go:, legacy build and
-//line directives enter source digests; ordinary comments/formatting remain free. No existing
-production source digest changed; added only the two explicitly reviewed fixture source snapshots.
-New race tests prove fixture edits/new helpers and semantic directives fail. Gate total returns to
-**120 adapters + 48 sources = 168**, zero legacy entries. This is expanded checking, not relaxed
-approval or a semantic proof of purity.
+| Slice | Result |
+|---|---|
+| Full affected Core/Comms/Draft/Race/Platform/Contracts/Offers/Sources/Trades race suites | PASS (Core 11.402s; others 1.020–7.008s); later full Comms/Market PASS (2.539s / 3.907s) |
+| Archive opponent policy + new inward cap/rules/positions/compile/authorization tests | PASS with focused race filters |
+| Filtered real Comms/Draft/Race lock/refresh/concurrency + wire/parity batch | PASS (12.239s) |
+| Real trade deadline/ownership/persistence/safe handoff, owner refusal, contract authorization, Draft/Race/Archive wire + door parity | PASS (114.271s); trade test 92.68s, owner refusal 19.81s |
+| Real Market refresh/archive/concurrent publication/canceled feed, Lab once, key change/delete, Comms wire + parity | PASS (3.752s) |
+| Frontend query + Archive/Race/Comms/Draft/Market report consumers | PASS: 14 files / 312 tests including command importers/readability; TypeScript no-emit PASS |
+| nativegen generator/freshness and boundarycheck race suites | PASS |
+| Frontend production build, bundle budget, static CSP | PASS; eager bundle 148,709 / 321,818 bytes; existing lazy >500KB warning |
+| Final full make lint on the closing candidate | PASS: ifaceguard, placement, root/transport/boundary guards, bloat 24/24 and zero lint issues |
 
+Two sequential actual query mutations were rejected: removing post-read revision fencing failed
+three semantic tests; removing cache invalidation failed same-scope explicit refresh. Restored before
+the passing frontend batch; no mutant/scratch file remains. The later command-importer/readability
+batch caught two >110-character query/source-test lines; formatting-only splits fixed both, then
+all 14 files / 312 tests passed. No readability limit was relaxed. New tests also cover canceled ring/no
+clear, canceled default pause/no fetch, independent feed freshness, latest failure/older success,
+failed publication not cached, reset during awaited refresh and static-input detachment.
 
-## Part 5 — regression and mutation checkpoint
+Real commit hooks passed; one formatted imports and was rerun normally, no bypass. The closing
+full-lint attempts collided with a separate pre-push linter; waited for its process to release the
+lock and retried normally. Final full make lint passed with zero issues; no process was stopped
+and no parallel-run/bypass option was used. Pre-existing
+>600-line facts/catalogue files are untouched; no lint baseline rose. No broad composition retry,
+full verify, pre-push or push was run. The measured fixture costs plus prior passing CI's 194–478s
+composition shards establish that a 200s broad budget is inadequate; they do not reconstruct the
+exact earlier timeout or demonstrate a deadlock. CI and live/disposable-profile review remain unclaimed.
 
-Additional inward Comms tests cover real memory-key missing/present/canceled-ring classification,
-retention after a canceled key read, default canceled pause/no-fetch and independent transaction/
-member-board freshness. Full Comms and Market race suites pass (2.539s / 3.907s). Filtered real
-composition Market refresh/archive/concurrent publication, canceled feed, Lab decode-once, key
-change/delete, Comms wire and door-parity batch passes (3.752s).
+### Footprint and remaining work
 
-Frontend affected batch now passes **11 files / 101 tests** and TypeScript no-emit. New cases cover
-newest-failure/older-success, failed publication adapters not entering cache, reset while awaiting
-an explicit refresh and same-scope refresh invalidating cache-first data. Two sequential actual
-query mutations were rejected: removing post-read revision fencing failed three semantic tests;
-removing refresh cache invalidation failed the same-scope refresh test. Both source mutations were
-restored before the passing batch; no mutant/scratch file is committed. No new production behavior
-was introduced by these tests. Existing wrappers still default to revalidation, not cache-first.
+Baseline **6cefc359**. Whole affected handwritten production union: **47 paths**, **7,314 → 7,580
+physical LOC**, **287,278 → 298,608 Unicode code points including LF** (+266 LOC / +11,330 CP).
+Tests separately: **33 paths**, **3,988 → 5,002 LOC**, **141,273 → 180,768 CP** (+1,014 LOC /
++39,495 CP). Generated/docs/vendor/lock artifacts excluded. These are relocation/safety costs,
+not compression. Core production: **1,649 LOC**, previously 1,917. Five frontend consumer files
+alone: **153 → 112 LOC**, **6,960 → 5,585 CP**; not total savings because query/generator code grew.
+
+Estimated one-hour parts remaining: Part 2 **1–2**; Part 3 **3–5**. Owner ruling: none needed.
+No live MFL, GUI, production-profile operation, PR, merge or HANDOFF.md edit. Owner controls push.
+
+Debt left: remaining approved-wiring semantic audit; owner-run pre-push/CI; disposable-profile live
+verification; remaining scoped/compound/hosted frontend reads, event invalidation, account/league/
+provider lifetime/reset integration and live polling. Keep cache-first disabled in wrappers until
+those lifetimes are exercised. Next concrete slice is in Resume here and frontend-reads.md.

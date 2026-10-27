@@ -72,6 +72,10 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object>(co
   }
   return {
     use: () => useStore(store), peek: store.getState, set: store.setState, load,
-    invalidate: () => { revision++; cache.clear(); store.setState({ pending: false } as Partial<S & ReadStatus>); }, reset,
+    invalidate: () => {
+      revision++;
+      cache.clear();
+      store.setState({ pending: false } as Partial<S & ReadStatus>);
+    }, reset,
   };
 }
