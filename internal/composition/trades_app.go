@@ -51,7 +51,7 @@ func (h tradesHost) TradeBuilder(r tradesapp.RawTradeBuilder, out tradesapp.Trad
 	defer a.core.WhatifMu.Unlock()
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
-	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
+	ctx, cancel := context.WithTimeout(a.core.Ctx, a.tradeBuilderTimeout)
 	defer cancel()
 	return (tradesapp.BuilderWorkflow{RequireOwner: a.requireTradePlanFranchise, State: a.tradeState, Teams: a.tradeBuilderTeams, Project: a.tradeProjection, Keep: a.keepTradePlan, Exit: a.draftTradeExit, Action: a.tradeBuilderPlanAction, Saved: a.savedTradePlans}).Run(ctx, r, out) //nolint:wrapcheck // Preserve builder partial output and errors.
 }

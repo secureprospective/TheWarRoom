@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -100,4 +101,49 @@ func TestOnlyKickersFallBackToTodaysBoardRule(t *testing.T) {
 			t.Errorf("%s: board_kept %v %v", pos, kept, err)
 		}
 	}
+}
+
+// A kicker with no games last season is valued on this season's pace, not 0: Zvada's 38 points
+// in 2026 with no 2025 season read 0 on the board before.
+func TestKickerWithoutLastSeasonIsValuedOnThisSeasonsPace(t *testing.T) {
+	h, st, dir, _ := kickers()
+	add := func(season, week int, measure string, v float64, text string) {
+		h.feats[season] = append(h.feats[season], history.Feature{PlayerID: "0430", Season: season, Week: week,
+			Measure: measure, Value: v, Text: text})
+	}
+	add(0, 0, "context.nfl_position", 0, "K")
+	add(0, 0, "context.birth_date", 0, "1999-03-01")
+	add(0, 0, "context.rookie_season", 2026, "")
+	for w := 1; w <= 6; w++ {
+		add(2026, w, "exposure.offense_snaps", 5, "")
+	}
+	add(2026, 0, "outcome.fantasy_points", 48, "")
+	dir["0430"] = normalize.PlayerFacts{Name: "New Leg", Position: domain.PosK}
+	st.roster = append(st.roster, state.PlayerState{MFLID: "0430"})
+	set := params.DefaultSet()
+	r, err := New(st, dir, h, "v-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := r.Run(context.Background(), Spec{Season: 2026, AsOf: time.Now(), Params: set, LastWeek: 17}); err != nil {
+		t.Fatal(err)
+	}
+	decay, err := set.GetGlobal(params.KeyLayer3DecayRate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pull, err := AgePull(domain.PosK, model.Player{Birth: time.Date(1999, 3, 1, 0, 0, 0, 0, time.UTC)}.AgeAt(2026), decay)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sc := range h.written[0].Scores {
+		if sc.MFLID != "0430" {
+			continue
+		}
+		if want := 48.0 / 6 * pull; math.Abs(sc.DynastyPPG-want) > 1e-9 || sc.DynastyPPG == 0 {
+			t.Fatalf("dynasty %.3f, want this season's pace %.3f (8 a game × pull %.3f)", sc.DynastyPPG, want, pull)
+		}
+		return
+	}
+	t.Fatal("the new kicker was not valued")
 }

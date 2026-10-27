@@ -131,6 +131,9 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	if len(scores) == 0 {
 		return Report{}, fmt.Errorf("modelrun: no player could be valued for season %d", spec.Season)
 	}
+	if err := r.tilt(scores, spec, pass); err != nil {
+		return Report{}, err
+	}
 	hash, err := inputsHash(inputs, rep.Excluded)
 	if err != nil {
 		return Report{}, err
@@ -144,6 +147,35 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	}
 	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, len(scores)
 	return rep, nil
+}
+
+// tilt applies the contract tilt to the rostered players' dynasty values.
+func (r *Runner) tilt(scores []history.ModelScore, spec Spec, ps pass) error {
+	maxTilt, err := spec.Params.GetGlobal(params.KeyDynastyContractTilt)
+	if err != nil {
+		return fmt.Errorf("modelrun: %w", err)
+	}
+	roster := map[string]state.PlayerState{}
+	for _, fid := range r.state.Franchises() {
+		players, _ := r.state.Roster(fid)
+		for _, p := range players {
+			roster[p.MFLID] = p
+		}
+	}
+	scale := func(pos domain.Position) func(float64) float64 {
+		s := ps.scale(pos, spec.Season-1)
+		if s.Len() == 0 {
+			return nil
+		}
+		return s.Pct
+	}
+	tilted := contractTilt(scores, roster, spec.Season, maxTilt, scale)
+	for i := range scores {
+		if _, ok := tilted[scores[i].MFLID]; ok {
+			scores[i].Inputs = append(scores[i].Inputs, "contract_price")
+		}
+	}
+	return nil
 }
 
 func (rep *Report) record(dir Directory, p universePlayer, in playerInput, reason string) bool {
@@ -246,8 +278,9 @@ type playerInput struct {
 	Past      []model.Past
 	Current   model.Past
 	Mislinked bool
-	// TodayTotal and TodayPull feed today's board rule where the fit did not keep the model.
-	TodayTotal, TodayPull float64
+	// TodayTotal, TodayCurrentPPG and TodayPull feed today's board rule where the fit did not
+	// keep the model; this season's pace stands in only when there is no total last season.
+	TodayTotal, TodayCurrentPPG, TodayPull float64
 }
 
 // value scores one rostered player, or returns why it could not.
@@ -288,8 +321,11 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 		if last := ps.data.Seasons[mflID][ps.season-1]; last != nil && last.Games() > 0 {
 			in.TodayTotal = last.PPG() * float64(last.Games())
 		}
+		if cur := ps.data.Seasons[mflID][ps.season]; cur != nil && cur.Games() > 0 {
+			in.TodayCurrentPPG = cur.PPG()
+		}
 		in.TodayPull = pull
-		v = model.TodayRule(v, in.TodayTotal, pull, scale)
+		v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
 	}
 	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
 }

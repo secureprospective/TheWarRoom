@@ -47,6 +47,11 @@ func defaultParams() []ParamDef {
 			Default: 0.75, Min: 0, Max: 1,
 			Description: "Dynasty: weight of each later season against the one before",
 		},
+		{
+			Key: KeyDynastyContractTilt, Position: global, Type: TypeFloat,
+			Default: 0.06, Min: 0, Max: 0.25,
+			Description: "Dynasty: most a contract's price and length move a value, as a share",
+		},
 	}, append(rubricParams(), fittedParams()...)...)
 }
 

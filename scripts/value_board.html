@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>TheWarRoom — valuation review</title>
+<style>
+:root { color-scheme: dark; font: 14px/1.5 system-ui, sans-serif; background: hsl(220 14% 4%); color: hsl(220 12% 92%); }
+* { box-sizing: border-box; scrollbar-color: hsl(220 8% 40%) transparent; scrollbar-width: thin; }
+body { margin: 0; padding: 28px clamp(16px, 3vw, 48px) 64px; }
+h1 { font-size: clamp(25px, 3vw, 38px); line-height: 1.2; margin: 0 0 16px; letter-spacing: -.025em; }
+h2 { margin: 34px 0 12px; font-size: 22px; }
+p { max-width: 78ch; margin: 10px 0; }
+small, .muted { color: hsl(220 8% 72%); }
+h2 small { font-size: 13px; font-weight: 400; margin-left: 12px; }
+a { color: hsl(208 78% 72%); text-underline-offset: 4px; }
+a:hover { color: white; }
+.bar { position: sticky; top: 0; z-index: 2; background: hsl(220 14% 4%); padding: 10px 0 0; margin: 18px 0 14px; border-bottom: 1px solid hsl(220 9% 26%); }
+nav { display: flex; gap: 4px; flex-wrap: wrap; }
+nav button { font: inherit; font-weight: 600; padding: 7px 14px; background: hsl(220 12% 9%); color: hsl(220 8% 76%); border: 1px solid hsl(220 9% 26%); border-bottom: 0; border-radius: 4px 4px 0 0; cursor: pointer; }
+nav button[aria-selected=true] { background: hsl(208 60% 26%); color: white; border-color: hsl(208 60% 40%); }
+nav button .n { font-weight: 400; font-size: 12px; color: hsl(38 92% 72%); margin-left: 6px; }
+#more { font: inherit; margin: 14px 0; padding: 8px 14px; background: hsl(220 12% 9%); color: hsl(208 78% 72%); border: 1px solid hsl(220 9% 30%); border-radius: 4px; cursor: pointer; }
+thead th { position: sticky; top: 0; }
+.notice { color: hsl(38 92% 72%); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 10px 0; }
+input[type=search] { width: min(250px, 75vw); font: inherit; padding: 8px 10px; margin-left: 8px; background: hsl(220 12% 8%); border: 1px solid hsl(220 8% 40%); border-radius: 4px; color: inherit; caret-color: hsl(208 78% 72%); }
+input[type=checkbox] { accent-color: hsl(38 92% 56%); width: 17px; height: 17px; vertical-align: middle; }
+:focus-visible { outline: 2px solid hsl(208 78% 72%); outline-offset: 4px; }
+::selection { background: hsl(208 60% 32%); color: white; }
+.table-wrap { overflow: auto; border: 1px solid hsl(220 9% 26%); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+caption { text-align: left; padding: 10px 14px; color: hsl(220 8% 72%); background: hsl(220 13% 6%); }
+th { background: hsl(220 11% 12%); text-align: right; font-size: 12px; white-space: nowrap; }
+th, td { padding: 10px 12px; border-bottom: 1px solid hsl(220 9% 20%); vertical-align: top; }
+td { text-align: right; white-space: nowrap; }
+th:nth-child(2), td:nth-child(2), th:last-child, td:last-child { text-align: left; }
+td:nth-child(2) { min-width: 175px; font-weight: 600; }
+.reading { min-width: 310px; max-width: 430px; white-space: normal; font-size: 13px; }
+.flagged td:first-child { color: hsl(38 92% 72%); font-weight: 700; }
+.flagged .reading { color: hsl(38 92% 77%); }
+tr:hover { background: hsl(220 12% 9%); }
+details { margin-top: 8px; color: hsl(220 8% 76%); font-weight: 400; }
+summary { color: hsl(208 78% 72%); cursor: pointer; }
+.checks { margin: 20px 0 12px; }
+.checks strong { color: hsl(38 92% 72%); }
+#empty { padding: 20px; border: 1px solid hsl(220 9% 26%); }
+@media (max-width: 600px) { body { padding-top: 20px; } h2 small { display: block; margin: 4px 0 0; } .toolbar { align-items: flex-start; flex-direction: column; } }
+@media print { .toolbar { display: none; } .table-wrap { overflow: visible; } body { padding: 8px; } }
+</style>
+</head>
+<body>
+<header>
+<h1>Which values deserve a second look?</h1>
+<p>Current engine, held Legacy NFL data. Read-only candidates for review — not proof that a dynasty value is wrong, and not a new ranking model.</p>
+<p class="notice">This is an archived early-season snapshot, not live results. No live fetch was attempted.</p>
+<p class="muted">@@PERIOD@@</p>
+<p>Players ranked by <strong>dynasty points per game</strong>, highest first. Compare the value rank with actual points rank; open a player’s inputs to see what the engine used.</p>
+<div class="checks">@@CHECKS@@</div>
+<details><summary>Checks, data dates & missing outcomes</summary>
+<p>@@PROVENANCE@@</p>
+<p>@@POOL@@ Actual ranks use this season’s total league fantasy points among the same valued players; tied scores share a rank. Missing is “—”, not zero. Ages are on September 1 of the valued season, matching the engine.</p>
+<p>The points-per-game rank helps separate injury or playing-time effects from talent. League contracts are context only: these engine values do not include salary or positional scarcity adjustments.</p>
+<p>@@COVERAGE@@. Missing totals never trigger a points comparison; they are not treated as a score of zero.</p>
+<p><strong>Rank gap:</strong> at least 20 places between dynasty rank and current total-points rank, with either rank in the top 20 and a known current total (including an explicit zero).</p>
+<p><strong>Zero-valued producer:</strong> a current top-20 scorer with positive points but zero dynasty value.</p>
+<p><strong>Older over producer:</strong> a top-30 valued older player above someone at least four years younger who scored over 25% more in both seasons. Older starts at QB 34, RB 29, WR 31, TE 32, K 36, DT/DE 31, LB/CB 30, S 31. These are review thresholds, not fitted age curves. One younger example is shown per flagged older player.</p>
+<p>Counts overlap. Neither a short season nor a lower dynasty value proves a defect. No run-jump check: stored runs changed engine and parameters, so their differences do not isolate an unexplained jump. No cross-position check: lineup scarcity is not part of these player values.</p>
+</details>
+</header>
+<div class="bar">
+<div class="toolbar">
+<label>Find player <input id="search" type="search" autocomplete="off" placeholder="Any position"></label>
+<label><input id="flagged" type="checkbox"> Candidates only</label>
+<span id="visible" role="status" aria-live="polite"></span>
+</div>
+<nav aria-label="Positions" role="tablist"></nav>
+</div>
+<p id="empty" hidden>No players match. Clear the search or turn off “Candidates only”.</p>
+<main>@@TABLES@@</main>
+<button id="more" type="button" hidden></button>
+<script>
+const TOP = 40;
+const search = document.getElementById('search');
+const flagged = document.getElementById('flagged');
+const nav = document.querySelector('nav');
+const more = document.getElementById('more');
+const sections = Array.from(document.querySelectorAll('main section'));
+let active = location.hash.slice(1) || sections[0].id;
+let showAll = false;
+sections.forEach(section => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.role = 'tab'; b.dataset.pos = section.id;
+  const n = section.querySelectorAll('tbody tr[data-flag="1"]').length;
+  b.innerHTML = section.id + (n ? `<span class="n">${n}</span>` : '');
+  b.title = n ? `${n} candidates to review` : 'no candidates';
+  b.addEventListener('click', () => { active = section.id; showAll = false; history.replaceState(null, '', '#' + active); filter(); window.scrollTo(0, 0); });
+  nav.appendChild(b);
+});
+more.addEventListener('click', () => { showAll = !showAll; filter(); });
+function filter() {
+  const query = search.value.trim().toLowerCase();
+  const everywhere = query !== '';
+  let visible = 0, hiddenByTop = 0;
+  sections.forEach(section => {
+    const on = everywhere || section.id === active;
+    let matches = 0;
+    section.querySelectorAll('tbody tr').forEach(row => {
+      const hit = row.dataset.search.includes(query) && (!flagged.checked || row.dataset.flag === '1');
+      const cut = !everywhere && !flagged.checked && !showAll && matches >= TOP;
+      row.hidden = !on || !hit || cut;
+      if (on && hit) { if (cut) hiddenByTop++; else matches++; }
+    });
+    section.hidden = !on || matches === 0;
+    visible += on ? matches : 0;
+  });
+  nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(!everywhere && b.dataset.pos === active)));
+  more.hidden = hiddenByTop === 0 && !showAll;
+  more.textContent = showAll ? `Show top ${TOP} only` : `Show all ${visible + hiddenByTop} ${active} players`;
+  document.getElementById('visible').textContent = everywhere ? `${visible} matches across positions` : `${visible} ${active} players shown`;
+  document.getElementById('empty').hidden = visible !== 0;
+}
+search.addEventListener('input', filter);
+flagged.addEventListener('change', filter);
+filter();
+</script>
+</body>
+</html>

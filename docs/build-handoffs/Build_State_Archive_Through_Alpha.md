@@ -1,3 +1,5 @@
+> Historical gate descriptions below are superseded: see `scripts/prepush.sh`; the full suite runs in CI.
+
 # Build State Archive — Through Alpha Gate (2026-07-27)
 
 Archived from `CLAUDE.md`'s "Current Build State" narrative and "Open Items at Last Session Close"
