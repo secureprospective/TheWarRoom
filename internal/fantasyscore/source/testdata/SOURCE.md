@@ -133,3 +133,28 @@ Potential explanations below are not asserted as MFL's actual credits.
 No residual can be resolved without inventing a credit or changing source facts. MFL's credited
 NFL-stat breakdown at the held correction time is the smallest missing evidence. No network was
 contacted. No runtime scorer, adjustment queue, owner reading or scouting consumer is wired here.
+
+## E5 golden fixtures (2026-10-27)
+
+`e5_weeks.csv.gz`, `e5_plays.csv.gz` and `e5_sleeper.json.gz` pin the five-player E5 golden
+(`TestE5Golden`): Hunt, McCaffrey, Hurts, Allen, Barkley, 2025 regular-season weeks 1–13.
+Regenerate with `scripts/e5_fixtures.py`, which reads only held sources and never engine output.
+
+| Fixture | Rows | Uncompressed SHA256 |
+|---|---|---|
+| `e5_weeks.csv.gz` | 61 player-weeks, all original columns | 034ae7bb3cfe2fd92a7effac57cbe74f1e0a600e0bbc6479a6aada8693849e2c |
+| `e5_plays.csv.gz` | 1,654 plays over 47 games, 34 adapter columns | 6917c8c4a97c3d00877a601ee9b0eed8a2452b32893e5a74c7eab169094d0f11 |
+| `e5_sleeper.json.gz` | the five players' Sleeper weekly rows | 62c96a4912339320563f739e2f628b4e7d3e7293eb284d098a476410ea7872bf |
+
+Plays are projected to exactly the columns `rawPlay` consumes — now including `play_type` and
+`sack` — with no descriptions. Only rows the adapter can attribute to one of the five
+(`passer_player_id`, `receiver_player_id`, `rusher_player_id`, `td_player_id`) are kept, plus one
+anchor row per game so `AttachPlays`' whole-game coverage check still sees all 47. Scoring the
+same five from the full held cache (`TestE5Diagnostic`, gated on `TWR_STUDY_CACHE` and
+`TWR_SLEEPER_STUDY_CACHE`) reproduces the pinned totals exactly, which is what proves the filter
+loses nothing.
+
+The expected totals in `e5_golden_test.go` come from `scripts/e5_study.py`, a Python second
+implementation that counts the play-derived stats itself and prices them with the p6 study's legacy
+scorer. The ruled definitions behind those counts, and the one convention Claude had to pick (the
+red-zone boundary), are in `HANDOFF.md`.

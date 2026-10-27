@@ -79,7 +79,9 @@ func TestDefault32MatchesReferenceOn2024Weeks(t *testing.T) {
 				}
 			}
 			points, items, err := Score(rules, row.Position, line)
-			if err != nil || points.State != leaguerules.IsKnown || points.Value != tenThousandths(row.Expected) {
+			extra := map[L]leaguerules.Decimal{qb: 75, rb: 285, wr: 384, te: 272}[row.Position]
+			credit := (line.Quantities["rushing_attempt"]/10000*extra + 50) / 100 * 100
+			if err != nil || points.State != leaguerules.IsKnown || points.Value != tenThousandths(row.Expected)+credit {
 				t.Fatalf("%s: %+v %v, reference %.2f; items %+v", row.Name, points, err, row.Expected, items)
 			}
 		})

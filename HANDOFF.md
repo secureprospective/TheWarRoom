@@ -1,19 +1,17 @@
 # Handoff
 
 ## Baton
-Christopher — 2026-10-27, `session/revamp-D-scoring-engine`. Local only; do not auto-push.
+Bee — 2026-10-27, `session/revamp-E-edge-scoring`. Do not push without authorization.
 
 ## Where it stands
-- Trade builder timeout remains 120 seconds in production; real builder test fixtures use 30 minutes per operation to tolerate loaded race runs. Timeout override and unchanged what-if assertions tested.
-- Merged `origin/main` through `2eae4ebd`; prior full verify passed. This change has focused race, build and lint verification only.
-- Reviewed boundary fingerprints updated for the timeout resource wiring; no decision entries added.
+E1–E6 done. Edge scoring, sources, play definitions and RTL are documented in
+`docs/architecture/default32-scoring.md`; code remains authoritative.
 
 ## Next move
-Christopher pushes PR #187; check fresh CI and perform outstanding live browser/feed gates.
+Review the documentation and resolve the debt below.
 
-## Blocked on
-No push authorized. Real NFL roster-season feed acquisition and previous live-browser follow-ups remain unverified.
-
-## Tried and rejected
-- A zero-value timeout fallback added a new composition decision and failed the boundary gate. Default is instead initialized in `NewApp`; the fixture overrides it per app.
-- Initial lint retry encountered another golangci-lint process; retry after it exits.
+## Debt left
+- Unknown Sleeper IDs need identity and roster coverage; do not assume they are irrelevant.
+- Held play bodies without a `sack` column can count red-zone sacks as attempts. Repin those
+  bodies before requiring the column; requiring it now rejects pinned evidence.
+- The red-zone boundary includes the 20-yard line; Christopher has not confirmed it.

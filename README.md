@@ -294,6 +294,10 @@ xychart-beta
 | INT thrown · fumble | −2 | | 🙅 Pass defended | 2.5 |
 | | | | 🏆 Safety | 10 |
 
+The preset also scores conversions, red-zone work, snaps and other edge stats, plus a weekly
+rushing-loss adjustment. See the [shipped scoring spec](docs/architecture/default32-scoring.md)
+for values, positions and sources. The study results below predate those additions.
+
 ### ⚖️ Offense and defense, finally even
 
 | Average points per starter | 🏈 Offense | 🛡️ Defense | Defense vs offense |
