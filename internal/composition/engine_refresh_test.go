@@ -133,8 +133,8 @@ func TestEngineRefreshIsWiredAfterInputs(t *testing.T) {
 		path  string
 		calls []string
 	}{
-		{"refresh_app.go", []string{"a.launchRefresh(parent)", "a.refreshWeeksInBackground(parent)"}},
-		{"week_app.go", []string{"a.refreshSeason(ctx)", "a.refreshFinishedScores(ctx)", "a.refreshEngine(parent)", "case <-ticker.C:", "a.launchRefresh(parent)"}},
+		{"refresh_app.go", []string{"Launch: a.launchRefresh", "Weeks: a.refreshWeeksInBackground"}},
+		{"week_app.go", []string{"controlapp.WeekWorker{", "Season: a.refreshSeason", "Finished: a.refreshFinishedScores", "Engine: a.refreshEngine", "Launch: a.launchRefresh", "}).Run(parent, ticker.C)"}},
 	} {
 		body, err := os.ReadFile("internal/composition/" + tc.path)
 		if err != nil {

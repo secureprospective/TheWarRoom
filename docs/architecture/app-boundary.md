@@ -2,13 +2,13 @@
 
 ## Resume here
 
-Part 2 in progress: **43 units / 1,913 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and eight Trades units completed afterward.
-Cumulative **111/126 units / 3,779/4,534 baseline function LOC**; 15 units / 755 LOC remain.
+Part 2 in progress: **46 units / 2,119 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and eleven units completed afterward.
+Cumulative **114/126 units / 3,985/4,534 baseline function LOC**; 12 units / 549 LOC remain.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
-Next: remaining Control refresh/key/read units 60–61, 102, 105; Platform lifecycle/entry/resource
+Next: remaining Control read unit 102; Platform lifecycle/entry/resource
 units 86–88, 90–92, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
 Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
 composition race batches with command-door parity; broad fixture runs need >200 seconds.
@@ -117,8 +117,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 57 | 3 | `internal/composition/race_app.go` — `scopedBodies`:71, `bracketsOrArchive`:85 | 47 | `race` | B,W:race,now,research | Archive must match URL scope; bracket list plus each bracket required; paced failure aborts all; last nonlive part sets aggregate freshness. MOVED (part 3, batch 5). |
 | 58 | 2 | `internal/composition/race_app.go` — `raceSnapshot`:123 | 15 | `race` | W:race,now | Capture joint live/held state; detect unplayed live week; apply live overlay only to matching week. MOVED (part 3, batch 2). |
 | 59 | 1 | `internal/composition/refresh_app.go` — `seasonGuess`:44 | 6 | `control` | startup,B,W:sources | Use held season else wall-clock year for discovery.  MOVED (part 2, batch 2). |
-| 60 | 4 | `internal/composition/refresh_app.go` — `refreshLeague`:53, `refreshLeagueLocked`:70, `fetchLeague`:104 | 78 | `control` | startup,B,W:sources;move watcher | Discover current season, normalize roster/money; stage rules+mirror and atomically commit; release prepared rules on mirror-stage failure; update checked times/model dirty; successful outer refresh updates draft feeds/revalidates plans. |
-| 61 | 5 | `internal/composition/refresh_app.go` — `refreshInBackground`:141, `launchRefresh`:172 | 44 | `control` | startup,B | Start due clock and move watcher once after readiness; optional launch refresh then hourly work; stopping prevents worker admission; report failures while preserving league. |
+| 60 | 4 | `internal/composition/refresh_app.go` — `refreshLeague`:53, `refreshLeagueLocked`:70, `fetchLeague`:104 | 78 | `control` | startup,B,W:sources;move watcher | Discover current season, normalize roster/money; stage rules+mirror and atomically commit; release prepared rules on mirror-stage failure; update checked times/model dirty; successful outer refresh updates draft feeds/revalidates plans. MOVED (part 4, batch 7). |
+| 61 | 5 | `internal/composition/refresh_app.go` — `refreshInBackground`:141, `launchRefresh`:172 | 44 | `control` | startup,B | Start due clock and move watcher once after readiness; optional launch refresh then hourly work; stopping prevents worker admission; report failures while preserving league. MOVED (part 4, batch 7). |
 | 62 | 2 | `internal/composition/research_archive.go` — `archivedResearchFeed`:24 | 7 | `research` | B,W:research,market,offers | Weekly feed selects scoped archive; unscoped kinds read all archived bodies.  MOVED (part 2, batch 4). |
 | 63 | 3 | `internal/composition/research_archive.go` — `hydrateResearchContext`:41 | 49 | `research` | W:research,market,offers,trades | One archive hydrate at a time; missing held feeds/weekly scores/depth/injuries/news only; roster+extra IDs define news scope; archived injury marked pending; merge without overwriting live data.  MOVED (part 2, batch 4). |
 | 64 | 2 | `internal/composition/research_archive.go` — `firstArchiveRead`:92, `hydrateResearchFeed`:106 | 25 | `research` | W:research,market,offers,trades | Each archive key tried once; only missing feeds hydrate; live failure reason overrides archived pending note.  MOVED (part 2, batch 3). |
@@ -163,7 +163,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 102 | 3 | `internal/composition/control_host.go` — `FetchRuleNames`:51, `FetchSiteNews`:65, `SourceHealth`:79 | 36 | `control` | W:control | Bounded live/archive rule dictionary and news; source health fails explicitly rather than fabricating state. |
 | 103 | 2 | `internal/composition/control_host.go` — `OpenMFLAccounting`:102 | 16 | `control` | W:control | Require startup; discovered host or empty host passes through AccountingURL admission before browser open. MOVED (part 3, batch 3). |
 | 104 | 4 | `internal/composition/control_host.go` — `Params`:119, `SetParam`:149, `ResetParam`:162 | 53 | `control` | W:control | Read definitions/current overrides, fail on missing position value; word labels/groups and sort group→label→position; bounded admin override/reset stores return explicit success/failure. MOVED (part 3, batch 3). |
-| 105 | 4 | `internal/composition/control_host.go` — `keyStatus`:175, `KeyStatus`:183, `SetKey`:201, `DeleteKey`:234, `lookupMyFranchise`:255 | 84 | `control` | W:control;startup | Trim/plausibility 16–256-byte key, verify before storage, distinguish rejected/unreachable/keyring unavailable; store and resolve franchise only after verification, bump generation and refresh. Delete clears identity/verified time/trades and fences older work. Lookup failure denies owner actions. |
+| 105 | 4 | `internal/composition/control_host.go` — `keyStatus`:175, `KeyStatus`:183, `SetKey`:201, `DeleteKey`:234, `lookupMyFranchise`:255 | 84 | `control` | W:control;startup | Trim/plausibility 16–256-byte key, verify before storage, distinguish rejected/unreachable/keyring unavailable; store and resolve franchise only after verification, bump generation and refresh. Delete clears identity/verified time/trades and fences older work. Lookup failure denies owner actions. MOVED (part 4, batch 7). |
 | 106 | 4 | `internal/composition/commissioner_host.go` — `Principal`:25, `commissionerPrincipal`:33, `commissionerSeat`:49, `commissionerSeatSignIn`:63 | 45 | `commissioner` | W:commissioner;local service host | Nonempty installation plus OS uid hashes stable local identity; injected session overrides fallback; reject blank identity. Ready-gated local seat/status/sign-in preserve account aliases and re-read status after sign-in. MOVED (part 4, batch 4). |
 | 107 | 2 | `internal/composition/commissioner_host.go` — `nativeFacts`:90 | 13 | `commissioner` | W:commissioner;store callbacks | Held directory contributes player facts only when loaded; only held injuries supply NFL designations; no network.  MOVED (part 2, batch 5). |
 | 108 | 2 | `internal/composition/archive_app.go` — `readArchiveFacts`:32 | 13 | `archive` | W:archive,comms;startup | Read verified snapshot with curated readings/compiler/manifest; retain cached snapshot only when returned SHA is nonempty; preserve service errors. MOVED (part 3, batch 3). |
@@ -790,3 +790,22 @@ origin/main tracking; no merge/rebase/upstream change. Initial lint found mispla
 wrapcheck annotations and import grouping; corrected, affected-package golangci-lint passed.
 No skipped test counted as passing. Timeout evidence remains the prior CI 194–478-second passing
 composition runs and locally measured expensive fixtures, not a demonstrated deadlock.
+
+## Part 4 — batch 7: atomic league refresh and credentials
+
+Three units (60–61, 105), 206 baseline function LOC. Control owns ordered discovery, roster/money
+normalization, staged rule/mirror commit and failure release, success-only checked/dirty publication,
+post-refresh revalidation, ready-gated worker dispatch and launch-result wording. KeyWorkflow owns
+trim/length admission, verify-before-store, refusal classification, lazy startup store capture,
+identity lookup failure, successful verification publication and delete-before-clear/refresh.
+Composition retains RefreshMu, WeekStart/WorkerMu cancellation/admission, KeyMu and the nested
+SeasonMu clear span, concrete network/keyring adapters and generation/identity state assignments.
+
+New inward readiness/no-early-capture, rejection/unreachable/no-store, exact verify→store→lookup→
+publish→refresh, delete removal, fail-closed identity, stage release, failed-commit/no-publication,
+unchanged/no-dirty and worker/launch order tests pass. Filtered composition race batch passes
+(3.482 seconds), including key leak/panic/season gates, atomic two-store rollback, manual failure
+health event, Control golden/concurrent reads, worker shutdown and door parity. The source-wiring
+test still asserted the pre-batch-2 weekly function body; changed it to assert the actual service
+port wiring, retaining inward runtime WeekWorker order coverage. Affected-package lint passed.
+No role, binding, schema, authorization, lock-order or remote-write change.

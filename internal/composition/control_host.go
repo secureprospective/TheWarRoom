@@ -2,14 +2,11 @@ package composition
 
 import (
 	"context"
-	"errors"
 	"strconv"
-	"strings"
 	"time"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
@@ -127,84 +124,40 @@ func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {
 }
 
 func (h controlHost) KeyStatus() (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	_, err := a.core.KeyStore.Get(a.core.Ctx)
-	if errors.Is(err, mflkey.ErrNoKey) {
-		return a.keyStatus("absent", ""), nil
-	}
-	if err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	return a.keyStatus("connected", ""), nil
+	return h.app.keyWorkflow().Read() //nolint:wrapcheck // Preserve startup refusals.
 }
 
-// SetKey runs after the bound method's panic recovery, in the binding's original order.
 func (h controlHost) SetKey(key string) (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	candidate := mflkey.Key(strings.TrimSpace(key))
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	// Bounds are plausibility checks, not a claim about MFL's key encoding.
-	if len(candidate) < 16 || len(candidate) > 256 {
-		detail := "key must contain 16 to 256 bytes after trimming whitespace"
-		return a.keyStatus("rejected", detail), nil
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, time.Minute)
-	defer cancel()
-	c := a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
-	verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if errors.Is(err, pendingtrades.ErrRejected) {
-		return a.keyStatus("rejected", err.Error()), nil
-	}
-	if err != nil {
-		return a.keyStatus("unreachable", report.FailureText(err)+" Nothing was stored."), nil
-	}
-	if err := a.core.KeyStore.Set(ctx, candidate); err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	a.lookupMyFranchise(ctx)
-	a.core.KeyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
-	a.core.KeyGeneration++
-	a.refreshPendingTradesInBackground()
-	return a.keyStatus("connected", verified.Detail), nil
+	return h.app.keyWorkflow().Set(key) //nolint:wrapcheck // Preserve startup refusals.
 }
 
 func (h controlHost) DeleteKey() (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	if err := a.core.KeyStore.Delete(a.core.Ctx); err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	a.core.MyFranchise = ""
-	a.core.KeyVerifiedAt = ""
-	a.core.KeyGeneration++
-	a.core.SeasonMu.Lock()
-	a.clearPendingTrades()
-	a.core.SeasonMu.Unlock()
-	a.refreshPendingTradesInBackground()
-	return a.keyStatus("absent", ""), nil
+	return h.app.keyWorkflow().Delete() //nolint:wrapcheck // Preserve startup refusals.
 }
 
-// lookupMyFranchise runs under KeyMu (or before startup publishes state). Lookup failures deny actions.
+// lookupMyFranchise runs under KeyMu or before startup publishes state.
 func (a *App) lookupMyFranchise(ctx context.Context) {
 	a.core.MyFranchise = ""
-	if _, err := a.core.KeyStore.Get(ctx); err != nil {
-		return
-	}
-	franchise, err := a.core.MFLClient.MyFranchise(ctx, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if err == nil {
-		a.core.MyFranchise = franchise
-	}
+	a.core.MyFranchise = controlapp.ResolveFranchise(ctx, a.core.KeyStore, func(ctx context.Context) (string, error) {
+		return a.core.MFLClient.MyFranchise(ctx, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+	})
+}
+
+func (a *App) keyWorkflow() controlapp.KeyWorkflow {
+	return controlapp.KeyWorkflow{Ready: a.ready, Lock: a.core.KeyMu.Lock, Unlock: a.core.KeyMu.Unlock,
+		Context: func() context.Context { return a.core.Ctx }, Store: func() controlapp.CredentialStore { return a.core.KeyStore }, Status: a.keyStatus,
+		Verify: func(ctx context.Context, candidate mflkey.Key) (string, error) {
+			c := a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
+			verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+			return verified.Detail, err //nolint:wrapcheck // The workflow classifies rejection identity.
+		}, Lookup: a.lookupMyFranchise,
+		Verified: func(at string) { a.core.KeyVerifiedAt = at; a.core.KeyGeneration++ },
+		Clear: func() {
+			a.core.MyFranchise = ""
+			a.core.KeyVerifiedAt = ""
+			a.core.KeyGeneration++
+			a.core.SeasonMu.Lock()
+			a.clearPendingTrades()
+			a.core.SeasonMu.Unlock()
+		}, Refresh: a.refreshPendingTradesInBackground, Now: time.Now}
 }
