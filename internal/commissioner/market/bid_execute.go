@@ -118,13 +118,9 @@ func (x *bidExecution) place(raw *commissioner.RawCommand) error {
 
 func (x *bidExecution) raise(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
-	auction, j, err := x.state.Bids.Find(args.Bid)
+	auction, err := x.standingBid(args)
 	if err != nil {
-		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
-	}
-	if auction.Decided || !auction.Bids[j].Live() || auction.Bids[j].Franchise != args.Franchise {
-		return fmt.Errorf("choose your own bid that is still standing")
 	}
 	outcome, err := x.judge(auction.Player, args.Franchise, auction, nativecheck.BidProposal{Salary: args.Salary, Years: args.Years})
 	if err != nil {
@@ -136,19 +132,27 @@ func (x *bidExecution) raise(raw *commissioner.RawCommand) error {
 
 func (x *bidExecution) withdraw(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
-	auction, j, err := x.state.Bids.Find(args.Bid)
+	auction, err := x.standingBid(args)
 	if err != nil {
-		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
-	}
-	if auction.Decided || !auction.Bids[j].Live() || auction.Bids[j].Franchise != args.Franchise {
-		return fmt.Errorf("choose your own bid that is still standing")
 	}
 	if err := x.auctionOpen(auction); err != nil {
 		return err
 	}
 	raw.Args.BidOutcome = &commissioner.BidOutcome{Player: auction.Player, Season: x.rules.Season}
 	return nil
+}
+
+func (x *bidExecution) standingBid(args *commissioner.RawBidArgs) (*commissioner.BidAuction, error) {
+	a, j, err := x.state.Bids.Find(args.Bid)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return nil, err
+	}
+	if a.Decided || !a.Bids[j].Live() || a.Bids[j].Franchise != args.Franchise {
+		return nil, fmt.Errorf("choose your own bid that is still standing")
+	}
+	return a, nil
 }
 
 // bidBar refuses a player who cannot be bid on: one on a roster, one still on waivers, or one this franchise

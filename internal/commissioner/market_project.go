@@ -24,12 +24,9 @@ func projectBid(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	case BidRaise:
 		return projectRaisedBid(book, r)
 	case BidWithdraw:
-		a, j, err := book.Find(args.Bid)
+		a, j, err := standingBid(book, args.Bid)
 		if err != nil {
 			return err
-		}
-		if a.Decided || !a.Bids[j].Live() {
-			return fmt.Errorf("reverse the later bid changes before reversing this one")
 		}
 		a.Bids[j].Withdrawn = true
 	case BidsProcess, BidsOverride:
@@ -58,11 +55,11 @@ func projectPlacedBid(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 
 func projectRaisedBid(book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
-	a, j, err := book.Find(args.Bid)
+	a, j, err := standingBid(book, args.Bid)
 	if err != nil {
 		return err
 	}
-	if a.Decided || !a.Bids[j].Live() || a.Bids[j].Franchise != args.Franchise {
+	if a.Bids[j].Franchise != args.Franchise {
 		return fmt.Errorf("reverse the later bid changes before reversing this one")
 	}
 	a.Bids[j].Replaced = true
@@ -70,6 +67,17 @@ func projectRaisedBid(book *BidBook, r Record) error {
 		Salary: args.Salary, Years: args.Years, Points: outcome.Points,
 		PlacedAt: r.Receipt.RecordedAt})
 	return nil
+}
+
+func standingBid(book *BidBook, id string) (*BidAuction, int, error) {
+	a, j, err := book.Find(id)
+	if err != nil {
+		return nil, 0, err
+	}
+	if a.Decided || !a.Bids[j].Live() {
+		return nil, 0, fmt.Errorf("reverse the later bid changes before reversing this one")
+	}
+	return a, j, nil
 }
 
 // projectBidAward decides an auction, or corrects a decision: the previous winner leaves the roster and the

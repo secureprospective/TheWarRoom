@@ -53,7 +53,7 @@ func tradeReviewers(t *commissioner.TradeState, state governance.State, records 
 	parties := tradeParties(state, t.Parties)
 	all := tradeDOT(state, records)
 	for _, p := range all {
-		if slices.Contains(parties, p) && !slices.ContainsFunc(t.Recusals, func(v commissioner.TradeVote) bool { return commissioner.SamePrincipal(records, v.Who, string(p)) }) {
+		if slices.Contains(parties, p) && !hasTradeVote(t.Recusals, records, string(p)) {
 			t.Recusals = append(t.Recusals, commissioner.TradeVote{Who: string(p), Decision: commissioner.TradeRecuse, At: now, Reason: "A trade party cannot review its own trade"})
 		}
 	}
@@ -68,4 +68,10 @@ func tradeReviewers(t *commissioner.TradeState, state governance.State, records 
 		return nil, fmt.Errorf("%s: DOT has %d of %d chosen seats", "Needs a ruling", len(all), t.Policy.Seats)
 	}
 	return eligible, nil
+}
+
+func hasTradeVote(votes []commissioner.TradeVote, records []commissioner.Record, principal string) bool {
+	return slices.ContainsFunc(votes, func(v commissioner.TradeVote) bool {
+		return commissioner.SamePrincipal(records, v.Who, principal)
+	})
 }

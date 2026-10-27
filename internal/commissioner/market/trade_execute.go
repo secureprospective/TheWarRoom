@@ -232,7 +232,7 @@ func (x tradeExecution) review(raw commissioner.RawCommand, t *commissioner.Trad
 	if raw.Command == commissioner.TradeRecuse {
 		return fmt.Errorf("party DOT members are recused automatically")
 	}
-	if slices.ContainsFunc(t.Votes, func(v commissioner.TradeVote) bool { return commissioner.SamePrincipal(x.records, v.Who, x.principal) }) {
+	if hasTradeVote(t.Votes, x.records, x.principal) {
 		return fmt.Errorf("each DOT member may vote once")
 	}
 	t.Votes = append(t.Votes, commissioner.TradeVote{Who: x.principal, Decision: raw.Args.Trade.Decision, At: x.now, Reason: raw.Reason})

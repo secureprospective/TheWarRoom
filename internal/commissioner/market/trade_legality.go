@@ -52,6 +52,15 @@ func (x tradeExecution) legal(t commissioner.TradeState) error {
 }
 
 func nativeFranchiseCap(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, id string, zone *time.Location) (nativecheck.CapState, error) {
+	players, charges := franchiseCapInputs(seed, id, rules.Season)
+	result, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
+	if err != nil {
+		return result, fmt.Errorf("check trade salary: %w", err)
+	}
+	return result, nil
+}
+
+func franchiseCapInputs(seed *commissioner.RawNativeSnapshot, id string, season int) ([]nativecheck.CapPlayer, []domain.Money) {
 	players := []nativecheck.CapPlayer{}
 	charges := []domain.Money{}
 	for _, p := range seed.Players {
@@ -60,15 +69,11 @@ func nativeFranchiseCap(seed *commissioner.RawNativeSnapshot, rules leaguerules.
 		}
 	}
 	for _, c := range seed.Adjustments {
-		if c.Franchise == id && (c.Season == 0 || c.Season == rules.Season) {
+		if c.Franchise == id && (c.Season == 0 || c.Season == season) {
 			charges = append(charges, c.Amount)
 		}
 	}
-	result, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
-	if err != nil {
-		return result, fmt.Errorf("check trade salary: %w", err)
-	}
-	return result, nil
+	return players, charges
 }
 
 func checkTradeAssets(t commissioner.TradeState, season int) error {

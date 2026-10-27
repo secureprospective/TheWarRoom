@@ -16,19 +16,12 @@ import (
 func rosterCapAllows(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
 	facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
 	roster := []nativecheck.RosterPlayer{}
-	players := []nativecheck.CapPlayer{}
-	charges := []domain.Money{}
 	for _, p := range seed.Players {
 		if p.Franchise == franchise {
 			roster = append(roster, nativecheck.RosterPlayer{ID: p.ID, Status: p.Status})
-			players = append(players, nativecheck.CapPlayer{Salary: p.Salary, Status: p.Status})
 		}
 	}
-	for _, c := range seed.Adjustments {
-		if c.Franchise == franchise && (c.Season == 0 || c.Season == rules.Season) {
-			charges = append(charges, c.Amount)
-		}
-	}
+	players, charges := franchiseCapInputs(seed, franchise, rules.Season)
 	if err := lineCardsHeld(seed, rules, franchise); err != nil {
 		return err
 	}

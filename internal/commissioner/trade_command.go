@@ -33,10 +33,8 @@ func OwnerTradeAction(command string) leaguerules.Action {
 }
 
 func (a RawArgs) validateTrade(command string) error {
-	other := a
-	other.Trade, other.TradeOutcome = nil, nil
-	if a.Trade == nil || !reflect.DeepEqual(other, RawArgs{}) {
-		return fmt.Errorf("send only this trade's details")
+	if err := a.onlyMarketDetails(func(v *RawArgs) { v.Trade, v.TradeOutcome = nil, nil }, a.Trade == nil, "send only this trade's details"); err != nil {
+		return err
 	}
 	return a.Trade.Validate(command)
 }

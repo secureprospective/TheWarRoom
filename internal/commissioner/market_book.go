@@ -70,13 +70,19 @@ func (k *BidBook) Latest(player string) *BidAuction {
 	return nil
 }
 
-func (k *BidBook) Find(id string) (*BidAuction, int, error) {
-	for i := range k.Auctions {
-		for j, b := range k.Auctions[i].Bids {
-			if b.ID == id {
-				return &k.Auctions[i], j, nil
-			}
+func nestedIndex[P, C any](parents []P, children func(*P) []C, match func(C) bool) (int, int) {
+	for i := range parents {
+		if j := slices.IndexFunc(children(&parents[i]), match); j >= 0 {
+			return i, j
 		}
+	}
+	return -1, -1
+}
+
+func (k *BidBook) Find(id string) (*BidAuction, int, error) {
+	i, j := nestedIndex(k.Auctions, func(a *BidAuction) []BidRecord { return a.Bids }, func(b BidRecord) bool { return b.ID == id })
+	if i >= 0 {
+		return &k.Auctions[i], j, nil
 	}
 	return nil, 0, fmt.Errorf("choose a recorded bid")
 }
@@ -159,12 +165,9 @@ func (s *MarketBook) Window(id string) (*WaiverWindow, error) {
 }
 
 func (s *MarketBook) Claim(id string) (*WaiverWindow, WaiverBookClaim, error) {
-	for i := range s.Windows {
-		for _, c := range s.Windows[i].Claims {
-			if c.ID == id {
-				return &s.Windows[i], c, nil
-			}
-		}
+	i, j := nestedIndex(s.Windows, func(w *WaiverWindow) []WaiverBookClaim { return w.Claims }, func(c WaiverBookClaim) bool { return c.ID == id })
+	if i >= 0 {
+		return &s.Windows[i], s.Windows[i].Claims[j], nil
 	}
 	return nil, WaiverBookClaim{}, fmt.Errorf("choose a recorded waiver claim")
 }
