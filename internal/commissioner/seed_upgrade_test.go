@@ -1,6 +1,9 @@
 package commissioner
 
 import (
+	"encoding/json"
+	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -8,9 +11,62 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// A league seeded before the scoring rule kinds existed upgrades on read: the kinds are recorded
-// empty, it scores exactly as the old Legacy rules did, and nothing waits for a ruling.
-func TestOldLegacySeedUpgradesAndScoresIdentically(t *testing.T) {
+// A Legacy league seeded before part 2 (the preset exactly as main dda866b8 recorded it, written by
+// that commit's own Prepared()) upgrades on read to MFL parity: its rules equal a new Legacy
+// league's, with no commissioner step and nothing waiting for a ruling.
+func TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague(t *testing.T) {
+	body, err := os.ReadFile("testdata/legacy-seed-dda866b8.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var old []SeedValue
+	if err := json.Unmarshal(body, &old); err != nil {
+		t.Fatal(err)
+	}
+	upgraded := legacyLeague(t)
+	fresh := legacyLeague(t)
+	if len(old) != len(fresh[0].Command.Args.Seed)-5 {
+		t.Fatalf("the held old seed should lack exactly the five scoring kinds: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
+	}
+	for _, s := range old {
+		if strings.Contains(string(s.Value), "blocked_fg_td") || strings.Contains(string(s.Value), "other_return_td") {
+			t.Fatal("the held old seed already carries the kick-return touchdown rows")
+		}
+	}
+	upgraded[0].Command.Args.Seed = old
+	got, err := RulesInForce(upgraded, 2026, noChangeTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := RulesInForce(fresh, 2026, noChangeTime())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		for _, f := range []string{"scoring.catalogue", "scoring.ranges", "scoring.extras", "scoring.scales", "scoring.totals", "scoring.lineUnit"} {
+			a, _ := ruleValue(upgraded, f)
+			b, _ := ruleValue(fresh, f)
+			if a != b {
+				t.Errorf("%s differs:\n upgraded %s\n new      %s", f, a, b)
+			}
+		}
+		t.Fatal("an upgraded pre-part-2 Legacy league's rules differ from a new Legacy league's")
+	}
+	if _, ok := got.Scoring.Catalogue.Value["blocked_punt_td"]; !ok || len(got.Scoring.Ranges.Value) == 0 {
+		t.Fatal("the upgrade did not add the kick-return rows and MFL's ranges")
+	}
+	sc := got.Scoring
+	for _, state := range []leaguerules.State{sc.Catalogue.State, sc.Extras.State, sc.Ranges.State, sc.Scales.State, sc.Totals.State, sc.LineUnit.State} {
+		if state != leaguerules.IsKnown {
+			t.Fatal("an upgraded league's scoring waits for a ruling")
+		}
+	}
+}
+
+// A seed recorded before the scoring kinds whose catalogue is not the recorded Legacy one (a
+// commissioner-edited or imported league) gets only the kinds recorded empty: it scores exactly as
+// it did, keeps its own catalogue, and nothing waits for a ruling.
+func TestPreKindsNonLegacySeedGetsEmptyKindsOnly(t *testing.T) {
 	records := legacyLeague(t)
 	var old []SeedValue
 	for _, s := range records[0].Command.Args.Seed {

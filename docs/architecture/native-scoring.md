@@ -4,6 +4,37 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
+- **Part 3 (2026-10-26):**
+  - **Old Legacy leagues reach MFL parity automatically** (owner ruling 2026-10-26). Seed step
+    version 2 (`leaguerules.seedUpgrades`): a seed recorded before the scoring kinds whose catalogue
+    is exactly the Legacy catalogue as then recorded gets today's Legacy catalogue (#UT other returns,
+    #BF/#BP IDP ×7) and kinds (MFL ranges; extras, scales, totals, line unit empty), replacing its
+    recorded catalogue on read. Any other pre-kinds seed (edited or imported catalogue) keeps its own
+    catalogue and gets only step 1's empty kinds. Each step decides from the seed as recorded, before
+    any step ran. Proof: `TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague` reads the real preset
+    main dda866b8's own `Prepared()` recorded (`internal/commissioner/testdata/legacy-seed-dda866b8.json`)
+    and its rules in force deep-equal a new Legacy league's; it fails with step 2 disabled.
+  - Study weeks (`TestStudyWeeksUnderTheLegacyUpgrade`, opt-in `TWR_STUDY_CACHE` = config-study p3
+    `cache/`): 35,498 2023–25 weeks 1–13 player-weeks (nflverse positions mapped to league positions;
+    P, OL and unlisted skipped) score unchanged except 9, every one a blocked-kick TD at an IDP
+    position, +7.00 each (no missed-FG return TD falls in those weeks; ranges changed none):
+
+    | Player (gsis) | Season wk | Pos | Before → after | Rule |
+    |---|---|---|---|---|
+    | Noah Igbinoghene (00-0036287) | 2023 w1 | CB | 0.00 → 7.00 | #BF |
+    | Grant Stuard (00-0036672) | 2023 w13 | LB | 0.00 → 7.00 | #BP |
+    | Jonathan Owens (00-0034485) | 2024 w1 | S | 0.00 → 7.00 | #BP |
+    | Deommodore Lenoir (00-0036563) | 2024 w5 | CB | 14.00 → 21.00 | #BF |
+    | Rodney McLeod Jr. (00-0028899) | 2024 w6 | S | 19.00 → 26.00 | #BF |
+    | Jordan Davis (00-0037073) | 2025 w3 | DT | 26.50 → 33.50 | #BF |
+    | Will McDonald IV (00-0039142) | 2025 w3 | DE | 9.50 → 16.50 | #BF |
+    | Sydney Brown (00-0039002) | 2025 w4 | S | 3.00 → 10.00 | #BP |
+    | Marshawn Kneeland (00-0039900) | 2025 w9 | DE | 0.00 → 7.00 | #BP |
+
+    "Before" is the old seed after step 1 with today's adapter (a blocked-kick TD is unused there).
+  - A commissioner who changed the catalogue after an old seed keeps their change: it is a later
+    rule change, and it still overrides the upgraded seed.
+
 - **Part 2 (2026-10-26), done:** the owner's rulings applied and the branch pushed.
   - Binding/wire (approved, additive): `models.ts` regenerated with `make bindings`; every wire
     fixture rewritten by its own `TWR_WRITE_WIRE` writer (`TestCommissionerControlsWire` gained one).
@@ -32,10 +63,7 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
   kind the model does not have yet; a model change to plan, not to slip in. (d) Live feeds (spec
   §5/§7.1) wait on the week-8 ESPN/Sleeper/nflverse accuracy study; do not build a Sleeper mapping
   before it reports.
-- **Old seeds and the kick-TD rows:** an upgraded pre-kinds Legacy league has no #BF/#BP/other-return
-  catalogue rows, so with the new play columns a blocked-kick TD reads as unused there (before, the
-  adapter credited it as a fumble-recovery TD, which MFL never did). Only a commissioner change, or a
-  later seed step, adds the rows.
+- **Old seeds and the kick-TD rows:** resolved in part 3 (seed step 2 below).
 
 - **Part 1 (2026-10-26), done:** five new scoring rule kinds as commissioner settings in
   `internal/leaguerules`, the scorer for them in `internal/fantasyscore`, the locked DEFAULT-32
