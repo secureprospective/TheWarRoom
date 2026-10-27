@@ -14,6 +14,7 @@ import (
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 
@@ -217,4 +218,12 @@ func nativeUpdateLock(directory string) (*os.File, error) {
 		time.Sleep(100 * time.Millisecond)
 	}
 	return nil, fmt.Errorf("open desktop update lock: %w", last)
+}
+
+func backupCLI() platformapp.BackupCLI {
+	return platformapp.BackupCLI{Directory: configDir, Backups: newDatabaseBackups, DevBuild: isDevBuild()}
+}
+func listBackups(stdout, stderr io.Writer) int { return backupCLI().List(stdout, stderr) }
+func restoreBackup(set string, stdout, stderr io.Writer) int {
+	return backupCLI().Restore(set, stdout, stderr)
 }

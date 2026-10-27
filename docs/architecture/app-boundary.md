@@ -2,14 +2,14 @@
 
 ## Resume here
 
-Part 2 in progress: **51 units / 2,423 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and sixteen units completed afterward.
-Cumulative **119/126 units / 4,289/4,534 baseline function LOC**; 7 units / 245 LOC remain.
+Part 2 in progress: **54 units / 2,445 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and nineteen units completed afterward.
+Cumulative **122/126 units / 4,311/4,534 baseline function LOC**; 4 units / 223 LOC remain.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
 Next: remaining Control read unit 102; Platform lifecycle/entry/resource
-units 86, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
+units 86, 99–100; then core policy audit/extraction and negative boundary ratchet.
 Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
 composition race batches with command-door parity; broad fixture runs need >200 seconds.
 
@@ -152,10 +152,10 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 92 | 5 | `internal/composition/app.go` — `shutdown`:334, `startWorker`:355 | 32 | `platform` | shutdown,B | Mark stopping/cancel workers under admission lock; join before closing pools/releasing instance lock; no new worker after stopping. MOVED (part 4, batch 9). |
 | 93 | 1 | `internal/composition/app.go` — `configDir`:370, `isDevBuild`:386, `dbFileName`:390 | 21 | `platform` | startup,CLI | Owner-only config dir; dev stamp routes to separate dev databases, never production ledger.  MOVED (part 2, batch 3). |
 | 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. MOVED (part 4, batch 4). |
-| 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. |
-| 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. |
+| 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. MOVED (part 4, batch 10). |
+| 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. MOVED (part 4, batch 10). |
 | 97 | 1 | `internal/composition/version.go` — `buildLabel`:14 | 6 | `platform` | startup,CLI,W stamps | Append parenthesized commit only for stamped builds; ldflags globals must stay compatible.  MOVED (part 2, batch 1). |
-| 98 | 5 | `internal/composition/restore_cli.go` — `listBackups`:20, `restoreBackup`:51, `restoreFailure`:86 | 80 | `platform` | offline CLI | List manifest directories sorted; lock before basename-confined matched restore; distinguish newer journal/no prior data; private technical log with temp fallback, public recovery wording/exit codes. |
+| 98 | 5 | `internal/composition/restore_cli.go` — `listBackups`:20, `restoreBackup`:51, `restoreFailure`:86 | 80 | `platform` | offline CLI | List manifest directories sorted; lock before basename-confined matched restore; distinguish newer journal/no prior data; private technical log with temp fallback, public recovery wording/exit codes. MOVED (part 4, batch 10). |
 | 99 | 5 | `internal/composition/run.go` — `Main`:37, `runFlag`:86, `probe`:103, `packageSmoke`:115 | 96 | `platform` | CLI/desktop entry | Known argument shapes only, unknown args never fall into production GUI; probe exits based on startup; smoke requires absolute existing disposable dir/lock and no stores/credentials/workers. |
 | 100 | 5 | `internal/composition/run.go` — `helperCommands`:155, `runNative`:167, `nativeUpdateLock`:209 | 61 | `platform` | hosted desktop entry | Only delegable helper catalog IDs; hosted startup excludes local App; HTTPS/league admission; update-cache lock retries 100×100ms; unsigned trust failure does not prevent screen; dev-only practice update flag. |
 | 101 | 2 | `internal/composition/cache_app.go` — `cacheScopes`:23, `ClearCache`:63 | 28 | `sources` | W:sources | Ordered five-scope labels/actions; scope selects corresponding forced feature refresh; unknown scope returns not found without effects. MOVED (part 3, batch 3). |
@@ -689,7 +689,7 @@ because this stacked branch tracks origin/main; no merge/rebase/upstream rewrite
 
 ## Part 4 — batch 2: seasonal Control refresh and week policy
 
-Ten units (72–77, 119, 121–122, 124), 518 baseline function LOC. Control owns fixed refresh
+Ten units (72–77, 119, 121–122, 124), 418 baseline function LOC. Control owns fixed refresh
 ordering, cancellation and early lineup notification; injury/transaction conversion and held
 injury views; requested-lineup week admission/reset; key-first pending reads, generation fencing,
 key failure wording and separate history-save logging; daily shell archive/attempt admission;
@@ -845,3 +845,31 @@ Full make lint passes: bloat 24/24, all placement/transport/root guards and zero
 Gosec cannot trace the stored WeekCancel through WorkerGroup.Stop; added a narrow lifetime
 explanation, not a cancellation bypass. Context spans, defer order and startup capture/publication
 remain source-traced against the pre-batch implementation. No public/schema/permission change.
+
+## Part 4 — inventory arithmetic correction and batch 10 lock ownership
+
+Re-summing the actual inventory found batch 2's narrative overstated its 10 rows by 100 LOC:
+**418**, not 518. No unit status changed. The earlier resume/checkpoint cumulative totals inherited
+that arithmetic error; current Resume counts are recomputed from the 126 inventory rows. Current
+Part 4 total is 53 units / 2,365 baseline LOC; cumulative 121 units / 4,231 LOC, with 5 / 303 open.
+
+Two OS lock units (95–96), 42 baseline function LOC. Implementation and standalone second-acquire/
+dev-production isolation tests now belong to Platform; composition keeps compatibility forwarding
+for startup, native update and restore callers. Source relocation ledger (repo-relative):
+internal/composition/instance_lock_unix.go → internal/app/platform/instance_lock_unix.go;
+internal/composition/instance_lock_windows.go → internal/app/platform/instance_lock_windows.go.
+Updated SYSTEM_MAP; package placement already covers both directories. Process/unit inspection
+found no running app tied to these source paths. No repository/worktree was moved.
+
+Lock batch evidence: inward Linux race tests and composition smoke-refusal/door parity passed;
+Windows Platform test binary cross-compiled successfully (compile evidence only, not Windows runtime).
+
+Batch 10 also moves unit 98 (80 baseline LOC): offline backup listing, locked/basename-confined
+restore, no-prior-data/newer-journal wording and private CLI error logs now live in Platform's
+BackupCLI; composition only wires current build/config and terminal writers. Source ledger:
+internal/composition/restore_cli.go → internal/app/platform/restore.go (forwarding entry adapters
+joined run.go). New inward manifest-only sorted listing/no-set, held-lock/no-backup-access,
+preparation failure and private-cause logging tests pass. Existing real matched/repeated-old-schema/
+never-opened-profile restores, smoke refusal and parity race batch passes (6.208 seconds).
+No actual installed/profile path moved; all tests use disposable directories. Initial G703 finding
+was the test reading a glob rooted in os.Getenv; keep its already-created disposable path directly.

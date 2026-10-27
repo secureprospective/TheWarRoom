@@ -1,6 +1,6 @@
 //go:build windows
 
-package composition
+package platform
 
 import (
 	"fmt"
@@ -9,10 +9,10 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-// acquireInstanceLock takes a non-blocking exclusive LockFileEx on a lockfile beside the database,
+// AcquireInstanceLock takes a non-blocking exclusive LockFileEx on a lockfile beside the database,
 // the Windows twin of the flock in instance_lock_unix.go. Keep the file open for the life of the
 // process: closing it releases the lock.
-func acquireInstanceLock(dbPath string) (*os.File, error) {
+func AcquireInstanceLock(dbPath string) (*os.File, error) {
 	path := dbPath + ".lock"
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
@@ -28,8 +28,8 @@ func acquireInstanceLock(dbPath string) (*os.File, error) {
 	return f, nil
 }
 
-// releaseInstanceLock is safe on nil (startup failed before locking).
-func releaseInstanceLock(f *os.File) {
+// ReleaseInstanceLock is safe on nil (startup failed before locking).
+func ReleaseInstanceLock(f *os.File) {
 	if f == nil {
 		return
 	}

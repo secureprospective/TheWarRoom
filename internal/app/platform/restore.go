@@ -1,4 +1,4 @@
-package composition
+package platform
 
 import (
 	"context"
@@ -15,17 +15,23 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 )
 
+type BackupCLI struct {
+	Directory func() (string, error)
+	Backups   func(string) (*db.Backups, error)
+	DevBuild  bool
+}
+
 // listBackups prints the backup sets in the data directory, oldest first: each one a directory
 // under backups/ that holds a manifest. It reads names only; Restore verifies the set it is given.
-func listBackups(stdout, stderr io.Writer) int {
-	dir, err := configDir()
+func (s BackupCLI) List(stdout, stderr io.Writer) int {
+	dir, err := s.Directory()
 	if err != nil {
-		restoreFailure(stderr, err, "The app could not open its data folder. Check that your account can open and write to its settings folder, then try again.")
+		RestoreFailure(stderr, err, "The app could not open its data folder. Check that your account can open and write to its settings folder, then try again.")
 		return 1
 	}
 	entries, err := os.ReadDir(filepath.Join(dir, "backups"))
 	if err != nil && !os.IsNotExist(err) {
-		restoreFailure(stderr, err, "The saved backups could not be listed. Check that your account can read the backups folder, then try again.")
+		RestoreFailure(stderr, err, "The saved backups could not be listed. Check that your account can read the backups folder, then try again.")
 		return 1
 	}
 	var sets []string
@@ -48,21 +54,21 @@ func listBackups(stdout, stderr io.Writer) int {
 // instance lock the app does, so it refuses while the app is open, and the files it replaces are
 // kept as a pre-restore set beside the others. A profile never opened (a new computer) has no
 // files to keep, and the result says so.
-func restoreBackup(set string, stdout, stderr io.Writer) int {
-	dir, err := configDir()
+func (s BackupCLI) Restore(set string, stdout, stderr io.Writer) int {
+	dir, err := s.Directory()
 	if err != nil {
-		restoreFailure(stderr, err, "The app could not open its data folder. Check that your account can open and write to its settings folder, then try again.")
+		RestoreFailure(stderr, err, "The app could not open its data folder. Check that your account can open and write to its settings folder, then try again.")
 		return 1
 	}
-	lock, err := acquireInstanceLock(filepath.Join(dir, dbFileName("thewarroom", isDevBuild())))
+	lock, err := AcquireInstanceLock(filepath.Join(dir, DatabaseFileName("thewarroom", s.DevBuild)))
 	if err != nil {
-		restoreFailure(stderr, err, "Restore needs the app closed and access to its data folder. Close every copy of The War Room, check that your account can write to its data folder, then try again.")
+		RestoreFailure(stderr, err, "Restore needs the app closed and access to its data folder. Close every copy of The War Room, check that your account can write to its data folder, then try again.")
 		return 1
 	}
-	defer releaseInstanceLock(lock)
-	backups, err := newDatabaseBackups(dir)
+	defer ReleaseInstanceLock(lock)
+	backups, err := s.Backups(dir)
 	if err != nil {
-		restoreFailure(stderr, err, "Restore could not prepare the backup folder. Check that your account can read and write to the data folder, then try again.")
+		RestoreFailure(stderr, err, "Restore could not prepare the backup folder. Check that your account can read and write to the data folder, then try again.")
 		return 1
 	}
 	safety, err := backups.Restore(context.Background(), filepath.Join(dir, "backups", filepath.Base(set)), time.Now().UTC())
@@ -71,7 +77,7 @@ func restoreBackup(set string, stdout, stderr io.Writer) int {
 		if errors.Is(err, db.ErrRestoreJournalNewer) {
 			message = err.Error()
 		}
-		restoreFailure(stderr, err, message)
+		RestoreFailure(stderr, err, message)
 		return 1
 	}
 	if safety == "" {
@@ -83,7 +89,7 @@ func restoreBackup(set string, stdout, stderr io.Writer) int {
 }
 
 // CLI logs must not tee technical details back to the terminal.
-func restoreFailure(stderr io.Writer, cause error, message string) {
+func RestoreFailure(stderr io.Writer, cause error, message string) {
 	cfg, err := os.UserConfigDir()
 	var file *os.File
 	if err == nil {

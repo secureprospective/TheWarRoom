@@ -5,6 +5,7 @@ package composition
 import (
 	"context"
 	"log"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -313,3 +314,8 @@ var (
 func buildLabel() string { return platformapp.BuildLabel(version, commit) }
 
 func setupLogging(dir string) error { return platformapp.SetupLogging(dir) } //nolint:wrapcheck // Logging already provides its resource context.
+
+func acquireInstanceLock(path string) (*os.File, error) {
+	return platformapp.AcquireInstanceLock(path) //nolint:wrapcheck // Preserve instance-lock refusal text.
+}
+func releaseInstanceLock(file *os.File) { platformapp.ReleaseInstanceLock(file) }

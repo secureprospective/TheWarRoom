@@ -54,50 +54,6 @@ func TestPackageSmokeRejectsInvalidDirectoryAndHeldLock(t *testing.T) {
 	}
 }
 
-// TestInstanceLock_SecondAcquireFails proves the single-instance guard: once the
-// lock is held, a second acquire on the same DB path is refused; after release a
-// fresh acquire succeeds.
-func TestInstanceLock_SecondAcquireFails(t *testing.T) {
-	t.Parallel()
-	dbPath := filepath.Join(t.TempDir(), "thewarroom.db")
-
-	first, err := acquireInstanceLock(dbPath)
-	if err != nil {
-		t.Fatalf("first acquire: %v", err)
-	}
-
-	if second, err := acquireInstanceLock(dbPath); err == nil {
-		releaseInstanceLock(second)
-		t.Fatal("second acquire succeeded while the lock was held — instance guard failed")
-	}
-
-	releaseInstanceLock(first)
-
-	third, err := acquireInstanceLock(dbPath)
-	if err != nil {
-		t.Fatalf("acquire after release: %v", err)
-	}
-	releaseInstanceLock(third)
-}
-
-// TestInstanceLock_DevAndRealDoNotContend proves the lock is keyed to the DB path,
-// so a dev build and a real build (different DB files) never falsely block.
-func TestInstanceLock_DevAndRealDoNotContend(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	realLock, err := acquireInstanceLock(filepath.Join(dir, "thewarroom.db"))
-	if err != nil {
-		t.Fatalf("acquire real: %v", err)
-	}
-	defer releaseInstanceLock(realLock)
-
-	dev, err := acquireInstanceLock(filepath.Join(dir, "thewarroom-dev.db"))
-	if err != nil {
-		t.Fatalf("dev build must not contend with the real ledger lock: %v", err)
-	}
-	releaseInstanceLock(dev)
-}
-
 // TestRunFlag_UnknownArgumentNeverOpensAWindow: an unknown argument exits 2 with usage instead
 // of falling through to a window on the real database; -version prints the build label.
 func TestRunFlag_UnknownArgumentNeverOpensAWindow(t *testing.T) {

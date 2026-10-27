@@ -1,6 +1,6 @@
 //go:build !windows
 
-package composition
+package platform
 
 import (
 	"fmt"
@@ -8,10 +8,10 @@ import (
 	"syscall"
 )
 
-// acquireInstanceLock takes a non-blocking flock on a lockfile beside the database, so a
+// AcquireInstanceLock takes a non-blocking flock on a lockfile beside the database, so a
 // second copy of the app cannot open the same ledger. Keep the file open for the life of the
 // process: closing it releases the lock.
-func acquireInstanceLock(dbPath string) (*os.File, error) {
+func AcquireInstanceLock(dbPath string) (*os.File, error) {
 	path := dbPath + ".lock"
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
 	if err != nil {
@@ -25,8 +25,8 @@ func acquireInstanceLock(dbPath string) (*os.File, error) {
 	return f, nil
 }
 
-// releaseInstanceLock is safe on nil (startup failed before locking).
-func releaseInstanceLock(f *os.File) {
+// ReleaseInstanceLock is safe on nil (startup failed before locking).
+func ReleaseInstanceLock(f *os.File) {
 	if f == nil {
 		return
 	}
