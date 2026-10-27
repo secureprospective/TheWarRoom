@@ -54,7 +54,9 @@ export function StartLeagueForm() {
           <input type="number" min={2} max={32} step={1} value={count}
             onChange={e => setCount(e.target.value)} />
         </label>
-        <p className="change-note">The 32-Team Default is for 32 franchises; an empty league works with 2 to 32.</p>
+        <p className="change-note">
+          The 32-Team Default is for 32 franchises; an empty league works with 2 to 32.
+        </p>
         <label>First NFL season
           <input type="number" min={1920} max={9999} step={1} value={season}
             onChange={e => setSeason(e.target.value)} />
