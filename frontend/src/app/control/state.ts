@@ -38,7 +38,7 @@ export function createControlState(reader: ControlReader) {
     }, accept: value => value,
   });
   const news = createReadQuery('control.TargetSiteNews', {
-    initial, store: league.store, read: reader.news, accept: value => ({ news: value }),
+    initial, store: league.store, read: () => reader.news(), accept: value => ({ news: value }),
   });
   const store = league.store;
   async function run(work: () => Promise<Partial<State>>) {
