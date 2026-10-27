@@ -41,7 +41,7 @@ view. Stand-up produces a checked **read-only** league, never authority grants.
 Evidence, responsibility split and justified debt:
 `docs/architecture/storage-recovery-identity.md` and `internal/store/history/README.md`.
 
-Tooling outside the features: `cmd/fit` (writes the fitted params), `cmd/fixtures`, `cmd/twr-practice` (development-only hosted click-test launcher; `cmd/twr-practice/README.md`), `tools/ifaceguard`, `tools/labparity`, `tools/boundarycheck` (function/source boundary ratchet), `scripts/`.
+Tooling outside the features: `scripts/value_board.py` (offline current-engine valuation triage; tagged harness in `internal/modelrun/value_board_test.go`, method in `docs/architecture/valuation-review.md`), `cmd/fit` (writes the fitted params), `cmd/fixtures`, `cmd/twr-practice` (development-only hosted click-test launcher; `cmd/twr-practice/README.md`), `tools/ifaceguard`, `tools/labparity`, `tools/boundarycheck` (function/source boundary ratchet), `scripts/`.
 
 Current boundary-extraction inventory and resume point: `docs/architecture/app-boundary.md`.
 Finished-score finality is in `internal/app/now/nfl_reading.go`; local database-check report

@@ -72,6 +72,7 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	}
 	checks := fit.CheckBoard(d, results, holdout, today)
 	fit.KeepBoard(results, checks)
+	fit.ApplyOwnerRules(results, fit.OwnerRules())
 	file := params.FittedFile{Fitted: time.Now().UTC().Format("2006-01-02"), First: first, Holdout: holdout}
 	for _, r := range results {
 		for key, v := range r.Params.Values() {
