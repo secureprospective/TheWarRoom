@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -17,34 +16,6 @@ const (
 	BidsProcess  = "bids.process"
 	BidsOverride = "bids.award.override"
 )
-
-// RawBidArgs names a recorded player or bid and the contract an owner offers. It never carries a decision,
-// a price the app works out or an owner identity.
-type RawBidArgs struct {
-	Player    string       `json:"player,omitempty"`
-	Franchise string       `json:"franchise,omitempty"`
-	Bid       string       `json:"bid,omitempty"`
-	Salary    domain.Money `json:"salaryCents,omitempty"`
-	Years     int          `json:"years,omitempty"`
-}
-
-// BidResult is how one bid fared when its player's bids were decided.
-type BidResult struct {
-	ID      string `json:"id"`
-	Refusal string `json:"refusal,omitempty"`
-}
-
-// BidOutcome is worked out by the app under the append lock; a request cannot supply it.
-type BidOutcome struct {
-	Player     string              `json:"player,omitempty"`
-	Season     int                 `json:"season"`
-	Points     leaguerules.Decimal `json:"points,omitempty"`
-	Late       bool                `json:"late,omitempty"`
-	Winner     string              `json:"winner,omitempty"`
-	WinningBid string              `json:"winningBid,omitempty"`
-	Tied       []string            `json:"tied,omitempty"`
-	Results    []BidResult         `json:"results,omitempty"`
-}
 
 func BidCommand(command string) bool {
 	return slices.Contains([]string{BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride}, command)
@@ -59,11 +30,17 @@ func OwnerBidAction(command string) leaguerules.Action {
 	return ""
 }
 
+func (a RawArgs) onlyMarketDetails(clearFields func(*RawArgs), missing bool, sentence string) error {
+	clearFields(&a)
+	if missing || !reflect.DeepEqual(a, RawArgs{}) {
+		return fmt.Errorf("%s", sentence)
+	}
+	return nil
+}
+
 func (a RawArgs) validateBid(command string) error {
-	other := a
-	other.Bid, other.BidOutcome = nil, nil
-	if a.Bid == nil || !reflect.DeepEqual(other, RawArgs{}) {
-		return fmt.Errorf("send only the details of this bid action")
+	if err := a.onlyMarketDetails(func(v *RawArgs) { v.Bid, v.BidOutcome = nil, nil }, a.Bid == nil, "send only the details of this bid action"); err != nil {
+		return err
 	}
 	return a.Bid.Validate(command)
 }

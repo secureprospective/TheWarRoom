@@ -57,7 +57,7 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 		Seats: []PeopleSeat{}, Roles: []PeopleRole{}, Invites: []PeopleInvite{}}
 	p := governance.Principal(PrincipalFor(records, principal))
 	private := state.HasRole(p, governance.Commissioner) || state.HasRole(p, governance.CoCommissioner)
-	persons, invites := peopleInventory(records)
+	persons, invites := PeopleInventory(records)
 	// Seats and names do not depend on the clock, only the alignment beside them does.
 	directory, err := nativeDirectory(league, records, state, time.Time{})
 	if err != nil {
@@ -122,7 +122,7 @@ func yourFranchise(p governance.Principal, seats []PeopleSeat) string {
 	return ""
 }
 
-func peopleInventory(records []Record) ([]string, []string) {
+func PeopleInventory(records []Record) ([]string, []string) {
 	persons, invites := make(map[string]bool), make(map[string]bool)
 	for _, r := range records {
 		persons[PrincipalFor(records, r.Principal)] = true

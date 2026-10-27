@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
@@ -175,7 +177,7 @@ func TestNativeLeagueWireMatchesGolden(t *testing.T) {
 
 	quotes := quoteApp(t)
 	quotes.app.core.ClockNow = quoteClock
-	quote, err := newCommissionerAPI(quotes.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
+	quote, err := newCommissionerAPI(quotes.app).TargetNativeContractQuote(market.RawContractQuote{League: legalityLeague,
 		Player: "0099", Action: "cut", ViewerZone: "UTC"})
 	readings.add(t, "contract-quote", quote, err)
 	readings.check(t)
@@ -290,7 +292,7 @@ func TestNativeDenialsMatchGolden(t *testing.T) {
 			return err
 		},
 		"contract-quote-input": func() error {
-			_, err := newCommissionerAPI(f.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague})
+			_, err := newCommissionerAPI(f.app).TargetNativeContractQuote(market.RawContractQuote{League: legalityLeague})
 			return err
 		},
 		"lineup-scope": func() error {

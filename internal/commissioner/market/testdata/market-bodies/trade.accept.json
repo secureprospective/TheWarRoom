@@ -1,0 +1,56 @@
+{
+ "trade": {
+  "id": "entry.27",
+  "franchise": "franchise.01"
+ },
+ "tradeOutcome": {
+  "vetoNumber": 0,
+  "appealedVetoNumber": 0,
+  "assetDetails": [
+   {
+    "fromTeam": "Team 2",
+    "toTeam": "Team 1",
+    "label": "2028 round 1 pick, originally Team 1"
+   }
+  ],
+  "previous": "fb8d085d976aa3502f938e0c353f84b9fc325eac8b3a36ed7d318bad89104055",
+  "id": "entry.27",
+  "proposer": "franchise.02",
+  "parties": [
+   "franchise.02",
+   "franchise.01"
+  ],
+  "assets": [
+   {
+    "from": "franchise.02",
+    "to": "franchise.01",
+    "season": 2028,
+    "round": 1,
+    "original": "franchise.01"
+   }
+  ],
+  "accepted": [
+   "franchise.02",
+   "franchise.01"
+  ],
+  "policy": {
+   "route": "dot",
+   "seats": 4,
+   "votesToDecide": 3,
+   "futureYears": 2,
+   "minimumRound": 1,
+   "maximumRound": 5,
+   "refuseIllegalRoster": true,
+   "offerLifetimeNanoseconds": 604800000000000,
+   "maximumParties": 3
+  },
+  "offeredAt": "2026-10-20T12:00:00Z",
+  "expiresAt": "2026-10-27T12:00:00Z",
+  "status": "review",
+  "words": "Waiting for trade review",
+  "votes": [],
+  "recusals": [],
+  "appeals": [],
+  "overrides": []
+ }
+}

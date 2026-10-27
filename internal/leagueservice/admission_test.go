@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -75,7 +77,7 @@ func TestHostedReadsAndPreviewsRequireCredential(t *testing.T) {
 			{"TargetNativeLineupCheck", []any{commissioner.RawNativeLineup{League: "native.test", Franchise: "franchise.01"}}},
 			{"TargetNativeHouseRules", []any{"native.test"}},
 			{"TargetNativePlayerScore", []any{"native.test", "0099", 2026, 1}},
-			{"TargetNativeContractQuote", []any{commissioner.RawContractQuote{League: "native.test", Player: "0099", Action: "tag", ViewerZone: "UTC"}}},
+			{"TargetNativeContractQuote", []any{market.RawContractQuote{League: "native.test", Player: "0099", Action: "tag", ViewerZone: "UTC"}}},
 			{"TargetNativeResults", []any{"native.test", 2026, 1}},
 			{"TargetNativeStandings", []any{"native.test", 2026}},
 			{"TargetNativeBracket", []any{"native.test", 2026}},
@@ -138,7 +140,7 @@ func TestHostedReadScopeIncludesFranchiseAndReferencedPlayer(t *testing.T) {
 			case "trades":
 				_, err = service.TargetNativeTrades("native.test", "franchise.other")
 			case "quote":
-				_, err = service.TargetNativeContractQuote(commissioner.RawContractQuote{League: "native.test", Player: "0099", Action: "tag", ViewerZone: "UTC"})
+				_, err = service.TargetNativeContractQuote(market.RawContractQuote{League: "native.test", Player: "0099", Action: "tag", ViewerZone: "UTC"})
 			case "score":
 				_, err = service.TargetNativePlayerScore("native.test", "0099", 2026, 1)
 			case "market":

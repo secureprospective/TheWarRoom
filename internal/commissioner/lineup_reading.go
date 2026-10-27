@@ -50,14 +50,14 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	if week < 1 || week > 22 {
 		return NativeLineup{}, fmt.Errorf("choose a week")
 	}
-	base, err := readNativeBase(league, records, at)
+	base, err := ReadNativeBase(league, records, at)
 	if err != nil {
 		return NativeLineup{}, err
 	}
-	if !base.assets.Seeded {
+	if !base.Assets.Seeded {
 		return NativeLineup{}, fmt.Errorf("record the league's starting snapshot before reading a lineup")
 	}
-	seat, ok := base.directory.seat(franchise)
+	seat, ok := base.Directory.seat(franchise)
 	if !ok {
 		return NativeLineup{}, fmt.Errorf("choose one of this league's franchises")
 	}
@@ -80,7 +80,7 @@ func NativeLineupReading(league, franchise, principal string, week int, records 
 	out := NativeLineup{League: league, Name: Replay(records).Name, Revision: int64(len(records)), Season: season,
 		Week: week, Franchise: franchise, FranchiseName: seat.Name, Zone: env.zone().String(), Set: set,
 		Corrected: held.Corrected, Reason: held.Reason, Starters: []LineupPlayer{}, Bench: []LineupPlayer{},
-		Rules: ruleLines(base.rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
+		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
 	starting := map[string]bool{}
 	for _, id := range held.Starters {
 		starting[id] = true

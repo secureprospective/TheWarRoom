@@ -13,14 +13,6 @@ import (
 
 const ContractActionSet = "contract.action.set"
 
-// Params replaces the action's parameters; omitted values explicitly need a ruling.
-// On is separate so there cannot be two competing enable switches in one request.
-type RawContractAction struct {
-	Action string          `json:"action"`
-	On     *bool           `json:"on"`
-	Params json.RawMessage `json:"params"`
-}
-
 func contractActionFields() map[string]leaguerules.FieldPath {
 	return map[string]leaguerules.FieldPath{
 		"tag": "contracts.tag", "extension": "contracts.extension",

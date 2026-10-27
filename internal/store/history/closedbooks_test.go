@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -164,14 +166,14 @@ func closedBooksReadings(t *testing.T, s *Store, g *bigLeagueBuilder) map[string
 		"house": readingProbe(func(r []commissioner.Record) (commissioner.NativeHouseRules, error) {
 			return commissioner.NativeHouseRulesReading(bigLeagueID, r, at)
 		}),
-		"waivers": readingProbe(func(r []commissioner.Record) (commissioner.NativeWaivers, error) {
-			return commissioner.NativeWaiversReading(bigLeagueID, team, owner, r, at, time.UTC, g.facts)
+		"waivers": readingProbe(func(r []commissioner.Record) (market.NativeWaivers, error) {
+			return market.NativeWaiversReading(bigLeagueID, team, owner, r, at, time.UTC, g.facts)
 		}),
-		"bids": readingProbe(func(r []commissioner.Record) (commissioner.NativeBids, error) {
-			return commissioner.NativeBidsReading(bigLeagueID, team, owner, r, at, time.UTC, g.facts)
+		"bids": readingProbe(func(r []commissioner.Record) (market.NativeBids, error) {
+			return market.NativeBidsReading(bigLeagueID, team, owner, r, at, time.UTC, g.facts)
 		}),
-		"trades": readingProbe(func(r []commissioner.Record) (commissioner.NativeTrades, error) {
-			return commissioner.NativeTradesReading(bigLeagueID, team, owner, r, at, time.UTC)
+		"trades": readingProbe(func(r []commissioner.Record) (market.NativeTrades, error) {
+			return market.NativeTradesReading(bigLeagueID, team, owner, r, at, time.UTC)
 		}),
 		"calendar": readingProbe(func(r []commissioner.Record) (commissioner.Calendar, error) {
 			return commissioner.CalendarReading(bigLeagueID, r, at, at.Year(), leaguerules.Action("trade"), team, time.UTC)

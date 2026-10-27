@@ -1,0 +1,89 @@
+{
+ "waiver": {
+  "franchise": "franchise.01",
+  "claim": "entry.18"
+ },
+ "waiverOutcome": {
+  "claims": [
+   {
+    "id": "entry.18"
+   },
+   {
+    "id": "entry.19"
+   }
+  ],
+  "priorOrder": [
+   "franchise.32",
+   "franchise.31",
+   "franchise.30",
+   "franchise.29",
+   "franchise.28",
+   "franchise.27",
+   "franchise.26",
+   "franchise.25",
+   "franchise.24",
+   "franchise.23",
+   "franchise.22",
+   "franchise.21",
+   "franchise.20",
+   "franchise.19",
+   "franchise.18",
+   "franchise.17",
+   "franchise.16",
+   "franchise.15",
+   "franchise.14",
+   "franchise.13",
+   "franchise.12",
+   "franchise.11",
+   "franchise.10",
+   "franchise.09",
+   "franchise.08",
+   "franchise.07",
+   "franchise.06",
+   "franchise.05",
+   "franchise.04",
+   "franchise.03",
+   "franchise.02",
+   "franchise.01"
+  ],
+  "closeAt": "2026-10-14T12:00:00Z",
+  "season": 2026,
+  "winner": "franchise.01",
+  "order": [
+   "franchise.32",
+   "franchise.31",
+   "franchise.30",
+   "franchise.29",
+   "franchise.28",
+   "franchise.27",
+   "franchise.26",
+   "franchise.25",
+   "franchise.24",
+   "franchise.23",
+   "franchise.22",
+   "franchise.21",
+   "franchise.20",
+   "franchise.19",
+   "franchise.18",
+   "franchise.17",
+   "franchise.16",
+   "franchise.15",
+   "franchise.14",
+   "franchise.13",
+   "franchise.12",
+   "franchise.11",
+   "franchise.10",
+   "franchise.09",
+   "franchise.08",
+   "franchise.07",
+   "franchise.06",
+   "franchise.05",
+   "franchise.04",
+   "franchise.03",
+   "franchise.02",
+   "franchise.01"
+  ],
+  "source": "Set by the commissioner",
+  "clearsDead": true
+ }
+}

@@ -308,16 +308,6 @@ func CheckGovernanceAppend(raw RawCommand, principal string, records []Record, a
 	return nil
 }
 
-func marketOwnerFranchise(raw RawCommand) string {
-	if OwnerWaiverAction(raw.Command) != "" {
-		return raw.Args.Waiver.Franchise
-	}
-	if OwnerBidAction(raw.Command) != "" {
-		return raw.Args.Bid.Franchise
-	}
-	return ""
-}
-
 func authorizeCaretaker(state governance.State, raw RawCommand, principal string) (string, error) {
 	if !state.HasRole(governance.Principal(principal), governance.Commissioner) || raw.Args.People.Principal != principal {
 		return "", fmt.Errorf("only the commissioner may take their own caretaker seat")

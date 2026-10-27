@@ -7,7 +7,7 @@ import (
 	"slices"
 )
 
-func cloneClosedNative(raw RawClosedBooks) (NativeAssets, waiverState, error) {
+func cloneClosedNative(raw RawClosedBooks) (NativeAssets, MarketBook, error) {
 	assets := raw.Native
 	if assets.Snapshot != nil {
 		snapshot := cloneRolloverAssets(*assets.Snapshot)
@@ -19,16 +19,16 @@ func cloneClosedNative(raw RawClosedBooks) (NativeAssets, waiverState, error) {
 	// is the same shape resumed here, including private, already-decided claims.
 	body, err := json.Marshal(raw.Waivers)
 	if err != nil {
-		return NativeAssets{}, waiverState{}, fmt.Errorf("copy closed waiver book: %w", err)
+		return NativeAssets{}, MarketBook{}, fmt.Errorf("copy closed waiver book: %w", err)
 	}
-	var waivers waiverState
+	var waivers MarketBook
 	if err := json.Unmarshal(body, &waivers); err != nil {
-		return NativeAssets{}, waiverState{}, fmt.Errorf("read closed waiver book: %w", err)
+		return NativeAssets{}, MarketBook{}, fmt.Errorf("read closed waiver book: %w", err)
 	}
 	return assets, waivers, nil
 }
 
-func resumeClosedNative(assets *NativeAssets, records []Record, waivers *waiverState) (int, error) {
+func resumeClosedNative(assets *NativeAssets, records []Record, waivers *MarketBook) (int, error) {
 	b := usableClosedBooks(records)
 	if b == nil {
 		return 0, nil

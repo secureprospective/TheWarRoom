@@ -6,75 +6,77 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
-func (a *Service) TargetNativeTrades(league, viewer string) (commissioner.NativeTrades, error) {
+func (a *Service) TargetNativeTrades(league, viewer string) (market.NativeTrades, error) {
 	if err := a.admitRead(league, "trades.read", viewer); err != nil {
-		return commissioner.NativeTrades{}, err
+		return market.NativeTrades{}, err
 	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeTrades{}, fmt.Errorf("trade startup: %w", err)
+		return market.NativeTrades{}, fmt.Errorf("trade startup: %w", err)
 	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeTrades{}, err
+		return market.NativeTrades{}, err
 	}
 	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeTrades{}, err
+		return market.NativeTrades{}, err
 	}
-	reading, err := commissioner.NativeTradesReading(league, viewer, principal, records,
+	reading, err := market.NativeTradesReading(league, viewer, principal, records,
 		a.host.CommissionerNow(), a.host.CommissionerZone())
 	if err != nil {
-		return commissioner.NativeTrades{}, fmt.Errorf("read trades: %w", err)
+		return market.NativeTrades{}, fmt.Errorf("read trades: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, nil
 }
 
-func (a *Service) TargetNativeWaivers(league, franchise string, at time.Time) (commissioner.NativeWaivers,
+func (a *Service) TargetNativeWaivers(league, franchise string, at time.Time) (market.NativeWaivers,
 	error) {
 	if at.IsZero() {
-		return commissioner.NativeWaivers{}, fmt.Errorf("choose when to read waivers")
+		return market.NativeWaivers{}, fmt.Errorf("choose when to read waivers")
 	}
 	if err := a.admitRead(league, "waivers.read", franchise); err != nil {
-		return commissioner.NativeWaivers{}, err
+		return market.NativeWaivers{}, err
 	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeWaivers{}, fmt.Errorf("waivers startup: %w", err)
+		return market.NativeWaivers{}, fmt.Errorf("waivers startup: %w", err)
 	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeWaivers{}, err
+		return market.NativeWaivers{}, err
 	}
 	reading, err := a.host.NativeWaivers(a.viewContext(a.host.CommissionerContext()), league, franchise, principal, at,
 		a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
-		return commissioner.NativeWaivers{}, fmt.Errorf("native waivers: %w", err)
+		return market.NativeWaivers{}, fmt.Errorf("native waivers: %w", err)
 	}
 	return reading, nil
 }
 
-func (a *Service) TargetNativeBids(league, franchise string) (commissioner.NativeBids, error) {
+func (a *Service) TargetNativeBids(league, franchise string) (market.NativeBids, error) {
 	if err := a.admitRead(league, "bids.read", franchise); err != nil {
-		return commissioner.NativeBids{}, err
+		return market.NativeBids{}, err
 	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.NativeBids{}, fmt.Errorf("bids startup: %w", err)
+		return market.NativeBids{}, fmt.Errorf("bids startup: %w", err)
 	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.NativeBids{}, err
+		return market.NativeBids{}, err
 	}
 	reading, err := a.host.NativeBids(a.viewContext(a.host.CommissionerContext()), league, franchise, principal,
 		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
-		return commissioner.NativeBids{}, fmt.Errorf("native bids: %w", err)
+		return market.NativeBids{}, fmt.Errorf("native bids: %w", err)
 	}
 	return reading, nil
 }

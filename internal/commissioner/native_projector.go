@@ -10,7 +10,7 @@ import (
 
 // projectNativeOverrides starts from cloned seed slices; neither ledger bodies nor held inputs mutate. visit, when
 // given, sees the assets after each entry is applied.
-func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *waiverState, visit func(*NativeAssets)) error {
+func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *MarketBook, visit func(*NativeAssets)) error {
 	active := Replay(records).Active
 	since := 0
 	if visit == nil {
@@ -36,7 +36,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *wai
 }
 
 // projectNativeEntry applies one active ledger entry to the native assets.
-func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *waiverState) error {
+func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook) error {
 	record := records[i]
 	if TradeCommand(record.Command.Command) {
 		if !assets.Seeded {

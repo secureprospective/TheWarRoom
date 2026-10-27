@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
@@ -79,7 +81,7 @@ func (f *tradeFixture) veto(t *testing.T, offer commissioner.Receipt) {
 	}
 }
 
-func (f *tradeFixture) trades(t *testing.T, who, team string) commissioner.NativeTrades {
+func (f *tradeFixture) trades(t *testing.T, who, team string) market.NativeTrades {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{who}
 	reading, err := newCommissionerAPI(f.app).TargetNativeTrades(legalityLeague, team)
@@ -89,7 +91,7 @@ func (f *tradeFixture) trades(t *testing.T, who, team string) commissioner.Nativ
 	return reading
 }
 
-func (f *tradeFixture) only(t *testing.T) commissioner.NativeTradeOffer {
+func (f *tradeFixture) only(t *testing.T) market.NativeTradeOffer {
 	t.Helper()
 	reading := f.trades(t, "owner.one", "franchise.01")
 	if len(reading.Offers) != 1 {

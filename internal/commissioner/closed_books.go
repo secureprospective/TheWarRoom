@@ -25,7 +25,7 @@ type RawClosedBooks struct {
 	People       governance.RawCheckpoint
 	PeopleEvents int
 	Native       NativeAssets
-	Waivers      waiverState
+	Waivers      MarketBook
 }
 
 func (r RawClosedBooks) Validate() error {
@@ -70,7 +70,7 @@ func CloseBooks(records []Record) (RawClosedBooks, error) {
 	if err != nil {
 		return RawClosedBooks{}, err
 	}
-	waivers := waiverState{Windows: []waiverWindow{}, Order: []string{}}
+	waivers := MarketBook{Windows: []WaiverWindow{}, Order: []string{}}
 	if err := projectNativeOverrides(&assets, records, &waivers, nil); err != nil {
 		return RawClosedBooks{}, err
 	}

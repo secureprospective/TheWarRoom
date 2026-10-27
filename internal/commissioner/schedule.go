@@ -82,7 +82,7 @@ func ScheduleSeasonReading(league string, records []Record, season int, at time.
 	if len(records) == 0 {
 		return Schedule{}, fmt.Errorf("create this app league before reading its schedule")
 	}
-	starts, err := rolloverInstants(recordsThrough(records, at))
+	starts, err := RolloverInstants(RecordsThrough(records, at))
 	if err != nil {
 		return Schedule{}, err
 	}
@@ -101,7 +101,7 @@ func ScheduleSeasonReading(league string, records []Record, season int, at time.
 	if index < len(starts) && !at.Before(starts[index]) {
 		at = starts[index].Add(-time.Nanosecond)
 	}
-	selected := append([]Record{}, recordsThrough(records, at)...)
+	selected := append([]Record{}, RecordsThrough(records, at)...)
 	for i := range selected {
 		if selected[i].Receipt.RecordedAt.Before(start) && scheduleCommand(selected[i].Command.Command) {
 			selected[i].Command.Command = ""

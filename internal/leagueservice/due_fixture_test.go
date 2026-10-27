@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -35,8 +37,8 @@ func (c *dueTestClock) Trusted() error {
 
 type dueEnvironment struct{}
 
-func (dueEnvironment) BidEnvironment(context.Context, string, time.Time) (commissioner.BidEnvironment, error) {
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
+func (dueEnvironment) BidEnvironment(context.Context, string, time.Time) (market.BidEnvironment, error) {
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
 }
 
 type dueFixture struct {

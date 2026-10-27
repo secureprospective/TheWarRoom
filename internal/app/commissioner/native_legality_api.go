@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
@@ -44,7 +45,7 @@ func (a *API) TargetNativePlayerScore(league, player string, season,
 // refused with the plain reason, the new salary and years, the dead money by season and the cap effect.
 // It reads the app league's ledger only and records nothing; the owner action that follows runs the same
 // check.
-func (a *API) TargetNativeContractQuote(raw commissioner.RawContractQuote) (commissioner.ContractQuote,
+func (a *API) TargetNativeContractQuote(raw market.RawContractQuote) (market.ContractQuote,
 	error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeContractQuote(raw)

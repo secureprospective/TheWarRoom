@@ -22,8 +22,8 @@ func NativeAssetsReading(league string, records []Record, at ...time.Time) (Nati
 	return assets, err
 }
 
-func nativeAssetsState(league string, records []Record, at ...time.Time) (NativeAssets, waiverState, error) {
-	waivers := waiverState{Windows: []waiverWindow{}, Order: []string{}}
+func nativeAssetsState(league string, records []Record, at ...time.Time) (NativeAssets, MarketBook, error) {
+	waivers := MarketBook{Windows: []WaiverWindow{}, Order: []string{}}
 	out, err := seedNativeAssets(league, records)
 	if err != nil {
 		return NativeAssets{}, waivers, err

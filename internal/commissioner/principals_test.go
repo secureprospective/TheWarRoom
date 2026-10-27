@@ -48,14 +48,6 @@ func TestAliasPrivateOwnerReadingsAndDraftRetry(t *testing.T) {
 	if err := authorizeLineupReading("native.test", "unverified", "legacy-owner", false, records); err == nil {
 		t.Fatal("private lineup leaked")
 	}
-	window := waiverWindow{ID: "window", Claims: []waiverClaim{{ID: "claim", Franchise: "one", Principal: "legacy-owner"}}}
-	claims := appendOwnWaiverClaims(nil, window, "one", account, records)
-	if len(claims) != 1 || claims[0].ID != "claim" {
-		t.Fatalf("own alias claim hidden: %+v", claims)
-	}
-	if got := appendOwnWaiverClaims(nil, window, "one", "unverified", records); len(got) != 0 {
-		t.Fatal("claim leaked")
-	}
 	in := DraftPickInput{Request: "pick", Season: 2026, Franchise: "one", Player: "1234"}
 	pick := Record{Principal: "other-install", Command: RawCommand{Command: DraftPick, Request: in.Request, Args: RawArgs{Draft: &RawDraftArgs{Season: 2026, Pick: &RawDraftSelection{Franchise: in.Franchise, Player: in.Player}}}}, Receipt: Receipt{Entry: "pick.receipt"}}
 	records = append(records, pick)

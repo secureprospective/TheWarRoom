@@ -7,6 +7,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
@@ -181,7 +183,7 @@ func TestHostedBlindBidIsInvisibleEvenToCommissioner(t *testing.T) {
 		}
 	}
 	c.invoke("bids.read", "read", []byte(`{"league":"native.hosted","franchise":"franchise.02"}`), 409)
-	var own commissioner.NativeBids
+	var own market.NativeBids
 	if err := json.Unmarshal(other.invoke("bids.read", "read", []byte(`{"league":"native.hosted","franchise":"franchise.02"}`), 200).Data, &own); err != nil {
 		t.Fatal(err)
 	}

@@ -2,7 +2,7 @@ import * as Bindings from '../../../wailsjs/go/commissioner/API';
 
 export * from '../../../wailsjs/go/commissioner/API';
 export type CommissionerBindings = typeof Bindings;
-export type { commissioner } from '../../../wailsjs/go/models';
+export type { commissioner, market } from '../../../wailsjs/go/models';
 
 // The generated module owns invocation; the adapter preserves each screen's no-desktop wording.
 function bindings(message: string): typeof Bindings {

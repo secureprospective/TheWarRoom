@@ -66,20 +66,20 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		return NativeCapCheck{}, fmt.Errorf("read viewer timezone: %w", err)
 	}
 	league := scope.League
-	base, err := readNativeBase(league, records, now)
+	base, err := ReadNativeBase(league, records, now)
 	if err != nil {
 		return NativeCapCheck{}, err
 	}
 	out := NativeCapCheck{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
-		RulesSeason: base.rules.Season, Seeded: base.assets.Seeded, Source: base.source(),
+		RulesSeason: base.Rules.Season, Seeded: base.Assets.Seeded, Source: base.source(),
 		Counting: "Committed salary counts active salaries, IR and taxi at the league's shares, " +
 			"plus signed salary adjustments and dead money. Each counted salary and charge is rounded " +
 			"to the league's money increment. Negative cap room is the amount over the cap.",
-		Rules: capRuleLines(base.rules, zone), Franchises: []NativeCapFranchise{}}
-	if !base.assets.Seeded {
+		Rules: capRuleLines(base.Rules, zone), Franchises: []NativeCapFranchise{}}
+	if !base.Assets.Seeded {
 		return out, nil
 	}
-	out.RosterSeason = base.assets.Snapshot.Season
+	out.RosterSeason = base.Assets.Snapshot.Season
 	changes, err := CorrectionsReading(league, records, now)
 	if err != nil {
 		return NativeCapCheck{}, err
@@ -88,18 +88,18 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 	players := map[string][]nativecheck.CapPlayer{}
 	charges := map[string][]domain.Money{}
 	details := map[string][]NativeCharge{}
-	for _, p := range base.assets.Snapshot.Players {
+	for _, p := range base.Assets.Snapshot.Players {
 		players[p.Franchise] = append(players[p.Franchise], nativecheck.CapPlayer{Salary: p.Salary, Status: p.Status})
 	}
-	for _, c := range base.assets.Snapshot.Adjustments {
+	for _, c := range base.Assets.Snapshot.Adjustments {
 		if c.Season != 0 && c.Season != out.RulesSeason {
 			continue
 		}
 		charges[c.Franchise] = append(charges[c.Franchise], c.Amount)
 		details[c.Franchise] = append(details[c.Franchise], c)
 	}
-	for _, seat := range base.directory.Franchises {
-		state, err := nativecheck.CheckCap(base.rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone, scopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...)
+	for _, seat := range base.Directory.Franchises {
+		state, err := nativecheck.CheckCap(base.Rules.Cap, players[seat.Franchise], charges[seat.Franchise], zone, ScopedDecisionExceptions(records, ExceptionScope{Franchise: seat.Franchise}, now)...)
 		if err != nil {
 			return NativeCapCheck{}, fmt.Errorf("judge salary cap for %s: %w", seat.Name, err)
 		}
@@ -114,8 +114,8 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 }
 
 func capRuleLines(rules leaguerules.RuleSet, zone *time.Location) []RuleLine {
-	lines := ruleLines(rules, "cap.amount", "cap.enforcement", "cap.irShare", "cap.taxiShare", "cap.quantum")
-	deadline := ruleLines(rules, "cap.complianceDeadline")
+	lines := RuleLines(rules, "cap.amount", "cap.enforcement", "cap.irShare", "cap.taxiShare", "cap.quantum")
+	deadline := RuleLines(rules, "cap.complianceDeadline")
 	if rules.Cap.ComplianceDeadline.State == leaguerules.IsKnown {
 		deadline[0].Words = rules.Cap.ComplianceDeadline.Value.In(zone).Format("2 Jan 2006 at 3:04 PM MST")
 	}

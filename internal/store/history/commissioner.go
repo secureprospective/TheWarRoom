@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -526,26 +528,26 @@ func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissione
 }
 
 func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
-	facts nativecheck.Facts, zone *time.Location, env commissioner.BidEnvironment) error {
+	facts nativecheck.Facts, zone *time.Location, env market.BidEnvironment) error {
 	if principal == commissioner.ReserveClockPrincipal {
-		if err := commissioner.PrepareDueReserve(raw, records, now, facts); err != nil {
+		if err := market.PrepareDueReserve(raw, records, now, facts); err != nil {
 			return fmt.Errorf("check automatic reserve return: %w", commissioner.Refused(err))
 		}
 		return nil
 	}
-	if err := commissioner.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
+	if err := market.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}
 	// The bid clock's scan is repeated here, under the append lock, against the current ledger.
 	if principal == bidClockPrincipal {
-		if err := commissioner.CheckDueBid(*raw, records, now, facts); err != nil {
+		if err := market.CheckDueBid(*raw, records, now, facts); err != nil {
 			return fmt.Errorf("check automatic bid award: %w", commissioner.Refused(err))
 		}
 	}
-	if err := commissioner.PrepareBidAppend(raw, records, now, facts, zone, env); err != nil {
+	if err := market.PrepareBidAppend(raw, records, now, facts, zone, env); err != nil {
 		return fmt.Errorf("check bid action: %w", commissioner.Refused(err))
 	}
-	if err := commissioner.PrepareTradeAppend(raw, principal, records, now, facts, zone); err != nil {
+	if err := market.PrepareTradeAppend(raw, principal, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check trade action: %w", commissioner.Refused(err))
 	}
 	return nil

@@ -1,0 +1,173 @@
+package market
+
+import (
+	"fmt"
+	"slices"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
+)
+
+type NativeWaiverPlayer struct {
+	Window   string    `json:"window"`
+	Player   string    `json:"player"`
+	Name     string    `json:"name"`
+	ClosesAt time.Time `json:"closesAt"`
+	Closes   string    `json:"closes"`
+	Status   string    `json:"status"`
+	Winner   string    `json:"winner,omitempty"`
+}
+
+type NativeWaiverClaim struct {
+	ID     string `json:"id"`
+	Window string `json:"window"`
+	Player string `json:"player"`
+	Status string `json:"status"`
+}
+
+type NativeWaivers struct {
+	Corrections []commissioner.Correction `json:"corrections,omitempty"`
+	League      string                    `json:"league"`
+	Franchise   string                    `json:"franchise"`
+	Revision    int64                     `json:"revision"`
+	Season      int                       `json:"season"`
+	Players     []NativeWaiverPlayer      `json:"players"`
+	Claims      []NativeWaiverClaim       `json:"claims"`
+	Order       []string                  `json:"order"`
+	OrderSource string                    `json:"orderSource"`
+	Method      string                    `json:"method"`
+}
+
+func NativeWaiversReading(league, franchise, principal string, records []commissioner.Record, at time.Time,
+	zone *time.Location, facts nativecheck.Facts) (NativeWaivers, error) {
+	if err := commissioner.AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return NativeWaivers{}, err
+	}
+	f, err := commissioner.NewFrame(league, records, at, facts, zone, at)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return NativeWaivers{}, err
+	}
+	return nativeWaiversFrame(f, franchise, principal)
+}
+
+func nativeWaiversFrame(f commissioner.Frame, franchise, principal string) (NativeWaivers, error) {
+	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return NativeWaivers{}, err
+	}
+	rules := f.Rules
+	changes, err := commissioner.CorrectionsReading(league, records, at)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return NativeWaivers{}, err
+	}
+	out := NativeWaivers{Corrections: changes.Items, League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
+		Players: []NativeWaiverPlayer{}, Claims: []NativeWaiverClaim{}, Order: []string{},
+		Method: commissioner.FieldWords(rules, "waivers.method")}
+	if !f.Assets.Seeded {
+		out.OrderSource = "No starting rosters recorded"
+		return out, nil
+	}
+	x := waiverExecution{assets: f.Assets, state: f.Book, rules: rules, records: records, now: at}
+	order, source, err := x.priority(league)
+	if err != nil {
+		out.OrderSource = err.Error()
+	} else {
+		out.Order, out.OrderSource = slices.Clone(order), source
+	}
+	policy, err := nativecheck.NewWaiverPolicy(rules.Waivers)
+	if err != nil {
+		return NativeWaivers{}, fmt.Errorf("read waiver rules: %w", err)
+	}
+	for _, w := range f.Book.Windows {
+		closeAt, err := policy.Close(w.CutAt)
+		if err != nil {
+			return NativeWaivers{}, fmt.Errorf("read waiver close: %w", err)
+		}
+		if w.Processed {
+			closeAt = w.ClosedAt
+		}
+		row := NativeWaiverPlayer{Window: w.ID, Player: w.Player.ID, Name: facts[w.Player.ID].Name,
+			ClosesAt: closeAt.In(zone), Closes: closeAt.In(zone).Format("Jan 2, 2006 at 3:04 PM MST"), Status: "On waivers"}
+		if row.Name == "" {
+			row.Name = "Player " + w.Player.ID
+		}
+		if w.Processed {
+			row.Winner = w.Winner
+			row.Status = "Awarded to a roster"
+			if w.Winner == "" {
+				row.Status = "Available as a free agent"
+			}
+		} else if !at.Before(closeAt) {
+			row.Status = "Closed; awaiting processing"
+		}
+		out.Players = append(out.Players, row)
+		out.Claims = appendOwnWaiverClaims(out.Claims, w, franchise, principal, records)
+	}
+	return out, nil
+}
+
+func appendOwnWaiverClaims(out []NativeWaiverClaim, w commissioner.WaiverWindow, franchise, principal string, records []commissioner.Record) []NativeWaiverClaim {
+	for _, c := range w.Claims {
+		if c.Franchise != franchise || !commissioner.SamePrincipal(records, c.Principal, principal) {
+			continue
+		}
+		status := "Claim recorded privately"
+		if w.Processed {
+			status = "Not awarded to your franchise"
+			for _, result := range w.Results {
+				if result.ID == c.ID && result.Refusal != "" {
+					status = "Not awarded: " + result.Refusal
+				}
+			}
+			if w.Winner == franchise {
+				status = "Awarded to your franchise"
+			}
+		}
+		out = append(out, NativeWaiverClaim{ID: c.ID, Window: w.ID, Player: w.Player.ID, Status: status})
+	}
+	return out
+}
+
+// DueWaiverWindows is shared by the clock worker and the explicit processing command.
+func DueWaiverWindows(league string, records []commissioner.Record, at time.Time) ([]string, error) {
+	f, err := commissioner.NewFrame(league, records, at, nil, nil, at)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return nil, err
+	}
+	return dueWaiverWindowsFrame(f)
+}
+
+func dueWaiverWindowsFrame(f commissioner.Frame) ([]string, error) {
+	at := f.At
+	assets, state := f.Assets, f.Book
+	// A league with no starting assets has no waivers; its season may not even be named yet.
+	due := []string{}
+	if !assets.Seeded || len(state.Windows) == 0 {
+		return due, nil
+	}
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return nil, err
+	}
+	rules := f.Rules
+	policy, err := nativecheck.NewWaiverPolicy(rules.Waivers)
+	if err != nil {
+		return nil, fmt.Errorf("read waiver rules: %w", err)
+	}
+	for _, w := range state.Windows {
+		closeAt, err := policy.Close(w.CutAt)
+		if err != nil {
+			return nil, fmt.Errorf("date due waiver: %w", err)
+		}
+		if !w.Processed && !at.Before(closeAt) {
+			due = append(due, w.ID)
+		}
+	}
+	return due, nil
+}
