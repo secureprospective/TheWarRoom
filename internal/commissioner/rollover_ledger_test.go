@@ -521,3 +521,22 @@ func TestRolloverEntryWire(t *testing.T) {
 		t.Fatalf("the written entry does not read back: %v", err)
 	}
 }
+
+// TestRolloverStoredBeforeConferencesStillValidates reads a rollover recorded before division
+// conferences were a setting: its before-state must still match the digest it was recorded with.
+func TestRolloverStoredBeforeConferencesStillValidates(t *testing.T) {
+	body, err := os.ReadFile("testdata/rollover-entry-before-conferences.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var record Record
+	if err := json.Unmarshal(body, &record); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(body), "DivisionConferences") {
+		t.Fatal("the frozen record must predate the setting")
+	}
+	if err := record.validateRolloverRecord(); err != nil {
+		t.Fatal(err)
+	}
+}

@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "6f945f03edbdd743454594727499351cf9d170226f35035ac9aeca23a5e4b2df",
+  "beforeDigest": "2d4f79b54594085938212ffe2dbc360d2d8f5d6a13f2e17bd41190075947ea2d",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -346,6 +346,11 @@
         "Citation": "Census CM-001"
       },
       "Alignment": {
+        "State": 0,
+        "Value": null,
+        "Citation": "Census CM-002: carried at setup"
+      },
+      "DivisionConferences": {
         "State": 0,
         "Value": null,
         "Citation": "Census CM-002: carried at setup"

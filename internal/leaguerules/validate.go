@@ -124,7 +124,23 @@ func validateRules(r RuleSet) error {
 		r.Playoffs.StartWeek.Value > r.Playoffs.FinalWeek.Value {
 		return fmt.Errorf("first playoff week cannot follow the final week")
 	}
+	if err := validateNames(r.League.DivisionConferences); err != nil {
+		return err
+	}
 	return validateScoringKinds(r.Scoring)
+}
+
+// validateNames refuses a blank division or conference name.
+func validateNames(names Value[map[string]string]) error {
+	if names.State != IsKnown {
+		return nil
+	}
+	for division, conference := range names.Value {
+		if strings.TrimSpace(division) == "" || strings.TrimSpace(conference) == "" {
+			return fmt.Errorf("name every division and its conference")
+		}
+	}
+	return nil
 }
 
 // menus is every closed list of options a rule value may take, by the value's type name.

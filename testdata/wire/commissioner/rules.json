@@ -200,6 +200,38 @@
      "governed": null
     },
     {
+     "field": "league.divisionConferences",
+     "label": "Conference of each division",
+     "value": "Needs a ruling",
+     "state": "Needs a ruling",
+     "citation": "Needs a ruling: carried at setup",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": null,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "league.dynasty",
      "label": "Dynasty league",
      "value": "On",

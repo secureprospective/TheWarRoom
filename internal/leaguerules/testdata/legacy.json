@@ -32,6 +32,11 @@
       "Value": null,
       "Citation": "Census CM-002: carried at setup"
     },
+    "DivisionConferences": {
+      "State": 0,
+      "Value": null,
+      "Citation": "Census CM-002: carried at setup"
+    },
     "Dynasty": {
       "State": 1,
       "Value": true,

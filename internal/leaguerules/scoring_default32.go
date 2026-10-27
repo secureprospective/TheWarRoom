@@ -1,5 +1,10 @@
 package leaguerules
 
+import (
+	"fmt"
+	"strings"
+)
+
 const (
 	default32EdgeCitation = "Config study p6 §2 Package A, ruling 2026-10-27"
 	default32RTLCitation  = "2025 nflverse regular-season play-by-play and weekly positions; FB counted as RB"
@@ -7,6 +12,7 @@ const (
 	default32Lineup       = "DEFAULT-32 spec §1, locked 2026-10-26"
 	default32Roster       = "DEFAULT-32 spec §2, locked 2026-10-26"
 	default32OLine        = "DEFAULT-32 spec §3, locked 2026-10-26"
+	default32Layout       = "32-Team Default: the NFL's conferences and divisions"
 )
 
 // Default32 is the 32-Team Default league: Legacy's rules for 32 teams with the spec's lineup, roster,
@@ -39,7 +45,34 @@ func Default32() RuleSet {
 	r.IR.Eligible = cited([]NFLStatus{InjuredReserve, PUP}, default32Roster)
 	r.IR.MustLeaveHealthy = cited(true, default32Roster)
 	r.Scoring = Default32Scoring()
+	if r.League.Alignment.State != IsKnown {
+		r.League.Alignment = cited(default32Alignment(), default32Layout)
+	}
+	r.League.DivisionConferences = cited(default32Conferences(), default32Layout)
 	return r
+}
+
+// default32Divisions is the NFL layout in franchise order: four franchises to a division.
+func default32Divisions() []string {
+	return []string{"AFC East", "AFC North", "AFC South", "AFC West", "NFC East", "NFC North", "NFC South", "NFC West"}
+}
+
+func default32Alignment() map[string]string {
+	alignment := map[string]string{}
+	for i, division := range default32Divisions() {
+		for seat := 1; seat <= 4; seat++ {
+			alignment[fmt.Sprintf("franchise.%02d", i*4+seat)] = division
+		}
+	}
+	return alignment
+}
+
+func default32Conferences() map[string]string {
+	conferences := map[string]string{}
+	for _, division := range default32Divisions() {
+		conferences[division] = strings.Fields(division)[0]
+	}
+	return conferences
 }
 
 // Default32Scoring is the 32-team default as commissioner scoring settings: Legacy's rule list plus

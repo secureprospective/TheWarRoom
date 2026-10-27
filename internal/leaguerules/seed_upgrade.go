@@ -27,6 +27,9 @@ func scoringKindPaths() []FieldPath {
 //     blocked-kick TDs, MFL's per-rule ranges, the other kinds empty), so its scoring equals a new
 //     Legacy league's. A seed is Legacy when its catalogue is exactly the
 //     Legacy catalogue as recorded then; any other league keeps its own catalogue.
+//   - version 3 records the automatic reserve moves off, as Legacy has them, for a seed without them.
+//   - version 4 (2026-10-27) records division conferences waiting for a ruling, as a new Legacy seed
+//     has them, for a seed recorded before the setting; an imported start then carries its own.
 func seedUpgrades() []seedUpgrade {
 	return []seedUpgrade{
 		{version: 1, fields: scoringKindPaths(),
@@ -47,6 +50,11 @@ func seedUpgrades() []seedUpgrade {
 		{version: 3, fields: []FieldPath{"taxi.autoPromote", "ir.autoReturn"},
 			applies: func(recorded map[FieldPath]Setting) bool {
 				return !anyRecorded(recorded, []FieldPath{"taxi.autoPromote", "ir.autoReturn"})
+			},
+			values: LegacyNFL},
+		{version: 4, fields: []FieldPath{"league.divisionConferences"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"league.divisionConferences"})
 			},
 			values: LegacyNFL},
 	}

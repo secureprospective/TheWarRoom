@@ -13,22 +13,26 @@ type LeagueRules struct {
 	Format         Value[Format]
 	InitialRosters Value[InitialRosters]
 	Alignment      Value[map[string]string]
-	Dynasty        Value[bool]
-	Carry          Value[CarryPolicy]
-	Keepers        Value[int]
+	// DivisionConferences names the conference of each division in Alignment. A rule set stored before
+	// it existed reads it as zero and omits it, so that set encodes, and digests, as it did.
+	DivisionConferences Value[map[string]string] `json:",omitzero"`
+	Dynasty             Value[bool]
+	Carry               Value[CarryPolicy]
+	Keepers             Value[int]
 }
 
 func legacyLeague() LeagueRules {
 	return LeagueRules{
-		Teams:          cited[int](32, "Census CM-001"),
-		Conferences:    cited[int](2, "Census CM-001"),
-		Divisions:      cited[int](8, "Census CM-001"),
-		Format:         cited[Format](HeadToHead, "Census CM-001"),
-		InitialRosters: cited[InitialRosters](ByDraft, "Census CM-001"),
-		Alignment:      Needs[map[string]string]("Census CM-002: carried at setup"),
-		Dynasty:        cited[bool](true, "Census CM-005"),
-		Carry:          cited[CarryPolicy](CarryAll, "Census CM-005"),
-		Keepers:        Needs[int]("Census CM-005: only for keeper leagues"),
+		Teams:               cited[int](32, "Census CM-001"),
+		Conferences:         cited[int](2, "Census CM-001"),
+		Divisions:           cited[int](8, "Census CM-001"),
+		Format:              cited[Format](HeadToHead, "Census CM-001"),
+		InitialRosters:      cited[InitialRosters](ByDraft, "Census CM-001"),
+		Alignment:           Needs[map[string]string]("Census CM-002: carried at setup"),
+		DivisionConferences: Needs[map[string]string]("Census CM-002: carried at setup"),
+		Dynasty:             cited[bool](true, "Census CM-005"),
+		Carry:               cited[CarryPolicy](CarryAll, "Census CM-005"),
+		Keepers:             Needs[int]("Census CM-005: only for keeper leagues"),
 	}
 }
 
@@ -40,6 +44,7 @@ func leagueFields() []ruleField {
 		field[Format]{path: "league.format", label: "Competition format", access: func(r *RuleSet) *Value[Format] { return &r.League.Format }},
 		field[InitialRosters]{path: "league.initialRosters", label: "First rosters", access: func(r *RuleSet) *Value[InitialRosters] { return &r.League.InitialRosters }},
 		field[map[string]string]{path: "league.alignment", label: "Division alignment", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.Alignment }},
+		field[map[string]string]{path: "league.divisionConferences", label: "Conference of each division", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.DivisionConferences }},
 		field[bool]{path: "league.dynasty", label: "Dynasty league", access: func(r *RuleSet) *Value[bool] { return &r.League.Dynasty }},
 		field[CarryPolicy]{path: "league.carry", label: "Roster carry policy", access: func(r *RuleSet) *Value[CarryPolicy] { return &r.League.Carry }},
 		field[int]{path: "league.keepers", label: "Keepers", access: func(r *RuleSet) *Value[int] { return &r.League.Keepers }},

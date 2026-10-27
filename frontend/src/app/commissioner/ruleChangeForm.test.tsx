@@ -165,6 +165,20 @@ describe('Change a rule', () => {
     await hold(host);
     expect(calls.sent[0].args).toEqual({ field: 'ir.eligible', value: ['PUP'] });
   });
+  it('sets the conference of each division through the map editor', async () => {
+    const { app, calls } = stub();
+    const host = await mount(form('league.divisionConferences'), app);
+    const map = 'New value for Conference of each division';
+    expect(all(host, 'option').map(o => o.textContent)).toContain('Conference of each division');
+    expect(present(host, 'In force nowNeeds a ruling')).toBe(true);
+    await act(async () => { (button(host, `Add to ${map}`).props().onClick as () => void)(); });
+    await settle();
+    const division = all(host, 'input').find(i => i.getAttribute('aria-label') === `${map}: entry 1 name`);
+    await type(division!, 'AFC East');
+    await type(control(host, `${map} › AFC East`), 'AFC');
+    await hold(host);
+    expect(calls.sent[0].args).toEqual({ field: 'league.divisionConferences', value: { 'AFC East': 'AFC' } });
+  });
   it('will not send a list with a blank entry, and says which', async () => {
     const host = await mount(form('ir.eligible'), stub().app);
     const list = 'New value for IR eligible designations';

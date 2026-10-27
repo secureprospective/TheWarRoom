@@ -49,17 +49,24 @@ func NativeStart(league string, records []Record, now time.Time) (RawNativeSnaps
 	if err != nil {
 		return RawNativeSnapshot{}, err
 	}
-	cards, err := nativeStartCards(records, now)
+	rules, err := RulesNow(records, now)
 	if err != nil {
 		return RawNativeSnapshot{}, err
 	}
+	cards := leaguerules.OLineOn(rules)
 	teams := nativecheck.LineCardTeams()
 	at := now.UTC()
 	seed := RawNativeSnapshot{Season: season, RosterAt: at, DraftAt: at, FutureAt: at,
 		Players: []NativePlayer{}, Picks: []NativePick{}, Adjustments: []NativeCharge{}}
+	// Only a settled division is copied; the directory's words for an unset one are never a name.
+	alignment := rules.League.Alignment
 	for _, f := range directory.Franchises {
+		division := ""
+		if alignment.State == leaguerules.IsKnown {
+			division = alignment.Value[f.Franchise]
+		}
 		seed.Franchises = append(seed.Franchises, NativeFranchise{ID: f.Franchise, HeldID: f.Franchise,
-			Name: f.Name, Abbreviation: f.Abbreviation, Division: f.Division})
+			Name: f.Name, Abbreviation: f.Abbreviation, Division: division})
 	}
 	if cards {
 		for _, team := range teams {

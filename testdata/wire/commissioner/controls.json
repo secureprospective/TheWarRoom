@@ -39,6 +39,10 @@
       {
        "field": "league.alignment",
        "label": "Division alignment"
+      },
+      {
+       "field": "league.divisionConferences",
+       "label": "Conference of each division"
       }
      ]
     },

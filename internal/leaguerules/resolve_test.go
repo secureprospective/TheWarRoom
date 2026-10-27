@@ -110,6 +110,8 @@ func TestInvalidChanges(t *testing.T) {
 		{"unknown path", testChange("no.such.rule", Known(3)), "recognised"},
 		{"bad state", testChange("cap.amount", Value[Money]{State: 99}), "set or Needs"},
 		{"hidden unknown value", testChange("cap.amount", Value[Money]{Value: 1}), "undecided"},
+		{"blank conference", testChange("league.divisionConferences", Known(map[string]string{"East": " "})), "name every division"},
+		{"blank division", testChange("league.divisionConferences", Known(map[string]string{"": "AFC"})), "name every division"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

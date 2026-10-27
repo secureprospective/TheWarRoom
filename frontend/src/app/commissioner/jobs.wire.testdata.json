@@ -8,7 +8,7 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "15 league rules still need a ruling.",
+        "words": "16 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -182,11 +182,12 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "118 league rules still need a ruling.",
+        "words": "120 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-001",
+          "CM-002",
           "CM-003",
           "CM-004",
           "CM-005",
@@ -361,7 +362,7 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "16 league rules still need a ruling.",
+        "words": "17 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -548,7 +549,7 @@
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "15 league rules still need a ruling.",
+        "words": "16 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
