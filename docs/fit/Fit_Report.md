@@ -74,7 +74,7 @@ The scale is a within-position percentile of league fantasy points per game play
 | TE | 125 | 0.168 | 0.175 | arc | +0.092 | -0.001 | -0.155 | -0.007 |
 | K | 38 | 0.308 | 0.306 | none | +0.000 | +0.000 | +0.000 | +0.000 |
 | DT | 148 | 0.249 | 0.252 | arc | +0.218 | +0.073 | +0.059 | -0.023 |
-| DE | 143 | 0.216 | 0.216 | none | +0.000 | +0.000 | +0.000 | +0.000 |
+| DE | 143 | 0.216 | 0.216 | none | -0.056 | +0.000 | -0.136 | +0.000 |
 | LB | 258 | 0.187 | 0.189 | arc | +0.072 | -0.030 | -0.036 | +0.128 |
 | CB | 186 | 0.209 | 0.207 | none | +0.000 | +0.000 | +0.000 | +0.000 |
 | S | 95 | 0.200 | 0.206 | arc | +0.241 | -0.042 | -0.170 | -0.079 |
@@ -141,8 +141,8 @@ Spearman rank correlation with what happened in 2025. Today's board is last seas
 
 Applied to the stored params after fitting; the holdout above scores the fitted values.
 
-| Pos | Recency, 2 and 3 seasons back | k_now | Arc later by | Why |
-|---|---|---|---|---|
-| DE | 0.8 / 0.0 | 2.0 | 0 years | reputation holds a season, 80% the next, then stops; this season's games take over as fast as at the other IDP spots |
-| CB | 0.6 / 0.4 | 6.0 | 0 years | a CB's points say little about his coverage, so one month counts less and years of steady scoring count more |
-| TE | fitted | fitted | 3 years | tight ends play well to older ages, so they age as the fit has them three years younger |
+| Pos | Recency, 2 and 3 seasons back | k_now | Arc | Cliff | Why |
+|---|---|---|---|---|---|
+| DE | 0.8 / 0.0 | 2.0 | set: +0.000 -0.010·(a−27) -0.0060·(a−27)² | -1.0 a season from 35 | reputation holds a season, 80% the next, then stops; this season's games take over as fast as at the other IDP spots; an end ages gently from his late 20s and falls off a cliff at 35 |
+| CB | 0.6 / 0.4 | 6.0 | fitted | none | a CB's points say little about his coverage, so one month counts less and years of steady scoring count more |
+| TE | fitted | fitted | fitted, 3 years later | none | tight ends play well to older ages, so they age as the fit has them three years younger |

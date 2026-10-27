@@ -27,6 +27,10 @@ type Params struct {
 	// Arc[0] + Arc[1]·(a−27) + Arc[2]·(a−27)² + Arc[3]·[x = 1].
 	Arc [4]float64
 
+	// Cliff: from age Cliff[0] on, each season also steps Cliff[1] on the normal-score scale; an
+	// age of 0 is no cliff. The fit never sets one; owner rules do.
+	Cliff [2]float64
+
 	// Survival: the log-odds of playing next season are Survival · SurvivalRow, the terms
 	// SurvivalTerms names for the position.
 	Survival []float64
@@ -73,6 +77,9 @@ func (p Params) ArcStep(age float64, experience int) float64 {
 	step := p.Arc[0] + p.Arc[1]*a + p.Arc[2]*a*a
 	if experience == 1 {
 		step += p.Arc[3]
+	}
+	if p.Cliff[0] > 0 && age >= p.Cliff[0] {
+		step += p.Cliff[1]
 	}
 	return step
 }
@@ -124,6 +131,7 @@ func (p Params) Values() map[string]float64 {
 		"model.prior.intercept": p.Intercept, "model.k_now": p.KNow, "model.k_dynasty": p.KDynasty,
 		"model.z_exponential": boolValue(p.Exponential), "model.board_kept": boolValue(p.BoardKept),
 		"model.recency.1": p.Recency[0], "model.recency.2": p.Recency[1],
+		"model.arc.cliff_age": p.Cliff[0], "model.arc.cliff_step": p.Cliff[1],
 	}
 	for i, f := range PriorFeatures(p.Position) {
 		out["model.prior."+f+".weight"] = p.Weight[i]
@@ -149,6 +157,7 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 		"model.prior.intercept": &p.Intercept, "model.k_now": &p.KNow, "model.k_dynasty": &p.KDynasty,
 		"model.z_exponential": &z, "model.board_kept": &kept,
 		"model.recency.1": &p.Recency[0], "model.recency.2": &p.Recency[1],
+		"model.arc.cliff_age": &p.Cliff[0], "model.arc.cliff_step": &p.Cliff[1],
 	}
 	for i, f := range PriorFeatures(pos) {
 		targets["model.prior."+f+".weight"] = &p.Weight[i]

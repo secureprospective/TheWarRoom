@@ -14,6 +14,16 @@
    "value": 0
   },
   {
+   "key": "model.arc.cliff_age",
+   "position": "CB",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "CB",
+   "value": 0
+  },
+  {
    "key": "model.arc.level",
    "position": "CB",
    "value": 0
@@ -231,12 +241,22 @@
   {
    "key": "model.arc.age",
    "position": "DE",
-   "value": 0
+   "value": -0.01
   },
   {
    "key": "model.arc.age_squared",
    "position": "DE",
-   "value": 0
+   "value": -0.006
+  },
+  {
+   "key": "model.arc.cliff_age",
+   "position": "DE",
+   "value": 35
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "DE",
+   "value": -1
   },
   {
    "key": "model.arc.level",
@@ -482,6 +502,16 @@
    "key": "model.arc.age_squared",
    "position": "DT",
    "value": 0.004066803775182056
+  },
+  {
+   "key": "model.arc.cliff_age",
+   "position": "DT",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "DT",
+   "value": 0
   },
   {
    "key": "model.arc.level",
@@ -759,6 +789,16 @@
    "value": 0
   },
   {
+   "key": "model.arc.cliff_age",
+   "position": "K",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "K",
+   "value": 0
+  },
+  {
    "key": "model.arc.level",
    "position": "K",
    "value": 0
@@ -962,6 +1002,16 @@
    "key": "model.arc.age_squared",
    "position": "LB",
    "value": 0.00300239898553901
+  },
+  {
+   "key": "model.arc.cliff_age",
+   "position": "LB",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "LB",
+   "value": 0
   },
   {
    "key": "model.arc.level",
@@ -1189,6 +1239,16 @@
    "value": 0
   },
   {
+   "key": "model.arc.cliff_age",
+   "position": "QB",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "QB",
+   "value": 0
+  },
+  {
    "key": "model.arc.level",
    "position": "QB",
    "value": 0
@@ -1394,6 +1454,16 @@
    "value": -0.0015994181191407366
   },
   {
+   "key": "model.arc.cliff_age",
+   "position": "RB",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "RB",
+   "value": 0
+  },
+  {
    "key": "model.arc.level",
    "position": "RB",
    "value": -0.12148631890982776
@@ -1597,6 +1667,16 @@
    "key": "model.arc.age_squared",
    "position": "S",
    "value": 0.004864408192008788
+  },
+  {
+   "key": "model.arc.cliff_age",
+   "position": "S",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "S",
+   "value": 0
   },
   {
    "key": "model.arc.level",
@@ -1824,6 +1904,16 @@
    "value": -0.0019056030772145413
   },
   {
+   "key": "model.arc.cliff_age",
+   "position": "TE",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "TE",
+   "value": 0
+  },
+  {
    "key": "model.arc.level",
    "position": "TE",
    "value": -0.0007385736919301028
@@ -2027,6 +2117,16 @@
    "key": "model.arc.age_squared",
    "position": "WR",
    "value": 0.0007662256301065805
+  },
+  {
+   "key": "model.arc.cliff_age",
+   "position": "WR",
+   "value": 0
+  },
+  {
+   "key": "model.arc.cliff_step",
+   "position": "WR",
+   "value": 0
   },
   {
    "key": "model.arc.level",
