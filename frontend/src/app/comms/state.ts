@@ -1,33 +1,25 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import type { Comms } from './contract';
 import { commsAPI, type CommsReader } from './api';
 
 export function createCommsState(reader: CommsReader) {
-  type State = { comms?: Comms; pending: boolean; error: string; team: string; kind: string; limit: number };
-  const store = createStore<State>(() => ({ pending: false, error: '', team: '', kind: '', limit: 50 }));
-  let revision = 0;
-  async function load(refresh = false) {
-    const request = ++revision;
-    store.setState({ pending: true, error: '' });
-    try {
-      if (refresh) await reader.refresh(true);
-      const { team, kind } = store.getState();
-      const comms = await reader.read(team, kind);
-      if (request === revision) store.setState({ comms, team: comms.team, kind: comms.kind });
-    } catch (cause) {
-      if (request === revision) store.setState({ error: String(cause) });
-    } finally {
-      if (request === revision) store.setState({ pending: false });
-    }
-  }
+  type Selection = { comms?: Comms; team: string; kind: string; limit: number };
+  const query = createReadQuery('comms.TargetComms', {
+    initial: (): Selection => ({ team: '', kind: '', limit: 50 }),
+    read: (scope) => reader.read(scope.team, scope.kind),
+    accept: comms => ({ comms, team: comms.team, kind: comms.kind }),
+  });
+  const load = (refresh = false) => query.load(() => {
+    const { team, kind } = query.peek();
+    return [{ team, kind }];
+  }, { before: refresh ? () => reader.refresh(true) : undefined });
   async function choose(action: 'refresh' | 'team' | 'kind' | 'more' | 'open', value: string) {
     if (action === 'open') { await reader.open(value); return; }
-    if (action === 'more') { store.setState(s => ({ limit: s.limit + 50 })); return; }
+    if (action === 'more') { query.set(s => ({ limit: s.limit + 50 })); return; }
     if (action === 'refresh') { await load(true); return; }
-    store.setState({ [action]: value, limit: 50 });
+    query.set({ [action]: value, limit: 50 });
     await load();
   }
-  return { use: () => useStore(store), peek: store.getState, load, choose };
+  return { use: query.use, peek: query.peek, load, choose };
 }
 export const commsState = createCommsState(commsAPI);

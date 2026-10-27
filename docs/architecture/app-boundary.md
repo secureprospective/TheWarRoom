@@ -2,23 +2,30 @@
 
 ## Resume here
 
-Composition inventory resolved: **125 units / 4,498 baseline function LOC relocated**, plus
-**one 36-LOC read-adapter unit reclassified after audit** (102). All 126 inventory rows are resolved;
-this is not a claim that core or the complete boundary is finished. Part 4 moved **57 units /
-2,632 baseline LOC** (35 before the usage-limit resume, 22 afterward), plus the adapter audit.
-Frontend plan Part 3 shared read/cache work has not started.
-Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
+Composition inventory remains resolved: **125 units / 4,498 baseline function LOC relocated**,
+plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally extracted all
+**17 frozen core policy functions / 278 baseline function LOC**; no legacy entries remain.
+Boundary gate now freezes **121 decision-bearing adapters + 47 complete sources** and detects
+straight-line/declaration/nested-path changes as well as the original branch syntax. This is a
+review ratchet, not semantic proof that every approved adapter is policy-free.
 
-Next: extract the **17 frozen legacy core functions** in boundary-adapters.tsv, then finish the
-core audit and final boundary verification. The negative syntax ratchet is now implemented and
-exercised through make lint. Core archive fallback and window
-mutation policy are now inward; remaining core examples include Comms refresh/key policy, own-team
-refusals, RulesFreshness, Offers cap availability and Sources compile admission/wording. Preserve
-readiness-dependent capture, locks and errors. Use filtered composition race batches plus parity;
-legitimate broad fixtures need >200 seconds. Finish with CI and disposable-profile live review.
+Frontend plan Part 3 has started: `docs/architecture/frontend-reads.md` is the design/inventory.
+One registry-keyed typed read/cache hook now owns four lifecycle implementations serving five
+consumers: Archive, Race, Comms, Draft reports and Market reports. Existing action/event adapters,
+selectors and public wrapper methods remain; no cache-first behavior was silently enabled.
 
-Still required for Part 2 completion: remaining core Host policy extraction/audit, tightening the
-legacy allowlist, full CI and disposable-profile live review. No permission/role/binding/schema change here.
+Next: audit the remaining reviewed core/composition adapters (especially lifecycle/resource versus
+feature-policy classification), then finish Part 2 full CI and disposable-profile live review.
+For Part 3 migrate Control held reads and Sources cache scopes next, then scoped historical
+Market/Draft/Counterparties; keep writes/live polling/session invalidation out until explicitly tested.
+Use filtered composition race batches plus door parity. A measured trade/owner integration batch
+passed in 114.271s (trade deadline/handoff test 92.68s; owner refusal 19.81s). Passing CI from prior
+parts took 194–478s per composition shard; a 200s broad tool budget is insufficient evidence of a
+failure/deadlock. The earlier broad/push timeout's exact process cause is still unproven.
+
+Branch: `session/revamp-B-app-boundary`. **Local commits only this part; owner pushes.** No PR,
+merge, force-push, generated Wails binding change or HANDOFF.md edit. No permission/role/binding/
+schema/lock-order change. Full verify/pre-push/CI and live profile review remain unclaimed.
 
 ## Boundary and preserved slice
 
@@ -1086,3 +1093,54 @@ circuit. Added inward two-sample/second-value URL and one-sample-unmapped tests;
 parity race tests pass. Reviewed only the corresponding composition whole-source fingerprint
 update: the adapter now supplies a straight-line read callback; no decision-function fingerprint
 changed or new composition policy was approved. No remote discovery was performed here.
+
+
+## Part 5 — frozen core inventory (baseline 6cefc359)
+
+These are additional to the original 126 composition units; do not double-count their LOC as
+new composition relocations. Paths below are relative to `internal/`.
+
+| Core source / function | Feature home / function | Baseline function LOC | Status |
+|---|---|---:|---|
+| app/core/host_archive.go: ArchiveOpponent | app/archive/board.go: Opponent | 22 | MOVED; lock adapter retained |
+| app/core/host_comms.go: RefreshComms | app/comms/api.go: RefreshReading | 23 | MOVED |
+| app/core/host_comms.go: RefreshCommsBoards | app/comms/api.go: RefreshBoards, RefuseBoards | 33 | MOVED; transport/publication ports retained |
+| app/core/host_comms.go: commsKey | app/comms/api.go: MemberKey | 15 | MOVED; KeyMu remains core |
+| app/core/host_contracts.go: RulesFreshness | app/contracts/roster.go: RulesFreshness | 7 | MOVED |
+| app/core/host_draft.go: DraftDestination | app/draft/held.go: Destination | 7 | MOVED |
+| app/core/host_draft.go: DraftPlayers | app/draft/held.go: ParsePlayers | 13 | MOVED; held-read adapter retained |
+| app/core/host_draft.go: OpenDraftRoom | app/draft/held.go: OpenRoom | 11 | MOVED |
+| app/core/host_draft.go: RefreshDraftReports | app/draft/held.go: RefreshReports | 18 | MOVED |
+| app/core/host_draft.go: RefreshDraftReportsFeeds | app/draft/held.go: RefreshFeeds | 27 | MOVED; individual transport reads remain core |
+| app/core/host_offers.go: OffersCapRoom | app/offers/personal_api.go: CapRoom | 13 | MOVED |
+| app/core/host_race.go: RefreshRace | app/race/refresh.go: RefreshReading | 28 | MOVED |
+| app/core/host_sources.go: SerializeSourcesCompile | app/sources/facts.go: CompileAvailable | 7 | MOVED |
+| app/core/host_sources.go: SourcesPositions | app/sources/reading.go: Positions | 15 | MOVED |
+| app/core/host_trades.go: TradeRequest | app/trades/plans.go: Request | 19 | MOVED; lazy two-host-sample port |
+| app/core/state.go: RequireOwnFranchise | app/platform/moves.go: AuthorizeTeam | 11 | MOVED; identity lock retained |
+| app/core/state.go: OwnFranchiseRefusal | app/platform/moves.go: OwnFranchiseRefusal | 9 | MOVED |
+| **Total** | | **278** | **17/17 moved** |
+
+## Part 5 — frontend shared read/cache start
+
+`nativegen -surface doors` now generates the conservative read projection from registry desktop
+exposures/binding argument shapes; it is not a new transport or authority declaration. Five audited
+held read adapters are selected because legacy desktop Modes are incomplete and G0 alone also
+includes effects. Generator tests reject conflicting execute modes/missing selections and exclude
+refresh/open methods. The existing generated-door freshness gate covers reads.gen.ts.
+
+`frontend/src/app/data/query.ts` owns typed keys, runtime argument validation, request fencing,
+pending/error/last-good handling, bounded instance-private cache, explicit refresh-before-read,
+invalidate/reset and the React hook. `archive/state.ts`, `race/state.ts`, `comms/state.ts` and
+`draftreports/state.ts` lose their duplicate lifecycle code; `reports/marketState.ts` supplies its
+own registry key to the shared reports factory. Selection/echo/action behavior stays in wrappers.
+No transport code moved outside api.ts. No dependency, schema, role or binding changed.
+
+Frontend affected batch passes: **11 files / 98 tests** (query + Archive/Race/Comms/Draft reports/
+Market reports). TypeScript no-emit, generator race/freshness tests, frontend transport guard,
+frontend production build, bundle budget and static CSP check pass. Eager bundle: 148,709 bytes
+against 321,818 limit. Existing >500KB lazy-chunk warning remains. New tests include compile-time
+write/wrong-tuple rejection; canonical full scopes; runtime malformed/undefined-extra rejection;
+last-good and retry; per-reader bounded cache; explicit refresh/lazy scope; older success/failure/
+finally fencing; invalidation/reset; and detachment across awaited refresh. Browser/GUI live review
+is deferred, not claimed. Design and remaining consumer inventory: frontend-reads.md.

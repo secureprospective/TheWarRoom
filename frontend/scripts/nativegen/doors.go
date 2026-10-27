@@ -78,11 +78,16 @@ func generateDoors(registry *catalog.Registry) (map[string][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("format CLI verbs: %w", err)
 	}
+	reads, err := generateReadCommands(registry.Entries())
+	if err != nil {
+		return nil, err
+	}
 	return map[string][]byte{
 		"internal/composition/wails_surface.gen.go":   wailsGo,
 		"testdata/bindings/manifest.txt":              []byte(strings.Join(manifest, "\n") + "\n"),
 		"cmd/twr/verbs.gen.go":                        cliGo,
 		"frontend/src/app/commands/arguments.gen.ts":  generateArguments(registry.Entries()),
+		"frontend/src/app/commands/reads.gen.ts":      reads,
 		"frontend/src/app/commands/commandbar.gen.ts": []byte(bar.String()),
 	}, nil
 }
