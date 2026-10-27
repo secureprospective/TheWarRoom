@@ -43,7 +43,7 @@
  │  DESKTOPS ....... PACKAGED   Windows · Mac · Linux · signed self-updates     │
  │  AI HELPERS ..... LEASHED    twr CLI + MCP · scoped tokens · human confirms  │
  │  CLIENT/SERVER .. 50 / 52    two drills from release-candidate               │
- │  THE REVAMP ..... MAPPED     16 parts · one at a time · build it better      │
+ │  THE REVAMP ..... MAPPED     16 parts · a few big, tested branches           │
  │  OPENING DAY .... JULY 2027  the rookie draft, run through TheWarRoom        │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -395,7 +395,7 @@ The bar is **Anduril, not SaaS**: dark, precise, data-dense, with no wasted pixe
 
 > We sprinted to a working platform. **Now we build it better, from the inside out.**
 
-Hundreds of build sessions got TheWarRoom to about **180,000 lines** and a working league server. With the platform standing, the next phase turns inward. Three independent AI mappers walked the entire codebase, and every subsystem was laid out, questioned and locked into a **16-part plan**, one part per session, each rebuilt in isolation.
+Hundreds of build sessions got TheWarRoom to about **180,000 lines** and a working league server. With the platform standing, the next phase turns inward. Three independent AI mappers walked the entire codebase, and every subsystem was laid out, questioned and locked into a **16-part plan**, built in a few big, tested branches.
 
 | | Part | The upgrade |
 |:--:|:--|:--|
@@ -459,7 +459,7 @@ The boundaries aren't conventions; they're **compiler-enforced**. A violation is
    ✅ THE TRUTH PASS ───────────────── ledger replay: 2,000 events from 135 s → 66 ms
    ✅ CLIENT/SERVER 01–50 ──────────── the league server, end to end
    ▶  51–52 ────────────────────────── the final drills and the 12-owner dress rehearsal
-   🔧 THE REVAMP ───────────────────── 16 parts, one at a time, built better
+   🔧 THE REVAMP ───────────────────── 16 parts, built in a few big, tested branches
    🔒 MAY 28 2027 ─────────────────── build freeze
    ✉️ JUN 25 2027 ─────────────────── invitations go out
    🏈 JULY 2027 ───────────────────── THE ROOKIE DRAFT, run through TheWarRoom
@@ -467,7 +467,7 @@ The boundaries aren't conventions; they're **compiler-enforced**. A violation is
 
 **On the horizon:**
 
-- 🧪 **The parity season.** Before MFL is retired, a full season runs in dual record with a discrepancy ledger. **Trust is earned the day the report catches the platform's error, not ours.**
+- 🚪 **The MFL import door.** Bring an existing league over without losing a roster, contract or pick.
 - 🗣️ **The Capologist.** Ask *"What's my dead cap in 2028 if I cut him?"* and get the answer from the actual ledger, **with receipts**.
 - 🎖️ **The January War Room.** **Fork your franchise** and branch offseason futures like code, each run through the real rules.
 - 🎟️ **Side games.** Pools, pick'em and survivor are planned.
