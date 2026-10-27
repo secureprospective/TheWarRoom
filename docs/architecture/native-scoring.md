@@ -48,6 +48,10 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
     unlisted PFR ids excluded, unpublished game leaves ybc absent → not recorded, newest revision,
     five rejected imports, unchanged evidence). The fetch-archive path (`Store.PlayerWeekStats`)
     still loads no play-by-play, as before.
+  - **Size (measured, not changed):** pinned evidence is capped at 8 MiB. One 2024 regular season's
+    play-by-play with the line columns is 4.6 MiB (3.4 MiB without them), PFR rushing 0.2 MiB, but
+    the full nflverse weekly file alone is 8.1 MiB, so a whole season already needed trimming or
+    splitting before line facts. The cap is a storage decision for the owner, left as it is.
 - **Next part starts at:** (b) the `Default32` preset and (c) the O-Line slot kind, both waiting on
   planning with the owner (do not start them unprompted); (d) live feeds wait on the week-8 accuracy
   study. Remaining unprompted work: none in the engine; wiring `LineGames` into a scoring reader comes
