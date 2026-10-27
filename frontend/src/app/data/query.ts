@@ -30,6 +30,7 @@ type QueryOptions<T, S extends object, A extends unknown[]> = {
   store?: StoreApi<S & ReadStatus>;
   companions?: ReadCommandId[];
   cacheSize?: 1 | 32;
+  retainErrorWhilePending?: boolean;
   read: (...args: A) => Promise<T>;
   accept: (value: T, args: A) => Partial<S>;
 };
@@ -65,7 +66,9 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object, A 
 
   async function load(input: A | (() => A), config: LoadOptions = {}) {
     const request = ++revision;
-    store.setState({ pending: true, error: '' } as Partial<S & ReadStatus>);
+    store.setState({ pending: true,
+      error: options.retainErrorWhilePending ? store.getState().error : '',
+    } as Partial<S & ReadStatus>);
     try {
       let captured: A | undefined;
       if (typeof input !== 'function') {
@@ -84,7 +87,7 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object, A 
       cache.delete(cacheKey);
       cache.set(cacheKey, value);
       if (cache.size > (options.cacheSize ?? 32)) cache.delete(cache.keys().next().value!);
-      store.setState(accepted as Partial<S & ReadStatus>);
+      store.setState({ ...accepted, error: '' } as Partial<S & ReadStatus>);
     } catch (cause) {
       if (request === revision) store.setState({ error: String(cause) } as Partial<S & ReadStatus>);
     } finally {

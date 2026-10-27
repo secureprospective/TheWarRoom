@@ -1,4 +1,4 @@
-import { createStore } from 'zustand/vanilla';
+import { createReadQuery } from '../data/query';
 import { useStore } from 'zustand';
 import { marketAPI, subscribeSeason } from '../market/api';
 import { parseAssetBoard, type AssetBoard, type AssetCell } from './contract';
@@ -10,22 +10,14 @@ export type AssetKey = 'now' | 'dynasty' | 'market';
 // The asset board loads once on first use and again whenever the season's held feeds change.
 export function createAssetState(read: () => Promise<AssetBoard>,
   onChange: (listener: () => void) => () => void) {
-  const store = createStore<AssetState>(() => ({ byId: new Map(), pending: false, error: '' }));
-  let revision = 0;
+  const query = createReadQuery('market.TargetAssetBoard', {
+    initial: (): AssetState => ({ byId: new Map(), pending: false, error: '' }),
+    retainErrorWhilePending: true,
+    read, accept: board => ({ board, byId: new Map(board.values.map(v => [v.id, v])) }),
+  });
+  const store = query.store;
   let started = false;
-  async function load() {
-    const request = ++revision;
-    store.setState({ pending: true });
-    try {
-      const board = await read();
-      if (request === revision)
-        store.setState({ board, byId: new Map(board.values.map(v => [v.id, v])), error: '' });
-    } catch (cause) {
-      if (request === revision) store.setState({ error: String(cause) });
-    } finally {
-      if (request === revision) store.setState({ pending: false });
-    }
-  }
+  const load = () => query.load([]);
   function start() {
     if (started) return;
     started = true;

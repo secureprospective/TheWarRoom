@@ -92,3 +92,40 @@ it('says the league\'s weeks are still being read instead of drawing an empty we
   expect(cold).not.toContain('Weekly reports');
   expect(body(now())).toContain('Weekly reports');
 });
+
+it('captures weeks before refresh but samples franchise afterward, and retains the last good view on failure', async () => {
+  let mine = '0001';
+  let finish!: () => void;
+  const reader: NowReader = { read: vi.fn(async () => now()), refresh: async () => {} };
+  const state = createNowState(reader, () => mine);
+  await state.load(false);
+  reader.refresh = async () => new Promise(resolve => { finish = resolve; });
+  const pending = state.choose('week', '3');
+  mine = '0002';
+  finish();
+  await pending;
+  expect(reader.read).toHaveBeenLastCalledWith(3, 0, '0002');
+  const good = state.peek().now;
+  reader.refresh = async () => { throw new Error('refresh refused'); };
+  await state.choose('refresh', '');
+  expect(state.peek().now).toBe(good);
+  expect(state.peek().error).toBe('Error: refresh refused');
+  expect(state.peek().pending).toBe(false);
+});
+
+it('never publishes an older weekly board after a newer request', async () => {
+  const waiting: ((value: ReturnType<typeof now>) => void)[] = [];
+  const reader: NowReader = {
+    read: async () => new Promise(resolve => waiting.push(resolve)), refresh: async () => {},
+  };
+  const state = createNowState(reader, () => '0001');
+  const old = state.load(false);
+  const latest = state.load(false);
+  const board = { ...now(), week: 6 };
+  waiting[1](board);
+  await latest;
+  waiting[0](now());
+  await old;
+  expect(state.peek().now).toBe(board);
+  expect(state.peek().week).toBe(6);
+});

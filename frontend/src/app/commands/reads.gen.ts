@@ -584,6 +584,18 @@ export const readCommands = {
     "Items": null
   }
 },
+"market.TargetAssetBoard": {
+  "command": "desktop.market.TargetAssetBoard",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
 "market.TargetAssetProfile": {
   "command": "desktop.market.TargetAssetProfile",
   "arguments": {
@@ -1048,6 +1060,58 @@ export const readCommands = {
               }
             }
           ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"now.TargetNow": {
+  "command": "desktop.now.TargetNow",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "week",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "reportWeek",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "mine",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
           "Items": null
         }
       }

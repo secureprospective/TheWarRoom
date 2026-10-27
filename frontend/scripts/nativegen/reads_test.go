@@ -21,6 +21,7 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 	}
 	for _, key := range []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"market.TargetAssetBoard", "now.TargetNow",
 		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
 		"market.TargetMarketStretches", "market.TargetAssetProfile",
@@ -58,6 +59,7 @@ func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
 	}
 	for _, key := range []string{
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"market.TargetAssetBoard", "now.TargetNow",
 		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
 		"market.TargetMarketStretches", "market.TargetAssetProfile",

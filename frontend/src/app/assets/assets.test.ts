@@ -83,3 +83,31 @@ it('keeps table values whole and wraps the qualifier on a separate line', async 
   expect(css).toContain('.matrix-roster .asset-table-sub { display: block; white-space: normal; }');
   spy.mockRestore();
 });
+
+it('fences overlapping board reads and keeps failed cell wording during retry', async () => {
+  const waiting: ((board: ReturnType<typeof parseAssetBoard>) => void)[] = [];
+  let fail = false;
+  const state = createAssetState(async () => {
+    if (fail) throw new Error('board unavailable');
+    return new Promise(resolve => waiting.push(resolve));
+  }, () => () => {});
+  const old = state.load();
+  const latest = state.load();
+  const board = parseAssetBoard(wire);
+  waiting[1](board);
+  await latest;
+  waiting[0]({ ...board, values: [] });
+  await old;
+  expect(state.peek().board).toBe(board);
+  fail = true;
+  await state.load();
+  fail = false;
+  const retry = state.load();
+  expect(state.peek().pending).toBe(true);
+  expect(state.cellFor(state.peek(), '99999', 'now').text).toBe('Unavailable');
+  expect(state.cellFor(state.peek(), '16162', 'now').held).toBe(true);
+  waiting[2](board);
+  await retry;
+  expect(state.peek().error).toBe('');
+  expect(state.cellFor(state.peek(), '99999', 'now').text).toBe('No score');
+});
