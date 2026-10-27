@@ -14,11 +14,12 @@ registry ruling (read modes on desktop declarations). Do not replace UI/action s
   now emits `commands/reads.gen.ts`, using real registry desktop exposures and typed bindings.
   Its `ReadArguments<K>` selects the existing generated `DesktopArgumentMap`, not another manual
   argument interface. Runtime shape validation uses those same registry binding schemas.
-- Legacy desktop declarations do **not** consistently publish `Modes: [read]`: G0 includes
-  Comms refresh and browser opening. Therefore the generator has a conservative 17-adapter
-  migration list of audited held reads. Every entry must exist in the registry, have G0 and have
-  no conflicting declared modes. Do not infer purity from gravity, method spelling or availability.
-  Expand this list only after reading its handler. No registry role/mode/schema/binding changed.
+- The projection is generated from the registry: every G0 desktop exposure whose modes are exactly
+  `[read]`. Legacy adapters opt in with `heldRead` in `commandcatalog/desktop.go` (the 37 audited
+  held reads, 28 of which had no mode before Part 10); shared commissioner reads carry their native
+  read mode, so all 26 other G0 commissioner reads are in the catalog too (63 entries). G0 alone
+  still proves nothing (Comms refresh and browser openers are G0): mark a legacy adapter only after
+  reading its handler. The frozen door fixture records the 28 added modes.
 - The projection is **not** a new command door. Existing feature `api.ts` adapters still perform
   transport access and parse/validate results. There is no generic Wails reflection, HTTP fallback,
   capability grant or response-schema invention. Result type comes from the typed parsed reader
@@ -277,10 +278,8 @@ only `enter` with an assigned franchise reopens). Mutants rejected, each restore
   them; the read is the keyring check, not a held reading. Splitting would break that serialization.
 
 **Command bar flags (brief step 3).** The bar's IDs are already generated from the registry
-(`commandbar.gen.ts`, `Browser.Searchable`, no args); none are reads. The remaining hand list is the
-37-adapter `selected` list in `frontend/scripts/nativegen/reads.go`. Replacing it with a registry flag
-needs `Modes: [read]` on those legacy desktop declarations (`commandcatalog/desktop.go` has none) — a
-registry mode change, out of scope. Owner ruling: optional.
+(`commandbar.gen.ts`, `Browser.Searchable`, no args); none are reads. The 37-adapter hand list in
+`frontend/scripts/nativegen/reads.go` was replaced in Part 10 by registry read modes (above).
 
 Gates: `tsc --noEmit` passes. Full frontend suite once (vitest, 2 threads): 141 files / 1,706 tests, 1
 failure: the readability gate (`controls.test.ts`, >110-char lines) caught two new test lines. Both were
@@ -292,7 +291,7 @@ shortened (a test title and a comment, no logic change); that gate plus the two 
 1. Live game `now/liveState.ts` — polling/revision lifetime; stays with live polling.
 2. Pool `pool/state.ts` — owner ruling: `offers.TargetPool`/`TargetBidPlans` are G1.
 3. Trade builder `shell/tradeBuilderState.ts` — owner ruling: read/preview/save share `TargetTradeBuilder`.
-4. Optional: registry read modes on the 37 audited desktop adapters, replacing the generator list.
+4. Done in Part 10: registry read modes replace the generator list.
 5. `cache-first` stays limited to historical details; extending it needs the session wiring above per owner.
 Not targets: contracts/commissioner action and option-read modules, moves journal, MFL key status,
 navigation/sort/presentation stores (inventory table).
