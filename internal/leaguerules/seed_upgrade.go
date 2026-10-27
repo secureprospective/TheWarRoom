@@ -44,6 +44,11 @@ func seedUpgrades() []seedUpgrade {
 					cited[map[StatID]Stat](legacyCatalogueBeforeKinds(), "MFL league scoring settings"))
 			},
 			values: LegacyNFL},
+		{version: 3, fields: []FieldPath{"taxi.autoPromote", "ir.autoReturn"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"taxi.autoPromote", "ir.autoReturn"})
+			},
+			values: LegacyNFL},
 	}
 }
 

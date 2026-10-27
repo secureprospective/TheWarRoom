@@ -2,7 +2,6 @@ package commissioner
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,88 +11,64 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// A 32-Team Default league records its start from its own franchises: each gets one O-Line card on a
-// 1-year contract at the league minimum (DEFAULT-32 spec §3), and the snapshot reads back as its assets.
-func TestDefault32LeagueStartsWithOneCardEach(t *testing.T) {
+// Starting cards belong to the auction, never to franchise creation order.
+func TestDefault32LeagueStartsWithUnassignedAuctionLots(t *testing.T) {
 	b := newLedger(t, PresetDefault32)
-	raw, err := Default32SeedCommand(b.records, "native.test", "start", "Start the league", 1, seasonMoment(2))
+	raw, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if err := CheckNativeAppend(raw, b.records); err != nil {
-		t.Fatalf("the start is refused: %v", err)
+		t.Fatal(err)
 	}
 	b.add(raw, seasonMoment(2))
 	assets, err := NativeAssetsReading("native.test", b.records, seasonMoment(3))
-	if err != nil || !assets.Seeded {
-		t.Fatalf("assets: %v %+v", err, assets)
+	if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Pool) != 32 {
+		t.Fatalf("%+v %v", assets, err)
 	}
-	rules, err := RulesNow(b.records, seasonMoment(3))
-	if err != nil {
-		t.Fatal(err)
-	}
-	teams := nativecheck.LineCardTeams()
-	byFranchise := map[string][]nativecheck.RosterPlayer{}
-	for i, p := range assets.Snapshot.Players {
-		want, _ := nativecheck.LineCardID(teams[i])
-		if p.ID != want || p.Franchise != fmt.Sprintf("franchise.%02d", i+1) || p.Salary != 33000000 ||
-			p.ExpirationYear != 2026 || p.Status != domain.RosterActive || p.ContractStatus != domain.CStatusUFA {
-			t.Fatalf("player %d: %+v", i, p)
-		}
-		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], nativecheck.RosterPlayer{ID: p.ID})
-	}
-	if len(byFranchise) != 32 {
-		t.Fatalf("franchises holding a card: %d", len(byFranchise))
-	}
-	for f, held := range byFranchise {
-		if err := nativecheck.LineCardsHeld(rules.Roster, held); err != nil {
-			t.Fatalf("%s: %v", f, err)
-		}
-	}
-	again, err := Default32SeedCommand(b.records, "native.test", "start", "Start the league", 1, seasonMoment(4))
+	again, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(4))
 	if err != nil || again.Args.Native.RosterAt != raw.Args.Native.RosterAt {
-		t.Fatalf("a retry reuses the recorded body: %v", err)
+		t.Fatalf("retry: %v", err)
 	}
-	if _, err := Default32SeedCommand(b.records, "native.test", "start", "Other", 1, seasonMoment(4)); err == nil {
-		t.Fatal("a reused request with another reason must be refused")
+	b.add(RawCommand{League: "native.test", Command: "commish.seat.replace", Args: RawArgs{People: &RawPeople{Franchise: "franchise.01", Principal: "creator"}}}, seasonMoment(3))
+	lots, err := NativeBidsReading("native.test", "franchise.01", "creator", b.records, seasonMoment(3), time.UTC, nativecheck.Facts{})
+	if err != nil || len(lots.Players) != 32 {
+		t.Fatalf("auction lots: %+v %v", lots, err)
 	}
-	if err := CheckNativeAppend(again, b.records); err == nil {
-		t.Fatal("a started league must not start again")
+	for _, lot := range lots.Players {
+		if lot.Mode != string(leaguerules.Open) || lot.Leader != nil {
+			t.Fatalf("not unassigned open lot: %+v", lot)
+		}
 	}
 }
 
-// Only one card per franchise, and nothing else, starts a 32-Team Default league; Legacy cannot start this way.
-func TestDefault32StartRefusesAnythingElse(t *testing.T) {
+func TestDefault32StartRefusesAssignedOrIncompleteCards(t *testing.T) {
 	b := newLedger(t, PresetDefault32)
 	raw, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for name, change := range map[string]func(s *RawNativeSnapshot){
-		"two cards on one franchise": func(s *RawNativeSnapshot) { s.Players[1].Franchise = s.Players[0].Franchise },
-		"a player, not a card":       func(s *RawNativeSnapshot) { s.Players[0].ID = "1000" },
-		"a card on taxi":             func(s *RawNativeSnapshot) { s.Players[0].Status = domain.RosterTaxi },
-		"a 2-year card":              func(s *RawNativeSnapshot) { s.Players[0].ExpirationYear = 2027 },
-		"a pick": func(s *RawNativeSnapshot) {
-			s.Picks = append(s.Picks, NativePick{Season: 2027, Round: 1, Original: "franchise.01", Owner: "franchise.01"})
+		"assigned card": func(s *RawNativeSnapshot) {
+			s.Players = []NativePlayer{{ID: balCard, Franchise: "franchise.01", Status: domain.RosterActive, ExpirationYear: 2026}}
 		},
-		"another season": func(s *RawNativeSnapshot) { s.Season = 2027 },
+		"missing lot":  func(s *RawNativeSnapshot) { s.Pool = s.Pool[:31] },
+		"duplicate":    func(s *RawNativeSnapshot) { s.Pool[1] = s.Pool[0] },
+		"not card":     func(s *RawNativeSnapshot) { s.Pool[0].Player = "1000" },
+		"wrong season": func(s *RawNativeSnapshot) { s.Season = 2027 },
 	} {
 		snap := *raw.Args.Native
-		snap.Players = append([]NativePlayer{}, snap.Players...)
+		snap.Pool = append([]NativePoolEntry{}, snap.Pool...)
 		change(&snap)
 		bad := raw
 		bad.Args.Native = &snap
 		if err := CheckNativeAppend(bad, b.records); err == nil {
-			t.Errorf("%s: recorded", name)
+			t.Errorf("%s admitted", name)
 		}
 	}
 	legacy := newLedger(t, PresetLegacy)
-	if _, err := Default32SeedCommand(legacy.records, "native.test", "start", "Start", 1, seasonMoment(2)); err == nil {
-		t.Fatal("a Legacy league starts from held data, not from cards")
-	}
-	if err := CheckNativeAppend(raw, legacy.records); err == nil || !strings.Contains(err.Error(), "held") {
-		t.Fatalf("a Legacy league must refuse a card start: %v", err)
+	if _, err := Default32Start("native.test", legacy.records, seasonMoment(2)); err == nil {
+		t.Fatal("Legacy accepted card start")
 	}
 }
 

@@ -20,7 +20,8 @@ type PlayerFacts struct {
 	DraftYearHeld   bool
 	CareerGames     int
 	CareerGamesHeld bool
-	// NFLSeasons counts the seasons the player has spent in the NFL, this one included; no feed holds it yet.
+	// NFLSeasons counts distinct NFL season labels with an NFL roster appearance, including this season.
+	// Games played, accrued-season credit, other leagues and years out do not count.
 	NFLSeasons     int
 	NFLSeasonsHeld bool
 }

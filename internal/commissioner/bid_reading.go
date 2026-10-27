@@ -152,10 +152,12 @@ func NativeBidsReading(league, franchise, principal string, records []Record, at
 			out.Awards = append(out.Awards, v.award(a))
 			continue
 		}
-		if row, ok := v.player(a, at, policy, policyErr == nil, stand); ok {
+		viewer := v.forPlayer(records, a.Player)
+		if row, ok := viewer.player(a, at, policy, policyErr == nil, stand); ok {
 			out.Players = append(out.Players, row)
 		}
 	}
+	out.Players = append(out.Players, unbidStartingLots(assets, state, records)...)
 	slices.SortFunc(out.Players, func(a, b NativeBidPlayer) int { return strings.Compare(a.Player, b.Player) })
 	return out, nil
 }
@@ -232,4 +234,21 @@ func (a *bidAuction) lastBidOf(franchise string) (bidRecord, bool) {
 		}
 	}
 	return bidRecord{}, false
+}
+
+func unbidStartingLots(assets NativeAssets, state waiverState, records []Record) []NativeBidPlayer {
+	rows := []NativeBidPlayer{}
+	for _, lot := range assets.Snapshot.Pool {
+		if startingCardLot(records, lot.Player) && state.Bids.latest(lot.Player) == nil {
+			rows = append(rows, NativeBidPlayer{Player: lot.Player, Name: lot.Name, Mode: string(leaguerules.Open), ModeWords: "League-start open auction", Closes: "Awaiting first bid"})
+		}
+	}
+	return rows
+}
+
+func (v bidViewer) forPlayer(records []Record, player string) bidViewer {
+	if startingCardLot(records, player) {
+		v.open = true
+	}
+	return v
 }

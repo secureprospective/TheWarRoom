@@ -8719,6 +8719,22 @@ export namespace leaguefeed {
 
 export namespace leaguerules {
 	
+	export class AutoMoveValue {
+	    State: number;
+	    Value: boolean;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new AutoMoveValue(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
 	export class Value_int_ {
 	    State: number;
 	    Value: number;

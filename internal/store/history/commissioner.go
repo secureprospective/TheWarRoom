@@ -293,6 +293,9 @@ func preparedCommand(raw commissioner.RawCommand, principal string,
 
 func commandRole(raw commissioner.RawCommand, principal string, auth commissioner.Authorizer,
 	records []commissioner.Record) (string, error) {
+	if clock, ok := auth.(clockReserveAuthorizer); ok {
+		return clock.Allow(raw.League, principal, raw.Command)
+	}
 	if commissioner.TradeCommand(raw.Command) || auth == nil || commissioner.OwnerWaiverAction(raw.Command) != "" || commissioner.OwnerBidAction(raw.Command) != "" {
 		role, err := commissioner.AuthorizeRecords(raw, principal, records)
 		if err != nil {
@@ -524,6 +527,12 @@ func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissione
 
 func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records []commissioner.Record, now time.Time,
 	facts nativecheck.Facts, zone *time.Location, env commissioner.BidEnvironment) error {
+	if principal == commissioner.ReserveClockPrincipal {
+		if err := commissioner.PrepareDueReserve(raw, records, now, facts); err != nil {
+			return fmt.Errorf("check automatic reserve return: %w", commissioner.Refused(err))
+		}
+		return nil
+	}
 	if err := commissioner.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))
 	}

@@ -4,6 +4,49 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
+- **Part 7 (2026-10-27), owner rulings:**
+  - **Start auction:** `Default32Start` now records empty rosters and all 32 cards as pool lots,
+    not creation-order ownership. `NativeBidsReading` offers unbid lots and shows their leaders
+    publicly even if ordinary UFA bidding is blind. The existing bid policy, clock, cap check,
+    award and replay own the auction. Initial lots admit 1-year bids, bypass the unrelated UFA
+    season/window and the not-yet-built roster minimum, but retain the maximum, cap and one-card
+    checks. Prior recorded starts are not rewritten.
+  - **NFL roster seasons:** optional `RawFootballPlayer.NFLRosterSeasons` pins the distinct NFL
+    season labels with an NFL roster appearance. Validate rejects duplicates, non-NFL-era labels,
+    future labels and unsubstantiated/precomputed counts. `PinnedFootball.PlayerFacts` derives the
+    count; calendar gaps, other leagues and game/accrued-season thresholds do not count. Missing
+    history remains unknown; known empty history counts zero. Live roster acquisition is not built.
+  - **IR/PUP:** pinned facts retain the reported official designation unchanged; the default accepts
+    IR and PUP only. No inference from games missed, injury description or NFI was added.
+  - **Automatic moves:** `taxi.autoPromote` / `ir.autoReturn` are on in Default32, off in Legacy;
+    append-only seed step 3 records them off for older seeds. Legacy's existing JSON golden is
+    byte-identical. `AutoMoveValue` omits only that specific Legacy default from rule-set JSON and
+    the reserve decoders restore it; explicit edits retain their citations and all seed settings
+    remain explicit. Both Legacy and Default32 roundtrip, including recorded rollover before-state.
+  - **Flow / boundaries:** pinned, validated football facts → `DueWorker` reconciliation →
+    `Store.ProcessDueReserves` → versioned roster.reserve append. The private clock authorizer
+    admits only reserve returns. `PrepareDueReserve` repeats eligibility and scoped-exception checks
+    under the append lock, using the same reserve verdict as the public check. Missing facts never
+    move a player. Automatic returns intentionally bypass owner windows and roster/cap refusal,
+    and record the original player plus the clock source; retries/restarts see the committed move.
+  - **Must-cut / activity:** `JobsReading` exposes a live `must_cut.<franchise>` team-activity job
+    while an automatic-return franchise exceeds the counted roster maximum. No deadline, automatic
+    cut or acknowledgement clears it. A human roster fix clears it. Sequential reducing cuts may
+    remain above the maximum between cuts; other roster/cap checks stay in force. There is no
+    existing owner AWOL score (the governance inactivity clock is for commissioners), so this uses
+    the commissioner's existing jobs surface rather than misusing that clock.
+  - **Proof:** changed commissioner, rules, nativecheck, app/commissioner, history and leagueservice
+    package suites pass with `-race`; hosted/composition wire writers pass. Added worker tests cover
+    open bidding and actual timed award, one-card/one-year refusal, IR return despite closed owner
+    windows, unknown facts, taxi expiry, restart, alert persistence after a year, human resolution,
+    stale eligibility and restricted authority. Six planted mutants were killed: hide the open
+    leader, inflate NFL seasons, reclassify PUP as IR, invert automatic-move flags, omit the must-cut
+    job and disable seed step 3. NFL-roster/official-status examples are synthetic: no real roster
+    history feed is held here; existing real scoring evidence was not changed.
+- **Next part:** live feed registration/acquisition after the week-8 source study; feed freshness and
+  season rollover of selected football evidence; browser click-through of auction lots and must-cut
+  jobs. No owner ruling is needed for the five behaviors above.
+
 - **Part 6 (2026-10-26), debt sweep:**
   - **Card corrections read the held line game** (`787a02cd`): `StatFacts` carries the season's held
     line games (`OLine`), so a card correction's preview "before" and the no-op refusal read the card's

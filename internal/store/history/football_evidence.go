@@ -55,8 +55,13 @@ func (p *PinnedFootball) CheckDigest(digest string) error {
 func (p *PinnedFootball) PlayerFacts() nativecheck.Facts {
 	facts := make(nativecheck.Facts, len(p.raw.Players))
 	for id, player := range p.raw.Players {
-		facts[id] = player.Facts
+		f := player.Facts
+		if player.NFLRosterSeasons != nil {
+			f.NFLSeasons, f.NFLSeasonsHeld = len(*player.NFLRosterSeasons), true
+		}
+		facts[id] = f
 	}
+	nativecheck.AddLineCards(facts)
 	return facts
 }
 

@@ -25,8 +25,8 @@ func TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague(t *testing.T) {
 	}
 	upgraded := legacyLeague(t)
 	fresh := legacyLeague(t)
-	if len(old) != len(fresh[0].Command.Args.Seed)-5 {
-		t.Fatalf("the held old seed should lack exactly the five scoring kinds: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
+	if len(old) != len(fresh[0].Command.Args.Seed)-7 {
+		t.Fatalf("the held old seed should lack the five scoring kinds and two auto-move fields: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
 	}
 	for _, s := range old {
 		if strings.Contains(string(s.Value), "blocked_fg_td") || strings.Contains(string(s.Value), "other_return_td") {

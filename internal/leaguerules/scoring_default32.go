@@ -9,8 +9,7 @@ const (
 
 // Default32 is the 32-Team Default league: Legacy's rules for 32 teams with the spec's lineup, roster,
 // IR and scoring. Every value is a commissioner setting the league can change afterwards.
-// Taxi keeps Legacy's 8 spots, 3-year limit and calendar-year measure; the spec's "years out of the
-// NFL don't count" and the automatic moves (taxi expiry, IR return) have no rule field yet.
+// Taxi counts NFL roster seasons; ineligible reserve players return to the active roster automatically.
 func Default32() RuleSet {
 	r := LegacyNFLForTeams(32)
 	// 19 starters: QB 1, RB 1, WR 1, three RB/WR/TE flex, PK 1, the O-Line card, DT/DE/LB 1 each,
@@ -32,6 +31,8 @@ func Default32() RuleSet {
 	r.Taxi.Slots = cited(8, default32Roster)
 	r.Taxi.MaximumYears = cited(3, default32Roster)
 	r.Taxi.Basis = cited(NFLSeasons, default32Roster)
+	r.Taxi.AutoPromote = AutoMoveValue(cited(true, default32Roster))
+	r.IR.AutoReturn = AutoMoveValue(cited(true, default32Roster))
 	r.IR.Slots = cited(12, default32Roster)
 	r.IR.Eligible = cited([]NFLStatus{InjuredReserve, PUP}, default32Roster)
 	r.IR.MustLeaveHealthy = cited(true, default32Roster)

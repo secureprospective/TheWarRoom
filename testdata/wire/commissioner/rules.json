@@ -3522,6 +3522,28 @@
    "label": "IR",
    "rows": [
     {
+     "field": "ir.autoReturn",
+     "label": "Automatically return ineligible IR players",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
+    {
      "field": "ir.slots",
      "label": "IR spots",
      "value": "12",
@@ -3625,6 +3647,28 @@
   {
    "label": "Taxi squad",
    "rows": [
+    {
+     "field": "taxi.autoPromote",
+     "label": "Automatically promote ineligible taxi players",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    },
     {
      "field": "taxi.slots",
      "label": "Taxi spots",

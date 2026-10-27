@@ -46,12 +46,12 @@ func taxiExperience(rules leaguerules.TaxiRules, f PlayerFacts, season int, exce
 		e.years = (f.CareerGames + gamesPerSeason - 1) / gamesPerSeason
 		e.words = fmt.Sprintf("with %d career games, which is %d seasons of %d games", f.CareerGames, e.years, gamesPerSeason)
 	case leaguerules.NFLSeasons:
-		if !f.NFLSeasonsHeld || f.NFLSeasons < 1 {
+		if !f.NFLSeasonsHeld || f.NFLSeasons < 0 {
 			e.reason = "his NFL seasons are not held"
 			return e
 		}
 		e.years = f.NFLSeasons
-		e.words = fmt.Sprintf("in his %s NFL season", ordinal(e.years))
+		e.words = fmt.Sprintf("with %d NFL roster seasons", e.years)
 	}
 	e.known = true
 	return e

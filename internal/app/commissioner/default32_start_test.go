@@ -25,11 +25,11 @@ func TestDefault32StartsThroughTheSeedRequest(t *testing.T) {
 		t.Fatalf("a retried start returns its receipt: %v", err)
 	}
 	assets, err := app.TargetNativeAssets("native.ops")
-	if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 32 {
+	if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Pool) != 32 {
 		t.Fatalf("assets: %v %+v", err, assets)
 	}
-	for _, p := range assets.Snapshot.Players {
-		if facts, ok := nativecheck.LineCardFacts(p.ID); !ok || p.Name != facts.Name {
+	for _, p := range assets.Snapshot.Pool {
+		if facts, ok := nativecheck.LineCardFacts(p.Player); !ok || p.Name != facts.Name {
 			t.Fatalf("%+v is not a named O-Line card", p)
 		}
 	}
