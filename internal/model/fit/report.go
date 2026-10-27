@@ -61,6 +61,7 @@ func Markdown(results []Result, checks []BoardCheck, first, holdout int, source 
 	debutSection(w, results)
 	boardSection(w, checks, holdout)
 	limitsSection(w)
+	b.WriteString(ownerRulesMarkdown(OwnerRules()))
 	return b.String()
 }
 

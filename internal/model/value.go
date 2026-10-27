@@ -47,19 +47,19 @@ func (p Params) Project(pl *Player, past []Past, target int) (pct, e float64) {
 		}
 		moved := s.Pct
 		for u := s.Year; u < target-1; u++ {
-			moved += p.step(pl, u)
+			moved = Level(Score(moved) + p.step(pl, u))
 		}
 		sw += w * s.Games
-		swx += w * s.Games * moved
+		swx += w * s.Games * Score(moved)
 		sw2 += w * w * s.Games
 	}
 	blend := p.Prior(pl)
 	if sw > 0 {
 		e = sw * sw / sw2
 		z := p.Z(e, p.KDynasty)
-		blend = z*swx/sw + (1-z)*blend
+		blend = Mix(z, Level(swx/sw), blend)
 	}
-	return blend + p.step(pl, target-1), e
+	return Level(Score(blend) + p.step(pl, target-1)), e
 }
 
 // Horizon is how far ahead the dynasty measurable looks.
@@ -97,7 +97,7 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 	}
 	if current.Games > 0 {
 		v.ZNow = p.Z(current.Games, p.KNow)
-		v.Now = v.ZNow*current.Pct + (1-v.ZNow)*proj
+		v.Now = Mix(v.ZNow, current.Pct, proj)
 	}
 	v.Now = unit(v.Now)
 	v.NowPPG = scale.PPG(v.Now)
@@ -113,7 +113,7 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 			level, on = unit(next), v.OnField
 		case t > 1:
 			on *= p.survives(pl, season+t-1, fullSeason, level)
-			level = unit(level + p.step(pl, season+t-1))
+			level = Level(Score(level) + p.step(pl, season+t-1))
 		}
 		d := math.Pow(h.Discount, float64(t))
 		weight += d
@@ -173,3 +173,16 @@ func (p Params) survives(pl *Player, u int, games, pct float64) float64 {
 }
 
 func unit(v float64) float64 { return min(max(v, 0), 1) }
+
+// Score is a percentile as a normal score, so blends keep an elite season's distance from the
+// pack: averaging raw percentiles pulls the top of the scale, where points per game are steep,
+// toward the middle. Percentiles are held inside [0.001, 0.999] first.
+func Score(pct float64) float64 {
+	return math.Sqrt2 * math.Erfinv(2*min(max(pct, 0.001), 0.999)-1)
+}
+
+// Level is the percentile of a normal score, the inverse of Score.
+func Level(score float64) float64 { return 0.5 * (1 + math.Erf(score/math.Sqrt2)) }
+
+// Mix is z of percentile a and 1-z of b, blended as normal scores.
+func Mix(z, a, b float64) float64 { return Level(z*Score(a) + (1-z)*Score(b)) }

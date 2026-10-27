@@ -109,8 +109,8 @@ func TestCaseAthleticLateCareerLinemanAgesLikeAnyOther(t *testing.T) {
 	slow := player(domain.PosDT, 31, season-9, 40)
 	slow.Combine = map[string]float64{"forty": 5.25, "vertical": 26, "broad_jump": 100, "bench": 22}
 	a, b := value(t, fast, seasons(0.7, 0.7, 0.7)), value(t, slow, seasons(0.7, 0.7, 0.7))
-	viaPrior := (1 - a.ZPast) * (a.Prior - b.Prior)
-	if math.Abs((a.Now-b.Now)-viaPrior) > 1e-9 || math.Abs(a.Dynasty-b.Dynasty) > 0.05 {
+	viaPrior := (1 - a.ZPast) * (model.Score(a.Prior) - model.Score(b.Prior))
+	if math.Abs((model.Score(a.Now)-model.Score(b.Now))-viaPrior) > 1e-9 || math.Abs(a.Dynasty-b.Dynasty) > 0.05 {
 		t.Errorf("athletic %+v vs not %+v: with no cushion only the prior may separate them", a, b)
 	}
 }
