@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -30,7 +32,7 @@ func TestStartAuctionAwardsCardsByOpenBidsNotCreationOrder(t *testing.T) {
 	reserveRule(t, f, "bids.ufa", `"blind"`)
 	f.execute(t, "owner.one", commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: card, Franchise: "franchise.01", Salary: 40000000, Years: 1}})
 	f.execute(t, "owner.two", commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: card, Franchise: "franchise.02", Salary: 50000000, Years: 1}})
-	reading, err := commissioner.NativeBidsReading(f.league, "franchise.01", "owner.one", reserveRecords(t, f), f.clock.Now(), time.UTC, f.facts)
+	reading, err := market.NativeBidsReading(f.league, "franchise.01", "owner.one", reserveRecords(t, f), f.clock.Now(), time.UTC, f.facts)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -1,31 +1,39 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // NextDueDeadline returns the nearest future auction or waiver close. Already-closed,
 // blocked awards are retried on reconciliation, not in a busy loop at their old deadline.
-func NextDueDeadline(league string, records []Record, at time.Time) (time.Time, error) {
-	f, err := marketFrame(league, records, at, nil, nil, true)
+func NextDueDeadline(league string, records []commissioner.Record, at time.Time) (time.Time, error) {
+	f, err := commissioner.NewFrame(league, records, at, nil, nil, at)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return time.Time{}, err
 	}
+	return nextDueDeadlineFrame(f)
+}
+
+func nextDueDeadlineFrame(f commissioner.Frame) (time.Time, error) {
+	at := f.At
 	assets, state := f.Assets, f.Book
 	if !assets.Seeded {
 		return time.Time{}, nil
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return time.Time{}, err
 	}
 	rules := f.Rules
 	var next time.Time
 	consider := func(deadline time.Time) {
-		next = nearerFutureDeadline(next, deadline, at)
+		next = commissioner.NearerFutureDeadline(next, deadline, at)
 	}
 	if len(state.Windows) > 0 {
 		policy, err := nativecheck.NewWaiverPolicy(rules.Waivers)
@@ -48,16 +56,9 @@ func NextDueDeadline(league string, records []Record, at time.Time) (time.Time, 
 		for i := range state.Bids.Auctions {
 			auction := &state.Bids.Auctions[i]
 			if !auction.Decided {
-				consider(auction.standingAt().Add(stand.Value))
+				consider(auction.StandingAt().Add(stand.Value))
 			}
 		}
 	}
 	return next, nil
-}
-
-func nearerFutureDeadline(next, deadline, at time.Time) time.Time {
-	if deadline.After(at) && (next.IsZero() || deadline.Before(next)) {
-		return deadline
-	}
-	return next
 }

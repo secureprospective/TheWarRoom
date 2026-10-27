@@ -1,24 +1,26 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func (x tradeExecution) legal(t TradeState) error {
+func (x tradeExecution) legal(t commissioner.TradeState) error {
 	if err := checkTradeAssets(t, x.rules.Season); err != nil {
 		return err
 	}
-	hasPicks := slices.ContainsFunc(t.Assets, func(a TradeAsset) bool { return a.Player == "" })
+	hasPicks := slices.ContainsFunc(t.Assets, func(a commissioner.TradeAsset) bool { return a.Player == "" })
 	candidate := *x.seed
 	candidate.Players, candidate.Picks = slices.Clone(x.seed.Players), slices.Clone(x.seed.Picks)
-	if err := moveTradeAssets(&candidate, t.Assets, false); err != nil {
+	if err := commissioner.MoveTradeAssets(&candidate, t.Assets, false); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	for _, id := range t.Parties {
@@ -49,7 +51,16 @@ func (x tradeExecution) legal(t TradeState) error {
 	return nil
 }
 
-func nativeFranchiseCap(seed *RawNativeSnapshot, rules leaguerules.RuleSet, id string, zone *time.Location) (nativecheck.CapState, error) {
+func nativeFranchiseCap(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, id string, zone *time.Location) (nativecheck.CapState, error) {
+	players, charges := franchiseCapInputs(seed, id, rules.Season)
+	result, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
+	if err != nil {
+		return result, fmt.Errorf("check trade salary: %w", err)
+	}
+	return result, nil
+}
+
+func franchiseCapInputs(seed *commissioner.RawNativeSnapshot, id string, season int) ([]nativecheck.CapPlayer, []domain.Money) {
 	players := []nativecheck.CapPlayer{}
 	charges := []domain.Money{}
 	for _, p := range seed.Players {
@@ -58,18 +69,14 @@ func nativeFranchiseCap(seed *RawNativeSnapshot, rules leaguerules.RuleSet, id s
 		}
 	}
 	for _, c := range seed.Adjustments {
-		if c.Franchise == id && (c.Season == 0 || c.Season == rules.Season) {
+		if c.Franchise == id && (c.Season == 0 || c.Season == season) {
 			charges = append(charges, c.Amount)
 		}
 	}
-	result, err := nativecheck.CheckCap(rules.Cap, players, charges, zone)
-	if err != nil {
-		return result, fmt.Errorf("check trade salary: %w", err)
-	}
-	return result, nil
+	return players, charges
 }
 
-func checkTradeAssets(t TradeState, season int) error {
+func checkTradeAssets(t commissioner.TradeState, season int) error {
 	seen := map[string]bool{}
 	for _, a := range t.Assets {
 		key := "player." + a.Player

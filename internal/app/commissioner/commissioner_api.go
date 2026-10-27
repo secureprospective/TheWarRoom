@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -73,7 +75,7 @@ func (a *API) TargetCorrections(league string) (commissioner.Corrections, error)
 }
 
 // TargetCommissionerMarket reads held targets under the permission of the requested act.
-func (a *API) TargetCommissionerMarket(league, command string) (commissioner.Market, error) {
+func (a *API) TargetCommissionerMarket(league, command string) (market.Market, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetCommissionerMarket(league, command)
 }

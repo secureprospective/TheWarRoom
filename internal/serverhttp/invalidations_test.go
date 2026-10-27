@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -213,8 +215,8 @@ func TestSSEDesktopRereadsAfterDroppedConnection(t *testing.T) {
 
 type streamBidEnvironment struct{}
 
-func (streamBidEnvironment) BidEnvironment(context.Context, string, time.Time) (commissioner.BidEnvironment, error) {
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
+func (streamBidEnvironment) BidEnvironment(context.Context, string, time.Time) (market.BidEnvironment, error) {
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
 }
 func prepareHiddenBid(t *testing.T, f *hostedFixture) func() {
 	t.Helper()

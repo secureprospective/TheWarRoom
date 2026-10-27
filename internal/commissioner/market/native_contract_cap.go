@@ -1,8 +1,9 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -11,13 +12,14 @@ import (
 // attaches what changed. It reports whether the cap itself refuses the move. A move that does not raise
 // this season's counted salary is never refused for the cap.
 func (in contractCheck) addCap(q *ContractQuote, p nativecheck.Pricing) (bool, error) {
-	rules := in.base.rules
+	rules := in.base.Rules
 	before, after := in.capCounts(p)
-	was, err := nativecheck.CheckCap(rules.Cap, before.players, before.charges, in.zone, scopedDecisionExceptions(in.base.records, ExceptionScope{Franchise: in.player.Franchise, Player: in.player.ID}, in.base.now)...)
+	exceptions := commissioner.ScopedDecisionExceptions(in.base.Records, commissioner.ExceptionScope{Franchise: in.player.Franchise, Player: in.player.ID}, in.base.Now)
+	was, err := nativecheck.CheckCap(rules.Cap, before.players, before.charges, in.zone, exceptions...)
 	if err != nil {
 		return false, fmt.Errorf("count the salary cap before the action: %w", err)
 	}
-	now, err := nativecheck.CheckCap(rules.Cap, after.players, after.charges, in.zone, scopedDecisionExceptions(in.base.records, ExceptionScope{Franchise: in.player.Franchise, Player: in.player.ID}, in.base.now)...)
+	now, err := nativecheck.CheckCap(rules.Cap, after.players, after.charges, in.zone, exceptions...)
 	if err != nil {
 		return false, fmt.Errorf("count the salary cap after the action: %w", err)
 	}
@@ -51,7 +53,7 @@ type capCount struct {
 
 // capCounts is the franchise's contracts and charges as they stand, and as they would after the action.
 func (in contractCheck) capCounts(p nativecheck.Pricing) (before, after capCount) {
-	seed, season := in.base.assets.Snapshot, in.base.rules.Season
+	seed, season := in.base.Assets.Snapshot, in.base.Rules.Season
 	for _, held := range seed.Players {
 		if held.Franchise != in.player.Franchise {
 			continue

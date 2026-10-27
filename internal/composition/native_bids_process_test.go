@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -19,7 +21,7 @@ func committed(t *testing.T, f *bidFixture, franchise string) int64 {
 	return int64(*row.CommittedCents)
 }
 
-func awardOf(reading commissioner.NativeBids, player string) *commissioner.NativeBidAward {
+func awardOf(reading market.NativeBids, player string) *market.NativeBidAward {
 	for i := range reading.Awards {
 		if reading.Awards[i].Player == player {
 			return &reading.Awards[i]

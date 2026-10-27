@@ -260,8 +260,8 @@ it('every table field is a field on its Go Raw argument, including nested pick a
     correction: ['correction_command.go', 'RawCorrection'],
     lineup: ['lineup_commands.go', 'RawLineupChange'], score: ['score_commands.go', 'RawScoreChange'],
     stat: ['stat_commands.go', 'RawStatChange'], standings: ['standings_commands.go', 'RawStandingsChange'],
-    override: ['native_override.go', 'RawNativeOverride'], waiver: ['waiver_command.go', 'RawWaiverArgs'],
-    bid: ['bid_command.go', 'RawBidArgs'], trade: ['trade_command.go', 'RawTradeArgs'],
+    override: ['native_override.go', 'RawNativeOverride'], waiver: ['market_wire.go', 'RawWaiverArgs'],
+    bid: ['market_wire.go', 'RawBidArgs'], trade: ['market_wire.go', 'RawTradeArgs'],
     schedule: ['schedule.go', 'RawScheduleArgs'], bracket: ['bracket_commands.go', 'RawBracketChange'],
     draft: ['draft_commands.go', 'RawDraftArgs'], '': ['command.go', 'RawArgs'],
   };

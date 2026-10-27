@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -66,9 +68,9 @@ type RosterHost interface {
 	NativeDirectory(ctx context.Context, league string) (commissioner.NativeDirectory, error)
 	NativeAssets(ctx context.Context, league string) (commissioner.NativeAssets, error)
 	NativeWaivers(ctx context.Context, league, franchise, principal string, at time.Time,
-		zone *time.Location, facts nativecheck.Facts) (commissioner.NativeWaivers, error)
+		zone *time.Location, facts nativecheck.Facts) (market.NativeWaivers, error)
 	NativeBids(ctx context.Context, league, franchise, principal string, at time.Time,
-		zone *time.Location, facts nativecheck.Facts) (commissioner.NativeBids, error)
+		zone *time.Location, facts nativecheck.Facts) (market.NativeBids, error)
 }
 
 type PreviewHost interface {

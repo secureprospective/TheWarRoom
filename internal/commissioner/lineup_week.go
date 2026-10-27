@@ -126,14 +126,14 @@ func CheckLineupAppend(raw RawCommand, records []Record, now time.Time, env Line
 	if err != nil {
 		return Refused(err)
 	}
-	base, err := readNativeBase(raw.League, records, now)
+	base, err := ReadNativeBase(raw.League, records, now)
 	if err != nil {
 		return err
 	}
-	if !base.assets.Seeded {
+	if !base.Assets.Seeded {
 		return Refused(fmt.Errorf("record the league's starting snapshot before setting a lineup"))
 	}
-	seat, ok := base.directory.seat(change.Franchise)
+	seat, ok := base.Directory.seat(change.Franchise)
 	if !ok {
 		return Refused(fmt.Errorf("choose one of this league's franchises"))
 	}
@@ -177,7 +177,7 @@ func checkOwnerLineup(records []Record, now time.Time, env LineupFacts, change R
 
 // checkLineupRoster requires every starter to be on the franchise's active roster: IR and taxi players
 // cannot start.
-func checkLineupRoster(base nativeBase, change RawLineupChange, env LineupFacts) error {
+func checkLineupRoster(base NativeBase, change RawLineupChange, env LineupFacts) error {
 	active := map[string]bool{}
 	for _, p := range base.playersOf()[change.Franchise] {
 		active[p.ID] = p.Status == domain.RosterActive

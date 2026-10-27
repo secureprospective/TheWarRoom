@@ -1,14 +1,15 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func (out *Market) readWaivers(state waiverState, rules leaguerules.WaiversRules,
+func (out *Market) readWaivers(state commissioner.MarketBook, rules leaguerules.WaiversRules,
 	v bidViewer, at time.Time) error {
 	policy, err := nativecheck.NewWaiverPolicy(rules)
 	if err != nil {
@@ -19,11 +20,11 @@ func (out *Market) readWaivers(state waiverState, rules leaguerules.WaiversRules
 		if w.Processed {
 			team := "No team awarded"
 			if w.Winner != "" {
-				team = "Awarded to " + v.teams.of(w.Winner).Name
+				team = "Awarded to " + v.teams.Of(w.Winner).Name
 			}
 			for _, claim := range w.Claims {
-				out.Claims = append(out.Claims, MarketChoice{ID: claim.ID,
-					Words: name + " — claim by " + v.teams.of(claim.Franchise).Name + " — " + team})
+				out.Claims = append(out.Claims, Choice{ID: claim.ID,
+					Words: name + " — claim by " + v.teams.Of(claim.Franchise).Name + " — " + team})
 			}
 			continue
 		}
@@ -35,33 +36,33 @@ func (out *Market) readWaivers(state waiverState, rules leaguerules.WaiversRules
 		if !at.Before(closes) {
 			status = "Ready to process"
 		}
-		words := fmt.Sprintf("%s — cut by %s — closes %s — %s", name, v.teams.of(w.Player.Franchise).Name,
+		words := fmt.Sprintf("%s — cut by %s — closes %s — %s", name, v.teams.Of(w.Player.Franchise).Name,
 			closes.In(v.zone).Format(bidTimeLayout), status)
-		out.Windows = append(out.Windows, MarketChoice{ID: w.ID, Words: words})
+		out.Windows = append(out.Windows, Choice{ID: w.ID, Words: words})
 	}
 	return nil
 }
 
-func (out *Market) readBids(book bidBook, v bidViewer,
+func (out *Market) readBids(book commissioner.BidBook, v bidViewer,
 	stand leaguerules.Value[time.Duration], at time.Time) {
 	for i := range book.Auctions {
 		a := &book.Auctions[i]
 		name := v.name(a.Player)
 		if a.Decided {
-			if book.latest(a.Player) != a {
+			if book.Latest(a.Player) != a {
 				continue
 			}
 			for _, bid := range a.Bids {
-				words := fmt.Sprintf("%s — %s — %s", name, v.teams.of(bid.Franchise).Name,
+				words := fmt.Sprintf("%s — %s — %s", name, v.teams.Of(bid.Franchise).Name,
 					nativecheck.ContractWords(bid.Salary, bid.Years))
-				out.Bids = append(out.Bids, MarketChoice{ID: bid.ID, Words: words})
+				out.Bids = append(out.Bids, Choice{ID: bid.ID, Words: words})
 			}
 			continue
 		}
-		if len(a.liveBids()) == 0 {
+		if len(a.LiveBids()) == 0 {
 			continue
 		}
-		closeAt, words := bidClose(stand, a.standingAt(), v.zone)
+		closeAt, words := bidClose(stand, a.StandingAt(), v.zone)
 		if !v.open && (closeAt == nil || at.Before(*closeAt)) {
 			continue
 		}
@@ -73,15 +74,15 @@ func (out *Market) readBids(book bidBook, v bidViewer,
 			}
 		}
 		if closeAt != nil && !at.Before(*closeAt) {
-			words = decidedBidWords(a.liveBids())
+			words = decidedBidWords(a.LiveBids())
 		}
 
-		out.Players = append(out.Players, MarketChoice{ID: a.Player, Words: name + " — " + words})
+		out.Players = append(out.Players, Choice{ID: a.Player, Words: name + " — " + words})
 	}
 }
 
-func decidedBidWords(live []bidRecord) string {
-	lead, ok := leaderOf(live)
+func decidedBidWords(live []commissioner.BidRecord) string {
+	lead, ok := commissioner.LeaderOf(live)
 	if !ok {
 		return "Ready for a decision"
 	}

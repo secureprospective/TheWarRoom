@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -338,8 +340,8 @@ func (g *bigLeagueBuilder) draft(v leagueVolume) {
 // Offseason environment is synthetic: bids are still judged by the production bid policy.
 type bigLeagueEnvironment struct{}
 
-func (bigLeagueEnvironment) BidEnvironment(context.Context, string, time.Time) (commissioner.BidEnvironment, error) {
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: 1, WeekKnown: true}}, nil
+func (bigLeagueEnvironment) BidEnvironment(context.Context, string, time.Time) (market.BidEnvironment, error) {
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: 1, WeekKnown: true}}, nil
 }
 
 func generateBigLeague(t testing.TB, s *Store, volumes []leagueVolume) {

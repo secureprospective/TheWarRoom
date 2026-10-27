@@ -26,6 +26,8 @@ const (
 	KeyDynastySeasons = "dynasty.seasons"
 	// KeyDynastyDiscount: each later season's weight in the dynasty measurable.
 	KeyDynastyDiscount = "dynasty.discount"
+	// KeyDynastyContractTilt: the most a contract's price and length move a dynasty value.
+	KeyDynastyContractTilt = "dynasty.contract_tilt"
 )
 
 // ParamDef is one parameter: its identity (Key, Position), type, shipped default and the

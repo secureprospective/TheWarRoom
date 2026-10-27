@@ -1,88 +1,100 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 type waiverExecution struct {
-	assets  NativeAssets
-	state   waiverState
+	assets  commissioner.NativeAssets
+	state   commissioner.MarketBook
 	rules   leaguerules.RuleSet
-	records []Record
+	records []commissioner.Record
 	now     time.Time
 	facts   nativecheck.Facts
 	zone    *time.Location
 }
 
 // PrepareWaiverAppend computes and validates the decision against the transaction's current records.
-func PrepareWaiverAppend(raw *RawCommand, records []Record, now time.Time, facts nativecheck.Facts,
+func PrepareWaiverAppend(raw *commissioner.RawCommand, records []commissioner.Record, now time.Time, facts nativecheck.Facts,
 	zone *time.Location) error {
-	if !WaiverCommand(raw.Command) {
+	if !commissioner.WaiverCommand(raw.Command) {
 		return nil
 	}
-	f, err := marketFrame(raw.League, records, now, facts, zone, false)
+	f, err := commissioner.NewFrame(raw.League, records, now, facts, zone)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
+	return prepareWaiverFrame(f, raw)
+}
+
+func prepareWaiverFrame(f commissioner.Frame, raw *commissioner.RawCommand) error {
+	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
 	if err := f.Seeded("record starting assets before waiver actions"); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	x := waiverExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone}
-	if OwnerWaiverAction(raw.Command) != "" {
+	if commissioner.OwnerWaiverAction(raw.Command) != "" {
 		if err := f.Gate(raw.Args.Waiver.Franchise, x.reserveAction(*raw)); err != nil {
+			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
 	}
 	return x.prepare(raw)
 }
 
-func (x *waiverExecution) prepare(raw *RawCommand) error {
+func (x *waiverExecution) prepare(raw *commissioner.RawCommand) error {
 	var err error
 	switch raw.Command {
-	case RosterReserve:
+	case commissioner.RosterReserve:
 		err = x.reserve(raw)
-	case RosterCut:
+	case commissioner.RosterCut:
 		err = x.cut(raw)
-	case WaiverClaim:
+	case commissioner.WaiverClaim:
 		err = x.claim(raw)
-	case WaiverOrderSet, WaiverOrderAuto:
+	case commissioner.WaiverOrderSet, commissioner.WaiverOrderAuto:
 		err = x.setOrder(raw)
-	case WaiverProcess, WaiverOverride:
+	case commissioner.WaiverProcess, commissioner.WaiverOverride:
 		err = x.award(raw)
 	}
 	if err != nil {
 		return err
 	}
-	f := Frame{League: raw.League, Records: x.records, At: x.now}
+	f := commissioner.Frame{League: raw.League, Records: x.records, At: x.now}
 	assets, err := f.Trial(*raw, "")
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	if raw.Command == WaiverOverride {
-		w, _, err := x.state.claim(raw.Args.Waiver.Claim)
+	if raw.Command == commissioner.WaiverOverride {
+		w, _, err := x.state.Claim(raw.Args.Waiver.Claim)
 		if err != nil {
+			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
 		if w.Winner != "" && w.Winner != raw.Args.WaiverOutcome.Winner {
-			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: w.Winner}, x.now)...)
+			return rosterCapAllows(assets.Snapshot, x.rules, w.Winner, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: w.Winner}, x.now)...)
 		}
 	}
-	if raw.Command == RosterCut || raw.Command == RosterReserve {
-		rules := allowDebtReduction(x.assets.Snapshot, assets.Snapshot, x.records, x.rules, raw.Args.Waiver.Franchise)
-		return rosterCapAllows(assets.Snapshot, rules, raw.Args.Waiver.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
+	if raw.Command == commissioner.RosterCut || raw.Command == commissioner.RosterReserve {
+		rules := commissioner.AllowDebtReduction(x.assets.Snapshot, assets.Snapshot, x.records, x.rules, raw.Args.Waiver.Franchise)
+		return rosterCapAllows(assets.Snapshot, rules, raw.Args.Waiver.Franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil
 }
 
-func (x *waiverExecution) cut(raw *RawCommand) error {
+func (x *waiverExecution) cut(raw *commissioner.RawCommand) error {
 	policy, err := nativecheck.NewWaiverPolicy(x.rules.Waivers)
 	if err != nil {
 		return fmt.Errorf("read waiver rules: %w", err)
@@ -99,15 +111,16 @@ func (x *waiverExecution) cut(raw *RawCommand) error {
 		if err != nil {
 			return err
 		}
-		raw.Args.WaiverOutcome = &WaiverOutcome{Player: &p, Dead: dead, Season: x.rules.Season}
+		raw.Args.WaiverOutcome = &commissioner.WaiverOutcome{Player: &p, Dead: dead, Season: x.rules.Season}
 		return nil
 	}
 	return fmt.Errorf("choose a player on your recorded roster")
 }
 
-func (x *waiverExecution) claim(raw *RawCommand) error {
-	w, err := x.state.window(raw.Args.Waiver.Window)
+func (x *waiverExecution) claim(raw *commissioner.RawCommand) error {
+	w, err := x.state.Window(raw.Args.Waiver.Window)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	policy, err := nativecheck.NewWaiverPolicy(x.rules.Waivers)
@@ -127,12 +140,12 @@ func (x *waiverExecution) claim(raw *RawCommand) error {
 			return fmt.Errorf("you already claimed this player")
 		}
 	}
-	return waiverClaimAllows(x.assets.Snapshot, x.rules, w, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: w.Player.ID, Transaction: w.ID}, x.now)...)
+	return waiverClaimAllows(x.assets.Snapshot, x.rules, w, franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: w.Player.ID, Transaction: w.ID}, x.now)...)
 }
 
-func (x *waiverExecution) setOrder(raw *RawCommand) error {
+func (x *waiverExecution) setOrder(raw *commissioner.RawCommand) error {
 	order, source := raw.Args.Waiver.Order, "Set by the commissioner"
-	if raw.Command == WaiverOrderAuto {
+	if raw.Command == commissioner.WaiverOrderAuto {
 		var err error
 		order, err = RecordedStandingsOrder(raw.League, x.records, x.rules.Season, x.now)
 		if err != nil {
@@ -140,10 +153,11 @@ func (x *waiverExecution) setOrder(raw *RawCommand) error {
 		}
 		source = "From recorded standings, lowest standing first"
 	}
-	if err := completeWaiverOrder(order, x.assets.Snapshot); err != nil {
+	if err := commissioner.CompleteWaiverOrder(order, x.assets.Snapshot); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	raw.Args.WaiverOutcome = &WaiverOutcome{Season: x.rules.Season, Order: slices.Clone(order), Source: source}
+	raw.Args.WaiverOutcome = &commissioner.WaiverOutcome{Season: x.rules.Season, Order: slices.Clone(order), Source: source}
 	return nil
 }
 
@@ -161,12 +175,13 @@ func (x *waiverExecution) priority(league string) ([]string, string, error) {
 	return order, "From recorded standings, lowest standing first", err
 }
 
-func (x *waiverExecution) award(raw *RawCommand) error {
-	w, err := x.state.window(raw.Args.Waiver.Window)
-	if raw.Command == WaiverOverride {
-		w, _, err = x.state.claim(raw.Args.Waiver.Claim)
+func (x *waiverExecution) award(raw *commissioner.RawCommand) error {
+	w, err := x.state.Window(raw.Args.Waiver.Window)
+	if raw.Command == commissioner.WaiverOverride {
+		w, _, err = x.state.Claim(raw.Args.Waiver.Claim)
 	}
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	policy, err := nativecheck.NewWaiverPolicy(x.rules.Waivers)
@@ -183,7 +198,7 @@ func (x *waiverExecution) award(raw *RawCommand) error {
 	if x.now.Before(closeAt) {
 		return fmt.Errorf("wait until this waiver window closes")
 	}
-	if (raw.Command == WaiverProcess && w.Processed) || (raw.Command == WaiverOverride && !w.Processed) {
+	if (raw.Command == commissioner.WaiverProcess && w.Processed) || (raw.Command == commissioner.WaiverOverride && !w.Processed) {
 		return fmt.Errorf("process an open award only once; use a correction for a processed award")
 	}
 	if x.rules.Contracts.ClaimClearsDeadCap.State != leaguerules.IsKnown {
@@ -196,11 +211,11 @@ func (x *waiverExecution) award(raw *RawCommand) error {
 	return nil
 }
 
-func (x *waiverExecution) chooseAward(raw *RawCommand, w *waiverWindow, policy nativecheck.WaiverPolicy) error {
+func (x *waiverExecution) chooseAward(raw *commissioner.RawCommand, w *commissioner.WaiverWindow, policy nativecheck.WaiverPolicy) error {
 	// A correction tests the incoming contract without counting the previous winner twice.
 	if w.Winner != "" {
 		x.assets.Snapshot.Players = slices.DeleteFunc(x.assets.Snapshot.Players,
-			func(p NativePlayer) bool { return p.ID == w.Player.ID })
+			func(p commissioner.NativePlayer) bool { return p.ID == w.Player.ID })
 	}
 	eligible, claims := x.eligibleClaims(w)
 	order, source, err := x.awardPriority(raw.League, w, raw.Command)
@@ -211,9 +226,10 @@ func (x *waiverExecution) chooseAward(raw *RawCommand, w *waiverWindow, policy n
 		order, source = slices.Clone(x.state.Order), x.state.Source
 	}
 	result := nativecheck.WaiverAward{Order: order}
-	if raw.Command == WaiverOverride {
-		_, c, err := x.state.claim(raw.Args.Waiver.Claim)
+	if raw.Command == commissioner.WaiverOverride {
+		_, c, err := x.state.Claim(raw.Args.Waiver.Claim)
 		if err != nil {
+			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
 		if c.Franchise != raw.Args.Waiver.Franchise || !slices.Contains(eligible, c.Franchise) {
@@ -227,13 +243,13 @@ func (x *waiverExecution) chooseAward(raw *RawCommand, w *waiverWindow, policy n
 			return fmt.Errorf("choose waiver winner: %w", err)
 		}
 	}
-	raw.Args.WaiverOutcome = &WaiverOutcome{Season: x.rules.Season, Winner: result.Winner,
+	raw.Args.WaiverOutcome = &commissioner.WaiverOutcome{Season: x.rules.Season, Winner: result.Winner,
 		Order: result.Order, PriorOrder: slices.Clone(order), Source: source, Claims: claims, ClearsDead: x.rules.Contracts.ClaimClearsDeadCap.Value}
 	return nil
 }
 
-func (x *waiverExecution) awardPriority(league string, w *waiverWindow, command string) ([]string, string, error) {
-	if command == WaiverOverride && x.rules.Waivers.Method.Value == leaguerules.Rolling {
+func (x *waiverExecution) awardPriority(league string, w *commissioner.WaiverWindow, command string) ([]string, string, error) {
+	if command == commissioner.WaiverOverride && x.rules.Waivers.Method.Value == leaguerules.Rolling {
 		for _, later := range x.state.Windows {
 			if later.Processed && later.ClosedAt.After(w.ClosedAt) {
 				return nil, "", fmt.Errorf("reverse the later waiver awards before correcting this rolling award")
@@ -244,12 +260,12 @@ func (x *waiverExecution) awardPriority(league string, w *waiverWindow, command 
 	return x.priority(league)
 }
 
-func (x *waiverExecution) eligibleClaims(w *waiverWindow) ([]string, []WaiverClaimResult) {
+func (x *waiverExecution) eligibleClaims(w *commissioner.WaiverWindow) ([]string, []commissioner.WaiverClaimResult) {
 	eligible := []string{}
-	results := []WaiverClaimResult{}
+	results := []commissioner.WaiverClaimResult{}
 	for _, c := range w.Claims {
-		result := WaiverClaimResult{ID: c.ID}
-		if err := waiverClaimAllows(x.assets.Snapshot, x.rules, w, c.Franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: c.Franchise, Player: w.Player.ID, Transaction: c.ID}, x.now)...); err != nil {
+		result := commissioner.WaiverClaimResult{ID: c.ID}
+		if err := waiverClaimAllows(x.assets.Snapshot, x.rules, w, c.Franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: c.Franchise, Player: w.Player.ID, Transaction: c.ID}, x.now)...); err != nil {
 			result.Refusal = err.Error()
 		} else {
 			eligible = append(eligible, c.Franchise)

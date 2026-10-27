@@ -38,10 +38,8 @@ func OwnerWaiverAction(command string) leaguerules.Action {
 }
 
 func (a RawArgs) validateWaiver(command string) error {
-	other := a
-	other.Waiver, other.WaiverOutcome = nil, nil
-	if a.Waiver == nil || !reflect.DeepEqual(other, RawArgs{}) {
-		return fmt.Errorf("send only the details of this waiver action")
+	if err := a.onlyMarketDetails(func(v *RawArgs) { v.Waiver, v.WaiverOutcome = nil, nil }, a.Waiver == nil, "send only the details of this waiver action"); err != nil {
+		return err
 	}
 	return a.Waiver.Validate(command)
 }

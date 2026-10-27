@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -167,7 +169,7 @@ func (w *DueWorker) processLeague(ctx context.Context, league string) (time.Time
 		}
 		records = append(records, *event.Payload.Commissioner)
 	}
-	next, err := commissioner.NextDueDeadline(league, records, at)
+	next, err := market.NextDueDeadline(league, records, at)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("read next deadline: %w", err)
 	}

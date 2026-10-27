@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
@@ -80,7 +82,7 @@ func TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen(t *testing.T) {
 	fresh := c
 	fresh.bearer, fresh.proof = c.f.login(t, "owner", "private-password"), ""
 	fresh.refreshReads("franchise.02")
-	var bids commissioner.NativeBids
+	var bids market.NativeBids
 	if err := json.Unmarshal(readings["bids.read"].Data, &bids); err != nil {
 		t.Fatal(err)
 	}

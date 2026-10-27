@@ -8,11 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 )
 
-func marketOf(t *testing.T, f *waiverFixture, command, who string) commissioner.Market {
+func marketOf(t *testing.T, f *waiverFixture, command, who string) market.Market {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{who}
 	reading, err := newCommissionerAPI(f.app).TargetCommissionerMarket(legalityLeague, command)
@@ -94,8 +96,8 @@ func TestCommissionerMarketWaiversRoundTrip(t *testing.T) {
 	f.process(t, cut.Entry)
 	reading = marketOf(t, f, commissioner.WaiverOverride, "creator")
 	if len(reading.Windows) != 0 || len(reading.Claims) != 2 ||
-		!slices.ContainsFunc(reading.Claims, func(c commissioner.MarketChoice) bool { return c.ID == claim.Entry }) ||
-		!slices.ContainsFunc(reading.Claims, func(c commissioner.MarketChoice) bool { return c.ID == other.Entry }) {
+		!slices.ContainsFunc(reading.Claims, func(c market.Choice) bool { return c.ID == claim.Entry }) ||
+		!slices.ContainsFunc(reading.Claims, func(c market.Choice) bool { return c.ID == other.Entry }) {
 		t.Fatalf("processed claims: %+v", reading)
 	}
 	for _, c := range reading.Claims {
@@ -203,7 +205,7 @@ func TestCommissionerMarketWire(t *testing.T) {
 	offer := trade.offer(t)
 	trade.accept(t, offer)
 	trades := marketOf(t, trade.waiverFixture, commissioner.TradeReview, "dot.a")
-	wire := map[string]commissioner.Market{"pending": pending, "waitingBids": waitingBids, "claims": claims, "bids": bids, "trades": trades}
+	wire := map[string]market.Market{"pending": pending, "waitingBids": waitingBids, "claims": claims, "bids": bids, "trades": trades}
 	body, err := json.MarshalIndent(wire, "", "  ")
 	if err != nil {
 		t.Fatal(err)
@@ -243,11 +245,11 @@ func TestCommissionerMarketIgnoresForeignLedgerAndPermission(t *testing.T) {
 	}
 	combined := append(slices.Clone(records), foreign...)
 	for _, command := range []string{commissioner.WaiverProcess, commissioner.BidsProcess} {
-		want, err := commissioner.MarketReading(legalityLeague, command, "creator", records, f.now, time.UTC, f.app.nativeFacts())
+		want, err := market.ChoicesReading(legalityLeague, command, "creator", records, f.now, time.UTC, f.app.nativeFacts())
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, err := commissioner.MarketReading(legalityLeague, command, "creator", combined, f.now, time.UTC, f.app.nativeFacts())
+		got, err := market.ChoicesReading(legalityLeague, command, "creator", combined, f.now, time.UTC, f.app.nativeFacts())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -262,7 +264,7 @@ func TestCommissionerMarketIgnoresForeignLedgerAndPermission(t *testing.T) {
 		if string(wantBody) != string(gotBody) {
 			t.Fatal("foreign data changed the market", string(gotBody))
 		}
-		if _, err := commissioner.MarketReading(legalityLeague, command, "foreign.commissioner", combined, f.now, time.UTC, nil); err == nil {
+		if _, err := market.ChoicesReading(legalityLeague, command, "foreign.commissioner", combined, f.now, time.UTC, nil); err == nil {
 			t.Fatal("foreign commissioner authorized in this league")
 		}
 	}

@@ -111,7 +111,7 @@ func (r RawNativeSnapshot) validate(rolled bool) error {
 		return err
 	}
 	if len(r.StandingsOrder) != 0 {
-		if err := completeWaiverOrder(r.StandingsOrder, &r); err != nil {
+		if err := CompleteWaiverOrder(r.StandingsOrder, &r); err != nil {
 			return err
 		}
 	}

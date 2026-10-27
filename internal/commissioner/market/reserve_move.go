@@ -1,16 +1,17 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func (x *waiverExecution) reserveAction(raw RawCommand) leaguerules.Action {
-	if raw.Command != RosterReserve {
-		return OwnerWaiverAction(raw.Command)
+func (x *waiverExecution) reserveAction(raw commissioner.RawCommand) leaguerules.Action {
+	if raw.Command != commissioner.RosterReserve {
+		return commissioner.OwnerWaiverAction(raw.Command)
 	}
 	if raw.Args.Waiver.Bucket == "taxi" {
 		return "taxi"
@@ -25,7 +26,7 @@ func (x *waiverExecution) reserveAction(raw RawCommand) leaguerules.Action {
 	return "ir"
 }
 
-func (x *waiverExecution) reserve(raw *RawCommand) error {
+func (x *waiverExecution) reserve(raw *commissioner.RawCommand) error {
 	args := raw.Args.Waiver
 	for _, p := range x.assets.Snapshot.Players {
 		if p.ID != args.Player || p.Franchise != args.Franchise {
@@ -45,7 +46,7 @@ func (x *waiverExecution) reserve(raw *RawCommand) error {
 				used++
 			}
 		}
-		exceptions := scopedDecisionExceptions(x.records, ExceptionScope{Franchise: p.Franchise, Player: p.ID}, x.now)
+		exceptions := commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: p.Franchise, Player: p.ID}, x.now)
 		entry := nativecheck.Entry{Allowed: true}
 		switch target {
 		case domain.RosterIR:
@@ -57,35 +58,10 @@ func (x *waiverExecution) reserve(raw *RawCommand) error {
 		if !entry.Allowed {
 			return fmt.Errorf("%s", entry.Words)
 		}
-		raw.Args.WaiverOutcome = &WaiverOutcome{Player: &p, Season: x.rules.Season}
+		raw.Args.WaiverOutcome = &commissioner.WaiverOutcome{Player: &p, Season: x.rules.Season}
 		return nil
 	}
 	return fmt.Errorf("choose a player on your recorded roster")
 }
 
-func reserveStatus(bucket string) domain.RosterStatus {
-	switch bucket {
-	case "ir":
-		return domain.RosterIR
-	case "taxi":
-		return domain.RosterTaxi
-	}
-	return domain.RosterActive
-}
-
-func projectReserve(seed *RawNativeSnapshot, args *RawWaiverArgs, result *WaiverOutcome) error {
-	if result.Player == nil {
-		return fmt.Errorf("a reserve move has no recorded player")
-	}
-	for i, p := range seed.Players {
-		if p.ID != args.Player {
-			continue
-		}
-		if p != *result.Player || p.Franchise != args.Franchise {
-			return fmt.Errorf("reverse the later roster changes first")
-		}
-		seed.Players[i].Status = reserveStatus(args.Bucket)
-		return nil
-	}
-	return fmt.Errorf("the reserve player is no longer on this roster")
-}
+func reserveStatus(bucket string) domain.RosterStatus { return commissioner.ReserveStatus(bucket) }

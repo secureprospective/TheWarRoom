@@ -44,7 +44,7 @@ func holdsOf(league string, records []Record, season int, now time.Time, standin
 	if basis.words != "" {
 		return draftHolds{}, fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, "."))
 	}
-	assets, err := NativeAssetsReading(league, recordsThrough(records, now))
+	assets, err := NativeAssetsReading(league, RecordsThrough(records, now))
 	if err != nil {
 		return draftHolds{}, err
 	}
@@ -182,9 +182,9 @@ func NextDraftDeadline(records []Record, at time.Time, standings DraftStandings)
 			continue
 		}
 		if !basis.started {
-			next = nearerFutureDeadline(next, basis.start, at)
+			next = NearerFutureDeadline(next, basis.start, at)
 		} else if clock := basis.draft.OnClock; clock != nil && !clock.Paused {
-			next = nearerFutureDeadline(next, clock.Deadline, at)
+			next = NearerFutureDeadline(next, clock.Deadline, at)
 		}
 	}
 	return next

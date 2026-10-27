@@ -1,28 +1,36 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // DueBids uses the manual decision policy, including current roster and cap checks. A tie remains
 // undecided for the commissioner; waivers must clear before any automatic award.
-func DueBids(league string, records []Record, at time.Time, facts nativecheck.Facts) ([]string, error) {
-	f, err := marketFrame(league, records, at, facts, time.UTC, false)
+func DueBids(league string, records []commissioner.Record, at time.Time, facts nativecheck.Facts) ([]string, error) {
+	f, err := commissioner.NewFrame(league, records, at, facts, time.UTC)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return nil, err
 	}
+	return dueBidsFrame(f)
+}
+
+func dueBidsFrame(f commissioner.Frame) ([]string, error) {
+	records, at, facts := f.Records, f.At, f.Facts
 	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no bids; its season may not even be named yet.
 	due := []string{}
 	if !assets.Seeded {
 		return due, nil
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return nil, err
 	}
 	rules := f.Rules
@@ -33,10 +41,10 @@ func DueBids(league string, records []Record, at time.Time, facts nativecheck.Fa
 	x := bidExecution{assets: assets, state: state, rules: rules, records: records, now: at, facts: facts, zone: time.UTC}
 	for i := range state.Bids.Auctions {
 		auction := &state.Bids.Auctions[i]
-		if auction.Decided || at.Before(auction.standingAt().Add(stand.Value)) {
+		if auction.Decided || at.Before(auction.StandingAt().Add(stand.Value)) {
 			continue
 		}
-		raw := RawCommand{Command: BidsProcess, Args: RawArgs{Bid: &RawBidArgs{Player: auction.Player}}}
+		raw := commissioner.RawCommand{Command: commissioner.BidsProcess, Args: commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: auction.Player}}}
 		if err := x.decide(&raw); err != nil {
 			continue
 		}
@@ -50,12 +58,12 @@ func DueBids(league string, records []Record, at time.Time, facts nativecheck.Fa
 
 // CheckDueBid repeats the worker's eligibility check under the append lock, so a stale clock scan
 // cannot award a player after a new bid, waiver restoration or commissioner rule change.
-func CheckDueBid(raw RawCommand, records []Record, at time.Time, facts nativecheck.Facts) error {
+func CheckDueBid(raw commissioner.RawCommand, records []commissioner.Record, at time.Time, facts nativecheck.Facts) error {
 	due, err := DueBids(raw.League, records, at, facts)
 	if err != nil {
 		return err
 	}
-	if raw.Command != BidsProcess || raw.Args.Bid == nil || !slices.Contains(due, raw.Args.Bid.Player) {
+	if raw.Command != commissioner.BidsProcess || raw.Args.Bid == nil || !slices.Contains(due, raw.Args.Bid.Player) {
 		return fmt.Errorf("only an untied bid that has stood its full time and cleared waivers can be awarded automatically")
 	}
 	return nil
@@ -63,13 +71,15 @@ func CheckDueBid(raw RawCommand, records []Record, at time.Time, facts nativeche
 
 // BidOffseasonAt recognizes an otherwise undated offseason only after a held rollover and before
 // September of the named season. An unrecorded rollover never becomes an invented season boundary.
-func BidOffseasonAt(records []Record, at time.Time, season int) (bool, error) {
-	starts, err := rolloverInstants(recordsThrough(records, at))
+func BidOffseasonAt(records []commissioner.Record, at time.Time, season int) (bool, error) {
+	starts, err := commissioner.RolloverInstants(commissioner.RecordsThrough(records, at))
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return false, err
 	}
-	rules, err := RulesNow(records, at)
+	rules, err := commissioner.RulesNow(records, at)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return false, err
 	}
 	if rules.Calendar.Timezone.State != leaguerules.IsKnown {

@@ -138,8 +138,8 @@ func (b *bracketReader) prepare(facts LineupFacts) error {
 	if b.directory, err = NativeDirectoryReading(b.league, b.records, b.now); err != nil {
 		return err
 	}
-	names := b.directory.seats()
-	b.state = foldBracket(b.records, b.season, func(id string) string { return names.of(id).Name })
+	names := b.directory.Seats()
+	b.state = foldBracket(b.records, b.season, func(id string) string { return names.Of(id).Name })
 	b.out.Changes = b.state.Changes
 	b.out.Presets = append(b.out.Presets, slices.Sorted(maps.Keys(b.state.Presets))...)
 	b.out.Preset = cmpPreset(b.state.Preset)
@@ -201,7 +201,7 @@ func (b *bracketReader) readRules(at time.Time) error {
 }
 
 // historyRecords lists every history link, read through the franchise names.
-func historyRecords(league string, records []Record, names seatIndex) ([]HistoryRecord, error) {
+func historyRecords(league string, records []Record, names SeatIndex) ([]HistoryRecord, error) {
 	links, err := HistoryLinks(league, records)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func historyRecords(league string, records []Record, names seatIndex) ([]History
 	out := []HistoryRecord{}
 	for _, record := range slices.Sorted(maps.Keys(links)) {
 		l := links[record]
-		out = append(out, HistoryRecord{Record: record, Franchise: l.Franchise, Name: names.of(l.Franchise).Name,
+		out = append(out, HistoryRecord{Record: record, Franchise: l.Franchise, Name: names.Of(l.Franchise).Name,
 			ByCommissioner: l.ByCommissioner, Reason: l.Reason})
 	}
 	return out, nil

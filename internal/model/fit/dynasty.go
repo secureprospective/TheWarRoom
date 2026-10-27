@@ -82,9 +82,9 @@ func fitArcGiven(m model.Params, rows []pair) [4]float64 {
 	for i, p := range rows {
 		s := p.from
 		z := m.Z(s.games, m.KDynasty)
-		blend := z*s.pct + (1-z)*m.Prior(s.player)
+		blend := model.Mix(z, s.pct, m.Prior(s.player))
 		stay := m.Survives(s.age, s.player.DraftPick, s.games, s.pct, s.player.TenureAt(s.year))
-		x[i], y[i], w[i] = arcRow(s.age, s.exp), p.next.pct-blend, min(1/max(stay, 1e-3), maxSurvivalWeight)
+		x[i], y[i], w[i] = arcRow(s.age, s.exp), model.Score(p.next.pct)-model.Score(blend), min(1/max(stay, 1e-3), maxSurvivalWeight)
 	}
 	return solveArc(x, y, w)
 }

@@ -1,10 +1,11 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -26,38 +27,47 @@ type NativeWaiverClaim struct {
 }
 
 type NativeWaivers struct {
-	Corrections []Correction         `json:"corrections,omitempty"`
-	League      string               `json:"league"`
-	Franchise   string               `json:"franchise"`
-	Revision    int64                `json:"revision"`
-	Season      int                  `json:"season"`
-	Players     []NativeWaiverPlayer `json:"players"`
-	Claims      []NativeWaiverClaim  `json:"claims"`
-	Order       []string             `json:"order"`
-	OrderSource string               `json:"orderSource"`
-	Method      string               `json:"method"`
+	Corrections []commissioner.Correction `json:"corrections,omitempty"`
+	League      string                    `json:"league"`
+	Franchise   string                    `json:"franchise"`
+	Revision    int64                     `json:"revision"`
+	Season      int                       `json:"season"`
+	Players     []NativeWaiverPlayer      `json:"players"`
+	Claims      []NativeWaiverClaim       `json:"claims"`
+	Order       []string                  `json:"order"`
+	OrderSource string                    `json:"orderSource"`
+	Method      string                    `json:"method"`
 }
 
-func NativeWaiversReading(league, franchise, principal string, records []Record, at time.Time,
+func NativeWaiversReading(league, franchise, principal string, records []commissioner.Record, at time.Time,
 	zone *time.Location, facts nativecheck.Facts) (NativeWaivers, error) {
-	if err := AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+	if err := commissioner.AuthorizeFranchiseOwner(records, principal, franchise); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return NativeWaivers{}, err
 	}
-	f, err := marketFrame(league, records, at, facts, zone, true)
+	f, err := commissioner.NewFrame(league, records, at, facts, zone, at)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return NativeWaivers{}, err
 	}
-	if err := f.readRules(); err != nil {
+	return nativeWaiversFrame(f, franchise, principal)
+}
+
+func nativeWaiversFrame(f commissioner.Frame, franchise, principal string) (NativeWaivers, error) {
+	league, records, at, zone, facts := f.League, f.Records, f.At, f.Zone, f.Facts
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return NativeWaivers{}, err
 	}
 	rules := f.Rules
-	changes, err := CorrectionsReading(league, records, at)
+	changes, err := commissioner.CorrectionsReading(league, records, at)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return NativeWaivers{}, err
 	}
 	out := NativeWaivers{Corrections: changes.Items, League: league, Franchise: franchise, Revision: int64(len(records)), Season: rules.Season,
 		Players: []NativeWaiverPlayer{}, Claims: []NativeWaiverClaim{}, Order: []string{},
-		Method: ruleValueWords(rules, "waivers.method")}
+		Method: commissioner.RuleValueWords(rules, "waivers.method")}
 	if !f.Assets.Seeded {
 		out.OrderSource = "No starting rosters recorded"
 		return out, nil
@@ -101,9 +111,9 @@ func NativeWaiversReading(league, franchise, principal string, records []Record,
 	return out, nil
 }
 
-func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, principal string, records []Record) []NativeWaiverClaim {
+func appendOwnWaiverClaims(out []NativeWaiverClaim, w commissioner.WaiverWindow, franchise, principal string, records []commissioner.Record) []NativeWaiverClaim {
 	for _, c := range w.Claims {
-		if c.Franchise != franchise || !SamePrincipal(records, c.Principal, principal) {
+		if c.Franchise != franchise || !commissioner.SamePrincipal(records, c.Principal, principal) {
 			continue
 		}
 		status := "Claim recorded privately"
@@ -124,18 +134,25 @@ func appendOwnWaiverClaims(out []NativeWaiverClaim, w waiverWindow, franchise, p
 }
 
 // DueWaiverWindows is shared by the clock worker and the explicit processing command.
-func DueWaiverWindows(league string, records []Record, at time.Time) ([]string, error) {
-	f, err := marketFrame(league, records, at, nil, nil, true)
+func DueWaiverWindows(league string, records []commissioner.Record, at time.Time) ([]string, error) {
+	f, err := commissioner.NewFrame(league, records, at, nil, nil, at)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return nil, err
 	}
+	return dueWaiverWindowsFrame(f)
+}
+
+func dueWaiverWindowsFrame(f commissioner.Frame) ([]string, error) {
+	at := f.At
 	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no waivers; its season may not even be named yet.
 	due := []string{}
 	if !assets.Seeded || len(state.Windows) == 0 {
 		return due, nil
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return nil, err
 	}
 	rules := f.Rules

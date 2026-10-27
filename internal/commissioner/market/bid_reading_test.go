@@ -1,10 +1,11 @@
-package commissioner
+package market
 
 import (
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -28,12 +29,12 @@ func TestBidCloseIsARulingUntilTheLeagueSetsHowLongABidStands(t *testing.T) {
 
 func TestLeaderIsTheMostPointsAndAmongEqualsTheFirstPlaced(t *testing.T) {
 	early, late := time.Unix(100, 0), time.Unix(200, 0)
-	lead, ok := leaderOf([]bidRecord{{ID: "a", Points: 50000, PlacedAt: late}, {ID: "b", Points: 60000, PlacedAt: late},
+	lead, ok := commissioner.LeaderOf([]commissioner.BidRecord{{ID: "a", Points: 50000, PlacedAt: late}, {ID: "b", Points: 60000, PlacedAt: late},
 		{ID: "c", Points: 60000, PlacedAt: early}})
 	if !ok || lead.ID != "c" {
 		t.Fatalf("leader: %+v", lead)
 	}
-	if _, ok := leaderOf(nil); ok {
+	if _, ok := commissioner.LeaderOf(nil); ok {
 		t.Fatal("no bids had a leader")
 	}
 }

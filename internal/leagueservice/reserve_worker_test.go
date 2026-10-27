@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -125,19 +127,19 @@ func TestReserveClockRechecksEligibilityAndCannotCut(t *testing.T) {
 	reserveRule(t, f, "ir.autoReturn", `true`)
 	raw := f.raw(t, commissioner.RosterReserve, commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: "0099", Franchise: "franchise.02", Bucket: "active"}})
 	records := reserveRecords(t, f)
-	if err := commissioner.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
+	if err := market.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
 		t.Fatal("still-eligible IR player returned")
 	}
 	f.facts["0099"] = nativecheck.PlayerFacts{Position: leaguerules.QB}
-	if err := commissioner.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
+	if err := market.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
 		t.Fatal("missing designation triggered return")
 	}
 	f.facts["0099"] = nativecheck.PlayerFacts{Position: leaguerules.QB, DesignationHeld: true}
-	if err := commissioner.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err != nil {
+	if err := market.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err != nil {
 		t.Fatal(err)
 	}
 	raw.Command = commissioner.RosterCut
-	if err := commissioner.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
+	if err := market.PrepareDueReserve(&raw, records, f.clock.Now(), f.facts); err == nil {
 		t.Fatal("reserve clock could cut")
 	}
 }

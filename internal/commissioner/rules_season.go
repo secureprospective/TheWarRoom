@@ -48,7 +48,7 @@ func seeded(records []Record) bool {
 // in-force "now" setting of the season rollover instant. A date set before the previous rollover has
 // passed moves that rollover; one set after it schedules the next. A date that does not come after the
 // one before it is not a new season.
-func rolloverInstants(records []Record) ([]time.Time, error) {
+func RolloverInstants(records []Record) ([]time.Time, error) {
 	if starts, explicit := explicitRolloverInstants(records); explicit {
 		return starts, nil
 	}
@@ -101,8 +101,8 @@ func nextRollover(starts []time.Time, recorded time.Time) (time.Time, bool) {
 
 // SeasonAt says which season the league is in at an instant.
 func SeasonAt(records []Record, at time.Time) (int, error) {
-	records = recordsThrough(records, at)
-	starts, err := rolloverInstants(records)
+	records = RecordsThrough(records, at)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return 0, err
 	}
@@ -150,11 +150,11 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 	if len(records) == 0 {
 		return leaguerules.RuleSet{}, fmt.Errorf("this app league has not been created")
 	}
-	records = recordsThrough(records, at)
+	records = RecordsThrough(records, at)
 	if rules, explicit, err := explicitSeasonRules(records, season, at); explicit {
 		return rules, err
 	}
-	starts, err := rolloverInstants(records)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return leaguerules.RuleSet{}, err
 	}
@@ -172,7 +172,7 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 	if index < len(starts) && !at.Before(starts[index]) {
 		at = starts[index].Add(-time.Nanosecond)
 	}
-	changes, err := seasonChanges(recordsThrough(records, at), starts, season)
+	changes, err := seasonChanges(RecordsThrough(records, at), starts, season)
 	if err != nil {
 		return leaguerules.RuleSet{}, err
 	}
@@ -184,7 +184,7 @@ func RulesInForce(records []Record, season int, at time.Time) (leaguerules.RuleS
 }
 
 // recordsThrough prevents later corrections from rewriting an earlier season or instant.
-func recordsThrough(records []Record, at time.Time) []Record {
+func RecordsThrough(records []Record, at time.Time) []Record {
 	out := make([]Record, 0, len(records))
 	for _, r := range records {
 		if !r.Receipt.RecordedAt.After(at) {

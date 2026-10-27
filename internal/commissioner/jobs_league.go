@@ -16,9 +16,9 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 		return nil, err
 	}
 	jobs := transactionJobs(assets, state, rules, at)
-	jobs = append(jobs, mustCutJobs(assets, recordsThrough(records, at), rules)...)
+	jobs = append(jobs, mustCutJobs(assets, RecordsThrough(records, at), rules)...)
 	return append(jobs,
-		draftJob(assets, recordsThrough(records, at), at),
+		draftJob(assets, RecordsThrough(records, at), at),
 		seededJob(assets, Job{ID: "stat_queue", Name: "Stat approval queue", Controls: []string{"CM-031", "CM-032"},
 			Words: "Statistic changes from the held files wait in the queue for approval."}),
 		tradeReviewJob(assets, state.Trades),

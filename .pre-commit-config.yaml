@@ -36,9 +36,9 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
-  # verify: the pre-push gate. scripts/prepush.sh runs only what the pushed commits change (lint and
-  # shuffled tests on the touched packages and their importers, the frontend checks if the frontend changed);
-  # GitHub's verify workflow runs the full make verify on every push, and the merge waits for it.
+  # verify: a quick local gate: lint and build all for Go changes, test directly changed
+  # packages (except composition), and run frontend checks for frontend changes.
+  # GitHub CI runs the full suite on every push, and the merge waits for it.
   # always_run: a hook with no file filter can be skipped when the computed delta is empty.
   - repo: local
     hooks:

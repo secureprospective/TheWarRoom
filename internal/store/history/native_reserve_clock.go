@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -27,7 +29,7 @@ func (s *Store) ProcessDueReserves(ctx context.Context, league string, facts nat
 	if err != nil {
 		return err
 	}
-	due, err := commissioner.DueReserves(league, records, s.now(), facts)
+	due, err := market.DueReserves(league, records, s.now(), facts)
 	if err != nil {
 		return fmt.Errorf("read due reserves: %w", err)
 	}

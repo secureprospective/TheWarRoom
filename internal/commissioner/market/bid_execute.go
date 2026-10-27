@@ -1,10 +1,11 @@
-package commissioner
+package market
 
 import (
 	"fmt"
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -18,10 +19,10 @@ type BidEnvironment struct {
 }
 
 type bidExecution struct {
-	assets  NativeAssets
-	state   waiverState
+	assets  commissioner.NativeAssets
+	state   commissioner.MarketBook
 	rules   leaguerules.RuleSet
-	records []Record
+	records []commissioner.Record
 	now     time.Time
 	facts   nativecheck.Facts
 	zone    *time.Location
@@ -31,24 +32,33 @@ type bidExecution struct {
 // PrepareBidAppend judges a bid action against the transaction's current records and writes the app's
 // decision onto the command. Owner actions are checked purely against the bid rules, the cap and roster
 // legality; the commissioner's commands decide a player's bids by those same rules.
-func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts nativecheck.Facts,
+func PrepareBidAppend(raw *commissioner.RawCommand, records []commissioner.Record, now time.Time, facts nativecheck.Facts,
 	zone *time.Location, env BidEnvironment) error {
-	if !BidCommand(raw.Command) {
+	if !commissioner.BidCommand(raw.Command) {
 		return nil
 	}
-	f, err := marketFrame(raw.League, records, now, facts, zone, false)
+	f, err := commissioner.NewFrame(raw.League, records, now, facts, zone)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
+	return prepareBidFrame(f, raw, env)
+}
+
+func prepareBidFrame(f commissioner.Frame, raw *commissioner.RawCommand, env BidEnvironment) error {
+	records, now, facts, zone := f.Records, f.At, f.Facts, f.Zone
 	if err := f.Seeded("record starting assets before bid actions"); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
-	if err := f.readRules(); err != nil {
+	if err := f.ReadRules(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	x := bidExecution{assets: f.Assets, state: f.Book, rules: f.Rules, records: records, now: now, facts: facts, zone: zone, env: env}
-	if action := OwnerBidAction(raw.Command); action != "" && !startingCardLot(records, bidPlayerOf(Record{Command: *raw}, records)) {
+	if action := commissioner.OwnerBidAction(raw.Command); action != "" && !commissioner.StartingCardLot(records, commissioner.BidPlayerOf(commissioner.Record{Command: *raw}, records)) {
 		if err := f.Gate(raw.Args.Bid.Franchise, action); err != nil {
+			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
 	}
@@ -56,18 +66,19 @@ func PrepareBidAppend(raw *RawCommand, records []Record, now time.Time, facts na
 		return err
 	}
 	if _, err := f.Trial(*raw, "proposed"); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	return nil
 }
 
-func (x *bidExecution) prepare(raw *RawCommand) error {
+func (x *bidExecution) prepare(raw *commissioner.RawCommand) error {
 	switch raw.Command {
-	case BidPlace:
+	case commissioner.BidPlace:
 		return x.place(raw)
-	case BidRaise:
+	case commissioner.BidRaise:
 		return x.raise(raw)
-	case BidWithdraw:
+	case commissioner.BidWithdraw:
 		return x.withdraw(raw)
 	}
 	return x.decide(raw)
@@ -80,20 +91,20 @@ func (x *bidExecution) name(player string) string {
 	return "Player " + player
 }
 
-func (x *bidExecution) place(raw *RawCommand) error {
+func (x *bidExecution) place(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
 	if _, known := x.facts[args.Player]; !known {
 		return fmt.Errorf("choose a player the app holds")
 	}
-	if !slices.ContainsFunc(x.assets.Snapshot.Franchises, func(f NativeFranchise) bool { return f.ID == args.Franchise }) {
+	if !slices.ContainsFunc(x.assets.Snapshot.Franchises, func(f commissioner.NativeFranchise) bool { return f.ID == args.Franchise }) {
 		return fmt.Errorf("choose a franchise in this app league")
 	}
 	if err := x.bidBar(args.Player, args.Franchise); err != nil {
 		return err
 	}
-	auction := x.state.Bids.open(args.Player)
+	auction := x.state.Bids.Open(args.Player)
 	if auction != nil {
-		if _, held := auction.activeFor(args.Franchise); held {
+		if _, held := auction.ActiveFor(args.Franchise); held {
 			return fmt.Errorf("you already have a bid on %s; raise it instead", x.name(args.Player))
 		}
 	}
@@ -105,14 +116,11 @@ func (x *bidExecution) place(raw *RawCommand) error {
 	return nil
 }
 
-func (x *bidExecution) raise(raw *RawCommand) error {
+func (x *bidExecution) raise(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
-	auction, j, err := x.state.Bids.find(args.Bid)
+	auction, err := x.standingBid(args)
 	if err != nil {
 		return err
-	}
-	if auction.Decided || !auction.Bids[j].live() || auction.Bids[j].Franchise != args.Franchise {
-		return fmt.Errorf("choose your own bid that is still standing")
 	}
 	outcome, err := x.judge(auction.Player, args.Franchise, auction, nativecheck.BidProposal{Salary: args.Salary, Years: args.Years})
 	if err != nil {
@@ -122,26 +130,35 @@ func (x *bidExecution) raise(raw *RawCommand) error {
 	return nil
 }
 
-func (x *bidExecution) withdraw(raw *RawCommand) error {
+func (x *bidExecution) withdraw(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
-	auction, j, err := x.state.Bids.find(args.Bid)
+	auction, err := x.standingBid(args)
 	if err != nil {
 		return err
-	}
-	if auction.Decided || !auction.Bids[j].live() || auction.Bids[j].Franchise != args.Franchise {
-		return fmt.Errorf("choose your own bid that is still standing")
 	}
 	if err := x.auctionOpen(auction); err != nil {
 		return err
 	}
-	raw.Args.BidOutcome = &BidOutcome{Player: auction.Player, Season: x.rules.Season}
+	raw.Args.BidOutcome = &commissioner.BidOutcome{Player: auction.Player, Season: x.rules.Season}
 	return nil
+}
+
+func (x *bidExecution) standingBid(args *commissioner.RawBidArgs) (*commissioner.BidAuction, error) {
+	a, j, err := x.state.Bids.Find(args.Bid)
+	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return nil, err
+	}
+	if a.Decided || !a.Bids[j].Live() || a.Bids[j].Franchise != args.Franchise {
+		return nil, fmt.Errorf("choose your own bid that is still standing")
+	}
+	return a, nil
 }
 
 // bidBar refuses a player who cannot be bid on: one on a roster, one still on waivers, or one this franchise
 // released this season when the league bars re-signing him.
 func (x *bidExecution) bidBar(player, franchise string) error {
-	if slices.ContainsFunc(x.assets.Snapshot.Players, func(p NativePlayer) bool { return p.ID == player }) {
+	if slices.ContainsFunc(x.assets.Snapshot.Players, func(p commissioner.NativePlayer) bool { return p.ID == player }) {
 		return fmt.Errorf("%s is on a roster; only free agents can be bid on", x.name(player))
 	}
 	for _, w := range x.state.Windows {
@@ -165,12 +182,12 @@ func (x *bidExecution) bidBar(player, franchise string) error {
 }
 
 // judge runs the bid rules, then the roster and the cap, and returns what the app records about the bid.
-func (x *bidExecution) judge(player, franchise string, auction *bidAuction, p nativecheck.BidProposal) (*BidOutcome, error) {
+func (x *bidExecution) judge(player, franchise string, auction *commissioner.BidAuction, p nativecheck.BidProposal) (*commissioner.BidOutcome, error) {
 	if err := x.auctionOpen(auction); err != nil {
 		return nil, err
 	}
 	rules := x.rules
-	startCard := startingCardLot(x.records, player)
+	startCard := commissioner.StartingCardLot(x.records, player)
 	if startCard {
 		if p.Years != 1 {
 			return nil, fmt.Errorf("a starting O-Line card has a 1-year contract")
@@ -190,7 +207,7 @@ func (x *bidExecution) judge(player, franchise string, auction *bidAuction, p na
 	if startCard {
 		facts.Season = nativecheck.BidSeason{Offseason: true}
 	}
-	facts.Active = x.state.Bids.activeCount(franchise, player)
+	facts.Active = x.state.Bids.ActiveCount(franchise, player)
 	if auction != nil {
 		facts.Standing = standingBid(auction, mode, franchise)
 	}
@@ -201,19 +218,19 @@ func (x *bidExecution) judge(player, franchise string, auction *bidAuction, p na
 	if err := x.rosterAllowsContract(player, franchise, p.Salary, p.Years); err != nil {
 		return nil, err
 	}
-	return &BidOutcome{Player: player, Season: x.rules.Season, Points: verdict.Points, Late: verdict.Late}, nil
+	return &commissioner.BidOutcome{Player: player, Season: x.rules.Season, Points: verdict.Points, Late: verdict.Late}, nil
 }
 
 // standingBid is the bid a new bid must beat. Open bidding shows the leader to everyone; a blind bid can only
 // be held to the owner's own earlier bid, since nothing else may be revealed.
-func standingBid(a *bidAuction, mode leaguerules.BidMode, franchise string) *nativecheck.StandingBid {
+func standingBid(a *commissioner.BidAuction, mode leaguerules.BidMode, franchise string) *nativecheck.StandingBid {
 	if mode == leaguerules.Blind {
-		if own, ok := a.activeFor(franchise); ok {
+		if own, ok := a.ActiveFor(franchise); ok {
 			return &nativecheck.StandingBid{Points: own.Points, PlacedAt: own.PlacedAt}
 		}
 		return nil
 	}
-	if lead, ok := leaderOf(a.liveBids()); ok {
+	if lead, ok := commissioner.LeaderOf(a.LiveBids()); ok {
 		return &nativecheck.StandingBid{Points: lead.Points, PlacedAt: lead.PlacedAt}
 	}
 	return nil
@@ -221,14 +238,14 @@ func standingBid(a *bidAuction, mode leaguerules.BidMode, franchise string) *nat
 
 func (x *bidExecution) rosterAllowsContract(player, franchise string, salary domain.Money, years int) error {
 	candidate := *x.assets.Snapshot
-	candidate.Players = append(slices.Clone(candidate.Players), NativePlayer{ID: player, Franchise: franchise,
+	candidate.Players = append(slices.Clone(candidate.Players), commissioner.NativePlayer{ID: player, Franchise: franchise,
 		Status: domain.RosterActive, Salary: salary, ExpirationYear: x.rules.Season + years - 1,
 		ContractStatus: domain.CStatusUFA})
 	rules := x.rules
-	if startingCardLot(x.records, player) {
+	if commissioner.StartingCardLot(x.records, player) {
 		rules.Roster.Limits.Value.Min = leaguerules.Known(0)
 	}
-	return rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, scopedDecisionExceptions(x.records, ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
+	return rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
 }
 
 // experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.
@@ -242,35 +259,36 @@ func experienceYears(season int, f nativecheck.PlayerFacts) int {
 
 // decide chooses the winner of a player's bids, or corrects the choice. A bid is judged again at the moment of
 // the decision, because the franchise's roster and cap may have changed since it was made.
-func (x *bidExecution) decide(raw *RawCommand) error {
+func (x *bidExecution) decide(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
-	var auction *bidAuction
-	if raw.Command == BidsProcess {
-		if auction = x.state.Bids.open(args.Player); auction == nil {
+	var auction *commissioner.BidAuction
+	if raw.Command == commissioner.BidsProcess {
+		if auction = x.state.Bids.Open(args.Player); auction == nil {
 			return fmt.Errorf("%s has no bids waiting for a decision", x.name(args.Player))
 		}
 	} else {
-		found, _, err := x.state.Bids.find(args.Bid)
+		found, _, err := x.state.Bids.Find(args.Bid)
 		if err != nil {
+			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
-		if auction = found; !auction.Decided || x.state.Bids.latest(auction.Player) != auction {
+		if auction = found; !auction.Decided || x.state.Bids.Latest(auction.Player) != auction {
 			return fmt.Errorf("correct only the newest decision on a player")
 		}
 		// The corrected decision is tested without counting the previous winner twice.
 		x.assets.Snapshot.Players = slices.DeleteFunc(slices.Clone(x.assets.Snapshot.Players),
-			func(p NativePlayer) bool { return p.ID == auction.Player })
+			func(p commissioner.NativePlayer) bool { return p.ID == auction.Player })
 	}
 	if err := x.clearsWaivers(auction.Player); err != nil {
 		return err
 	}
-	live := auction.liveBids()
+	live := auction.LiveBids()
 	if len(live) == 0 {
 		return fmt.Errorf("every bid on %s has been withdrawn", x.name(auction.Player))
 	}
 	eligible, results := x.eligibleBids(auction.Player, live)
-	outcome := &BidOutcome{Player: auction.Player, Season: x.rules.Season, Results: results}
-	if raw.Command == BidsOverride {
+	outcome := &commissioner.BidOutcome{Player: auction.Player, Season: x.rules.Season, Results: results}
+	if raw.Command == commissioner.BidsOverride {
 		return x.overrideAward(raw, auction, eligible, outcome)
 	}
 	award := nativecheck.ChooseBidWinner(eligible)
@@ -285,9 +303,9 @@ func (x *bidExecution) decide(raw *RawCommand) error {
 	return nil
 }
 
-func (x *bidExecution) overrideAward(raw *RawCommand, a *bidAuction, eligible []nativecheck.AwardBid, outcome *BidOutcome) error {
+func (x *bidExecution) overrideAward(raw *commissioner.RawCommand, a *commissioner.BidAuction, eligible []nativecheck.AwardBid, outcome *commissioner.BidOutcome) error {
 	winner := raw.Args.Bid.Franchise
-	bid, held := a.activeFor(winner)
+	bid, held := a.ActiveFor(winner)
 	if !held || !slices.ContainsFunc(eligible, func(e nativecheck.AwardBid) bool { return e.ID == bid.ID }) {
 		return fmt.Errorf("the corrected winner must have a legal bid on this player")
 	}
@@ -309,11 +327,11 @@ func (x *bidExecution) clearsWaivers(player string) error {
 	return nil
 }
 
-func (x *bidExecution) eligibleBids(player string, live []bidRecord) ([]nativecheck.AwardBid, []BidResult) {
+func (x *bidExecution) eligibleBids(player string, live []commissioner.BidRecord) ([]nativecheck.AwardBid, []commissioner.BidResult) {
 	eligible := []nativecheck.AwardBid{}
-	results := make([]BidResult, 0, len(live))
+	results := make([]commissioner.BidResult, 0, len(live))
 	for _, b := range live {
-		result := BidResult{ID: b.ID}
+		result := commissioner.BidResult{ID: b.ID}
 		if err := x.rosterAllowsContract(player, b.Franchise, b.Salary, b.Years); err != nil {
 			result.Refusal = err.Error()
 		} else {
@@ -324,7 +342,7 @@ func (x *bidExecution) eligibleBids(player string, live []bidRecord) ([]nativech
 	return eligible, results
 }
 
-func franchiseOf(bids []bidRecord, id string) string {
+func franchiseOf(bids []commissioner.BidRecord, id string) string {
 	for _, b := range bids {
 		if b.ID == id {
 			return b.Franchise
@@ -333,7 +351,7 @@ func franchiseOf(bids []bidRecord, id string) string {
 	return ""
 }
 
-func (x *bidExecution) auctionOpen(auction *bidAuction) error {
+func (x *bidExecution) auctionOpen(auction *commissioner.BidAuction) error {
 	if auction == nil {
 		return nil
 	}
@@ -341,7 +359,7 @@ func (x *bidExecution) auctionOpen(auction *bidAuction) error {
 	if stand.State != leaguerules.IsKnown || stand.Value <= 0 {
 		return fmt.Errorf("the bid closing time needs a ruling")
 	}
-	if !x.now.Before(auction.standingAt().Add(stand.Value)) {
+	if !x.now.Before(auction.StandingAt().Add(stand.Value)) {
 		return fmt.Errorf("bidding has closed; this auction is waiting for a decision")
 	}
 	return nil

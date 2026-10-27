@@ -30,11 +30,17 @@ func OwnerBidAction(command string) leaguerules.Action {
 	return ""
 }
 
+func (a RawArgs) onlyMarketDetails(clearFields func(*RawArgs), missing bool, sentence string) error {
+	clearFields(&a)
+	if missing || !reflect.DeepEqual(a, RawArgs{}) {
+		return fmt.Errorf("%s", sentence)
+	}
+	return nil
+}
+
 func (a RawArgs) validateBid(command string) error {
-	other := a
-	other.Bid, other.BidOutcome = nil, nil
-	if a.Bid == nil || !reflect.DeepEqual(other, RawArgs{}) {
-		return fmt.Errorf("send only the details of this bid action")
+	if err := a.onlyMarketDetails(func(v *RawArgs) { v.Bid, v.BidOutcome = nil, nil }, a.Bid == nil, "send only the details of this bid action"); err != nil {
+		return err
 	}
 	return a.Bid.Validate(command)
 }

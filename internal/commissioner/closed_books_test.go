@@ -135,7 +135,7 @@ func TestClosedNativeStartsAtBoundaryAndRejectsEditedBodies(t *testing.T) {
 		t.Fatal("valid summary rejected")
 	}
 	var assets NativeAssets
-	var waivers waiverState
+	var waivers MarketBook
 	since, err := resumeClosedNative(&assets, folded, &waivers)
 	if err != nil || since != raw.Revision {
 		t.Fatalf("native resume at %d, want %d: %v", since, raw.Revision, err)
@@ -177,7 +177,7 @@ func TestClosedNativeUnhashableSourceFallsBack(t *testing.T) {
 		t.Fatalf("edited source differs from full replay: %v / %v", gotErr, wantErr)
 	}
 	var assets NativeAssets
-	var waivers waiverState
+	var waivers MarketBook
 	since, err := resumeClosedNative(&assets, folded, &waivers)
 	if err != nil || since != 0 {
 		t.Fatalf("unhashable source did not select full replay: %d %v", since, err)

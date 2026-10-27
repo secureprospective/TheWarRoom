@@ -56,7 +56,7 @@ func mustCutJobs(assets NativeAssets, records []Record, rules leaguerules.RuleSe
 
 // allowDebtReduction permits successive cuts when more than one player must leave. All other
 // roster and cap checks remain in force; acquiring or returning a player manually gets no exemption.
-func allowDebtReduction(before, after *RawNativeSnapshot, records []Record, rules leaguerules.RuleSet, franchise string) leaguerules.RuleSet {
+func AllowDebtReduction(before, after *RawNativeSnapshot, records []Record, rules leaguerules.RuleSet, franchise string) leaguerules.RuleSet {
 	if autoReturnTeams(records)[franchise] && rosterOverfull(before, rules.Roster, franchise) &&
 		countedRoster(after, rules.Roster, franchise) < countedRoster(before, rules.Roster, franchise) && rosterOverfull(after, rules.Roster, franchise) {
 		rules.Roster.Limits.Value.Max.Value = countedRoster(after, rules.Roster, franchise)

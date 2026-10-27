@@ -1,4 +1,4 @@
-package commissioner
+package market
 
 import (
 	"fmt"
@@ -7,27 +7,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
+func rosterCapAllows(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, franchise string,
 	facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
 	roster := []nativecheck.RosterPlayer{}
-	players := []nativecheck.CapPlayer{}
-	charges := []domain.Money{}
 	for _, p := range seed.Players {
 		if p.Franchise == franchise {
 			roster = append(roster, nativecheck.RosterPlayer{ID: p.ID, Status: p.Status})
-			players = append(players, nativecheck.CapPlayer{Salary: p.Salary, Status: p.Status})
 		}
 	}
-	for _, c := range seed.Adjustments {
-		if c.Franchise == franchise && (c.Season == 0 || c.Season == rules.Season) {
-			charges = append(charges, c.Amount)
-		}
-	}
+	players, charges := franchiseCapInputs(seed, franchise, rules.Season)
 	if err := lineCardsHeld(seed, rules, franchise); err != nil {
 		return err
 	}
@@ -46,7 +40,7 @@ func rosterCapAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchi
 	return nil
 }
 
-func waiverClaimAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, w *waiverWindow,
+func waiverClaimAllows(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, w *commissioner.WaiverWindow,
 	franchise string, facts nativecheck.Facts, zone *time.Location, exceptions ...nativecheck.DecisionException) error {
 	if rules.Contracts.ReleaseReSignSameSeason.State != leaguerules.IsKnown {
 		return fmt.Errorf("re-signing a released player needs a ruling")
@@ -74,7 +68,7 @@ func waiverClaimAllows(seed *RawNativeSnapshot, rules leaguerules.RuleSet, w *wa
 }
 
 // Dead money counts each remaining flat paid season after the cut season.
-func waiverDeadMoney(player NativePlayer, rules leaguerules.RuleSet) (domain.Money, error) {
+func waiverDeadMoney(player commissioner.NativePlayer, rules leaguerules.RuleSet) (domain.Money, error) {
 	rate := rules.Contracts.DeadCap
 	if player.Restructured {
 		rate = rules.Contracts.RestructuredDeadCap
@@ -104,36 +98,17 @@ func waiverDeadMoney(player NativePlayer, rules leaguerules.RuleSet) (domain.Mon
 	return domain.Money(value.Int64()), nil
 }
 
-func completeWaiverOrder(order []string, seed *RawNativeSnapshot) error {
-	if len(order) != len(seed.Franchises) {
-		return fmt.Errorf("waiver order must list every franchise exactly once")
-	}
-	seen := map[string]bool{}
-	for _, id := range order {
-		found := false
-		for _, f := range seed.Franchises {
-			if f.ID == id {
-				found = true
-			}
-		}
-		if !found || seen[id] {
-			return fmt.Errorf("waiver order must list every franchise exactly once")
-		}
-		seen[id] = true
-	}
-	return nil
-}
-
 // RecordedStandingsOrder is the pure side of the store's StandingsOrder(league, season, at) seam.
-func RecordedStandingsOrder(league string, records []Record, season int, at time.Time) ([]string, error) {
+func RecordedStandingsOrder(league string, records []commissioner.Record, season int, at time.Time) ([]string, error) {
 	for _, r := range records {
-		if r.Command.League == league && r.Command.Command == NativeSeed && r.Command.Args.Native != nil &&
+		if r.Command.League == league && r.Command.Command == commissioner.NativeSeed && r.Command.Args.Native != nil &&
 			!r.Receipt.RecordedAt.After(at) && r.Command.Args.Native.Season == season {
 			seed := r.Command.Args.Native
 			if len(seed.StandingsOrder) == 0 {
 				break
 			}
-			if err := completeWaiverOrder(seed.StandingsOrder, seed); err != nil {
+			if err := commissioner.CompleteWaiverOrder(seed.StandingsOrder, seed); err != nil {
+				//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 				return nil, err
 			}
 			return append([]string{}, seed.StandingsOrder...), nil
@@ -144,7 +119,7 @@ func RecordedStandingsOrder(league string, records []Record, season int, at time
 
 // lineCardsHeld holds a franchise to exactly one O-Line card in a league that has them, on every move
 // path and whatever roster refusal or decision exception is in force.
-func lineCardsHeld(seed *RawNativeSnapshot, rules leaguerules.RuleSet, franchise string) error {
+func lineCardsHeld(seed *commissioner.RawNativeSnapshot, rules leaguerules.RuleSet, franchise string) error {
 	roster := []nativecheck.RosterPlayer{}
 	for _, p := range seed.Players {
 		if p.Franchise == franchise {

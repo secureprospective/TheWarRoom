@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -19,7 +21,7 @@ func (a *API) TargetNativeTradeAction(raw commissioner.RawCommand) (commissioner
 }
 
 // TargetNativeTrades reads the league's native trade desk; viewer is the seated owner's franchise.
-func (a *API) TargetNativeTrades(league, viewer string) (commissioner.NativeTrades, error) {
+func (a *API) TargetNativeTrades(league, viewer string) (market.NativeTrades, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeTrades(league, viewer)
 }
@@ -32,7 +34,7 @@ func (a *API) TargetNativeWaiverAction(raw commissioner.RawCommand) (commissione
 	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
-func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (commissioner.NativeWaivers,
+func (a *API) TargetNativeWaivers(league, franchise string, at time.Time) (market.NativeWaivers,
 	error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeWaivers(league, franchise, at)
@@ -46,7 +48,7 @@ func (a *API) TargetNativeBidAction(raw commissioner.RawCommand) (commissioner.R
 	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
-func (a *API) TargetNativeBids(league, franchise string) (commissioner.NativeBids, error) {
+func (a *API) TargetNativeBids(league, franchise string) (market.NativeBids, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeBids(league, franchise)
 }

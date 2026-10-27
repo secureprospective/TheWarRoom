@@ -75,7 +75,7 @@ func readDraft(records []Record, season int, at time.Time, standings DraftStandi
 	if standings == nil {
 		standings = NoDraftStandings{}
 	}
-	records = recordsThrough(records, at)
+	records = RecordsThrough(records, at)
 	if len(records) == 0 {
 		return draftBasis{}, fmt.Errorf("this app league has not been created")
 	}
@@ -162,9 +162,9 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if err != nil {
 		return NativeDraft{}, err
 	}
-	through := recordsThrough(records, scope.At)
+	through := RecordsThrough(records, scope.At)
 	out := NativeDraft{League: scope.League, Season: scope.Season, Revision: int64(len(through)),
-		Rules: namedRules(ruleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
+		Rules: namedRules(RuleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
 		Words: basis.words, Draft: basis.draft, Players: map[string]DraftPlayer{}, Available: []DraftPlayer{},
 		Checkpoints: []DraftCheckpoint{}}
 	changes, err := CorrectionsReading(scope.League, records, scope.At)

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -198,27 +200,27 @@ func (a *Service) TargetCorrections(league string) (commissioner.Corrections, er
 	return out, nil
 }
 
-func (a *Service) TargetCommissionerMarket(league, command string) (commissioner.Market, error) {
+func (a *Service) TargetCommissionerMarket(league, command string) (market.Market, error) {
 	if err := a.admitReading(commissioner.Access{League: league, Operation: "commish.market.read", Mode: "read", SubjectCommand: command}); err != nil {
-		return commissioner.Market{}, err
+		return market.Market{}, err
 	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.Market{}, fmt.Errorf("commissioner market startup: %w", err)
+		return market.Market{}, fmt.Errorf("commissioner market startup: %w", err)
 	}
 	principal, err := a.host.CommissionerPrincipal()
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Market{}, err
+		return market.Market{}, err
 	}
 	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), league)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.Market{}, err
+		return market.Market{}, err
 	}
-	reading, err := commissioner.MarketReading(league, command, principal, records,
+	reading, err := market.ChoicesReading(league, command, principal, records,
 		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
 	if err != nil {
-		return commissioner.Market{}, fmt.Errorf("commissioner market: %w", err)
+		return market.Market{}, fmt.Errorf("commissioner market: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, reading.Revision)
 	return reading, nil

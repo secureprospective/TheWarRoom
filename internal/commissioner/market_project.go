@@ -12,7 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-func projectBid(seed *RawNativeSnapshot, state *waiverState, r Record) error {
+func projectBid(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
 	if args == nil || outcome == nil {
 		return fmt.Errorf("a bid change has no recorded details")
@@ -24,12 +24,9 @@ func projectBid(seed *RawNativeSnapshot, state *waiverState, r Record) error {
 	case BidRaise:
 		return projectRaisedBid(book, r)
 	case BidWithdraw:
-		a, j, err := book.find(args.Bid)
+		a, j, err := standingBid(book, args.Bid)
 		if err != nil {
 			return err
-		}
-		if a.Decided || !a.Bids[j].live() {
-			return fmt.Errorf("reverse the later bid changes before reversing this one")
 		}
 		a.Bids[j].Withdrawn = true
 	case BidsProcess, BidsOverride:
@@ -38,55 +35,66 @@ func projectBid(seed *RawNativeSnapshot, state *waiverState, r Record) error {
 	return nil
 }
 
-func projectPlacedBid(seed *RawNativeSnapshot, book *bidBook, r Record) error {
+func projectPlacedBid(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
 	if slices.ContainsFunc(seed.Players, func(p NativePlayer) bool { return p.ID == args.Player }) {
 		return fmt.Errorf("this player already belongs to a roster")
 	}
-	bid := bidRecord{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal, Salary: args.Salary,
+	bid := BidRecord{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal, Salary: args.Salary,
 		Years: args.Years, Points: outcome.Points, PlacedAt: r.Receipt.RecordedAt}
-	if a := book.open(args.Player); a != nil {
-		if _, held := a.activeFor(args.Franchise); held {
+	if a := book.Open(args.Player); a != nil {
+		if _, held := a.ActiveFor(args.Franchise); held {
 			return fmt.Errorf("this franchise already has a bid on this player")
 		}
 		a.Bids = append(a.Bids, bid)
 		return nil
 	}
-	book.Auctions = append(book.Auctions, bidAuction{Player: args.Player, Bids: []bidRecord{bid}})
+	book.Auctions = append(book.Auctions, BidAuction{Player: args.Player, Bids: []BidRecord{bid}})
 	return nil
 }
 
-func projectRaisedBid(book *bidBook, r Record) error {
+func projectRaisedBid(book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
-	a, j, err := book.find(args.Bid)
+	a, j, err := standingBid(book, args.Bid)
 	if err != nil {
 		return err
 	}
-	if a.Decided || !a.Bids[j].live() || a.Bids[j].Franchise != args.Franchise {
+	if a.Bids[j].Franchise != args.Franchise {
 		return fmt.Errorf("reverse the later bid changes before reversing this one")
 	}
 	a.Bids[j].Replaced = true
-	a.Bids = append(a.Bids, bidRecord{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal,
+	a.Bids = append(a.Bids, BidRecord{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal,
 		Salary: args.Salary, Years: args.Years, Points: outcome.Points,
 		PlacedAt: r.Receipt.RecordedAt})
 	return nil
 }
 
+func standingBid(book *BidBook, id string) (*BidAuction, int, error) {
+	a, j, err := book.Find(id)
+	if err != nil {
+		return nil, 0, err
+	}
+	if a.Decided || !a.Bids[j].Live() {
+		return nil, 0, fmt.Errorf("reverse the later bid changes before reversing this one")
+	}
+	return a, j, nil
+}
+
 // projectBidAward decides an auction, or corrects a decision: the previous winner leaves the roster and the
 // new one signs the contract his live bid named.
-func projectBidAward(seed *RawNativeSnapshot, book *bidBook, r Record) error {
+func projectBidAward(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
-	var a *bidAuction
+	var a *BidAuction
 	if r.Command.Command == BidsProcess {
-		if a = book.open(args.Player); a == nil {
+		if a = book.Open(args.Player); a == nil {
 			return fmt.Errorf("this player has no bids waiting for a decision")
 		}
 	} else {
-		found, _, err := book.find(args.Bid)
+		found, _, err := book.Find(args.Bid)
 		if err != nil {
 			return err
 		}
-		if a = found; !a.Decided || book.latest(a.Player) != a {
+		if a = found; !a.Decided || book.Latest(a.Player) != a {
 			return fmt.Errorf("correct only the newest decision on a player")
 		}
 	}
@@ -98,7 +106,7 @@ func projectBidAward(seed *RawNativeSnapshot, book *bidBook, r Record) error {
 	return nil
 }
 
-func replaceBidWinner(seed *RawNativeSnapshot, a *bidAuction, outcome *BidOutcome) error {
+func replaceBidWinner(seed *RawNativeSnapshot, a *BidAuction, outcome *BidOutcome) error {
 	if a.Winner != "" {
 		index := slices.IndexFunc(seed.Players, func(p NativePlayer) bool {
 			return p.ID == a.Player && p.Franchise == a.Winner
@@ -114,7 +122,7 @@ func replaceBidWinner(seed *RawNativeSnapshot, a *bidAuction, outcome *BidOutcom
 	if slices.ContainsFunc(seed.Players, func(p NativePlayer) bool { return p.ID == a.Player }) {
 		return fmt.Errorf("this player already belongs to a roster")
 	}
-	won := slices.IndexFunc(a.Bids, func(b bidRecord) bool { return b.ID == outcome.WinningBid })
+	won := slices.IndexFunc(a.Bids, func(b BidRecord) bool { return b.ID == outcome.WinningBid })
 	if won < 0 || a.Bids[won].Franchise != outcome.Winner {
 		return fmt.Errorf("the winning bid is not a recorded bid of the winner")
 	}
@@ -130,7 +138,7 @@ func replaceBidWinner(seed *RawNativeSnapshot, a *bidAuction, outcome *BidOutcom
 }
 
 // bidPlayerOf follows a bid change back to the player it concerns.
-func bidPlayerOf(r Record, records []Record) string {
+func BidPlayerOf(r Record, records []Record) string {
 	for range len(records) {
 		args := r.Command.Args.Bid
 		if args == nil {
@@ -166,7 +174,7 @@ func privateBidRecord(r Record, records []Record) bool {
 // decidedBidRecord says whether the player's bids have been decided, which is when administrators may see
 // them. A decision that is itself reversed does not count.
 func decidedBidRecord(r Record, records []Record) bool {
-	player := bidPlayerOf(r, records)
+	player := BidPlayerOf(r, records)
 	if player == "" {
 		return false
 	}
@@ -176,11 +184,11 @@ func decidedBidRecord(r Record, records []Record) bool {
 	})
 }
 
-func projectTrade(seed *RawNativeSnapshot, state *waiverState, r Record) error {
+func projectTrade(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	if r.Command.Args.TradeOutcome == nil {
 		return fmt.Errorf("a trade action has no recorded outcome")
 	}
-	t := r.Command.Args.TradeOutcome.clone()
+	t := r.Command.Args.TradeOutcome.Clone()
 	index := slices.IndexFunc(state.Trades, func(v TradeState) bool { return v.ID == t.ID })
 	before := false
 	if r.Command.Command == TradeOffer {
@@ -192,14 +200,14 @@ func projectTrade(seed *RawNativeSnapshot, state *waiverState, r Record) error {
 		if index < 0 {
 			return fmt.Errorf("reverse the later trade actions first")
 		}
-		if t.Previous != tradeDigest(state.Trades[index]) {
+		if t.Previous != TradeDigest(state.Trades[index]) {
 			return fmt.Errorf("undo the later trade actions first")
 		}
 		before = state.Trades[index].Status == "approved"
 	}
 	after := t.Status == "approved"
 	if before != after {
-		if err := moveTradeAssets(seed, t.Assets, before); err != nil {
+		if err := MoveTradeAssets(seed, t.Assets, before); err != nil {
 			return err
 		}
 	}
@@ -212,7 +220,7 @@ func projectTrade(seed *RawNativeSnapshot, state *waiverState, r Record) error {
 }
 
 // Ownership checks make compensation refuse to strand a subsequent cut, award or pick transfer.
-func moveTradeAssets(seed *RawNativeSnapshot, assets []TradeAsset, reverse bool) error {
+func MoveTradeAssets(seed *RawNativeSnapshot, assets []TradeAsset, reverse bool) error {
 	for _, a := range assets {
 		from, to := a.From, a.To
 		if reverse {
@@ -237,7 +245,7 @@ func moveTradeAssets(seed *RawNativeSnapshot, assets []TradeAsset, reverse bool)
 	return nil
 }
 
-func tradeDigest(t TradeState) string {
+func TradeDigest(t TradeState) string {
 	body, err := json.Marshal(t)
 	if err != nil {
 		return "invalid"
@@ -245,7 +253,7 @@ func tradeDigest(t TradeState) string {
 	return fmt.Sprintf("%x", sha256.Sum256(body))
 }
 
-func projectWaiver(seed *RawNativeSnapshot, state *waiverState, r Record) error {
+func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
 	if args == nil {
 		return fmt.Errorf("a waiver change has no details")
@@ -267,17 +275,17 @@ func projectWaiver(seed *RawNativeSnapshot, state *waiverState, r Record) error 
 		seed.Players = slices.Delete(seed.Players, index, index+1)
 		seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
 			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(result.Player.Name, args.Player)})
-		state.Windows = append(state.Windows, waiverWindow{ID: r.Receipt.Entry, Player: *result.Player,
-			CutAt: r.Receipt.RecordedAt, Season: result.Season, Dead: result.Dead, Claims: []waiverClaim{}})
+		state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Player: *result.Player,
+			CutAt: r.Receipt.RecordedAt, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
 	case WaiverClaim:
-		w, err := state.window(args.Window)
+		w, err := state.Window(args.Window)
 		if err != nil {
 			return err
 		}
 		if w.Processed {
 			return fmt.Errorf("reverse the waiver award before reversing its claims")
 		}
-		w.Claims = append(w.Claims, waiverClaim{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal})
+		w.Claims = append(w.Claims, WaiverBookClaim{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal})
 	case WaiverOrderSet, WaiverOrderAuto:
 		state.Order, state.OrderSeason, state.Source = slices.Clone(result.Order), result.Season, result.Source
 		state.BaseOrder = slices.Clone(result.Order)
@@ -287,11 +295,11 @@ func projectWaiver(seed *RawNativeSnapshot, state *waiverState, r Record) error 
 	return nil
 }
 
-func projectWaiverAward(seed *RawNativeSnapshot, state *waiverState, r Record) error {
+func projectWaiverAward(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 	args, result := r.Command.Args.Waiver, r.Command.Args.WaiverOutcome
-	w, err := state.window(args.Window)
+	w, err := state.Window(args.Window)
 	if r.Command.Command == WaiverOverride {
-		w, _, err = state.claim(args.Claim)
+		w, _, err = state.Claim(args.Claim)
 	}
 	if err != nil {
 		return err
@@ -338,7 +346,7 @@ func privateWaiverRecord(r Record, records []Record) bool {
 	return r.Command.Command == WaiverClaim
 }
 
-func replaceWaiverWinner(seed *RawNativeSnapshot, w *waiverWindow, winner string) error {
+func replaceWaiverWinner(seed *RawNativeSnapshot, w *WaiverWindow, winner string) error {
 	if w.Winner != "" {
 		index := slices.IndexFunc(seed.Players, func(p NativePlayer) bool { return p.ID == w.Player.ID && p.Franchise == w.Winner })
 		if index < 0 {
@@ -350,7 +358,7 @@ func replaceWaiverWinner(seed *RawNativeSnapshot, w *waiverWindow, winner string
 		return fmt.Errorf("this player already belongs to a roster")
 	}
 	if winner != "" {
-		if !slices.ContainsFunc(w.Claims, func(c waiverClaim) bool { return c.Franchise == winner }) {
+		if !slices.ContainsFunc(w.Claims, func(c WaiverBookClaim) bool { return c.Franchise == winner }) {
 			return fmt.Errorf("reverse the award before reversing its winning claim")
 		}
 		player := w.Player
@@ -374,7 +382,7 @@ func processedWaiverClaim(r Record, records []Record) bool {
 	return false
 }
 
-func (t TradeState) clone() TradeState {
+func (t TradeState) Clone() TradeState {
 	t.Details = slices.Clone(t.Details)
 	for i, d := range t.Details {
 		if d.Salary != nil {
@@ -387,20 +395,47 @@ func (t TradeState) clone() TradeState {
 	return t
 }
 
-func tradeByID(trades []TradeState, id string) (TradeState, error) {
+func TradeByID(trades []TradeState, id string) (TradeState, error) {
 	for _, t := range trades {
 		if t.ID == id {
-			return t.clone(), nil
+			return t.Clone(), nil
 		}
 	}
 	return TradeState{}, fmt.Errorf("choose a recorded trade")
 }
 
-func checkTradeReplay(raw RawCommand, records []Record, now time.Time) error {
+func CheckTradeReplay(raw RawCommand, records []Record, now time.Time) error {
 	if raw.Command != Revert {
 		return nil
 	}
 	trial := append(slices.Clone(records), Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: now}})
 	_, _, err := nativeAssetsState(raw.League, trial)
 	return err
+}
+
+func ReserveStatus(bucket string) domain.RosterStatus {
+	switch bucket {
+	case "ir":
+		return domain.RosterIR
+	case "taxi":
+		return domain.RosterTaxi
+	}
+	return domain.RosterActive
+}
+
+func projectReserve(seed *RawNativeSnapshot, args *RawWaiverArgs, result *WaiverOutcome) error {
+	if result.Player == nil {
+		return fmt.Errorf("a reserve move has no recorded player")
+	}
+	for i, p := range seed.Players {
+		if p.ID != args.Player {
+			continue
+		}
+		if p != *result.Player || p.Franchise != args.Franchise {
+			return fmt.Errorf("reverse the later roster changes first")
+		}
+		seed.Players[i].Status = ReserveStatus(args.Bucket)
+		return nil
+	}
+	return fmt.Errorf("the reserve player is no longer on this roster")
 }

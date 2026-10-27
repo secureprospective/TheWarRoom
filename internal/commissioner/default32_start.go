@@ -81,7 +81,7 @@ func checkDefault32Start(records []Record, seed *RawNativeSnapshot) error {
 
 // startingCardLot distinguishes the open start auction from later free-agent bidding and older
 // leagues that already assigned cards. The immutable seed, not today's roster size, defines it.
-func startingCardLot(records []Record, player string) bool {
+func StartingCardLot(records []Record, player string) bool {
 	if !IsDefault32(records) {
 		return false
 	}

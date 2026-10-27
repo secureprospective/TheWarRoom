@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -108,7 +110,7 @@ func (f *waiverFixture) claim(t *testing.T, window, principal, franchise string)
 	return receipt
 }
 
-func (f *waiverFixture) reading(t *testing.T, principal, franchise string) commissioner.NativeWaivers {
+func (f *waiverFixture) reading(t *testing.T, principal, franchise string) market.NativeWaivers {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	reading, err := newCommissionerAPI(f.app).TargetNativeWaivers(legalityLeague, franchise, f.now)
@@ -553,11 +555,11 @@ func TestNativeWaiverStandingsSeamDoesNotInventPriority(t *testing.T) {
 			records[i].Command.Args.Native = &clone
 		}
 	}
-	order, err := commissioner.RecordedStandingsOrder(legalityLeague, records, 2026, f.now)
+	order, err := market.RecordedStandingsOrder(legalityLeague, records, 2026, f.now)
 	if err != nil || !slices.Equal(order, waiverOrder()) {
 		t.Fatal("recorded standings seam did not read typed order", order, err)
 	}
-	if _, err := commissioner.RecordedStandingsOrder(legalityLeague, records, 2027, f.now); err == nil {
+	if _, err := market.RecordedStandingsOrder(legalityLeague, records, 2027, f.now); err == nil {
 		t.Fatal("standings order leaked across seasons")
 	}
 }
