@@ -532,7 +532,7 @@ make verify    # lint, tests and the frontend build
 | `thewarroom` | The desktop app every owner runs | [Owner install guide](docs/Owner_Install_Guide.md) |
 | `cmd/twr-server` | The league server: hosting, backups, restore, status, upgrades | [`cmd/twr-server`](cmd/twr-server/README.md) · [`deploy/server`](deploy/server/README.md) |
 | `cmd/twr` | The command line and MCP server for people and AI helpers | [`cmd/twr`](cmd/twr/README.md) |
-| `cmd/twr-practice` | A development-only practice league for click tests | [`cmd/twr-practice`](cmd/twr-practice/README.md) |
+| `tools/twr-practice` | A development-only practice league for click tests | [`tools/twr-practice`](tools/twr-practice/README.md) |
 
 **Status, honestly:** the league server is **preproduction**. It opens to real owners after slices 51 and 52 pass, the build freezes on May 28, 2027, and invitations go out in June.
 

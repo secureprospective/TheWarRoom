@@ -236,7 +236,7 @@ func writeSnapshot(out string, snap snapshot.Snapshot) error {
 	// The eligibility players are spliced in one per line: 1,450 near-identical verdict pairs
 	// would take fourteen pretty-printed lines each and dominate the file. Everything else
 	// keeps the indented encoding the other fixture files use, so the whole file stays
-	// diffable and cmd/fixtures remains its only producer.
+	// diffable and tools/fixtures remains its only producer.
 	players := snap.Eligibility.Players
 	snap.Eligibility.Players = nil
 	head, err := json.MarshalIndent(snap, "", "  ")

@@ -9,10 +9,10 @@ Run from the repository root. Requires the normal desktop build dependencies (Go
 assets. On a fresh worktree: `cd frontend && pnpm install && pnpm build`, then return to the root.
 
 ```sh
-go run ./cmd/twr-practice up .scratch/practice
+go run ./tools/twr-practice up .scratch/practice
 # .scratch must already exist; any existing practice directory must be empty.
-go run ./cmd/twr-practice code .scratch/practice
-go run ./cmd/twr-practice down .scratch/practice
+go run ./tools/twr-practice code .scratch/practice
+go run ./tools/twr-practice down .scratch/practice
 ```
 
 ## Build once, copy to a test machine without Go
@@ -21,7 +21,7 @@ On a Linux build machine with Go, pnpm and the normal WebKitGTK 4.1 development
 libraries, run this one-liner from the repository root:
 
 ```sh
-(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./cmd/twr-practice && go build -tags practice -o .scratch/practice-bundle/twr-server ./cmd/twr-server && go build -tags desktop,production,webkit2_41 -o .scratch/practice-bundle/thewarroom . && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
+(cd frontend && pnpm install && pnpm build) && mkdir -p .scratch/practice-bundle && go build -o .scratch/practice-bundle/twr-practice ./tools/twr-practice && go build -tags practice -o .scratch/practice-bundle/twr-server ./cmd/twr-server && go build -tags desktop,production,webkit2_41 -o .scratch/practice-bundle/thewarroom . && cp docs/ui/endpoint-registry.csv .scratch/practice-bundle/registry.csv
 ```
 
 The desktop embeds the freshly built frontend assets. Use the same Linux architecture
@@ -82,10 +82,10 @@ Flow: claim an empty owner-only directory → copy preview registry/build binari
 loopback TLS (or copy bundle binaries/registry and generate TLS) → initialize one database through trusted account/history APIs → create canonical
 league/owner seat/enroll TOTP → launch the real `twr-server hosted` → record PID and credentials.
 No network bootstrap or authorization override is added. The shared league creation helper in
-`internal/hostedfixture` is also used by the hosted transport tests. The hosted server retains
+`tools/hostedfixture` is also used by the hosted transport tests. The hosted server retains
 its normal admission and clock-health checks; this tool does not disable them.
 
-`go test -race ./cmd/twr-practice ./internal/serverhttp` exercises the real up → HTTPS password
+`go test -race ./tools/twr-practice ./internal/serverhttp` exercises the real up → HTTPS password
 sign-in → TOTP step-up → enter league → down lifecycle, verifies nonempty-directory refusal
 preserves the running league, and rejects unowned directories, symlinks and unrelated PIDs.
 An RFC 6238 vector independently checks the disposable code generator. The lifecycle test builds

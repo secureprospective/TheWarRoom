@@ -1,6 +1,6 @@
-github.com/secureprospective/TheWarRoom/cmd/fixtures	3.608
+github.com/secureprospective/TheWarRoom/tools/fixtures	3.608
 github.com/secureprospective/TheWarRoom/cmd/twr	62.221
-github.com/secureprospective/TheWarRoom/cmd/twr-practice	59.539
+github.com/secureprospective/TheWarRoom/tools/twr-practice	59.539
 github.com/secureprospective/TheWarRoom/cmd/twr-server	46.907
 github.com/secureprospective/TheWarRoom/frontend/scripts/nativegen	4.260
 github.com/secureprospective/TheWarRoom/internal/accounts	85.240

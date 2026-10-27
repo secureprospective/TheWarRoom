@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/hostedfixture"
+	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
 func main() {
@@ -92,7 +92,7 @@ func sandboxPath(path string) (string, error) {
 func quote(s string) string { return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'" }
 
 func report(out io.Writer, dir string, state rawState, bin string) error {
-	launcher := "go run ./cmd/twr-practice"
+	launcher := "go run ./tools/twr-practice"
 	if bin != "" {
 		executable, err := os.Executable()
 		if err != nil {

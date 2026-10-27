@@ -8,5 +8,5 @@ statistics. `AddWorkflowOwner` uses real account enrollment and seat replacement
 it grants no authentication override. The launcher provisions two ordinary owner seats
 in addition to the commissioner so a nonparty commissioner can review a trade.
 
-Launcher, cleanup rules and click walkthrough: `cmd/twr-practice/README.md`.
+Launcher, cleanup rules and click walkthrough: `tools/twr-practice/README.md`.
 HTTPS and retry/privacy/replay evidence: `internal/serverhttp/market_workflow_test.go`.

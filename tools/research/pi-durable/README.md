@@ -72,8 +72,8 @@ umask 077
 candidate=$(git rev-parse HEAD)
 workspace=$(mktemp -d -t twr-durable-XXXXXXXX)
 chmod 700 "$workspace"
-git archive "$candidate" docs/experiments/pi-durable | tar -x -C "$workspace"
-cd "$workspace/docs/experiments/pi-durable"
+git archive "$candidate" tools/research/pi-durable | tar -x -C "$workspace"
+cd "$workspace/tools/research/pi-durable"
 printf '%s\n' "$candidate" > candidate.txt
 # Keep even package-manager caches and its HOME inside the disposable copy.
 mkdir -m 700 .tool-home
