@@ -8,6 +8,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // StatFacts is what the held NFL files say about the one player's week a stat command is about: its
@@ -71,10 +72,8 @@ func checkStatCorrection(change RawStatChange, records []Record, effects statEff
 	if err != nil {
 		return Refused(err)
 	}
-	if rules.Scoring.Catalogue.State == leaguerules.IsKnown {
-		if _, scored := rules.Scoring.Catalogue.Value[change.Stat]; !scored {
-			return Refused(errors.New("the league's scoring has no such statistic"))
-		}
+	if !scoresStat(rules.Scoring, change.Player, change.Stat) {
+		return Refused(errors.New("the league's scoring has no such statistic"))
 	}
 	key := change.key()
 	counted, err := countedVersion(facts.Versions, effects.baselines[key])
@@ -90,4 +89,18 @@ func checkStatCorrection(change RawStatChange, records []Record, effects statEff
 		return Refused(fmt.Errorf("the league already counts %s for this statistic", scorePointsWords(standing)))
 	}
 	return nil
+}
+
+// scoresStat says whether a correction names a statistic the league scores for this player: a catalogue
+// row, or for an O-Line card one of the line unit's components.
+func scoresStat(rules leaguerules.ScoringRules, player string, stat leaguerules.StatID) bool {
+	if _, card := nativecheck.LineCardTeam(player); card {
+		_, weighted := rules.LineUnit.Value.Weights[stat]
+		return rules.LineUnit.State == leaguerules.IsKnown && rules.LineUnit.Value.Used && weighted
+	}
+	if rules.Catalogue.State != leaguerules.IsKnown {
+		return true
+	}
+	_, scored := rules.Catalogue.Value[stat]
+	return scored
 }

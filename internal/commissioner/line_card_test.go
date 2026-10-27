@@ -161,7 +161,7 @@ func TestLineCardScoresARealGame(t *testing.T) {
 		{"PIT", 3, "Unavailable", -1},
 	} {
 		out := NativePlayerScore{Season: 2024, Week: c.week, Status: "Unavailable", Items: []NativeScoreItem{}}
-		got, err := out.countLineCard(rules, c.team, evidence)
+		got, err := out.countLineCard(rules, c.team, evidence, nil, 0)
 		if err != nil || got.Status != c.status {
 			t.Fatalf("%s week %d: %+v %v", c.team, c.week, got, err)
 		}
@@ -173,7 +173,7 @@ func TestLineCardScoresARealGame(t *testing.T) {
 		}
 	}
 	legacy := leaguerules.LegacyNFL().Scoring
-	if got, _ := (NativePlayerScore{Week: 1}).countLineCard(legacy, "PIT", evidence); got.Points != nil {
+	if got, _ := (NativePlayerScore{Week: 1}).countLineCard(legacy, "PIT", evidence, nil, 0); got.Points != nil {
 		t.Fatalf("Legacy scored a card: %+v", got)
 	}
 }

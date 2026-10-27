@@ -62,9 +62,6 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	if err != nil || !ready {
 		return out, err
 	}
-	if team, ok := nativecheck.LineCardTeam(scope.Player); ok {
-		return out.countLineCard(rules.Scoring, team, evidence)
-	}
 	folded := fold(records)
 	changes, err := playerScoreChanges(records, folded.active, scope.Player, scope.Season, scope.Week)
 	if err != nil {
@@ -75,6 +72,9 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	}
 	key := statKey{scope.Player, scope.Season, scope.Week}
 	out.Changes = orderChanges(folded.position, changes.Changes, folded.effects.changes[key])
+	if team, ok := nativecheck.LineCardTeam(scope.Player); ok {
+		return out.countLineCard(rules.Scoring, team, evidence, folded.effects.corrections[key], changes.Delta)
+	}
 	out.Missing = append(out.Missing, evidence.Missing...)
 	counted, err := countedVersion(evidence.Versions(), folded.effects.baselines[key])
 	if err != nil {

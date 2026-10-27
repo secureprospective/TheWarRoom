@@ -27,21 +27,30 @@ func lineCardWeek(team string, week int, games map[source.LineGame]fantasyscore.
 	return fantasyscore.UnitLine{}, weekHeld
 }
 
-// countLineCard scores a started O-Line card as its team's line unit (DEFAULT-32 spec §3, Set B).
+// countLineCard scores a started O-Line card as its team's line unit (DEFAULT-32 spec §3, Set B). The
+// commissioner's stat corrections replace held components, and score changes add to the total, as they
+// do for a player.
 func (out NativePlayerScore) countLineCard(rules leaguerules.ScoringRules, team string,
-	evidence source.NativeEvidence) (NativePlayerScore, error) {
+	evidence source.NativeEvidence, corrections map[leaguerules.StatID]StatCorrection,
+	delta leaguerules.Decimal) (NativePlayerScore, error) {
 	out.Position, out.PositionWhy = leaguerules.OL, team+" O-Line"
 	if rules.LineUnit.State == leaguerules.IsKnown && !rules.LineUnit.Value.Used {
 		out.Words = "This league does not score an O-Line"
 		return out, nil
 	}
-	if evidence.OLine == nil {
+	var line fantasyscore.UnitLine
+	held := false
+	if evidence.OLine != nil {
+		out.SHA256, out.FetchedAt = evidence.OLine.SHA256, &evidence.OLine.FetchedAt
+		line, held = lineCardWeek(team, out.Week, evidence.OLine.Games)
+	}
+	switch {
+	case len(corrections) != 0:
+		line = correctedLine(line, held, corrections)
+	case evidence.OLine == nil:
 		out.Words = "No O-Line statistics are held for this season"
 		return out, nil
-	}
-	out.SHA256, out.FetchedAt = evidence.OLine.SHA256, &evidence.OLine.FetchedAt
-	line, held := lineCardWeek(team, out.Week, evidence.OLine.Games)
-	if !held {
+	case !held:
 		out.Words = "No O-Line statistics are held for this week"
 		return out, nil
 	}
@@ -61,11 +70,28 @@ func (out NativePlayerScore) countLineCard(rules leaguerules.ScoringRules, team 
 		out.Missing = append(out.Missing, points.Citation)
 		return out, nil
 	}
-	total := points.Value
+	total, err := addScoreDelta(points.Value, delta)
+	if err != nil {
+		return out, err
+	}
 	out.Status, out.Points = "Complete", &total
 	out.Words = scorePointsWords(total) + " points"
 	if !line.Played {
 		out.Words += " (bye)"
 	}
 	return out, nil
+}
+
+// correctedLine is the line game with the commissioner's corrections in place of the held components. A
+// corrected week the held games do not reach counts as played, from the corrections alone.
+func correctedLine(line fantasyscore.UnitLine, held bool, corrections map[leaguerules.StatID]StatCorrection) fantasyscore.UnitLine {
+	out := fantasyscore.UnitLine{Played: line.Played || !held,
+		Quantities: make(map[leaguerules.StatID]leaguerules.Decimal, len(line.Quantities)+len(corrections))}
+	for id, quantity := range line.Quantities {
+		out.Quantities[id] = quantity
+	}
+	for id, correction := range corrections {
+		out.Quantities[id] = correction.Value
+	}
+	return out
 }
