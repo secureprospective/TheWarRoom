@@ -36,7 +36,7 @@ func TestSleeperOwnedQuantities(t *testing.T) {
 	}
 }
 
-// These prove the retained quantities' unrounded value, not player-week attachment (E2b).
+// These prove the retained quantities' unrounded value, not player-week attachment.
 func TestSleeperNamedLossContributions(t *testing.T) {
 	rules := leaguerules.Default32Scoring()
 	rules.RoundStatPoints.Value = false

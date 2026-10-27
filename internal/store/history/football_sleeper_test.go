@@ -68,6 +68,11 @@ func TestSleeperEvidenceRoundTrip(t *testing.T) {
 }
 
 func TestSleeperLegacyEvidenceBytesAndDigests(t *testing.T) {
+	// Frozen from the pre-Sleeper version-1 identity/facts/schedule serialization.
+	_, evidenceSHA := footballBody(t)
+	if evidenceSHA != "f47880bd75787bc29e0122c427eb0007166ebb120c17ba293531d5cacfab5d87" {
+		t.Fatalf("legacy selected-evidence bytes changed: %s", evidenceSHA)
+	}
 	stats := RawFootballStats{AsOf: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC), Weekly: "weekly", Plays: "plays"}
 	body, err := json.Marshal(stats)
 	if err != nil {
