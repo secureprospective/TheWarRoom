@@ -2,14 +2,14 @@
 
 ## Resume here
 
-Part 2 in progress: **54 units / 2,445 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and nineteen units completed afterward.
-Cumulative **122/126 units / 4,311/4,534 baseline function LOC**; 4 units / 223 LOC remain.
+Part 2 in progress: **56 units / 2,602 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and twenty-one units completed afterward.
+Cumulative **124/126 units / 4,468/4,534 baseline function LOC**; 2 units / 66 LOC remain.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
 Next: remaining Control read unit 102; Platform lifecycle/entry/resource
-units 86, 99–100; then core policy audit/extraction and negative boundary ratchet.
+unit 86; then core policy audit/extraction and negative boundary ratchet.
 Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
 composition race batches with command-door parity; broad fixture runs need >200 seconds.
 
@@ -156,8 +156,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 96 | 5 | `internal/composition/instance_lock_windows.go` — `acquireInstanceLock`:15, `releaseInstanceLock`:32 | 22 | `platform` | startup,CLI | Windows exclusive lock equivalent; nil-safe unlock/close. MOVED (part 4, batch 10). |
 | 97 | 1 | `internal/composition/version.go` — `buildLabel`:14 | 6 | `platform` | startup,CLI,W stamps | Append parenthesized commit only for stamped builds; ldflags globals must stay compatible.  MOVED (part 2, batch 1). |
 | 98 | 5 | `internal/composition/restore_cli.go` — `listBackups`:20, `restoreBackup`:51, `restoreFailure`:86 | 80 | `platform` | offline CLI | List manifest directories sorted; lock before basename-confined matched restore; distinguish newer journal/no prior data; private technical log with temp fallback, public recovery wording/exit codes. MOVED (part 4, batch 10). |
-| 99 | 5 | `internal/composition/run.go` — `Main`:37, `runFlag`:86, `probe`:103, `packageSmoke`:115 | 96 | `platform` | CLI/desktop entry | Known argument shapes only, unknown args never fall into production GUI; probe exits based on startup; smoke requires absolute existing disposable dir/lock and no stores/credentials/workers. |
-| 100 | 5 | `internal/composition/run.go` — `helperCommands`:155, `runNative`:167, `nativeUpdateLock`:209 | 61 | `platform` | hosted desktop entry | Only delegable helper catalog IDs; hosted startup excludes local App; HTTPS/league admission; update-cache lock retries 100×100ms; unsigned trust failure does not prevent screen; dev-only practice update flag. |
+| 99 | 5 | `internal/composition/run.go` — `Main`:37, `runFlag`:86, `probe`:103, `packageSmoke`:115 | 96 | `platform` | CLI/desktop entry | Known argument shapes only, unknown args never fall into production GUI; probe exits based on startup; smoke requires absolute existing disposable dir/lock and no stores/credentials/workers. MOVED (part 4, batch 11). |
+| 100 | 5 | `internal/composition/run.go` — `helperCommands`:155, `runNative`:167, `nativeUpdateLock`:209 | 61 | `platform` | hosted desktop entry | Only delegable helper catalog IDs; hosted startup excludes local App; HTTPS/league admission; update-cache lock retries 100×100ms; unsigned trust failure does not prevent screen; dev-only practice update flag. MOVED (part 4, batch 11). |
 | 101 | 2 | `internal/composition/cache_app.go` — `cacheScopes`:23, `ClearCache`:63 | 28 | `sources` | W:sources | Ordered five-scope labels/actions; scope selects corresponding forced feature refresh; unknown scope returns not found without effects. MOVED (part 3, batch 3). |
 
 | 102 | 3 | `internal/composition/control_host.go` — `FetchRuleNames`:51, `FetchSiteNews`:65, `SourceHealth`:79 | 36 | `control` | W:control | Bounded live/archive rule dictionary and news; source health fails explicitly rather than fabricating state. |
@@ -873,3 +873,19 @@ preparation failure and private-cause logging tests pass. Existing real matched/
 never-opened-profile restores, smoke refusal and parity race batch passes (6.208 seconds).
 No actual installed/profile path moved; all tests use disposable directories. Initial G703 finding
 was the test reading a glob rooted in os.Getenv; keep its already-created disposable path directly.
+
+## Part 4 — batch 11: process mode and hosted-window admission
+
+Two units (99–100), 157 baseline function LOC. Platform owns exact CLI mode/arity dispatch,
+windowless probe exit/shutdown, disposable smoke-directory/lock admission, delegable helper
+selection, hosted update-directory/cache locking, bounded child-lock retry, updater trust failure
+continuation and dev-only practice admission. NativeWindow accepts a narrow client port and WebView
+runner, not Wails or composition/core; composition still wires embedded assets, WebView options,
+local constructors and window context. Hosted mode never constructs the local App.
+
+New inward unknown-mode/no-window, exact dispatch, probe-finally-shutdown, invalid smoke/no-run,
+smoke-lock release after failure, hosted refusal/close, updater failure/still reachable, dev practice,
+lock failure/no-updater and 100×100ms retry tests pass. Platform/composition smoke/native/manifest/
+parity race batch passed (1.601 seconds composition). Gosec G602 incorrectly flags indices inside
+exact-length cases; the two precise annotations state the proven bounds (no unchecked index or
+permission change). No actual GUI, update, network or installed-profile operation was performed.
