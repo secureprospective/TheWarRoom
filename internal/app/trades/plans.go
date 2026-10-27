@@ -331,7 +331,7 @@ func (s PlanWorkflow) CheckExitPending(mine string, spec envelope.Spec) error {
 	return nil
 }
 
-func Request(franchiseID string, offer leaguefeed.PendingTrade, host string, season int) envelope.TradeRequest {
+func Request(franchiseID string, offer leaguefeed.PendingTrade, host func() string, season int) envelope.TradeRequest {
 	req := envelope.TradeRequest{
 		LeagueID: ingestion.LeagueID, FranchiseID: franchiseID,
 		Trade: envelope.ExpectedTrade{
@@ -343,9 +343,9 @@ func Request(franchiseID string, offer leaguefeed.PendingTrade, host string, sea
 	if !offer.Expires.IsZero() {
 		req.Deadline = &offer.Expires
 	}
-	if host != "" {
+	if host() != "" {
 		req.Target = envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
-			"https://%s/%d/options?L=%s&O=05", host, season,
+			"https://%s/%d/options?L=%s&O=05", host(), season,
 			url.QueryEscape(req.LeagueID))}
 	}
 	return req

@@ -1075,3 +1075,14 @@ suites pass in the nine affected non-Archive packages: Core 11.402s, Comms 2.360
 Race 5.586s, Platform 1.020s, Contracts 7.008s, Offers 6.450s, Sources 6.455s, Trades 1.082s.
 Archive's new inward opponent policy suite passes under a focused filter; its expensive full facts
 suite was not redundantly run. This is targeted/package evidence, not full verify/CI or live review.
+
+### Part 5 review correction: trade host sampling
+
+Source review found the original trade request intentionally samples the discovered host for
+admission and again for URL construction. The first extraction had eagerly captured one value;
+MFL can rediscover its host after TTL, so "client set at startup" does not mean its host is fixed.
+Request now receives a lazy host port and preserves both samples, including the absent-host short
+circuit. Added inward two-sample/second-value URL and one-sample-unmapped tests; service and door
+parity race tests pass. Reviewed only the corresponding composition whole-source fingerprint
+update: the adapter now supplies a straight-line read callback; no decision-function fingerprint
+changed or new composition policy was approved. No remote discovery was performed here.

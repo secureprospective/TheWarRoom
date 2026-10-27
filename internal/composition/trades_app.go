@@ -179,8 +179,10 @@ func (a *App) tradePlans() tradesapp.PlanWorkflow {
 }
 
 func (h tradesHost) TradeRequest(franchise string, offer leaguefeed.PendingTrade) envelope.TradeRequest {
-	host, season := h.ContractsLeagueHost()
-	return tradesapp.Request(franchise, offer, host, season)
+	return tradesapp.Request(franchise, offer, func() string {
+		host, _ := h.ContractsLeagueHost()
+		return host
+	}, h.Season)
 }
 
 func (h tradesHost) RequireOwnFranchise(franchise string) error {
