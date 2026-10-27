@@ -32,10 +32,12 @@ type RawPlay struct {
 	Deleted      string
 	TwoPoint     string
 	// Optional: older held play files lack these, and their kick TDs keep the older credits.
-	PosTeam     string
-	PuntBlocked string
-	FieldGoal   string
-	FieldResult string
+	PosTeam                                                                                             string
+	PuntBlocked                                                                                         string
+	FieldGoal                                                                                           string
+	FieldResult                                                                                         string
+	EdgeAvailable                                                                                       bool
+	ThirdConversion, FourthConversion, RushAttempt, PassAttempt, CompletePass, Yardline, TackledForLoss string
 }
 
 func (r RawPlay) Validate() error {
@@ -56,10 +58,30 @@ func (r RawPlay) Validate() error {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
 	}
+	if err := r.validateEdge(); err != nil {
+		return err
+	}
 	for _, raw := range []string{r.Passing, r.Receiving, r.Rushing} {
 		if raw != "NA" && raw != "" {
 			if _, err := decimal(raw); err != nil {
 				return fmt.Errorf("play distance: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+func (r RawPlay) validateEdge() error {
+	if r.EdgeAvailable {
+		for _, raw := range []string{r.ThirdConversion, r.FourthConversion, r.RushAttempt, r.PassAttempt, r.CompletePass, r.TackledForLoss} {
+			if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
+				return fmt.Errorf("edge flag must be 0, 1 or absent")
+			}
+		}
+		if r.Yardline != "" && r.Yardline != "NA" {
+			n, err := strconv.Atoi(r.Yardline)
+			if err != nil || n < 0 || n > 100 {
+				return fmt.Errorf("invalid yardline")
 			}
 		}
 	}
@@ -76,7 +98,18 @@ func ReadPlays(input io.Reader) ([]RawPlay, error) {
 				return fmt.Errorf("play-by-play is missing %s", name)
 			}
 		}
+		edgeNames := []string{"third_down_converted", "fourth_down_converted", "rush_attempt", "pass_attempt", "complete_pass", "yardline_100", "tackled_for_loss"}
+		present := 0
+		for _, name := range edgeNames {
+			if _, ok := fields[name]; ok {
+				present++
+			}
+		}
+		if present != 0 && present != len(edgeNames) {
+			return fmt.Errorf("partial play-by-play edge capability")
+		}
 		play := rawPlay(fields)
+		play.EdgeAvailable = present == len(edgeNames)
 		if err := play.Validate(); err != nil {
 			return fmt.Errorf("nflverse play: %w", err)
 		}
@@ -101,7 +134,10 @@ func rawPlay(f map[string]string) RawPlay {
 		ReturnTeam: f["return_team"], Interception: f["interception"],
 		Punt: f["punt_attempt"], Kickoff: f["kickoff_attempt"], Deleted: f["play_deleted"],
 		TwoPoint: f["two_point_attempt"], PosTeam: f["posteam"], PuntBlocked: f["punt_blocked"],
-		FieldGoal: f["field_goal_attempt"], FieldResult: f["field_goal_result"]}
+		FieldGoal: f["field_goal_attempt"], FieldResult: f["field_goal_result"],
+		ThirdConversion: f["third_down_converted"], FourthConversion: f["fourth_down_converted"],
+		RushAttempt: f["rush_attempt"], PassAttempt: f["pass_attempt"], CompletePass: f["complete_pass"],
+		Yardline: f["yardline_100"], TackledForLoss: f["tackled_for_loss"]}
 }
 
 // AttachPlays completes the week lines in place using held play-by-play.
@@ -109,9 +145,20 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 	if err := validateCoverage(weeks, plays); err != nil {
 		return err
 	}
+	capabilities := make(map[string]bool)
+	for _, play := range plays {
+		capabilities[play.GameID] = play.EdgeAvailable
+	}
 	index := make(map[string]int, len(weeks))
 	for i, week := range weeks {
 		index[playKey(week.GSIS, week.Season, week.Week)] = i
+		for _, id := range edgeStatIDs() {
+			if capabilities[week.GameID] {
+				week.Line.Quantities[id] = 0
+			} else {
+				delete(week.Line.Quantities, id)
+			}
+		}
 		week.Line.Quantities["fumble_recovery_tds"] = week.RecoveryTDs
 		for _, id := range []leaguerules.StatID{"long_pass", "long_rush", "long_reception", "chunk_play"} {
 			week.Line.Events[id] = []leaguerules.Decimal{}
@@ -127,6 +174,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 		}
 		season, _ := strconv.Atoi(play.Season)
 		week, _ := strconv.Atoi(play.Week)
+		attachEdges(weeks, index, play, season, week)
 		attachDistances(weeks, index, play, season, week)
 		attachTouchdown(weeks, index, play, season, week)
 		attachKickRecovery(weeks, index, play, season, week)
@@ -138,10 +186,15 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 func validateCoverage(weeks []PlayerWeek, plays []RawPlay) error {
 	games := make(map[string]bool)
 	seen := make(map[string]bool)
+	capabilities := make(map[string]bool)
 	for _, play := range plays {
 		if err := play.Validate(); err != nil {
 			return fmt.Errorf("attach play: %w", err)
 		}
+		if capable, ok := capabilities[play.GameID]; ok && capable != play.EdgeAvailable {
+			return fmt.Errorf("mixed edge capability for %s", play.GameID)
+		}
+		capabilities[play.GameID] = play.EdgeAvailable
 		key := play.GameID + "/" + play.PlayID
 		if seen[key] {
 			return fmt.Errorf("duplicate NFL play %s", key)
