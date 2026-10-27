@@ -1,6 +1,8 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { targetDraftTradeAccept, targetTradeBuilder, targetTradeBuilderPreview, targetTradeBuilderRead, targetTrades } from './api';
+import {
+  targetDraftTradeAccept, targetTradeBuilder, targetTradeBuilderPreview, targetTradeBuilderRead, targetTrades,
+} from './api';
 import { draftTradeAccept, trades } from '../data/tradeProvider';
 import { parseTrades } from '../data/parseTrades';
 import { parseReceipt } from '../data/parseEnvelope';
