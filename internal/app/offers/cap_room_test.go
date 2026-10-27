@@ -11,9 +11,8 @@ func TestCapRoomAvailabilityAndReadOrder(t *testing.T) {
 		raw   string
 		known bool
 		reads int
-		room  *domain.Money
 	}{
-		{" ", true, 0, nil}, {"bad", true, 1, nil}, {"100", false, 1, nil},
+		{" ", true, 0}, {"bad", true, 1}, {"100", false, 1},
 	} {
 		reads := 0
 		got := CapRoom(tc.raw, func() (domain.Money, bool) { reads++; return 0, tc.known })

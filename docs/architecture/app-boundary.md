@@ -1066,3 +1066,12 @@ mutations were rejected by make boundary: a core constant added to state.go and 
 composition function. Both were removed; the final boundary gate passes at 168 function/source
 rows. This closes detection gaps, not semantic review: approved wiring could still call existing
 misplaced policy elsewhere. Depguard and the remaining boundary audit remain necessary.
+
+## Part 5 — inward policy coverage follow-up
+
+Added pure Archive first-current-match/away/stale-week/absent-fallback tests and Sources busy-compile/
+failed-compile unlock tests; retained outward checks proving the real shared mutex spans. Full race
+suites pass in the nine affected non-Archive packages: Core 11.402s, Comms 2.360s, Draft 2.498s,
+Race 5.586s, Platform 1.020s, Contracts 7.008s, Offers 6.450s, Sources 6.455s, Trades 1.082s.
+Archive's new inward opponent policy suite passes under a focused filter; its expensive full facts
+suite was not redundantly run. This is targeted/package evidence, not full verify/CI or live review.
