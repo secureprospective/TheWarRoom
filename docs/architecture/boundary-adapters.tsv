@@ -4,9 +4,6 @@ internal/app/core/host_comms.go:(*State).CommsArchive	207d446dc31e28c94895b36a88
 internal/app/core/host_comms.go:(*State).CommsContext	4933a89dc58dba9925a94cfd6b9ffb21abdec1b54f8678d4c1c15ddec4c31cfb	adapter
 internal/app/core/host_comms.go:(*State).CommsDestination	0a36cc03f888366a8a19216f7681096c27cb70ce6616bd97fb231475ec72cb17	adapter
 internal/app/core/host_comms.go:(*State).CommsFeeds	269820f6c1b7d216c8b333ed3c2dea8d7b014425693ead93961eb143822a0a8d	adapter
-internal/app/core/host_comms.go:(*State).RefreshComms	02abad73b8373c0098a158e3c701d0aa85fb342aaf94375ecfc9a679c0a1a8a2	legacy
-internal/app/core/host_comms.go:(*State).RefreshCommsBoards	cc0cfb4c119b4c5cd750c2f64b7930db0ed7fff92d94445d4be3a20bff24eb52	legacy
-internal/app/core/host_comms.go:(*State).commsKey	c95f392b0807cfe0c45b549e6e8b7bc7a661bd4254ea741c0fd4877fb941788b	legacy
 internal/app/core/host_comms.go:cloneAssets	553b24c85dd62361cc9070a20e45142b3cd5168c1707b0410d823ce810abdbbd	adapter
 internal/app/core/host_comms.go:clonePointers	20143ebc26b4b59c5d0637091e1e6b416c2c606f9882239410d166ce5de7333b	adapter
 internal/app/core/host_comms.go:clonePtr	1969adf3016ec595c92f11ca18759aa95675e5da1d25bad3a10999e4ebddf4ec	adapter
@@ -19,15 +16,10 @@ internal/app/core/host_counterparties.go:(*State).CounterpartiesFacts	58d9b56558
 internal/app/core/host_counterparties.go:(*State).Lab	86bfc5f689179e1c3f72a6b3f74ed2b4671b5af1346425fa7a281ca35f22c7f5	adapter
 internal/app/core/host_counterparties.go:cloneCounterpartyPlayer	741be49e220d0f9bf9e8d8f621da637ad3026847358232c7674e9325d407f665	adapter
 internal/app/core/host_counterparties.go:cloneCounterpartyTrade	5532024adfd2db9232b04f502884e78da9aa1ab5885f65a61aefc72c26461c22	adapter
-internal/app/core/host_draft.go:(*State).DraftDestination	e12ca58be407d86364a1c96bf768ae53243df99f9c673b6bb9a8caee6873e3de	legacy
 internal/app/core/host_draft.go:(*State).DraftFacts	5589736eb9302e93d8975ddb0aecce3c91a4538489c184db16fc51e7bdb45995	adapter
 internal/app/core/host_draft.go:(*State).DraftFeeds	36c443cae60a2c990ac4325594ef6a3c30a562abafe03e99b40db96408ee9d9d	adapter
 internal/app/core/host_draft.go:(*State).DraftLeague	3a8a9ad75e31baf6739ec7752e216f85e2c125dd236b71011f32c5026dec0ff4	adapter
-internal/app/core/host_draft.go:(*State).DraftPlayers	c735ab00c4d8e66b9f397717a2b3f5a41be8292bea79ec367946a744acc7e575	legacy
 internal/app/core/host_draft.go:(*State).DraftReady	2644f9fe46ef824340bc18b26ede01df88ee5e6360349869d5b8f7f466bed0cd	adapter
-internal/app/core/host_draft.go:(*State).OpenDraftRoom	886c386bd1c0865512e6a839daca996eed65644e892c0dca2eb70c03d29218ba	legacy
-internal/app/core/host_draft.go:(*State).RefreshDraftReports	d424330fcb9446e54c004e25ae6f8528a682020eeb1531e859bbb87f84baa818	legacy
-internal/app/core/host_draft.go:(*State).RefreshDraftReportsFeeds	acb97276ae86661a49e6dea3a6f07424bdf58f032820f937ae5e6507b5b41eaf	legacy
 internal/app/core/host_market.go:(*State).LabFacts	d911d2d6b86b1eeb66e98431f96b86ccc59e868146e2599d4d62e632016550c4	adapter
 internal/app/core/host_market.go:(*State).MarketZone	f88476fc307fb72c62ef49cf5197c5ff71660fa8ec8521bcbb3992fbecc0f47b	adapter
 internal/app/core/host_market.go:(*State).RefreshMarket	b1d9065d9cc176c405e66fd5cfc945b25cff20dc0acb9d090fc697645491284b	adapter
@@ -35,7 +27,6 @@ internal/app/core/host_offers.go:(*State).OffersSnapshotNames	f861edd0333429b3f1
 internal/app/core/host_offers.go:(*State).OffersWeek	6c63e7677dccbec88054a7e627dcc5b4ffe92a43b805fb9895342394d4ec3c6b	adapter
 internal/app/core/host_offers.go:(*State).OffersZone	b3f4c56aa711433d9738ebe56895e3b77cc34215fa7577002fbc8aba82742cfa	adapter
 internal/app/core/host_race.go:(*State).RaceInput	81cf6ddcf7e1b62e8d7de0c8f6ed9b4cad8179a8bd0dc98078263aa7244a7ef3	adapter
-internal/app/core/host_race.go:(*State).RefreshRace	6f0e8e94db886679d99558b967d80916d3ea333343d0a98a9724874d5d40ff54	legacy
 internal/app/core/host_race.go:CloneLineups	1d6fdf2b3528f974e538d4831d89ec3d59c9d27296cd77c3a85d5c78feb5ddf7	adapter
 internal/app/core/host_research.go:(*State).ResearchZone	29b1832b38475179f6cefa827a2a24f65d81c3292134e11f8df78f34ae1d0983	adapter
 internal/app/core/host_sources.go:(*State).SerializeSourcesLoad	e8040ffb281db607f523ebaf24a5e71fe27e18f38c7a77390f722fee050b3cc5	adapter
@@ -43,9 +34,7 @@ internal/app/core/host_sources.go:(*State).SourcesPhotos	9404f29fa251d56974c767e
 internal/app/core/host_sources.go:(*State).SourcesRostered	cb7900f0d8fdc9b464cddf9f88457cfcafea132c8b95c89b8ed411cdf6ff8ac4	adapter
 internal/app/core/host_sources.go:(*State).SourcesZone	6f74c325b1a5cf38988d0a68c1ffc57e87af988631974e792e076885caf63f4a	adapter
 internal/app/core/host_contracts.go:(*State).PendingTrades	54350f91ad955e1ceb74cbdeff974c7723008602593459030b3389e3a8b83af3	adapter
-internal/app/core/state.go:(*State).RequireOwnFranchise	3fa0dce939808a501b2af004e73ad2acfb247e7990909da050a67a3153944757	legacy
 internal/app/core/state.go:ArchivedOnly	bc47debe9ea9f112b932d24cc9d96d2227f1913f737b34b11963211e30f18d35	adapter
-internal/app/core/state.go:OwnFranchiseRefusal	527dba1aabc06feb483132311ec1c78d973d7960eee77a25f44275e6abc05d3d	legacy
 internal/composition/app.go:(*App).logMigrationFindings	56096c628dd9df5e5f13dd9d3bab74292149a5ea0964e7720e2acbba718076db	adapter
 internal/composition/app.go:(*App).openDatabases	a51b91bafec7dabf4fb212dfe5739c063066c7cb70d6683073522f72dafa31b1	adapter
 internal/composition/app.go:(*App).startup	787e9a7e4e6901d6a6b902b1dac89bfc9a31287566391330d0949e7a2ac68950	adapter

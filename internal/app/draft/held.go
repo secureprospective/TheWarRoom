@@ -4,10 +4,13 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -120,4 +123,57 @@ func NextDraft(available bool, read func() (snapshot.Sourced[leagueclock.Reading
 		}
 	}
 	return next
+}
+
+func Destination(host string, season int) string {
+	if host == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://%s/%d/options?L=%s&O=17", host, season, url.QueryEscape(ingestion.LeagueID))
+}
+
+func ParsePlayers(ctx context.Context, body []byte) ([]players.RawPlayer, error) {
+	rows, err := players.Parse(ctx, body)
+	if err != nil {
+		return nil, fmt.Errorf("NFL draft: players: %w", err)
+	}
+	if !slices.ContainsFunc(rows, func(p players.RawPlayer) bool { return p.DraftRound != "" && p.DraftPick != "" }) {
+		return nil, fmt.Errorf("NFL draft: detailed selection fields not held")
+	}
+	return rows, nil
+}
+
+func OpenRoom(ready func() error, destination func() string, open func(string)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("open draft room: %w", err)
+	}
+	target := destination()
+	if target == "" {
+		return fmt.Errorf("open draft room: MFL host not held; refresh first")
+	}
+	open(target)
+	return nil
+}
+
+func RefreshFeeds(ctx context.Context, pause func() func(context.Context, time.Duration) error, results, future func(context.Context)) {
+	results(ctx)
+	if err := report.RefreshPause(pause())(ctx, time.Second); err != nil {
+		return
+	}
+	future(ctx)
+}
+
+func RefreshReports(force bool, ready func() error, capture func() (report.Feed, report.Feed), parent func() context.Context, run func(context.Context)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("draft refresh: startup: %w", err)
+	}
+	results, future := capture()
+	if !force && results.RefreshError == "" && future.RefreshError == "" &&
+		time.Since(results.FetchedAt) < 5*time.Minute && time.Since(future.FetchedAt) < 5*time.Minute {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	run(ctx)
+	return nil
 }

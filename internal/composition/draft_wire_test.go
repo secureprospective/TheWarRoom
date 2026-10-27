@@ -182,7 +182,7 @@ func TestDraftArchiveFallbackKeepsOriginalAsOf(t *testing.T) {
 	at := time.Date(2026, 10, 5, 12, 0, 0, 0, time.UTC)
 	recordSeasonArchive(t, a, "draftResults", "", transport.bodies["draftResults"], at)
 	transport.failure = "draftResults"
-	a.core.RefreshDraftReportsFeeds(a.core.Ctx)
+	a.refreshDraftReportsFeeds(a.core.Ctx)
 	board, err := draftAPI(a).TargetDraftReports()
 	if err != nil {
 		t.Fatal(err)

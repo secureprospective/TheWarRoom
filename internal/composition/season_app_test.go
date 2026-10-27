@@ -662,7 +662,7 @@ func TestCommsRefreshWire(t *testing.T) {
 	if err := a.core.KeyStore.Set(context.Background(), mflkey.Key("fixture-key")); err != nil {
 		t.Fatal(err)
 	}
-	err := commsapp.New(a.core).TargetCommsRefresh(true)
+	err := commsapp.New(commsHost{a.core}).TargetCommsRefresh(true)
 	message := ""
 	if err != nil {
 		message = err.Error()

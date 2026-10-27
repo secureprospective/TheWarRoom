@@ -133,7 +133,7 @@ func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error)
 }
 
 func (a *App) moveActions() platformapp.MoveActions {
-	return platformapp.MoveActions{Store: a.core.Moves, Own: a.core.RequireOwnFranchise, Now: a.core.MovesNow,
+	return platformapp.MoveActions{Store: a.core.Moves, Own: a.requireOwnFranchise, Now: a.core.MovesNow,
 		Open: func(target string) { a.core.OpenURL(a.core.Ctx, target) }, Audit: a.logMove,
 		Changed: func() { a.core.MovesChanged(a.core.Ctx) }, Wake: a.wakeMoves}
 }
@@ -154,4 +154,8 @@ func newMovesTimer(delay time.Duration) (<-chan time.Time, func()) {
 func (a *App) watchMoves(parent context.Context) { a.movePolling().Run(parent) }
 func (a *App) movePolling() platformapp.MovePolling {
 	return platformapp.MovePolling{Now: a.core.MovesNow, Timer: a.core.MovesTimer, Wake: a.core.MovesWake, Timeout: refreshTimeout, Check: a.checkMoves, Log: a.core.MovesLog, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock, Awaiting: a.core.Moves.Awaiting}
+}
+
+func (a *App) requireOwnFranchise(franchise string) error {
+	return platformapp.AuthorizeTeam(franchise, a.ready, a.core.WithTeamIdentity) //nolint:wrapcheck // Preserve shared team authorization refusals.
 }

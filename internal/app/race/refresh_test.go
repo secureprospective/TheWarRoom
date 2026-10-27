@@ -84,3 +84,28 @@ func TestBracketsAggregateFreshnessAndRefusePartialSet(t *testing.T) {
 		t.Fatal("canceled bracket pause continued")
 	}
 }
+
+func TestRaceRefreshReadingAdmissionAndDeadline(t *testing.T) {
+	at := time.Now()
+	held := season.Held{}
+	held.Weeks.FetchedAt, held.Brackets.FetchedAt, held.Standings.FetchedAt = at, at, at
+	fresh := func() season.Held { return held }
+	if err := RefreshReading(false, func() error { return nil }, fresh, func() context.Context { t.Fatal("fresh context capture"); return nil }, nil); err != nil {
+		t.Fatal(err)
+	}
+	var observed context.Context
+	if err := RefreshReading(true, func() error { return nil }, fresh, func() context.Context { return t.Context() }, func(ctx context.Context) {
+		observed = ctx
+		if _, ok := ctx.Deadline(); !ok {
+			t.Fatal("missing deadline")
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !errors.Is(observed.Err(), context.Canceled) {
+		t.Fatal("context retained")
+	}
+	if err := RefreshReading(true, func() error { return errors.New("failed") }, func() season.Held { t.Fatal("capture before ready"); return held }, nil, nil); err == nil || err.Error() != "race refresh: startup: failed" {
+		t.Fatal(err)
+	}
+}

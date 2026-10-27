@@ -75,7 +75,7 @@ func (a *App) leagueRefresh(rb *rulebook.Store, mirror *state.Mirror) controlapp
 		},
 		Fetch: a.fetchLeague, StageRules: rb.StageSync, StageMirror: mirror.StageReplace, Commit: a.core.Pools.CommitPrepared,
 		RulesChecked: a.core.RulesCheckedAt.Store, Dirty: a.core.ModelDirty.Store, RostersChecked: func(at time.Time) { a.core.RostersCheckedAt = at }, Now: time.Now,
-		DraftReports: a.core.RefreshDraftReportsFeeds, Revalidate: a.revalidateReadyRosterMoves,
+		DraftReports: a.refreshDraftReportsFeeds, Revalidate: a.revalidateReadyRosterMoves,
 	}
 }
 

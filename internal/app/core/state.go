@@ -3,8 +3,6 @@ package core
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"os"
 	"slices"
@@ -183,30 +181,6 @@ func HoldFeed[T any](h *HeldFeed[T], value T, fresh domain.Freshness, err error)
 	report.HoldFeed(h, value, fresh, err)
 }
 
-// RequireOwnFranchise binds MFL-side plans to the saved login, never the viewed team or native role.
-func (s *State) RequireOwnFranchise(franchise string) error {
-	if err := s.Ready(); err != nil {
-		return fmt.Errorf("team authorization: startup: %w", err)
-	}
-	s.KeyMu.Lock()
-	defer s.KeyMu.Unlock()
-	if reason := OwnFranchiseRefusal(s.MyFranchise, franchise); reason != "" {
-		return errors.New(reason)
-	}
-	return nil
-}
-
-// OwnFranchiseRefusal supplies the same words to bindings and team-action controls.
-func OwnFranchiseRefusal(mine, acting string) string {
-	if mine == "" {
-		return "Connect your MFL account to act for your team."
-	}
-	if mine != acting {
-		return "You can only act for your own team."
-	}
-	return ""
-}
-
 // SeasonFeeds copies the held transactions, lineups (with the week they were asked for) and
 // pending trades under SeasonMu. The slices, each lineup row's players and starters are copied
 // and nil stays nil; a refresh replaces the published rows, never edits them in place.
@@ -245,4 +219,10 @@ func StaleFreshness(at time.Time, cause error) domain.Freshness {
 
 func ArchivedOnly[T any](ctx context.Context, s *State, export string, leagueless bool, parse func([]byte) ([]T, error)) HeldFeed[[]T] {
 	return report.ReadHeldArchive(ctx, s.History != nil, s.Season, report.ArchivedFeed[T]{Export: export, Leagueless: leagueless, Parse: parse, Bodies: s.History.ReferenceBodies})
+}
+
+func (s *State) WithTeamIdentity(run func(string) error) error {
+	s.KeyMu.Lock()
+	defer s.KeyMu.Unlock()
+	return run(s.MyFranchise)
 }

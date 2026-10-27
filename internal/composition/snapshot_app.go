@@ -88,7 +88,7 @@ func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.
 
 func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error) {
 	return (platformapp.RosterDraft{ //nolint:wrapcheck // Preserve draft admission and persistence errors.
-		Ready: a.ready, Own: a.core.RequireOwnFranchise, Snapshot: func() (snapshot.Snapshot, bool) {
+		Ready: a.ready, Own: a.requireOwnFranchise, Snapshot: func() (snapshot.Snapshot, bool) {
 			a.core.TargetSnapshotMu.Lock()
 			defer a.core.TargetSnapshotMu.Unlock()
 			return a.core.TargetSnapshot, a.core.HasTargetSnapshot

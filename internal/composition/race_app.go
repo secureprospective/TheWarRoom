@@ -128,3 +128,14 @@ func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult {
 	}
 	return season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
 }
+
+type raceHost struct{ *core.State }
+
+func (h raceHost) RefreshRace(force bool, snapshot func() season.Held) error {
+	//nolint:wrapcheck // Preserve Race readiness errors.
+	return raceapp.RefreshReading(force, h.Ready, func() season.Held { return h.RaceRefreshState(snapshot) }, func() context.Context { return h.Ctx }, func(ctx context.Context) {
+		h.RefreshMu.Lock()
+		defer h.RefreshMu.Unlock()
+		h.RefreshRaceFeeds(ctx)
+	})
+}

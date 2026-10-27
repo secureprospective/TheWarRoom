@@ -99,3 +99,7 @@ func scorePeriod(ctx context.Context, a *App, period string) heldSeasonFeed[[]in
 func (h contractsHost) RulesFreshness() domain.Freshness {
 	return contractsapp.RulesFreshness(h.RulesCheckedAt.Load())
 }
+
+func (h contractsHost) RequireOwnFranchise(franchise string) error {
+	return h.app.requireOwnFranchise(franchise)
+}

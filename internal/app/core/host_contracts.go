@@ -116,9 +116,6 @@ func (s *State) ContractsLeagueHost() (string, int) {
 	return host, s.Season
 }
 
-// RulesFreshness is live from the last successful rules sync; before one, the stored rulebook
-// is the last good copy and says so.
-
 func cloneSnapshot(in snapshot.Snapshot) snapshot.Snapshot {
 	out := in
 	out.League.Value.SalaryCap = clonePtr(in.League.Value.SalaryCap)

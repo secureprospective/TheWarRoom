@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -61,4 +62,26 @@ func RosterMoveTarget(host string, season int, league, option string) (envelope.
 	}
 	return envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
 		"https://%s/%d/options?L=%s&O=%s", host, season, url.QueryEscape(league), option)}, nil
+}
+
+func OwnFranchiseRefusal(mine, acting string) string {
+	if mine == "" {
+		return "Connect your MFL account to act for your team."
+	}
+	if mine != acting {
+		return "You can only act for your own team."
+	}
+	return ""
+}
+
+func AuthorizeTeam(franchise string, ready func() error, identity func(func(string) error) error) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("team authorization: startup: %w", err)
+	}
+	return identity(func(mine string) error {
+		if reason := OwnFranchiseRefusal(mine, franchise); reason != "" {
+			return errors.New(reason)
+		}
+		return nil
+	})
 }

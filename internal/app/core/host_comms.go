@@ -2,8 +2,6 @@ package core
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"slices"
 	"strconv"
 	"time"
@@ -71,83 +69,6 @@ func (s *State) CommsDestination() (string, int) {
 }
 
 func (s *State) OpenBrowser(target string) { s.OpenURL(s.Ctx, target) }
-
-// Missing credentials clear member data; a locked keyring retains the last good copy.
-var errCommsNeedsKey = errors.New("MFL serves the message board and polls only to league members: connect your MFL key in Control Room › App")
-
-func (s *State) commsKey(ctx context.Context) error {
-	s.KeyMu.Lock()
-	defer s.KeyMu.Unlock()
-	if s.KeyStore == nil {
-		return errors.New("MFL keyring is locked or unavailable")
-	}
-	_, err := s.KeyStore.Get(ctx)
-	switch {
-	case errors.Is(err, mflkey.ErrNoKey):
-		return errCommsNeedsKey
-	case err != nil:
-		return errors.New("MFL keyring is locked or unavailable")
-	}
-	return nil
-}
-
-func (s *State) RefreshCommsBoards(ctx context.Context) {
-	if err := s.commsKey(ctx); err != nil {
-		s.SeasonMu.Lock()
-		for i := range s.CommsBoards {
-			if errors.Is(err, errCommsNeedsKey) {
-				s.CommsBoards[i] = HeldFeed[[]ingestion.RawLeaguePost]{}
-			}
-			s.CommsBoards[i].RefreshError = report.FailureText(err)
-		}
-		s.SeasonMu.Unlock()
-		return
-	}
-	for i, export := range []string{"messageBoard", "polls"} {
-		pause := s.SeasonPause
-		if pause == nil {
-			pause = Pause
-		}
-		if err := pause(ctx, time.Second); err != nil {
-			return
-		}
-		rows, fresh, err := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[ingestion.RawLeaguePost]{
-			Export: export,
-			Fetch: func(ctx context.Context) ([]ingestion.RawLeaguePost, error) {
-				return ingestion.FetchLeagueBoard(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID, export)
-			},
-			Parse:  func(body []byte) ([]ingestion.RawLeaguePost, error) { return ingestion.ParseLeagueBoard(body, export) },
-			Bodies: s.History.ArchivedBodies,
-		}, s.FallbackLog)
-		s.SeasonMu.Lock()
-		HoldFeed(&s.CommsBoards[i], rows, fresh, err)
-		s.SeasonMu.Unlock()
-	}
-}
-
-func (s *State) RefreshComms(force bool) error {
-	if err := s.Ready(); err != nil {
-		return fmt.Errorf("comms refresh: %w", err)
-	}
-	s.SeasonMu.Lock()
-	tx, boards := s.SeasonTransactions, s.CommsBoards
-	s.SeasonMu.Unlock()
-	ctx, cancel := context.WithTimeout(s.Ctx, 2*time.Minute)
-	defer cancel()
-	s.RefreshMu.Lock()
-	defer s.RefreshMu.Unlock()
-	if force || tx.RefreshError != "" || time.Since(tx.FetchedAt) >= 5*time.Minute {
-		s.RefreshTransactions(ctx)
-	}
-	fresh := true
-	for _, b := range boards {
-		fresh = fresh && b.RefreshError == "" && time.Since(b.FetchedAt) < 5*time.Minute
-	}
-	if force || !fresh {
-		s.RefreshCommsBoards(ctx)
-	}
-	return nil
-}
 
 func cloneTransactions(rows []leaguefeed.Transaction) []leaguefeed.Transaction {
 	out := slices.Clone(rows)
@@ -220,4 +141,29 @@ func cloneNflGames(in facts.NflGameColumns) facts.NflGameColumns {
 		Kickoff: clonePointers(in.Kickoff),
 		Src:     slices.Clone(in.Src),
 	}
+}
+
+func (s *State) ReadCommsBoard(ctx context.Context, i int, export string) {
+	rows, fresh, err := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[ingestion.RawLeaguePost]{
+		Export: export,
+		Fetch: func(ctx context.Context) ([]ingestion.RawLeaguePost, error) {
+			return ingestion.FetchLeagueBoard(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID, export)
+		},
+		Parse:  func(body []byte) ([]ingestion.RawLeaguePost, error) { return ingestion.ParseLeagueBoard(body, export) },
+		Bodies: s.History.ArchivedBodies,
+	}, s.FallbackLog)
+	s.SeasonMu.Lock()
+	HoldFeed(&s.CommsBoards[i], rows, fresh, err)
+	s.SeasonMu.Unlock()
+}
+
+func (s *State) WithCommsKey(ctx context.Context, read func(context.Context, *mflkey.Store) error) error {
+	s.KeyMu.Lock()
+	defer s.KeyMu.Unlock()
+	return read(ctx, s.KeyStore)
+}
+func (s *State) CommsRefreshState() (report.Feed, [2]report.Feed) {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	return s.SeasonTransactions.FeedState(), [2]report.Feed{s.CommsBoards[0].FeedState(), s.CommsBoards[1].FeedState()}
 }

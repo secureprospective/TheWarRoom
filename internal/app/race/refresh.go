@@ -69,3 +69,28 @@ func ReadBrackets(ctx context.Context, pause func(context.Context, time.Duration
 	}
 	return list, fresh, nil
 }
+
+func RefreshReading(force bool, ready func() error, capture func() season.Held, parent func() context.Context, run func(context.Context)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("race refresh: startup: %w", err)
+	}
+	held := capture()
+	fresh := true
+	for _, f := range []struct {
+		at  time.Time
+		err string
+	}{
+		{held.Weeks.FetchedAt, held.Weeks.RefreshError},
+		{held.Brackets.FetchedAt, held.Brackets.RefreshError},
+		{held.Standings.FetchedAt, held.Standings.RefreshError},
+	} {
+		fresh = fresh && f.err == "" && time.Since(f.at) < 5*time.Minute
+	}
+	if !force && fresh {
+		return nil
+	}
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	run(ctx)
+	return nil
+}

@@ -61,7 +61,7 @@ func (a *App) tradeState(franchiseID string) (
 ) {
 	//nolint:wrapcheck // Preserve existing feature refusal text.
 	return tradesapp.ReadState(franchiseID, func(id string) (snapshot.Snapshot, error) {
-		snap, _, err := contractsapp.LineupSelection(a.core, id, nil)
+		snap, _, err := contractsapp.LineupSelection(contractsHost{State: a.core, app: a}, id, nil)
 		return snap, err //nolint:wrapcheck // The shared service supplies trade-state context.
 	}, a.core.PendingTrades)
 
@@ -173,7 +173,7 @@ func (a *App) tradePlans() tradesapp.PlanWorkflow {
 		Plans: func(ctx context.Context, mine string) ([]state.TradePlan, error) {
 			return state.NewTradePlans(a.core.WhatifPools).List(ctx, mine)
 		},
-		Own: a.core.RequireOwnFranchise, Project: a.tradeProjection, Supersede: func(ctx context.Context, e envelope.Envelope, now time.Time) error {
+		Own: a.requireOwnFranchise, Project: a.tradeProjection, Supersede: func(ctx context.Context, e envelope.Envelope, now time.Time) error {
 			return contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now)
 		}, Audit: a.logMove, Changed: a.core.MovesChanged, HandOff: a.tradeBuilderHandOff, State: a.tradeState, ValidateURL: platformapp.ValidateMoveURL, OpenURL: a.core.OpenURL, Wake: a.wakeMoves}
 }
@@ -181,4 +181,8 @@ func (a *App) tradePlans() tradesapp.PlanWorkflow {
 func (h tradesHost) TradeRequest(franchise string, offer leaguefeed.PendingTrade) envelope.TradeRequest {
 	host, season := h.ContractsLeagueHost()
 	return tradesapp.Request(franchise, offer, host, season)
+}
+
+func (h tradesHost) RequireOwnFranchise(franchise string) error {
+	return h.app.requireOwnFranchise(franchise)
 }

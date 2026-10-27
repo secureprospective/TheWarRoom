@@ -150,8 +150,8 @@ func (a *App) cacheScopes() []sourcesapp.CacheScope {
 	return sourcesapp.CacheScopes(sourcesapp.CacheRefreshers{
 		Pool:     offersapp.New(offersHost{State: a.core, app: a}).TargetPoolRefresh,
 		Research: researchapp.New(researchHost{app: a}, a.researchHeld).TargetResearchRefresh,
-		Race:     raceapp.New(a.core, a.raceHeld).TargetRaceRefresh,
-		Comms:    commsapp.New(a.core).TargetCommsRefresh,
+		Race:     raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh,
+		Comms:    commsapp.New(commsHost{a.core}).TargetCommsRefresh,
 		Draft:    draftapp.New(draftHost{State: a.core, app: a}).TargetDraftReportsRefresh,
 	})
 }

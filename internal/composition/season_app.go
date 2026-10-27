@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -32,9 +34,9 @@ func (a *App) refreshSeason(ctx context.Context) {
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
 	(controlapp.SeasonRefresh{
-		Changed: a.core.SeasonChanged, Transactions: a.refreshSeasonTransactions, Comms: a.core.RefreshCommsBoards,
+		Changed: a.core.SeasonChanged, Transactions: a.refreshSeasonTransactions, Comms: (commsHost{a.core}).RefreshCommsBoards,
 		Shell: a.refreshShellFeeds, Lineups: a.refreshSeasonLineups, Trades: a.refreshPendingTrades,
-		Injuries: a.refreshInjuries, Draft: a.core.RefreshDraftReportsFeeds,
+		Injuries: a.refreshInjuries, Draft: a.refreshDraftReportsFeeds,
 		Market: func(ctx context.Context) { a.refreshMarketFeeds(ctx, false) }, Race: a.refreshRace,
 		Firsts: a.refreshScoreFirsts, Revalidate: a.revalidateReadyRosterMoves,
 		Pause: a.seasonPauseFunc, Week: a.marketWeek,
@@ -186,4 +188,22 @@ func (a *App) refreshPendingTradesInBackground() {
 
 func (a *App) seasonPauseFunc() func(context.Context, time.Duration) error {
 	return report.RefreshPause(a.core.SeasonPause)
+}
+
+type commsHost struct{ *core.State }
+
+func (h commsHost) RefreshCommsBoards(ctx context.Context) {
+	commsapp.RefreshBoards(ctx, func(ctx context.Context) error { return h.WithCommsKey(ctx, commsapp.MemberKey) }, func(err error) {
+		h.SeasonMu.Lock()
+		defer h.SeasonMu.Unlock()
+		commsapp.RefuseBoards(&h.CommsBoards, err)
+	}, func() func(context.Context, time.Duration) error { return h.SeasonPause }, h.ReadCommsBoard)
+}
+func (h commsHost) RefreshComms(force bool) error {
+	//nolint:wrapcheck // Preserve Comms readiness errors.
+	return commsapp.RefreshReading(force, h.Ready, h.CommsRefreshState, func() context.Context { return h.Ctx }, func(run func()) {
+		h.RefreshMu.Lock()
+		defer h.RefreshMu.Unlock()
+		run()
+	}, h.RefreshTransactions, h.RefreshCommsBoards)
 }

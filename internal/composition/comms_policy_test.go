@@ -1,4 +1,4 @@
-package core_test
+package composition
 
 import (
 	"context"
@@ -31,7 +31,7 @@ func commsState(t *testing.T) (*core.State, *coretest.Transport) {
 func TestCommsMissingKeyClearsMemberBoardsWithoutRequests(t *testing.T) {
 	s, transport := commsState(t)
 	s.CommsBoards[0] = core.HeldFeed[[]ingestion.RawLeaguePost]{Value: []ingestion.RawLeaguePost{{Title: "kept"}}, FetchedAt: time.Now()}
-	if err := s.RefreshComms(true); err != nil {
+	if err := (commsHost{s}).RefreshComms(true); err != nil {
 		t.Fatal(err)
 	}
 	requests, _ := transport.Requests()
@@ -40,7 +40,7 @@ func TestCommsMissingKeyClearsMemberBoardsWithoutRequests(t *testing.T) {
 	}
 	s.CommsBoards[0].Value = []ingestion.RawLeaguePost{{Title: "kept"}}
 	s.KeyStore = nil
-	s.RefreshCommsBoards(context.Background())
+	(commsHost{s}).RefreshCommsBoards(context.Background())
 	if len(s.CommsBoards[0].Value) != 1 || s.CommsBoards[0].RefreshError != "MFL keyring is locked or unavailable" {
 		t.Fatal(s.CommsBoards[0])
 	}
@@ -85,7 +85,7 @@ func TestCommsRefreshFreshnessOrderAndLastGood(t *testing.T) {
 				pauses++
 				return ctx.Err()
 			}
-			if err := s.RefreshComms(tc.force); err != nil {
+			if err := (commsHost{s}).RefreshComms(tc.force); err != nil {
 				t.Fatal(err)
 			}
 			requests, keyed := transport.Requests()
@@ -98,7 +98,7 @@ func TestCommsRefreshFreshnessOrderAndLastGood(t *testing.T) {
 			before := s.CommsBoards[0].FetchedAt
 			transport.Fail("messageBoard")
 			s.RefreshTransactions = func(context.Context) {}
-			if err := s.RefreshComms(true); err != nil {
+			if err := (commsHost{s}).RefreshComms(true); err != nil {
 				t.Fatal(err)
 			}
 			if s.CommsBoards[0].FetchedAt != before || s.CommsBoards[0].RefreshError == "" {
@@ -184,7 +184,7 @@ func TestCommsConcurrentRefreshAndRead(t *testing.T) {
 		s.SeasonMu.Unlock()
 	}
 	done := make(chan error, 1)
-	go func() { done <- s.RefreshComms(true) }()
+	go func() { done <- (commsHost{s}).RefreshComms(true) }()
 	<-entered
 	// Reading must complete while refresh holds RefreshMu and waits on I/O.
 	s.CommsFeeds()
@@ -202,7 +202,7 @@ func TestCommsConcurrentRefreshAndRead(t *testing.T) {
 		t.Fatal(err)
 	}
 	for range 10 {
-		if err := s.RefreshComms(true); err != nil {
+		if err := (commsHost{s}).RefreshComms(true); err != nil {
 			t.Fatal(err)
 		}
 	}

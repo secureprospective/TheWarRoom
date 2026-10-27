@@ -1019,3 +1019,31 @@ Filtered core/service/composition race tests and door parity pass. No public/sch
 Resource consolidation: internal/app/core/host_trades.go → internal/app/core/host_contracts.go
 (pending/future trade reads beside shared ledger reads); fingerprint keys relocate unchanged.
 No running app/unit tied to these paths was found; no repository or installed data moved.
+
+## Part 5 — batch 2: remaining frozen core workflows
+
+The other 11 frozen functions now live inward: Comms key admission/member-data clearing,
+board pacing and ready/freshness refresh orchestration → app/comms/api.go; Draft destination,
+detailed-player admission/parser, open-room ordering, report refresh and results→pause→future
+workflow → app/draft/held.go; Race ready/freshness refresh → app/race/refresh.go; shared own-team
+refusal and ready-before-locked-identity admission → app/platform/moves.go. Core retains bounded
+transport reads, snapshots and lock/resource adapters. Composition hosts wire these services.
+All **17 legacy entries are removed; 121 decision-bearing adapter entries remain**, unchanged
+fingerprints except the batch-1 path-only consolidation. No gate baseline was raised.
+
+New inward tests exercise readiness/no-early-capture, exact refusal text, detailed-player refusal,
+absent destination/no browser, lazy pause selection, ordered/canceled feed reads, fresh versus
+forced admission, bounded contexts/release, missing-key clearing versus locked-key retention.
+Real lock/publication/concurrency integration tests moved outward rather than importing core into
+features: core/host_comms_test.go → composition/comms_policy_test.go; refresh cases from
+core/host_draft_test.go and core/host_race_test.go → composition/{draft,race}_policy_test.go.
+Core retains detachment/resource tests. Feature race batch and filtered composition batch pass
+(12.239 seconds), including new workflow integrations, Control/Offers/Draft wire and command-door
+parity. Full make lint passes (24/24 tiny files; zero issues). The initial new player fixture lacked
+its mandatory position; corrected fixture only. The composition fixture loader now uses repo-root
+paths because its existing TestMain changes directory; this was not a production failure.
+
+Source trace preserved pause-field sampling after results and before each board pause, parent
+context capture after readiness/freshness, original serializer/capture order, KeyMu scope, and
+SeasonMu around both member-data refusal and feed publication. No permission, schema, binding,
+identity interpretation or remote-write changes. No live app/network/profile operation.

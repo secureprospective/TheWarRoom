@@ -148,7 +148,7 @@ func (h nowHost) liveGameWindows() []livegame.Window {
 func (h nowHost) NowRefresh(week int, force bool) error {
 	a := h.app
 	//nolint:wrapcheck // Preserve the feature refusal text.
-	return nowapp.RefreshNow(week, force, raceapp.New(a.core, a.raceHeld).TargetRaceRefresh,
+	return nowapp.RefreshNow(week, force, raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh,
 		func(week int, force bool) error {
 			ctx, cancel := context.WithTimeout(a.core.Ctx, refreshTimeout)
 			defer cancel()
