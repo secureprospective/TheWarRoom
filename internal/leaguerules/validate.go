@@ -119,8 +119,10 @@ func validateRules(r RuleSet) error {
 	}
 	return validateScoringKinds(r.Scoring)
 }
-func validateMenu(kind, value string) error {
-	menus := map[string][]string{
+
+// menus is every closed list of options a rule value may take, by the value's type name.
+func menus() map[string][]string {
+	return map[string][]string{
 		"Format": {"head_to_head"}, "InitialRosters": {"draft"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
@@ -134,7 +136,10 @@ func validateMenu(kind, value string) error {
 		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},
 		"LineupGroup": {"offense", "defense", "total"},
 	}
-	choices, found := menus[kind]
+}
+
+func validateMenu(kind, value string) error {
+	choices, found := menus()[kind]
 	if !found {
 		return nil
 	}

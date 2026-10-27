@@ -156,7 +156,7 @@ func catalogueChoices(kind string) []Choice {
 		"reverse_standings", "rolling", "blind", "open", "dot", "commissioner", "start_of_day", "end_of_day",
 		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "win_percentage", "head_to_head",
 		"division_percentage", "conference_percentage", "all_play_percentage", "points", "power_rank",
-		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "offense", "defense", "total"}
+		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total"}
 	choices := []Choice{}
 	if validateMenu(kind, "not_an_option") == nil {
 		return choices

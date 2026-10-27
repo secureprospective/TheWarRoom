@@ -172,3 +172,18 @@ func TestBidStandForIsCommissionerOwnedDuration(t *testing.T) {
 		t.Fatal("negative stand time accepted")
 	}
 }
+
+// Every option a menu accepts is offered as a choice, so the Admin form can pick it (OL was once missing).
+func TestEveryMenuOptionIsOffered(t *testing.T) {
+	for kind, options := range menus() {
+		offered := map[string]bool{}
+		for _, c := range catalogueChoices(kind) {
+			offered[c.Value] = true
+		}
+		for _, option := range options {
+			if !offered[option] {
+				t.Errorf("%s: %q is accepted but not offered", kind, option)
+			}
+		}
+	}
+}
