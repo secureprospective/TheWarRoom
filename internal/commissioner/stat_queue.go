@@ -328,6 +328,9 @@ func (b queueBuilder) statLabel(id leaguerules.StatID, weeks ...source.PlayerWee
 			return lowerFirst(stat.Label.Value)
 		}
 	}
+	if label := b.rules.Scoring.LineUnit.Value.Labels[id]; b.rules.Scoring.LineUnit.State == leaguerules.IsKnown && label != "" {
+		return lowerFirst(label)
+	}
 	for _, week := range weeks {
 		if label := week.Line.Labels[id]; label != "" {
 			return lowerFirst(label)

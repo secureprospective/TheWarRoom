@@ -58,6 +58,6 @@ func (s *Store) appendFactsFor(ctx context.Context, raw commissioner.RawCommand)
 	if err != nil {
 		return appendFacts{}, err
 	}
-	facts.stat = commissioner.StatFacts{Versions: week.Evidence.Versions()}
+	facts.stat = commissioner.StatFacts{Versions: week.Evidence.Versions(), OLine: week.Evidence.OLine}
 	return facts, nil
 }

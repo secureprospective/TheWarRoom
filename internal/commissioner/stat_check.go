@@ -6,14 +6,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // StatFacts is what the held NFL files say about the one player's week a stat command is about: its
-// versions, oldest first. Native checks read the ledger; the files are all they need besides.
-type StatFacts struct{ Versions []source.LineRevision }
+// versions, oldest first, and for an O-Line card the season's held line games. Native checks read the
+// ledger; the files are all they need besides.
+type StatFacts struct {
+	Versions []source.LineRevision
+	OLine    *source.HeldLineGames
+}
 
 // CheckStatAppend refuses a stat decision the league cannot hold: one not waiting any more, one already
 // decided, or a correction that changes nothing or names a statistic the league does not score.
@@ -75,20 +80,39 @@ func checkStatCorrection(change RawStatChange, records []Record, effects statEff
 	if !scoresStat(rules.Scoring, change.Player, change.Stat) {
 		return Refused(errors.New("the league's scoring has no such statistic"))
 	}
-	key := change.key()
-	counted, err := countedVersion(facts.Versions, effects.baselines[key])
+	standing, recorded, err := standingQuantity(change.key(), change.Stat, facts, effects)
 	if err != nil {
 		return err
+	}
+	if recorded && standing == *change.Value {
+		return Refused(fmt.Errorf("the league already counts %s for this statistic", scorePointsWords(standing)))
+	}
+	return nil
+}
+
+// standingQuantity is the value the league counts for a stat now: the counted NFL version with the
+// commissioner's corrections, or for an O-Line card its held line game with them.
+func standingQuantity(key statKey, stat leaguerules.StatID, facts StatFacts, effects statEffects) (leaguerules.Decimal, bool, error) {
+	corrections := effects.corrections[key]
+	if team, card := nativecheck.LineCardTeam(key.player); card {
+		var line fantasyscore.UnitLine
+		held := false
+		if facts.OLine != nil {
+			line, held = lineCardWeek(team, key.week, facts.OLine.Games)
+		}
+		quantity, recorded := correctedLine(line, held, corrections).Quantities[stat]
+		return quantity, recorded, nil
+	}
+	counted, err := countedVersion(facts.Versions, effects.baselines[key])
+	if err != nil {
+		return 0, false, err
 	}
 	var week source.PlayerWeek
 	if counted != nil {
 		week = *counted.Held.Week
 	}
-	standing, recorded := withCorrections(week, effects.corrections[key]).Line.Quantities[change.Stat]
-	if recorded && standing == *change.Value {
-		return Refused(fmt.Errorf("the league already counts %s for this statistic", scorePointsWords(standing)))
-	}
-	return nil
+	quantity, recorded := withCorrections(week, corrections).Line.Quantities[stat]
+	return quantity, recorded, nil
 }
 
 // scoresStat says whether a correction names a statistic the league scores for this player: a catalogue
