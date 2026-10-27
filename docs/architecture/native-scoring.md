@@ -4,6 +4,37 @@
 
 Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final part).
 
+- **Part 5 (2026-10-26):**
+  - **League start for the 32-Team Default** (`46b129d3`): the same starting-snapshot request
+    (`TargetNativeSeed` and its preview) builds a 32-Team Default league's start from its own
+    franchises (`commissioner.Default32SeedCommand` / `Default32Start`), not from held MFL data:
+    franchise N (creation order) gets the Nth card of `LineCardTeams()`, active, on a 1-year contract
+    (expires the league season, UFA) at the lowest recorded minimum salary. `CheckNativeAppend`
+    (`checkSeedPreset`) admits exactly one active 1-year card per franchise and nothing else, and a
+    Legacy start may not hold a card. Retries reuse the recorded body. The cards join the player
+    facts every screen reads (`nativecheck.AddLineCards` in `native.PlayerFacts`). Must-cut-to-receive
+    is the existing roster gate: a card trade that leaves the receiver at 45 is refused until it cuts.
+    Tests: `internal/commissioner/default32_start_test.go`, `internal/app/commissioner/
+    default32_start_test.go` (through the API with the held-data port nil). Mutant: dropping the start
+    check fails the refusal table.
+  - **Commissioner control over card scores** (`8ee8bcd1`): a card's score reads the ledger first;
+    `commish.stat.correct` may name a line component (`line_*`) for a card only, where the league
+    scores the line unit, and replaces the held component; `commish.score.player` adds to the total
+    after the clamp; both are listed in the score's changes. A corrected week the held games do not
+    reach counts from the corrections alone. Test: `line_card_correction_test.go` (real PIT 2024 game).
+    Mutants: ignoring corrections, ignoring the delta; each fails.
+  - **Taxi by NFL seasons** (`e9981736`): `taxi.basis` gains `nfl_seasons` ("NFL seasons"; CFL and
+    years out don't count); the 32-Team Default sets it, Legacy keeps calendar years. The fact
+    (`PlayerFacts.NFLSeasons`) has no feed yet, so the check says "Can't tell", never reads the draft
+    year instead.
+  - **Already true, no field added:** IR players are tradeable in every league (no trade check reads
+    roster status); taxi moves both ways (active → taxi is `CanEnterTaxi`, taxi → active is open).
+- **Next part starts at:** auto-promote at taxi eligibility end and IR auto-return (spec §2.2/§2.3)
+  as real moves: two rule fields (`taxi.autoPromote`, `ir.autoReturn`), a seed-upgrade step 3
+  recording them off for older seeds, Legacy off, the 32-Team Default on, and the job that moves the
+  player, which then needs the must-cut deadline ruling (spec §7 item 6). The NFL-seasons feed and
+  the official IR/PUP feed (spec §7 items 5, 7) wait on the week-8 study with the live feeds.
+
 - **Part 4 (2026-10-26):**
   - **32-Team Default preset** (`a6bba706`): `commissioner.PresetDefault32` seeds
     `leaguerules.Default32()` (spec §1 lineup with the O-Line card, 44 active incl. the card, taxi 8 /
