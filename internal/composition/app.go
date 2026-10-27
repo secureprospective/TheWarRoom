@@ -47,18 +47,19 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	commands     *catalog.Registry
-	core         *core.State
-	archiveCache archiveapp.Snapshot
-	controlHeld  *controlapp.Held
-	researchHeld *researchapp.Held
-	raceHeld     *raceapp.Held
-	now          nowSchedules
-	nowHeld      *nowapp.Held
-	sourcesHeld  *sourcesapp.Held
-	marketHeld   *marketapp.Held
-	seatStore    *accountstore.Store
-	seat         *accounts.LocalSeat
+	commands            *catalog.Registry
+	core                *core.State
+	tradeBuilderTimeout time.Duration
+	archiveCache        archiveapp.Snapshot
+	controlHeld         *controlapp.Held
+	researchHeld        *researchapp.Held
+	raceHeld            *raceapp.Held
+	now                 nowSchedules
+	nowHeld             *nowapp.Held
+	sourcesHeld         *sourcesapp.Held
+	marketHeld          *marketapp.Held
+	seatStore           *accountstore.Store
+	seat                *accounts.LocalSeat
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.
@@ -84,7 +85,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 // NewApp is cheap; resources are acquired in startup.
 func NewApp() *App {
 	var desktop core.Runtime = desktopRuntime{}
-	a := &App{controlHeld: &controlapp.Held{}, researchHeld: &researchapp.Held{}, marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
+	a := &App{tradeBuilderTimeout: m2Timeout, controlHeld: &controlapp.Held{}, researchHeld: &researchapp.Held{}, marketHeld: &marketapp.Held{}, nowHeld: &nowapp.Held{}, raceHeld: &raceapp.Held{}, sourcesHeld: &sourcesapp.Held{}, core: &core.State{Started: make(chan struct{}),
 		BuildStamp:    buildLabel() + " " + buildDate,
 		LabData:       sync.OnceValues(lab.Load),
 		MovesWake:     make(chan struct{}, 1),
