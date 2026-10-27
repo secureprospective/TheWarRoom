@@ -105,12 +105,16 @@ func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource)
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
 	}
+	canonical, unknown, err := r.attachSleeper(weeks, bodies)
+	if err != nil {
+		return heldFile{}, err
+	}
 	lineSHA, lines, err := lineFile(bodies, r.leagueRB())
 	if err != nil {
 		return heldFile{}, err
 	}
 	return heldFile{sha: sha, at: raw.AsOf,
-		weeks: weeks, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
+		weeks: weeks, canonical: canonical, unknownSleeper: unknown, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
 }
 
 // revisionBodies returns a revision's bodies and its statistics SHA. An inline revision is one
@@ -174,6 +178,30 @@ func (p *PinnedFootball) statWeeks(ctx context.Context, season int) ([]commissio
 				out = append(out, commissioner.StatWeek{Player: player, Week: week, Evidence: evidence})
 			}
 		}
+	}
+	return out, nil
+}
+
+func (p *PinnedFootball) CanonicalPlayerWeekStats(ctx context.Context, scope source.RawNativeScope) ([]source.HeldWeek, error) {
+	if err := scope.Validate(); err != nil {
+		return nil, fmt.Errorf("read pinned statistics: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("read pinned statistics: %w", err)
+	}
+	if scope.Season != p.raw.Season {
+		return nil, fmt.Errorf("pinned statistics do not hold season %d", scope.Season)
+	}
+	out := make([]source.HeldWeek, 0, len(p.stats))
+	for _, file := range p.stats {
+		held := source.HeldWeek{SHA256: file.sha, FetchedAt: file.at}
+		if week, ok := file.canonical[canonicalWeek{scope.Player, scope.Week}]; ok {
+			copied := clonePlayerWeek(week)
+			held.Week = &copied
+		} else {
+			held.Missing = []string{"This held file does not report the player's regular-season week"}
+		}
+		out = append(out, held)
 	}
 	return out, nil
 }

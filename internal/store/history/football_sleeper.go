@@ -73,3 +73,85 @@ func (r RawFootballEvidence) sleeperRevision(bodies []RawFootballWeek, legacy st
 	}
 	return bodies, footballDigest(encoded), nil
 }
+
+// canonicalWeek identifies a regular-season week by the pinned league identity.
+type canonicalWeek struct {
+	player string
+	week   int
+}
+
+func (r RawFootballEvidence) attachSleeper(weeks []source.PlayerWeek, bodies []RawFootballWeek) (map[canonicalWeek]source.PlayerWeek, map[int]int, error) {
+	canonical := make(map[canonicalWeek]source.PlayerWeek)
+	gsis := make(map[string]string)
+	bridge := make(map[string]string)
+	for mfl, player := range r.Players {
+		if player.Identity != "" {
+			gsis[player.Identity] = mfl
+		}
+		if player.Sleeper != "" {
+			bridge[player.Sleeper] = mfl
+		}
+	}
+	for _, week := range weeks {
+		if mfl, ok := gsis[week.GSIS]; ok && week.SeasonType == "REG" {
+			key := canonicalWeek{mfl, week.Week}
+			if _, exists := canonical[key]; !exists {
+				canonical[key] = clonePlayerWeek(week)
+			}
+		}
+	}
+	unknown := make(map[int]int)
+	for _, body := range bodies {
+		for _, raw := range body.Sleeper {
+			count, err := r.mergeSleeperWeek(raw, bridge, canonical)
+			if err != nil {
+				return nil, nil, err
+			}
+			unknown[raw.Season] += count
+		}
+	}
+	return canonical, unknown, nil
+}
+
+func (r RawFootballEvidence) mergeSleeperWeek(raw source.RawSleeperWeek, bridge map[string]string, canonical map[canonicalWeek]source.PlayerWeek) (int, error) {
+	var rows map[string]source.RawSleeperStats
+	if err := json.Unmarshal([]byte(raw.Body), &rows); err != nil {
+		return 0, fmt.Errorf("decode pinned Sleeper statistics: %w", err)
+	}
+	unknown := 0
+	for id, stats := range rows {
+		if id == "" || strings.Trim(id, "0123456789") != "" {
+			continue
+		}
+		line, err := stats.Convert()
+		if err != nil {
+			return 0, fmt.Errorf("convert Sleeper player %s: %w", id, err)
+		}
+		nonzero := false
+		for _, value := range line.Quantities {
+			if value != 0 {
+				nonzero = true
+				break
+			}
+		}
+		if !nonzero {
+			continue
+		}
+		mfl, ok := bridge[id]
+		if !ok {
+			unknown++
+			continue
+		}
+		key := canonicalWeek{mfl, raw.Week}
+		week, ok := canonical[key]
+		if !ok {
+			week = source.PlayerWeek{Position: string(r.Players[mfl].Facts.Position), Season: raw.Season, Week: raw.Week, SeasonType: "REG", Line: line}
+		} else {
+			for stat, value := range line.Quantities {
+				week.Line.Quantities[stat] = value
+			}
+		}
+		canonical[key] = week
+	}
+	return unknown, nil
+}

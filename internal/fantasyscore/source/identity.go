@@ -15,6 +15,11 @@ type IdentityPort interface {
 	SourceID(context.Context, string, string) (string, error)
 }
 
+// CanonicalStatPort reads held statistics by the league player identity.
+type CanonicalStatPort interface {
+	CanonicalPlayerWeekStats(context.Context, RawNativeScope) ([]HeldWeek, error)
+}
+
 type RawNativeScope struct {
 	Player string
 	Season int
@@ -72,15 +77,20 @@ func ReadNativeEvidence(ctx context.Context, identity IdentityPort, stats StatPo
 		return NativeEvidence{}, fmt.Errorf("match the league player to NFL statistics: %w", err)
 	}
 	out := NativeEvidence{GSIS: gsis, Missing: []string{}}
-	if gsis == "" {
-		out.Missing = append(out.Missing, "This player has no matching NFL statistics identity")
-		return out, nil
+	var revisions []HeldWeek
+	if canonical, ok := stats.(CanonicalStatPort); ok {
+		revisions, err = canonical.CanonicalPlayerWeekStats(ctx, raw)
+	} else {
+		if gsis == "" {
+			out.Missing = append(out.Missing, "This player has no matching NFL statistics identity")
+			return out, nil
+		}
+		scope := RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week}
+		if err := scope.Validate(); err != nil {
+			return NativeEvidence{}, fmt.Errorf("read matched NFL identity: %w", err)
+		}
+		revisions, err = stats.PlayerWeekStats(ctx, scope)
 	}
-	scope := RawStatScope{GSIS: gsis, Season: raw.Season, Week: raw.Week}
-	if err := scope.Validate(); err != nil {
-		return NativeEvidence{}, fmt.Errorf("read matched NFL identity: %w", err)
-	}
-	revisions, err := stats.PlayerWeekStats(ctx, scope)
 	if err != nil {
 		return NativeEvidence{}, fmt.Errorf("read the player's held statistics: %w", err)
 	}
