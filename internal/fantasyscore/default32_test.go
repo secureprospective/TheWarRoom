@@ -281,3 +281,40 @@ func TestDefault32RTL(t *testing.T) {
 		})
 	}
 }
+
+func TestDefault32EdgeRows(t *testing.T) {
+	rules := leaguerules.Default32Scoring()
+	rules.RoundStatPoints.Value = false
+	for _, tc := range []struct {
+		code      string
+		id        leaguerules.StatID
+		position  L
+		qty, want leaguerules.Decimal
+	}{
+		{"X3", "third_down_conversion", rb, 10000, 2500},
+		{"X4", "fourth_down_conversion", wr, 10000, 4000},
+		{"Q3", "third_down_passing_conversion", qb, 10000, 1000},
+		{"Q4", "fourth_down_passing_conversion", qb, 10000, 1500},
+		{"RZA", "red_zone_carry", rb, 10000, 800},
+		{"RZT", "red_zone_target", wr, 10000, 800},
+		{"RZP", "red_zone_pass_attempt", qb, 10000, 400},
+		{"RYAC", "rushing_yards_after_contact", rb, 100000, 300},
+		{"CYAC", "receiving_yards_after_catch", wr, 100000, 300},
+		{"RAY", "receiving_air_yards", wr, 100000, 200},
+		{"PAY", "passing_air_yards", qb, 100000, 100},
+		{"BTK", "rushing_broken_tackle", rb, 10000, 800},
+		{"OSNP", "offensive_snap", qb, 10000, 20},
+		{"DROP", "receiving_drop", wr, 10000, -3000},
+		{"PEN", "penalty", cb, 10000, -2500},
+		{"PENY", "penalty_yards", cb, 100000, -1000},
+		{"SKY", "defensive_sack_yards", de, 100000, 5000},
+		{"STK", "special_teams_solo_tackle", pk, 10000, 2500},
+		{"DSNP", "defensive_snap", lb, 10000, 80},
+		{"SSNP", "special_teams_snap", pk, 10000, 30},
+	} {
+		t.Run(tc.code, func(t *testing.T) {
+			assertScore(t, rules, tc.position, quantity(tc.id, tc.qty), tc.want)
+		})
+	}
+	assertScore(t, rules, lb, quantity("third_down_conversion", 10000), 0)
+}

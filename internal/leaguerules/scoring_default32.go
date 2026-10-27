@@ -1,11 +1,12 @@
 package leaguerules
 
 const (
-	default32RTLCitation = "2025 nflverse regular-season play-by-play and weekly positions; FB counted as RB"
-	default32Citation    = "DEFAULT-32 spec §4, locked 2026-10-26"
-	default32Lineup      = "DEFAULT-32 spec §1, locked 2026-10-26"
-	default32Roster      = "DEFAULT-32 spec §2, locked 2026-10-26"
-	default32OLine       = "DEFAULT-32 spec §3, locked 2026-10-26"
+	default32EdgeCitation = "Config study p6 §2 Package A, ruling 2026-10-27"
+	default32RTLCitation  = "2025 nflverse regular-season play-by-play and weekly positions; FB counted as RB"
+	default32Citation     = "DEFAULT-32 spec §4, locked 2026-10-26"
+	default32Lineup       = "DEFAULT-32 spec §1, locked 2026-10-26"
+	default32Roster       = "DEFAULT-32 spec §2, locked 2026-10-26"
+	default32OLine        = "DEFAULT-32 spec §3, locked 2026-10-26"
 )
 
 // Default32 is the 32-Team Default league: Legacy's rules for 32 teams with the spec's lineup, roster,
@@ -47,17 +48,21 @@ func Default32() RuleSet {
 func Default32Scoring() ScoringRules {
 	catalogue := map[StatID]Stat{}
 	ranges := map[StatID]StatRange{}
-	for _, row := range default32Rows() {
-		stat := scoringStatCited(row.label, row.group, row.points, default32Citation)
-		if len(row.positions) != 0 {
-			stat.Positions = cited(row.positions, default32Citation)
-		}
-		stat.Once = cited(row.once, default32Citation)
-		catalogue[row.id] = stat
-		if row.ranged {
-			ranges[row.id] = StatRange{Min: row.min * 10000, Max: row.max * 10000}
+	addRows := func(rows []default32Row, citation string) {
+		for _, row := range rows {
+			stat := scoringStatCited(row.label, row.group, row.points, citation)
+			if len(row.positions) != 0 {
+				stat.Positions = cited(row.positions, citation)
+			}
+			stat.Once = cited(row.once, citation)
+			catalogue[row.id] = stat
+			if row.ranged {
+				ranges[row.id] = StatRange{Min: row.min * 10000, Max: row.max * 10000}
+			}
 		}
 	}
+	addRows(default32Rows(), default32Citation)
+	addRows(default32EdgeRows(), default32EdgeCitation)
 	lost := scoringStatCited("Fumbles lost", "Fumbles", -20000, default32Citation)
 	lost.Used = cited(false, default32Citation)
 	catalogue["fumble_lost"] = lost
@@ -141,6 +146,35 @@ func default32Rows() []default32Row {
 		{"interception_return_td", "Interception return touchdown", "Defense", 60000, true, 0, 10, false, nil},
 		{"blocked_fg_td", "Blocked field goal touchdown", "Defense", 70000, true, 0, 10, false, idp},
 		{"blocked_punt_td", "Blocked punt touchdown", "Defense", 70000, true, 0, 10, false, idp},
+	}
+}
+
+func default32EdgeRows() []default32Row {
+	off := []Position{QB, RB, WR, TE}
+	idp := []Position{DT, DE, LB, CB, S}
+	st := []Position{DT, DE, LB, CB, S, PK}
+	all := []Position{QB, RB, WR, TE, PK, DT, DE, LB, CB, S}
+	return []default32Row{
+		{"third_down_conversion", "Third down conversion", "Conversions", 2500, false, 0, 0, false, off},
+		{"fourth_down_conversion", "Fourth down conversion", "Conversions", 4000, false, 0, 0, false, off},
+		{"third_down_passing_conversion", "Third down passing conversion", "Conversions", 1000, false, 0, 0, false, []Position{QB}},
+		{"fourth_down_passing_conversion", "Fourth down passing conversion", "Conversions", 1500, false, 0, 0, false, []Position{QB}},
+		{"red_zone_carry", "Red zone carry", "Rushing", 800, false, 0, 0, false, off},
+		{"red_zone_target", "Red zone target", "Receiving", 800, false, 0, 0, false, off},
+		{"red_zone_pass_attempt", "Red zone pass attempt", "Passing", 400, false, 0, 0, false, []Position{QB}},
+		{"rushing_yards_after_contact", "Rushing yards after contact", "Rushing", 30, false, 0, 0, false, off},
+		{"receiving_yards_after_catch", "Receiving yards after catch", "Receiving", 30, false, 0, 0, false, off},
+		{"receiving_air_yards", "Receiving air yards", "Receiving", 20, false, 0, 0, false, off},
+		{"passing_air_yards", "Passing air yards", "Passing", 10, false, 0, 0, false, []Position{QB}},
+		{"rushing_broken_tackle", "Broken tackle", "Rushing", 800, false, 0, 0, false, off},
+		{"offensive_snap", "Offensive snap", "Snaps", 20, false, 0, 0, false, off},
+		{"receiving_drop", "Drop", "Receiving", -3000, false, 0, 0, false, off},
+		{"penalty", "Penalty", "Penalties", -2500, false, 0, 0, false, all},
+		{"penalty_yards", "Penalty yards", "Penalties", -100, false, 0, 0, false, all},
+		{"defensive_sack_yards", "Sack yards", "Defense", 500, false, 0, 0, false, idp},
+		{"special_teams_solo_tackle", "Special teams solo tackle top-up", "Special teams", 2500, false, 0, 0, false, st},
+		{"defensive_snap", "Defensive snap", "Snaps", 80, false, 0, 0, false, idp},
+		{"special_teams_snap", "Special teams snap", "Snaps", 30, false, 0, 0, false, st},
 	}
 }
 
