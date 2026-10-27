@@ -31,6 +31,19 @@ const mountForm = (over: Parameters<typeof stub>[0] = {}) => {
 };
 
 describe('Commissioner tray', () => {
+  it('offers only allowed timings and defaults each selected rule to its first timing', async () => {
+    const supplied = stub();
+    const host = await mount(render(RuleChangeForm, { rules, initialField: 'league.teams' }), supplied.app);
+    const timing = () => control(host, 'When it takes effect');
+    expect(all(timing(), 'option').map(o => o.textContent)).toEqual(['Now']);
+    expect(timing().props().value).toBe('now');
+    await type(control(host, 'Rule'), 'roster.limits');
+    expect(all(timing(), 'option').map(o => o.textContent)).toEqual(['From the next rollover', 'Now']);
+    expect(timing().props().value).toBe('next_rollover');
+    await type(control(host, 'Rule'), 'league.divisions');
+    expect(all(timing(), 'option').map(o => o.textContent)).toEqual(['Now']);
+    expect(timing().props().value).toBe('now');
+  });
   it('opens from a rule search, traps both Tab edges, closes with Escape and returns focus', async () => {
     await import('./RuleTray');
     const { app } = stub({ TargetCommissionerControls: async () => controlsWire,

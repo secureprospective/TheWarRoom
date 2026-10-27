@@ -35,6 +35,7 @@ type RuleRow struct {
 	ChangedAt   string                  `json:"changedAt"`
 	Schema      leaguerules.ValueSchema `json:"schema"`
 	Competitive bool                    `json:"competitive"`
+	NowOnly     bool                    `json:"nowOnly,omitempty"`
 	Pending     []RulePending           `json:"pending"`
 	// Current is the value in force as the plain JSON a change is sent in; null while it Needs a ruling.
 	Current json.RawMessage `json:"current"`
@@ -87,9 +88,15 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		value := values[i]
 		row := RuleRow{Field: string(field.Path), Label: field.Label, Value: value.Words, State: value.State,
 			Citation: startingSource(preset, value.State, value.Citation), Schema: field.Schema,
-			Competitive: field.Competitive, Pending: pending[string(field.Path)], Current: current[i],
+			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)), Pending: pending[string(field.Path)], Current: current[i],
 			Unit:       unitFor(field.Path),
 			Safeguards: safeguardsFor(string(field.Path))}
+		if row.Field == alignmentField {
+			row.Value, err = alignmentWords(records, rules.League.Alignment)
+			if err != nil {
+				return Rules{}, err
+			}
+		}
 		if source, ok := sources[row.Field]; ok {
 			row.Citation = "Changed in the league ledger"
 			row.ChangedAt = source

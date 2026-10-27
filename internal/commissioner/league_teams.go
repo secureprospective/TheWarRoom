@@ -152,11 +152,15 @@ func playBegun(records []Record) bool {
 }
 
 // checkShapeChange checks a Teams or Divisions change: a native league before play, now, within range.
+func shapeField(field string) bool {
+	return field == teamsField || field == divisionsField
+}
+
 func checkShapeChange(raw RawCommand, records []Record, at time.Time) error {
 	if raw.Command == Revert {
 		return checkTeamsRevert(raw, records)
 	}
-	if raw.Command != RulesSet || (raw.Args.Field != teamsField && raw.Args.Field != divisionsField) {
+	if raw.Command != RulesSet || !shapeField(raw.Args.Field) {
 		return nil
 	}
 	label := "Teams"
@@ -242,7 +246,7 @@ func checkTeamsRevert(raw RawCommand, records []Record) error {
 // shapePreview words a Teams change by the franchises it adds or removes, and shows the alignment a
 // Divisions change divides the league into.
 func shapePreview(out *Preview, raw RawCommand, records []Record, now time.Time) error {
-	if raw.Args.Field != teamsField && raw.Args.Field != divisionsField || len(out.Fields) == 0 {
+	if !shapeField(raw.Args.Field) || len(out.Fields) == 0 {
 		return nil
 	}
 	setting, err := leaguerules.DecodeSetting(leaguerules.FieldPath(raw.Args.Field), raw.Args.Value)
@@ -265,8 +269,14 @@ func shapePreview(out *Preview, raw RawCommand, records []Record, now time.Time)
 	if err != nil {
 		return err
 	}
-	before := RuleValueWords(rules, alignmentField)
-	after := leaguerules.DescribeField(alignmentField, leaguerules.Known(leaguerules.EvenDivisions(ids, value.Value))).Words
+	before, err := alignmentWords(records, rules.League.Alignment)
+	if err != nil {
+		return err
+	}
+	after, err := alignmentWords(records, leaguerules.Known(leaguerules.EvenDivisions(ids, value.Value)))
+	if err != nil {
+		return err
+	}
 	if before != after {
 		out.Fields = append(out.Fields, PreviewField{Label: "Division alignment", Before: before,
 			BeforeSource: "In force now", After: after, AfterSource: "Divided evenly by this change", When: timingWords(raw.Effective)})

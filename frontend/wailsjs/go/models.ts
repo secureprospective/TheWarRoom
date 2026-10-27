@@ -4363,6 +4363,7 @@ export namespace commissioner {
 	    changedAt: string;
 	    schema: leaguerules.ValueSchema;
 	    competitive: boolean;
+	    nowOnly?: boolean;
 	    pending: RulePending[];
 	    current: number[];
 	    unit: string;
@@ -4383,6 +4384,7 @@ export namespace commissioner {
 	        this.changedAt = source["changedAt"];
 	        this.schema = this.convertValues(source["schema"], leaguerules.ValueSchema);
 	        this.competitive = source["competitive"];
+	        this.nowOnly = source["nowOnly"];
 	        this.pending = this.convertValues(source["pending"], RulePending);
 	        this.current = source["current"];
 	        this.unit = source["unit"];

@@ -186,11 +186,22 @@ func TestDivisionsChangeRewritesAlignment(t *testing.T) {
 		t.Fatalf("more divisions than teams: %v", err)
 	}
 	fields := teamsPreview(t, b, "league.divisions", `4`)
-	if len(fields) != 2 || fields[1].Label != "Division alignment" || !strings.Contains(fields[1].After, "Division 4") {
+	if len(fields) != 2 || fields[1].Label != "Division alignment" || !strings.Contains(fields[1].After, "Franchise 1: Division 1") {
 		t.Fatalf("preview: %+v", fields)
 	}
 	if err := b.change("league.divisions", `4`, 4); err != nil {
 		t.Fatal(err)
+	}
+	reading, err := RulesReading("native.test", b.records, seasonMoment(5))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, section := range reading.Sections {
+		for _, row := range section.Rows {
+			if row.Field == alignmentField && !strings.Contains(row.Value, "Franchise 1: Division 1") {
+				t.Fatalf("alignment listing: %s", row.Value)
+			}
+		}
 	}
 	rules, err := RulesNow(b.records, seasonMoment(5))
 	if err != nil {
@@ -242,5 +253,23 @@ func TestFranchisesResizedRefusesASeatedTeam(t *testing.T) {
 	}
 	if f, _ := grown.Franchise("franchise.03"); f.Seat != "owner" {
 		t.Fatalf("a kept team lost its owner: %+v", f)
+	}
+}
+
+func TestAlignmentUsesCurrentNamesAndFallsBackToID(t *testing.T) {
+	b := nativeLedger(t, 12, nil)
+	b.add(RawCommand{Command: "commish.franchise.edit", Effective: "now", Args: RawArgs{People: &RawPeople{
+		Franchise: "franchise.01", Name: "Renamed Club", Abbreviation: "RC"}}}, seasonMoment(2))
+	fields := teamsPreview(t, b, "league.divisions", `4`)
+	if len(fields) != 2 || !strings.Contains(fields[1].After, "Renamed Club: Division 1") {
+		t.Fatalf("renamed preview: %+v", fields)
+	}
+	direct := teamsPreview(t, b, alignmentField, `{"franchise.01":"East"}`)
+	if len(direct) != 1 || !strings.Contains(direct[0].After, "Renamed Club: East") {
+		t.Fatalf("direct alignment preview: %+v", direct)
+	}
+	words, err := alignmentWords(b.records, leaguerules.Known(map[string]string{"missing.id": "East"}))
+	if err != nil || words != "missing.id: East" {
+		t.Fatalf("unknown franchise: %q, %v", words, err)
 	}
 }
