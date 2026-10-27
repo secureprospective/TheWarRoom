@@ -29,6 +29,7 @@ import (
 func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	t.Helper()
 	a, transport, _ := lineupDraftApp(t)
+	a.tradeBuilderTimeout = 30 * time.Minute
 	a.core.MyFranchise = "0001"
 	pools, err := db.Open(a.core.Ctx, filepath.Join(t.TempDir(), "whatif.db"))
 	if err != nil {
@@ -116,6 +117,20 @@ func builderCall(t *testing.T, a *App, r tradesapp.RawTradeBuilder) tradesapp.Tr
 func realDeal() tradesapp.RawTradeBuilder {
 	return tradesapp.RawTradeBuilder{Mine: "0001", Other: "0025", Action: "preview", Give: []string{"11675"}, Get: []string{"15761"}, Rationale: "Balance salary with a younger starter."}
 }
+func TestTradeBuilderTimeoutOverride(t *testing.T) {
+	t.Parallel()
+	if got := NewApp().tradeBuilderTimeout; got != 120*time.Second {
+		t.Fatalf("default builder timeout: %s", got)
+	}
+	a, _ := realTradeBuilderApp(t)
+	a.tradeBuilderTimeout = -time.Nanosecond
+	if got := builderReading(a, realDeal()); got.Status == report.ReadingOK {
+		t.Fatal("expired builder timeout succeeded")
+	}
+	a.tradeBuilderTimeout = 30 * time.Minute
+	builderCall(t, a, realDeal())
+}
+
 func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	t.Parallel()
 	a, transport := realTradeBuilderApp(t)

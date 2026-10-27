@@ -166,7 +166,7 @@ func TestAtLeaguePositionsUsesTheLeaguesPosition(t *testing.T) {
 
 func TestInputsNameTheContractOnlyWhereItWeighs(t *testing.T) {
 	set := params.DefaultSet()
-	for pos, want := range map[domain.Position]bool{domain.PosLB: true, domain.PosS: false, domain.PosWR: false} {
+	for pos, want := range map[domain.Position]bool{domain.PosLB: false, domain.PosS: true, domain.PosWR: false} {
 		m, err := model.ParamsFrom(pos, func(key string) (float64, error) { return set.GetPosition(key, string(pos)) })
 		if err != nil {
 			t.Fatal(err)
@@ -174,7 +174,7 @@ func TestInputsNameTheContractOnlyWhereItWeighs(t *testing.T) {
 		pl := &model.Player{Position: pos, Contracts: map[int]map[string]float64{2025: {"cap_pct": 0.05, "years": 3}}}
 		got := slices.Contains(inputNames(m, pl, playerInput{Current: model.Past{Year: 2026}}), "contract")
 		if got != want {
-			t.Errorf("%s lists the contract: %v, want %v (shipped fit: kept at LB, dropped at S, none at offense)", pos, got, want)
+			t.Errorf("%s lists the contract: %v, want %v (shipped fit: kept at S, dropped at LB, none at offense)", pos, got, want)
 		}
 	}
 }

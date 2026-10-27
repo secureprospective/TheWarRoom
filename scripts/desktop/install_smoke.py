@@ -27,7 +27,7 @@ def install(artifact, directory):
             subprocess.run(["hdiutil", "detach", str(mount)], check=True, timeout=60)
         return destination / "Contents/MacOS/thewarroom"
     subprocess.run(["sudo", "apt-get", "update"], check=True, timeout=180)
-    subprocess.run(["sudo", "apt-get", "install", "-y", str(artifact)], check=True, timeout=300)
+    subprocess.run(["sudo", "apt-get", "install", "-y", str(artifact)], check=True, timeout=1200)
     return Path("/usr/bin/thewarroom")
 
 

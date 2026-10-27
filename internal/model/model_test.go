@@ -155,7 +155,7 @@ func TestProjectOneSeasonIsTheSeasonPairPrediction(t *testing.T) {
 	pl := &Player{Position: domain.PosWR, Birth: time.Date(1998, 9, 1, 0, 0, 0, 0, time.UTC), Rookie: 2021}
 	got, e := p.Project(pl, []Past{{Year: 2024, Games: 12, Pct: 0.8}}, 2025)
 	z := 12.0 / 20
-	want := z*0.8 + (1-z)*0.4 + p.ArcStep(pl.AgeAt(2024), 4)
+	want := Level(Score(Mix(z, 0.8, 0.4)) + p.ArcStep(pl.AgeAt(2024), 4))
 	if math.Abs(got-want) > 1e-12 || e != 12 {
 		t.Errorf("Project = %v (e %v), want %v (e 12)", got, e, want)
 	}
@@ -176,7 +176,7 @@ func TestThisSeasonsGamesMoveNowByKNow(t *testing.T) {
 	past := []Past{{Year: 2025, Games: 16, Pct: 0.5}}
 	before := p.Value(pl, past, Past{Year: 2026}, Horizon{Seasons: 1, Discount: 1}, Scale{})
 	after := p.Value(pl, past, Past{Year: 2026, Games: 3, Pct: 0.9}, Horizon{Seasons: 1, Discount: 1}, Scale{})
-	if want := 0.5*0.9 + 0.5*before.Now; math.Abs(after.Now-want) > 1e-12 || after.ZNow != 0.5 {
+	if want := Mix(0.5, 0.9, before.Now); math.Abs(after.Now-want) > 1e-12 || after.ZNow != 0.5 {
 		t.Errorf("now = %v (Z %v), want %v (Z 0.5)", after.Now, after.ZNow, want)
 	}
 }
