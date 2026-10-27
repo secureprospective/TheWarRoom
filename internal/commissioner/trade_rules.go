@@ -9,18 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-type TradePolicy struct {
-	Route          leaguerules.ReviewRoute `json:"route"`
-	Seats          int                     `json:"seats"`
-	DecideAt       int                     `json:"votesToDecide"`
-	FutureYears    int                     `json:"futureYears"`
-	MinimumRound   int                     `json:"minimumRound"`
-	MaximumRound   int                     `json:"maximumRound"`
-	RosterGate     bool                    `json:"refuseIllegalRoster"`
-	Expiry         time.Duration           `json:"offerLifetimeNanoseconds"`
-	MaximumParties int                     `json:"maximumParties"`
-}
-
 func resolveTradePolicy(r leaguerules.TradesRules) (TradePolicy, error) {
 	if r.Review.State != leaguerules.IsKnown || r.DecideAt.State != leaguerules.IsKnown ||
 		r.FutureYears.State != leaguerules.IsKnown || r.Rounds.State != leaguerules.IsKnown ||

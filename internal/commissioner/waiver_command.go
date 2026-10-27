@@ -5,10 +5,7 @@ import (
 	"reflect"
 	"slices"
 	"strings"
-	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -22,35 +19,6 @@ const (
 	WaiverOrderAuto = "waivers.order.auto"
 	WaiverOverride  = "waivers.award.override"
 )
-
-// RawWaiverArgs names recorded native assets, never prices or an owner identity.
-type RawWaiverArgs struct {
-	Bucket    string   `json:"bucket,omitempty"`
-	Player    string   `json:"player,omitempty"`
-	Franchise string   `json:"franchise,omitempty"`
-	Window    string   `json:"window,omitempty"`
-	Claim     string   `json:"claim,omitempty"`
-	Order     []string `json:"order,omitempty"`
-}
-
-// WaiverOutcome is computed under the append lock; IPC cannot supply a decision.
-type WaiverClaimResult struct {
-	ID      string `json:"id"`
-	Refusal string `json:"refusal,omitempty"`
-}
-
-type WaiverOutcome struct {
-	Claims     []WaiverClaimResult `json:"claims,omitempty"`
-	PriorOrder []string            `json:"priorOrder,omitempty"`
-	CloseAt    time.Time           `json:"closeAt,omitempty"`
-	Player     *NativePlayer       `json:"player,omitempty"`
-	Dead       domain.Money        `json:"deadCents,omitempty"`
-	Season     int                 `json:"season"`
-	Winner     string              `json:"winner,omitempty"`
-	Order      []string            `json:"order,omitempty"`
-	Source     string              `json:"source,omitempty"`
-	ClearsDead bool                `json:"clearsDead"`
-}
 
 func WaiverCommand(command string) bool {
 	return slices.Contains([]string{RosterReserve, RosterCut, WaiverClaim, WaiverProcess,
@@ -146,18 +114,6 @@ func (r RawCommand) validateWaiverPlacement() error {
 	}
 	if r.Effective != "now" || r.Visibility != visibility {
 		return fmt.Errorf("waiver actions take effect now; claims stay private and other changes are public")
-	}
-	return nil
-}
-
-func AuthorizeFranchiseOwner(records []Record, principal, franchise string) error {
-	state, err := GovernanceState(records)
-	if err != nil {
-		return err
-	}
-	seat, ok := state.Franchise(governance.FranchiseID(franchise))
-	if !ok || seat.Seat == "" || seat.Seat != governance.Principal(principal) {
-		return fmt.Errorf("you may act only for your own franchise")
 	}
 	return nil
 }

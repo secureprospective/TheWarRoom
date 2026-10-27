@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"slices"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
@@ -17,34 +16,6 @@ const (
 	BidsProcess  = "bids.process"
 	BidsOverride = "bids.award.override"
 )
-
-// RawBidArgs names a recorded player or bid and the contract an owner offers. It never carries a decision,
-// a price the app works out or an owner identity.
-type RawBidArgs struct {
-	Player    string       `json:"player,omitempty"`
-	Franchise string       `json:"franchise,omitempty"`
-	Bid       string       `json:"bid,omitempty"`
-	Salary    domain.Money `json:"salaryCents,omitempty"`
-	Years     int          `json:"years,omitempty"`
-}
-
-// BidResult is how one bid fared when its player's bids were decided.
-type BidResult struct {
-	ID      string `json:"id"`
-	Refusal string `json:"refusal,omitempty"`
-}
-
-// BidOutcome is worked out by the app under the append lock; a request cannot supply it.
-type BidOutcome struct {
-	Player     string              `json:"player,omitempty"`
-	Season     int                 `json:"season"`
-	Points     leaguerules.Decimal `json:"points,omitempty"`
-	Late       bool                `json:"late,omitempty"`
-	Winner     string              `json:"winner,omitempty"`
-	WinningBid string              `json:"winningBid,omitempty"`
-	Tied       []string            `json:"tied,omitempty"`
-	Results    []BidResult         `json:"results,omitempty"`
-}
 
 func BidCommand(command string) bool {
 	return slices.Contains([]string{BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride}, command)

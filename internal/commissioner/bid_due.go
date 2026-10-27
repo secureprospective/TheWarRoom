@@ -9,17 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// standingAt restarts the auction clock on every new bid, even if that bid is later withdrawn.
-func (a *bidAuction) standingAt() time.Time {
-	var latest time.Time
-	for _, b := range a.Bids {
-		if b.PlacedAt.After(latest) {
-			latest = b.PlacedAt
-		}
-	}
-	return latest
-}
-
 // DueBids uses the manual decision policy, including current roster and cap checks. A tie remains
 // undecided for the commissioner; waivers must clear before any automatic award.
 func DueBids(league string, records []Record, at time.Time, facts nativecheck.Facts) ([]string, error) {
