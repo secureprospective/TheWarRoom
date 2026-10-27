@@ -12,25 +12,19 @@ representation or wiring. Ratchet: **118 decision-bearing adapters / 1,527 funct
 whole-source fingerprints**, down from 120 / 1,572 + 48; zero legacy entries. This is reviewed source,
 not semantic proof or live feature acceptance.
 
-Frontend plan Part 3 (after part 8): **19 lifecycle modules on 37 registry read adapters**. Part 8
-moved commissioner `leagueState` (proxy.ts; seven audited commissioner reads admitted) and added
-`data/session.ts`, an explicit read-session end (shared → invalidate, private → reset), tested but
-**not yet wired** to any identity boundary (see `frontend-reads.md` § Part 8). No cache-first,
-polling or write change.
-
-Next Part 3: wire session end at the three identity boundaries (MFL key change, native account
-enter/forget/revoke, commissioner seat sign-in), each followed by the owner's existing reread, per
-the join table in `frontend-reads.md` § Part 8. Blocked pending an owner ruling: Pool (G1
-`offers.TargetPool`) and the trade builder (one read/preview/save command). Live game stays with
-its polling lifetime.
+Frontend plan Part 3: **closed in part 9** — 19 lifecycle modules on 37 registry read adapters. Read-session
+end is wired at the commissioner seat (`leagueState.changeSeat`, private, then reread of the same league)
+and proven by lifetime at the native account (HostedLeague unmount = dispose, remount = refresh); the MFL
+key is not an identity boundary for any held read (evidence in `frontend-reads.md` § Part 9). The commands
+moves/key stores are not read stores. Remaining: live polling, and owner rulings below.
 Next Part 2: owner-run pre-push/full CI and disposable-profile live review (R12 on Claude-OS).
 
 Branch: `session/revamp-B-app-boundary`. **Local commits only; owner pushes.** No push, PR, merge,
 rebase, generated Wails binding change or HANDOFF.md edit. No permission/role/schema/lock-order
 change. Full verify/pre-push/CI and live profile review remain unclaimed. Estimates: Part 2 **one
-verification/review part**; Part 3 **1–2 one-hour parts** (session wiring, then the command
-moves/key audit and close).
-Owner ruling needed for the Pool and trade-builder blockers above.
+verification/review part**; Part 3 **0 parts** (closed), plus one part per owner ruling taken up.
+Owner rulings: Pool (G1 `offers.TargetPool`), trade builder (one read/preview/save command); optional
+registry `Modes: [read]` on the 37 audited desktop adapters to retire the generator's hand list.
 
 ## Boundary and preserved slice
 

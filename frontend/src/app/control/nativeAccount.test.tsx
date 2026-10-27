@@ -7,7 +7,7 @@ import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
 
 // Franchise workflow requests are covered by the hosted-room tests, not account admission. The stand-in
-// records each room's lifetime: unmount is the hosted room's dispose (its read session end), mount its reread.
+// records each room's lifetime: unmount is the hosted room's dispose (its session end), mount its reread.
 const rooms = vi.hoisted(() => [] as string[]);
 vi.mock('../commissioner/HostedLeague', async () => {
   const { useEffect } = await import('react');

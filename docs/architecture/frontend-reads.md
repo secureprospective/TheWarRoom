@@ -2,11 +2,11 @@
 
 ## Resume here
 
-Shared primitive: `frontend/src/app/data/query.ts`. After part 8: **37 registry read adapters / 19
-lifecycle modules** (§ Part 8). `data/session.ts` adds an explicit session end, tested but not wired.
-Next: wire it at the three identity boundaries in § Part 8, each followed by the owner's existing
-reread, then audit `commands/{moves,sessionMoves,mflKey}.ts`. Pool and the trade builder await an
-owner ruling. Live polling stays out. Do not replace UI/action state merely to inflate counts.
+Shared primitive: `frontend/src/app/data/query.ts`. **Part 3 is closed** (§ Part 9): **37 registry read
+adapters / 19 lifecycle modules**; read-session end is wired where an identity really changes (the
+commissioner seat) and proven by lifetime at the native account. What remains is listed in § Part 9
+"Remains": live polling, two owner rulings (Pool G1, trade builder one-command), and one optional
+registry ruling (read modes on desktop declarations). Do not replace UI/action state to inflate counts.
 
 ## Contract
 
@@ -80,7 +80,7 @@ relative to `frontend/src/app/`. Query-neutral/action-only state is explicitly o
 | Commissioner `commissioner/hostedRoom.ts` | hosted league bundle | MOVED (part 7); keyed by native-lineup scope |
 | Commissioner `commissioner/proxy.ts` (`leagueState`) | leagues picker + core/landing/ops settled reads | MOVED (part 8); picker in pre-read step, bundle keyed by league; controls read once |
 | Commissioner `commissioner/{actReadings,competitionReadings}.ts` | one-shot option reads for an act form | NOT a read store: write-admission inputs, revision-checked per open |
-| Commands `commands/{moves,sessionMoves,mflKey}.ts` | moves/key/session state | OPEN audit; split read state from action state first |
+| Commands `commands/{moves,sessionMoves,mflKey}.ts` | moves journal / MFL key status | NOT a read store (part 9 audit, § Part 9) |
 | `contracts/{contractActState,releases}.ts`, `commissioner/{backupState,surfaceActions,controls}.ts` | action results / previews / controls | MIXED; migrate only audited reads, not mutation admission |
 | `shell/state.ts`, `reports/sortState.ts`, `clock/windowState.ts`, search/specimen/ticker | navigation/sort/edit/action/presentation | NOT read-store migration targets |
 
@@ -248,4 +248,52 @@ leagueState. Shared: Archive, Race, Comms, reports, Control, Sources, Research, 
 Counterparties and historical details. `target:season` is not a session boundary (features already
 reread on it). Ending without a following reread would blank private screens: wiring must test the
 pair together. Tests exist for the primitive (3, three mutants rejected); wiring tests do not.
+
+## Part 9 — session wiring and close
+
+**Session ownership refined.** One app-wide session (the Part 8 sketch) would reset every private screen
+at any boundary, and most have no reread at that moment. Each owner of an identity now owns its session,
+created inside that owner (no module global, no listener):
+
+| Boundary | Evidence | Wiring |
+|---|---|---|
+| Commissioner seat (`LocalSignIn` → `leagueState.changeSeat()`) | another seat may see other leagues, roles, controls | WIRED. `createLeagueState` joins its league query to a seat session as **private**; `changeSeat` ends it (readings, picker, read-once controls and outcome cleared; old-seat replies fenced) then `choose(previous selection)`. Selection survives exactly as the old `choose()` did. |
+| Native account enter/forget/revoke-device/revoke-all | `NativeAccount.run` already drops `view.franchise` before admission | ALREADY ENDED by lifetime: `HostedLeague` unmounts → `room.dispose()` (generation++, `query.invalidate()`, private readings cleared), remount → `room.refresh()`. A second session object would duplicate dispose. Startup never carries a franchise (Go `serverclient` `status` sets only the message). |
+| MFL key connect/forget (`requestMFL`) | league is the constant `ingestion.LeagueID`; season changes arrive by `target:season`; held reads are keyed by explicit franchise, not by key; key-dependent Go data (pending trades) is already fenced by `KeyGeneration` | NOT WIRED. No held read changes identity at the key boundary; ending would blank lineups/trades/alerts and reread identical data. Revisit only if a read becomes key-scoped. |
+
+Tests (pair = end + reread together): `leagueState.test.ts` seat change (old-seat reply fenced, readings
+cleared at once, same league and controls reread); `localSignIn.test.tsx` asserts an accepted sign-in calls
+`changeSeat`; `nativeAccount.test.tsx` four cases (each action closes the open room before admission;
+only `enter` with an assigned franchise reopens). Mutants rejected, each restored: no `seat.end()`;
+`shared` membership; no reread; reread without the previous selection; `LocalSignIn` back to `choose()`;
+`NativeAccount` without the pre-admission view clear (all four cases fail).
+
+**Commands audit (brief step 2).** Not split, because neither is a held-read store:
+- `moves.ts`/`sessionMoves.ts`: `moves` is one receipt journal written by both the `TargetMoves` read and
+  draft/hand-off actions, merged audit-monotonically ("audits only grow"); per-franchise loads dedupe an
+  in-flight load (the query tool revalidates instead). Moving the read part would change dedup and could
+  roll back a hand-off. `drafting/draftErrors` are action state; `demo` is the fixture stand-in.
+- `mflKey.ts`: one status written by read, connect and forget under one `pending` guard that serializes
+  them; the read is the keyring check, not a held reading. Splitting would break that serialization.
+
+**Command bar flags (brief step 3).** The bar's IDs are already generated from the registry
+(`commandbar.gen.ts`, `Browser.Searchable`, no args); none are reads. The remaining hand list is the
+37-adapter `selected` list in `frontend/scripts/nativegen/reads.go`. Replacing it with a registry flag
+needs `Modes: [read]` on those legacy desktop declarations (`commandcatalog/desktop.go` has none) — a
+registry mode change, out of scope. Owner ruling: optional.
+
+Gates: `tsc --noEmit` passes. Full frontend suite once (vitest, 2 threads): 141 files / 1,706 tests, 1
+failure: the readability gate (`controls.test.ts`, >110-char lines) caught two new test lines. Both were
+shortened (a test title and a comment, no logic change); that gate plus the two edited files then pass
+(3 files / 41 tests). The full suite was not rerun for that string-only change.
+
+### Remains (exact)
+
+1. Live game `now/liveState.ts` — polling/revision lifetime; stays with live polling.
+2. Pool `pool/state.ts` — owner ruling: `offers.TargetPool`/`TargetBidPlans` are G1.
+3. Trade builder `shell/tradeBuilderState.ts` — owner ruling: read/preview/save share `TargetTradeBuilder`.
+4. Optional: registry read modes on the 37 audited desktop adapters, replacing the generator list.
+5. `cache-first` stays limited to historical details; extending it needs the session wiring above per owner.
+Not targets: contracts/commissioner action and option-read modules, moves journal, MFL key status,
+navigation/sort/presentation stores (inventory table).
 

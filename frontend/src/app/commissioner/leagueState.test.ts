@@ -191,7 +191,7 @@ describe('Landing reading lifecycle', () => {
 });
 
 describe('League seat change (read session end, then reread)', () => {
-  it('clears the old seat at once, fences its reply and rereads the same league and its controls', async () => {
+  it('clears the old seat at once, fences its reply, rereads the same league and controls', async () => {
     let release: () => void = () => undefined;
     let hold = false;
     let controls = 0;
