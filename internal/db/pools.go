@@ -40,7 +40,7 @@ type Pools struct {
 }
 
 // Open refuses newer files before opening a writer. The optional version is the file's
-// newest known migration; the default is MainVersion (also the current what-if version).
+// newest known migration; the default is MainVersion, so what-if and history files must pass theirs.
 func Open(ctx context.Context, path string, versions ...int) (*Pools, error) {
 	maxVersion := MainVersion()
 	if len(versions) > 1 || (len(versions) == 1 && versions[0] < 0) {
