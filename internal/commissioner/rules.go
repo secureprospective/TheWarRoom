@@ -94,13 +94,8 @@ func resolveRecords(records []Record) (leaguerules.RuleSet, error) {
 
 // CheckRulesAppend refuses a change whose result the league's rules could not hold together.
 func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
-	if raw.Command == RulesSet {
-		switch raw.Args.Field {
-		case "league.teams":
-			return Refused(errors.New("rule change refused: Teams is counted from the league's franchises; add or remove franchises instead"))
-		case "league.divisions":
-			return Refused(errors.New("rule change refused: Divisions is counted from the division alignment; change the alignment instead"))
-		}
+	if err := checkShapeChange(raw, records, at); err != nil {
+		return err
 	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
@@ -167,13 +162,22 @@ func checkRuleChangesSomething(raw RawCommand, records []Record, at time.Time) e
 	}
 	trial := raw
 	trial.Effective = "now"
-	after, err := ruleValue(append(append([]Record(nil), base...), Record{Command: trial,
-		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}}), raw.Args.Field)
+	proposed := append(append([]Record(nil), base...), Record{Command: trial,
+		Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})
+	after, err := ruleValue(proposed, raw.Args.Field)
 	if err != nil {
 		return Refused(fmt.Errorf("rule change refused: %w", err))
 	}
 	if before != after {
 		return nil
+	}
+	// A Divisions change at the count already set still divides a league that has no alignment yet.
+	if raw.Args.Field == divisionsField {
+		was, wasErr := ruleValue(base, alignmentField)
+		will, willErr := ruleValue(proposed, alignmentField)
+		if wasErr == nil && willErr == nil && was != will {
+			return nil
+		}
 	}
 	if waiting {
 		return Refused(errors.New("this change is already waiting for the next rollover. Nothing would change"))

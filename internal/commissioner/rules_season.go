@@ -155,22 +155,13 @@ func RulesNow(records []Record, now time.Time) (leaguerules.RuleSet, error) {
 }
 
 func countedShape(rules *leaguerules.RuleSet, records []Record) {
-	for _, r := range records {
-		if r.Command.Command == Create {
-			rules.League.Teams = leaguerules.Value[int]{State: leaguerules.IsKnown,
-				Value: len(r.Command.Args.Franchises), Citation: "Counted from the league's franchises"}
-			break
-		}
+	if len(records) != 0 && records[0].Command.Command == Create {
+		rules.League.Teams = leaguerules.Value[int]{State: leaguerules.IsKnown,
+			Value: len(LeagueFranchises(records)), Citation: "Counted from the league's franchises"}
 	}
 	if rules.League.Alignment.State == leaguerules.IsKnown {
-		divisions := map[string]bool{}
-		for _, name := range rules.League.Alignment.Value {
-			if name != "" {
-				divisions[name] = true
-			}
-		}
 		rules.League.Divisions = leaguerules.Value[int]{State: leaguerules.IsKnown,
-			Value: len(divisions), Citation: "Counted from the division alignment"}
+			Value: leaguerules.DivisionCount(rules.League.Alignment.Value), Citation: "Counted from the division alignment"}
 	}
 }
 
@@ -261,6 +252,9 @@ type seasonFold struct {
 	alignmentSet bool
 	// conferencesSet says the commissioner set division conferences before the starting snapshot.
 	conferencesSet bool
+	// franchises is the league's franchises as of the entry being folded; a Teams or Divisions change
+	// carries it so its resolution keeps the alignment to them.
+	franchises []string
 }
 
 func (f *seasonFold) add(r Record) error {
@@ -274,6 +268,7 @@ func (f *seasonFold) add(r Record) error {
 func (f *seasonFold) addChange(r Record) error {
 	switch r.Command.Command {
 	case Create:
+		f.franchises = r.Command.Args.Franchises
 		seeded, err := seedChanges(r, f.season)
 		if err != nil {
 			return err
@@ -300,6 +295,12 @@ func (f *seasonFold) addChange(r Record) error {
 		if err != nil || !ok {
 			return err
 		}
+		if n, ok := teamCount(r); ok {
+			f.franchises = resizedFranchises(f.franchises, n)
+		}
+		if c.Field == teamsField || c.Field == divisionsField {
+			c.Franchises = slices.Clone(f.franchises)
+		}
 		f.timed = append(f.timed, startedChange{c, start})
 		f.noteSetNow(r)
 	}
@@ -319,7 +320,7 @@ func (f *seasonFold) addCarried(r Record) {
 // noteSetNow remembers a commissioner setting of the divisions or conferences, which a later start keeps.
 func (f *seasonFold) noteSetNow(r Record) {
 	now := r.Command.Effective == "now"
-	f.alignmentSet = f.alignmentSet || (now && r.Command.Args.Field == alignmentField)
+	f.alignmentSet = f.alignmentSet || (now && (r.Command.Args.Field == alignmentField || r.Command.Args.Field == divisionsField))
 	f.conferencesSet = f.conferencesSet || (now && r.Command.Args.Field == conferencesField)
 }
 

@@ -131,7 +131,7 @@ func prepareClose(raw *RawCommand, records []Record, now time.Time, facts native
 		}
 		outcome.Pool = append(outcome.Pool, NativePoolEntry{Player: p.ID, Name: name, Season: season})
 	}
-	outcome.Issued = issuedPicks(holds, records[0].Command.Args.Franchises, season)
+	outcome.Issued = issuedPicks(holds, LeagueFranchises(records), season)
 	raw.Args.DraftOutcome = outcome
 	return nil
 }

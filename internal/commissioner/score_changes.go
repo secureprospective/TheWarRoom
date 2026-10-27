@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -100,14 +101,8 @@ func checkScoreAppend(raw RawCommand, records []Record) error {
 	if raw.Command != ScoreFranchise {
 		return nil
 	}
-	for _, r := range records {
-		if r.Command.Command == Create {
-			for _, id := range r.Command.Args.Franchises {
-				if id == change.Franchise {
-					return nil
-				}
-			}
-		}
+	if slices.Contains(LeagueFranchises(records), change.Franchise) {
+		return nil
 	}
 	return Refused(fmt.Errorf("that franchise is not in this app league"))
 }

@@ -143,5 +143,5 @@ func RulePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, n
 			}
 		}
 	}
-	return out, nil
+	return out, shapePreview(&out, raw, records, now)
 }

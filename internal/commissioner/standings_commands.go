@@ -94,7 +94,7 @@ func checkStandingsAppend(raw RawCommand, records []Record) error {
 	if len(records) == 0 {
 		return Refused(fmt.Errorf("this app league has not been created"))
 	}
-	franchises := records[0].Command.Args.Franchises
+	franchises := LeagueFranchises(records)
 	switch raw.Command {
 	case StandingsRecordAdjust:
 		if !slices.Contains(franchises, change.Franchise) {

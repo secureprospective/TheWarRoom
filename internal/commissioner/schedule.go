@@ -200,7 +200,7 @@ func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	if err != nil {
 		return nil, err
 	}
-	teams := records[0].Command.Args.Franchises
+	teams := LeagueFranchises(records)
 
 	pattern := rules.Schedule.Pattern
 	if raw.Args.Schedule.Pattern != "" {
@@ -265,7 +265,7 @@ func checkScheduleWeek(week ScheduleWeek, target []ScheduleWeek, records []Recor
 		return fmt.Errorf("choose a week in the generated or published schedule")
 	}
 	remaining := make(map[string]bool)
-	for _, team := range records[0].Command.Args.Franchises {
+	for _, team := range LeagueFranchises(records) {
 		remaining[team] = true
 	}
 	for _, game := range week.Games {
@@ -275,7 +275,7 @@ func checkScheduleWeek(week ScheduleWeek, target []ScheduleWeek, records []Recor
 		delete(remaining, game.Home)
 		delete(remaining, game.Away)
 	}
-	odd := len(records[0].Command.Args.Franchises)%2 == 1
+	odd := len(LeagueFranchises(records))%2 == 1
 	if odd {
 		if len(remaining) != 1 || !remaining[week.Bye] {
 			return fmt.Errorf("give exactly one franchise a bye")

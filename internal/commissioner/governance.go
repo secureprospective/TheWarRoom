@@ -12,6 +12,9 @@ func recordEvents(r Record) ([]governance.Event, error) {
 	if r.Command.Command == Create {
 		return creationEvents(r), nil
 	}
+	if n, ok := teamCount(r); ok {
+		return teamsEvents(n), nil
+	}
 	if r.Command.Args.People != nil {
 		people := r.Command.Args.People
 		var event governance.Event

@@ -42,12 +42,7 @@ func nativeDirectory(league string, records []Record, state governance.State, no
 	out := NativeDirectory{League: league, Name: Replay(records).Name, Revision: int64(len(records)),
 		Source:     "App league; franchise identities and divisions are never synced with MFL",
 		Franchises: []NativeDirectorySeat{}}
-	seats := []PeopleSeat{}
-	for _, r := range records {
-		if r.Command.Command == Create {
-			seats = readSeats(state, r.Command.Args.Franchises)
-		}
-	}
+	seats := readSeats(state, LeagueFranchises(records))
 	alignment := rules.League.Alignment
 	if assets.Seeded {
 		out.RosterSeason = assets.Snapshot.Season
@@ -69,6 +64,13 @@ func applyNativeNames(seats []PeopleSeat, records []Record) {
 		if r.Command.Command == NativeSeed && r.Command.Args.Native != nil {
 			for _, f := range r.Command.Args.Native.Franchises {
 				setNativeName(seats, f.ID, f.Name, f.Abbreviation)
+			}
+		}
+		if n, ok := teamCount(r); ok && active[r.Receipt.Entry] {
+			// A team the change removes starts again under its first name if it is ever added back.
+			for _, id := range franchiseIDs(maxFranchises)[n:] {
+				name, abbreviation := defaultFranchiseName(id)
+				setNativeName(seats, id, name, abbreviation)
 			}
 		}
 		if r.Command.Command == "commish.franchise.edit" && active[r.Receipt.Entry] {

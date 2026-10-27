@@ -63,7 +63,7 @@ func rulesOfExplicitSeason(records []Record, starts []time.Time, season int, at 
 		return firstExplicitRules(records, starts, season, at)
 	}
 	changes := leaguerules.SeedChanges(*base, base.LeagueID, season, records[since-1].Receipt.RecordedAt)
-	fold := seasonFold{season: season, starts: starts, active: active}
+	fold := seasonFold{season: season, starts: starts, active: active, franchises: LeagueFranchises(records[:since])}
 	for _, change := range changes {
 		fold.timed = append(fold.timed, startedChange{change, change.RecordedAt})
 	}

@@ -306,7 +306,7 @@ func checkNativeAppend(raw RawCommand, records []Record, recovery bool) error {
 			return Refused(fmt.Errorf("this league already has its starting snapshot"))
 		}
 	}
-	ids := records[0].Command.Args.Franchises
+	ids := LeagueFranchises(records)
 	for _, f := range raw.Args.Native.Franchises {
 		if !slices.Contains(ids, f.ID) {
 			return Refused(fmt.Errorf("the snapshot must use this app league's franchises"))

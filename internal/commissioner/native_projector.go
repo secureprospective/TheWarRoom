@@ -57,6 +57,8 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return projectBid(assets.Snapshot, waivers, record)
 	}
 	switch record.Command.Command {
+	case RulesSet:
+		return projectTeamsChange(assets, record)
 	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
 		return applyAssetCorrection(assets.Snapshot, records[:i], record)
 	case SeasonRollover:

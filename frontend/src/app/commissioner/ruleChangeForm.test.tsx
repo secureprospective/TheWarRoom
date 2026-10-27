@@ -7,6 +7,7 @@ import { leagueState, staleWords } from './proxy';
 import { RuleChangeForm } from './RuleChangeForm';
 import LeagueRules from './LeagueRules';
 import rulesWire from './rules.wire.testdata.json';
+import previewWire from './preview.wire.testdata.json';
 
 beforeEach(() => leagueState.forget());
 afterEach(async () => { await unmount(); vi.useRealTimers(); });
@@ -178,6 +179,26 @@ describe('Change a rule', () => {
     await type(control(host, `${map} › AFC East`), 'AFC');
     await hold(host);
     expect(calls.sent[0].args).toEqual({ field: 'league.divisionConferences', value: { 'AFC East': 'AFC' } });
+  });
+  it('sends a Teams change like any rule and shows the teams it adds before it is recorded', async () => {
+    const teams = { ...previewWire.reason, fields: [{ label: 'Teams', before: '4',
+      beforeSource: 'Counted from the league\'s franchises', after: '6 (adds Franchise 5, Franchise 6)',
+      afterSource: 'Your proposed change', when: 'in force now' }] };
+    const { app, calls } = stub({ TargetCommissionerPreview: async body => {
+      const sent = JSON.parse(body) as { league: string; expected: number };
+      return { ...teams, target: { ...teams.target, league: sent.league, version: sent.expected } };
+    } });
+    const host = await mount(form('league.teams'), app);
+    expect(present(host, 'In force now4')).toBe(true);
+    await type(control(host, 'New value for Teams'), '6');
+    await type(control(host, 'When it takes effect'), 'now');
+    await type(control(host, 'Reason'), 'Two expansion teams');
+    await settle();
+    expect(present(host, 'Teams: 4 → 6 (adds Franchise 5, Franchise 6) (in force now)')).toBe(true);
+    await act(async () => { (button(host, confirm).props().onClick as () => void)(); });
+    await settle();
+    expect(calls.sent[0]).toMatchObject({ command: 'commish.rules.set', effective: 'now', reason: 'Two expansion teams',
+      args: { field: 'league.teams', value: 6 } });
   });
   it('will not send a list with a blank entry, and says which', async () => {
     const host = await mount(form('ir.eligible'), stub().app);

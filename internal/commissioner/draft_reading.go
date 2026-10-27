@@ -104,7 +104,7 @@ func readDraft(records []Record, season int, at time.Time, standings DraftStandi
 	if basis.started {
 		through = basis.start
 	}
-	basis.order, err = rookiedraft.Order(rules.Draft, records[0].Command.Args.Franchises, owned,
+	basis.order, err = rookiedraft.Order(rules.Draft, LeagueFranchises(records), owned,
 		standings.Final(records, season-1, through))
 	if err != nil {
 		basis.words = draftWords(err)
@@ -226,8 +226,9 @@ func draftReadingFields() []string {
 }
 
 func draftOwners(records []Record) []DraftOwner {
-	seats := make([]PeopleSeat, len(records[0].Command.Args.Franchises))
-	for i, id := range records[0].Command.Args.Franchises {
+	ids := LeagueFranchises(records)
+	seats := make([]PeopleSeat, len(ids))
+	for i, id := range ids {
 		seats[i] = PeopleSeat{Franchise: id, Name: fmt.Sprintf("Franchise %d", i+1)}
 	}
 	applyNativeNames(seats, records)

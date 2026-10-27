@@ -156,7 +156,7 @@ func checkDraftReversal(raw RawCommand, records []Record, at time.Time, standing
 
 // checkOrderList holds a recorded order to the league's franchises and the draft's rounds.
 func checkOrderList(d *RawDraftArgs, records []Record, at time.Time) error {
-	franchises := records[0].Command.Args.Franchises
+	franchises := LeagueFranchises(records)
 	seen := map[string]bool{}
 	for _, f := range d.Order {
 		if !slices.Contains(franchises, f) || seen[f] {
