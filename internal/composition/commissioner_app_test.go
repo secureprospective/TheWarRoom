@@ -36,12 +36,29 @@ func executeCommissionerTest(t *testing.T, app *App, raw commissioner.RawCommand
 	return commissionertest.Execute(t, newCommissionerAPI(app).TargetCommissionerExecute, raw)
 }
 
+// historicalLeague preserves frozen pre-auto-start ledgers; mutations under test still use the API.
+func historicalLeague(t *testing.T, app *App, raw commissioner.RawCommand) commissioner.Receipt {
+	t.Helper()
+	if raw.Command != commissioner.Create {
+		t.Fatal("historical fixture needs a Create")
+	}
+	principal, err := app.commissionerPrincipal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt, err := app.core.History.ExecuteCommissioner(t.Context(), raw, principal, app.core.CommissionerAuthorizer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return receipt
+}
+
 func peopleWireLeague(t *testing.T, app *App) commissioner.RawCommand {
 	t.Helper()
 	raw := commissioner.RawCommand{League: "native.people", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "People league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
 		Reason: "Create our league", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, app, raw)
+	historicalLeague(t, app, raw)
 	raw.Command, raw.Visibility = "commish.seat.replace", "league"
 	for i, owner := range []string{"owner-one", "owner-two", "owner-three"} {
 		raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{
@@ -178,7 +195,7 @@ func TestCommissionerWire(t *testing.T) {
 	raw := commissioner.RawCommand{League: "native.wire", Command: commissioner.Create,
 		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}, Reason: "Start our own league", Request: "create",
 		Effective: "now", Visibility: "league"}
-	first := executeCommissionerTest(t, app, raw)
+	first := historicalLeague(t, app, raw)
 	raw.Command, raw.Args = commissioner.Revert, commissioner.RawArgs{Entry: first.Entry}
 	raw.Expected, raw.Request, raw.Reason, raw.Visibility = 1, "private", "Private correction", "private"
 	private := executeCommissionerTest(t, app, raw)
@@ -256,7 +273,7 @@ func TestCommissionerRulesWire(t *testing.T) {
 	raw := commissioner.RawCommand{League: "native.rules", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Rules league", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 4},
 		Reason: "Start our own league", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, app, raw)
+	historicalLeague(t, app, raw)
 	raw.Command, raw.Reason, raw.Visibility = commissioner.RulesSet, "Owners agreed the roster size", "league"
 	raw.Args = commissioner.RawArgs{Field: "roster.limits", Value: json.RawMessage(`{"min":20,"max":70}`)}
 	raw.Expected, raw.Request, raw.Effective = 1, "limits", "now"

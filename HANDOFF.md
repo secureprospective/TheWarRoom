@@ -1,31 +1,32 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-27, `session/mode1-mirror`. Settings F2a implemented; ready for ClaudeBox review. No push.
+Bee — 2026-10-27, `session/mode1-mirror`. Settings F2b implemented; ready for ClaudeBox review. No push.
 
 ## Where it stands
-- Create records persist `source`; `LeagueSource` alone reads pre-source compatibility.
-- Source selects native empty/OL-lot starts versus unchanged MFL held-data admission.
-- Restore points retain source and preset; old points recover as MFL import / Legacy.
-- Offline recovery uses `CheckNativeRecoveryAppend`, never a caller-controlled flag. Played native rosters recover without relaxing normal start admission; recovered copies stay read-only.
-- Explicit valid source survives preparation independently of preset. Pre-source Create retries still match their original canonical request without rewriting history.
-- App capture uses source; generated Wails models include the optional field.
+- App-native Create + `NativeStart` append atomically, using the same reason and clock. Seed failure rolls both back.
+- Source alone selects automatic start; MFL-import Create remains one record and waits for held capture.
+- Original Create receipts/retries stay stable; start keys append `.native-start`. Hosted starts use recipient tokens and inherit credential-admitted creation, while retaining seed domain checks.
+- `seed` job exists only before a start: native “Start the league”, import “Record starting assets”. Launcher/tray follow that job; no wire-shape change or binding generation needed.
+- Renamed native start source/tests; references updated. Placement/shard weights index packages and had no old filename.
+- Low-level single-record creation remains available for historical fixtures; older native Default32 and empty leagues can still start manually.
 
 ## Evidence
-- PASS: build all; vet internal; test inventory; requested package tests with and without race; lint (0 issues); bindings generation/freshness; frontend TypeScript.
-- Native 12-team, native Legacy-rules 12-team, native Default32 and old/new Legacy 32-team recovery round trips preserve source, preset, exact contracts and the read-only fence.
-- Mutation: reinstating unconditional empty-snapshot refusal fails both native-start and store-admission tests; mutation removed and final race batch passes.
-- Existing MFL empty-seed and held-capture error text tested; refused append leaves ledger unchanged.
+- PASS: requested test inventory and package tests; race batch for commissioner, history, app/commissioner and leagueservice; targeted composition creation/calendar/schedule/restore/wire tests.
+- PASS: build all, vet internal, lint (0 issues), TypeScript, 31 frontend files / 426 tests; UI detector returned no findings.
+- Failing-first creation table proved native leagues previously lacked starts. Table now covers exact Default32 seed bytes, open bids, empty starts, source/preset independence, jobs and retries.
+- Injected seed insert failure leaves no Create; retry after removing failure records both. Hosted admission/revocation regression passes with both records.
 
 ## Next move
-ClaudeBox reviews F2a; live-test a 12-team empty-preset start and offline recovery on a throwaway profile. Passing: zero starting players/picks/pool; recovered source/preset/contracts unchanged and copy read-only.
+ClaudeBox reviews and runs the live gate on a throwaway profile. Create Default32: 32 unassigned O-Line lots, open bids, no starting-assets launcher/tray. Create empty: started, no lots; unset rules still need rulings. Older unstarted native: “Start the league”. MFL import: held-capture action until started.
 
 ## Blocked on
-Nothing for this brief. No live GUI test or fleet coordination performed.
+No implementation blocker. GUI verification and independent review not performed here. No production databases or live MFL calls used.
 
 ## Tried and rejected
-- Recovery request-name bypass: a caller could reuse the name. Dedicated Go-only recovery admission keeps normal commands strict.
-- Unconditional empty snapshot refusal: prevents native empty starts; retained only for MFL held capture/admission.
+- Create then seed separately: the store can make both atomic.
+- Using ledger count for hosted seed Expected: recipient concurrency requires its opaque token.
+- Requiring a separate hosted seed capability: automatic start is internally derived from already-admitted Create, not another user operation.
 
 ## Debt left
-No F2a implementation debt identified. Live verification remains with ClaudeBox. Earlier unrelated project debt remains in the preceding handoff's git history.
+Live GUI verification remains. Existing generic seed receipt/ledger descriptions still refer to held data even for native starts; unchanged by this brief. Earlier unrelated debt remains in git history.

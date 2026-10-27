@@ -2,8 +2,10 @@ package history
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
@@ -73,4 +75,32 @@ func (s *Store) Corrections(ctx context.Context, league string) (commissioner.Co
 	}
 	out.Revision = commissioner.ViewRevision(ctx, records, out.Revision)
 	return out, nil
+}
+
+// appendNativeStart shares creation's transaction; a refused or failed start rolls both records back.
+func (s *Store) appendNativeStart(ctx context.Context, tx *sql.Tx, records []commissioner.Record,
+	principal string, auth commissioner.Authorizer, at time.Time, creating bool) error {
+	if !creating || commissioner.LeagueSource(records) != commissioner.SourceNative {
+		return nil
+	}
+	create := records[0].Command
+	seed, err := commissioner.NativeStart(create.League, records, at)
+	if err != nil {
+		return fmt.Errorf("build native start: %w", err)
+	}
+	raw := commissioner.RawCommand{League: create.League, Command: commissioner.NativeSeed,
+		Args: commissioner.RawArgs{Native: &seed}, Expected: commissioner.ViewRevisionAt(ctx, records, int64(len(records)), at),
+		Request: create.Request + ".native-start", Reason: create.Reason, Effective: "now", Visibility: "league"}
+	raw, canonical, err := preparedCommand(raw, principal, true)
+	if err != nil {
+		return err
+	}
+	role, _, err := s.checkCommissionerCommand(ctx, raw, principal, auth, records, appendFacts{}, at)
+	if err != nil {
+		return err
+	}
+	// The start is an internal effect of the admitted Create, not a separate credential capability.
+	_, err = s.appendAdmittedCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
+		canonical: canonical, at: at, records: records})
+	return err
 }

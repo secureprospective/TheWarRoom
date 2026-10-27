@@ -6,6 +6,7 @@ import { DensityScreen } from './DensityScreen';
 import { actsFor, liveDraftControls } from './actTable';
 import { commands } from '../commands/registry';
 import { JobsStrip } from './JobsStrip';
+import { startingJob } from './jobs';
 import { parseOpen, parseTray, scopedRules, type ActionKind, type LandingView } from './landing';
 import { LeaguePicker } from './LeaguePicker';
 import type { People } from './people';
@@ -52,7 +53,7 @@ export default function LeagueLanding() {
       return;
     }
     const opener = document.activeElement as HTMLElement;
-    if (args.action === 'tray' && args.value === 'seed' && selected) {
+    if (args.action === 'tray' && args.value === 'seed' && selected && startingJob(jobs)) {
       setTray({ kind: 'seed', opener });
       return;
     }
@@ -87,7 +88,7 @@ export default function LeagueLanding() {
     }
     if (found) setView(v => ({ open: found.control.group,
       reveal: { control: found.control.id, field: found.field, n: (v.reveal?.n ?? 0) + 1 } }));
-  }), [entries, rules, people, selected]);
+  }), [entries, rules, people, selected, jobs]);
   // Starting a league moves the picker to the new league; the tray stays, to show what was recorded.
   useEffect(() => { setTray(t => (t?.kind === 'start' ? t : undefined)); }, [selected]);
   // Once the opened group is drawn, move to the control it was opened for.
@@ -126,7 +127,7 @@ export default function LeagueLanding() {
         <CommissionerActTray key={`${selected}:${tray.control}`} control={tray.control} league={selected}
           opener={tray.opener} background={background.current} onClose={() => setTray(undefined)} />
       </Suspense>}
-      {tray?.kind === 'seed' && <Suspense fallback={<p role="status">Opening starting assets…</p>}>
+      {tray?.kind === 'seed' && startingJob(jobs) && <Suspense fallback={<p role="status">Opening starting assets…</p>}>
         <SeedTray key={selected} league={selected} opener={tray.opener}
           background={background.current} onClose={() => setTray(undefined)} />
       </Suspense>}

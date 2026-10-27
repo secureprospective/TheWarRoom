@@ -124,7 +124,7 @@ func TestRestoreOnAnotherComputerKeepsCommissionerWithSignIn(t *testing.T) {
 	requireRole(t, restored, raw.League, "Commissioner")
 	grant := commissioner.RawCommand{League: raw.League, Command: "commish.franchise.edit",
 		Args:   commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: "franchise.01", Name: "Restored", Abbreviation: "RES"}},
-		Reason: "Prove restored authority", Request: "restored-edit", Expected: 1, Effective: "now", Visibility: "league"}
+		Reason: "Prove restored authority", Request: "restored-edit", Expected: 2, Effective: "now", Visibility: "league"}
 	executeCommissionerTest(t, restored, grant)
 	// The source computer keeps its own link and its role.
 	requireRole(t, source, raw.League, "Commissioner")

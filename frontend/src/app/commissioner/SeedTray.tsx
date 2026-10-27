@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { nativeBindings } from './actReadings';
 import { newKey } from './forms';
+import { startingJob } from './jobs';
 import { HoldToFire } from './HoldToFire';
 import { PreviewReview } from './PreviewReview';
 import type { Preview } from './preview';
@@ -13,6 +14,8 @@ import SideTray from './SideTray';
 export const seedPreviewPause = 400;
 
 export function SeedForm({ league }: { league: string }) {
+  const start = startingJob(leagueState.use().jobs);
+  const label = start?.name ?? 'Record starting assets';
   const [reason, setReason] = useState('');
   const [target] = useState(() => ({ league, expected: leagueState.peek().ledger?.revision ?? 0 }));
   const [request, setRequest] = useState(newKey);
@@ -47,26 +50,28 @@ export function SeedForm({ league }: { league: string }) {
     finally { setSending(false); }
   };
   const ready = !!preview && preview.blockers.length === 0 && reason.trim() !== '' && !sending && !receipt;
-  return <section className="league-form" aria-label="Record starting assets">
-    <p>Record the held franchises, rostered players and draft picks as this league’s starting assets.</p>
+  return <section className="league-form" aria-label={label}>
+    <p>{start?.words ?? "Record the held franchises, rostered players and draft picks as this league’s starting assets."}</p>
     <p>No MFL changes are made.</p>
     <PreviewReview preview={review?.preview} confirm={<>
       <label>Reason (required)<textarea value={reason} rows={2} onChange={e => {
         setReason(e.target.value); setRequest(newKey());
       }} /></label>
-      <HoldToFire label="Record starting assets" body={body} disabled={!ready}
+      <HoldToFire label={label} body={body} disabled={!ready}
         onConfirm={() => void record()} answer={sending ? 'sending' : receipt} />
       {review && !preview && !error && !receipt && <p role="status">Checking the change again…</p>}
       {error && <p role="alert">{error}</p>}
       {receipt && <p role="status">{receipt}</p>}
     </>}>
-      {!review && !error && <p role="status">Reading the held starting assets preview…</p>}
+      {!review && !error && <p role="status">Reading the starting assets preview…</p>}
     </PreviewReview>
   </section>;
 }
 export default function SeedTray({ league, opener, background, onClose }: {
   league: string; opener: HTMLElement; background: HTMLElement | null; onClose(): void;
 }) {
-  return <SideTray title="Record starting assets" screen="landing" opener={opener} background={background}
+  const start = startingJob(leagueState.use().jobs);
+  if (!start) return null;
+  return <SideTray title={start.name} screen="landing" opener={opener} background={background}
     onClose={onClose} closeLabel="Close starting assets"><SeedForm league={league} /></SideTray>;
 }

@@ -230,8 +230,8 @@ func TestHostedServiceCarriesAdmissionIntoStoreTransaction(t *testing.T) {
 		t.Fatalf("retry returned revoked receipt: %v", err)
 	}
 	events, err = store.Events(t.Context(), raw.League, commissioner.Stream, 0)
-	if err != nil || len(events) != 1 {
-		t.Fatalf("retry appended: %d %v", len(events), err)
+	if err != nil || len(events) != 2 || events[1].Payload.Commissioner.Command.Command != commissioner.NativeSeed {
+		t.Fatalf("create/start or retry ledger: %d %v", len(events), err)
 	}
 }
 

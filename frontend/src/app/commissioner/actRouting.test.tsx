@@ -98,3 +98,26 @@ it('live multi-control jobs prefer the matching act over their rule settings', a
   await click(all(host, 'button')[0]);
   expect(calls).toHaveBeenLastCalledWith({ screen: 'landing', action: 'open', value: 'CM-037' });
 });
+
+for (const source of ['mfl_import', 'native'] as const) {
+  for (const started of [false, true]) {
+    it(`${source} ${started ? 'started' : 'unstarted'} league shows only its available start action`, async () => {
+      const label = source === 'native' ? 'Start the league' : 'Record starting assets';
+      const jobs = { ...jobsWire.fresh, jobs: started ? [] : [{ id: 'seed', name: label,
+        state: 'live', words: 'Start this league.', controls: [], opens: '', closes: '' }] };
+      const { app } = stub({ TargetCommissionerControls: async () => controlsWire,
+        TargetCommissionerJobs: async () => jobs });
+      const host = await mount(render(LeagueLanding), app);
+      await act(async () => { await leagueState.choose(); });
+      await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }));
+      await settle();
+      const launcher = all(host, 'button').find(b => b.textContent === label);
+      expect(launcher !== undefined).toBe(!started);
+      expect(host.textContent.includes(`${label}Live`)).toBe(!started);
+      await act(async () => surfaceActions.run({ screen: 'landing', action: 'tray', value: 'seed' }));
+      await settle();
+      expect(dialogOf(host) !== undefined).toBe(!started);
+      if (!started) expect(dialogOf(host)!.textContent).toContain(label);
+    });
+  }
+}

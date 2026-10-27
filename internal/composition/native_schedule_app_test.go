@@ -167,7 +167,7 @@ func TestNativeScheduleRegenerationChangesOwnerOpponentRevertRestart(t *testing.
 	raw := commissioner.RawCommand{League: "native.calendar", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Four teams", Preset: commissioner.PresetEmpty, FranchiseCount: 4, Season: 2026},
 		Reason: "Start our league", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, app, raw)
+	historicalLeague(t, app, raw)
 	raw.Command, raw.Expected, raw.Request = commissioner.RulesSet, 1, "align"
 	raw.Args = commissioner.RawArgs{Field: "league.alignment", Value: json.RawMessage(
 		`{"franchise.01":"one","franchise.02":"one","franchise.03":"two","franchise.04":"two"}`)}

@@ -35,7 +35,7 @@ export function JobsStrip({ jobs, clock = Date.now }: { jobs: Jobs; clock?: () =
         {jobs.jobs.map(job => {
           const when = timing(job);
           const due = when ? `. ${when.text}: ${localTime(when.at)}` : '';
-          const seed = job.words === 'Record starting assets first.';
+          const seed = job.id === 'seed' || job.words === 'Record starting assets first.';
           const target = job.controls.find(id => actsFor(id).length > 0) ?? job.controls[0] ?? '';
           const lines = [stateWords[job.state], ...(job.state === 'unbuilt' ? [] : [job.words]),
             ...(job.state === 'live' && !job.closes ? ['No deadline'] : [])];

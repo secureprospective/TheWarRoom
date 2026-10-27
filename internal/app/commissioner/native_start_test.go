@@ -16,7 +16,22 @@ func TestDefault32StartsThroughTheSeedRequest(t *testing.T) {
 	create := opsCommand(commissioner.Create, 0, "create", commissioner.RawArgs{Name: "Ops league",
 		Preset: commissioner.PresetDefault32, Season: 2026})
 	create.Reason = "Start our league"
-	executeCommissionerTest(t, app, create)
+	if _, err := app.history.ExecuteCommissioner(t.Context(), create, app.session, nil); err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := app.TargetCommissionerJobs(create.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, job := range jobs.Jobs {
+		if job.ID == "seed" {
+			found = job.Name == "Start the league"
+		}
+	}
+	if !found {
+		t.Fatalf("older native league cannot start: %+v", jobs)
+	}
 	input := RawNativeSeedRequest{League: "native.ops", Expected: 1, Request: "start", Reason: "Hand out the lines"}
 	if _, err := app.TargetNativeSeed(input); err != nil {
 		t.Fatal(err)

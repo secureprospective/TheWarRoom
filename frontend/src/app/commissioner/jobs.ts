@@ -13,6 +13,8 @@ export type Job = {
 };
 export type Jobs = { league: string; name: string; revision: number; jobs: Job[] };
 
+export const startingJob = (jobs?: Jobs) => jobs?.jobs.find(job => job.id === 'seed');
+
 export function parseJobs(v: unknown): Jobs {
   const r = object(v, 'League jobs', ['league', 'name', 'revision', 'jobs']);
   return {

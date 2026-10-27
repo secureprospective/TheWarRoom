@@ -24,6 +24,15 @@
         ]
       },
       {
+        "id": "seed",
+        "name": "Record starting assets",
+        "state": "live",
+        "words": "Record the held franchises, rostered players and draft picks as this league’s starting assets.",
+        "opens": "",
+        "closes": "",
+        "controls": []
+      },
+      {
         "id": "communications",
         "name": "League notices and news",
         "state": "live",
@@ -167,18 +176,17 @@
   "empty": {
     "league": "native.empty",
     "name": "Jobs league",
-    "revision": 1,
+    "revision": 2,
     "jobs": [
       {
         "id": "setup",
         "name": "League setup",
         "state": "live",
-        "words": "119 league rules still need a ruling.",
+        "words": "118 league rules still need a ruling.",
         "opens": "",
         "closes": "",
         "controls": [
           "CM-001",
-          "CM-002",
           "CM-003",
           "CM-004",
           "CM-005",
@@ -201,6 +209,47 @@
           "CM-040",
           "CM-041",
           "CM-051"
+        ]
+      },
+      {
+        "id": "stat_queue",
+        "name": "Stat approval queue",
+        "state": "live",
+        "words": "Statistic changes from the held files wait in the queue for approval.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-031",
+          "CM-032"
+        ]
+      },
+      {
+        "id": "dot_review",
+        "name": "DOT review and appeal",
+        "state": "live",
+        "words": "Trades awaiting review: 0. Appeals awaiting a ruling: 0.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-014",
+          "CM-037"
+        ]
+      },
+      {
+        "id": "in_season",
+        "name": "In-season operations",
+        "state": "live",
+        "words": "Corrections, overrides and exceptions are open when needed; each needs a recorded reason.",
+        "opens": "",
+        "closes": "",
+        "controls": [
+          "CM-028",
+          "CM-029",
+          "CM-030",
+          "CM-033",
+          "CM-034",
+          "CM-038",
+          "CM-039"
         ]
       },
       {
@@ -242,7 +291,7 @@
         "id": "waivers",
         "name": "Waiver processing",
         "state": "blocked",
-        "words": "Record starting assets first.",
+        "words": "Needs a ruling: how long waivers last.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -253,7 +302,7 @@
         "id": "bids",
         "name": "Bid processing",
         "state": "blocked",
-        "words": "Record starting assets first.",
+        "words": "Needs a ruling: how long a bid must stand to win.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -264,7 +313,7 @@
         "id": "rookie_draft",
         "name": "Rookie draft",
         "state": "blocked",
-        "words": "Record starting assets first.",
+        "words": "No rookie draft is left to run; closing a draft issues the next picks.",
         "opens": "",
         "closes": "",
         "controls": [
@@ -274,30 +323,6 @@
           "CM-043",
           "CM-044",
           "CM-045"
-        ]
-      },
-      {
-        "id": "stat_queue",
-        "name": "Stat approval queue",
-        "state": "blocked",
-        "words": "Record starting assets first.",
-        "opens": "",
-        "closes": "",
-        "controls": [
-          "CM-031",
-          "CM-032"
-        ]
-      },
-      {
-        "id": "dot_review",
-        "name": "DOT review and appeal",
-        "state": "blocked",
-        "words": "Record starting assets first.",
-        "opens": "",
-        "closes": "",
-        "controls": [
-          "CM-014",
-          "CM-037"
         ]
       },
       {
@@ -311,23 +336,6 @@
           "CM-016",
           "CM-046",
           "CM-047"
-        ]
-      },
-      {
-        "id": "in_season",
-        "name": "In-season operations",
-        "state": "blocked",
-        "words": "Record starting assets first.",
-        "opens": "",
-        "closes": "",
-        "controls": [
-          "CM-028",
-          "CM-029",
-          "CM-030",
-          "CM-033",
-          "CM-034",
-          "CM-038",
-          "CM-039"
         ]
       },
       {
@@ -368,6 +376,15 @@
           "CM-027",
           "CM-041"
         ]
+      },
+      {
+        "id": "seed",
+        "name": "Record starting assets",
+        "state": "live",
+        "words": "Record the held franchises, rostered players and draft picks as this league’s starting assets.",
+        "opens": "",
+        "closes": "",
+        "controls": []
       },
       {
         "id": "communications",
@@ -556,6 +573,15 @@
         "controls": [
           "CM-027"
         ]
+      },
+      {
+        "id": "seed",
+        "name": "Record starting assets",
+        "state": "live",
+        "words": "Record the held franchises, rostered players and draft picks as this league’s starting assets.",
+        "opens": "",
+        "closes": "",
+        "controls": []
       },
       {
         "id": "communications",

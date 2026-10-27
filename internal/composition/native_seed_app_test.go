@@ -68,7 +68,7 @@ func createNativeSeedLeague(t *testing.T, a *App, preset string) RawNativeSeedRe
 	raw := commissioner.RawCommand{League: "native.seed", Command: commissioner.Create,
 		Args:   commissioner.RawArgs{Name: "Seed league", Preset: preset, Season: 2026, FranchiseCount: 32},
 		Reason: "Create the league", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, a, raw)
+	historicalLeague(t, a, raw)
 	return RawNativeSeedRequest{League: raw.League, Expected: 1, Request: "held.start", Reason: "Start from held data"}
 }
 
@@ -214,15 +214,16 @@ func TestNativeSeedRefusesMissingAndMixedHeldInputs(t *testing.T) {
 	}
 }
 
-func TestEmptyNativeLeagueHasNoSeed(t *testing.T) {
+func TestOlderEmptyNativeLeagueCanStart(t *testing.T) {
 	t.Parallel()
 	a := nativeSeedTestApp(t)
 	input := createNativeSeedLeague(t, a, commissioner.PresetEmpty)
-	if _, err := newCommissionerAPI(a).TargetNativeSeed(input); err == nil {
-		t.Fatal("empty league accepted a Legacy snapshot")
+	if _, err := newCommissionerAPI(a).TargetNativeSeed(input); err != nil {
+		t.Fatal(err)
 	}
-	if assets := readNativeTest(t, a, input.League); assets.Seeded || assets.Snapshot != nil || assets.Revision != 1 {
-		t.Fatalf("empty league invented a starting snapshot: %+v", assets)
+	if assets := readNativeTest(t, a, input.League); !assets.Seeded || assets.Revision != 2 ||
+		len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Picks) != 0 || len(assets.Snapshot.Pool) != 0 {
+		t.Fatalf("older native league did not start empty: %+v", assets)
 	}
 }
 

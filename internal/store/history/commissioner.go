@@ -119,13 +119,20 @@ func (s *Store) cachedTransactionRecords(ctx context.Context, tx *sql.Tx, league
 // immediate SQLite transaction, including across independently opened stores.
 func (s *Store) ExecuteCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer) (commissioner.Receipt, error) {
-	return s.ExecuteCommissionerWithFacts(ctx, raw, principal, auth, nil, time.UTC)
+	return s.executeCommissioner(ctx, raw, principal, auth, nil, time.UTC, false)
 }
 
 // ExecuteCommissionerWithFacts keeps held football facts inside the same atomic native append path: the
 // app's waiver decision is made under the ledger transaction, after every shared check.
+// Native creation also records its start before the transaction becomes visible.
 func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location) (commissioner.Receipt, error) {
+	return s.executeCommissioner(ctx, raw, principal, auth, facts, zone, true)
+}
+
+func (s *Store) executeCommissioner(ctx context.Context, raw commissioner.RawCommand,
+	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location,
+	startNative bool) (commissioner.Receipt, error) {
 	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -170,19 +177,30 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 	if before != nil {
 		now = before.At
 	}
-	receipt, err := s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: principal, role: role,
-		canonical: canonical, at: now, before: before, plan: plan, records: records})
+	req := appendRequest{raw: raw, principal: principal, role: role,
+		canonical: canonical, at: now, before: before, plan: plan, records: records}
+	receipt, err := s.appendCommissioner(ctx, tx, req)
 	if err != nil {
 		return commissioner.Receipt{}, err
 	}
-	if err := s.closeRolloverBooks(ctx, tx, raw); err != nil {
+	return s.finishCommissioner(ctx, tx, req, receipt, auth, startNative)
+}
+
+func (s *Store) finishCommissioner(ctx context.Context, tx *sql.Tx, req appendRequest,
+	receipt commissioner.Receipt, auth commissioner.Authorizer, startNative bool) (commissioner.Receipt, error) {
+	if err := s.closeRolloverBooks(ctx, tx, req.raw); err != nil {
 		return commissioner.Receipt{}, err
 	}
-
+	records := req.records
+	records = append(records, commissioner.Record{Command: req.raw, Principal: req.principal, Receipt: receipt})
+	if err := s.appendNativeStart(ctx, tx, records, req.principal, auth, req.at,
+		startNative && req.raw.Command == commissioner.Create); err != nil {
+		return commissioner.Receipt{}, fmt.Errorf("create and start native league: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("record league change: %w", err)
 	}
-	return s.committedReceipt(ctx, receipt, append(records, commissioner.Record{Command: raw, Principal: principal, Receipt: receipt})), nil
+	return s.committedReceipt(ctx, receipt, records), nil
 }
 
 func (s *Store) committedReceipt(ctx context.Context, receipt commissioner.Receipt, records []commissioner.Record) commissioner.Receipt {
@@ -332,6 +350,11 @@ func (s *Store) appendCommissioner(ctx context.Context, tx *sql.Tx, req appendRe
 		Operation: req.raw.Command, Mode: "execute", Raw: req.raw, Records: req.records}); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("admit league change: %w", err)
 	}
+	return s.appendAdmittedCommissioner(ctx, tx, req)
+}
+
+// appendAdmittedCommissioner writes an admitted command or its internally derived native start.
+func (s *Store) appendAdmittedCommissioner(ctx context.Context, tx *sql.Tx, req appendRequest) (commissioner.Receipt, error) {
 	raw, principal, now := req.raw, req.principal, req.at
 	hash := sha256.Sum256([]byte(req.canonical))
 	request := viewRequestKey(ctx, commissioner.PrincipalFor(req.records, principal), raw.Request)

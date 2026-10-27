@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -186,5 +187,31 @@ func TestEmptySeedAdmissionBySource(t *testing.T) {
 				t.Fatalf("empty native start not recorded: %+v %v", assets, err)
 			}
 		})
+	}
+}
+
+func TestNativeCreationRollsBackWhenStartFails(t *testing.T) {
+	t.Parallel()
+	s, _, _ := newStore(t)
+	if _, err := s.pools.Write().ExecContext(t.Context(), `CREATE TRIGGER fail_start BEFORE INSERT ON league_event WHEN NEW.kind='commish.league.seed_held' BEGIN SELECT RAISE(ABORT,'start unavailable'); END`); err != nil {
+		t.Fatal(err)
+	}
+	raw := createCommand()
+	if _, err := s.ExecuteCommissionerWithFacts(t.Context(), raw, "creator", nil, nil, time.UTC); err == nil || !strings.Contains(err.Error(), "start unavailable") {
+		t.Fatalf("start failure lost: %v", err)
+	}
+	events, err := s.Events(t.Context(), raw.League, commissioner.Stream, 0)
+	if err != nil || len(events) != 0 {
+		t.Fatalf("partial league after failed start: %+v %v", events, err)
+	}
+	if _, err := s.pools.Write().ExecContext(t.Context(), `DROP TRIGGER fail_start`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.ExecuteCommissionerWithFacts(t.Context(), raw, "creator", nil, nil, time.UTC); err != nil {
+		t.Fatal(err)
+	}
+	assets, err := s.NativeAssets(t.Context(), raw.League)
+	if err != nil || !assets.Seeded || assets.Revision != 2 {
+		t.Fatalf("retry after rollback: %+v %v", assets, err)
 	}
 }
