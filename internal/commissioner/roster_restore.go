@@ -29,7 +29,7 @@ func (r RawRosterRestorePoint) Validate() error {
 	if r.Source != "" && r.Source != SourceNative && r.Source != SourceMFLImport {
 		return fmt.Errorf("invalid restore point source")
 	}
-	if r.Preset != "" && r.Preset != PresetEmpty && r.Preset != PresetLegacy && r.Preset != PresetDefault32 {
+	if !validRestorePreset(r.Preset) {
 		return fmt.Errorf("invalid restore point preset")
 	}
 	if err := r.validateIdentities(); err != nil {

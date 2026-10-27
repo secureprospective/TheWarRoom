@@ -14,7 +14,7 @@ import (
 // correction replaces a line component, a score change adds to the total, and both are listed.
 func TestLineCardScoreTakesCommissionerCorrections(t *testing.T) {
 	b := newLedger(t, PresetDefault32)
-	seed, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
+	seed, err := NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -70,7 +70,7 @@ func (cardFeed) Name(string) string                        { return "PIT O-Line"
 // component's plain-English label, and entering the value already held is refused as a change of nothing.
 func TestLineCardCorrectionReadsTheHeldLineGame(t *testing.T) {
 	b := newLedger(t, PresetDefault32)
-	seed, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
+	seed, err := NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}

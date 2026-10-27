@@ -101,6 +101,13 @@ func validateMonthDay(v MonthDay) error {
 	}
 	return nil
 }
+
+// OLineOn reports whether a known roster position limit includes O-Line.
+func OLineOn(r RuleSet) bool {
+	_, found := r.Roster.PositionBounds.Value[OL]
+	return r.Roster.PositionBounds.State == IsKnown && found
+}
+
 func validateRules(r RuleSet) error {
 	if r.Trades.DOTSeats.State == IsKnown && (r.Trades.DOTSeats.Value < 4 || r.Trades.DOTSeats.Value > 10) {
 		return fmt.Errorf("trade review needs between 4 and 10 seats")

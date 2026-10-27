@@ -1,14 +1,19 @@
 package commissioner
 
 import (
+	"encoding/json"
+	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 func TestDefault32StartRefusesAssignedOrIncompleteCards(t *testing.T) {
 	b := newLedger(t, PresetDefault32)
-	raw, err := Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
+	raw, err := NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +36,7 @@ func TestDefault32StartRefusesAssignedOrIncompleteCards(t *testing.T) {
 		}
 	}
 	legacy := newLedger(t, PresetLegacy)
-	if _, err := Default32Start("native.test", legacy.records, seasonMoment(2)); err == nil {
+	if _, err := NativeStart("native.test", legacy.records, seasonMoment(2)); err == nil {
 		t.Fatal("Legacy accepted card start")
 	}
 }
@@ -72,6 +77,12 @@ func TestNativeStartsFollowSourceAndOLBounds(t *testing.T) {
 			b.records[0].Command.Args.Source = tc.source
 			if tc.bounded {
 				b.set("roster.positionBounds", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+				b.set("lineup.positions", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+				unit, err := json.Marshal(leaguerules.Default32().Scoring.LineUnit.Value)
+				if err != nil {
+					t.Fatal(err)
+				}
+				b.set("scoring.lineUnit", string(unit), "now", seasonMoment(2))
 			}
 			seed, err := NativeStart("native.test", b.records, seasonMoment(3))
 			if err != nil || len(seed.Pool) != tc.lots || len(seed.Players) != 0 || len(seed.Picks) != 0 {
@@ -112,5 +123,108 @@ func TestNativeStartRefusesHeldAssetsOutsideRecovery(t *testing.T) {
 				t.Fatal(err)
 			}
 		})
+	}
+}
+
+func TestNativeStartPoolsFollowSettings(t *testing.T) {
+	baseline := newLedger(t, PresetDefault32)
+	want, err := NativeStart("native.test", baseline.records, seasonMoment(3))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name      string
+		setup     func(*ledgerBuilder)
+		lots      int
+		same      bool
+		errorText string
+	}{
+		{"empty preset OL on", func(b *ledgerBuilder) {
+			b.set("lineup.positions", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+			b.set("roster.positionBounds", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+			unit, e := json.Marshal(leaguerules.Default32().Scoring.LineUnit.Value)
+			if e != nil {
+				t.Fatal(e)
+			}
+			b.set("scoring.lineUnit", string(unit), "now", seasonMoment(2))
+		}, 32, true, ""},
+		{"off", func(b *ledgerBuilder) {
+			b.set("lineup.positions", `{}`, "now", seasonMoment(2))
+			b.set("roster.positionBounds", `{}`, "now", seasonMoment(2))
+			b.set("scoring.lineUnit", `{"Used":false,"Weights":{},"Labels":{}}`, "now", seasonMoment(2))
+		}, 0, false, ""},
+		// Lots follow the roster bound alone; a half-changed O-Line setting must stay editable.
+		{"roster bound only", func(b *ledgerBuilder) {
+			b.set("lineup.positions", `{}`, "now", seasonMoment(2))
+			b.set("roster.positionBounds", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+			b.set("scoring.lineUnit", `{"Used":false,"Weights":{},"Labels":{}}`, "now", seasonMoment(2))
+		}, 32, true, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			b := newLedger(t, PresetEmpty)
+			tc.setup(b)
+			got, err := NativeStart("native.test", b.records, seasonMoment(3))
+			if tc.errorText != "" {
+				if err == nil || !strings.Contains(err.Error(), tc.errorText) {
+					t.Fatalf("error = %v", err)
+				}
+				return
+			}
+			if err != nil || len(got.Pool) != tc.lots {
+				t.Fatalf("pool %d: %v", len(got.Pool), err)
+			}
+			if tc.same && !reflect.DeepEqual(got.Pool, want.Pool) {
+				t.Fatal("pool differs from Default32")
+			}
+		})
+	}
+}
+
+func TestNativeStartTwelveTeamDefaultRules(t *testing.T) {
+	create, err := (RawCommand{League: "native.test", Command: Create,
+		Args: RawArgs{Name: "Twelve", Preset: PresetEmpty, FranchiseCount: 12, Season: 2026}}).Prepared()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := &ledgerBuilder{t: t}
+	b.add(create, seasonMoment(1))
+	b.set("lineup.positions", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+	b.set("roster.positionBounds", `{"OL":{"min":1,"max":1}}`, "now", seasonMoment(2))
+	unit, err := json.Marshal(leaguerules.Default32().Scoring.LineUnit.Value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.set("scoring.lineUnit", string(unit), "now", seasonMoment(2))
+	seed, err := NativeStart("native.test", b.records, seasonMoment(3))
+	if err != nil || len(seed.Franchises) != 12 || len(seed.Pool) != 32 {
+		t.Fatalf("start: %+v, %v", seed, err)
+	}
+	raw := RawCommand{Command: NativeSeed, Args: RawArgs{Native: &seed}}
+	if err := CheckNativeAppend(raw, b.records); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestNativeStartDefaultPresetWithOlineOff(t *testing.T) {
+	b := newLedger(t, PresetDefault32)
+	b.set("lineup.positions", `{}`, "now", seasonMoment(2))
+	b.set("roster.positionBounds", `{}`, "now", seasonMoment(2))
+	b.set("scoring.lineUnit", `{"Used":false,"Weights":{},"Labels":{}}`, "now", seasonMoment(2))
+	seed, err := NativeStart("native.test", b.records, seasonMoment(3))
+	if err != nil || len(seed.Pool) != 0 {
+		t.Fatalf("pool %d, error %v", len(seed.Pool), err)
+	}
+}
+
+func TestNativeStartHistoricalTwelveTeamDefaultPreset(t *testing.T) {
+	b := newLedger(t, PresetDefault32)
+	b.records[0].Command.Args.Franchises = b.records[0].Command.Args.Franchises[:12]
+	b.records[0].Command.Args.FranchiseCount = 12
+	seed, err := NativeStart("native.test", b.records, seasonMoment(3))
+	if err != nil || len(seed.Franchises) != 12 || len(seed.Pool) != 32 {
+		t.Fatalf("start: %+v, %v", seed, err)
+	}
+	if err := CheckNativeAppend(RawCommand{Command: NativeSeed, Args: RawArgs{Native: &seed}}, b.records); err != nil {
+		t.Fatal(err)
 	}
 }

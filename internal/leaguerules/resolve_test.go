@@ -189,3 +189,17 @@ func TestResolveAndDiffOwnTheirCollections(t *testing.T) {
 		}
 	}
 }
+
+func TestOLineOnReadsTheRosterBound(t *testing.T) {
+	r := RuleSet{Roster: RosterRules{PositionBounds: Known(map[Position]Bounds{})}}
+	if OLineOn(r) {
+		t.Fatal("no OL bound must leave O-Line off")
+	}
+	r.Roster.PositionBounds.Value[OL] = bounds(1, 1, "")
+	if !OLineOn(r) {
+		t.Fatal("an OL bound must turn O-Line on")
+	}
+	if OLineOn(RuleSet{}) {
+		t.Fatal("unknown roster must not enable O-Line")
+	}
+}

@@ -205,3 +205,29 @@ func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 	}
 	return leaguerules.UpgradeSeed(changes), nil
 }
+
+func validRestorePreset(preset string) bool {
+	return preset == "" || preset == PresetEmpty || preset == PresetLegacy || preset == PresetDefault32
+}
+
+func presetHistoryLabel(preset string) string {
+	switch preset {
+	case PresetLegacy:
+		return "the Legacy NFL rules"
+	case PresetDefault32:
+		return "the 32-Team Default rules"
+	default:
+		return "every rule waiting for a ruling"
+	}
+}
+
+func presetPreviewLabel(preset string) string {
+	switch preset {
+	case PresetLegacy:
+		return "Legacy NFL rules"
+	case PresetDefault32:
+		return "32-Team Default rules"
+	default:
+		return "Every rule waits for a ruling"
+	}
+}

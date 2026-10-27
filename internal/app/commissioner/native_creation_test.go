@@ -45,7 +45,7 @@ func TestAppCreationStartsBySource(t *testing.T) {
 					t.Fatalf("start: %+v", seed)
 				}
 				if tc.preset == commissioner.PresetDefault32 {
-					old, err := commissioner.Default32Start(raw.League, records[:1], records[0].Receipt.RecordedAt)
+					old, err := commissioner.NativeStart(raw.League, records[:1], records[0].Receipt.RecordedAt)
 					if err != nil {
 						t.Fatal(err)
 					}
