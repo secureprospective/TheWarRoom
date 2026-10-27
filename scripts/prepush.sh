@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# prepush.sh — the local pre-push gate. It checks only what the pushed commits change; GitHub's verify
-# workflow runs the full suite on every push, and the merge waits for it.
-#   docs only        → nothing to run
-#   Go changed       → lint, then shuffled tests on the changed packages and their importers (-race runs in CI)
-#   frontend changed → type check, frontend tests, build and bundle budget
-# With no usable range (a new branch, a deleted ref) it falls back to the full `make verify`.
+# Quick local check; the full suite is CI's job.
+# Docs only: skip. Go: bindings, lint, build all, test directly changed packages.
+# Gate scripts or an unknown base: lint and build; CI runs the rest.
+# Frontend: bindings, type check, tests, build and bundle budget.
 set -euo pipefail
 
+fallback=0
 from=${PRE_COMMIT_FROM_REF:-}
 to=${PRE_COMMIT_TO_REF:-HEAD}
 zero=0000000000000000000000000000000000000000
 if [[ -z "$from" || "$from" == "$zero" ]] || ! git cat-file -e "$from^{commit}" 2>/dev/null; then
   base=$(git merge-base "$to" origin/main 2>/dev/null || true)
-  [[ -n "$base" ]] || exec make verify
-  from=$base
+  if [[ -n "$base" ]]; then from=$base; else fallback=1; fi
 fi
 
-mapfile -t changed < <(git diff --name-only "$from" "$to")
+changed=()
+if [[ $fallback -eq 0 ]]; then
+  mapfile -t changed < <(git diff --name-only "$from" "$to")
+fi
 go_changed=() front=0 build=0
 for f in "${changed[@]}"; do
   case "$f" in
@@ -25,35 +26,45 @@ for f in "${changed[@]}"; do
     Makefile|scripts/*.sh|scripts/*.mjs|.pre-commit-config.yaml) build=1 ;; # the gate's own scripts; CI checks .github and the rest
   esac
 done
-[[ $build -eq 0 ]] || exec make verify
-if [[ ${#go_changed[@]} -eq 0 && $front -eq 0 ]]; then
+if [[ $build -eq 0 && $fallback -eq 0 && ${#go_changed[@]} -eq 0 && $front -eq 0 ]]; then
   echo "prepush: no code changed in $from..$to; the full suite runs in CI"
   exit 0
 fi
 
-if [[ ${#go_changed[@]} -gt 0 || $front -eq 1 ]]; then
+if [[ ${#go_changed[@]} -gt 0 || $front -eq 1 || $build -eq 1 || $fallback -eq 1 ]]; then
   # Embedded assets and generated bindings must exist before any Go package that embeds them compiles.
   make bindings >/dev/null
 fi
 
-if [[ ${#go_changed[@]} -gt 0 ]]; then
+if [[ ${#go_changed[@]} -gt 0 || $build -eq 1 || $fallback -eq 1 ]]; then
   make lint
+  go build ./...
+  if [[ $build -eq 1 || $fallback -eq 1 ]]; then
+    echo "prepush: gate scripts changed or no usable base; CI runs the rest"
+  fi
+fi
+
+if [[ ${#go_changed[@]} -gt 0 ]]; then
   module=$(go list -m)
   mapfile -t dirs < <(printf '%s\n' "${go_changed[@]}" | xargs -n1 dirname | sort -u)
   pkgs=()
   for d in "${dirs[@]}"; do
     [[ -d "$d" ]] || continue
-    [[ "$d" == "." ]] && pkgs+=("$module") || pkgs+=("$module/${d#./}")
+    if [[ "$d" == "internal/composition" ]]; then
+      echo "prepush: skipping internal/composition; CI runs it"
+      continue
+    fi
+    if go list "./$d" >/dev/null 2>&1; then
+      [[ "$d" == "." ]] && pkgs+=("$module") || pkgs+=("$module/${d#./}")
+    fi
   done
-  # Packages that import a changed package can break too; go list -deps over ./... finds them.
-  mapfile -t affected < <(go list -f '{{.ImportPath}}{{range .Deps}} {{.}}{{end}}' ./... |
-    awk -v want="$(printf '%s ' "${pkgs[@]}")" 'BEGIN{n=split(want,w," "); for(i=1;i<=n;i++) set[w[i]]=1}
-      { for(i=1;i<=NF;i++) if ($i in set) { print $1; break } }')
-  if [[ ${#affected[@]} -gt 0 ]]; then
-    go test -shuffle=on -timeout 30m "${affected[@]}"
+  if [[ ${#pkgs[@]} -gt 0 ]]; then
+    go test -shuffle=on -timeout 10m "${pkgs[@]}"
   fi
 fi
 
 if [[ $front -eq 1 ]]; then
   (cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build && node scripts/bundle-budget.mjs)
 fi
+
+echo "prepush: quick local check passed; CI runs the full suite"

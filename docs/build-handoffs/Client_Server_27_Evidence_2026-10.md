@@ -1,3 +1,5 @@
+> Historical gate descriptions below are superseded: see `scripts/prepush.sh`; the full suite runs in CI.
+
 # Client/server 27: patched toolchain and B acceptance
 
 ## Scope and result
