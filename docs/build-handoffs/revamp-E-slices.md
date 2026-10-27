@@ -1,19 +1,19 @@
 # Revamp E: edge-stat scoring in the 32-Team Default, as six slices
 
-Status: plan. This supersedes the 23-slice draft at 02a1f551, which is kept in git history; its per-file notes are still a useful reference for E1 and E2.
+Status: E1–E6 complete. See [the shipped scoring spec](../architecture/default32-scoring.md). This supersedes the 23-slice draft at 02a1f551, which is kept in git history; its per-file notes are still a useful reference for E1 and E2.
 
 ## Rulings (the owner, 2026-10-27)
 - **Package A values:** from `~/fleet/tom/out/config-study-p6.out` §2.
 - **Special-teams solo tackles:** a top-up of +0.25.
-- **Snaps:** defensive 0.008, offensive 0.002.
+- **Snaps:** defensive 0.008, offensive 0.002, special teams 0.003.
 - **Third/fourth-down conversions and red-zone stats** come from nflverse play-by-play.
 - **Rushes tackled for a loss (RTL)** are scored weekly, at half strength, against last season's league rate at the position:
-  `−0.31242 × (TFL − r_pos × carries)`. There is no 40-carry floor, and past scores never change.
+  `−0.3124 × (TFL − r_pos × carries)`. There is no 40-carry floor, and past scores never change.
 
 ## The design choice that keeps this small
 RTL is linear, so it needs no new arithmetic, no season settlement and no freeze machinery. It becomes two ordinary rules:
 1. A `rushing_tfl` stat at **−0.3124** each, for the offensive positions.
-2. A **position extra** on `rushing_attempt` (the existing `Extras` mechanism, `fantasyscore/kinds.go` extraItems) at **+0.3124 × r_pos** for each of QB, RB, WR and TE.
+2. A **position extra** on `rushing_attempt` (the existing `Extras` mechanism, `fantasyscore/kinds.go` extraItems) at **+0.3124 × r_pos**, rounded to the stored precision, for each of QB, RB, WR and TE.
 
 `r_pos` is a constant in the Default32 preset, computed once from the pinned 2025 nflverse play-by-play by a checked-in script. Its value is cited like every other preset value. Changing it in a later season is an ordinary commissioner rules change, already governed by the rules engine. Nothing new is built for that.
 
