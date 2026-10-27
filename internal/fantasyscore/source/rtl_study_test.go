@@ -3,6 +3,7 @@ package source_test
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
@@ -14,13 +15,21 @@ func TestRTLStudy(t *testing.T) {
 	if dir == "" {
 		t.Skip("set TWR_STUDY_CACHE to the held 2025 nflverse cache")
 	}
-	weeks := readGzip(t, filepath.Join(dir, "stats_player_week_2025.csv.gz"), source.ReadWeeks)
-	plays := readGzip(t, filepath.Join(dir, "play_by_play_2025.csv.gz"), source.ReadPlays)
+	year := os.Getenv("TWR_RTL_YEAR")
+	if year == "" {
+		year = "2025"
+	}
+	season, err := strconv.Atoi(year)
+	if err != nil {
+		t.Fatal(err)
+	}
+	weeks := readGzip(t, filepath.Join(dir, "stats_player_week_"+year+".csv.gz"), source.ReadWeeks)
+	plays := readGzip(t, filepath.Join(dir, "play_by_play_"+year+".csv.gz"), source.ReadPlays)
 	var reg []source.PlayerWeek
 	maxWeek := 0
 	games := map[string]bool{}
 	for _, play := range plays {
-		if play.Season == "2025" && play.SeasonType == "REG" {
+		if play.Season == year && play.SeasonType == "REG" {
 			if !play.EdgeAvailable {
 				t.Fatal("play-by-play lacks edge columns")
 			}
@@ -31,7 +40,7 @@ func TestRTLStudy(t *testing.T) {
 		t.Fatalf("2025 regular season incomplete: %d games", len(games))
 	}
 	for _, w := range weeks {
-		if w.Season == 2025 && w.SeasonType == "REG" {
+		if w.Season == season && w.SeasonType == "REG" {
 			reg = append(reg, w)
 			if w.Week > maxWeek {
 				maxWeek = w.Week
