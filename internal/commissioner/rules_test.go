@@ -162,3 +162,33 @@ func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 		t.Fatal("rollover wording must not depend on implementation status")
 	}
 }
+
+func TestCreationRecordsSource(t *testing.T) {
+	for _, tc := range []struct{ preset, source, want string }{
+		{PresetEmpty, "", SourceNative}, {PresetDefault32, "", SourceNative},
+		{PresetLegacy, "", SourceMFLImport}, {PresetLegacy, SourceNative, SourceNative},
+		{PresetEmpty, "unknown", ""},
+	} {
+		t.Run(tc.preset+"/"+tc.source, func(t *testing.T) {
+			raw := RawCommand{Command: Create, Args: RawArgs{Name: "Ours", Preset: tc.preset,
+				Source: tc.source, Season: 2026, FranchiseCount: 32}}
+			got, err := raw.Prepared()
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = got.Args.Validate(Create)
+			if tc.want == "" {
+				if err == nil {
+					t.Fatal("unknown source admitted")
+				}
+				return
+			}
+			if err != nil || got.Args.Source != tc.want {
+				t.Fatalf("source=%q, error=%v", got.Args.Source, err)
+			}
+			if err := (RawArgs{Source: tc.want}).Validate(NativeSeed); err == nil {
+				t.Fatal("source sent with a seed instead of creation")
+			}
+		})
+	}
+}

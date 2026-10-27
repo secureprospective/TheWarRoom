@@ -79,7 +79,6 @@ func BuildLeagueSeedCommand(ctx context.Context, input RawNativeSeedRequest,
 	read func(context.Context, string) ([]commissioner.Record, error), now func() time.Time,
 	capture func() (commissioner.RawNativeSnapshot, error)) (commissioner.RawCommand, error) {
 	var records []commissioner.Record
-	//nolint:wrapcheck // Preserve the starting-snapshot refusal.
 	return BuildSeedCommand(ctx, input, func(ctx context.Context, league, request string) (commissioner.RawCommand, bool, error) {
 		var err error
 		records, err = read(ctx, league)
@@ -89,13 +88,8 @@ func BuildLeagueSeedCommand(ctx context.Context, input RawNativeSeedRequest,
 		raw, found := commissioner.NativeSeedRetry(records, request)
 		return raw, found, nil
 	}, func() (commissioner.RawNativeSnapshot, error) {
-		if commissioner.IsDefault32(records) {
-			raw, err := commissioner.Default32SeedCommand(records, input.League, input.Request, input.Reason,
-				input.Expected, now())
-			if err != nil {
-				return commissioner.RawNativeSnapshot{}, err
-			}
-			return *raw.Args.Native, nil
+		if commissioner.LeagueSource(records) == commissioner.SourceNative {
+			return commissioner.NativeStart(input.League, records, now())
 		}
 		return capture()
 	})

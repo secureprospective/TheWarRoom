@@ -82,6 +82,12 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, nil
 	}
 	a := r.Args
+	if a.Source == "" {
+		a.Source = SourceNative
+		if a.Preset == PresetLegacy {
+			a.Source = SourceMFLImport
+		}
+	}
 	if (a.Preset == PresetLegacy || a.Preset == PresetDefault32) && a.FranchiseCount == 0 {
 		a.FranchiseCount = legacyTeams
 	}
@@ -129,9 +135,19 @@ func (a RawArgs) validateCreationSeason() error {
 	return nil
 }
 
-func (a RawArgs) validateCreation() error {
+func (a RawArgs) validateCreationIdentity() error {
+	if a.Source != "" && a.Source != SourceNative && a.Source != SourceMFLImport {
+		return fmt.Errorf("choose a native league or an MFL import")
+	}
 	if strings.TrimSpace(a.Name) == "" || a.Entry != "" || a.People != nil {
 		return fmt.Errorf("give the new league a name")
+	}
+	return nil
+}
+
+func (a RawArgs) validateCreation() error {
+	if err := a.validateCreationIdentity(); err != nil {
+		return err
 	}
 	if err := a.validateCreationSeason(); err != nil {
 		return err

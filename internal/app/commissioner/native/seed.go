@@ -114,5 +114,8 @@ func CaptureSeed(source SeedSource) (commissioner.RawNativeSnapshot, error) {
 	if err := seed.Validate(); err != nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
 	}
+	if len(seed.Players) == 0 && len(seed.Pool) == 0 {
+		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: hold the Legacy NFL rosters, franchises and both draft reports before seeding")
+	}
 	return seed, nil
 }

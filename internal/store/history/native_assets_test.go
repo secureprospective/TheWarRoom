@@ -2,6 +2,7 @@ package history
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -142,6 +143,47 @@ func TestNativeSeedValidationLeavesNoPartialAct(t *testing.T) {
 			assets, err := s.NativeAssets(t.Context(), command.League)
 			if err != nil || assets.Seeded || assets.Revision != 1 || assets.Snapshot != nil {
 				t.Fatalf("invalid seed partially appended: %+v %v", assets, err)
+			}
+		})
+	}
+}
+
+func TestEmptySeedAdmissionBySource(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ preset, source, want string }{
+		{commissioner.PresetEmpty, commissioner.SourceNative, ""},
+		{commissioner.PresetLegacy, commissioner.SourceMFLImport, "hold the Legacy NFL rosters, franchises and both draft reports before seeding"},
+	} {
+		t.Run(tc.preset, func(t *testing.T) {
+			s, _, _ := newStore(t)
+			if _, err := s.ExecuteCommissioner(t.Context(), createWith(tc.preset, 12), "creator", nil); err != nil {
+				t.Fatal(err)
+			}
+			records, err := s.nativeRecords(t.Context(), "native.test")
+			if err != nil || commissioner.LeagueSource(records) != tc.source || records[0].Command.Args.Source != tc.source {
+				t.Fatalf("stored source: %v", err)
+			}
+			seed := heldSeedCommand(t)
+			seed.Args.Native.Franchises = seed.Args.Native.Franchises[:12]
+			seed.Args.Native.Players, seed.Args.Native.Picks, seed.Args.Native.Pool, seed.Args.Native.Adjustments = nil, nil, nil, nil
+			before := historyJSON(t, s.pools.Read(), `SELECT json_group_array(payload) FROM league_event`)
+			_, err = s.ExecuteCommissioner(t.Context(), seed, "creator", nil)
+			if tc.want != "" {
+				var refusal *commissioner.Refusal
+				if !errors.As(err, &refusal) || refusal.Error() != tc.want {
+					t.Fatalf("empty import seed error=%v, want %q", err, tc.want)
+				}
+				if after := historyJSON(t, s.pools.Read(), `SELECT json_group_array(payload) FROM league_event`); after != before {
+					t.Fatal("refused seed changed the ledger")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			assets, err := s.NativeAssets(t.Context(), seed.League)
+			if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 0 || assets.Revision != 2 {
+				t.Fatalf("empty native start not recorded: %+v %v", assets, err)
 			}
 		})
 	}

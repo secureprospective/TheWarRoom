@@ -4,12 +4,27 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 // IsDefault32 reports whether a league was created from the 32-Team Default.
 func IsDefault32(records []Record) bool {
 	return len(records) != 0 && records[0].Command.Command == Create && records[0].Command.Args.Preset == PresetDefault32
+}
+
+// LeagueSource is the single compatibility read for records written before Source existed.
+func LeagueSource(records []Record) string {
+	if len(records) != 0 && records[0].Command.Command == Create {
+		args := records[0].Command.Args
+		if args.Source != "" {
+			return args.Source
+		}
+		if args.Preset == PresetLegacy {
+			return SourceMFLImport
+		}
+	}
+	return SourceNative
 }
 
 // Default32SeedCommand is the starting snapshot command of a 32-Team Default league. Such a league holds
@@ -36,13 +51,25 @@ func Default32Start(league string, records []Record, now time.Time) (RawNativeSn
 	if !IsDefault32(records) {
 		return RawNativeSnapshot{}, fmt.Errorf("only a 32-Team Default league starts with O-Line cards")
 	}
+	return NativeStart(league, records, now)
+}
+
+// NativeStart captures empty rosters and, when OL is bounded, the unassigned O-Line lots.
+func NativeStart(league string, records []Record, now time.Time) (RawNativeSnapshot, error) {
+	if len(records) == 0 || LeagueSource(records) != SourceNative {
+		return RawNativeSnapshot{}, fmt.Errorf("only a native league starts without held data")
+	}
 	season := records[0].Command.Args.Season
 	directory, err := NativeDirectoryReading(league, records, now)
 	if err != nil {
 		return RawNativeSnapshot{}, err
 	}
+	cards, err := nativeStartCards(records, now)
+	if err != nil {
+		return RawNativeSnapshot{}, err
+	}
 	teams := nativecheck.LineCardTeams()
-	if len(directory.Franchises) != len(teams) {
+	if IsDefault32(records) && len(directory.Franchises) != len(teams) {
 		return RawNativeSnapshot{}, fmt.Errorf("a 32-Team Default league needs its %d franchises", len(teams))
 	}
 	at := now.UTC()
@@ -52,15 +79,43 @@ func Default32Start(league string, records []Record, now time.Time) (RawNativeSn
 		seed.Franchises = append(seed.Franchises, NativeFranchise{ID: f.Franchise, HeldID: f.Franchise,
 			Name: f.Name, Abbreviation: f.Abbreviation, Division: f.Division})
 	}
-	for _, team := range teams {
-		card, _ := nativecheck.LineCardID(team)
-		seed.Pool = append(seed.Pool, NativePoolEntry{Player: card, Name: team + " O-Line", Season: season})
+	if cards {
+		for _, team := range teams {
+			card, _ := nativecheck.LineCardID(team)
+			seed.Pool = append(seed.Pool, NativePoolEntry{Player: card, Name: team + " O-Line", Season: season})
+		}
 	}
 
 	if err := seed.Validate(); err != nil {
-		return RawNativeSnapshot{}, fmt.Errorf("32-Team Default starting snapshot: %w", err)
+		return RawNativeSnapshot{}, fmt.Errorf("native starting snapshot: %w", err)
 	}
 	return seed, nil
+}
+
+func nativeStartCards(records []Record, now time.Time) (bool, error) {
+	if IsDefault32(records) {
+		return true, nil
+	}
+	rules, err := RulesNow(records, now)
+	if err != nil {
+		return false, err
+	}
+	_, bounded := rules.Roster.PositionBounds.Value[leaguerules.OL]
+	return rules.Roster.PositionBounds.State == leaguerules.IsKnown && bounded, nil
+}
+
+func checkNativeStart(records []Record, seed *RawNativeSnapshot) error {
+	cards, err := nativeStartCards(records, seed.RosterAt)
+	if err != nil {
+		return err
+	}
+	if cards {
+		return checkDefault32Start(records, seed)
+	}
+	if len(seed.Players) != 0 || len(seed.Picks) != 0 || len(seed.Pool) != 0 || len(seed.Adjustments) != 0 {
+		return fmt.Errorf("a native league starts with empty rosters, picks and pool")
+	}
+	return nil
 }
 
 // checkDefault32Start admits only the empty start and the complete, unassigned auction pool.
@@ -82,7 +137,7 @@ func checkDefault32Start(records []Record, seed *RawNativeSnapshot) error {
 // startingCardLot distinguishes the open start auction from later free-agent bidding and older
 // leagues that already assigned cards. The immutable seed, not today's roster size, defines it.
 func StartingCardLot(records []Record, player string) bool {
-	if !IsDefault32(records) {
+	if LeagueSource(records) != SourceNative {
 		return false
 	}
 	if _, ok := nativecheck.LineCardTeam(player); !ok {

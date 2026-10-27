@@ -18,6 +18,9 @@ const (
 	Create = "commish.league.create"
 	Revert = "commish.correction.revert"
 	Stream = "commissioner"
+
+	SourceNative    = "native"
+	SourceMFLImport = "mfl_import"
 )
 
 // Refusal marks a league change the league's own rules turned down, as distinct from a failure to read
@@ -108,6 +111,7 @@ type RawArgs struct {
 	Note           *RawNote            `json:"note,omitempty"`
 	Field          string              `json:"field,omitempty"`
 	Value          json.RawMessage     `json:"value,omitempty"`
+	Source         string              `json:"source,omitempty"`
 	Preset         string              `json:"preset,omitempty"`
 	FranchiseCount int                 `json:"franchiseCount,omitempty"`
 	Seed           []SeedValue         `json:"seed,omitempty"`
@@ -231,7 +235,7 @@ func (a RawArgs) Validate(command string) error {
 
 func (a RawArgs) foreignRuleArgs(command string) bool {
 	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 || a.Season != 0))
+		(a.Source != "" || a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 || a.Season != 0))
 }
 
 func (a RawArgs) validateOther(command string) error {

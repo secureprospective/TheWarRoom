@@ -1,31 +1,31 @@
 # Handoff
 
 ## Baton
-Claude (CT105) — 2026-10-27, `session/revamp-P6-draft`, after merging main (E + market).
+Bee — 2026-10-27, `session/mode1-mirror`. Settings F2a implemented; ready for ClaudeBox review. No push.
 
 ## Where it stands
-- Part 6 market (steps 1–5) and revamp E (edge scoring) are on main.
-- Draft: job A (rules owners, `RuleValueWords`, `TestDraftBodies` with 15 goldens, the
-  draft_wire/apply/restore split), the `draft.change` bite fix `1d0c42d6`, and `draft_core.go`
-  `636f8a59`. The draft package move was stopped on purpose at this green cut.
+- Create records persist `source`; `LeagueSource` alone reads pre-source compatibility.
+- Source selects native empty/OL-lot starts versus unchanged MFL held-data admission.
+- Restore points retain source and preset; old points recover as MFL import / Legacy.
+- Offline recovery uses `CheckNativeRecoveryAppend`, never a caller-controlled flag. Played native rosters recover without relaxing normal start admission; recovered copies stay read-only.
+- Explicit valid source survives preparation independently of preset. Pre-source Create retries still match their original canonical request without rewriting history.
+- App capture uses source; generated Wails models include the optional field.
+
+## Evidence
+- PASS: build all; vet internal; test inventory; requested package tests with and without race; lint (0 issues); bindings generation/freshness; frontend TypeScript.
+- Native 12-team, native Legacy-rules 12-team, native Default32 and old/new Legacy 32-team recovery round trips preserve source, preset, exact contracts and the read-only fence.
+- Mutation: reinstating unconditional empty-snapshot refusal fails both native-start and store-admission tests; mutation removed and final race batch passes.
+- Existing MFL empty-seed and held-capture error text tested; refused append leaves ledger unchanged.
 
 ## Next move
-- The draft package move joins the naming pass after Part 6 session 3. It needs a bounded core
-  interface first: `admission.go` holds `*DraftPickInput`; `NativeStandings` has private `level`,
-  `overrideLevel` and `regularWeeks`; draft preview uses private `PreviewCatalogue` internals; about two
-  dozen other core-private references cross.
+ClaudeBox reviews F2a; live-test a 12-team empty-preset start and offline recovery on a throwaway profile. Passing: zero starting players/picks/pool; recovered source/preset/contracts unchanged and copy read-only.
 
-## Debt left
-- Unknown Sleeper IDs need identity and roster coverage; do not assume they are irrelevant.
-- Held play bodies without a `sack` column can count red-zone sacks as attempts. Repin those
-  bodies before requiring the column; requiring it now rejects pinned evidence.
-- Part 6 session 3: competition judgment (tie-breakers, playoff fields and brackets, schedules) is in `internal/engine/competition`; commissioner keeps aliases. Its tests still live in commissioner; move the pure ones into the engine. Wails now emits those seven wire types under the `competition` TS namespace (JSON unchanged).
-- Part 15 slice A: dev tools live in `tools/`; depguard blocks app imports. Lab detach waits for Part 7.
-- Market step 6 (retire frame wrappers) not started; the quote path stays staged.
-- `contract_actions.go` writes rules fields and remains in core for the rules session.
+## Blocked on
+Nothing for this brief. No live GUI test or fleet coordination performed.
 
 ## Tried and rejected
-- Moving only draft-named files compiles neither draft nor history: core references to
-  `draftSetupValues`, `countWords`, `controlOfCommand` and `DraftPickInput` are load-bearing.
-- Do not eagerly construct market frames: owner and commissioner readings authorize first, trade
-  replay handles non-trade reversals separately, and quote loads governance → directory → fold → rules.
+- Recovery request-name bypass: a caller could reuse the name. Dedicated Go-only recovery admission keeps normal commands strict.
+- Unconditional empty snapshot refusal: prevents native empty starts; retained only for MFL held capture/admission.
+
+## Debt left
+No F2a implementation debt identified. Live verification remains with ClaudeBox. Earlier unrelated project debt remains in the preceding handoff's git history.

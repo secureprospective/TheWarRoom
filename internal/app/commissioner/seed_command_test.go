@@ -52,7 +52,9 @@ func TestLeagueSeedUsesHeldCaptureAndPreservesFailure(t *testing.T) {
 	for _, captureErr := range []error{nil, failure} {
 		calls := 0
 		raw, err := BuildLeagueSeedCommand(t.Context(), input,
-			func(context.Context, string) ([]commissioner.Record, error) { return nil, nil },
+			func(context.Context, string) ([]commissioner.Record, error) {
+				return []commissioner.Record{{Command: commissioner.RawCommand{Command: commissioner.Create, Args: commissioner.RawArgs{Preset: commissioner.PresetLegacy}}}}, nil
+			},
 			func() time.Time { t.Fatal("held capture read the default clock"); return time.Time{} },
 			func() (commissioner.RawNativeSnapshot, error) {
 				calls++
@@ -64,5 +66,48 @@ func TestLeagueSeedUsesHeldCaptureAndPreservesFailure(t *testing.T) {
 		if err == nil && (raw.Args.Native.Season != 2026 || raw.Request != input.Request) {
 			t.Fatalf("held seed changed: %+v", raw)
 		}
+	}
+}
+
+func TestLeagueSeedChoosesCaptureBySource(t *testing.T) {
+	for _, tc := range []struct {
+		name, preset, source string
+		held                 bool
+		lots                 int
+	}{
+		{"old Legacy", commissioner.PresetLegacy, "", true, 0},
+		{"import with empty preset", commissioner.PresetEmpty, commissioner.SourceMFLImport, true, 0},
+		{"empty native", commissioner.PresetEmpty, commissioner.SourceNative, false, 0},
+		{"native Legacy rules", commissioner.PresetLegacy, commissioner.SourceNative, false, 0},
+		{"default native", commissioner.PresetDefault32, commissioner.SourceNative, false, 32},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			create, err := (commissioner.RawCommand{League: "native.test", Command: commissioner.Create,
+				Args: commissioner.RawArgs{Name: "Ours", Preset: tc.preset, Source: tc.source,
+					Season: 2026, FranchiseCount: 32}}).Prepared()
+			if err != nil {
+				t.Fatal(err)
+			}
+			create.Args.Source = tc.source
+			at := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+			records := []commissioner.Record{{Command: create, Principal: "creator",
+				Receipt: commissioner.Receipt{Entry: "create", Revision: 1, RecordedAt: at}}}
+			calls := 0
+			input := RawNativeSeedRequest{League: "native.test", Expected: 1, Request: "start", Reason: "Start"}
+			raw, err := BuildLeagueSeedCommand(t.Context(), input,
+				func(context.Context, string) ([]commissioner.Record, error) { return records, nil },
+				func() time.Time {
+					if tc.held {
+						t.Fatal("MFL import used native clock")
+					}
+					return at.Add(time.Hour)
+				}, func() (commissioner.RawNativeSnapshot, error) {
+					calls++
+					return commissioner.RawNativeSnapshot{Season: 2026}, nil
+				})
+			if err != nil || (calls == 1) != tc.held || raw.Args.Native == nil || len(raw.Args.Native.Pool) != tc.lots {
+				t.Fatalf("calls=%d seed=%+v error=%v", calls, raw, err)
+			}
+		})
 	}
 }

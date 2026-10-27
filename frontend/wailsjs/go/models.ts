@@ -3886,6 +3886,7 @@ export namespace commissioner {
 	    note?: RawNote;
 	    field?: string;
 	    value?: number[];
+	    source?: string;
 	    preset?: string;
 	    franchiseCount?: number;
 	    seed?: SeedValue[];
@@ -3927,6 +3928,7 @@ export namespace commissioner {
 	        this.note = this.convertValues(source["note"], RawNote);
 	        this.field = source["field"];
 	        this.value = source["value"];
+	        this.source = source["source"];
 	        this.preset = source["preset"];
 	        this.franchiseCount = source["franchiseCount"];
 	        this.seed = this.convertValues(source["seed"], SeedValue);

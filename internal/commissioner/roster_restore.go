@@ -12,6 +12,8 @@ import (
 // It is private league data, not a grant of authority to operate the league.
 type RawRosterRestorePoint struct {
 	Identities []playerid.RawIdentity `json:"identities,omitempty"`
+	Source     string                 `json:"source,omitempty"`
+	Preset     string                 `json:"preset,omitempty"`
 	Version    int                    `json:"version"`
 	League     string                 `json:"league"`
 	Revision   int64                  `json:"revision"`
@@ -23,6 +25,12 @@ func (r RawRosterRestorePoint) Validate() error {
 	if r.Version != 1 || !strings.HasPrefix(r.League, "native.") || r.League == "native." ||
 		strings.TrimSpace(r.League) != r.League || r.Revision < 2 || r.CapturedAt.IsZero() {
 		return fmt.Errorf("invalid league roster restore point")
+	}
+	if r.Source != "" && r.Source != SourceNative && r.Source != SourceMFLImport {
+		return fmt.Errorf("invalid restore point source")
+	}
+	if r.Preset != "" && r.Preset != PresetEmpty && r.Preset != PresetLegacy && r.Preset != PresetDefault32 {
+		return fmt.Errorf("invalid restore point preset")
 	}
 	if err := r.validateIdentities(); err != nil {
 		return err
@@ -70,6 +78,7 @@ func RosterRestorePoint(league string, records []Record) (RawRosterRestorePoint,
 	snapshot.Picks, snapshot.Pool, snapshot.Champions = nil, nil, nil
 	snapshot.Champion, snapshot.StandingsOrder = "", nil
 	point := RawRosterRestorePoint{Version: 1, League: league, Revision: last.Receipt.Revision,
+		Source: LeagueSource(records), Preset: records[0].Command.Args.Preset,
 		CapturedAt: last.Receipt.RecordedAt, Snapshot: snapshot}
 	if err := point.Validate(); err != nil {
 		return RawRosterRestorePoint{}, false, err
