@@ -2,8 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
-	"net/url"
 	"slices"
 	"strconv"
 	"time"
@@ -15,53 +13,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
-
-func (s *State) RefreshDraftReportsFeeds(ctx context.Context) {
-	results, rf, re := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.Pick]{
-		Export: draftreports.ResultsExport,
-		Fetch: func(ctx context.Context) ([]draftreports.Pick, error) {
-			return draftreports.FetchResults(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)
-		}, Parse: draftreports.ParseResults, Bodies: s.History.ArchivedBodies,
-	}, s.FallbackLog)
-	s.SeasonMu.Lock()
-	HoldFeed(&s.SeasonDraftResults, results, rf, re)
-	s.SeasonMu.Unlock()
-	pause := s.SeasonPause
-	if pause == nil {
-		pause = Pause
-	}
-	if err := pause(ctx, time.Second); err != nil {
-		return
-	}
-	future, ff, fe := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.FuturePick]{
-		Export: draftreports.FutureExport,
-		Fetch: func(ctx context.Context) ([]draftreports.FuturePick, error) {
-			return draftreports.FetchFuture(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)
-		}, Parse: draftreports.ParseFuture, Bodies: s.History.ArchivedBodies,
-	}, s.FallbackLog)
-	s.SeasonMu.Lock()
-	defer s.SeasonMu.Unlock()
-	HoldFeed(&s.SeasonFuturePicks, future, ff, fe)
-}
-
-func (s *State) RefreshDraftReports(force bool) error {
-	if err := s.Ready(); err != nil {
-		return fmt.Errorf("draft refresh: startup: %w", err)
-	}
-	s.SeasonMu.Lock()
-	results, future := s.SeasonDraftResults, s.SeasonFuturePicks
-	s.SeasonMu.Unlock()
-	if !force && results.RefreshError == "" && future.RefreshError == "" &&
-		time.Since(results.FetchedAt) < 5*time.Minute && time.Since(future.FetchedAt) < 5*time.Minute {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(s.Ctx, 2*time.Minute)
-	defer cancel()
-	s.RefreshMu.Lock()
-	defer s.RefreshMu.Unlock()
-	s.RefreshDraftReportsFeeds(ctx)
-	return nil
-}
 
 func (s *State) DraftFeeds() (report.Held[draftreports.Pick], report.Held[draftreports.FuturePick]) {
 	s.SeasonMu.Lock()
@@ -89,28 +40,6 @@ func (s *State) DraftLeague() (int, map[string]string, *time.Location) {
 		zone = time.Local
 	}
 	return s.League.Season(), s.Rulebook.FranchiseNames(), zone
-}
-
-func (s *State) DraftDestination() string {
-	host, season := s.CommsDestination()
-	if host == "" {
-		return ""
-	}
-	return fmt.Sprintf("https://%s/%d/options?L=%s&O=17", host, season, url.QueryEscape(ingestion.LeagueID))
-}
-
-func (s *State) DraftPlayers(ctx context.Context) report.Held[players.RawPlayer] {
-	held := ArchivedOnly(ctx, s, "players", false, func(body []byte) ([]players.RawPlayer, error) {
-		rows, err := players.Parse(ctx, body)
-		if err != nil {
-			return nil, fmt.Errorf("NFL draft: players: %w", err)
-		}
-		if !slices.ContainsFunc(rows, func(p players.RawPlayer) bool { return p.DraftRound != "" && p.DraftPick != "" }) {
-			return nil, fmt.Errorf("NFL draft: detailed selection fields not held")
-		}
-		return rows, nil
-	})
-	return report.Held[players.RawPlayer]{Value: slices.Clone(held.Value), Feed: held.FeedState()}
 }
 
 func (s *State) DraftReady() (context.Context, int, *time.Location, error) {
@@ -156,14 +85,30 @@ func cloneDraftPick(p lab.DraftPick) lab.DraftPick {
 	return p
 }
 
-func (s *State) OpenDraftRoom() error {
-	if err := s.Ready(); err != nil {
-		return fmt.Errorf("open draft room: %w", err)
-	}
-	target := s.DraftDestination()
-	if target == "" {
-		return fmt.Errorf("open draft room: MFL host not held; refresh first")
-	}
-	s.OpenBrowser(target)
-	return nil
+func (s *State) ReadDraftPlayers(ctx context.Context, parse func([]byte) ([]players.RawPlayer, error)) report.Held[players.RawPlayer] {
+	held := ArchivedOnly(ctx, s, "players", false, parse)
+	return report.Held[players.RawPlayer]{Value: slices.Clone(held.Value), Feed: held.FeedState()}
+}
+
+func (s *State) RefreshDraftResults(ctx context.Context) {
+	results, rf, re := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.Pick]{
+		Export: draftreports.ResultsExport,
+		Fetch: func(ctx context.Context) ([]draftreports.Pick, error) {
+			return draftreports.FetchResults(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)
+		}, Parse: draftreports.ParseResults, Bodies: s.History.ArchivedBodies,
+	}, s.FallbackLog)
+	s.SeasonMu.Lock()
+	HoldFeed(&s.SeasonDraftResults, results, rf, re)
+	s.SeasonMu.Unlock()
+}
+func (s *State) RefreshFuturePicks(ctx context.Context) {
+	future, ff, fe := LiveOrArchive(ctx, s.CommsContext(), s.Season, ArchivedFeed[draftreports.FuturePick]{
+		Export: draftreports.FutureExport,
+		Fetch: func(ctx context.Context) ([]draftreports.FuturePick, error) {
+			return draftreports.FetchFuture(ctx, s.MFLClient, strconv.Itoa(s.Season), ingestion.LeagueID)
+		}, Parse: draftreports.ParseFuture, Bodies: s.History.ArchivedBodies,
+	}, s.FallbackLog)
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	HoldFeed(&s.SeasonFuturePicks, future, ff, fe)
 }

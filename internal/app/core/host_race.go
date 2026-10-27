@@ -1,8 +1,6 @@
 package core
 
 import (
-	"context"
-	"fmt"
 	"slices"
 	"time"
 
@@ -23,35 +21,6 @@ func (s *State) RaceInput(snapshot func() season.Held) season.Snapshot {
 	return in
 }
 
-func (s *State) RefreshRace(force bool, snapshot func() season.Held) error {
-	if err := s.Ready(); err != nil {
-		return fmt.Errorf("race refresh: startup: %w", err)
-	}
-	s.SeasonMu.Lock()
-	held := snapshot()
-	s.SeasonMu.Unlock()
-	fresh := true
-	for _, f := range []struct {
-		at  time.Time
-		err string
-	}{
-		{held.Weeks.FetchedAt, held.Weeks.RefreshError},
-		{held.Brackets.FetchedAt, held.Brackets.RefreshError},
-		{held.Standings.FetchedAt, held.Standings.RefreshError},
-	} {
-		fresh = fresh && f.err == "" && time.Since(f.at) < 5*time.Minute
-	}
-	if !force && fresh {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(s.Ctx, 2*time.Minute)
-	defer cancel()
-	s.RefreshMu.Lock()
-	defer s.RefreshMu.Unlock()
-	s.RefreshRaceFeeds(ctx)
-	return nil
-}
-
 // CloneLineups detaches the shared feed while its caller holds SeasonMu.
 func CloneLineups(in leaguefeed.Lineups) leaguefeed.Lineups {
 	in.Matchups = slices.Clone(in.Matchups)
@@ -63,4 +32,10 @@ func CloneLineups(in leaguefeed.Lineups) leaguefeed.Lineups {
 		f.NonStarters = slices.Clone(f.NonStarters)
 	}
 	return in
+}
+
+func (s *State) RaceRefreshState(snapshot func() season.Held) season.Held {
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	return snapshot()
 }

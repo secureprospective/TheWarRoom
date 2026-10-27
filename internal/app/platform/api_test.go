@@ -1,6 +1,11 @@
 package platform
 
 import (
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -61,5 +66,63 @@ func TestDraftActsNameTheirIntent(t *testing.T) {
 	}
 	if _, _ = api.TargetDraftTaxi("0001", "13130"); host.intent != "roster.taxi" {
 		t.Fatalf("TargetDraftTaxi intent = %q", host.intent)
+	}
+}
+
+func TestPhotoRuntimeInstallsBeforeSettingsAndReadsIDsLazily(t *testing.T) {
+	available := false
+	calls := []string{}
+	service := PhotoRuntime{Available: func() bool { return available },
+		SourceID: func(_ context.Context, id, source string) (string, error) {
+			calls = append(calls, source)
+			return id + source, nil
+		},
+		Install:  func(func(context.Context, string) (string, string, error)) { calls = append(calls, "install") },
+		Settings: func() (bool, error) { calls = append(calls, "settings"); return true, nil }, SetOff: func(off bool) {
+			if !off {
+				t.Fatal("lost switch")
+			}
+			calls = append(calls, "off")
+		},
+	}
+	service.Initialize()
+	if !reflect.DeepEqual(calls, []string{"install", "settings", "off"}) {
+		t.Fatal(calls)
+	}
+	calls = nil
+	if _, _, err := service.IDs(context.Background(), "0099"); err == nil || len(calls) != 0 {
+		t.Fatal(err, calls)
+	}
+	available = true
+	espn, sleeper, err := service.IDs(context.Background(), "0099")
+	if err != nil || espn != "0099espn" || sleeper != "0099sleeper" || !reflect.DeepEqual(calls, []string{"espn", "sleeper"}) {
+		t.Fatal(espn, sleeper, err, calls)
+	}
+	calls = nil
+	service.Settings = func() (bool, error) { return false, context.Canceled }
+	service.Initialize()
+	if !reflect.DeepEqual(calls, []string{"install"}) {
+		t.Fatal("failed settings overwrote switch", calls)
+	}
+	service.SourceID = func(context.Context, string, string) (string, error) { return "", context.Canceled }
+	if _, _, err := service.IDs(context.Background(), "0099"); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
+	}
+}
+
+// Local mode answers the shell's native probe with 404 even while photos are not ready, or the
+// window shows "Desktop startup could not be read" instead of opening the local app.
+func TestPhotoRoutesAnswerTheNativeProbeWithNotFound(t *testing.T) {
+	t.Parallel()
+	notReady := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "photos are not ready", http.StatusServiceUnavailable)
+	})
+	cases := map[string]int{"/desktop/native": http.StatusNotFound, "/headshot/1234": http.StatusServiceUnavailable}
+	for path, want := range cases {
+		rec := httptest.NewRecorder()
+		PhotoRoutes(notReady).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != want {
+			t.Fatalf("GET %s = %d, want %d", path, rec.Code, want)
+		}
 	}
 }

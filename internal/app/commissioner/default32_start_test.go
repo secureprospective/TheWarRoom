@@ -21,8 +21,14 @@ func TestDefault32StartsThroughTheSeedRequest(t *testing.T) {
 	if _, err := app.TargetNativeSeed(input); err != nil {
 		t.Fatal(err)
 	}
+	opsClock(app, 10)
 	if _, err := app.TargetNativeSeed(input); err != nil {
 		t.Fatalf("a retried start returns its receipt: %v", err)
+	}
+	changed := input
+	changed.Reason = "Different request body"
+	if _, err := app.TargetNativeSeed(changed); err == nil {
+		t.Fatal("a default start retry accepted a changed reason")
 	}
 	assets, err := app.TargetNativeAssets("native.ops")
 	if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Pool) != 32 {

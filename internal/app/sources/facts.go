@@ -144,3 +144,37 @@ func (b CuratedBodies) Body(ctx context.Context, sha string) ([]byte, error) {
 }
 
 const FactsCompiler = "facts 1 (ring 3: 37 relations, nine checks)"
+
+// StartupFacts resumes only an already-imported archive; no manifest means no work.
+func StartupFacts(ctx context.Context, exists func(context.Context) (bool, error),
+	publish, compile func(context.Context) error, warm, fit func(context.Context), logFailure func(string)) {
+	if ok, err := exists(ctx); err != nil || !ok {
+		return
+	}
+	if err := publish(ctx); err != nil {
+		logFailure(fmt.Sprintf("the war room: checked facts: %v", err))
+		return
+	}
+	if err := compile(ctx); err != nil {
+		logFailure(fmt.Sprintf("the war room: checked facts: %v", err))
+		return
+	}
+	warm(ctx)
+	fit(ctx)
+}
+
+func WarmArchive(ctx context.Context, began time.Time, read func(context.Context) error, logLine func(string)) {
+	if err := read(ctx); err != nil {
+		logLine(fmt.Sprintf("the war room: league archive: %v", err))
+		return
+	}
+	logLine(fmt.Sprintf("the war room: league archive read in %s", time.Since(began).Round(time.Millisecond)))
+}
+
+func CompileAvailable(lock func() bool, unlock func(), compile func() (string, error)) (string, error) {
+	if !lock() {
+		return "The checked facts are already compiling.", nil
+	}
+	defer unlock()
+	return compile()
+}

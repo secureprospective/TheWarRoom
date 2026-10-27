@@ -9,6 +9,8 @@ import (
 	"slices"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -193,4 +195,22 @@ func (a Service) LinkCrosswalk(ctx context.Context, cw crosswalk.Map, lk normali
 	log.Printf("the war room: crosswalk: %d links, %d waiting facts resolved; rostered %d of %d matched, free agents %d of %d",
 		rep.Links, rep.Promoted, rep.Total.RosteredMatched, rep.Total.Rostered, rep.Total.FreeAgentsMatched, rep.Total.FreeAgents)
 	return rep, nil
+}
+
+// Directory publishes only a completely normalized player lookup. Caller owns its lookup lock.
+func Directory(ctx context.Context, held normalize.Lookup, loaded bool,
+	fetch func(context.Context) ([]players.RawPlayer, error), publish func(normalize.Lookup, time.Time)) (normalize.Lookup, error) {
+	if loaded {
+		return held, nil
+	}
+	raw, err := fetch(ctx)
+	if err != nil {
+		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
+	}
+	lookup, err := normalize.NewLookup(raw)
+	if err != nil {
+		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
+	}
+	publish(lookup, time.Now().UTC())
+	return lookup, nil
 }

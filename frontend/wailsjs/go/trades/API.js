@@ -10,6 +10,14 @@ export function TargetTradeBuilder(arg1) {
   return window['go']['trades']['API']['TargetTradeBuilder'](arg1);
 }
 
+export function TargetTradeBuilderPreview(arg1) {
+  return window['go']['trades']['API']['TargetTradeBuilderPreview'](arg1);
+}
+
+export function TargetTradeBuilderRead(arg1) {
+  return window['go']['trades']['API']['TargetTradeBuilderRead'](arg1);
+}
+
 export function TargetTrades(arg1) {
   return window['go']['trades']['API']['TargetTrades'](arg1);
 }

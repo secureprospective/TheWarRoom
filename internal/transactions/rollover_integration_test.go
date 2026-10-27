@@ -106,7 +106,7 @@ func TestIntegration_RolloverSurvivesReboot(t *testing.T) {
 	path := filepath.Join(dir, "reboot.db")
 	ctx := context.Background()
 
-	pools, err := db.Open(ctx, path)
+	pools, err := db.Open(ctx, path, statepkg.SchemaVersion())
 	if err != nil {
 		t.Fatalf("db.Open: %v", err)
 	}
@@ -134,7 +134,7 @@ func TestIntegration_RolloverSurvivesReboot(t *testing.T) {
 	}
 
 	// Reboot from the same DB with the UNCHANGED config season — must derive 2027 from the log.
-	pools2, err := db.Open(ctx, path)
+	pools2, err := db.Open(ctx, path, statepkg.SchemaVersion())
 	if err != nil {
 		t.Fatalf("db.Open reboot: %v", err)
 	}

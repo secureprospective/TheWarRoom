@@ -93,3 +93,34 @@ func TestDecodeLineupSetReadsOneLineupForAnAppLeague(t *testing.T) {
 		}
 	}
 }
+
+func TestHeldNativeFactsRequireDirectoryAndInjuryObservation(t *testing.T) {
+	t.Parallel()
+	empty := HeldPlayerFacts(nil, false)
+	if empty == nil || len(empty) != 0 {
+		t.Fatal("unloaded directory must give an allocated empty fact set")
+	}
+	facts := HeldPlayerFacts(heldLookup{"0042": {Name: "Held", Position: domain.PosQB}}, true)
+	if len(facts) != 33 || facts["0042"].Name != "Held" {
+		t.Fatal(facts)
+	}
+	for _, team := range nativecheck.LineCardTeams() {
+		id, ok := nativecheck.LineCardID(team)
+		if !ok || facts[id].Name != team+" O-Line" || facts[id].Position != leaguerules.OL {
+			t.Fatalf("missing O-Line card for %s: %+v", team, facts[id])
+		}
+	}
+	got := HeldDesignations(facts, false, func() map[string]string { t.Fatal("unheld injuries must not be read"); return nil })
+	if got["0042"].DesignationHeld {
+		t.Fatal("invented injury observation")
+	}
+	reads := 0
+	got = HeldDesignations(facts, true, func() map[string]string { reads++; return map[string]string{"0042": "IR"} })
+	if reads != 1 || !got["0042"].DesignationHeld || got["0042"].Designation != leaguerules.InjuredReserve {
+		t.Fatal(got, reads)
+	}
+	HeldDesignations(empty, true, func() map[string]string { reads++; return nil })
+	if reads != 2 {
+		t.Fatal("held injury callback must retain its read point even with no directory")
+	}
+}

@@ -29,7 +29,9 @@ func initializeWhatIf(ctx context.Context, pools *db.Pools) error {
 // SchemaVersion is the newest whatif.db file migration this build can read.
 func SchemaVersion() int { return len(whatIfMigrations()) }
 
-func whatIfMigrations() []db.Migration { return []db.Migration{adoptWhatIf, guardWhatIfJSON} }
+func whatIfMigrations() []db.Migration {
+	return []db.Migration{adoptWhatIf, guardWhatIfJSON, dropTradeScratch}
+}
 
 func adoptWhatIf(ctx context.Context, tx *sql.Tx) error {
 	if _, err := tx.ExecContext(ctx, baseSchemaDDL+ledgerDDL+seasonPhaseDDL+capReliefDDL+mflAdjustmentsDDL+playerStatusDDL+calendarEventsDDL+tradeNotesDDL+tradePlansDDL+whatIfSessionsDDL+schemaMigrationsDDL); err != nil {

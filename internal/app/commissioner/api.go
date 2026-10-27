@@ -26,7 +26,7 @@ type Host interface {
 type SessionHost = leagueservice.SessionHost
 type ActionHost interface {
 	RunNativeOwnerAction(string, string, string, json.RawMessage) (commissioner.Receipt, error)
-	NativeSeedCommand(context.Context, RawNativeSeedRequest) (commissioner.RawCommand, error)
+	CaptureNativeSeed() (commissioner.RawNativeSnapshot, error)
 	CloseFinishedDrafts(string)
 }
 

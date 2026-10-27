@@ -73,3 +73,19 @@ func TestReadWithoutAVerifiedCompile(t *testing.T) {
 		t.Fatal("a snapshot that needs rebuilding reads its manifest", err)
 	}
 }
+
+func TestReadCachedRetainsPriorSnapshotOnEmptyAndFailure(t *testing.T) {
+	t.Parallel()
+	held := Snapshot{SHA: "prior", Cutoff: "held"}
+	if got, stale, err := ReadCached(t.Context(), Source{History: fakeHistory{}, Compiler: "c"}, &held); err != nil || stale || got.SHA != "" || held.SHA != "prior" {
+		t.Fatal("empty read erased held snapshot")
+	}
+	failure := errors.New("disk")
+	if got, stale, err := ReadCached(t.Context(), Source{History: fakeHistory{err: failure}}, &held); !errors.Is(err, failure) || stale || got.SHA != "" || held.SHA != "prior" {
+		t.Fatal("failed read changed snapshot")
+	}
+	src := Source{History: fakeHistory{attempts: []history.SnapshotRecord{{Compiler: "c", ResultSHA: "prior", ManifestSHA: "m", RulesHash: lab.CheckExceptions().SHA256}}, latest: "m"}, Compiler: "c"}
+	if got, stale, err := ReadCached(t.Context(), src, &held); err != nil || stale || got.Cutoff != "held" || held.SHA != "prior" {
+		t.Fatal("verified held read changed")
+	}
+}

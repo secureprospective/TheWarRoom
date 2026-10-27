@@ -4,13 +4,13 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"time"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -22,7 +22,6 @@ import (
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/offline"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
@@ -73,19 +72,13 @@ func (a *App) attachSeat(hist *history.Store) {
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.core.LookupMu.Lock()
 	defer a.core.LookupMu.Unlock()
-	if a.core.HasLookup {
-		return a.core.Lookup, nil
-	}
-	raws, err := players.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if err != nil {
-		return normalize.Lookup{}, fmt.Errorf("app: fetch players db: %w", err)
-	}
-	lk, err := normalize.NewLookup(raws)
-	if err != nil {
-		return normalize.Lookup{}, fmt.Errorf("app: build players lookup: %w", err)
-	}
-	a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lk, true, time.Now().UTC()
-	return lk, nil
+	return sourcesapp.Directory(ctx, a.core.Lookup, a.core.HasLookup, //nolint:wrapcheck // Preserve directory fetch/normalize errors.
+		func(ctx context.Context) ([]players.RawPlayer, error) {
+			return players.Fetch(ctx, a.core.MFLClient, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+		},
+		func(lookup normalize.Lookup, at time.Time) {
+			a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lookup, true, at
+		})
 }
 
 // NewApp is cheap; resources are acquired in startup.
@@ -129,71 +122,42 @@ func (a *App) startup(ctx context.Context) {
 	a.core.Ctx = ctx
 	a.core.WorkCtx, a.core.WorkCancel = context.WithCancel(ctx)
 	defer a.settleStartupFailure()
-
-	// Logging starts first so a lock or open failure below reaches the disk log. A logging
-	// failure is not fatal.
-	dir, err := configDir()
-	if err != nil {
-		a.core.StartupErr = fmt.Errorf("startup: resolve config dir: %w", err)
-		return
-	}
-	a.core.Paths.DataDir = dir
-	if lerr := setupLogging(dir); lerr != nil {
-		log.Printf("the war room: WARNING disk logging unavailable: %v", lerr)
-	}
-
-	path, hist, err := a.openDatabases(ctx, dir)
-	if err != nil {
-		a.core.StartupErr = fmt.Errorf("startup: %w", err)
-		return
-	}
-
-	client, err := mfl.New("api", 2, mfl.WithTransport(a.core.Fetches),
-		mfl.WithKeySource(func(ctx context.Context) (mflkey.Key, error) {
-			if a.core.KeyStore == nil {
-				return "", mflkey.ErrUnavailable
+	refreshed, a.core.StartupErr = (platformapp.StartupWorkflow{
+		Directory: configDir, SetDirectory: func(dir string) { a.core.Paths.DataDir = dir }, Logging: setupLogging,
+		Databases: a.openDatabases,
+		Client: func() error {
+			client, err := mfl.New("api", 2, mfl.WithTransport(a.core.Fetches),
+				mfl.WithKeySource(func(ctx context.Context) (mflkey.Key, error) {
+					if a.core.KeyStore == nil {
+						return "", mflkey.ErrUnavailable
+					}
+					return a.core.KeyStore.Get(ctx)
+				}))
+			if err != nil {
+				return err //nolint:wrapcheck // The workflow adds the original startup client context.
 			}
-			return a.core.KeyStore.Get(ctx)
-		}))
-	if err != nil {
-		a.core.StartupErr = fmt.Errorf("startup: mfl client: %w", err)
-		return
-	}
-	a.core.MFLClient = client
-	a.startHeadshots()
-
-	log.Printf("the war room: starting %s, db %s", buildLabel(), path)
-	began := time.Now()
-	refreshed, err = a.initStoreFloor(ctx, hist)
-	if err != nil {
-		a.core.StartupErr = err
-		return
-	}
-	log.Printf("the war room: season %d ready in %s", a.core.Season, time.Since(began).Round(time.Millisecond))
-	a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
-	a.lookupMyFranchise(ctx)
-	a.core.LaunchRefreshDue = !refreshed
+			a.core.MFLClient = client
+			return nil
+		}, Photos: a.startHeadshots, Floor: a.initStoreFloor,
+		Keys: func(ctx context.Context) {
+			a.core.KeyStore = mflkey.New(ingestion.LeagueID, strconv.Itoa(a.core.Season))
+			a.lookupMyFranchise(ctx)
+		},
+		LaunchDue: func(due bool) { a.core.LaunchRefreshDue = due }, Season: func() int { return a.core.Season }, Label: buildLabel(), Log: func(line string) { log.Print(line) },
+	}).Run(ctx)
 }
 
-// settleStartupFailure logs a failed startup's whole chain. One that could not reach MFL is then
-// kept as the plain offline sentence, which every screen shows through ready.
 func (a *App) settleStartupFailure() {
-	if a.core.StartupErr != nil {
-		log.Printf("the war room: startup failed: %v", a.core.StartupErr)
-		a.core.StartupErr = offline.Plain(a.core.StartupErr)
-	}
+	a.core.StartupErr = platformapp.StartupFailure(a.core.StartupErr, func(line string) { log.Print(line) })
 }
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
-	// Revalidation reads through ready; publish the completed store floor first.
-	close(a.core.Started)
-	if a.core.StartupErr != nil || !refreshed {
-		return
-	}
-	defer a.sourceHealthChanged(ctx)
-	a.core.RefreshMu.Lock()
-	defer a.core.RefreshMu.Unlock()
-	a.revalidateReadyRosterMoves(ctx)
+	platformapp.FinishStartup(a.core.StartupErr, refreshed, func() { close(a.core.Started) }, func() {
+		defer a.sourceHealthChanged(ctx)
+		a.core.RefreshMu.Lock()
+		defer a.core.RefreshMu.Unlock()
+		a.revalidateReadyRosterMoves(ctx)
+	})
 }
 
 // domReady is the Wails OnDomReady hook: the window is up, so the launch refresh and the signals
@@ -207,39 +171,46 @@ func (a *App) domReady(ctx context.Context) {
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes
 // through the history archive. It returns the league database's path for the startup log.
 func (a *App) openDatabases(ctx context.Context, dir string) (string, *history.Store, error) {
-	path := filepath.Join(dir, dbFileName("thewarroom", isDevBuild()))
-	// One running copy per database: two processes writing one ledger is the hazard.
-	lock, err := acquireInstanceLock(path)
-	if err != nil {
-		return "", nil, err
-	}
-	a.core.LockFile = lock
-	if a.core.Backups, err = newDatabaseBackups(dir); err != nil {
-		return "", nil, err
-	}
-	if err := a.core.Backups.Recover(ctx); err != nil {
-		return "", nil, fmt.Errorf("recover databases: %w", err)
-	}
-	if _, err := a.core.Backups.BeforeMigrations(ctx, time.Now().UTC()); err != nil {
-		return "", nil, fmt.Errorf("capture before migrations: %w", err)
-	}
-	if a.core.Pools, err = db.Open(ctx, path); err != nil {
-		return "", nil, fmt.Errorf("open database: %w", err)
-	}
-	reg, err := measures.Embedded()
-	if err != nil {
-		return "", nil, err //nolint:wrapcheck // the registry's errors name the CSV line
-	}
-	if a.core.HistPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("history", isDevBuild())), history.SchemaVersion()); err != nil {
-		return "", nil, fmt.Errorf("open history database: %w", err)
-	}
-	if a.core.WhatifPools, err = db.Open(ctx, filepath.Join(dir, dbFileName("whatif", isDevBuild())), state.SchemaVersion()); err != nil {
-		return "", nil, fmt.Errorf("open what-if database: %w", err)
-	}
-	hist := history.New(a.core.HistPools, reg)
-	a.attachSeat(hist)
-	a.core.Fetches = &archive.Transport{Base: a.core.Network, Sink: hist, Judge: ingestion.MFLRefusal}
-	return path, hist, nil
+	//nolint:wrapcheck // Preserve startup step and store refusal errors.
+	return (platformapp.DatabaseOpening{
+		Lock: func(path string) error {
+			lock, err := acquireInstanceLock(path)
+			if err == nil {
+				a.core.LockFile = lock
+			}
+			return err
+		},
+		Backups: func(dir string) error { backups, err := newDatabaseBackups(dir); a.core.Backups = backups; return err },
+		Recover: func(ctx context.Context) error { return a.core.Backups.Recover(ctx) },
+		BeforeMigrations: func(ctx context.Context, now time.Time) error {
+			_, err := a.core.Backups.BeforeMigrations(ctx, now)
+			return err
+		},
+		Main: func(ctx context.Context, path string) error {
+			pools, err := db.Open(ctx, path)
+			a.core.Pools = pools
+			return err
+		},
+		Registry: measures.Embedded,
+		History: func(ctx context.Context, path string) error {
+			pools, err := db.Open(ctx, path, history.SchemaVersion())
+			a.core.HistPools = pools
+			return err
+		},
+		WhatIf: func(ctx context.Context, path string) error {
+			pools, err := db.Open(ctx, path, state.SchemaVersion())
+			a.core.WhatifPools = pools
+			return err
+		},
+		Attach: func(reg *measures.Registry) *history.Store {
+			hist := history.New(a.core.HistPools, reg)
+			a.attachSeat(hist)
+			return hist
+		},
+		Archive: func(hist *history.Store) {
+			a.core.Fetches = &archive.Transport{Base: a.core.Network, Sink: hist, Judge: ingestion.MFLRefusal}
+		}, DevBuild: isDevBuild(),
+	}).Open(ctx, dir)
 }
 
 // startupBudget bounds store-floor init. An empty mirror is filled from MFL on this thread, so an
@@ -262,136 +233,59 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 	mirror := state.NewMirror(a.core.Pools, rb)
 	var whatif *state.Store
 	var coord *transactions.Coordinator
-	steps := []struct {
-		name string
-		run  func(context.Context) error
-	}{
-		{"history", hist.Initialize},
-		{"local sign-in", a.seatStore.Initialize},
-		{"params", pstore.Initialize},
-		{"moves", moveStore.Initialize},
-		{"personal lists", personal.New(a.core.Pools).Initialize},
-		{"rulebook", func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) }},
-		{"league mirror", mirror.Initialize},
-		{"first MFL refresh", func(c context.Context) error {
-			if mirror.Season() != 0 {
-				return nil
-			}
-			refreshed = true
-			// Startup seeds only the mirror; reports and plan checks need the completed store floor.
+	//nolint:wrapcheck // The service retains the original step names and failures.
+	return (platformapp.StoreFloor{
+		History: hist.Initialize, Seat: a.seatStore.Initialize, Params: pstore.Initialize, Moves: moveStore.Initialize,
+		Personal: personal.New(a.core.Pools).Initialize,
+		Rules:    func(c context.Context) error { return rb.Initialize(c, discoverSource{app: a}) },
+		Mirror:   mirror.Initialize, MirrorSeason: mirror.Season,
+		Refresh: func(c context.Context) error {
 			a.core.RefreshMu.Lock()
 			defer a.core.RefreshMu.Unlock()
 			_, err := a.refreshLeagueLocked(c, rb, mirror)
 			return err
-		}},
-		{"what-if league", func(c context.Context) error {
+		},
+		WhatIf: func(c context.Context) error {
 			a.core.Season = mirror.Season()
 			whatif = state.New(a.core.WhatifPools, ingestion.LeagueID, a.core.Season, rb)
 			return whatif.Initialize(c, mirror)
-		}},
-		// The coordinator is the only holder of the what-if Writer.
-		{"transaction coordinator", func(context.Context) error {
+		},
+		Coordinator: func(context.Context) error {
 			var err error
 			coord, err = transactions.New(whatif.Writer(), &contractsapp.RosterPolicy{Rulebook: rb, Directory: a.directory},
 				func(c context.Context) (transactions.Directory, error) { return a.directory(c) })
-			return err //nolint:wrapcheck // wrapped below with the step name
-		}},
-	}
-	for _, s := range steps {
-		began := time.Now()
-		if err := s.run(ctx); err != nil {
-			return false, fmt.Errorf("startup: initialize %s: %w", s.name, err)
-		}
-		log.Printf("the war room: %s ready in %s", s.name, time.Since(began).Round(time.Millisecond))
-	}
-	a.logMigrationFindings()
-	a.core.Params, a.core.Rulebook, a.core.League, a.core.Whatif, a.core.Coordinator, a.core.History = pstore, rb, mirror, whatif, coord, hist
-	a.core.Moves = moveStore
-	hist.SetLineupEnvironment(appLineupEnv{app: a})
-	hist.SetBidEnvironment(appBidEnv{app: a})
-	if refreshed {
-		a.core.RefreshDraftReportsFeeds(ctx)
-	}
-	a.seedClockSchedules(ctx)
-	return refreshed, nil
+			return err
+		},
+		MigrationFindings: a.logMigrationFindings,
+		Publish: func() {
+			a.core.Params, a.core.Rulebook, a.core.League, a.core.Whatif, a.core.Coordinator, a.core.History = pstore, rb, mirror, whatif, coord, hist
+			a.core.Moves = moveStore
+			hist.SetLineupEnvironment(appLineupEnv{app: a})
+			hist.SetBidEnvironment(appBidEnv{app: a})
+		}, DraftReports: a.refreshDraftReportsFeeds, SeedClock: a.seedClockSchedules, Log: func(line string) { log.Print(line) },
+	}).Run(ctx)
 }
 
 func (a *App) logMigrationFindings() {
-	for _, file := range []struct {
-		name  string
-		pools *db.Pools
-	}{
-		{"thewarroom", a.core.Pools}, {"history", a.core.HistPools}, {"whatif", a.core.WhatifPools},
-	} {
-		if file.pools != nil {
-			findings := file.pools.MigrationFindings()
-			log.Printf("the war room: %s migration checks: before=%+v after=%+v", file.name, findings.Before, findings.After)
-		}
+	files := []platformapp.DatabaseFile{}
+	for _, file := range a.databaseFiles() {
+		files = append(files, platformapp.DatabaseFile{Name: file.name, Pools: file.pools})
 	}
+	platformapp.LogMigrationFindings(files, func(line string) { log.Print(line) })
 }
 
-// shutdown releases the database and the instance lock.
 func (a *App) shutdown(_ context.Context) {
 	a.core.ShutdownOnce.Do(func() {
-		a.core.WorkerMu.Lock()
-		a.core.Stopping = true
-		if a.core.WeekCancel != nil {
-			a.core.WeekCancel()
-		}
-		if a.core.WorkCancel != nil {
-			a.core.WorkCancel()
-		}
-		a.core.WorkerMu.Unlock()
-		a.core.WeekWorkers.Wait()
-		for _, p := range []*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools} {
-			if p != nil {
-				_ = p.Close()
-			}
-		}
+		a.workerGroup().Stop(&a.core.WeekCancel, &a.core.WorkCancel)
+		platformapp.CloseDatabases([]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools})
 		releaseInstanceLock(a.core.LockFile)
 	})
 }
 
-func (a *App) startWorker(work func()) {
-	a.core.WorkerMu.Lock()
-	defer a.core.WorkerMu.Unlock()
-	if a.core.Stopping {
-		return
-	}
-	a.core.WeekWorkers.Add(1)
-	go func() {
-		defer a.core.WeekWorkers.Done()
-		work()
-	}()
-}
+func (a *App) startWorker(work func()) { a.workerGroup().Start(work) }
 
-// configDir returns the app's data directory (~/.config/TheWarRoom on Linux), creating it
-// owner-only. A dir left by an older build (0750) is tightened, since it holds the ledger.
-func configDir() (string, error) {
-	cfg, err := os.UserConfigDir()
-	if err != nil {
-		return "", fmt.Errorf("user config dir: %w", err)
-	}
-	dir := filepath.Join(cfg, "TheWarRoom")
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", fmt.Errorf("create data dir %q: %w", dir, err)
-	}
-	if err := os.Chmod(dir, 0o700); err != nil { //nolint:gosec // a directory needs its x bit; 0700 is owner-only
-		return "", fmt.Errorf("restrict data dir %q: %w", dir, err)
-	}
-	return dir, nil
-}
-
-// isDevBuild reports an un-stamped build (plain go build or wails dev).
-func isDevBuild() bool { return version == "dev" }
-
-// dbFileName gives dev builds their own databases, so development can never migrate or
-// corrupt the real league ledger or its history.
-func dbFileName(base string, devBuild bool) string {
-	if devBuild {
-		return base + "-dev.db"
-	}
-	return base + ".db"
+func (a *App) workerGroup() platformapp.WorkerGroup {
+	return platformapp.WorkerGroup{Mutex: &a.core.WorkerMu, Stopping: &a.core.Stopping, Workers: &a.core.WeekWorkers}
 }
 
 type desktopRuntime struct{}
@@ -400,3 +294,28 @@ func (desktopRuntime) EventsEmit(ctx context.Context, event string) { runtime.Ev
 func (desktopRuntime) BrowserOpenURL(ctx context.Context, target string) {
 	runtime.BrowserOpenURL(ctx, target)
 }
+
+func configDir() (string, error) { return platformapp.ConfigDir() } //nolint:wrapcheck // Preserve startup/config directory errors.
+func isDevBuild() bool           { return platformapp.IsDevBuild(version) }
+func dbFileName(base string, devBuild bool) string {
+	return platformapp.DatabaseFileName(base, devBuild)
+}
+
+// Build stamp, set at link time by -ldflags -X from git describe (see the Makefile). The
+// defaults make an un-stamped binary read as a DEV build, never a release.
+//
+//nolint:gochecknoglobals // ldflags -X requires package-level string vars.
+var (
+	version   = "dev"
+	commit    = ""
+	buildDate = ""
+)
+
+func buildLabel() string { return platformapp.BuildLabel(version, commit) }
+
+func setupLogging(dir string) error { return platformapp.SetupLogging(dir) } //nolint:wrapcheck // Logging already provides its resource context.
+
+func acquireInstanceLock(path string) (*os.File, error) {
+	return platformapp.AcquireInstanceLock(path) //nolint:wrapcheck // Preserve instance-lock refusal text.
+}
+func releaseInstanceLock(file *os.File) { platformapp.ReleaseInstanceLock(file) }

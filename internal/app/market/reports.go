@@ -11,6 +11,7 @@ package market
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"math"
 	"net/url"
@@ -20,6 +21,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -305,4 +308,73 @@ func WeekText(week int) string {
 		return "NFL week not known"
 	}
 	return fmt.Sprintf("NFL week %d", week)
+}
+
+func RefreshFeeds(ctx context.Context, force bool, week int, held map[string]HeldFeed, since func(time.Time) time.Duration,
+	pause func(context.Context, time.Duration) error, refresh func(context.Context, string, int)) {
+	for _, kind := range Kinds() {
+		feed := held[kind]
+		sameWeek := kind != marketfeeds.Projections || (len(feed.Value) == 1 && feed.Value[0].Week == week)
+		if !force && sameWeek && feed.Feed.RefreshError == "" && since(feed.Feed.FetchedAt) < 24*time.Hour {
+			continue
+		}
+		if err := pause(ctx, time.Second); err != nil {
+			return
+		}
+		refresh(ctx, kind, week)
+	}
+}
+
+func ParseArchiveFeed(kind string, week int, body []byte) ([]marketfeeds.Feed, error) {
+	feed, err := marketfeeds.Parse(kind, body)
+	if err != nil {
+		return nil, fmt.Errorf("market archive: %w", err)
+	}
+	if kind == marketfeeds.Projections && feed.Week != week {
+		return nil, fmt.Errorf("projection archive: wrong week")
+	}
+	return []marketfeeds.Feed{feed}, nil
+}
+
+func RefreshedFeed(kind string, week int, held season.Feed[[]marketfeeds.Feed], rows []marketfeeds.Feed, fresh domain.Freshness, err error) season.Feed[[]marketfeeds.Feed] {
+	if kind == marketfeeds.Projections && len(held.Value) == 1 && held.Value[0].Week != week {
+		held = season.Feed[[]marketfeeds.Feed]{}
+	}
+	next := report.HeldFeed[[]marketfeeds.Feed](held)
+	report.HoldFeed(&next, rows, fresh, err)
+	return season.Feed[[]marketfeeds.Feed](next)
+}
+
+func RefreshReports(force bool, ready func() error, parent func() context.Context, run func(context.Context, bool)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("market refresh: startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	run(ctx, force)
+	return nil
+}
+
+// ReadFeed applies the report's league/week archive scope to the caller's transport ports.
+func ReadFeed(ctx, fallback context.Context, season int, kind string, week int,
+	fetch func(context.Context) (marketfeeds.Feed, error), bodies func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error),
+	logLine func(string)) ([]marketfeeds.Feed, domain.Freshness, error) {
+	return report.LiveOrArchive(ctx, fallback, season, report.ArchivedFeed[marketfeeds.Feed]{ //nolint:wrapcheck // Preserve live/archive refusal precedence.
+		Export: kind, Leagueless: kind != marketfeeds.Projections,
+		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
+			feed, err := fetch(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("market refresh: %w", err)
+			}
+			return []marketfeeds.Feed{feed}, nil
+		}, Parse: func(body []byte) ([]marketfeeds.Feed, error) { return ParseArchiveFeed(kind, week, body) },
+		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+			return bodies(ctx, part, func(src string, body []byte, at time.Time) bool {
+				if !ArchiveScope(src, kind, week) {
+					return false
+				}
+				return accept(src, body, at)
+			})
+		},
+	}, logLine)
 }

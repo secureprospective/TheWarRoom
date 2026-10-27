@@ -139,24 +139,8 @@ func TestTargetHandOffRefused(t *testing.T) {
 	}
 }
 
-func TestMoveURLSecondLock(t *testing.T) {
+func TestInvalidMoveTargetCannotBeStored(t *testing.T) {
 	t.Parallel()
-	for _, target := range []string{
-		"https://example.com/", "http://myfantasyleague.com/",
-		"https://owner@myfantasyleague.com/", "https://myfantasyleague.com.evil.test/",
-		"https://evilmyfantasyleague.com/", "https:///options", ":bad",
-	} {
-		if err := validateMoveURL(target); err == nil {
-			t.Fatal("accepted", target)
-		}
-	}
-	for _, target := range []string{
-		"https://myfantasyleague.com/", "https://www47.myfantasyleague.com/options?O=18",
-	} {
-		if err := validateMoveURL(target); err != nil {
-			t.Fatal(err)
-		}
-	}
 	// Invalid HTTP/user-info targets cannot reach the store in the first place.
 	for _, target := range []string{"http://myfantasyleague.com/", "https://owner@myfantasyleague.com/"} {
 		spec := moveSpec(t)

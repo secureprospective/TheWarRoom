@@ -55,8 +55,12 @@ measure-dictionary:
 	go test ./internal/measures -run TestDictionaryIsCurrent -update
 
 # lint runs ifaceguard, filelen, bloat, placement AND golangci-lint — all must pass to clear.
-lint: ifaceguard filelen bloat placement frontend-transport
+lint: ifaceguard filelen bloat placement frontend-transport boundary
 	golangci-lint run ./...
+
+.PHONY: boundary
+boundary:
+	go run ./tools/boundarycheck
 
 .PHONY: frontend-transport
 frontend-transport:

@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -77,4 +79,40 @@ func SeedPicks(seed *commissioner.RawNativeSnapshot, results []draftreports.Pick
 		seed.Picks = append(seed.Picks, commissioner.NativePick{Season: p.Year, Round: p.Round,
 			Original: mapping[p.Original], Owner: mapping[p.Owner]})
 	}
+}
+
+type SeedSource struct {
+	Available func() bool
+	Roster    func() (state.MirrorSnapshot, string)
+	Season    func() int
+	Draft     func() (season.Feed[[]draftreports.Pick], season.Feed[[]draftreports.FuturePick])
+	Config    func() league.RawConfig
+	Directory func() []snapshot.Player
+}
+
+func CaptureSeed(source SeedSource) (commissioner.RawNativeSnapshot, error) {
+	if !source.Available() {
+		return commissioner.RawNativeSnapshot{}, fmt.Errorf("hold the league rosters and settings before seeding")
+	}
+	snap, at := source.Roster()
+	if snap.Season != source.Season() {
+		return commissioner.RawNativeSnapshot{}, fmt.Errorf("the held rosters and draft reports must be from the same season")
+	}
+	rosterAt, err := time.Parse(time.RFC3339Nano, at)
+	if err != nil {
+		return commissioner.RawNativeSnapshot{}, fmt.Errorf("read held roster date: %w", err)
+	}
+	results, future := source.Draft()
+	seed := commissioner.RawNativeSnapshot{Season: snap.Season, RosterAt: rosterAt, DraftAt: results.FetchedAt,
+		FutureAt: future.FetchedAt, Players: []commissioner.NativePlayer{}, Picks: []commissioner.NativePick{}, Adjustments: []commissioner.NativeCharge{}}
+	config := source.Config()
+	franchises, mapping := Franchises(config.Franchises)
+	seed.Franchises, seed.Conferences = franchises, Conferences(config)
+	directory := source.Directory()
+	SeedPlayers(&seed, snap, mapping, directory)
+	SeedPicks(&seed, results.Value, future.Value, mapping)
+	if err := seed.Validate(); err != nil {
+		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
+	}
+	return seed, nil
 }

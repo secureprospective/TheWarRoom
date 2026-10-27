@@ -1,24 +1,22 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { initialScope, readOffers, type OfferReading, type Scope } from './provider';
 export type OfferFilter = {
   field: 'direction' | 'window' | 'range' | 'team' | 'retry';
   value: string;
 };
 export function createOfferState(read = readOffers) {
-  const store = createStore<{
-    scope: Scope; reading?: OfferReading; pending: boolean;
-  }>(() => ({ scope: initialScope, pending: false }));
-  let revision = 0;
+  const query = createReadQuery('offers.TargetOffers', {
+    initial: (): { scope: Scope; reading?: OfferReading } => ({ scope: initialScope }),
+    read, accept: reading => ({ reading }),
+  });
+  const store = query.store;
   let opening: Promise<void> | undefined;
-  async function refresh(scope: Scope) {
-    const token = ++revision;
-    store.setState({ scope, pending: true });
-    const reading = await read(scope);
-    if (token === revision) store.setState({ reading, pending: false });
+  function refresh(scope: Scope) {
+    store.setState({ scope });
+    return query.load([scope]);
   }
   return {
-    use: () => useStore(store),
+    use: query.use,
     peek: store.getState,
     refresh: () => refresh(store.getState().scope),
     first: () => {

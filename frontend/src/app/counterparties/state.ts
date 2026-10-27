@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery, readKey } from '../data/query';
 import { counterpartProvider } from './api';
 import type { ReadingShell } from '../market/contract';
 import type { MarketFilter } from '../market/contract';
@@ -79,58 +78,57 @@ function failure(cause: unknown): ReadingShell {
   };
 }
 export function createCounterState(provider: typeof counterpartProvider) {
-  const store = createStore<{
+  type State = {
     sort: { key: SortKey; descending: boolean };
     scope: CounterScope;
     applied: CounterScope;
     reading?: CounterpartiesReading;
-    pending: boolean;
     panels: Record<string, TeamPanelReading>;
     teamPending: Record<string, boolean>;
-  }>(() => ({
-    sort: { key: 'day', descending: true },
-    scope: initial(),
-    applied: initial(),
-    pending: false,
-    panels: {},
-    teamPending: {},
-  }));
-  let revision = 0;
-  const seen = new Map<string, string>();
-  const teamTokens = new Map<string, number>();
+  };
+  const query = createReadQuery('counterparties.TargetCounterparties', {
+    initial: (): State => ({
+      sort: { key: 'day', descending: true }, scope: initial(), applied: initial(),
+      panels: {}, teamPending: {},
+    }), read: async scope => {
+      try { return await provider.surface(scope); }
+      catch (cause) { return failure(cause); }
+    }, accept: (reading, [scope]) => ({ reading, applied: { ...scope } }),
+  });
+  const store = query.store;
+  function detail(fid: string) {
+    const reading = createReadQuery('counterparties.TargetCounterpartTeam', {
+      initial: () => ({}), cacheSize: 1,
+      read: async ({ scope, fid }) => {
+        try { return await provider.team(scope, fid); }
+        catch (cause) { return { ...failure(cause), threshold: 1 }; }
+      }, accept: value => {
+        store.setState(s => ({ panels: { ...s.panels, [fid]: value } }));
+        return {};
+      },
+    });
+    reading.store.subscribe(s => {
+      store.setState(current => ({ teamPending: { ...current.teamPending, [fid]: s.pending } }));
+    });
+    return { reading, requested: '' };
+  }
+  const details = new Map<string, ReturnType<typeof detail>>();
   async function refresh(scope = store.getState().scope) {
-    const token = ++revision;
-    store.setState({ scope, pending: true });
-    let reading: CounterpartiesReading;
-    try {
-      reading = await provider.surface(scope);
-    } catch (cause) {
-      reading = failure(cause);
-    }
-    if (token === revision) store.setState({ reading, applied: { ...scope }, pending: false });
+    store.setState({ scope });
+    await query.load([scope]);
   }
   async function team(fid: string) {
-    const scope = { ...store.getState().applied, team: '' },
-      signature = JSON.stringify(scope);
-    if (seen.get(fid) === signature) return;
-    seen.set(fid, signature);
-    const token = (teamTokens.get(fid) ?? 0) + 1;
-    teamTokens.set(fid, token);
-    store.setState((s) => ({ teamPending: { ...s.teamPending, [fid]: true } }));
-    let reading: TeamPanelReading;
-    try {
-      reading = await provider.team(scope, fid);
-    } catch (cause) {
-      reading = { ...failure(cause), threshold: 1 };
-    }
-    if (teamTokens.get(fid) !== token) return;
-    store.setState((s) => ({
-      panels: { ...s.panels, [fid]: reading },
-      teamPending: { ...s.teamPending, [fid]: false },
-    }));
+    const scope = { ...store.getState().applied, team: '' };
+    let panel = details.get(fid);
+    if (!panel) { panel = detail(fid); details.set(fid, panel); }
+    const args: [{ scope: CounterScope; fid: string }] = [{ scope, fid }];
+    const key = readKey('counterparties.TargetCounterpartTeam', args);
+    if (panel.reading.peek().pending && panel.requested === key) return;
+    panel.requested = key;
+    await panel.reading.load(args, { policy: 'cache-first' });
   }
   return {
-    use: () => useStore(store),
+    use: query.use,
     peek: store.getState,
     refresh,
     team,
@@ -146,7 +144,9 @@ export function createCounterState(provider: typeof counterpartProvider) {
         });
         return Promise.resolve();
       }
-      if (change.field === 'counterpart-retry') seen.clear();
+      if (change.field === 'counterpart-retry') {
+        for (const panel of details.values()) panel.reading.invalidate();
+      }
       return refresh(filtered(store.getState().scope, change));
     },
   };

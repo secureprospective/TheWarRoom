@@ -371,3 +371,26 @@ code it does not map, so a silently dropped stat cannot pass.
 
 1. Spec §7 items (live mapping, ybc provisional score, stat corrections, EDGE designation) remain
    open as written there.
+
+## Main integration — part 8
+
+Seed preparation lives in `internal/app/commissioner`: read the league records, check the request
+replay through `BuildSeedCommand`, then choose its start. A replay returns the recorded command
+before reading the clock or capturing held state; execution still checks the current principal.
+A new Default32 request uses `Default32SeedCommand` (own franchises, empty rosters, 32 unassigned
+O-Line lots). Other leagues use the host's held-data capture; capture failure records nothing.
+Preview uses the same preparation path.
+
+The host port now exposes only `CaptureNativeSeed`, not seed-command policy. Composition's
+`nativeSeedCommand` remains a straight delegate for existing internal callers. The two source
+fingerprints in `boundary-adapters.tsv` were refreshed only for this inward routing/port change;
+no decision-function allowances were added or widened. Main's other placements and ratchets stay.
+
+Regression evidence: Default32 API start/retry after clock advance and changed-reason refusal;
+held-path capture and failure; existing composition tests for held assets, refresh/retry,
+unauthorized retry, missing/mixed inputs and generic-IPC refusal.
+
+The auto-merged `TestHeldNativeFactsRequireDirectoryAndInjuryObservation` initially failed: main
+expected one held player, while this branch also supplies 32 synthetic O-Line facts. Its exact
+cardinality is now 33, with every O-Line name/position checked; the unloaded-directory and held
+injury callback assertions remain unchanged. No production fact behavior was relaxed.

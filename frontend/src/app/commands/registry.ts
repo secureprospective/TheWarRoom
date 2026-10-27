@@ -67,8 +67,8 @@ export function createCommands(
   let snapshot: Snapshot | undefined;
   const state = createShellState();
   const lineups = createLineups(provider);
-  const trades = createReadings<TradeReading>(provider, (id) => provider.trades(id));
-  const alerts = createReadings(provider, (id) => provider.alerts(id));
+  const trades = createReadings<TradeReading>(provider, (id) => provider.trades(id), 'trades.TargetTrades');
+  const alerts = createReadings(provider, (id) => provider.alerts(id), 'control.TargetAlerts');
   const moves = createMovesState();
   const mflKey = createMFLKeyState();
   const prefetchMoves = createMovesPrefetch();

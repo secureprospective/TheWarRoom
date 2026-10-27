@@ -2,12 +2,10 @@ package composition
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -15,6 +13,7 @@ import (
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -23,55 +22,26 @@ import (
 type localCommissionerSession struct{ installation string }
 
 func (s localCommissionerSession) Principal() (string, error) {
-	if s.installation == "" {
-		return "", fmt.Errorf("local identity is unavailable")
-	}
-	identity := sha256.Sum256([]byte(fmt.Sprintf("%s\x00%d", s.installation, os.Getuid())))
-	return "local." + hex.EncodeToString(identity[:]), nil
+	return commissionerapp.LocalPrincipal(s.installation, os.Getuid()) //nolint:wrapcheck // Preserve missing local identity refusal.
 }
 
 func (a *App) commissionerPrincipal() (string, error) {
-	session := a.core.CommissionerSession
-	if session == nil {
-		session = localCommissionerSession{installation: a.core.Paths.DataDir}
-	}
-	principal, err := session.Principal()
-	if err != nil {
-		return "", fmt.Errorf("read local identity: %w", err)
-	}
-	if strings.TrimSpace(principal) == "" {
-		return "", fmt.Errorf("local identity is unavailable")
-	}
-	return principal, nil
+	return commissionerapp.ResolvePrincipal(a.core.CommissionerSession, func() (string, error) { //nolint:wrapcheck // Preserve local identity errors.
+		return (localCommissionerSession{installation: a.core.Paths.DataDir}).Principal()
+	})
 }
-
-// commissionerSeat reads whether this computer is linked to the local sign-in.
+func (a *App) localSeat() commissionerapp.LocalSeat {
+	return commissionerapp.LocalSeat{Ready: a.ready, Principal: a.commissionerPrincipal, Context: func() context.Context { return a.core.Ctx },
+		Status: func(ctx context.Context, local string) (accounts.SeatStatus, error) { return a.seat.Status(ctx, local) },
+		SignIn: func(ctx context.Context, raw accounts.RawCredentials, local string) (accounts.Account, error) {
+			return a.seat.SignIn(ctx, raw, local)
+		}}
+}
 func (a *App) commissionerSeat() (accounts.SeatStatus, error) {
-	if err := a.ready(); err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	local, err := a.commissionerPrincipal()
-	if err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	//nolint:wrapcheck // the seat names its own failure
-	return a.seat.Status(a.core.Ctx, local)
+	return a.localSeat().Read() //nolint:wrapcheck // Preserve seat errors.
 }
-
-// commissionerSeatSignIn links this computer's identity to the local sign-in. On the computer that
-// made the league it protects the commissioner; on a restored copy it proves the same person.
 func (a *App) commissionerSeatSignIn(raw accounts.RawCredentials) (accounts.SeatStatus, error) {
-	if err := a.ready(); err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	local, err := a.commissionerPrincipal()
-	if err != nil {
-		return accounts.SeatStatus{}, err
-	}
-	if _, err := a.seat.SignIn(a.core.Ctx, raw, local); err != nil {
-		return accounts.SeatStatus{}, err //nolint:wrapcheck // the seat names its own failure
-	}
-	return a.commissionerSeat()
+	return a.localSeat().Login(raw, a.commissionerSeat) //nolint:wrapcheck // Preserve sign-in errors and re-read status.
 }
 
 // commissionerPreviewRegistry is docs/ui/endpoint-registry.csv, embedded by the root binary.
@@ -88,17 +58,10 @@ func (a *App) leagueRecords(parent context.Context, league string) ([]commission
 // nativeFacts reads the football facts the app already holds, with no network: positions and draft years
 // from the held players directory under its lock, NFL listings from the held injuries feed.
 func (a *App) nativeFacts() nativecheck.Facts {
-	facts := nativecheck.Facts{}
 	a.core.LookupMu.Lock()
-	if a.core.HasLookup {
-		facts = nativeapp.PlayerFacts(a.core.Lookup)
-	}
+	facts := nativeapp.HeldPlayerFacts(a.core.Lookup, a.core.HasLookup)
 	a.core.LookupMu.Unlock()
-	if !a.injuriesHeld() {
-		return facts
-	}
-	nativeapp.Designate(facts, a.heldInjuries().Status)
-	return facts
+	return nativeapp.HeldDesignations(facts, a.injuriesHeld(), func() map[string]string { return a.heldInjuries().Status })
 }
 
 type RawLeagueCalendarScope = commissionerapp.RawLeagueCalendarScope
@@ -139,9 +102,8 @@ func (h commissionerHost) RunNativeOwnerAction(league, franchise, name string,
 	body json.RawMessage) (commissioner.Receipt, error) {
 	return h.app.runNativeAction(nativeOwnerActions(), league, franchise, name, body)
 }
-func (h commissionerHost) NativeSeedCommand(ctx context.Context,
-	input commissionerapp.RawNativeSeedRequest) (commissioner.RawCommand, error) {
-	return h.app.nativeSeedCommand(ctx, input)
+func (h commissionerHost) CaptureNativeSeed() (commissioner.RawNativeSnapshot, error) {
+	return h.app.heldNativeSnapshot()
 }
 func (h commissionerHost) CommissionerSeat() (accounts.SeatStatus, error) {
 	return h.app.commissionerSeat()
@@ -160,4 +122,31 @@ func (h commissionerHost) TransferStatus(ctx context.Context, league string) (hi
 		return history.TransferStatus{}, fmt.Errorf("read league location: %w", err)
 	}
 	return status, nil
+}
+
+// This is a local reference read. It has no fetch path and never reads a fantasy league's schedule.
+func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Time) ([]leagueweek.Week,
+	error) {
+	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
+	defer cancel()
+	return nativeapp.ScheduleDates(ctx, a.core.History.ReferenceBodies, season, at) //nolint:wrapcheck // Preserve the held NFL week dates refusal.
+}
+
+type appBidEnv struct{ app *App }
+
+func (e appBidEnv) BidEnvironment(ctx context.Context, league string,
+	at time.Time) (commissioner.BidEnvironment, error) {
+	//nolint:wrapcheck // Preserve the bidding refusal.
+	return nativeapp.ReadBidEnvironment(ctx, nativeapp.BidSource{Records: e.app.leagueRecords,
+		Schedule: e.app.nativeScheduleDates, Bracket: e.app.core.History.NativeBracket}, league, at)
+}
+
+type nativeDueClock struct{ now func() time.Time }
+
+func (c nativeDueClock) Now() time.Time { return c.now() }
+func (nativeDueClock) Trusted() error   { return nil }
+
+func (a *App) nativeWaiverClock(ctx context.Context) {
+	worker := leagueservice.NewDueWorker(a.core.History, a.nativeFacts, nativeDueClock{now: a.timeNow})
+	worker.Run(ctx, func(err error) { log.Printf("the war room: process native deadlines: %v", err) })
 }

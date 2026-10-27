@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import {
   assets,
   phases,
@@ -8,7 +7,7 @@ import {
   type MarketScope,
   type SurfaceReading,
 } from './contract';
-import { marketProvider, unavailable } from './provider';
+import { marketProvider, marketScopeInput, unavailable } from './provider';
 import { FILTER_KEYS, keepFilter, restoreFilter, subset } from '../shell/viewFilters';
 
 type State = {
@@ -71,47 +70,49 @@ export function parseMarketScope(v: unknown): MarketScope | null {
   return { ...all, phases: kept.phases, assets: kept.assets, byAge: r.byAge };
 }
 export function createMarketState(provider: MarketProvider) {
-  const store = createStore<State>(() => ({
-    scope: restoreFilter(FILTER_KEYS.market, parseMarketScope, allScope()),
-    profiles: {},
-    pending: false,
-  }));
-  let revision = 0;
-  const profileScopes = new Map<string, string>();
   const safe = (read: Promise<SurfaceReading>) => read.catch((cause) => unavailable(String(cause)));
-  async function refresh(scope = store.getState().scope) {
-    const token = ++revision;
-    keepFilter(FILTER_KEYS.market, scope);
-    store.setState({ scope, pending: true });
-    const [lists, clock, stretches] = await Promise.all([
-      safe(provider.lists(scope)),
-      safe(provider.clock(scope)),
-      safe(provider.stretches(scope)),
-    ]);
-    if (token !== revision) return;
-    store.setState({
-      lists,
-      clock,
-      stretches,
-      applied: scope,
-      pending: false,
-      profiles: store.getState().profiles,
+  const query = createReadQuery('market.TargetMarketLists', {
+    initial: (): State => ({
+      scope: restoreFilter(FILTER_KEYS.market, parseMarketScope, allScope()), profiles: {}, pending: false,
+    }), companions: ['market.TargetPickClock', 'market.TargetMarketStretches'],
+    arguments: ([scope]: [MarketScope]): [ReturnType<typeof marketScopeInput>] => [marketScopeInput(scope)],
+    read: async (request: MarketScope) => {
+      const [lists, clock, stretches] = await Promise.all([
+        safe(provider.lists(request)), safe(provider.clock(request)), safe(provider.stretches(request)),
+      ]);
+      return { lists, clock, stretches };
+    }, accept: (value, [scope]) => ({ ...value, applied: scope }),
+  });
+  const store = query.store;
+  function detail(kind: string) {
+    return createReadQuery('market.TargetAssetProfile', {
+      initial: () => ({}), cacheSize: 1,
+      arguments: ([request]: [{ scope: MarketScope; kind: string }]):
+        [{ scope: ReturnType<typeof marketScopeInput>; kind: string }] => [
+          { ...request, scope: marketScopeInput(request.scope) },
+        ],
+      read: ({ scope, kind }: { scope: MarketScope; kind: string }) => safe(provider.profile(scope, kind)),
+      accept: reading => {
+        store.setState(s => ({ profiles: { ...s.profiles, [kind]: reading } }));
+        return {};
+      },
     });
+  }
+  const details = new Map<string, ReturnType<typeof detail>>();
+  async function refresh(scope = store.getState().scope) {
+    for (const reading of details.values()) reading.fence();
+    keepFilter(FILTER_KEYS.market, scope);
+    store.setState({ scope });
+    await query.load([scope]);
   }
   async function profile(kind: string) {
     const before = store.getState();
-    const scope = before.applied ?? before.scope;
-    const signature = JSON.stringify(scope);
-    if (before.profiles[kind] && profileScopes.get(kind) === signature) return;
-    const token = revision;
-    const reading = await safe(provider.profile(scope, kind));
-    if (token === revision) {
-      profileScopes.set(kind, signature);
-      store.setState((s) => ({ profiles: { ...s.profiles, [kind]: reading } }));
-    }
+    let reading = details.get(kind);
+    if (!reading) { reading = detail(kind); details.set(kind, reading); }
+    await reading.load([{ scope: before.applied ?? before.scope, kind }], { policy: 'cache-first' });
   }
   return {
-    use: () => useStore(store),
+    use: query.use,
     peek: store.getState,
     refresh,
     profile,

@@ -91,3 +91,27 @@ describe('Control Room', () => {
     vi.doUnmock('./state');
   });
 });
+
+it('publishes the league compound read only when every part succeeds', async () => {
+  let failed = false;
+  const accounting = report(wire.accounting, 'Accounting');
+  const c = createControlState(reader({
+    settings: async () => ({ ...report(wire.settings, 'Settings'), title: failed ? 'new' : 'held' }),
+    accounting: async () => { if (failed) throw new Error('missing ledger'); return accounting; },
+  }));
+  await c.choose('league');
+  failed = true;
+  await c.choose('league');
+  expect(c.peek()).toMatchObject({ settings: { title: 'held' }, accounting, pending: false });
+  expect(c.peek().error).toContain('missing ledger');
+  await c.choose('news');
+  expect(c.peek().error).toBe('');
+  expect(c.peek().settings?.title).toBe('held');
+});
+
+it('preserves the reader receiver for independent news reads', async () => {
+  const c = createControlState(reader({ async news(this: ControlReader) { return this.settings(); } }));
+  await c.choose('news');
+  expect(c.peek().news?.title).toBe(report(wire.settings, 'League settings').title);
+  expect(c.peek().error).toBe('');
+});

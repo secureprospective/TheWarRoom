@@ -42,7 +42,7 @@ func TestResearchRealPointsActivityAndScales(t *testing.T) {
 	for _, kind := range []string{"topAdds", "topDrops", "topStarters", "topOwns", "topTrades"} {
 		out := Build(in, Scope{Trend: kind})
 		report := reportByID(t, out.Board, "M-052")
-		want := researchRows(in.Held.Feeds[Key(kind, "")])
+		want := Rows(in.Held.Feeds[Key(kind, "")])
 		for i, row := range report.Rows {
 			if row.Cells[1] != (researchView{Snapshot: in}).player(want[i].ID.String()).Name || row.Cells[4] != strconv.FormatFloat(want[i].Value, 'f', 2, 64)+"%" {
 				t.Fatal(kind, i, row)

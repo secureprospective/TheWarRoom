@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { hostedWorkflow, type HostedResponse } from './api';
 import type { NativeRequest } from '../commands/native';
 import { parseDraft, type Draft } from '../draftroom/draft';
@@ -59,148 +58,143 @@ export function createHostedRoom(
   franchise: string,
   port: HostedPort = hostedWorkflow,
 ) {
-  const store = createStore<State>(() => ({
-    stale: true,
-    pending: false,
-    error: '',
-    message: '',
-  }));
+  const query = createReadQuery('commissioner.TargetNativeLineup', {
+    initial: (): State => ({ stale: true, pending: false, error: '', message: '' }),
+    retainErrorWhilePending: true,
+    read: (_league: string, _franchise: string, week: number, _at: string) => readBundle(week),
+    accept: reading => ({ reading, stale: false }),
+    failure: () => {
+      query.set({ stale: true, message: '' });
+      return 'Could not refresh your league. Saved readings are read-only. ' +
+        'Check your connection, seat and authenticator, then refresh.';
+    },
+  });
+  const store = query.store;
   let generation = 0;
   let activeWeek = 1;
   async function refresh(week = activeWeek) {
     if (store.getState().pending) return;
     activeWeek = week;
-    const turn = ++generation;
-    store.setState({ pending: true, review: undefined, market: undefined });
-    try {
-      const assets = await port({
-        command: 'native.assets.read',
+    generation++;
+    query.invalidate();
+    store.setState({ review: undefined, market: undefined });
+    await query.load([league, franchise, week, '']);
+  }
+  async function readBundle(week: number) {
+    const assets = await port({
+      command: 'native.assets.read',
+      mode: 'read',
+      arguments: { league },
+    });
+    const roster = parseHostedRoster(assets.data);
+    const season = roster.season;
+    const requests: NativeRequest[] = [
+      {
+        command: 'lineup.read',
+        mode: 'read',
+        arguments: { league, franchise, week, at: '' },
+      },
+      {
+        command: 'native.reserve.check',
         mode: 'read',
         arguments: { league },
-      });
-      const roster = parseHostedRoster(assets.data);
-      const season = roster.season;
-      const requests: NativeRequest[] = [
-        {
-          command: 'lineup.read',
-          mode: 'read',
-          arguments: { league, franchise, week, at: '' },
+      },
+      {
+        command: 'draft.read',
+        mode: 'read',
+        arguments: {
+          league,
+          franchise,
+          season: 0,
+          at: '0001-01-01T00:00:00Z',
         },
-        {
-          command: 'native.reserve.check',
-          mode: 'read',
-          arguments: { league },
-        },
-        {
-          command: 'draft.read',
-          mode: 'read',
-          arguments: {
-            league,
-            franchise,
-            season: 0,
-            at: '0001-01-01T00:00:00Z',
-          },
-        },
-        { command: 'commish.rules.read', mode: 'read', arguments: { league } },
-        {
-          command: 'bids.read',
-          mode: 'read',
-          arguments: { league, franchise },
-        },
-        {
-          command: 'waivers.read',
-          mode: 'read',
-          arguments: { league, franchise, at: new Date().toISOString() },
-        },
-        {
-          command: 'trades.read',
-          mode: 'read',
-          arguments: { league, viewer: franchise },
-        },
-        {
-          command: 'results.read',
-          mode: 'read',
-          arguments: { league, season, week },
-        },
-        {
-          command: 'standings.read',
-          mode: 'read',
-          arguments: { league, season },
-        },
-      ];
-      const results = await Promise.all(
-        requests.map((request) =>
-          request.command === 'lineup.read'
-            ? port(request).catch(() => ({ ...assets, data: null }))
-            : port(request),
-        ),
-      );
-      const [lineup, reserves, draft, rules, bids, waivers, trades, games, standings] = results;
-      const reading: HostedReading = {
-        markets: {
-          bids: parseHostedBids(bids.data),
-          waivers: parseHostedWaivers(waivers.data),
-          trades: parseHostedTrades(trades.data),
-          results: parseHostedResults(games.data),
-          standings: parseHostedStandings(standings.data),
-        },
-        lineup:
-          lineup.data === null
-            ? {
-                available: false,
-                league,
-                franchise,
-                season,
-                week,
-                revision: roster.revision,
-                words:
-                  'The lineup could not be read. Ask the server operator to check football evidence ' +
-                'for this season, then refresh.',
-                verdict: 'Lineup changes are unavailable.',
-                starters: [],
-                bench: [],
-              }
-            : parseHostedLineup(lineup.data),
-        roster,
-        reserves: parseHostedReserves(reserves.data),
-        draft: parseDraft(draft.data),
-        rules: parseRules(rules.data),
-        label: lineup.label,
-        writable: results.every((r) => r.writable),
-        football: lineup.football,
-        readAt: Date.now(),
-      };
-      if (
-        reading.lineup.league !== league ||
-        reading.lineup.franchise !== franchise ||
-        reading.draft.league !== league ||
-        reading.rules.league !== league ||
-        reading.roster.league !== league ||
-        [reading.lineup, reading.draft, reading.rules, ...Object.values(reading.markets)].some(
-          (r) => r.revision !== roster.revision,
-        ) ||
-        Object.values(reading.markets).some((r) => r.league !== league) ||
-        [reading.markets.bids, reading.markets.waivers, reading.markets.trades].some(
-          (r) => r.franchise !== franchise,
-        ) ||
-        results.some((r) => r.football !== reading.football)
-      )
-        throw new Error('League readings changed. Refresh again.');
-      if (turn === generation) {
-        store.setState({ reading, stale: false, error: '' });
-      }
-    } catch {
-      if (turn === generation)
-        store.setState({
-          stale: true,
-          message: '',
-          error:
-            'Could not refresh your league. Saved readings are read-only. ' +
-            'Check your connection, seat and authenticator, then refresh.',
-        });
-    } finally {
-      if (turn === generation) store.setState({ pending: false });
-    }
+      },
+      { command: 'commish.rules.read', mode: 'read', arguments: { league } },
+      {
+        command: 'bids.read',
+        mode: 'read',
+        arguments: { league, franchise },
+      },
+      {
+        command: 'waivers.read',
+        mode: 'read',
+        arguments: { league, franchise, at: new Date().toISOString() },
+      },
+      {
+        command: 'trades.read',
+        mode: 'read',
+        arguments: { league, viewer: franchise },
+      },
+      {
+        command: 'results.read',
+        mode: 'read',
+        arguments: { league, season, week },
+      },
+      {
+        command: 'standings.read',
+        mode: 'read',
+        arguments: { league, season },
+      },
+    ];
+    const results = await Promise.all(
+      requests.map((request) =>
+        request.command === 'lineup.read'
+          ? port(request).catch(() => ({ ...assets, data: null }))
+          : port(request),
+      ),
+    );
+    const [lineup, reserves, draft, rules, bids, waivers, trades, games, standings] = results;
+    const reading: HostedReading = {
+      markets: {
+        bids: parseHostedBids(bids.data),
+        waivers: parseHostedWaivers(waivers.data),
+        trades: parseHostedTrades(trades.data),
+        results: parseHostedResults(games.data),
+        standings: parseHostedStandings(standings.data),
+      },
+      lineup:
+        lineup.data === null
+          ? {
+              available: false,
+              league,
+              franchise,
+              season,
+              week,
+              revision: roster.revision,
+              words:
+                'The lineup could not be read. Ask the server operator to check football evidence ' +
+              'for this season, then refresh.',
+              verdict: 'Lineup changes are unavailable.',
+              starters: [],
+              bench: [],
+            }
+          : parseHostedLineup(lineup.data),
+      roster,
+      reserves: parseHostedReserves(reserves.data),
+      draft: parseDraft(draft.data),
+      rules: parseRules(rules.data),
+      label: lineup.label,
+      writable: results.every((r) => r.writable),
+      football: lineup.football,
+      readAt: Date.now(),
+    };
+    if (
+      reading.lineup.league !== league ||
+      reading.lineup.franchise !== franchise ||
+      reading.draft.league !== league ||
+      reading.rules.league !== league ||
+      reading.roster.league !== league ||
+      [reading.lineup, reading.draft, reading.rules, ...Object.values(reading.markets)].some(
+        (r) => r.revision !== roster.revision,
+      ) ||
+      Object.values(reading.markets).some((r) => r.league !== league) ||
+      [reading.markets.bids, reading.markets.waivers, reading.markets.trades].some(
+        (r) => r.franchise !== franchise,
+      ) ||
+      results.some((r) => r.football !== reading.football)
+    )
+      throw new Error('League readings changed. Refresh again.');
+    return reading;
   }
   const canChange = () => {
     const s = store.getState();
@@ -297,6 +291,7 @@ export function createHostedRoom(
   const cancel = () => store.setState({ review: undefined });
   const dispose = () => {
     generation++;
+    query.invalidate();
     store.setState({
       reading: undefined,
       stale: true,
@@ -314,7 +309,7 @@ export function createHostedRoom(
     dispose,
     canChange,
     peek: store.getState,
-    use: () => useStore(store),
+    use: query.use,
   };
 }
 export type HostedRoom = ReturnType<typeof createHostedRoom>;

@@ -20,6 +20,15 @@ export async function targetDraftTradeAccept(franchiseId: string, tradeId: strin
   return bindings().TargetDraftTradeAccept(franchiseId, tradeId);
 }
 
+export async function targetTradeBuilderRead(franchiseId: string): Promise<unknown> {
+  return bindings().TargetTradeBuilderRead(franchiseId);
+}
+
+export async function targetTradeBuilderPreview(request: TradeBuilderRequest): Promise<unknown> {
+  return bindings().TargetTradeBuilderPreview(request as trades.RawTradeBuilder);
+}
+
+// Save and the plan actions; reads and previews have their own commands.
 export async function targetTradeBuilder(request: TradeBuilderRequest): Promise<unknown> {
   return bindings().TargetTradeBuilder(request as trades.RawTradeBuilder);
 }

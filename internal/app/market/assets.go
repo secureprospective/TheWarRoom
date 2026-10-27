@@ -2,13 +2,16 @@ package market
 
 import (
 	"cmp"
+	"context"
 	"fmt"
 	"math"
 	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/labcompile"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
 // Board is C-01: what each player is worth on the field now and as a dynasty asset; it is
@@ -211,4 +214,43 @@ func Signed(v float64) string {
 		return "−" + text
 	}
 	return fmt.Sprintf("%.2f", math.Abs(v))
+}
+
+func PoolAssetValues(now OnField, model Model, ids []playerid.PlayerID, at time.Time) (map[string]AssetValue, string) {
+	also := make([]string, 0, len(ids))
+	for _, id := range ids {
+		also = append(also, id.String())
+	}
+	board := WireAssetBoard(BuildBoard(now, model, at, also))
+	out := make(map[string]AssetValue, len(board.Values))
+	for _, v := range board.Values {
+		out[v.ID] = v
+	}
+	return out, board.NowSource
+}
+
+func PickValue(model Model, year, round int, original string, at time.Time) *AssetCell {
+	if model == nil {
+		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
+	}
+	cell, _, _ := ValueCells(model.Pick(year, round, original, at))
+	out := AssetCell(cell)
+	return &out
+}
+
+// FitAssetModel compiles only verified facts and publishes only a successful model.
+func FitAssetModel(ctx context.Context, began time.Time, cache report.ArchiveSnapshot,
+	build func(context.Context, facts.Facts, labcompile.Evidence) (*labcompile.Model, []byte, error),
+	publish func(Model), changed func(context.Context), logLine func(string)) {
+	if cache.SHA == "" {
+		return
+	}
+	model, _, err := build(ctx, cache.Facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.Through})
+	if err != nil {
+		logLine(fmt.Sprintf("the war room: value model: %v", err))
+		return
+	}
+	publish(LabModel{Model: model})
+	logLine(fmt.Sprintf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond)))
+	changed(ctx)
 }

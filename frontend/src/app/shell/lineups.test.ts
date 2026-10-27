@@ -38,3 +38,26 @@ it('keeps franchise caches independent and suppresses equal readings by value', 
   expect(cache.peek('0001').reading?.franchise).toBe('0001');
   expect(changed).toHaveBeenCalledTimes(2);
 });
+
+it('retains held lineup on failure and exposes no extra pending notifications on retry', async () => {
+  const provider = new FixtureProvider();
+  const held = heldLineup();
+  provider.lineup = async () => held;
+  const cache = createLineups(provider);
+  const changed = vi.fn();
+  cache.subscribe(changed);
+  await cache.refresh('0001');
+  provider.lineup = async () => { throw new Error('lineup unavailable'); };
+  await cache.refresh('0001');
+  expect(cache.peek('0001')).toEqual({ reading: held, error: 'lineup unavailable' });
+  expect(changed).toHaveBeenCalledTimes(2);
+  let finish!: (value: LineupReading) => void;
+  provider.lineup = () => new Promise(resolve => { finish = resolve; });
+  const retry = cache.refresh('0001');
+  expect(cache.peek('0001').error).toBe('lineup unavailable');
+  expect(changed).toHaveBeenCalledTimes(2);
+  finish(held);
+  await retry;
+  expect(cache.peek('0001')).toEqual({ reading: held });
+  expect(changed).toHaveBeenCalledTimes(3);
+});

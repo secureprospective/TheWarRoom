@@ -1,6 +1,7 @@
 import { parseAssetCell } from '../assets/contract';
 import { create } from 'zustand';
-import { targetTradeBuilder } from '../trades/api';
+import { targetTradeBuilder, targetTradeBuilderPreview, targetTradeBuilderRead } from '../trades/api';
+import { createReadQuery } from '../data/query';
 import { selectProvider } from '../data/provider';
 import { array, object, text } from '../data/parseValues';
 import { parseReceipt } from '../data/parseEnvelope';
@@ -64,10 +65,28 @@ export type BuilderAction =
   | { action: 'other' | 'rationale'; value: string }
   | { action: 'give' | 'get'; value: string }
   | { action: 'reject' | 'revoke' | 'handoff' | 'remove'; mine: string; id: string; post?: string };
-export const useBuilder = create<{
+type BuilderState = {
   mine: string; other: string; give: string[]; get: string[]; rationale: string;
-  reading?: Reading<BuilderView>; busy: boolean; error: string;
-}>(() => ({ mine: '', other: '', give: [], get: [], rationale: '', busy: false, error: '' }));
+  reading?: Reading<BuilderView>; busy: boolean; pending: boolean; error: string;
+};
+const initialBuilder = (): BuilderState => ({
+  mine: '', other: '', give: [], get: [], rationale: '', busy: false, pending: false, error: '',
+});
+export const useBuilder = create<BuilderState>(initialBuilder);
+
+async function readBuilder(mine: string): Promise<Reading<BuilderView>> {
+  const reading = parseBuilder(await targetTradeBuilderRead(mine));
+  if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Trade builder unavailable');
+  return reading;
+}
+// The held builder reading (catalog and saved plans) on the shared read tool. It publishes into the
+// builder store; a new franchise clears the deal being built.
+const builderRead = createReadQuery('trades.TargetTradeBuilderRead', {
+  store: useBuilder, initial: initialBuilder, read: readBuilder,
+  accept: (reading, [mine]) => ({ reading, mine,
+    ...(useBuilder.getState().mine !== mine ? { other: '', give: [], get: [], rationale: '' } : {}) }),
+});
+
 export async function builderAction(action: BuilderAction) {
   const s = useBuilder.getState();
   if ('value' in action) {
@@ -88,10 +107,12 @@ export async function builderAction(action: BuilderAction) {
   useBuilder.setState({ busy: true, error: '' });
   try {
     if (selectProvider().kind !== 'live') throw new Error('Trade builder needs the desktop app');
+    if (action.action === 'read') {
+      await builderRead.load([action.mine]);
+      return;
+    }
     if (action.action === 'handoff') {
-      const reading = parseBuilder(await targetTradeBuilder({
-        mine: action.mine, action: 'read', other: '', give: [], get: [], rationale: '', id: '',
-      }));
+      const reading = parseBuilder(await targetTradeBuilderRead(action.mine));
       if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Trade plan unavailable');
       const proposal = reading.value?.plans.find(p => p.id === action.id);
       const post = proposal?.post ?? action.post;
@@ -101,15 +122,17 @@ export async function builderAction(action: BuilderAction) {
       }
     }
     const reset = s.mine !== action.mine;
-    const response = parseBuilder(await targetTradeBuilder({
+    const request = {
       mine: action.mine, other: reset ? '' : s.other, give: reset ? [] : s.give,
       get: reset ? [] : s.get, rationale: s.rationale, action: action.action,
       id: 'id' in action ? action.id : '',
-    }));
+    };
+    const response = parseBuilder(await (action.action === 'preview'
+      ? targetTradeBuilderPreview(request) : targetTradeBuilder(request)));
     if (response.status !== 'ok') throw new Error(response.absenceReason ?? 'Trade builder unavailable');
     useBuilder.setState({ reading: response, mine: action.mine,
       ...(reset ? { other: '', give: [], get: [], rationale: '' } : {}) });
-    if (action.action !== 'preview' && action.action !== 'read') await commands.loadMoves(action.mine);
+    if (action.action !== 'preview') await commands.loadMoves(action.mine);
   } catch (cause) { useBuilder.setState({ error: String(cause) }); }
   finally { useBuilder.setState({ busy: false }); }
 }

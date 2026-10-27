@@ -15,6 +15,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 )
@@ -535,4 +538,37 @@ func trophyTitle(name, title string) string {
 		return name
 	}
 	return name + " · " + title
+}
+
+func OpponentFallback(weeks []leaguefeed.WeekResult, week int, team string) string {
+	for _, w := range weeks {
+		if w.Week != week {
+			continue
+		}
+		if g, ok := season.FindGame(w, team); ok {
+			if g.Home.Franchise == team {
+				return g.Away.Franchise
+			}
+			return g.Home.Franchise
+		}
+	}
+	return ""
+}
+
+func Opponent(week int, team string, lineups leaguefeed.Lineups, fallback func(int, string) string) string {
+	for _, m := range lineups.Matchups {
+		if lineups.Week != week {
+			break
+		}
+		if m.Home == team {
+			return m.Away
+		}
+		if m.Away == team {
+			return m.Home
+		}
+	}
+	if fallback != nil {
+		return fallback(week, team)
+	}
+	return ""
 }

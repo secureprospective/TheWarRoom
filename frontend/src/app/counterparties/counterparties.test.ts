@@ -488,3 +488,28 @@ it('keeps browser-without-go and missing-feature transport paths honest', async 
     globalThis.window = old;
   }
 });
+
+it('keeps teams independent, deduplicates pending panels and fences older scopes', async () => {
+  let finishOld!: (r: ReturnType<typeof parseTeamPanel>) => void;
+  const panel = parseTeamPanel(teamWire);
+  const team = vi.fn().mockImplementationOnce(() => new Promise(resolve => { finishOld = resolve; }))
+    .mockResolvedValue(panel);
+  const s = createCounterState({ surface: async () => parseCounterparties(surfaceWire), team });
+  await s.refresh(scope);
+  const old = s.team('0001');
+  await s.team('0001');
+  expect(team).toHaveBeenCalledTimes(1);
+  expect(s.peek().teamPending['0001']).toBe(true);
+  await s.team('0002');
+  expect(s.peek().teamPending).toMatchObject({ '0001': true, '0002': false });
+  await s.change({ field: 'counterpart-tier', value: 'contender' });
+  await s.team('0001');
+  finishOld({ ...panel, absenceReason: 'stale team' });
+  await old;
+  expect(s.peek().panels['0001'].absenceReason).not.toBe('stale team');
+  expect(s.peek().teamPending['0001']).toBe(false);
+  expect(team).toHaveBeenLastCalledWith({ ...scope, tiers: ['contender'] }, '0001');
+  const privateState = createCounterState({ surface: async () => parseCounterparties(surfaceWire), team });
+  await privateState.team('0001');
+  expect(team).toHaveBeenCalledTimes(4);
+});

@@ -9,7 +9,9 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/draft/drafttest"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
@@ -69,5 +71,36 @@ func TestNamesOnlyKnownDraftedPlayers(t *testing.T) {
 	got := Names(picks, func(id string) (string, bool) { return "Known " + id, id == "0531" })
 	if !reflect.DeepEqual(got, map[string]string{"0531": "Known 0531"}) {
 		t.Fatal(got)
+	}
+}
+
+func TestNextDraftReadOrderAndFailure(t *testing.T) {
+	t.Parallel()
+	at := time.Unix(1800000000, 0)
+	next := at.Add(time.Hour)
+	for _, tc := range []struct {
+		name      string
+		available bool
+		err       error
+		windows   []leagueclock.Window
+		want      string
+		calls     []string
+	}{
+		{name: "no store", want: "Next draft: no date set by the commissioner."},
+		{name: "clock failed", available: true, err: errors.New("clock failed"), want: "Next draft date unavailable: clock failed", calls: []string{"clock"}},
+		{name: "no date", available: true, want: "Next draft: no date set by the commissioner.", calls: []string{"clock", "now"}},
+		{name: "held date", available: true, windows: []leagueclock.Window{{Kind: leagueclock.Draft, At: &next}}, want: "Next draft: " + next.In(time.UTC).Format("January 2, 2006, 3:04 PM"), calls: []string{"clock", "now"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			var calls []string
+			got := NextDraft(tc.available, func() (snapshot.Sourced[leagueclock.Reading], error) {
+				calls = append(calls, "clock")
+				return snapshot.Sourced[leagueclock.Reading]{Value: leagueclock.Reading{Windows: tc.windows}}, tc.err
+			}, func() time.Time { calls = append(calls, "now"); return at }, time.UTC)
+			if got != tc.want || !reflect.DeepEqual(calls, tc.calls) {
+				t.Fatalf("%q calls %v", got, calls)
+			}
+		})
 	}
 }

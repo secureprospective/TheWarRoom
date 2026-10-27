@@ -67,8 +67,36 @@ func (a *API) TargetDraftTradeAccept(franchiseID, tradeID string) (envelope.Rece
 	return a.host.DraftTradeAccept(franchiseID, offer, snap, held, "trade-"+hex.EncodeToString(random[:]))
 }
 
+// TargetTradeBuilderRead is the builder's held reading: the trade catalog and every saved plan,
+// each re-projected live on throwaway scratch ledgers. It writes nothing.
+func (a *API) TargetTradeBuilderRead(franchiseID string) TradeBuilderReading {
+	return a.tradeBuilder(RawTradeBuilder{Mine: franchiseID, Action: "read"})
+}
+
+// TargetTradeBuilderPreview projects one proposed deal on scratch ledgers; it saves no plan and
+// writes nothing. The request's action must be "preview".
+func (a *API) TargetTradeBuilderPreview(r RawTradeBuilder) TradeBuilderReading {
+	if r.Action != "preview" {
+		return a.builderReading(emptyBuilder(), fmt.Errorf("trade builder preview: action must be preview"))
+	}
+	return a.tradeBuilder(r)
+}
+
+// TargetTradeBuilder saves a plan or acts on one (save, reject, revoke, handoff, remove). Reads and
+// previews have their own commands.
 func (a *API) TargetTradeBuilder(r RawTradeBuilder) TradeBuilderReading {
-	out := TradeBuilderView{Teams: []TradeBuilderTeam{}, Plans: []TradeBuilderPlan{}}
+	if r.Action == "read" || r.Action == "preview" {
+		return a.builderReading(emptyBuilder(), fmt.Errorf("trade builder: %s has its own command", r.Action))
+	}
+	return a.tradeBuilder(r)
+}
+
+func emptyBuilder() TradeBuilderView {
+	return TradeBuilderView{Teams: []TradeBuilderTeam{}, Plans: []TradeBuilderPlan{}}
+}
+
+func (a *API) tradeBuilder(r RawTradeBuilder) TradeBuilderReading {
+	out := emptyBuilder()
 	if err := r.Validate(); err != nil {
 		return a.builderReading(out, err)
 	}

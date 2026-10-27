@@ -114,7 +114,7 @@ func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
 	a.core.Week.Number = 5
 	a.core.SeasonLineups = held(pulseLive(t))
 	match := a.core.SeasonLineups.Value.Matchups[0]
-	board, err := archiveapp.New(a.core).TargetArchive(0, match.Home, "")
+	board, err := archiveapp.New(archiveHost{a.core}).TargetArchive(0, match.Home, "")
 	if err != nil || board.Other != match.Away {
 		t.Fatal("series did not open on current opponent", board.Other, err)
 	}

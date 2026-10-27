@@ -3,12 +3,10 @@ package core
 import (
 	"context"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -68,20 +66,6 @@ func (s *State) OffersWeek() (int, bool) {
 	s.WeekMu.Lock()
 	defer s.WeekMu.Unlock()
 	return s.Week.Number, !s.WeekFetchedAt.IsZero()
-}
-
-func (s *State) OffersCapRoom(franchise string) *domain.Money {
-	raw := strings.TrimSpace(s.Rulebook.GetSalaryCap())
-	if raw == "" {
-		return nil
-	}
-	limit, err := domain.ParseMoneyMillions(raw)
-	used, ok := s.League.CapUsed(franchise)
-	if err != nil || !ok {
-		return nil
-	}
-	room := limit - used
-	return &room
 }
 
 // The callback retains the original load/check/save/log/event span, including revalidation.

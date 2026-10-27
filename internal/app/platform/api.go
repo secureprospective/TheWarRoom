@@ -3,6 +3,11 @@
 package platform
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -44,6 +49,19 @@ func Photo(mflID, name string, off bool) PhotoView {
 		return PhotoView{Alt: name}
 	}
 	return PhotoView{Src: "/headshot/" + mflID, Alt: "Photo of " + name}
+}
+
+// PhotoRoutes passes only /headshot/ paths to the photo cache; every other path the window asks
+// for is 404 from the first request. Startup runs alongside the page load on Linux, and the
+// shell's native probe (GET /desktop/native) reads anything but 404 as a broken startup.
+func PhotoRoutes(photos http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/headshot/") {
+			http.NotFound(w, r)
+			return
+		}
+		photos.ServeHTTP(w, r)
+	})
 }
 
 func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {
@@ -98,3 +116,34 @@ func (a *API) TargetPhoto(mflID string) PhotoView {
 
 // Commands is the platform catalog.
 func Commands() []catalog.Command { return catalog.DesktopCommands("platform", nil) }
+
+// PhotoRuntime resolves IDs lazily; installing the cache never reads the crosswalk.
+type PhotoRuntime struct {
+	Available func() bool
+	SourceID  func(context.Context, string, string) (string, error)
+	Install   func(func(context.Context, string) (string, string, error))
+	Settings  func() (bool, error)
+	SetOff    func(bool)
+}
+
+func (s PhotoRuntime) Initialize() {
+	s.Install(s.IDs)
+	if off, err := s.Settings(); err == nil {
+		s.SetOff(off)
+	}
+}
+
+func (s PhotoRuntime) IDs(ctx context.Context, mflID string) (string, string, error) {
+	if !s.Available() {
+		return "", "", fmt.Errorf("history unavailable")
+	}
+	espn, err := s.SourceID(ctx, mflID, "espn")
+	if err != nil {
+		return "", "", fmt.Errorf("app: photo ids: %w", err)
+	}
+	sleeper, err := s.SourceID(ctx, mflID, "sleeper")
+	if err != nil {
+		return "", "", fmt.Errorf("app: photo ids: %w", err)
+	}
+	return espn, sleeper, nil
+}

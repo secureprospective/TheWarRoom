@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -55,5 +56,48 @@ func TestWindowSnapshotReadsOnlyMatchingValidSchedules(t *testing.T) {
 	}
 	if !reflect.DeepEqual(in.Schedules[9][0], raw) {
 		t.Fatal("service changed caller input")
+	}
+}
+
+func TestCaptureWindowsKeepsOnlyRuleWeeksAndDetachesMatchups(t *testing.T) {
+	t.Parallel()
+	schedules := map[int]report.HeldFeed[[]nflschedule.RawWeek]{1: {Value: []nflschedule.RawWeek{{Week: "1"}}}, 14: {Value: []nflschedule.RawWeek{{Week: "14", Matchups: []nflschedule.RawMatchup{{Kickoff: "1800000000"}}}}}}
+	got := CaptureWindows(13, schedules)
+	if got.LastRegular != 13 || len(got.Schedules[14]) != 1 {
+		t.Fatal(got)
+	}
+	if _, ok := got.Schedules[1]; ok {
+		t.Fatal("unconfigured week copied")
+	}
+	if rows, ok := got.Schedules[0]; !ok || rows != nil {
+		t.Fatal("missing rule week must stay represented as nil")
+	}
+	got.Schedules[14][0].Week = "changed"
+	got.Schedules[14][0].Matchups[0].Kickoff = "changed"
+	if schedules[14].Value[0].Week != "14" || schedules[14].Value[0].Matchups[0].Kickoff != "1800000000" {
+		t.Fatal("window capture aliases published schedules")
+	}
+}
+
+func TestLastRegularWeekAndClockFallback(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		raw  string
+		want int
+	}{{"", 0}, {"bad", 0}, {"1", 0}, {"2", 2}, {"18", 18}, {"19", 0}, {"13", 13}} {
+		if got := LastRegularWeek(tc.raw); got != tc.want {
+			t.Errorf("%q: %d", tc.raw, got)
+		}
+	}
+	at := time.Unix(1800000000, 0)
+	reads := 0
+	if got := TimeNow(func() time.Time { reads++; return at }); got != at || reads != 1 {
+		t.Fatal(got, reads)
+	}
+	before := time.Now()
+	wall := TimeNow(nil)
+	after := time.Now()
+	if wall.Before(before) || wall.After(after) {
+		t.Fatal("wall clock fallback outside observation span")
 	}
 }

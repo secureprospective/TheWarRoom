@@ -40,7 +40,7 @@ export function LocalSignIn({ onSeat }: { onSeat?: (seat: Seat) => void } = {}) 
       const signed = parseSeat(await bindings().TargetCommissionerSeatSignIn(username, password));
       setSeat(signed);
       onSeat?.(signed);
-      await leagueState.choose();
+      await leagueState.changeSeat();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
       throw cause;

@@ -2,21 +2,22 @@ package composition
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/fs"
 	"log"
-	"os"
 	"path/filepath"
 	"time"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	commsapp "github.com/secureprospective/TheWarRoom/internal/app/comms"
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
+	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
+	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/manifest"
-
+	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
-
+	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
+	"github.com/secureprospective/TheWarRoom/internal/manifest"
 )
 
 func (a *App) wireSources() {
@@ -55,21 +56,11 @@ func (a *App) compileFactsInBackground() {
 		}
 		ctx, cancel := context.WithTimeout(parent, factsTimeout)
 		defer cancel()
-		// A manifest published by an older build may lack an input this build pins (the curated
-		// readings); re-publishing is idempotent and only ever follows an archive import.
-		if _, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs); err != nil || !ok {
-			return
-		}
-		if _, _, err := a.publishLabManifest(ctx); err != nil {
-			log.Printf("the war room: checked facts: %v", err)
-			return
-		}
-		if _, err := a.compileFacts(ctx); err != nil {
-			log.Printf("the war room: checked facts: %v", err)
-			return
-		}
-		a.warmArchive(ctx)
-		a.fitAssetModel(ctx)
+		sourcesapp.StartupFacts(ctx, func(ctx context.Context) (bool, error) {
+			_, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs)
+			return ok, err //nolint:wrapcheck // Startup compilation silently skips failed manifest reads as before.
+		}, func(ctx context.Context) error { _, _, err := a.publishLabManifest(ctx); return err },
+			func(ctx context.Context) error { _, err := a.compileFacts(ctx); return err }, a.warmArchive, a.fitAssetModel, func(text string) { log.Print(text) })
 	})
 }
 
@@ -80,53 +71,21 @@ func (a *App) warmArchive(ctx context.Context) {
 	began := time.Now()
 	a.core.FactsMu.Lock()
 	defer a.core.FactsMu.Unlock()
-	if _, _, err := a.readArchiveFacts(ctx); err != nil {
-		log.Printf("the war room: league archive: %v", err)
-		return
-	}
-	log.Printf("the war room: league archive read in %s", time.Since(began).Round(time.Millisecond))
+	sourcesapp.WarmArchive(ctx, began, func(ctx context.Context) error { _, _, err := a.readArchiveFacts(ctx); return err }, func(text string) { log.Print(text) })
 }
 
 func (a *App) compileFacts(ctx context.Context) (string, error) {
 	return sourcesapp.CompileFacts(ctx, sourcesHost{State: a.core, app: a}, lab.NoteReadings()) //nolint:wrapcheck // Preserve the existing compile error.
 }
 
-// appSettings is the app's own configuration, kept as settings.json in its data directory.
-type appSettings struct {
-	LeagueArchiveDir string `json:"leagueArchiveDir"`
-	PhotosOff        bool   `json:"photosOff,omitempty"`
-}
+type appSettings = sourcesapp.Settings
 
 func (a *App) settingsPath() string { return filepath.Join(a.core.Paths.DataDir, "settings.json") }
-
 func (a *App) readSettings() (appSettings, error) {
-	var s appSettings
-	b, err := os.ReadFile(a.settingsPath())
-	if errors.Is(err, fs.ErrNotExist) {
-		return s, nil
-	}
-	if err != nil {
-		return s, fmt.Errorf("app: read settings: %w", err)
-	}
-	if err := json.Unmarshal(b, &s); err != nil {
-		return s, fmt.Errorf("app: settings.json: %w", err)
-	}
-	return s, nil
+	return sourcesapp.ReadSettings(a.settingsPath()) //nolint:wrapcheck // Keep settings refusal text.
 }
-
 func (a *App) writeSettings(s appSettings) error {
-	b, err := json.MarshalIndent(s, "", "  ")
-	if err != nil {
-		return fmt.Errorf("app: encode settings: %w", err)
-	}
-	tmp := a.settingsPath() + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o600); err != nil {
-		return fmt.Errorf("app: write settings: %w", err)
-	}
-	if err := os.Rename(tmp, a.settingsPath()); err != nil {
-		return fmt.Errorf("app: write settings: %w", err)
-	}
-	return nil
+	return sourcesapp.WriteSettings(a.settingsPath(), s) //nolint:wrapcheck // Keep settings refusal text.
 }
 
 func (a *App) publishLabManifest(ctx context.Context) (manifest.Manifest, bool, error) {
@@ -160,3 +119,73 @@ const labFrozenInputs = sourcesapp.LabFrozenInputs
 func (a *App) researchCrosswalkVersion() string { return a.sourcesHeld.SnapshotCrosswalk().LoadedAt }
 
 const dynastyProcessSource = sourcesapp.DynastyProcessSource
+
+// readArchiveFacts reads the verified archive snapshot through the service and keeps it on App.
+// The caller holds factsMu, which guards archiveCache.
+func (a *App) readArchiveFacts(ctx context.Context) (archiveapp.Snapshot, bool, error) {
+	notes := lab.NoteReadings()
+	src := archiveapp.Source{History: a.core.History, Bodies: sourcesapp.CuratedBodies{Archive: a.core.History, Curated: map[string][]byte{notes.SHA256: notes.Body}},
+		Manifest: labFrozenInputs, Compiler: factsCompiler}
+	return archiveapp.ReadCached(ctx, src, &a.archiveCache) //nolint:wrapcheck // Archive's errors already name the step.
+
+}
+
+// readCommsArchive borrows the snapshot under its caller's FactsMu; core detaches the columns.
+func (a *App) readCommsArchive(ctx context.Context) (facts.RosterWeekColumns, facts.NflGameColumns, error) {
+	cache, _, err := a.readArchiveFacts(ctx)
+	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
+}
+
+func (a *App) configureArchive() {
+	a.core.ArchiveOpponentFallback = a.archiveOpponentFallback
+	a.core.ReadArchive = a.readArchiveFacts
+	a.core.ReadCommsArchive = a.readCommsArchive
+}
+
+func (a *App) archiveOpponentFallback(week int, team string) string {
+	return archiveapp.OpponentFallback(a.raceHeld.Snapshot().Weeks.Value, week, team)
+}
+
+func (a *App) cacheScopes() []sourcesapp.CacheScope {
+	return sourcesapp.CacheScopes(sourcesapp.CacheRefreshers{
+		Pool:     offersapp.New(offersHost{State: a.core, app: a}).TargetPoolRefresh,
+		Research: researchapp.New(researchHost{app: a}, a.researchHeld).TargetResearchRefresh,
+		Race:     raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh,
+		Comms:    commsapp.New(commsHost{a.core}).TargetCommsRefresh,
+		Draft:    draftapp.New(draftHost{State: a.core, app: a}).TargetDraftReportsRefresh,
+	})
+}
+
+// sourcesHost is the Sources Host: core's shared state plus the held copies other features own. It is
+// never bound: only sources.API exposes methods to Wails.
+type sourcesHost struct {
+	*core.State
+	app *App
+}
+
+func (a *App) sourcesAPI() *sourcesapp.API {
+	return sourcesapp.New(sourcesHost{State: a.core, app: a}, a.sourcesHeld)
+}
+
+func (h sourcesHost) CacheScopes() []sourcesapp.DataScope {
+	return sourcesapp.CacheScopeReadings(h.app.cacheScopes())
+
+}
+
+func (h sourcesHost) ClearCache(scope string) (string, bool, error) {
+	return sourcesapp.ClearCache(h.app.cacheScopes(), scope) //nolint:wrapcheck // Preserve the selected refresh error.
+}
+
+func (h sourcesHost) SourcesPositions() map[string]string {
+	lookup, held := h.SourcesLookup()
+	return sourcesapp.Positions(lookup, held, h.SourcesRostered)
+}
+func (h sourcesHost) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
+	return sourcesapp.CompileAvailable(h.FactsMu.TryLock, h.FactsMu.Unlock, compile) //nolint:wrapcheck // Preserve compile errors and the busy result.
+}
+
+type archiveHost struct{ *core.State }
+
+func (h archiveHost) ArchiveOpponent(team string) string {
+	return h.ReadArchiveOpponent(team, archiveapp.Opponent)
+}

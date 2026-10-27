@@ -2,21 +2,17 @@ package composition
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
-	"net/url"
-	"slices"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
-	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -28,17 +24,15 @@ func (a *App) takeSnapshot() (snapshot.Snapshot, error) {
 	defer a.core.RefreshMu.Unlock()
 	ctx, cancel := context.WithTimeout(a.core.Ctx, rasFetchTimeout)
 	defer cancel()
-	dir := a.targetDirectory(ctx)
-	inj := a.targetInjuries(ctx)
-	snap, err := snapshot.Build(a.core.Ctx, snapshot.NewSource(a.core.League, a.core.Rulebook), dir, inj)
-	if err != nil {
-		return snapshot.Snapshot{}, fmt.Errorf("target snapshot: build: %w", err)
-	}
-	a.core.TargetSnapshotMu.Lock()
-	a.core.TargetSnapshot = snap
-	a.core.HasTargetSnapshot = true
-	a.core.TargetSnapshotMu.Unlock()
-	return snap, nil
+	return platformapp.ReadSnapshot(ctx, a.targetDirectory, a.targetInjuries, //nolint:wrapcheck // Preserve snapshot build context.
+		func(dir snapshot.Directory, inj snapshot.Injuries) (snapshot.Snapshot, error) {
+			return snapshot.Build(a.core.Ctx, snapshot.NewSource(a.core.League, a.core.Rulebook), dir, inj)
+		},
+		func(snap snapshot.Snapshot) {
+			a.core.TargetSnapshotMu.Lock()
+			defer a.core.TargetSnapshotMu.Unlock()
+			a.core.TargetSnapshot, a.core.HasTargetSnapshot = snap, true
+		})
 }
 
 func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
@@ -64,31 +58,18 @@ func (a *App) targetDirectory(ctx context.Context) snapshot.Directory {
 		},
 		Bodies: a.core.History.ArchivedBodies,
 	}, a.core.FallbackLog)
-	p := snapshot.Provenance{Source: "mfl-players", Kind: "live", Freshness: fresh}
-	if err != nil {
-		p.Freshness = domain.Freshness{State: domain.FreshFail, Note: report.FailureText(err)}
-		return snapshot.Directory{Provenance: p}
-	}
-	if fresh.State == domain.FreshLive {
+	return platformapp.SnapshotDirectory(rows, fresh, err, func() time.Time {
 		a.core.LookupMu.Lock()
-		p.Freshness.FetchedAt = a.core.LookupAt.UTC().Format(time.RFC3339)
-		a.core.LookupMu.Unlock()
-	} else {
-		p.Source = "mfl-players-archive"
-	}
-	return snapshot.Directory{Lookup: rows[0], Provenance: p}
+		defer a.core.LookupMu.Unlock()
+		return a.core.LookupAt
+	})
 }
 
 // targetInjuries returns the held injuries feed, fetching it on first use like the directory,
 // so a snapshot taken while the season refresh is still running still carries live rules. The
 // caller holds refreshMu; the hold itself is guarded by seasonMu.
 func (a *App) targetInjuries(ctx context.Context) snapshot.Injuries {
-	if !a.injuriesHeld() {
-		inner, cancel := context.WithTimeout(ctx, m2Timeout)
-		a.refreshInjuries(inner)
-		cancel()
-	}
-	return a.heldInjuries()
+	return platformapp.SnapshotInjuries(ctx, a.injuriesHeld(), m2Timeout, a.refreshInjuries, a.heldInjuries)
 }
 
 func (a *App) injuriesHeld() bool {
@@ -98,89 +79,22 @@ func (a *App) injuriesHeld() bool {
 }
 
 func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.Reading], error) {
-	if err := a.ready(); err != nil {
-		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
-	}
-	if err := a.core.Whatif.Err(); err != nil {
-		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: state: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(parent, m2Timeout)
-	defer cancel()
-	now := a.timeNow()
-	lineup, fresh := a.weekClock(now)
-	clock, err := snapshot.BuildClock(ctx, now.UTC(), a.core.League.Season(), a.core.Whatif, lineup, a.windowInputs(now), snapshot.Provenance{
-		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
-	})
-	if err != nil {
-		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
-	}
-	a.mergeMFLCalendar(ctx, now, &clock)
-	return clock, nil
-}
-
-func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
-	host := ""
-	if a.core.MFLClient != nil {
-		host = a.core.MFLClient.LeagueHost()
-	}
-	if host == "" {
-		return envelope.Target{Kind: envelope.Unmapped}, []string{"MFL host not yet known"}
-	}
-	return envelope.Target{Kind: envelope.Mapped, URL: fmt.Sprintf(
-		"https://%s/%d/options?L=%s&O=%s", host, a.core.Season, url.QueryEscape(ingestion.LeagueID), option)}, nil
+	return (controlapp.ClockRead{ //nolint:wrapcheck // Preserve held clock admission/build errors.
+		Ready: a.ready, StateError: func() error { return a.core.Whatif.Err() }, Timeout: m2Timeout,
+		Now: a.timeNow, Season: func() int { return a.core.League.Season() }, Source: func() snapshot.ClockSource { return a.core.Whatif },
+		Lineup: a.weekClock, Windows: a.windowInputs, Merge: a.mergeMFLCalendar,
+	}).Read(parent)
 }
 
 func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error) {
-	if err := a.ready(); err != nil {
-		return envelope.Receipt{}, fmt.Errorf("target draft: startup: %w", err)
-	}
-	if err := a.core.RequireOwnFranchise(franchiseID); err != nil {
-		return envelope.Receipt{}, err //nolint:wrapcheck // Preserve the shared authorization refusal.
-	}
-	pid, err := playerid.New(playerID)
-	if err != nil {
-		return envelope.Receipt{}, fmt.Errorf("target draft: player: %w", err)
-	}
-	a.core.TargetSnapshotMu.Lock()
-	snap, loaded := a.core.TargetSnapshot, a.core.HasTargetSnapshot
-	a.core.TargetSnapshotMu.Unlock()
-	if !loaded {
-		return envelope.Receipt{}, fmt.Errorf("target draft: no snapshot loaded")
-	}
-	var random [16]byte
-	if _, err := rand.Read(random[:]); err != nil {
-		return envelope.Receipt{}, fmt.Errorf("target draft: correlation ID: %w", err)
-	}
-	a.core.MovesMu.Lock()
-	defer a.core.MovesMu.Unlock()
-	option, prefix := "18", "ir-"
-	if intent == "roster.taxi" {
-		option, prefix = "98", "taxi-"
-	}
-	target, blocks := a.rosterMoveTarget(option)
-	req := envelope.IRRequest{
-		LeagueID:    ingestion.LeagueID,
-		FranchiseID: franchiseID,
-		Player:      pid,
-		Target:      target,
-		Blocks:      blocks,
-	}
-	id := prefix + hex.EncodeToString(random[:])
-	var e envelope.Envelope
-	if intent == "roster.taxi" {
-		e, err = envelope.DraftTaxi(time.Now().UTC(), envelope.TaxiRequest(req), snap, func() string { return id })
-	} else {
-		e, err = envelope.DraftIR(time.Now().UTC(), req, snap, func() string { return id })
-	}
-	if err != nil {
-		return envelope.Receipt{}, fmt.Errorf("target draft: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, m2Timeout)
-	defer cancel()
-	if err := a.core.Moves.Save(ctx, e); err != nil {
-		return envelope.Receipt{}, fmt.Errorf("target draft: log: %w", err)
-	}
-	return e.Receipt(), nil
+	return (platformapp.RosterDraft{ //nolint:wrapcheck // Preserve draft admission and persistence errors.
+		Ready: a.ready, Own: a.requireOwnFranchise, Snapshot: func() (snapshot.Snapshot, bool) {
+			a.core.TargetSnapshotMu.Lock()
+			defer a.core.TargetSnapshotMu.Unlock()
+			return a.core.TargetSnapshot, a.core.HasTargetSnapshot
+		}, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock, Target: a.rosterMoveTarget, League: ingestion.LeagueID,
+		Parent: func() context.Context { return a.core.Ctx }, Timeout: m2Timeout, Save: func(ctx context.Context, e envelope.Envelope) error { return a.core.Moves.Save(ctx, e) },
+	}).Draft(intent, franchiseID, playerID)
 }
 
 func (a *App) listMoves(franchiseID string) ([]envelope.Receipt, error) {
@@ -197,8 +111,13 @@ func (a *App) listMoves(franchiseID string) ([]envelope.Receipt, error) {
 	snap := a.core.TargetSnapshot
 	a.core.TargetSnapshotMu.Unlock()
 	labelTradeReceipts(receipts, snap)
-	// Bid plans carry facts the move rail cannot show; TargetBidPlans lists them.
-	return slices.DeleteFunc(receipts, func(r envelope.Receipt) bool {
-		return r.Spec.Intent == envelope.BidIntent || envelope.IsRelease(r.Spec.Intent) || envelope.IsContract(r.Spec.Intent)
-	}), nil
+	return platformapp.RosterRail(receipts), nil
+}
+
+func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
+	host := ""
+	if a.core.MFLClient != nil {
+		host = a.core.MFLClient.LeagueHost()
+	}
+	return platformapp.RosterMoveTarget(host, a.core.Season, ingestion.LeagueID, option)
 }
