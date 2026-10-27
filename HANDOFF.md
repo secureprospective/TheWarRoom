@@ -9,10 +9,10 @@ Bee — 2026-10-27, `session/revamp-P6-market`. Local only; do not push.
 - Commissioner/history/leagueservice targeted tests, build, vet, `TestMarketBodies` and `make lint` pass. Boundary fingerprints were reviewed for moved return types in core host and composition host.
 
 ## Next move
-- Run the sealed-bid visibility mutant and restore it. If detected, proceed with steps 5–6 and their proof.
+- Address the sealed-bid composition test gap before continuing to steps 5–6. The requested mutant was not detected; do not proceed until the proof goes red with the mutant and green after restoration.
 
 ## Blocked on
-- Nothing currently. Do not run the full test suite or push; push runs full verification later.
+- The mandated composition filter passed after inverting `privileged && decidedBidRecord(...)` to `privileged && !decidedBidRecord(...)` in `internal/commissioner/ledger.go`. This is a test gap, not a pass. Mutant restored; the same filter passed again (106.071s). Steps 5–6 not started. Do not run the full test suite or push; push runs full verification later.
 
 ## Tried and rejected
 - Eager rules/governance construction changes error precedence; staged readers retain ordering. Quote's `ReadNativeBase` remains staged for governance → directory → fold → rules.
