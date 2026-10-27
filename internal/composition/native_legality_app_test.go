@@ -521,7 +521,7 @@ func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
 	}
 	proved := []string{"roster.limits", "roster.reserveExcluded", "roster.positionBounds",
 		"lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag", "ir.slots",
-		"ir.eligible", "ir.mustLeaveHealthy", "taxi.slots", "taxi.maximumYears", "taxi.basis", "house.texts"}
+		"ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.autoPromote", "taxi.slots", "taxi.maximumYears", "taxi.basis", "house.texts"}
 	for _, path := range proved {
 		if !seen[path] {
 			t.Fatalf("round-trip proof has no reading edge: %s", path)
@@ -530,5 +530,30 @@ func TestNativeGovernedCatalogueHasNoOrphanedFields(t *testing.T) {
 	}
 	if len(seen) != 0 {
 		t.Fatalf("reading fields have no round-trip proof: %v", seen)
+	}
+}
+
+func TestAutomaticReserveSettingsRoundTripThroughGovernedReadings(t *testing.T) {
+	t.Parallel()
+	f := legalityApp(t)
+	for _, setting := range []struct{ path, label string }{
+		{"ir.autoReturn", "Automatically return ineligible IR players"},
+		{"taxi.autoPromote", "Automatically promote ineligible taxi players"},
+	} {
+		read := func(t *testing.T, f *legalityFixture) string {
+			t.Helper()
+			check, err := newCommissionerAPI(f.app).TargetNativeReserveCheck(legalityLeague)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, line := range check.Rules {
+				if line.Label == setting.label {
+					return line.Words
+				}
+			}
+			t.Fatal("automatic reserve setting missing")
+			return ""
+		}
+		f.governs(t, setting.path, `true`, read, "Off", "On")
 	}
 }
