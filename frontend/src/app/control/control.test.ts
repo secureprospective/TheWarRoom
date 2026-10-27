@@ -110,7 +110,7 @@ it('publishes the league compound read only when every part succeeds', async () 
 });
 
 it('preserves the reader receiver for independent news reads', async () => {
-  const c = createControlState(reader({ async news() { return this.settings(); } }));
+  const c = createControlState(reader({ async news(this: ControlReader) { return this.settings(); } }));
   await c.choose('news');
   expect(c.peek().news?.title).toBe(report(wire.settings, 'League settings').title);
   expect(c.peek().error).toBe('');
