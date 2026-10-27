@@ -5,6 +5,8 @@ package platform
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
@@ -47,6 +49,19 @@ func Photo(mflID, name string, off bool) PhotoView {
 		return PhotoView{Alt: name}
 	}
 	return PhotoView{Src: "/headshot/" + mflID, Alt: "Photo of " + name}
+}
+
+// PhotoRoutes passes only /headshot/ paths to the photo cache; every other path the window asks
+// for is 404 from the first request. Startup runs alongside the page load on Linux, and the
+// shell's native probe (GET /desktop/native) reads anything but 404 as a broken startup.
+func PhotoRoutes(photos http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasPrefix(r.URL.Path, "/headshot/") {
+			http.NotFound(w, r)
+			return
+		}
+		photos.ServeHTTP(w, r)
+	})
 }
 
 func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {

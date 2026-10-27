@@ -3,6 +3,8 @@ package platform
 import (
 	"context"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -105,5 +107,22 @@ func TestPhotoRuntimeInstallsBeforeSettingsAndReadsIDsLazily(t *testing.T) {
 	service.SourceID = func(context.Context, string, string) (string, error) { return "", context.Canceled }
 	if _, _, err := service.IDs(context.Background(), "0099"); !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
+	}
+}
+
+// Local mode answers the shell's native probe with 404 even while photos are not ready, or the
+// window shows "Desktop startup could not be read" instead of opening the local app.
+func TestPhotoRoutesAnswerTheNativeProbeWithNotFound(t *testing.T) {
+	t.Parallel()
+	notReady := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "photos are not ready", http.StatusServiceUnavailable)
+	})
+	cases := map[string]int{"/desktop/native": http.StatusNotFound, "/headshot/1234": http.StatusServiceUnavailable}
+	for path, want := range cases {
+		rec := httptest.NewRecorder()
+		PhotoRoutes(notReady).ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
+		if rec.Code != want {
+			t.Fatalf("GET %s = %d, want %d", path, rec.Code, want)
+		}
 	}
 }

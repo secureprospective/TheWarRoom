@@ -64,7 +64,7 @@ func runDesktop(embedded Embedded) int {
 		AssetServer: &assetserver.Options{
 			Assets: embedded.Assets,
 			// Anything not in the bundle: player photos at /headshot/<mfl id>.
-			Handler: app.photoHandler(),
+			Handler: platformapp.PhotoRoutes(app.photoHandler()),
 		},
 		// --surface-0 (hsl(220 14% 4%)), opaque, so the window never flashes another colour.
 		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
