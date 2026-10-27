@@ -31,11 +31,11 @@ func (s *Store) LoadFootball(ctx context.Context, digest string) (*PinnedFootbal
 	if footballDigest(body) != digest {
 		return nil, fmt.Errorf("held football evidence digest mismatch")
 	}
-	raw, err := decodeFootball(body)
+	raw, err := decodeFootball(body, s.storeParts(ctx))
 	if err != nil {
 		return nil, err
 	}
-	stats, err := raw.scoringFiles()
+	stats, err := raw.scoringFiles(s.storeParts(ctx))
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,10 @@ type RawFootballPlayer struct {
 	PFR      string                  `json:"pfr,omitempty"`
 }
 
-func (r RawFootballEvidence) Validate() error {
+// Validate checks inline evidence; evidence split into week parts validates only with them (validate).
+func (r RawFootballEvidence) Validate() error { return r.validate(nil) }
+
+func (r RawFootballEvidence) validate(parts partSource) error {
 	if r.Version != 1 || r.Season < 1920 || r.Season > 9999 || r.AsOf.IsZero() ||
 		strings.TrimSpace(r.Source) == "" || len(r.Source) > 200 || len(r.Players) == 0 || len(r.Players) > 30000 {
 		return fmt.Errorf("choose version 1, a season, provenance and player facts")
@@ -61,7 +64,7 @@ func (r RawFootballEvidence) Validate() error {
 	if err := validateFootballWeeks(r.Weeks); err != nil {
 		return err
 	}
-	_, err := r.scoringFiles()
+	_, err := r.scoringFiles(parts)
 	return err
 }
 
@@ -137,9 +140,9 @@ func validateFootballGames(games []leagueweek.Game) error {
 	return nil
 }
 
-func decodeFootball(body []byte) (RawFootballEvidence, error) {
+func decodeFootball(body []byte, parts partSource) (RawFootballEvidence, error) {
 	var raw RawFootballEvidence
-	if len(body) > 8<<20 {
+	if len(body) > maxFootballItem {
 		return raw, fmt.Errorf("football evidence exceeds 8 MiB")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(body))
@@ -150,7 +153,7 @@ func decodeFootball(body []byte) (RawFootballEvidence, error) {
 	if err := decoder.Decode(new(json.RawMessage)); err != io.EOF {
 		return raw, fmt.Errorf("football evidence must contain one JSON value")
 	}
-	if err := raw.Validate(); err != nil {
+	if err := raw.validate(parts); err != nil {
 		return raw, fmt.Errorf("validate football evidence: %w", err)
 	}
 	return raw, nil
@@ -162,9 +165,10 @@ func footballDigest(body []byte) string {
 }
 
 // ImportFootball validates everything before writing. It reuses history's immutable,
-// matched-backup archive; no active environment is changed by an import.
+// matched-backup archive; no active environment is changed by an import. Split evidence's week
+// parts must already be imported (ImportFootballWeek).
 func (s *Store) ImportFootball(ctx context.Context, body []byte, digest string) error {
-	if _, err := decodeFootball(body); err != nil {
+	if _, err := decodeFootball(body, s.storeParts(ctx)); err != nil {
 		return err
 	}
 	if footballDigest(body) != digest {

@@ -21,27 +21,42 @@ type HeldLines struct {
 	Games map[source.LineGame]fantasyscore.UnitLine
 }
 
-// lineFile builds a revision's line games when it carries advanced rushing. The play-by-play body
-// must then also carry the line columns; a revision without advanced rushing holds no line facts,
-// exactly as before line facts existed.
-func lineFile(raw RawFootballStats, isRB func(pfrID string) bool) (string, map[source.LineGame]fantasyscore.UnitLine, error) {
-	if raw.Rushing == "" {
+// lineFile builds a revision's line games when any of its bodies carries advanced rushing. Every
+// play-by-play body must then also carry the line columns; a body without advanced rushing adds plays
+// but no yards before contact, so its games score as not recorded. A revision with no advanced
+// rushing holds no line facts, exactly as before line facts existed.
+func lineFile(bodies []RawFootballWeek, isRB func(pfrID string) bool) (string, map[source.LineGame]fantasyscore.UnitLine, error) {
+	var hash strings.Builder
+	for _, body := range bodies {
+		if body.Rushing != "" {
+			fmt.Fprintf(&hash, "%d:%s%s", len(body.Plays), body.Plays, body.Rushing)
+		}
+	}
+	if hash.Len() == 0 {
 		return "", nil, nil
 	}
-	plays, err := source.ReadLinePlays(strings.NewReader(raw.Plays))
-	if err != nil {
-		return "", nil, fmt.Errorf("read pinned line plays: %w", err)
-	}
-	rushing, err := source.ReadLineRushing(strings.NewReader(raw.Rushing))
-	if err != nil {
-		return "", nil, fmt.Errorf("read pinned advanced rushing: %w", err)
+	var plays []source.RawLinePlay
+	var rushing []source.RawLineRushing
+	for _, body := range bodies {
+		p, err := source.ReadLinePlays(strings.NewReader(body.Plays))
+		if err != nil {
+			return "", nil, fmt.Errorf("read pinned line plays: %w", err)
+		}
+		plays = append(plays, p...)
+		if body.Rushing == "" {
+			continue
+		}
+		r, err := source.ReadLineRushing(strings.NewReader(body.Rushing))
+		if err != nil {
+			return "", nil, fmt.Errorf("read pinned advanced rushing: %w", err)
+		}
+		rushing = append(rushing, r...)
 	}
 	games, err := source.LineGames(plays, rushing, isRB)
 	if err != nil {
 		return "", nil, fmt.Errorf("build pinned line games: %w", err)
 	}
-	sha := footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Plays), raw.Plays, raw.Rushing)))
-	return sha, games, nil
+	return footballDigest([]byte(hash.String())), games, nil
 }
 
 // leagueRB answers whether the league lists the player with this PFR id at RB: the RB designation

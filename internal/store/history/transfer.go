@@ -161,12 +161,13 @@ func captureTransferRows(ctx context.Context, tx *sql.Tx, league string, digests
 }
 
 // TransferFootball uses the same validation and scoring decoder as the running authority.
+// A transfer does not yet carry week parts, so split evidence is refused here.
 func TransferFootball(body []byte) (*PinnedFootball, error) {
-	raw, err := decodeFootball(body)
+	raw, err := decodeFootball(body, nil)
 	if err != nil {
 		return nil, err
 	}
-	stats, err := raw.scoringFiles()
+	stats, err := raw.scoringFiles(nil)
 	if err != nil {
 		return nil, err
 	}
