@@ -246,8 +246,9 @@ type playerInput struct {
 	Past      []model.Past
 	Current   model.Past
 	Mislinked bool
-	// TodayTotal and TodayPull feed today's board rule where the fit did not keep the model.
-	TodayTotal, TodayPull float64
+	// TodayTotal, TodayCurrentPPG and TodayPull feed today's board rule where the fit did not
+	// keep the model; this season's pace stands in only when there is no total last season.
+	TodayTotal, TodayCurrentPPG, TodayPull float64
 }
 
 // value scores one rostered player, or returns why it could not.
@@ -288,8 +289,11 @@ func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInp
 		if last := ps.data.Seasons[mflID][ps.season-1]; last != nil && last.Games() > 0 {
 			in.TodayTotal = last.PPG() * float64(last.Games())
 		}
+		if cur := ps.data.Seasons[mflID][ps.season]; cur != nil && cur.Games() > 0 {
+			in.TodayCurrentPPG = cur.PPG()
+		}
 		in.TodayPull = pull
-		v = model.TodayRule(v, in.TodayTotal, pull, scale)
+		v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
 	}
 	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
 }

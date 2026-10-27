@@ -125,10 +125,15 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 }
 
 // TodayRule values a player by today's board rule where the fit kept it over the model
-// (BoardKept false): last season's total league points times the engine's age pull, counted per
-// game of a full season, for both measurables. The model's own diagnostics stay beside it.
-func TodayRule(v Value, lastTotal, pull float64, scale Scale) Value {
-	ppg := lastTotal * pull / fullSeason
+// (BoardKept false): his points per game times the engine's age pull, for both measurables. The
+// per-game basis is last season's total league points over a full season, or this season's
+// pace when he played no games last season. The model's own diagnostics stay beside it.
+func TodayRule(v Value, lastTotal, currentPPG, pull float64, scale Scale) Value {
+	ppg := lastTotal / fullSeason
+	if lastTotal == 0 {
+		ppg = currentPPG
+	}
+	ppg *= pull
 	pct := unit(scale.Pct(ppg))
 	v.Now, v.NowPPG, v.Dynasty, v.DynastyPPG = pct, ppg, pct, ppg
 	return v
