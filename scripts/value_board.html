@@ -49,13 +49,15 @@ summary { color: hsl(208 78% 72%); cursor: pointer; }
 <h1>Which values deserve a second look?</h1>
 <p>Current engine, held Legacy NFL data. Read-only candidates for review — not proof that a dynasty value is wrong, and not a new ranking model.</p>
 <p class="notice">This is an archived early-season snapshot, not live results. No live fetch was attempted.</p>
-<p class="muted">@@PROVENANCE@@</p>
-<p>Ranked by <strong>dynasty points per game</strong> within each position, including rostered players and free agents only when a held MFL free-agent feed exists. This snapshot has no free-agent feed; only rostered players are valued. Actual ranks use this season’s total league fantasy points among the same valued players; tied scores share a rank. Missing is “—”, not zero. Ages are on September 1 of the valued season, matching the engine.</p>
-<p>The points-per-game rank helps separate injury or playing-time effects from talent. League contracts are context only: these engine values do not include salary or positional scarcity adjustments.</p>
+<p class="muted">@@PERIOD@@</p>
+<p>Players ranked by <strong>dynasty points per game</strong>, highest first. Compare the value rank with actual points rank; open a player’s inputs to see what the engine used.</p>
 <div class="checks">@@CHECKS@@</div>
-<p class="muted">@@COVERAGE@@. Missing totals never trigger a points comparison; they are not treated as a score of zero.</p>
-<details><summary>What triggers a check?</summary>
-<p><strong>Rank gap:</strong> at least 20 places between dynasty rank and current total-points rank, with either rank in the top 20 and positive current points.</p>
+<details><summary>Checks, data dates & missing outcomes</summary>
+<p>@@PROVENANCE@@</p>
+<p>@@POOL@@ Actual ranks use this season’s total league fantasy points among the same valued players; tied scores share a rank. Missing is “—”, not zero. Ages are on September 1 of the valued season, matching the engine.</p>
+<p>The points-per-game rank helps separate injury or playing-time effects from talent. League contracts are context only: these engine values do not include salary or positional scarcity adjustments.</p>
+<p>@@COVERAGE@@. Missing totals never trigger a points comparison; they are not treated as a score of zero.</p>
+<p><strong>Rank gap:</strong> at least 20 places between dynasty rank and current total-points rank, with either rank in the top 20 and a known current total (including an explicit zero).</p>
 <p><strong>Zero-valued producer:</strong> a current top-20 scorer with positive points but zero dynasty value.</p>
 <p><strong>Older over producer:</strong> a top-30 valued older player above someone at least four years younger who scored over 25% more in both seasons. Older starts at QB 34, RB 29, WR 31, TE 32, K 36, DT/DE 31, LB/CB 30, S 31. These are review thresholds, not fitted age curves. One younger example is shown per flagged older player.</p>
 <p>Counts overlap. Neither a short season nor a lower dynasty value proves a defect. No run-jump check: stored runs changed engine and parameters, so their differences do not isolate an unexplained jump. No cross-position check: lineup scarcity is not part of these player values.</p>

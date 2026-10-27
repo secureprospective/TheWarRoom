@@ -1,9 +1,7 @@
 """Behavior tests for the offline valuation review, using only disposable data."""
-import contextlib
 import copy
 import gzip
 import hashlib
-import io
 import json
 from pathlib import Path
 import sqlite3
@@ -48,6 +46,13 @@ class ValueBoardTests(unittest.TestCase):
         for row in rows:
             if row['pr'] is not None and abs(row['gap']) < 20:
                 self.assertNotIn('Rank gap', row['checks'])
+
+    def test_explicit_zero_points_is_an_outcome_not_missing(self):
+        players = [self.player('zero', points=0, value=100)]
+        players += [self.player(str(i), points=i+1, value=22-i) for i in range(25)]
+        rows, _ = board.assess(players, [])
+        self.assertEqual((rows[0]['vr'], rows[0]['pr']), (1, 26))
+        self.assertIn('Rank gap', rows[0]['checks'])
 
     def test_old_inversion_requires_both_seasons_and_position_threshold(self):
         players = [self.player('old', age=32, points=20, value=10, last=40),
@@ -103,6 +108,16 @@ class ValueBoardTests(unittest.TestCase):
                 board.snapshot(src, dest)
             self.assertEqual(src.read_bytes(), before)
 
+    def test_backup_refuses_dangling_destination_symlink(self):
+        with tempfile.TemporaryDirectory() as folder:
+            src, dest, target = (Path(folder) / name for name in ('src.db', 'dest.db', 'target.db'))
+            with sqlite3.connect(src) as db:
+                db.execute('CREATE TABLE held (value TEXT)')
+            dest.symlink_to(target)
+            with self.assertRaises(FileExistsError):
+                board.snapshot(src, dest)
+            self.assertFalse(target.exists())
+
     def test_archive_matches_exact_export_not_playerscores(self):
         with sqlite3.connect(':memory:') as db:
             db.row_factory = sqlite3.Row
@@ -122,11 +137,14 @@ class ValueBoardTests(unittest.TestCase):
             db.execute('UPDATE raw_archive SET size=100')
             with self.assertRaisesRegex(ValueError, 'Corrupt'):
                 board.archived_export(db, 'players', 2026)
+            db.execute('UPDATE raw_archive SET size=?', (256 * 1024 * 1024 + 1,))
+            with self.assertRaisesRegex(ValueError, 'Unreasonable'):
+                board.archived_export(db, 'players', 2026)
 
     def test_feature_export_uses_latest_per_source_then_priority_as_of(self):
         with tempfile.TemporaryDirectory() as folder:
             out = Path(folder)
-            (out / 'measures.json').write_text(json.dumps(['points']))
+            (out / 'measures.json').write_text(json.dumps(dict(Measures=['points'], Lookback=16)))
             with sqlite3.connect(out / 'history.db') as db:
                 db.executescript('CREATE TABLE observations (player_id,season,week,measure,source,as_of,value,text);'
                                  'CREATE TABLE source_fields (source,measure,priority);')

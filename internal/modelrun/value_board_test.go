@@ -3,18 +3,18 @@
 package modelrun
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
-	"bufio"
-	"slices"
-
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -23,12 +23,11 @@ import (
 )
 
 type RawBoardRequest struct {
-	Season     int
-	LastWeek   int
-	AsOf       time.Time
-	Roster     []state.PlayerState
-	FreeAgents []string
-	Overrides  map[string]float64
+	Season    int
+	LastWeek  int
+	AsOf      time.Time
+	Roster    []state.PlayerState
+	Overrides map[string]float64
 }
 
 func (r RawBoardRequest) Validate(t *testing.T) {
@@ -104,7 +103,7 @@ func TestValueBoardReplay(t *testing.T) {
 		effective[k] = v
 	}
 	set := params.SetOf(effective)
-	spec := Spec{Season: req.Season, AsOf: req.AsOf, Params: set, LastWeek: req.LastWeek, FreeAgents: req.FreeAgents}
+	spec := Spec{Season: req.Season, AsOf: req.AsOf, Params: set, LastWeek: req.LastWeek, FreeAgents: boardFreeAgents(t, root)}
 	report, err := runner.Run(t.Context(), spec)
 	if err != nil {
 		t.Fatal(err)
@@ -188,7 +187,10 @@ func boardReadJSON(t *testing.T, root *os.Root, out *RawBoardRequest) {
 
 func TestValueBoardMeasures(t *testing.T) {
 	root := boardRoot(t)
-	body, err := json.Marshal(model.RuntimeMeasures())
+	body, err := json.Marshal(struct {
+		Measures []string
+		Lookback int
+	}{model.RuntimeMeasures(), lookback})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,4 +256,51 @@ func boardRoot(t *testing.T) *os.Root {
 		}
 	})
 	return root
+}
+
+func boardFreeAgents(t *testing.T, root *os.Root) []string {
+	t.Helper()
+	body, err := root.ReadFile("free-agents.json")
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := freeagents.Parse(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids, err := freeagents.ToPlayerIDs(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make([]string, 0, len(ids))
+	for _, id := range ids {
+		out = append(out, id.String())
+	}
+	slices.Sort(out)
+	return out
+}
+
+func TestValueBoardFreeAgentArchiveUsesProductionParser(t *testing.T) {
+	root, err := os.OpenRoot(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := root.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	if got := boardFreeAgents(t, root); len(got) != 0 {
+		t.Fatalf("missing feed: %v", got)
+	}
+	body := []byte(`{"freeAgents":{"leagueUnit":[{"player":{"id":"0001"}},{"player":[{"id":"0001"},{"id":"0002"}]}]}}`)
+	if err := root.WriteFile("free-agents.json", body, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got := boardFreeAgents(t, root); !slices.Equal(got, []string{"0001", "0002"}) {
+		t.Fatalf("parsed free agents = %v", got)
+	}
 }

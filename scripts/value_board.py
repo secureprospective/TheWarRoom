@@ -7,6 +7,7 @@ import datetime as dt
 import gzip
 import hashlib
 import html
+import io
 import json
 import math
 import os
@@ -30,6 +31,8 @@ def snapshot(source, destination):
     if destination.exists():
         raise ValueError(f"Refusing to replace snapshot: {destination}; choose a new --out directory")
     with readonly(source) as src:
+        with destination.open('xb'):
+            pass
         dst = sqlite3.connect(destination)
         try:
             src.backup(dst)
@@ -47,7 +50,10 @@ def archived_export(connection, kind, season, required=True):
         query = parse_qs(url.query)
         if query.get("TYPE") != [kind] or url.path.split("/")[1:2] != [str(season)]:
             continue
-        body = gzip.decompress(row["body"])
+        if not 0 <= row['size'] <= 256 * 1024 * 1024:
+            raise ValueError(f"Unreasonable archived {kind} size")
+        with gzip.GzipFile(fileobj=io.BytesIO(row['body'])) as compressed:
+            body = compressed.read(row['size'] + 1)
         if len(body) != row["size"] or hashlib.sha256(body).hexdigest() != row["sha256"]:
             raise ValueError(f"Corrupt archived {kind} body")
         return body, row["fetched_at"]
@@ -75,9 +81,6 @@ def prepare(profile, out):
     with readonly(out / "history.db") as history:
         players, players_at = archived_export(history, "players", season)
         free_body, free_at = archived_export(history, "freeAgents", season, required=False)
-        free = json.loads(free_body).get("freeAgents", {}).get("player", []) if free_body else []
-        if not isinstance(free, list) or any(not isinstance(p.get("id"), str) for p in free):
-            raise ValueError("Malformed held free-agents export")
         as_of = history.execute("SELECT MAX(as_of) FROM observations").fetchone()[0]
         points_dates = [dict(r) for r in history.execute("""SELECT season, MAX(as_of) AS as_of
             FROM observations WHERE measure = ? AND season IN (?, ?) GROUP BY season""",
@@ -90,12 +93,15 @@ def prepare(profile, out):
     if not as_of or any(not math.isfinite(v) for v in overrides.values()):
         raise ValueError("Missing observation cutoff or non-finite override")
     request = dict(Season=season, LastWeek=int(config["EndWeek"]), AsOf=as_of,
-                   Roster=roster["Players"], FreeAgents=sorted({p["id"] for p in free}), Overrides=overrides)
+                   Roster=roster["Players"], Overrides=overrides)
     (out / "players.json").write_bytes(players)
+    if free_body is not None:
+        (out / "free-agents.json").write_bytes(free_body)
     (out / "request.json").write_text(json.dumps(request))
     provenance = dict(profile=str(profile), snapshot_date=dt.datetime.now(dt.timezone.utc).isoformat(),
                       as_of=as_of, season=season, roster_at=mirror["refreshed_at"],
-                      players_at=players_at, free_agents_at=free_at or 'unavailable (not valued)', points_dates=points_dates,
+                      players_at=players_at, free_agents_at=free_at or 'unavailable (not valued)',
+                      free_agents_available=free_body is not None, points_dates=points_dates,
                       held_runs=runs)
     provenance['source_commit'] = subprocess.check_output(
         ['git', 'rev-parse', 'HEAD'], text=True).strip()
@@ -108,7 +114,8 @@ def prepare(profile, out):
 
 
 def export_features(out, request):
-    measures = json.loads((out / 'measures.json').read_text())
+    scope = json.loads((out / 'measures.json').read_text())
+    measures = scope['Measures']
     placeholders = ','.join('?' for _ in measures)
     query = f"""WITH latest AS (
         SELECT *, ROW_NUMBER() OVER (
@@ -122,7 +129,7 @@ def export_features(out, request):
         WHERE l.newest = 1
     ) SELECT * FROM picked WHERE pick = 1 ORDER BY season, player_id, week, measure"""
     with readonly(out / 'history.db') as history, (out / 'features.jsonl').open('w') as target:
-        for row in history.execute(query, [request['AsOf'], request['Season'] - 16, request['Season'], *measures]):
+        for row in history.execute(query, [request['AsOf'], request['Season'] - scope['Lookback'], request['Season'], *measures]):
             feature = dict(PlayerID=row['player_id'], Season=row['season'], Week=row['week'],
                            Measure=row['measure'], Source=row['source'], AsOf=row['as_of'],
                            Value=row['value'] or 0, Text=row['text'] or '')
@@ -163,7 +170,7 @@ def assess(players, roster):
             row["ppr"] = ppg_ranks.get(row["id"])
             gap = row["vr"] - row["pr"] if row["pr"] else 0
             row["gap"] = gap
-            if row["points"] is not None and row["points"] > 0 and abs(gap) >= 20 and min(row["vr"], row["pr"]) <= 20:
+            if row["points"] is not None and abs(gap) >= 20 and min(row["vr"], row["pr"]) <= 20:
                 row["checks"].append("Rank gap")
                 direction = "below" if gap > 0 else "above"
                 row["flags"].append(f"Value rank sits {abs(gap)} places {direction} current points rank.")
@@ -250,8 +257,13 @@ def render(rows, counts, provenance, template):
         group = [r for r in rows if r['position'] == pos]
         coverage.append(f"{pos}: {sum(r['points'] is None for r in group)}/{len(group)} current totals missing")
     coverage_text = escape('; '.join(coverage))
+    period = escape(f"{provenance['season']} season · observations held through {provenance['as_of'][:10]} · "
+                    f"{len(rows):,} valued players")
+    pool = ('Held MFL free agents are included alongside rostered players.' if provenance.get('free_agents_available')
+            else 'No held free-agent feed: this board covers rostered players only.')
     return (template.replace('@@PROVENANCE@@', info).replace('@@CHECKS@@', checks)
-            .replace('@@COVERAGE@@', coverage_text).replace('@@TABLES@@', ''.join(sections)))
+            .replace('@@POOL@@', pool).replace('@@PERIOD@@', period).replace('@@COVERAGE@@', coverage_text)
+            .replace('@@TABLES@@', ''.join(sections)))
 
 
 def main():
