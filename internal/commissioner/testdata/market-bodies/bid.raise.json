@@ -1,0 +1,13 @@
+{
+ "bid": {
+  "franchise": "franchise.01",
+  "bid": "entry.11",
+  "salaryCents": 600000000,
+  "years": 2
+ },
+ "bidOutcome": {
+  "player": "5001",
+  "season": 2026,
+  "points": 72000
+ }
+}

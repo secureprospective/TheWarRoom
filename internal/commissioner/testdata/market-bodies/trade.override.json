@@ -1,0 +1,82 @@
+{
+ "trade": {
+  "id": "entry.27",
+  "decision": "approve"
+ },
+ "tradeOutcome": {
+  "vetoNumber": 1,
+  "appealedVetoNumber": 0,
+  "assetDetails": [
+   {
+    "fromTeam": "Team 2",
+    "toTeam": "Team 1",
+    "label": "2028 round 1 pick, originally Team 1"
+   }
+  ],
+  "previous": "d9778829b4aaef2dfc27bc66915d7f98580ab11fbd0eadccd879e924bc85b83c",
+  "id": "entry.27",
+  "proposer": "franchise.02",
+  "parties": [
+   "franchise.02",
+   "franchise.01"
+  ],
+  "assets": [
+   {
+    "from": "franchise.02",
+    "to": "franchise.01",
+    "season": 2028,
+    "round": 1,
+    "original": "franchise.01"
+   }
+  ],
+  "accepted": [
+   "franchise.02",
+   "franchise.01"
+  ],
+  "policy": {
+   "route": "dot",
+   "seats": 4,
+   "votesToDecide": 3,
+   "futureYears": 2,
+   "minimumRound": 1,
+   "maximumRound": 5,
+   "refuseIllegalRoster": true,
+   "offerLifetimeNanoseconds": 604800000000000,
+   "maximumParties": 3
+  },
+  "offeredAt": "2026-10-20T12:00:00Z",
+  "expiresAt": "2026-10-27T12:00:00Z",
+  "status": "approved",
+  "words": "Approved; the assets have changed teams",
+  "votes": [
+   {
+    "who": "dot.a",
+    "decision": "veto",
+    "at": "2026-10-20T12:00:00Z",
+    "reason": "Recorded change"
+   },
+   {
+    "who": "dot.b",
+    "decision": "veto",
+    "at": "2026-10-20T12:00:00Z",
+    "reason": "Recorded change"
+   },
+   {
+    "who": "dot.c",
+    "decision": "veto",
+    "at": "2026-10-20T12:00:00Z",
+    "reason": "Recorded change"
+   }
+  ],
+  "recusals": [],
+  "appeals": [],
+  "overrides": [
+   {
+    "who": "creator",
+    "decision": "approve",
+    "at": "2026-10-20T12:00:00Z",
+    "reason": "Recorded change"
+   }
+  ]
+ }
+}

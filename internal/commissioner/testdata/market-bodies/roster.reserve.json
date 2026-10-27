@@ -1,0 +1,22 @@
+{
+ "waiver": {
+  "bucket": "active",
+  "player": "0002",
+  "franchise": "franchise.02"
+ },
+ "waiverOutcome": {
+  "closeAt": "0001-01-01T00:00:00Z",
+  "player": {
+   "name": "Injured Veteran",
+   "id": "0002",
+   "franchise": "franchise.02",
+   "status": "IR",
+   "salaryCents": 200,
+   "expirationYear": 2028,
+   "contractStatus": "",
+   "contractInfo": ""
+  },
+  "season": 2026,
+  "clearsDead": false
+ }
+}

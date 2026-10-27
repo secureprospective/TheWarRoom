@@ -1,0 +1,21 @@
+{
+ "waiver": {
+  "player": "0003",
+  "franchise": "franchise.02"
+ },
+ "waiverOutcome": {
+  "closeAt": "0001-01-01T00:00:00Z",
+  "player": {
+   "name": "Starter",
+   "id": "0003",
+   "franchise": "franchise.02",
+   "status": "ROSTER",
+   "salaryCents": 300,
+   "expirationYear": 2027,
+   "contractStatus": "",
+   "contractInfo": ""
+  },
+  "season": 2026,
+  "clearsDead": false
+ }
+}
