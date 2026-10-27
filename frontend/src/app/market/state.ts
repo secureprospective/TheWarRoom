@@ -7,7 +7,7 @@ import {
   type MarketScope,
   type SurfaceReading,
 } from './contract';
-import { marketProvider, unavailable } from './provider';
+import { marketProvider, marketScopeInput, unavailable } from './provider';
 import { FILTER_KEYS, keepFilter, restoreFilter, subset } from '../shell/viewFilters';
 
 type State = {
@@ -71,12 +71,11 @@ export function parseMarketScope(v: unknown): MarketScope | null {
 }
 export function createMarketState(provider: MarketProvider) {
   const safe = (read: Promise<SurfaceReading>) => read.catch((cause) => unavailable(String(cause)));
-  const raw = (scope: MarketScope) => ({ ...scope, phases: scope.phases ?? [], assets: scope.assets ?? [] });
   const query = createReadQuery('market.TargetMarketLists', {
     initial: (): State => ({
       scope: restoreFilter(FILTER_KEYS.market, parseMarketScope, allScope()), profiles: {}, pending: false,
     }), companions: ['market.TargetPickClock', 'market.TargetMarketStretches'],
-    arguments: ([scope]: [MarketScope]): [ReturnType<typeof raw>] => [raw(scope)],
+    arguments: ([scope]: [MarketScope]): [ReturnType<typeof marketScopeInput>] => [marketScopeInput(scope)],
     read: async (request: MarketScope) => {
       const [lists, clock, stretches] = await Promise.all([
         safe(provider.lists(request)), safe(provider.clock(request)), safe(provider.stretches(request)),
@@ -89,7 +88,9 @@ export function createMarketState(provider: MarketProvider) {
     return createReadQuery('market.TargetAssetProfile', {
       initial: () => ({}), cacheSize: 1,
       arguments: ([request]: [{ scope: MarketScope; kind: string }]):
-        [{ scope: ReturnType<typeof raw>; kind: string }] => [{ ...request, scope: raw(request.scope) }],
+        [{ scope: ReturnType<typeof marketScopeInput>; kind: string }] => [
+          { ...request, scope: marketScopeInput(request.scope) },
+        ],
       read: ({ scope, kind }: { scope: MarketScope; kind: string }) => safe(provider.profile(scope, kind)),
       accept: reading => {
         store.setState(s => ({ profiles: { ...s.profiles, [kind]: reading } }));
