@@ -2,14 +2,14 @@
 
 ## Resume here
 
-Part 2 in progress: **46 units / 2,119 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and eleven units completed afterward.
-Cumulative **114/126 units / 3,985/4,534 baseline function LOC**; 12 units / 549 LOC remain.
+Part 2 in progress: **48 units / 2,212 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and thirteen units completed afterward.
+Cumulative **116/126 units / 4,078/4,534 baseline function LOC**; 10 units / 456 LOC remain.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
 Next: remaining Control read unit 102; Platform lifecycle/entry/resource
-units 86–88, 90–92, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
+units 86, 90–92, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
 Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
 composition race batches with command-door parity; broad fixture runs need >200 seconds.
 
@@ -144,8 +144,8 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 84 | 2 | `internal/composition/sources_runtime.go` — `readSettings`:102, `writeSettings`:117 | 28 | `sources` | startup,W:sources | Missing file means defaults; JSON decode errors remain visible; write indented owner-only temp file then rename atomically. MOVED (part 3, batch 3). |
 | 85 | 3 | `internal/composition/asset_board.go` — `fitAssetModel`:133 | 17 | `market` | startup | No verified cache means no fit; compile error logs without publishing; success publishes model and season event. MOVED (part 4, batch 4). |
 | 86 | 5 | `internal/composition/platform_host.go` — `startHeadshots`:61, `photoHandler`:83 | 30 | `platform` | startup,W photo HTTP | History/crosswalk failures preserve error; lazy cache plus photo-off setting; unavailable cache returns 503, off switch denies request. |
-| 87 | 5 | `internal/composition/database_checks_app.go` — `checkDatabases`:31, `startDatabaseChecks`:43 | 38 | `platform` | startup,B | Skip missing pools/canceled context; log findings; start one ready-gated hourly worker with bounded check/backup cycle and joined shutdown. |
-| 88 | 4 | `internal/composition/database_checks_app.go` — `newDatabaseBackups`:71, `backupDatabases`:83, `backupNow`:99, `pruneBackups`:125 | 55 | `platform` | B,W:commissioner;restore CLI | Build-stamped dev/prod matched-set schema limits; daily capture before retention; manual capture requires local account and configured backups; private logs/public generic failure; prune findings best-effort. |
+| 87 | 5 | `internal/composition/database_checks_app.go` — `checkDatabases`:31, `startDatabaseChecks`:43 | 38 | `platform` | startup,B | Skip missing pools/canceled context; log findings; start one ready-gated hourly worker with bounded check/backup cycle and joined shutdown. MOVED (part 4, batch 8). |
+| 88 | 4 | `internal/composition/database_checks_app.go` — `newDatabaseBackups`:71, `backupDatabases`:83, `backupNow`:99, `pruneBackups`:125 | 55 | `platform` | B,W:commissioner;restore CLI | Build-stamped dev/prod matched-set schema limits; daily capture before retention; manual capture requires local account and configured backups; private logs/public generic failure; prune findings best-effort. MOVED (part 4, batch 8). |
 | 89 | 3 | `internal/composition/app.go` — `directory`:73 | 17 | `sources` | startup,B,W many | Cache season directory after first successful normalized player fetch; failure never publishes partial lookup. MOVED (part 4, batch 4). |
 | 90 | 5 | `internal/composition/app.go` — `startup`:126, `settleStartupFailure`:180, `finishStartup`:187, `initStoreFloor`:255 | 131 | `platform` | startup/probe | Logging failure nonfatal; acquire protected DB floor before client; initialize ordered stores; refresh only empty mirror; coordinator owns Writer; publish complete floor/readiness before revalidation; plain offline failure; launch refresh only if not seeded. |
 | 91 | 5 | `internal/composition/app.go` — `openDatabases`:209, `logMigrationFindings`:319 | 48 | `platform` | startup/probe | Instance lock before recovery and pre-migration backup; open matched stores at schema versions, archive subsequent fetches; log only present pools. |
@@ -809,3 +809,19 @@ health event, Control golden/concurrent reads, worker shutdown and door parity. 
 test still asserted the pre-batch-2 weekly function body; changed it to assert the actual service
 port wiring, retaining inward runtime WeekWorker order coverage. Affected-package lint passed.
 No role, binding, schema, authorization, lock-order or remote-write change.
+
+## Part 4 — batch 8: routine checks and matched backups
+
+Two units (87–88), 93 baseline function LOC. Platform owns absent/canceled database admission,
+ready-gated bounded check→backup cycles, build-matched backup schema configuration, daily capture
+before retention and manual sign-in/configuration admission. Public backup failure now has its
+single sentinel owner inward; technical causes remain private logs. Composition retains once/
+worker joining, live resource capture, commissioner result conversion and the existing sign-in
+refusal identity supplied as a port; no sibling service import or new global alias.
+
+Added inward no-sign-in/no-capture, missing configuration, private failure/no-retention, bounded
+manual capture, basename/public wording, best-effort retention, failed daily capture/no-prune,
+ready refusal and same-context ordered maintenance tests. Platform and filtered composition race
+batches passed (4.579 seconds composition), including actual daily capture, before-migration
+matched backup, manual restore into a never-opened profile, joined checks/shutdown and door parity.
+No schema version, backup retention, authorization or public response change.
