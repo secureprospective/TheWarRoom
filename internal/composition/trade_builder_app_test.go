@@ -88,9 +88,22 @@ func realTradeBuilderApp(t *testing.T) (*App, *seasonTransport) {
 	transport.requests = nil
 	return a, transport
 }
+
+// builderReading sends r to the builder command that owns its action, as the frontend does.
+func builderReading(a *App, r tradesapp.RawTradeBuilder) tradesapp.TradeBuilderReading {
+	switch r.Action {
+	case "read":
+		return a.tradesAPI().TargetTradeBuilderRead(r.Mine)
+	case "preview":
+		return a.tradesAPI().TargetTradeBuilderPreview(r)
+	default:
+		return a.tradesAPI().TargetTradeBuilder(r)
+	}
+}
+
 func builderCall(t *testing.T, a *App, r tradesapp.RawTradeBuilder) tradesapp.TradeBuilderView {
 	t.Helper()
-	reading := a.tradesAPI().TargetTradeBuilder(r)
+	reading := builderReading(a, r)
 	if reading.Status != report.ReadingOK {
 		t.Fatalf("builder %s: %+v", r.Action, reading)
 	}
@@ -150,7 +163,7 @@ func TestTradeBuilderRealRosterExactCentsBothSides(t *testing.T) {
 	if !strings.Contains(preview.Post, "a year through 2026") || strings.Contains(preview.Post, "11675") {
 		t.Fatal(preview.Post)
 	}
-	body, err := json.Marshal(a.tradesAPI().TargetTradeBuilder(realDeal()))
+	body, err := json.Marshal(builderReading(a, realDeal()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -577,7 +590,7 @@ func TestKeptTradePlanRemovalIsLocalAndVisibleInMyMoves(t *testing.T) {
 func TestTradeAndContractWhatIfExplainCarriedSalaries(t *testing.T) {
 	t.Parallel()
 	a, _ := realTradeBuilderApp(t)
-	reading := a.tradesAPI().TargetTradeBuilder(realDeal())
+	reading := builderReading(a, realDeal())
 	body, err := json.Marshal(reading)
 	if err != nil {
 		t.Fatal(err)
@@ -723,7 +736,7 @@ func TestOwnerActionsRefuseWithoutChangingState(t *testing.T) {
 			"HandOff":          func() string { _, err := a.platformAPI().TargetHandOff(kept.CorrelationID); return errText(err) },
 			"WithdrawRoster":   func() string { _, err := a.platformAPI().TargetWithdrawRoster(kept.CorrelationID); return errText(err) },
 			"DraftTradeAccept": func() string { _, err := a.tradesAPI().TargetDraftTradeAccept("0001", "77"); return errText(err) },
-			"TradeBuilder":     func() string { return refusal(a.tradesAPI().TargetTradeBuilder(realDeal())) },
+			"TradeBuilder":     func() string { return refusal(builderReading(a, realDeal())) },
 		}
 		for name, call := range calls {
 			before := ownerActionState(t, a)

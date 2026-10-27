@@ -3041,6 +3041,32 @@ export const readCommands = {
     "Items": null
   }
 },
+"trades.TargetTradeBuilderRead": {
+  "command": "desktop.trades.TargetTradeBuilderRead",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "franchiseID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "trades.TargetTrades": {
   "command": "desktop.trades.TargetTrades",
   "arguments": {

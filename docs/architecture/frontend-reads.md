@@ -5,7 +5,7 @@
 Shared primitive: `frontend/src/app/data/query.ts`. **Part 3 is closed** (§ Part 9): **37 registry read
 adapters / 19 lifecycle modules**; read-session end is wired where an identity really changes (the
 commissioner seat) and proven by lifetime at the native account. What remains is listed in § Part 9
-"Remains": live polling, two owner rulings (Pool G1, trade builder one-command), and one optional
+"Remains": live polling, one owner ruling (Pool G1; the trade builder moved in revamp B2), and one optional
 registry ruling (read modes on desktop declarations). Do not replace UI/action state to inflate counts.
 
 ## Contract
@@ -17,7 +17,8 @@ registry ruling (read modes on desktop declarations). Do not replace UI/action s
 - The projection is generated from the registry: every G0 desktop exposure whose modes are exactly
   `[read]`. Legacy adapters opt in with `heldRead` in `commandcatalog/desktop.go` (the 37 audited
   held reads, 28 of which had no mode before Part 10); shared commissioner reads carry their native
-  read mode, so all 26 other G0 commissioner reads are in the catalog too (63 entries). G0 alone
+  read mode, so all 26 other G0 commissioner reads are in the catalog too (64 entries with
+  `TargetTradeBuilderRead`). G0 alone
   still proves nothing (Comms refresh and browser openers are G0): mark a legacy adapter only after
   reading its handler. The frozen door fixture records the 28 added modes.
 - The projection is **not** a new command door. Existing feature `api.ts` adapters still perform
@@ -77,7 +78,7 @@ relative to `frontend/src/app/`. Query-neutral/action-only state is explicitly o
 | Contracts `contracts/state.ts` | contract/player readings | NOT a read store: filters + action dispatch; release board reads through the release action command |
 | Draft room `draftroom/state.ts` | native draft + owner actions | MOVED (part 7); reset fences reads |
 | Shell `shell/lineups.ts` | lineup/trades/alerts per franchise | MOVED (part 7); one query per franchise, pending unpublished; `roster.ts` is pure projection |
-| Shell `shell/tradeBuilderState.ts` | builder reading and isolated preview | BLOCKED; read/preview/save share one `TargetTradeBuilder` command |
+| Shell `shell/tradeBuilderState.ts` | builder reading and isolated preview | MOVED (revamp B2); read is `TargetTradeBuilderRead` on the shared query (publishing into the builder store), preview is `TargetTradeBuilderPreview`, save and plan actions stay `TargetTradeBuilder`; `busy` still serializes every action |
 | Commissioner `commissioner/hostedRoom.ts` | hosted league bundle | MOVED (part 7); keyed by native-lineup scope |
 | Commissioner `commissioner/proxy.ts` (`leagueState`) | leagues picker + core/landing/ops settled reads | MOVED (part 8); picker in pre-read step, bundle keyed by league; controls read once |
 | Commissioner `commissioner/{actReadings,competitionReadings}.ts` | one-shot option reads for an act form | NOT a read store: write-admission inputs, revision-checked per open |
@@ -204,7 +205,8 @@ poll stays in the wrapper and a poll failure still survives the read's success (
 the pre-migration store and fails on an `accept` that drops it).
 
 Blocked without a registry ruling: Pool (`offers.TargetPool`/`TargetBidPlans` are G1 MFL reads;
-the generator admits only G0 held reads) and the trade builder (read/preview/save are one command).
+the generator admits only G0 held reads). The trade builder was split in revamp B2 once its read
+stopped writing `whatif.db` (projections run on a throwaway scratch file).
 
 Next slice: `commissioner/proxy.ts` leagueState. Proposed shape, not built: a leagues query (no
 args) publishing the picker, then one bundle query keyed by `[league]` whose read runs the three
@@ -290,7 +292,7 @@ shortened (a test title and a comment, no logic change); that gate plus the two 
 
 1. Live game `now/liveState.ts` — polling/revision lifetime; stays with live polling.
 2. Pool `pool/state.ts` — owner ruling: `offers.TargetPool`/`TargetBidPlans` are G1.
-3. Trade builder `shell/tradeBuilderState.ts` — owner ruling: read/preview/save share `TargetTradeBuilder`.
+3. Done in revamp B2: trade builder read/preview/save split; the read is on the shared query.
 4. Done in Part 10: registry read modes replace the generator list.
 5. `cache-first` stays limited to historical details; extending it needs the session wiring above per owner.
 Not targets: contracts/commissioner action and option-read modules, moves journal, MFL key status,

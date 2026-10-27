@@ -214,9 +214,11 @@ func sourcesCommandBindings(api *sourcesapi.API) map[string]catalog.Binding {
 }
 func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
-		"TargetTrades":           catalog.Bind1(api.TargetTrades, "franchiseID"),
-		"TargetDraftTradeAccept": catalog.Bind2(api.TargetDraftTradeAccept, "franchiseID", "tradeID"),
-		"TargetTradeBuilder":     catalog.Bind1Value(api.TargetTradeBuilder, "r"),
+		"TargetTrades":              catalog.Bind1(api.TargetTrades, "franchiseID"),
+		"TargetDraftTradeAccept":    catalog.Bind2(api.TargetDraftTradeAccept, "franchiseID", "tradeID"),
+		"TargetTradeBuilder":        catalog.Bind1Value(api.TargetTradeBuilder, "r"),
+		"TargetTradeBuilderRead":    catalog.Bind1Value(api.TargetTradeBuilderRead, "franchiseID"),
+		"TargetTradeBuilderPreview": catalog.Bind1Value(api.TargetTradeBuilderPreview, "r"),
 	}
 }
 

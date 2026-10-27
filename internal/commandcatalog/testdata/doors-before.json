@@ -3895,6 +3895,34 @@
     "Door": "wails",
     "Feature": "trades",
     "ID": "unset",
+    "Method": "TargetTradeBuilderPreview",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": [
+      "preview"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "trades",
+    "ID": "unset",
+    "Method": "TargetTradeBuilderRead",
+    "Role": "gm,commish",
+    "Gravity": "G0",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "trades",
+    "ID": "unset",
     "Method": "TargetTrades",
     "Role": "gm,commish,admin",
     "Gravity": "G0",

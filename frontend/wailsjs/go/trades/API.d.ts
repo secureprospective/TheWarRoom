@@ -7,4 +7,8 @@ export function TargetDraftTradeAccept(arg1:string,arg2:string):Promise<envelope
 
 export function TargetTradeBuilder(arg1:trades.RawTradeBuilder):Promise<trades.TradeBuilderReading>;
 
+export function TargetTradeBuilderPreview(arg1:trades.RawTradeBuilder):Promise<trades.TradeBuilderReading>;
+
+export function TargetTradeBuilderRead(arg1:string):Promise<trades.TradeBuilderReading>;
+
 export function TargetTrades(arg1:string):Promise<trades.TradeReading>;

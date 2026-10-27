@@ -133,4 +133,6 @@ sources.API.TargetDataRefresh
 sources.API.TargetDataSources
 trades.API.TargetDraftTradeAccept
 trades.API.TargetTradeBuilder
+trades.API.TargetTradeBuilderPreview
+trades.API.TargetTradeBuilderRead
 trades.API.TargetTrades

@@ -286,7 +286,7 @@ func TestTradesBindingGoldens(t *testing.T) {
 	}
 	receipt.CorrelationID = "fixture-correlation"
 	checkGolden(t, "trades", "TargetDraftTradeAccept", receipt)
-	builder := a.tradesAPI().TargetTradeBuilder(tradesapp.RawTradeBuilder{Mine: "invalid", Action: "read"})
+	builder := a.tradesAPI().TargetTradeBuilderRead("invalid")
 	checkGolden(t, "trades", "TargetTradeBuilder-invalid", builder)
 	if len(transport.requests) != 0 {
 		t.Fatal("binding fetched")
@@ -331,7 +331,7 @@ func TestTradesDenialGoldens(t *testing.T) {
 func TestTradeBuilderPopulatedGolden(t *testing.T) {
 	t.Parallel()
 	a, transport := realTradeBuilderApp(t)
-	reading := a.tradesAPI().TargetTradeBuilder(realDeal())
+	reading := a.tradesAPI().TargetTradeBuilderPreview(realDeal())
 	if reading.Status != report.ReadingOK || reading.Value.Preview == nil {
 		t.Fatal(reading)
 	}

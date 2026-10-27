@@ -241,6 +241,8 @@ func tradesDesktop(_ []Command) []Command {
 	return []Command{
 		{ID: "trade.accept", Method: "TargetDraftTradeAccept", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
 		{ID: Unset, Method: "TargetTradeBuilder", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
+		{ID: Unset, Method: "TargetTradeBuilderPreview", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "desktop", Modes: []Mode{Preview}},
+		heldRead(Command{ID: Unset, Method: "TargetTradeBuilderRead", Version: Unset, Role: "gm,commish", Gravity: "G0", Availability: "desktop"}),
 		{ID: Unset, Method: "TargetTrades", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
