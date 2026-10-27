@@ -38,16 +38,24 @@ func attachEdges(weeks []PlayerWeek, index map[string]int, p RawPlay, season, we
 			add(p.Passer, c.passer)
 		}
 	}
-	if yard, err := strconv.Atoi(p.Yardline); err == nil && yard <= 20 {
-		if p.RushAttempt == "1" {
-			add(p.Rusher, "red_zone_carry")
-		}
-		if p.PassAttempt == "1" {
-			add(p.Passer, "red_zone_pass_attempt")
-			add(p.Receiver, "red_zone_target")
-		}
-	}
+	attachRedZone(add, p)
 	if p.RushAttempt == "1" && p.TackledForLoss == "1" {
 		add(p.Rusher, "rushing_tfl")
+	}
+}
+
+// The 20-yard line is inside the red zone, as the NFL's own "inside 20" tables count it.
+func attachRedZone(add func(string, leaguerules.StatID), p RawPlay) {
+	yard, err := strconv.Atoi(p.Yardline)
+	if err != nil || yard > 20 {
+		return
+	}
+	if p.RushAttempt == "1" {
+		add(p.Rusher, "red_zone_carry")
+	}
+	// nflverse's pass_attempt includes sacks; official individual pass attempts do not.
+	if p.PassAttempt == "1" && p.Sack != "1" {
+		add(p.Passer, "red_zone_pass_attempt")
+		add(p.Receiver, "red_zone_target")
 	}
 }

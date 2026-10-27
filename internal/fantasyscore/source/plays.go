@@ -31,6 +31,8 @@ type RawPlay struct {
 	Kickoff      string
 	Deleted      string
 	TwoPoint     string
+	PlayType     string
+	Sack         string
 	// Optional: older held play files lack these, and their kick TDs keep the older credits.
 	PosTeam                                                                                             string
 	PuntBlocked                                                                                         string
@@ -53,7 +55,7 @@ func (r RawPlay) Validate() error {
 	if r.SeasonType != "REG" && r.SeasonType != "POST" {
 		return fmt.Errorf("play needs a season type")
 	}
-	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal} {
+	for _, raw := range []string{r.Touchdown, r.Interception, r.Punt, r.Kickoff, r.Deleted, r.TwoPoint, r.PuntBlocked, r.FieldGoal, r.Sack} {
 		if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
@@ -98,6 +100,8 @@ func ReadPlays(input io.Reader) ([]RawPlay, error) {
 				return fmt.Errorf("play-by-play is missing %s", name)
 			}
 		}
+		// sack is deliberately not required here: pinned evidence bodies predate the column, and
+		// refusing to read them would be worse than their red-zone sacks counting as attempts.
 		edgeNames := []string{"third_down_converted", "fourth_down_converted", "rush_attempt", "pass_attempt", "complete_pass", "yardline_100", "tackled_for_loss"}
 		present := 0
 		for _, name := range edgeNames {
@@ -133,7 +137,8 @@ func rawPlay(f map[string]string) RawPlay {
 		Touchdown: f["touchdown"], Scorer: f["td_player_id"], ScoringTeam: f["td_team"],
 		ReturnTeam: f["return_team"], Interception: f["interception"],
 		Punt: f["punt_attempt"], Kickoff: f["kickoff_attempt"], Deleted: f["play_deleted"],
-		TwoPoint: f["two_point_attempt"], PosTeam: f["posteam"], PuntBlocked: f["punt_blocked"],
+		TwoPoint: f["two_point_attempt"], PlayType: f["play_type"], Sack: f["sack"],
+		PosTeam: f["posteam"], PuntBlocked: f["punt_blocked"],
 		FieldGoal: f["field_goal_attempt"], FieldResult: f["field_goal_result"],
 		ThirdConversion: f["third_down_converted"], FourthConversion: f["fourth_down_converted"],
 		RushAttempt: f["rush_attempt"], PassAttempt: f["pass_attempt"], CompletePass: f["complete_pass"],
@@ -169,7 +174,7 @@ func AttachPlays(weeks []PlayerWeek, plays []RawPlay) error {
 		}
 	}
 	for _, play := range plays {
-		if play.Deleted == "1" || play.TwoPoint == "1" {
+		if play.Deleted == "1" || play.TwoPoint == "1" || play.PlayType == "no_play" {
 			continue
 		}
 		season, _ := strconv.Atoi(play.Season)
