@@ -2,31 +2,34 @@
 
 ## Resume here
 
-Composition inventory remains resolved: **125 units / 4,498 baseline function LOC relocated**,
-plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally extracted all
-**17 frozen core policy functions / 278 baseline function LOC**, plus one audited Market
-refresh-admission function / 11 LOC (**18 / 289 total**); no legacy entries remain.
-Boundary gate now freezes **120 decision-bearing adapters + 48 complete sources** and detects
-straight-line/declaration/nested-path changes as well as the original branch syntax. This is a
-review ratchet, not semantic proof that every approved adapter is policy-free.
+Original composition inventory remains resolved: **125 units / 4,498 baseline function LOC
+relocated**, plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally
+extracted **18 core/audit functions / 289 baseline LOC**. Part 6 closes two residual workflows
+from original units 19 and 69 (45 current-baseline function LOC; not counted a second time): Market
+archive scope/read orchestration and Research refresh admission/status. See Part 6's source-by-source
+disposition below: every remaining named adapter is classified as lifecycle/resource, transport,
+representation or wiring. Ratchet: **118 decision-bearing adapters / 1,527 function LOC + 48
+whole-source fingerprints**, down from 120 / 1,572 + 48; zero legacy entries. This is reviewed source,
+not semantic proof or live feature acceptance.
 
-Frontend plan Part 3 has started: `docs/architecture/frontend-reads.md` is the design/inventory.
-One registry-keyed typed read/cache hook now owns four lifecycle implementations serving five
-consumers: Archive, Race, Comms, Draft reports and Market reports. Existing action/event adapters,
-selectors and public wrapper methods remain; no cache-first behavior was silently enabled.
+Frontend plan Part 3: **nine lifecycle implementations / ten store consumers**, driven by **17
+registry read adapters**. This part migrated Control, Sources cache scopes, historical Market,
+historical Draft and Counterparties. Main reads still revalidate. Historical details retain their
+pre-existing one-last-scope-per-kind/team caching; no new polling/write/session invalidation.
+Compound publication, detached UI-versus-binding scope, detail fencing and per-team independence
+are documented in `docs/architecture/frontend-reads.md`.
 
-Next: audit the remaining reviewed core/composition adapters (especially lifecycle/resource versus
-feature-policy classification), then finish Part 2 full CI and disposable-profile live review.
-For Part 3 migrate Control held reads and Sources cache scopes next, then scoped historical
-Market/Draft/Counterparties; keep writes/live polling/session invalidation out until explicitly tested.
-Use filtered composition race batches plus door parity. A measured trade/owner integration batch
-passed in 114.271s (trade deadline/handoff test 92.68s; owner refusal 19.81s). Passing CI from prior
-parts took 194–478s per composition shard; a 200s broad tool budget is insufficient evidence of a
-failure/deadlock. The earlier broad/push timeout's exact process cause is still unproven.
+Next Part 2: owner-run pre-push/full CI and disposable-profile live review (R12 on Claude-OS).
+Next Part 3: Sources compound sources→parallel crosswalk/params view with partial-result semantics,
+then Assets and Now held reads. Hosted provider/account/league lifetimes, session invalidation,
+write-plan state and live polling remain separate work. Keep targeted race batches and composition
+-run filters plus command-door parity; prior real composition CI shards took 194–478 seconds.
 
-Branch: `session/revamp-B-app-boundary`. **Local commits only this part; owner pushes.** No PR,
-merge, force-push, generated Wails binding change or HANDOFF.md edit. No permission/role/binding/
-schema/lock-order change. Full verify/pre-push/CI and live profile review remain unclaimed.
+Branch: `session/revamp-B-app-boundary`. **Local commits only; owner pushes.** No push, PR, merge,
+rebase, generated Wails binding change or HANDOFF.md edit. No permission/role/schema/lock-order
+change. Full verify/pre-push/CI and live profile review remain unclaimed. Estimates: Part 2 **one
+verification/review part**; Part 3 **3–5 one-hour parts**, including lifetime/invalidation integration.
+No owner ruling needed.
 
 ## Boundary and preserved slice
 
@@ -45,8 +48,8 @@ but no new exposure is added in this part. Existing shared native commands alrea
 **Done looks like:** CI permits only an explicit composition adapter/lifecycle allowlist and rejects
 new domain-data branches there; feature services import neither composition/core nor Wails;
 command-door parity stays unchanged. A ratchet must also cover core host decision code,
-not merely empty composition by relocating it into core. The decision-syntax ratchet below now enforces reviewed fingerprints, with legacy core policy
-explicitly frozen rather than mislabeled complete.
+not merely empty composition by relocating it into core. The ratchet now freezes reviewed
+function and whole-source fingerprints; no legacy policy rows remain.
 
 ## Inventory conventions
 
@@ -88,7 +91,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 16 | 2 | `internal/composition/engine_refresh.go` — `modelFreeAgents`:94 | 9 | `scoring` | B,W:scoring | Capture held free-agent IDs as engine input under season lock.  MOVED (part 2, batch 5). |
 | 17 | 3 | `internal/composition/finished_scores.go` — `refreshFinishedScores`:40 | 47 | `research` | B | Previous market week only; hydrate missing score archive; pin first finished instant per week; reread week and YTD once if scores predate cutoff with paced cancellation. MOVED (part 4, batch 1). |
 | 18 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeeds`:41 | 19 | `market` | B,W:market,offers | Skip fresh daily feeds unless forced, but projections must match week; pace reads and stop on cancellation. MOVED (part 3, batch 4). |
-| 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. MOVED (part 3, batch 4). |
+| 19 | 3 | `internal/composition/market_feeds_app.go` — `refreshMarketFeed`:61 | 38 | `market` | B,W:market,offers | Scope projection archive by week; reject wrong-week parsed feed; discard prior week's projection before publishing held/live-or-archive result. MOVED (part 3, batch 4; residual scope workflow closed in part 6). |
 | 20 | 1 | `internal/composition/moves_app.go` — `validateMoveURL`:58 | 12 | `platform` | W:platform,contracts,trades | Allow only HTTPS MFL hostname/suffix without user info; preserve existing URL behavior.  MOVED (part 2, batch 1). |
 | 21 | 1 | `internal/composition/moves_app.go` — `movePredicate`:87 | 14 | `platform` | B,W:platform | Intent-to-landing-predicate registry, unknown intent has no predicate.  MOVED (part 2, batch 1). |
 | 22 | 1 | `internal/composition/moves_app.go` — `watchableMove`:441, `skipMoveRefresh`:445, `saveMoveEvidence`:476 | 16 | `platform` | B,W:platform | Require unchanged listed state; don't watch handed-off contract; roster refresh covers contracts; save state changes or new trade audit evidence only.  MOVED (part 2, batch 1). |
@@ -138,7 +141,7 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 66 | 2 | `internal/composition/research_reading.go` — `researchRows`:33, `snapshot`:45 | 26 | `research` | W:research,market,offers,trades | Use first feed's rows; choose now if unset; finish-score totals and held cut charges become research input, with detached indexes.  MOVED (part 2, batch 3). |
 | 67 | 3 | `internal/composition/research_reading.go` — `PrepareResearchDepth`:73 | 8 | `research` | W:research | No fetch transport means no depth preparation; otherwise bounded nonforced refresh. MOVED (part 4, batch 1). |
 | 68 | 3 | `internal/composition/research_runtime.go` — `refreshResearchFeed`:33, `researchLinks`:69, `refreshResearchDepth`:84 | 77 | `research` | W:research | Five-minute feed/daily depth freshness unless forced; weekly archive scoping; link only known MFL IDs for gsis/espn; publish links/errors and held feeds. MOVED (part 4, batch 1). |
-| 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. MOVED (part 4, batch 1). |
+| 69 | 3 | `internal/composition/research_runtime.go` — `refreshResearch`:111 | 43 | `research` | W:research | Read kinds/YTD then weekly scores through market week with status/pacing; injuries, current schedule, depth follow; startup/cancellation errors preserve text and clear status. MOVED (part 4, batch 1; residual admission/status closed in part 6). |
 | 70 | 3 | `internal/composition/research_runtime.go` — `refreshResearchNews`:176 | 45 | `research` | W:research | Validate optional mine and franchise; reject concurrent refresh; order roster IDs with directory; bounded news batches, merge result even on error. MOVED (part 4, batch 1). |
 | 71 | 3 | `internal/composition/research_runtime.go` — `researchDepthOrArchive`:227 | 9 | `research` | W:research | Live depth success returns live freshness; otherwise log and use fallback archive preserving original error. MOVED (part 4, batch 1). |
 | 72 | 3 | `internal/composition/season_app.go` — `refreshSeason`:31 | 49 | `control` | B | Fixed transactions/comms/shell/lineups/trades/injuries/draft/market/race/firsts/current-schedule order; pace/cancel, notify early for lineups, revalidate plans, always wake watcher. MOVED (part 4, batch 2). |
@@ -1164,8 +1167,7 @@ those lifetimes are exercised. Next concrete slice is in Resume here and fronten
 Finding: `refreshMarketFeed` still selected league-less exports, filtered archive URLs by report
 kind/week and wrapped live failures in composition. `market.ReadFeed` now owns that workflow;
 composition supplies the raw fetch/archive ports and retains the original latest-held reread and
-SeasonMu publication. This is one additional audited function (26 baseline physical LOC), not a
-second relocation of the original inventory. Remaining decision fingerprints in that file are
+SeasonMu publication. This is one residual adapter function (26 physical LOC at this part's baseline); original unit 19 is not counted again. Remaining decision fingerprints in that file are
 representation conversion and the refresh pause resource fallback. Ratchet: 119 adapters / 48
 sources, zero legacy. Only the reviewed changed source fingerprint was updated; unrelated digests
 are unchanged. No host/permission/role/schema/binding/lock-span change.
@@ -1187,3 +1189,150 @@ New inward failure-before-resource and status→lock→capture→failed pause→
 pass. Full Research and nativegen race suites pass (3.162s / 2.041s); filtered real composition
 Research cold-open/status/concurrency/refresh/goldens and frozen-door/every-door parity pass
 (2.788s). Only the reviewed changed source fingerprint and removed decision row changed.
+
+
+## Part 6 — reviewed-adapter disposition
+
+Baseline `f538303a`: **120 decision-bearing functions / 1,572 physical function LOC**, plus 48
+whole-source fingerprints. The 26-LOC Market and 19-LOC Research residual workflows above move
+inward; **118 functions / 1,527 current function LOC remain, all STAY as lifecycle/resource,
+transport, representation or constructor/registry adapters**. These close residual portions of
+original composition units 19 and 69, not two new units or 45 more baseline relocated LOC. Original
+126-unit totals and the separate Part 5 core inventory do not increase. The original rows' MOVED
+status means their named feature rules live inward; it did not imply their remaining adapter
+orchestration could never be reduced further.
+
+Every named remaining function in `boundary-adapters.tsv` is covered by its source row below;
+there are no unlisted feature-policy exceptions. The TSV remains the single function-identity
+inventory and enforcement baseline. This is source-traced classification, not a claim that every
+resource path was exercised here. Nil availability, timestamp-presence flags, zone/context defaults,
+error propagation, cloning, transport encoding and registry construction stay; business refusals,
+ordering, scope predicates and value calculations belong to the called feature services.
+
+| Source (repo-relative) | Functions / current LOC | Why every remaining adapter in this source stays |
+|---|---:|---|
+| `internal/app/core/host_comms.go` | 8 / 76 | Resource capture/context/host defaults and archive availability; clone helpers detach representation. |
+| `internal/app/core/host_contracts.go` | 5 / 65 | Shared host/lineup/pending snapshots and nonblocking wake; cloneSnapshot detaches representation. |
+| `internal/app/core/host_counterparties.go` | 4 / 50 | Immutable Lab resource fallback/capture; clone helpers detach representation. |
+| `internal/app/core/host_draft.go` | 4 / 43 | Readiness/zone defaults and detached held Lab/feed snapshots. |
+| `internal/app/core/host_research.go` | 3 / 22 | Lab resource fallback and local-zone defaults; no standings/value policy. |
+| `internal/app/core/host_offers.go` | 3 / 26 | Local-zone defaults, held snapshot cloning and week-availability flag. |
+| `internal/app/core/host_race.go` | 2 / 23 | Joint resource snapshot/zone default; CloneLineups detaches representation. |
+| `internal/app/core/host_sources.go` | 4 / 34 | Roster index/resource availability, zone default and serialized notification lifetime. |
+| `internal/app/core/state.go` | 1 / 3 | ArchivedOnly passes archive availability and transport ports; Report owns missing/failed wording. |
+| `internal/composition/app.go` | 4 / 103 | Constructors/startup/store installation and migration-log resource wiring. |
+| `internal/composition/asset_board.go` | 2 / 16 | Research score rows and Market cells converted without choosing business rules. |
+| `internal/composition/command_bindings.go` | 1 / 8 | Registry construction failure; typed binding/door wiring only. |
+| `internal/composition/commissioner_host.go` | 1 / 7 | TransferStatus resource read/error wrapping only. |
+| `internal/composition/contracts_host.go` | 1 / 20 | AcquisitionTeams converts Trades cells/assets to Contracts representation. |
+| `internal/composition/control_alerts.go` | 1 / 7 | tradeAlert converts already-held offer rows; Control owns alert decisions. |
+| `internal/composition/control_host.go` | 2 / 22 | SourceHealth error propagation and missing-client resource capture for accounting. |
+| `internal/composition/database_checks_app.go` | 4 / 40 | Pool availability, worker lifetime and backup resource ports; Platform owns policy. |
+| `internal/composition/draft_reports_app.go` | 2 / 11 | Dictionary representation and Whatif availability; Draft owns date admission. |
+| `internal/composition/engine_refresh.go` | 1 / 13 | Params availability and refresh-lock port; Scoring owns refresh/model decisions. |
+| `internal/composition/lab_app.go` | 1 / 1 | labStamp concatenates linker-provided build metadata. |
+| `internal/composition/market_feeds_app.go` | 4 / 39 | Held/wire conversion and caller pause-resource default; Market owns scope/refresh decisions. |
+| `internal/composition/moves_app.go` | 5 / 60 | Readiness/context/lock spans, resource availability and cross-feature evidence representation. |
+| `internal/composition/native_gate.go` | 3 / 34 | Native registry wiring, App-to-service callback conversion and held-schedule error propagation. |
+| `internal/composition/native_seed_app.go` | 1 / 21 | Held mirror/rules availability and joint capture; Native owns seed policy. |
+| `internal/composition/now_app.go` | 12 / 177 | Joint snapshots/map initialization, transport errors, network/archive port selection and wire conversion. |
+| `internal/composition/offers_reading.go` | 4 / 46 | Asset/fact conversion, build metadata and resource/read-error ports for offer observation. |
+| `internal/composition/platform_host.go` | 2 / 21 | HTTP cache-absence/status adapter and photo-client construction. |
+| `internal/composition/pool_app.go` | 2 / 37 | Raw transport parse/error wrappers and held-resource availability for restore. |
+| `internal/composition/power_rankings_app.go` | 2 / 27 | Power-row and dictionary representation; Scoring owns ranking decisions. |
+| `internal/composition/race_app.go` | 2 / 57 | Pause-resource default, held publication ports and power-result conversion. |
+| `internal/composition/refresh_app.go` | 2 / 21 | Discovery transport error and startup/worker cancellation admission. |
+| `internal/composition/report_reading.go` | 6 / 52 | Wire conversions preserve nil/empty and pointers; no report wording/selection. |
+| `internal/composition/research_archive.go` | 1 / 20 | History availability and joint capture/publication; Research owns hydrate/merge decisions. |
+| `internal/composition/research_reading.go` | 1 / 3 | PrepareResearchDepth supplies transport availability; Research owns admission. |
+| `internal/composition/research_runtime.go` | 2 / 47 | Raw archive parser/error wrapper and detached joint state capture. |
+| `internal/composition/run.go` | 3 / 55 | Wails result/status encoding, smoke-ready file error and registry construction. |
+| `internal/composition/season_app.go` | 3 / 92 | Raw fetch/parse/error adapters call inward conversion/week checks; no duplicated week predicate. |
+| `internal/composition/snapshot_app.go` | 5 / 75 | Readiness, bounded resource operations, raw normalization and absent-client capture. |
+| `internal/composition/sources_runtime.go` | 1 / 18 | Worker parent/readiness lifetime; Sources owns compile/warm/fit order. |
+| `internal/composition/trades_app.go` | 2 / 16 | Build metadata and cross-feature asset/cell representation; Trades owns team/plan decisions. |
+| `internal/composition/week_app.go` | 1 / 19 | Raw held-schedule parse/error and publication ports; Control owns week selection. |
+
+The seven source-only fingerprints have no production decision rows:
+`internal/app/core/host_archive.go`, `internal/app/core/host_commissioner.go`,
+`internal/composition/finished_scores.go`, `internal/composition/mfl_feed_cache.go`,
+`internal/composition/shell_feeds_app.go`, `internal/app/core/coretest/builder.go` and
+`internal/app/core/coretest/transport.go`. Their straight-line ports/declarations remain frozen. No source
+fingerprint was regenerated wholesale; only the two changed source digests were reviewed/updated.
+No baseline exemption, dependency, package/global or privilege was added to make the ratchet pass.
+
+
+## Part 6 — final review and verification checkpoint
+
+Source trace against `f538303a`: Market's fetch-error/archive-scope rules are inward while
+SeasonMu still spans latest-held reread and publication. Research still checks readiness before
+context/status, displays waiting before lock acquisition, samples pause after the lock, clears
+status before unlock and cancels the bounded context afterward. Default pause still resolves to
+Report's same implementation. Handler audit for all 12 added query adapters found no execute/
+browser/clear action admitted: historical handlers validate Raw scopes and read frozen Lab data;
+Control settings/news retain their existing lazy native cache fills, not an invented pure/no-I/O
+claim. CacheScopes constructs only allocation-only refresh ports and never runs them.
+
+Frontend source review retained all compound/partial-failure and per-team revision spans, failed
+parsed readings, retry behavior, persisted Market/Draft filters and local-only presentation/actions.
+It also consolidated the existing Market scope normalization into `marketScopeInput`, shared by
+provider transport and query key projection, and retained reader method receivers through closures.
+New tests assert null/all versus empty-list scope separation and receiver-dependent Control reads.
+No new UI event listener, background request, automatic retry, browser launch or write was added.
+
+Final evidence is tied to the implementation commits, with the closing change docs-only:
+
+| Check | Result |
+|---|---|
+| Full Market and Research race suites | PASS (initial exercised runs 4.601s / 3.162s; final repeat cache hits) |
+| nativegen race/freshness/admission suite | PASS (2.986s), including 36 negative cases across the 12 new adapters |
+| Filtered real composition Control/Sources/Market/Research + frozen-door/every-door parity | PASS (10.361s) |
+| Frontend query, all affected consumers/API adapters, old five consumers, filters, command importers/readability | PASS: 30 files / 332 tests |
+| TypeScript no-emit | PASS |
+| Production build, bundle budget and static CSP | PASS; eager 148,709 / 321,818 bytes; existing large lazy-chunk warning |
+| Full make lint | PASS: bloat 24/24, placement/root/transport/boundary and zero golangci-lint issues |
+| Three sequential query mutations | Correct semantic tests FAIL; each restored before the next; no scratch/mutant committed |
+
+Four new inward Go workflow tests, twelve frontend regressions and the generator's 36 negative
+subcases supplement retained integration tests; no tests were moved or removed. Hook contention
+with another golangci-lint process was handled by waiting/retrying normally, not stopping it or
+bypassing. Hooks also removed unused nolints and caught an unused forwarding helper; fixed before
+the relevant successful commits. Readability failures were line splits, with no gate relaxation.
+
+One workflow error is explicit: the shell chain for `813bf475` did not stop after TypeScript rejected
+the new test fixture's inferred Partial reader receiver. That commit therefore contains a test-only
+type error. `d77926d4` immediately types the receiver explicitly; TypeScript and affected tests pass
+there. History was not rewritten. No failing state is left at HEAD; subsequent commands use fail-fast
+shell execution. This is not reported as a passing check on the intermediate commit.
+
+Debt left: owner-run pre-push/full CI and disposable-profile live acceptance; the structural ratchet's
+semantic limits; remaining compound/hosted frontend reads, account/league/provider reset integration,
+session invalidation and live polling. Live passing means unchanged startup/backup/restore ordering,
+held-data retention and refusals, exact-cents/local-only trade plans, and scoped detail/refresh/retry
+behavior on a throwaway profile. No real MFL, GUI, installed-profile operation or Windows runtime
+review was performed here.
+
+
+### Part 6 footprint and committed handoff
+
+Baseline `f538303a`, complete affected handwritten production union: **12 paths**, **1,664 → 1,723
+physical LOC**, **62,337 → 66,632 Unicode code points including LF** (+59 LOC / +4,295 CP).
+Tests separately: **9 paths**, **1,632 → 1,979 LOC**, **73,119 → 88,272 CP** (+347 / +15,153).
+Generated read projection separately: **one path**, **187 → 1,112 LOC**, **4,313 → 29,887 CP**.
+No generated Wails binding, dependency/lockfile or lint baseline changed. These are typed migration/
+verification costs, not compression claims. Five migrated consumer files alone: **530 → 537 LOC**;
+selection, action/outcome state and per-detail identity remain owned by their wrappers.
+
+Local implementation commits (owner pushes):
+- `23c1d393` — move Market archive scope workflow inward.
+- `745d0230` — move Research refresh admission/status inward.
+- `cee93827` — share Control/Sources/scoped historical read lifecycles.
+- `697620d6` — Sources action-outcome regression and negative read-adapter admission.
+- `09d251e2` — share Market binding scope projection.
+- `813bf475` — preserve reader receivers (intermediate fixture typing failure noted above).
+- `d77926d4` — explicitly type receiver fixture; final implementation candidate.
+
+Final frontend batch after the receiver/projection follow-ups: **30 files / 332 tests PASS**;
+TypeScript, production build, budget, static CSP and frontend transport guard PASS. The full Go
+lint/guards and race evidence above covers unchanged Go sources. Closing commit is docs-only.
+No push/pre-push/CI, PR, merge or HANDOFF.md edit; no uncommitted implementation remains.

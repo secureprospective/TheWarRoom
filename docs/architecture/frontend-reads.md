@@ -164,3 +164,10 @@ failed while that read was pending; the action's per-scope outcome remains displ
 A real DOM/state regression covers that interleaving. Generator admission now individually rejects
 execute mode, non-read gravity and removal for each of the 12 newly migrated registry adapters
 (36 negative cases), not merely for the original Comms adapter.
+
+
+Final source review shares the existing Market null-to-array binding projection between provider
+and query keys (`marketScopeInput`); UI selections remain distinct in the cache key. Reader ports
+retain their original method receiver through closures; a receiver-dependent Control regression
+covers this. The final candidate's TypeScript check passes; the intermediate receiver-fixture typing
+failure and immediate repair are recorded explicitly in app-boundary.md.
