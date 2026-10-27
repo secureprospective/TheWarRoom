@@ -147,12 +147,12 @@ func TestRolloverDateMovesUntilItPasses(t *testing.T) {
 	b := newLedger(t, PresetLegacy)
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	b.set("calendar.rollover", `"2027-03-05T05:00:00Z"`, "now", seasonMoment(3))
-	starts, err := rolloverInstants(b.records)
+	starts, err := RolloverInstants(b.records)
 	if err != nil || len(starts) != 1 || !starts[0].Equal(time.Date(2027, 3, 5, 5, 0, 0, 0, time.UTC)) {
 		t.Fatalf("a corrected date became a second season: %v %v", starts, err)
 	}
 	b.set("calendar.rollover", `"2028-03-01T05:00:00Z"`, "now", time.Date(2027, 3, 6, 0, 0, 0, 0, time.UTC))
-	starts, err = rolloverInstants(b.records)
+	starts, err = RolloverInstants(b.records)
 	if err != nil || len(starts) != 2 {
 		t.Fatalf("a date set after the rollover passed did not schedule the next: %v %v", starts, err)
 	}
@@ -269,7 +269,7 @@ func TestFutureRolloverCorrectionDoesNotRedateThePast(t *testing.T) {
 	b.set("calendar.rollover", rolloverAt, "now", seasonMoment(2))
 	b.set("calendar.rollover", `"2027-04-01T05:00:00Z"`, "now", time.Date(2027, 2, 1, 0, 0, 0, 0, time.UTC))
 	at := seasonMoment(3)
-	starts, err := rolloverInstants(recordsThrough(b.records, at))
+	starts, err := RolloverInstants(RecordsThrough(b.records, at))
 	if err != nil || len(starts) != 1 || starts[0].Month() != time.March {
 		t.Fatalf("future correction changed the date held at a past instant: %v %v", starts, err)
 	}

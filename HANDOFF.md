@@ -1,26 +1,21 @@
 # Handoff
 
 ## Baton
-Christopher — 2026-10-27, `session/revamp-P6-market`. Local only; do not push.
+Bee — 2026-10-27, `session/revamp-P6-market`. Local only; do not push.
 
 ## Where it stands
-- Step 3b: ten frame-taking operations split from existing entry points, with staged construction, authorization, correction timing, early returns and trade governance-before-rules retained. Commit d662ac6a. No market package move yet.
-- Targeted commissioner, history and leagueservice tests, composition market filter, hosted/worker filter, build, placement and bloat passed. Testdata diff from 78b2c4ad empty. No mutant or full suite run.
+- Step 3b and staged Frame seam committed through `9a5ce1ac`; keep the seam.
+- Step 4 moves the market judgment layer and its tests into `internal/commissioner/market`. Fold, persisted types and visibility predicates stay in commissioner; the closed-books round-trip uses an external test and test-only bridge. Body goldens are byte-identical R100 renames.
+- Commissioner/history/leagueservice targeted tests, build, vet, `TestMarketBodies` and `make lint` pass. Boundary fingerprints were reviewed for moved return types in core host and composition host.
 
 ## Next move
-Resolve the step-4 Frame construction seam, then move the judgment layer; preserve ledger visibility predicates in commissioner and run the sealed-bid mutant proof.
+- Run the sealed-bid visibility mutant and restore it. If detected, proceed with steps 5–6 and their proof.
 
 ## Blocked on
-The proposed eager `NewFrame` cannot represent the existing correction-time and error-order contracts: it always folds without the correction time and eagerly loads rules and governance, while owner readings authorize before folding and several paths return before those loads. Frame construction and staged loading must be exposed or orchestrated without changing those contracts before callers can pass a Frame across packages.
+- Nothing currently. Do not run the full test suite or push; push runs full verification later.
 
 ## Tried and rejected
-- Unconditionally calling eager `NewFrame` changes authorization/error precedence and correction timing; retained staged loading instead.
-
-## Staged Frame contract
-- Callers authorize and filter records before NewFrame; command guards remain before folding.
-- NewFrame folds once, loading neither rules nor governance.
-- Optional correctionAt preserves requested correction time; omission uses the final record time.
-- Operations call ReadRules/ReadGovernance at their existing stages, including early returns.
-- Trades load governance before rules; Gate and Trial retain their existing timing.
-- Records are transaction-held inputs; Frame does not write them or register callbacks.
-- The fold, wire bodies, visibility predicates and core-called book helpers stay in commissioner.
+- Eager rules/governance construction changes error precedence; staged readers retain ordering. Quote's `ReadNativeBase` remains staged for governance → directory → fold → rules.
+- Same-package commissioner tests importing market create a cycle; market tests moved, core round-trip uses an external test.
+- Wrapcheck errors at the new boundary cannot be wrapped without changing user-visible refusals; annotated individual returns.
+- Contract action writes rules fields; leave it in core for the rules session.

@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -20,8 +22,8 @@ func addBooksReadings(t *testing.T, s *Store, g *bigLeagueBuilder, probes map[st
 		return commissioner.NativeLineupCheckReading(commissioner.RawNativeLineup{League: bigLeagueID, Franchise: team}, r, at, g.facts)
 	})
 	for _, command := range []string{commissioner.WaiverProcess, commissioner.BidsProcess, commissioner.TradeReview} {
-		probes["market/"+command] = readingProbe(func(r []commissioner.Record) (commissioner.Market, error) {
-			return commissioner.MarketReading(bigLeagueID, command, "creator", r, at, time.UTC, g.facts)
+		probes["market/"+command] = readingProbe(func(r []commissioner.Record) (market.Market, error) {
+			return market.ChoicesReading(bigLeagueID, command, "creator", r, at, time.UTC, g.facts)
 		})
 	}
 	for _, kind := range []string{"setup", "rules", "people", "notices", "corrections"} {

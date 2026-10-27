@@ -16,7 +16,7 @@ type Frame struct {
 	Records []Record
 	At      time.Time
 	Assets  NativeAssets
-	Book    waiverState
+	Book    MarketBook
 	Rules   leaguerules.RuleSet
 	Govern  governance.State
 	Facts   nativecheck.Facts
@@ -76,5 +76,5 @@ func (f Frame) Trial(raw RawCommand, principal string) (NativeAssets, error) {
 
 // Exceptions returns the applicable recorded decisions.
 func (f Frame) Exceptions(scope ExceptionScope) []nativecheck.DecisionException {
-	return scopedDecisionExceptions(f.Records, scope, f.At)
+	return ScopedDecisionExceptions(f.Records, scope, f.At)
 }

@@ -1,10 +1,11 @@
-package commissioner
+package market
 
 import (
 	"math"
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -15,7 +16,7 @@ func TestNativeWaiverDeadMoneyUsesConfiguredRateAndPerCellQuantum(t *testing.T) 
 	rules.Season = 2026
 	rules.Contracts.DeadCap = leaguerules.Known[leaguerules.Decimal](3500)
 	rules.Cap.Quantum = leaguerules.Known[leaguerules.Money](1000000)
-	player := NativePlayer{Salary: 105000000, ExpirationYear: 2028}
+	player := commissioner.NativePlayer{Salary: 105000000, ExpirationYear: 2028}
 	// $367,500 per cell rounds to $370,000, then two future cells are counted.
 	amount, err := waiverDeadMoney(player, rules)
 	if err != nil || amount != 74000000 {
@@ -52,9 +53,9 @@ func TestNativeWaiverOwnClaimCountsReliefWithoutMutatingAssets(t *testing.T) {
 	rules.Contracts.ClaimClearsDeadCap = leaguerules.Known(true)
 	rules.Cap.Amount = leaguerules.Known[leaguerules.Money](100000000)
 	rules.Cap.Enforcement = leaguerules.Known(leaguerules.HardCap)
-	seed := &RawNativeSnapshot{Players: []NativePlayer{}, Adjustments: []NativeCharge{
+	seed := &commissioner.RawNativeSnapshot{Players: []commissioner.NativePlayer{}, Adjustments: []commissioner.NativeCharge{
 		{ID: "cut", Franchise: "one", Season: 2026, Amount: 70000000}}}
-	w := &waiverWindow{ID: "cut", Season: 2026, Player: NativePlayer{ID: "1000", Franchise: "one", Salary: 100000000}}
+	w := &commissioner.WaiverWindow{ID: "cut", Season: 2026, Player: commissioner.NativePlayer{ID: "1000", Franchise: "one", Salary: 100000000}}
 	if err := waiverClaimAllows(seed, rules, w, "one", nativecheck.Facts{}, time.UTC); err != nil {
 		t.Fatal(err)
 	}

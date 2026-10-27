@@ -33,7 +33,7 @@ type NativeReserveCheck struct {
 // NativeReserveCheckReading is public: every owner may read who must leave a reserve squad. It judges
 // this league's rules only; it makes no promise about what MFL would accept.
 func NativeReserveCheckReading(league string, records []Record, now time.Time, facts nativecheck.Facts) (NativeReserveCheck, error) {
-	base, err := readNativeBase(league, records, now)
+	base, err := ReadNativeBase(league, records, now)
 	if err != nil {
 		return NativeReserveCheck{}, err
 	}
@@ -42,17 +42,17 @@ func NativeReserveCheckReading(league string, records []Record, now time.Time, f
 		return NativeReserveCheck{}, err
 	}
 	out := NativeReserveCheck{Corrections: changes.Items, League: league, Name: Replay(records).Name, Revision: int64(len(records)),
-		RulesSeason: base.rules.Season, Seeded: base.assets.Seeded, Source: base.source(),
-		Rules: ruleLines(base.rules, "ir.slots", "ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.slots",
+		RulesSeason: base.Rules.Season, Seeded: base.Assets.Seeded, Source: base.source(),
+		Rules: RuleLines(base.Rules, "ir.slots", "ir.eligible", "ir.mustLeaveHealthy", "ir.autoReturn", "taxi.slots",
 			"taxi.maximumYears", "taxi.basis", "taxi.autoPromote"),
 		Franchises: []NativeReserveFranchise{}}
-	if !base.assets.Seeded {
+	if !base.Assets.Seeded {
 		return out, nil
 	}
-	out.RosterSeason = base.assets.Snapshot.Season
+	out.RosterSeason = base.Assets.Snapshot.Season
 	players := base.playersOf()
-	for _, seat := range base.directory.Franchises {
-		check := nativecheck.CheckReserves(base.rules.IR, base.rules.Taxi, out.RulesSeason,
+	for _, seat := range base.Directory.Franchises {
+		check := nativecheck.CheckReserves(base.Rules.IR, base.Rules.Taxi, out.RulesSeason,
 			players[seat.Franchise], facts)
 		if err := applyReserveExceptions(check.Players, records, now); err != nil {
 			return NativeReserveCheck{}, err

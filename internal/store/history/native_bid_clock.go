@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -32,7 +34,7 @@ func (s *Store) ProcessDueBids(ctx context.Context, league string, facts nativec
 	if err != nil {
 		return err
 	}
-	due, err := commissioner.DueBids(league, records, s.now(), facts)
+	due, err := market.DueBids(league, records, s.now(), facts)
 	if err != nil {
 		return fmt.Errorf("read due bids: %w", err)
 	}

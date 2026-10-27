@@ -46,7 +46,7 @@ func TestMarketFrame(t *testing.T) {
 		t.Fatalf("seed refusal: %v", err)
 	}
 	scope := ExceptionScope{Franchise: "franchise.01"}
-	if !reflect.DeepEqual(f.Exceptions(scope), scopedDecisionExceptions(records, scope, fixture.now)) {
+	if !reflect.DeepEqual(f.Exceptions(scope), ScopedDecisionExceptions(records, scope, fixture.now)) {
 		t.Fatal("exceptions differ")
 	}
 	raw := RawCommand{League: rolloverLeague, Command: "unrelated", Request: "frame-test"}
@@ -59,42 +59,6 @@ func TestMarketFrame(t *testing.T) {
 	}
 	if !reflect.DeepEqual(records, before) {
 		t.Fatal("trial changed records")
-	}
-}
-
-func TestMarketDueWithoutSeed(t *testing.T) {
-	records := legacyLeague(t)
-	if got, err := DueBids("native.test", records, noChangeTime(), nil); err != nil || len(got) != 0 {
-		t.Fatalf("bids: %v %v", got, err)
-	}
-	if got, err := DueWaiverWindows("native.test", records, noChangeTime()); err != nil || len(got) != 0 {
-		t.Fatalf("waivers: %v %v", got, err)
-	}
-	if got, err := NextDueDeadline("native.test", records, noChangeTime()); err != nil || !got.IsZero() {
-		t.Fatalf("deadline: %v %v", got, err)
-	}
-}
-
-func TestFrameDefersRulesAndPreservesEarlyReturns(t *testing.T) {
-	records := legacyLeague(t)
-	records = append(records, Record{Command: RawCommand{League: "native.test", Command: RulesSet,
-		Args: RawArgs{Field: "cap.amount", Value: []byte(`"invalid"`)}, Effective: "now"},
-		Receipt: Receipt{Entry: "bad-rule", RecordedAt: noChangeTime()}})
-	f, err := NewFrame("native.test", records, noChangeTime(), nil, time.UTC)
-	if err != nil {
-		t.Fatalf("fold loaded rules: %v", err)
-	}
-	if err := f.ReadRules(); err == nil {
-		t.Fatal("invalid rules accepted")
-	}
-	if got, err := dueBidsFrame(f); err != nil || len(got) != 0 {
-		t.Fatalf("unseeded bids loaded rules: %v %v", got, err)
-	}
-	if got, err := dueWaiverWindowsFrame(f); err != nil || len(got) != 0 {
-		t.Fatalf("unseeded waivers loaded rules: %v %v", got, err)
-	}
-	if got, err := nextDueDeadlineFrame(f); err != nil || !got.IsZero() {
-		t.Fatalf("unseeded deadline loaded rules: %v %v", got, err)
 	}
 }
 

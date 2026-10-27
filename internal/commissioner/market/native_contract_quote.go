@@ -1,10 +1,11 @@
-package commissioner
+package market
 
 import (
 	"errors"
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -26,7 +27,8 @@ type RawContractQuote struct {
 }
 
 func (r RawContractQuote) Validate() error {
-	if err := (RawNativeCapScope{League: r.League, ViewerZone: r.ViewerZone}).Validate(); err != nil {
+	if err := (commissioner.RawNativeCapScope{League: r.League, ViewerZone: r.ViewerZone}).Validate(); err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	id, err := playerid.New(r.Player)
@@ -99,17 +101,20 @@ func OwnerContractWindow(action nativecheck.ContractAction) (leaguerules.Action,
 
 // ContractActionOn is the owner's first check before an action: the league must have it on. It is the
 // same switch the quote reads, so a quote and a start can never disagree about what is on.
-func ContractActionOn(records []Record, now time.Time, action nativecheck.ContractAction) error {
-	rules, err := RulesNow(records, now)
+func ContractActionOn(records []commissioner.Record, now time.Time, action nativecheck.ContractAction) error {
+	rules, err := commissioner.RulesNow(records, now)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return err
 	}
 	refusal, needs := nativecheck.Availability(rules.Contracts, action)
 	switch {
 	case refusal != "":
-		return Refused(errors.New(refusal))
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return commissioner.Refused(errors.New(refusal))
 	case needs != "":
-		return Refused(errors.New(needs))
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return commissioner.Refused(errors.New(needs))
 	}
 	return nil
 }
@@ -117,26 +122,29 @@ func ContractActionOn(records []Record, now time.Time, action nativecheck.Contra
 // QuoteContract is the one check for a native contract action. The preview reads it; the owner action
 // will run it, so both ask the calendar's gate, count the same limits, price with the same rules and judge
 // the same cap. A shut gate keeps the action refused even when its price is plain.
-func QuoteContract(raw RawContractQuote, records []Record, now time.Time, local *time.Location,
+func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time.Time, local *time.Location,
 	facts nativecheck.Facts) (ContractQuote, error) {
 	if err := raw.Validate(); err != nil {
 		return ContractQuote{}, err
 	}
-	base, err := readNativeBase(raw.League, records, now)
+	base, err := commissioner.ReadNativeBase(raw.League, records, now)
 	if err != nil {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, err
 	}
-	if !base.assets.Seeded {
-		return ContractQuote{}, Refused(fmt.Errorf("this app league has no recorded rosters to quote"))
+	if !base.Assets.Seeded {
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return ContractQuote{}, commissioner.Refused(fmt.Errorf("this app league has no recorded rosters to quote"))
 	}
-	player, ok := recordedPlayer(base.assets.Snapshot, raw.Player)
+	player, ok := recordedPlayer(base.Assets.Snapshot, raw.Player)
 	if !ok {
-		return ContractQuote{}, Refused(fmt.Errorf("choose a player on this app league's recorded roster"))
+		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+		return ContractQuote{}, commissioner.Refused(fmt.Errorf("choose a player on this app league's recorded roster"))
 	}
 	action := nativecheck.ContractAction(raw.Action)
-	gate := Gate{Open: true}
+	gate := commissioner.Gate{Open: true}
 	if window, gated := windowAction(action); gated {
-		gate, err = NativeActionGate(raw.League, records, player.Franchise, window, now, local)
+		gate, err = commissioner.NativeActionGate(raw.League, records, player.Franchise, window, now, local)
 		if err != nil {
 			return ContractQuote{}, fmt.Errorf("ask the league calendar: %w", err)
 		}
@@ -146,22 +154,22 @@ func QuoteContract(raw RawContractQuote, records []Record, now time.Time, local 
 	return checkContract(in)
 }
 
-func recordedPlayer(seed *RawNativeSnapshot, id string) (NativePlayer, bool) {
+func recordedPlayer(seed *commissioner.RawNativeSnapshot, id string) (commissioner.NativePlayer, bool) {
 	for _, p := range seed.Players {
 		if p.ID == id {
 			return p, true
 		}
 	}
-	return NativePlayer{}, false
+	return commissioner.NativePlayer{}, false
 }
 
 // contractCheck is what checkContract judges: the rules and rosters, the player, and the calendar's answer.
 type contractCheck struct {
 	raw      RawContractQuote
 	action   nativecheck.ContractAction
-	base     nativeBase
-	player   NativePlayer
-	gate     Gate
+	base     commissioner.NativeBase
+	player   commissioner.NativePlayer
+	gate     commissioner.Gate
 	facts    nativecheck.Facts
 	revision int64
 	zone     *time.Location
@@ -177,13 +185,13 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 	}
 	// No owner contract action is recorded in the ledger yet, so nothing has been used and no contract has
 	// been restructured, extended or tagged in the app league. The recording step fills this in.
-	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.rules,
+	priced, err := nativecheck.PriceContract(nativecheck.Input{Rules: in.base.Rules,
 		Contract: nativecheck.Contract{Player: in.player.ID, Name: name, Position: fact.Position,
 			PositionHeld: fact.Position != "", Salary: in.player.Salary, Expiration: in.player.ExpirationYear,
 			Status: in.player.ContractStatus},
 		Ask: nativecheck.Ask{Years: in.raw.Years, Level: in.raw.Level, Move: in.raw.MoveCents,
 			Amount: in.raw.AmountCents, Reason: in.raw.Reason},
-		Market: positionSalaries(in.base.assets.Snapshot, in.facts, fact.Position)}, in.action)
+		Market: positionSalaries(in.base.Assets.Snapshot, in.facts, fact.Position)}, in.action)
 	if err != nil {
 		return ContractQuote{}, fmt.Errorf("price the contract action: %w", err)
 	}
@@ -199,14 +207,14 @@ func checkContract(in contractCheck) (ContractQuote, error) {
 }
 
 func (in contractCheck) quoteFrom(name string, p nativecheck.Pricing) ContractQuote {
-	q := ContractQuote{League: in.raw.League, Revision: in.revision, Season: in.base.rules.Season,
+	q := ContractQuote{League: in.raw.League, Revision: in.revision, Season: in.base.Rules.Season,
 		Player: in.player.ID, Name: name, Franchise: in.player.Franchise, Action: in.raw.Action,
 		ActionName: in.action.Name(), Needs: append([]string{}, p.Needs...), Years: p.Years, SalaryCent: p.Salary,
 		Salaries:  append([]nativecheck.SeasonAmount{}, p.Schedule...),
 		DeadMoney: append([]nativecheck.SeasonAmount{}, p.Dead...), Relief: p.Relief,
 		Basis: append([]string{}, p.Basis...), Notes: append([]string{}, p.Notes...),
 		Source: "App league; priced from this league's own rules and recorded contract, never from MFL"}
-	for _, seat := range in.base.directory.Franchises {
+	for _, seat := range in.base.Directory.Franchises {
 		if seat.Franchise == in.player.Franchise {
 			q.Franchise = seat.Name
 		}
@@ -230,7 +238,7 @@ func (in contractCheck) decide(q *ContractQuote, refusal string, capRefused bool
 	q.Allowed = q.Reason == ""
 }
 
-func positionSalaries(seed *RawNativeSnapshot, facts nativecheck.Facts, position leaguerules.Position) []domain.Money {
+func positionSalaries(seed *commissioner.RawNativeSnapshot, facts nativecheck.Facts, position leaguerules.Position) []domain.Money {
 	if position == "" {
 		return nil
 	}

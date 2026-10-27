@@ -1,9 +1,10 @@
-package commissioner
+package market
 
 import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -12,22 +13,22 @@ import (
 const quoteMillion = domain.Money(100_000_000)
 
 // quoteBase is one franchise with an active player (0099) and a taxi player (0100), each $10M through 2029.
-func quoteBase() nativeBase {
+func quoteBase() commissioner.NativeBase {
 	rules := leaguerules.LegacyNFL()
 	rules.Season = 2026
-	seed := &RawNativeSnapshot{Season: 2026, Players: []NativePlayer{
+	seed := &commissioner.RawNativeSnapshot{Season: 2026, Players: []commissioner.NativePlayer{
 		{ID: "0099", Franchise: "franchise.01", Status: domain.RosterActive, Salary: 10 * quoteMillion,
 			ExpirationYear: 2029, ContractStatus: domain.CStatusUFA},
 		{ID: "0100", Franchise: "franchise.01", Status: domain.RosterTaxi, Salary: 10 * quoteMillion,
 			ExpirationYear: 2029, ContractStatus: domain.CStatusUFA}}}
-	seat := NativeDirectorySeat{PeopleSeat: PeopleSeat{Franchise: "franchise.01", Name: "Franchise One"}}
-	return nativeBase{assets: NativeAssets{Seeded: true, Snapshot: seed},
-		directory: NativeDirectory{Franchises: []NativeDirectorySeat{seat}}, rules: rules}
+	seat := commissioner.NativeDirectorySeat{PeopleSeat: commissioner.PeopleSeat{Franchise: "franchise.01", Name: "Franchise One"}}
+	return commissioner.NativeBase{Assets: commissioner.NativeAssets{Seeded: true, Snapshot: seed},
+		Directory: commissioner.NativeDirectory{Franchises: []commissioner.NativeDirectorySeat{seat}}, Rules: rules}
 }
 
-func quoteOf(t *testing.T, base nativeBase, player, action string, gate Gate) ContractQuote {
+func quoteOf(t *testing.T, base commissioner.NativeBase, player, action string, gate commissioner.Gate) ContractQuote {
 	t.Helper()
-	held, ok := recordedPlayer(base.assets.Snapshot, player)
+	held, ok := recordedPlayer(base.Assets.Snapshot, player)
 	if !ok {
 		t.Fatal("no such player")
 	}
@@ -39,7 +40,7 @@ func quoteOf(t *testing.T, base nativeBase, player, action string, gate Gate) Co
 	return q
 }
 
-func openGate() Gate { return Gate{Open: true} }
+func openGate() commissioner.Gate { return commissioner.Gate{Open: true} }
 
 func TestContractQuoteWaitsForTheCalendarButStillShowsThePrice(t *testing.T) {
 	base := quoteBase()
@@ -48,14 +49,14 @@ func TestContractQuoteWaitsForTheCalendarButStillShowsThePrice(t *testing.T) {
 		open.Franchise != "Franchise One" || open.Cap == nil {
 		t.Fatalf("open quote: %+v", open)
 	}
-	shut := quoteOf(t, base, "0099", "buyout", Gate{Sentence: "This action opens with the cut_buyout window on Aug 25, 2026 at 12:00 AM UTC."})
+	shut := quoteOf(t, base, "0099", "buyout", commissioner.Gate{Sentence: "This action opens with the cut_buyout window on Aug 25, 2026 at 12:00 AM UTC."})
 	if shut.Allowed || shut.Reason != "This action opens with the cut_buyout window on Aug 25, 2026 at 12:00 AM UTC." ||
 		len(shut.DeadMoney) != 1 {
 		t.Fatalf("a shut window must refuse and still show the price: %+v", shut)
 	}
 	// A refusal about the contract itself outranks a shut window: the window would not help.
-	base.rules.Contracts.Buyout.Value.Enabled = leaguerules.Known(false)
-	off := quoteOf(t, base, "0099", "buyout", Gate{Sentence: "shut"})
+	base.Rules.Contracts.Buyout.Value.Enabled = leaguerules.Known(false)
+	off := quoteOf(t, base, "0099", "buyout", commissioner.Gate{Sentence: "shut"})
 	if off.Allowed || !strings.Contains(off.Reason, "turned off") || len(off.DeadMoney) != 0 || off.Cap != nil {
 		t.Fatalf("a switched-off action: %+v", off)
 	}
@@ -70,14 +71,14 @@ func TestContractQuoteCapEffectAndHardCap(t *testing.T) {
 		t.Fatalf("cap effect: %+v", q.Cap)
 	}
 	// A taxi player counts at 0 percent here, so his buyout charge is new counted salary.
-	base.rules.Cap.TaxiShare = leaguerules.Known(leaguerules.Decimal(0))
-	base.rules.Cap.Amount = leaguerules.Known(leaguerules.Money(15 * quoteMillion))
+	base.Rules.Cap.TaxiShare = leaguerules.Known(leaguerules.Decimal(0))
+	base.Rules.Cap.Amount = leaguerules.Known(leaguerules.Money(15 * quoteMillion))
 	hard := quoteOf(t, base, "0100", "buyout", openGate())
 	if hard.Allowed || *hard.Cap.ChangeCents != 75*quoteMillion/10 ||
 		hard.Reason != hard.Cap.Words || !strings.Contains(hard.Reason, "ends over the salary cap is refused") {
 		t.Fatalf("a hard cap must refuse the buyout: %+v", hard)
 	}
-	base.rules.Cap.Amount = leaguerules.Known(leaguerules.Money(18 * quoteMillion))
+	base.Rules.Cap.Amount = leaguerules.Known(leaguerules.Money(18 * quoteMillion))
 	if fits := quoteOf(t, base, "0100", "buyout", openGate()); !fits.Allowed {
 		t.Fatalf("a buyout that ends at $17.5M fits an $18M cap: %+v", fits)
 	}
@@ -85,14 +86,14 @@ func TestContractQuoteCapEffectAndHardCap(t *testing.T) {
 
 func TestContractQuoteSoftCapFlagsAndMissingCapRulingStops(t *testing.T) {
 	base := quoteBase()
-	base.rules.Cap.TaxiShare = leaguerules.Known(leaguerules.Decimal(0))
-	base.rules.Cap.Amount = leaguerules.Known(leaguerules.Money(15 * quoteMillion))
-	base.rules.Cap.Enforcement = leaguerules.Known(leaguerules.SoftCap)
+	base.Rules.Cap.TaxiShare = leaguerules.Known(leaguerules.Decimal(0))
+	base.Rules.Cap.Amount = leaguerules.Known(leaguerules.Money(15 * quoteMillion))
+	base.Rules.Cap.Enforcement = leaguerules.Known(leaguerules.SoftCap)
 	soft := quoteOf(t, base, "0100", "buyout", openGate())
 	if !soft.Allowed || !strings.Contains(soft.Cap.Words, "Over the salary cap: flagged") {
 		t.Fatalf("a soft cap flags and allows: %+v", soft)
 	}
-	base.rules.Cap.Amount = leaguerules.Needs[leaguerules.Money]("test")
+	base.Rules.Cap.Amount = leaguerules.Needs[leaguerules.Money]("test")
 	needs := quoteOf(t, base, "0100", "buyout", openGate())
 	if needs.Allowed || len(needs.Needs) != 1 || !strings.HasPrefix(needs.Reason, "Needs a ruling: the salary cap") {
 		t.Fatalf("an unruled cap must stop the quote: %+v", needs)

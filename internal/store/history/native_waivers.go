@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -16,7 +18,7 @@ func (s *Store) StandingsOrder(ctx context.Context, league string, season int, a
 	if err != nil {
 		return nil, err
 	}
-	order, err := commissioner.RecordedStandingsOrder(league, records, season, at)
+	order, err := market.RecordedStandingsOrder(league, records, season, at)
 	if err != nil {
 		return nil, fmt.Errorf("read native standings order: %w", err)
 	}
@@ -24,14 +26,14 @@ func (s *Store) StandingsOrder(ctx context.Context, league string, season int, a
 }
 
 func (s *Store) NativeWaivers(ctx context.Context, league, franchise, principal string, at time.Time,
-	zone *time.Location, facts nativecheck.Facts) (commissioner.NativeWaivers, error) {
+	zone *time.Location, facts nativecheck.Facts) (market.NativeWaivers, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
-		return commissioner.NativeWaivers{}, err
+		return market.NativeWaivers{}, err
 	}
-	reading, err := commissioner.NativeWaiversReading(league, franchise, principal, records, at, zone, facts)
+	reading, err := market.NativeWaiversReading(league, franchise, principal, records, at, zone, facts)
 	if err != nil {
-		return commissioner.NativeWaivers{}, fmt.Errorf("read native waivers: %w", err)
+		return market.NativeWaivers{}, fmt.Errorf("read native waivers: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	return reading, nil
@@ -53,7 +55,7 @@ func (s *Store) ProcessDueWaivers(ctx context.Context, league string, facts nati
 	if err != nil {
 		return err
 	}
-	due, err := commissioner.DueWaiverWindows(league, records, s.now())
+	due, err := market.DueWaiverWindows(league, records, s.now())
 	if err != nil {
 		return fmt.Errorf("read due waivers: %w", err)
 	}
@@ -75,14 +77,14 @@ func (s *Store) ProcessDueWaivers(ctx context.Context, league string, facts nati
 
 // NativeBids reads the open and decided bids as one franchise's owner is allowed to see them.
 func (s *Store) NativeBids(ctx context.Context, league, franchise, principal string, at time.Time,
-	zone *time.Location, facts nativecheck.Facts) (commissioner.NativeBids, error) {
+	zone *time.Location, facts nativecheck.Facts) (market.NativeBids, error) {
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
-		return commissioner.NativeBids{}, err
+		return market.NativeBids{}, err
 	}
-	reading, err := commissioner.NativeBidsReading(league, franchise, principal, records, at, zone, facts)
+	reading, err := market.NativeBidsReading(league, franchise, principal, records, at, zone, facts)
 	if err != nil {
-		return commissioner.NativeBids{}, fmt.Errorf("read native bids: %w", err)
+		return market.NativeBids{}, fmt.Errorf("read native bids: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
 	if s.bidEnv != nil {
@@ -92,7 +94,7 @@ func (s *Store) NativeBids(ctx context.Context, league, franchise, principal str
 			return reading, nil
 		}
 		if err != nil {
-			return commissioner.NativeBids{}, fmt.Errorf("read bidding season: %w", err)
+			return market.NativeBids{}, fmt.Errorf("read bidding season: %w", err)
 		}
 		if env.Season.Offseason {
 			reading.Notes = append(reading.Notes, "It is the offseason: the week limits on multi-year and playoff-only bidding do not apply.")

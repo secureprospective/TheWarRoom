@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 
@@ -104,39 +106,39 @@ type BidSource struct {
 	Bracket  func(context.Context, string, int) (commissioner.NativeBracket, error)
 }
 
-func ReadBidEnvironment(ctx context.Context, source BidSource, league string, at time.Time) (commissioner.BidEnvironment, error) {
+func ReadBidEnvironment(ctx context.Context, source BidSource, league string, at time.Time) (market.BidEnvironment, error) {
 	records, err := source.Records(ctx, league)
 	if err != nil {
-		return commissioner.BidEnvironment{}, err
+		return market.BidEnvironment{}, err
 	}
 	season, err := commissioner.SeasonAt(records, commissioner.ReadingInstant(records, at))
 	if err != nil {
-		return commissioner.BidEnvironment{}, fmt.Errorf("read the league season: %w", err)
+		return market.BidEnvironment{}, fmt.Errorf("read the league season: %w", err)
 	}
 	weeks, err := source.Schedule(ctx, season, at)
 	if err != nil {
-		return commissioner.BidEnvironment{}, err
+		return market.BidEnvironment{}, err
 	}
 	phase := WeekAt(weeks, at)
 	if !phase.WeekKnown && !phase.Offseason {
-		phase.Offseason, err = commissioner.BidOffseasonAt(records, at, season)
+		phase.Offseason, err = market.BidOffseasonAt(records, at, season)
 		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
+			return market.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
 		}
 	}
 	field := map[string]nativecheck.PlayoffStanding{}
 	if phase.WeekKnown {
 		bracket, err := source.Bracket(ctx, league, season)
 		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
+			return market.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
 		}
 		directory, err := commissioner.NativeDirectoryReading(league, records, at)
 		if err != nil {
-			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
+			return market.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
 		}
 		field = PlayoffField(bracket, directory)
 	}
-	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
+	return market.BidEnvironment{Season: phase, Playoff: field}, nil
 }
 
 func OwnerZone(zone *time.Location) *time.Location {

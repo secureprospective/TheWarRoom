@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -227,7 +229,7 @@ func projectionDigests(projections []history.TransferProjection) (ProjectionDige
 	roster := make([]commissioner.NativeAssets, 0, len(projections))
 	capReadings := make([]commissioner.NativeCapCheck, 0, len(projections))
 	lineups := [][]commissioner.NativeLineup{}
-	bids := [][]commissioner.NativeBids{}
+	bids := [][]market.NativeBids{}
 	results := [][]commissioner.NativeResults{}
 	standings := []commissioner.NativeStandings{}
 	for _, p := range projections {

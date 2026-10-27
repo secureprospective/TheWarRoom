@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"slices"
 	"time"
 
@@ -138,7 +140,7 @@ type ContractOwnerAction struct {
 func ContractOwnerActions() []ContractOwnerAction {
 	var out []ContractOwnerAction
 	for _, action := range nativecheck.ContractActions() {
-		window, gated := commissioner.OwnerContractWindow(action)
+		window, gated := market.OwnerContractWindow(action)
 		if !gated {
 			continue
 		}
@@ -153,7 +155,7 @@ func StartContractAction(ctx context.Context, permit commissioner.Permit, action
 	if err != nil {
 		return err
 	}
-	if err := commissioner.ContractActionOn(records, now(), action); err != nil {
+	if err := market.ContractActionOn(records, now(), action); err != nil {
 		return fmt.Errorf("start %s: %w", action.Name(), err)
 	}
 	return nil

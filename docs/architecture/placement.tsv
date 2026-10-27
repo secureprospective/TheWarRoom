@@ -20,6 +20,7 @@ internal/app/report	platform
 internal/app/season	platform
 internal/archive	archive
 internal/commissioner	commissioner
+internal/commissioner/market	commissioner
 internal/db	platform
 internal/domain	core
 internal/engine	scoring

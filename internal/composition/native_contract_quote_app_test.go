@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
@@ -78,10 +80,10 @@ func (f *legalityFixture) openWindow(t *testing.T, id string, opens []leaguerule
 }
 
 // quote reads the actual quote at the fixed clock, for player and action, asking whatever ask sets.
-func (f *legalityFixture) quote(t *testing.T, player, action string, ask func(*commissioner.RawContractQuote)) commissioner.ContractQuote {
+func (f *legalityFixture) quote(t *testing.T, player, action string, ask func(*market.RawContractQuote)) market.ContractQuote {
 	t.Helper()
 	f.app.core.ClockNow = quoteClock
-	raw := commissioner.RawContractQuote{League: legalityLeague, Player: player, Action: action, ViewerZone: "UTC"}
+	raw := market.RawContractQuote{League: legalityLeague, Player: player, Action: action, ViewerZone: "UTC"}
 	if ask != nil {
 		ask(&raw)
 	}
@@ -126,7 +128,7 @@ func (f *legalityFixture) setAction(t *testing.T, action, params string, on bool
 }
 
 // priceOf is the one figure a case watches, as plain text.
-type priceOf func(commissioner.ContractQuote) string
+type priceOf func(market.ContractQuote) string
 
 func cents(m *domain.Money) string {
 	if m == nil {
@@ -135,14 +137,14 @@ func cents(m *domain.Money) string {
 	return fmt.Sprint(int64(*m))
 }
 
-func deadCents(q commissioner.ContractQuote) string {
+func deadCents(q market.ContractQuote) string {
 	if len(q.DeadMoney) == 0 {
 		return "none"
 	}
 	return fmt.Sprint(int64(q.DeadMoney[0].Cents))
 }
 
-func verdict(q commissioner.ContractQuote, figure string) string {
+func verdict(q market.ContractQuote, figure string) string {
 	if !q.Allowed {
 		return "refused: " + q.Reason
 	}
@@ -151,60 +153,60 @@ func verdict(q commissioner.ContractQuote, figure string) string {
 
 type quoteCase struct {
 	name, action, player, field string
-	ask                         func(*commissioner.RawContractQuote)
+	ask                         func(*market.RawContractQuote)
 	patch                       map[string]string
 	price                       priceOf
 	before, after               string
 }
 
 func quoteCases() []quoteCase {
-	asLevel := func(level, years int) func(*commissioner.RawContractQuote) {
-		return func(r *commissioner.RawContractQuote) { r.Level, r.Years = level, years }
+	asLevel := func(level, years int) func(*market.RawContractQuote) {
+		return func(r *market.RawContractQuote) { r.Level, r.Years = level, years }
 	}
 	return []quoteCase{
 		{name: "buyout rates", action: "buyout", player: "0099", field: "contracts.buyout",
-			patch: map[string]string{"Rates": `{"2":6000,"3":9000,"4":9000}`}, price: func(q commissioner.ContractQuote) string {
+			patch: map[string]string{"Rates": `{"2":6000,"3":9000,"4":9000}`}, price: func(q market.ContractQuote) string {
 				return verdict(q, deadCents(q))
 			}, before: "750000000", after: "900000000"},
 		{name: "retirement rate", action: "retire", player: "0099", field: "contracts.retirement",
-			patch: map[string]string{"Rate": "5000"}, price: func(q commissioner.ContractQuote) string {
+			patch: map[string]string{"Rate": "5000"}, price: func(q market.ContractQuote) string {
 				return verdict(q, deadCents(q))
 			}, before: "900000000", after: "1500000000"},
 		{name: "death rate", action: "death", player: "0099", field: "contracts.death",
-			patch: map[string]string{"Rate": "1000"}, price: func(q commissioner.ContractQuote) string {
+			patch: map[string]string{"Rate": "1000"}, price: func(q market.ContractQuote) string {
 				return verdict(q, deadCents(q))
 			}, before: "none", after: "300000000"},
 		{name: "restructure tiers", action: "restructure", player: "0099", field: "contracts.restructure",
 			patch: map[string]string{"Tiers": `[{"At":300000000,"Amount":100000000},{"At":600000000,"Amount":250000000},` +
 				`{"At":1200000000,"Amount":300000000}]`},
-			price: func(q commissioner.ContractQuote) string {
+			price: func(q market.ContractQuote) string {
 				if len(q.Salaries) == 0 {
 					return verdict(q, "none")
 				}
 				return verdict(q, fmt.Sprint(int64(q.Salaries[0].Cents)))
 			}, before: "800000000", after: "750000000"},
 		{name: "extension multiplier", action: "extension", player: "0099", field: "contracts.extension",
-			patch: map[string]string{"Multiplier": "20000"}, price: func(q commissioner.ContractQuote) string {
+			patch: map[string]string{"Multiplier": "20000"}, price: func(q market.ContractQuote) string {
 				return verdict(q, cents(q.SalaryCent))
 			}, before: "1500000000", after: "2000000000"},
 		{name: "tag top salaries", action: "tag", player: "0098", field: "contracts.tag",
-			patch: map[string]string{"TopPlayers": "2"}, price: func(q commissioner.ContractQuote) string {
+			patch: map[string]string{"TopPlayers": "2"}, price: func(q market.ContractQuote) string {
 				return verdict(q, cents(q.SalaryCent))
 			}, before: "960000000", after: "900000000"},
 		{name: "tender price", action: "rfa_tender", player: "0097", field: "contracts.tender", ask: asLevel(1, 0),
 			patch: map[string]string{"Prices": `[{"Price":70000000,"Rounds":[5]},{"Price":100000000,"Rounds":[4]},` +
 				`{"Price":150000000,"Rounds":[3]},{"Price":250000000,"Rounds":[2]},{"Price":500000000,"Rounds":[1]},` +
 				`{"Price":650000000,"Rounds":[1,2]}]`},
-			price:  func(q commissioner.ContractQuote) string { return verdict(q, cents(q.SalaryCent)) },
+			price:  func(q market.ContractQuote) string { return verdict(q, cents(q.SalaryCent)) },
 			before: "60000000", after: "70000000"},
 		{name: "re-sign premium", action: "resign", player: "0097", field: "contracts.reSign", ask: asLevel(1, 3),
 			patch:  map[string]string{"Premiums": `{"1":0,"2":1500,"3":5000,"4":4500}`},
-			price:  func(q commissioner.ContractQuote) string { return verdict(q, cents(q.SalaryCent)) },
+			price:  func(q market.ContractQuote) string { return verdict(q, cents(q.SalaryCent)) },
 			before: "78000000", after: "90000000"},
 		{name: "cap relief reasons", action: "cap_relief", player: "0099", field: "contracts.capRelief",
-			ask:    func(r *commissioner.RawContractQuote) { r.Reason, r.AmountCents = "Career-ending injury", 100_000_000 },
+			ask:    func(r *market.RawContractQuote) { r.Reason, r.AmountCents = "Career-ending injury", 100_000_000 },
 			patch:  map[string]string{"Reasons": `["Recurring injury"]`},
-			price:  func(q commissioner.ContractQuote) string { return verdict(q, fmt.Sprint(int64(q.Relief))) },
+			price:  func(q market.ContractQuote) string { return verdict(q, fmt.Sprint(int64(q.Relief))) },
 			before: "100000000", after: "refused: Cap relief is for one of: Recurring injury."},
 	}
 }
@@ -312,7 +314,7 @@ func TestNativeQuoteAsksTheCalendarGate(t *testing.T) {
 		t.Fatalf("buyout inside its window: %+v", open)
 	}
 	f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
-	shut, err := newCommissionerAPI(f.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
+	shut, err := newCommissionerAPI(f.app).TargetNativeContractQuote(market.RawContractQuote{League: legalityLeague,
 		Player: "0099", Action: "buyout", ViewerZone: "UTC"})
 	if err != nil {
 		t.Fatal(err)
@@ -361,20 +363,20 @@ func TestNativeQuoteRefusesWhatItCannotPrice(t *testing.T) {
 	f := quoteApp(t)
 	for _, tc := range []struct {
 		player, action, reason string
-		ask                    func(*commissioner.RawContractQuote)
+		ask                    func(*market.RawContractQuote)
 	}{
 		{"0099", "tag", "last year of his contract", nil},
 		{"0099", "rfa_tender", "Only a restricted free agent", nil},
 		{"0097", "rfa_tender", "Choose a tender level from 1 to 6.", nil},
-		{"0099", "extension", "adds at most 3 years", func(r *commissioner.RawContractQuote) { r.Years = 4 }},
-		{"0099", "restructure", "At most", func(r *commissioner.RawContractQuote) { r.MoveCents = 900_000_000 }},
+		{"0099", "extension", "adds at most 3 years", func(r *market.RawContractQuote) { r.Years = 4 }},
+		{"0099", "restructure", "At most", func(r *market.RawContractQuote) { r.MoveCents = 900_000_000 }},
 	} {
 		q := f.quote(t, tc.player, tc.action, tc.ask)
 		if q.Allowed || !strings.Contains(q.Reason, tc.reason) {
 			t.Fatalf("%s %s: %+v", tc.player, tc.action, q)
 		}
 	}
-	for _, bad := range []commissioner.RawContractQuote{
+	for _, bad := range []market.RawContractQuote{
 		{League: legalityLeague, Player: "0099", Action: "tender", ViewerZone: "UTC"},
 		{League: legalityLeague, Player: "0001", Action: "buyout", ViewerZone: "UTC"},
 		{League: "native.unmade", Player: "0099", Action: "buyout", ViewerZone: "UTC"},
@@ -411,15 +413,15 @@ func TestNativeContractQuoteWire(t *testing.T) {
 	t.Parallel()
 	f := quoteApp(t)
 	f.setAction(t, "extension", legacyParams(t, "contracts.extension", nil), false)
-	readings := map[string]commissioner.ContractQuote{
+	readings := map[string]market.ContractQuote{
 		"buyout":       f.quote(t, "0099", "buyout", nil),
 		"tag":          f.quote(t, "0098", "tag", nil),
 		"restructure":  f.quote(t, "0099", "restructure", nil),
-		"resign":       f.quote(t, "0097", "resign", func(r *commissioner.RawContractQuote) { r.Level, r.Years = 1, 3 }),
+		"resign":       f.quote(t, "0097", "resign", func(r *market.RawContractQuote) { r.Level, r.Years = 1, 3 }),
 		"extensionOff": f.quote(t, "0099", "extension", nil),
-		"cutAtGate": func() commissioner.ContractQuote {
+		"cutAtGate": func() market.ContractQuote {
 			f.app.core.ClockNow = func() time.Time { return quoteClock().AddDate(0, 0, 30) }
-			q, err := newCommissionerAPI(f.app).TargetNativeContractQuote(commissioner.RawContractQuote{League: legalityLeague,
+			q, err := newCommissionerAPI(f.app).TargetNativeContractQuote(market.RawContractQuote{League: legalityLeague,
 				Player: "0099", Action: "cut", ViewerZone: "America/Los_Angeles"})
 			if err != nil {
 				t.Fatal(err)

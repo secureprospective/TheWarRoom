@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -20,8 +22,8 @@ type heldSeason struct {
 	playoff map[string]nativecheck.PlayoffStanding
 }
 
-func (h *heldSeason) BidEnvironment(context.Context, string, time.Time) (commissioner.BidEnvironment, error) {
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: h.week, WeekKnown: h.known},
+func (h *heldSeason) BidEnvironment(context.Context, string, time.Time) (market.BidEnvironment, error) {
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: h.week, WeekKnown: h.known},
 		Playoff: h.playoff}, nil
 }
 
@@ -82,7 +84,7 @@ func (f *bidFixture) withdraw(t *testing.T, principal, franchise string, bid com
 	return err
 }
 
-func (f *bidFixture) bids(t *testing.T, principal, franchise string) commissioner.NativeBids {
+func (f *bidFixture) bids(t *testing.T, principal, franchise string) market.NativeBids {
 	t.Helper()
 	f.app.core.CommissionerSession = testCommissionerSession{principal}
 	reading, err := newCommissionerAPI(f.app).TargetNativeBids(legalityLeague, franchise)

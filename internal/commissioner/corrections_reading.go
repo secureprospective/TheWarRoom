@@ -89,7 +89,7 @@ func supportedExceptionRule(rule string) bool {
 		(strings.HasPrefix(rule, "calendar.") && len(rule) > len("calendar."))
 }
 
-func scopedDecisionExceptions(records []Record, scope ExceptionScope, now time.Time) []nativecheck.DecisionException {
+func ScopedDecisionExceptions(records []Record, scope ExceptionScope, now time.Time) []nativecheck.DecisionException {
 	out := []nativecheck.DecisionException{}
 	for _, rule := range []string{"roster.limits", "roster.positionBounds", "cap.enforcement", "ir.eligible", "taxi.maximumYears"} {
 		if why, allowed := decisionException(records, rule, scope, now); allowed {

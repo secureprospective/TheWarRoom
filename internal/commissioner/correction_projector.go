@@ -70,7 +70,7 @@ func recordedCorrectionPlayer(records []Record, id string) (NativePlayer, bool, 
 		}
 	}
 	keep(&assets)
-	waivers := waiverState{Windows: []waiverWindow{}, Order: []string{}}
+	waivers := MarketBook{Windows: []WaiverWindow{}, Order: []string{}}
 	if err := projectNativeOverrides(&assets, records, &waivers, keep); err != nil {
 		return NativePlayer{}, false, fmt.Errorf("read the last recorded contract: %w", err)
 	}

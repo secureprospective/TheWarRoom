@@ -234,7 +234,7 @@ func checkRuleChangesSomething(raw RawCommand, records []Record, at time.Time) e
 	return Refused(errors.New("this is already the rule. Nothing would change"))
 }
 
-func fieldWords(rules leaguerules.RuleSet, path string) string {
+func FieldWords(rules leaguerules.RuleSet, path string) string {
 	fields, values := leaguerules.Catalogue(), leaguerules.ReadSettings(rules)
 	for i, f := range fields {
 		if string(f.Path) == path {
@@ -269,7 +269,7 @@ func ruleLabel(r Record, before []Record) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("describe recorded rule: %w", err)
 	}
-	return fmt.Sprintf("%s: %s → %s, %s", field.Label, fieldWords(rules, string(field.Path)),
+	return fmt.Sprintf("%s: %s → %s, %s", field.Label, FieldWords(rules, string(field.Path)),
 		leaguerules.DescribeField(field.Path, setting).Words, timingWords(r.Command.Effective)), nil
 }
 
@@ -303,5 +303,5 @@ func revertRuleLabel(records []Record, i int, target Record) (string, bool, erro
 		return "", false, err
 	}
 	return fmt.Sprintf("Reversed a rule change. %s: %s → %s, in force now", field.Label,
-		fieldWords(before, string(field.Path)), fieldWords(after, string(field.Path))), true, nil
+		FieldWords(before, string(field.Path)), FieldWords(after, string(field.Path))), true, nil
 }

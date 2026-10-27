@@ -2,6 +2,8 @@ package commissioner
 
 import (
 	"encoding/json"
+	"fmt"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -140,3 +142,33 @@ type WaiverOutcome struct {
 	Source     string              `json:"source,omitempty"`
 	ClearsDead bool                `json:"clearsDead"`
 }
+
+func tradeLabel(r Record) string {
+	labels := map[string]string{TradeOffer: "Offered a trade", TradeAccept: "Accepted a trade", TradeDecline: "Declined a trade",
+		TradeWithdraw: "Withdrew a trade offer", TradeReview: "Reviewed a trade", TradeRecuse: "Sat out a trade review",
+		TradeAppeal: "Appealed a trade veto", TradeAppealRule: "Ruled on a trade appeal", TradeOverride: "Overrode a trade decision"}
+	label := labels[r.Command.Command]
+	if r.Command.Reason != "" {
+		label = fmt.Sprintf("%s: %s", label, r.Command.Reason)
+	}
+	return label
+}
+func (p TradePolicy) Validate(r leaguerules.TradesRules) error {
+	if r.Rounds.Value.Min.State != leaguerules.IsKnown || r.Rounds.Value.Max.State != leaguerules.IsKnown ||
+		p.invalidLimits() {
+		return fmt.Errorf("the trade rules need a valid ruling")
+	}
+	if !slices.Contains([]leaguerules.ReviewRoute{leaguerules.DOTReview, leaguerules.CommissionerReview, leaguerules.NoReview}, p.Route) {
+		return fmt.Errorf("choose who reviews trades")
+	}
+	if p.Route == leaguerules.DOTReview && (r.DOTSeats.State != leaguerules.IsKnown || p.Seats < 4 || p.Seats > 10 || p.DecideAt > p.Seats) {
+		return fmt.Errorf("%s: choose 4 to 10 DOT seats and a decision count within them", "Needs a ruling")
+	}
+	return nil
+}
+func (p TradePolicy) invalidLimits() bool {
+	return p.DecideAt < 1 || p.FutureYears < 0 || p.MinimumRound < 1 || p.MaximumRound < p.MinimumRound ||
+		p.Expiry <= 0 || p.MaximumParties < 2 || p.MaximumParties > 3
+}
+
+const ReserveClockPrincipal = "native.reserve.clock"

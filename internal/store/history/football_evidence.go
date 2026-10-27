@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -103,20 +105,20 @@ func (p *PinnedFootball) ScheduleDates(ctx context.Context, season int) ([]leagu
 
 // BidEnvironment uses the selected schedule, never the host's wall-clock week number.
 // Playoff eligibility remains unknown unless league evidence supplies it.
-func (p *PinnedFootball) BidEnvironment(ctx context.Context, _ string, at time.Time) (commissioner.BidEnvironment, error) {
+func (p *PinnedFootball) BidEnvironment(ctx context.Context, _ string, at time.Time) (market.BidEnvironment, error) {
 	weeks, err := p.ScheduleDates(ctx, p.raw.Season)
 	if err != nil {
-		return commissioner.BidEnvironment{}, err
+		return market.BidEnvironment{}, err
 	}
 	week, ok := leagueweek.LineupWeek(at, weeks...)
 	if !ok {
-		return commissioner.BidEnvironment{}, nil
+		return market.BidEnvironment{}, nil
 	}
 	number := week.Number
 	if number == 1 && at.Before(leagueweek.FirstLock(week)) {
 		number = 0
 	}
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: number, WeekKnown: true}}, nil
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: number, WeekKnown: true}}, nil
 }
 
 // SetPinnedFootball installs one immutable evidence selection for lineups and bids at startup.
@@ -134,13 +136,13 @@ type pinnedBidEnvironment struct {
 	evidence *PinnedFootball
 }
 
-func (p pinnedBidEnvironment) BidEnvironment(ctx context.Context, league string, at time.Time) (commissioner.BidEnvironment, error) {
+func (p pinnedBidEnvironment) BidEnvironment(ctx context.Context, league string, at time.Time) (market.BidEnvironment, error) {
 	assets, err := p.store.NativeAssets(ctx, league)
 	if err != nil {
-		return commissioner.BidEnvironment{}, fmt.Errorf("read bid season: %w", err)
+		return market.BidEnvironment{}, fmt.Errorf("read bid season: %w", err)
 	}
 	if p.evidence == nil || assets.Snapshot == nil || assets.Snapshot.Season != p.evidence.raw.Season {
-		return commissioner.BidEnvironment{}, ErrBidSeasonEvidence
+		return market.BidEnvironment{}, ErrBidSeasonEvidence
 	}
 	return p.evidence.BidEnvironment(ctx, league, at)
 }

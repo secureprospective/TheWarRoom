@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -47,7 +49,7 @@ func TestOwnerActionAdmissionOrder(t *testing.T) {
 		t.Fatalf("calendar refusal changed: %v", err)
 	}
 	for _, action := range ContractOwnerActions() {
-		window, ok := commissioner.OwnerContractWindow(action.Action)
+		window, ok := market.OwnerContractWindow(action.Action)
 		if !ok || window != action.Opens || action.Name != "contract."+string(action.Action) {
 			t.Fatalf("ungated contract: %+v", action)
 		}

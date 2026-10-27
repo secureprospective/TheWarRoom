@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
@@ -221,8 +223,8 @@ func TransferReadings(ctx context.Context, league string, records []commissioner
 	return out, err
 }
 
-func transferBids(league string, records []commissioner.Record, evidence *PinnedFootball, directory commissioner.NativeDirectory, at time.Time) ([]commissioner.NativeBids, error) {
-	out := []commissioner.NativeBids{}
+func transferBids(league string, records []commissioner.Record, evidence *PinnedFootball, directory commissioner.NativeDirectory, at time.Time) ([]market.NativeBids, error) {
+	out := []market.NativeBids{}
 	people, err := commissioner.GovernanceState(records)
 	if err != nil {
 		return nil, fmt.Errorf("replay league owners: %w", err)
@@ -232,7 +234,7 @@ func transferBids(league string, records []commissioner.Record, evidence *Pinned
 		if !ok || owner.Seat == "" {
 			continue
 		}
-		bids, err := commissioner.NativeBidsReading(league, seat.Franchise, string(owner.Seat), records, at, time.UTC, evidence.PlayerFacts())
+		bids, err := market.NativeBidsReading(league, seat.Franchise, string(owner.Seat), records, at, time.UTC, evidence.PlayerFacts())
 		if err != nil {
 			return nil, fmt.Errorf("replay league reading: %w", err)
 		}
@@ -264,7 +266,7 @@ type TransferProjection struct {
 	Assets    commissioner.NativeAssets
 	Cap       commissioner.NativeCapCheck
 	Lineups   []commissioner.NativeLineup
-	Bids      []commissioner.NativeBids
+	Bids      []market.NativeBids
 	Results   []commissioner.NativeResults
 	Standings commissioner.NativeStandings
 }

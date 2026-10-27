@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
@@ -139,12 +141,12 @@ func (s *State) NativeAssets(ctx context.Context, league string) (commissioner.N
 	return s.History.NativeAssets(ctx, league)
 }
 func (s *State) NativeWaivers(ctx context.Context, league, franchise, principal string, at time.Time,
-	zone *time.Location, facts nativecheck.Facts) (commissioner.NativeWaivers, error) {
+	zone *time.Location, facts nativecheck.Facts) (market.NativeWaivers, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeWaivers(ctx, league, franchise, principal, at, zone, facts)
 }
 func (s *State) NativeBids(ctx context.Context, league, franchise, principal string, at time.Time,
-	zone *time.Location, facts nativecheck.Facts) (commissioner.NativeBids, error) {
+	zone *time.Location, facts nativecheck.Facts) (market.NativeBids, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeBids(ctx, league, franchise, principal, at, zone, facts)
 }

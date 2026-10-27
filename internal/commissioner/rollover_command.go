@@ -158,7 +158,7 @@ func rolloverBefore(league string, records []Record, at time.Time, from int) (*R
 	if err != nil {
 		return nil, err
 	}
-	starts, err := rolloverInstants(records)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return nil, err
 	}

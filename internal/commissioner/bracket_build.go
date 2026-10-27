@@ -65,13 +65,13 @@ func (b *bracketReader) fieldInput(rows []StandingRow) (fieldInput, map[string]s
 
 // pair builds the rounds, scoring each playoff week from the native results.
 func (b *bracketReader) pair(ctx context.Context, in bracketInput) error {
-	scores, seats := map[string]FranchiseWeekScore{}, b.directory.seats()
+	scores, seats := map[string]FranchiseWeekScore{}, b.directory.Seats()
 	var failed error
 	in.points = func(franchise string, week int) (*leaguerules.Decimal, string) {
 		key := fmt.Sprintf("%s/%d", franchise, week)
 		score, ok := scores[key]
 		if !ok && failed == nil {
-			score, failed = franchiseWeekScore(ctx, b.records, b.src, b.rules.Lineup, seats.of(franchise),
+			score, failed = franchiseWeekScore(ctx, b.records, b.src, b.rules.Lineup, seats.Of(franchise),
 				b.season, week)
 			scores[key] = score
 		}
