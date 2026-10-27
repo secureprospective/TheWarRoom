@@ -171,3 +171,20 @@ and query keys (`marketScopeInput`); UI selections remain distinct in the cache 
 retain their original method receiver through closures; a receiver-dependent Control regression
 covers this. The final candidate's TypeScript check passes; the intermediate receiver-fixture typing
 failure and immediate repair are recorded explicitly in app-boundary.md.
+
+## Part 7 — next compound/hosted slice (design)
+
+Sources uses two shared queries on one view: sources publishes first, then crosswalk/parameters
+publish together after their parallel reads. The busy/action/outcome guard stays outside both;
+a refused action's error survives successful reads. Assets keeps its existing one-time listener
+and failed-cell wording while retrying. Now captures weeks before refresh and samples franchise
+afterward. Personal owns one private query per franchise; no write is cached or replayed. Native
+draft uses its registry scope and existing refusal formatter; reset fences outstanding reads.
+
+Hosted room will key the whole bundle by the registry's native-lineup scope (league, franchise,
+week, read-at), while still reading assets first to derive season and reading the remaining views
+in parallel. Existing hosted API/nativeEnvelope validates each actual registry request; parsers
+and cross-reading league/revision/football checks remain in the room. Only the held-read lifecycle
+moves to the shared query, not preview/confirm, the generation fence for writes, or canChange.
+Refresh failure must retain the last bundle but set stale/read-only before pending clears. Dispose
+must fence the query as well as writes and clear private readings. No cache-first or eager request.
