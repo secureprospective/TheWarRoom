@@ -96,14 +96,21 @@ type NativeCharge struct {
 	Description string       `json:"description"`
 }
 
+func validFranchiseCount(count int) bool {
+	return count >= minFranchises && count <= maxFranchises
+}
+
 // Validate checks a snapshot captured from held data, as it is recorded.
 func (r RawNativeSnapshot) Validate() error { return r.validate(false) }
 
 // validate checks a snapshot; rolled is true for assets a season rollover has carried past the season they
 // were captured in, whose picks keep their history and whose new season's picks wait for the draft.
 func (r RawNativeSnapshot) validate(rolled bool) error {
+	if !validFranchiseCount(len(r.Franchises)) {
+		return fmt.Errorf("a league needs between 2 and 32 franchises")
+	}
 	if r.Season < 1 || r.Season > 9999 || r.RosterAt.IsZero() || r.DraftAt.IsZero() || r.FutureAt.IsZero() ||
-		len(r.Franchises) != legacyTeams || (len(r.Players) == 0 && len(r.Pool) == 0) {
+		(len(r.Players) == 0 && len(r.Pool) == 0) {
 		return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")
 	}
 	franchises, err := r.franchiseIndex()

@@ -41,6 +41,41 @@ func ledgerSnapshot() *RawNativeSnapshot {
 	return native
 }
 
+func TestSeedAndRestoreFranchiseCounts(t *testing.T) {
+	for _, tc := range []struct {
+		count int
+		want  string
+	}{
+		{1, "a league needs between 2 and 32 franchises"},
+		{2, ""},
+		{12, ""},
+		{32, ""},
+		{33, "a league needs between 2 and 32 franchises"},
+	} {
+		t.Run(fmt.Sprint(tc.count), func(t *testing.T) {
+			snapshot := ledgerSnapshot()
+			if tc.count <= len(snapshot.Franchises) {
+				snapshot.Franchises = snapshot.Franchises[:tc.count]
+			} else {
+				snapshot.Franchises = append(snapshot.Franchises, NativeFranchise{
+					ID: "franchise.33", HeldID: "0033", Name: "Team 33", Division: "div.8",
+				})
+			}
+			check := func(name string, err error) {
+				t.Helper()
+				if tc.want == "" && err != nil || tc.want != "" && (err == nil || err.Error() != tc.want) {
+					t.Errorf("%s: got %v, want %q", name, err, tc.want)
+				}
+			}
+			check("snapshot", snapshot.Validate())
+			snapshot.Picks = nil
+			point := RawRosterRestorePoint{Version: 1, League: rolloverLeague, Revision: 2,
+				CapturedAt: snapshot.RosterAt, Snapshot: *snapshot}
+			check("restore", point.Validate())
+		})
+	}
+}
+
 // rolloverLedger is a seeded Legacy league whose calendar rulings are made; time moves one day per entry.
 func rolloverLedger(t *testing.T) *ledgerBuilder {
 	t.Helper()

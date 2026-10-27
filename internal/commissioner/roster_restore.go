@@ -32,8 +32,11 @@ func (r RawRosterRestorePoint) Validate() error {
 
 func (r RawRosterRestorePoint) validateRoster() error {
 	s := r.Snapshot
+	if !validFranchiseCount(len(s.Franchises)) {
+		return fmt.Errorf("a league needs between 2 and 32 franchises")
+	}
 	if s.Season < 1 || s.Season > 9999 || s.RosterAt.IsZero() || s.DraftAt.IsZero() ||
-		s.FutureAt.IsZero() || len(s.Franchises) != legacyTeams || len(s.Picks) != 0 ||
+		s.FutureAt.IsZero() || len(s.Picks) != 0 ||
 		len(s.Pool) != 0 || len(s.Champions) != 0 || s.Champion != "" || len(s.StandingsOrder) != 0 {
 		return fmt.Errorf("invalid roster restore point directory or season")
 	}
