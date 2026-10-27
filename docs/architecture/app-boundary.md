@@ -12,24 +12,21 @@ representation or wiring. Ratchet: **118 decision-bearing adapters / 1,527 funct
 whole-source fingerprints**, down from 120 / 1,572 + 48; zero legacy entries. This is reviewed source,
 not semantic proof or live feature acceptance.
 
-Frontend plan Part 3: **nine lifecycle implementations / ten store consumers**, driven by **17
-registry read adapters**. This part migrated Control, Sources cache scopes, historical Market,
-historical Draft and Counterparties. Main reads still revalidate. Historical details retain their
-pre-existing one-last-scope-per-kind/team caching; no new polling/write/session invalidation.
-Compound publication, detached UI-versus-binding scope, detail fencing and per-team independence
-are documented in `docs/architecture/frontend-reads.md`.
+Frontend plan Part 3 (after part 7): **18 lifecycle modules on 30 registry read adapters**. Part 7
+moved Sources joint view, Assets, Now, Offers, Personal, Draft room, hosted league bundle, shell
+held readings and the Research board (see `frontend-reads.md` § Part 7 — close). Main reads still
+revalidate; no cache-first, polling, write or session invalidation was added.
 
+Next Part 3: commissioner `leagueState` (proxy.ts), then provider/session invalidation design and
+tests. Blocked pending an owner ruling: Pool (G1 `offers.TargetPool`) and the trade builder
+(one read/preview/save command). Live game stays with its polling lifetime.
 Next Part 2: owner-run pre-push/full CI and disposable-profile live review (R12 on Claude-OS).
-Next Part 3: Sources compound sources→parallel crosswalk/params view with partial-result semantics,
-then Assets and Now held reads. Hosted provider/account/league lifetimes, session invalidation,
-write-plan state and live polling remain separate work. Keep targeted race batches and composition
--run filters plus command-door parity; prior real composition CI shards took 194–478 seconds.
 
 Branch: `session/revamp-B-app-boundary`. **Local commits only; owner pushes.** No push, PR, merge,
 rebase, generated Wails binding change or HANDOFF.md edit. No permission/role/schema/lock-order
 change. Full verify/pre-push/CI and live profile review remain unclaimed. Estimates: Part 2 **one
-verification/review part**; Part 3 **3–5 one-hour parts**, including lifetime/invalidation integration.
-No owner ruling needed.
+verification/review part**; Part 3 **2–3 one-hour parts**, including lifetime/invalidation integration.
+Owner ruling needed for the Pool and trade-builder blockers above.
 
 ## Boundary and preserved slice
 

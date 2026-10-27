@@ -65,22 +65,24 @@ relative to `frontend/src/app/`. Query-neutral/action-only state is explicitly o
 | Market reports `reports/marketState.ts` | TargetMarketReports; shared report factory | MOVED; explicitly supplies its own registry key, never Draft's |
 | Control `control/state.ts` | league/settings/news/accounting reads | MOVED; joint league publication, independent news; accounting open remains an action |
 | Sources `datasources/cacheState.ts` | TargetCacheScopes; clear outcomes | MOVED; clear/busy/outcomes remain action state; forget fences reads |
-| Sources `datasources/state.ts` | sources/crosswalk/params joint view | OPEN; preserve read-before-parallel-subreads and partial results |
+| Sources `datasources/state.ts` | sources/crosswalk/params joint view | MOVED (part 7); two queries, sources first then crosswalk+params together |
 | Counterparties `counterparties/state.ts` | historical scope/details | MOVED; per-team last-scope cache/tokens and pending dedup; filters/sort unchanged |
 | Market `market/state.ts` | lists/clock/stretches/profiles | MOVED; joint publication and per-kind last-scope cache |
 | Historical Draft `market/draftState.ts` | DraftLab / pick-kind details | MOVED; pending details fenced by refresh, retry invalidates per-kind cache |
-| Assets `assets/state.ts` | asset board/profile | OPEN; selection and detail identity |
-| Now `now/state.ts` | week/team live-season view | OPEN; refresh and held snapshot interplay |
-| Live game `now/liveState.ts` | game/player live detail | OPEN; polling/revision lifetime |
-| Research `research/state.ts` | research/status/player/news | OPEN; cancellation/pending and news refresh |
-| Offers `offers/state.ts` | pending offers, refresh/actions | OPEN; no automatic plan execution |
-| Pool `pool/state.ts` | scoped pool and player detail | OPEN; persisted filter and multi-part results |
-| Personal `personal/state.ts` | personal board and local changes | OPEN; write outcomes separate from reads |
-| Contracts `contracts/state.ts` | contract/player readings | OPEN; plan/actions and local previews separate |
-| Draft room `draftroom/state.ts` | native draft + owner actions | OPEN; hosted permissions and native scope |
-| Shell `shell/lineups.ts`, `shell/roster.ts` | lineups/readings/roster snapshots | OPEN; shared provider and franchise identity |
-| Shell `shell/tradeBuilderState.ts` | builder reading and isolated preview | OPEN; local plan writes never replay |
-| Commissioner `commissioner/{actReadings,competitionReadings,hostedRoom,proxy}.ts` | hosted/native readings | OPEN; preserve credential/provider/league lifetime |
+| Assets `assets/state.ts` | asset board/profile | MOVED (part 7); one-time listener and failed-cell wording kept |
+| Now `now/state.ts` | week/team live-season view | MOVED (part 7); weeks captured before refresh, franchise sampled after |
+| Live game `now/liveState.ts` | game/player live detail | OPEN; polling/revision lifetime, deliberately left with live polling |
+| Research `research/state.ts` | research/status/player/news | MOVED (part 7); board read only; status poll, player, open stay outside |
+| Offers `offers/state.ts` | pending offers, refresh/actions | MOVED (part 7); actions never cached or replayed |
+| Pool `pool/state.ts` | scoped pool and player detail | BLOCKED; `mfl.pool.read`/`TargetPool` is G1 in `commandcatalog/desktop.go`, not an admissible held read |
+| Personal `personal/state.ts` | personal board and local changes | MOVED (part 7); one private query per franchise |
+| Contracts `contracts/state.ts` | contract/player readings | NOT a read store: filters + action dispatch; release board reads through the release action command |
+| Draft room `draftroom/state.ts` | native draft + owner actions | MOVED (part 7); reset fences reads |
+| Shell `shell/lineups.ts` | lineup/trades/alerts per franchise | MOVED (part 7); one query per franchise, pending unpublished; `roster.ts` is pure projection |
+| Shell `shell/tradeBuilderState.ts` | builder reading and isolated preview | BLOCKED; read/preview/save share one `TargetTradeBuilder` command |
+| Commissioner `commissioner/hostedRoom.ts` | hosted league bundle | MOVED (part 7); keyed by native-lineup scope |
+| Commissioner `commissioner/proxy.ts` (`leagueState`) | leagues picker + core/landing/ops settled reads | OPEN; next slice, see Part 7 close |
+| Commissioner `commissioner/{actReadings,competitionReadings}.ts` | one-shot option reads for an act form | NOT a read store: write-admission inputs, revision-checked per open |
 | Commands `commands/{moves,sessionMoves,mflKey}.ts` | moves/key/session state | OPEN audit; split read state from action state first |
 | `contracts/{contractActState,releases}.ts`, `commissioner/{backupState,surfaceActions,controls}.ts` | action results / previews / controls | MIXED; migrate only audited reads, not mutation admission |
 | `shell/state.ts`, `reports/sortState.ts`, `clock/windowState.ts`, search/specimen/ticker | navigation/sort/edit/action/presentation | NOT read-store migration targets |
@@ -188,3 +190,27 @@ and cross-reading league/revision/football checks remain in the room. Only the h
 moves to the shared query, not preview/confirm, the generation fence for writes, or canChange.
 Refresh failure must retain the last bundle but set stale/read-only before pending clears. Dispose
 must fence the query as well as writes and clear private readings. No cache-first or eager request.
+
+## Part 7 — close
+
+Moved this part: Sources joint view, Assets, Now, Offers, Personal, Draft room, hosted league
+bundle, shell held readings (lineup/trades/alerts) and the Research board. **30 registry read
+adapters / 18 lifecycle modules** on the shared tool (Part 6 ended at 17 / 9).
+
+Shell readings: one query per franchise inside `createReadings`; the wrapper publishes only
+non-pending states so subscribers see exactly the old notifications (success, or last reading +
+error). Research: refresh/news are `before` steps only when requested, so a plain scope change still
+calls the reader synchronously and an older reply is fenced; a superseded refresh/news load now
+skips its own board read (its result was discarded before, so only the call is saved). The status
+poll stays in the wrapper and a poll failure still survives the read's success (new test passes on
+the pre-migration store and fails on an `accept` that drops it).
+
+Blocked without a registry ruling: Pool (`offers.TargetPool`/`TargetBidPlans` are G1 MFL reads;
+the generator admits only G0 held reads) and the trade builder (read/preview/save are one command).
+
+Next slice: `commissioner/proxy.ts` leagueState. Proposed shape, not built: a leagues query (no
+args) publishing the picker, then one bundle query keyed by `[league]` whose read runs the three
+settled groups (core, landing, ops) and returns them whole; failure must also clear the core
+readings (today's catch) — the query's `failure` is string-only, so either the wrapper resets
+readings on error or the bundle read never rejects (settled groups already word their failures).
+Controls stay read-once. Then provider/session invalidation design (brief step 2) once reads close.
