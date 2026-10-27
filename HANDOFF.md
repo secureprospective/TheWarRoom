@@ -4,16 +4,14 @@
 Christopher — 2026-10-27, `session/revamp-P6-market`. Local only; do not push.
 
 ## Where it stands
-- Part 6 slice 3: staged market Frame fold, rules, gate, trial and exceptions; ten entry-point preambles use the staged fold. External signatures unchanged.
-- Behavior requires staged loading: waiver/market/deadline use the requested correction time; bid/trade do not. Some paths return before rules; trade reads governance before rules; market reads governance only for trades. Bid/trade/waiver trials preserve their different principals.
-- NewFrame eagerly loads rules and governance; existing entry points use staged marketFrame to preserve those semantics. Frame.Book is still the private waiverState. Entry points are not yet thin wrappers around frame-taking operations; the intended shared-frame seam and line reduction are incomplete.
-- Market-body goldens unchanged; targeted packages, composition market subset, commissioner race tests, build and bloat passed. No full verify.
+- Step 3b: ten frame-taking operations split from existing entry points, with staged construction, authorization, correction timing, early returns and trade governance-before-rules retained. Commit d662ac6a. No market package move yet.
+- Targeted commissioner, history and leagueservice tests, composition market filter, hosted/worker filter, build, placement and bloat passed. Testdata diff from 78b2c4ad empty. No mutant or full suite run.
 
 ## Next move
-Review the staged Frame design and complete reusable frame-taking operations without changing authorization, correction time or error order. Then reassess line count and plan the market package move.
+Resolve the step-4 Frame construction seam, then move the judgment layer; preserve ledger visibility predicates in commissioner and run the sealed-bid mutant proof.
 
 ## Blocked on
-No push authorized. Shared-frame API and ~70-line reduction are not achieved.
+The proposed eager `NewFrame` cannot represent the existing correction-time and error-order contracts: it always folds without the correction time and eagerly loads rules and governance, while owner readings authorize before folding and several paths return before those loads. Frame construction and staged loading must be exposed or orchestrated without changing those contracts before callers can pass a Frame across packages.
 
 ## Tried and rejected
-- Unconditionally calling eager NewFrame from every entry point would change early-return/error precedence and correction timing; retained staged loading instead.
+- Unconditionally calling eager `NewFrame` changes authorization/error precedence and correction timing; retained staged loading instead.
