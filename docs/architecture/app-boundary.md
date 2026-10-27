@@ -2,18 +2,16 @@
 
 ## Resume here
 
-Part 2 in progress: **35 units / 1,064 baseline function LOC moved this part** in five batches.
-Cumulative **68/126 units / 1,866/4,534 baseline function LOC**; 58 units / 2,668 LOC remain.
-Part 3 here means this brief/session, **not** the frontend plan stage: shared read/cache work has not started.
+Part 2 in progress: **43 units / 1,913 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and eight Trades units completed afterward.
+Cumulative **111/126 units / 3,779/4,534 baseline function LOC**; 15 units / 755 LOC remain.
+Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
-Next: remaining refresh/evidence units (17 finished scores; 50 offer recording; 67–71 Research;
-72–77 and 119–122 Control/season/week), then write-side move/trade workflows (23–30, 79–82,
-109–117). Large lifecycle/platform units and core audit remain; do not count retained lock/resource
-adapters as removed decisions. Native gate/schedule adapters now live in native_gate.go and
-commissioner_host.go; cache/settings/freshness adapters were consolidated (tables below).
-All band 1 and 2 units are inward. Continue batches with filtered composition race tests and
-command-door parity. Keep readiness-dependent resources lazy, exact lock spans and error text.
+Next: remaining Control refresh/key/read units 60–61, 102, 105; Platform lifecycle/entry/resource
+units 86–88, 90–92, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
+Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
+composition race batches with command-door parity; broad fixture runs need >200 seconds.
 
 Still required for Part 2 completion: core Host policy extraction and negative composition/core
 ratchet, full CI and disposable-profile live review. No permission/role/binding/schema change here.
@@ -169,15 +167,15 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 106 | 4 | `internal/composition/commissioner_host.go` — `Principal`:25, `commissionerPrincipal`:33, `commissionerSeat`:49, `commissionerSeatSignIn`:63 | 45 | `commissioner` | W:commissioner;local service host | Nonempty installation plus OS uid hashes stable local identity; injected session overrides fallback; reject blank identity. Ready-gated local seat/status/sign-in preserve account aliases and re-read status after sign-in. MOVED (part 4, batch 4). |
 | 107 | 2 | `internal/composition/commissioner_host.go` — `nativeFacts`:90 | 13 | `commissioner` | W:commissioner;store callbacks | Held directory contributes player facts only when loaded; only held injuries supply NFL designations; no network.  MOVED (part 2, batch 5). |
 | 108 | 2 | `internal/composition/archive_app.go` — `readArchiveFacts`:32 | 13 | `archive` | W:archive,comms;startup | Read verified snapshot with curated readings/compiler/manifest; retain cached snapshot only when returned SHA is nonempty; preserve service errors. MOVED (part 3, batch 3). |
-| 109 | 4 | `internal/composition/trades_app.go` — `DraftTradeAccept`:42 | 25 | `trades` | W:trades | Build request/check from held offer; missing MFL host blocks; draft accept, supersede older moves, then save receipt under moves lock. |
-| 110 | 4 | `internal/composition/trades_app.go` — `TradeBuilder`:69 | 44 | `trades` | W:trades | Validate saved-plan ownership before any action; capture state/catalog, preview/save/reject/revoke dispatch; run remove/handoff then return current saved plans under what-if→refresh locks. |
+| 109 | 4 | `internal/composition/trades_app.go` — `DraftTradeAccept`:42 | 25 | `trades` | W:trades | Build request/check from held offer; missing MFL host blocks; draft accept, supersede older moves, then save receipt under moves lock. MOVED (part 4, batch 6). |
+| 110 | 4 | `internal/composition/trades_app.go` — `TradeBuilder`:69 | 44 | `trades` | W:trades | Validate saved-plan ownership before any action; capture state/catalog, preview/save/reject/revoke dispatch; run remove/handoff then return current saved plans under what-if→refresh locks. MOVED (part 4, batch 6). |
 | 111 | 2 | `internal/composition/trades_app.go` — `tradeState`:115, `tradeBuilderTeams`:133, `builderPickValue`:250 | 34 | `trades` | W:trades,contracts | Held lineup selection validates snapshot/franchise; gather pending trades and valued player/pick assets; missing model gives explicit Not valued cell; failed board yields no values. MOVED (part 3, batch 3). |
-| 112 | 4 | `internal/composition/trades_app.go` — `tradeID`:148, `keepTradePlan`:155 | 32 | `trades` | W:trades | Random trade ID; construct propose request, missing-host block; save what-if plan then envelope then event (preserve existing ordering, no atomicity change). |
-| 113 | 4 | `internal/composition/trades_app.go` — `draftTradeExit`:180, `savedTradePlans`:220 | 68 | `trades` | W:trades | Require still-pending offer and correct owner direction; stale pending/unknown host block; supersede prior exits before save. Saved plans require own franchise, omit withdrawn and recompute preview before attaching receipt. |
-| 114 | 4 | `internal/composition/trades_app.go` — `removeTradePlan`:259, `tradeBuilderPlanAction`:281, `requireTradePlanFranchise`:513 | 43 | `trades` | W:trades | Dispatch remove/handoff only; saved ID actions recheck ownership; remove verifies mine and transitions via WithdrawTrade before save/audit/event. |
-| 115 | 4 | `internal/composition/trades_app.go` — `tradeSimulation`:298, `tradeProjectionInput`:499 | 64 | `trades` | W:trades | Own what-if vs counterparty mirror; fresh isolated generations; merge only currently-owned players/adjustments, seed separate preview store; derive before/seed/live cap inputs without mutating authoritative mirror. |
-| 116 | 4 | `internal/composition/trades_app.go` — `tradeProjection`:349 | 54 | `trades` | W:trades | Detect newer MFL stamps with reset reasons; collect clock/roster/pick/leg blocks; execute local trade only with nonempty valid legs; project each franchise's rich roster/cap and deal text. |
-| 117 | 4 | `internal/composition/trades_app.go` — `tradeBuilderHandOff`:403, `checkTradeExitPending`:454 | 65 | `trades` | W:trades | Recompute saved plan preview; refuse blocks/out-of-scope receipt/nonpending exit/unsafe URL; save handoff before browser/event/wake; proposal skips pending-exit check. |
+| 112 | 4 | `internal/composition/trades_app.go` — `tradeID`:148, `keepTradePlan`:155 | 32 | `trades` | W:trades | Random trade ID; construct propose request, missing-host block; save what-if plan then envelope then event (preserve existing ordering, no atomicity change). MOVED (part 4, batch 6). |
+| 113 | 4 | `internal/composition/trades_app.go` — `draftTradeExit`:180, `savedTradePlans`:220 | 68 | `trades` | W:trades | Require still-pending offer and correct owner direction; stale pending/unknown host block; supersede prior exits before save. Saved plans require own franchise, omit withdrawn and recompute preview before attaching receipt. MOVED (part 4, batch 6). |
+| 114 | 4 | `internal/composition/trades_app.go` — `removeTradePlan`:259, `tradeBuilderPlanAction`:281, `requireTradePlanFranchise`:513 | 43 | `trades` | W:trades | Dispatch remove/handoff only; saved ID actions recheck ownership; remove verifies mine and transitions via WithdrawTrade before save/audit/event. MOVED (part 4, batch 6). |
+| 115 | 4 | `internal/composition/trades_app.go` — `tradeSimulation`:298, `tradeProjectionInput`:499 | 64 | `trades` | W:trades | Own what-if vs counterparty mirror; fresh isolated generations; merge only currently-owned players/adjustments, seed separate preview store; derive before/seed/live cap inputs without mutating authoritative mirror. MOVED (part 4, batch 6). |
+| 116 | 4 | `internal/composition/trades_app.go` — `tradeProjection`:349 | 54 | `trades` | W:trades | Detect newer MFL stamps with reset reasons; collect clock/roster/pick/leg blocks; execute local trade only with nonempty valid legs; project each franchise's rich roster/cap and deal text. MOVED (part 4, batch 6). |
+| 117 | 4 | `internal/composition/trades_app.go` — `tradeBuilderHandOff`:403, `checkTradeExitPending`:454 | 65 | `trades` | W:trades | Recompute saved plan preview; refuse blocks/out-of-scope receipt/nonpending exit/unsafe URL; save handoff before browser/event/wake; proposal skips pending-exit check. MOVED (part 4, batch 6). |
 | 118 | 2 | `internal/composition/trades_app.go` — `tradePickReason`:470, `tradeClockReasons`:484 | 20 | `trades` | W:trades | FP_ token requires held fresh ownership; unreadable clock blocks with explicit reason; otherwise shared deadline rule.  MOVED (part 2, batch 5). |
 | 119 | 3 | `internal/composition/week_app.go` — `refreshWeeksInBackground`:21, `refreshWeek`:56 | 55 | `control` | B | Hourly week→season→clock-rule schedules→finished scores→engine; re-launch league refresh on tick. Week failure preserves prior week/time with failure note; success may derive phase; always revalidate release and notify. MOVED (part 4, batch 2). |
 | 120 | 1 | `internal/composition/week_app.go` — `lineupWeekFrom`:85 | 22 | `control` | B,startup | Fetch default week then advance until lineup week available; reject >18/mismatched requested week; final week18 ends with no lineup; wrap fetch/conversion errors unchanged.  MOVED (part 2, batch 1). |
@@ -767,3 +765,28 @@ startup/state/merge tests. Filtered Platform/Control/Research/composition race b
 concurrent draft, eligibility rebasing, weekly clock and door parity. Full make lint passed:
 all guards, bloat 24/24 and zero golangci-lint issues. Source review also preserved news pause
 selection before the held news capture, matching its original sampling order.
+
+## Part 4 — batch 6: trade plan lifecycle and isolated projection (usage-limit resume)
+
+Eight units (109–110, 112–117), 395 baseline function LOC. Trades owns accept/propose/exit
+construction, save/supersession, saved-plan admission, builder dispatch, removal, recomputed
+handoff refusals and save-before-browser ordering. Simulation/Projection own session selection,
+isolated generations, currently-owned asset merge, stale baseline/reset reasons, leg admission,
+local transaction and rich cap/roster projection. Composition retains what-if→refresh and MovesMu
+spans plus cross-feature WhatIf, asset, clock, authorization and URL ports. No authoritative
+mirror mutation, remote submission, permission/binding/schema change or new package/dependency.
+
+The resume began with uncommitted plans.go and trades_app.go from the interrupted run; completed
+and source-traced them against HEAD before testing. Added inward save-failure/order, missing/wrong
+exit direction, blocked/stale handoff, receipt persistence before browser/event/wake, owner refusal,
+partial builder output and simulation/projection early-error tests. Full Trades race suite passed;
+filtered real composition trade batch plus command-door parity passed (130.844 seconds), including
+exact cents, private-counterparty isolation, IR/taxi/removed assets, pick-only/next season, local
+removal/supersession, wire goldens and safe handoff. Existing integration tests remain outward;
+new tests exercise the inward workflows rather than duplicating the real DB fixture harness.
+
+Frontend install/build passed (existing chunk warning). git pull --ff-only again refused divergent
+origin/main tracking; no merge/rebase/upstream change. Initial lint found misplaced/now-unused
+wrapcheck annotations and import grouping; corrected, affected-package golangci-lint passed.
+No skipped test counted as passing. Timeout evidence remains the prior CI 194–478-second passing
+composition runs and locally measured expensive fixtures, not a demonstrated deadlock.
