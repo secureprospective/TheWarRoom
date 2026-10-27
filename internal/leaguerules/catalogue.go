@@ -50,11 +50,31 @@ type SettingReading struct {
 
 // catalogue is built once: every field, label and schema in it is fixed by the code, and rebuilding it by
 // reflection on each rule check was a third of a native command's time.
-var catalogue = sync.OnceValue(buildCatalogue) //nolint:gochecknoglobals // fixed by the code, built once, read-only
+//
+//nolint:gochecknoglobals // fixed by the code, built once, read-only
+var catalogue = sync.OnceValue(func() catalogueIndex {
+	fields := buildCatalogue()
+	byPath := make(map[FieldPath]CatalogueField, len(fields))
+	for _, field := range fields {
+		byPath[field.Path] = field
+	}
+	return catalogueIndex{fields: fields, byPath: byPath}
+})
+
+type catalogueIndex struct {
+	fields []CatalogueField
+	byPath map[FieldPath]CatalogueField
+}
+
+// Field returns a catalogue entry by path. Its schema is shared and read-only.
+func Field(path FieldPath) (CatalogueField, bool) {
+	field, ok := catalogue().byPath[path]
+	return field, ok
+}
 
 // Catalogue lists every rule a commissioner can set. Each call gets its own list; the schemas inside are
 // shared and read-only.
-func Catalogue() []CatalogueField { return slices.Clone(catalogue()) }
+func Catalogue() []CatalogueField { return slices.Clone(catalogue().fields) }
 
 func buildCatalogue() []CatalogueField {
 	result := make([]CatalogueField, 0, len(ruleFields()))

@@ -1,0 +1,19 @@
+{
+ "draft": {
+  "season": 2027,
+  "at": "0001-01-01T00:00:00Z",
+  "pick": {
+   "franchise": "franchise.01",
+   "player": "5001",
+   "entrySeason": 2027,
+   "round": 1,
+   "slot": 1,
+   "original": "franchise.01",
+   "terms": {
+    "salaryCents": 300000000,
+    "years": 5,
+    "rfaAfter": false
+   }
+  }
+ }
+}

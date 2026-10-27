@@ -15,13 +15,13 @@ func draftSetupValues(raw RawCommand, records []Record, now time.Time) (map[stri
 		return nil, err
 	}
 	out := map[string]string{}
-	out["Later-round draft pattern"] = FieldWords(rules, "draft.laterPattern")
-	out["Draft order tie rule"] = FieldWords(rules, "draft.tieRule")
+	out["Later-round draft pattern"] = RuleValueWords(rules, "draft.laterPattern")
+	out["Draft order tie rule"] = RuleValueWords(rules, "draft.tieRule")
 	if d.Season == 0 {
 		return out, nil
 	}
 	prefix := fmt.Sprintf("Season %d rookie draft", d.Season)
-	out[prefix+" order source"] = FieldWords(rules, "draft.orderSource")
+	out[prefix+" order source"] = RuleValueWords(rules, "draft.orderSource")
 	rounds := slices.SortedFunc(maps.Keys(rules.Draft.Order.Value), func(a, b int) int { return a - b })
 	for _, round := range rounds {
 		out[fmt.Sprintf("%s, round %d order", prefix, round)] = strings.Join(rules.Draft.Order.Value[round], ", ")

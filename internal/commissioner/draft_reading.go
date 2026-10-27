@@ -297,17 +297,6 @@ func draftActs(records []Record, season int) []rookiedraft.Act {
 	return out
 }
 
-// closeRecord is the close in force for one draft, if there is one.
-func closeRecord(records []Record, season int) (Record, bool) {
-	active := Replay(records).Active
-	for _, r := range records {
-		if r.Command.Command == DraftArchive && active[r.Receipt.Entry] && r.Command.Args.Draft.Season == season {
-			return r, true
-		}
-	}
-	return Record{}, false
-}
-
 func localizeDraft(d *rookiedraft.Draft, local *time.Location) {
 	d.Start = d.Start.In(local)
 	if d.OnClock != nil {
