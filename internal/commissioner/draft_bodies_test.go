@@ -109,6 +109,23 @@ func TestDraftBodies(t *testing.T) {
 	act("draft.assign", DraftAssign, RawDraftAct{Round: 1, Original: order[1], Player: "5002"})
 	act("draft.insert", DraftInsert, RawDraftAct{Round: 1, Original: order[1], Franchise: order[2], Player: "5003"})
 	act("draft.change", DraftChange, RawDraftAct{Round: 1, Original: order[1], Player: "5004", Replaces: "5002"})
+	assets, err := NativeAssetsReading(rolloverLeague, f.b.records)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, pick := range assets.Snapshot.Picks {
+		if pick.Season == 2027 && pick.Round == 1 && pick.Original == order[1] {
+			found = true
+			if pick.Player != "5004" {
+				t.Fatalf("changed pick holds %q, want 5004", pick.Player)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("changed pick not found")
+	}
+	act("draft.change-again", DraftChange, RawDraftAct{Round: 1, Original: order[1], Player: "5005", Replaces: "5004"})
 	act("draft.timer.pause", DraftTimer, RawDraftAct{Timer: TimerPause})
 	act("draft.timer.resume", DraftTimer, RawDraftAct{Timer: TimerResume})
 	act("draft.timer.set", DraftTimer, RawDraftAct{Timer: TimerSet, Seconds: 1800})
