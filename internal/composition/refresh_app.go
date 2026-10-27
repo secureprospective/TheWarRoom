@@ -90,7 +90,7 @@ func (a *App) refreshInBackground(parent context.Context) {
 			a.core.WorkerMu.Unlock()
 			return
 		}
-		parent, a.core.WeekCancel = context.WithCancel(parent)
+		parent, a.core.WeekCancel = context.WithCancel(parent) //nolint:gosec // WorkerGroup.Stop cancels the stored function under WorkerMu and joins before closing resources.
 		a.core.WorkerMu.Unlock()
 		(controlapp.BackgroundRefresh{Ready: a.ready, Start: a.startWorker,
 			Due: func() bool { return a.core.LaunchRefreshDue }, Clock: a.nativeWaiverClock, Watch: a.watchMoves,

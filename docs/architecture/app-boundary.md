@@ -2,14 +2,14 @@
 
 ## Resume here
 
-Part 2 in progress: **48 units / 2,212 baseline function LOC moved in Part 4**, including
-35 committed before the usage-limit resume and thirteen units completed afterward.
-Cumulative **116/126 units / 4,078/4,534 baseline function LOC**; 10 units / 456 LOC remain.
+Part 2 in progress: **51 units / 2,423 baseline function LOC moved in Part 4**, including
+35 committed before the usage-limit resume and sixteen units completed afterward.
+Cumulative **119/126 units / 4,289/4,534 baseline function LOC**; 7 units / 245 LOC remain.
 Frontend plan Part 3 shared read/cache work has not started.
 Branch: `session/revamp-B-app-boundary`. No PR/merge. HANDOFF.md untouched.
 
 Next: remaining Control read unit 102; Platform lifecycle/entry/resource
-units 86, 90–92, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
+units 86, 95–96, 98–100; then core policy audit/extraction and negative boundary ratchet.
 Keep readiness-dependent captures lazy, original lock spans and refusal text. Use filtered
 composition race batches with command-door parity; broad fixture runs need >200 seconds.
 
@@ -147,9 +147,9 @@ The first two rows are complete; row order within subsequent bands is advisory.
 | 87 | 5 | `internal/composition/database_checks_app.go` — `checkDatabases`:31, `startDatabaseChecks`:43 | 38 | `platform` | startup,B | Skip missing pools/canceled context; log findings; start one ready-gated hourly worker with bounded check/backup cycle and joined shutdown. MOVED (part 4, batch 8). |
 | 88 | 4 | `internal/composition/database_checks_app.go` — `newDatabaseBackups`:71, `backupDatabases`:83, `backupNow`:99, `pruneBackups`:125 | 55 | `platform` | B,W:commissioner;restore CLI | Build-stamped dev/prod matched-set schema limits; daily capture before retention; manual capture requires local account and configured backups; private logs/public generic failure; prune findings best-effort. MOVED (part 4, batch 8). |
 | 89 | 3 | `internal/composition/app.go` — `directory`:73 | 17 | `sources` | startup,B,W many | Cache season directory after first successful normalized player fetch; failure never publishes partial lookup. MOVED (part 4, batch 4). |
-| 90 | 5 | `internal/composition/app.go` — `startup`:126, `settleStartupFailure`:180, `finishStartup`:187, `initStoreFloor`:255 | 131 | `platform` | startup/probe | Logging failure nonfatal; acquire protected DB floor before client; initialize ordered stores; refresh only empty mirror; coordinator owns Writer; publish complete floor/readiness before revalidation; plain offline failure; launch refresh only if not seeded. |
-| 91 | 5 | `internal/composition/app.go` — `openDatabases`:209, `logMigrationFindings`:319 | 48 | `platform` | startup/probe | Instance lock before recovery and pre-migration backup; open matched stores at schema versions, archive subsequent fetches; log only present pools. |
-| 92 | 5 | `internal/composition/app.go` — `shutdown`:334, `startWorker`:355 | 32 | `platform` | shutdown,B | Mark stopping/cancel workers under admission lock; join before closing pools/releasing instance lock; no new worker after stopping. |
+| 90 | 5 | `internal/composition/app.go` — `startup`:126, `settleStartupFailure`:180, `finishStartup`:187, `initStoreFloor`:255 | 131 | `platform` | startup/probe | Logging failure nonfatal; acquire protected DB floor before client; initialize ordered stores; refresh only empty mirror; coordinator owns Writer; publish complete floor/readiness before revalidation; plain offline failure; launch refresh only if not seeded. MOVED (part 4, batch 9). |
+| 91 | 5 | `internal/composition/app.go` — `openDatabases`:209, `logMigrationFindings`:319 | 48 | `platform` | startup/probe | Instance lock before recovery and pre-migration backup; open matched stores at schema versions, archive subsequent fetches; log only present pools. MOVED (part 4, batch 9). |
+| 92 | 5 | `internal/composition/app.go` — `shutdown`:334, `startWorker`:355 | 32 | `platform` | shutdown,B | Mark stopping/cancel workers under admission lock; join before closing pools/releasing instance lock; no new worker after stopping. MOVED (part 4, batch 9). |
 | 93 | 1 | `internal/composition/app.go` — `configDir`:370, `isDevBuild`:386, `dbFileName`:390 | 21 | `platform` | startup,CLI | Owner-only config dir; dev stamp routes to separate dev databases, never production ledger.  MOVED (part 2, batch 3). |
 | 94 | 5 | `internal/composition/logging.go` — `setupLogging`:19, `pruneLogs`:37 | 25 | `platform` | startup | Owner-only per-launch log plus stderr; keep ten newest chronological launch files, best-effort pruning. MOVED (part 4, batch 4). |
 | 95 | 5 | `internal/composition/instance_lock_unix.go` — `acquireInstanceLock`:14, `releaseInstanceLock`:29 | 20 | `platform` | startup,CLI | Nonblocking exclusive OS lock; close on lock failure; nil-safe unlock/close. |
@@ -825,3 +825,23 @@ ready refusal and same-context ordered maintenance tests. Platform and filtered 
 batches passed (4.579 seconds composition), including actual daily capture, before-migration
 matched backup, manual restore into a never-opened profile, joined checks/shutdown and door parity.
 No schema version, backup retention, authorization or public response change.
+
+## Part 4 — batch 9: startup floor, database opening and worker admission
+
+Three units (90–92), 211 baseline function LOC. Platform owns startup ordering, nonfatal log
+failure, offline failure wording, readiness-before-revalidation, the fixed initialization steps,
+empty-mirror-only seed, complete-floor publication and seeded-report/clock order. DatabaseOpening
+owns lock→backup/recovery→pre-migration capture→matched stores→archive publication. WorkerGroup
+owns shared admission/stop/cancel/join decisions on the same caller-owned mutex, flag and waitgroup;
+composition retains shutdown once, resource construction, store assignments, lock ownership and
+cross-feature adapters. The coordinator remains the only holder of the what-if Writer.
+
+Inward tests cover nonfatal logs, launch-refresh selection, ordered cold/warm floor, failed
+coordinator/no-publication, ready-before-conditional revalidation, failed lock/recovery/history
+short-circuit, dev database paths, worker joining and no admission after stop. Platform and filtered
+composition race batches pass (6.409 seconds composition), including actual pre-migration backup,
+cold/warm startup, matched restores/manual recovery, key/refresh wiring, worker shutdown and parity.
+Full make lint passes: bloat 24/24, all placement/transport/root guards and zero lint issues.
+Gosec cannot trace the stored WeekCancel through WorkerGroup.Stop; added a narrow lifetime
+explanation, not a cancellation bypass. Context spans, defer order and startup capture/publication
+remain source-traced against the pre-batch implementation. No public/schema/permission change.
