@@ -36,7 +36,7 @@ func TestDefault32SpecRows(t *testing.T) {
 	}{
 		{"passing_yards", qb, 3000000, 150000}, {"passing_td", qb, 20000, 100000},
 		{"interception_thrown", qb, 20000, -40000}, {"passing_two_point", qb, 20000, 40000},
-		{"rushing_yards", rb, 1000000, 100000}, {"rushing_attempt", rb, 200000, 30000},
+		{"rushing_yards", rb, 1000000, 100000}, {"rushing_attempt", rb, 200000, 35700},
 		{"rushing_td", rb, 20000, 120000}, {"rushing_two_point", rb, 20000, 40000},
 		{"receiving_yards", wr, 1000000, 100000}, {"reception", wr, 20000, 20000},
 		{"receiving_td", wr, 20000, 120000}, {"receiving_two_point", wr, 20000, 40000},
@@ -162,13 +162,14 @@ func TestDefault32TouchBonus(t *testing.T) {
 		{15, 4, rb, 15*1500 + 40000}, {16, 4, rb, 16*1500 + 40000 + 30000}, {30, 9, rb, 30*1500 + 90000 + 30000},
 		{20, 0, qb, 20*1500 + 30000}, {0, 20, te, 20*12000 + 30000}, {60, 40, rb, 60*1500 + 400000},
 	} {
-		assertScore(t, rules, tc.position, line(tc.carries, tc.catches), tc.want)
+		extra := map[L]leaguerules.Decimal{qb: 75, rb: 285, wr: 384, te: 272}[tc.position]
+		assertScore(t, rules, tc.position, line(tc.carries, tc.catches), tc.want+(tc.carries*extra+50)/100*100)
 	}
 	if _, _, err := Score(rules, rb, quantity("touches", 200000)); err == nil {
 		t.Fatal("touches are counted from carries and catches, never recorded")
 	}
 	// Without both parts recorded the bonus is absent, not zero-guessed.
-	assertScore(t, rules, rb, quantity("rushing_attempt", 250000), 25*1500)
+	assertScore(t, rules, rb, quantity("rushing_attempt", 250000), 25*1500+7100)
 }
 
 func TestDefault32LineUnit(t *testing.T) {
@@ -260,5 +261,23 @@ func TestDefault32PuntAndOtherReturnsAreOneRule(t *testing.T) {
 		{0, 0, 0}, {2, 0, 120000}, {1, 1, 120000}, {0, 1, 60000}, {6, 5, 0},
 	} {
 		assertScore(t, rules, wr, line(tc.punt, tc.other), tc.want)
+	}
+}
+
+func TestDefault32RTL(t *testing.T) {
+	rules := leaguerules.Default32Scoring()
+	rules.RoundStatPoints = leaguerules.Known(false)
+	for _, tc := range []struct {
+		name                string
+		pos                 L
+		carries, tfl, extra leaguerules.Decimal
+	}{
+		{"RB three losses", rb, 20, 3, 285}, {"RB no losses", rb, 20, 0, 285},
+		{"WR", wr, 20, 3, 384}, {"QB", qb, 20, 3, 75}, {"TE", te, 20, 3, 272},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			line := StatLine{Quantities: map[leaguerules.StatID]leaguerules.Decimal{"rushing_attempt": tc.carries * 10000, "rushing_tfl": tc.tfl * 10000}}
+			assertScore(t, rules, tc.pos, line, tc.carries*1500+tc.carries*tc.extra-tc.tfl*3124)
+		})
 	}
 }

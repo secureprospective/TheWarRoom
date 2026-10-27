@@ -4,13 +4,13 @@
 Bee — 2026-10-27, `session/revamp-E-edge-scoring`. Do not push.
 
 ## Where it stands
-E1 derives eight PBP edge counts in `internal/fantasyscore/source/`, with old held-line fingerprint preserved. Hunt 17/11 and McCaffrey 29/1 match p6 for 2025 weeks 1–13. Targeted source tests pass, including race and opted-in real data. No scoring values changed.
+E3 adds RTL linear rules and the opt-in 2025 rate study in `internal/fantasyscore/source/rtl_study_test.go`. FB maps to RB. Held full-season PBP has 272 games. Weeks 1–13 RB rate 0.09368635 differs from Sol's reported 0.09386; investigate the source/position population before E5.
 
 ## Next move
-Review E1, then E2 per `docs/build-handoffs/revamp-E-slices.md`.
+Review E3 and the rate discrepancy; E2 remains outstanding, then E4–E6 per `docs/build-handoffs/revamp-E-slices.md`.
 
 ## Blocked on
-Nothing for E2. No upstream configured; `git pull --ff-only` refused.
+No upstream configured; `git pull --ff-only` refused. Lint was blocked by another running golangci-lint process.
 
 ## Tried and rejected
-No alternative pull or push attempted. Real PBP is in the p5 study cache referenced by p6's extractor, not p6cache itself.
+No alternative pull or push attempted.

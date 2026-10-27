@@ -24,6 +24,7 @@ func TestEdgeCredits(t *testing.T) {
 		}, map[leaguerules.StatID]leaguerules.Decimal{"third_down_conversion": 10000, "third_down_passing_conversion": 10000, "red_zone_target": 10000, "red_zone_pass_attempt": 10000}},
 		{"fourth completion", func(p *RawPlay) { p.FourthConversion = "1"; p.CompletePass = "1" }, map[leaguerules.StatID]leaguerules.Decimal{"fourth_down_conversion": 10000, "fourth_down_passing_conversion": 10000}},
 		{"incomplete red zone", func(p *RawPlay) { p.PassAttempt = "1"; p.Yardline = "20" }, map[leaguerules.StatID]leaguerules.Decimal{"red_zone_target": 10000, "red_zone_pass_attempt": 10000}},
+		{"third down run does not convert", func(p *RawPlay) { p.ThirdConversion = "0"; p.RushAttempt = "1" }, nil},
 		{"nonconversion outside", func(p *RawPlay) { p.RushAttempt = "1"; p.Yardline = "21" }, nil},
 		{"deleted", func(p *RawPlay) { p.RushAttempt = "1"; p.ThirdConversion = "1"; p.Deleted = "1" }, nil},
 		{"two point", func(p *RawPlay) { p.CompletePass = "1"; p.FourthConversion = "1"; p.TwoPoint = "1" }, nil},

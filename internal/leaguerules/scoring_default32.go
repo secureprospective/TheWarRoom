@@ -1,10 +1,11 @@
 package leaguerules
 
 const (
-	default32Citation = "DEFAULT-32 spec §4, locked 2026-10-26"
-	default32Lineup   = "DEFAULT-32 spec §1, locked 2026-10-26"
-	default32Roster   = "DEFAULT-32 spec §2, locked 2026-10-26"
-	default32OLine    = "DEFAULT-32 spec §3, locked 2026-10-26"
+	default32RTLCitation = "2025 nflverse regular-season play-by-play and weekly positions; FB counted as RB"
+	default32Citation    = "DEFAULT-32 spec §4, locked 2026-10-26"
+	default32Lineup      = "DEFAULT-32 spec §1, locked 2026-10-26"
+	default32Roster      = "DEFAULT-32 spec §2, locked 2026-10-26"
+	default32OLine       = "DEFAULT-32 spec §3, locked 2026-10-26"
 )
 
 // Default32 is the 32-Team Default league: Legacy's rules for 32 teams with the spec's lineup, roster,
@@ -71,7 +72,7 @@ func Default32Scoring() ScoringRules {
 	r := ScoringRules{
 		Catalogue:       cited(catalogue, default32Citation),
 		RoundStatPoints: cited(true, default32Citation),
-		Extras:          cited(default32Extras(), default32Citation),
+		Extras:          cited(default32Extras(), default32Citation+"; RTL rates: "+default32RTLCitation),
 		Ranges:          cited(ranges, default32Citation),
 		Scales:          cited(default32Scales(), default32Citation),
 		Totals: cited(map[StatID][]StatID{"touches": {"rushing_attempt", "reception"},
@@ -102,6 +103,7 @@ func default32Rows() []default32Row {
 		{"passing_two_point", "Passing two point conversion", "Passing", 20000, true, 0, 10, false, nil},
 		{"rushing_yards", "Rushing yards", "Rushing", 1000, true, -50, 999, false, nil},
 		{"rushing_attempt", "Rushing attempt", "Rushing", 1500, true, 0, 99, false, nil},
+		{"rushing_tfl", "Rush tackled for loss", "Rushing", -3124, false, 0, 0, false, []Position{QB, RB, WR, TE}},
 		{"rushing_td", "Rushing touchdown", "Rushing", 60000, true, 0, 10, false, nil},
 		{"rushing_two_point", "Rushing two point conversion", "Rushing", 20000, true, 0, 10, false, nil},
 		{"receiving_yards", "Receiving yards", "Receiving", 1000, true, -50, 999, false, nil},
@@ -144,6 +146,7 @@ func default32Rows() []default32Row {
 
 func default32Extras() map[StatID][]PositionExtra {
 	return map[StatID][]PositionExtra{
+		"rushing_attempt":     {{Positions: []Position{QB}, Points: 75}, {Positions: []Position{RB}, Points: 285}, {Positions: []Position{WR}, Points: 384}, {Positions: []Position{TE}, Points: 272}},
 		"reception":           {{Positions: []Position{TE}, Points: 2000, Ranged: true, Range: StatRange{Min: 0, Max: 9990000}}},
 		"tackle":              {{Positions: []Position{DT, DE}, Points: 10000}, {Positions: []Position{CB, S}, Points: 5000}},
 		"assist":              {{Positions: []Position{DT, DE}, Points: 5000}},
