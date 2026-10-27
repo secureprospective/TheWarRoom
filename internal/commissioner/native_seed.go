@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -267,8 +268,8 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 	if raw.Command != NativeSeed {
 		return nil
 	}
-	if len(records) == 0 || records[0].Command.Args.Preset != PresetLegacy {
-		return Refused(fmt.Errorf("only a Legacy NFL league can be seeded from held data"))
+	if err := checkSeedPreset(raw, records); err != nil {
+		return Refused(err)
 	}
 	if season := records[0].Command.Args.Season; season != 0 && season != raw.Args.Native.Season {
 		return Refused(fmt.Errorf("the starting snapshot must be for season %d, the season this league starts in",
@@ -287,6 +288,23 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 		if !slices.Contains(ids, f.ID) {
 			return Refused(fmt.Errorf("the snapshot must use this app league's franchises"))
 		}
+	}
+	return nil
+}
+
+// checkSeedPreset admits a start by the league's preset: a 32-Team Default league starts with one O-Line
+// card per franchise, a Legacy league from held data that holds no card, and no other league is seeded.
+func checkSeedPreset(raw RawCommand, records []Record) error {
+	switch {
+	case IsDefault32(records):
+		return checkDefault32Start(records, raw.Args.Native)
+	case len(records) == 0 || records[0].Command.Args.Preset != PresetLegacy:
+		return fmt.Errorf("only a Legacy NFL league can be seeded from held data")
+	case slices.ContainsFunc(raw.Args.Native.Players, func(p NativePlayer) bool {
+		_, card := nativecheck.LineCardTeam(p.ID)
+		return card
+	}):
+		return fmt.Errorf("a Legacy NFL league is seeded from held data and holds no O-Line cards")
 	}
 	return nil
 }

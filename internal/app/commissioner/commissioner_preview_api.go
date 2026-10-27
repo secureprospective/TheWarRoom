@@ -49,6 +49,5 @@ func (a *API) decodeCommissionerPreview(body string) (commissioner.RawCommand, e
 	}
 	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-	return a.host.NativeSeedCommand(ctx, input)
+	return a.seedCommand(ctx, input)
 }

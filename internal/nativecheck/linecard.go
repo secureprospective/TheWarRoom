@@ -55,6 +55,15 @@ func (f Facts) Of(id string) (PlayerFacts, bool) {
 	return p, ok
 }
 
+// AddLineCards puts every O-Line card into a facts map, so a reading that looks a player up by id names,
+// places and teams a card like any player (the cards join the player pool).
+func AddLineCards(f Facts) {
+	for _, team := range LineCardTeams() {
+		id, _ := LineCardID(team)
+		f[id], _ = LineCardFacts(id)
+	}
+}
+
 // LineCardsHeld checks the one-card rule on everything a franchise holds, reserve included: a league
 // that bounds OL holds each franchise to exactly one card, whatever other gate is turned off.
 func LineCardsHeld(rules leaguerules.RosterRules, players []RosterPlayer) error {

@@ -47,9 +47,8 @@ func (a *API) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt
 	}
 	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
 	defer cancel()
-	raw, err := a.host.NativeSeedCommand(ctx, input)
+	raw, err := a.seedCommand(ctx, input)
 	if err != nil {
-		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
 		return commissioner.Receipt{}, err
 	}
 	receipt, err := a.host.ExecuteCommissioner(ctx, raw, principal, a.host.CommissionerAuthorization())
@@ -67,4 +66,20 @@ func (a *API) TargetNativeDirectory(leagueID string) (commissioner.NativeDirecto
 func (a *API) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeAssets(leagueID)
+}
+
+// seedCommand shapes the starting snapshot: a 32-Team Default league starts from its own franchises and
+// O-Line cards; every other league captures held data through the host.
+func (a *API) seedCommand(ctx context.Context, input RawNativeSeedRequest) (commissioner.RawCommand, error) {
+	records, err := a.host.CommissionerRecords(ctx, input.League)
+	if err != nil {
+		return commissioner.RawCommand{}, fmt.Errorf("read the league before recording its start: %w", err)
+	}
+	if commissioner.IsDefault32(records) {
+		//nolint:wrapcheck // The refusal text is the user-facing reason.
+		return commissioner.Default32SeedCommand(records, input.League, input.Request, input.Reason, input.Expected,
+			a.host.CommissionerNow())
+	}
+	//nolint:wrapcheck // Preserve the existing refusal text and error identity.
+	return a.host.NativeSeedCommand(ctx, input)
 }

@@ -37,6 +37,10 @@ func TestPlayerFactsMarkOnlyARealDraftYearAsHeld(t *testing.T) {
 		"0043": {Name: "Backer, B", Team: "BBB", Position: leaguerules.Position("LB"), DraftYear: 1970},
 		"0044": {Name: "Safety, C", Team: "CCC", Position: leaguerules.Position("S")},
 	}
+	nativecheck.AddLineCards(want)
+	if len(want) != 35 || want["990003"].Name != "BAL O-Line" || want["990003"].Position != leaguerules.OL {
+		t.Fatalf("the 32 O-Line cards join the pool: %+v", want["990003"])
+	}
 	if !reflect.DeepEqual(facts, want) {
 		t.Fatalf("an id the directory cannot resolve is skipped, and MFL's 1970 is no draft year:\n got %+v\nwant %+v", facts, want)
 	}
