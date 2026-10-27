@@ -2,9 +2,11 @@ package trades
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -12,11 +14,15 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
 
+// SimulationWorkflow projects a trade on throwaway ledgers. Scratch opens one temporary pool per
+// projection; Open and Load must write only to the pool they are given, so a projection (including
+// the live re-projection of every saved plan on each builder read) never writes whatif.db.
 type SimulationWorkflow struct {
-	Open   func(context.Context, string) (state.WhatIfSession, *state.Store, error)
-	Mirror func(context.Context, string) (state.WhatIfSession, error)
-	Load   func(context.Context, state.WhatIfSession) (*state.Store, error)
-	Now    func() time.Time
+	Scratch func(context.Context) (*db.Pools, error)
+	Open    func(context.Context, *db.Pools, string) (state.WhatIfSession, *state.Store, error)
+	Mirror  func(context.Context, string) (state.WhatIfSession, error)
+	Load    func(context.Context, *db.Pools, state.WhatIfSession) (*state.Store, error)
+	Now     func() time.Time
 }
 
 type ProjectionWorkflow struct {
@@ -29,26 +35,46 @@ type ProjectionWorkflow struct {
 	Figure       func(string, domain.Money, domain.Money) Figure
 }
 
+// Simulation's Store lives in its scratch pool; Close discards both.
 type Simulation struct {
 	Sessions []state.WhatIfSession
 	Store    *state.Store
 	Before   map[string]domain.Money
+	scratch  *db.Pools
 }
 
-func (s SimulationWorkflow) Run(ctx context.Context, mine, other string) (Simulation, error) {
-	out := Simulation{Before: map[string]domain.Money{}}
+// Close discards the scratch pool. It is safe on a zero Simulation.
+func (s Simulation) Close() error {
+	if s.scratch == nil {
+		return nil
+	}
+	return s.scratch.Close() //nolint:wrapcheck // db.Close names the pool.
+}
+
+func (s SimulationWorkflow) Run(ctx context.Context, mine, other string) (out Simulation, err error) {
+	out = Simulation{Before: map[string]domain.Money{}}
+	scratch, err := s.Scratch(ctx)
+	if err != nil {
+		return out, fmt.Errorf("trade scratch ledger: %w", err)
+	}
+	out.scratch = scratch
+	defer func() {
+		if err != nil {
+			err = errors.Join(err, out.Close())
+		}
+	}()
 	merged := state.MirrorSnapshot{}
 	for _, fid := range []string{mine, other} {
 		var session state.WhatIfSession
 		var store *state.Store
 		var err error
 		if fid == mine {
-			session, store, err = s.Open(ctx, fid)
+			session, store, err = s.Open(ctx, scratch, fid)
 		} else {
 			session, err = s.Mirror(ctx, fid)
 			if err == nil {
 				session.Generation = "trade-counterparty:" + fmt.Sprint(s.Now().UnixNano())
-				store, err = s.Load(ctx, session)
+				store, err = s.Load(ctx, scratch, session)
 				if err == nil {
 					session.SeedUsed, _ = store.CapUsed(fid)
 				}
@@ -79,7 +105,7 @@ func (s SimulationWorkflow) Run(ctx context.Context, mine, other string) (Simula
 	seed := out.Sessions[0]
 	seed.Generation = "trade-preview:" + fmt.Sprint(s.Now().UnixNano())
 	seed.Snapshot = merged
-	store, err := s.Load(ctx, seed)
+	store, err := s.Load(ctx, scratch, seed)
 	if err != nil {
 		return out, err
 	}
@@ -92,6 +118,7 @@ func (s ProjectionWorkflow) Run(ctx context.Context, r RawTradeBuilder, snap sna
 	if err != nil {
 		return out, err
 	}
+	defer func() { _ = sim.Close() }() // a throwaway scratch pool; nothing to keep
 	stamps, err := s.Stamps(ctx)
 	if err != nil {
 		return out, fmt.Errorf("trade baseline stamps: %w", err)
@@ -119,12 +146,8 @@ func (s ProjectionWorkflow) Run(ctx context.Context, r RawTradeBuilder, snap sna
 		before[session.Mine], _ = sim.Store.CapUsed(session.Mine)
 	}
 	if len(blocks) == 0 && len(moves) > 0 {
-		coord, err := transactions.New(sim.Store.Writer(), nil, nil)
-		if err != nil {
-			return out, fmt.Errorf("trade preview coordinator: %w", err)
-		}
-		if _, err := coord.Execute(ctx, transactions.Trade{Moves: moves, Rationale: "Local what-if trade projection"}); err != nil {
-			return out, fmt.Errorf("trade preview: %w", err)
+		if err := executeProjection(ctx, sim.Store, moves); err != nil {
+			return out, err
 		}
 	}
 	players := map[string]snapshot.Player{}
@@ -140,6 +163,19 @@ func (s ProjectionWorkflow) Run(ctx context.Context, r RawTradeBuilder, snap sna
 	out.Post = DealText(Input(r), ServiceTeams(catalog), sim.Sessions[0].Snapshot)
 	return out, nil
 }
+
+// executeProjection makes the trade on the simulation's scratch ledger.
+func executeProjection(ctx context.Context, store *state.Store, moves []transactions.PlayerMove) error {
+	coord, err := transactions.New(store.Writer(), nil, nil)
+	if err != nil {
+		return fmt.Errorf("trade preview coordinator: %w", err)
+	}
+	if _, err := coord.Execute(ctx, transactions.Trade{Moves: moves, Rationale: "Local what-if trade projection"}); err != nil {
+		return fmt.Errorf("trade preview: %w", err)
+	}
+	return nil
+}
+
 func simulationInput(sim Simulation, s state.WhatIfSession, seed domain.Money,
 	players map[string]snapshot.Player, name string) ProjectionInput {
 	used, _ := sim.Store.CapUsed(s.Mine)

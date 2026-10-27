@@ -55,7 +55,7 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 	if err != nil {
 		return result, err
 	}
-	if version < len(steps) {
+	if version < len(steps) && p.scratchDir == "" {
 		result.Backup, err = p.backupMigration(ctx, version)
 		if err != nil {
 			return result, err

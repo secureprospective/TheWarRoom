@@ -10,6 +10,7 @@ import (
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -122,16 +123,15 @@ func (a *App) tradeBuilderPlanAction(ctx context.Context, r tradesapp.RawTradeBu
 func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradesapp.Simulation, error) {
 	//nolint:wrapcheck // Preserve what-if service errors.
 	return (tradesapp.SimulationWorkflow{
-		Open: func(ctx context.Context, fid string) (state.WhatIfSession, *state.Store, error) {
-			return contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: fid, Action: "read"})
+		Scratch: db.OpenScratch,
+		Open: func(ctx context.Context, scratch *db.Pools, fid string) (state.WhatIfSession, *state.Store, error) {
+			return contractsapp.ScratchWhatIf(ctx, contractsapp.StoresOf(a.core), scratch, fid)
 		},
 		Mirror: func(ctx context.Context, fid string) (state.WhatIfSession, error) {
 			return contractsapp.MirrorWhatIf(ctx, contractsapp.StoresOf(a.core), fid)
 		},
-		Load: func(ctx context.Context, session state.WhatIfSession) (*state.Store, error) {
-			return contractsapp.LoadWhatIf(ctx, a.core.WhatifPools, session)
-		},
-		Now: time.Now,
+		Load: contractsapp.LoadWhatIf,
+		Now:  time.Now,
 	}).Run(ctx, mine, other)
 }
 

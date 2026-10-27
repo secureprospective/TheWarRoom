@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -154,7 +155,7 @@ func TestBuilderOwnerRefusalAvoidsStateAndPreviewFailureRetainsTeams(t *testing.
 }
 func TestSimulationAndProjectionStopOnInputFailure(t *testing.T) {
 	failure := errors.New("unavailable")
-	simulation := SimulationWorkflow{Open: func(context.Context, string) (state.WhatIfSession, *state.Store, error) {
+	simulation := SimulationWorkflow{Scratch: db.OpenScratch, Open: func(context.Context, *db.Pools, string) (state.WhatIfSession, *state.Store, error) {
 		return state.WhatIfSession{}, nil, failure
 	}}
 	if out, err := simulation.Run(context.Background(), "0001", "0002"); !errors.Is(err, failure) || out.Store != nil || len(out.Sessions) != 0 {

@@ -29,6 +29,7 @@ type Pools struct {
 	read             *sql.DB
 	write            *sql.DB
 	path             string
+	scratchDir       string // set by OpenScratch; Close deletes it
 	checkRunMu       sync.Mutex
 	checkMu          sync.Mutex
 	lastCheck        RoutineCheck
@@ -208,6 +209,11 @@ func (p *Pools) Close() error {
 	if p.write != nil {
 		if err := p.write.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("db: close write pool: %w", err))
+		}
+	}
+	if p.scratchDir != "" {
+		if err := os.RemoveAll(p.scratchDir); err != nil {
+			errs = append(errs, fmt.Errorf("db: remove scratch: %w", err))
 		}
 	}
 	return errors.Join(errs...)
