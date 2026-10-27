@@ -97,6 +97,9 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 				row.Governed = &g
 			}
 		}
+		if value.Citation == "Counted from the league's franchises" || value.Citation == "Counted from the division alignment" {
+			row.Citation, row.ChangedAt, row.Governed = value.Citation, "", nil
+		}
 		if row.Pending == nil {
 			row.Pending = []RulePending{}
 		}

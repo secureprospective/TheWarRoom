@@ -94,6 +94,14 @@ func resolveRecords(records []Record) (leaguerules.RuleSet, error) {
 
 // CheckRulesAppend refuses a change whose result the league's rules could not hold together.
 func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
+	if raw.Command == RulesSet {
+		switch raw.Args.Field {
+		case "league.teams":
+			return Refused(errors.New("rule change refused: Teams is counted from the league's franchises; add or remove franchises instead"))
+		case "league.divisions":
+			return Refused(errors.New("rule change refused: Divisions is counted from the division alignment; change the alignment instead"))
+		}
+	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})

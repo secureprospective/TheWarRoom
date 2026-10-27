@@ -192,3 +192,20 @@ func TestCreationRecordsSource(t *testing.T) {
 		})
 	}
 }
+
+func TestCountedShapeChangeRefused(t *testing.T) {
+	b := newLedger(t, PresetLegacy)
+	for _, tc := range []struct{ field, message string }{
+		{"league.teams", "Teams is counted from the league's franchises; add or remove franchises instead"},
+		{"league.divisions", "Divisions is counted from the division alignment; change the alignment instead"},
+	} {
+		for _, effective := range []string{"now", "next_rollover"} {
+			t.Run(tc.field+"/"+effective, func(t *testing.T) {
+				err := CheckRulesAppend(ruleRaw(tc.field, `12`, effective, "Agreed"), b.records, seasonMoment(2))
+				if err == nil || !strings.Contains(err.Error(), tc.message) {
+					t.Fatalf("refusal: %v", err)
+				}
+			})
+		}
+	}
+}

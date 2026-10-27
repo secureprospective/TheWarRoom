@@ -198,6 +198,12 @@ func TestCommissionerPresets(t *testing.T) {
 	}
 	for _, section := range rules.Sections {
 		for _, row := range section.Rows {
+			if row.Field == "league.teams" {
+				if row.State != "Set" || row.Value != "10" || row.Citation != "Counted from the league's franchises" {
+					t.Fatalf("empty league teams: %+v", row)
+				}
+				continue
+			}
 			if row.State != "Needs a ruling" || row.Value != "Needs a ruling" ||
 				row.Citation != "Needs a ruling" || row.ChangedAt != "" {
 				t.Fatalf("empty league invented %s: %+v", row.Field, row)

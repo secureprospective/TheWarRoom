@@ -146,7 +146,32 @@ func RulesNow(records []Record, now time.Time) (leaguerules.RuleSet, error) {
 	if err != nil {
 		return leaguerules.RuleSet{}, err
 	}
-	return RulesInForce(records, season, at)
+	rules, err := RulesInForce(records, season, at)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	countedShape(&rules, records)
+	return rules, nil
+}
+
+func countedShape(rules *leaguerules.RuleSet, records []Record) {
+	for _, r := range records {
+		if r.Command.Command == Create {
+			rules.League.Teams = leaguerules.Value[int]{State: leaguerules.IsKnown,
+				Value: len(r.Command.Args.Franchises), Citation: "Counted from the league's franchises"}
+			break
+		}
+	}
+	if rules.League.Alignment.State == leaguerules.IsKnown {
+		divisions := map[string]bool{}
+		for _, name := range rules.League.Alignment.Value {
+			if name != "" {
+				divisions[name] = true
+			}
+		}
+		rules.League.Divisions = leaguerules.Value[int]{State: leaguerules.IsKnown,
+			Value: len(divisions), Citation: "Counted from the division alignment"}
+	}
 }
 
 // RulesInForce is the one place a native league's rules are resolved. It returns the rules a season

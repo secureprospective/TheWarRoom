@@ -12,7 +12,7 @@
      "label": "Teams",
      "value": "32",
      "state": "Set",
-     "citation": "Legacy NFL rules",
+     "citation": "Counted from the league's franchises",
      "changedAt": "",
      "schema": {
       "kind": "count",
@@ -56,9 +56,9 @@
     {
      "field": "league.divisions",
      "label": "Divisions",
-     "value": "8",
+     "value": "1",
      "state": "Set",
-     "citation": "Legacy NFL rules",
+     "citation": "Counted from the division alignment",
      "changedAt": "",
      "schema": {
       "kind": "count",
@@ -68,7 +68,7 @@
      },
      "competitive": true,
      "pending": [],
-     "current": 8,
+     "current": 1,
      "unit": "",
      "safeguards": {
       "nextRollover": "hold",
