@@ -152,7 +152,7 @@ func schemaFor(t reflect.Type) ValueSchema {
 
 func catalogueChoices(kind string) []Choice {
 	candidates := []string{"head_to_head", "draft", "all", "keepers", "zero_top_starter", "zero_slot", "none",
-		"hard", "soft", "IR", "PUP", "NFI", "Out", "suspended", "calendar_years", "career_games", "cut",
+		"hard", "soft", "IR", "PUP", "NFI", "Out", "suspended", "calendar_years", "career_games", "nfl_seasons", "cut",
 		"reverse_standings", "rolling", "blind", "open", "dot", "commissioner", "start_of_day", "end_of_day",
 		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "win_percentage", "head_to_head",
 		"division_percentage", "conference_percentage", "all_play_percentage", "points", "power_rank",
@@ -599,8 +599,11 @@ func renderRange(low, high string, hasLow, hasHigh bool) string {
 }
 
 func choiceWords(option string) string {
-	if option == string(DOTReview) {
+	switch option {
+	case string(DOTReview):
 		return "DOT"
+	case string(NFLSeasons):
+		return "NFL seasons"
 	}
 	return plainName(option)
 }

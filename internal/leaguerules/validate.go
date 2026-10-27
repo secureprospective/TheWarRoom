@@ -124,7 +124,7 @@ func validateMenu(kind, value string) error {
 		"Format": {"head_to_head"}, "InitialRosters": {"draft"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
-		"ExperienceBasis": {"calendar_years", "career_games"}, "WaiverTrigger": {"cut"},
+		"ExperienceBasis": {"calendar_years", "career_games", "nfl_seasons"}, "WaiverTrigger": {"cut"},
 		"WaiverMethod": {"reverse_standings", "rolling"}, "BidMode": {"blind", "open"},
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
 		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},

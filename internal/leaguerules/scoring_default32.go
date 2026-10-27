@@ -31,6 +31,7 @@ func Default32() RuleSet {
 	r.Roster.PositionBounds = cited(map[Position]Bounds{OL: bounds(1, 1, default32OLine)}, default32OLine)
 	r.Taxi.Slots = cited(8, default32Roster)
 	r.Taxi.MaximumYears = cited(3, default32Roster)
+	r.Taxi.Basis = cited(NFLSeasons, default32Roster)
 	r.IR.Slots = cited(12, default32Roster)
 	r.IR.Eligible = cited([]NFLStatus{InjuredReserve, PUP}, default32Roster)
 	r.IR.MustLeaveHealthy = cited(true, default32Roster)

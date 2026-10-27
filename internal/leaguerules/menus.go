@@ -64,6 +64,8 @@ const (
 	Suspended            NFLStatus       = "suspended"
 	CalendarYears        ExperienceBasis = "calendar_years"
 	CareerGames          ExperienceBasis = "career_games"
+	// NFLSeasons counts only seasons the player spent in the NFL: no other league, no year out of it.
+	NFLSeasons           ExperienceBasis = "nfl_seasons"
 	OnCut                WaiverTrigger   = "cut"
 	ReverseStandings     WaiverMethod    = "reverse_standings"
 	Rolling              WaiverMethod    = "rolling"

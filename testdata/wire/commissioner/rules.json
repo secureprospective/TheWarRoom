@@ -3668,6 +3668,10 @@
        {
         "value": "career_games",
         "label": "Career games"
+       },
+       {
+        "value": "nfl_seasons",
+        "label": "NFL seasons"
        }
       ],
       "fields": []
