@@ -23,7 +23,8 @@ const (
 // the UFA slot: "$2M, expires 2028" seeded in 2026 gives PAID 2026-2028 at $2M each and UFA 2029.
 // Cells are flat (§6) and snapped to $10k (§1). An expired or missing year still gets the current
 // season as one PAID cell. contract_id groups the term's cells; each cell logs an INIT change row.
-func seedLedgerPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season int, now string, p domain.PlayerRecord) error {
+func (st *seedStatements) seedLedgerPlayer(ctx context.Context, leagueID string, season int, now string,
+	p domain.PlayerRecord) error {
 	mflID := p.MFLID.String()
 	contractID := "ct:" + leagueID + ":" + fmt.Sprint(season) + ":" + mflID
 	salary := domain.RoundToNearest10k(p.Salary)
@@ -33,11 +34,11 @@ func seedLedgerPlayer(ctx context.Context, tx *sql.Tx, leagueID string, season i
 		lastPaid = season // expired or missing: at least the current season
 	}
 	for year := season; year <= lastPaid; year++ {
-		if err := insertCell(ctx, tx, leagueID, mflID, contractID, year, salary, yearStatusPaid, now); err != nil {
+		if err := st.insertCell(ctx, leagueID, mflID, contractID, year, salary, yearStatusPaid, now); err != nil {
 			return err
 		}
 	}
-	return insertCell(ctx, tx, leagueID, mflID, contractID, lastPaid+1, 0, yearStatusUFA, now)
+	return st.insertCell(ctx, leagueID, mflID, contractID, lastPaid+1, 0, yearStatusUFA, now)
 }
 
 // LedgerCells returns a player's committed PAID cells (year to salary). UFA and VOID cells carry
@@ -66,17 +67,14 @@ WHERE league_id = ? AND mfl_id = ? AND year_status = ?`, s.leagueID, mflID, year
 }
 
 // insertCell writes one cell and its INIT change row in the seed transaction.
-func insertCell(ctx context.Context, tx *sql.Tx, leagueID, mflID, contractID string, year int, salary domain.Money, status, now string) error {
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO contract_years (league_id, mfl_id, league_year, salary_cents, year_status, contract_id, source, last_updated)
-		 VALUES (?, ?, ?, ?, ?, ?, 'seed', ?)`,
+func (st *seedStatements) insertCell(ctx context.Context, leagueID, mflID, contractID string, year int,
+	salary domain.Money, status, now string) error {
+	if _, err := st.cell.ExecContext(ctx,
 		leagueID, mflID, year, salary.Cents(), status, contractID, now); err != nil {
 		return fmt.Errorf("state: seed ledger cell %q/%d: %w", mflID, year, err)
 	}
 	changeID := fmt.Sprintf("cyc:%s:%s:%d", leagueID, mflID, year)
-	if _, err := tx.ExecContext(ctx,
-		`INSERT INTO contract_year_changes (id, league_id, mfl_id, league_year, old_cents, new_cents, reason, source, changed_at)
-		 VALUES (?, ?, ?, ?, 0, ?, 'seed: flat-fill from MFL annual salary + expiration', 'seed', ?)`,
+	if _, err := st.change.ExecContext(ctx,
 		changeID, leagueID, mflID, year, salary.Cents(), now); err != nil {
 		return fmt.Errorf("state: seed ledger change %q/%d: %w", mflID, year, err)
 	}

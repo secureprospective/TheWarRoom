@@ -105,7 +105,11 @@ func builderCall(t *testing.T, a *App, r tradesapp.RawTradeBuilder) tradesapp.Tr
 	t.Helper()
 	reading := builderReading(a, r)
 	if reading.Status != report.ReadingOK {
-		t.Fatalf("builder %s: %+v", r.Action, reading)
+		reason := "<nil>"
+		if reading.AbsenceReason != nil {
+			reason = *reading.AbsenceReason
+		}
+		t.Fatalf("builder %s: %s", r.Action, reason)
 	}
 	return reading.Value
 }
