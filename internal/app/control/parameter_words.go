@@ -18,6 +18,9 @@ func ParameterWords(key, description string) (label, group string) {
 		"model.k_dynasty":             {"Games until production and scouting weigh equally", "Production blend · dynasty"},
 		"model.z_exponential":         {"Use the exponential production blend", "Production blend"},
 		"model.board_kept":            {"Value this position with the fitted ratings (off: use the board rule)", "Production blend"},
+		"model.prior.unproven":        {"Pull toward the middle for a player with no NFL games (0 none, 1 all the way)", "Scouting prior"},
+		"model.arc.cliff_age":         {"Age the cliff starts (0: no cliff)", "Talent and age arc"},
+		"model.arc.cliff_step":        {"Extra yearly drop from the cliff age on", "Talent and age arc"},
 	}
 	if words, ok := fixed[key]; ok {
 		return words[0], words[1]
