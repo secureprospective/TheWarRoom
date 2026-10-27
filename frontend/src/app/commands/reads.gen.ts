@@ -106,6 +106,18 @@ export const readCommands = {
     "Items": null
   }
 },
+"control.GetParams": {
+  "command": "desktop.control.GetParams",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
 "control.TargetAccounting": {
   "command": "desktop.control.TargetAccounting",
   "arguments": {
@@ -1097,6 +1109,30 @@ export const readCommands = {
 },
 "sources.TargetCacheScopes": {
   "command": "desktop.sources.TargetCacheScopes",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"sources.TargetCrosswalk": {
+  "command": "desktop.sources.TargetCrosswalk",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [],
+    "Items": null
+  }
+},
+"sources.TargetDataSources": {
+  "command": "desktop.sources.TargetDataSources",
   "arguments": {
     "Type": "object",
     "Enum": null,

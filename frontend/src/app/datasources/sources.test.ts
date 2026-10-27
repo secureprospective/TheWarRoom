@@ -209,3 +209,51 @@ it('turns photos off when they are on, and keeps Go\'s result line', async () =>
   const markup = html(createElement(RefreshScopes, { data: state.read().data!, busy: '' }));
   expect(markup).toContain('Turn photos off');
 });
+
+it('publishes sources before parallel details, retaining both old details if either fails', async () => {
+  const p = provider();
+  const state = createDataState(p);
+  await state.run({ kind: 'read' });
+  const old = state.read();
+  let finish!: (v: ReturnType<typeof data>) => void;
+  let fail!: (cause: Error) => void;
+  const calls: string[] = [];
+  p.read = async () => { calls.push('sources'); return new Promise(resolve => { finish = resolve; }); };
+  p.crosswalk = async () => { calls.push('crosswalk'); return new Promise((_, reject) => { fail = reject; }); };
+  p.params = async () => { calls.push('params'); return wire.params as ParamsResult; };
+  const pending = state.run({ kind: 'read' });
+  expect(calls).toEqual(['sources']);
+  const next = { ...data(), archiveDir: 'new held folder' };
+  finish(next);
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(calls).toEqual(['sources', 'crosswalk', 'params']);
+  expect(state.read().data).toBe(next);
+  expect(state.read().crosswalk).toBe(old.crosswalk);
+  expect(state.read().params).toBe(old.params);
+  fail(new Error('crosswalk unavailable'));
+  await pending;
+  expect(state.read().data).toBe(next);
+  expect(state.read().crosswalk).toBe(old.crosswalk);
+  expect(state.read().params).toBe(old.params);
+  expect(state.read().outcomes.read).toBe('Error: crosswalk unavailable');
+  expect(state.read().busy).toBe('');
+});
+
+it('does not start detail reads after sources fails, and retries without replaying an action', async () => {
+  const p = provider();
+  let details = 0;
+  let actions = 0;
+  p.crosswalk = async () => { details++; return report(wire.crosswalk, 'Crosswalk'); };
+  p.read = async () => { throw new Error('sources unavailable'); };
+  p.photos = async () => { actions++; return parseOutcome(wire.result); };
+  const state = createDataState(p);
+  await state.run({ kind: 'photos', on: false });
+  expect(details).toBe(0);
+  expect(state.read().error).toBe('Error: sources unavailable');
+  p.read = async () => data();
+  await state.run({ kind: 'read' });
+  expect(details).toBe(1);
+  expect(actions).toBe(1);
+  expect(state.read().error).toBe('');
+  expect(state.read().outcomes.photos).toBe('Error: sources unavailable');
+});
