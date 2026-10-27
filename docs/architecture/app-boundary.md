@@ -1158,3 +1158,19 @@ Debt left: remaining approved-wiring semantic audit; owner-run pre-push/CI; disp
 verification; remaining scoped/compound/hosted frontend reads, event invalidation, account/league/
 provider lifetime/reset integration and live polling. Keep cache-first disabled in wrappers until
 those lifetimes are exercised. Next concrete slice is in Resume here and frontend-reads.md.
+
+## Part 6 — Market archive scope audit
+
+Finding: `refreshMarketFeed` still selected league-less exports, filtered archive URLs by report
+kind/week and wrapped live failures in composition. `market.ReadFeed` now owns that workflow;
+composition supplies the raw fetch/archive ports and retains the original latest-held reread and
+SeasonMu publication. This is one additional audited function (31 baseline physical LOC), not a
+second relocation of the original inventory. Remaining decision fingerprints in that file are
+representation conversion and the refresh pause resource fallback. Ratchet: 119 adapters / 48
+sources, zero legacy. Only the reviewed changed source fingerprint was updated; unrelated digests
+are unchanged. No host/permission/role/schema/binding/lock-span change.
+
+New inward tests exercise live success/no archive and live failure with wrong-week/wrong-league
+archive rejection before correct-scope parse; full Market race suite passes (4.601s). Filtered real
+composition Market refresh/fallback/concurrent reads/wire plus frozen-door and every-door parity
+pass (3.127s). Frontend prerequisite install/build passed (existing large lazy-chunk warning).

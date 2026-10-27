@@ -3,7 +3,9 @@ package market
 import (
 	"context"
 	"errors"
+	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -73,5 +75,47 @@ func TestMarketRefreshReportsReadyBeforeContextAndBoundedRun(t *testing.T) {
 	}
 	if !errors.Is(observed.Err(), context.Canceled) {
 		t.Fatal("context retained")
+	}
+}
+
+func TestReadFeedScopesFallbackBeforeParsing(t *testing.T) {
+	t.Parallel()
+	body, err := os.ReadFile("../../ingestion/marketfeeds/testdata/projectedScores.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	at := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
+	failure := errors.New("no network")
+	bodies := func(_ context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		if part != "TYPE=projectedScores" {
+			t.Fatal(part)
+		}
+		for _, query := range []string{"L=14432&W=5", "L=other&W=6", "L=14432&W=6"} {
+			if accept("https://fixture.invalid/2026/export?TYPE=projectedScores&"+query, body, at) {
+				if query != "L=14432&W=6" {
+					t.Fatal("wrong archive admitted", query)
+				}
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	rows, fresh, err := ReadFeed(t.Context(), t.Context(), 2026, marketfeeds.Projections, 6,
+		func(context.Context) (marketfeeds.Feed, error) { return marketfeeds.Feed{}, failure }, bodies, func(string) {})
+	if err != nil || len(rows) != 1 || rows[0].Week != 6 || fresh.FetchedAt != at.Format(time.RFC3339) || !strings.Contains(fresh.Note, "market refresh: no network") {
+		t.Fatal(rows, fresh, err)
+	}
+}
+
+func TestReadFeedLiveSuccessNeverReadsArchive(t *testing.T) {
+	t.Parallel()
+	rows, _, err := ReadFeed(t.Context(), t.Context(), 2026, marketfeeds.Ranks, 6,
+		func(context.Context) (marketfeeds.Feed, error) { return marketfeeds.Feed{Week: 6}, nil },
+		func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error) {
+			t.Fatal("archive after success")
+			return false, nil
+		}, func(string) {})
+	if err != nil || len(rows) != 1 || rows[0].Week != 6 {
+		t.Fatal(rows, err)
 	}
 }

@@ -354,3 +354,27 @@ func RefreshReports(force bool, ready func() error, parent func() context.Contex
 	run(ctx, force)
 	return nil
 }
+
+// ReadFeed applies the report's league/week archive scope to the caller's transport ports.
+func ReadFeed(ctx, fallback context.Context, season int, kind string, week int,
+	fetch func(context.Context) (marketfeeds.Feed, error), bodies func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error),
+	logLine func(string)) ([]marketfeeds.Feed, domain.Freshness, error) {
+	return report.LiveOrArchive(ctx, fallback, season, report.ArchivedFeed[marketfeeds.Feed]{ //nolint:wrapcheck // Preserve live/archive refusal precedence.
+		Export: kind, Leagueless: kind != marketfeeds.Projections,
+		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
+			feed, err := fetch(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("market refresh: %w", err)
+			}
+			return []marketfeeds.Feed{feed}, nil
+		}, Parse: func(body []byte) ([]marketfeeds.Feed, error) { return ParseArchiveFeed(kind, week, body) },
+		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+			return bodies(ctx, part, func(src string, body []byte, at time.Time) bool {
+				if !ArchiveScope(src, kind, week) {
+					return false
+				}
+				return accept(src, body, at)
+			})
+		},
+	}, logLine)
+}

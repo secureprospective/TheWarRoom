@@ -2,7 +2,6 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -52,34 +51,15 @@ func (a *App) refreshMarketFeeds(ctx context.Context, force bool) {
 }
 
 func (a *App) refreshMarketFeed(ctx context.Context, kind string, week int) {
-	parse := func(body []byte) ([]marketfeeds.Feed, error) { return marketapp.ParseArchiveFeed(kind, week, body) }
-	rows, fresh, err := liveOrArchive(ctx, a.fallbackParent(), a.core.Season, archivedFeed[marketfeeds.Feed]{
-		Export: kind, Leagueless: kind != marketfeeds.Projections,
-		Fetch: func(ctx context.Context) ([]marketfeeds.Feed, error) {
-			feed, ferr := marketfeeds.Fetch(ctx, a.core.MFLClient, kind, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
-			if ferr != nil {
-				return nil, fmt.Errorf("market refresh: %w", ferr)
-			}
-			return []marketfeeds.Feed{feed}, nil
-		}, Parse: parse,
-		Bodies: func(ctx context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
-			return a.core.History.ArchivedBodies(ctx, part, func(src string, body []byte, at time.Time) bool {
-				if !marketArchiveScope(src, kind, week) {
-					return false
-				}
-				return accept(src, body, at)
-			})
-		},
-	}, a.core.FallbackLog)
+	rows, fresh, err := marketapp.ReadFeed(ctx, a.fallbackParent(), a.core.Season, kind, week,
+		func(ctx context.Context) (marketfeeds.Feed, error) {
+			return marketfeeds.Fetch(ctx, a.core.MFLClient, kind, strconv.Itoa(a.core.Season), ingestion.LeagueID, week)
+		}, a.core.History.ArchivedBodies, a.core.FallbackLog)
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
 	held := a.marketHeld.SnapshotFeeds()[kind]
 	a.marketHeld.PublishFeed(kind, marketapp.RefreshedFeed(kind, week, held, rows, fresh, err))
 
-}
-
-func marketArchiveScope(src, kind string, week int) bool {
-	return marketapp.ArchiveScope(src, kind, week)
 }
 
 // buildMarketReports builds the board in the feature service and converts it to its wire type.
