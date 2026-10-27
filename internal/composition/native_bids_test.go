@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -23,7 +25,7 @@ func ledgerHas(t *testing.T, f *bidFixture, principal, entry string) bool {
 	return slices.ContainsFunc(ledger.Entries, func(e commissioner.Entry) bool { return e.ID == entry })
 }
 
-func playerRow(reading commissioner.NativeBids, player string) *commissioner.NativeBidPlayer {
+func playerRow(reading market.NativeBids, player string) *market.NativeBidPlayer {
 	for i := range reading.Players {
 		if reading.Players[i].Player == player {
 			return &reading.Players[i]

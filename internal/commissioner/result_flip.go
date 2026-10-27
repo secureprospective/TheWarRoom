@@ -233,7 +233,7 @@ func LineupCorrectionPreview(ctx context.Context, league string, records []Recor
 	verdict, _ := judgeStarters(rules.Lineup, true, change.Starters, env.Facts)
 	name := change.Franchise
 	if directory, err := NativeDirectoryReading(league, records, now); err == nil {
-		name = directory.seats().of(change.Franchise).Name
+		name = directory.Seats().Of(change.Franchise).Name
 	}
 	out := ScorePreview{Command: raw.Command, Warnings: []string{}, Flip: flip, Lineup: &verdict,
 		Words: fmt.Sprintf("Count these %d starters as %s's week %d lineup, lock or no lock", len(change.Starters), name, change.Week)}

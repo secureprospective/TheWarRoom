@@ -112,7 +112,7 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 // ruleHistory finds where each in-force value came from and which recorded changes still wait. A
 // next-rollover change stops waiting once its rollover has come.
 func ruleHistory(records []Record, at time.Time) (map[string]string, map[string][]RulePending, error) {
-	starts, err := rolloverInstants(records)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -185,7 +185,7 @@ func markReplaced(records []Record, pending map[string][]RulePending) error {
 // replaced, with when it was replaced. Only the newest takes effect (Christopher, 10-14). It does not
 // depend on the clock, so the ledger keeps the mark after the rollover has passed.
 func replacedWaiting(records []Record) (map[string]string, error) {
-	starts, err := rolloverInstants(records)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return nil, err
 	}

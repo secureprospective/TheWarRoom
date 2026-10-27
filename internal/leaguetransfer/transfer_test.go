@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
@@ -124,8 +126,8 @@ func addTransferLineups(t *testing.T, store *history.Store, raw commissioner.Raw
 
 type transferBidSeason struct{}
 
-func (transferBidSeason) BidEnvironment(context.Context, string, time.Time) (commissioner.BidEnvironment, error) {
-	return commissioner.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
+func (transferBidSeason) BidEnvironment(context.Context, string, time.Time) (market.BidEnvironment, error) {
+	return market.BidEnvironment{Season: nativecheck.BidSeason{Week: 5, WeekKnown: true}}, nil
 }
 
 func addTransferBid(t *testing.T, store *history.Store, raw commissioner.RawCommand, facts nativecheck.Facts) {

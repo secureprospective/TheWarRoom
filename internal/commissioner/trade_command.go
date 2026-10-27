@@ -20,24 +20,6 @@ const (
 	TradeOverride   = "trade.override"
 )
 
-// TradeAsset identifies exactly one player or an unspent pick, moving between two parties.
-type TradeAsset struct {
-	From     string `json:"from"`
-	To       string `json:"to"`
-	Player   string `json:"player,omitempty"`
-	Season   int    `json:"season,omitempty"`
-	Round    int    `json:"round,omitempty"`
-	Original string `json:"original,omitempty"`
-}
-
-type RawTradeArgs struct {
-	ID        string       `json:"id,omitempty"`
-	Franchise string       `json:"franchise,omitempty"`
-	Parties   []string     `json:"parties,omitempty"`
-	Assets    []TradeAsset `json:"assets,omitempty"`
-	Decision  string       `json:"decision,omitempty"`
-}
-
 func TradeCommand(command string) bool {
 	return slices.Contains([]string{TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeReview,
 		TradeRecuse, TradeAppeal, TradeAppealRule, TradeOverride}, command)
@@ -51,10 +33,8 @@ func OwnerTradeAction(command string) leaguerules.Action {
 }
 
 func (a RawArgs) validateTrade(command string) error {
-	other := a
-	other.Trade, other.TradeOutcome = nil, nil
-	if a.Trade == nil || !reflect.DeepEqual(other, RawArgs{}) {
-		return fmt.Errorf("send only this trade's details")
+	if err := a.onlyMarketDetails(func(v *RawArgs) { v.Trade, v.TradeOutcome = nil, nil }, a.Trade == nil, "send only this trade's details"); err != nil {
+		return err
 	}
 	return a.Trade.Validate(command)
 }

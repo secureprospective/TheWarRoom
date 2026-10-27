@@ -58,7 +58,7 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if basis.draft.OnClock != nil && basis.draft.OnClock.Paused {
 		return RawCommand{}, Refused(fmt.Errorf("the draft clock is paused; wait for the commissioner to resume it"))
 	}
-	assets, err := NativeAssetsReading(in.League, recordsThrough(records, at))
+	assets, err := NativeAssetsReading(in.League, RecordsThrough(records, at))
 	if err != nil {
 		return RawCommand{}, err
 	}
@@ -85,7 +85,7 @@ func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candi
 
 func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts nativecheck.Facts,
 	local *time.Location, records []Record, at time.Time) rookiedraft.SelectionBasis {
-	out := rookiedraft.SelectionBasis{Exceptions: scopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
+	out := rookiedraft.SelectionBasis{Exceptions: ScopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
 	if !assets.Seeded {
 		return out
 	}

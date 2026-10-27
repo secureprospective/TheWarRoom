@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -168,7 +170,7 @@ func TestNativeBidUndatedOffseasonUsesHeldRolloverAndLeagueZone(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		got, err := commissioner.BidOffseasonAt(records, at, 2027)
+		got, err := market.BidOffseasonAt(records, at, 2027)
 		if err != nil || got != c.want {
 			t.Fatalf("offseason at %s: %t %v", c.instant, got, err)
 		}

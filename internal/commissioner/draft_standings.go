@@ -168,6 +168,6 @@ func (f finalOrder) tied(group []string, tie leaguerules.Value[leaguerules.TieRu
 // afterwards cannot move a first round that has begun.
 func FinalStandingsReading(ctx context.Context, league string, records []Record, src ResultSources, season int,
 	through time.Time) (NativeStandings, error) {
-	records = recordsThrough(records, through)
+	records = RecordsThrough(records, through)
 	return NativeStandingsReading(ctx, league, records, src, season, through)
 }

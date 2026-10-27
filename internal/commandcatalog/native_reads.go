@@ -4,6 +4,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
@@ -69,7 +71,7 @@ func NativeReadShape(method, fields string) Schema {
 	case "TargetLeagueSchedule":
 		return Shape(reflect.TypeFor[leagueservice.RawLeagueScheduleScope](), "RawLeagueScheduleScope.Validate")
 	case "TargetNativeContractQuote":
-		return Shape(reflect.TypeFor[commissioner.RawContractQuote](), "RawContractQuote.Validate")
+		return Shape(reflect.TypeFor[market.RawContractQuote](), "RawContractQuote.Validate")
 	case "TargetNativeDraft":
 		return Shape(reflect.TypeFor[commissioner.RawNativeDraftScope](), "RawNativeDraftScope.Validate")
 	case "TargetNativeFranchiseSchedule":

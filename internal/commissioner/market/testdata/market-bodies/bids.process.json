@@ -1,0 +1,19 @@
+{
+ "bid": {
+  "player": "5001"
+ },
+ "bidOutcome": {
+  "player": "5001",
+  "season": 2026,
+  "winner": "franchise.02",
+  "winningBid": "entry.13",
+  "results": [
+   {
+    "id": "entry.12"
+   },
+   {
+    "id": "entry.13"
+   }
+  ]
+ }
+}

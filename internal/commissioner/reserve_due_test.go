@@ -14,15 +14,15 @@ func TestMustCutAllowsSuccessiveHumanCutsWithoutOpeningAcquisitions(t *testing.T
 	after := *before
 	after.Players = after.Players[:2]
 	records := []Record{{Principal: ReserveClockPrincipal, Command: RawCommand{Command: RosterReserve, Args: RawArgs{Waiver: &RawWaiverArgs{Franchise: "a", Player: "1002", Bucket: "active"}}}, Receipt: Receipt{Entry: "auto"}}}
-	permitted := allowDebtReduction(before, &after, records, rules, "a")
+	permitted := AllowDebtReduction(before, &after, records, rules, "a")
 	if permitted.Roster.Limits.Value.Max.Value != 2 || rules.Roster.Limits.Value.Max.Value != 1 {
 		t.Fatal("successive cut blocked or rules mutated")
 	}
-	unchanged := allowDebtReduction(before, before, records, rules, "a")
+	unchanged := AllowDebtReduction(before, before, records, rules, "a")
 	if unchanged.Roster.Limits.Value.Max.Value != 1 {
 		t.Fatal("non-reducing move got debt exemption")
 	}
-	if allowDebtReduction(before, &after, nil, rules, "a").Roster.Limits.Value.Max.Value != 1 {
+	if AllowDebtReduction(before, &after, nil, rules, "a").Roster.Limits.Value.Max.Value != 1 {
 		t.Fatal("ordinary overfull roster got automatic-return exemption")
 	}
 }

@@ -60,14 +60,14 @@ type NativeLineupCheck struct {
 // NativeLineupCheckReading judges a lineup of active players on one native franchise. A starter must be
 // on that franchise's active roster: IR and taxi players cannot start.
 func NativeLineupCheckReading(in RawNativeLineup, records []Record, now time.Time, facts nativecheck.Facts) (NativeLineupCheck, error) {
-	base, err := readNativeBase(in.League, records, now)
+	base, err := ReadNativeBase(in.League, records, now)
 	if err != nil {
 		return NativeLineupCheck{}, err
 	}
-	if !base.assets.Seeded {
+	if !base.Assets.Seeded {
 		return NativeLineupCheck{}, fmt.Errorf("record the league's starting snapshot before judging a lineup")
 	}
-	seat, ok := base.directory.seat(in.Franchise)
+	seat, ok := base.Directory.seat(in.Franchise)
 	if !ok {
 		return NativeLineupCheck{}, fmt.Errorf("choose one of this league's franchises")
 	}
@@ -76,15 +76,15 @@ func NativeLineupCheckReading(in RawNativeLineup, records []Record, now time.Tim
 		active[p.ID] = p.Status == domain.RosterActive
 	}
 	out := NativeLineupCheck{League: in.League, Name: Replay(records).Name, Revision: int64(len(records)),
-		RosterSeason: base.assets.Snapshot.Season, RulesSeason: base.rules.Season, Franchise: in.Franchise,
+		RosterSeason: base.Assets.Snapshot.Season, RulesSeason: base.Rules.Season, Franchise: in.Franchise,
 		FranchiseName: seat.Name, Source: base.source(), Starters: []NativeStarter{},
-		Rules: ruleLines(base.rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
+		Rules: RuleLines(base.Rules, "lineup.positions", "lineup.groups", "lineup.invalidPenalty", "lineup.missedFlag")}
 	for _, id := range in.Starters {
 		if !active[id] {
 			return NativeLineupCheck{}, fmt.Errorf("a starter must be on this franchise's active roster")
 		}
 	}
-	out.Verdict, out.Starters = judgeStarters(base.rules.Lineup, in.Submitted, in.Starters, facts)
+	out.Verdict, out.Starters = judgeStarters(base.Rules.Lineup, in.Submitted, in.Starters, facts)
 	return out, nil
 }
 

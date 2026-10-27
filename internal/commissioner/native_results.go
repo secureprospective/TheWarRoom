@@ -92,23 +92,23 @@ func weekResults(ctx context.Context, league string, records []Record, src Resul
 		out.Words = fmt.Sprintf("Week %d is not in the published schedule", week)
 		return out, nil
 	}
-	names := directory.seats()
+	names := directory.Seats()
 	scored := map[string]FranchiseWeekScore{}
 	for _, game := range published[index].Games {
 		for _, id := range []string{game.Home, game.Away} {
-			score, err := franchiseWeekScore(ctx, records, src, lineup, names.of(id), season, week)
+			score, err := franchiseWeekScore(ctx, records, src, lineup, names.Of(id), season, week)
 			if err != nil {
 				return NativeResults{}, err
 			}
 			scored[id] = score
 			out.Scores = append(out.Scores, score)
 		}
-		out.Games = append(out.Games, gameResult(week, names.of(game.Home), names.of(game.Away),
+		out.Games = append(out.Games, gameResult(week, names.Of(game.Home), names.Of(game.Away),
 			scored[game.Home], scored[game.Away]))
 	}
 	if bye := published[index].Bye; bye != "" {
-		out.Bye, out.ByeName = bye, names.of(bye).Name
-		score, err := franchiseWeekScore(ctx, records, src, lineup, names.of(bye), season, week)
+		out.Bye, out.ByeName = bye, names.Of(bye).Name
+		score, err := franchiseWeekScore(ctx, records, src, lineup, names.Of(bye), season, week)
 		if err != nil {
 			return NativeResults{}, err
 		}
@@ -172,7 +172,7 @@ func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek
 	if _, err := RulesInForce(records, season, at); err != nil {
 		return nil, err
 	}
-	starts, err := rolloverInstants(records)
+	starts, err := RolloverInstants(records)
 	if err != nil {
 		return nil, err
 	}
@@ -183,6 +183,6 @@ func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek
 	if index := season - first; index < len(starts) && !at.Before(starts[index]) {
 		at = starts[index].Add(-time.Nanosecond)
 	}
-	_, published, err := replaySchedule(recordsThrough(records, at))
+	_, published, err := replaySchedule(RecordsThrough(records, at))
 	return published, err
 }

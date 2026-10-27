@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
@@ -135,7 +137,7 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 type appBidEnv struct{ app *App }
 
 func (e appBidEnv) BidEnvironment(ctx context.Context, league string,
-	at time.Time) (commissioner.BidEnvironment, error) {
+	at time.Time) (market.BidEnvironment, error) {
 	//nolint:wrapcheck // Preserve the bidding refusal.
 	return nativeapp.ReadBidEnvironment(ctx, nativeapp.BidSource{Records: e.app.leagueRecords,
 		Schedule: e.app.nativeScheduleDates, Bracket: e.app.core.History.NativeBracket}, league, at)

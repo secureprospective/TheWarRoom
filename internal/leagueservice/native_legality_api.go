@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
@@ -135,29 +137,29 @@ func (a *Service) TargetNativePlayerScore(league, player string, season,
 	return reading, nil
 }
 
-func (a *Service) TargetNativeContractQuote(raw commissioner.RawContractQuote) (commissioner.ContractQuote,
+func (a *Service) TargetNativeContractQuote(raw market.RawContractQuote) (market.ContractQuote,
 	error) {
 	if err := raw.Validate(); err != nil {
-		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote input: %w", err)
+		return market.ContractQuote{}, fmt.Errorf("native contract quote input: %w", err)
 	}
 	if err := a.admitReading(commissioner.Access{League: raw.League, Operation: "contract.quote", Mode: "read", Player: raw.Player, SubjectCommand: raw.Action}); err != nil {
-		return commissioner.ContractQuote{}, err
+		return market.ContractQuote{}, err
 	}
 	if err := a.host.Ready(); err != nil {
-		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote startup: %w", err)
+		return market.ContractQuote{}, fmt.Errorf("native contract quote startup: %w", err)
 	}
 	zone, err := time.LoadLocation(raw.ViewerZone)
 	if err != nil {
-		return commissioner.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
+		return market.ContractQuote{}, fmt.Errorf("read viewer timezone: %w", err)
 	}
 	records, err := a.host.CommissionerRecords(a.viewContext(a.host.CommissionerContext()), raw.League)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the existing refusal text and error identity.
-		return commissioner.ContractQuote{}, err
+		return market.ContractQuote{}, err
 	}
-	quote, err := commissioner.QuoteContract(raw, records, a.host.CommissionerNow(), zone, a.host.NativeFacts())
+	quote, err := market.QuoteContract(raw, records, a.host.CommissionerNow(), zone, a.host.NativeFacts())
 	if err != nil {
-		return commissioner.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
+		return market.ContractQuote{}, fmt.Errorf("native contract quote: %w", err)
 	}
 	quote.Revision = commissioner.ViewRevision(a.viewContext(a.host.CommissionerContext()), records, quote.Revision)
 	return quote, nil

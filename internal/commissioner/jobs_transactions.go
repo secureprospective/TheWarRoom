@@ -8,7 +8,7 @@ import (
 )
 
 // transactionJobs reports the native queues, not an imported league's pending moves.
-func transactionJobs(assets NativeAssets, state waiverState, rules leaguerules.RuleSet, at time.Time) []Job {
+func transactionJobs(assets NativeAssets, state MarketBook, rules leaguerules.RuleSet, at time.Time) []Job {
 	waivers := Job{ID: "waivers", Name: "Waiver processing", State: JobLive, Controls: []string{"CM-035"}}
 	bids := Job{ID: "bids", Name: "Bid processing", State: JobLive, Controls: []string{"CM-036"}}
 	if !assets.Seeded {
@@ -21,7 +21,7 @@ func transactionJobs(assets NativeAssets, state waiverState, rules leaguerules.R
 	return []Job{waivers, bids}
 }
 
-func fillWaiverJob(job *Job, windows []waiverWindow, rules leaguerules.WaiversRules, at time.Time) {
+func fillWaiverJob(job *Job, windows []WaiverWindow, rules leaguerules.WaiversRules, at time.Time) {
 	if rules.Duration.State != leaguerules.IsKnown {
 		job.State, job.Words = JobBlocked, "Needs a ruling: how long waivers last."
 		return
@@ -36,7 +36,7 @@ func fillWaiverJob(job *Job, windows []waiverWindow, rules leaguerules.WaiversRu
 	job.Words = fmt.Sprintf("Waiver windows awaiting processing: %d. Closed windows are processed automatically.", pending)
 }
 
-func fillBidJob(job *Job, book bidBook, rules leaguerules.BidsRules, at time.Time) {
+func fillBidJob(job *Job, book BidBook, rules leaguerules.BidsRules, at time.Time) {
 	if rules.StandFor.State != leaguerules.IsKnown || rules.StandFor.Value <= 0 {
 		job.State, job.Words = JobBlocked, "Needs a ruling: how long a bid must stand to win."
 		return
@@ -52,9 +52,9 @@ func fillBidJob(job *Job, book bidBook, rules leaguerules.BidsRules, at time.Tim
 	}
 	pending := 0
 	for _, auction := range book.Auctions {
-		if !auction.Decided && len(auction.liveBids()) > 0 {
+		if !auction.Decided && len(auction.LiveBids()) > 0 {
 			pending++
-			jobClose(job, auction.standingAt().Add(rules.StandFor.Value), at)
+			jobClose(job, auction.StandingAt().Add(rules.StandFor.Value), at)
 		}
 	}
 	job.Words = fmt.Sprintf("Players with bids: %d. Untied bids close automatically; the commissioner settles ties.", pending)

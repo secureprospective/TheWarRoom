@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
@@ -12,7 +14,7 @@ import (
 // BidEnvironmentSource says where the NFL season stands and which franchises are in the playoffs when an
 // owner's bid is judged. It reads only what the app already holds, and never fetches.
 type BidEnvironmentSource interface {
-	BidEnvironment(ctx context.Context, league string, at time.Time) (commissioner.BidEnvironment, error)
+	BidEnvironment(ctx context.Context, league string, at time.Time) (market.BidEnvironment, error)
 }
 
 // SetBidEnvironment installs the season facts bids are judged against. Without it the week is unknown, and
@@ -20,13 +22,13 @@ type BidEnvironmentSource interface {
 func (s *Store) SetBidEnvironment(src BidEnvironmentSource) { s.bidEnv = src }
 
 // bidEnvironmentFor gathers an owner bid's season facts before the write begins; nothing else needs them.
-func (s *Store) bidEnvironmentFor(ctx context.Context, raw commissioner.RawCommand) (commissioner.BidEnvironment, error) {
+func (s *Store) bidEnvironmentFor(ctx context.Context, raw commissioner.RawCommand) (market.BidEnvironment, error) {
 	if commissioner.OwnerBidAction(raw.Command) == "" || s.bidEnv == nil {
-		return commissioner.BidEnvironment{}, nil
+		return market.BidEnvironment{}, nil
 	}
 	env, err := s.bidEnv.BidEnvironment(ctx, raw.League, s.now())
 	if err != nil {
-		return commissioner.BidEnvironment{}, fmt.Errorf("read the NFL week for this bid: %w", err)
+		return market.BidEnvironment{}, fmt.Errorf("read the NFL week for this bid: %w", err)
 	}
 	return env, nil
 }
@@ -36,7 +38,7 @@ type appendFacts struct {
 	players nativecheck.Facts
 	lineup  commissioner.LineupFacts
 	stat    commissioner.StatFacts
-	bid     commissioner.BidEnvironment
+	bid     market.BidEnvironment
 	draft   commissioner.DraftStandings
 }
 

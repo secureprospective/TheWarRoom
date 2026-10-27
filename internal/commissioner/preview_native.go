@@ -208,7 +208,7 @@ func snapshotPreviewValues(seed *RawNativeSnapshot, names map[string]string, out
 
 }
 
-func marketPreviewValues(raw RawCommand, book waiverState, names map[string]string, out map[string]string) {
+func marketPreviewValues(raw RawCommand, book MarketBook, names map[string]string, out map[string]string) {
 	if raw.Args.Waiver != nil {
 		out["Waiver priority"] = strings.Join(book.Order, ", ") + " — " + book.Source
 		for _, w := range book.Windows {
@@ -224,7 +224,7 @@ func marketPreviewValues(raw RawCommand, book waiverState, names map[string]stri
 	}
 	if raw.Args.Bid != nil {
 		for _, a := range book.Bids.Auctions {
-			words := countWords(len(a.liveBids()), "bid", "bids") + " awaiting a decision"
+			words := countWords(len(a.LiveBids()), "bid", "bids") + " awaiting a decision"
 			if a.Decided {
 				words = "No award"
 				if a.Winner != "" {
