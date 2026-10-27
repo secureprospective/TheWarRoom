@@ -95,3 +95,18 @@ it('does not republish an old scope-list read after forgetting the held view', a
   await settle();
   expect(cacheState.peek()).toEqual({ scopes: [], busy: '', error: '', outcomes: {}, pending: false });
 });
+
+it('keeps clear outcomes separate when an already-pending scope read finishes', async () => {
+  let finish!: (value: unknown) => void;
+  const host = await mount(render(CacheTools), {}, goes(async () => ({
+    ok: false, error: 'no source answer', summary: '',
+  }), () => new Promise(resolve => { finish = resolve; })));
+  await settle();
+  await cacheState.run('race');
+  expect(cacheState.peek()).toMatchObject({ busy: '', error: 'no source answer' });
+  finish(scopes);
+  await settle();
+  expect(cacheState.peek()).toMatchObject({ scopes, busy: '', error: '',
+    outcomes: { race: 'no source answer' } });
+  expect(host.textContent).toContain('no source answer');
+});

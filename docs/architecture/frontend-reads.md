@@ -45,7 +45,8 @@ to inflate migration counts.
 - `invalidate()` clears cached values and fences pending publication, retaining the displayed
   last-good view. `reset()` also clears private/displayed data and restores initial selections.
   Neither cancels a transport promise (the existing Wails calls have no AbortSignal contract).
-  Reset the instance when its account/league/provider lifetime ends before enabling cache-first.
+  Reset the instance when its account/league/provider lifetime ends; that integration is still
+  required before extending cache-first beyond the pre-existing historical detail caches.
 - Existing feature event adapters and UI mount subscriptions stay unchanged in this batch.
   Next migrations must route events/actions to explicit invalidation/revalidation without duplicate
   listeners or refresh loops. No new global event listener or eager request was installed.
@@ -156,3 +157,10 @@ detail revision fence; collapsing original scope identity; replacing one-entry d
 32 entries. Restored between attempts; no mutant or scratch file remains. Skipped tests in focused
 mutation runs are not counted as passes. Final targeted batch and production checks are recorded
 in app-boundary.md. No UI layout/event listener, write/polling/session invalidation or dependency change.
+
+
+Follow-up source review preserved Sources' successful-list error clearing even if a clear action
+failed while that read was pending; the action's per-scope outcome remains displayed separately.
+A real DOM/state regression covers that interleaving. Generator admission now individually rejects
+execute mode, non-read gravity and removal for each of the 12 newly migrated registry adapters
+(36 negative cases), not merely for the original Comms adapter.

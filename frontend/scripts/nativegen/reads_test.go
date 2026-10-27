@@ -49,3 +49,46 @@ func TestQueryCatalogUsesOnlyAuditedRegistryReadAdapters(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMigratedReadAdaptersRefuseEffectModesAndMissingEntries(t *testing.T) {
+	registry, err := composition.CommandRegistry()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{
+		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",
+		"market.TargetMarketStretches", "market.TargetAssetProfile",
+		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
+	} {
+		for _, change := range []string{"mode", "gravity", "missing"} {
+			t.Run(key+"/"+change, func(t *testing.T) {
+				entries := registry.Entries()
+				for i, entry := range entries {
+					for j, desktop := range entry.Desktop {
+						if desktop.Feature+"."+desktop.Command.Method != key {
+							continue
+						}
+						entries[i].Desktop = slices.Clone(entry.Desktop)
+						switch change {
+						case "mode":
+							entries[i].Desktop[j].Command.Modes = []catalog.Mode{catalog.Execute}
+						case "gravity":
+							entries[i].Desktop[j].Command.Gravity = "G1"
+						case "missing":
+							entries[i].Desktop = slices.Delete(entries[i].Desktop, j, j+1)
+						}
+					}
+				}
+				_, err := generateReadCommands(entries)
+				want := "not a held reading"
+				if change == "missing" {
+					want = "absent from registry"
+				}
+				if err == nil || !strings.Contains(err.Error(), key) || !strings.Contains(err.Error(), want) {
+					t.Fatal("wrong query admission", key, change, err)
+				}
+			})
+		}
+	}
+}

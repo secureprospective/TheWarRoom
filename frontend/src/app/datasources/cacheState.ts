@@ -28,7 +28,7 @@ function createCacheState(provider: CacheProvider) {
   type Held = { scopes: Scope[]; busy: string; error: string; outcomes: Record<string, string> };
   const query = createReadQuery('sources.TargetCacheScopes', {
     initial: (): Held => ({ scopes: [], busy: '', error: '', outcomes: {} }),
-    read: provider.scopes, accept: scopes => ({ scopes }),
+    read: provider.scopes, accept: scopes => ({ scopes, error: '' }),
   });
   const store = query.store;
   const load = () => query.load([]);
