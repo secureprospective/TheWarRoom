@@ -159,7 +159,7 @@ func TestValueBoardReplay(t *testing.T) {
 		}
 		if s := seasons[req.Season]; s != nil {
 			row.ThisPoints = boardPoints(s)
-			if s.Games() > 0 {
+			if s.HasTotal && s.Games() > 0 {
 				ppg := s.PPG()
 				row.CurrentPPG = &ppg
 			}
@@ -178,10 +178,6 @@ func TestValueBoardReplay(t *testing.T) {
 func boardPoints(s *model.Season) *float64 {
 	if s.HasTotal {
 		v := s.Total
-		return &v
-	}
-	if s.Games() > 0 {
-		v := s.PPG() * float64(s.Games())
 		return &v
 	}
 	return nil
@@ -340,5 +336,20 @@ func TestValueBoardRequestValidation(t *testing.T) {
 				t.Fatal("invalid replay request accepted")
 			}
 		})
+	}
+}
+
+func TestValueBoardPointsDontInferZeroFromSnaps(t *testing.T) {
+	season := &model.Season{Points: map[int]float64{1: 0}}
+	if got := boardPoints(season); got != nil {
+		t.Fatalf("missing total shown as %v", *got)
+	}
+	season.HasTotal = true
+	if got := boardPoints(season); got == nil || *got != 0 {
+		t.Fatalf("explicit zero total lost: %v", got)
+	}
+	season.Total = 12.5
+	if got := boardPoints(season); got == nil || *got != 12.5 {
+		t.Fatalf("known total lost: %v", got)
 	}
 }

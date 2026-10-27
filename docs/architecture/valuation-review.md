@@ -7,8 +7,8 @@ No valuation, fitted parameter, scoring-rule or real-profile changes. No MFL req
 
 Source: the real `~/.config/TheWarRoom/history.db` and `thewarroom.db`, copied with SQLite's
 backup API through read-only connections. Copies, raw exports, extracted features, exact effective
-parameters, replay output and source hashes stay in the ignored `.scratch/valuation-review-board/`.
-The board is `.scratch/valuation-review-board/warroom-value-board.html` (open directly in a browser).
+parameters, replay output and source hashes stay in the ignored `.scratch/value-board-reviewed/`.
+The board is `.scratch/value-board-reviewed/warroom-value-board.html` (open directly in a browser).
 The operator restricted writes to this worktree, so neither `/tmp` snapshots nor the requested
 Downloads destination were used.
 
@@ -22,7 +22,7 @@ This is **current code on held data**, not live October 27 outcomes:
   agents were valued, rather than inventing eligibility from unowned directory entries.
 - Fresh shipped defaults plus the profile's overrides (none): 3 seasons, discount 0.75.
   Historical model run #3 is an old build, not a substitute for replaying current code.
-- 252 current totals, 288 last-season totals and five birth dates are absent. Missing is not zero.
+- 253 current totals, 292 last-season totals and five birth dates are absent. Missing is not zero.
   The production runner set aside one mislinked history record (`17767`), as designed.
 
 From the repo root, with Go 1.26.10 on PATH (Python 3.11+; no Python dependencies):
@@ -120,7 +120,8 @@ in these player outputs, and PPG by itself does not establish replacement-level 
 
 Twelve Python tests exercise ties, missing versus explicit zero, check boundaries, both-season
 age comparisons, HTML escaping, non-finite rejection, snapshot preservation/symlink rejection,
-bounded archive decoding, exact export matching and source-priority/as-of selection. Targeted Go
+bounded archive decoding, exact export matching and source-priority/as-of selection. A Go regression
+test rejects inferred zero totals from snap-only evidence while preserving explicit MFL zeros. Targeted Go
 race tests (including the held free-agent parser path), real-data race replay and tagged lint pass. All **456,370 extracted features**
 match the engine-created season/week feature views by SHA-256. Two complete generations produced
 byte-identical replay JSON and HTML; both source DB files' SHA-256 values stayed unchanged.
@@ -137,6 +138,11 @@ Operator check: open the board, search “Zvada”, enable candidates-only, expa
 37 / points rank 11, 38 current points, zero value and last-season fallback should all agree.
 Then search “Mendoza”: QB rank 3 / points rank 49 with explicit zero, not a missing total.
 
-Debt left: live/fresher outcomes, a held free-agent pool, independent outcome spot-checks, and
+Latest archived MFL YTD exports (October 5, 20:00 UTC), decoded and checked with the production
+`playerscores.RawScore.Validate`, agree with all 1,158 held 2025 totals and 1,197 held 2026 totals.
+The other 292/253 are absent in both. This cross-check caught and removed five display-only zeros
+that had been inferred from snaps; it did not change any engine value or candidate count.
+
+Debt left: live/fresher outcomes, a held free-agent pool, independent external outcome spot-checks, and
 owner adjudication of the candidates. Downloads publication awaits permission to write outside
 this worktree. No valuation tuning or fleet/app deployment is part of this change.
