@@ -8,7 +8,8 @@ server recovery remains the path to recover rules, credentials and authority.
 ## Files and version ownership
 
 `db.Pools.Migrate` transactionally applies one ordered `user_version` list per
-SQLite file. Main (`thewarroom.db`) and what-if (`whatif.db`) remain v2. History
+SQLite file. Main (`thewarroom.db`) remains v2. What-if (`whatif.db`) is v3: v3
+deletes the trade-projection scratch generations older builds left behind. History
 (`history.db`, or hosted `server.db`) is v10: v9 introduced roster recovery; v10
 separates canonical identity and side-qualified ownership. Version zero is the
 oldest supported unversioned installation. Empty and every intermediate migration
