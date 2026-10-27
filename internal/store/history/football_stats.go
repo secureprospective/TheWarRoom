@@ -18,11 +18,12 @@ import (
 // revision holds offensive line facts (football_line.go). A revision too large for one pinned item
 // lists its week parts by digest instead (Parts, football_week.go); it carries no inline bodies.
 type RawFootballStats struct {
-	AsOf    time.Time `json:"asOf"`
-	Weekly  string    `json:"weekly,omitempty"`
-	Plays   string    `json:"plays,omitempty"`
-	Rushing string    `json:"rushing,omitempty"`
-	Parts   []string  `json:"parts,omitempty"`
+	AsOf    time.Time               `json:"asOf"`
+	Weekly  string                  `json:"weekly,omitempty"`
+	Plays   string                  `json:"plays,omitempty"`
+	Rushing string                  `json:"rushing,omitempty"`
+	Parts   []string                `json:"parts,omitempty"`
+	Sleeper []source.RawSleeperWeek `json:"sleeper,omitempty"`
 }
 
 func (r RawFootballStats) Validate() error {
@@ -30,7 +31,7 @@ func (r RawFootballStats) Validate() error {
 		return fmt.Errorf("statistics need a source instant")
 	}
 	if len(r.Parts) != 0 {
-		if r.Weekly != "" || r.Plays != "" || r.Rushing != "" || len(r.Parts) > 22 {
+		if r.Weekly != "" || r.Plays != "" || r.Rushing != "" || len(r.Sleeper) != 0 || len(r.Parts) > 22 {
 			return fmt.Errorf("split statistics list one to 22 week parts and embed no bodies")
 		}
 		for _, digest := range r.Parts {
@@ -69,6 +70,9 @@ func (r RawFootballEvidence) scoringFiles(parts partSource) ([]heldFile, error) 
 	}
 	if len(files) != 0 {
 		for _, player := range r.Players {
+			if player.Identity == "" && player.Sleeper != "" {
+				continue
+			}
 			if err := (source.RawStatScope{GSIS: player.Identity, Season: r.Season, Week: 1}).Validate(); err != nil {
 				return nil, fmt.Errorf("pinned statistics require GSIS identities: %w", err)
 			}
@@ -101,26 +105,34 @@ func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource)
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
 	}
+	canonical, unknown, err := r.attachSleeper(weeks, bodies)
+	if err != nil {
+		return heldFile{}, err
+	}
 	lineSHA, lines, err := lineFile(bodies, r.leagueRB())
 	if err != nil {
 		return heldFile{}, err
 	}
 	return heldFile{sha: sha, at: raw.AsOf,
-		weeks: weeks, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
+		weeks: weeks, canonical: canonical, unknownSleeper: unknown, index: source.IndexHeldWeeks(weeks), lineSHA: lineSHA, lines: lines}, nil
 }
 
 // revisionBodies returns a revision's bodies and its statistics SHA. An inline revision is one
 // unchecked-week body with its SHA as before; a split revision's SHA covers its part digests.
 func (r RawFootballEvidence) revisionBodies(raw RawFootballStats, parts partSource) ([]RawFootballWeek, string, error) {
+	var bodies []RawFootballWeek
+	sha := footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays)))
 	if len(raw.Parts) == 0 {
-		return []RawFootballWeek{{Season: r.Season, Weekly: raw.Weekly, Plays: raw.Plays, Rushing: raw.Rushing}},
-			footballDigest([]byte(fmt.Sprintf("%d:%s%s", len(raw.Weekly), raw.Weekly, raw.Plays))), nil
+		bodies = []RawFootballWeek{{Season: r.Season, Weekly: raw.Weekly, Plays: raw.Plays, Rushing: raw.Rushing, Sleeper: raw.Sleeper}}
+	} else {
+		var err error
+		bodies, err = r.readParts(raw, parts)
+		if err != nil {
+			return nil, "", err
+		}
+		sha = footballDigest([]byte("parts:" + strings.Join(raw.Parts, ",")))
 	}
-	weeks, err := r.readParts(raw, parts)
-	if err != nil {
-		return nil, "", err
-	}
-	return weeks, footballDigest([]byte("parts:" + strings.Join(raw.Parts, ","))), nil
+	return r.sleeperRevision(bodies, sha)
 }
 
 func (p *PinnedFootball) SourceID(ctx context.Context, player, kind string) (string, error) {
@@ -166,6 +178,30 @@ func (p *PinnedFootball) statWeeks(ctx context.Context, season int) ([]commissio
 				out = append(out, commissioner.StatWeek{Player: player, Week: week, Evidence: evidence})
 			}
 		}
+	}
+	return out, nil
+}
+
+func (p *PinnedFootball) CanonicalPlayerWeekStats(ctx context.Context, scope source.RawNativeScope) ([]source.HeldWeek, error) {
+	if err := scope.Validate(); err != nil {
+		return nil, fmt.Errorf("read pinned statistics: %w", err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("read pinned statistics: %w", err)
+	}
+	if scope.Season != p.raw.Season {
+		return nil, fmt.Errorf("pinned statistics do not hold season %d", scope.Season)
+	}
+	out := make([]source.HeldWeek, 0, len(p.stats))
+	for _, file := range p.stats {
+		held := source.HeldWeek{SHA256: file.sha, FetchedAt: file.at}
+		if week, ok := file.canonical[canonicalWeek{scope.Player, scope.Week}]; ok {
+			copied := clonePlayerWeek(week)
+			held.Week = &copied
+		} else {
+			held.Missing = []string{"This held file does not report the player's regular-season week"}
+		}
+		out = append(out, held)
 	}
 	return out, nil
 }

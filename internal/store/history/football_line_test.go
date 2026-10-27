@@ -15,7 +15,7 @@ import (
 const linePlayHeader = "game_id,play_id,season,week,season_type,passer_player_id,receiver_player_id,rusher_player_id," +
 	"passing_yards,receiving_yards,rushing_yards,touchdown,td_player_id,td_team,return_team,interception,punt_attempt," +
 	"kickoff_attempt,play_deleted,two_point_attempt,posteam,play_type,rush_attempt,qb_kneel,lateral_rushing_yards," +
-	"rush_touchdown,down,ydstogo,third_down_converted,fourth_down_converted,tackled_for_loss,sack,qb_hit_1_player_id,qb_hit_2_player_id\n"
+	"rush_touchdown,down,ydstogo,third_down_converted,fourth_down_converted,tackled_for_loss,sack,qb_hit_1_player_id,qb_hit_2_player_id,pass_attempt,complete_pass,yardline_100\n"
 
 // lineImport is the scoring import with an RB and a WR carrying PFR ids, and a revision whose plays
 // carry the line columns: PIT's 12-yard run, its 1-yard rushing TD, a kneel, a sack hit by two
@@ -32,12 +32,12 @@ func lineImport(t *testing.T) RawFootballEvidence {
 		raw.Players[id] = player
 	}
 	raw.Stats[0].Plays = linePlayHeader +
-		"2025_01_PIT_NYJ,1,2026,1,REG,00-0023459,,,40,NA,NA,0,,,,0,0,0,0,0,PIT,pass,0,0,NA,0,1,10,0,0,0,0,NA,NA\n" +
-		"2025_01_PIT_NYJ,2,2026,1,REG,,,00-0036223,NA,NA,12,0,,,,0,0,0,0,0,PIT,run,1,0,NA,0,2,8,0,0,0,0,NA,NA\n" +
-		"2025_01_PIT_NYJ,3,2026,1,REG,,,00-0036223,NA,NA,1,1,00-0036223,PIT,,0,0,0,0,0,PIT,run,1,0,NA,1,1,1,0,0,0,0,NA,NA\n" +
-		"2025_01_PIT_NYJ,4,2026,1,REG,,,,NA,NA,-1,0,,,,0,0,0,0,0,PIT,qb_kneel,1,1,NA,0,1,10,0,0,1,0,NA,NA\n" +
-		"2025_01_PIT_NYJ,5,2026,1,REG,00-0023459,,,NA,NA,NA,0,,,,0,0,0,0,0,PIT,pass,0,0,NA,0,3,7,0,0,0,1,00-0031111,00-0032222\n" +
-		"2025_01_BAL_BUF,1,2026,1,REG,,,,NA,NA,NA,0,,,,0,0,0,0,0,BAL,pass,0,0,NA,0,1,10,0,0,0,0,NA,NA\n"
+		"2025_01_PIT_NYJ,1,2026,1,REG,00-0023459,,,40,NA,NA,0,,,,0,0,0,0,0,PIT,pass,0,0,NA,0,1,10,0,0,0,0,NA,NA,1,1,NA\n" +
+		"2025_01_PIT_NYJ,2,2026,1,REG,,,00-0036223,NA,NA,12,0,,,,0,0,0,0,0,PIT,run,1,0,NA,0,2,8,0,0,0,0,NA,NA,0,0,NA\n" +
+		"2025_01_PIT_NYJ,3,2026,1,REG,,,00-0036223,NA,NA,1,1,00-0036223,PIT,,0,0,0,0,0,PIT,run,1,0,NA,1,1,1,0,0,0,0,NA,NA,0,0,NA\n" +
+		"2025_01_PIT_NYJ,4,2026,1,REG,,,,NA,NA,-1,0,,,,0,0,0,0,0,PIT,qb_kneel,1,1,NA,0,1,10,0,0,1,0,NA,NA,0,0,NA\n" +
+		"2025_01_PIT_NYJ,5,2026,1,REG,00-0023459,,,NA,NA,NA,0,,,,0,0,0,0,0,PIT,pass,0,0,NA,0,3,7,0,0,0,1,00-0031111,00-0032222,1,0,NA\n" +
+		"2025_01_BAL_BUF,1,2026,1,REG,,,,NA,NA,NA,0,,,,0,0,0,0,0,BAL,pass,0,0,NA,0,1,10,0,0,0,0,NA,NA,1,0,NA\n"
 	raw.Stats[0].Rushing = "game_id,season,week,game_type,team,pfr_player_id,rushing_yards_before_contact\n" +
 		"2025_01_PIT_NYJ,2026,1,REG,PIT,HarrNa00,25\n" +
 		"2025_01_PIT_NYJ,2026,1,REG,PIT,PickGe00,5\n" +
@@ -95,6 +95,13 @@ func TestPinnedEvidenceWithoutRushingHoldsNoLineFacts(t *testing.T) {
 	if strings.Contains(string(body), `"rushing"`) || strings.Contains(string(body), `"pfr"`) {
 		t.Fatal("evidence without line facts gained keys, so its digest would change")
 	}
+	// Compare line capability with equal edge capability, so recorded edge zeros agree.
+	rows := strings.Split(strings.TrimSuffix(raw.Stats[0].Plays, "\n"), "\n")
+	rows[0] += ",third_down_converted,fourth_down_converted,rush_attempt,pass_attempt,complete_pass,yardline_100,tackled_for_loss"
+	for i := 1; i < len(rows); i++ {
+		rows[i] += ",0,0,0,0,0,NA,0"
+	}
+	raw.Stats[0].Plays = strings.Join(rows, "\n") + "\n"
 	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
 	pinned := installScoringImport(t, s, raw)
 	if _, ok, err := pinned.LineGames(t.Context(), 2026); ok || err != nil {

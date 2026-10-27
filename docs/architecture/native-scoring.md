@@ -319,6 +319,9 @@ stat, new IDs where the stat is new (`chunk_play`, `touches`, `fg_made_distance`
 `fg_missed_distance`, `blocked_fg_td`, `blocked_punt_td`, `line_*`). Removed Legacy rows (R20/R40/
 C20/C40, the FG buckets, MG) are simply absent, so a recorded bucket scores nothing.
 
+The shipped [edge scoring spec](default32-scoring.md) lists Package A, RTL, snap and
+special-teams rules, sources and play definitions.
+
 ### Inputs
 
 - Player-week: `fantasyscore.StatLine` — `Quantities` per stat (ten-thousandths, so half sacks
