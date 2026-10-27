@@ -131,6 +131,9 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	if len(scores) == 0 {
 		return Report{}, fmt.Errorf("modelrun: no player could be valued for season %d", spec.Season)
 	}
+	if err := r.tilt(scores, spec, pass); err != nil {
+		return Report{}, err
+	}
 	hash, err := inputsHash(inputs, rep.Excluded)
 	if err != nil {
 		return Report{}, err
@@ -144,6 +147,35 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	}
 	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, len(scores)
 	return rep, nil
+}
+
+// tilt applies the contract tilt to the rostered players' dynasty values.
+func (r *Runner) tilt(scores []history.ModelScore, spec Spec, ps pass) error {
+	maxTilt, err := spec.Params.GetGlobal(params.KeyDynastyContractTilt)
+	if err != nil {
+		return fmt.Errorf("modelrun: %w", err)
+	}
+	roster := map[string]state.PlayerState{}
+	for _, fid := range r.state.Franchises() {
+		players, _ := r.state.Roster(fid)
+		for _, p := range players {
+			roster[p.MFLID] = p
+		}
+	}
+	scale := func(pos domain.Position) func(float64) float64 {
+		s := ps.scale(pos, spec.Season-1)
+		if s.Len() == 0 {
+			return nil
+		}
+		return s.Pct
+	}
+	tilted := contractTilt(scores, roster, spec.Season, maxTilt, scale)
+	for i := range scores {
+		if _, ok := tilted[scores[i].MFLID]; ok {
+			scores[i].Inputs = append(scores[i].Inputs, "contract_price")
+		}
+	}
+	return nil
 }
 
 func (rep *Report) record(dir Directory, p universePlayer, in playerInput, reason string) bool {

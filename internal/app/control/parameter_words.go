@@ -14,6 +14,7 @@ func ParameterWords(key, description string) (label, group string) {
 		"cushion_guard.reduction":     {"Decline reduction", "Defensive tackle decline guard"},
 		"dynasty.seasons":             {"Seasons counted, starting this season", "Dynasty horizon"},
 		"dynasty.discount":            {"Weight of each later season", "Dynasty horizon"},
+		"dynasty.contract_tilt":       {"Most a cheap or costly contract moves a value", "Dynasty horizon"},
 		"model.k_now":                 {"Games until production and scouting weigh equally", "Production blend · this season"},
 		"model.k_dynasty":             {"Games until production and scouting weigh equally", "Production blend · dynasty"},
 		"model.z_exponential":         {"Use the exponential production blend", "Production blend"},
