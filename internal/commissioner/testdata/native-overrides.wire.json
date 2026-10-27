@@ -688,6 +688,10 @@
         "words": "On"
       },
       {
+        "label": "Automatically return ineligible IR players",
+        "words": "Off"
+      },
+      {
         "label": "Taxi spots",
         "words": "8"
       },
@@ -698,6 +702,10 @@
       {
         "label": "Taxi experience measure",
         "words": "Calendar years"
+      },
+      {
+        "label": "Automatically promote ineligible taxi players",
+        "words": "Off"
       }
     ],
     "franchises": [
