@@ -8,30 +8,32 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-func rankFixture() rankInput {
-	return rankInput{teams: []rankTeam{{ID: "a", Name: "Alpha", Division: "d", Conference: "c"},
+func rankFixture() competition.RankInput {
+	return competition.RankInput{Teams: []competition.RankTeam{{ID: "a", Name: "Alpha", Division: "d", Conference: "c"},
 		{ID: "b", Name: "Beta", Division: "d", Conference: "c"}, {ID: "x", Name: "Other", Division: "e", Conference: "e"}},
-		games: []rankGame{{Home: "a", Away: "b", HomePoints: 1, AwayPoints: 0},
+		Games: []competition.RankGame{{Home: "a", Away: "b", HomePoints: 1, AwayPoints: 0},
 			{Home: "a", Away: "x", HomePoints: 0, AwayPoints: 100}, {Home: "b", Away: "x", HomePoints: 10, AwayPoints: 0}},
-		points:  map[string]leaguerules.Decimal{"a": 1, "b": 10, "x": 100},
-		allPlay: map[string]tally{"a": {W: 1, L: 3}, "b": {W: 3, L: 1}, "x": {W: 2, L: 2}}}
+		Points:  map[string]leaguerules.Decimal{"a": 1, "b": 10, "x": 100},
+		AllPlay: map[string]competition.Tally{"a": {W: 1, L: 3}, "b": {W: 3, L: 1}, "x": {W: 2, L: 2}}}
 }
 
 func TestNativeRankingHonorsCriterionOrderAndExplains(t *testing.T) {
 	in := rankFixture()
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord, leaguerules.Points}
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord, leaguerules.Points}
 	// Restrict the tied group to the two teams whose head-to-head conflicts with their points.
-	in.teams = in.teams[:2]
-	got := rankStandings(in)
-	if !reflect.DeepEqual(got.order, []string{"a", "b"}) || !strings.Contains(strings.Join(got.why["a"], " "), "Head-to-head record") {
+	in.Teams = in.Teams[:2]
+	got := competition.RankStandings(in)
+	if !reflect.DeepEqual(got.Order, []string{"a", "b"}) || !strings.Contains(strings.Join(got.Why["a"], " "), "Head-to-head record") {
 		t.Fatalf("head-to-head skipped: %+v", got)
 	}
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.Points, leaguerules.HeadToHeadRecord}
-	got = rankStandings(in)
-	if !reflect.DeepEqual(got.order, []string{"b", "a"}) || !strings.Contains(strings.Join(got.why["b"], " "), "Points scored") {
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.Points, leaguerules.HeadToHeadRecord}
+	got = competition.RankStandings(in)
+	if !reflect.DeepEqual(got.Order, []string{"b", "a"}) || !strings.Contains(strings.Join(got.Why["b"], " "), "Points scored") {
 		t.Fatalf("criteria applied out of order: %+v", got)
 	}
 }
@@ -40,34 +42,34 @@ func TestNativeRankingEachCriterionAndNoData(t *testing.T) {
 	for _, c := range []leaguerules.Criterion{leaguerules.DivisionPercentage, leaguerules.ConferencePercentage,
 		leaguerules.AllPlayPercentage, leaguerules.Points} {
 		in := rankFixture()
-		in.teams = in.teams[:2]
-		in.criteria = []leaguerules.Criterion{c}
-		got := rankStandings(in)
+		in.Teams = in.Teams[:2]
+		in.Criteria = []leaguerules.Criterion{c}
+		got := competition.RankStandings(in)
 		want := "a"
 		if c == leaguerules.AllPlayPercentage || c == leaguerules.Points {
 			want = "b"
 		}
-		if got.order[0] != want || !strings.Contains(strings.ToLower(strings.Join(got.why[want], " ")), criterionLabel(c)) {
+		if got.Order[0] != want || !strings.Contains(strings.ToLower(strings.Join(got.Why[want], " ")), competition.CriterionLabel(c)) {
 			t.Fatalf("%s: %+v", c, got)
 		}
 	}
 	in := rankFixture()
-	in.games = nil
-	in.allPlay = nil
-	in.points = nil
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord,
+	in.Games = nil
+	in.AllPlay = nil
+	in.Points = nil
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord,
 		leaguerules.DivisionPercentage, leaguerules.ConferencePercentage, leaguerules.AllPlayPercentage,
 		leaguerules.Points, leaguerules.PowerRank}
-	got := rankStandings(in)
-	if len(got.skipped) != 7 || !reflect.DeepEqual(got.order, []string{"a", "b", "x"}) {
+	got := competition.RankStandings(in)
+	if len(got.Skipped) != 7 || !reflect.DeepEqual(got.Order, []string{"a", "b", "x"}) {
 		t.Fatalf("missing data invented a competitive value: %+v", got)
 	}
 	in = rankFixture()
-	in.teams = in.teams[:2]
-	in.allPlay = map[string]tally{"b": {W: 3, L: 1}}
-	in.criteria = []leaguerules.Criterion{leaguerules.AllPlayPercentage, leaguerules.HeadToHeadRecord}
-	got = rankStandings(in)
-	if got.order[0] != "a" || !strings.Contains(strings.Join(got.skipped, " "), "Alpha has no games yet") {
+	in.Teams = in.Teams[:2]
+	in.AllPlay = map[string]competition.Tally{"b": {W: 3, L: 1}}
+	in.Criteria = []leaguerules.Criterion{leaguerules.AllPlayPercentage, leaguerules.HeadToHeadRecord}
+	got = competition.RankStandings(in)
+	if got.Order[0] != "a" || !strings.Contains(strings.Join(got.Skipped, " "), "Alpha has no games yet") {
 		t.Fatalf("missing data treated as zero: %+v", got)
 	}
 }
@@ -138,14 +140,14 @@ func TestNativeWeekScoreNeverUsesPartialOrDuplicateStarter(t *testing.T) {
 func TestNativeAllPlayIncludesByesAndRequiresCompleteWeek(t *testing.T) {
 	one, two, three := leaguerules.Decimal(1), leaguerules.Decimal(2), leaguerules.Decimal(3)
 	scores := []FranchiseWeekScore{{Franchise: "a", Points: &one}, {Franchise: "b", Points: &two}, {Franchise: "bye", Points: &three}}
-	got := seasonGames{allPlay: map[string]tally{}}
+	got := seasonGames{allPlay: map[string]competition.Tally{}}
 	got.addAllPlay(scores)
-	if got.allPlay["bye"] != (tally{W: 2}) || got.allPlay["a"] != (tally{L: 2}) {
+	if got.allPlay["bye"] != (competition.Tally{W: 2}) || got.allPlay["a"] != (competition.Tally{L: 2}) {
 		t.Fatal(got)
 	}
 	scores[2].Points = nil
 	got.addAllPlay(scores)
-	if got.allPlay["a"] != (tally{L: 2}) {
+	if got.allPlay["a"] != (competition.Tally{L: 2}) {
 		t.Fatal("incomplete all-play counted")
 	}
 }
@@ -181,11 +183,11 @@ func TestNativePointsCountCompleteSidesAndByeWithoutInventingResults(t *testing.
 		t.Fatal("incomplete points invented")
 	}
 	in := rankFixture()
-	in.points = got.points
-	in.criteria = []leaguerules.Criterion{leaguerules.Points, leaguerules.HeadToHeadRecord}
-	in.teams = in.teams[:2]
-	ranked := rankStandings(in)
-	if ranked.order[0] != "a" || len(ranked.skipped) != 1 || !strings.Contains(ranked.skipped[0], "Beta has no complete weekly score") {
+	in.Points = got.points
+	in.Criteria = []leaguerules.Criterion{leaguerules.Points, leaguerules.HeadToHeadRecord}
+	in.Teams = in.Teams[:2]
+	ranked := competition.RankStandings(in)
+	if ranked.Order[0] != "a" || len(ranked.Skipped) != 1 || !strings.Contains(ranked.Skipped[0], "Beta has no complete weekly score") {
 		t.Fatal("missing points treated as zero", ranked)
 	}
 }

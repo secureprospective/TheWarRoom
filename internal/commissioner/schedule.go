@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -204,7 +206,8 @@ func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	if raw.Args.Schedule.Pattern != "" {
 		pattern = leaguerules.Known(raw.Args.Schedule.Pattern)
 	}
-	return GenerateSchedule(teams, rules.League.Alignment.Value, leaguerules.ScheduleRules{
+	//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+	return competition.GenerateSchedule(teams, rules.League.Alignment.Value, leaguerules.ScheduleRules{
 		RegularWeeks: leaguerules.Known(raw.Args.Schedule.Weeks),
 		Pattern:      pattern,
 	})
@@ -305,14 +308,14 @@ func (r Record) validateGeneratedSchedule() error {
 		if week.Week != i+1 || len(week.Games) == 0 {
 			return fmt.Errorf("the recorded schedule has an invalid week")
 		}
-		if err := week.validateFrozenGames(ids); err != nil {
+		if err := validateFrozenGames(week, ids); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (w ScheduleWeek) validateFrozenGames(ids map[string]bool) error {
+func validateFrozenGames(w ScheduleWeek, ids map[string]bool) error {
 	teams := make(map[string]bool)
 	for _, game := range w.Games {
 		if strings.TrimSpace(game.ID) == "" || ids[game.ID] ||

@@ -6,72 +6,74 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 func TestRankStandingsTable(t *testing.T) {
 	base := rankFixture()
-	base.teams = base.teams[:2]
+	base.Teams = base.Teams[:2]
 	cases := []struct {
 		name  string
-		in    rankInput
+		in    competition.RankInput
 		order []string
 		line  string
 		level [][]string
 	}{}
-	add := func(name string, in rankInput, order []string, line string, level [][]string) {
+	add := func(name string, in competition.RankInput, order []string, line string, level [][]string) {
 		cases = append(cases, struct {
 			name  string
-			in    rankInput
+			in    competition.RankInput
 			order []string
 			line  string
 			level [][]string
 		}{name, in, order, line, level})
 	}
 	in := base
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage}
-	in.stands = map[string]tally{"a": {W: 1, L: 3}, "b": {W: 3, L: 1}}
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage}
+	in.Stands = map[string]competition.Tally{"a": {W: 1, L: 3}, "b": {W: 3, L: 1}}
 	add("winning percentage", in, []string{"b", "a"}, "Winning percentage put Beta (3-1) over Alpha (1-3).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord, leaguerules.Points}
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage, leaguerules.HeadToHeadRecord, leaguerules.Points}
 	add("criterion order head-to-head before points", in, []string{"a", "b"}, "Alpha and Beta were level on winning percentage. Head-to-head record put Alpha (1-0) over Beta (0-1).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.DivisionPercentage}
+	in.Criteria = []leaguerules.Criterion{leaguerules.DivisionPercentage}
 	add("division", in, []string{"a", "b"}, "Division record put Alpha (1-0) over Beta (0-1).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.ConferencePercentage}
+	in.Criteria = []leaguerules.Criterion{leaguerules.ConferencePercentage}
 	add("conference", in, []string{"a", "b"}, "Conference record put Alpha (1-0) over Beta (0-1).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.AllPlayPercentage}
+	in.Criteria = []leaguerules.Criterion{leaguerules.AllPlayPercentage}
 	add("all-play", in, []string{"b", "a"}, "All-play record put Beta (3-1) over Alpha (1-3).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.Points}
+	in.Criteria = []leaguerules.Criterion{leaguerules.Points}
 	add("points", in, []string{"b", "a"}, "Points scored put Beta (0.001 points scored) over Alpha (0.0001 points scored).", nil)
 	in = base
-	in.criteria = []leaguerules.Criterion{leaguerules.PowerRank}
+	in.Criteria = []leaguerules.Criterion{leaguerules.PowerRank}
 	add("power rank unavailable", in, []string{"a", "b"}, "Power rank did not apply: no power rank is held for this league yet. Alpha and Beta remain level on the available tie-breakers, so they are listed in the league's franchise order.", [][]string{{"a", "b"}})
 	in = base
-	in.stands = map[string]tally{"a": {W: 1}, "b": {W: 1}}
-	in.criteria = []leaguerules.Criterion{leaguerules.WinPercentage}
+	in.Stands = map[string]competition.Tally{"a": {W: 1}, "b": {W: 1}}
+	in.Criteria = []leaguerules.Criterion{leaguerules.WinPercentage}
 	add("undecided equal records", in, []string{"a", "b"}, "Alpha and Beta remain level on the available tie-breakers, so they are listed in the league's franchise order.", [][]string{{"a", "b"}})
 	// A three-way head-to-head is skipped for the entire group unless every pair has met.
-	in = rankInput{teams: []rankTeam{{ID: "a", Name: "Alpha"}, {ID: "b", Name: "Beta"}, {ID: "c", Name: "Charlie"}}, games: []rankGame{{Home: "a", Away: "b", HomePoints: 1}, {Home: "b", Away: "c", HomePoints: 1}}, points: map[string]leaguerules.Decimal{"a": 10000, "b": 20000, "c": 30000}, criteria: []leaguerules.Criterion{leaguerules.HeadToHeadRecord, leaguerules.Points}}
+	in = competition.RankInput{Teams: []competition.RankTeam{{ID: "a", Name: "Alpha"}, {ID: "b", Name: "Beta"}, {ID: "c", Name: "Charlie"}}, Games: []competition.RankGame{{Home: "a", Away: "b", HomePoints: 1}, {Home: "b", Away: "c", HomePoints: 1}}, Points: map[string]leaguerules.Decimal{"a": 10000, "b": 20000, "c": 30000}, Criteria: []leaguerules.Criterion{leaguerules.HeadToHeadRecord, leaguerules.Points}}
 	add("three-way incomplete head-to-head", in, []string{"c", "b", "a"}, "Head-to-head record did not apply: not every tied team has played every other. Points scored put Charlie (3 points scored) over Beta (2 points scored) over Alpha (1 points scored).", nil)
 	records := default32League(t)
 	ids := records[0].Command.Args.Franchises
 	if len(ids) != 32 {
 		t.Fatalf("default32 franchises: %d", len(ids))
 	}
-	in = rankInput{stands: map[string]tally{}, criteria: []leaguerules.Criterion{leaguerules.WinPercentage}}
+	in = competition.RankInput{Stands: map[string]competition.Tally{}, Criteria: []leaguerules.Criterion{leaguerules.WinPercentage}}
 	for i, id := range ids {
 		conference := "AFC"
 		if i >= 16 {
 			conference = "NFC"
 		}
-		team := rankTeam{ID: id, Name: fmt.Sprintf("Team %02d", i+1), Division: fmt.Sprintf("%s-%d", conference, (i%16)/4+1), Conference: conference}
+		team := competition.RankTeam{ID: id, Name: fmt.Sprintf("Team %02d", i+1), Division: fmt.Sprintf("%s-%d", conference, (i%16)/4+1), Conference: conference}
 		if conference == "AFC" {
-			in.teams = append(in.teams, team)
-			in.stands[id] = tally{W: 16 - i, L: i}
+			in.Teams = append(in.Teams, team)
+			in.Stands[id] = competition.Tally{W: 16 - i, L: i}
 		}
 	}
 	order := make([]string, 16)
@@ -79,13 +81,13 @@ func TestRankStandingsTable(t *testing.T) {
 	add("default32 AFC", in, order, "Winning percentage put", nil)
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := rankStandings(tc.in)
-			if !reflect.DeepEqual(got.order, tc.order) || !reflect.DeepEqual(got.level, tc.level) {
-				t.Errorf("order/level = %v / %v, want %v / %v", got.order, got.level, tc.order, tc.level)
+			got := competition.RankStandings(tc.in)
+			if !reflect.DeepEqual(got.Order, tc.order) || !reflect.DeepEqual(got.Level, tc.level) {
+				t.Errorf("order/level = %v / %v, want %v / %v", got.Order, got.Level, tc.order, tc.level)
 			}
 			for _, id := range tc.order {
-				if !strings.Contains(strings.Join(got.why[id], " "), tc.line) {
-					t.Errorf("%s explanation = %q, want %q", id, got.why[id], tc.line)
+				if !strings.Contains(strings.Join(got.Why[id], " "), tc.line) {
+					t.Errorf("%s explanation = %q, want %q", id, got.Why[id], tc.line)
 				}
 			}
 		})
@@ -98,7 +100,7 @@ func TestDefault32BracketShape(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	field := fieldInput{teams: map[string]fieldTeam{}, conferences: []string{"AFC", "NFC"}, rules: ResolvePlayoffRules(rules, rules.Playoffs.Graph.Value), hand: map[string]map[int]string{}}
+	field := competition.FieldInput{Teams: map[string]competition.FieldTeam{}, Conferences: []string{"AFC", "NFC"}, Rules: ResolvePlayoffRules(rules, rules.Playoffs.Graph.Value), Hand: map[string]map[int]string{}}
 	rank := map[string]int{}
 	names := map[string]string{}
 	for i, id := range records[0].Command.Args.Franchises {
@@ -106,17 +108,17 @@ func TestDefault32BracketShape(t *testing.T) {
 		if i >= 16 {
 			conference = "NFC"
 		}
-		field.order = append(field.order, id)
-		field.teams[id] = fieldTeam{Name: id, Conference: conference, Division: fmt.Sprintf("%s-%d", conference, (i%16)/4)}
+		field.Order = append(field.Order, id)
+		field.Teams[id] = competition.FieldTeam{Name: id, Conference: conference, Division: fmt.Sprintf("%s-%d", conference, (i%16)/4)}
 		rank[id] = (i + 1) * 10
 		names[id] = id
 	}
-	fields, words := seedField(field)
+	fields, words := competition.SeedField(field)
 	if words != "" {
 		t.Fatal(words)
 	}
-	in := bracketInput{rules: field.rules, fields: fields, rank: rank, names: names, points: scripted{}.points(rank), edits: map[string]string{}, advance: map[string]string{}}
-	rounds, champion, words := buildBracket(in)
+	in := competition.BracketInput{Rules: field.Rules, Fields: fields, Rank: rank, Names: names, Points: scripted{}.points(rank), Edits: map[string]string{}, Advance: map[string]string{}}
+	rounds, champion, words := competition.BuildBracket(in)
 	if words != "" {
 		t.Fatal(words)
 	}
@@ -130,7 +132,7 @@ func TestDefault32BracketShape(t *testing.T) {
 	for _, conf := range []string{"AFC", "NFC"} {
 		for _, suffix := range []string{"wildcard_2", "wildcard_3", "wildcard_4"} {
 			g := gameOf(rounds, conf+"/"+suffix)
-			if g.Home == nil || g.Away == nil || field.teams[g.Home.Franchise].Conference != conf || field.teams[g.Away.Franchise].Conference != conf {
+			if g.Home == nil || g.Away == nil || field.Teams[g.Home.Franchise].Conference != conf || field.Teams[g.Away.Franchise].Conference != conf {
 				t.Fatalf("%s/%s: %+v", conf, suffix, g)
 			}
 		}

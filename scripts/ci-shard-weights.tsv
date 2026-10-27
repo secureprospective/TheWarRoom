@@ -39,6 +39,7 @@ github.com/secureprospective/TheWarRoom/internal/engine/eligibility	1.022
 github.com/secureprospective/TheWarRoom/internal/engine/l4	1.021
 github.com/secureprospective/TheWarRoom/internal/engine/race	1.025
 github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft	1.055
+github.com/secureprospective/TheWarRoom/internal/engine/competition	0.100
 github.com/secureprospective/TheWarRoom/internal/envelope	1.321
 github.com/secureprospective/TheWarRoom/internal/facts	119.179
 github.com/secureprospective/TheWarRoom/internal/fantasyscore	1.055

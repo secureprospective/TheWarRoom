@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 // Complete division rounds make weighting an opponent rule, not an accidental
 // consequence of where franchises happen to sit in one circle.

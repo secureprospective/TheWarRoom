@@ -7,15 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
-)
-
-// Game statuses: a result needs both scores complete; a level score is a tie, never a coin toss.
-const (
-	GameFinal    = "Final"
-	GameTie      = "Tie"
-	GameNoResult = "No result yet"
 )
 
 // NativeGame is one published head-to-head game and, when both scores are complete, its result.
@@ -162,10 +156,6 @@ func gameResult(week int, home, away NativeDirectorySeat, hs, as FranchiseWeekSc
 	return game
 }
 
-func finalWords(winner, loser string, high, low leaguerules.Decimal) string {
-	return fmt.Sprintf("%s beat %s, %s to %s", winner, loser, scorePointsWords(high), scorePointsWords(low))
-}
-
 // A closed season keeps its published schedule; later seasons' edits do not rewrite its games.
 func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek, error) {
 	at := ReadingInstant(records, now)
@@ -185,4 +175,39 @@ func resultSchedule(records []Record, season int, now time.Time) ([]ScheduleWeek
 	}
 	_, published, err := replaySchedule(RecordsThrough(records, at))
 	return published, err
+}
+
+// The competition judgment (tie-breakers, playoff fields and brackets, schedule generation) lives in
+// internal/engine/competition. These names keep the commissioner API and its wire shapes unchanged.
+type (
+	ScheduleWeek    = competition.ScheduleWeek
+	ScheduleGame    = competition.ScheduleGame
+	PlayoffRules    = competition.PlayoffRules
+	BracketRound    = competition.BracketRound
+	BracketSide     = competition.BracketSide
+	BracketGame     = competition.BracketGame
+	ConferenceField = competition.ConferenceField
+	FieldSeed       = competition.FieldSeed
+)
+
+// Game statuses: a result needs both scores complete; a level score is a tie, never a coin toss.
+const (
+	GameFinal    = competition.GameFinal
+	GameTie      = competition.GameTie
+	GameNoResult = competition.GameNoResult
+)
+
+// ResolvePlayoffRules reads a season's playoff rules from its rules and bracket shape.
+func ResolvePlayoffRules(rules leaguerules.RuleSet, graph []leaguerules.BracketNode) PlayoffRules {
+	return competition.ResolvePlayoffRules(rules, graph)
+}
+
+func addScoreDelta(a, b leaguerules.Decimal) (leaguerules.Decimal, error) {
+	return competition.AddPoints(a, b) //nolint:wrapcheck // Same package family; the refusal text is the message.
+}
+
+func scorePointsWords(points leaguerules.Decimal) string { return competition.PointsWords(points) }
+
+func finalWords(winner, loser string, high, low leaguerules.Decimal) string {
+	return competition.FinalWords(winner, loser, high, low)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -23,7 +25,7 @@ func (b *bracketReader) build(ctx context.Context) error {
 		rows = standings.Override.Rows
 	}
 	field, names, rank := b.fieldInput(rows)
-	fields, words := seedField(field)
+	fields, words := competition.SeedField(field)
 	if words != "" {
 		b.stop(bracketNeeds, words)
 		return nil
@@ -33,8 +35,8 @@ func (b *bracketReader) build(ctx context.Context) error {
 		b.stop(bracketReady, "The regular season is over and the playoff field is set. Build the bracket to set the games.")
 		return nil
 	}
-	return b.pair(ctx, bracketInput{rules: b.pr, fields: fields, rank: rank, names: names, edits: b.state.Edits,
-		advance: b.state.Advances})
+	return b.pair(ctx, competition.BracketInput{Rules: b.pr, Fields: fields, Rank: rank, Names: names, Edits: b.state.Edits,
+		Advance: b.state.Advances})
 }
 
 // regularSeasonOpen says why the standings are not final, or nothing when they are.
@@ -51,23 +53,23 @@ func regularSeasonOpen(s NativeStandings, rules leaguerules.RuleSet) string {
 	return ""
 }
 
-func (b *bracketReader) fieldInput(rows []StandingRow) (fieldInput, map[string]string, map[string]int) {
-	in := fieldInput{teams: map[string]fieldTeam{}, conferences: b.layout.Conferences, rules: b.pr,
-		hand: b.state.handFields(b.layout)}
+func (b *bracketReader) fieldInput(rows []StandingRow) (competition.FieldInput, map[string]string, map[string]int) {
+	in := competition.FieldInput{Teams: map[string]competition.FieldTeam{}, Conferences: b.layout.Conferences, Rules: b.pr,
+		Hand: b.state.handFields(b.layout)}
 	names, rank := map[string]string{}, map[string]int{}
 	for i, row := range rows {
-		in.order = append(in.order, row.Franchise)
-		in.teams[row.Franchise] = fieldTeam{Name: row.Name, Division: row.Division, Conference: b.layout.Of[row.Franchise]}
+		in.Order = append(in.Order, row.Franchise)
+		in.Teams[row.Franchise] = competition.FieldTeam{Name: row.Name, Division: row.Division, Conference: b.layout.Of[row.Franchise]}
 		names[row.Franchise], rank[row.Franchise] = row.Name, i+1
 	}
 	return in, names, rank
 }
 
 // pair builds the rounds, scoring each playoff week from the native results.
-func (b *bracketReader) pair(ctx context.Context, in bracketInput) error {
+func (b *bracketReader) pair(ctx context.Context, in competition.BracketInput) error {
 	scores, seats := map[string]FranchiseWeekScore{}, b.directory.Seats()
 	var failed error
-	in.points = func(franchise string, week int) (*leaguerules.Decimal, string) {
+	in.Points = func(franchise string, week int) (*leaguerules.Decimal, string) {
 		key := fmt.Sprintf("%s/%d", franchise, week)
 		score, ok := scores[key]
 		if !ok && failed == nil {
@@ -77,7 +79,7 @@ func (b *bracketReader) pair(ctx context.Context, in bracketInput) error {
 		}
 		return score.Points, score.Words
 	}
-	rounds, champion, words := buildBracket(in)
+	rounds, champion, words := competition.BuildBracket(in)
 	if failed != nil {
 		return failed
 	}

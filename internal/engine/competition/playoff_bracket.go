@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"slices"
@@ -9,7 +9,7 @@ import (
 // Where a game stands. A game with both teams and both scores has a result; nothing is ever guessed.
 const (
 	gameWaiting = "Waiting for teams"
-	gameByHand  = "Set by the commissioner"
+	GameByHand  = "Set by the commissioner"
 )
 
 // BracketSide is one team in a bracket game, with the seed it holds in its own conference and where it
@@ -51,23 +51,23 @@ type BracketRound struct {
 	Games []BracketGame `json:"games"`
 }
 
-// pointsFunc is a franchise's complete score for a week, or why there is none yet.
-type pointsFunc func(franchise string, week int) (*leaguerules.Decimal, string)
+// PointsFunc is a franchise's complete score for a week, or why there is none yet.
+type PointsFunc func(franchise string, week int) (*leaguerules.Decimal, string)
 
-type bracketInput struct {
-	rules   PlayoffRules
-	fields  []ConferenceField
-	rank    map[string]int
-	names   map[string]string
-	points  pointsFunc
-	edits   map[string]string
-	advance map[string]string
+type BracketInput struct {
+	Rules   PlayoffRules
+	Fields  []ConferenceField
+	Rank    map[string]int
+	Names   map[string]string
+	Points  PointsFunc
+	Edits   map[string]string
+	Advance map[string]string
 }
 
 // bracketBuilder follows the shape round by round. A round's pairings come from the teams that reached it,
 // so a winner changes who plays next; that is why each round is built after the one before it is read.
 type bracketBuilder struct {
-	in        bracketInput
+	in        BracketInput
 	seeds     map[string]map[int]string
 	seedOf    map[string]int
 	games     map[string]bool
@@ -76,41 +76,41 @@ type bracketBuilder struct {
 	pending   map[string]bool
 }
 
-func newBracketBuilder(in bracketInput) *bracketBuilder {
+func newBracketBuilder(in BracketInput) *bracketBuilder {
 	b := &bracketBuilder{in: in, seeds: map[string]map[int]string{}, seedOf: map[string]int{}, games: map[string]bool{},
 		winners: map[string]*BracketSide{}, advancers: map[string][]*BracketSide{}, pending: map[string]bool{}}
-	for _, f := range in.fields {
+	for _, f := range in.Fields {
 		b.seeds[f.Conference] = map[int]string{}
 		for _, s := range f.Seeds {
 			b.seeds[f.Conference][s.Seed], b.seedOf[s.Franchise] = s.Franchise, s.Seed
 		}
-		for _, n := range in.rules.Shape {
-			if !n.leagueWide() {
-				b.games[gameID(f.Conference, n.ID)] = true
+		for _, n := range in.Rules.Shape {
+			if !n.LeagueWide() {
+				b.games[GameID(f.Conference, n.ID)] = true
 			}
 		}
 	}
-	for _, n := range in.rules.Shape {
-		if n.leagueWide() {
-			b.games[gameID("", n.ID)] = true
+	for _, n := range in.Rules.Shape {
+		if n.LeagueWide() {
+			b.games[GameID("", n.ID)] = true
 		}
 	}
 	return b
 }
 
-func gameID(scope, node string) string {
+func GameID(scope, node string) string {
 	if scope == "" {
 		return node
 	}
 	return scope + "/" + node
 }
 
-// buildBracket pairs every round of the shape for the seeded fields. It returns plain words instead when
+// BuildBracket pairs every round of the shape for the seeded fields. It returns plain words instead when
 // the shape cannot be followed with these teams, and the champion once the last game has a winner.
-func buildBracket(in bracketInput) ([]BracketRound, *BracketSide, string) {
+func BuildBracket(in BracketInput) ([]BracketRound, *BracketSide, string) {
 	b := newBracketBuilder(in)
 	rounds := []BracketRound{}
-	for i, nodes := range in.rules.rounds() {
+	for i, nodes := range in.Rules.rounds() {
 		round := BracketRound{Round: i + 1, Week: nodes[0].Week, Name: roundName(nodes), Games: []BracketGame{}}
 		used := map[string]bool{}
 		for _, scope := range b.scopes(nodes) {
@@ -129,21 +129,21 @@ func buildBracket(in bracketInput) ([]BracketRound, *BracketSide, string) {
 
 // scopes are the conferences that play this round's conference games, then the whole league when a
 // game takes conference winners.
-func (b *bracketBuilder) scopes(nodes []shapeNode) []string {
+func (b *bracketBuilder) scopes(nodes []ShapeNode) []string {
 	var out []string
-	if slices.ContainsFunc(nodes, func(n shapeNode) bool { return !n.leagueWide() }) {
-		for _, f := range b.in.fields {
+	if slices.ContainsFunc(nodes, func(n ShapeNode) bool { return !n.LeagueWide() }) {
+		for _, f := range b.in.Fields {
 			out = append(out, f.Conference)
 		}
 	}
-	if slices.ContainsFunc(nodes, shapeNode.leagueWide) {
+	if slices.ContainsFunc(nodes, ShapeNode.LeagueWide) {
 		out = append(out, "")
 	}
 	return out
 }
 
 // reachNext records who reached the next round, from each scope's winners in the order its games were listed.
-func (b *bracketBuilder) reachNext(round BracketRound, nodes []shapeNode) {
+func (b *bracketBuilder) reachNext(round BracketRound, nodes []ShapeNode) {
 	next := map[string][]*BracketSide{}
 	pending := map[string]bool{}
 	for _, g := range round.Games {
@@ -155,10 +155,10 @@ func (b *bracketBuilder) reachNext(round BracketRound, nodes []shapeNode) {
 		next[g.Conference] = append(next[g.Conference], winner)
 	}
 	league := []*BracketSide{}
-	if slices.ContainsFunc(nodes, shapeNode.leagueWide) {
+	if slices.ContainsFunc(nodes, ShapeNode.LeagueWide) {
 		league = next[""]
 	} else {
-		for _, f := range b.in.fields {
+		for _, f := range b.in.Fields {
 			league = append(league, next[f.Conference]...)
 		}
 	}
@@ -167,6 +167,6 @@ func (b *bracketBuilder) reachNext(round BracketRound, nodes []shapeNode) {
 }
 
 func (b *bracketBuilder) side(franchise string) *BracketSide {
-	return &BracketSide{Franchise: franchise, Name: b.in.names[franchise], Seed: b.seedOf[franchise],
-		Rank: b.in.rank[franchise]}
+	return &BracketSide{Franchise: franchise, Name: b.in.Names[franchise], Seed: b.seedOf[franchise],
+		Rank: b.in.Rank[franchise]}
 }

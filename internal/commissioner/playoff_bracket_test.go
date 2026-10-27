@@ -5,20 +5,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/engine/competition"
+
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // twoConferences is 16 teams in two conferences of four divisions: a1..a8 and b1..b8, ranked a1, b1, a2, b2...
 // Teams 2k-1 and 2k share a division, so the second of each pair is a wild card, never a division winner.
-func twoConferences() (fieldInput, map[string]string) {
-	in := fieldInput{teams: map[string]fieldTeam{}, conferences: []string{"AFC", "NFC"},
-		rules: legacyPlayoffRules(), hand: map[string]map[int]string{}}
+func twoConferences() (competition.FieldInput, map[string]string) {
+	in := competition.FieldInput{Teams: map[string]competition.FieldTeam{}, Conferences: []string{"AFC", "NFC"},
+		Rules: legacyPlayoffRules(), Hand: map[string]map[int]string{}}
 	names := map[string]string{}
 	for i := 1; i <= 8; i++ {
 		for _, c := range []struct{ id, prefix string }{{"AFC", "a"}, {"NFC", "b"}} {
 			id := fmt.Sprintf("%s%d", c.prefix, i)
-			in.order = append(in.order, id)
-			in.teams[id] = fieldTeam{Name: "Team " + id, Division: fmt.Sprintf("%s-%d", c.id, (i+1)/2), Conference: c.id}
+			in.Order = append(in.Order, id)
+			in.Teams[id] = competition.FieldTeam{Name: "Team " + id, Division: fmt.Sprintf("%s-%d", c.id, (i+1)/2), Conference: c.id}
 			names[id] = "Team " + id
 		}
 	}
@@ -33,7 +35,7 @@ func legacyPlayoffRules() PlayoffRules {
 // scripted scores a team by how it finished (better is higher) unless the test names its score for a week.
 type scripted map[string]map[int]leaguerules.Decimal
 
-func (s scripted) points(rank map[string]int) pointsFunc {
+func (s scripted) points(rank map[string]int) competition.PointsFunc {
 	return func(franchise string, week int) (*leaguerules.Decimal, string) {
 		if v, ok := s[franchise][week]; ok {
 			return &v, ""
@@ -45,20 +47,20 @@ func (s scripted) points(rank map[string]int) pointsFunc {
 
 func points(n int) leaguerules.Decimal { return leaguerules.Decimal(n * 10000) }
 
-func legacyBracketFixture(t *testing.T, s scripted) (bracketInput, []BracketRound, *BracketSide, string) {
+func legacyBracketFixture(t *testing.T, s scripted) (competition.BracketInput, []BracketRound, *BracketSide, string) {
 	t.Helper()
 	field, names := twoConferences()
-	fields, words := seedField(field)
+	fields, words := competition.SeedField(field)
 	if words != "" {
 		t.Fatal(words)
 	}
 	rank := map[string]int{}
-	for i, id := range field.order {
+	for i, id := range field.Order {
 		rank[id] = i + 1
 	}
-	in := bracketInput{rules: field.rules, fields: fields, rank: rank, names: names, points: s.points(rank),
-		edits: map[string]string{}, advance: map[string]string{}}
-	rounds, champion, words := buildBracket(in)
+	in := competition.BracketInput{Rules: field.Rules, Fields: fields, Rank: rank, Names: names, Points: s.points(rank),
+		Edits: map[string]string{}, Advance: map[string]string{}}
+	rounds, champion, words := competition.BuildBracket(in)
 	return in, rounds, champion, words
 }
 
@@ -96,7 +98,7 @@ func pair(g BracketGame) string {
 
 func TestLegacyFieldSeedsDivisionWinnersBeforeWildCards(t *testing.T) {
 	field, _ := twoConferences()
-	fields, words := seedField(field)
+	fields, words := competition.SeedField(field)
 	if words != "" {
 		t.Fatal(words)
 	}
@@ -186,20 +188,20 @@ func TestAnAdvancementOverrideRepairsTheNextRound(t *testing.T) {
 		t.Fatalf("without an override: %s", got)
 	}
 	// Computed: a3 beats a6. The commissioner advances a6.
-	in.advance["AFC/wildcard_2"] = "a6"
-	rounds, _, words := buildBracket(in)
+	in.Advance["AFC/wildcard_2"] = "a6"
+	rounds, _, words := competition.BuildBracket(in)
 	if words != "" {
 		t.Fatal(words)
 	}
 	over := gameOf(rounds, "AFC/wildcard_2")
-	if over.Winner != "a6" || !over.ByHand || over.Status != gameByHand || !strings.Contains(over.Words, "despite the computed result") {
+	if over.Winner != "a6" || !over.ByHand || over.Status != competition.GameByHand || !strings.Contains(over.Words, "despite the computed result") {
 		t.Fatalf("override: %+v", over)
 	}
 	if got := pair(gameOf(rounds, "AFC/division_1")); got != "a1 v a6" {
 		t.Fatalf("the next round did not re-pair from a6: %s", got)
 	}
-	in.advance["AFC/wildcard_2"] = "a1"
-	rounds, _, _ = buildBracket(in)
+	in.Advance["AFC/wildcard_2"] = "a1"
+	rounds, _, _ = competition.BuildBracket(in)
 	if g := gameOf(rounds, "AFC/wildcard_2"); g.Winner != "a3" || !strings.Contains(g.Words, "set aside") {
 		t.Fatalf("a team outside the game cannot advance from it: %+v", g)
 	}
@@ -216,8 +218,8 @@ func TestATiedPlayoffGameHasNoWinnerUntilTheCommissionerDecides(t *testing.T) {
 	if got := pair(gameOf(rounds, "AFC/division_1")); got != "waiting" {
 		t.Fatalf("the divisional round must wait for the tie: %s", got)
 	}
-	in.advance["AFC/wildcard_3"] = "a4"
-	rounds, _, _ = buildBracket(in)
+	in.Advance["AFC/wildcard_3"] = "a4"
+	rounds, _, _ = competition.BuildBracket(in)
 	if got := pair(gameOf(rounds, "AFC/division_1")); got == "waiting" {
 		t.Fatalf("a hand decision should release the next round: %s", got)
 	}
@@ -236,8 +238,8 @@ func TestTheChampionIsTheWinnerOfTheFinalAcrossConferences(t *testing.T) {
 
 func TestAHandEditReplacesOnePlaceAndAHandSeedOneSlot(t *testing.T) {
 	in, _, _, _ := legacyBracketFixture(t, scripted{})
-	in.edits["AFC/wildcard_2/away"] = "a8"
-	rounds, _, words := buildBracket(in)
+	in.Edits["AFC/wildcard_2/away"] = "a8"
+	rounds, _, words := competition.BuildBracket(in)
 	if words != "" {
 		t.Fatal(words)
 	}
@@ -245,23 +247,23 @@ func TestAHandEditReplacesOnePlaceAndAHandSeedOneSlot(t *testing.T) {
 	if g.Away.Franchise != "a8" || !g.Away.ByHand || g.Home.ByHand {
 		t.Fatalf("edit: %+v", g)
 	}
-	in.edits["AFC/wildcard_3/home"] = "a8"
-	if _, _, words = buildBracket(in); !strings.Contains(words, "two games") {
+	in.Edits["AFC/wildcard_3/home"] = "a8"
+	if _, _, words = competition.BuildBracket(in); !strings.Contains(words, "two games") {
 		t.Fatalf("a team in two games of one round: %q", words)
 	}
 
 	field, _ := twoConferences()
-	field.hand["AFC"] = map[int]string{1: "a8"}
-	fields, words := seedField(field)
+	field.Hand["AFC"] = map[int]string{1: "a8"}
+	fields, words := competition.SeedField(field)
 	if words != "" {
 		t.Fatal(words)
 	}
-	if seedOf(fields, "AFC", "a8") != 1 || !fields[0].Seeds[0].ByHand || fields[0].Seeds[0].Kind != kindByHand ||
+	if seedOf(fields, "AFC", "a8") != 1 || !fields[0].Seeds[0].ByHand || fields[0].Seeds[0].Kind != competition.KindByHand ||
 		seedOf(fields, "AFC", "a1") != 2 || seedOf(fields, "NFC", "b1") != 1 {
 		t.Fatalf("hand seed: %+v", fields[0].Seeds)
 	}
-	field.hand["AFC"] = map[int]string{1: "b1"}
-	if _, words := seedField(field); !strings.Contains(words, "no longer fits") {
+	field.Hand["AFC"] = map[int]string{1: "b1"}
+	if _, words := competition.SeedField(field); !strings.Contains(words, "no longer fits") {
 		t.Fatalf("a hand seed from another conference: %q", words)
 	}
 }
@@ -286,24 +288,24 @@ func TestASmallerLeagueFollowsItsOwnShape(t *testing.T) {
 	if pr.Words != "" {
 		t.Fatal(pr.Words)
 	}
-	in := fieldInput{teams: map[string]fieldTeam{}, conferences: []string{singleConference}, rules: pr}
+	in := competition.FieldInput{Teams: map[string]competition.FieldTeam{}, Conferences: []string{singleConference}, Rules: pr}
 	names := map[string]string{}
 	for i := 1; i <= 8; i++ {
 		id := fmt.Sprintf("t%d", i)
-		in.order = append(in.order, id)
-		in.teams[id] = fieldTeam{Name: id, Division: fmt.Sprintf("d%d", (i+1)/2), Conference: singleConference}
+		in.Order = append(in.Order, id)
+		in.Teams[id] = competition.FieldTeam{Name: id, Division: fmt.Sprintf("d%d", (i+1)/2), Conference: singleConference}
 		names[id] = id
 	}
-	fields, words := seedField(in)
+	fields, words := competition.SeedField(in)
 	if words != "" {
 		t.Fatal(words)
 	}
 	rank := map[string]int{}
-	for i, id := range in.order {
+	for i, id := range in.Order {
 		rank[id] = i + 1
 	}
-	rounds, champion, words := buildBracket(bracketInput{rules: pr, fields: fields, rank: rank, names: names,
-		points: scripted{}.points(rank), edits: map[string]string{}, advance: map[string]string{}})
+	rounds, champion, words := competition.BuildBracket(competition.BracketInput{Rules: pr, Fields: fields, Rank: rank, Names: names,
+		Points: scripted{}.points(rank), Edits: map[string]string{}, Advance: map[string]string{}})
 	if words != "" || champion == nil {
 		t.Fatalf("%q %+v", words, champion)
 	}
@@ -351,8 +353,8 @@ func TestPlayoffRulesAreReadFromTheSeasonsOwnRules(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 	field, _ := twoConferences()
-	field.rules = got
-	fields, words := seedField(field)
+	field.Rules = got
+	fields, words := competition.SeedField(field)
 	if words != "" || !fields[0].Seeds[1].Bye || fields[0].Seeds[2].Bye {
 		t.Fatalf("two byes: %q %+v", words, fields[0].Seeds)
 	}

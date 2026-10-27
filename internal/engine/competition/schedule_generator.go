@@ -1,4 +1,4 @@
-package commissioner
+package competition
 
 import (
 	"fmt"
