@@ -16,6 +16,7 @@ func generateReadCommands(entries []catalog.Entry) ([]byte, error) {
 		"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports",
 		"market.TargetMarketReports", "race.TargetRace",
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
+		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
 		"market.TargetAssetBoard", "now.TargetNow",
 		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
 		"sources.TargetCacheScopes", "draft.TargetDraftLab", "market.TargetMarketLists", "market.TargetPickClock",

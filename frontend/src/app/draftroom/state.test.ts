@@ -68,3 +68,20 @@ describe('The Draft room is lazy', () => {
     expect(readFileSync('src/app/shell/TargetApp.tsx', 'utf8')).not.toContain('draftroom');
   });
 });
+
+it('retains refusal wording during retry and fences a read when the room is reset', async () => {
+  let fail = true;
+  let finish!: (value: unknown) => void;
+  const room = createDraftRoom({ pick: async () => receipt, read: async () => {
+    if (fail) throw new Error('The ledger is busy.');
+    return new Promise(resolve => { finish = resolve; });
+  } });
+  await room.read('native.a', 'franchise.01');
+  fail = false;
+  const pending = room.read('native.a', 'franchise.01');
+  expect(room.peek()).toMatchObject({ error: 'The ledger is busy.', pending: true });
+  room.reset();
+  finish(reading('native.a'));
+  await pending;
+  expect(room.peek()).toEqual({ error: '', pending: false, pick: { status: 'idle' } });
+});

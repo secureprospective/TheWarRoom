@@ -1,6 +1,5 @@
 import { draftBindings as bindings } from '../commissioner/api';
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { newKey } from '../commissioner/forms';
 import { parseReceipt, refusalText, staleWords } from '../commissioner/proxy';
 import { parseDraft, type Draft } from './draft';
@@ -28,22 +27,18 @@ type RoomState = { draft?: Draft; error: string; pending: boolean; pick: PickOut
 
 // One draft room: the reading Go sent, the owner's pick, and why anything was refused.
 export function createDraftRoom(port: Port = live) {
-  const store = createStore<RoomState>(() => ({ error: '', pending: false, pick: { status: 'idle' } }));
-  let generation = 0;
+  const query = createReadQuery('commissioner.TargetNativeDraft', {
+    initial: (): RoomState => ({ error: '', pending: false, pick: { status: 'idle' } }),
+    retainErrorWhilePending: true, failure: refusalText,
+    read: async (scope: Scope) => parseDraft(await port.read(scope)),
+    accept: draft => ({ draft }),
+  });
+  const store = query.store;
   let held = { signature: '', key: '' };
-  async function read(league: string, franchise: string, season = 0) {
-    const request = ++generation;
-    // A draft read for another league must never stand in for this one while it is being read.
+  function read(league: string, franchise: string, season = 0) {
     const held = store.getState().draft;
-    store.setState({ pending: true, ...(held && held.league !== league ? { draft: undefined } : {}) });
-    try {
-      const draft = parseDraft(await port.read({ league, season, franchise, at: zeroTime }));
-      if (request === generation) store.setState({ draft, error: '' });
-    } catch (cause) {
-      if (request === generation) store.setState({ error: refusalText(cause) });
-    } finally {
-      if (request === generation) store.setState({ pending: false });
-    }
+    if (held && held.league !== league) store.setState({ draft: undefined });
+    return query.load([{ league, season, franchise, at: zeroTime }]);
   }
   // A retry of the same pick repeats its request key, so it cannot be recorded twice.
   function requestKey(signature: string) {
@@ -69,8 +64,7 @@ export function createDraftRoom(port: Port = live) {
   }
   const forget = () => store.setState({ pick: { status: 'idle' } });
   // reset puts the room back as it was before anything was read.
-  const reset = () =>
-    store.setState({ draft: undefined, error: '', pending: false, pick: { status: 'idle' } });
-  return { read, pick, forget, reset, use: () => useStore(store), peek: store.getState };
+  const reset = query.reset;
+  return { read, pick, forget, reset, use: query.use, peek: store.getState };
 }
 export const draftRoom = createDraftRoom();

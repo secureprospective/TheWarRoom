@@ -31,6 +31,7 @@ type QueryOptions<T, S extends object, A extends unknown[]> = {
   companions?: ReadCommandId[];
   cacheSize?: 1 | 32;
   retainErrorWhilePending?: boolean;
+  failure?: (cause: unknown) => string;
   read: (...args: A) => Promise<T>;
   accept: (value: T, args: A) => Partial<S>;
 };
@@ -87,9 +88,9 @@ export function createReadQuery<K extends ReadCommandId, T, S extends object, A 
       cache.delete(cacheKey);
       cache.set(cacheKey, value);
       if (cache.size > (options.cacheSize ?? 32)) cache.delete(cache.keys().next().value!);
-      store.setState({ ...accepted, error: '' } as Partial<S & ReadStatus>);
+      store.setState({ error: '', ...accepted } as Partial<S & ReadStatus>);
     } catch (cause) {
-      if (request === revision) store.setState({ error: String(cause) } as Partial<S & ReadStatus>);
+      if (request === revision) store.setState({ error: options.failure ? options.failure(cause) : String(cause) } as Partial<S & ReadStatus>);
     } finally {
       if (request === revision) store.setState({ pending: false } as Partial<S & ReadStatus>);
     }

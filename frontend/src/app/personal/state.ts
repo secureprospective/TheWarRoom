@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { parsePersonal, type ListKind, type ListChange, type PersonalReading } from './contract';
 import { personalWire } from '../offers/api';
 
@@ -16,25 +15,24 @@ const live: PersonalProvider = {
 export function createPersonalState(provider: PersonalProvider) {
   type Reading = { value?: PersonalReading; pending: boolean; error: string;
     savedNote?: ListChange & { at: string } };
-  const store = createStore<Record<string, Reading>>(() => ({}));
   const empty: Reading = { pending: false, error: '' };
-  const revisions = new Map<string, number>();
-  const write = (mine: string, patch: Partial<Reading>) => store.setState(s =>
-    ({ [mine]: { ...empty, ...s[mine], ...patch } }));
-  async function load(mine: string) {
-    const revision = (revisions.get(mine) ?? 0) + 1;
-    revisions.set(mine, revision);
-    write(mine, { pending: true, error: '' });
-    try {
-      const value = await provider.read(mine);
-      if (revisions.get(mine) === revision) write(mine, { value, pending: false });
-    } catch (cause) {
-      if (revisions.get(mine) === revision) write(mine, { pending: false, error: String(cause) });
-    }
+  function createReading() {
+    return createReadQuery('offers.TargetPersonal', {
+      initial: (): Reading => ({ ...empty }),
+      read: (mine: string) => provider.read(mine), accept: value => ({ value }),
+    });
   }
+  const readings = new Map<string, ReturnType<typeof createReading>>();
+  function reading(mine: string) {
+    let query = readings.get(mine);
+    if (!query) { query = createReading(); readings.set(mine, query); }
+    return query;
+  }
+  const write = (mine: string, patch: Partial<Reading>) => reading(mine).set(patch);
+  const load = (mine: string) => reading(mine).load([mine]);
   async function change(mine: string, kind: ListKind, change: ListChange) {
-    if (store.getState()[mine]?.pending) return;
-    revisions.set(mine, (revisions.get(mine) ?? 0) + 1);
+    if (reading(mine).peek().pending) return;
+    reading(mine).fence();
     write(mine, { pending: true, error: '' });
     try {
       await provider.change(mine, kind, change);
@@ -44,10 +42,10 @@ export function createPersonalState(provider: PersonalProvider) {
     } catch (cause) { write(mine, { pending: false, error: String(cause) }); }
   }
   return { load, change, ensure: (mine: string) => {
-    const s = store.getState()[mine];
+    const s = readings.get(mine)?.peek();
     if (!s?.value && !s?.pending) return load(mine);
   }, handoff: provider.handoff,
-    peek: (mine: string) => store.getState()[mine] ?? empty,
-    useReading: (mine: string) => useStore(store, s => s[mine] ?? empty) };
+    peek: (mine: string) => readings.get(mine)?.peek() ?? empty,
+    useReading: (mine: string) => reading(mine).use() };
 }
 export const personalState = createPersonalState(live);
