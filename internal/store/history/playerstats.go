@@ -70,10 +70,12 @@ func (s *Store) PlayerWeekStats(ctx context.Context, scope source.RawStatScope) 
 
 // heldFile is one held copy of a season's weekly file, already parsed.
 type heldFile struct {
-	sha   string
-	at    time.Time
-	weeks []source.PlayerWeek
-	index source.HeldWeekIndex // built only by readings that look up many players
+	sha            string
+	at             time.Time
+	weeks          []source.PlayerWeek
+	canonical      map[canonicalWeek]source.PlayerWeek
+	unknownSleeper map[int]int
+	index          source.HeldWeekIndex // built only by readings that look up many players
 	// lines are the revision's offensive line games, nil when it holds no advanced rushing.
 	lineSHA string
 	lines   map[source.LineGame]fantasyscore.UnitLine

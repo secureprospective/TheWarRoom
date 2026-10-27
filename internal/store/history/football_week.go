@@ -21,12 +21,13 @@ const maxFootballItem = 8 << 20
 // full season of weekly statistics, play-by-play and advanced rushing fits under the per-item cap.
 // A revision lists its weeks by digest (RawFootballStats.Parts) instead of embedding the bodies.
 type RawFootballWeek struct {
-	Version int    `json:"version"`
-	Season  int    `json:"season"`
-	Week    int    `json:"week"`
-	Weekly  string `json:"weekly"`
-	Plays   string `json:"plays"`
-	Rushing string `json:"rushing,omitempty"`
+	Version int                     `json:"version"`
+	Season  int                     `json:"season"`
+	Week    int                     `json:"week"`
+	Weekly  string                  `json:"weekly"`
+	Plays   string                  `json:"plays"`
+	Rushing string                  `json:"rushing,omitempty"`
+	Sleeper []source.RawSleeperWeek `json:"sleeper,omitempty"`
 }
 
 // partSource returns a held week part's exact body by digest; nil means none is reachable.
@@ -48,6 +49,9 @@ func decodeFootballWeek(body []byte) (RawFootballWeek, error) {
 	if raw.Version != 1 || raw.Season < 1920 || raw.Season > 9999 || raw.Week < 1 || raw.Week > 22 ||
 		raw.Weekly == "" || raw.Plays == "" {
 		return raw, fmt.Errorf("a football week part needs version 1, a season, a week, weekly and play-by-play CSV")
+	}
+	if err := raw.validateSleeper(); err != nil {
+		return raw, err
 	}
 	return raw, nil
 }

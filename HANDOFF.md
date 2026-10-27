@@ -1,19 +1,30 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-27, `session/revamp-P6-draft`. Local only; do not push.
+Claude (CT105) — 2026-10-27, `session/revamp-P6-draft`, after merging main (E + market).
 
 ## Where it stands
-- Step 0 is `1d0c42d6`. A mutant retaining the replaced pick player fails `TestDraftBodies`; restored it passes.
-- `636f8a59` moves the calendar/job helpers and their shared close-record lookup into `draft_core.go`; commissioner and history race tests and the 71 selected composition tests passed.
-- Draft package move is not committed. The experimental move was reverted; the working tree is otherwise unchanged.
+- Part 6 market (steps 1–5) and revamp E (edge scoring) are on main.
+- Draft: job A (rules owners, `RuleValueWords`, `TestDraftBodies` with 15 goldens, the
+  draft_wire/apply/restore split), the `draft.change` bite fix `1d0c42d6`, and `draft_core.go`
+  `636f8a59`. The draft package move was stopped on purpose at this green cut.
 
 ## Next move
-- Resolve the move's core/public-surface conflict: `admission.go` holds `*DraftPickInput`, but the design puts `PickInput` in draft, which cannot be imported by core. Decide how to preserve the intended type and generated bindings.
-- Resolve the seam: `NativeStandings` has private `level`, `overrideLevel` and `regularWeeks`, and draft preview uses private `PreviewCatalogue` internals. The attempted move exposed roughly two dozen other core-private references. Decide a bounded core interface before resuming the compiler-led move.
+- The draft package move joins the naming pass after Part 6 session 3. It needs a bounded core
+  interface first: `admission.go` holds `*DraftPickInput`; `NativeStandings` has private `level`,
+  `overrideLevel` and `regularWeeks`; draft preview uses private `PreviewCatalogue` internals; about two
+  dozen other core-private references cross.
 
-## Blocked on
-- A seam that satisfies the specified public surface, one-way imports and short shared-helper list without changing wire data.
+## Debt left
+- Unknown Sleeper IDs need identity and roster coverage; do not assume they are irrelevant.
+- Held play bodies without a `sack` column can count red-zone sacks as attempts. Repin those
+  bodies before requiring the column; requiring it now rejects pinned evidence.
+- The red-zone boundary includes the 20-yard line; Christopher has not confirmed it.
+- Market step 6 (retire frame wrappers) not started; the quote path stays staged.
+- `contract_actions.go` writes rules fields and remains in core for the rules session.
 
 ## Tried and rejected
-- Moving the files directly compiled neither draft nor history. Core references to `draftSetupValues`, `countWords`, `controlOfCommand`, and `DraftPickInput` remain load-bearing; moving only draft-named files is insufficient.
+- Moving only draft-named files compiles neither draft nor history: core references to
+  `draftSetupValues`, `countWords`, `controlOfCommand` and `DraftPickInput` are load-bearing.
+- Do not eagerly construct market frames: owner and commissioner readings authorize first, trade
+  replay handles non-trade reversals separately, and quote loads governance → directory → fold → rules.
