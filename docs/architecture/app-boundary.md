@@ -5,7 +5,7 @@
 Composition inventory remains resolved: **125 units / 4,498 baseline function LOC relocated**,
 plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally extracted all
 **17 frozen core policy functions / 278 baseline function LOC**; no legacy entries remain.
-Boundary gate now freezes **120 decision-bearing adapters + 46 complete sources** and detects
+Boundary gate now freezes **120 decision-bearing adapters + 48 complete sources** and detects
 straight-line/declaration/nested-path changes as well as the original branch syntax. This is a
 review ratchet, not semantic proof that every approved adapter is policy-free.
 
@@ -1150,7 +1150,7 @@ is deferred, not claimed. Design and remaining consumer inventory: frontend-read
 
 The follow-up audit found Market's ready→bounded-context→serialized refresh workflow still marked
 as an adapter. It is the same kind of application admission moved for Draft/Comms/Race, so moved
-it too: core/host_market.go:RefreshMarket → app/market/reports.go:RefreshReports (13 baseline
+it too: core/host_market.go:RefreshMarket → app/market/reports.go:RefreshReports (11 baseline
 function LOC, additional to the frozen 17 / 278). Core's held resource readers from host_market.go
 joined host_research.go, which already owns the shared directory/season/zone reads. No policy or
 cross-feature import moved into core. Removed the admission fingerprint and old whole-source row;
@@ -1163,3 +1163,16 @@ composition/market_policy_test.go and pass, along with filtered core/Market and 
 tests. The now-unused core wait helper was removed; composition retains its used helper. No actual
 app/unit references these source paths; no installed path or repository moved. Boundary count is
 now **120 adapters + 46 sources = 166**, with zero legacy rows. No baseline rose.
+
+
+### Part 5 ratchet review follow-up
+
+Closed two further source-freeze gaps found in review. core/coretest is no longer an unguarded
+source-path exemption: its two fixture files are source-frozen without classifying test fixture
+branches as production policy. New or changed fixture helper sources now fail too. Only *_test.go
+and the exact generated Wails surface are excluded entirely. Meaningful //go:, legacy build and
+//line directives enter source digests; ordinary comments/formatting remain free. No existing
+production source digest changed; added only the two explicitly reviewed fixture source snapshots.
+New race tests prove fixture edits/new helpers and semantic directives fail. Gate total returns to
+**120 adapters + 48 sources = 168**, zero legacy entries. This is expanded checking, not relaxed
+approval or a semantic proof of purity.

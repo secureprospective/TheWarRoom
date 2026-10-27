@@ -105,7 +105,7 @@ func decisions(root string) (map[string]string, error) {
 				return nil, fmt.Errorf("boundary relative path: %w", err)
 			}
 			relative = filepath.ToSlash(relative)
-			if strings.HasSuffix(path, "_test.go") || strings.HasPrefix(relative, "internal/app/core/coretest/") || relative == "internal/composition/wails_surface.gen.go" {
+			if strings.HasSuffix(path, "_test.go") || relative == "internal/composition/wails_surface.gen.go" {
 				continue
 			}
 			if err := inspectFile(path, relative, out); err != nil {
@@ -137,7 +137,7 @@ func boundaryPaths(directory string) ([]string, error) {
 }
 
 func inspectFile(path, relative string, out map[string]string) error {
-	file, err := parser.ParseFile(token.NewFileSet(), path, nil, 0)
+	file, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.ParseComments)
 	if err != nil {
 		return fmt.Errorf("parse %s: %w", relative, err)
 	}
@@ -146,6 +146,10 @@ func inspectFile(path, relative string, out map[string]string) error {
 		return fmt.Errorf("fingerprint source %s: %w", relative, err)
 	}
 	out[relative+":#source"] = digest
+	// Fixture code is not production policy, but its source still cannot change unnoticed.
+	if strings.HasPrefix(relative, "internal/app/core/coretest/") {
+		return nil
+	}
 	for _, declaration := range file.Decls {
 		fn, ok := declaration.(*ast.FuncDecl)
 		if !ok || !hasDecision(fn) {
@@ -198,6 +202,15 @@ func fingerprint(fn ast.Node) (string, error) {
 			break
 		}
 		_, _ = fmt.Fprintf(&canonical, "%d:%s\x00", kind, literal)
+	}
+	if file, ok := fn.(*ast.File); ok {
+		for _, group := range file.Comments {
+			for _, comment := range group.List {
+				if strings.HasPrefix(comment.Text, "//go:") || strings.HasPrefix(comment.Text, "// +build ") || strings.HasPrefix(comment.Text, "//line ") {
+					_, _ = fmt.Fprintf(&canonical, "directive:%s\x00", comment.Text)
+				}
+			}
+		}
 	}
 	return fmt.Sprintf("%x", sha256.Sum256(canonical.Bytes())), nil
 }

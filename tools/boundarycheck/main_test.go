@@ -125,3 +125,30 @@ func TestBoundaryRejectsNestedSourcesAndPackageInitializers(t *testing.T) {
 		}
 	}
 }
+
+func TestBoundaryFreezesTestFixtureSourcesToo(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	path := "internal/app/core/coretest/builder.go"
+	fixtureWrite(t, root, path, "package coretest\nfunc fixture(flag bool) bool {if flag {return true};return false}")
+	approveFixture(t, root)
+	fixtureWrite(t, root, path, "package coretest\nfunc fixture(flag bool) bool {if flag {return false};return true}")
+	if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "changed boundary source") {
+		t.Fatal(err)
+	}
+	fixtureWrite(t, root, path, "package coretest\nfunc fixture(flag bool) bool {if flag {return true};return false}")
+	fixtureWrite(t, root, "internal/app/core/coretest/policy.go", "package coretest\nfunc policy() string {return \"hidden\"}")
+	if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "unreviewed boundary source") {
+		t.Fatal(err)
+	}
+}
+
+func TestBoundaryIncludesSemanticDirectivesButNotOrdinaryComments(t *testing.T) {
+	for _, directive := range []string{"//go:build linux\n\n", "// +build linux\n\n", "//line hidden.go:2\n"} {
+		root := boundaryFixture(t, "package composition\nfunc adapter() int {return 1}")
+		approveFixture(t, root)
+		fixtureWrite(t, root, "internal/composition/adapter.go", directive+"package composition\nfunc adapter() int {return 1}")
+		if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "changed boundary source") {
+			t.Fatal(err)
+		}
+	}
+}
