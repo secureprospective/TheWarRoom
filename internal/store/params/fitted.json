@@ -154,6 +154,11 @@
    "value": -0.3490639979083395
   },
   {
+   "key": "model.prior.unproven",
+   "position": "CB",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "CB",
    "value": 0.7751844261763967
@@ -407,6 +412,11 @@
    "key": "model.prior.three_cone.weight",
    "position": "DE",
    "value": -0.038055779259859264
+  },
+  {
+   "key": "model.prior.unproven",
+   "position": "DE",
+   "value": 0.3
   },
   {
    "key": "model.prior.vertical.missing",
@@ -694,6 +704,11 @@
    "value": -0.16304489688841836
   },
   {
+   "key": "model.prior.unproven",
+   "position": "DT",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "DT",
    "value": 0.39548378779561777
@@ -929,6 +944,11 @@
    "value": 0
   },
   {
+   "key": "model.prior.unproven",
+   "position": "K",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "K",
    "value": 0
@@ -1142,6 +1162,11 @@
    "key": "model.prior.three_cone.weight",
    "position": "LB",
    "value": -0.13805663150722447
+  },
+  {
+   "key": "model.prior.unproven",
+   "position": "LB",
+   "value": 0.3
   },
   {
    "key": "model.prior.vertical.missing",
@@ -1379,6 +1404,11 @@
    "value": -0.1669467396292038
   },
   {
+   "key": "model.prior.unproven",
+   "position": "QB",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "QB",
    "value": -0.75947294928427
@@ -1594,6 +1624,11 @@
    "value": 0.37764331732941103
   },
   {
+   "key": "model.prior.unproven",
+   "position": "RB",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "RB",
    "value": 0.17241808563611644
@@ -1807,6 +1842,11 @@
    "key": "model.prior.three_cone.weight",
    "position": "S",
    "value": -0.10967400706266846
+  },
+  {
+   "key": "model.prior.unproven",
+   "position": "S",
+   "value": 0.3
   },
   {
    "key": "model.prior.vertical.missing",
@@ -2044,6 +2084,11 @@
    "value": -0.08247936784053848
   },
   {
+   "key": "model.prior.unproven",
+   "position": "TE",
+   "value": 0.3
+  },
+  {
    "key": "model.prior.vertical.missing",
    "position": "TE",
    "value": -0.15193332126911885
@@ -2257,6 +2302,11 @@
    "key": "model.prior.three_cone.weight",
    "position": "WR",
    "value": -0.09713137973317831
+  },
+  {
+   "key": "model.prior.unproven",
+   "position": "WR",
+   "value": 0.3
   },
   {
    "key": "model.prior.vertical.missing",

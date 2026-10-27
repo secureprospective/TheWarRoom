@@ -1,6 +1,9 @@
 package model
 
-import "math"
+import (
+	"math"
+	"slices"
+)
 
 // Past is one of a player's seasons as evidence: its year, the games he played and his
 // percentile at his position.
@@ -53,7 +56,7 @@ func (p Params) Project(pl *Player, past []Past, target int) (pct, e float64) {
 		swx += w * s.Games * Score(moved)
 		sw2 += w * w * s.Games
 	}
-	blend := p.Prior(pl)
+	blend := p.priorFor(pl)
 	if sw > 0 {
 		e = sw * sw / sw2
 		z := p.Z(e, p.KDynasty)
@@ -90,6 +93,7 @@ const fullSeason = 17.0
 // on the field and discounted. scale turns percentiles back into points per game.
 func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Scale) Value {
 	season := current.Year
+	p.unplayed = current.Games <= 0 && !slices.ContainsFunc(past, func(s Past) bool { return s.Games > 0 })
 	proj, e := p.Project(pl, past, season)
 	v := Value{Prior: p.Prior(pl), PastGames: e, SeasonGames: current.Games, Now: proj}
 	if e > 0 {
@@ -186,3 +190,13 @@ func Level(score float64) float64 { return 0.5 * (1 + math.Erf(score/math.Sqrt2)
 
 // Mix is z of percentile a and 1-z of b, blended as normal scores.
 func Mix(z, a, b float64) float64 { return Level(z*Score(a) + (1-z)*Score(b)) }
+
+// priorFor is the prior as it counts in a projection: shrunk toward the middle by Unproven for
+// a player who has not played an NFL game.
+func (p Params) priorFor(pl *Player) float64 {
+	prior := p.Prior(pl)
+	if !p.unplayed {
+		return prior
+	}
+	return Level((1 - p.Unproven) * Score(prior))
+}

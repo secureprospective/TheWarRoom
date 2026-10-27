@@ -18,6 +18,7 @@ func TestOwnerRulesSetTheirPositionsParams(t *testing.T) {
 		{Position: domain.PosTE, ArcShift: 3},
 		{Position: domain.PosCB, Recency: &[2]float64{0.6, 0.4}, KNow: 6, Arc: &[3]float64{0, -0.01, -0.006},
 			Cliff: [2]float64{35, -1}},
+		{Position: domain.PosCB, Unproven: 0.3},
 	})
 	te, cb, wr := results[0].Params, results[1].Params, results[2].Params
 	for _, age := range []float64{24, 27, 30, 33} {
@@ -30,6 +31,9 @@ func TestOwnerRulesSetTheirPositionsParams(t *testing.T) {
 	}
 	if cb.Recency != [2]float64{0.6, 0.4} || cb.KNow != 6 || cb.Arc != [4]float64{0, -0.01, -0.006, 0.01} {
 		t.Errorf("CB = %+v", cb)
+	}
+	if cb.Unproven != 0.3 || cb.Cliff != [2]float64{35, -1} {
+		t.Errorf("a second CB rule must add its shrink and keep the first rule's cliff: %+v", cb)
 	}
 	// The cliff adds its step from its age on, and nowhere before.
 	if d := cb.ArcStep(34.9, 5) - cb.ArcStep(35, 5); math.Abs(d-1) > 0.05 {

@@ -31,6 +31,13 @@ type Params struct {
 	// age of 0 is no cliff. The fit never sets one; owner rules do.
 	Cliff [2]float64
 
+	// Unproven shrinks the prior's normal score toward the middle for a player who has not yet
+	// played an NFL game: a high pick is boom or bust, and his own games decide which. 0 trusts
+	// the prior as fitted; 1 starts him at the middle. The fit sets 0.
+	Unproven float64
+
+	unplayed bool // set by Value for a player with no NFL games, so the prior is shrunk
+
 	// Survival: the log-odds of playing next season are Survival · SurvivalRow, the terms
 	// SurvivalTerms names for the position.
 	Survival []float64
@@ -132,6 +139,7 @@ func (p Params) Values() map[string]float64 {
 		"model.z_exponential": boolValue(p.Exponential), "model.board_kept": boolValue(p.BoardKept),
 		"model.recency.1": p.Recency[0], "model.recency.2": p.Recency[1],
 		"model.arc.cliff_age": p.Cliff[0], "model.arc.cliff_step": p.Cliff[1],
+		"model.prior.unproven": p.Unproven,
 	}
 	for i, f := range PriorFeatures(p.Position) {
 		out["model.prior."+f+".weight"] = p.Weight[i]
@@ -158,6 +166,7 @@ func ParamsFrom(pos domain.Position, get func(key string) (float64, error)) (Par
 		"model.z_exponential": &z, "model.board_kept": &kept,
 		"model.recency.1": &p.Recency[0], "model.recency.2": &p.Recency[1],
 		"model.arc.cliff_age": &p.Cliff[0], "model.arc.cliff_step": &p.Cliff[1],
+		"model.prior.unproven": &p.Unproven,
 	}
 	for i, f := range PriorFeatures(pos) {
 		targets["model.prior."+f+".weight"] = &p.Weight[i]

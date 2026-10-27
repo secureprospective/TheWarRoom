@@ -146,3 +146,13 @@ Applied to the stored params after fitting; the holdout above scores the fitted 
 | DE | 0.8 / 0.0 | 2.0 | set: +0.000 -0.010·(a−27) -0.0060·(a−27)² | -1.0 a season from 35 | reputation holds a season, 80% the next, then stops; this season's games take over as fast as at the other IDP spots; an end ages gently from his late 20s and falls off a cliff at 35 |
 | CB | 0.6 / 0.4 | 6.0 | fitted | none | a CB's points say little about his coverage, so one month counts less and years of steady scoring count more |
 | TE | fitted | fitted | fitted, 3 years later | none | tight ends play well to older ages, so they age as the fit has them three years younger |
+| QB | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| RB | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| WR | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| TE | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| K | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| DT | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| DE | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| LB | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| CB | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
+| S | fitted | fitted | fitted | none; unplayed prior 30% nearer the middle | a player with no NFL games is boom or bust, high picks too; his draft profile counts 30% nearer the middle until he plays |
