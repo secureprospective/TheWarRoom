@@ -3,11 +3,12 @@ package serverhttp_test
 import (
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 )
 
 // hostedWireVolatile matches what differs between two runs of a hosted workflow: clock instants (also in words), SHA-256
-// digests, account ids, store revisions and the countdown to the trade deadline.
+// digests, account ids, store revisions and the countdowns to the trade deadline and the pick clock.
 func hostedWireVolatile() []struct {
 	pattern *regexp.Regexp
 	with    string
@@ -23,6 +24,7 @@ func hostedWireVolatile() []struct {
 		{regexp.MustCompile(`[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}`), "<uuid>"},
 		{regexp.MustCompile(`"revision": \d+`), `"revision": <n>`},
 		{regexp.MustCompile(`"secondsToTradeDeadline": \d+`), `"secondsToTradeDeadline": <n>`},
+		{regexp.MustCompile(`"remaining": \d{10,}`), `"remaining": <nanoseconds>`},
 	}
 }
 
@@ -46,7 +48,18 @@ func checkHostedWire(t *testing.T, path string, body []byte) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if normaliseHostedWire(held) != normaliseHostedWire(body) {
-		t.Fatalf("%s differs from its writer's output; rerun with TWR_UPDATE_HOSTED_WIRE=1", path)
+	want, got := strings.Split(normaliseHostedWire(held), "\n"), strings.Split(normaliseHostedWire(body), "\n")
+	for i := range max(len(want), len(got)) {
+		if i >= len(want) || i >= len(got) || want[i] != got[i] {
+			t.Fatalf("%s differs from its writer's output at line %d (held %q, written %q); rerun with "+
+				"TWR_UPDATE_HOSTED_WIRE=1", path, i+1, line(want, i), line(got, i))
+		}
 	}
+}
+
+func line(lines []string, i int) string {
+	if i < len(lines) {
+		return lines[i]
+	}
+	return "<end>"
 }

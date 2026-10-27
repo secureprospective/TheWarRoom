@@ -74,6 +74,8 @@ func TestHostedRolloverAfterWorkerBidAwardKeepsEveryReadingOpen(t *testing.T) {
 	}
 	receipt := c.invoke(rollover.Command, "execute", body, 200)
 	requirePlainRollover(t, c.previews[commissioner.SeasonRollover])
+	// The practice draft starts two seconds after provisioning; read it running, however fast the test is.
+	time.Sleep(2 * time.Second)
 	readings := c.refreshReads("franchise.01")
 	fresh := c
 	fresh.bearer, fresh.proof = c.f.login(t, "owner", "private-password"), ""
