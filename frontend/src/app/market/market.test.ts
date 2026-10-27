@@ -320,3 +320,42 @@ it('all eight Draft endpoints route through Trade Floor Draft room and have menu
     expect(source).toContain("args={{ id: 'L-15' }}");
     expect(source).toContain('<Draft kind={kind}');
 });
+
+it('publishes compound readings together and retains only the last scope per profile kind', async () => {
+    const p = provider();
+    let clock!: (r: SurfaceReading) => void;
+    p.clock = vi.fn(() => new Promise<SurfaceReading>(resolve => { clock = resolve; }));
+    const s = createMarketState(p);
+    const pending = s.refresh(scope);
+    await Promise.resolve();
+    expect(s.peek().lists).toBeUndefined();
+    expect(s.peek().pending).toBe(true);
+    clock(reading('L-14'));
+    await pending;
+    p.clock = vi.fn(async () => reading('L-14'));
+    await s.profile('LB');
+    await s.profile('DL');
+    await s.refresh(scope);
+    await s.profile('LB');
+    expect(p.profile).toHaveBeenCalledTimes(2);
+    await s.change({ field: 'phase', value: 'early' });
+    await s.profile('LB');
+    await s.refresh(scope);
+    await s.profile('LB');
+    expect(p.profile).toHaveBeenCalledTimes(4);
+    expect(p.profile).toHaveBeenLastCalledWith(scope, 'LB');
+});
+
+it('keeps empty versus all UI selections while using the existing nonnullable binding shape', async () => {
+    const p = provider();
+    const s = createMarketState(p);
+    const empty = { ...scope, phases: [] };
+    await s.refresh(empty);
+    expect(p.lists).toHaveBeenLastCalledWith(empty);
+    expect(s.peek().applied).toEqual(empty);
+    await s.profile('LB');
+    await s.refresh(scope);
+    await s.profile('LB');
+    expect(p.profile).toHaveBeenCalledTimes(2);
+    expect(p.profile).toHaveBeenLastCalledWith(scope, 'LB');
+});

@@ -2,8 +2,9 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"strconv"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -55,25 +56,8 @@ func (h contractsHost) ReleaseTarget() envelope.Target {
 	return target
 }
 
-func (h contractsHost) ValidateMoveURL(target string) error { return validateMoveURL(target) }
-
-func scorePeriod(ctx context.Context, a *App, period string) heldSeasonFeed[[]ingestion.RawPlayerScore] {
-	return archivedOnly(ctx, a, "playerScores", false, func(body []byte) ([]ingestion.RawPlayerScore, error) {
-		rows, err := ingestion.ParsePlayerScores(body)
-		if err != nil {
-			return nil, fmt.Errorf("player scores: parse: %w", err)
-		}
-		out := []ingestion.RawPlayerScore{}
-		for _, r := range rows {
-			if r.Week == period {
-				out = append(out, r)
-			}
-		}
-		if len(out) == 0 {
-			return nil, fmt.Errorf("player scores: period %s not held", period)
-		}
-		return out, nil
-	})
+func (h contractsHost) ValidateMoveURL(target string) error {
+	return platformapp.ValidateMoveURL(target) //nolint:wrapcheck // Preserve the shared move URL refusal.
 }
 
 func (h contractsHost) AcquisitionSnapshot(mine string) (snapshot.Snapshot, error) {
@@ -104,4 +88,18 @@ func (h contractsHost) AcquisitionTeams(ctx context.Context, snap snapshot.Snaps
 
 func (h contractsHost) AcquisitionCorrection(p state.MirrorPlayer, s state.WhatIfSession) domain.Money {
 	return tradeCentsCorrection(p, "", s)
+}
+
+func scorePeriod(ctx context.Context, a *App, period string) heldSeasonFeed[[]ingestion.RawPlayerScore] {
+	return archivedOnly(ctx, a, "playerScores", false, func(body []byte) ([]ingestion.RawPlayerScore, error) {
+		return contractsapp.ParseScorePeriod(body, period)
+	})
+}
+
+func (h contractsHost) RulesFreshness() domain.Freshness {
+	return contractsapp.RulesFreshness(h.RulesCheckedAt.Load())
+}
+
+func (h contractsHost) RequireOwnFranchise(franchise string) error {
+	return h.app.requireOwnFranchise(franchise)
 }

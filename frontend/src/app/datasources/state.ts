@@ -1,6 +1,5 @@
 import type { ParamsResult } from '../control/api';
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { dataProvider, type DataProvider, type Sources } from './provider';
 import type { Report } from '../reports/contract';
 export type ParamAction = { kind: 'parameter'; key: string; position: string; value: number | null };
@@ -8,14 +7,28 @@ export type DataAction = { kind: 'read' } | { kind: 'folder'; path: string } |
   { kind: 'refresh'; scope: string } | { kind: 'photos'; on: boolean };
 export type Action = DataAction | ParamAction;
 export function createDataState(provider: DataProvider) {
-  const store = createStore<{ data?: Sources; crosswalk?: Report; params?: ParamsResult;
-    busy: string; error: string; result: string; outcomes: Record<string, string> }>(() =>
-      ({ busy: '', error: '', result: '', outcomes: {} }));
+  type State = { data?: Sources; crosswalk?: Report; params?: ParamsResult;
+    busy: string; result: string; outcomes: Record<string, string> };
+  const initial = (): State => ({ busy: '', result: '', outcomes: {} });
+  const sources = createReadQuery('sources.TargetDataSources', {
+    initial, read: () => provider.read(), accept: data => ({ data }),
+  });
+  const details = createReadQuery('sources.TargetCrosswalk', {
+    initial, store: sources.store, companions: ['control.GetParams'],
+    read: async () => {
+      const [crosswalk, params] = await Promise.all([provider.crosswalk(), provider.params()]);
+      return { crosswalk, params };
+    }, accept: value => value,
+  });
+  const store = sources.store;
   async function read() {
-    const data = await provider.read();
-    store.setState({ data });
-    const [crosswalk, params] = await Promise.all([provider.crosswalk(), provider.params()]);
-    store.setState({ crosswalk, params });
+    const actionError = store.getState().error;
+    await sources.load([]);
+    if (store.getState().error) return store.getState().error;
+    await details.load([]);
+    if (store.getState().error) return store.getState().error;
+    store.setState({ error: actionError });
+    return '';
   }
   async function run(action: Action) {
     if (store.getState().busy) return;
@@ -31,13 +44,17 @@ export function createDataState(provider: DataProvider) {
       } else if (action.kind === 'parameter') {
         await provider.parameter(action.key, action.position, action.value);
       }
-      await read();
+      const error = await read();
+      if (error) {
+        store.setState(s => ({ error, outcomes: { ...s.outcomes, [busy]: error } }));
+        return;
+      }
       if (action.kind === 'read') store.setState(s => ({ outcomes: { ...s.outcomes,
         read: s.data!.words.readResult } }));
     } catch (cause) {
       store.setState(s => ({ error: String(cause), outcomes: { ...s.outcomes, [busy]: String(cause) } }));
     } finally { store.setState({ busy: '' }); }
   }
-  return { use: () => useStore(store), read: store.getState, run };
+  return { use: sources.use, read: store.getState, run };
 }
 export const dataState = createDataState(dataProvider);

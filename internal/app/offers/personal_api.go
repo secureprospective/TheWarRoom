@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
@@ -116,6 +117,10 @@ func snapshotNames(snap snapshot.Snapshot) (map[string]string, map[string]string
 func (a *API) personalSnapshot(mine string) (snapshot.Snapshot, error) {
 	players, franchises, loaded := a.host.OffersSnapshotNames()
 	snap := snapshot.Snapshot{Players: snapshot.Sourced[[]snapshot.Player]{Value: players}, Franchises: snapshot.Sourced[[]snapshot.Franchise]{Value: franchises}}
+	return PersonalSnapshot(snap, loaded, mine)
+}
+
+func PersonalSnapshot(snap snapshot.Snapshot, loaded bool, mine string) (snapshot.Snapshot, error) {
 	if !loaded {
 		return snap, fmt.Errorf("personal: snapshot not loaded")
 	}
@@ -123,4 +128,34 @@ func (a *API) personalSnapshot(mine string) (snapshot.Snapshot, error) {
 		return snap, fmt.Errorf("personal: unknown franchise")
 	}
 	return snap, nil
+}
+
+// RecordOffers keeps a history-save failure separate from a failed pending-offer read.
+func RecordOffers(ctx context.Context, pending []leaguefeed.PendingTrade, at time.Time, readErr error, available bool,
+	owner func() (string, error), save func(context.Context, string, []leaguefeed.PendingTrade, time.Time) error) error {
+	if readErr != nil || !available {
+		return readErr
+	}
+	mine, err := owner()
+	if err != nil {
+		return fmt.Errorf("offers: archive owner: %w", err)
+	}
+	if err := save(ctx, mine, pending, at); err != nil {
+		return fmt.Errorf("offers: save live read: %w", err)
+	}
+	return nil
+}
+
+func CapRoom(raw string, usedFor func() (domain.Money, bool)) *domain.Money {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	limit, err := domain.ParseMoneyMillions(raw)
+	used, ok := usedFor()
+	if err != nil || !ok {
+		return nil
+	}
+	room := limit - used
+	return &room
 }

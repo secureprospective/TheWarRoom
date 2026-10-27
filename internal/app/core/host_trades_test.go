@@ -9,7 +9,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -105,30 +104,5 @@ func TestTradeFuturePicksKeepNilAndDetach(t *testing.T) {
 	s.SeasonFuturePicks.FetchedAt, s.SeasonFuturePicks.RefreshError = at, "offline"
 	if fetched, refresh := s.TradeFuturePicksFeed(); !fetched.Equal(at) || refresh != "offline" {
 		t.Fatal(fetched, refresh)
-	}
-}
-
-func TestTradeRequestMapsOnlyAKnownHost(t *testing.T) {
-	t.Parallel()
-	s := coretest.New(t).Build()
-	offer := heldOffer(t)
-	req := s.TradeRequest("0025", offer)
-	if req.Target.Kind != envelope.Unmapped || req.FranchiseID != "0025" || req.Trade.TradeID != "77" ||
-		req.Trade.Offering != "0001" || req.Trade.Accepting != "0025" || req.Deadline == nil || !req.Deadline.Equal(offer.Expires) ||
-		len(req.Trade.OfferingGives) != 2 || req.Trade.AcceptingGives[0] != "0099" {
-		t.Fatal(req)
-	}
-	offer.Expires = time.Time{}
-	if req := s.TradeRequest("0025", offer); req.Deadline != nil {
-		t.Fatal("zero expiry became a deadline")
-	}
-	_, client := coretest.NewTransport(t, map[string]string{})
-	if err := client.DiscoverHost(s.Ctx, "2026", "14432"); err != nil {
-		t.Fatal(err)
-	}
-	s.MFLClient = client
-	if req := s.TradeRequest("0025", offer); req.Target.Kind != envelope.Mapped ||
-		req.Target.URL != "https://www47.myfantasyleague.com/2026/options?L=14432&O=05" {
-		t.Fatal(req.Target)
 	}
 }

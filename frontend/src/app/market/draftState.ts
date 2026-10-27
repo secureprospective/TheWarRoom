@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { readDraftLab } from '../draftreports/api';
 import { unavailable } from './provider';
 import type { MarketFilter, SurfaceReading } from './contract';
@@ -80,39 +79,42 @@ function pickScope(scope: DraftScope, kind: string): DraftScope {
   return { ...scope, segments: ids };
 }
 export function createDraftState(reader: DraftReader) {
-  const store = createStore<{
-    scope: DraftScope;
-    reading?: SurfaceReading;
-    pending: boolean;
-    picks: Record<string, SurfaceReading>;
-  }>(() => ({
-    scope: restoreFilter(FILTER_KEYS.draft, parseDraftScope, initial()), pending: false, picks: {},
-  }));
-  let revision = 0;
-  const seen = new Map<string, string>();
+  type State = { scope: DraftScope; reading?: SurfaceReading; picks: Record<string, SurfaceReading> };
   async function read(scope: DraftScope) {
     try { return await reader(scope); }
     catch (cause) { return absent(String(cause)); }
   }
+  const query = createReadQuery('draft.TargetDraftLab', {
+    initial: (): State => ({
+      scope: restoreFilter(FILTER_KEYS.draft, parseDraftScope, initial()), picks: {},
+    }), read, accept: reading => ({ reading }),
+  });
+  const store = query.store;
+  function detail(kind: string) {
+    return createReadQuery('draft.TargetDraftLab', {
+      initial: () => ({}), cacheSize: 1, read,
+      accept: reading => {
+        store.setState(s => ({ picks: { ...s.picks, [kind]: reading } }));
+        return {};
+      },
+    });
+  }
+  const details = new Map<string, ReturnType<typeof detail>>();
   async function refresh(scope = store.getState().scope) {
-    const token = ++revision;
+    for (const reading of details.values()) reading.fence();
     keepFilter(FILTER_KEYS.draft, scope);
-    store.setState({ scope: { ...scope }, pending: true });
-    const reading = await read(scope);
-    if (token === revision) store.setState({ reading, pending: false });
+    store.setState({ scope: { ...scope } });
+    await query.load([scope]);
   }
   async function pick(kind: string) {
-    const scope = pickScope(store.getState().scope, kind), signature = JSON.stringify(scope);
-    if (seen.get(kind) === signature && store.getState().picks[kind]) return;
-    const token = revision, reading = await read(scope);
-    if (token !== revision) return;
-    seen.set(kind, signature);
-    store.setState(s => ({ picks: { ...s.picks, [kind]: reading } }));
+    let reading = details.get(kind);
+    if (!reading) { reading = detail(kind); details.set(kind, reading); }
+    await reading.load([pickScope(store.getState().scope, kind)], { policy: 'cache-first' });
   }
   return {
-    use: () => useStore(store), peek: store.getState, refresh, pick,
+    use: query.use, peek: store.getState, refresh, pick,
     change: (change: MarketFilter) => {
-      if (change.field === 'draft-retry') seen.clear();
+      if (change.field === 'draft-retry') for (const reading of details.values()) reading.invalidate();
       return refresh(draftFiltered(store.getState().scope, change));
     },
   };

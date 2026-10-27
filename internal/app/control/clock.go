@@ -1,14 +1,18 @@
 package control
 
 import (
+	"context"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
 // WeekSnapshot owns its Games slice; the root copies it while holding weekMu.
@@ -94,4 +98,96 @@ func WindowInputs(in WindowSnapshot, now time.Time) leagueclock.WindowInputs {
 		}
 	}
 	return out
+}
+
+// SeasonGuess starts discovery at the held season, falling back to the calendar year.
+func SeasonGuess(held int, now time.Time) int {
+	if held != 0 {
+		return held
+	}
+	return now.Year()
+}
+
+func LineupWeekFrom(now time.Time, read func(int) (nflschedule.RawWeek, error)) (leagueweek.Week, error) {
+	for requested := 0; ; {
+		raw, err := read(requested)
+		if err != nil {
+			return leagueweek.Week{}, fmt.Errorf("week refresh: %w", err)
+		}
+		w, err := nflschedule.ToWeek(raw, now)
+		if err != nil {
+			return leagueweek.Week{}, fmt.Errorf("week refresh: convert: %w", err)
+		}
+		if w.Number > 18 || (requested != 0 && w.Number != requested) {
+			return leagueweek.Week{}, fmt.Errorf("week refresh: requested %d, received %d", requested, w.Number)
+		}
+		if lineup, ok := leagueweek.LineupWeek(now, w); ok {
+			return lineup, nil
+		}
+		if w.Number == 18 {
+			return leagueweek.Week{}, nil
+		}
+		requested = w.Number + 1
+	}
+}
+
+func LastRegularWeek(raw string) int {
+	last, err := strconv.Atoi(raw)
+	if err != nil || last < 2 || last > 18 {
+		return 0
+	}
+	return last
+}
+
+// CaptureWindows detaches only configured rule weeks while the caller holds the season lock.
+func CaptureWindows(last int, schedules map[int]report.HeldFeed[[]nflschedule.RawWeek]) WindowSnapshot {
+	in := WindowSnapshot{LastRegular: last, Schedules: map[int][]nflschedule.RawWeek{}}
+	for _, rule := range leagueclock.Rules(in.LastRegular) {
+		rows := slices.Clone(schedules[rule.Week].Value)
+		for i := range rows {
+			rows[i].Matchups = slices.Clone(rows[i].Matchups)
+		}
+		in.Schedules[rule.Week] = rows
+	}
+	return in
+}
+
+func TimeNow(clock func() time.Time) time.Time {
+	if clock != nil {
+		return clock()
+	}
+	return time.Now()
+}
+
+// ClockRead builds a held-only clock after startup/state admission; no callback fetches MFL.
+type ClockRead struct {
+	Ready, StateError func() error
+	Timeout           time.Duration
+	Now               func() time.Time
+	Season            func() int
+	Source            func() snapshot.ClockSource
+	Lineup            func(time.Time) (*leagueclock.LineupLock, domain.Freshness)
+	Windows           func(time.Time) leagueclock.WindowInputs
+	Merge             func(context.Context, time.Time, *snapshot.Sourced[leagueclock.Reading])
+}
+
+func (s ClockRead) Read(parent context.Context) (snapshot.Sourced[leagueclock.Reading], error) {
+	if err := s.Ready(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: startup: %w", err)
+	}
+	if err := s.StateError(); err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: state: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(parent, s.Timeout)
+	defer cancel()
+	now := s.Now()
+	lineup, fresh := s.Lineup(now)
+	clock, err := snapshot.BuildClock(ctx, now.UTC(), s.Season(), s.Source(), lineup, s.Windows(now), snapshot.Provenance{
+		Source: "phase-log+commissioner-calendar+nflSchedule", Kind: "live", Freshness: fresh,
+	})
+	if err != nil {
+		return snapshot.Sourced[leagueclock.Reading]{}, fmt.Errorf("target clock: %w", err)
+	}
+	s.Merge(ctx, now, &clock)
+	return clock, nil
 }

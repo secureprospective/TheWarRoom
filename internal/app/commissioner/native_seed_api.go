@@ -68,3 +68,25 @@ func (a *API) TargetNativeAssets(leagueID string) (commissioner.NativeAssets, er
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeAssets(leagueID)
 }
+
+func BuildSeedCommand(ctx context.Context, input RawNativeSeedRequest,
+	retry func(context.Context, string, string) (commissioner.RawCommand, bool, error),
+	capture func() (commissioner.RawNativeSnapshot, error)) (commissioner.RawCommand, error) {
+	raw, found, err := retry(ctx, input.League, input.Request)
+	if err != nil {
+		return raw, fmt.Errorf("read starting snapshot request: %w", err)
+	}
+	if found {
+		if raw.Command != commissioner.NativeSeed || raw.Expected != input.Expected || raw.Reason != input.Reason {
+			return raw, fmt.Errorf("this request was already used for a different change")
+		}
+		return raw, nil
+	}
+	seed, err := capture()
+	if err != nil {
+		return raw, err
+	}
+	return commissioner.RawCommand{League: input.League, Command: commissioner.NativeSeed,
+		Args: commissioner.RawArgs{Native: &seed}, Expected: input.Expected, Request: input.Request,
+		Reason: input.Reason, Effective: "now", Visibility: "league"}, nil
+}

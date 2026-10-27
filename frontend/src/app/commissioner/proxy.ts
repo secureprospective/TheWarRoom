@@ -1,6 +1,4 @@
 import { ledgerBindings as bindings } from './api';
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
 import { parseControls, type Controls } from './controls';
 import { parseJobs, type Jobs } from './jobs';
@@ -8,6 +6,8 @@ import { parseDigests, parseNotes, type Digests, type LeagueNotes } from './note
 import { parsePeople, type People } from './people';
 import { parseRules, type Rules } from './rules';
 import { parsePreview } from './preview';
+import { createReadQuery } from '../data/query';
+import { createReadSession } from '../data/session';
 
 type Receipt = {
   entry: string; league: string; revision: number; recordedAt: string; message: string;
@@ -124,12 +124,30 @@ type LeagueState = {
   error: string; pending: boolean; outcome: Outcome;
 };
 // One state serves the picker, the three readings and every form, so a receipt reloads them together.
+// The held readings are one shared registry query keyed by the selected league; forms stay outside it.
 export function createLeagueState(proxy = createProxy(live)) {
-  const store = createStore<LeagueState>(() => ({
-    choices: [], selected: '', error: '', landingError: '', opsError: '', pending: true,
-    outcome: { status: 'idle' },
-  }));
-  let generation = 0;
+  const readings = { ledger: undefined, rules: undefined, people: undefined, jobs: undefined,
+    notes: undefined, digests: undefined };
+  const query = createReadQuery('commissioner.TargetCommissionerLedger', {
+    initial: (): Omit<LeagueState, 'pending' | 'error'> => ({
+      choices: [], selected: '', landingError: '', opsError: '', outcome: { status: 'idle' } }),
+    companions: ['commissioner.TargetCommissionerRules', 'commissioner.TargetCommissionerPeople',
+      'commissioner.TargetCommissionerJobs', 'commissioner.TargetCommissionerNotices',
+      'commissioner.TargetCommissionerDigests'],
+    read: async (selected: string) => {
+      const [core, landing, ops] = await Promise.all([
+        readCore(selected), readLanding(selected), readOps(selected)]);
+      return { ...core, ...landing, ...ops };
+    },
+    accept: bundle => bundle,
+    // A league that is gone, or a picker that cannot be read, leaves no readings behind.
+    failure: cause => {
+      query.set(readings);
+      return String(cause);
+    },
+  });
+  const store = query.store;
+  store.setState({ pending: true });
   // The control list does not depend on the league, so it is read once.
   async function readLanding(selected: string) {
     type Landing = Pick<LeagueState, 'jobs' | 'controls' | 'landingError'>;
@@ -174,31 +192,23 @@ export function createLeagueState(proxy = createProxy(live)) {
     if (failed.length > 0) core.error = `This league could not be read: ${failed.join(', ')}.`;
     return core;
   }
+  // The picker is read first and kept even when one league cannot be read, so the commissioner can still
+  // choose another league or fix this one; each reading that failed is named. The query samples the league
+  // only for its current request, so a superseded choice never publishes its picker or starts its readings.
   async function choose(league = '') {
-    const request = ++generation;
     const was = store.getState().selected;
-    store.setState({ pending: true, error: '', ...(league && league !== was ?
-      { ledger: undefined, rules: undefined, people: undefined, jobs: undefined, notes: undefined,
-        digests: undefined } : {}) });
-    try {
-      const choices = await proxy.leagues();
-      const selected = league || was || choices[0]?.id || '';
+    if (league && league !== was) store.setState(readings);
+    let choices: NativeLeague[] = [];
+    let selected = '';
+    await query.load(() => {
+      store.setState({ choices, selected });
+      return [selected];
+    }, { before: async () => {
+      choices = await proxy.leagues();
+      selected = league || was || choices[0]?.id || '';
       if (selected && !choices.some(choice => choice.id === selected))
         throw new Error('This app league is no longer available. Choose another league.');
-      // The picker is kept even when one league cannot be read, so the commissioner can still choose another
-      // league or fix this one; each reading that failed is named.
-      if (request === generation) store.setState({ choices, selected });
-      const [core, landing, ops] = await Promise.all([
-        readCore(selected), readLanding(selected), readOps(selected)]);
-      if (request === generation)
-        store.setState({ choices, selected, ...core, ...landing, ...ops });
-    } catch (cause) {
-      if (request === generation)
-        store.setState({ error: String(cause), ledger: undefined, rules: undefined, people: undefined,
-          jobs: undefined, notes: undefined, digests: undefined });
-    } finally {
-      if (request === generation) store.setState({ pending: false });
-    }
+    } });
   }
   async function execute(body: string) {
     const form = formOf(body);
@@ -218,8 +228,17 @@ export function createLeagueState(proxy = createProxy(live)) {
       throw new Error(message);
     }
   }
+  // A seat is one read session: another seat may see other leagues, roles and controls, so its sign-in
+  // clears the old seat's readings and fences their replies, then rereads the same league as before.
+  const seat = createReadSession();
+  seat.join(query, 'private');
+  async function changeSeat() {
+    const was = store.getState().selected;
+    seat.end();
+    await choose(was);
+  }
   const forget = () => store.setState({ outcome: { status: 'idle' } });
-  return { choose, execute, forget, use: () => useStore(store), peek: store.getState };
+  return { choose, changeSeat, execute, forget, use: query.use, peek: store.getState };
 }
 export const leagueState = createLeagueState();
 export const execute = leagueState.execute;

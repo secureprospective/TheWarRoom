@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/accounts"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 
@@ -36,16 +36,18 @@ type Embedded struct {
 // database.
 func Main(args []string, embedded Embedded) int {
 	rulebookMarkdown, commissionerPreviewRegistry = embedded.Rulebook, embedded.EndpointRegistry
-	if len(args) == 2 && args[0] == "-package-smoke" {
-		return packageSmoke(args[1], embedded, os.Stderr)
-	}
-	if len(args) == 3 && args[0] == "-native" {
-		return runNative(args[1], args[2], embedded, os.Stderr)
-	}
-	if len(args) > 0 {
-		return runFlag(args, os.Stdout, os.Stderr)
-	}
+	return entryPoints(embedded).Run(args, os.Stdout, os.Stderr)
+}
 
+func entryPoints(embedded Embedded) platformapp.EntryPoints {
+	return platformapp.EntryPoints{
+		Smoke:   func(directory string) int { return packageSmoke(directory, embedded, os.Stderr) },
+		Native:  func(address, league string) int { return runNative(address, league, embedded, os.Stderr) },
+		Desktop: func() int { return runDesktop(embedded) }, Probe: probe, Backups: listBackups, Restore: restoreBackup, Label: buildLabel(),
+	}
+}
+
+func runDesktop(embedded Embedded) int {
 	app := NewApp()
 
 	err := wails.Run(&options.App{
@@ -84,60 +86,28 @@ func Main(args []string, embedded Embedded) int {
 // `-version` prints the build label. `-backups` lists the backup sets and `-restore <set>` restores
 // one, both with the app closed.
 func runFlag(args []string, stdout, stderr io.Writer) int {
-	switch {
-	case len(args) == 1 && args[0] == "-probe":
-		return probe()
-	case len(args) == 1 && args[0] == "-version":
-		_, _ = fmt.Fprintln(stdout, buildLabel())
-		return 0
-	case len(args) == 1 && args[0] == "-backups":
-		return listBackups(stdout, stderr)
-	case len(args) == 2 && args[0] == "-restore":
-		return restoreBackup(args[1], stdout, stderr)
-	default:
-		_, _ = fmt.Fprintf(stderr, "thewarroom: unknown arguments %q\nusage: thewarroom [-probe | -version | -backups | -restore <set> | -native <https-origin> <league-id>]\n", args)
-		return 2
-	}
+	return entryPoints(Embedded{}).RunFlag(args, stdout, stderr)
 }
 
 func probe() int {
 	app := NewApp()
-	app.startup(context.Background())
-	defer app.shutdown(context.Background())
-	if app.core.StartupErr != nil {
-		return 1
-	}
-	return 0
+	return platformapp.Probe(app.startup, app.shutdown, func() error { return app.core.StartupErr })
 }
 
 // packageSmoke initializes the installed WebView without databases, credentials or network
 // workers. The caller supplies a disposable existing directory and kills the ready process.
 func packageSmoke(directory string, embedded Embedded, stderr io.Writer) int {
-	info, err := os.Stat(directory)
-	if err != nil || !info.IsDir() || !filepath.IsAbs(directory) {
-		_, _ = fmt.Fprintln(stderr, "package smoke requires an existing absolute directory")
-		return 2
-	}
-	lock, err := acquireInstanceLock(filepath.Join(directory, "smoke.db"))
-	if err != nil {
-		_, _ = fmt.Fprintln(stderr, err)
-		return 1
-	}
-	defer releaseInstanceLock(lock)
-	err = wails.Run(&options.App{
-		Title: "The War Room — installation check", Width: 640, Height: 480,
-		AssetServer: &assetserver.Options{Assets: embedded.Assets},
-		OnDomReady: func(_ context.Context) {
-			if writeErr := os.WriteFile(filepath.Join(directory, "ready"), []byte("webview ready\n"), 0o600); writeErr != nil {
-				log.Printf("package smoke ready: %v", writeErr)
-			}
-		},
+	return platformapp.SmokeWindow(directory, stderr, func() error {
+		return wails.Run(&options.App{
+			Title: "The War Room — installation check", Width: 640, Height: 480,
+			AssetServer: &assetserver.Options{Assets: embedded.Assets},
+			OnDomReady: func(_ context.Context) {
+				if err := os.WriteFile(filepath.Join(directory, "ready"), []byte("webview ready\n"), 0o600); err != nil {
+					log.Printf("package smoke ready: %v", err)
+				}
+			},
+		})
 	})
-	if err != nil {
-		_, _ = fmt.Fprintf(stderr, "package smoke: %v\n", err)
-		return 1
-	}
-	return 0
 }
 
 // bindings is the runtime surface also inspected by the binding manifest test.
@@ -153,68 +123,40 @@ func bindings(app *App) []interface{} {
 
 // helperCommands is every catalog command an AI helper's token may carry.
 func helperCommands() []string {
-	var out []string
-	for _, command := range commissionerapp.NativeCommands() {
-		if accounts.DelegableCommand(command.ID) {
-			out = append(out, command.ID)
-		}
-	}
-	return out
+	return platformapp.DelegableCommands(commissionerapp.NativeCommands())
 }
 
-// runNative never constructs the local App: no MFL key, databases, refresh workers
-// or authoritative local mutations are available in a hosted window.
+// runNative constructs only the hosted client and WebView, never the local App.
 func runNative(address, league string, embedded Embedded, stderr io.Writer) int {
-	desktop, err := serverclient.NewDesktop(address, league, nil)
-	if err != nil {
-		_, _ = fmt.Fprintln(stderr, "native startup requires an HTTPS origin and native league ID")
-		return 2
-	}
-	defer desktop.Close()
-	desktop.SetHelperCommands(helperCommands())
-	directory, err := os.UserConfigDir()
-	if err != nil {
-		return 2
-	}
-	directory = filepath.Join(directory, "TheWarRoom", "updates")
-	if err := os.MkdirAll(directory, 0700); err != nil {
-		return 2
-	}
-	lock, err := nativeUpdateLock(directory)
-	if err != nil {
-		_, _ = fmt.Fprintln(stderr, "Another native window is open. Close it and try again.")
-		return 2
-	}
-	defer releaseInstanceLock(lock)
+	var desktop *serverclient.Desktop
 	var window context.Context
-	// Missing install trust keeps the screen reachable, but never permits an unsigned update.
-	_ = desktop.ConfigureUpdater(directory, version, func() { wailsruntime.Quit(window) })
-	if version == "dev" && os.Getenv("TWR_PRACTICE_UPDATE") == "app" {
-		desktop.PracticeUpdate()
-	}
-	err = wails.Run(&options.App{
-		Title: "The War Room — Native league", Width: 960, Height: 800,
-		OnStartup:        func(ctx context.Context) { window = ctx },
-		BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
-		AssetServer:      &assetserver.Options{Assets: embedded.Assets, Handler: desktop.Handler()},
-	})
-	if err != nil {
-		_, _ = fmt.Fprintln(stderr, "native window could not start")
-		return 1
-	}
-	return 0
+	return (platformapp.NativeWindow{
+		Open: func() (platformapp.NativeDesktop, error) {
+			var err error
+			desktop, err = serverclient.NewDesktop(address, league, nil)
+			return desktop, err //nolint:wrapcheck // NativeWindow preserves the public startup refusal.
+		},
+		Commands: helperCommands, Directory: os.UserConfigDir, Lock: nativeUpdateLock,
+		Quit: func() { wailsruntime.Quit(window) }, Version: version, Practice: func() string { return os.Getenv("TWR_PRACTICE_UPDATE") },
+		Run: func() error {
+			return wails.Run(&options.App{
+				Title: "The War Room — Native league", Width: 960, Height: 800,
+				OnStartup:        func(ctx context.Context) { window = ctx },
+				BackgroundColour: &options.RGBA{R: 9, G: 10, B: 12, A: 255},
+				AssetServer:      &assetserver.Options{Assets: embedded.Assets, Handler: desktop.Handler()},
+			})
+		},
+	}).RunWindow(stderr)
 }
 
-// A staged child waits for the old window to release its cache lock before opening.
 func nativeUpdateLock(directory string) (*os.File, error) {
-	var last error
-	for range 100 {
-		lock, err := acquireInstanceLock(filepath.Join(directory, "desktop"))
-		if err == nil {
-			return lock, nil
-		}
-		last = err
-		time.Sleep(100 * time.Millisecond)
-	}
-	return nil, fmt.Errorf("open desktop update lock: %w", last)
+	return platformapp.NativeUpdateLock(directory, acquireInstanceLock, time.Sleep) //nolint:wrapcheck // Preserve update-lock refusal text.
+}
+
+func backupCLI() platformapp.BackupCLI {
+	return platformapp.BackupCLI{Directory: configDir, Backups: newDatabaseBackups, DevBuild: isDevBuild()}
+}
+func listBackups(stdout, stderr io.Writer) int { return backupCLI().List(stdout, stderr) }
+func restoreBackup(set string, stdout, stderr io.Writer) int {
+	return backupCLI().Restore(set, stdout, stderr)
 }

@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
-	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 func TestArchiveFactsDetached(t *testing.T) {
@@ -103,41 +103,6 @@ func TestArchiveFactsZeroAndError(t *testing.T) {
 	}
 }
 
-func TestArchiveOpponentLockOrderAndFallback(t *testing.T) {
-	s := coretest.New(t).Build()
-	s.Week.Number = 5
-	s.SeasonLineups.Value = leaguefeed.Lineups{Week: 5, Matchups: []leaguefeed.Matchup{{Home: "0001", Away: "0002"}}}
-	s.ArchiveOpponentFallback = func(week int, team string) string {
-		if week != 5 || team != "0001" {
-			t.Error(week, team)
-		}
-		if s.SeasonMu.TryLock() {
-			s.SeasonMu.Unlock()
-			t.Error("fallback ran without SeasonMu")
-		}
-		if !s.WeekMu.TryLock() {
-			t.Error("WeekMu retained while reading fallback")
-		} else {
-			s.WeekMu.Unlock()
-		}
-		return "0003"
-	}
-	if got := s.ArchiveOpponent("0001"); got != "0002" {
-		t.Fatal(got)
-	}
-	if got := s.ArchiveOpponent("0002"); got != "0001" {
-		t.Fatal(got)
-	}
-	s.SeasonLineups.Value.Week = 4
-	if got := s.ArchiveOpponent("0001"); got != "0003" {
-		t.Fatal(got)
-	}
-	s.ArchiveOpponentFallback = nil
-	if got := s.ArchiveOpponent("0001"); got != "" {
-		t.Fatal(got)
-	}
-}
-
 func TestArchiveConcurrentCachePublicationAndRead(t *testing.T) {
 	s := coretest.New(t).Build()
 	held := report.ArchiveSnapshot{SHA: "0", Facts: facts.Facts{Season: facts.SeasonColumns{Year: []int64{2026}}}}
@@ -164,5 +129,13 @@ func TestArchiveConcurrentCachePublicationAndRead(t *testing.T) {
 	workers.Wait()
 	if held.Facts.Season.Year[0] != 2126 {
 		t.Fatal("reader mutated held facts")
+	}
+}
+
+func TestArchivedOnlyWithoutHistoryStaysUnavailable(t *testing.T) {
+	s := &core.State{}
+	got := core.ArchivedOnly(context.Background(), s, "injuries", true, func([]byte) ([]string, error) { t.Fatal("parsed absent history"); return nil, nil })
+	if got.RefreshError != "No held archive" || got.Value != nil {
+		t.Fatal(got)
 	}
 }

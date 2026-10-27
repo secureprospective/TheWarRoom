@@ -110,3 +110,22 @@ it('parses counted position breakdowns and rejects untyped record counts', async
         ...wire.value.sections[0], breakdowns: [{ title: 'Quarterbacks', count: '25', rows: [] }],
     }] } })).toThrow();
 });
+
+it('keeps one scoped reading per pick kind and fences pending picks across refresh', async () => {
+    let finish!: (r: SurfaceReading) => void;
+    const reader = vi.fn(async () => unavailable('held'));
+    const s = createDraftState(reader);
+    await s.refresh(scope);
+    await s.pick('pick1:next');
+    await s.pick('pick1:next');
+    expect(reader).toHaveBeenCalledTimes(2);
+    reader.mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const pending = s.pick('pick2:next');
+    await s.change({ field: 'draft-seasons', value: '2' });
+    finish(unavailable('stale pick'));
+    await pending;
+    expect(s.peek().picks['pick2:next']).toBeUndefined();
+    await s.pick('pick1:next');
+    expect(reader).toHaveBeenCalledTimes(5);
+    expect(reader).toHaveBeenLastCalledWith({ ...scope, seasons: 2, segments: ['r1a', 'r1b'] });
+});

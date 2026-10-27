@@ -4,6 +4,10 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -142,4 +146,28 @@ func Layout(snap snapshot.Snapshot, saved leaguefeed.Lineups, franchise string, 
 	slices.SortFunc(starters, byPosition)
 	slices.SortFunc(bench, byPosition)
 	return starters, bench, found
+}
+
+func ParseScorePeriod(body []byte, period string) ([]ingestion.RawPlayerScore, error) {
+	rows, err := ingestion.ParsePlayerScores(body)
+	if err != nil {
+		return nil, fmt.Errorf("player scores: parse: %w", err)
+	}
+	out := []ingestion.RawPlayerScore{}
+	for _, r := range rows {
+		if r.Week == period {
+			out = append(out, r)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("player scores: period %s not held", period)
+	}
+	return out, nil
+}
+
+func RulesFreshness(checked int64) domain.Freshness {
+	if checked == 0 {
+		return domain.Freshness{State: domain.FreshStale, Note: "stored league settings; not yet checked with MFL this run"}
+	}
+	return report.LiveFreshness(time.Unix(checked, 0))
 }

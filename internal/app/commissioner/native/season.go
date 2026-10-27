@@ -1,7 +1,12 @@
 package native
 
 import (
+	"context"
+	"fmt"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -54,4 +59,89 @@ func PlayoffField(bracket commissioner.NativeBracket, directory commissioner.Nat
 		}
 	}
 	return field
+}
+
+// ScheduleDates reads local reference bodies only; its caller bounds the resource lifetime.
+func ScheduleDates(ctx context.Context, bodies func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error), season int, at time.Time) ([]leagueweek.Week, error) {
+	var weeks []leagueweek.Week
+	seen := make(map[int]bool)
+	_, err := bodies(ctx, "TYPE="+nflschedule.Export,
+		func(src string, body []byte, _ time.Time) bool {
+			if !ingestion.SameLeaguelessExport(src, nflschedule.Export, season) {
+				return false
+			}
+			raw, err := nflschedule.Parse(body)
+			if err != nil {
+				return false
+			}
+			week, err := nflschedule.ToWeek(raw, at)
+			if err == nil && !seen[week.Number] {
+				weeks = append(weeks, week)
+				seen[week.Number] = true
+			}
+			return false
+		})
+	if err != nil {
+		return nil, fmt.Errorf("read held NFL week dates: %w", err)
+	}
+	return weeks, nil
+}
+
+// HeldLineupFacts uses only the selected week's held locks; later duplicates retain precedence.
+func HeldLineupFacts(weeks []leagueweek.Week, week int, facts nativecheck.Facts, zone *time.Location) commissioner.LineupFacts {
+	out := commissioner.LineupFacts{Facts: facts, Zone: zone}
+	for _, w := range weeks {
+		if w.Number == week {
+			out.Locks, out.ScheduleHeld = leagueweek.Locks(w), true
+		}
+	}
+	return out
+}
+
+type BidSource struct {
+	Records  func(context.Context, string) ([]commissioner.Record, error)
+	Schedule func(context.Context, int, time.Time) ([]leagueweek.Week, error)
+	Bracket  func(context.Context, string, int) (commissioner.NativeBracket, error)
+}
+
+func ReadBidEnvironment(ctx context.Context, source BidSource, league string, at time.Time) (commissioner.BidEnvironment, error) {
+	records, err := source.Records(ctx, league)
+	if err != nil {
+		return commissioner.BidEnvironment{}, err
+	}
+	season, err := commissioner.SeasonAt(records, commissioner.ReadingInstant(records, at))
+	if err != nil {
+		return commissioner.BidEnvironment{}, fmt.Errorf("read the league season: %w", err)
+	}
+	weeks, err := source.Schedule(ctx, season, at)
+	if err != nil {
+		return commissioner.BidEnvironment{}, err
+	}
+	phase := WeekAt(weeks, at)
+	if !phase.WeekKnown && !phase.Offseason {
+		phase.Offseason, err = commissioner.BidOffseasonAt(records, at, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding offseason: %w", err)
+		}
+	}
+	field := map[string]nativecheck.PlayoffStanding{}
+	if phase.WeekKnown {
+		bracket, err := source.Bracket(ctx, league, season)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding playoff field: %w", err)
+		}
+		directory, err := commissioner.NativeDirectoryReading(league, records, at)
+		if err != nil {
+			return commissioner.BidEnvironment{}, fmt.Errorf("read bidding franchises: %w", err)
+		}
+		field = PlayoffField(bracket, directory)
+	}
+	return commissioner.BidEnvironment{Season: phase, Playoff: field}, nil
+}
+
+func OwnerZone(zone *time.Location) *time.Location {
+	if zone != nil {
+		return zone
+	}
+	return time.Local
 }

@@ -116,7 +116,7 @@ func (v researchView) playerPoints(r *report.Report, p PlayerInfo) {
 			rank++
 		}
 	}
-	for _, e := range researchRows(week) {
+	for _, e := range Rows(week) {
 		if e.ID.String() == p.ID {
 			text = fmt.Sprintf("%.2f", e.Value)
 		}
@@ -292,7 +292,7 @@ func (v researchView) playerForm(r *report.Report, p PlayerInfo) {
 	if season != nil && season.Games > 0 {
 		weeks, total := []string{}, 0.0
 		for w := max(v.Week-3, 1); w < v.Week; w++ {
-			for _, score := range researchRows(v.feed("playerScores", strconv.Itoa(w))) {
+			for _, score := range Rows(v.feed("playerScores", strconv.Itoa(w))) {
 				if score.ID.String() == p.ID {
 					weeks = append(weeks, fmt.Sprintf("W%d: %.2f", w, score.Value))
 					total += score.Value

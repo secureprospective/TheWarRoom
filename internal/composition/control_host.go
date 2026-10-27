@@ -1,18 +1,14 @@
 package composition
 
 import (
-	"cmp"
 	"context"
-	"errors"
-	"fmt"
-	"slices"
 	"strconv"
-	"strings"
 	"time"
+
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades"
@@ -96,169 +92,77 @@ func (h controlHost) Now() time.Time { return h.app.timeNow() }
 func (h controlHost) SetWindow(kind, at string) error {
 	ctx, cancel := context.WithTimeout(h.app.core.Ctx, m2Timeout)
 	defer cancel()
-	return h.app.core.SetLeagueWindow(ctx, kind, at) //nolint:wrapcheck // keeps the binding's refusal text
+	//nolint:wrapcheck // Preserve window refusals and coordinator errors.
+	return (controlapp.WindowSetter{StateError: h.app.core.Whatif.Err, TradeDeadline: h.app.core.Whatif.TradeDeadline,
+		CalendarEvents: h.app.core.Whatif.CalendarEvents, Season: h.app.core.League.Season, Execute: h.app.core.Coordinator.Execute,
+		Changed: h.app.core.ClockChanged}).Set(ctx, kind, at)
 }
 
 func (h controlHost) OpenMFLAccounting() error {
 	a := h.app
-	if err := a.ready(); err != nil {
-		return fmt.Errorf("open accounting: %w", err)
-	}
-	host := ""
-	if a.core.MFLClient != nil {
-		host = a.core.MFLClient.LeagueHost()
-	}
-	target, err := controlapp.AccountingURL(host, a.core.Season)
-	if err != nil {
-		return err //nolint:wrapcheck // preserve the binding error text
-	}
-	a.core.OpenURL(a.core.Ctx, target)
-	return nil
+	//nolint:wrapcheck // Preserve existing feature refusal text.
+	return controlapp.OpenAccounting(a.ready, func() string {
+		if a.core.MFLClient != nil {
+			return a.core.MFLClient.LeagueHost()
+		}
+		return ""
+	}, func() int { return a.core.Season }, func(target string) { a.core.OpenURL(a.core.Ctx, target) })
+
 }
 
 func (h controlHost) Params() controlapp.ParamsResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.ParamsResult{OK: false, Error: err.Error()}
-	}
-	values := a.core.Params.Snapshot()
-	defs := a.core.Params.Definitions()
-	out := make([]controlapp.ParamView, len(defs))
-	for i, d := range defs {
-		v, err := values.GetPosition(d.Key, d.Position)
-		if err != nil {
-			return controlapp.ParamsResult{OK: false, Error: err.Error()}
-		}
-		label, group := controlapp.ParameterWords(d.Key, d.Description)
-		out[i] = controlapp.ParamView{Key: d.Key, Label: label, Group: group, Position: d.Position, Description: d.Description,
-			Default: d.Default, Min: d.Min, Max: d.Max, Value: v, Calibrated: d.IsCalibrated,
-			Overridden: a.core.Params.Overridden(d.Key, d.Position)}
-	}
-	slices.SortFunc(out, func(a, b controlapp.ParamView) int {
-		if n := cmp.Compare(a.Group, b.Group); n != 0 {
-			return n
-		}
-		if n := cmp.Compare(a.Label, b.Label); n != 0 {
-			return n
-		}
-		return cmp.Compare(a.Position, b.Position)
-	})
-	return controlapp.ParamsResult{OK: true, Params: out}
+	return controlapp.ReadParams(h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params })
 }
-
 func (h controlHost) SetParam(key, position string, value float64) controlapp.SetParamResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
-	defer cancel()
-	if err := a.core.Params.SetOverride(ctx, key, position, value, "admin console"); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	return controlapp.SetParamResult{OK: true}
+	return controlapp.SetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position, value)
 }
-
 func (h controlHost) ResetParam(key, position string) controlapp.SetParamResult {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, 3*time.Second)
-	defer cancel()
-	if err := a.core.Params.ClearOverride(ctx, key, position); err != nil {
-		return controlapp.SetParamResult{OK: false, Error: err.Error()}
-	}
-	return controlapp.SetParamResult{OK: true}
+	return controlapp.ResetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position)
 }
 
 func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {
 	return controlapp.MFLKeyStatus{
 		State: state, League: ingestion.LeagueID, Season: a.core.Season,
-		MyFranchise: a.core.MyFranchise, TeamActionRefusal: core.OwnFranchiseRefusal(a.core.MyFranchise, ""),
+		MyFranchise: a.core.MyFranchise, TeamActionRefusal: platformapp.OwnFranchiseRefusal(a.core.MyFranchise, ""),
 		VerifiedAt: a.core.KeyVerifiedAt, Detail: detail,
 	}
 }
 
 func (h controlHost) KeyStatus() (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	_, err := a.core.KeyStore.Get(a.core.Ctx)
-	if errors.Is(err, mflkey.ErrNoKey) {
-		return a.keyStatus("absent", ""), nil
-	}
-	if err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	return a.keyStatus("connected", ""), nil
+	return h.app.keyWorkflow().Read() //nolint:wrapcheck // Preserve startup refusals.
 }
 
-// SetKey runs after the bound method's panic recovery, in the binding's original order.
 func (h controlHost) SetKey(key string) (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	candidate := mflkey.Key(strings.TrimSpace(key))
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	// Bounds are plausibility checks, not a claim about MFL's key encoding.
-	if len(candidate) < 16 || len(candidate) > 256 {
-		detail := "key must contain 16 to 256 bytes after trimming whitespace"
-		return a.keyStatus("rejected", detail), nil
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, time.Minute)
-	defer cancel()
-	c := a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
-	verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if errors.Is(err, pendingtrades.ErrRejected) {
-		return a.keyStatus("rejected", err.Error()), nil
-	}
-	if err != nil {
-		return a.keyStatus("unreachable", report.FailureText(err)+" Nothing was stored."), nil
-	}
-	if err := a.core.KeyStore.Set(ctx, candidate); err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	a.lookupMyFranchise(ctx)
-	a.core.KeyVerifiedAt = time.Now().UTC().Format(time.RFC3339)
-	a.core.KeyGeneration++
-	a.refreshPendingTradesInBackground()
-	return a.keyStatus("connected", verified.Detail), nil
+	return h.app.keyWorkflow().Set(key) //nolint:wrapcheck // Preserve startup refusals.
 }
 
 func (h controlHost) DeleteKey() (controlapp.MFLKeyStatus, error) {
-	a := h.app
-	if err := a.ready(); err != nil {
-		return controlapp.MFLKeyStatus{}, err
-	}
-	a.core.KeyMu.Lock()
-	defer a.core.KeyMu.Unlock()
-	if err := a.core.KeyStore.Delete(a.core.Ctx); err != nil {
-		return a.keyStatus("unavailable", err.Error()), nil
-	}
-	a.core.MyFranchise = ""
-	a.core.KeyVerifiedAt = ""
-	a.core.KeyGeneration++
-	a.core.SeasonMu.Lock()
-	a.clearPendingTrades()
-	a.core.SeasonMu.Unlock()
-	a.refreshPendingTradesInBackground()
-	return a.keyStatus("absent", ""), nil
+	return h.app.keyWorkflow().Delete() //nolint:wrapcheck // Preserve startup refusals.
 }
 
-// lookupMyFranchise runs under KeyMu (or before startup publishes state). Lookup failures deny actions.
+// lookupMyFranchise runs under KeyMu or before startup publishes state.
 func (a *App) lookupMyFranchise(ctx context.Context) {
 	a.core.MyFranchise = ""
-	if _, err := a.core.KeyStore.Get(ctx); err != nil {
-		return
-	}
-	franchise, err := a.core.MFLClient.MyFranchise(ctx, strconv.Itoa(a.core.Season), ingestion.LeagueID)
-	if err == nil {
-		a.core.MyFranchise = franchise
-	}
+	a.core.MyFranchise = controlapp.ResolveFranchise(ctx, a.core.KeyStore, func(ctx context.Context) (string, error) {
+		return a.core.MFLClient.MyFranchise(ctx, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+	})
+}
+
+func (a *App) keyWorkflow() controlapp.KeyWorkflow {
+	return controlapp.KeyWorkflow{Ready: a.ready, Lock: a.core.KeyMu.Lock, Unlock: a.core.KeyMu.Unlock,
+		Context: func() context.Context { return a.core.Ctx }, Store: func() controlapp.CredentialStore { return a.core.KeyStore }, Status: a.keyStatus,
+		Verify: func(ctx context.Context, candidate mflkey.Key) (string, error) {
+			c := a.core.MFLClient.WithKeySource(func(context.Context) (mflkey.Key, error) { return candidate, nil })
+			verified, err := pendingtrades.Verify(ctx, c, strconv.Itoa(a.core.Season), ingestion.LeagueID)
+			return verified.Detail, err //nolint:wrapcheck // The workflow classifies rejection identity.
+		}, Lookup: a.lookupMyFranchise,
+		Verified: func(at string) { a.core.KeyVerifiedAt = at; a.core.KeyGeneration++ },
+		Clear: func() {
+			a.core.MyFranchise = ""
+			a.core.KeyVerifiedAt = ""
+			a.core.KeyGeneration++
+			a.core.SeasonMu.Lock()
+			a.clearPendingTrades()
+			a.core.SeasonMu.Unlock()
+		}, Refresh: a.refreshPendingTradesInBackground, Now: time.Now}
 }

@@ -7,12 +7,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/domain"
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
-	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -21,12 +21,7 @@ import (
 const refreshTimeout = 2 * time.Minute
 
 // RefreshResult reports one pull of MFL truth. Changed is false when MFL held nothing new.
-type RefreshResult struct {
-	Season       int  `json:"season"`
-	RulesChanged bool `json:"rulesChanged"`
-	Changed      bool `json:"changed"`
-	Players      int  `json:"players"`
-}
+type RefreshResult = controlapp.LeagueRefreshResult
 
 // discoverSource fetches the league config for MFL's current season; the rulebook seeds from it
 // on a fresh database.
@@ -42,10 +37,7 @@ func (s discoverSource) Fetch(ctx context.Context) (league.RawConfig, error) {
 
 // seasonGuess is where season discovery starts: the season held, else the calendar year.
 func (a *App) seasonGuess() int {
-	if a.core.Season != 0 {
-		return a.core.Season
-	}
-	return time.Now().Year()
+	return controlapp.SeasonGuess(a.core.Season, time.Now())
 }
 
 // refreshLeague stages the rules and mirror from MFL's rosters and salary
@@ -56,82 +48,35 @@ func (a *App) refreshLeague(
 	a.core.RefreshMu.Lock()
 	defer a.sourceHealthChanged(ctx)
 	defer a.core.RefreshMu.Unlock()
-	res, err := a.refreshLeagueLocked(ctx, rb, mirror)
-	if err != nil {
-		return res, err
-	}
-	a.core.RefreshDraftReportsFeeds(ctx)
-	// A mirror refresh changes the eligibility inputs; Ready plans revalidate against them.
-	a.revalidateReadyRosterMoves(ctx)
-	return res, nil
+	return a.leagueRefresh(rb, mirror).Refresh(ctx) //nolint:wrapcheck // Preserve refresh refusals.
+
 }
 
 // The caller holds refreshMu, including when the watcher refreshes several feeds.
-func (a *App) refreshLeagueLocked(
-	ctx context.Context, rb *rulebook.Store, mirror *state.Mirror,
-) (RefreshResult, error) {
-	cfg, err := league.Discover(ctx, a.core.MFLClient, ingestion.LeagueID, a.seasonGuess())
-	if err != nil {
-		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
-	}
-	snap, err := a.fetchLeague(ctx, cfg.CurrentSeason)
-	if err != nil {
-		return RefreshResult{}, err
-	}
-	rulesWrite, caps, rulesChanged, err := rb.StageSync(cfg)
-	if err != nil {
-		return RefreshResult{}, fmt.Errorf("refresh: rules: %w", err)
-	}
-	mirrorWrite, changed, err := mirror.StageReplace(snap, caps)
-	if err != nil {
-		rulesWrite.Release()
-		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
-	}
-	if err := a.core.Pools.CommitPrepared(ctx, rulesWrite, mirrorWrite); err != nil {
-		return RefreshResult{}, fmt.Errorf("refresh: %w", err)
-	}
-	a.core.RulesCheckedAt.Store(time.Now().Unix())
-	if changed || rulesChanged {
-		a.core.ModelDirty.Store(true)
-	}
-	a.core.RostersCheckedAt = time.Now().UTC()
-	return RefreshResult{Season: snap.Season, RulesChanged: rulesChanged, Changed: changed,
-		Players: len(snap.Players)}, nil
+func (a *App) refreshLeagueLocked(ctx context.Context, rb *rulebook.Store, mirror *state.Mirror) (RefreshResult, error) {
+	return a.leagueRefresh(rb, mirror).Run(ctx) //nolint:wrapcheck // Preserve refresh refusals.
 }
 
-// fetchLeague pulls one season's rosters and salary adjustments as a mirror snapshot. It needs no
-// players directory, so MFL's once-a-day players limit never blocks a refresh.
 func (a *App) fetchLeague(ctx context.Context, season int) (state.MirrorSnapshot, error) {
-	year := strconv.Itoa(season)
-	raws, err := rosters.Fetch(ctx, a.core.MFLClient, year, ingestion.LeagueID)
-	if err != nil {
-		return state.MirrorSnapshot{}, fmt.Errorf("refresh: rosters: %w", err)
-	}
-	snap := state.MirrorSnapshot{Season: season}
-	for _, raw := range raws {
-		p, err := normalize.Contract(raw)
-		if err != nil {
-			return state.MirrorSnapshot{}, fmt.Errorf("refresh: rosters: %w", err)
-		}
-		snap.Players = append(snap.Players, state.MirrorPlayer{
-			MFLID: p.MFLID.String(), FranchiseID: p.FranchiseID, RosterStatus: p.RosterStatus,
-			Salary: p.Salary, ContractYear: p.ContractYear, ContractStatus: p.ContractStatus,
-			ContractInfo: p.ContractInfo,
+	//nolint:wrapcheck // Preserve roster and salary conversion errors.
+	return controlapp.PullLeague(ctx, season,
+		func(ctx context.Context, season int) ([]rosters.RawRoster, error) {
+			return rosters.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), ingestion.LeagueID)
+		},
+		func(ctx context.Context, season int) ([]salaryadjustments.RawSalaryAdjustment, error) {
+			return salaryadjustments.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), ingestion.LeagueID)
 		})
+}
+
+func (a *App) leagueRefresh(rb *rulebook.Store, mirror *state.Mirror) controlapp.LeagueRefresh {
+	return controlapp.LeagueRefresh{
+		Discover: func(ctx context.Context) (league.RawConfig, error) {
+			return league.Discover(ctx, a.core.MFLClient, ingestion.LeagueID, a.seasonGuess())
+		},
+		Fetch: a.fetchLeague, StageRules: rb.StageSync, StageMirror: mirror.StageReplace, Commit: a.core.Pools.CommitPrepared,
+		RulesChecked: a.core.RulesCheckedAt.Store, Dirty: a.core.ModelDirty.Store, RostersChecked: func(at time.Time) { a.core.RostersCheckedAt = at }, Now: time.Now,
+		DraftReports: a.refreshDraftReportsFeeds, Revalidate: a.revalidateReadyRosterMoves,
 	}
-	adjs, err := salaryadjustments.Fetch(ctx, a.core.MFLClient, year, ingestion.LeagueID)
-	if err != nil {
-		return state.MirrorSnapshot{}, fmt.Errorf("refresh: salary adjustments: %w", err)
-	}
-	for _, adj := range adjs {
-		amt, err := domain.ParseSignedMoneyMillions(adj.Amount)
-		if err != nil {
-			return state.MirrorSnapshot{}, fmt.Errorf("refresh: salary adjustment %s: %w", adj.ID, err)
-		}
-		snap.Adjustments = append(snap.Adjustments, state.Adjustment{
-			ID: adj.ID, FranchiseID: adj.FranchiseID, Amount: amt, Description: adj.Description})
-	}
-	return snap, nil
 }
 
 // refreshInBackground runs the launch refresh off the startup path, so an MFL outage never
@@ -145,41 +90,16 @@ func (a *App) refreshInBackground(parent context.Context) {
 			a.core.WorkerMu.Unlock()
 			return
 		}
-		parent, a.core.WeekCancel = context.WithCancel(parent)
+		parent, a.core.WeekCancel = context.WithCancel(parent) //nolint:gosec // WorkerGroup.Stop cancels the stored function under WorkerMu and joins before closing resources.
 		a.core.WorkerMu.Unlock()
-		a.startWorker(func() {
-			if a.ready() == nil {
-				a.nativeWaiverClock(parent)
-			}
-		})
-		a.startWorker(func() {
-			if a.ready() == nil {
-				a.watchMoves(parent)
-			}
-		})
-		a.startWorker(func() {
-			if a.ready() != nil {
-				return
-			}
-			if a.core.LaunchRefreshDue {
-				a.launchRefresh(parent)
-			}
-			a.refreshWeeksInBackground(parent)
-		})
+		(controlapp.BackgroundRefresh{Ready: a.ready, Start: a.startWorker,
+			Due: func() bool { return a.core.LaunchRefreshDue }, Clock: a.nativeWaiverClock, Watch: a.watchMoves,
+			Launch: a.launchRefresh, Weeks: a.refreshWeeksInBackground}).StartWorkers(parent)
 	})
 }
 
 func (a *App) launchRefresh(parent context.Context) {
-	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
-	defer cancel()
-	res, err := a.refreshLeague(ctx, a.core.Rulebook, a.core.League)
-	if err != nil {
-		log.Printf("the war room: launch refresh failed (the league held is kept): %v", err)
-		return
-	}
-	if res.Changed || res.RulesChanged {
-		a.core.ModelDirty.Store(true)
-	}
-	log.Printf("the war room: launch refresh: season %d, %d players, league changed %t, rules changed %t",
-		res.Season, res.Players, res.Changed, res.RulesChanged)
+	controlapp.LaunchLeagueRefresh(parent, refreshTimeout, func(ctx context.Context) (RefreshResult, error) {
+		return a.refreshLeague(ctx, a.core.Rulebook, a.core.League)
+	}, a.core.ModelDirty.Store, func(line string) { log.Print(line) })
 }

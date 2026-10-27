@@ -238,3 +238,25 @@ it('clears the recorded-change notice when the follow-up refresh fails', async (
   expect(f.room.peek().error).toContain('Could not refresh your league');
   expect(f.room.peek().message).toBe('');
 });
+
+it('keeps hosted room instances private and admits no duplicate refresh while one is pending', async () => {
+  let finish!: (response: HostedResponse) => void;
+  const port = vi.fn<HostedPort>(async request => {
+    if (request.command === 'native.assets.read') return new Promise(resolve => { finish = resolve; });
+    return readings[request.command];
+  });
+  const first = createHostedRoom('native.hosted', 'franchise.01', port);
+  const second = fixture();
+  const pending = first.refresh(1);
+  await first.refresh(2);
+  expect(port).toHaveBeenCalledTimes(1);
+  await second.room.refresh();
+  expect(first.peek().reading).toBeUndefined();
+  expect(second.room.canChange()).toBe(true);
+  first.dispose();
+  finish(readings['native.assets.read']);
+  await pending;
+  expect(first.peek().reading).toBeUndefined();
+  expect(first.canChange()).toBe(false);
+  expect(second.room.canChange()).toBe(true);
+});

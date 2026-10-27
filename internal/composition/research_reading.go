@@ -1,11 +1,9 @@
 package composition
 
 import (
-	"context"
 	"time"
 
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
-	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
@@ -31,10 +29,7 @@ func (v researchView) feed(kind, week string) heldSeasonFeed[[]researchfeeds.Fee
 	return v.held.feeds[researchKey(kind, week)]
 }
 func researchRows(feed heldSeasonFeed[[]researchfeeds.Feed]) []researchfeeds.Entry {
-	if len(feed.Value) == 0 {
-		return nil
-	}
-	return feed.Value[0].Players
+	return researchapp.Rows(feed)
 }
 func (v researchView) player(id string) researchapp.ResearchPlayer {
 	return researchapp.ResearchPlayer(researchapp.Player(v.lookup, v.mirror, v.config, id))
@@ -43,24 +38,7 @@ func (v researchView) player(id string) researchapp.ResearchPlayer {
 // snapshot detaches mutable indexes. Feed payloads, directory lookups, roster views and
 // rulebook configs are published values: refresh replaces them rather than mutating them.
 func (in researchInput) snapshot() researchapp.Snapshot {
-	if in.now.IsZero() {
-		in.now = time.Now()
-	}
-	v := researchView{researchInput: in}
-	rows, _, latest := v.finishedScores()
-	scores := make(map[string]*researchapp.Score, len(rows))
-	for id, r := range rows {
-		scores[id] = &researchapp.Score{Position: r.position, Sum: r.sum, Games: r.games}
-	}
-	charges := map[string]domain.Money{}
-	for _, p := range in.mirror.Players {
-		if charge, ok := heldCutCharge(p, in.mirror.Season); ok {
-			charges[p.MFLID] = charge
-		}
-	}
-	return researchapp.Snapshot{Held: researchapp.Values{Feeds: in.held.feeds, Depth: in.held.depth, Links: in.held.links, LinkError: in.held.linkError, News: in.held.news},
-		Lookup: in.lookup, Mirror: in.mirror, Injuries: in.injuries, Schedules: in.schedules, Config: in.config, Week: in.week, Zone: in.zone, Now: in.now,
-		Finished: scores, Latest: latest, CutCharges: charges}
+	return researchapp.PrepareSnapshot(researchapp.Snapshot{Held: researchapp.Values{Feeds: in.held.feeds, Depth: in.held.depth, Links: in.held.links, LinkError: in.held.linkError, News: in.held.news}, Lookup: in.lookup, Mirror: in.mirror, Injuries: in.injuries, Schedules: in.schedules, Config: in.config, Week: in.week, Zone: in.zone, Now: in.now}, time.Now, heldCutCharge)
 }
 
 // researchHost composes private Research state with Market and Now's shared capture.
@@ -71,12 +49,7 @@ func (h researchHost) Ready() error                     { return h.app.ready() }
 func (h researchHost) ResearchNames() map[string]string { return h.app.core.ResearchNames() }
 func (h researchHost) HydrateResearch(ids ...string)    { h.app.hydrateResearch(ids...) }
 func (h researchHost) PrepareResearchDepth() {
-	if h.app.core.Fetches == nil {
-		return
-	}
-	ctx, cancel := context.WithTimeout(h.app.fallbackParent(), rasFetchTimeout)
-	defer cancel()
-	h.app.refreshResearchDepth(ctx, false)
+	researchapp.PrepareDepth(h.app.core.Fetches != nil, h.app.fallbackParent, rasFetchTimeout, h.app.refreshResearchDepth)
 }
 func (h researchHost) ResearchSnapshot() researchapp.Snapshot {
 	return h.app.heldResearchInput().snapshot()
@@ -95,13 +68,24 @@ func (h researchHost) OpenBrowser(target string)          { h.app.core.OpenBrows
 // snapshotResearch and publishResearch require SeasonMu: the same lock also guards
 // injuries and Now's schedules. The detached compatibility value is still read by Market.
 func (a *App) snapshotResearch() researchHeld {
-	value := a.researchHeld.Snapshot()
+	return researchFromValues(a.researchHeld.Snapshot())
+}
+func (a *App) publishResearch(value researchHeld) {
+	a.researchHeld.Publish(value.values())
+}
+
+func (v researchView) scoreInput() researchapp.Snapshot {
+	return researchapp.Snapshot{Held: researchapp.Values{Feeds: v.held.feeds}, Lookup: v.lookup, Mirror: v.mirror, Config: v.config, Week: v.week}
+}
+
+func researchFromValues(value researchapp.Values) researchHeld {
 	return researchHeld{feeds: value.Feeds, depth: value.Depth,
 		links: value.Links, linkError: value.LinkError, linkVersion: value.LinkVersion,
 		finishedAt: value.FinishedAt, status: value.Status, news: value.News, archiveRead: value.ArchiveRead}
 }
-func (a *App) publishResearch(value researchHeld) {
-	a.researchHeld.Publish(researchapp.Values{Feeds: value.feeds, Depth: value.depth,
+
+func (value researchHeld) values() researchapp.Values {
+	return researchapp.Values{Feeds: value.feeds, Depth: value.depth,
 		Links: value.links, LinkError: value.linkError, LinkVersion: value.linkVersion,
-		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead})
+		FinishedAt: value.finishedAt, Status: value.status, News: value.news, ArchiveRead: value.archiveRead}
 }

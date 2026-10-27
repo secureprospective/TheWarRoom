@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/core"
+
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
@@ -159,5 +161,18 @@ func TestMFLDemandPollingAndBackoff(t *testing.T) {
 	a.pollLiveMFL(a.core.Ctx, live, at.Add(90*time.Second), false)
 	if len(transport.requests) != 2 {
 		t.Fatal("closed or off-game MFL refreshed")
+	}
+}
+
+func TestLiveAdapterKeepsExistingFinalsWithoutHistory(t *testing.T) {
+	t.Parallel()
+	a := &App{core: &core.State{}}
+	finals := &nowapp.HeldFinals{}
+	adapter := livegame.Adapter{Finals: finals}
+	if err := a.startLiveGame(&adapter); err != nil {
+		t.Fatal(err)
+	}
+	if adapter.Fetch == nil || adapter.Finals != finals {
+		t.Fatal("initializing transport discarded the existing finals cache")
 	}
 }

@@ -2,18 +2,14 @@ package composition
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"log"
-	"path/filepath"
 	"time"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/store/history"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 func (a *App) databaseFiles() []struct {
@@ -29,15 +25,11 @@ func (a *App) databaseFiles() []struct {
 }
 
 func (a *App) checkDatabases(ctx context.Context, now time.Time) {
+	files := []platformapp.DatabaseFile{}
 	for _, file := range a.databaseFiles() {
-		if file.pools == nil || ctx.Err() != nil {
-			continue
-		}
-		file.pools.CheckDue(ctx, now)
-		if result := file.pools.LastCheck(); result.Error != "" {
-			log.Printf("the war room: %s routine checks: %s", file.name, result.Error)
-		}
+		files = append(files, platformapp.DatabaseFile{Name: file.name, Pools: file.pools})
 	}
+	platformapp.CheckDatabases(ctx, now, files, func(line string) { log.Print(line) })
 }
 
 func (a *App) startDatabaseChecks() {
@@ -47,88 +39,33 @@ func (a *App) startDatabaseChecks() {
 			parent = a.fallbackParent()
 		}
 		a.startWorker(func() {
-			if a.ready() != nil {
-				return
-			}
-			ticker := time.NewTicker(time.Hour)
-			defer ticker.Stop()
-			for {
-				ctx, cancel := context.WithTimeout(parent, startupBudget)
-				now := time.Now().UTC()
-				a.checkDatabases(ctx, now)
-				a.backupDatabases(ctx, now)
-				cancel()
-				select {
-				case <-parent.Done():
-					return
-				case <-ticker.C:
-				}
-			}
+			(platformapp.DatabaseWorker{Ready: a.ready, Check: a.checkDatabases, Backup: a.backupDatabases}).Run(parent, time.Hour, startupBudget)
 		})
 	})
 }
 
 func newDatabaseBackups(dir string) (*db.Backups, error) {
-	b, err := db.NewBackups(dir, buildLabel(), [3]db.BackupFile{
-		{Name: dbFileName("thewarroom", isDevBuild()), MaxVersion: db.MainVersion()},
-		{Name: dbFileName("history", isDevBuild()), MaxVersion: history.SchemaVersion()},
-		{Name: dbFileName("whatif", isDevBuild()), MaxVersion: state.SchemaVersion()},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("configure database backups: %w", err)
-	}
-	return b, nil
+	return platformapp.NewDatabaseBackups(dir, buildLabel(), isDevBuild()) //nolint:wrapcheck // Preserve backup configuration errors.
 }
 
 func (a *App) backupDatabases(ctx context.Context, now time.Time) {
-	if a.core.Backups == nil {
-		return
-	}
-	if _, err := a.core.Backups.Capture(ctx, [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, "daily", now); err != nil {
-		log.Printf("the war room: daily backup: %s", err)
-		return
-	}
-	a.pruneBackups(ctx)
+	a.backupWorkflow().Daily(ctx, now) //nolint:contextcheck // Daily never calls the manual Seat/Context ports; capture and retention use ctx.
 }
 
-// errBackupFailed is all a person sees of a failed backup; the cause goes to the log.
-var errBackupFailed = errors.New("the backup could not be saved; close and reopen the app, then try again")
-
-// backupNow is Back up now: a manual matched set taken at once, after the local sign-in exists,
-// because a set without it restores elsewhere with no one's roles. The five newest are kept.
 func (a *App) backupNow() (commissionerapp.BackupResult, error) {
-	status, err := a.commissionerSeat()
-	if err != nil {
-		return commissionerapp.BackupResult{}, err
-	}
-	if !status.HasAccount {
-		return commissionerapp.BackupResult{}, commissionerapp.ErrBackupNeedsSignIn
-	}
-	if a.core.Backups == nil {
-		log.Printf("the war room: backup now: backups are not configured")
-		return commissionerapp.BackupResult{}, errBackupFailed
-	}
-	ctx, cancel := context.WithTimeout(a.core.Ctx, startupBudget)
-	defer cancel()
-	set, err := a.core.Backups.Capture(ctx, [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, "manual", time.Now().UTC())
-	if err != nil {
-		log.Printf("the war room: backup now: %s", err)
-		return commissionerapp.BackupResult{}, errBackupFailed
-	}
-	log.Printf("the war room: backup now: saved %s", set)
-	a.pruneBackups(ctx)
-	name := filepath.Base(set)
-	return commissionerapp.BackupResult{Set: name, Message: "Backup saved as " + name +
-		". It holds your league and your sign-in; the app keeps your five newest."}, nil
+	result, err := a.backupWorkflow().Manual()
+	return commissionerapp.BackupResult(result), err
 }
 
-func (a *App) pruneBackups(ctx context.Context) {
-	reports, err := a.core.Backups.Prune(ctx, "")
-	for _, report := range reports {
-		log.Printf("the war room: backup retention: %s", report)
-	}
-	if err != nil {
-		log.Printf("the war room: backup retention: %s", err)
+func (a *App) backupWorkflow() platformapp.BackupWorkflow {
+	return platformapp.BackupWorkflow{
+		Seat: func() (bool, error) { status, err := a.commissionerSeat(); return status.HasAccount, err }, NeedsSignIn: commissionerapp.ErrBackupNeedsSignIn,
+		Configured: func() bool { return a.core.Backups != nil }, Context: func() context.Context { return a.core.Ctx },
+		Capture: func(ctx context.Context, kind string, now time.Time) (string, error) {
+			return a.core.Backups.Capture(ctx, [3]*db.Pools{a.core.Pools, a.core.HistPools, a.core.WhatifPools}, kind, now)
+		},
+		Prune: func(ctx context.Context) ([]string, error) { return a.core.Backups.Prune(ctx, "") },
+		Log:   func(line string) { log.Print(line) }, Now: time.Now, Budget: startupBudget,
 	}
 }
 
@@ -138,36 +75,13 @@ func (a *App) databaseChecksReport() *Report {
 }
 
 func (a *App) databaseChecksReading() *report.Report {
-	r := &report.Report{ID: "database-checks", Title: "Local database checks", Status: "ok",
-		Columns: []string{"File", "Last checked", "Result"}, Rows: []report.Row{},
-		How: "SQLite integrity_check and foreign_key_check run after launch and weekly while open. The last attempt is held for this launch."}
+	checks := []platformapp.DatabaseCheck{}
 	for _, file := range a.databaseFiles() {
-		at, words := "Not checked this launch", "Waiting for checks"
+		check := platformapp.DatabaseCheck{Name: file.name}
 		if file.pools != nil {
-			result := file.pools.LastCheck()
-			if !result.At.IsZero() {
-				at = result.At.Format(time.RFC3339)
-				words = databaseCheckWords(result)
-				if words != "OK" {
-					r.Status = "failed"
-				}
-			} else if r.Status == "ok" {
-				r.Status = "empty"
-			}
-		} else if r.Status == "ok" {
-			r.Status = "empty"
+			check.Result = file.pools.LastCheck()
 		}
-		r.Rows = append(r.Rows, report.Row{Cells: []string{file.name, at, words}})
+		checks = append(checks, check)
 	}
-	return r
-}
-
-func databaseCheckWords(result db.RoutineCheck) string {
-	if result.Error != "" {
-		return result.Error
-	}
-	if len(result.Findings.Integrity) == 1 && result.Findings.Integrity[0] == "ok" && len(result.Findings.ForeignKeys) == 0 {
-		return "OK"
-	}
-	return fmt.Sprintf("Integrity: %v; foreign key violations: %d", result.Findings.Integrity, len(result.Findings.ForeignKeys))
+	return platformapp.DatabaseChecksReading(checks)
 }

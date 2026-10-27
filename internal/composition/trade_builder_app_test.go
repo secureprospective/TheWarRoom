@@ -440,7 +440,7 @@ func TestProposalWatcherPersistsSameStateSubmissionEvidence(t *testing.T) {
 	t.Parallel()
 	a, _, offer := tradeDraftApp(t)
 	a.core.SeasonPendingTrades.Value = nil
-	req := a.core.TradeRequest("0001", offer)
+	req := (tradesHost{State: a.core, app: a}).TradeRequest("0001", offer)
 	req.Trade.TradeID = "local"
 	e, err := envelope.DraftTradeAct(a.core.MovesNow(), "trade.propose", req, nil, func() string { return "watch-propose" })
 	if err != nil {

@@ -1,6 +1,7 @@
 package report
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -56,5 +57,49 @@ func TestOfflineSentenceMatchesFrontend(t *testing.T) {
 	if !strings.Contains(string(body), `"`+offline.Advice+`"`) || !strings.Contains(string(body), `"Can't reach the league site." + ADVICE`) ||
 		Offline != "Can't reach the league site."+offline.Advice {
 		t.Fatal("frontend ADVICE or OFFLINE differs from internal/offline")
+	}
+}
+
+func TestScopedArchiveBodiesRetainOnlyRequestedParameter(t *testing.T) {
+	t.Parallel()
+	reads := 0
+	bodies := func(_ context.Context, part string, accept func(string, []byte, time.Time) bool) (bool, error) {
+		if part != "TYPE=test" {
+			t.Fatal(part)
+		}
+		for _, src := range []string{"%", "https://fixture.invalid/?W=1", "https://fixture.invalid/?W=2"} {
+			if accept(src, []byte("body"), time.Time{}) {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	found, err := ScopedBodies(bodies, "W", "2")(t.Context(), "TYPE=test", func(src string, body []byte, _ time.Time) bool {
+		reads++
+		if src != "https://fixture.invalid/?W=2" || string(body) != "body" {
+			t.Fatal(src)
+		}
+		return true
+	})
+	if err != nil || !found || reads != 1 {
+		t.Fatalf("scope %v %v reads %d", found, err, reads)
+	}
+}
+
+func TestReadHeldArchiveAvailabilityAndFailedBody(t *testing.T) {
+	source := ArchivedFeed[string]{Export: "injuries", Leagueless: true,
+		Parse: func([]byte) ([]string, error) { return nil, errors.New("bad body") },
+		Bodies: func(_ context.Context, _ string, accept func(string, []byte, time.Time) bool) (bool, error) {
+			if accept("https://api.myfantasyleague.com/2026/export?TYPE=injuries", nil, time.Now()) {
+				t.Fatal("accepted failed parse")
+			}
+			return false, nil
+		},
+	}
+	if got := ReadHeldArchive(context.Background(), false, 2026, source); got.RefreshError != "No held archive" {
+		t.Fatal(got)
+	}
+	if got := ReadHeldArchive(context.Background(), true, 2026, source); got.RefreshError != "No usable held injuries export" {
+		t.Fatal(got)
 	}
 }

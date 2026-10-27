@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { sourcesAPI } from './api';
 import { array, object, text } from '../data/parseValues';
 import { parseOutcome, type Outcome, type Scope } from './provider';
@@ -27,14 +26,12 @@ const cacheProvider: CacheProvider = {
 
 function createCacheState(provider: CacheProvider) {
   type Held = { scopes: Scope[]; busy: string; error: string; outcomes: Record<string, string> };
-  const store = createStore<Held>(() => ({ scopes: [], busy: '', error: '', outcomes: {} }));
-  async function load() {
-    try {
-      store.setState({ scopes: await provider.scopes(), error: '' });
-    } catch (cause) {
-      store.setState({ error: String(cause) });
-    }
-  }
+  const query = createReadQuery('sources.TargetCacheScopes', {
+    initial: (): Held => ({ scopes: [], busy: '', error: '', outcomes: {} }),
+    read: () => provider.scopes(), accept: scopes => ({ scopes, error: '' }),
+  });
+  const store = query.store;
+  const load = () => query.load([]);
   async function run(scope: string) {
     if (store.getState().busy) return;
     store.setState(s => ({ busy: scope, error: '', outcomes: { ...s.outcomes, [scope]: '' } }));
@@ -49,7 +46,7 @@ function createCacheState(provider: CacheProvider) {
       store.setState({ busy: '' });
     }
   }
-  const forget = () => store.setState({ scopes: [], busy: '', error: '', outcomes: {} });
-  return { use: () => useStore(store), peek: store.getState, load, run, forget };
+  const forget = query.reset;
+  return { use: query.use, peek: (): Held => store.getState(), load, run, forget };
 }
 export const cacheState = createCacheState(cacheProvider);

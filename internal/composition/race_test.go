@@ -27,16 +27,16 @@ func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 	t.Parallel()
 	a, transport, _, _ := seasonTestApp(t)
 	a.core.SeasonChanged = func(context.Context) { t.Error("Race refresh emitted a season event; its caller owns notification") }
-	board, err := raceapp.New(a.core, a.raceHeld).TargetRace(0, "", "")
+	board, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(0, "", "")
 	if err != nil || len(transport.requests) != 0 || board.Standings.Status != "failed" {
 		t.Fatal("reading fetched or invented standings", err, transport.requests)
 	}
-	if _, err := raceapp.New(a.core, a.raceHeld).TargetRace(3, "", ""); err == nil {
+	if _, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(3, "", ""); err == nil {
 		t.Fatal("accepted a week with no held results")
 	}
 	recordSeasonArchive(t, a, "weeklyResults", "YTD", transport.bodies["weeklyResults"], raceHeldAt)
 	transport.failure = "weeklyResults"
-	if err := raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(false); err != nil {
+	if err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh(false); err != nil {
 		t.Fatal(err)
 	}
 	a.core.SeasonMu.Lock()
@@ -46,13 +46,13 @@ func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 		t.Fatal("archived weekly results not served as stale", weeks.RefreshError)
 	}
 	requests := len(transport.requests)
-	if err := raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(false); err != nil || len(transport.requests) == requests {
+	if err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh(false); err != nil || len(transport.requests) == requests {
 		t.Fatal("a stale feed must refresh again", err)
 	}
 	transport.failure = ""
 	requests = len(transport.requests)
-	_ = raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(true)
-	if err := raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(false); err != nil || len(transport.requests) != requests+6 {
+	_ = raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh(true)
+	if err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh(false); err != nil || len(transport.requests) != requests+6 {
 		t.Fatal("fresh feeds refetched", transport.requests[requests:])
 	}
 }
@@ -60,7 +60,7 @@ func TestRaceBindingReadsHeldAndRefreshFallsBack(t *testing.T) {
 func TestRaceBindingsGolden(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	board, err := raceapp.New(a.core, a.raceHeld).TargetRace(0, "", "")
+	board, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(0, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +74,7 @@ func TestRaceBindingsGolden(t *testing.T) {
 	populated.core.Lookup, populated.core.HasLookup = in.lookup, true
 	populated.core.LocalZone = time.UTC
 	publishRaceFixture(populated, in.held)
-	board, err = raceapp.New(populated.core, populated.raceHeld).TargetRace(0, in.team, in.mine)
+	board, err = raceapp.New(raceHost{populated.core}, populated.raceHeld).TargetRace(0, in.team, in.mine)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,14 +85,14 @@ func TestRaceBindingsGolden(t *testing.T) {
 	}
 	checkGolden(t, "race", "held", board)
 	errs := map[string]string{}
-	if _, err := raceapp.New(a.core, a.raceHeld).TargetRace(40, "", ""); err != nil {
+	if _, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(40, "", ""); err != nil {
 		errs["week"] = err.Error()
 	}
-	if _, err := raceapp.New(a.core, a.raceHeld).TargetRace(0, "unknown", ""); err != nil {
+	if _, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(0, "unknown", ""); err != nil {
 		errs["team"] = err.Error()
 	}
 	refresh, _, _, _ := seasonTestApp(t)
-	if err := raceapp.New(refresh.core, refresh.raceHeld).TargetRaceRefresh(true); err != nil {
+	if err := raceapp.New(raceHost{refresh.core}, refresh.raceHeld).TargetRaceRefresh(true); err != nil {
 		errs["refresh"] = err.Error()
 	}
 	checkGolden(t, "race", "errors", errs)
@@ -168,7 +168,7 @@ func TestRaceConcurrentRefreshAndRead(t *testing.T) {
 	}
 	defer close(release)
 	refreshed := make(chan error, 1)
-	go func() { refreshed <- raceapp.New(a.core, a.raceHeld).TargetRaceRefresh(true) }()
+	go func() { refreshed <- raceapp.New(raceHost{a.core}, a.raceHeld).TargetRaceRefresh(true) }()
 	select {
 	case <-published:
 	case <-time.After(5 * time.Second):
@@ -178,7 +178,7 @@ func TestRaceConcurrentRefreshAndRead(t *testing.T) {
 	readDone := make(chan error, 1)
 	go func() {
 		for i := 0; i < 100; i++ {
-			_, err := raceapp.New(a.core, a.raceHeld).TargetRace(0, "", "")
+			_, err := raceapp.New(raceHost{a.core}, a.raceHeld).TargetRace(0, "", "")
 			if err != nil {
 				readDone <- err
 				return
@@ -310,4 +310,12 @@ func TestRaceJointCaptureConsistency(t *testing.T) {
 		}
 	}
 	<-done
+}
+
+func racePower(in map[string]PowerRankingsResult) map[string]season.PowerRankingsResult {
+	out := make(map[string]season.PowerRankingsResult, len(in))
+	for key, power := range in {
+		out[key] = racePowerResult(power)
+	}
+	return out
 }

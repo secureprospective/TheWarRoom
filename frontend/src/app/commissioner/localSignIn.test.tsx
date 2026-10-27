@@ -1,11 +1,12 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { all, control, mount, present, render, settle, type, unmount } from './commissionerDom';
 import { stub } from './commissionerStub';
 import { commands } from '../commands/registry';
 import { LocalSignIn } from './LocalSignIn';
+import { leagueState } from './proxy';
 
-afterEach(unmount);
+afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
 
 const submit = (host: Parameters<typeof all>[0]) => act(async () => {
   (all(host, 'form')[0].props().onSubmit as (e: unknown) => void)({ preventDefault() {} });
@@ -21,6 +22,7 @@ describe('League sign-in', () => {
         return { hasAccount: true, username: 'commish' };
       },
     });
+    const changeSeat = vi.spyOn(leagueState, 'changeSeat').mockResolvedValue();
     const host = await mount(render(LocalSignIn), app);
     await settle();
     expect(present(host, 'Keep your league if you change computers')).toBe(true);
@@ -29,6 +31,8 @@ describe('League sign-in', () => {
     await submit(host);
     await settle();
     expect(sent).toEqual([['Commish', 'league-password']]);
+    // An accepted sign-in is a new seat: the old seat's readings end, then the league is reread.
+    expect(changeSeat).toHaveBeenCalledTimes(1);
     expect(present(host, 'This computer is signed in as commish.')).toBe(true);
   });
   it('asks a restored copy for the original sign-in and clears a refused password', async () => {

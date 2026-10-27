@@ -78,3 +78,28 @@ it('renders status, market, dated escaped notes, MFL handoffs and ordered-list A
     expect(draft).toContain('Open my draft list on MFL');
   } finally { shell.mockRestore(); lists.mockRestore(); }
 });
+
+it('keeps franchise reads independent and excludes older same-franchise publication', async () => {
+  const waiting: { mine: string; finish: (value: typeof reading) => void }[] = [];
+  const provider = {
+    read: (mine: string): Promise<typeof reading> => new Promise(finish => waiting.push({ mine, finish })),
+    change: vi.fn(async () => {}), handoff: async () => {},
+  };
+  const state = createPersonalState(provider);
+  const old = state.load('0001');
+  const other = state.load('0002');
+  const latest = state.load('0001');
+  await state.change('0001', 'note', { id: '0816', entity: 'player', action: 'add', text: 'Do not send' });
+  expect(provider.change).not.toHaveBeenCalled();
+  const current = { ...reading, entries: [] };
+  waiting[2].finish(current);
+  await latest;
+  waiting[0].finish(reading);
+  await old;
+  expect(state.peek('0001').value).toBe(current);
+  expect(state.peek('0002').pending).toBe(true);
+  waiting[1].finish(reading);
+  await other;
+  expect(state.peek('0002').value).toBe(reading);
+  expect(state.peek('0001').pending).toBe(false);
+});

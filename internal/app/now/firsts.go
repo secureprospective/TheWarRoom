@@ -58,3 +58,13 @@ func ReadFirsts(ctx context.Context, prev FirstScores, season int, bodies Bodies
 	}
 	return next, nil
 }
+
+func RefreshFirsts(ctx context.Context, prev FirstScores, season int,
+	bodies func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error), publish func(FirstScores), logFailure func(string)) {
+	next, err := ReadFirsts(ctx, prev, season, bodies)
+	if err != nil {
+		logFailure("the war room: " + err.Error())
+		return
+	}
+	publish(next)
+}

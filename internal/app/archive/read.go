@@ -110,3 +110,16 @@ func resolve(ctx context.Context, bodies manifest.Bodies, m manifest.Manifest) (
 	}
 	return Snapshot{Facts: compiled, Cutoff: cutoff.Local().Format("Jan 2, 2006"), Through: cutoff}, nil
 }
+
+// ReadCached replaces caller-owned held data only after a nonempty verified read.
+// The caller serializes access and retains the last good snapshot on empty/error results.
+func ReadCached(ctx context.Context, src Source, held *Snapshot) (Snapshot, bool, error) {
+	cache, stale, err := Read(ctx, src, *held)
+	if err != nil {
+		return Snapshot{}, false, err
+	}
+	if cache.SHA != "" {
+		*held = cache
+	}
+	return cache, stale, nil
+}

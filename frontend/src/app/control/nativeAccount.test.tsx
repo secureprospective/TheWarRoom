@@ -6,8 +6,19 @@ import { all, button, click, control, mount, render, settle, type, unmount }
 import NativeAccount from './NativeAccount';
 import { nativeAction, nativeStartup, parseNativeView, type NativeView } from './nativeApi';
 
-// Franchise workflow requests are covered by the hosted-room tests, not account admission.
-vi.mock('../commissioner/HostedLeague', () => ({ default: () => null }));
+// Franchise workflow requests are covered by the hosted-room tests, not account admission. The stand-in
+// records each room's lifetime: unmount is the hosted room's dispose (its session end), mount its reread.
+const rooms = vi.hoisted(() => [] as string[]);
+vi.mock('../commissioner/HostedLeague', async () => {
+  const { useEffect } = await import('react');
+  return { default: ({ franchise }: { franchise: string }) => {
+    useEffect(() => {
+      rooms.push(`open ${franchise}`);
+      return () => { rooms.push(`close ${franchise}`); };
+    }, [franchise]);
+    return null;
+  } };
+});
 
 const initial: NativeView = { server: 'https://league.example', league: 'native.test', message: '',
   name: '', role: '', franchise: '', franchiseName: '', seed: '', connection: '', helperId: '',
@@ -169,3 +180,26 @@ it.each(['done', 'failed'] as const)('records account %s after admission', async
     args: { screen: 'native-account', action: 'check', value: 'submit' }, status,
     ...(status === 'failed' ? { reason } : {}) });
 });
+
+it.each(['enter', 'forget', 'revoke-device', 'revoke-all'] as const)(
+  'ends the open franchise room before %s is admitted, then rereads only an assigned one', async action => {
+    rooms.length = 0;
+    let answer: (value: unknown) => void = () => undefined;
+    const fetcher = vi.fn().mockResolvedValueOnce(reply({ ...initial, name: 'League',
+      franchise: 'franchise.01', franchiseName: 'My club' }));
+    vi.stubGlobal('fetch', fetcher);
+    // Startup never carries a franchise (Go's status action only sets the message).
+    const host = await mount(render(NativeAccount, { initial: { ...initial, message: 'Saved.' } }));
+    await click(button(host, 'Open my franchise')); await settle();
+    fetcher.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+    expect(rooms).toEqual(['open franchise.01']);
+    const label = { enter: 'Open my franchise', forget: 'Forget saved sign-in',
+      'revoke-device': 'Revoke this device', 'revoke-all': 'Revoke all devices' }[action];
+    await click(button(host, label)); await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01']);
+    await act(async () => { answer(reply({ ...initial, name: 'League', message: 'Done.',
+      franchise: action === 'enter' ? 'franchise.02' : '' })); });
+    await settle();
+    expect(rooms).toEqual(['open franchise.01', 'close franchise.01',
+      ...(action === 'enter' ? ['open franchise.02'] : [])]);
+  });

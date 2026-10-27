@@ -6,16 +6,16 @@ import (
 )
 
 func main() {
-	lock, err := acquireInstanceLock(os.Args[1])
+	lock, err := AcquireInstanceLock(os.Args[1])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	if err := os.WriteFile(os.Args[2], []byte("ready"), 0o600); err != nil {
-		releaseInstanceLock(lock)
+		ReleaseInstanceLock(lock)
 		os.Exit(2)
 	}
 	var input [1]byte
 	_, _ = os.Stdin.Read(input[:])
-	releaseInstanceLock(lock)
+	ReleaseInstanceLock(lock)
 }

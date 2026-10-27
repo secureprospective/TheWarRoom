@@ -6,32 +6,10 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 )
 
 func (s *State) ArchiveContext() context.Context { return s.Ctx }
-
-func (s *State) ArchiveOpponent(team string) string {
-	s.WeekMu.Lock()
-	week := s.Week.Number
-	s.WeekMu.Unlock()
-	s.SeasonMu.Lock()
-	defer s.SeasonMu.Unlock()
-	for _, m := range s.SeasonLineups.Value.Matchups {
-		if s.SeasonLineups.Value.Week != week {
-			break
-		}
-		if m.Home == team {
-			return m.Away
-		}
-		if m.Away == team {
-			return m.Home
-		}
-	}
-	if s.ArchiveOpponentFallback != nil {
-		return s.ArchiveOpponentFallback(week, team)
-	}
-	return ""
-}
 
 func (s *State) ArchiveFacts(ctx context.Context) (report.ArchiveSnapshot, bool, error) {
 	s.FactsMu.Lock()
@@ -443,4 +421,13 @@ func cloneArchiveMflAav(in facts.MflAavColumns) facts.MflAavColumns {
 		MaxValue: clonePointers(in.MaxValue),
 		Src:      slices.Clone(in.Src),
 	}
+}
+
+func (s *State) ReadArchiveOpponent(team string, choose func(int, string, leaguefeed.Lineups, func(int, string) string) string) string {
+	s.WeekMu.Lock()
+	week := s.Week.Number
+	s.WeekMu.Unlock()
+	s.SeasonMu.Lock()
+	defer s.SeasonMu.Unlock()
+	return choose(week, team, s.SeasonLineups.Value, s.ArchiveOpponentFallback)
 }

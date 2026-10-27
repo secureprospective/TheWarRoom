@@ -362,16 +362,15 @@ principal (`commissionerPrincipal`), the commissioner door's routing refusals, a
 store call with its authorizer, so authorization, validation and the ledger append still share one
 store transaction. `testdata/wire/commissioner` freezes the wire and the exact denial words.
 
-`internal/app/native` is the native league's pure logic, stateless: `facts.go` reads the football
-facts a native check uses from the held players directory (`PlayerFacts`; the root holds `lookupMu`)
-and the held injury statuses (`Designate`), maps positions and NFL listings, and decodes the owner's
-lineup request (`DecodeLineupSet`; `RawLineupSet` is an alias, not a Wails model); `season.go` judges
-the NFL week a bid falls in (`WeekAt`) and the playoff field (`PlayoffField`); `seed.go` shapes the
-starting snapshot from held values. It never decides who may act. The root keeps every binding, the
-native gate (`native_gate.go`: the registry, `runNativeAction`, `ownerZone`), the owner door and its
-families with their permit checks (`native_owner_app.go`), the principal read, the held-state locks,
-the clock (`native_schedule_app.go`) and each history store call, which re-checks the permit inside
-its own transaction (`ExecuteCommissionerWithFacts` asks the gate again). `testdata/wire/native` freezes the wire and the exact denial words.
+`internal/app/commissioner/native` owns native owner admission and held-football policy:
+`facts.go` transforms the held directory and injuries; `season.go` selects schedule locks,
+owner zone, bidding week and playoff evidence; `seed.go` shapes starting assets. The transport-free
+`owner_actions.go` checks the calendar gate and permit, constructs lineup/pick/family commands
+and delegates ledger execution through callbacks. `internal/composition/native_gate.go` binds these
+services to the desktop registry, local principal, original resource timeouts and held-state locks.
+`commissioner_host.go` supplies schedule and deadline-worker adapters. The history store still
+rechecks permits and authorization inside its transaction. The command doors and wire contracts
+are unchanged; `docs/architecture/app-boundary.md` tracks the remaining boundary work.
 
 `internal/app/contracts` is the contracts and roster actions' pure logic, stateless: `acts.go` holds the
 contract Act request twin (`Act`) and prices an Act (`ActFacts`, `Terms`, `EvidenceReasons`) on a player
@@ -621,7 +620,7 @@ native gate and `draft_reading.go` all read the start through it, so the calenda
 and the draft cannot disagree (a window command on that window is refused once a start is recorded).
 `draft_reading.go` (`readDraft`) replays the ledger into `internal/engine/rookiedraft`; pick ownership comes
 from the starting snapshot's future picks and is never recreated. A pick is the one owner action recorded in
-the commissioner stream without commissioner permission: root `native_draft_app.go` registers it, so
+the commissioner stream without commissioner permission: `internal/composition/native_gate.go` registers it, so
 `runNativeAction` asks the calendar first, and `history.RecordDraftPick` (`internal/store/history/draft.go`)
 checks the franchise's seated owner, replays the draft, judges roster and cap and appends in one immediate
 transaction. Go fixes the slot and contract in the record; `TargetCommissionerExecute` refuses `draft.pick`.
@@ -819,7 +818,7 @@ owner's lineup to be this season's, on the active roster, legal under `nativeche
 move any player whose game has kicked off, in or out; with the week's kickoffs not held it refuses rather
 than guess. A correction skips the lock and the legality refusal: an illegal one is penalised when scored.
 `LineupFacts` (names, positions, NFL teams, the week's kickoffs, the owner's zone) comes from the
-`history.LineupEnvironment` the app installs at startup (`appLineupEnv` in `native_lineup_app.go`, reading the
+`history.LineupEnvironment` the app installs at startup (`appLineupEnv` in `internal/composition/native_gate.go`, reading the
 held directory and held NFL schedule, no fetch); without it lineups cannot be set or corrected.
 `franchiseWeekScore` judges a complete lineup with the same `nativecheck` functions: an invalid one loses
 what the league's penalty rule says (Legacy: the top starter), a missing one is a flagged missed lineup
@@ -885,7 +884,7 @@ in the ledger and on each note; the reusable `app/governed/GovernedGlyph` shows 
 The commissioner package imports nothing that can reach a network or a mail system, and a test enforces it.
 Ledger filters gain the kind "notices". Control Room › Data and sources gains "Read data again":
 `TargetCacheScopes` lists the held copies and `TargetCacheClear` runs the refresh each screen already has, asked
-to ignore the copy held (`cache_app.go`); the refresh scopes there are the existing S-09 Acts. The lazy
+to ignore the copy held (`internal/app/sources/settings.go`, wired in `internal/composition/sources_runtime.go`); the refresh scopes there are the existing S-09 Acts. The lazy
 `LeagueOps` screen shows notices, What's New, the mail log and the digest in League ops; `NoteForm` posts in the
 shared side tray with Go's preview.
 

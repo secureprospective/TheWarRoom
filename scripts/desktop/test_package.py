@@ -56,10 +56,10 @@ class DesktopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=base) as directory:
             root = Path(directory)
             suffix = "windows" if package.platform.system() == "Windows" else "unix"
-            source = package.ROOT / f"internal/composition/instance_lock_{suffix}.go"
+            source = package.ROOT / f"internal/app/platform/instance_lock_{suffix}.go"
             # Compile the existing implementation verbatim apart from its package name.
             (root / "lock.go").write_text(source.read_text().replace(
-                "package composition", "package main", 1))
+                "package platform", "package main", 1))
             shutil.copy2(Path(__file__).with_name("lock_main.go.txt"), root / "main.go")
             executable = root / "lock-probe.exe"
             subprocess.run(["go", "build", "-race", "-o", str(executable),

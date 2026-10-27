@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -46,7 +48,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 				r.Spec.Expected.RosterStatus != tc.want || r.Spec.Intent != tc.intent {
 				t.Fatalf("draft: %+v %v", r, err)
 			}
-			if err := validateMoveURL(r.Spec.Target.URL); err != nil {
+			if err := platformapp.ValidateMoveURL(r.Spec.Target.URL); err != nil {
 				t.Fatal(err)
 			}
 			stored, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)
@@ -77,14 +79,6 @@ func TestRosterDraftUnknownHost(t *testing.T) {
 	}
 	if calls != down.calls {
 		t.Fatal("draft discovered host")
-	}
-}
-
-func TestTaxiPredicateRegistered(t *testing.T) {
-	t.Parallel()
-	predicate := movePredicate("roster.taxi")
-	if _, ok := predicate.(envelope.TaxiPredicate); !ok {
-		t.Fatalf("taxi registry: %T", predicate)
 	}
 }
 

@@ -1,5 +1,4 @@
-import { createStore } from 'zustand/vanilla';
-import { useStore } from 'zustand';
+import { createReadQuery } from '../data/query';
 import { array, object, text } from '../data/parseValues';
 import { report, type Report } from '../reports/contract';
 import { controlAPI } from './api';
@@ -29,7 +28,19 @@ type ControlAction = 'league' | 'news' | 'search' | 'open-accounting';
 type State = { settings?: Report; bylaws?: Bylaw[]; accounting?: Report; news?: Report; search: string;
   pending: boolean; error: string };
 export function createControlState(reader: ControlReader) {
-  const store = createStore<State>(() => ({ search: '', pending: false, error: '' }));
+  const initial = (): State => ({ search: '', pending: false, error: '' });
+  const league = createReadQuery('control.TargetLeagueSettings', {
+    initial, companions: ['control.TargetBylaws', 'control.TargetAccounting'],
+    read: async () => {
+      const [settings, bylaws, accounting] =
+        await Promise.all([reader.settings(), reader.bylaws(), reader.accounting()]);
+      return { settings, bylaws, accounting };
+    }, accept: value => value,
+  });
+  const news = createReadQuery('control.TargetSiteNews', {
+    initial, store: league.store, read: () => reader.news(), accept: value => ({ news: value }),
+  });
+  const store = league.store;
   async function run(work: () => Promise<Partial<State>>) {
     store.setState({ pending: true, error: '' });
     try {
@@ -46,14 +57,10 @@ export function createControlState(reader: ControlReader) {
       await run(async () => { await reader.openAccounting(); return {}; });
       return;
     }
-    if (action === 'news') { await run(async () => ({ news: await reader.news() })); return; }
-    await run(async () => {
-      const [settings, bylaws, accounting] =
-        await Promise.all([reader.settings(), reader.bylaws(), reader.accounting()]);
-      return { settings, bylaws, accounting };
-    });
+    if (action === 'news') { await news.load([]); return; }
+    await league.load([]);
   }
-  return { use: () => useStore(store), peek: store.getState, choose };
+  return { use: league.use, peek: store.getState, choose };
 }
 export const controlState = createControlState(live);
 

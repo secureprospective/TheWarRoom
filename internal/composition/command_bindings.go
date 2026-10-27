@@ -222,9 +222,9 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
-		archive:        archiveapi.New(app.core),
+		archive:        archiveapi.New(archiveHost{app.core}),
 		commissioner:   newCommissionerAPI(app),
-		comms:          commsapi.New(app.core),
+		comms:          commsapi.New(commsHost{app.core}),
 		contracts:      contractsapi.New(contractsHost{State: app.core, app: app}),
 		control:        controlapi.New(controlHost{State: app.core, app: app}, app.controlHeld),
 		counterparties: counterpartiesapi.New(app.core),
@@ -233,7 +233,7 @@ func newCommandAPIs(app *App) commandAPIs {
 		now:            nowapi.New(nowHost{State: app.core, app: app}, app.nowHeld),
 		offers:         offersapi.New(offersHost{State: app.core, app: app}),
 		platform:       app.platformAPI(),
-		race:           raceapi.New(app.core, app.raceHeld),
+		race:           raceapi.New(raceHost{app.core}, app.raceHeld),
 		research:       researchapi.New(researchHost{app: app}, app.researchHeld),
 		sources:        app.sourcesAPI(),
 		trades:         tradesapi.New(tradesHost{State: app.core, app: app}),

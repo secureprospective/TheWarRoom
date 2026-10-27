@@ -2,7 +2,6 @@ package composition
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -59,24 +58,15 @@ const photoTimeout = 10 * time.Second
 // startHeadshots builds the photo cache in the data directory. Photos are personal use only
 // (spec §7): never bundled, never in history.db.
 func (a *App) startHeadshots() {
-	ids := func(ctx context.Context, mflID string) (string, string, error) {
-		if a.core.History == nil {
-			return "", "", fmt.Errorf("history unavailable")
-		}
-		espn, err := a.core.History.SourceID(ctx, mflID, "espn")
-		if err != nil {
-			return "", "", fmt.Errorf("app: photo ids: %w", err)
-		}
-		sleeper, err := a.core.History.SourceID(ctx, mflID, "sleeper")
-		if err != nil {
-			return "", "", fmt.Errorf("app: photo ids: %w", err)
-		}
-		return espn, sleeper, nil
-	}
-	a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout, Transport: a.core.Network}))
-	if s, err := a.readSettings(); err == nil {
-		a.core.PhotosOff.Store(s.PhotosOff)
-	}
+	(platformapp.PhotoRuntime{
+		Available: func() bool { return a.core.History != nil },
+		SourceID: func(ctx context.Context, id, source string) (string, error) {
+			return a.core.History.SourceID(ctx, id, source)
+		},
+		Install: func(ids func(context.Context, string) (string, string, error)) {
+			a.core.Headshots.Store(headshot.New(filepath.Join(a.core.Paths.DataDir, "headshots"), ids, &http.Client{Timeout: photoTimeout, Transport: a.core.Network}))
+		}, Settings: func() (bool, error) { settings, err := a.readSettings(); return settings.PhotosOff, err }, SetOff: a.core.PhotosOff.Store,
+	}).Initialize()
 }
 
 // photoHandler serves /headshot/<mfl id> to the webview from the cache, fetching on first use.

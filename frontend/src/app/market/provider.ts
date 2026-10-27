@@ -130,14 +130,14 @@ async function read(call: () => Promise<unknown>): Promise<SurfaceReading> {
     return unavailable(`Market read failed: ${String(cause)}. Retry the held archive reading.`);
   }
 }
-const raw = (scope: MarketScope): RawMarketScope => ({
+export const marketScopeInput = (scope: MarketScope): RawMarketScope => ({
   ...scope,
   phases: scope.phases ?? [],
   assets: scope.assets ?? [],
 });
 export const marketProvider: MarketProvider = {
-  lists: (scope) => read(() => marketAPI.lists(raw(scope))),
-  clock: (scope) => read(() => marketAPI.clock(raw(scope))),
-  stretches: (scope) => read(() => marketAPI.stretches(raw(scope))),
-  profile: (scope, kind) => read(() => marketAPI.profile(raw(scope), kind)),
+  lists: (scope) => read(() => marketAPI.lists(marketScopeInput(scope))),
+  clock: (scope) => read(() => marketAPI.clock(marketScopeInput(scope))),
+  stretches: (scope) => read(() => marketAPI.stretches(marketScopeInput(scope))),
+  profile: (scope, kind) => read(() => marketAPI.profile(marketScopeInput(scope), kind)),
 };

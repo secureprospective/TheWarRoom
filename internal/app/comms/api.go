@@ -2,8 +2,11 @@ package comms
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/mflkey"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
@@ -120,3 +123,64 @@ func Read(ctx context.Context, src Source, in Input, scope RawCommsScope) (Board
 
 // Commands is data, not an API method: Wails must not bind the catalog itself.
 func Commands() []catalog.Command { return catalog.DesktopCommands("comms", nil) }
+
+// ErrNeedsKey distinguishes absent credentials from an unavailable keyring.
+var ErrNeedsKey = errors.New("MFL serves the message board and polls only to league members: connect your MFL key in Control Room › App")
+
+func MemberKey(ctx context.Context, store *mflkey.Store) error {
+	if store == nil {
+		return errors.New("MFL keyring is locked or unavailable")
+	}
+	_, err := store.Get(ctx)
+	switch {
+	case errors.Is(err, mflkey.ErrNoKey):
+		return ErrNeedsKey
+	case err != nil:
+		return errors.New("MFL keyring is locked or unavailable")
+	}
+	return nil
+}
+
+func RefuseBoards(boards *[2]report.HeldFeed[[]ingestion.RawLeaguePost], err error) {
+	for i := range boards {
+		if errors.Is(err, ErrNeedsKey) {
+			boards[i] = report.HeldFeed[[]ingestion.RawLeaguePost]{}
+		}
+		boards[i].RefreshError = report.FailureText(err)
+	}
+}
+
+func RefreshBoards(ctx context.Context, key func(context.Context) error, refuse func(error), pause func() func(context.Context, time.Duration) error, read func(context.Context, int, string)) {
+	if err := key(ctx); err != nil {
+		refuse(err)
+		return
+	}
+	for i, export := range []string{"messageBoard", "polls"} {
+		if err := report.RefreshPause(pause())(ctx, time.Second); err != nil {
+			return
+		}
+		read(ctx, i, export)
+	}
+}
+
+func RefreshReading(force bool, ready func() error, capture func() (report.Feed, [2]report.Feed), parent func() context.Context, serialize func(func()), transactions, boardsRefresh func(context.Context)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("comms refresh: %w", err)
+	}
+	tx, boards := capture()
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	serialize(func() {
+		if force || tx.RefreshError != "" || time.Since(tx.FetchedAt) >= 5*time.Minute {
+			transactions(ctx)
+		}
+		fresh := true
+		for _, b := range boards {
+			fresh = fresh && b.RefreshError == "" && time.Since(b.FetchedAt) < 5*time.Minute
+		}
+		if force || !fresh {
+			boardsRefresh(ctx)
+		}
+	})
+	return nil
+}
