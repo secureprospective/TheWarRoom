@@ -53,3 +53,25 @@ func TestMarketFailureNeverPublishesWrongWeek(t *testing.T) {
 		t.Fatal("bad archive accepted")
 	}
 }
+
+func TestMarketRefreshReportsReadyBeforeContextAndBoundedRun(t *testing.T) {
+	err := RefreshReports(true, func() error { return errors.New("failed") }, func() context.Context { t.Fatal("context before ready"); return nil }, func(context.Context, bool) { t.Fatal("run before ready") })
+	if err == nil || err.Error() != "market refresh: startup: failed" {
+		t.Fatal(err)
+	}
+	var observed context.Context
+	if err := RefreshReports(true, func() error { return nil }, func() context.Context { return t.Context() }, func(ctx context.Context, force bool) {
+		observed = ctx
+		if !force {
+			t.Fatal("lost force")
+		}
+		if _, ok := ctx.Deadline(); !ok {
+			t.Fatal("missing bound")
+		}
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !errors.Is(observed.Err(), context.Canceled) {
+		t.Fatal("context retained")
+	}
+}

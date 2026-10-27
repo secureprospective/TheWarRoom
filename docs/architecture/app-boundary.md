@@ -5,7 +5,7 @@
 Composition inventory remains resolved: **125 units / 4,498 baseline function LOC relocated**,
 plus **one 36-LOC adapter-only unit** (102), out of 126 / 4,534. Part 5 additionally extracted all
 **17 frozen core policy functions / 278 baseline function LOC**; no legacy entries remain.
-Boundary gate now freezes **121 decision-bearing adapters + 47 complete sources** and detects
+Boundary gate now freezes **120 decision-bearing adapters + 46 complete sources** and detects
 straight-line/declaration/nested-path changes as well as the original branch syntax. This is a
 review ratchet, not semantic proof that every approved adapter is policy-free.
 
@@ -1144,3 +1144,22 @@ write/wrong-tuple rejection; canonical full scopes; runtime malformed/undefined-
 last-good and retry; per-reader bounded cache; explicit refresh/lazy scope; older success/failure/
 finally fencing; invalidation/reset; and detachment across awaited refresh. Browser/GUI live review
 is deferred, not claimed. Design and remaining consumer inventory: frontend-reads.md.
+
+
+## Part 5 — remaining adapter audit: Market admission
+
+The follow-up audit found Market's ready→bounded-context→serialized refresh workflow still marked
+as an adapter. It is the same kind of application admission moved for Draft/Comms/Race, so moved
+it too: core/host_market.go:RefreshMarket → app/market/reports.go:RefreshReports (13 baseline
+function LOC, additional to the frozen 17 / 278). Core's held resource readers from host_market.go
+joined host_research.go, which already owns the shared directory/season/zone reads. No policy or
+cross-feature import moved into core. Removed the admission fingerprint and old whole-source row;
+remaining resource-function fingerprints relocate unchanged. Explicitly reviewed source snapshots
+for the consolidated core reader and the new straight-line composition Market callback.
+
+Added inward ready/no-context/no-run, force propagation, bounded lifetime/cancel tests. Existing
+real serializer/blocked-I/O/read-through and startup-refusal integrations moved from core to
+composition/market_policy_test.go and pass, along with filtered core/Market and door parity race
+tests. The now-unused core wait helper was removed; composition retains its used helper. No actual
+app/unit references these source paths; no installed path or repository moved. Boundary count is
+now **120 adapters + 46 sources = 166**, with zero legacy rows. No baseline rose.

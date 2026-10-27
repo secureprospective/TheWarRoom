@@ -50,12 +50,3 @@ func racePlayer(t *testing.T, raw string) playerid.PlayerID {
 	}
 	return id
 }
-
-func waitRace(t *testing.T, ch <-chan struct{}) {
-	t.Helper()
-	select {
-	case <-ch:
-	case <-time.After(5 * time.Second):
-		t.Fatal("race host operation blocked")
-	}
-}

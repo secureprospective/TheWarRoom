@@ -94,3 +94,12 @@ func (a *App) fitAssetModel(ctx context.Context) {
 	a.core.FactsMu.Unlock()
 	marketapp.FitAssetModel(ctx, began, cache, labcompile.Build, a.marketHeld.PublishModel, a.core.SeasonChanged, func(text string) { log.Print(text) })
 }
+
+func (h marketHost) RefreshMarket(force bool) error {
+	//nolint:wrapcheck // Preserve Market startup refusal and refresh context.
+	return marketapp.RefreshReports(force, h.Ready, func() context.Context { return h.Ctx }, func(ctx context.Context, force bool) {
+		h.RefreshMu.Lock()
+		defer h.RefreshMu.Unlock()
+		h.RefreshMarketFeeds(ctx, force)
+	})
+}

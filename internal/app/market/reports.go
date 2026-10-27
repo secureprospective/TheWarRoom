@@ -344,3 +344,13 @@ func RefreshedFeed(kind string, week int, held season.Feed[[]marketfeeds.Feed], 
 	report.HoldFeed(&next, rows, fresh, err)
 	return season.Feed[[]marketfeeds.Feed](next)
 }
+
+func RefreshReports(force bool, ready func() error, parent func() context.Context, run func(context.Context, bool)) error {
+	if err := ready(); err != nil {
+		return fmt.Errorf("market refresh: startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+	defer cancel()
+	run(ctx, force)
+	return nil
+}

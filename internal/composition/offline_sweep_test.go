@@ -65,7 +65,7 @@ func TestOfflineFeedsSayPlainWords(t *testing.T) {
 	a.refreshNowWeek(ctx, 6, true)
 	a.refreshScoreFirsts(ctx)
 	a.refreshFinishedScores(ctx)
-	_ = a.core.RefreshMarket(true)
+	_ = (marketHost{State: a.core, app: a}).RefreshMarket(true)
 	// What a person starts: every refresh button, every held copy read afresh, the key check.
 	keep("loadSignals", a.loadSignals(ctx))
 	keep("SetKey", must(controlHost{State: a.core, app: a}.SetKey("ABCDEF0123456789abcdef0123456789")))
