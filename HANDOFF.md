@@ -157,3 +157,15 @@ prompt clears. A standing bid or tie must be decided before close.
 - Removed seven stale boundary rows and added three approved migration adapter rows. Checker still fails on changed offer/report adapters and six changed sources; no other fingerprints refreshed.
 - Go build and boundary checker tests pass. Vitest: 1,569 pass, one fail; `src/app/commands/controls.test.ts` fails alone on line 13 of `browserParity.test.ts` exceeding 110 characters.
 - Next: review the remaining boundary changes and repair the frontend line-length failure. No GUI verification performed.
+## Bee — F8-D1 franchise pickers, session/t-pick
+- Baton: review. Existing directory/asset readings supply every commissioner act's franchise names
+  with side labels when present. Contract corrections, cap relief and reserve exceptions now require
+  the chosen franchise and submit its ID; calendar/rule exception pickers reuse the same labels.
+- Checks: TypeScript and Go build pass; 111 Vitest tests pass across actTray, competitionAct and
+  marketAct (80 in actTray). Added one-pool and per-side picker/execute tests. Initial tests failed before
+  implementation. Production footprint: 252 -> 255 physical lines across the two changed files.
+- Next: GUI-check reserve/contract corrections in both league types; chosen ID must name the intended
+  copy. No GUI performed. No backend, generated bindings, or new screen added.
+- Left: contract.quote has a generated read binding but no frontend form/caller in this revision;
+  no quote screen was invented. “Decision exceptions” is not a named form here; existing calendar
+  and rule exception forms are covered. Pull blocked: no branch upstream. No push requested.

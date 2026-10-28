@@ -19,8 +19,9 @@ const previewBodies: Sent[] = [];
 const assets = { league, revision: 3, seeded: true, snapshot: { season: 2026,
   players: [{ id: player, name: 'Player One', franchise }], pool: [], picks: [
     { season: 2027, round: 1, original: franchise, owner: franchise }], franchises: [{ id: franchise }] } };
+let sides: Record<string, string> = {};
 const native = {
-  TargetNativeAssets: async () => assets,
+  TargetNativeAssets: async () => ({ ...assets, snapshot: { ...assets.snapshot, sides } }),
   TargetCommissionerMarket: async () => ({ league, revision: 3,
     windows: [{ id: 'window.one', words: 'Player One — Tomorrow' }],
     claims: [{ id: 'claim.one', words: 'Player One — Awarded' }],
@@ -39,7 +40,7 @@ const native = {
   TargetStatQueue: async () => ({ open: [
     { id: item, name: 'Player One', week: 1, words: 'Tackle changed' }] }),
 };
-afterEach(async () => { await unmount(); leagueState.forget(); previewBodies.length = 0; });
+afterEach(async () => { await unmount(); leagueState.forget(); previewBodies.length = 0; sides = {}; });
 const definition = (command: string): ActDefinition => actTable.find(d => d.command === command)!;
 const answer = (sent: Sent, blockers: string[] = [], safeguard = 'reason') => ({
   ...previewWire.reason, question: 'Record this league action?',
@@ -98,13 +99,16 @@ const cases: { family: string; command: string; fields: Record<string, string | 
     fields: { Season: '2026', Franchise: franchise, Wins: '3', Losses: '2', Ties: '0' },
     args: { standings: { season: 2026, franchise, wins: 3, losses: 2, ties: 0 } } },
   { family: 'contracts', command: 'commish.contract.edit',
-    fields: { Player: player, 'Contract years': '2', 'Annual salary': '120.25' },
-    args: { override: { player, years: 2, salaryCents: 12025 } } },
+    fields: { Franchise: franchise, Player: player, 'Contract years': '2', 'Annual salary': '120.25' },
+    args: { override: { franchise, player, years: 2, salaryCents: 12025 } } },
   { family: 'cap', command: 'commish.cap.adjust',
     fields: { Franchise: franchise, Season: '2026', 'Cap charge': '-15.25' },
     args: { override: { franchise, season: 2026, amountCents: -1525 } } },
   { family: 'reserve exceptions', command: 'commish.reserve.exception',
-    fields: { Player: player, 'Reserve list': 'ir' }, args: { override: { player, bucket: 'ir' } } },
+    fields: { Franchise: franchise, Player: player, 'Reserve list': 'ir' }, args: { override: { franchise, player, bucket: 'ir' } } },
+  { family: 'cap relief', command: 'commish.cap.relief',
+    fields: { Franchise: franchise, Player: player, 'Cap relief': '10' },
+    args: { override: { franchise, player, amountCents: 1000 } } },
   { family: 'rule exceptions', command: 'rule.exception',
     fields: { Rule: 'roster.limits', 'Applies to': JSON.stringify({ franchise }) },
     args: { correction: { rule: 'roster.limits', scope: { franchise } } } },
@@ -136,6 +140,25 @@ const cases: { family: string; command: string; fields: Record<string, string | 
     fields: { Season: '2027', Round: '0', 'Place 1': franchise, 'Place 2': 'franchise.02' },
     args: { draft: { season: 2027, round: 0, order: [franchise, 'franchise.02'], running: false } } },
 ];
+for (const perSide of [false, true]) describe(perSide ? 'Side-labelled franchise pickers' : 'One-pool franchise pickers', () => {
+  for (const c of cases.filter(c => 'Franchise' in c.fields || 'Applies to' in c.fields))
+    it(`${c.command}: lists franchises and submits the chosen ID`, async () => {
+      sides = perSide ? { [franchise]: 'AFC', 'franchise.02': 'NFC' } : {};
+      const safeguard = c.family === 'people' ? 'hold' : 'reason';
+      const { host, calls } = await show(c.command, [], safeguard);
+      const scope = 'Applies to' in c.fields;
+      const picker = control(host, scope ? 'Applies to' : 'Franchise');
+      expect(picker.tagName).toBe('SELECT');
+      const prefix = scope ? 'Franchise: ' : '';
+      expect(all(picker, 'option').map(o => o.textContent)).toContain(
+        `${prefix}First franchise${perSide ? ' — AFC' : ''}`);
+      expect(all(picker, 'option').map(o => o.textContent)).toContain(
+        `${prefix}Second franchise${perSide ? ' — NFC' : ''}`);
+      await fill(host, c.fields);
+      await fire(host, safeguard);
+      expect(calls.sent[0].args).toEqual(c.args);
+    });
+});
 describe('Commissioner act families', () => {
   for (const c of cases) it(`${c.family}: exact preview and execute body, review and receipt`, async () => {
     const safeguard = c.family === 'people' ? 'hold' : 'reason';
@@ -280,9 +303,10 @@ it('every table field is a field on its Go Raw argument, including nested pick a
 
 it('keeps large cents exact, and refuses fractional cents instead of silently rounding', async () => {
   const { host } = await show('commish.contract.edit');
-  await fill(host, { Player: player, 'Contract years': '2', 'Annual salary': '70368744177664.01' });
+  await fill(host, { Franchise: franchise, Player: player, 'Contract years': '2',
+    'Annual salary': '70368744177664.01' });
   expect(previewBodies[previewBodies.length - 1].args)
-    .toEqual({ override: { player, years: 2, salaryCents: 7036874417766401 } });
+    .toEqual({ override: { franchise, player, years: 2, salaryCents: 7036874417766401 } });
   await type(control(host, 'Annual salary'), '1.005');
   await settle();
   expect(disabled(button(host, 'Record this change'))).toBe(true);
