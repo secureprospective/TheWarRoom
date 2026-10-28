@@ -368,3 +368,18 @@ func TestPerSidePlayerDecisionExceptionOnlyAffectsNamedCopy(t *testing.T) {
 		}
 	}
 }
+
+func TestPerSideIgnoresLegacyUnscopedPlayerException(t *testing.T) {
+	f := perSideMarket(t, "preset")
+	f.b.add(commissioner.RawCommand{League: rolloverLeague, Command: commissioner.RuleException,
+		Args: commissioner.RawArgs{Correction: &commissioner.RawCorrection{Rule: "ir.eligible",
+			Scope: &commissioner.ExceptionScope{Player: samePlayer}}}, Request: "legacy.exception",
+		Reason: "Old exception", Effective: "now", Visibility: "league"}, f.now)
+	for _, franchise := range []string{afcTeam, nfcTeam} {
+		got := commissioner.ScopedDecisionExceptions(f.b.records,
+			commissioner.ExceptionScope{Franchise: franchise, Player: samePlayer}, f.now)
+		if len(got) != 0 {
+			t.Fatalf("legacy exception affected %s: %+v", franchise, got)
+		}
+	}
+}

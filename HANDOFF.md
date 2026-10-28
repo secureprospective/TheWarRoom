@@ -1,26 +1,24 @@
 # Handoff
 
 ## Baton
-Tom (Beelink) — 2026-10-28, `session/settings-mirror`. Do not push.
+Bee — 2026-10-28, `session/terra-franchise-scope`. Do not push without direction.
 
 ## Where it stands
-- F8: the 16-Team Mirror as settings. `players.pools` (one | per_side) and the counted `league.sides`
-  (each conference a side, fixed once play begins); the catalog's "16-Team Mirror" bundle; the side seam
-  (`internal/commissioner/player_sides.go`) with its lint gate; market state, corrections, the startup
-  draft and storage per side. Commits d3579e1c (pins), 533741e0, 55ee2f13, 5fcc94c9.
-- Gates on 5fcc94c9: leaguerules, commissioner/..., store/history, db, composition, serverhttp all ok;
-  make lint 0 issues; tsc ok; vitest commissioner+draftroom+commands 728/728.
+- Scoped reserve exceptions, player decision exceptions and contract quotes by franchise for per-side pools.
+- Legacy player-only exceptions remain valid in single-pool leagues, but do not cross per-side copies.
+- Contract quote schema changed; frozen command metadata updated. Fixture rewrites contained unrelated
+  timestamps and were discarded.
 
 ## Next move
-Christopher reviews the F8 report. Then the UI debt below and a live click-through on Claude-OS.
+Review commits and run the full race suite on a quiet machine. Verify the reserve preview and contract
+quote flows in the UI; the new franchise argument is available at the API boundary.
 
 ## Blocked on
-Nothing. Older F3a O-Line transition question still belongs to Christopher/ClaudeBox.
+No upstream configured, so `git pull --ff-only` could not run. No push attempted.
 
 ## Tried and rejected
-A stored, seed-only sides map (rev-2 item 1): sides are counted from the conferences instead, and any
-change after play that would move a team or rename a side is refused, so nothing can move silently.
+Fixture regeneration changed volatile timestamps and revisions without an intended wire change.
 
 ## Debt left
-See the F8 report: commissioner market choices and tray per side in the UI; rookie draft per side;
-per-side O-Line lots; reserve and rule-exception scoping by franchise; per-side contract quote.
+Full race suite timed out under concurrent workload; targeted race tests passed. UI affordances for selecting
+franchise in quotes and exception forms have not been implemented or verified.
