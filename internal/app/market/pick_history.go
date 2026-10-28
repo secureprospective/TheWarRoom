@@ -18,13 +18,13 @@ type HeldDraftBodies func(context.Context, string, func(string, []byte, time.Tim
 // HeldPickHistory extends the frozen v1 sample only after its last season. Each season uses its
 // newest valid held draft, so corrections replace rather than duplicate picks. Unknown draft
 // capital is omitted, not relabelled undrafted. Missing seasons retain the original sample.
-func HeldPickHistory(ctx context.Context, bodies HeldDraftBodies, league string, season, teams int,
+func HeldPickHistory(ctx context.Context, bodies HeldDraftBodies, league string, season int,
 	records []playerrecord.Record) ([]pickvalue.Pick, error) {
 	if season <= 2026 || bodies == nil {
 		return nil, nil
 	}
-	if teams < 1 || league == "" {
-		return nil, fmt.Errorf("pickvalue: draft history needs a league and franchise count")
+	if league == "" {
+		return nil, fmt.Errorf("pickvalue: draft history needs a league")
 	}
 	byMFL := make(map[string]playerrecord.Draft, len(records))
 	for _, r := range records {
@@ -43,7 +43,7 @@ func HeldPickHistory(ctx context.Context, bodies HeldDraftBodies, league string,
 			return false
 		}
 		seen[export.Season] = true
-		out = append(out, draftSlots(export.Season, teams, picks, byMFL)...)
+		out = append(out, draftSlots(export.Season, picks, byMFL)...)
 		return false
 	})
 	if err != nil {
@@ -58,10 +58,14 @@ func HeldPickHistory(ctx context.Context, bodies HeldDraftBodies, league string,
 	return out, nil
 }
 
-func draftSlots(year, teams int, picks []draftreports.Pick, byMFL map[string]playerrecord.Draft) []pickvalue.Pick {
+func draftSlots(year int, picks []draftreports.Pick, byMFL map[string]playerrecord.Draft) []pickvalue.Pick {
 	var out []pickvalue.Pick
+	teams := 0
 	for _, p := range picks {
-		if p.Player == nil || p.Skipped || p.Slot > teams {
+		teams = max(teams, p.Slot)
+	}
+	for _, p := range picks {
+		if p.Player == nil || p.Skipped {
 			continue
 		}
 		d, ok := byMFL[p.Player.String()]

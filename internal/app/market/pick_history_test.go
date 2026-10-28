@@ -28,7 +28,8 @@ func TestPickSlotsContinueAfter2026(t *testing.T) {
 				return []byte(`{"draftResults":{"draftUnit":{"unit":"LEAGUE","draftPick":[` +
 					`{"round":"2","pick":"1","player":"` + player + `","franchise":"0001"},` +
 					`{"round":"2","pick":"2","player":"0002","franchise":"0002"},` +
-					`{"round":"2","pick":"3","player":"0003","franchise":"0003"}]}}}`)
+					`{"round":"2","pick":"3","player":"0003","franchise":"0003"},` +
+					`{"round":"2","pick":"4","player":"","franchise":"0004"}]}}}`)
 			}
 			bodies := func(_ context.Context, _ string, take func(string, []byte, time.Time) bool) (bool, error) {
 				take(url(2027, "other"), body("0001"), time.Now())
@@ -38,7 +39,7 @@ func TestPickSlotsContinueAfter2026(t *testing.T) {
 				take(url(2027, "14432"), body("0003"), time.Now()) // older correction is not counted again
 				return false, nil
 			}
-			h, err := HeldPickHistory(t.Context(), bodies, "14432", season, 4, records)
+			h, err := HeldPickHistory(t.Context(), bodies, "14432", season, records)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -68,12 +69,32 @@ func TestPickHistoryFailureDoesNotRemovePlayerValues(t *testing.T) {
 	failure := errors.New("archive unavailable")
 	_, err := HeldPickHistory(t.Context(), func(context.Context, string, func(string, []byte, time.Time) bool) (bool, error) {
 		return false, failure
-	}, "14432", 2027, 32, nil)
+	}, "14432", 2027, nil)
 	if !errors.Is(err, failure) {
 		t.Fatal("lost archive failure", err)
 	}
 	n := NewNative(NativeInput{Values: map[string]float64{"0042": 6}, PickWhy: err.Error()})
 	if !n.Player("0042", time.Now()).Valued || n.Pick(2027, 1, "", time.Now()).Valued {
 		t.Fatal("archive failure removed player values or fabricated pick history")
+	}
+}
+
+func TestDraftSlotSelectionUsesThatDraftsWidth(t *testing.T) {
+	for _, teams := range []int{2, 4, 16, 32} {
+		t.Run(fmt.Sprint(teams), func(t *testing.T) {
+			body := []byte(fmt.Sprintf(`{"draftResults":{"draftUnit":{"draftPick":[
+ {"round":"1","pick":"%d","player":"","franchise":"0002"},
+ {"round":"2","pick":"1","player":"0001","franchise":"0001"}]}}}`, teams))
+			records := []playerrecord.Record{{MFL: "0001", Draft: playerrecord.Draft{Year: 2027,
+				Status: playerrecord.Drafted, Overall: 10}}}
+			bodies := func(_ context.Context, _ string, take func(string, []byte, time.Time) bool) (bool, error) {
+				take("https://example.test/2027/export?TYPE=draftResults&L=14432", body, time.Now())
+				return false, nil
+			}
+			h, err := HeldPickHistory(t.Context(), bodies, "14432", 2028, records)
+			if err != nil || len(h) != 1 || h[0].Selection != teams+1 {
+				t.Fatalf("historical width replaced by today's league: %+v %v", h, err)
+			}
+		})
 	}
 }

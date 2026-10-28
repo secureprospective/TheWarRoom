@@ -37,3 +37,6 @@ No network fallback or historical reclassification of the approved 2017–2026 s
 `market.HeldPickHistory` → `NativeInput.History` → Pick Value v1 fit. Archive failure leaves player
 values usable and gives picks a reason rather than publishing a fabricated number. A missing season
 uses the held sample. Native-ledger rookie drafts are not added by this reference-export adapter.
+
+Post-2026 selection numbers use the held draft's own slot width (including unmade/skipped slots),
+not today's franchise count. Resizing a league later cannot renumber its historical picks.

@@ -137,7 +137,7 @@ func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
 	for _, sc := range scores {
 		values[sc.MFLID] = sc.DynastyPPG
 	}
-	history, historyErr := HeldPickHistory(ctx, src.Bodies, src.League, run.Season, src.Teams(), records)
+	history, historyErr := HeldPickHistory(ctx, src.Bodies, src.League, run.Season, records)
 	why := ""
 	if historyErr != nil {
 		why = historyErr.Error()
