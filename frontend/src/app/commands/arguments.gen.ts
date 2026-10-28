@@ -30,8 +30,6 @@ export type BrowserArgumentMap = {
  import('../datasources/state').ParamAction;
 "contracts.set":
  import('../contracts/state').ContractsAction;
-"offers.filter":
- import('../offers/state').OfferFilter;
 "market":
  import('../market/contract').MarketFilter;
 "trade.builder":

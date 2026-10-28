@@ -289,13 +289,6 @@ export function createCommands(
         return import('../contracts/state').then(m => m.runContractsAction(change));
       },
     }),
-    'offers.filter': command({
-      id: 'offers.filter',
-      run: (change: BrowserArguments<'offers.filter'>) => {
-        void change;
-        throw new Error('Offer history is unavailable');
-      },
-    }),
     market: command({
       id: 'market',
       run: (change: BrowserArguments<'market'>) => {

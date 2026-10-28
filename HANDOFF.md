@@ -105,3 +105,10 @@ Composition race suite timed out under load; non-race suite passed.
 Baseline was tested from a temporary archive inside this worktree rather than using the other worktree, to honor the worktree-only instruction.
 Did not update frontend fixtures or generated frontend command files: outside this slice. Did not commit while required checks are not green.
 Did not alter Go command catalogue or endpoint CSV: outside this frontend slice. Removed workspace endpoints are retired in the frontend registry instead.
+
+## Bee — Terra gate 1, 2026-10-28
+- Baton: review; `session/terra-gate1`. No upstream configured; no push attempted.
+- Removed retired `offers.filter` from the browser catalogue and handler; regenerated browser and doors surfaces. Targeted Go tests (16), frontend command tests (190), Go build and TypeScript pass.
+- Bloat blocks lint: tiny files 27 versus 24. Documented `scripts/bloat.sh --update` refuses any increase; baseline unchanged. Nine files newly tiny and six no longer tiny since its baseline commit, including cleanup and platform moves. Boundary check independently flags `internal/app/core/host_lab.go` decision syntax.
+- Placement, transport, isolated-cache golangci-lint, Wails version, vulnerability scan and bindings freshness pass; Wails emits existing missing-model warnings. Full verify/race suite not run.
+- Next: resolve the ratchet policy conflict and review the lab boundary before rerunning verify. Shared golangci cache produced stale paths from another worktree; isolated cache was clean.

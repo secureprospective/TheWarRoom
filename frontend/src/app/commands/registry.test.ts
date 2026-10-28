@@ -42,7 +42,7 @@ describe('Command registry', () => {
       const mixed = createCommands(undefined, undefined, undefined, ['gm', 'admin']);
       mixed.dispatch('data.parameter', action);
       await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2));
-      expect(Object.keys(mixed.registry)).toHaveLength(62);
+      expect(Object.keys(mixed.registry)).toHaveLength(61);
     } finally { run.mockRestore(); }
   });
   it('keeps IDs and args type-checked', () => {

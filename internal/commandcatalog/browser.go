@@ -65,7 +65,6 @@ func browserWorkCommands() []BrowserCommand {
 		{ID: "data.run", Arguments: browserType("import('../datasources/state').DataAction"), Label: "Data settings", Args: strings.Fields("kind"), Gravity: "G1"},
 		{ID: "data.parameter", Arguments: browserType("import('../datasources/state').ParamAction"), Label: "Change engine parameter", Args: strings.Fields("key position value"), Roles: []string{"admin"}, Gravity: "G1"},
 		{ID: "contracts.set", Arguments: browserType("import('../contracts/state').ContractsAction"), Label: "Filter or sort contracts", Args: strings.Fields("field value")},
-		{ID: "offers.filter", Arguments: browserType("import('../offers/state').OfferFilter"), Label: "Filter Offers", Args: strings.Fields("field value")},
 		{ID: "market", Arguments: browserType("import('../market/contract').MarketFilter"), Label: "Market", Args: strings.Fields("field value")},
 		{ID: "trade.builder", Arguments: browserType("import('../shell/tradeBuilderState').BuilderAction"), Label: "Trade builder", Args: strings.Fields("action"), Gravity: "G3", Undo: "irreversible"},
 		{ID: "acquisition", Arguments: browserType("import('../contracts/acquisition').AcquisitionRequest"), Label: "What does the add cost me?", Args: strings.Fields("mine")},
