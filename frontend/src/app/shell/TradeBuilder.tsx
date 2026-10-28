@@ -46,6 +46,9 @@ export function Deal({ plan, mine, busy }: { plan: BuilderPlan; mine: string; bu
       label="Keep this local trade plan" />}
   </article>;
 }
+export function BuilderUnavailable({ error }: { error: string }) {
+  return <p role="alert">Franchises are unavailable: {error}</p>;
+}
 export default function TradeBuilder({ mine }: { mine: string }) {
   const s = useBuilder();
   useEffect(() => {
@@ -61,6 +64,7 @@ export default function TradeBuilder({ mine }: { mine: string }) {
   return <section className="trade-builder" aria-label="Trade builder">
     <h4>Build a deal</h4>
     <p>Local what-if only. Choose a franchise, then what each side gives.</p>
+    {s.error && !view && <BuilderUnavailable error={s.error} />}
     <label>Other franchise <select value={s.other} onChange={e => commands.dispatch('trade.builder',
       { action: 'other', value: e.target.value })} disabled={s.busy}>
       <option value="">Choose a franchise</option>
@@ -81,7 +85,7 @@ export default function TradeBuilder({ mine }: { mine: string }) {
     <Act variant="button" verb="trade.builder" args={{ action: 'preview', mine }}
       disabled={s.busy || !s.other || !s.give.length || !s.get.length} label="Check both sides" />
     {s.busy && <p role="status">Checking held rosters and cap…</p>}
-    {s.error && <p role="alert">{s.error}</p>}
+    {s.error && view && <p role="alert">{s.error}</p>}
     {view?.preview?.teams.length ? <Deal plan={view.preview} mine={mine} busy={s.busy} /> : null}
     {s.get.filter(token => !token.startsWith('FP_')).map(player => <Act variant="button" key={player}
       verb="acquisition" args={{ mine, player }} label={`What does ${view?.teams
