@@ -13,3 +13,15 @@ Composition supplies callbacks only. No scoring formula, population or precedenc
 Tests: `TestPlayerRecordIsWrittenWhereItsFeedsLand`, `TestValuationReadsTheRecordItDoesNotWriteIt`,
 `TestRecordIngestKeepsFailuresVisible`, and the record store's held/stored Book equality test.
 GUI acceptance and the held 10-28 value-board replay are separate checks.
+
+## Supplied career facts
+
+The already-held nflverse `draft_picks.csv` supplies `seasons_started`, `allpro` and `probowls`.
+Registry mappings ingest them as player-grain career counts, not draft-season statistics. The record
+stores them separately from the model's inputs/population, with nflverse provenance; a known zero is
+not a missing count. Mislinked identities do not inherit these facts. History migration 12 adds a
+non-destructive `career` JSON column (existing records default to unknown); server release 5 names it.
+
+`seasons_started` means seasons as a primary starter, **not games started**. None of the held registered
+feeds supplies player wins or game starts: those are not manufactured. In particular `w_av` is weighted
+approximate value, not wins. Career facts do not enter the approved value formula.

@@ -136,6 +136,9 @@ Every number in `history.db` is stored as player · season · week · measure. W
 | Measure | Grain | Unit | Positions | Meaning | Sources |
 |---|---|---|---|---|---|
 | `context.birth_date` | player | text | all | Date of birth, as YYYY-MM-DD. | `nflverse` players.birth_date |
+| `context.career_all_pro` | player | count | all | First-team All-Pro selections in the held NFL draft record. | `nflverse` draft_picks.allpro |
+| `context.career_pro_bowls` | player | count | all | Pro Bowl selections in the held NFL draft record. | `nflverse` draft_picks.probowls |
+| `context.career_starting_seasons` | player | seasons | all | Number of NFL seasons as a primary starter in the held draft record; not games started. | `nflverse` draft_picks.seasons_started |
 | `context.contract_cap_pct` | season | fraction | all | The average yearly value of the contract the player signed that season, as a share of that season's salary cap (OverTheCap). | `nflverse` contracts.apy_cap_pct |
 | `context.contract_guaranteed` | season | millions | all | The guaranteed money of the contract the player signed that season, in millions of dollars (OverTheCap). | `nflverse` contracts.guaranteed |
 | `context.contract_value` | season | millions | all | The total value of the contract the player signed that season, in millions of dollars (OverTheCap). | `nflverse` contracts.value |

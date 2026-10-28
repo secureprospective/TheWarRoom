@@ -62,6 +62,9 @@ func open(t *testing.T) *db.Pools {
 	if err := db.CreatePlayerRecord(t.Context(), tx); err != nil {
 		t.Fatal(err)
 	}
+	if err := db.AddPlayerCareer(t.Context(), tx); err != nil {
+		t.Fatal(err)
+	}
 	if err := tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
@@ -225,4 +228,66 @@ func mustID(t *testing.T, b record.Book, mfl string) string {
 		t.Fatalf("no record for %s", mfl)
 	}
 	return id
+}
+
+func TestCareerCountsRoundTripAndRejectWithoutMutation(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		count float64
+		valid bool
+	}{
+		{"known zero", 0, true}, {"supplied counts", 5, true},
+		{"negative", -1, false}, {"fractional", 1.5, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := open(t)
+			l, f := feeds()
+			s := New(p, f)
+			if _, err := s.Write(t.Context(), l, time.Now()); err != nil {
+				t.Fatal(err)
+			}
+			before, err := s.Records(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, measure := range record.CareerMeasures() {
+				f[0] = append(f[0], history.Feature{PlayerID: "0001", Measure: measure, Value: tc.count})
+			}
+			_, err = s.Write(t.Context(), l, time.Now())
+			if (err == nil) != tc.valid {
+				t.Fatalf("valid=%t: %v", tc.valid, err)
+			}
+			after, err := s.Records(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !tc.valid {
+				if !reflect.DeepEqual(before, after) {
+					t.Fatal("invalid career facts changed stored records")
+				}
+				return
+			}
+			for _, r := range after {
+				if r.Career.Wins != nil {
+					t.Fatal("invented career wins")
+				}
+				if r.MFL != "0001" {
+					if r.Career.StartingSeasons != nil {
+						t.Fatal("invented starts for an absent player")
+					}
+					continue
+				}
+				for _, count := range []*int{r.Career.StartingSeasons, r.Career.AllPro, r.Career.ProBowls} {
+					if count == nil || *count != int(tc.count) {
+						t.Fatalf("career: %+v", r.Career)
+					}
+				}
+				for _, measure := range record.CareerMeasures() {
+					if r.Sources[measure] != record.SourceNFLverse {
+						t.Fatal("lost career provenance")
+					}
+				}
+			}
+		})
+	}
 }

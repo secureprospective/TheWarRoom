@@ -109,3 +109,6 @@ nflverse,stats_player_week.rushing_tds,outcome.rushing_tds,1
 nflverse,stats_player_week.rushing_yards,outcome.rushing_yards,1
 nflverse,stats_player_week.sacks_suffered,outcome.sacks_taken,1
 nflverse,stats_player_week.targets,opportunity.targets,1
+nflverse,draft_picks.seasons_started,context.career_starting_seasons,1
+nflverse,draft_picks.allpro,context.career_all_pro,1
+nflverse,draft_picks.probowls,context.career_pro_bowls,1

@@ -117,3 +117,40 @@ func TestReadFailsLoudly(t *testing.T) {
 		}
 	}
 }
+
+func TestHeldDraftFeedSuppliesStartingSeasonsAndHonours(t *testing.T) {
+	reg, err := measures.Embedded()
+	if err != nil {
+		t.Fatal(err)
+	}
+	feed, ok := reg.Feed("draft_picks")
+	if !ok {
+		t.Fatal("missing held feed")
+	}
+	for _, tc := range []struct {
+		name, row string
+		counts    int
+	}{
+		{"known zero", "Test00,0,0,0", 3},
+		{"supplied", "Test00,5,2,3", 3},
+		{"unknown", "Test00,,,", 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := parse(reg, feed, []byte("pfr_player_id,seasons_started,allpro,probowls\n"+tc.row+"\n"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(res.Batch.Facts) != tc.counts {
+				t.Fatalf("facts: %+v", res.Batch.Facts)
+			}
+			for _, f := range res.Batch.Facts {
+				if f.Season != 0 || f.Week != 0 {
+					t.Fatal("career count received a draft-year period")
+				}
+				if strings.Contains(f.Field, "wins") {
+					t.Fatal("weighted approximate value is not wins")
+				}
+			}
+		})
+	}
+}

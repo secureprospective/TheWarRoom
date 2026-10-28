@@ -45,6 +45,10 @@ func (s *Store) Write(ctx context.Context, listing record.Listing, asOf time.Tim
 	if err != nil {
 		return 0, err
 	}
+	career, err := s.observations(ctx, []int{0}, asOf, record.CareerMeasures())
+	if err != nil {
+		return 0, err
+	}
 	known := model.Build(obs, nil).Players
 	tx, err := s.pools.BeginWrite(ctx)
 	if err != nil {
@@ -56,6 +60,9 @@ func (s *Store) Write(ctx context.Context, listing record.Listing, asOf time.Tim
 	})
 	if err != nil {
 		return 0, fmt.Errorf("playerrecord: write: %w", err)
+	}
+	if err := record.AddCareer(records, career); err != nil {
+		return 0, fmt.Errorf("playerrecord: career: %w", err)
 	}
 	stamp := asOf.UTC().Format(time.RFC3339Nano)
 	for _, r := range records {
@@ -74,21 +81,25 @@ func upsert(ctx context.Context, tx *sql.Tx, r record.Record, stamp string) erro
 	if err != nil {
 		return fmt.Errorf("playerrecord: encode sources: %w", err)
 	}
+	career, err := json.Marshal(r.Career)
+	if err != nil {
+		return fmt.Errorf("playerrecord: encode career: %w", err)
+	}
 	birth := ""
 	if !r.Birth.IsZero() {
 		birth = r.Birth.UTC().Format(time.RFC3339)
 	}
 	d := r.Draft
 	if _, err := tx.ExecContext(ctx, `INSERT INTO player_record(player,listed,name,position,birth_date,college,
- rookie_season,draft,draft_year,draft_round,draft_pick,draft_overall,draft_team,mislinked,sources,as_of)
- VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+ rookie_season,draft,draft_year,draft_round,draft_pick,draft_overall,draft_team,mislinked,sources,as_of,career)
+ VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
  ON CONFLICT(player) DO UPDATE SET listed=excluded.listed,name=excluded.name,position=excluded.position,
  birth_date=excluded.birth_date,college=excluded.college,rookie_season=excluded.rookie_season,draft=excluded.draft,
  draft_year=excluded.draft_year,draft_round=excluded.draft_round,draft_pick=excluded.draft_pick,
  draft_overall=excluded.draft_overall,draft_team=excluded.draft_team,mislinked=excluded.mislinked,
- sources=excluded.sources,as_of=excluded.as_of`,
+ sources=excluded.sources,as_of=excluded.as_of,career=excluded.career`,
 		r.ID, r.Listed, r.Name, string(r.Position), birth, r.College, r.Rookie, string(d.Status), d.Year, d.Round, d.Pick,
-		d.Overall, d.Team, r.Mislinked, string(sources), stamp); err != nil {
+		d.Overall, d.Team, r.Mislinked, string(sources), stamp, string(career)); err != nil {
 		return fmt.Errorf("playerrecord: save %s: %w", r.ID, err)
 	}
 	return nil
@@ -98,7 +109,7 @@ func upsert(ctx context.Context, tx *sql.Tx, r record.Record, stamp string) erro
 func (s *Store) Records(ctx context.Context) ([]record.Record, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `SELECT r.player,COALESCE(e.value,''),r.listed,r.name,r.position,
  r.birth_date,r.college,r.rookie_season,r.draft,r.draft_year,r.draft_round,r.draft_pick,r.draft_overall,r.draft_team,
- r.mislinked,r.sources FROM player_record r LEFT JOIN player_external_id e ON e.player=r.player AND e.provider='mfl'
+ r.mislinked,r.sources,r.career FROM player_record r LEFT JOIN player_external_id e ON e.player=r.player AND e.provider='mfl'
  ORDER BY r.player`)
 	if err != nil {
 		return nil, fmt.Errorf("playerrecord: read: %w", err)
@@ -107,9 +118,9 @@ func (s *Store) Records(ctx context.Context) ([]record.Record, error) {
 	var out []record.Record
 	for rows.Next() {
 		var r record.Record
-		var pos, birth, status, sources string
+		var pos, birth, status, sources, career string
 		if err := rows.Scan(&r.ID, &r.MFL, &r.Listed, &r.Name, &pos, &birth, &r.College, &r.Rookie, &status,
-			&r.Draft.Year, &r.Draft.Round, &r.Draft.Pick, &r.Draft.Overall, &r.Draft.Team, &r.Mislinked, &sources); err != nil {
+			&r.Draft.Year, &r.Draft.Round, &r.Draft.Pick, &r.Draft.Overall, &r.Draft.Team, &r.Mislinked, &sources, &career); err != nil {
 			return nil, fmt.Errorf("playerrecord: scan: %w", err)
 		}
 		r.Position, r.Draft.Status = domain.Position(pos), record.DraftStatus(status)
@@ -120,6 +131,9 @@ func (s *Store) Records(ctx context.Context) ([]record.Record, error) {
 		}
 		if err := json.Unmarshal([]byte(sources), &r.Sources); err != nil {
 			return nil, fmt.Errorf("playerrecord: %s sources: %w", r.ID, err)
+		}
+		if err := json.Unmarshal([]byte(career), &r.Career); err != nil {
+			return nil, fmt.Errorf("playerrecord: %s career: %w", r.ID, err)
 		}
 		out = append(out, r)
 	}
