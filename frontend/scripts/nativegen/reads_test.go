@@ -15,7 +15,7 @@ func auditedReads() []string {
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
 		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
 		"commissioner.TargetNativeLineup",
-		"offers.TargetPersonal", "offers.TargetOffers", "commissioner.TargetNativeDraft",
+		"offers.TargetPersonal", "commissioner.TargetNativeDraft",
 		"market.TargetAssetBoard", "now.TargetNow",
 		"sources.TargetDataSources", "sources.TargetCrosswalk", "control.GetParams",
 		"sources.TargetCacheScopes",

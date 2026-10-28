@@ -1881,15 +1881,6 @@ string
 number,
 boolean
 ];
-"offers.TargetOffers": [
-{
-"from": number;
-"to": number;
-"direction": string;
-"window": string;
-"team": string
-}
-];
 "offers.TargetPersonal": [
 string
 ];
