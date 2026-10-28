@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"testing"
 	"time"
@@ -35,6 +36,8 @@ func (f fakeDir) Facts(id string) (normalize.PlayerFacts, bool) {
 	pf, ok := f[id]
 	return pf, ok
 }
+
+func (f fakeDir) IDs() []string { return slices.Sorted(maps.Keys(f)) }
 
 // fakeHistory serves features by season and keeps the model run written.
 type fakeHistory struct {
@@ -80,7 +83,7 @@ func league() (*fakeHistory, fakeState, fakeDir) {
 
 func TestRunValuesTheRosterAndRecordsInputs(t *testing.T) {
 	h, st, dir := league()
-	r, err := New(st, dir, h, "v-test")
+	r, err := New(st, Held{dir, h}, h, "v-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +124,7 @@ func TestRunSetsAsideAnotherPlayersRecord(t *testing.T) {
 	rookie := dir["0300"]
 	rookie.DraftYear, rookie.HasDraftYear = 2026, true
 	dir["0300"] = rookie
-	r, err := New(st, dir, h, "v-test")
+	r, err := New(st, Held{dir, h}, h, "v-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,32 +138,6 @@ func TestRunSetsAsideAnotherPlayersRecord(t *testing.T) {
 	got := h.written[0].Scores[1]
 	if got.MFLID != "0300" || got.Now <= 0 || got.Dynasty <= 0 {
 		t.Errorf("the rookie must be valued on MFL's facts, not a 73-year-old's: %+v", got)
-	}
-}
-
-func TestAtLeaguePositionsUsesTheLeaguesPosition(t *testing.T) {
-	d := model.Data{Players: map[string]*model.Player{
-		"edge":    {ID: "edge", Position: domain.PosLB}, // nflverse LB, the league's DE
-		"unknown": {ID: "unknown", Position: domain.PosDE},
-		"flagged": {ID: "flagged", Position: domain.PosCB}, // the league's code is not one the model scores
-		"db":      {ID: "db"},                              // nflverse's generic DB, which the model leaves out
-		"same":    {ID: "same", Position: domain.PosDT},
-	}}
-	dir := fakeDir{
-		"edge":    {Position: domain.PosDE},
-		"flagged": {Position: domain.PosFlag},
-		"db":      {Position: domain.PosS},
-		"same":    {Position: domain.PosDT},
-	}
-	if moved := AtLeaguePositions(d, dir); moved != 2 {
-		t.Fatalf("moved %d players, want 2", moved)
-	}
-	want := map[string]domain.Position{"edge": domain.PosDE, "unknown": domain.PosDE, "flagged": domain.PosCB,
-		"db": domain.PosS, "same": domain.PosDT}
-	for id, pos := range want {
-		if got := d.Players[id].Position; got != pos {
-			t.Errorf("%s at %q, want %q", id, got, pos)
-		}
 	}
 }
 
@@ -188,28 +165,27 @@ func TestUniversePreservesEveryRosterValueAndValuesFreeAgentsOnce(t *testing.T) 
 	}
 	dir["0400"] = normalize.PlayerFacts{Name: "Free rookie", Position: domain.PosWR, IsRookie: true}
 	spec := Spec{Season: 2026, AsOf: time.Now(), Params: params.DefaultSet(), LastWeek: 17}
-	obs, err := Observations(context.Background(), h, 2010, 2026, spec.AsOf, model.RuntimeMeasures())
+	book, err := Held{dir, h}.Book(context.Background(), BookQuery(spec))
 	if err != nil {
 		t.Fatal(err)
 	}
-	weeks := map[int]int{}
-	for y := 2010; y <= 2026; y++ {
-		weeks[y] = 17
-	}
-	data := model.Build(obs, weeks)
-	AtLeaguePositions(data, dir)
-	legacy, err := newPass(data, spec)
+	legacy, err := newPass(book, spec)
 	if err != nil {
 		t.Fatal(err)
+	}
+	valueMFL := func(mfl string) (history.ModelScore, string) {
+		id, _ := book.ID(mfl)
+		score, _, reason := legacy.value(id)
+		return score, reason
 	}
 	before := map[string]history.ModelScore{}
 	for _, player := range st.roster {
-		score, _, reason := legacy.value(dir, player.MFLID)
+		score, reason := valueMFL(player.MFLID)
 		if reason == "" {
 			before[player.MFLID] = score
 		}
 	}
-	r, err := New(st, dir, h, "test")
+	r, err := New(st, Held{dir, h}, h, "test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -225,7 +201,7 @@ func TestUniversePreservesEveryRosterValueAndValuesFreeAgentsOnce(t *testing.T) 
 		}
 		after[score.MFLID] = score
 	}
-	free, _, reason := legacy.value(dir, "0400")
+	free, reason := valueMFL("0400")
 	if reason != "" {
 		t.Fatal(reason)
 	}

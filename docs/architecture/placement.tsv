@@ -130,3 +130,5 @@ internal/leaguerecovery	platform
 internal/leaguemigration	platform
 internal/leaguemigration/migrationtest	platform
 internal/leaguemigration/mflsource	platform
+internal/playerrecord	core
+internal/store/playerrecord	core

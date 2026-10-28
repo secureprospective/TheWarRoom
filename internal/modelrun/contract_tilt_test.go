@@ -16,9 +16,11 @@ import (
 // one paid 40 for three years falls by the cap, not by 30%. A free agent is left as valued.
 func TestContractTiltMovesValueByPriceAndLength(t *testing.T) {
 	var scores []history.ModelScore
+	var ids []string
 	roster := map[string]state.PlayerState{}
 	add := func(id string, salary domain.Money, through int) {
 		scores = append(scores, history.ModelScore{MFLID: id, Position: "WR", Value: model.Value{DynastyPPG: 10}})
+		ids = append(ids, id)
 		if salary > 0 {
 			roster[id] = state.PlayerState{MFLID: id, Salary: salary, ExpirationYear: through}
 		}
@@ -30,7 +32,7 @@ func TestContractTiltMovesValueByPriceAndLength(t *testing.T) {
 	add("cheap1", 5, 2026)
 	add("dear3", 40, 2028)
 	add("free", 0, 0)
-	tilts := contractTilt(scores, roster, 2026, 0.06, func(domain.Position) func(float64) float64 { return nil })
+	tilts := contractTilt(scores, ids, roster, 2026, 0.06, func(domain.Position) func(float64) float64 { return nil })
 	want := map[string]float64{"cheap3": 0.05, "cheap1": 0.05 / 3, "dear3": -0.06, "0": 0}
 	for id, w := range want {
 		if math.Abs(tilts[id]-w) > 1e-12 {
@@ -45,7 +47,7 @@ func TestContractTiltMovesValueByPriceAndLength(t *testing.T) {
 	if _, ok := tilts["free"]; ok || scores[len(scores)-1].DynastyPPG != 10 {
 		t.Error("a free agent was tilted")
 	}
-	if contractTilt(scores, roster, 2026, 0, nil) != nil {
+	if contractTilt(scores, ids, roster, 2026, 0, nil) != nil {
 		t.Error("a zero cap must turn the tilt off")
 	}
 }

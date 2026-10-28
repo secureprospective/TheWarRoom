@@ -20,17 +20,18 @@ const (
 	tiltFullYears  = 3    // years left at which the tilt counts in full
 )
 
-// contractTilt applies the tilt to scores in place and returns each tilted player's tilt.
+// contractTilt applies the tilt to scores in place and returns each tilted player's tilt, by our
+// ID. ids[i] is our ID for scores[i]; roster is each rostered player's contract by our ID.
 // Players without a positive salary (free agents, unknown contracts) are left as valued and do
 // not set going rates.
-func contractTilt(scores []history.ModelScore, roster map[string]state.PlayerState, season int, maxTilt float64,
+func contractTilt(scores []history.ModelScore, ids []string, roster map[string]state.PlayerState, season int, maxTilt float64,
 	scale func(pos domain.Position) func(ppg float64) float64) map[string]float64 {
 	if maxTilt <= 0 {
 		return nil
 	}
 	var paid []int
-	for i, sc := range scores {
-		if p, ok := roster[sc.MFLID]; ok && p.Salary > 0 {
+	for i := range scores {
+		if p, ok := roster[ids[i]]; ok && p.Salary > 0 {
 			paid = append(paid, i)
 		}
 	}
@@ -39,12 +40,12 @@ func contractTilt(scores []history.ModelScore, roster map[string]state.PlayerSta
 	})
 	salaries := make([]float64, len(paid))
 	for k, i := range paid {
-		salaries[k] = float64(roster[scores[i].MFLID].Salary)
+		salaries[k] = float64(roster[ids[i]].Salary)
 	}
 	tilts := map[string]float64{}
 	for k, i := range paid {
 		sc := &scores[i]
-		p := roster[sc.MFLID]
+		p := roster[ids[i]]
 		rate := median(salaries[max(0, k-tiltNeighbours):min(len(salaries), k+tiltNeighbours+1)])
 		years := min(float64(max(p.ExpirationYear-season+1, 1)), tiltFullYears) / tiltFullYears
 		tilt := math.Max(-maxTilt, math.Min(maxTilt, tiltStrength*(rate-float64(p.Salary))/rate*years))
@@ -53,7 +54,7 @@ func contractTilt(scores []history.ModelScore, roster map[string]state.PlayerSta
 		if pct := scale(domain.Position(sc.Position)); pct != nil {
 			v.Dynasty = pct(v.DynastyPPG)
 		}
-		tilts[sc.MFLID] = tilt
+		tilts[ids[i]] = tilt
 	}
 	return tilts
 }

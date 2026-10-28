@@ -9,6 +9,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -18,10 +19,17 @@ import (
 type ModelSource struct {
 	EndWeek    func() (string, bool)
 	State      func() state.Reader
-	History    modelrun.History
+	History    modelrun.Writer
+	Records    RecordStore
 	BuildLabel string
 	Season     int
 	FreeAgents func() []string
+}
+
+// RecordStore is the player record: written from the feeds before each pass, then read by it.
+type RecordStore interface {
+	modelrun.Records
+	Write(ctx context.Context, listing playerrecord.Listing, asOf time.Time) (int, error)
 }
 
 // EngineDue reports whether a synchronous model pass is needed.
@@ -37,12 +45,19 @@ func (a ModelSource) RunModel(ctx context.Context, lk normalize.Lookup, set para
 	if err != nil || last < 1 {
 		return modelrun.Report{}, fmt.Errorf("app: the league's last scoring week %q is unreadable", end)
 	}
-	runner, err := modelrun.New(a.State(), lk, a.History, a.BuildLabel)
+	if a.Records == nil {
+		return modelrun.Report{}, fmt.Errorf("app: the player record is not open")
+	}
+	now := time.Now()
+	if _, err := a.Records.Write(ctx, lk, now); err != nil {
+		return modelrun.Report{}, fmt.Errorf("app: write the player record: %w", err)
+	}
+	runner, err := modelrun.New(a.State(), a.Records, a.History, a.BuildLabel)
 	if err != nil {
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)
 	}
 	free := a.FreeAgents()
-	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.Season, AsOf: time.Now(), Params: set, LastWeek: last, FreeAgents: free, Refresh: true})
+	rep, err := runner.Run(ctx, modelrun.Spec{Season: a.Season, AsOf: now, Params: set, LastWeek: last, FreeAgents: free, Refresh: true})
 	if err != nil {
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)
 	}

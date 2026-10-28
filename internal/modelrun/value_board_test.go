@@ -104,7 +104,7 @@ func TestValueBoardReplay(t *testing.T) {
 	}
 	features := boardFeatures(t, root)
 	capture := &boardCapture{FeatureReader: features}
-	runner, err := New(fakeState{roster: req.Roster}, dir, capture, "offline-value-board")
+	runner, err := New(fakeState{roster: req.Roster}, Held{dir, features}, capture, "offline-value-board")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,24 +121,20 @@ func TestValueBoardReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	obs, err := Observations(t.Context(), features, req.Season-lookback, req.Season, req.AsOf, model.RuntimeMeasures())
+	book, err := Held{dir, features}.Book(t.Context(), BookQuery(spec))
 	if err != nil {
 		t.Fatal(err)
 	}
-	last := map[int]int{}
-	for y := req.Season - lookback; y <= req.Season; y++ {
-		last[y] = req.LastWeek
-	}
-	data := model.Build(obs, last)
-	AtLeaguePositions(data, dir)
-	pass, err := newPass(data, spec)
+	pass, err := newPass(book, spec)
 	if err != nil {
 		t.Fatal(err)
 	}
+	data := book.Data
 	result := boardResult{Report: report, Parameters: effective}
 	for _, sc := range capture.run.Scores {
 		facts, _ := dir.Facts(sc.MFLID)
-		pl, _ := pass.player(sc.MFLID, facts)
+		id, _ := book.ID(sc.MFLID)
+		pl := book.Player(id)
 		row := boardPlayer{Score: sc, Facts: facts, Rule: "Fitted model"}
 		age := pl.AgeAt(req.Season)
 		if !math.IsNaN(age) {
@@ -152,7 +148,7 @@ func TestValueBoardReplay(t *testing.T) {
 			}
 			row.AgePull = &pull
 		}
-		seasons := data.Seasons[sc.MFLID]
+		seasons := data.Seasons[id]
 		if s := seasons[req.Season-1]; s != nil {
 			row.LastGames = s.Games()
 			row.LastPoints = boardPoints(s)

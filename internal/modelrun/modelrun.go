@@ -1,7 +1,9 @@
 // Package modelrun values the league with the measurables model (plan Stage 7). For every
-// rostered player it reads his league seasons, his pre-NFL facts and the run's fitted params,
-// computes on-field-now and dynasty, and writes them as one model run in history beside the
-// board.
+// rostered player it reads his record (internal/playerrecord): his league seasons, his draft
+// capital and pre-NFL facts, all keyed by our permanent player ID; with the run's fitted params
+// it computes on-field-now and dynasty, and writes them as one model run in history beside the
+// board. MFL IDs appear only at the edges: the league's rosters name players by them, and the
+// stored scores carry them for the screens that still read by them.
 //
 // Missing facts are normal: a player without a combine, a college season or a birth date is
 // valued on what exists, and each score lists the inputs that fed it.
@@ -14,14 +16,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"slices"
 	"strconv"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine"
 	"github.com/secureprospective/TheWarRoom/internal/model"
-	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -32,32 +33,52 @@ type FeatureReader interface {
 	Features(ctx context.Context, q history.FeatureQuery) ([]history.Feature, error)
 }
 
-// History is what a model run needs from the history store.
-type History interface {
-	FeatureReader
+// Writer is where a model run is written.
+type Writer interface {
 	WriteModelRun(ctx context.Context, nr history.NewModelRun) (history.Run, bool, error)
 }
 
-// Directory resolves a rostered mfl id to its players-DB facts. normalize.Lookup satisfies it.
-type Directory interface {
-	Facts(mflID string) (normalize.PlayerFacts, bool)
+// Records serves the player record and the production read through it, keyed by our ID.
+type Records interface {
+	Book(ctx context.Context, q playerrecord.Query) (playerrecord.Book, error)
 }
 
-// Runner runs model passes. It reads league state and history and writes only model runs.
+// Held is the player record built from held feeds, MFL's listing and history's facts, with no
+// identity store: an offline replay or a test. It resolves records exactly as the stored record.
+type Held struct {
+	Listing  playerrecord.Listing
+	Features FeatureReader
+}
+
+// Book reads the held facts and resolves their records.
+func (h Held) Book(ctx context.Context, q playerrecord.Query) (playerrecord.Book, error) {
+	obs, err := Observations(ctx, h.Features, q.From, q.To, q.AsOf, q.Measures)
+	if err != nil {
+		return playerrecord.Book{}, err
+	}
+	b, err := playerrecord.HeldBook(h.Listing, obs, q.LastWeek)
+	if err != nil {
+		return playerrecord.Book{}, fmt.Errorf("modelrun: %w", err)
+	}
+	return b, nil
+}
+
+// Runner runs model passes. It reads league state and the player record and writes only model
+// runs.
 type Runner struct {
-	state  state.Reader
-	dir    Directory
-	hist   History
-	engine string
+	state   state.Reader
+	records Records
+	out     Writer
+	engine  string
 }
 
 // New wires a Runner. engine is the build label recorded on every run.
-func New(st state.Reader, dir Directory, hist History, engine string) (*Runner, error) {
-	if st == nil || dir == nil || hist == nil || engine == "" {
-		return nil, fmt.Errorf("modelrun: missing dependency (state=%t dir=%t history=%t engine=%t)",
-			st != nil, dir != nil, hist != nil, engine != "")
+func New(st state.Reader, records Records, out Writer, engine string) (*Runner, error) {
+	if st == nil || records == nil || out == nil || engine == "" {
+		return nil, fmt.Errorf("modelrun: missing dependency (state=%t records=%t writer=%t engine=%t)",
+			st != nil, records != nil, out != nil, engine != "")
 	}
-	return &Runner{state: st, dir: dir, hist: hist, engine: engine}, nil
+	return &Runner{state: st, records: records, out: out, engine: engine}, nil
 }
 
 // Spec is one pass: the season valued, the date facts are read as of, the params, and the
@@ -98,32 +119,36 @@ type Exclusion struct {
 // veteran's last college season, which his prior reads.
 const lookback = 16
 
-// Run values every rostered player and writes the run.
-func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
-	obs, err := Observations(ctx, r.hist, spec.Season-lookback, spec.Season, spec.AsOf, model.RuntimeMeasures())
-	if err != nil {
-		return Report{}, err
-	}
+// BookQuery is the read a pass makes of the record for spec.
+func BookQuery(spec Spec) playerrecord.Query {
 	lastWeek := map[int]int{}
 	for y := spec.Season - lookback; y <= spec.Season; y++ {
 		lastWeek[y] = spec.LastWeek
 	}
-	d := model.Build(obs, lastWeek)
-	AtLeaguePositions(d, r.dir)
-	pass, err := newPass(d, spec)
+	return playerrecord.Query{From: spec.Season - lookback, To: spec.Season, AsOf: spec.AsOf,
+		Measures: model.RuntimeMeasures(), LastWeek: lastWeek}
+}
+
+// Run values every rostered player and writes the run.
+func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
+	book, err := r.records.Book(ctx, BookQuery(spec))
+	if err != nil {
+		return Report{}, fmt.Errorf("modelrun: read the player record: %w", err)
+	}
+	pass, err := newPass(book, spec)
 	if err != nil {
 		return Report{}, err
 	}
 	var rep Report
 	var scores []history.ModelScore
 	var inputs []playerInput
-	ids, err := r.universe(spec.FreeAgents)
+	universe, err := r.universe(book, spec.FreeAgents)
 	if err != nil {
 		return Report{}, err
 	}
-	for _, p := range ids {
-		sc, in, reason := pass.value(r.dir, p.id)
-		if !rep.record(r.dir, p, in, reason) {
+	for _, p := range universe {
+		sc, in, reason := pass.value(p.id)
+		if !rep.record(book, p, in, reason) {
 			continue
 		}
 		scores, inputs = append(scores, sc), append(inputs, in)
@@ -131,14 +156,14 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	if len(scores) == 0 {
 		return Report{}, fmt.Errorf("modelrun: no player could be valued for season %d", spec.Season)
 	}
-	if err := r.tilt(scores, spec, pass); err != nil {
+	if err := r.tilt(book, scores, inputs, spec, pass); err != nil {
 		return Report{}, err
 	}
 	hash, err := inputsHash(inputs, rep.Excluded)
 	if err != nil {
 		return Report{}, err
 	}
-	run, written, err := r.hist.WriteModelRun(ctx, history.NewModelRun{
+	run, written, err := r.out.WriteModelRun(ctx, history.NewModelRun{
 		Refresh: spec.Refresh, Season: spec.Season, AsOf: spec.AsOf, Engine: r.engine, InputsHash: hash, Scores: scores,
 		Params: history.ParamSet{Params: spec.Params.Model(), Measures: model.RuntimeMeasures()},
 	})
@@ -149,8 +174,9 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	return rep, nil
 }
 
-// tilt applies the contract tilt to the rostered players' dynasty values.
-func (r *Runner) tilt(scores []history.ModelScore, spec Spec, ps pass) error {
+// tilt applies the contract tilt to the rostered players' dynasty values. The league's rosters
+// name players by MFL ID; each contract is filed under our ID before it is read.
+func (r *Runner) tilt(book playerrecord.Book, scores []history.ModelScore, inputs []playerInput, spec Spec, ps pass) error {
 	maxTilt, err := spec.Params.GetGlobal(params.KeyDynastyContractTilt)
 	if err != nil {
 		return fmt.Errorf("modelrun: %w", err)
@@ -159,8 +185,14 @@ func (r *Runner) tilt(scores []history.ModelScore, spec Spec, ps pass) error {
 	for _, fid := range r.state.Franchises() {
 		players, _ := r.state.Roster(fid)
 		for _, p := range players {
-			roster[p.MFLID] = p
+			if id, ok := book.ID(p.MFLID); ok {
+				roster[id] = p
+			}
 		}
+	}
+	ids := make([]string, len(inputs))
+	for i, in := range inputs {
+		ids[i] = in.ID
 	}
 	scale := func(pos domain.Position) func(float64) float64 {
 		s := ps.scale(pos, spec.Season-1)
@@ -169,19 +201,19 @@ func (r *Runner) tilt(scores []history.ModelScore, spec Spec, ps pass) error {
 		}
 		return s.Pct
 	}
-	tilted := contractTilt(scores, roster, spec.Season, maxTilt, scale)
+	tilted := contractTilt(scores, ids, roster, spec.Season, maxTilt, scale)
 	for i := range scores {
-		if _, ok := tilted[scores[i].MFLID]; ok {
+		if _, ok := tilted[ids[i]]; ok {
 			scores[i].Inputs = append(scores[i].Inputs, "contract_price")
 		}
 	}
 	return nil
 }
 
-func (rep *Report) record(dir Directory, p universePlayer, in playerInput, reason string) bool {
+func (rep *Report) record(book playerrecord.Book, p universePlayer, in playerInput, reason string) bool {
+	name := book.Records[p.id].Name
 	if reason != "" {
-		facts, _ := dir.Facts(p.id)
-		rep.Excluded = append(rep.Excluded, Exclusion{MFLID: p.id, Name: facts.Name, Reason: reason})
+		rep.Excluded = append(rep.Excluded, Exclusion{MFLID: p.mfl, Name: name, Reason: reason})
 		if p.free {
 			rep.FreeAgentExcluded++
 		} else {
@@ -198,25 +230,28 @@ func (rep *Report) record(dir Directory, p universePlayer, in playerInput, reaso
 		rep.Rookies++
 	}
 	if in.Mislinked {
-		facts, _ := dir.Facts(p.id)
-		rep.Mislinked = append(rep.Mislinked, Exclusion{MFLID: p.id, Name: facts.Name,
+		rep.Mislinked = append(rep.Mislinked, Exclusion{MFLID: p.mfl, Name: name,
 			Reason: "history's record is another player's: its first NFL season is far from MFL's draft year"})
 	}
 	return true
 }
 
+// universePlayer is one player the pass values: our ID ("" when no record holds his MFL link)
+// and the MFL ID the league named him by.
 type universePlayer struct {
-	id   string
-	free bool
+	id, mfl string
+	free    bool
 }
 
-func (r *Runner) universe(free []string) ([]universePlayer, error) {
+// universe is every rostered player, then every free agent, each once, resolved to our ID.
+func (r *Runner) universe(book playerrecord.Book, free []string) ([]universePlayer, error) {
 	var out []universePlayer
 	seen := map[string]bool{}
-	add := func(id string, fa bool) {
-		if !seen[id] {
-			out = append(out, universePlayer{id, fa})
-			seen[id] = true
+	add := func(mfl string, fa bool) {
+		if !seen[mfl] {
+			id, _ := book.ID(mfl)
+			out = append(out, universePlayer{id: id, mfl: mfl, free: fa})
+			seen[mfl] = true
 		}
 	}
 	for _, fid := range r.state.Franchises() {
@@ -236,6 +271,7 @@ func (r *Runner) universe(free []string) ([]universePlayer, error) {
 
 // pass is what every player in one run is valued with.
 type pass struct {
+	book    playerrecord.Book
 	data    model.Data
 	scales  map[domain.Position]map[int]model.Scale
 	params  map[domain.Position]model.Params
@@ -244,8 +280,8 @@ type pass struct {
 	decay   float64 // the engine's age-pull rate, for positions valued by today's board rule
 }
 
-func newPass(d model.Data, spec Spec) (pass, error) {
-	p := pass{data: d, scales: d.Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
+func newPass(book playerrecord.Book, spec Spec) (pass, error) {
+	p := pass{book: book, data: book.Data, scales: book.Data.Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
 	for _, pos := range model.Positions() {
 		m, err := model.ParamsFrom(pos, func(key string) (float64, error) {
 			return spec.Params.GetPosition(key, string(pos))
@@ -272,6 +308,7 @@ func newPass(d model.Data, spec Spec) (pass, error) {
 
 // playerInput is everything the model read for one player; the run's inputs hash covers it.
 type playerInput struct {
+	ID        string // our permanent ID
 	MFLID     string
 	Position  domain.Position
 	Player    model.Player
@@ -283,77 +320,53 @@ type playerInput struct {
 	TodayTotal, TodayCurrentPPG, TodayPull float64
 }
 
-// value scores one rostered player, or returns why it could not.
-func (ps pass) value(dir Directory, mflID string) (history.ModelScore, playerInput, string) {
-	facts, ok := dir.Facts(mflID)
-	if !ok {
+// value scores one player by our ID, or returns why it could not. Every input it reads is the
+// player record's or filed under our ID in it.
+func (ps pass) value(id string) (history.ModelScore, playerInput, string) {
+	rec, ok := ps.book.Records[id]
+	if !ok || !rec.Listed {
 		return history.ModelScore{}, playerInput{}, "not in the players database (aggregate or unknown id)"
 	}
-	m, ok := ps.params[facts.Position]
+	pos := rec.Position
+	m, ok := ps.params[pos]
 	if !ok {
-		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no model for position %q", facts.Position)
+		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no model for position %q", pos)
 	}
-	pl, mislinked := ps.player(mflID, facts)
-	in := playerInput{MFLID: mflID, Position: facts.Position, Player: pl, Current: model.Past{Year: ps.season},
-		Mislinked: mislinked}
+	pl := ps.book.Player(id)
+	in := playerInput{ID: id, MFLID: rec.MFL, Position: pos, Player: pl, Current: model.Past{Year: ps.season},
+		Mislinked: rec.Mislinked}
 	for y := ps.season - 3; y <= ps.season; y++ {
-		s := ps.data.Seasons[mflID][y]
+		s := ps.data.Seasons[id][y]
 		if s == nil || s.Games() == 0 {
 			continue
 		}
-		past := model.Past{Year: y, Games: float64(s.Games()), Pct: ps.scale(facts.Position, y).Pct(s.PPG())}
+		past := model.Past{Year: y, Games: float64(s.Games()), Pct: ps.scale(pos, y).Pct(s.PPG())}
 		if y == ps.season {
 			in.Current = past
 		} else {
 			in.Past = append(in.Past, past)
 		}
 	}
-	scale := ps.scale(facts.Position, ps.season-1)
+	scale := ps.scale(pos, ps.season-1)
 	if scale.Len() == 0 {
-		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no %s regulars in %d to read points from", facts.Position, ps.season-1)
+		return history.ModelScore{}, playerInput{}, fmt.Sprintf("no %s regulars in %d to read points from", pos, ps.season-1)
 	}
 	v := m.Value(&pl, in.Past, in.Current, ps.horizon, scale)
 	if !m.BoardKept {
-		pull, err := AgePull(facts.Position, pl.AgeAt(ps.season), ps.decay)
+		pull, err := AgePull(pos, pl.AgeAt(ps.season), ps.decay)
 		if err != nil {
 			return history.ModelScore{}, playerInput{}, err.Error()
 		}
-		if last := ps.data.Seasons[mflID][ps.season-1]; last != nil && last.Games() > 0 {
+		if last := ps.data.Seasons[id][ps.season-1]; last != nil && last.Games() > 0 {
 			in.TodayTotal = last.PPG() * float64(last.Games())
 		}
-		if cur := ps.data.Seasons[mflID][ps.season]; cur != nil && cur.Games() > 0 {
+		if cur := ps.data.Seasons[id][ps.season]; cur != nil && cur.Games() > 0 {
 			in.TodayCurrentPPG = cur.PPG()
 		}
 		in.TodayPull = pull
 		v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
 	}
-	return history.ModelScore{MFLID: mflID, Position: string(facts.Position), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
-}
-
-// identitySlack is how many seasons history's first NFL season may sit from the year MFL has the
-// player entering the league. On the 2026 roster 1,439 of 1,440 sit within one; the one outside
-// sat 48 away.
-const identitySlack = 2
-
-// player is the history's facts for mflID, with the position he is rostered at; the players
-// database fills a birth date history lacks. A history record whose first NFL season is far from
-// MFL's draft year is another player's: the crosswalk tied him to the wrong ids (DynastyProcess
-// gave a 2026 rookie DT the ids of a 1978 receiver). MFL wins: that record's birth date, rookie
-// season, draft slot and measurements are set aside, his college seasons kept, and mislinked
-// reports it.
-func (ps pass) player(mflID string, facts normalize.PlayerFacts) (pl model.Player, mislinked bool) {
-	pl = model.Player{ID: mflID}
-	if h := ps.data.Players[mflID]; h != nil {
-		pl = *h
-		if facts.HasDraftYear && h.Rookie != 0 && abs(h.Rookie-facts.DraftYear) > identitySlack {
-			pl, mislinked = model.Player{ID: mflID, College: h.College}, true
-		}
-	}
-	pl.Position = facts.Position
-	if pl.Birth.IsZero() && facts.HasBirthdate {
-		pl.Birth = time.Unix(facts.Birthdate, 0).UTC()
-	}
-	return pl, mislinked
+	return history.ModelScore{MFLID: rec.MFL, Position: string(pos), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
 }
 
 // AgePull is the engine's age pull that today's board applies at age; an unknown age is the arc's
@@ -367,26 +380,6 @@ func AgePull(pos domain.Position, age, decay float64) (float64, error) {
 		return 0, fmt.Errorf("modelrun: age pull: %w", err)
 	}
 	return pull, nil
-}
-
-func abs(n int) int { return max(n, -n) }
-
-// AtLeaguePositions moves each history player the league's players database lists at a position
-// the model scores to that position, and returns how many moved. The league scores by its own
-// position (a DE's tackle is worth 2.5, an LB's 1.5), so nflverse's label would put an edge
-// rusher it lists as LB in the linebackers' scale and the linebackers' fit. A player the league
-// does not list keeps nflverse's position.
-func AtLeaguePositions(d model.Data, dir Directory) int {
-	moved := 0
-	for id, pl := range d.Players {
-		facts, ok := dir.Facts(id)
-		if !ok || facts.Position == pl.Position || !slices.Contains(model.Positions(), facts.Position) {
-			continue
-		}
-		pl.Position = facts.Position
-		moved++
-	}
-	return moved
 }
 
 // scale is the position's scale for a season; a season with too few regulars yet (the first

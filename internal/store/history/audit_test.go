@@ -103,6 +103,7 @@ DROP TRIGGER observations_player_identity; DROP TRIGGER run_scores_player_identi
 CREATE TABLE legacy_player_ids AS SELECT * FROM player_ids;
 DROP VIEW player_ids;
 ALTER TABLE legacy_player_ids RENAME TO player_ids;
+DROP TABLE player_record;
 DROP TABLE player_ownership; DROP TABLE player_external_id; DROP TABLE canonical_player;
 PRAGMA user_version=4`); err != nil {
 		t.Fatal(err)

@@ -29,8 +29,9 @@ type RawPlayer struct {
 	Status     string // "R" for a rookie
 	Birthdate  string // epoch seconds; empty for commissioner-created players
 	DraftRound string
-	DraftPick  string
+	DraftPick  string // the pick within the round
 	DraftYear  string // §6 experience; "0" and "1970" mean undrafted
+	DraftTeam  string // the NFL team that drafted him; "FA" or empty when undrafted
 	// College feeds SchoolTier; MFL's names differ from CFBD's ("Miami (FL)" vs "Miami").
 	College string
 }
@@ -87,6 +88,7 @@ type playerBlock struct {
 	DraftRound string `json:"draft_round"`
 	DraftPick  string `json:"draft_pick"`
 	DraftYear  string `json:"draft_year"`
+	DraftTeam  string `json:"draft_team"`
 	College    string `json:"college"`
 }
 
