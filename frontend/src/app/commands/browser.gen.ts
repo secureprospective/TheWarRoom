@@ -739,22 +739,6 @@ export const browserCommands = {
       "value"
     ]
   },
-  "offers.filter": {
-    "id": "offers.filter",
-    "label": "Filter Offers",
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "field",
-      "value"
-    ]
-  },
   "overlays.close": {
     "id": "overlays.close",
     "label": "Close overlays",

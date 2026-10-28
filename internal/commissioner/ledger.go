@@ -289,6 +289,8 @@ func recordLabel(r Record) string {
 		return fmt.Sprintf("Moved the league to season %d", r.Command.Args.Rollover.To)
 	case NativeSeed:
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
+	case Cutover:
+		return cutoverLabel
 	case WindowSet, WindowMove, WindowRemove:
 		return windowLabel(r)
 	}
@@ -299,13 +301,7 @@ func recordLabel(r Record) string {
 			e.Action, e.Franchise, e.Until.Format(time.RFC3339), r.Command.Reason)
 	}
 	if r.Command.Command == Create {
-		preset := "every rule waiting for a ruling"
-		switch r.Command.Args.Preset {
-		case PresetLegacy:
-			preset = "the Legacy NFL rules"
-		case PresetDefault32:
-			preset = "the 32-Team Default rules"
-		}
+		preset := presetHistoryLabel(r.Command.Args.Preset)
 		return fmt.Sprintf("Created league “%s” with %d franchises and %s", r.Command.Args.Name,
 			len(r.Command.Args.Franchises), preset)
 	}
@@ -321,6 +317,8 @@ func recordLabel(r Record) string {
 // familyLabel describes an entry of a command family that writes its own labels: draft, waiver, schedule.
 func familyLabel(r Record) (string, bool) {
 	switch c := r.Command.Command; {
+	case c == OLineAuctionClose:
+		return olineLabel(r.Command.Args.OLineOutcome), true
 	case draftCommand(c):
 		return draftLabel(r), true
 	case WaiverCommand(c):
@@ -353,7 +351,8 @@ func scheduleLabel(r Record) string {
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i, root int, p Projection, principal string, auth Authorizer, hasRollover bool) string {
 	r := records[i]
-	if r.Command.Command == Create || r.Command.Command == NativeSeed || liveDraftEntry(r.Command.Command) ||
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == Cutover || r.Command.Command == OLineAuctionClose ||
+		liveDraftEntry(r.Command.Command) ||
 		!p.Active[r.Receipt.Entry] {
 		return ""
 	}

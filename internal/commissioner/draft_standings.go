@@ -60,7 +60,7 @@ func (l *LazyStandings) Final(records []Record, season int, through time.Time) r
 			if err != nil {
 				return nil, fmt.Errorf("read the final standings: %w", err)
 			}
-			order = finalOrderOf(standings, records[0].Command.Args.Franchises)
+			order = finalOrderOf(standings, LeagueFranchises(records))
 			if l.cache == nil {
 				l.cache = map[string]finalOrder{}
 			}

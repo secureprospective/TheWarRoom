@@ -15,7 +15,7 @@ func draftStartFor(records []Record, season int) (time.Time, bool) {
 	var start time.Time
 	found := false
 	for _, r := range records {
-		if r.Command.Command == DraftStart && active[r.Receipt.Entry] && r.Command.Args.Draft.Season == season {
+		if r.Command.Command == DraftStart && active[r.Receipt.Entry] && ofDraft(r, rookieDraft(season)) {
 			start, found = r.Command.Args.Draft.At, true
 		}
 	}
@@ -25,6 +25,7 @@ func draftStartFor(records []Record, season int) (time.Time, bool) {
 // projectDraftCalendar gives the calendar the draft's own start. The calendar and the draft both read the
 // start through here, so a draft start can never disagree with the window that opens its picks.
 func projectDraftCalendar(clock *leagueclock.ActionCalendar, records []Record, season int, at time.Time) {
+	defer projectStartupCalendar(clock, records, season, at)
 	start, found := draftStartFor(records, season)
 	if !found {
 		return
@@ -61,7 +62,7 @@ func draftSeasonPending(assets NativeAssets, through []Record) (int, bool) {
 	}
 	slices.Sort(seasons)
 	for _, season := range seasons {
-		if _, closed := closeRecord(through, season); !closed {
+		if !rookieClosed(through, season) {
 			return season, true
 		}
 	}
@@ -69,12 +70,41 @@ func draftSeasonPending(assets NativeAssets, through []Record) (int, bool) {
 }
 
 // closeRecord is the close in force for one draft, if there is one.
-func closeRecord(records []Record, season int) (Record, bool) {
+func closeRecord(records []Record, key DraftKey) (Record, bool) {
 	active := Replay(records).Active
 	for _, r := range records {
-		if r.Command.Command == DraftArchive && active[r.Receipt.Entry] && r.Command.Args.Draft.Season == season {
+		if r.Command.Command == DraftArchive && active[r.Receipt.Entry] && ofDraft(r, key) {
 			return r, true
 		}
 	}
 	return Record{}, false
+}
+
+// projectStartupCalendar opens owners' picks while the startup draft runs, from its opening until it closes,
+// in whichever calendar year is read: the draft is dated by those instants, not by a season's windows.
+func projectStartupCalendar(clock *leagueclock.ActionCalendar, records []Record, _ int, at time.Time) {
+	if len(records) == 0 {
+		return
+	}
+	key := startupKey(records)
+	open, found := startupOpened(records, key)
+	if !found {
+		return
+	}
+	window := leagueclock.ActionWindow{ID: startupDraftWindow, Opens: []leaguerules.Action{draftPickAction},
+		Start: open.Receipt.RecordedAt.UTC()}
+	// The window closes when the last side's startup draft does; with one pool, when the draft does.
+	if startupClosed(records) {
+		var end time.Time
+		for _, k := range startupKeys(records) {
+			closed, _ := closeRecord(records, k)
+			if at := closed.Receipt.RecordedAt.UTC(); at.After(end) {
+				end = at
+			}
+		}
+		window.Close = &end
+	}
+	window.Live = !at.Before(window.Start) && (window.Close == nil || at.Before(*window.Close))
+	clock.Windows = append(clock.Windows, window)
+	slices.SortFunc(clock.Windows, func(a, b leagueclock.ActionWindow) int { return strings.Compare(a.ID, b.ID) })
 }

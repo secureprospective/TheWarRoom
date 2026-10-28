@@ -13,11 +13,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
-	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -36,7 +34,6 @@ type fakeHost struct {
 	Week          leagueweek.Week
 	WeekFetchedAt time.Time
 	MovesNow      func() time.Time
-	LabData       func() (*lab.Data, error)
 	MovesWake     chan struct{}
 	movesMu       sync.Mutex
 }
@@ -48,7 +45,7 @@ type apiFixture struct {
 
 func newFakeHost(t *testing.T) *fakeHost {
 	t.Helper()
-	return &fakeHost{Ctx: t.Context(), LabData: lab.Load, MovesNow: time.Now, MovesWake: make(chan struct{}, 1)}
+	return &fakeHost{Ctx: t.Context(), MovesNow: time.Now, MovesWake: make(chan struct{}, 1)}
 }
 
 func bidTestApp(t *testing.T) *apiFixture {
@@ -114,20 +111,15 @@ func mustGet(t *testing.T, a *apiFixture, id string) envelope.Envelope {
 	return e
 }
 
-func (h *fakeHost) Ready() error                          { return nil }
-func (h *fakeHost) OffersHistoryContext() context.Context { return h.Ctx }
-func (h *fakeHost) OffersContext() context.Context        { return h.Ctx }
-func (h *fakeHost) OffersBuildStamp() string              { return "dev dev" }
-func (h *fakeHost) OffersZone() *time.Location            { return time.Local }
-func (h *fakeHost) OffersLab() (*lab.Data, error)         { return h.LabData() }
-func (h *fakeHost) OffersProvenance(d *lab.Data) snapshot.Provenance {
-	return snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}
-}
-func (h *fakeHost) OffersPools() *db.Pools      { return h.Pools }
-func (h *fakeHost) OffersMoves() *moves.Store   { return h.Moves }
-func (h *fakeHost) OffersNow() time.Time        { return h.MovesNow() }
-func (h *fakeHost) OffersChanged()              {}
-func (h *fakeHost) OffersLog(envelope.Envelope) {}
+func (h *fakeHost) Ready() error                   { return nil }
+func (h *fakeHost) OffersContext() context.Context { return h.Ctx }
+func (h *fakeHost) OffersBuildStamp() string       { return "dev dev" }
+func (h *fakeHost) OffersZone() *time.Location     { return time.Local }
+func (h *fakeHost) OffersPools() *db.Pools         { return h.Pools }
+func (h *fakeHost) OffersMoves() *moves.Store      { return h.Moves }
+func (h *fakeHost) OffersNow() time.Time           { return h.MovesNow() }
+func (h *fakeHost) OffersChanged()                 {}
+func (h *fakeHost) OffersLog(envelope.Envelope)    {}
 func (h *fakeHost) OffersWake() {
 	select {
 	case h.MovesWake <- struct{}{}:
@@ -164,8 +156,14 @@ func (h *fakeHost) OffersAssetValues(context.Context, []playerid.PlayerID, time.
 	return nil, ""
 }
 
-func TestAPIMethodCatalogHasThirteenDoors(t *testing.T) {
-	if got := len(Commands()); got != 13 {
+func TestAPIMethodCatalogHasTwelveDoors(t *testing.T) {
+	commands := Commands()
+	if got := len(commands); got != 12 {
 		t.Fatalf("commands = %d", got)
+	}
+	for _, command := range commands {
+		if command.Method == "TargetOffers" {
+			t.Fatal("offer-history research remains published")
+		}
 	}
 }

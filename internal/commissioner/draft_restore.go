@@ -22,7 +22,7 @@ func setAsideByDraftRestores(records []Record, active map[string]bool) {
 			continue
 		}
 		for _, later := range records[checkpoint+1 : j] {
-			if liveDraftEntry(later.Command.Command) && later.Command.Args.Draft.Season == r.Command.Args.Draft.Season {
+			if liveDraftEntry(later.Command.Command) && ofDraft(later, r.Command.Args.Draft.key()) {
 				active[later.Receipt.Entry] = false
 			}
 		}
@@ -34,21 +34,20 @@ func draftRestoreLabel(records []Record, i int) string {
 	d := records[i].Command.Args.Draft
 	at := slices.IndexFunc(records[:i], func(r Record) bool { return r.Receipt.Entry == d.Act.To })
 	if at < 0 {
-		return fmt.Sprintf("Restored the %d rookie draft to an earlier point", d.Season)
+		return fmt.Sprintf("Restored the %s to an earlier point", d.noun())
 	}
-	return fmt.Sprintf("Restored the %d rookie draft to how it stood after: %s", d.Season, recordLabel(records[at]))
+	return fmt.Sprintf("Restored the %s to how it stood after: %s", d.noun(), recordLabel(records[at]))
 }
 
 // checkpointOf is the recorded entry a restore names, when it is a change to this draft that is still in
 // force: a draft's start, its order, or one of its live entries. Its place in the ledger is its index.
-func checkpointOf(records []Record, season int, entry string) (int, error) {
+func checkpointOf(records []Record, key DraftKey, entry string) (int, error) {
 	at := slices.IndexFunc(records, func(r Record) bool { return r.Receipt.Entry == entry })
 	if at < 0 {
 		return 0, fmt.Errorf("choose a point in this draft's history to restore it to")
 	}
 	r := records[at]
-	d := r.Command.Args.Draft
-	if !draftCommand(r.Command.Command) || d == nil || d.Season != season || standingRule(r.Command.Command) ||
+	if !draftCommand(r.Command.Command) || !draftCheckpointMatches(r, key) || standingRule(r.Command.Command) ||
 		!Replay(records).Active[entry] {
 		return 0, fmt.Errorf("choose a point in this draft's history that is still part of it")
 	}

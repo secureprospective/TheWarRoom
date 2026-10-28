@@ -3,6 +3,7 @@ package commissioner
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -35,6 +36,7 @@ type RuleRow struct {
 	ChangedAt   string                  `json:"changedAt"`
 	Schema      leaguerules.ValueSchema `json:"schema"`
 	Competitive bool                    `json:"competitive"`
+	NowOnly     bool                    `json:"nowOnly,omitempty"`
 	Pending     []RulePending           `json:"pending"`
 	// Current is the value in force as the plain JSON a change is sent in; null while it Needs a ruling.
 	Current json.RawMessage `json:"current"`
@@ -87,15 +89,23 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		value := values[i]
 		row := RuleRow{Field: string(field.Path), Label: field.Label, Value: value.Words, State: value.State,
 			Citation: startingSource(preset, value.State, value.Citation), Schema: field.Schema,
-			Competitive: field.Competitive, Pending: pending[string(field.Path)], Current: current[i],
+			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)) || field.Path == poolsField,
+			Pending: pending[string(field.Path)], Current: current[i],
 			Unit:       unitFor(field.Path),
 			Safeguards: safeguardsFor(string(field.Path))}
+		if err := leagueRowWords(&row, records, rules); err != nil {
+			return Rules{}, err
+		}
 		if source, ok := sources[row.Field]; ok {
 			row.Citation = "Changed in the league ledger"
 			row.ChangedAt = source
 			if g, ok := governed[row.Field]; ok {
 				row.Governed = &g
 			}
+		}
+		if slices.Contains([]string{"Counted from the league's franchises", "Counted from the division alignment",
+			sidesCounted, noSides}, value.Citation) {
+			row.Citation, row.ChangedAt, row.Governed = value.Citation, "", nil
 		}
 		if row.Pending == nil {
 			row.Pending = []RulePending{}
@@ -107,6 +117,28 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		last.Rows = append(last.Rows, row)
 	}
 	return out, nil
+}
+
+// leagueRowWords words a row from the league itself: the alignment by team names, the startup order as a
+// pick from the league's franchises.
+func leagueRowWords(row *RuleRow, records []Record, rules leaguerules.RuleSet) error {
+	switch row.Field {
+	case alignmentField:
+		words, err := alignmentWords(records, rules.League.Alignment)
+		if err != nil {
+			return err
+		}
+		row.Value = words
+	case sidesField:
+		words, err := sidesWords(records, rules.League.Sides)
+		if err != nil {
+			return err
+		}
+		row.Value = words
+	case string(startupListField):
+		row.Schema = franchiseList(row.Schema, draftOwners(records))
+	}
+	return nil
 }
 
 // ruleHistory finds where each in-force value came from and which recorded changes still wait. A
@@ -266,10 +298,11 @@ func startingSource(preset, state, citation string) string {
 		}
 		return "Needs a ruling: " + detail
 	}
-	if preset == PresetEmpty {
-		return "Empty league default"
+	p := storedPreset(preset, MFLImportPreset)
+	source := p.citation
+	if !p.seeds() {
+		return source
 	}
-	source := "Legacy NFL rules"
 	if strings.Contains(citation, "MFL league scoring settings") {
 		return source + " (the league’s MFL scoring)"
 	}
@@ -316,4 +349,21 @@ func governedRules(records []Record) (map[string]Governed, error) {
 			Change: change}
 	}
 	return out, nil
+}
+
+// startupListField is the commissioner's startup draft order: a list of the league's own franchises.
+const startupListField = leaguerules.FieldPath("draft.startupList")
+
+// franchiseList offers the league's franchises, by name, as the choices of a list of franchise ids.
+func franchiseList(schema leaguerules.ValueSchema, owners []DraftOwner) leaguerules.ValueSchema {
+	element := leaguerules.ValueSchema{Kind: "string", Choices: []leaguerules.Choice{}, Fields: []leaguerules.SchemaField{}}
+	if schema.Element != nil {
+		element = *schema.Element
+	}
+	element.Choices = make([]leaguerules.Choice, len(owners))
+	for i, o := range owners {
+		element.Choices[i] = leaguerules.Choice{Value: o.ID, Label: o.Name}
+	}
+	schema.Element = &element
+	return schema
 }

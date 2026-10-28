@@ -1,8 +1,10 @@
 package market
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -12,7 +14,8 @@ import (
 
 // DueBids uses the manual decision policy, including current roster and cap checks. A tie remains
 // undecided for the commissioner; waivers must clear before any automatic award.
-func DueBids(league string, records []commissioner.Record, at time.Time, facts nativecheck.Facts) ([]string, error) {
+// Each due auction is named by its player and side.
+func DueBids(league string, records []commissioner.Record, at time.Time, facts nativecheck.Facts) ([]commissioner.RawBidArgs, error) {
 	f, err := commissioner.NewFrame(league, records, at, facts, time.UTC)
 	if err != nil {
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
@@ -21,11 +24,11 @@ func DueBids(league string, records []commissioner.Record, at time.Time, facts n
 	return dueBidsFrame(f)
 }
 
-func dueBidsFrame(f commissioner.Frame) ([]string, error) {
+func dueBidsFrame(f commissioner.Frame) ([]commissioner.RawBidArgs, error) {
 	records, at, facts := f.Records, f.At, f.Facts
 	assets, state := f.Assets, f.Book
 	// A league with no starting assets has no bids; its season may not even be named yet.
-	due := []string{}
+	due := []commissioner.RawBidArgs{}
 	if !assets.Seeded {
 		return due, nil
 	}
@@ -44,15 +47,18 @@ func dueBidsFrame(f commissioner.Frame) ([]string, error) {
 		if auction.Decided || at.Before(auction.StandingAt().Add(stand.Value)) {
 			continue
 		}
-		raw := commissioner.RawCommand{Command: commissioner.BidsProcess, Args: commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: auction.Player}}}
+		args := commissioner.RawBidArgs{Player: auction.Player, Side: auction.Side}
+		raw := commissioner.RawCommand{Command: commissioner.BidsProcess, Args: commissioner.RawArgs{Bid: &args}}
 		if err := x.decide(&raw); err != nil {
 			continue
 		}
 		if len(raw.Args.BidOutcome.Tied) == 0 {
-			due = append(due, auction.Player)
+			due = append(due, args)
 		}
 	}
-	slices.Sort(due)
+	slices.SortFunc(due, func(a, b commissioner.RawBidArgs) int {
+		return cmp.Or(strings.Compare(a.Player, b.Player), strings.Compare(a.Side, b.Side))
+	})
 	return due, nil
 }
 
@@ -63,7 +69,9 @@ func CheckDueBid(raw commissioner.RawCommand, records []commissioner.Record, at 
 	if err != nil {
 		return err
 	}
-	if raw.Command != commissioner.BidsProcess || raw.Args.Bid == nil || !slices.Contains(due, raw.Args.Bid.Player) {
+	if raw.Command != commissioner.BidsProcess || raw.Args.Bid == nil || !slices.ContainsFunc(due, func(d commissioner.RawBidArgs) bool {
+		return d.Player == raw.Args.Bid.Player && d.Side == raw.Args.Bid.Side
+	}) {
 		return fmt.Errorf("only an untied bid that has stood its full time and cleared waivers can be awarded automatically")
 	}
 	return nil

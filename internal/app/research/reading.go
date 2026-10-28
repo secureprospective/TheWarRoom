@@ -17,7 +17,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -407,7 +406,7 @@ func (v researchView) allowedReport(id string, position bool) report.Report {
 		n := totals[k]
 		row := report.Row{Cells: []string{parts[0], parts[1], fmt.Sprintf("%.2f", n)}}
 		if n >= 0 && maxValue > 0 {
-			row.Range = &report.Range{Interval: lab.Interval{Value: n, Lo: 0, Hi: n}, Max: maxValue, Text: fmt.Sprintf("%.2f points allowed", n)}
+			row.Range = &report.Range{Interval: report.Interval{Value: n, Lo: 0, Hi: n}, Max: maxValue, Text: fmt.Sprintf("%.2f points allowed", n)}
 		}
 		if position {
 			row.Group = parts[1]

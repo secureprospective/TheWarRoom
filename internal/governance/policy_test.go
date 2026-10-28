@@ -105,24 +105,24 @@ func TestCensusPermissions(t *testing.T) {
 }
 func TestDOTReviewAndAppeal(t *testing.T) {
 	s := league(t, 2)
+	if err := TradeReviewReady(s); err == nil || err.Error() != "Needs a ruling: trade review needs at least one seat" {
+		t.Fatalf("no seats: %v", err)
+	}
 	members := []Principal{}
 	for i := 0; i < 10; i++ {
 		p := Principal(fmt.Sprintf("dot%d", i))
 		members = append(members, p)
 		s = change(t, s, RoleGranted{Principal: p, Role: DOT})
-		if i == 2 {
-			err := TradeReviewReady(s)
-			if err == nil || err.Error() != "Needs a ruling: DOT has 3 of 4 seats" {
-				t.Fatalf("three seats: %v", err)
-			}
-			if _, err := Reviewers(s, nil); err == nil {
-				t.Fatal("underfilled DOT reviewed")
+		if i == 0 {
+			if err := TradeReviewReady(s); err != nil {
+				t.Fatalf("one seat: %v", err)
 			}
 		}
 	}
-	rejected(t, s, RoleGranted{Principal: "eleventh", Role: DOT})
+	s = change(t, s, RoleGranted{Principal: "eleventh", Role: DOT})
+	members = append(members, "eleventh")
 	reviewers, err := Reviewers(s, []Principal{"dot0", "dot1", "dot2"})
-	if err != nil || len(reviewers) != 7 || reviewers[0] != "dot3" {
+	if err != nil || len(reviewers) != 8 || reviewers[0] != "dot3" {
 		t.Fatalf("recusal: %v %v", reviewers, err)
 	}
 	if _, err := Reviewers(s, members); err == nil {

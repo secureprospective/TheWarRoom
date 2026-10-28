@@ -85,7 +85,7 @@ describe('League people screen', () => {
     const host = await show(render(LeaguePeople), { people: peopleWire.commissioner });
     const view = text(host);
     for (const part of ['Franchise 1 (F1)', 'owner-one', 'Vacant', 'Co-commissioner', 'private-deputy',
-      'Needs a ruling: DOT has 0 of 4 seats', 'Trade review seats (DOT): 0',
+      'Needs a ruling: trade review needs at least one seat', 'Trade review seats (DOT): 0',
       'Commissioner removal voting is open', '1 of 4 franchises have voted', 'Voted: Franchise 2 (F2)',
       'The commissioner is serving; no succession is pending', 'You are: Commissioner'])
       expect(view).toContain(part);
@@ -114,8 +114,8 @@ describe('Plain rule provenance', () => {
   it('shows the scoring sources and counting settings in plain words', async () => {
     const host = await show(render(LeagueRules), { rules: legacy });
     const source = 'Legacy NFL rules (the league’s MFL scoring)';
-    // Seven scoring settings carry the source: values, rounding and the five rule kinds.
-    expect(host.textContent.split(source)).toHaveLength(8);
+    // Eight scoring settings carry the source: values, rounding and the six rule kinds.
+    expect(host.textContent.split(source)).toHaveLength(9);
     expect(host.textContent).not.toMatch(/Rulebook §|Math §/);
     expect(host.textContent).toContain('Once per player-week');
     expect(host.textContent).toContain('Round each stat’s points to the cent');

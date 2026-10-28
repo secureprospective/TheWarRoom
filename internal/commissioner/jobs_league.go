@@ -16,7 +16,21 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 		return nil, err
 	}
 	jobs := transactionJobs(assets, state, rules, at)
+	if leaguerules.OLineOn(rules) {
+		jobs = append(jobs, olineJobs(state, assets.Snapshot)...)
+	}
+	if !assets.Seeded {
+		job := Job{ID: "seed", Name: "Record starting assets", State: JobLive, Controls: []string{},
+			Words: "Record the held franchises, rostered players and draft picks as this league’s starting assets."}
+		if LeagueSource(records) == SourceNative {
+			job.Name, job.Words = "Start the league", "Start with empty rosters and the auction lots defined by this league’s rules."
+		}
+		jobs = append(jobs, job)
+	}
 	jobs = append(jobs, mustCutJobs(assets, RecordsThrough(records, at), rules)...)
+	if job, ok := startupDraftJob(RecordsThrough(records, at), rules); ok {
+		jobs = append(jobs, job)
+	}
 	return append(jobs,
 		draftJob(assets, RecordsThrough(records, at), at),
 		seededJob(assets, Job{ID: "stat_queue", Name: "Stat approval queue", Controls: []string{"CM-031", "CM-032"},

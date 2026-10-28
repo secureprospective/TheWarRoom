@@ -3,6 +3,7 @@ package native
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 
@@ -89,5 +90,28 @@ func TestSeedCaptureStopsBeforeReadingUnusableHeldInputs(t *testing.T) {
 		if _, err := CaptureSeed(source); err == nil {
 			t.Fatal("mixed season or bad roster time accepted")
 		}
+	}
+}
+
+func TestHeldCaptureStillRefusesEmptyRosters(t *testing.T) {
+	t.Parallel()
+	at := time.Date(2026, 10, 1, 0, 0, 0, 0, time.UTC)
+	source := SeedSource{
+		Available: func() bool { return true },
+		Roster: func() (state.MirrorSnapshot, string) {
+			return state.MirrorSnapshot{Season: 2026}, at.Format(time.RFC3339Nano)
+		},
+		Season: func() int { return 2026 },
+		Draft: func() (season.Feed[[]draftreports.Pick], season.Feed[[]draftreports.FuturePick]) {
+			return season.Feed[[]draftreports.Pick]{FetchedAt: at}, season.Feed[[]draftreports.FuturePick]{FetchedAt: at}
+		},
+		Config: func() league.RawConfig {
+			return league.RawConfig{Franchises: []league.Franchise{{ID: "0001", Name: "One"}, {ID: "0002", Name: "Two"}}}
+		},
+		Directory: func() []snapshot.Player { return nil },
+	}
+	_, err := CaptureSeed(source)
+	if err == nil || err.Error() != "held starting snapshot: hold the Legacy NFL rosters, franchises and both draft reports before seeding" {
+		t.Fatalf("empty held capture error changed: %v", err)
 	}
 }

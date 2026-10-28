@@ -154,8 +154,12 @@ INSERT OR IGNORE INTO param_sets (param_set_id, measures, params, created_at) VA
 	return runID, nil
 }
 
-// LatestRun returns the newest run of a kind for a season. ok is false when there is none.
+// LatestRun returns the newest run of a kind for a season. ok is false when there is none, or
+// when no store is open yet (a fresh profile).
 func (s *Store) LatestRun(ctx context.Context, season int, kind RunKind) (Run, bool, error) {
+	if s == nil {
+		return Run{}, false, nil
+	}
 	return s.run(ctx, `WHERE season = ? AND kind = ? ORDER BY run_id DESC LIMIT 1`, season, string(kind))
 }
 

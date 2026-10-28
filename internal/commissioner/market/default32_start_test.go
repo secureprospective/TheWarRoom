@@ -12,7 +12,7 @@ import (
 // Starting cards belong to the auction, never to franchise creation order.
 func TestDefault32LeagueStartsWithUnassignedAuctionLots(t *testing.T) {
 	b := newLedger(t, commissioner.PresetDefault32)
-	raw, err := commissioner.Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
+	raw, err := commissioner.NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -24,7 +24,7 @@ func TestDefault32LeagueStartsWithUnassignedAuctionLots(t *testing.T) {
 	if err != nil || !assets.Seeded || len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Pool) != 32 {
 		t.Fatalf("%+v %v", assets, err)
 	}
-	again, err := commissioner.Default32SeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(4))
+	again, err := commissioner.NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(4))
 	if err != nil || again.Args.Native.RosterAt != raw.Args.Native.RosterAt {
 		t.Fatalf("retry: %v", err)
 	}
@@ -37,5 +37,33 @@ func TestDefault32LeagueStartsWithUnassignedAuctionLots(t *testing.T) {
 		if lot.Mode != string(leaguerules.Open) || lot.Leader != nil {
 			t.Fatalf("not unassigned open lot: %+v", lot)
 		}
+	}
+}
+
+func TestUnbidStartingCardsAreNotAwardedByDueWorker(t *testing.T) {
+	b := newLedger(t, commissioner.PresetDefault32)
+	raw, err := commissioner.NativeSeedCommand(b.records, "native.test", "start", "Start", 1, seasonMoment(2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.add(raw, seasonMoment(2))
+	at := seasonMoment(10)
+	due, err := DueBids("native.test", b.records, at, nativecheck.Facts{})
+	if err != nil || len(due) != 0 {
+		t.Fatalf("unbid lots have no due awards: %v %v", due, err)
+	}
+	assets, err := commissioner.NativeAssetsReading("native.test", b.records, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rules, err := commissioner.RulesNow(b.records, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(assets.Snapshot.Franchises) != 32 || len(assets.Snapshot.Players) != 0 || len(assets.Snapshot.Pool) != 32 {
+		t.Fatalf("unbid starting assets: %+v", assets.Snapshot)
+	}
+	if err := nativecheck.LineCardsHeld(rules.Roster, nil); err == nil {
+		t.Fatal("an empty roster should violate the one-card rule")
 	}
 }

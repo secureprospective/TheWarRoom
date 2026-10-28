@@ -53,7 +53,7 @@ func DraftSetupFields(raw RawCommand, records []Record, now time.Time, standings
 }
 
 func draftSetupReading(season int, records []Record, now time.Time, standings DraftStandings) (map[string]string, error) {
-	basis, err := readDraft(records, season, now, standings)
+	basis, err := readDraft(records, rookieDraft(season), now, standings)
 	if err != nil {
 		return nil, err
 	}

@@ -32,6 +32,11 @@
       "Value": null,
       "Citation": "Census CM-002: carried at setup"
     },
+    "DivisionConferences": {
+      "State": 0,
+      "Value": null,
+      "Citation": "Census CM-002: carried at setup"
+    },
     "Dynasty": {
       "State": 1,
       "Value": true,
@@ -46,6 +51,16 @@
       "State": 0,
       "Value": 0,
       "Citation": "Census CM-005: only for keeper leagues"
+    },
+    "Sides": {
+      "State": 0,
+      "Value": null,
+      "Citation": "Counted from the conferences when each side has its own player pool"
+    },
+    "Pools": {
+      "State": 1,
+      "Value": "one",
+      "Citation": "Census CM-001"
     }
   },
   "Roster": {
@@ -2681,6 +2696,11 @@
         "Clamp": 0
       },
       "Citation": "MFL league scoring settings"
+    },
+    "Rules": {
+      "State": 1,
+      "Value": {},
+      "Citation": "MFL league scoring settings"
     }
   },
   "Standings": {
@@ -4861,6 +4881,41 @@
       "State": 0,
       "Value": "",
       "Citation": "Census CM-041 Q-E1"
+    },
+    "StartupRounds": {
+      "State": 1,
+      "Value": 80,
+      "Citation": "Startup draft ruling R1, 2026-10-27; fact R"
+    },
+    "StartupOrder": {
+      "State": 1,
+      "Value": "random",
+      "Citation": "Startup draft ruling R1, 2026-10-27"
+    },
+    "StartupList": {
+      "State": 1,
+      "Value": [],
+      "Citation": "Startup draft ruling R1, 2026-10-27"
+    },
+    "StartupPattern": {
+      "State": 1,
+      "Value": "snake",
+      "Citation": "Startup draft ruling R1, 2026-10-27"
+    },
+    "StartupYears": {
+      "State": 1,
+      "Value": 1,
+      "Citation": "Startup draft ruling R1, 2026-10-27"
+    },
+    "StartupSalary": {
+      "State": 1,
+      "Value": 33000000,
+      "Citation": "Startup draft ruling R1, 2026-10-27; Rulebook §6"
+    },
+    "StartupRookies": {
+      "State": 1,
+      "Value": false,
+      "Citation": "Startup draft rookies, 2026-10-27: off unless the commissioner turns it on"
     }
   },
   "Notify": {

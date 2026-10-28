@@ -1,6 +1,6 @@
-import { endpoints, type EndpointId, type Endpoint, type Placement } from './endpoints.gen';
+import { endpoints as generated, type EndpointId, type Endpoint, type Placement } from './endpoints.gen';
 import { nodeKeys, nodes, routeFor, type Route } from '../shell/nodes';
-export { endpoints, type Endpoint, type EndpointId, type Placement } from './endpoints.gen';
+export type { Endpoint, EndpointId, Placement } from './endpoints.gen';
 
 export const surfacePlaces = [
   'Inspector', 'Comms', 'Calendar', 'Command bar', 'Status strip', 'Report drawer',
@@ -18,6 +18,19 @@ export function placementRoute(place: string): Route | undefined {
   }
   return undefined;
 }
+const removedPlaces = new Set([
+  'War Room › Market', 'Trade Floor › Offers history', 'Trade Floor › Counterparties',
+  'League Pulse › Archive', 'Control Room › Data and sources',
+]);
+const removedIds = new Set(generated.filter(row =>
+  row.disposition === 'kept' && removedPlaces.has(row.placement)).map(row => row.id));
+export const endpoints: readonly Endpoint[] = Object.freeze(generated.map(row => {
+  const removed = removedIds.has(row.id) || (row.disposition === 'merged' &&
+    (removedPlaces.has(row.merged_place) || row.merged_into.some(id => removedIds.has(id))));
+  return removed ? Object.freeze({ ...row, disposition: 'retired', placement: '', merged_place: '',
+    merged_into: Object.freeze([] as const),
+    disposition_note: 'This workspace is no longer available.' }) : row;
+}));
 const byId = new Map(endpoints.map((row) => [row.id, row]));
 const byPlace = new Map<Placement, readonly Endpoint[]>();
 for (const row of endpoints) {

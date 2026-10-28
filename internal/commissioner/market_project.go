@@ -37,19 +37,20 @@ func projectBid(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 
 func projectPlacedBid(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
-	if slices.ContainsFunc(seed.Players, func(p NativePlayer) bool { return p.ID == args.Player }) {
+	side := seed.SideOf(args.Franchise)
+	if seed.OnSide(side, args.Player) {
 		return fmt.Errorf("this player already belongs to a roster")
 	}
 	bid := BidRecord{ID: r.Receipt.Entry, Franchise: args.Franchise, Principal: r.Principal, Salary: args.Salary,
 		Years: args.Years, Points: outcome.Points, PlacedAt: r.Receipt.RecordedAt}
-	if a := book.Open(args.Player); a != nil {
+	if a := book.Open(side, args.Player); a != nil {
 		if _, held := a.ActiveFor(args.Franchise); held {
 			return fmt.Errorf("this franchise already has a bid on this player")
 		}
 		a.Bids = append(a.Bids, bid)
 		return nil
 	}
-	book.Auctions = append(book.Auctions, BidAuction{Player: args.Player, Bids: []BidRecord{bid}})
+	book.Auctions = append(book.Auctions, BidAuction{Player: args.Player, Side: side, Bids: []BidRecord{bid}})
 	return nil
 }
 
@@ -86,7 +87,7 @@ func projectBidAward(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 	args, outcome := r.Command.Args.Bid, r.Command.Args.BidOutcome
 	var a *BidAuction
 	if r.Command.Command == BidsProcess {
-		if a = book.Open(args.Player); a == nil {
+		if a = book.Open(args.Side, args.Player); a == nil {
 			return fmt.Errorf("this player has no bids waiting for a decision")
 		}
 	} else {
@@ -94,7 +95,7 @@ func projectBidAward(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 		if err != nil {
 			return err
 		}
-		if a = found; !a.Decided || book.Latest(a.Player) != a {
+		if a = found; !a.Decided || book.Latest(a.Side, a.Player) != a {
 			return fmt.Errorf("correct only the newest decision on a player")
 		}
 	}
@@ -108,9 +109,7 @@ func projectBidAward(seed *RawNativeSnapshot, book *BidBook, r Record) error {
 
 func replaceBidWinner(seed *RawNativeSnapshot, a *BidAuction, outcome *BidOutcome) error {
 	if a.Winner != "" {
-		index := slices.IndexFunc(seed.Players, func(p NativePlayer) bool {
-			return p.ID == a.Player && p.Franchise == a.Winner
-		})
+		index := seed.PlayerOf(a.Winner, a.Player)
 		if index < 0 {
 			return fmt.Errorf("a later roster change depends on this award; reverse it first")
 		}
@@ -119,7 +118,7 @@ func replaceBidWinner(seed *RawNativeSnapshot, a *BidAuction, outcome *BidOutcom
 	if outcome.Winner == "" {
 		return nil
 	}
-	if slices.ContainsFunc(seed.Players, func(p NativePlayer) bool { return p.ID == a.Player }) {
+	if seed.OnSide(a.Side, a.Player) {
 		return fmt.Errorf("this player already belongs to a roster")
 	}
 	won := slices.IndexFunc(a.Bids, func(b BidRecord) bool { return b.ID == outcome.WinningBid })
@@ -128,7 +127,7 @@ func replaceBidWinner(seed *RawNativeSnapshot, a *BidAuction, outcome *BidOutcom
 	}
 	bid := a.Bids[won]
 	name := ""
-	if pool := slices.IndexFunc(seed.Pool, func(p NativePoolEntry) bool { return p.Player == a.Player }); pool >= 0 {
+	if pool := seed.PoolOn(a.Side, a.Player); pool >= 0 {
 		name = seed.Pool[pool].Name
 	}
 	seed.Players = append(seed.Players, NativePlayer{ID: a.Player, Name: name, Franchise: bid.Franchise, Status: domain.RosterActive,
@@ -178,9 +177,14 @@ func decidedBidRecord(r Record, records []Record) bool {
 	if player == "" {
 		return false
 	}
+	side, err := bidSideOf(r, records)
+	if err != nil {
+		return false
+	}
 	active := Replay(records).Active
 	return slices.ContainsFunc(records, func(v Record) bool {
-		return active[v.Receipt.Entry] && v.Command.Command == BidsProcess && v.Command.Args.Bid.Player == player
+		bid := v.Command.Args.Bid
+		return active[v.Receipt.Entry] && v.Command.Command == BidsProcess && bid.Player == player && bid.Side == side
 	})
 }
 
@@ -227,7 +231,7 @@ func MoveTradeAssets(seed *RawNativeSnapshot, assets []TradeAsset, reverse bool)
 			from, to = to, from
 		}
 		if a.Player != "" {
-			i := slices.IndexFunc(seed.Players, func(p NativePlayer) bool { return p.ID == a.Player && p.Franchise == from })
+			i := seed.PlayerOf(from, a.Player)
 			if i < 0 {
 				return fmt.Errorf("a traded player no longer belongs to the sending team; undo the later asset change first")
 			}
@@ -268,14 +272,14 @@ func projectWaiver(seed *RawNativeSnapshot, state *MarketBook, r Record) error {
 		if result.Player == nil {
 			return fmt.Errorf("a cut has no recorded contract")
 		}
-		index := slices.IndexFunc(seed.Players, func(p NativePlayer) bool { return p.ID == args.Player })
+		index := seed.PlayerOf(args.Franchise, args.Player)
 		if index < 0 || seed.Players[index] != *result.Player {
 			return fmt.Errorf("a later cut depends on the earlier roster change; reverse it first")
 		}
 		seed.Players = slices.Delete(seed.Players, index, index+1)
 		seed.Adjustments = append(seed.Adjustments, NativeCharge{ID: r.Receipt.Entry, Franchise: args.Franchise,
 			Amount: result.Dead, Season: result.Season, Description: "Dead money for released player " + cmp.Or(result.Player.Name, args.Player)})
-		state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Player: *result.Player,
+		state.Windows = append(state.Windows, WaiverWindow{ID: r.Receipt.Entry, Side: seed.SideOf(args.Franchise), Player: *result.Player,
 			CutAt: r.Receipt.RecordedAt, Season: result.Season, Dead: result.Dead, Claims: []WaiverBookClaim{}})
 	case WaiverClaim:
 		w, err := state.Window(args.Window)
@@ -348,13 +352,13 @@ func privateWaiverRecord(r Record, records []Record) bool {
 
 func replaceWaiverWinner(seed *RawNativeSnapshot, w *WaiverWindow, winner string) error {
 	if w.Winner != "" {
-		index := slices.IndexFunc(seed.Players, func(p NativePlayer) bool { return p.ID == w.Player.ID && p.Franchise == w.Winner })
+		index := seed.PlayerOf(w.Winner, w.Player.ID)
 		if index < 0 {
 			return fmt.Errorf("a later roster change depends on this award; reverse it first")
 		}
 		seed.Players = slices.Delete(seed.Players, index, index+1)
 	}
-	if slices.ContainsFunc(seed.Players, func(p NativePlayer) bool { return p.ID == w.Player.ID }) {
+	if seed.OnSide(w.Side, w.Player.ID) {
 		return fmt.Errorf("this player already belongs to a roster")
 	}
 	if winner != "" {
@@ -427,15 +431,13 @@ func projectReserve(seed *RawNativeSnapshot, args *RawWaiverArgs, result *Waiver
 	if result.Player == nil {
 		return fmt.Errorf("a reserve move has no recorded player")
 	}
-	for i, p := range seed.Players {
-		if p.ID != args.Player {
-			continue
-		}
-		if p != *result.Player || p.Franchise != args.Franchise {
-			return fmt.Errorf("reverse the later roster changes first")
-		}
-		seed.Players[i].Status = ReserveStatus(args.Bucket)
-		return nil
+	i := seed.PlayerOn(seed.SideOf(args.Franchise), args.Player)
+	if i < 0 {
+		return fmt.Errorf("the reserve player is no longer on this roster")
 	}
-	return fmt.Errorf("the reserve player is no longer on this roster")
+	if seed.Players[i] != *result.Player || seed.Players[i].Franchise != args.Franchise {
+		return fmt.Errorf("reverse the later roster changes first")
+	}
+	seed.Players[i].Status = ReserveStatus(args.Bucket)
+	return nil
 }

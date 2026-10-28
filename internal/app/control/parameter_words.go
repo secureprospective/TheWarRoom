@@ -7,30 +7,20 @@ import (
 
 func ParameterWords(key, description string) (label, group string) {
 	fixed := map[string][2]string{
-		"captier.cold_ceiling_pct":    {"Cold salary tier ceiling (% of cap)", "Salary tiers"},
-		"captier.hot_floor_pct":       {"Hot salary tier floor (% of cap)", "Salary tiers"},
-		"layer3.decay_rate":           {"Annual age decline", "Board age adjustment"},
-		"cushion_guard.ras_threshold": {"Athletic rating threshold", "Defensive tackle decline guard"},
-		"cushion_guard.reduction":     {"Decline reduction", "Defensive tackle decline guard"},
-		"dynasty.seasons":             {"Seasons counted, starting this season", "Dynasty horizon"},
-		"dynasty.discount":            {"Weight of each later season", "Dynasty horizon"},
-		"dynasty.contract_tilt":       {"Most a cheap or costly contract moves a value", "Dynasty horizon"},
-		"model.k_now":                 {"Games until production and scouting weigh equally", "Production blend · this season"},
-		"model.k_dynasty":             {"Games until production and scouting weigh equally", "Production blend · dynasty"},
-		"model.z_exponential":         {"Use the exponential production blend", "Production blend"},
-		"model.board_kept":            {"Value this position with the fitted ratings (off: use the board rule)", "Production blend"},
-		"model.prior.unproven":        {"Pull toward the middle for a player with no NFL games (0 none, 1 all the way)", "Scouting prior"},
-		"model.arc.cliff_age":         {"Age the cliff starts (0: no cliff)", "Talent and age arc"},
-		"model.arc.cliff_step":        {"Extra yearly drop from the cliff age on", "Talent and age arc"},
+		"layer3.decay_rate":     {"Annual age decline", "Board age adjustment"},
+		"dynasty.seasons":       {"Seasons counted, starting this season", "Dynasty horizon"},
+		"dynasty.discount":      {"Weight of each later season", "Dynasty horizon"},
+		"dynasty.contract_tilt": {"Most a cheap or costly contract moves a value", "Dynasty horizon"},
+		"model.k_now":           {"Games until production and scouting weigh equally", "Production blend · this season"},
+		"model.k_dynasty":       {"Games until production and scouting weigh equally", "Production blend · dynasty"},
+		"model.z_exponential":   {"Use the exponential production blend", "Production blend"},
+		"model.board_kept":      {"Value this position with the fitted ratings (off: use the board rule)", "Production blend"},
+		"model.prior.unproven":  {"Pull toward the middle for a player with no NFL games (0 none, 1 all the way)", "Scouting prior"},
+		"model.arc.cliff_age":   {"Age the cliff starts (0: no cliff)", "Talent and age arc"},
+		"model.arc.cliff_step":  {"Extra yearly drop from the cliff age on", "Talent and age arc"},
 	}
 	if words, ok := fixed[key]; ok {
 		return words[0], words[1]
-	}
-	if strings.HasPrefix(key, "l4.") {
-		area, detail, _ := strings.Cut(description, ": ")
-		area = strings.ReplaceAll(area, "RAS", "Athletic rating")
-		detail = strings.ReplaceAll(detail, "RAS", "athletic rating")
-		return detail, "Scouting adjustment · " + area
 	}
 	if strings.HasPrefix(key, "model.recency.") {
 		return fmt.Sprintf("Weight of season %s years back", strings.TrimPrefix(key, "model.recency.")), "Production history"

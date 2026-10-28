@@ -18,6 +18,9 @@ const (
 	Create = "commish.league.create"
 	Revert = "commish.correction.revert"
 	Stream = "commissioner"
+
+	SourceNative    = "native"
+	SourceMFLImport = "mfl_import"
 )
 
 // Refusal marks a league change the league's own rules turned down, as distinct from a failure to read
@@ -66,7 +69,7 @@ func DefinitionFor(command string) (Definition, error) {
 	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
 	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
-		ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
+		DraftStartupOpen, ReserveException, Create, Revert, NativeSeed, Cutover, SeasonRollover, CalendarException,
 		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
 		LineupCorrect, BracketAdvance,
 		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
@@ -74,7 +77,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
 		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
-		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride,
+		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride, OLineAuctionClose,
 		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
 		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,
 		BracketPresetSave, HistoryLink, PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove,
@@ -92,6 +95,7 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	OLineOutcome   *OLineOutcome       `json:"olineOutcome,omitempty"`
 	Correction     *RawCorrection      `json:"correction,omitempty"`
 	Trade          *RawTradeArgs       `json:"trade,omitempty"`
 	TradeOutcome   *TradeState         `json:"tradeOutcome,omitempty"`
@@ -108,6 +112,7 @@ type RawArgs struct {
 	Note           *RawNote            `json:"note,omitempty"`
 	Field          string              `json:"field,omitempty"`
 	Value          json.RawMessage     `json:"value,omitempty"`
+	Source         string              `json:"source,omitempty"`
 	Preset         string              `json:"preset,omitempty"`
 	FranchiseCount int                 `json:"franchiseCount,omitempty"`
 	Seed           []SeedValue         `json:"seed,omitempty"`
@@ -148,9 +153,14 @@ func (a RawArgs) scoringDetails() bool {
 		a.Title != nil || a.Link != nil
 }
 
+// HasMarketDecision identifies app-owned decisions that no request may supply.
+func (a RawArgs) HasMarketDecision() bool {
+	return a.OLineOutcome != nil || a.WaiverOutcome != nil || a.BidOutcome != nil || a.TradeOutcome != nil
+}
+
 // marketDetails covers the arguments of the waiver and bid commands, including the decisions the app writes.
 func (a RawArgs) marketDetails() bool {
-	return a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil || a.Trade != nil || a.TradeOutcome != nil
+	return a.OLineOutcome != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil || a.Trade != nil || a.TradeOutcome != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -163,6 +173,8 @@ func (a RawArgs) ownedDetails(command string) bool {
 // validateDecoded checks the commands that decode their own typed argument; handled is false for any other.
 func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 	switch {
+	case command == OLineAuctionClose:
+		err = a.onlyMarketDetails(func(v *RawArgs) { v.OLineOutcome = nil }, false, "send only the O-Line auction close")
 	case correctionCommand(command):
 		_, err = decodeCorrection(a, command)
 	case isScoreCommand(command):
@@ -231,10 +243,13 @@ func (a RawArgs) Validate(command string) error {
 
 func (a RawArgs) foreignRuleArgs(command string) bool {
 	return (command != RulesSet && (a.Field != "" || len(a.Value) != 0)) || (command != Create &&
-		(a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 || a.Season != 0))
+		(a.Source != "" || a.Preset != "" || a.FranchiseCount != 0 || len(a.Seed) != 0 || len(a.Franchises) != 0 || a.Season != 0))
 }
 
 func (a RawArgs) validateOther(command string) error {
+	if command == Cutover {
+		return a.validateCutover()
+	}
 	if _, isNote := noteDefinitionFor(command); isNote {
 		return a.validateNote()
 	}
@@ -318,12 +333,16 @@ func (r RawCommand) validate(requireReason bool) error {
 // recorded now for the league; it is empty for every other command.
 func publicNowRule(command string) string {
 	switch {
+	case command == OLineAuctionClose:
+		return "closing the O-Line auction takes effect now and is visible to every owner"
 	case command == SeasonRollover:
 		return "the season rollover takes effect now and is visible to every owner"
 	case draftCommand(command):
 		return "draft changes take effect now and are visible to every owner"
 	case command == NativeSeed:
 		return "the starting snapshot is recorded now for every owner"
+	case command == Cutover:
+		return "moving the league over from MFL takes effect now and is shown to every owner"
 	case windowCommand(command):
 		return "window changes take effect now and are visible to every owner"
 	case isStandingsCommand(command):
@@ -430,7 +449,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
-	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
+	if raw.Args.HasMarketDecision() {
 		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	if raw.Args.DraftOutcome != nil {
@@ -447,6 +466,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
+	r.Args.OLineOutcome = nil
 	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome, r.Args.DraftOutcome = nil, nil, nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {

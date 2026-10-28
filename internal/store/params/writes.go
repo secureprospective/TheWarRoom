@@ -111,7 +111,7 @@ func (s *Store) load(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	ovs, err := s.loadOverrides(ctx)
+	ovs, err := s.loadOverrides(ctx, defs)
 	if err != nil {
 		return err
 	}
@@ -132,12 +132,18 @@ func (s *Store) loadDefaults(ctx context.Context) (map[string]ParamDef, error) {
 	defer func() { _ = rows.Close() }()
 
 	out := map[string]ParamDef{}
+	shipped := map[string]bool{}
+	for _, d := range defaultParams() {
+		shipped[defKey(d.Key, d.Position)] = true
+	}
 	for rows.Next() {
-		d, derr := scanDef(rows)
+		d, known, derr := scanDef(rows, shipped)
 		if derr != nil {
 			return nil, derr
 		}
-		out[defKey(d.Key, d.Position)] = d
+		if known {
+			out[defKey(d.Key, d.Position)] = d
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("params: iterate defaults: %w", err)
@@ -146,7 +152,7 @@ func (s *Store) loadDefaults(ctx context.Context) (map[string]ParamDef, error) {
 }
 
 // loadOverrides reads the admin override layer keyed by (key, position).
-func (s *Store) loadOverrides(ctx context.Context) (map[string]Override, error) {
+func (s *Store) loadOverrides(ctx context.Context, defs map[string]ParamDef) (map[string]Override, error) {
 	rows, err := s.pools.Read().QueryContext(ctx,
 		`SELECT param_key, position, value, note, updated_at FROM param_overrides`)
 	if err != nil {
@@ -156,11 +162,13 @@ func (s *Store) loadOverrides(ctx context.Context) (map[string]Override, error) 
 
 	out := map[string]Override{}
 	for rows.Next() {
-		o, oerr := scanOverride(rows)
+		o, known, oerr := scanOverride(rows, defs)
 		if oerr != nil {
 			return nil, oerr
 		}
-		out[defKey(o.Key, o.Position)] = o
+		if known {
+			out[defKey(o.Key, o.Position)] = o
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("params: iterate overrides: %w", err)

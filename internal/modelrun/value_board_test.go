@@ -18,6 +18,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
@@ -104,7 +105,7 @@ func TestValueBoardReplay(t *testing.T) {
 	}
 	features := boardFeatures(t, root)
 	capture := &boardCapture{FeatureReader: features}
-	runner, err := New(fakeState{roster: req.Roster}, dir, capture, "offline-value-board")
+	runner, err := New(fakeState{roster: req.Roster}, Held{dir, features}, capture, "offline-value-board")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,24 +122,20 @@ func TestValueBoardReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	obs, err := Observations(t.Context(), features, req.Season-lookback, req.Season, req.AsOf, model.RuntimeMeasures())
+	book, err := Held{dir, features}.Book(t.Context(), BookQuery(spec))
 	if err != nil {
 		t.Fatal(err)
 	}
-	last := map[int]int{}
-	for y := req.Season - lookback; y <= req.Season; y++ {
-		last[y] = req.LastWeek
-	}
-	data := model.Build(obs, last)
-	AtLeaguePositions(data, dir)
-	pass, err := newPass(data, spec)
+	pass, err := newPass(book, spec)
 	if err != nil {
 		t.Fatal(err)
 	}
+	data := book.Data
 	result := boardResult{Report: report, Parameters: effective}
 	for _, sc := range capture.run.Scores {
 		facts, _ := dir.Facts(sc.MFLID)
-		pl, _ := pass.player(sc.MFLID, facts)
+		id, _ := book.ID(sc.MFLID)
+		pl := book.Player(id)
 		row := boardPlayer{Score: sc, Facts: facts, Rule: "Fitted model"}
 		age := pl.AgeAt(req.Season)
 		if !math.IsNaN(age) {
@@ -152,7 +149,7 @@ func TestValueBoardReplay(t *testing.T) {
 			}
 			row.AgePull = &pull
 		}
-		seasons := data.Seasons[sc.MFLID]
+		seasons := data.Seasons[id]
 		if s := seasons[req.Season-1]; s != nil {
 			row.LastGames = s.Games()
 			row.LastPoints = boardPoints(s)
@@ -351,5 +348,113 @@ func TestValueBoardPointsDontInferZeroFromSnaps(t *testing.T) {
 	season.Total = 12.5
 	if got := boardPoints(season); got == nil || *got != 12.5 {
 		t.Fatalf("known total lost: %v", got)
+	}
+}
+
+// TestPickValueReplay fits Pick Value v1 on the replayed values and the replay's records, logs
+// the slot table and pins its scale on the real league: an early 1st lands among solid starters
+// (70th–95th percentile of the valued players), not superstars; a late 3rd among bench players
+// (20th–55th).
+func TestPickValueReplay(t *testing.T) {
+	root := boardRoot(t)
+	var req RawBoardRequest
+	boardReadJSON(t, root, &req)
+	body, err := root.ReadFile("players.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := players.Parse(t.Context(), body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir, err := normalize.NewLookup(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	features := boardFeatures(t, root)
+	capture := &boardCapture{FeatureReader: features}
+	runner, err := New(fakeState{roster: req.Roster}, Held{dir, features}, capture, "offline-value-board")
+	if err != nil {
+		t.Fatal(err)
+	}
+	set := params.DefaultSet()
+	spec := Spec{Season: req.Season, AsOf: req.AsOf, Params: set, LastWeek: req.LastWeek, FreeAgents: boardFreeAgents(t, root)}
+	if _, err := runner.Run(t.Context(), spec); err != nil {
+		t.Fatal(err)
+	}
+	book, err := Held{dir, features}.Book(t.Context(), BookQuery(spec))
+	if err != nil {
+		t.Fatal(err)
+	}
+	valued := map[string]float64{}
+	var values []float64
+	for _, sc := range capture.run.Scores {
+		valued[sc.MFLID] = sc.DynastyPPG
+		values = append(values, sc.DynastyPPG)
+	}
+	slices.Sort(values)
+	var cohort []pickvalue.Player
+	for _, r := range book.Records {
+		v, ok := valued[r.MFL]
+		cohort = append(cohort, pickvalue.Player{Draft: r.Draft, Value: v, Valued: ok})
+	}
+	discount, err := set.GetGlobal(params.KeyDynastyDiscount)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hist, err := pickvalue.History()
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := pickvalue.Fit(hist, cohort, req.Season, discount)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pct := func(v float64) float64 {
+		i, _ := slices.BinarySearch(values, v)
+		return 100 * float64(i) / float64(len(values))
+	}
+	t.Logf("valued players: p50 %.2f · p75 %.2f · p90 %.2f · p98 %.2f dynasty PPG", values[len(values)/2],
+		values[len(values)*75/100], values[len(values)*90/100], values[len(values)*98/100])
+	type row struct {
+		Pick                        string
+		PPG, Pct, BandLow, BandHigh float64
+		Undrafted                   float64
+		Players                     int
+	}
+	var table []row
+	for r := 1; r <= 5; r++ {
+		for _, s := range []int{1, 3, 8, 16, 24, 30, 0} {
+			v, err := m.Pick(req.Season, r, s, 32)
+			if err != nil {
+				t.Fatal(err)
+			}
+			name := fmt.Sprintf("%d.%02d", r, s)
+			if s == 0 {
+				name = fmt.Sprintf("round %d", r)
+			}
+			table = append(table, row{name, v.PPG, pct(v.PPG), v.BandLow, v.BandHigh, v.Undrafted, v.Players})
+			t.Logf("%-8s %6.2f PPG  p%-3.0f NFL %3.0f–%3.0f  undrafted %3.0f%%  n=%d", name, v.PPG, pct(v.PPG), v.BandLow,
+				v.BandHigh, 100*v.Undrafted, v.Players)
+		}
+	}
+	for y := 1; y <= 2; y++ {
+		v, _ := m.Pick(req.Season+y, 1, 0, 32)
+		t.Logf("round 1, %d (%d out): %.2f PPG", req.Season+y, y, v.PPG)
+	}
+	early, _ := m.Pick(req.Season, 1, 3, 32)
+	late, _ := m.Pick(req.Season, 3, 30, 32)
+	if p := pct(early.PPG); p < 70 || p > 95 {
+		t.Errorf("early 1st at p%.0f, want a solid starter (p70–p95)", p)
+	}
+	if p := pct(late.PPG); p < 20 || p > 55 {
+		t.Errorf("late 3rd at p%.0f, want a bench player (p20–p55)", p)
+	}
+	body, err = json.Marshal(table)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := root.WriteFile("pick-values.json", body, 0o600); err != nil {
+		t.Fatal(err)
 	}
 }

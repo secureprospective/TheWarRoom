@@ -18,6 +18,8 @@ type DraftPickInput struct {
 	Player    string `json:"player"`
 	Request   string `json:"request"`
 	Expected  int64  `json:"expected"`
+	// Startup makes the pick in the league's startup draft.
+	Startup bool `json:"startup,omitempty"`
 }
 
 func (i DraftPickInput) Validate() error {
@@ -44,7 +46,8 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err != nil || id.String() != in.Player {
 		return RawCommand{}, Refused(fmt.Errorf("choose a rookie from this season's player pool"))
 	}
-	basis, err := readDraft(records, in.Season, at, standings)
+	key := pickKey(records, in)
+	basis, err := readDraft(records, key, at, standings)
 	if err != nil {
 		return RawCommand{}, err
 	}
@@ -52,10 +55,13 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 		return RawCommand{}, Refused(fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, ".")))
 	}
 	if basis.closed != nil {
-		return RawCommand{}, Refused(fmt.Errorf("the %d rookie draft is closed", in.Season))
+		return RawCommand{}, Refused(fmt.Errorf("the %s is closed", key.noun()))
 	}
 	if basis.draft.OnClock != nil && basis.draft.OnClock.Paused {
 		return RawCommand{}, Refused(fmt.Errorf("the draft clock is paused; wait for the commissioner to resume it"))
+	}
+	if _, held := facts[in.Player]; in.Startup && !held {
+		return RawCommand{}, Refused(fmt.Errorf("choose a player from this draft's pool"))
 	}
 	assets, err := NativeAssetsReading(in.League, RecordsThrough(records, at))
 	if err != nil {
@@ -70,8 +76,15 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	selection := RawDraftSelection{Franchise: in.Franchise, Player: in.Player, EntrySeason: in.Season,
 		Round: clock.Round, Slot: clock.Slot, Original: clock.Original, Terms: preview.Terms}
 	return RawCommand{League: in.League, Command: DraftPick, Expected: in.Expected, Request: in.Request,
-		Args: RawArgs{Draft: &RawDraftArgs{Season: in.Season, Pick: &selection}}, Effective: "now",
+		Args: RawArgs{Draft: &RawDraftArgs{Season: in.Season, Startup: in.Startup, Side: key.Side, Pick: &selection}}, Effective: "now",
 		Visibility: "league"}, nil
+}
+
+// pickKey is the franchise's side's draft, or the only draft in a single-pool league.
+func pickKey(records []Record, in DraftPickInput) DraftKey {
+	key := startupKeyOf(records, in.Franchise)
+	key.Season, key.Startup = in.Season, in.Startup
+	return key
 }
 
 func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candidate {
@@ -84,11 +97,14 @@ func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candi
 
 func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts nativecheck.Facts,
 	local *time.Location, records []Record, at time.Time) rookiedraft.SelectionBasis {
-	out := rookiedraft.SelectionBasis{Exceptions: ScopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
+	out := rookiedraft.SelectionBasis{Pool: basis.pool, Exceptions: ScopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
 	if !assets.Seeded {
 		return out
 	}
 	for _, p := range assets.Snapshot.Players {
+		if assets.Snapshot.SideOf(p.Franchise) != basis.key.Side {
+			continue
+		}
 		out.Players = append(out.Players, rookiedraft.PlayerContract{ID: p.ID, Franchise: p.Franchise,
 			Salary: p.Salary, Status: p.Status})
 	}
@@ -108,7 +124,7 @@ func RetriedDraftPick(in DraftPickInput, principal string, records []Record) (Re
 			continue
 		}
 		d := r.Command.Args.Draft
-		if r.Command.Command != DraftPick || !SamePrincipal(records, r.Principal, principal) || d.Season != in.Season ||
+		if r.Command.Command != DraftPick || !SamePrincipal(records, r.Principal, principal) || d.Season != in.Season || d.Startup != in.Startup ||
 			d.Pick.Franchise != in.Franchise || d.Pick.Player != in.Player {
 			return Receipt{}, false, Refused(fmt.Errorf("this request was already used for a different change"))
 		}

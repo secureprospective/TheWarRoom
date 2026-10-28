@@ -90,7 +90,7 @@ func CheckHistoryLinkAppend(raw RawCommand, records []Record, now time.Time) err
 	if err != nil {
 		return err
 	}
-	if len(records) == 0 || !slices.Contains(records[0].Command.Args.Franchises, link.Franchise) {
+	if len(records) == 0 || !slices.Contains(LeagueFranchises(records), link.Franchise) {
 		return Refused(fmt.Errorf("that franchise is not in this app league"))
 	}
 	if year, dated := historyRecordYear(link.Record); dated {

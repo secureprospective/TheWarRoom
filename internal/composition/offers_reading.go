@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -28,10 +27,7 @@ type offersHost struct {
 	app *App
 }
 
-func (h offersHost) OffersHistoryContext() context.Context            { return h.app.fallbackParent() }
-func (h offersHost) OffersBuildStamp() string                         { return buildLabel() + " " + buildDate }
-func (h offersHost) OffersLab() (*lab.Data, error)                    { return h.app.lab() }
-func (h offersHost) OffersProvenance(d *lab.Data) snapshot.Provenance { return counterProvenance(d) }
+func (h offersHost) OffersBuildStamp() string { return buildLabel() + " " + buildDate }
 func (h offersHost) OffersDirectory(ctx context.Context) (normalize.Lookup, error) {
 	return h.app.directory(ctx)
 }
@@ -81,7 +77,7 @@ func offersMarketFacts(facts map[string][]MarketFact) map[string][]report.Market
 				cell.Value = &value
 			}
 			if fact.Range != nil {
-				value := report.Range(*fact.Range)
+				value := report.Range{Max: fact.Range.Max, Interval: report.Interval(fact.Range.Interval), Text: fact.Range.Text}
 				cell.Range = &value
 			}
 			out[id][i] = cell
@@ -111,10 +107,6 @@ func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrad
 			return personal.New(a.core.Pools).ObserveOffers(ctx, owner, a.core.Season, pending, a.core.SeasonTransactions.Value, at)
 		})
 
-}
-
-func counterProvenance(d *lab.Data) snapshot.Provenance {
-	return (counterpartiesapp.Service{}).Provenance(d)
 }
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.

@@ -289,16 +289,6 @@ export function createCommands(
         return import('../contracts/state').then(m => m.runContractsAction(change));
       },
     }),
-    'offers.filter': command({
-      id: 'offers.filter',
-      run: (change: BrowserArguments<'offers.filter'>) => {
-        return import('../offers/state').then(m => completed(m.offerState.change(change), () => {
-          const reading = m.offerState.peek().reading;
-          return reading?.status === 'failed'
-            ? reading.absenceReason || 'The offer history could not be read. Try again.' : undefined;
-        }));
-      },
-    }),
     market: command({
       id: 'market',
       run: (change: BrowserArguments<'market'>) => {
@@ -726,7 +716,6 @@ export function createCommands(
     loadSnapshot: (value: Snapshot) => {
       snapshot = value;
       prefetchMoves();
-      void loadMarket().then((m) => m.warm(), console.error);
       const franchiseId = loadFranchise(value, storage());
       if (franchiseId) {
         void prefetchHQ().catch(hqFailure);

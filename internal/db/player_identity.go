@@ -91,12 +91,14 @@ func LinkPlayerExternalID(ctx context.Context, tx *sql.Tx, provider, value, mfl 
 	return nil
 }
 
-// RosterOwner is the stored ownership key. Empty side is the existing single pool;
-// no conference inference or mirrored-league behavior is performed here.
+// RosterOwner is the stored ownership key. Empty side is the single pool; a league with a
+// player pool per side owns each player once per side. The caller names the side.
 type RosterOwner struct{ MFL, Side, Franchise string }
 
+// ReplaceRosterOwnership replaces every side's ownership of the league in the caller's transaction, so
+// both sides are saved together or not at all.
 func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owners []RosterOwner) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM player_ownership WHERE league=? AND side=''`, league); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM player_ownership WHERE league=?`, league); err != nil {
 		return fmt.Errorf("replace roster ownership: %w", err)
 	}
 	for _, owner := range owners {
@@ -135,7 +137,8 @@ func GuardPlayerEvidence(ctx context.Context, tx *sql.Tx) error {
 
 // RosterIdentities is a transaction-consistent reading for a private restore point.
 func RosterIdentities(ctx context.Context, tx *sql.Tx, league string) ([]playerid.RawIdentity, error) {
-	rows, err := tx.QueryContext(ctx, `SELECT o.player,e.provider,e.value FROM player_ownership o JOIN player_external_id e ON e.player=o.player WHERE o.league=? AND o.side='' ORDER BY o.player,e.provider,e.value`, league)
+	// A player owned on two sides is one identity: his links are read once.
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT o.player,e.provider,e.value FROM player_ownership o JOIN player_external_id e ON e.player=o.player WHERE o.league=? ORDER BY o.player,e.provider,e.value`, league)
 	if err != nil {
 		return nil, fmt.Errorf("read roster identities: %w", err)
 	}
@@ -231,4 +234,32 @@ func scanPlayerIdentities(rows *sql.Rows) ([]playerid.RawIdentity, error) {
 		return nil, fmt.Errorf("read roster identities: %w", err)
 	}
 	return out, nil
+}
+
+// CreatePlayerRecord adds the player record: one row per permanent player holding his NFL draft
+// capital and bio, each field's winning source beside it. Outside IDs stay in player_external_id
+// and production in observations; the record is how both are read by our ID.
+func CreatePlayerRecord(ctx context.Context, tx *sql.Tx) error {
+	const ddl = `CREATE TABLE player_record (
+ player TEXT PRIMARY KEY REFERENCES canonical_player(id),
+ listed INTEGER NOT NULL CHECK(listed IN (0,1)),
+ name TEXT NOT NULL,
+ position TEXT NOT NULL,
+ birth_date TEXT NOT NULL,
+ college TEXT NOT NULL,
+ rookie_season INTEGER NOT NULL CHECK(rookie_season>=0),
+ draft TEXT NOT NULL CHECK(draft IN ('drafted','undrafted','unknown')),
+ draft_year INTEGER NOT NULL CHECK(draft_year>=0),
+ draft_round INTEGER NOT NULL CHECK(draft_round>=0),
+ draft_pick INTEGER NOT NULL CHECK(draft_pick>=0),
+ draft_overall INTEGER NOT NULL CHECK(draft_overall>=0),
+ draft_team TEXT NOT NULL,
+ mislinked INTEGER NOT NULL CHECK(mislinked IN (0,1)),
+ sources TEXT NOT NULL CHECK(json_valid(sources)),
+ as_of TEXT NOT NULL
+ ) STRICT;`
+	if _, err := tx.ExecContext(ctx, ddl); err != nil {
+		return fmt.Errorf("migrate player record: %w", err)
+	}
+	return nil
 }

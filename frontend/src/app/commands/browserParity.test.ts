@@ -8,8 +8,10 @@ const local = createCommands();
 const roles: Role[] = ['gm', 'commish', 'admin'];
 const hidden = new Set(['commandbar.open', 'commandbar.close', 'overlays.close', 'surface.close']);
 
-it('has exactly the old browser inventory, with immutable metadata and consistent effects', () => {
-  const ids = before.map(c => c.id).sort();
+const retained = before.filter(c => c.id !== 'offers.filter');
+
+it('retains the browser inventory except removed offer history, with immutable metadata', () => {
+  const ids = retained.map(c => c.id).sort();
   expect(Object.keys(local.registry).sort()).toEqual(ids);
   expect(Object.keys(browserCommands).sort()).toEqual(ids);
   expect(Object.isFrozen(local.registry)).toBe(true);
@@ -29,7 +31,7 @@ describe.each(roles)('%s browser door parity', role => {
   const searchable = new Set(searchCandidates(caller)
     .filter(c => c.kind === 'command' && Object.keys(c.invocation.args).length === 0)
     .map(c => c.invocation.verb));
-  it.each(before)('$id keeps admission and direct command-bar exposure', old => {
+  it.each(retained)('$id keeps admission and direct command-bar exposure', old => {
     const id = old.id as CommandId;
     const allowed = old.roles.includes(role);
     expect(caller.canDispatch(id)).toBe(allowed);

@@ -109,3 +109,30 @@ func TestAliasResolutionDoesNotChangeYesNoBallots(t *testing.T) {
 		t.Fatal("election candidate alias unresolved")
 	}
 }
+
+func TestCreationRetryBeforeSourceWasRecorded(t *testing.T) {
+	for _, preset := range []string{PresetLegacy, PresetEmpty, PresetDefault32} {
+		t.Run(preset, func(t *testing.T) {
+			b := newLedger(t, preset)
+			prior := b.records[0]
+			prior.Command.Args.Source = ""
+			canonical, err := prior.Command.Canonical(prior.Principal)
+			if err != nil {
+				t.Fatal(err)
+			}
+			prior.Canonical = canonical
+			matches, err := MatchesRetry(b.records[0].Command, prior.Principal, prior, []Record{prior})
+			if err != nil || !matches || prior.Canonical != canonical {
+				t.Fatalf("pre-source retry changed: matches=%v error=%v", matches, err)
+			}
+			changed := b.records[0].Command
+			changed.Args.Source = SourceMFLImport
+			if preset == PresetLegacy {
+				changed.Args.Source = SourceNative
+			}
+			if matches, err := MatchesRetry(changed, prior.Principal, prior, []Record{prior}); err != nil || matches {
+				t.Fatalf("changed source retried: matches=%v error=%v", matches, err)
+			}
+		})
+	}
+}

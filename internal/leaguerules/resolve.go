@@ -25,6 +25,10 @@ type Change struct {
 	Effective  Effective
 	RecordedAt time.Time
 	Season     int
+	// Franchises, set on a Teams or Divisions change, is the league's franchises in order once the
+	// change applies. Resolving the change keeps the division alignment to them (see alignTo). It is
+	// omitted when empty, so a stored change without it encodes, and digests, as it did.
+	Franchises []string `json:",omitempty"`
 }
 
 func (c Change) Validate() error {
@@ -111,6 +115,7 @@ func Resolve(changes []Change, season int, at time.Time) (RuleSet, error) {
 				if err := f.apply(&result, c.New); err != nil {
 					return RuleSet{}, fmt.Errorf("rule value: %w", err)
 				}
+				alignTo(&result, c)
 				break
 			}
 		}

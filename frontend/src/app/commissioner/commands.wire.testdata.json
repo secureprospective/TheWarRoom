@@ -252,6 +252,12 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.league.cutover",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "commish.league.seed_held",
     "effective": "now",
     "field": "",
@@ -426,6 +432,12 @@
     "safeguard": "confirm"
   },
   {
+    "command": "draft.startup.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "draft.timer",
     "effective": "now",
     "field": "",
@@ -433,6 +445,12 @@
   },
   {
     "command": "history.link",
+    "effective": "now",
+    "field": "",
+    "safeguard": "hold"
+  },
+  {
+    "command": "oline.auction.close",
     "effective": "now",
     "field": "",
     "safeguard": "hold"

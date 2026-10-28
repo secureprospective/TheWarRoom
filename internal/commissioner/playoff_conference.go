@@ -19,13 +19,17 @@ type conferenceLayout struct {
 }
 
 // conferencesFor reads the league's conferences from its division alignment and the conference of each
-// division recorded in the starting snapshot. A league with one conference needs no record of it.
+// division: the league setting when it is known, else the record in the starting snapshot. A league with
+// one conference needs no record of it.
 func conferencesFor(records []Record, rules leaguerules.RuleSet, franchises []string) conferenceLayout {
 	alignment := rules.League.Alignment
 	if alignment.State != leaguerules.IsKnown {
 		return conferenceLayout{Words: "Needs a ruling: which division each team is in"}
 	}
 	held := heldConferences(records)
+	if setting := rules.League.DivisionConferences; setting.State == leaguerules.IsKnown {
+		held = setting.Value
+	}
 	out := conferenceLayout{Of: map[string]string{}}
 	for _, id := range franchises {
 		division := alignment.Value[id]

@@ -31,6 +31,7 @@ type Entry struct {
 	Native     map[Mode]Handler
 	MFL        map[Mode]Handler
 	Console    map[Mode]Handler
+	Assist     map[Mode]Handler
 	Desktop    []DesktopExposure
 	Browser    *BrowserCommand
 	Workflow   *WorkflowCommand
@@ -52,6 +53,8 @@ type RegistryInputs struct {
 	MFL     MFLShapes
 	Desktop map[string]map[string]Binding
 	Service *leagueservice.Service
+	// Migration adds the move from MFL; nil leaves it out.
+	Migration *MigrationInputs
 }
 
 // NewRegistry binds application-lifetime ports without globals or reflective invocation.
@@ -86,6 +89,9 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		}
 		entry.Workflow = &w
 	}
+	if in.Migration != nil {
+		r.entries = append(r.entries, MigrationEntries(*in.Migration)...)
+	}
 	for _, c := range BrowserCommands() {
 		r.entries = append(r.entries, Entry{ID: c.ID, Label: c.Label, Browser: &c})
 	}
@@ -96,7 +102,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 }
 
 func (r *Registry) addDesktop(bindings map[string]map[string]Binding, native, mfl []Command) error {
-	features := strings.Fields("archive commissioner comms contracts control counterparties draft market now offers platform race research sources trades")
+	features := strings.Fields("archive commissioner comms contracts control draft market now offers platform race research sources trades")
 	for _, feature := range features {
 		related := native
 		if feature == "offers" {
@@ -165,7 +171,7 @@ func (e Entry) validate() error {
 	if err := e.validateGeneratedDoors(); err != nil {
 		return err
 	}
-	for _, handlers := range []map[Mode]Handler{e.Native, e.MFL, e.Console} {
+	for _, handlers := range []map[Mode]Handler{e.Native, e.MFL, e.Console, e.Assist} {
 		if handlers != nil {
 			if err := validateHandlers(e.Definition, handlers); err != nil {
 				return err
@@ -208,25 +214,34 @@ func (r *Registry) Invoke(ctx context.Context, door Door, id string, mode Mode, 
 			}
 			return entry.Workflow.Run(ctx, r.service, raw)
 		}
-		var handlers map[Mode]Handler
-		switch door {
-		case ConsoleDoor:
-			handlers = entry.Console
-		case MFLDoor:
-			handlers = entry.MFL
-		case NativeDoor:
-			handlers = entry.Native
-		case WailsDoor, WorkflowDoor, BrowserDoor:
-			handlers = nil
-		}
-		if handler := handlers[mode]; handler != nil {
+		if handler := entry.handlers(door)[mode]; handler != nil {
 			return handler(ctx, body)
 		}
 	}
 	return nil, fmt.Errorf("command %s is not available in %s mode through %s", id, mode, door)
 }
 
+// handlers are the entry's handlers on a door that dispatches by mode; nil for the other doors.
+func (e *Entry) handlers(door Door) map[Mode]Handler {
+	switch door {
+	case ConsoleDoor:
+		return e.Console
+	case AssistDoor:
+		return e.Assist
+	case MFLDoor:
+		return e.MFL
+	case NativeDoor:
+		return e.Native
+	case WailsDoor, WorkflowDoor, BrowserDoor:
+		return nil
+	}
+	return nil
+}
+
 func commandLabel(id string) string {
+	if id == "oline.auction.close" {
+		return "Close O-Line auction"
+	}
 	if strings.Contains(id, ".") {
 		words := strings.Split(strings.ReplaceAll(id, "_", " "), ".")
 		for i, word := range words {
@@ -280,7 +295,7 @@ func validateHandlers(c Command, handlers map[Mode]Handler) error {
 }
 
 func (e Entry) hasDoor() bool {
-	return e.Native != nil || e.MFL != nil || e.Console != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
+	return e.Native != nil || e.MFL != nil || e.Console != nil || e.Assist != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
 }
 
 func (e Entry) validateGeneratedDoors() error {

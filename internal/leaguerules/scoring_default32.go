@@ -1,5 +1,10 @@
 package leaguerules
 
+import (
+	"fmt"
+	"strings"
+)
+
 const (
 	default32EdgeCitation = "Config study p6 §2 Package A, ruling 2026-10-27"
 	default32RTLCitation  = "2025 nflverse regular-season play-by-play and weekly positions; FB counted as RB"
@@ -7,6 +12,7 @@ const (
 	default32Lineup       = "DEFAULT-32 spec §1, locked 2026-10-26"
 	default32Roster       = "DEFAULT-32 spec §2, locked 2026-10-26"
 	default32OLine        = "DEFAULT-32 spec §3, locked 2026-10-26"
+	default32Layout       = "32-Team Default: the NFL's conferences and divisions"
 )
 
 // Default32 is the 32-Team Default league: Legacy's rules for 32 teams with the spec's lineup, roster,
@@ -30,6 +36,8 @@ func Default32() RuleSet {
 	r.Roster.Limits = cited(Bounds{Min: r.Roster.Limits.Value.Min, Max: cited(44, default32Roster)}, default32Roster)
 	r.Roster.ReserveExcluded = cited(true, default32Roster)
 	r.Roster.PositionBounds = cited(map[Position]Bounds{OL: bounds(1, 1, default32OLine)}, default32OLine)
+	// A startup draft fills the active roster except the O-Line card, which is auctioned.
+	r.Draft.StartupRounds = cited(43, default32Roster+"; "+startupRuling)
 	r.Taxi.Slots = cited(8, default32Roster)
 	r.Taxi.MaximumYears = cited(3, default32Roster)
 	r.Taxi.Basis = cited(NFLSeasons, default32Roster)
@@ -39,7 +47,64 @@ func Default32() RuleSet {
 	r.IR.Eligible = cited([]NFLStatus{InjuredReserve, PUP}, default32Roster)
 	r.IR.MustLeaveHealthy = cited(true, default32Roster)
 	r.Scoring = Default32Scoring()
+	if r.League.Alignment.State != IsKnown {
+		r.League.Alignment = cited(default32Alignment(), default32Layout)
+	}
+	r.League.DivisionConferences = cited(default32Conferences(), default32Layout)
 	return r
+}
+
+// Default32ForTeams adapts the 32-Team Default to a team count without guessing the parts that depend on
+// how many teams there are. At 32 it is the 32-Team Default exactly.
+func Default32ForTeams(count int) RuleSet {
+	r := Default32()
+	r.League.Teams = cited(count, "Legacy template: chosen team count")
+	if count == 32 {
+		return r
+	}
+	// The NFL's eight divisions and their alignment hold 32 franchises only.
+	r.League.Divisions = Needs[int]("Choose the number of divisions for this league's size.")
+	r.League.Alignment = Needs[map[string]string]("Choose which division each franchise belongs to.")
+	r.League.DivisionConferences = Needs[map[string]string]("Choose the conference of each division.")
+	// The playoff field is competitive: the app does not scale the NFL's seven per conference.
+	r.Playoffs.PerConference = Needs[int]("Choose how many teams per conference make the playoffs in this " +
+		"league.")
+	r.Playoffs.DivisionWinners = Needs[int]("Choose the playoff field first, then how many division " +
+		"winners qualify.")
+	r.Playoffs.WildCards = Needs[int]("Choose the playoff field first, then how many wild cards qualify.")
+	r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this playoff field.")
+	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this playoff field.")
+	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the bracket.")
+	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this league.")
+	if count < 4 {
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades.")
+		r.Trades.DOTSeats = Needs[int]("Fewer than four teams: choose how many people review trades.")
+		r.Trades.MaximumParties = Needs[int]("Fewer than four teams: choose the maximum parties in a trade.")
+	}
+	return r
+}
+
+// default32Divisions is the NFL layout in franchise order: four franchises to a division.
+func default32Divisions() []string {
+	return []string{"AFC East", "AFC North", "AFC South", "AFC West", "NFC East", "NFC North", "NFC South", "NFC West"}
+}
+
+func default32Alignment() map[string]string {
+	alignment := map[string]string{}
+	for i, division := range default32Divisions() {
+		for seat := 1; seat <= 4; seat++ {
+			alignment[fmt.Sprintf("franchise.%02d", i*4+seat)] = division
+		}
+	}
+	return alignment
+}
+
+func default32Conferences() map[string]string {
+	conferences := map[string]string{}
+	for _, division := range default32Divisions() {
+		conferences[division] = strings.Fields(division)[0]
+	}
+	return conferences
 }
 
 // Default32Scoring is the 32-team default as commissioner scoring settings: Legacy's rule list plus
@@ -84,6 +149,7 @@ func Default32Scoring() ScoringRules {
 			"pat_missed_or_blocked":   {"pat_missed", "pat_blocked"},
 			"punt_or_other_return_td": {"punt_return_td", "other_return_td"}}, default32Citation),
 		LineUnit: cited(default32LineUnit(), default32Citation),
+		Rules:    cited(map[StatID][]RangeRule{}, default32Citation),
 	}
 	return r
 }

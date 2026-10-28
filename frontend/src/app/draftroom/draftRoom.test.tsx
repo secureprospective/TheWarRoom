@@ -6,6 +6,7 @@ import { leagueState } from '../commissioner/proxy';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { dialogOf } from '../commissioner/trayHarness';
 import { at, openRoom, people, wire } from './draftHarness';
+import { draftRoom } from './state';
 
 let restore: (() => void) | undefined;
 afterEach(async () => {
@@ -204,6 +205,20 @@ describe('The commissioner’s tray', () => {
       expect(sent[0].args.draft.act).toEqual({ round: 1, original: 'franchise.03', player: '5004',
         replaces: '5001' });
     });
+  it('uses player wording when assigning a startup pick', async () => {
+    at(noon);
+    const reading = { ...wire.running, startup: true };
+    const { host } = await room({ reading });
+    await act(async () => { draftRoom.choose(true); });
+    await settle();
+    const panel = await launch(host, 'Choose a player for round 1 pick 2, Held team 1');
+    expect(panel.textContent).toContain('Choose a player.');
+    expect(panel.textContent).not.toContain('rookie');
+    expect(disabled(button(panel, 'Give this player to the pick'))).toBe(true);
+    await type(control(panel, 'Player'), '5002');
+    await settle();
+    expect(panel.textContent).not.toContain('Choose a player.');
+  });
   it('gives a rookie to the pick on the clock, and to nothing else without one chosen', async () => {
     at(noon);
     const { host, sent } = await room();
@@ -427,3 +442,40 @@ describe('Which franchise is shown', () => {
   });
 });
 const commissionerSeat = () => leagueState.peek().people?.seats[0]?.franchise;
+
+describe('Searching the pool for your own pick', () => {
+  const shown = (host: Element, label: string) => all(control(host, label), 'option')
+    .map(o => o.textContent);
+  it('narrows the players shown by the name typed, ignoring case and padding', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner });
+    expect(shown(host, 'Rookie')).toHaveLength(6);
+    await type(control(host, 'Search by name'), '  player, 5003 ');
+    await settle();
+    expect(shown(host, 'Rookie')).toEqual(['Choose…', 'Player, 5003, WR · AAA']);
+  });
+  it('narrows the players shown to the position chosen, and lists every position A–Z', async () => {
+    at(noon);
+    const reading = { ...wire.running,
+      available: wire.running.available.map(p => (p.id === '5003' ? { ...p, position: 'RB' } : p)) };
+    const { host } = await room({ people: people.owner, reading });
+    expect(shown(host, 'Position')).toEqual(['All positions', 'RB', 'WR']);
+    await type(control(host, 'Position'), 'RB');
+    await settle();
+    expect(shown(host, 'Rookie')).toEqual(['Choose…', 'Player, 5003, RB · AAA']);
+  });
+  it('says so when nobody matches the search or position', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner });
+    await type(control(host, 'Search by name'), 'nobody');
+    await settle();
+    expect(host.textContent).toContain('No player matches.');
+    expect(shown(host, 'Rookie')).toEqual(['Choose…']);
+  });
+  it('says Player instead of Rookie on the pool of a startup draft', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner, reading: { ...wire.running, startup: true } });
+    expect(shown(host, 'Player')).toHaveLength(6);
+    expect(() => control(host, 'Rookie')).toThrow('No field labelled “Rookie”');
+  });
+});

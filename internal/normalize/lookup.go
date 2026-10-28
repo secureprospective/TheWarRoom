@@ -86,6 +86,14 @@ func NewLookup(raws []players.RawPlayer) (Lookup, error) {
 				entry.DraftYear, entry.HasDraftYear = v, true
 			}
 		}
+		// The fetcher validated the selection; a round with no pick (or none at all) is no
+		// selection.
+		round, _ := strconv.Atoi(strings.TrimSpace(rp.DraftRound))
+		pick, _ := strconv.Atoi(strings.TrimSpace(rp.DraftPick))
+		if round > 0 && pick > 0 {
+			entry.DraftRound, entry.DraftPick = round, pick
+			entry.DraftTeam = strings.TrimSpace(rp.DraftTeam)
+		}
 		byID[id.String()] = entry
 	}
 	return Lookup{byID: byID}, nil
@@ -103,6 +111,9 @@ type PlayerFacts struct {
 	HasBirthdate bool   // commissioner-created players lack one
 	DraftYear    int    // the §6 experience source
 	HasDraftYear bool   // false for undrafted ("0")
+	DraftRound   int    // NFL draft round; 0 when MFL lists no selection
+	DraftPick    int    // the pick within that round; 0 when MFL lists no selection
+	DraftTeam    string // the NFL team that drafted him, when MFL lists a selection
 	College      string // raw; the SchoolTier source
 }
 

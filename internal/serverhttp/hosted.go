@@ -419,7 +419,7 @@ func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Cer
 }
 
 func hostedOwner(policy governance.State, principal governance.Principal, records []commissioner.Record) bool {
-	for _, id := range records[0].Command.Args.Franchises {
+	for _, id := range commissioner.LeagueFranchises(records) {
 		seat, ok := policy.Franchise(governance.FranchiseID(id))
 		if ok && seat.Seat == principal {
 			return true

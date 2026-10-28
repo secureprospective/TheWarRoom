@@ -9,7 +9,6 @@ import (
 	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapi "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
-	counterpartiesapi "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapi "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -119,29 +118,17 @@ func controlCommandBindings(api *controlapi.API) map[string]catalog.Binding {
 		"TargetSetWindow":         catalog.Bind2Error(api.TargetSetWindow, "kind", "at"),
 	}
 }
-func counterpartiesCommandBindings(api *counterpartiesapi.API) map[string]catalog.Binding {
-	return map[string]catalog.Binding{
-		"TargetCounterparties":  catalog.Bind1Value(api.TargetCounterparties, "raw"),
-		"TargetCounterpartTeam": catalog.Bind1Value(api.TargetCounterpartTeam, "raw"),
-	}
-}
 func draftCommandBindings(api *draftapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetDraftReportsRefresh": catalog.Bind1Error(api.TargetDraftReportsRefresh, "force"),
 		"TargetDraftReports":        catalog.Bind0(api.TargetDraftReports),
 		"TargetOpenMFLDraftRoom":    catalog.Bind0Error(api.TargetOpenMFLDraftRoom),
 		"TargetNFLDraft":            catalog.Bind0(api.TargetNFLDraft),
-		"TargetDraftLab":            catalog.Bind1Value(api.TargetDraftLab, "raw"),
 	}
 }
 func marketCommandBindings(api *marketapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetAssetBoard":           catalog.Bind0(api.TargetAssetBoard),
-		"TargetMarket":               catalog.Bind1Value(api.TargetMarket, "raw"),
-		"TargetMarketLists":          catalog.Bind1Value(api.TargetMarketLists, "raw"),
-		"TargetPickClock":            catalog.Bind1Value(api.TargetPickClock, "raw"),
-		"TargetMarketStretches":      catalog.Bind1Value(api.TargetMarketStretches, "raw"),
-		"TargetAssetProfile":         catalog.Bind1Value(api.TargetAssetProfile, "raw"),
 		"TargetMarketReportsRefresh": catalog.Bind1Error(api.TargetMarketReportsRefresh, "force"),
 		"TargetMarketReports":        catalog.Bind0(api.TargetMarketReports),
 	}
@@ -155,7 +142,6 @@ func nowCommandBindings(api *nowapi.API) map[string]catalog.Binding {
 }
 func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
-		"TargetOffers":          catalog.Bind1Value(api.TargetOffers, "raw"),
 		"TargetPersonal":        catalog.Bind1(api.TargetPersonal, "mine"),
 		"TargetPersonalChange":  catalog.Bind1Error(api.TargetPersonalChange, "raw"),
 		"TargetPersonalHandOff": catalog.Bind1Error(api.TargetPersonalHandOff, "kind"),
@@ -224,21 +210,20 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
-		archive:        archiveapi.New(archiveHost{app.core}),
-		commissioner:   newCommissionerAPI(app),
-		comms:          commsapi.New(commsHost{app.core}),
-		contracts:      contractsapi.New(contractsHost{State: app.core, app: app}),
-		control:        controlapi.New(controlHost{State: app.core, app: app}, app.controlHeld),
-		counterparties: counterpartiesapi.New(app.core),
-		draft:          draftapi.New(draftHost{State: app.core, app: app}),
-		market:         newMarketAPI(app),
-		now:            nowapi.New(nowHost{State: app.core, app: app}, app.nowHeld),
-		offers:         offersapi.New(offersHost{State: app.core, app: app}),
-		platform:       app.platformAPI(),
-		race:           raceapi.New(raceHost{app.core}, app.raceHeld),
-		research:       researchapi.New(researchHost{app: app}, app.researchHeld),
-		sources:        app.sourcesAPI(),
-		trades:         tradesapi.New(tradesHost{State: app.core, app: app}),
+		archive:      archiveapi.New(archiveHost{app.core}),
+		commissioner: newCommissionerAPI(app),
+		comms:        commsapi.New(commsHost{app.core}),
+		contracts:    contractsapi.New(contractsHost{State: app.core, app: app}),
+		control:      controlapi.New(controlHost{State: app.core, app: app}, app.controlHeld),
+		draft:        draftapi.New(draftHost{State: app.core, app: app}),
+		market:       newMarketAPI(app),
+		now:          nowapi.New(nowHost{State: app.core, app: app}, app.nowHeld),
+		offers:       offersapi.New(offersHost{State: app.core, app: app}),
+		platform:     app.platformAPI(),
+		race:         raceapi.New(raceHost{app.core}, app.raceHeld),
+		research:     researchapi.New(researchHost{app: app}, app.researchHeld),
+		sources:      app.sourcesAPI(),
+		trades:       tradesapi.New(tradesHost{State: app.core, app: app}),
 	}
 }
 func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
@@ -250,23 +235,23 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 			Pool:  catalog.Shape(reflect.TypeFor[offersapi.RawPoolScope](), "RawPoolScope.Validate"),
 			Owner: catalog.Shape(reflect.TypeFor[offersapi.RawBidOwner](), "RawBidOwner.Validate"),
 		},
-		Service: leagueservice.New(commissionerHost{State: app.core, app: app}),
+		Service:   leagueservice.New(commissionerHost{State: app.core, app: app}),
+		Migration: app.migrationInputs(),
 		Desktop: map[string]map[string]catalog.Binding{
-			"archive":        archiveCommandBindings(a.archive),
-			"commissioner":   commissionerCommandBindings(a.commissioner),
-			"comms":          commsCommandBindings(a.comms),
-			"contracts":      contractsCommandBindings(a.contracts),
-			"control":        controlCommandBindings(a.control),
-			"counterparties": counterpartiesCommandBindings(a.counterparties),
-			"draft":          draftCommandBindings(a.draft),
-			"market":         marketCommandBindings(a.market),
-			"now":            nowCommandBindings(a.now),
-			"offers":         offersCommandBindings(a.offers),
-			"platform":       platformCommandBindings(a.platform),
-			"race":           raceCommandBindings(a.race),
-			"research":       researchCommandBindings(a.research),
-			"sources":        sourcesCommandBindings(a.sources),
-			"trades":         tradesCommandBindings(a.trades),
+			"archive":      archiveCommandBindings(a.archive),
+			"commissioner": commissionerCommandBindings(a.commissioner),
+			"comms":        commsCommandBindings(a.comms),
+			"contracts":    contractsCommandBindings(a.contracts),
+			"control":      controlCommandBindings(a.control),
+			"draft":        draftCommandBindings(a.draft),
+			"market":       marketCommandBindings(a.market),
+			"now":          nowCommandBindings(a.now),
+			"offers":       offersCommandBindings(a.offers),
+			"platform":     platformCommandBindings(a.platform),
+			"race":         raceCommandBindings(a.race),
+			"research":     researchCommandBindings(a.research),
+			"sources":      sourcesCommandBindings(a.sources),
+			"trades":       tradesCommandBindings(a.trades),
 		},
 	}
 }

@@ -10,7 +10,8 @@ describe('Commissioner people wire', () => {
     expect(people.seats.map(s => s.owner)).toEqual(['owner-one', 'owner-two', 'owner-three', 'Vacant']);
     expect(people.roles).toEqual([{ person: 'creator', role: 'Commissioner' },
       { person: 'private-deputy', role: 'Co-commissioner' }]);
-    expect(people).toMatchObject({ dotCount: 0, dotStatus: 'Needs a ruling: DOT has 0 of 4 seats',
+    expect(people).toMatchObject({ dotCount: 0,
+      dotStatus: 'Needs a ruling: trade review needs at least one seat',
       yourRole: 'Commissioner', mayChangeRules: true, mayGrantRoles: true });
     expect(people.votes[0])
       .toMatchObject({ ballotsCast: 1, votesRequired: 3, votedFranchises: ['franchise.02'] });

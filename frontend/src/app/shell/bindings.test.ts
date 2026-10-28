@@ -41,14 +41,27 @@ it('ignores typing and modified shortcuts without dispatching', () => {
   expect(c.read().density).toBe('narrative');
 });
 
-it('opens old saved Archive hashes and writes the canonical Archive route', () => {
+it('normalizes removed Archive hashes', () => {
   const c = createCommands();
   const location = { hash: '#/pulse/pools-archive' };
   const binding = connectRoutes(c, location, hash => { location.hash = hash; });
-  expect(c.read()).toMatchObject({ node: 'pulse', workspace: { pulse: 'archive' } });
-  expect(location.hash).toBe('#/pulse/archive');
-  c.dispatch('nav.open', { node: 'home' });
-  c.dispatch('nav.open', { node: 'pulse' });
-  expect(location.hash).toBe('#/pulse/archive');
+  expect(location.hash).toBe('#/home/seasonal-card');
   binding.unsubscribe();
+});
+
+it('rejects removed workspaces while keeping the draft room and value board', () => {
+  const c = createCommands();
+  for (const hash of ['#/war/market', '#/trade/counterparties', '#/trade/offers-history',
+    '#/pulse/archive', '#/control/data-and-sources']) {
+    const location = { hash };
+    const binding = connectRoutes(c, location, value => { location.hash = value; });
+    expect(location.hash).toBe('#/home/seasonal-card');
+    binding.unsubscribe();
+  }
+  for (const hash of ['#/trade/draft-room', '#/war/valuations-and-pool']) {
+    const location = { hash };
+    const binding = connectRoutes(c, location, value => { location.hash = value; });
+    expect(location.hash).toBe(hash);
+    binding.unsubscribe();
+  }
 });

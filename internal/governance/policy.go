@@ -65,8 +65,8 @@ func dotCommand(id string) bool {
 }
 func TradeReviewReady(s State) error {
 	n := len(s.members(DOT))
-	if n < 4 {
-		return fmt.Errorf("%s: DOT has %d of 4 seats", "Needs a ruling", n)
+	if n < 1 {
+		return fmt.Errorf("%s: trade review needs at least one seat", "Needs a ruling")
 	}
 	return nil
 }

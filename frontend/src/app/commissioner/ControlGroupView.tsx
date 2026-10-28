@@ -3,6 +3,7 @@ import { Act } from '../commands/Act';
 import { ControlRow } from './ControlRow';
 import type { Entry } from './controls';
 import { leagueState } from './proxy';
+import { startingJob } from './jobs';
 import type { RuleRow } from './rules';
 import { TrayLauncher } from './TrayLauncher';
 
@@ -20,13 +21,14 @@ type Props = {
 // What a group shows besides its controls: the screens that already exist, placed with the controls they
 // answer for, and the way into each change. A change itself is made in the side tray, never in the group.
 function Existing({ id }: { id: string }) {
-  const { choices, people, pending } = leagueState.use();
+  const { choices, people, pending, jobs } = leagueState.use();
+  const start = startingJob(jobs);
   if (id === 'constitution') return (
     <>
       <p>A league run in this app. You become its commissioner.</p>
       <TrayLauncher tray="start" label={choices.length === 0 && !pending ? 'Start an app league'
         : 'Start another app league'} />
-      <TrayLauncher tray="seed" label="Record starting assets" />
+      {start && <TrayLauncher tray="seed" label={start.name} />}
       <LeagueRules />
     </>
   );

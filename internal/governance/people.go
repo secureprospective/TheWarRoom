@@ -29,6 +29,69 @@ func (e LeagueCreated) apply(s *State) error {
 	return nil
 }
 
+// FranchisesResized sets the league's franchises to the listed ones, in order. A new franchise starts
+// vacant under its listed name; a franchise left off must be vacant with no open invitation.
+type FranchisesResized struct {
+	Franchises []FranchiseIdentitySet
+}
+
+func (FranchisesResized) Private() bool { return false }
+func (e FranchisesResized) apply(s *State) error {
+	if err := s.requireCreated(); err != nil {
+		return err
+	}
+	if len(e.Franchises) == 0 {
+		return fmt.Errorf("a league needs franchises")
+	}
+	listed := make(map[FranchiseID]bool, len(e.Franchises))
+	for _, f := range e.Franchises {
+		listed[f.Franchise] = true
+	}
+	for id := range s.franchises {
+		if listed[id] {
+			continue
+		}
+		if err := s.removable(id); err != nil {
+			return err
+		}
+	}
+	for id := range s.franchises {
+		if !listed[id] {
+			delete(s.franchises, id)
+		}
+	}
+	return s.addListed(e.Franchises)
+}
+
+// removable refuses to remove a franchise someone holds or has been invited to.
+func (s *State) removable(id FranchiseID) error {
+	f := s.franchises[id]
+	if f.Seat != "" || f.Caretaker != "" {
+		return fmt.Errorf("%s still has an owner; free the seat before removing the team", f.Name)
+	}
+	for _, invite := range s.invites {
+		if invite.Franchise == id && !invite.Revoked && !invite.Redeemed {
+			return fmt.Errorf("%s has an open invitation; revoke it before removing the team", f.Name)
+		}
+	}
+	return nil
+}
+
+// addListed seats each listed franchise the league does not hold yet, vacant under its listed name.
+func (s *State) addListed(franchises []FranchiseIdentitySet) error {
+	for _, f := range franchises {
+		if _, ok := s.franchises[f.Franchise]; ok {
+			continue
+		}
+		if f.Franchise == "" || f.Name == "" || f.Abbreviation == "" {
+			return fmt.Errorf("a franchise needs an identity")
+		}
+		s.franchises[f.Franchise] = Franchise{ID: f.Franchise, Name: f.Name, Abbreviation: f.Abbreviation,
+			Abilities: defaultAbilities()}
+	}
+	return nil
+}
+
 type FranchiseIdentitySet struct {
 	Franchise          FranchiseID
 	Name, Abbreviation string
@@ -61,9 +124,6 @@ func (e RoleGranted) apply(s *State) error {
 	}
 	if e.Role == CoCommissioner && s.HasRole(e.Principal, CoCommissioner) {
 		return fmt.Errorf("that person is already a co-commissioner")
-	}
-	if e.Role == DOT && !s.HasRole(e.Principal, DOT) && len(s.members(DOT)) >= 10 {
-		return fmt.Errorf("dOT already has its maximum of 10 seats")
 	}
 	s.grant(e.Principal, e.Role)
 	if e.Role == CoCommissioner {

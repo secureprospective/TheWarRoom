@@ -15,9 +15,6 @@ import fixture from '../data/fixtures/snapshot.json';
 import { PlaySpine } from '../now/LiveGame';
 import { parseLive } from '../now/liveContract';
 import liveWire from '../now/live.testdata.json';
-import { TeamTable } from '../counterparties/Counterparties';
-import { parseCounterparties } from '../counterparties/provider';
-import { surfaceWire } from '../counterparties/wire.testdata';
 
 const css = (file: string) => readFileSync(resolve('src/app', file), 'utf8');
 function declarations(source: string, selector: string) {
@@ -102,21 +99,6 @@ it('a rendered Now player name dispatches inspect and the franchise header is in
   expect(html).toContain(`aria-label="Inspect ${name}"`);
   expect(html).toContain(`aria-label="Inspect ${franchise.name}"`);
   expect(html).toContain('act-text');
-});
-it('L-26 fits ten wrapping columns at 1280 with partner names and trade counts still present', () => {
-  const reading = parseCounterparties(surfaceWire).value!;
-  const html = renderToStaticMarkup(createElement(TeamTable, {
-    rows: reading.rows, words: reading.words, snapshot: parseSnapshot(fixture),
-  }));
-  expect((html.match(/scope="col"/g) ?? []).length).toBe(10);
-  expect(html).toContain('counter-partner-label');
-  for (const row of reading.rows.filter(r => r.partner)) expect(html).toContain(row.partnerTrades);
-  const source = css('counterparties/counterparties.css');
-  expect(declarations(source, '.counter-team-table')).toContain('table-layout: fixed');
-  expect(source).not.toMatch(/display:\s*none/);
-  expect(declarations(source, '.counter-team-table :is(th, td), .counter-team-table th:first-child'))
-    .toContain('min-width: 0');
-  expect(source).toContain('white-space: normal; width: auto');
 });
 it('standalone box reports and the asset board use the same pane-fit rules', () => {
   const reports = css('draftreports/reports.css');

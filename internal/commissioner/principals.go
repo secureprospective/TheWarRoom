@@ -87,6 +87,10 @@ func MatchesRetry(raw RawCommand, principal string, prior Record, records []Reco
 	if !SamePrincipal(records, principal, prior.Principal) {
 		return false, nil
 	}
+	if raw.Command == Create && prior.Command.Command == Create && prior.Command.Args.Source == "" &&
+		raw.Args.Source == LeagueSource([]Record{prior}) {
+		raw.Args.Source = ""
+	}
 	canonical, err := raw.Canonical(prior.Principal)
 	if err != nil {
 		return false, fmt.Errorf("canonical retry: %w", err)

@@ -5,7 +5,6 @@ import { PoolFrame } from './Pool';
 import { parsePool } from './provider';
 import { createPoolState } from './state';
 import wire from './wire.testdata.json';
-import { MarketWorkspace } from '../market/Market';
 import { renderState } from '../shell/state';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
@@ -42,24 +41,6 @@ it('starts with descending engine points and sends the no-team toggle to the poo
   expect(provider.pool).toHaveBeenLastCalledWith('0001', expect.objectContaining({ showNoTeam: true }));
   await state.change({ field: 'pool-sort', value: 'engine' });
   expect(state.peek().scope.desc).toBe(false);
-});
-
-it('uses endpoint.open L-15 from Market and offers Draft lab alongside draft reports', () => {
-  const spy = vi.spyOn(commands, 'use').mockReturnValue({ ...renderState(commands.read()), endpointIds: [] });
-  try {
-    const tree = MarketWorkspace();
-    const controls = tree.props.children[0];
-    const door = controls.props.children[1];
-    expect(door.props.verb).toBe('endpoint.open');
-    expect(door.props.args).toEqual({ id: 'L-15' });
-    Act(door.props).props.onClick();
-    expect(commands.read().endpointIds).toEqual(['L-15']);
-    const reportTree = ReportsView({ board: parseBoard(draftWire), selected: [] });
-    const draftDoor = reportTree.props.children[1].props.children[0];
-    expect(draftDoor.props.verb).toBe('endpoint.open');
-    expect(draftDoor.props.args).toEqual({ id: 'L-15' });
-    expect(draftDoor.props.label).toBe('Draft lab');
-  } finally { spy.mockRestore(); }
 });
 
 it('parses and renders trade player details and shared value cells, and the Lab pick value', () => {

@@ -35,6 +35,19 @@ type DistanceScale struct {
 	Cap    Decimal
 }
 
+// RangeRule is one scoring rule as MFL writes it: for the listed positions (every position when
+// empty), a stat whose value falls inside Range earns Points. Flat awards Points once (MFL "6");
+// otherwise Points is earned for each Per of the value (MFL "1/10"), or for each one when Per is 0
+// (MFL "*6"). A stat recorded play by play as lengths applies the rule to each play's length. Rules on
+// one stat add up and each is rounded on its own.
+type RangeRule struct {
+	Positions []Position
+	Points    Decimal
+	Per       Decimal
+	Flat      bool
+	Range     StatRange
+}
+
 // LineUnit scores a team-game for an NFL team's offensive line. A team that did not play scores 0.
 type LineUnit struct {
 	Used    bool
@@ -53,6 +66,7 @@ func emptyScoringKinds(r *ScoringRules, citation string) {
 	r.Scales = cited(map[StatID]DistanceScale{}, citation)
 	r.Totals = cited(map[StatID][]StatID{}, citation)
 	r.LineUnit = cited(LineUnit{Weights: map[StatID]Decimal{}, Labels: map[StatID]string{}}, citation)
+	r.Rules = cited(map[StatID][]RangeRule{}, citation)
 }
 
 func scoringKindFields() []ruleField {
@@ -61,19 +75,19 @@ func scoringKindFields() []ruleField {
 		field[map[StatID]StatRange]{path: "scoring.ranges", label: "Scoring ranges", access: func(r *RuleSet) *Value[map[StatID]StatRange] { return &r.Scoring.Ranges }},
 		field[map[StatID]DistanceScale]{path: "scoring.scales", label: "Points by play distance", access: func(r *RuleSet) *Value[map[StatID]DistanceScale] { return &r.Scoring.Scales }},
 		field[map[StatID][]StatID]{path: "scoring.totals", label: "Stats counted as a total of others", access: func(r *RuleSet) *Value[map[StatID][]StatID] { return &r.Scoring.Totals }},
+		field[map[StatID][]RangeRule]{path: "scoring.rules", label: "Scoring rules by range and position", access: func(r *RuleSet) *Value[map[StatID][]RangeRule] { return &r.Scoring.Rules }},
 		field[LineUnit]{path: "scoring.lineUnit", label: "Team offensive line scoring", access: func(r *RuleSet) *Value[LineUnit] { return &r.Scoring.LineUnit }},
 	}
 }
 
 func validateScoringKinds(r ScoringRules) error {
-	if r.Ranges.State == IsKnown {
-		for id, bounds := range r.Ranges.Value {
-			if bounds.Min > bounds.Max {
-				return fmt.Errorf("%s: a scoring range cannot start above its end", id)
-			}
-		}
+	if err := validateRanges(r.Ranges); err != nil {
+		return err
 	}
 	if err := validateExtras(r.Extras); err != nil {
+		return err
+	}
+	if err := validateRangeRules(r.Rules); err != nil {
 		return err
 	}
 	if r.Scales.State == IsKnown {
@@ -95,6 +109,18 @@ func validateScoringKinds(r ScoringRules) error {
 	return nil
 }
 
+func validateRanges(ranges Value[map[StatID]StatRange]) error {
+	if ranges.State != IsKnown {
+		return nil
+	}
+	for id, bounds := range ranges.Value {
+		if bounds.Min > bounds.Max {
+			return fmt.Errorf("%s: a scoring range cannot start above its end", id)
+		}
+	}
+	return nil
+}
+
 func validateExtras(extras Value[map[StatID][]PositionExtra]) error {
 	if extras.State != IsKnown {
 		return nil
@@ -103,6 +129,25 @@ func validateExtras(extras Value[map[StatID][]PositionExtra]) error {
 		for _, extra := range rows {
 			if extra.Range.Min > extra.Range.Max || (!extra.Ranged && extra.Range != (StatRange{})) {
 				return fmt.Errorf("%s: an extra's range must start at or below its end and be set only when ranged", id)
+			}
+		}
+	}
+	return nil
+}
+
+// validateRangeRules refuses only what cannot be counted: a range that ends before it starts, a
+// negative unit, or a flat award that also names a unit.
+func validateRangeRules(rules Value[map[StatID][]RangeRule]) error {
+	if rules.State != IsKnown {
+		return nil
+	}
+	for id, rows := range rules.Value {
+		for _, rule := range rows {
+			if rule.Range.Min > rule.Range.Max {
+				return fmt.Errorf("%s: a scoring range cannot start above its end", id)
+			}
+			if rule.Per < 0 || (rule.Flat && rule.Per != 0) {
+				return fmt.Errorf("%s: points are earned once, or for each unit of one size", id)
 			}
 		}
 	}

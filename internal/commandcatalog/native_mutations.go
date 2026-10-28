@@ -50,6 +50,7 @@ func nativeLeagueMutations() []struct{ id, args string } {
 		{commissioner.DraftTimer, "draft"},
 		{commissioner.DraftRevert, "draft"},
 		{commissioner.DraftArchive, "draft"},
+		{commissioner.DraftStartupOpen, "draft"},
 		{commissioner.WindowSet, "window"},
 		{commissioner.WindowMove, "window"},
 		{commissioner.WindowRemove, "window"},
@@ -105,6 +106,7 @@ func nativeMarketMutations() []struct{ id, args string } {
 		{commissioner.BidPlace, "bid"},
 		{commissioner.BidRaise, "bid"},
 		{commissioner.BidWithdraw, "bid"},
+		{commissioner.OLineAuctionClose, ""},
 		{commissioner.BidsProcess, "bid"},
 		{commissioner.BidsOverride, "bid"},
 	}
@@ -160,6 +162,9 @@ func nativeMutation(id, args string, seed Schema) Command {
 		command.Facts = "held-mirror"
 	}
 
+	if id == commissioner.OLineAuctionClose {
+		command.Role, command.Undo = "commish", "none"
+	}
 	if id == commissioner.Create || strings.HasPrefix(id, "draft.") &&
 		!strings.HasPrefix(id, "draft.order.") && id != commissioner.DraftStart {
 		command.Undo = "none"

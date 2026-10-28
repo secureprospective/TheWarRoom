@@ -13,22 +13,34 @@ type LeagueRules struct {
 	Format         Value[Format]
 	InitialRosters Value[InitialRosters]
 	Alignment      Value[map[string]string]
-	Dynasty        Value[bool]
-	Carry          Value[CarryPolicy]
-	Keepers        Value[int]
+	// DivisionConferences names the conference of each division in Alignment. A rule set stored before
+	// it existed reads it as zero and omits it, so that set encodes, and digests, as it did.
+	DivisionConferences Value[map[string]string] `json:",omitzero"`
+	Dynasty             Value[bool]
+	Carry               Value[CarryPolicy]
+	Keepers             Value[int]
+	// Sides names the side of each franchise in a league whose player pools are per side: each conference
+	// is a side. It is counted from the alignment and conferences, never set, and fixed once play begins.
+	// Like Pools it is omitted while zero, so a rule set stored before it encodes, and digests, as it did.
+	Sides Value[map[string]string] `json:",omitzero"`
+	// Pools says whether the league holds one copy of every player or one per side.
+	Pools Value[PlayerPools] `json:",omitzero"`
 }
 
 func legacyLeague() LeagueRules {
 	return LeagueRules{
-		Teams:          cited[int](32, "Census CM-001"),
-		Conferences:    cited[int](2, "Census CM-001"),
-		Divisions:      cited[int](8, "Census CM-001"),
-		Format:         cited[Format](HeadToHead, "Census CM-001"),
-		InitialRosters: cited[InitialRosters](ByDraft, "Census CM-001"),
-		Alignment:      Needs[map[string]string]("Census CM-002: carried at setup"),
-		Dynasty:        cited[bool](true, "Census CM-005"),
-		Carry:          cited[CarryPolicy](CarryAll, "Census CM-005"),
-		Keepers:        Needs[int]("Census CM-005: only for keeper leagues"),
+		Teams:               cited[int](32, "Census CM-001"),
+		Conferences:         cited[int](2, "Census CM-001"),
+		Divisions:           cited[int](8, "Census CM-001"),
+		Format:              cited[Format](HeadToHead, "Census CM-001"),
+		InitialRosters:      cited[InitialRosters](ByDraft, "Census CM-001"),
+		Alignment:           Needs[map[string]string]("Census CM-002: carried at setup"),
+		DivisionConferences: Needs[map[string]string]("Census CM-002: carried at setup"),
+		Dynasty:             cited[bool](true, "Census CM-005"),
+		Carry:               cited[CarryPolicy](CarryAll, "Census CM-005"),
+		Keepers:             Needs[int]("Census CM-005: only for keeper leagues"),
+		Sides:               Needs[map[string]string]("Counted from the conferences when each side has its own player pool"),
+		Pools:               cited[PlayerPools](OnePool, "Census CM-001"),
 	}
 }
 
@@ -40,9 +52,12 @@ func leagueFields() []ruleField {
 		field[Format]{path: "league.format", label: "Competition format", access: func(r *RuleSet) *Value[Format] { return &r.League.Format }},
 		field[InitialRosters]{path: "league.initialRosters", label: "First rosters", access: func(r *RuleSet) *Value[InitialRosters] { return &r.League.InitialRosters }},
 		field[map[string]string]{path: "league.alignment", label: "Division alignment", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.Alignment }},
+		field[map[string]string]{path: "league.divisionConferences", label: "Conference of each division", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.DivisionConferences }},
 		field[bool]{path: "league.dynasty", label: "Dynasty league", access: func(r *RuleSet) *Value[bool] { return &r.League.Dynasty }},
 		field[CarryPolicy]{path: "league.carry", label: "Roster carry policy", access: func(r *RuleSet) *Value[CarryPolicy] { return &r.League.Carry }},
 		field[int]{path: "league.keepers", label: "Keepers", access: func(r *RuleSet) *Value[int] { return &r.League.Keepers }},
+		field[map[string]string]{path: "league.sides", label: "Sides", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.Sides }},
+		field[PlayerPools]{path: "players.pools", label: "Player pools", access: func(r *RuleSet) *Value[PlayerPools] { return &r.League.Pools }},
 	}
 }
 
@@ -193,8 +208,8 @@ func LegacyNFLForTeams(count int) RuleSet {
 	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this smaller playoff field.")
 	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the smaller bracket.")
 	if count < 4 {
-		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades; DOT needs four seats.")
-		r.Trades.DOTSeats = Needs[int]("DOT needs four to ten people; choose reviewers for this small league.")
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades.")
+		r.Trades.DOTSeats = Needs[int]("Choose how many people review trades.")
 	}
 	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this smaller league.")
 	r.Trades.MaximumParties = cited(min(3, count), "Legacy template: bounded by team count")

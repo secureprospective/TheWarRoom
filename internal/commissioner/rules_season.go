@@ -4,6 +4,7 @@ package commissioner
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"time"
 
@@ -11,10 +12,15 @@ import (
 )
 
 const (
-	rolloverField  = "calendar.rollover"
-	alignmentField = "league.alignment"
+	rolloverField    = "calendar.rollover"
+	alignmentField   = "league.alignment"
+	conferencesField = "league.divisionConferences"
 	// carriedDivisions is the citation on a division alignment carried in from the starting snapshot.
 	carriedDivisions = "Carried from the held Legacy NFL divisions when the league was seeded"
+	// carriedConferences is the citation on division conferences carried in from the starting snapshot.
+	carriedConferences = "Carried from the held Legacy NFL conferences when the league was seeded"
+	// unsettledDivision is the word an older native start stored for a team with no division yet.
+	unsettledDivision = "Needs a ruling"
 )
 
 // firstSeason numbers the season the ledger opens in: the starting snapshot's season once the league
@@ -140,7 +146,24 @@ func RulesNow(records []Record, now time.Time) (leaguerules.RuleSet, error) {
 	if err != nil {
 		return leaguerules.RuleSet{}, err
 	}
-	return RulesInForce(records, season, at)
+	rules, err := RulesInForce(records, season, at)
+	if err != nil {
+		return leaguerules.RuleSet{}, err
+	}
+	countedShape(&rules, records)
+	return rules, nil
+}
+
+func countedShape(rules *leaguerules.RuleSet, records []Record) {
+	if len(records) != 0 && records[0].Command.Command == Create {
+		rules.League.Teams = leaguerules.Value[int]{State: leaguerules.IsKnown,
+			Value: len(LeagueFranchises(records)), Citation: "Counted from the league's franchises"}
+	}
+	if rules.League.Alignment.State == leaguerules.IsKnown {
+		rules.League.Divisions = leaguerules.Value[int]{State: leaguerules.IsKnown,
+			Value: leaguerules.DivisionCount(rules.League.Alignment.Value), Citation: "Counted from the division alignment"}
+	}
+	countSides(rules)
 }
 
 // RulesInForce is the one place a native league's rules are resolved. It returns the rules a season
@@ -228,6 +251,11 @@ type seasonFold struct {
 	active       map[string]bool
 	timed        []startedChange
 	alignmentSet bool
+	// conferencesSet says the commissioner set division conferences before the starting snapshot.
+	conferencesSet bool
+	// franchises is the league's franchises as of the entry being folded; a Teams or Divisions change
+	// carries it so its resolution keeps the alignment to them.
+	franchises []string
 }
 
 func (f *seasonFold) add(r Record) error {
@@ -241,6 +269,7 @@ func (f *seasonFold) add(r Record) error {
 func (f *seasonFold) addChange(r Record) error {
 	switch r.Command.Command {
 	case Create:
+		f.franchises = r.Command.Args.Franchises
 		seeded, err := seedChanges(r, f.season)
 		if err != nil {
 			return err
@@ -249,9 +278,7 @@ func (f *seasonFold) addChange(r Record) error {
 			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
 		}
 	case NativeSeed:
-		if c, ok := carriedAlignment(r, f.alignmentSet); ok {
-			f.timed = append(f.timed, startedChange{c, c.RecordedAt})
-		}
+		f.addCarried(r)
 	case WindowSet, WindowMove, WindowRemove:
 		if !f.active[r.Receipt.Entry] {
 			return nil
@@ -269,10 +296,33 @@ func (f *seasonFold) addChange(r Record) error {
 		if err != nil || !ok {
 			return err
 		}
+		if n, ok := teamCount(r); ok {
+			f.franchises = resizedFranchises(f.franchises, n)
+		}
+		if c.Field == teamsField || c.Field == divisionsField {
+			c.Franchises = slices.Clone(f.franchises)
+		}
 		f.timed = append(f.timed, startedChange{c, start})
-		f.alignmentSet = f.alignmentSet || (r.Command.Effective == "now" && r.Command.Args.Field == alignmentField)
+		f.noteSetNow(r)
 	}
 	return nil
+}
+
+// addCarried adds the divisions and conferences the starting snapshot carries into the rules.
+func (f *seasonFold) addCarried(r Record) {
+	if c, ok := carriedAlignment(r, f.alignmentSet); ok {
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+	}
+	if c, ok := carriedConferenceNames(r, f.conferencesSet); ok {
+		f.timed = append(f.timed, startedChange{c, c.RecordedAt})
+	}
+}
+
+// noteSetNow remembers a commissioner setting of the divisions or conferences, which a later start keeps.
+func (f *seasonFold) noteSetNow(r Record) {
+	now := r.Command.Effective == "now"
+	f.alignmentSet = f.alignmentSet || (now && (r.Command.Args.Field == alignmentField || r.Command.Args.Field == divisionsField))
+	f.conferencesSet = f.conferencesSet || (now && r.Command.Args.Field == conferencesField)
 }
 
 // addStanding adds a draft pattern or tie rule that is in force.
@@ -310,7 +360,7 @@ func carriedAlignment(r Record, alignmentSet bool) (leaguerules.Change, bool) {
 	}
 	divisions := map[string]string{}
 	for _, f := range r.Command.Args.Native.Franchises {
-		if f.Division != "" {
+		if f.Division != "" && f.Division != unsettledDivision {
 			divisions[f.ID] = f.Division
 		}
 	}
@@ -319,6 +369,18 @@ func carriedAlignment(r Record, alignmentSet bool) (leaguerules.Change, bool) {
 	}
 	return leaguerules.Change{LeagueID: r.Command.League, Field: alignmentField,
 		New:       leaguerules.Value[map[string]string]{State: leaguerules.IsKnown, Value: divisions, Citation: carriedDivisions},
+		Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}, true
+}
+
+// carriedConferenceNames gives the league the conference of each division held in the starting
+// snapshot, unless the commissioner had already set them. Only an imported start holds conferences.
+func carriedConferenceNames(r Record, conferencesSet bool) (leaguerules.Change, bool) {
+	if conferencesSet || r.Command.Args.Native == nil || len(r.Command.Args.Native.Conferences) == 0 {
+		return leaguerules.Change{}, false
+	}
+	return leaguerules.Change{LeagueID: r.Command.League, Field: conferencesField,
+		New: leaguerules.Value[map[string]string]{State: leaguerules.IsKnown,
+			Value: maps.Clone(r.Command.Args.Native.Conferences), Citation: carriedConferences},
 		Effective: leaguerules.Effective{Kind: leaguerules.Now}, RecordedAt: r.Receipt.RecordedAt}, true
 }
 

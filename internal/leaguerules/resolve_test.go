@@ -99,8 +99,6 @@ func TestInvalidChanges(t *testing.T) {
 	}{
 		{"roster bounds", testChange("roster.limits", Known(bounds(81, 80, ""))), "minimum"},
 		{"lineup bounds", testChange("lineup.positions", Known(map[Position]Bounds{QB: bounds(2, 1, "")})), "minimum"},
-		{"seats eleven", testChange("trades.dotSeats", Known(11)), "between 4 and 10"},
-		{"seats three", testChange("trades.dotSeats", Known(3)), "between 4 and 10"},
 		{"wrong type", testChange("cap.amount", Known(125)), "correct kind"},
 		{"negative money", testChange("cap.amount", Known(Money(-1))), "negative"},
 		{"negative count", testChange("roster.limits", Known(bounds(-1, 80, ""))), "negative"},
@@ -110,6 +108,8 @@ func TestInvalidChanges(t *testing.T) {
 		{"unknown path", testChange("no.such.rule", Known(3)), "recognised"},
 		{"bad state", testChange("cap.amount", Value[Money]{State: 99}), "set or Needs"},
 		{"hidden unknown value", testChange("cap.amount", Value[Money]{Value: 1}), "undecided"},
+		{"blank conference", testChange("league.divisionConferences", Known(map[string]string{"East": " "})), "name every division"},
+		{"blank division", testChange("league.divisionConferences", Known(map[string]string{"": "AFC"})), "name every division"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -122,10 +122,30 @@ func TestInvalidChanges(t *testing.T) {
 			}
 		})
 	}
-	for _, seats := range []int{4, 10} {
-		if err := testChange("trades.dotSeats", Known(seats)).Validate(); err != nil {
-			t.Fatal(err)
-		}
+}
+func TestDOTSeatsNeedAtLeastOne(t *testing.T) {
+	cases := []struct {
+		name   string
+		seats  int
+		refuse bool
+	}{
+		{"one", 1, false}, {"two", 2, false}, {"three", 3, false},
+		{"eleven", 11, false}, {"forty", 40, false},
+		{"zero", 0, true}, {"negative", -1, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := testChange("trades.dotSeats", Known(tc.seats)).Validate()
+			if tc.refuse {
+				if err == nil {
+					t.Fatalf("seats %d: accepted", tc.seats)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("seats %d: %v", tc.seats, err)
+			}
+		})
 	}
 }
 func TestNoInventedDefaultsAndTiming(t *testing.T) {
@@ -187,5 +207,19 @@ func TestResolveAndDiffOwnTheirCollections(t *testing.T) {
 		if strings.Contains(change.Label, ".") || strings.Contains(change.Label, "dOT") {
 			t.Fatalf("internal diff label: %s", change.Label)
 		}
+	}
+}
+
+func TestOLineOnReadsTheRosterBound(t *testing.T) {
+	r := RuleSet{Roster: RosterRules{PositionBounds: Known(map[Position]Bounds{})}}
+	if OLineOn(r) {
+		t.Fatal("no OL bound must leave O-Line off")
+	}
+	r.Roster.PositionBounds.Value[OL] = bounds(1, 1, "")
+	if !OLineOn(r) {
+		t.Fatal("an OL bound must turn O-Line on")
+	}
+	if OLineOn(RuleSet{}) {
+		t.Fatal("unknown roster must not enable O-Line")
 	}
 }

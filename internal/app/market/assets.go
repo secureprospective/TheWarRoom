@@ -2,15 +2,13 @@ package market
 
 import (
 	"cmp"
-	"context"
 	"fmt"
 	"math"
 	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	"github.com/secureprospective/TheWarRoom/internal/facts"
-	"github.com/secureprospective/TheWarRoom/internal/labcompile"
+	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -25,8 +23,8 @@ type Board struct {
 }
 
 // Value is one player's three cells: on-field-now, dynasty value and market; it is
-// main.AssetValue. NowValue and DynastyValue order the board (points per game, discounted
-// wins); zero when not held.
+// main.AssetValue. NowValue and DynastyValue order the board (points per game, dynasty points
+// per game); zero when not held.
 type Value struct {
 	ID           string  `json:"id"`
 	Now          Cell    `json:"now"`
@@ -45,55 +43,30 @@ type Cell struct {
 	Held   bool   `json:"held"`
 }
 
-// Dynasty is one asset's Lab value at a moment: the shape of the Lab valuer's answer
-// (internal/labcompile Model.Player). Price and its range are in win-equivalents: 1.00 is one
-// expected win in a next-draft first-round pick.
+// Dynasty is one asset's native value at a moment, in dynasty points per game: the discounted
+// mean of its expected league points per game over Seasons seasons, this one first (a player's
+// from the latest model run, a pick's from Pick Value v1).
 type Dynasty struct {
-	Discounted        float64
-	Seasons           int
-	Class, ClassLabel string
-	Price, Low, High  *float64
-	Valued            bool
-	Reason            string
+	Discounted float64
+	Seasons    int
+	ClassLabel string
+	Valued     bool
+	Reason     string
 }
 
-// Model values a player or a pick at a moment. The caller holds none until the Lab's value
-// model is compiled.
+// Model values a player or a pick at a moment. The caller holds none until the first model run
+// is read.
 type Model interface {
 	Player(pid string, at time.Time) Dynasty
 	Pick(year, round int, original string, at time.Time) Dynasty
 }
 
-// LabModel is the Lab's fitted value model (internal/labcompile) as the asset board reads it.
-type LabModel struct{ Model *labcompile.Model }
-
-// Pick values a draft pick of a season and round, by its original owner.
-func (l LabModel) Pick(year, round int, original string, at time.Time) Dynasty {
-	return DynastyFrom(l.Model.Pick(year, round, 0, original, at))
-}
-
-// Player values a player.
-func (l LabModel) Player(pid string, at time.Time) Dynasty {
-	return DynastyFrom(l.Model.Player(pid, at))
-}
-
-// DynastyFrom keeps the Lab's answer as given: its forecast seasons, class words, price and range.
-func DynastyFrom(v labcompile.AssetValue) Dynasty {
-	d := Dynasty{Discounted: v.Discounted, Seasons: len(v.Forecast), Class: v.Class, ClassLabel: v.Label,
-		Price: v.Price, Valued: v.Valued, Reason: v.Reason}
-	if v.Range != nil {
-		d.Low, d.High = &v.Range.Low, &v.Range.High
-	}
-	return d
-}
-
 const boardHow = "On-field-now is points per game in this league's scoring over the finished weeks MFL has " +
 	"scored, counting only weeks in which the player has a score, ranked against every player at his position " +
-	"with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this " +
-	"season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for " +
-	"that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), " +
-	"with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. " +
-	"Values only; this app moves nothing."
+	"with a score this season. Dynasty value is the native value model's: his expected league points per game " +
+	"over this season and the ones after, later seasons discounted, from his record (draft capital, age, college, " +
+	"combine) and his seasons. A pick is valued in the same units by " + pickvalue.Version + ": what the players " +
+	"typically taken at its slot are worth. Trades are not priced. Values only; this app moves nothing."
 
 // Scored is one player's points over the finished weeks the caller holds, and the weeks he scored.
 type Scored struct {
@@ -146,12 +119,12 @@ func TopPercent(rank, of int) int {
 }
 
 // BuildBoard words C-01 for every player with an on-field cell, and every id in also, valued by
-// model at a moment; model is nil until the Lab's value model is compiled.
+// model at a moment; model is nil until the first model run is read.
 func BuildBoard(now OnField, model Model, at time.Time, also []string) Board {
 	b := Board{Values: []Value{}, How: boardHow, NowSource: now.Source}
-	b.DynastySource = "Source: the Lab's value model, compiled from the checked league facts"
+	b.DynastySource = "Source: the native value model's latest run, and " + pickvalue.Version + " for picks"
 	if model == nil {
-		b.DynastySource = "Source: the Lab's value model · not compiled yet"
+		b.DynastySource = "Source: the native value model · no model run read yet"
 	}
 	cells := now.Cells
 	ids := slices.Sorted(func(yield func(string) bool) {
@@ -175,35 +148,26 @@ func BuildBoard(now OnField, model Model, at time.Time, also []string) Board {
 	return b
 }
 
-// DynastyCells words the Lab's value and its market price, or why there is none.
+// DynastyCells words the native value and the market cell, or why there is none.
 func DynastyCells(model Model, id string, at time.Time) (Cell, Cell, float64) {
 	if model == nil {
-		missing := Cell{Text: "Not valued yet", Sub: "Lab model not compiled"}
+		missing := Cell{Text: "Not valued yet", Sub: "no model run read yet"}
 		return missing, missing, 0
 	}
 	return ValueCells(model.Player(id, at))
 }
 
-// ValueCells words one Lab answer: the dynasty cell, the market cell and the discounted wins.
+// ValueCells words one native value: the dynasty cell, the market cell and the value itself.
 func ValueCells(d Dynasty) (Cell, Cell, float64) {
 	if !d.Valued {
 		reason := Cell{Text: "Not valued", Sub: d.Reason}
 		return reason, reason, 0
 	}
-	dynasty := Cell{Held: true, Text: Signed(d.Discounted) + " wins",
-		Sub:    fmt.Sprintf("next %d seasons", d.Seasons),
-		Detail: fmt.Sprintf("%s · this season's unplayed weeks and the %d after, later ones discounted", d.ClassLabel, max(d.Seasons-1, 0))}
-	market := Cell{Text: "No price", Sub: "no market for " + d.ClassLabel}
-	if d.Price != nil {
-		market = Cell{Held: true, Text: Signed(*d.Price), Sub: "win-equivalents",
-			Detail: "1.00 is the price of one expected win from a next-draft first-round pick"}
-		if d.Low != nil && d.High != nil {
-			market.Sub = fmt.Sprintf("win-equivalents · 95%% %s to %s", Signed(*d.Low), Signed(*d.High))
-		}
-		if *d.Price < 0 {
-			market.Detail += ". Below zero: in trades the league has valued this kind of player at less than the roster spot he takes"
-		}
-	}
+	dynasty := Cell{Held: true, Text: Signed(d.Discounted) + " PPG",
+		Sub: fmt.Sprintf("dynasty · next %d seasons", d.Seasons),
+		Detail: fmt.Sprintf("%s · expected league points per game this season and the %d after, later ones discounted",
+			d.ClassLabel, max(d.Seasons-1, 0))}
+	market := Cell{Text: "No price", Sub: "trades are not priced"}
 	return dynasty, market, d.Discounted
 }
 
@@ -231,26 +195,9 @@ func PoolAssetValues(now OnField, model Model, ids []playerid.PlayerID, at time.
 
 func PickValue(model Model, year, round int, original string, at time.Time) *AssetCell {
 	if model == nil {
-		return &AssetCell{Text: "Not valued", Sub: "Lab model not compiled"}
+		return &AssetCell{Text: "Not valued", Sub: "no model run read yet"}
 	}
 	cell, _, _ := ValueCells(model.Pick(year, round, original, at))
 	out := AssetCell(cell)
 	return &out
-}
-
-// FitAssetModel compiles only verified facts and publishes only a successful model.
-func FitAssetModel(ctx context.Context, began time.Time, cache report.ArchiveSnapshot,
-	build func(context.Context, facts.Facts, labcompile.Evidence) (*labcompile.Model, []byte, error),
-	publish func(Model), changed func(context.Context), logLine func(string)) {
-	if cache.SHA == "" {
-		return
-	}
-	model, _, err := build(ctx, cache.Facts, labcompile.Evidence{Built: began, ArchiveThrough: cache.Through})
-	if err != nil {
-		logLine(fmt.Sprintf("the war room: value model: %v", err))
-		return
-	}
-	publish(LabModel{Model: model})
-	logLine(fmt.Sprintf("the war room: value model fitted in %s", time.Since(began).Round(time.Millisecond)))
-	changed(ctx)
 }

@@ -34,7 +34,9 @@ func (b BidRecord) Live() bool { return !b.Replaced && !b.Withdrawn }
 // bidAuction is every bid on one player until the app decides them. A decided auction with no winner stays
 // recorded; a later bid on the same player starts a new one.
 type BidAuction struct {
-	Player     string
+	Player string
+	// Side is the side whose copy of the player is at auction; empty with one pool.
+	Side       string `json:",omitempty"`
 	Bids       []BidRecord
 	Decided    bool
 	Winner     string
@@ -47,10 +49,10 @@ type BidAuction struct {
 
 type BidBook struct{ Auctions []BidAuction }
 
-// open is the player's auction still waiting for a decision.
-func (k *BidBook) Open(player string) *BidAuction {
+// Open is the auction of the side's copy of the player still waiting for a decision.
+func (k *BidBook) Open(side, player string) *BidAuction {
 	for i := len(k.Auctions) - 1; i >= 0; i-- {
-		if k.Auctions[i].Player == player {
+		if k.Auctions[i].Player == player && k.Auctions[i].Side == side {
 			if k.Auctions[i].Decided {
 				return nil
 			}
@@ -60,10 +62,10 @@ func (k *BidBook) Open(player string) *BidAuction {
 	return nil
 }
 
-// latest is the player's newest auction, decided or not.
-func (k *BidBook) Latest(player string) *BidAuction {
+// Latest is the newest auction of the side's copy of the player, decided or not.
+func (k *BidBook) Latest(side, player string) *BidAuction {
 	for i := len(k.Auctions) - 1; i >= 0; i-- {
-		if k.Auctions[i].Player == player {
+		if k.Auctions[i].Player == player && k.Auctions[i].Side == side {
 			return &k.Auctions[i]
 		}
 	}
@@ -129,6 +131,8 @@ func (k *BidBook) ActiveCount(franchise, except string) int {
 }
 
 type WaiverWindow struct {
+	// Side is the side of the franchise that cut the player; only its teams may claim him.
+	Side       string `json:",omitempty"`
 	Results    []WaiverClaimResult
 	PriorOrder []string
 	ID         string
@@ -145,6 +149,7 @@ type WaiverWindow struct {
 type WaiverBookClaim struct{ ID, Franchise, Principal string }
 
 type MarketBook struct {
+	OLine       *OLineOutcome `json:",omitempty"`
 	Windows     []WaiverWindow
 	BaseOrder   []string
 	Order       []string

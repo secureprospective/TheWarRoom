@@ -14,6 +14,7 @@ type Effective = Change['effective'];
 const timing: { value: Effective; label: string }[] = [
   { value: 'next_rollover', label: 'From the next rollover' }, { value: 'now', label: 'Now' },
 ];
+const allowedTiming = (row?: RuleRow) => row?.nowOnly ? timing.filter(t => t.value === 'now') : timing;
 const start = (row?: RuleRow): Draft | undefined =>
   row && draftFrom(row.schema, row.current, row.unit === 'percent');
 
@@ -34,7 +35,8 @@ export function RuleChangeForm({ rules, initialField = '' }: { rules: Rules; ini
   const row = rows.find(r => r.field === field);
   const [draft, setDraft] = useState<Draft | undefined>(() =>
     start(rows.find(r => r.field === initialField)));
-  const [effective, setEffective] = useState<Effective>('next_rollover');
+  const [effective, setEffective] = useState<Effective>(
+    () => allowedTiming(rows.find(r => r.field === initialField))[0].value);
   const [reason, setReason] = useState('');
   const outcome = leagueState.use().outcome;
   const landed = outcome.status === 'done' && outcome.form === 'rule' ? outcome.receipt.entry : '';
@@ -50,7 +52,9 @@ export function RuleChangeForm({ rules, initialField = '' }: { rules: Rules; ini
   }, [row]);
   const pick = (next: string) => {
     setField(next);
-    setDraft(start(rows.find(r => r.field === next)));
+    const nextRow = rows.find(r => r.field === next);
+    setDraft(start(nextRow));
+    setEffective(allowedTiming(nextRow)[0].value);
   };
   const typed = row && draft ? toNatural(row.schema, draft, row.label, row.unit === 'percent') : undefined;
   const change: Change | null = row && typed?.ok ? {
@@ -84,7 +88,7 @@ export function RuleChangeForm({ rules, initialField = '' }: { rules: Rules; ini
               label={`New value for ${row.label}`} percent={row.unit === 'percent'} />
             <label>When it takes effect
               <select value={effective} onChange={e => setEffective(e.target.value as Effective)}>
-                {timing.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {allowedTiming(row).map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </label>
             {effective === 'next_rollover' && <p className="change-note">{rules.rollover}</p>}

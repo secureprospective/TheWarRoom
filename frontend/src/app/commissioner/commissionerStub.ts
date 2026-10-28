@@ -9,6 +9,7 @@ import previewWire from './preview.wire.testdata.json';
 import formsWire from './preview-forms.wire.testdata.json';
 import noticesWire from './notices.wire.testdata.json';
 import digestsWire from './digests.wire.testdata.json';
+import controlsWire from './controls.wire.testdata.json';
 
 // The Go bindings as the forms see them: readings are the Go-written fixtures, and every execute call
 // is recorded so a test can read exactly what was sent.
@@ -50,6 +51,7 @@ export function stub(over: Partial<App> = {}, readings: { people?: Reading; rule
     TargetCommissionerNotices: async () => noticesWire.commissioner,
     TargetCommissionerSeat: async () => ({ hasAccount: true, username: 'commish' }),
     TargetCommissionerDigests: async () => digestsWire.creator,
+    TargetCommissionerControls: async () => controlsWire,
     TargetCommissionerPeople: async league => {
       calls.people.push(league);
       return read(readings.people ?? peopleWire.commissioner);

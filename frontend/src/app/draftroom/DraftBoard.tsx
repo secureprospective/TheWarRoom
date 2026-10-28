@@ -19,11 +19,12 @@ function Result({ draft, pick }: { draft: Draft; pick: Pick }) {
 function Launchers({ draft, pick }: { draft: Draft; pick: Pick }) {
   const ref = { round: pick.round, original: pick.original, extra: pick.extra };
   const named = `round ${pick.round} pick ${slotOf(pick)}, ${franchiseName(draft, pick.owner)}`;
+  const who = draft.startup ? 'player' : 'rookie';
   const open = pick.player === '' && (isOnClock(draft, pick) || pick.skipped) && !pick.forfeited;
   return (
     <>
-      {open && <DraftLauncher action={{ kind: 'assign', ref }} text="Choose a rookie"
-        label={`Choose a rookie for ${named}`} />}
+      {open && <DraftLauncher action={{ kind: 'assign', ref }} text={`Choose a ${who}`}
+        label={`Choose a ${who} for ${named}`} />}
       {pick.player !== '' && <DraftLauncher action={{ kind: 'change', ref }} text="Change"
         label={`Change ${named}`} />}
       {pick.extra === 0 && <DraftLauncher action={{ kind: 'insert', ref }} text="Add extra pick"

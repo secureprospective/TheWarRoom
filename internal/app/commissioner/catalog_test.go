@@ -66,7 +66,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 			t.Errorf("unrecognized native mutation %s", id)
 		}
 	}
-	if len(mutations) != 101 {
+	if len(mutations) != 103 {
 		t.Fatalf("mutation inventory changed: got %d; review the new family's metadata", len(mutations))
 	}
 }
@@ -128,6 +128,9 @@ func domainCommandIDs(t *testing.T) map[string]bool {
 			return true
 		})
 	}
+	// Cutover is recorded only through the MFL move's assist door (internal/commandcatalog/migration.go),
+	// which checks the review digest first; the native door must not offer it.
+	delete(ids, commissioner.Cutover)
 	return ids
 }
 

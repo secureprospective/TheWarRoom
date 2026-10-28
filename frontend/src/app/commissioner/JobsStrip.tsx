@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { connectClock } from '../clock/ticker';
 import type { Deadline } from '../data/contract';
 import { Act } from '../commands/Act';
-import { countdown, localTime, type Job, type Jobs } from './jobs';
+import { countdown, localTime, startupDraftJob, type Job, type Jobs } from './jobs';
 
 // What a job says about its time, in the viewer's own time zone.
 function timing(job: Job) {
@@ -35,8 +35,9 @@ export function JobsStrip({ jobs, clock = Date.now }: { jobs: Jobs; clock?: () =
         {jobs.jobs.map(job => {
           const when = timing(job);
           const due = when ? `. ${when.text}: ${localTime(when.at)}` : '';
-          const seed = job.words === 'Record starting assets first.';
-          const target = job.controls.find(id => actsFor(id).length > 0) ?? job.controls[0] ?? '';
+          const seed = job.id === 'seed' || job.words === 'Record starting assets first.';
+          const target = job.id === startupDraftJob ? startupDraftJob
+            : job.controls.find(id => actsFor(id).length > 0) ?? job.controls[0] ?? '';
           const lines = [stateWords[job.state], ...(job.state === 'unbuilt' ? [] : [job.words]),
             ...(job.state === 'live' && !job.closes ? ['No deadline'] : [])];
           return (

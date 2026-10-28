@@ -1,4 +1,4 @@
-import { array, object, text } from '../data/parseValues';
+import { array, integer, object, text } from '../data/parseValues';
 import { commissionerControls } from '../registry/commissioner.gen';
 
 // The Go controls reading (TargetCommissionerControls): every census row, grouped, and whether a person
@@ -7,15 +7,28 @@ import { commissionerControls } from '../registry/commissioner.gen';
 type ControlField = { field: string; label: string };
 export type Control = { id: string; built: boolean; note: string; fields: ControlField[] };
 export type ControlGroup = { id: string; label: string; controls: Control[] };
-export type Controls = { groups: ControlGroup[] };
+// A preset is a named bundle of setting values from Go's catalog; the start form lists exactly these.
+export type StartingPreset = {
+  id: string; label: string; description: string; suggestedTeams: number;
+};
+// Teams is how many franchises a new app league may have, as Go allows.
+export type TeamRange = { min: number; max: number };
+export type Controls = { groups: ControlGroup[]; presets: StartingPreset[]; teams: TeamRange };
 
 function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
 }
 export function parseControls(v: unknown): Controls {
-  const r = object(v, 'League controls', ['groups']);
+  const r = object(v, 'League controls', ['groups', 'presets', 'teams']);
+  const teams = object(r.teams, 'League sizes', ['min', 'max']);
   return {
+    teams: { min: integer(teams.min, 'League sizes.min', 1), max: integer(teams.max, 'League sizes.max', 1) },
+    presets: array(r.presets, 'Starting presets', (x, p) => {
+      const o = object(x, p, ['id', 'label', 'description', 'suggestedTeams']);
+      return { id: text(o.id, p), label: text(o.label, p), description: text(o.description, p),
+        suggestedTeams: integer(o.suggestedTeams, `${p}.suggestedTeams`, 0) };
+    }),
     groups: array(r.groups, 'Control groups', (g, p) => {
       const o = object(g, p, ['id', 'label', 'controls']);
       return {

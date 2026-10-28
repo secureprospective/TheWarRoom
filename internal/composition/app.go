@@ -167,6 +167,7 @@ func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
 	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
+	a.startWorker(func() { a.publishAssetModel(ctx); a.sourceHealthChanged(ctx) })
 }
 
 // openDatabases takes the instance lock and opens the three databases. Every fetch after this goes

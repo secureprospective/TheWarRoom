@@ -30,8 +30,6 @@ export type BrowserArgumentMap = {
  import('../datasources/state').ParamAction;
 "contracts.set":
  import('../contracts/state').ContractsAction;
-"offers.filter":
- import('../offers/state').OfferFilter;
 "market":
  import('../market/contract').MarketFilter;
 "trade.builder":
@@ -203,6 +201,7 @@ string
 {
 "league": string;
 "player": string;
+"franchise"?: string;
 "action": string;
 "viewerZone": string;
 "years": number;
@@ -220,7 +219,8 @@ string
 "league": string;
 "season": number;
 "franchise": string;
-"at": string
+"at": string;
+"startup"?: boolean
 }
 ];
 "commissioner.TargetNativeFranchiseSchedule": [
@@ -381,6 +381,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;
@@ -511,7 +546,9 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -541,7 +578,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -553,6 +591,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -580,6 +619,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -593,7 +633,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -625,6 +667,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({
@@ -663,7 +706,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -686,9 +730,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
@@ -811,7 +857,8 @@ string
 "franchise": string;
 "player": string;
 "request": string;
-"expected": number
+"expected": number;
+"startup"?: boolean
 }
 ];
 "commissioner.TargetNativeLineupSet": [
@@ -833,6 +880,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;
@@ -963,7 +1045,9 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -993,7 +1077,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -1005,6 +1090,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -1032,6 +1118,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -1045,7 +1132,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -1077,6 +1166,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({
@@ -1115,7 +1205,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -1138,9 +1229,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
@@ -1261,6 +1354,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;
@@ -1391,7 +1519,9 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -1421,7 +1551,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -1433,6 +1564,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -1460,6 +1592,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -1473,7 +1606,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -1505,6 +1640,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({
@@ -1543,7 +1679,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -1566,9 +1703,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
@@ -1810,39 +1949,6 @@ string
 string,
 string
 ];
-"counterparties.TargetCounterpartTeam": [
-{
-"scope": {
-"from": number;
-"to": number;
-"tiers": (string)[];
-"windows": (string)[];
-"postures": (string)[];
-"team": string
-};
-"fid": string
-}
-];
-"counterparties.TargetCounterparties": [
-{
-"from": number;
-"to": number;
-"tiers": (string)[];
-"windows": (string)[];
-"postures": (string)[];
-"team": string
-}
-];
-"draft.TargetDraftLab": [
-{
-"from": number;
-"to": number;
-"seasons": number;
-"segments": (string)[];
-"nfl": (string)[];
-"group": string
-}
-];
 "draft.TargetDraftReports": [
 
 ];
@@ -1858,59 +1964,11 @@ boolean
 "market.TargetAssetBoard": [
 
 ];
-"market.TargetAssetProfile": [
-{
-"scope": {
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-};
-"kind": string
-}
-];
-"market.TargetMarket": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
-"market.TargetMarketLists": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
 "market.TargetMarketReports": [
 
 ];
 "market.TargetMarketReportsRefresh": [
 boolean
-];
-"market.TargetMarketStretches": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
-"market.TargetPickClock": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
 ];
 "now.TargetLiveGame": [
 boolean,
@@ -1925,15 +1983,6 @@ string
 "now.TargetNowRefresh": [
 number,
 boolean
-];
-"offers.TargetOffers": [
-{
-"from": number;
-"to": number;
-"direction": string;
-"window": string;
-"team": string
-}
 ];
 "offers.TargetPersonal": [
 string

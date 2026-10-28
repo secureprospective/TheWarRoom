@@ -300,7 +300,7 @@ func (x tradeExecution) describeAssets(assets []commissioner.TradeAsset) []commi
 			d.Label = fmt.Sprintf("%d round %d pick, originally %s", a.Season, a.Round, teams[a.Original])
 		} else {
 			for _, p := range x.seed.Players {
-				if p.ID != a.Player {
+				if p.ID != a.Player || x.seed.SideOf(p.Franchise) != x.seed.SideOf(a.From) {
 					continue
 				}
 				d.Label = p.Name

@@ -35,7 +35,9 @@ export function ChangeBar({ form, change, safeguard, reason, onReason, confirmLa
         Reason{safeguard && (safeguard === 'reason' ? ' (required)' : ' (optional)')}
         <textarea value={reason} rows={2} onChange={e => onReason(e.target.value)} />
       </label>
-      {safeguard && <p className="change-safeguard">{safeguardWords[safeguard]}</p>}
+      {safeguard && (safeguard !== 'reason' || typed === '') && (
+        <p className="change-safeguard">{safeguardWords[safeguard]}</p>
+      )}
       {note && <p className="change-note">{note}</p>}
       {safeguard === 'hold'
         ? <HoldToFire label={confirmLabel} disabled={!ready} body={body}

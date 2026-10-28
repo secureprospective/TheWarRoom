@@ -47,8 +47,8 @@ func (a RawArgs) validateBid(command string) error {
 
 // bidDetails says which details a bid command takes, and the sentence that asks for them.
 type bidDetails struct {
-	player, franchise, bid, contract bool
-	ask                              string
+	player, franchise, bid, contract, side bool
+	ask                                    string
 }
 
 func bidDetailsOf(command string) bidDetails {
@@ -62,7 +62,7 @@ func bidDetailsOf(command string) bidDetails {
 	case BidWithdraw:
 		return bidDetails{bid: true, franchise: true, ask: "choose your bid to withdraw"}
 	case BidsProcess:
-		return bidDetails{player: true, ask: "choose a player whose bids are to be decided"}
+		return bidDetails{player: true, side: true, ask: "choose a player whose bids are to be decided"}
 	}
 	return bidDetails{bid: true, franchise: true, ask: "choose a recorded bid and the franchise that wins"}
 }
@@ -82,6 +82,9 @@ func (d bidDetails) keep(r RawBidArgs) RawBidArgs {
 	if d.contract {
 		kept.Salary, kept.Years = r.Salary, r.Years
 	}
+	if d.side {
+		kept.Side = r.Side
+	}
 	return kept
 }
 
@@ -91,7 +94,7 @@ func (d bidDetails) incomplete(r RawBidArgs) bool {
 		return true
 	}
 	return (d.franchise && blank(r.Franchise)) || (d.bid && blank(r.Bid)) ||
-		(d.contract && (r.Salary <= 0 || r.Years < 1 || r.Years > 99))
+		(d.contract && (r.Salary <= 0 || r.Years < 1 || r.Years > lastSeason))
 }
 
 func (r RawBidArgs) Validate(command string) error {

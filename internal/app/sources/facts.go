@@ -147,7 +147,7 @@ const FactsCompiler = "facts 1 (ring 3: 37 relations, nine checks)"
 
 // StartupFacts resumes only an already-imported archive; no manifest means no work.
 func StartupFacts(ctx context.Context, exists func(context.Context) (bool, error),
-	publish, compile func(context.Context) error, warm, fit func(context.Context), logFailure func(string)) {
+	publish, compile func(context.Context) error, warm func(context.Context), logFailure func(string)) {
 	if ok, err := exists(ctx); err != nil || !ok {
 		return
 	}
@@ -160,7 +160,6 @@ func StartupFacts(ctx context.Context, exists func(context.Context) (bool, error
 		return
 	}
 	warm(ctx)
-	fit(ctx)
 }
 
 func WarmArchive(ctx context.Context, began time.Time, read func(context.Context) error, logLine func(string)) {

@@ -7,7 +7,6 @@ import (
 	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapi "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
-	counterpartiesapi "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
 	nowapi "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -20,21 +19,20 @@ import (
 )
 
 type commandAPIs struct {
-	archive        *archiveapi.API
-	commissioner   *commissionerapi.API
-	comms          *commsapi.API
-	contracts      *contractsapi.API
-	control        *controlapi.API
-	counterparties *counterpartiesapi.API
-	draft          *draftapi.API
-	market         *marketapi.API
-	now            *nowapi.API
-	offers         *offersapi.API
-	platform       *platformapi.API
-	race           *raceapi.API
-	research       *researchapi.API
-	sources        *sourcesapi.API
-	trades         *tradesapi.API
+	archive      *archiveapi.API
+	commissioner *commissionerapi.API
+	comms        *commsapi.API
+	contracts    *contractsapi.API
+	control      *controlapi.API
+	draft        *draftapi.API
+	market       *marketapi.API
+	now          *nowapi.API
+	offers       *offersapi.API
+	platform     *platformapi.API
+	race         *raceapi.API
+	research     *researchapi.API
+	sources      *sourcesapi.API
+	trades       *tradesapi.API
 }
 
 func generatedWailsBindings(apis commandAPIs) []interface{} {
@@ -44,7 +42,6 @@ func generatedWailsBindings(apis commandAPIs) []interface{} {
 		apis.comms,
 		apis.contracts,
 		apis.control,
-		apis.counterparties,
 		apis.draft,
 		apis.market,
 		apis.now,

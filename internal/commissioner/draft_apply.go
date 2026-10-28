@@ -11,8 +11,20 @@ import (
 func applyDraftPick(seed *RawNativeSnapshot, record Record) {
 	d := record.Command.Args.Draft
 	p := d.Pick
+	if d.Startup {
+		signStartup(seed, d.Season, p.Player, p.Franchise, p.Round, p.Slot, p.Terms)
+		return
+	}
 	signRookie(seed, d.Season, p.Player, p.Franchise, p.Round, p.Slot, p.Terms)
 	markPick(seed, d.Season, p.Round, p.Original, p.Slot, p.Player)
+}
+
+// signStartup puts a player taken in the startup draft on a roster under the startup draft's contract. He is
+// no rookie, and his pick was the draft's own, so no recorded pick is marked.
+func signStartup(seed *RawNativeSnapshot, season int, player, franchise string, round, slot int, terms rookiedraft.Terms) {
+	seed.Players = append(seed.Players, NativePlayer{ID: player, Franchise: franchise, Status: domain.RosterActive,
+		Salary: terms.Salary, ExpirationYear: season + terms.Years - 1, ContractStatus: domain.CStatusUFA,
+		ContractInfo: fmt.Sprintf("Round %d pick %d of the %d startup draft", round, slot, season)})
 }
 
 // signRookie puts a drafted rookie on a roster under the contract his slot fixed.
@@ -42,6 +54,10 @@ func applyDraftTray(seed *RawNativeSnapshot, record Record) {
 	if o == nil || o.Terms == nil {
 		return
 	}
+	if d.Startup {
+		signStartup(seed, d.Season, d.Act.Player, o.Franchise, d.Act.Round, o.Slot, *o.Terms)
+		return
+	}
 	signRookie(seed, d.Season, d.Act.Player, o.Franchise, d.Act.Round, o.Slot, *o.Terms)
 	if record.Command.Command == DraftAssign && d.Act.Extra == 0 {
 		markPick(seed, d.Season, d.Act.Round, d.Act.Original, o.Slot, d.Act.Player)
@@ -52,13 +68,11 @@ func applyDraftTray(seed *RawNativeSnapshot, record Record) {
 // roster to be undrafted.
 func applyDraftChange(seed *RawNativeSnapshot, record Record) {
 	d := record.Command.Args.Draft
-	for i := range seed.Players {
-		if seed.Players[i].ID == d.Act.Replaces {
-			seed.Players[i].ID = d.Act.Player
-		}
+	if i := seed.PlayerOn(d.Side, d.Act.Replaces); i >= 0 {
+		seed.Players[i].ID = d.Act.Player
 	}
 	for i := range seed.Picks {
-		if seed.Picks[i].Player == d.Act.Replaces {
+		if seed.Picks[i].Player == d.Act.Replaces && seed.SideOf(seed.Picks[i].Owner) == d.Side {
 			seed.Picks[i].Player = d.Act.Player
 		}
 	}

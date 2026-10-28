@@ -101,9 +101,16 @@ func validateMonthDay(v MonthDay) error {
 	}
 	return nil
 }
+
+// OLineOn reports whether a known roster position limit includes O-Line.
+func OLineOn(r RuleSet) bool {
+	_, found := r.Roster.PositionBounds.Value[OL]
+	return r.Roster.PositionBounds.State == IsKnown && found
+}
+
 func validateRules(r RuleSet) error {
-	if r.Trades.DOTSeats.State == IsKnown && (r.Trades.DOTSeats.Value < 4 || r.Trades.DOTSeats.Value > 10) {
-		return fmt.Errorf("trade review needs between 4 and 10 seats")
+	if r.Trades.DOTSeats.State == IsKnown && r.Trades.DOTSeats.Value < 1 {
+		return fmt.Errorf("trade review needs at least one seat")
 	}
 	for _, share := range []Value[Decimal]{r.Cap.IRShare, r.Cap.TaxiShare} {
 		if share.State == IsKnown && (share.Value < 0 || share.Value > 10000) {
@@ -117,13 +124,30 @@ func validateRules(r RuleSet) error {
 		r.Playoffs.StartWeek.Value > r.Playoffs.FinalWeek.Value {
 		return fmt.Errorf("first playoff week cannot follow the final week")
 	}
+	if err := validateNames(r.League.DivisionConferences); err != nil {
+		return err
+	}
 	return validateScoringKinds(r.Scoring)
+}
+
+// validateNames refuses a blank division or conference name.
+func validateNames(names Value[map[string]string]) error {
+	if names.State != IsKnown {
+		return nil
+	}
+	for division, conference := range names.Value {
+		if strings.TrimSpace(division) == "" || strings.TrimSpace(conference) == "" {
+			return fmt.Errorf("name every division and its conference")
+		}
+	}
+	return nil
 }
 
 // menus is every closed list of options a rule value may take, by the value's type name.
 func menus() map[string][]string {
 	return map[string][]string{
-		"Format": {"head_to_head"}, "InitialRosters": {"draft"}, "CarryPolicy": {"all", "keepers"},
+		"Format": {"head_to_head"}, "InitialRosters": {"draft", "free_agency"},
+		"PlayerPools": {"one", "per_side"}, "CarryPolicy": {"all", "keepers"},
 		"Penalty": {"zero_top_starter", "zero_slot", "none"}, "CapMode": {"hard", "soft"},
 		"NFLStatus":       {"IR", "PUP", "NFI", "Out", "suspended"},
 		"ExperienceBasis": {"calendar_years", "career_games", "nfl_seasons"}, "WaiverTrigger": {"cut"},
@@ -131,6 +155,7 @@ func menus() map[string][]string {
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
 		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
+		"StartupOrderSource": {"random", "commissioner"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",
 			"all_play_percentage", "points", "power_rank"},
 		"Position":    {"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL"},

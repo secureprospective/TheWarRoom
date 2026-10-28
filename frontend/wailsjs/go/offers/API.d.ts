@@ -18,8 +18,6 @@ export function TargetBidRevise(arg1:string,arg2:offers.RawBidInput):Promise<off
 
 export function TargetBidWithdraw(arg1:string):Promise<offers.BidPlan>;
 
-export function TargetOffers(arg1:offers.RawOfferScope):Promise<report.Reading_github_com_secureprospective_TheWarRoom_internal_app_offers_OffersView_>;
-
 export function TargetPersonal(arg1:string):Promise<offers.PersonalReading>;
 
 export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;

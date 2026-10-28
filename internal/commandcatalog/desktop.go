@@ -2,7 +2,7 @@ package catalog
 
 // DesktopCommands is the legacy binding view; availability describes the old adapter, not remote admission.
 func DesktopCommands(feature string, related []Command) []Command {
-	views := map[string]func([]Command) []Command{"archive": archiveDesktop, "commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "counterparties": counterpartiesDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
+	views := map[string]func([]Command) []Command{"archive": archiveDesktop, "commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
 	if view, ok := views[feature]; ok {
 		return view(related)
 	}
@@ -143,16 +143,8 @@ func controlDesktop(_ []Command) []Command {
 	}
 }
 
-func counterpartiesDesktop(_ []Command) []Command {
-	return []Command{
-		{ID: Unset, Method: "TargetCounterpartTeam", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-		{ID: Unset, Method: "TargetCounterparties", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-	}
-}
-
 func draftDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetDraftLab", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetDraftReports", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetDraftReportsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetNFLDraft", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
@@ -166,13 +158,8 @@ func marketDesktop(_ []Command) []Command {
 	}
 	return []Command{
 		heldRead(read("TargetAssetBoard", "G0")),
-		heldRead(read("TargetAssetProfile", "G0")),
-		read("TargetMarket", "G0"),
-		heldRead(read("TargetMarketLists", "G0")),
 		heldRead(read("TargetMarketReports", "G0")),
 		read("TargetMarketReportsRefresh", "G1"),
-		heldRead(read("TargetMarketStretches", "G0")),
-		heldRead(read("TargetPickClock", "G0")),
 	}
 }
 
@@ -186,7 +173,6 @@ func nowDesktop(_ []Command) []Command {
 
 func offersDesktop(related []Command) []Command {
 	return append(related, []Command{
-		{ID: Unset, Method: "TargetOffers", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonal", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalChange", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetPersonalHandOff", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},

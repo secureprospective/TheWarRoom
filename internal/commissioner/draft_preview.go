@@ -12,15 +12,14 @@ import (
 
 // DraftTrayCommand says whether a command is previewed by DraftPreview.
 func DraftTrayCommand(command string) bool {
-	return trayCommand(command) || command == DraftRevert || command == DraftArchive
+	return trayCommand(command) || command == DraftRevert || command == DraftArchive || command == DraftStartupOpen
 }
 
 // DraftPreview describes a live draft change for a GM: what the pick, the clock or the draft is now, what it
 // becomes, and what to know before confirming. The checks that may refuse the change run elsewhere.
 func DraftPreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, now time.Time,
 	standings DraftStandings, facts nativecheck.Facts) (Preview, error) {
-	season := raw.Args.Draft.Season
-	basis, err := readDraft(records, season, now, standings)
+	basis, err := readDraft(records, raw.Args.Draft.key(), now, standings)
 	if err != nil {
 		return Preview{}, err
 	}
@@ -126,6 +125,12 @@ func (v draftRoomView) describe(raw RawCommand) (PreviewField, string) {
 		return v.timer(d.Act)
 	case DraftRevert:
 		return v.restore(d)
+	case DraftStartupOpen:
+		return v.opening(d)
+	}
+	if d.Startup {
+		return v.field("The "+d.noun(), "Open", "Closed: every pick still unused is skipped"),
+			"Nobody goes to the free-agent pool and no picks are issued. A closed draft can only be reopened by restoring it."
 	}
 	return v.closing(d.Season)
 }
@@ -157,14 +162,14 @@ func (v draftRoomView) timer(a *RawDraftAct) (PreviewField, string) {
 }
 
 func (v draftRoomView) restore(d *RawDraftArgs) (PreviewField, string) {
-	at, err := checkpointOf(v.records, d.Season, d.Act.To)
+	at, err := checkpointOf(v.records, d.key(), d.Act.To)
 	label := "an earlier point"
 	setAside := 0
 	if err == nil {
 		label = namedLabel(v.records[at], v.facts)
 		active := Replay(v.records).Active
 		for _, r := range v.records[at+1:] {
-			if liveDraftEntry(r.Command.Command) && r.Command.Args.Draft.Season == d.Season && active[r.Receipt.Entry] {
+			if liveDraftEntry(r.Command.Command) && ofDraft(r, d.key()) && active[r.Receipt.Entry] {
 				setAside++
 			}
 		}
@@ -175,7 +180,7 @@ func (v draftRoomView) restore(d *RawDraftArgs) (PreviewField, string) {
 			made++
 		}
 	}
-	return v.field("The "+fmt.Sprint(d.Season)+" rookie draft", countWords(made, "pick made", "picks made"),
+	return v.field("The "+d.noun(), countWords(made, "pick made", "picks made"),
 			"Back to how it stood after: "+label),
 		fmt.Sprintf("%s set aside, not erased: the ledger keeps both states. The pick that comes back on the "+
 			"clock gets a fresh clock.", countWords(setAside, "later change is", "later changes are"))
@@ -186,6 +191,17 @@ func (v draftRoomView) closing(season int) (PreviewField, string) {
 			"Closed: undrafted rookies join the free-agent pool and picks for the next two seasons are issued"),
 		"Every rookie nobody took goes to the free-agent pool. Picks for two seasons out are issued to every " +
 			"franchise and can be traded at once. A closed draft can only be reopened by restoring it."
+}
+
+// opening is the startup draft before and after it opens.
+func (v draftRoomView) opening(d *RawDraftArgs) (PreviewField, string) {
+	rounds := "its rounds"
+	if s, err := rookiedraft.ResolveStartup(v.basis.rules); err == nil {
+		rounds = countWords(s.Rounds, "round", "rounds")
+	}
+	return v.field("The "+d.noun(), "Not open", "Open now, "+rounds+"; the first pick is on the clock"),
+		"The first round's order is fixed as the draft opens: the commissioner's list, or drawn at random and " +
+			"recorded. Every player taken signs the startup draft's contract."
 }
 
 func countWords(n int, one, many string) string {

@@ -45,8 +45,10 @@ describe('Rule value drafts', () => {
   });
   it('holds a number to Go’s bounds and says so in words', () => {
     const seats = row('trades.dotSeats');
-    expect(typed(seats, text('3'))).toEqual({ ok: false, error: 'Trade review seats: must be at least 4' });
-    expect(typed(seats, text('11'))).toEqual({ ok: false, error: 'Trade review seats: must be at most 10' });
+    expect(typed(seats, text('0'))).toEqual({ ok: false, error: 'Trade review seats: must be at least 1' });
+    expect(typed(seats, text('1'))).toEqual({ ok: true, value: 1 });
+    expect(typed(seats, text('11'))).toEqual({ ok: true, value: 11 });
+    expect(typed(seats, text('40'))).toEqual({ ok: true, value: 40 });
     expect(typed(seats, text('7'))).toEqual({ ok: true, value: 7 });
     expect(typed(seats, text('7.5'))).toMatchObject({ ok: false });
     expect(typed(seats, text(''))).toMatchObject({ ok: false });

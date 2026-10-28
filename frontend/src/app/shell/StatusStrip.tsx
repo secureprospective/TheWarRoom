@@ -33,12 +33,11 @@ export default function StatusStrip() {
     return () => { active = false; stop(); stopClock(); };
   }, []);
   return <div className="shell-status" role="status">
-    <Act variant="text" verb="nav.open" args={{ node: 'control', workspace: 'data-and-sources' }}
-      label={error || status?.health || 'Source health loading'}>
+    <span aria-label={error || status?.health || 'Source health loading'}>
       <SignalChip signal={error || status?.state === 'fail' ? 'red'
         : status?.state === 'stale' ? 'amber' : 'blue'}
         label={error ? 'Source health unavailable' : status?.health ?? 'Source health loading…'} />
-    </Act>
+    </span>
     <Act variant="text" verb="nav.open" args={{ node: 'pulse', workspace: 'now' }}>
       {status?.gameday ?? 'Gameday unavailable'}</Act>
   </div>;

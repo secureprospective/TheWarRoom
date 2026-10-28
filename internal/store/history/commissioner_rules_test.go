@@ -168,7 +168,7 @@ func TestCommissionerRulesRefusals(t *testing.T) {
 		ruleCommand("roster.size", `{"min":20,"max":70}`, "next_rollover", "", 1),
 		ruleCommand("roster.limits", `{"min":"twenty","max":70}`, "next_rollover", "", 1),
 		ruleCommand("roster.limits", `{"min":71,"max":70}`, "next_rollover", "", 1),
-		ruleCommand("trades.dotSeats", `11`, "next_rollover", "", 1),
+		ruleCommand("trades.dotSeats", `0`, "next_rollover", "", 1),
 		ruleCommand("playoffs.startWeek", `18`, "now", "Push the playoffs back", 1),
 		ruleCommand("roster.limits", `{"min":20,"max":70}`, "instant", "", 1),
 	} {
@@ -198,6 +198,18 @@ func TestCommissionerPresets(t *testing.T) {
 	}
 	for _, section := range rules.Sections {
 		for _, row := range section.Rows {
+			if row.Field == "league.teams" {
+				if row.State != "Set" || row.Value != "10" || row.Citation != "Counted from the league's franchises" {
+					t.Fatalf("empty league teams: %+v", row)
+				}
+				continue
+			}
+			if row.Field == "league.sides" {
+				if row.State != "Set" || row.Value != "None" || row.Citation != "No player pool per side: the league has no sides" {
+					t.Fatalf("empty league sides: %+v", row)
+				}
+				continue
+			}
 			if row.State != "Needs a ruling" || row.Value != "Needs a ruling" ||
 				row.Citation != "Needs a ruling" || row.ChangedAt != "" {
 				t.Fatalf("empty league invented %s: %+v", row.Field, row)

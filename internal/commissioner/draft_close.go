@@ -25,6 +25,8 @@ func PrepareDraftAppend(raw *RawCommand, records []Record, now time.Time, facts 
 		return prepareRookie(raw, records, now, facts, standings)
 	case DraftArchive:
 		return prepareClose(raw, records, now, facts, standings)
+	case DraftStartupOpen:
+		return prepareStartupOpen(raw, records, now)
 	}
 	return nil
 }
@@ -36,8 +38,8 @@ type draftHolds struct {
 	taken  map[string]bool
 }
 
-func holdsOf(league string, records []Record, season int, now time.Time, standings DraftStandings) (draftHolds, error) {
-	basis, err := readDraft(records, season, now, standings)
+func holdsOf(league string, records []Record, key DraftKey, now time.Time, standings DraftStandings) (draftHolds, error) {
+	basis, err := readDraft(records, key, now, standings)
 	if err != nil {
 		return draftHolds{}, err
 	}
@@ -54,10 +56,14 @@ func holdsOf(league string, records []Record, season int, now time.Time, standin
 	}
 	if assets.Seeded {
 		for _, p := range assets.Snapshot.Players {
-			out.taken[p.ID] = true
+			if assets.Snapshot.SideOf(p.Franchise) == key.Side {
+				out.taken[p.ID] = true
+			}
 		}
 		for _, p := range assets.Snapshot.Pool {
-			out.taken[p.Player] = true
+			if p.Side == key.Side {
+				out.taken[p.Player] = true
+			}
 		}
 	}
 	return out, nil
@@ -66,12 +72,12 @@ func holdsOf(league string, records []Record, season int, now time.Time, standin
 func prepareRookie(raw *RawCommand, records []Record, now time.Time, facts nativecheck.Facts,
 	standings DraftStandings) error {
 	d := raw.Args.Draft
-	holds, err := holdsOf(raw.League, records, d.Season, now, standings)
+	holds, err := holdsOf(raw.League, records, d.key(), now, standings)
 	if err != nil {
 		return err
 	}
-	if f := facts[d.Act.Player]; !f.DraftYearHeld || f.DraftYear != d.Season {
-		return fmt.Errorf("choose a rookie from the %d player pool", d.Season)
+	if err := inPool(d, facts); err != nil {
+		return err
 	}
 	if holds.taken[d.Act.Player] {
 		return fmt.Errorf("this player already belongs to a team or has been drafted")
@@ -98,7 +104,7 @@ func prepareRookie(raw *RawCommand, records []Record, now time.Time, facts nativ
 // keepsReplaced holds a change to a rookie who is still on the roster that drafted him: once he has left it,
 // his pick can no longer be swapped for another player.
 func (h draftHolds) keepsReplaced(player string) error {
-	if !h.assets.Seeded || !slices.ContainsFunc(h.assets.Snapshot.Players, func(p NativePlayer) bool { return p.ID == player }) {
+	if !h.assets.Seeded || !h.assets.Snapshot.OnSide(h.basis.key.Side, player) {
 		return fmt.Errorf("this rookie is no longer on the roster that drafted him, so his pick cannot be changed")
 	}
 	return nil
@@ -119,19 +125,28 @@ func (h draftHolds) pick(ref rookiedraft.PickRef) (rookiedraft.Result, bool) {
 func prepareClose(raw *RawCommand, records []Record, now time.Time, facts nativecheck.Facts,
 	standings DraftStandings) error {
 	season := raw.Args.Draft.Season
-	holds, err := holdsOf(raw.League, records, season, now, standings)
+	holds, err := holdsOf(raw.League, records, raw.Args.Draft.key(), now, standings)
 	if err != nil {
 		return err
 	}
 	outcome := &DraftOutcome{Pool: []NativePoolEntry{}, Issued: []NativePick{}}
+	// A startup draft moves nobody to the pool and issues no picks: they are the rookie draft's.
+	if raw.Args.Draft.Startup {
+		raw.Args.DraftOutcome = outcome
+		return nil
+	}
 	for _, p := range classRookies(facts, season, holds.taken) {
 		name := ""
 		if facts[p.ID].Name != "" {
 			name = p.Name
 		}
-		outcome.Pool = append(outcome.Pool, NativePoolEntry{Player: p.ID, Name: name, Season: season})
+		outcome.Pool = append(outcome.Pool, NativePoolEntry{Player: p.ID, Name: name, Season: season, Side: holds.basis.key.Side})
 	}
-	outcome.Issued = issuedPicks(holds, records[0].Command.Args.Franchises, season)
+	franchises, err := draftFranchises(records, holds.basis.key)
+	if err != nil {
+		return err
+	}
+	outcome.Issued = issuedPicks(holds, franchises, season)
 	raw.Args.DraftOutcome = outcome
 	return nil
 }
@@ -161,23 +176,23 @@ func issuedPicks(holds draftHolds, franchises []string, season int) []NativePick
 
 // DueDrafts are the seasons whose draft has used every pick and has not been closed: the app closes them.
 // A league with no live draft change recorded has no draft to look at.
-func DueDrafts(records []Record, at time.Time, standings DraftStandings) []int {
-	seasons := []int{}
-	for _, season := range draftSeasonsKnown(records) {
-		basis, err := readDraft(records, season, at, standings)
+func DueDrafts(records []Record, at time.Time, standings DraftStandings) []DraftKey {
+	keys := []DraftKey{}
+	for _, key := range draftSeasonsKnown(records) {
+		basis, err := readDraft(records, key, at, standings)
 		if err == nil && basis.words == "" && basis.draft.Exhausted && basis.closed == nil {
-			seasons = append(seasons, season)
+			keys = append(keys, key)
 		}
 	}
-	return seasons
+	return keys
 }
 
 // NextDraftDeadline is the nearest instant after at when a draft's clock starts or runs out, so a due
 // worker can sleep until then; no one records a pick the clock used up. A paused clock waits for reconcile.
 func NextDraftDeadline(records []Record, at time.Time, standings DraftStandings) time.Time {
 	var next time.Time
-	for _, season := range draftSeasonsKnown(records) {
-		basis, err := readDraft(records, season, at, standings)
+	for _, key := range draftSeasonsKnown(records) {
+		basis, err := readDraft(records, key, at, standings)
 		if err != nil || basis.words != "" || basis.closed != nil || basis.draft.Exhausted {
 			continue
 		}
@@ -190,14 +205,33 @@ func NextDraftDeadline(records []Record, at time.Time, standings DraftStandings)
 	return next
 }
 
-// draftSeasonsKnown are the drafts with a start, a pick or any other live change recorded.
-func draftSeasonsKnown(records []Record) []int {
-	seasons := draftsWithPicks(records)
+// draftSeasonsKnown are the drafts with a start, an opening, a pick or any other live change recorded.
+func draftSeasonsKnown(records []Record) []DraftKey {
+	keys := draftsWithPicks(records)
 	active := Replay(records).Active
 	for _, r := range records {
-		if r.Command.Command == DraftStart && active[r.Receipt.Entry] && !slices.Contains(seasons, r.Command.Args.Draft.Season) {
-			seasons = append(seasons, r.Command.Args.Draft.Season)
+		started := r.Command.Command == DraftStart || r.Command.Command == DraftStartupOpen
+		if started && active[r.Receipt.Entry] {
+			for _, key := range sideDraftKeys(records, r.Command.Args.Draft.key()) {
+				if !slices.Contains(keys, key) {
+					keys = append(keys, key)
+				}
+			}
 		}
 	}
-	return seasons
+	return keys
+}
+
+// inPool holds the player a commissioner gives a pick to the draft's pool: the season's rookie class, or for
+// a startup draft any held player but an O-Line card.
+func inPool(d *RawDraftArgs, facts nativecheck.Facts) error {
+	f, held := facts[d.Act.Player]
+	_, card := nativecheck.LineCardTeam(d.Act.Player)
+	switch {
+	case d.Startup && (!held || card):
+		return fmt.Errorf("choose a player from the startup draft's pool")
+	case !d.Startup && (!f.DraftYearHeld || f.DraftYear != d.Season):
+		return fmt.Errorf("choose a rookie from the %d player pool", d.Season)
+	}
+	return nil
 }

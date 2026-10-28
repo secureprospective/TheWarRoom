@@ -178,13 +178,6 @@ func TestEveryEngineParameterHasGoPlainWordsAndOrderedAreas(t *testing.T) {
 			t.Errorf("areas not grouped: %q after %q", p.Group, previous)
 		}
 		previous = p.Group
-		if p.Key == "captier.cold_ceiling_pct" && p.Label != "Cold salary tier ceiling (% of cap)" {
-			t.Errorf("cold ceiling = %q", p.Label)
-		}
-		if p.Key == "l4.breakout.athletic_lift" && (p.Label != "how far athletic rating lifts breakout age and age trajectory" ||
-			p.Group != "Scouting adjustment · Breakout (inert, no run reads it)") {
-			t.Errorf("breakout words = %q / %q", p.Label, p.Group)
-		}
 	}
 }
 

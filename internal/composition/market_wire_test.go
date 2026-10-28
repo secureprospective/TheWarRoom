@@ -40,11 +40,10 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkGolden(t, "market", "assets-unheld", board)
-	price, low, high, filler := 3.1, 2.4, 3.9, -0.03
 	model := fakeAssets{
-		"16162": {Valued: true, Discounted: 2.314, Seasons: 5, ClassLabel: "Running back, 24 or younger", Price: &price, Low: &low, High: &high},
-		"13589": {Valued: false, Reason: "The player has no known position or birth date"},
-		"99999": {Valued: true, Discounted: 0.05, Seasons: 5, ClassLabel: "Kicker, 28 or older", Price: &filler},
+		"16162": {Valued: true, Discounted: 12.314, Seasons: 3, ClassLabel: "Native value"},
+		"13589": {Valued: false, Reason: "Not in this season's model run"},
+		"99999": {Valued: true, Discounted: 0.05, Seasons: 3, ClassLabel: "Native value"},
 	}
 	assets := buildAssetBoard(researchView{researchInput: realResearch(t)}, model, time.Now(), []string{"99999"})
 	sample := slices.Clone(assets.Values[:6]) // the first scored players, then the modelled ones
@@ -131,7 +130,7 @@ func TestAssetBoardOnFieldNowFromHeldWeeks(t *testing.T) {
 	if c := cells["99999"].Now; c.Held || c.Text != "No score" || c.Sub != "this season" {
 		t.Fatal("unscored rostered player", c)
 	}
-	if c := cells[id].Dynasty; c.Held || c.Text != "Not valued yet" || c.Sub != "Lab model not compiled" || b.DynastySource == "" {
+	if c := cells[id].Dynasty; c.Held || c.Text != "Not valued yet" || c.Sub != "no model run read yet" || b.DynastySource == "" {
 		t.Fatal("no model", c, b.DynastySource)
 	}
 }

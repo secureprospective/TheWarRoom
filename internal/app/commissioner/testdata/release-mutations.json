@@ -1,4 +1,10 @@
 {
+  "oline.auction.close": {
+    "args": {},
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": ["commissioner"]
+  },
   "commish.league.create": {
     "args": {
       "name": "Matrix league",
@@ -566,6 +572,21 @@
     "args": {
       "draft": {
         "season": 2026
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
+  "draft.startup.open": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "startup": true
       }
     },
     "visibility": "league",

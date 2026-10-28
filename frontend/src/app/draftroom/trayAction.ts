@@ -5,10 +5,10 @@ import type { Draft } from './draft';
 // extra pick added after it, which one.
 export type PickRef = { round: number; original: string; extra: number };
 export type TrayAction =
-  | { kind: 'skip' | 'pause' | 'resume' | 'set' | 'restore' | 'close' }
+  | { kind: 'skip' | 'pause' | 'resume' | 'set' | 'restore' | 'close' | 'open' }
   | { kind: 'assign' | 'insert' | 'change'; ref: PickRef };
 
-const plain = ['skip', 'pause', 'resume', 'set', 'restore', 'close'] as const;
+const plain = ['skip', 'pause', 'resume', 'set', 'restore', 'close', 'open'] as const;
 const onPick = ['assign', 'insert', 'change'] as const;
 
 // The value a launcher sends: "skip", or "assign 1 franchise.03 0".
@@ -37,7 +37,14 @@ export const trayWords = {
   restore: { title: 'Restore the draft to an earlier point', confirm: 'Restore the draft',
     close: 'Close restore' },
   close: { title: 'Close the draft', confirm: 'Close the draft', close: 'Close the draft form' },
+  open: { title: 'Open the startup draft', confirm: 'Open the startup draft', close: 'Close open the draft' },
 } as const;
+
+export function wordsFor(action: TrayAction, draft: Draft) {
+  if (action.kind === 'assign' && draft.startup) return { title: 'Choose a player for a pick',
+    confirm: 'Give this player to the pick', close: 'Close choose a player' };
+  return trayWords[action.kind];
+}
 
 export type Inputs = { player: string; franchise: string; minutes: string; checkpoint: string };
 export const noInputs: Inputs = { player: '', franchise: '', minutes: '', checkpoint: '' };
@@ -46,12 +53,13 @@ const refOf = (r: PickRef) => ({ round: r.round, original: r.original,
   ...(r.extra > 0 ? { extra: r.extra } : {}) });
 const commands = { skip: 'draft.skip', assign: 'draft.assign', insert: 'draft.insert',
   change: 'draft.change', pause: 'draft.timer', resume: 'draft.timer', set: 'draft.timer',
-  restore: 'draft.revert', close: 'draft.archive' } as const;
+  restore: 'draft.revert', close: 'draft.archive', open: 'draft.startup.open' } as const;
 
 // what is still missing before the change can be sent, in words; empty once it is whole.
 export function missing(a: TrayAction, draft: Draft, i: Inputs): string {
   if (a.kind === 'skip' && !draft.onClock) return 'No pick is on the clock.';
-  if (['assign', 'insert', 'change'].includes(a.kind) && i.player === '') return 'Choose a rookie.';
+  if (['assign', 'insert', 'change'].includes(a.kind) && i.player === '')
+    return draft.startup ? 'Choose a player.' : 'Choose a rookie.';
   if (a.kind === 'insert' && i.franchise === '') return 'Choose the franchise that gets the extra pick.';
   if (a.kind === 'set' && !(Number(i.minutes) >= 1 && Number.isInteger(Number(i.minutes))))
     return 'Enter the minutes the pick on the clock has left.';
@@ -72,7 +80,7 @@ function actOf(a: TrayAction, draft: Draft, i: Inputs): object | undefined {
     case 'pause': case 'resume': return { timer: a.kind };
     case 'set': return { timer: 'set', seconds: Number(i.minutes) * 60 };
     case 'restore': return { to: i.checkpoint };
-    case 'close': return undefined;
+    case 'close': case 'open': return undefined;
   }
 }
 
@@ -81,6 +89,7 @@ export function changeOf(a: TrayAction, draft: Draft, i: Inputs, reason: string)
   if (missing(a, draft, i) !== '') return null;
   const act = actOf(a, draft, i);
   return { league: draft.league, command: commands[a.kind], reason: reason.trim(), expected: draft.revision,
-    args: { draft: { season: draft.season, ...(act ? { act } : {}) } }, effective: 'now',
-    visibility: 'league' };
+    args: { draft: { season: draft.season, ...(draft.startup ? { startup: true } : {}),
+      ...(draft.side && a.kind !== 'open' ? { side: draft.side } : {}),
+      ...(act ? { act } : {}) } }, effective: 'now', visibility: 'league' };
 }

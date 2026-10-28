@@ -71,7 +71,8 @@ func (r RawCorrection) Validate(command string) error {
 			return fmt.Errorf("choose the recorded transaction to reverse")
 		}
 	case CorrectProvenance:
-		expected.Player, expected.Via = r.Player, r.Via
+		// The franchise names whose copy is meant; a league with a player pool per side requires it.
+		expected.Player, expected.Via, expected.Franchise = r.Player, r.Via, r.Franchise
 		if !slices.Contains([]string{"held", "draft", "waiver", "trade", "free_agent", "commissioner"}, r.Via) {
 			return fmt.Errorf("choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
 		}
@@ -119,8 +120,9 @@ func (r RawCorrection) validateRuleException() error {
 	if strings.HasPrefix(r.Rule, "calendar.") && r.Scope.Franchise == "" {
 		return fmt.Errorf("a calendar exception needs a franchise scope")
 	}
-	if count != 1 {
-		return fmt.Errorf("choose exactly one exception scope")
+	if count != 1 && (count != 2 || r.Scope.Franchise == "" || r.Scope.Player == "" ||
+		strings.HasPrefix(r.Rule, "calendar.")) {
+		return fmt.Errorf("choose exactly one exception scope, or a franchise and player together")
 	}
 	if !supportedExceptionRule(r.Rule) {
 		return fmt.Errorf("choose an automated roster, salary-cap or calendar rule")
@@ -178,13 +180,25 @@ func checkExceptionTarget(c RawCorrection, records []Record, now time.Time) erro
 	if !assets.Seeded {
 		return fmt.Errorf("record the starting assets before granting an exception")
 	}
+	return checkExceptionScope(c, records, assets.Snapshot)
+}
+
+func checkExceptionScope(c RawCorrection, records []Record, snapshot *RawNativeSnapshot) error {
 	switch {
+	case c.Scope.Player != "" && c.Scope.Franchise != "":
+		if snapshot.PlayerOf(c.Scope.Franchise, c.Scope.Player) < 0 {
+			return fmt.Errorf("choose a player on that franchise's recorded roster")
+		}
 	case c.Scope.Franchise != "":
-		if !slices.ContainsFunc(assets.Snapshot.Franchises, func(f NativeFranchise) bool { return f.ID == c.Scope.Franchise }) {
+		if !slices.ContainsFunc(snapshot.Franchises, func(f NativeFranchise) bool { return f.ID == c.Scope.Franchise }) {
 			return fmt.Errorf("choose a franchise in this app league")
 		}
 	case c.Scope.Player != "":
-		if !slices.ContainsFunc(assets.Snapshot.Players, func(p NativePlayer) bool { return p.ID == c.Scope.Player }) {
+		side, err := snapshot.TargetSide(c.Scope.Franchise)
+		if err != nil {
+			return err
+		}
+		if !snapshot.OnSide(side, c.Scope.Player) {
 			return fmt.Errorf("choose a recorded roster player")
 		}
 	case c.Scope.Transaction != "":

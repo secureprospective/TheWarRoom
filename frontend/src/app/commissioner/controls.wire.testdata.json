@@ -28,6 +28,10 @@
             {
               "field": "league.initialRosters",
               "label": "First rosters"
+            },
+            {
+              "field": "players.pools",
+              "label": "Player pools"
             }
           ]
         },
@@ -39,6 +43,14 @@
             {
               "field": "league.alignment",
               "label": "Division alignment"
+            },
+            {
+              "field": "league.divisionConferences",
+              "label": "Conference of each division"
+            },
+            {
+              "field": "league.sides",
+              "label": "Sides"
             }
           ]
         },
@@ -131,6 +143,10 @@
             {
               "field": "scoring.totals",
               "label": "Stats counted as a total of others"
+            },
+            {
+              "field": "scoring.rules",
+              "label": "Scoring rules by range and position"
             },
             {
               "field": "scoring.lineUnit",
@@ -739,6 +755,22 @@
             {
               "field": "draft.rfaAfter",
               "label": "Rookie restricted free agency"
+            },
+            {
+              "field": "draft.startupRounds",
+              "label": "Startup draft rounds"
+            },
+            {
+              "field": "draft.startupYears",
+              "label": "Startup draft contract years"
+            },
+            {
+              "field": "draft.startupSalary",
+              "label": "Startup draft salary"
+            },
+            {
+              "field": "draft.startupRookies",
+              "label": "Incoming rookie class in the startup draft pool"
             }
           ]
         },
@@ -762,6 +794,18 @@
             {
               "field": "draft.tieRule",
               "label": "Draft order tie breaker"
+            },
+            {
+              "field": "draft.startupOrder",
+              "label": "Startup draft first round order"
+            },
+            {
+              "field": "draft.startupList",
+              "label": "Startup draft order set by the commissioner"
+            },
+            {
+              "field": "draft.startupPattern",
+              "label": "Startup draft later round pattern"
             }
           ]
         },
@@ -884,5 +928,29 @@
         }
       ]
     }
-  ]
+  ],
+  "presets": [
+    {
+      "id": "default_32",
+      "label": "32-Team Default",
+      "description": "The 32-Team Default is built for 32 franchises: the NFL's divisions, a startup draft and its own lineup, roster and scoring. Every value can be changed afterwards.",
+      "suggestedTeams": 32
+    },
+    {
+      "id": "mirror_16",
+      "label": "16-Team Mirror",
+      "description": "The 16-Team Mirror is built for 16 franchises in two conferences. Each conference is a side with its own copy of every player: the sides meet only on the field and in the final. A startup draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
+      "suggestedTeams": 16
+    },
+    {
+      "id": "empty",
+      "label": "Start empty: every rule Needs a ruling",
+      "description": "An empty league has no suggested size; every rule waits for a ruling.",
+      "suggestedTeams": 0
+    }
+  ],
+  "teams": {
+    "min": 2,
+    "max": 32
+  }
 }

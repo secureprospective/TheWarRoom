@@ -68,8 +68,15 @@ func (s *Store) standUpRecords(ctx context.Context, tx *sql.Tx, point commission
 	for _, f := range point.Snapshot.Franchises {
 		franchises = append(franchises, f.ID)
 	}
+	source, preset := point.Source, point.Preset
+	if source == "" {
+		source = commissioner.SourceMFLImport
+	}
+	if preset == "" {
+		preset = commissioner.MFLImportPreset()
+	}
 	commands := []commissioner.RawCommand{
-		{League: point.League, Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Recovered league", Preset: commissioner.PresetLegacy, Season: point.Snapshot.Season, FranchiseCount: len(franchises), Franchises: franchises}, Request: "recovery-create", Reason: "Recover rosters and contracts", Effective: "now", Visibility: "league"},
+		{League: point.League, Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Recovered league", Preset: preset, Source: source, Season: point.Snapshot.Season, FranchiseCount: len(franchises), Franchises: franchises}, Request: "recovery-create", Reason: "Recover rosters and contracts", Effective: "now", Visibility: "league"},
 		{League: point.League, Command: commissioner.NativeSeed, Args: commissioner.RawArgs{Native: &point.Snapshot}, Expected: 1, Request: "recovery-seed", Reason: "Recover rosters and contracts", Effective: "now", Visibility: "league"},
 	}
 	var records []commissioner.Record
@@ -82,7 +89,7 @@ func (s *Store) standUpRecords(ctx context.Context, tx *sql.Tx, point commission
 		if err != nil {
 			return nil, err
 		}
-		if err := commissioner.CheckNativeAppend(raw, records); err != nil {
+		if err := commissioner.CheckNativeRecoveryAppend(raw, records); err != nil {
 			return nil, fmt.Errorf("check recovery seed: %w", err)
 		}
 		if _, err := s.appendCommissioner(ctx, tx, appendRequest{raw: raw, principal: "offline.recovery", role: role, canonical: canonical, at: point.CapturedAt, records: records}); err != nil {

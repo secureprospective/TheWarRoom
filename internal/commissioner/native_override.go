@@ -69,8 +69,9 @@ func (r RawNativeOverride) validateTarget(command string) error {
 		}
 		return nil
 	}
+	// A franchise may name whose copy is meant: a league with a pool per side requires it.
 	id, err := playerid.New(r.Player)
-	if err != nil || id.String() != r.Player || r.Franchise != "" || r.Season != 0 {
+	if err != nil || id.String() != r.Player || strings.TrimSpace(r.Franchise) != r.Franchise || r.Season != 0 {
 		return fmt.Errorf("choose a recorded player for this correction")
 	}
 	return nil

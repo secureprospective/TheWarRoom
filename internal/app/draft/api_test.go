@@ -9,7 +9,6 @@ import (
 	"os"
 	"reflect"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -17,13 +16,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
 type fakeHost struct {
 	startup error
-	load    func() (*lab.Data, error)
 	calls   []string
 	in      Input
 	players report.Held[players.RawPlayer]
@@ -37,11 +34,6 @@ func (h *fakeHost) Ready() error { h.calls = append(h.calls, "ready"); return h.
 func (h *fakeHost) DraftReady() (context.Context, int, *time.Location, error) {
 	return context.Background(), 2026, time.UTC, h.Ready()
 }
-func (h *fakeHost) DraftFacts() (*lab.Data, string, error) {
-	d, err := h.load()
-	return d, "test build", err
-}
-
 func (h *fakeHost) DraftInputs() (report.Held[draftreports.Pick], report.Held[draftreports.FuturePick], normalize.Lookup) {
 	h.calls = append(h.calls, "feeds", "lookup")
 	return report.Held[draftreports.Pick]{Value: h.in.Results.Value, Feed: h.in.Results.Feed},
@@ -63,11 +55,6 @@ func (h *fakeHost) DraftDestination() string {
 func (h *fakeHost) DraftPlayers(context.Context) report.Held[players.RawPlayer] { return h.players }
 func (h *fakeHost) RefreshDraftReports(force bool) error                        { return h.refresh(force) }
 
-func newTestAPI(t *testing.T) *API {
-	t.Helper()
-	return New(&fakeHost{load: sync.OnceValues(lab.Load)})
-}
-
 func TestAPIReadyBeforeReads(t *testing.T) {
 	h := &fakeHost{startup: errors.New("not ready")}
 	a := New(h)
@@ -83,10 +70,7 @@ func TestAPIReadyBeforeReads(t *testing.T) {
 	if !reflect.DeepEqual(h.calls, []string{"ready", "ready", "ready"}) {
 		t.Fatal(h.calls)
 	}
-	h.load = func() (*lab.Data, error) { t.Fatal("invalid scope reached facts"); return nil, nil }
-	if New(h).TargetDraftLab(RawDraftScope{}).Status != report.ReadingFailed {
-		t.Fatal("invalid input accepted")
-	}
+
 }
 
 func TestAPIReportsReadOrderAndForce(t *testing.T) {

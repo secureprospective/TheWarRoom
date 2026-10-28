@@ -293,3 +293,53 @@ func TestReversingAnElapsedRolloverCannotEraseASeason(t *testing.T) {
 		t.Fatalf("current season failed to apply later rules: %d", got)
 	}
 }
+
+func TestCountedShapeReading(t *testing.T) {
+	for _, tc := range []struct {
+		name, preset     string
+		teams, divisions int
+		knownDivisions   bool
+	}{
+		{"native twelve without alignment", PresetEmpty, 12, 0, false},
+		{"default32", PresetDefault32, 32, 8, true},
+		{"legacy without alignment", PresetLegacy, 32, 8, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			create, err := (RawCommand{League: "native.test", Command: Create, Args: RawArgs{
+				Name: "Ours", Preset: tc.preset, Season: 2026, FranchiseCount: tc.teams},
+				Request: "create", Effective: "now", Visibility: "league"}).Prepared()
+			if err != nil {
+				t.Fatal(err)
+			}
+			records := []Record{{Command: create, Receipt: Receipt{Entry: "create", RecordedAt: seasonMoment(1)}}}
+			stored, err := RulesInForce(records, 2026, seasonMoment(2))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rules, err := RulesNow(records, seasonMoment(2))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rules.League.Teams.State != leaguerules.IsKnown || rules.League.Teams.Value != tc.teams ||
+				rules.League.Teams.Citation != "Counted from the league's franchises" {
+				t.Fatalf("teams: %+v", rules.League.Teams)
+			}
+			if tc.knownDivisions != (rules.League.Divisions.State == leaguerules.IsKnown) ||
+				(tc.knownDivisions && rules.League.Divisions.Value != tc.divisions) {
+				t.Fatalf("divisions: %+v", rules.League.Divisions)
+			}
+			if rules.League.Alignment.State != leaguerules.IsKnown && rules.League.Divisions != stored.League.Divisions {
+				t.Fatalf("unknown alignment changed divisions: %+v -> %+v", stored.League.Divisions, rules.League.Divisions)
+			}
+			if rules.League.Alignment.State == leaguerules.IsKnown && rules.League.Divisions.Citation != "Counted from the division alignment" {
+				t.Fatalf("division citation: %+v", rules.League.Divisions)
+			}
+		})
+	}
+	rules := leaguerules.RuleSet{}
+	rules.League.Alignment = leaguerules.Known(map[string]string{"a": "East", "b": "East", "c": "West", "d": ""})
+	countedShape(&rules, nil)
+	if rules.League.Divisions.Value != 2 {
+		t.Fatalf("distinct nonempty divisions: %+v", rules.League.Divisions)
+	}
+}

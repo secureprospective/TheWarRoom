@@ -87,8 +87,8 @@ Branch `session/revamp-D-scoring-engine` (stacked parts, PR only at the final pa
     Legacy start may not hold a card. Retries reuse the recorded body. The cards join the player
     facts every screen reads (`nativecheck.AddLineCards` in `native.PlayerFacts`). Must-cut-to-receive
     is the existing roster gate: a card trade that leaves the receiver at 45 is refused until it cuts.
-    Tests: `internal/commissioner/default32_start_test.go`, `internal/app/commissioner/
-    default32_start_test.go` (through the API with the held-data port nil). Mutant: dropping the start
+    Tests: `internal/commissioner/native_start_test.go`, `internal/app/commissioner/
+    native_start_test.go` (through the API with the held-data port nil). Mutant: dropping the start
     check fails the refusal table.
   - **Commissioner control over card scores** (`8ee8bcd1`): a card's score reads the ledger first;
     `commish.stat.correct` may name a line component (`line_*`) for a card only, where the league
@@ -380,9 +380,32 @@ code it does not map, so a silently dropped stat cannot pass.
 Seed preparation lives in `internal/app/commissioner`: read the league records, check the request
 replay through `BuildSeedCommand`, then choose its start. A replay returns the recorded command
 before reading the clock or capturing held state; execution still checks the current principal.
-A new Default32 request uses `Default32SeedCommand` (own franchises, empty rosters, 32 unassigned
-O-Line lots). Other leagues use the host's held-data capture; capture failure records nothing.
-Preview uses the same preparation path.
+A native request uses `NativeStart` (own franchises, empty rosters, and unassigned O-Line lots
+when its rules bound OL). MFL-import leagues use the host's held-data capture; capture failure
+records nothing. Source, not preset, chooses this route. Preview uses the same preparation path.
+
+App creation (`TargetCommissionerExecute` → `leagueservice.Execute` →
+`history.ExecuteCommissionerWithFacts`) appends Create and the native start in one write transaction.
+Both records use the creation reason and transaction clock; the start request is the creation key
+plus `.native-start`. Hosted starts use the recipient's version token and are an internal effect of
+credential-admitted Create; they do not require a separately exposed seed capability. The internally
+derived seed still passes domain authorization and append checks. A failed start rolls back Create too.
+Retry returns the original Create receipt
+without appending either record again; its revision identifies Create, not the latest ledger version.
+The low-level `ExecuteCommissioner` remains a single-record operation for historical/import fixtures
+and explicit ledger callers. Older native leagues can still start through `TargetNativeSeed`.
+
+`ledgerJobs` emits the `seed` job only before a start exists: “Start the league” for native source,
+“Record starting assets” for MFL import. The launcher and tray use this job's presence and wording;
+there is no second frontend rule or new wire flag. The renamed source is
+`internal/commissioner/native_start.go`. SYSTEM_MAP, placement and CI shard weights had no old
+source-file entry (the latter two index packages).
+
+Evidence: `TestAppCreationStartsBySource` covers source/preset independence, byte-identical Default32
+starts, empty starts, open bids, job visibility and retries. `TestNativeCreationRollsBackWhenStartFails`
+injects a seed insert failure, checks an empty ledger and proves a later retry succeeds.
+`TestDefault32StartsThroughTheSeedRequest` and `TestOlderEmptyNativeLeagueCanStart` preserve the older
+unstarted-league path. Frontend routing tests cover started/unstarted native and import tray visibility.
 
 The host port now exposes only `CaptureNativeSeed`, not seed-command policy. Composition's
 `nativeSeedCommand` remains a straight delegate for existing internal callers. The two source

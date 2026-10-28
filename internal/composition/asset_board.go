@@ -8,7 +8,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
-	"github.com/secureprospective/TheWarRoom/internal/labcompile"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	recordstore "github.com/secureprospective/TheWarRoom/internal/store/playerrecord"
 )
 
 // AssetBoard, AssetValue and AssetCell are Market's wire types; the pool and trade surfaces
@@ -19,8 +20,8 @@ type (
 	AssetCell  = marketapp.AssetCell
 )
 
-// dynastyValue and assetModel are the service's Lab answer and value model; the App holds the
-// model (assetModel) once the Lab compiles. Neither is on the wire.
+// dynastyValue and assetModel are the service's native value and value model; the App holds the
+// model (assetModel) once a model run is read. Neither is on the wire.
 type (
 	dynastyValue = marketapp.Dynasty
 	assetModel   = marketapp.Model
@@ -59,7 +60,6 @@ type marketHost struct {
 	app *App
 }
 
-func (h marketHost) LabStamp() string { return labStamp() }
 func (h marketHost) AssetInput(ctx context.Context) (marketapp.OnField, []string) {
 	return h.app.assetInput(ctx)
 }
@@ -84,15 +84,21 @@ func (a *App) assetInput(ctx context.Context) (marketapp.OnField, []string) {
 
 }
 
-// fitAssetModel fits the Lab's value model on the verified facts warmArchive just read, so C-01
-// values players on the same frame and market as the Lab's trade legs. Until it lands the board
-// says the model is not compiled; when it lands the board reloads.
-func (a *App) fitAssetModel(ctx context.Context) {
-	began := time.Now()
-	a.core.FactsMu.Lock()
-	cache := a.archiveCache
-	a.core.FactsMu.Unlock()
-	marketapp.FitAssetModel(ctx, began, cache, labcompile.Build, a.marketHeld.PublishModel, a.core.SeasonChanged, func(text string) { log.Print(text) })
+// publishAssetModel reads the latest model run and the player record and publishes the native
+// value model C-01 values players and picks with. Until a run exists the board says so.
+func (a *App) publishAssetModel(ctx context.Context) {
+	h := a.core.History
+	native, ok, err := marketapp.LoadNative(ctx, marketapp.NativeSource{
+		Ready: a.ready,
+		LatestRun: func(ctx context.Context) (history.Run, bool, error) {
+			return h.LatestRun(ctx, a.core.Season, history.RunModel)
+		},
+		Scores:  h.ModelScores,
+		Records: recordstore.New(a.core.HistPools, h).Records,
+		Params:  a.core.Params.Snapshot,
+		Teams:   func() int { return len(a.core.League.Reader().Franchises()) },
+	})
+	marketapp.PublishNative(native, ok, err, a.marketHeld.PublishModel, func(text string) { log.Print(text) })
 }
 
 func (h marketHost) RefreshMarket(force bool) error {

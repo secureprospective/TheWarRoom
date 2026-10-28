@@ -3,10 +3,7 @@ package composition
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
-
-	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 
 	personalstore "github.com/secureprospective/TheWarRoom/internal/store/personal"
 )
@@ -29,7 +26,6 @@ func TestOffersClusterDenialsGolden(t *testing.T) {
 func TestOffersClusterWireGolden(t *testing.T) {
 	t.Parallel()
 	a := bidTestApp(t)
-	checkGolden(t, "offers", "offers", offersTestAPI(a).TargetOffers(RawOfferScope{From: 2013, To: 2026, Direction: "all"}))
 	personal, err := offersTestAPI(a).TargetPersonal("0001")
 	checkGolden(t, "offers", "personal", personal)
 	checkGolden(t, "offers", "personal-error", errorWords(err))
@@ -55,24 +51,6 @@ func TestOffersClusterWireGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkGolden(t, "offers", "plans", json.RawMessage(normalizeWire(raw)))
-}
-
-func TestOffersWireTwinsMatch(t *testing.T) {
-	t.Parallel()
-	var full offersapp.View
-	n := 0
-	fillWire(reflect.ValueOf(&full).Elem(), &n)
-	service, err := json.Marshal(full)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wire, err := json.Marshal(wireOffers(full))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(service) != string(wire) {
-		t.Fatalf("wire twin differs: %s != %s", wire, service)
-	}
 }
 
 func TestOffersWireMarketPortDetachment(t *testing.T) {

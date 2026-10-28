@@ -6,7 +6,7 @@ import SideTray from '../commissioner/SideTray';
 import { useChangePreview } from '../commissioner/useChangePreview';
 import type { Draft } from './draft';
 import { checkpointWords, franchiseName, pickWords, playerLine } from './draftWords';
-import { changeOf, missing, noInputs, trayValue, trayWords, type Inputs, type TrayAction }
+import { changeOf, missing, noInputs, trayValue, wordsFor, type Inputs, type TrayAction }
   from './trayAction';
 
 function Choose<K extends keyof Inputs>({ label, field, inputs, set, options }: {
@@ -37,12 +37,13 @@ function PickLine({ draft, action }: { draft: Draft; action: TrayAction }) {
 export function DraftForm({ action, draft }: { action: TrayAction; draft: Draft }) {
   const [inputs, setInputs] = useState<Inputs>(noInputs);
   const [reason, setReason] = useState('');
-  const words = trayWords[action.kind];
+  const words = wordsFor(action, draft);
   const change = changeOf(action, draft, inputs, reason);
   const request = useRequestKey(change);
   const { preview, wait, safeguard } = useChangePreview(change, request);
   const rookies = draft.available.map(p => ({ value: p.id, text: playerLine(p) }));
   const kind = action.kind;
+  const who = draft.startup ? 'player' : 'rookie';
   return (
     <section className="league-form" aria-label={words.title}>
       <PreviewReview preview={preview} confirm={
@@ -52,7 +53,8 @@ export function DraftForm({ action, draft }: { action: TrayAction; draft: Draft 
       }>
         <PickLine draft={draft} action={action} />
         {(kind === 'assign' || kind === 'insert' || kind === 'change') &&
-          <Choose label={kind === 'change' ? 'The rookie to give this pick' : 'Rookie'} field="player"
+          <Choose field="player"
+            label={kind === 'change' ? `The ${who} to give this pick` : draft.startup ? 'Player' : 'Rookie'}
             inputs={inputs} set={setInputs} options={rookies} />}
         {kind === 'insert' && <Choose label="Franchise that gets the extra pick" field="franchise"
           inputs={inputs} set={setInputs}
@@ -75,7 +77,7 @@ export function DraftForm({ action, draft }: { action: TrayAction; draft: Draft 
 export default function DraftTray({ action, draft, opener, background, onClose }: {
   action: TrayAction; draft: Draft; opener: HTMLElement; background: HTMLElement | null; onClose(): void;
 }) {
-  const words = trayWords[action.kind];
+  const words = wordsFor(action, draft);
   return (
     <SideTray title={words.title} screen="draftroom" opener={opener} background={background}
       onClose={onClose} closeLabel={words.close}>

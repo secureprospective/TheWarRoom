@@ -12,6 +12,9 @@ func recordEvents(r Record) ([]governance.Event, error) {
 	if r.Command.Command == Create {
 		return creationEvents(r), nil
 	}
+	if n, ok := teamCount(r); ok {
+		return teamsEvents(n), nil
+	}
 	if r.Command.Args.People != nil {
 		people := r.Command.Args.People
 		var event governance.Event
@@ -74,7 +77,7 @@ func governanceEvents(records []Record, projection Projection) ([]governance.Eve
 type GovernanceAuthorizer struct{ State governance.State }
 
 func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string, error) {
-	if (command == ContractActionSet || command == TradeOverride) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
+	if (command == ContractActionSet || command == TradeOverride || command == OLineAuctionClose) && !a.State.HasRole(governance.Principal(principal), governance.Commissioner) {
 		return "", fmt.Errorf("only this league's commissioner may make this change")
 	}
 	if d, ok := successionDefinitionFor(command); ok {
@@ -111,15 +114,15 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 func commandControls() map[string]string {
 	return map[string]string{
 		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
-		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
+		DraftStart: "CM-042", DraftStartupOpen: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
 		DraftTimer: "CM-043", DraftRevert: "CM-044", DraftArchive: "CM-045",
 		WaiverProcess: "CM-035", WaiverOrderSet: "CM-035", WaiverOrderAuto: "CM-035", WaiverOverride: "CM-035",
-		BidsProcess: "CM-036", BidsOverride: "CM-036",
+		OLineAuctionClose: "CM-036", BidsProcess: "CM-036", BidsOverride: "CM-036",
 		CorrectRoster: "CM-028", CorrectTransaction: "CM-028", CorrectProvenance: "CM-028",
 		CorrectPick: "CM-028", RuleException: "CM-039",
-		Create: "CM-001", NativeSeed: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
+		Create: "CM-001", NativeSeed: "CM-001", Cutover: "CM-001", Revert: "CM-039", ContractActionSet: "CM-009",
 		ContractEdit: "CM-034", CapAdjust: "CM-034", CapRelief: "CM-034", ReserveException: "CM-038",
 		PlayerPosition: "CM-030", PlayerPositionClear: "CM-030",
 		ScorePlayer: "CM-032", ScoreFranchise: "CM-032",

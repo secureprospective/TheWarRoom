@@ -62,6 +62,8 @@ type Store struct {
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
 	wmu       sync.Mutex
+	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
+	batchFault func(step int) error
 }
 
 // New returns an unprepared store over history.db's pools, using reg as the registry.

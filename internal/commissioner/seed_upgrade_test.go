@@ -25,8 +25,8 @@ func TestPrePartTwoLegacySeedUpgradesToANewLegacyLeague(t *testing.T) {
 	}
 	upgraded := legacyLeague(t)
 	fresh := legacyLeague(t)
-	if len(old) != len(fresh[0].Command.Args.Seed)-7 {
-		t.Fatalf("the held old seed should lack the five scoring kinds and two auto-move fields: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
+	if len(old) != len(fresh[0].Command.Args.Seed)-18 {
+		t.Fatalf("the held old seed should lack the six scoring kinds, two auto-move fields, division conferences, seven startup draft settings, sides and player pools: %d vs %d", len(old), len(fresh[0].Command.Args.Seed))
 	}
 	for _, s := range old {
 		if strings.Contains(string(s.Value), "blocked_fg_td") || strings.Contains(string(s.Value), "other_return_td") {
@@ -74,8 +74,8 @@ func TestPreKindsNonLegacySeedGetsEmptyKindsOnly(t *testing.T) {
 			old = append(old, s)
 		}
 	}
-	if len(old) != len(records[0].Command.Args.Seed)-5 {
-		t.Fatalf("expected five newer scoring settings in the preset, kept %d of %d", len(old), len(records[0].Command.Args.Seed))
+	if len(old) != len(records[0].Command.Args.Seed)-6 {
+		t.Fatalf("expected six newer scoring settings in the preset, kept %d of %d", len(old), len(records[0].Command.Args.Seed))
 	}
 	records[0].Command.Args.Seed = old
 	rules, err := RulesInForce(records, 2026, noChangeTime())
@@ -83,12 +83,12 @@ func TestPreKindsNonLegacySeedGetsEmptyKindsOnly(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := rules.Scoring
-	for _, state := range []leaguerules.State{s.Extras.State, s.Ranges.State, s.Scales.State, s.Totals.State, s.LineUnit.State} {
+	for _, state := range []leaguerules.State{s.Extras.State, s.Ranges.State, s.Scales.State, s.Totals.State, s.LineUnit.State, s.Rules.State} {
 		if state != leaguerules.IsKnown {
 			t.Fatalf("an upgraded seed left a scoring kind unset: %+v", s)
 		}
 	}
-	if len(s.Extras.Value)+len(s.Ranges.Value)+len(s.Scales.Value)+len(s.Totals.Value)+len(s.LineUnit.Value.Weights) != 0 || s.LineUnit.Value.Used {
+	if len(s.Extras.Value)+len(s.Ranges.Value)+len(s.Scales.Value)+len(s.Totals.Value)+len(s.LineUnit.Value.Weights)+len(s.Rules.Value) != 0 || s.LineUnit.Value.Used {
 		t.Fatalf("an upgraded seed must record the kinds empty: %+v", s)
 	}
 	before := leaguerules.LegacyNFL().Scoring

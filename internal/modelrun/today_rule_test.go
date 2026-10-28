@@ -46,7 +46,7 @@ func kickers() (*fakeHistory, fakeState, fakeDir, map[string]float64) {
 func kickerScores(t *testing.T, set params.Set) []history.ModelScore {
 	t.Helper()
 	h, st, dir, _ := kickers()
-	r, err := New(st, dir, h, "v-test")
+	r, err := New(st, Held{dir, h}, h, "v-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestKickerWithoutLastSeasonIsValuedOnThisSeasonsPace(t *testing.T) {
 	dir["0430"] = normalize.PlayerFacts{Name: "New Leg", Position: domain.PosK}
 	st.roster = append(st.roster, state.PlayerState{MFLID: "0430"})
 	set := params.DefaultSet()
-	r, err := New(st, dir, h, "v-test")
+	r, err := New(st, Held{dir, h}, h, "v-test")
 	if err != nil {
 		t.Fatal(err)
 	}

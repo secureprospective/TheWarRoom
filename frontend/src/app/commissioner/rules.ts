@@ -16,7 +16,7 @@ export const safeguardKinds = ['confirm', 'hold', 'reason'] as const;
 export type Safeguard = (typeof safeguardKinds)[number];
 export type RuleRow = {
   field: string; label: string; value: string; state: 'Set' | 'Needs a ruling'; citation: string;
-  changedAt: string; schema: RuleSchema; competitive: boolean; pending: RulePending[];
+  changedAt: string; schema: RuleSchema; competitive: boolean; nowOnly: boolean; pending: RulePending[];
   current: unknown; unit: '' | 'percent'; safeguards: { nextRollover: Safeguard; now: Safeguard };
   // Who set the value now in force, when and with which change; null while it is the starting preset.
   governed: Governed | null;
@@ -61,13 +61,14 @@ function parseSafeguards(v: unknown, p: string): RuleRow['safeguards'] {
 }
 function parseRow(v: unknown, p: string): RuleRow {
   const keys = ['field', 'label', 'value', 'state', 'citation', 'schema', 'competitive', 'pending', 'current',
-    'unit', 'safeguards', 'changedAt', 'governed'];
+    'unit', 'safeguards', 'changedAt', 'governed', 'nowOnly'];
   const r = object(v, p, keys);
   return {
     field: text(r.field, p), label: text(r.label, p), value: text(r.value, p),
     state: choice(r.state, `${p}.state`, ['Set', 'Needs a ruling'] as const), citation: text(r.citation, p),
     changedAt: r.changedAt === '' ? '' : timestamp(r.changedAt, `${p}.changedAt`),
     schema: parseSchema(r.schema, `${p}.schema`), competitive: flag(r.competitive, `${p}.competitive`),
+    nowOnly: r.nowOnly === undefined ? false : flag(r.nowOnly, `${p}.nowOnly`),
     current: r.current, unit: choice(r.unit, `${p}.unit`, ['', 'percent'] as const),
     safeguards: parseSafeguards(r.safeguards, `${p}.safeguards`),
     governed: r.governed === null ? null : parseGoverned(r.governed, `${p}.governed`),

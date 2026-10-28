@@ -13,7 +13,14 @@ import (
 func SchemaVersion() int { return len(historyMigrations()) }
 
 func historyMigrations() []db.Migration {
-	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity}
+	return []db.Migration{adoptHistory, quarantineOrphans, guardHistoryJSON, addClosedBooks, initializeLedgerAudit, addInactiveImports, addTransferAuthority, db.CreateServerRelease, addRosterRestorePoints, addPlayerIdentity, addPlayerRecord}
+}
+
+func addPlayerRecord(ctx context.Context, tx *sql.Tx) error {
+	if err := db.CreatePlayerRecord(ctx, tx); err != nil {
+		return fmt.Errorf("history: %w", err)
+	}
+	return nil
 }
 
 func adoptHistory(ctx context.Context, tx *sql.Tx) error {

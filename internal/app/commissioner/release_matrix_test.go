@@ -235,6 +235,7 @@ draft.read
 draft.revert
 draft.skip
 draft.start
+draft.startup.open
 draft.timer
 history.link
 lineup.check
@@ -255,6 +256,7 @@ schedule.generate
 schedule.publish
 schedule.read
 score.player.read
+oline.auction.close
 season.rollover
 standings.read
 stats.queue.read

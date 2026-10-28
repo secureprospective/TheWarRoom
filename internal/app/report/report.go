@@ -18,7 +18,6 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/offline"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -37,10 +36,17 @@ type Row struct {
 	Group string `json:"group,omitempty"`
 }
 
+// Interval is the displayed value and its bounds.
+type Interval struct {
+	Value float64 `json:"value"`
+	Lo    float64 `json:"lo"`
+	Hi    float64 `json:"hi"`
+}
+
 // Range is a row's value interval; it is main.MarketRange.
 type Range struct {
 	Max float64 `json:"max,omitempty"`
-	lab.Interval
+	Interval
 	Text string `json:"text"`
 }
 

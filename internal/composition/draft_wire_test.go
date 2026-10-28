@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	draftapp "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft/drafttest"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -47,14 +46,6 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 		{ID: "0816", Name: "Old rookie", Position: "WR", Team: "IND", DraftYear: "2025", DraftRound: "1", DraftPick: "2"},
 		{ID: "0817", Name: "Undrafted", Position: "WR", Team: "IND", DraftYear: "2026"},
 	}}))
-	scope := draftapp.RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
-	checkDraftWire(t, "lab", draftAPI(a).TargetDraftLab(scope))
-	scope.Segments, scope.NFL = []string{"r1a", "r3"}, []string{"n1"}
-	checkDraftWire(t, "lab-filtered", draftAPI(a).TargetDraftLab(scope))
-	scope.From, scope.To = 2100, 2101
-	checkDraftWire(t, "lab-thin", draftAPI(a).TargetDraftLab(scope))
-	scope.Seasons = 5
-	checkDraftWire(t, "lab-invalid", draftAPI(a).TargetDraftLab(scope))
 	errs := map[string]string{}
 	if err := draftAPI(a).TargetOpenMFLDraftRoom(); err != nil {
 		errs["openDraftRoom"] = err.Error()
@@ -207,24 +198,6 @@ func TestDraftValueNotePlainWords(t *testing.T) {
 	got := draftapp.ValueNote(run, a.measureMeanings(run.MissingMeasures), time.Local)
 	if !strings.Contains(got, "Missing player information:") || strings.Contains(got, "context.birth_date") || strings.Contains(got, "secret-version") || !strings.Contains(got, "Date of birth") || got == want {
 		t.Fatal(got)
-	}
-}
-
-func TestCounterpartiesWireMatchesGolden(t *testing.T) {
-	a := counterpartiesapp.New(NewApp().core)
-	for _, c := range []struct {
-		name  string
-		scope counterpartiesapp.RawCounterpartiesScope
-		fid   string
-	}{
-		{"league", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026}, "0001"},
-		{"filtered", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026, Tiers: []string{"contender"}, Postures: []string{"now"}}, "0014"},
-		{"thin", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2017, Windows: []string{"summer"}, Postures: []string{"later"}}, "0002"},
-		{"invalid", counterpartiesapp.RawCounterpartiesScope{From: 2026, To: 2017}, "0099"},
-		{"unknown", counterpartiesapp.RawCounterpartiesScope{From: 2017, To: 2026, Team: "0099"}, "0099"},
-	} {
-		checkGolden(t, "counterparties", c.name, a.TargetCounterparties(c.scope))
-		checkGolden(t, "counterparties", c.name+"-team", a.TargetCounterpartTeam(counterpartiesapp.RawCounterpartTeam{Scope: c.scope, Fid: c.fid}))
 	}
 }
 

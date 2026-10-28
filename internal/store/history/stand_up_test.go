@@ -81,3 +81,72 @@ func TestRosterRecoveryRoundTrip(t *testing.T) {
 		}
 	}
 }
+
+func TestRosterRecoveryPreservesSourceAndPreset(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name, preset, source string
+		teams                int
+		old                  bool
+	}{
+		{"native 12", commissioner.PresetEmpty, commissioner.SourceNative, 12, false},
+		{"native Legacy rules 12", commissioner.PresetLegacy, commissioner.SourceNative, 12, false},
+		{"native Default32", commissioner.PresetDefault32, commissioner.SourceNative, 32, false},
+		{"Legacy 32", commissioner.PresetLegacy, commissioner.SourceMFLImport, 32, false},
+		{"pre-source Legacy 32", commissioner.PresetLegacy, commissioner.SourceMFLImport, 32, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			point := playedRosterPoint(t, tc.preset, tc.source, tc.teams)
+			if point.Source != tc.source || point.Preset != tc.preset {
+				t.Fatalf("captured source/preset=%q/%q", point.Source, point.Preset)
+			}
+			if tc.old {
+				point.Source, point.Preset = "", ""
+			}
+			target, _, _ := newStore(t)
+			if _, err := target.StandUpRosters(t.Context(), point); err != nil {
+				t.Fatal(err)
+			}
+			recovered, err := target.RosterRestorePoint(t.Context(), point.League)
+			if err != nil || !reflect.DeepEqual(recovered.Snapshot, point.Snapshot) ||
+				recovered.Source != tc.source || recovered.Preset != tc.preset {
+				t.Fatalf("source, preset or contracts changed: %+v %v", recovered, err)
+			}
+			records, err := target.nativeRecords(t.Context(), point.League)
+			if err != nil || records[0].Command.Args.Source != tc.source || records[0].Command.Args.Preset != tc.preset ||
+				len(records[0].Command.Args.Franchises) != tc.teams {
+				t.Fatalf("recovered creation: %+v %v", records, err)
+			}
+			location, err := target.TransferStatus(t.Context(), point.League)
+			if err != nil || location.Writable {
+				t.Fatalf("recovery granted authority: %+v %v", location, err)
+			}
+		})
+	}
+}
+
+func playedRosterPoint(t *testing.T, preset, source string, teams int) commissioner.RawRosterRestorePoint {
+	t.Helper()
+	create := createWith(preset, teams)
+	create.Args.Source = source
+	create, err := create.Prepared()
+	if err != nil {
+		t.Fatal(err)
+	}
+	seed := heldSeedCommand(t)
+	seed.Args.Native.Franchises = seed.Args.Native.Franchises[:teams]
+	seed.Args.Native.Picks = nil
+	seed.Args.Native.Players[0].Salary = 123456789
+	seed.Args.Native.Players[0].ExpirationYear = 2031
+	at := seed.Args.Native.RosterAt
+	records := []commissioner.Record{
+		{Command: create, Principal: "creator", Receipt: commissioner.Receipt{Entry: "create", Revision: 1, RecordedAt: at}},
+		{Command: seed, Principal: "creator", Receipt: commissioner.Receipt{Entry: "played", Revision: 2, RecordedAt: at}},
+	}
+	point, seeded, err := commissioner.RosterRestorePoint(seed.League, records)
+	if err != nil || !seeded {
+		t.Fatalf("capture played rosters: seeded=%v error=%v", seeded, err)
+	}
+	return point
+}

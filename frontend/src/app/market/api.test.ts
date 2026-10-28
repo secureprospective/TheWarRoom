@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { marketAPI, subscribeSeason } from './api';
-import { marketProvider } from './provider';
 import { createAssetState } from '../assets/state';
 import { marketReportState } from '../reports/marketState';
 
@@ -10,45 +9,22 @@ afterEach(() => {
   else Reflect.deleteProperty(globalThis, 'window');
 });
 const flush = () => new Promise<void>(resolve => setTimeout(resolve, 5));
-const scope = { from: 2017, to: 2026, phases: null, assets: null, byAge: false };
-const raw = { from: 2017, to: 2026, phases: [], assets: [], byAge: false };
-
 describe('Market transport adapter', () => {
   it('routes every method only through market.API', async () => {
     const api = {
-      TargetMarketLists: vi.fn(async () => 'lists'), TargetPickClock: vi.fn(async () => 'clock'),
-      TargetMarketStretches: vi.fn(async () => 'stretches'), TargetAssetProfile: vi.fn(async () => 'profile'),
       TargetAssetBoard: vi.fn(async () => 'board'), TargetMarketReports: vi.fn(async () => 'reports'),
       TargetMarketReportsRefresh: vi.fn(async () => {}), TargetMarket: vi.fn(),
     };
     vi.stubGlobal('window', { go: { market: { API: api } } });
-    expect(marketAPI.hasDesktop()).toBe(true);
-    expect(await marketAPI.lists(raw)).toBe('lists');
-    expect(await marketAPI.clock(raw)).toBe('clock');
-    expect(await marketAPI.stretches(raw)).toBe('stretches');
-    expect(await marketAPI.profile(raw, 'LB')).toBe('profile');
-    expect(api.TargetAssetProfile).toHaveBeenCalledWith({ scope: raw, kind: 'LB' });
     expect(await marketAPI.assetBoard()).toBe('board');
     expect(await marketAPI.reports()).toBe('reports');
     await marketAPI.refreshReports(true);
     expect(api.TargetMarketReportsRefresh).toHaveBeenCalledWith(true);
-    for (const call of [api.TargetMarketLists, api.TargetPickClock, api.TargetMarketStretches])
-      expect(call).toHaveBeenCalledWith(raw);
-    // The provider fills an omitted selection and reports a malformed answer as a failed read.
-    const failed = await marketProvider.lists(scope);
-    expect(failed.status).toBe('failed');
-    expect(failed.absenceReason).toContain('Market read failed');
-    expect(api.TargetMarketLists).toHaveBeenLastCalledWith(raw);
+
   });
 
   it.each([undefined, {}])('does not substitute a fixture without desktop bindings: %s', async window => {
     vi.stubGlobal('window', window);
-    expect(marketAPI.hasDesktop()).toBe(false);
-    const reading = await marketProvider.clock(scope);
-    expect(reading.status).toBe('not_wired');
-    expect(reading.absenceReason).toBe(
-      'Historical Market needs the desktop app; no browser fixtures are substituted',
-    );
     await expect(marketAPI.assetBoard()).rejects.toThrow(
       'Player values require the desktop app; no browser fixture is substituted.',
     );

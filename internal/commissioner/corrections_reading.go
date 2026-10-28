@@ -72,6 +72,9 @@ func decisionException(records []Record, rule string, scope ExceptionScope, now 
 		if c == nil || c.Rule != rule || c.Scope == nil || !exceptionScopeMatches(*c.Scope, scope) {
 			continue
 		}
+		if !exceptionScopeUsable(records, *c.Scope) {
+			continue
+		}
 		if c.Until != "" {
 			until, err := time.Parse(time.RFC3339Nano, c.Until)
 			if err != nil || !now.Before(until) {
@@ -81,6 +84,14 @@ func decisionException(records []Record, rule string, scope ExceptionScope, now 
 		return "Commissioner exception: " + r.Command.Reason, true
 	}
 	return "", false
+}
+
+func exceptionScopeUsable(records []Record, scope ExceptionScope) bool {
+	if scope.Player == "" || scope.Franchise != "" {
+		return true
+	}
+	sides, err := snapshotSides(records)
+	return err == nil && len(sides) == 0
 }
 
 func supportedExceptionRule(rule string) bool {
@@ -101,6 +112,8 @@ func ScopedDecisionExceptions(records []Record, scope ExceptionScope, now time.T
 
 func exceptionScopeMatches(want, decision ExceptionScope) bool {
 	switch {
+	case want.Franchise != "" && want.Player != "":
+		return want.Franchise == decision.Franchise && want.Player == decision.Player
 	case want.Franchise != "":
 		return want.Franchise == decision.Franchise
 	case want.Player != "":

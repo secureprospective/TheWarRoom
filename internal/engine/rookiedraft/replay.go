@@ -70,11 +70,23 @@ func Replay(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
 // Restart is the one act that does not first let the clock run out: it puts the draft back as it stood.
 // Exhausted does not seal the draft or issue new picks; closing is a separate commissioner phase.
 func ReplayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time, acts []Act) (Draft, error) {
+	return replayActs(r, order, start, at, acts, false)
+}
+
+// ReplaySideActs replays one side's share of a validated league order. Traded picks follow their owners,
+// so rounds can have different original franchises or no picks at all on this side.
+func ReplaySideActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
+	acts []Act) (Draft, error) {
+	return replayActs(r, order, start, at, acts, true)
+}
+
+func replayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
+	acts []Act, perSide bool) (Draft, error) {
 	setup, err := ResolveSetup(r)
 	if err != nil {
 		return Draft{}, err
 	}
-	picks, err := preparedPicks(r, setup, order)
+	picks, err := preparedPicks(r, setup, order, perSide)
 	if err != nil {
 		return Draft{}, err
 	}
@@ -105,19 +117,17 @@ func ReplayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Tim
 	return out, nil
 }
 
-func preparedPicks(r leaguerules.DraftRules, setup Setup, order []RoundOrder) ([]Result, error) {
+func preparedPicks(r leaguerules.DraftRules, setup Setup, order []RoundOrder, perSide bool) ([]Result, error) {
 	if len(order) != setup.Rounds {
 		return nil, fmt.Errorf("set every round's draft order before starting")
 	}
 	out := []Result{}
 	counts := map[string]int{}
 	for i, round := range order {
-		if round.Round != i+1 || len(round.Picks) == 0 {
-			return nil, fmt.Errorf("set round %d's draft order before starting", i+1)
-		}
-		if err := validateRound(round, order[0]); err != nil {
+		if err := validateReplayRound(round, order[0], i+1, perSide); err != nil {
 			return nil, err
 		}
+
 		seen := map[string]bool{}
 		for slot, pick := range round.Picks {
 			if pick.Round != round.Round || pick.Slot != slot+1 || pick.Owner == "" ||
@@ -137,6 +147,16 @@ func preparedPicks(r leaguerules.DraftRules, setup Setup, order []RoundOrder) ([
 		}
 	}
 	return out, nil
+}
+
+func validateReplayRound(round, first RoundOrder, number int, perSide bool) error {
+	if round.Round != number || (!perSide && len(round.Picks) == 0) {
+		return fmt.Errorf("set round %d's draft order before starting", number)
+	}
+	if perSide {
+		return nil
+	}
+	return validateRound(round, first)
 }
 
 func validateRound(round, first RoundOrder) error {

@@ -38,14 +38,18 @@ func (s *Store) ProcessDueBids(ctx context.Context, league string, facts nativec
 	if err != nil {
 		return fmt.Errorf("read due bids: %w", err)
 	}
-	for _, player := range due {
+	for _, args := range due {
 		records, err = s.nativeRecords(ctx, league)
 		if err != nil {
 			return err
 		}
+		lot := args.Player
+		if args.Side != "" {
+			lot = args.Side + "." + args.Player
+		}
 		raw := commissioner.RawCommand{League: league, Command: commissioner.BidsProcess,
-			Args:     commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: player}},
-			Expected: int64(len(records)), Request: fmt.Sprintf("bid-clock.%s.%d", player, len(records)),
+			Args:     commissioner.RawArgs{Bid: &args},
+			Expected: int64(len(records)), Request: fmt.Sprintf("bid-clock.%s.%d", lot, len(records)),
 			Effective: "now", Visibility: "league"}
 		if _, err := s.ExecuteCommissionerWithFacts(ctx, raw, bidClockPrincipal, clockBidAuthorizer{}, facts, time.UTC); err != nil {
 			return fmt.Errorf("award due bid: %w", err)

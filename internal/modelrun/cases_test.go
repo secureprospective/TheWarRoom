@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
@@ -17,7 +18,7 @@ const season = 2026
 
 func shipped(t *testing.T) (map[domain.Position]model.Params, model.Horizon) {
 	t.Helper()
-	p, err := newPass(model.Data{}, Spec{Season: season, Params: params.DefaultSet()})
+	p, err := newPass(playerrecord.Book{}, Spec{Season: season, Params: params.DefaultSet()})
 	if err != nil {
 		t.Fatal(err)
 	}

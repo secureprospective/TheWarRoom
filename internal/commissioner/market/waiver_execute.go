@@ -89,6 +89,9 @@ func (x *waiverExecution) prepare(raw *commissioner.RawCommand) error {
 	}
 	if raw.Command == commissioner.RosterCut || raw.Command == commissioner.RosterReserve {
 		rules := commissioner.AllowDebtReduction(x.assets.Snapshot, assets.Snapshot, x.records, x.rules, raw.Args.Waiver.Franchise)
+		if raw.Command == commissioner.RosterCut {
+			rules = commissioner.PendingOLineCutRules(x.state, x.assets.Snapshot, assets.Snapshot, rules, raw.Args.Waiver.Franchise)
+		}
 		return rosterCapAllows(assets.Snapshot, rules, raw.Args.Waiver.Franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil
@@ -135,6 +138,9 @@ func (x *waiverExecution) claim(raw *commissioner.RawCommand) error {
 		return fmt.Errorf("this waiver window is closed")
 	}
 	franchise := raw.Args.Waiver.Franchise
+	if x.assets.Snapshot.SideOf(franchise) != w.Side {
+		return fmt.Errorf("players stay on their own side of the league: claim only players cut on your side")
+	}
 	for _, c := range w.Claims {
 		if c.Franchise == franchise {
 			return fmt.Errorf("you already claimed this player")
@@ -214,8 +220,11 @@ func (x *waiverExecution) award(raw *commissioner.RawCommand) error {
 func (x *waiverExecution) chooseAward(raw *commissioner.RawCommand, w *commissioner.WaiverWindow, policy nativecheck.WaiverPolicy) error {
 	// A correction tests the incoming contract without counting the previous winner twice.
 	if w.Winner != "" {
-		x.assets.Snapshot.Players = slices.DeleteFunc(x.assets.Snapshot.Players,
-			func(p commissioner.NativePlayer) bool { return p.ID == w.Player.ID })
+		seed := x.assets.Snapshot
+		seed.Players = slices.DeleteFunc(seed.Players,
+			func(p commissioner.NativePlayer) bool {
+				return p.ID == w.Player.ID && seed.SideOf(p.Franchise) == w.Side
+			})
 	}
 	eligible, claims := x.eligibleClaims(w)
 	order, source, err := x.awardPriority(raw.League, w, raw.Command)

@@ -15,6 +15,8 @@ func ruleOwners() []ruleOwner {
 		{"league.teams", "CM-001", "G2"}, {"league.conferences", "CM-001", "G2"},
 		{"league.divisions", "CM-001", "G2"}, {"league.format", "CM-001", "G2"},
 		{"league.initialRosters", "CM-001", "G2"}, {"league.alignment", "CM-002", "G2"},
+		{"league.divisionConferences", "CM-002", "G2"}, {"league.sides", "CM-002", "G2"},
+		{"players.pools", "CM-001", "G2"},
 		{"league.dynasty", "CM-005", "G2"}, {"league.carry", "CM-005", "G2"},
 		{"league.keepers", "CM-005", "G2"}, {"roster.", "CM-003", "G2"},
 		{"lineup.", "CM-004", "G2"}, {"scoring.", "CM-006", "G2"},
@@ -34,6 +36,10 @@ func ruleOwners() []ruleOwner {
 		{"notify.", "CM-051", "G1"}, {"draft.lengths", "CM-040", "G2"}, {"draft.rfaAfter", "CM-040", "G2"},
 		{"draft.orderSource", "CM-041", "G2"}, {"draft.order", "CM-041", "G2"},
 		{"draft.laterPattern", "CM-041", "G2"}, {"draft.tieRule", "CM-041", "G2"},
+		{"draft.startupRounds", "CM-040", "G2"}, {"draft.startupYears", "CM-040", "G2"},
+		{"draft.startupSalary", "CM-040", "G2"}, {"draft.startupOrder", "CM-041", "G2"},
+		{"draft.startupList", "CM-041", "G2"}, {"draft.startupPattern", "CM-041", "G2"},
+		{"draft.startupRookies", "CM-040", "G2"},
 	}
 }
 

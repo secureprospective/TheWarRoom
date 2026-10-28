@@ -39,10 +39,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook) error {
 	record := records[i]
 	if TradeCommand(record.Command.Command) {
-		if !assets.Seeded {
-			return fmt.Errorf("record starting assets before trading")
-		}
-		return projectTrade(assets.Snapshot, waivers, record)
+		return projectNativeTrade(assets, waivers, record)
 	}
 	if WaiverCommand(record.Command.Command) {
 		if !assets.Seeded {
@@ -57,6 +54,10 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return projectBid(assets.Snapshot, waivers, record)
 	}
 	switch record.Command.Command {
+	case OLineAuctionClose:
+		return projectOLineClose(assets.Snapshot, waivers, record.Command.Args.OLineOutcome)
+	case RulesSet:
+		return projectTeamsChange(assets, record)
 	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
 		return applyAssetCorrection(assets.Snapshot, records[:i], record)
 	case SeasonRollover:
@@ -106,10 +107,14 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 		}
 		return fmt.Errorf("choose a franchise in this app league")
 	}
-	for i := range seed.Players {
+	side, err := seed.TargetSide(value.Franchise)
+	if err != nil {
+		return err
+	}
+	if i := seed.PlayerOn(side, value.Player); i >= 0 {
 		player := &seed.Players[i]
-		if player.ID != value.Player {
-			continue
+		if value.Franchise != "" && player.Franchise != value.Franchise {
+			return fmt.Errorf("choose a player on that franchise's recorded roster")
 		}
 		switch record.Command.Command {
 		case ContractEdit:
@@ -130,7 +135,8 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 	return fmt.Errorf("choose a player on this app league's recorded roster")
 }
 
-func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Record, now time.Time) error {
+func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Record, now time.Time,
+	franchise string, perSide bool) error {
 	active := Replay(records).Active
 	for _, record := range records {
 		if record.Command.Command != ReserveException || !active[record.Receipt.Entry] {
@@ -139,6 +145,9 @@ func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Rec
 		value, err := decodeOverride(record.Command.Command, record.Command.Args)
 		if err != nil {
 			return err
+		}
+		if (perSide && value.Franchise == "") || (value.Franchise != "" && value.Franchise != franchise) {
+			continue
 		}
 		if value.Until != "" {
 			until, parseErr := time.Parse(time.RFC3339Nano, value.Until)
@@ -159,4 +168,11 @@ func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Rec
 		}
 	}
 	return nil
+}
+
+func projectNativeTrade(assets *NativeAssets, book *MarketBook, record Record) error {
+	if !assets.Seeded {
+		return fmt.Errorf("record starting assets before trading")
+	}
+	return projectTrade(assets.Snapshot, book, record)
 }

@@ -95,7 +95,7 @@ func sectionLabels() map[string]string {
 		"scoring": "Scoring", "standings": "Standings", "cap": "Salary cap", "contracts": "Contracts",
 		"ir": "IR", "taxi": "Taxi squad", "waivers": "Waivers", "bids": "Free-agent bids", "trades": "Trades",
 		"schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
-		"draft": "Draft", "notify": "Notifications"}
+		"draft": "Draft", "notify": "Notifications", "players": "Player pools"}
 }
 
 // percentFields hold a share of one, which a GM reads as a percentage.
@@ -107,8 +107,8 @@ func percentFields() map[FieldPath]bool {
 func fieldBounds(path FieldPath, schema *ValueSchema) {
 	switch path {
 	case "trades.dotSeats":
-		low, high := int64(4), int64(10)
-		schema.Minimum, schema.Maximum = &low, &high
+		low := int64(1)
+		schema.Minimum, schema.Maximum = &low, nil
 	case "cap.irShare", "cap.taxiShare":
 		low, high := int64(0), int64(10000)
 		schema.Minimum, schema.Maximum = &low, &high
@@ -135,16 +135,7 @@ func schemaFor(t reflect.Type) ValueSchema {
 			s.Fields = append(s.Fields, SchemaField{f.Name, fieldWords(f.Name), schemaFor(f.Type)})
 		}
 	case reflect.Map, reflect.Slice:
-		s.Kind = "list"
-		if t.Kind() == reflect.Map {
-			s.Kind = "map"
-		}
-		child := schemaFor(t.Elem())
-		s.Element = &child
-		if t.Kind() == reflect.Map {
-			key := schemaFor(t.Key())
-			s.Key = &key
-		}
+		collectionSchema(t, &s)
 	case reflect.Int, reflect.Int64:
 		s.Kind = "count"
 		low := int64(0)
@@ -170,13 +161,34 @@ func schemaFor(t reflect.Type) ValueSchema {
 	return s
 }
 
+func collectionSchema(t reflect.Type, s *ValueSchema) {
+	s.Kind = "list"
+	if t.Kind() == reflect.Map {
+		s.Kind = "map"
+	}
+	// A stat named as a key or in a list is chosen from the stat dictionary.
+	child := schemaFor(t.Elem())
+	if t.Elem() == reflect.TypeFor[StatID]() {
+		child.Choices = statChoices()
+	}
+	s.Element = &child
+	if t.Kind() == reflect.Map {
+		key := schemaFor(t.Key())
+		if t.Key() == reflect.TypeFor[StatID]() {
+			key.Choices = statChoices()
+		}
+		s.Key = &key
+	}
+}
+
 func catalogueChoices(kind string) []Choice {
-	candidates := []string{"head_to_head", "draft", "all", "keepers", "zero_top_starter", "zero_slot", "none",
+	candidates := []string{"head_to_head", "draft", "free_agency", "all", "keepers", "zero_top_starter", "zero_slot", "none",
 		"hard", "soft", "IR", "PUP", "NFI", "Out", "suspended", "calendar_years", "career_games", "nfl_seasons", "cut",
 		"reverse_standings", "rolling", "blind", "open", "dot", "commissioner", "start_of_day", "end_of_day",
-		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "win_percentage", "head_to_head",
+		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "random", "win_percentage", "head_to_head",
 		"division_percentage", "conference_percentage", "all_play_percentage", "points", "power_rank",
-		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total"}
+		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total",
+		"one", "per_side"}
 	choices := []Choice{}
 	if validateMenu(kind, "not_an_option") == nil {
 		return choices
@@ -624,6 +636,10 @@ func choiceWords(option string) string {
 		return "DOT"
 	case string(NFLSeasons):
 		return "NFL seasons"
+	case string(OnePool):
+		return "One for the whole league"
+	case string(PerSide):
+		return "One per side: each conference has its own copy of every player"
 	}
 	return plainName(option)
 }

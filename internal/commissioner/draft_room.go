@@ -72,25 +72,33 @@ func (d *NativeDraft) addRoom(basis draftBasis, records []Record, facts nativech
 		return err
 	}
 	if assets.Seeded {
-		for _, p := range assets.Snapshot.Players {
-			taken[p.ID] = true
+		seed := assets.Snapshot
+		for _, p := range seed.Players {
+			if seed.SideOf(p.Franchise) == basis.key.Side {
+				taken[p.ID] = true
+			}
 		}
-		for _, p := range assets.Snapshot.Pool {
-			taken[p.Player] = true
+		for _, p := range seed.Pool {
+			if p.Side == basis.key.Side {
+				taken[p.Player] = true
+			}
 		}
 	}
-	if basis.closed != nil {
+	switch {
+	case basis.closed != nil:
 		d.Closed = closedReading(*basis.closed, assets, facts)
 		for _, p := range d.Closed.Pool {
 			d.Players[p.ID] = p
 		}
-	} else {
+	case d.Startup:
+		d.Available = startupPool(facts, taken)
+	default:
 		d.Available = classRookies(facts, d.Season, taken)
 		for _, p := range d.Available {
 			d.Players[p.ID] = p
 		}
 	}
-	d.Checkpoints = draftCheckpoints(records, d.Season, facts)
+	d.Checkpoints = draftCheckpoints(records, basis.key, facts)
 	return nil
 }
 
@@ -172,13 +180,13 @@ func namedLabel(r Record, facts nativecheck.Facts) string {
 }
 
 // draftCheckpoints lists, newest first, the draft's start and each change in force since.
-func draftCheckpoints(records []Record, season int, facts nativecheck.Facts) []DraftCheckpoint {
+func draftCheckpoints(records []Record, key DraftKey, facts nativecheck.Facts) []DraftCheckpoint {
 	active := Replay(records).Active
 	out := []DraftCheckpoint{}
 	for _, r := range records {
-		d := r.Command.Args.Draft
-		if d == nil || d.Season != season || !active[r.Receipt.Entry] || standingRule(r.Command.Command) ||
-			(!liveDraftEntry(r.Command.Command) && r.Command.Command != DraftStart) {
+		opens := r.Command.Command == DraftStart || r.Command.Command == DraftStartupOpen
+		if !draftCheckpointMatches(r, key) || !active[r.Receipt.Entry] || standingRule(r.Command.Command) ||
+			(!liveDraftEntry(r.Command.Command) && !opens) {
 			continue
 		}
 		out = append(out, DraftCheckpoint{Entry: r.Receipt.Entry, Words: namedLabel(r, facts), At: r.Receipt.RecordedAt})

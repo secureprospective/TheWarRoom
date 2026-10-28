@@ -7,6 +7,7 @@ import { leagueState, staleWords } from './proxy';
 import { RuleChangeForm } from './RuleChangeForm';
 import LeagueRules from './LeagueRules';
 import rulesWire from './rules.wire.testdata.json';
+import previewWire from './preview.wire.testdata.json';
 
 beforeEach(() => leagueState.forget());
 afterEach(async () => { await unmount(); vi.useRealTimers(); });
@@ -58,6 +59,10 @@ describe('Change a rule', () => {
     await type(control(host, 'When it takes effect'), 'now');
     expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(true);
     expect(present(host, 'Reason (required)')).toBe(true);
+    await type(control(host, 'Reason'), '   ');
+    expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(true);
+    await type(control(host, 'Reason'), 'Owners agreed');
+    expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(false);
   });
   it('sends the next-rollover change once held; the screen shows it waiting by the old value', async () => {
     let landed = false;
@@ -164,6 +169,41 @@ describe('Change a rule', () => {
     expect(present(host, `${list} #2`)).toBe(false);
     await hold(host);
     expect(calls.sent[0].args).toEqual({ field: 'ir.eligible', value: ['PUP'] });
+  });
+  it('sets the conference of each division through the map editor', async () => {
+    const { app, calls } = stub();
+    const host = await mount(form('league.divisionConferences'), app);
+    const map = 'New value for Conference of each division';
+    expect(all(host, 'option').map(o => o.textContent)).toContain('Conference of each division');
+    expect(present(host, 'In force nowNeeds a ruling')).toBe(true);
+    await act(async () => { (button(host, `Add to ${map}`).props().onClick as () => void)(); });
+    await settle();
+    const division = all(host, 'input').find(i => i.getAttribute('aria-label') === `${map}: entry 1 name`);
+    await type(division!, 'AFC East');
+    await type(control(host, `${map} › AFC East`), 'AFC');
+    await hold(host);
+    expect(calls.sent[0].args).toEqual({ field: 'league.divisionConferences', value: { 'AFC East': 'AFC' } });
+  });
+  it('sends a Teams change like any rule and shows the teams it adds before it is recorded', async () => {
+    const teams = { ...previewWire.reason, fields: [{ label: 'Teams', before: '4',
+      beforeSource: 'Counted from the league\'s franchises', after: '6 (adds Franchise 5, Franchise 6)',
+      afterSource: 'Your proposed change', when: 'in force now' }] };
+    const { app, calls } = stub({ TargetCommissionerPreview: async body => {
+      const sent = JSON.parse(body) as { league: string; expected: number };
+      return { ...teams, target: { ...teams.target, league: sent.league, version: sent.expected } };
+    } });
+    const host = await mount(form('league.teams'), app);
+    expect(present(host, 'In force now4')).toBe(true);
+    await type(control(host, 'New value for Teams'), '6');
+    await type(control(host, 'When it takes effect'), 'now');
+    await type(control(host, 'Reason'), 'Two expansion teams');
+    await settle();
+    expect(present(host, 'Teams: 4 → 6 (adds Franchise 5, Franchise 6) (in force now)')).toBe(true);
+    await act(async () => { (button(host, confirm).props().onClick as () => void)(); });
+    await settle();
+    expect(calls.sent[0]).toMatchObject({ command: 'commish.rules.set', effective: 'now',
+      reason: 'Two expansion teams',
+      args: { field: 'league.teams', value: 6 } });
   });
   it('will not send a list with a blank entry, and says which', async () => {
     const host = await mount(form('ir.eligible'), stub().app);

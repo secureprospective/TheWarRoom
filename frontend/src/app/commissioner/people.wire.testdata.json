@@ -41,7 +41,7 @@
     ],
     "invites": [],
     "dotCount": 0,
-    "dotStatus": "Needs a ruling: DOT has 0 of 4 seats",
+    "dotStatus": "Needs a ruling: trade review needs at least one seat",
     "votes": [
       {
         "id": "removal",
@@ -104,7 +104,7 @@
     "roles": [],
     "invites": [],
     "dotCount": 0,
-    "dotStatus": "Needs a ruling: DOT has 0 of 4 seats",
+    "dotStatus": "Needs a ruling: trade review needs at least one seat",
     "votes": [
       {
         "id": "removal",

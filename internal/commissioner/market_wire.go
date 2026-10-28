@@ -13,11 +13,13 @@ import (
 // RawBidArgs names a recorded player or bid and the contract an owner offers. It never carries a decision,
 // a price the app works out or an owner identity.
 type RawBidArgs struct {
-	Player    string       `json:"player,omitempty"`
-	Franchise string       `json:"franchise,omitempty"`
-	Bid       string       `json:"bid,omitempty"`
-	Salary    domain.Money `json:"salaryCents,omitempty"`
-	Years     int          `json:"years,omitempty"`
+	Player    string `json:"player,omitempty"`
+	Franchise string `json:"franchise,omitempty"`
+	// Side names whose copy of the player has its bids decided, in a league with a pool per side.
+	Side   string       `json:"side,omitempty"`
+	Bid    string       `json:"bid,omitempty"`
+	Salary domain.Money `json:"salaryCents,omitempty"`
+	Years  int          `json:"years,omitempty"`
 }
 
 // BidResult is how one bid fared when its player's bids were decided.
@@ -161,14 +163,14 @@ func (p TradePolicy) Validate(r leaguerules.TradesRules) error {
 	if !slices.Contains([]leaguerules.ReviewRoute{leaguerules.DOTReview, leaguerules.CommissionerReview, leaguerules.NoReview}, p.Route) {
 		return fmt.Errorf("choose who reviews trades")
 	}
-	if p.Route == leaguerules.DOTReview && (r.DOTSeats.State != leaguerules.IsKnown || p.Seats < 4 || p.Seats > 10 || p.DecideAt > p.Seats) {
-		return fmt.Errorf("%s: choose 4 to 10 DOT seats and a decision count within them", "Needs a ruling")
+	if p.Route == leaguerules.DOTReview && (r.DOTSeats.State != leaguerules.IsKnown || p.Seats < 1 || p.DecideAt > p.Seats) {
+		return fmt.Errorf("%s: choose at least one DOT seat and a decision count within it", "Needs a ruling")
 	}
 	return nil
 }
 func (p TradePolicy) invalidLimits() bool {
 	return p.DecideAt < 1 || p.FutureYears < 0 || p.MinimumRound < 1 || p.MaximumRound < p.MinimumRound ||
-		p.Expiry <= 0 || p.MaximumParties < 2 || p.MaximumParties > 3
+		p.Expiry <= 0 || p.MaximumParties < 2
 }
 
 const ReserveClockPrincipal = "native.reserve.clock"

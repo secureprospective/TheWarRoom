@@ -26,7 +26,10 @@ export async function readActData(league: string, kinds: readonly FieldKind[], s
   if (assets.league !== league || directory.league !== league || assets.revision !== directory.revision)
     throw new Error('The league changed while reading its assets. Reopen the change.');
   const options: ActReadings['options'] = {
-    franchise: directory.franchises.map(f => ({ value: f.franchise, label: f.name })),
+    franchise: directory.franchises.map(f => {
+      const side = assets.snapshot?.sides?.[f.franchise];
+      return { value: f.franchise, label: side ? `${f.name} — ${side}` : f.name };
+    }),
     player: unique([...(assets.snapshot?.players ?? []), ...(assets.snapshot?.pool ?? [])]
       .map(p => ({ value: 'id' in p ? p.id : p.player, label: p.name || 'Unnamed player' }))),
     pick: (assets.snapshot?.picks ?? []).filter(p => p.original).map(p => ({

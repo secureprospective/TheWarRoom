@@ -491,10 +491,10 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     disposition: "kept",
     ring: 4,
     status: "landed",
-    disposition_note: "DOT has 4–10 seats and 3 approvals or vetoes decide; up to 3 parti" +
-      "es, picks 2 years ahead in rounds 1–5, no compensatory pick trades" +
-      ", invalid rosters refused and offers expire after 7 days (rulebook" +
-      " §14; brief §5; fact 7a; ruling 4).",
+    disposition_note: "DOT has at least one seat and 3 approvals or vetoes decide; up to " +
+      "3 parties, picks 2 years ahead in rounds 1–5, no compensatory pick" +
+      " trades, invalid rosters refused and offers expire after 7 days (r" +
+      "ulebook §14; brief §5; fact 7a; ruling 4).",
     merged_into: Object.freeze([] as const),
     merged_place: "",
     governs: Object.freeze([
@@ -666,8 +666,9 @@ export const commissionerControls: readonly CommissionerControl[] = Object.freez
     ring: 4,
     status: "landed",
     disposition_note: "Creator is first commissioner, last commissioner cannot be revoked" +
-      ", role grants stay private, DOT has 4–10 seats and trades wait bel" +
-      "ow 4 (fact 8a; fact 7a; rulings 5–6).",
+      ", role grants stay private, DOT needs at least one seat and trades" +
+      " wait while no reviewer is eligible (fact 8a; fact 7a; rulings 5–6" +
+      ").",
     merged_into: Object.freeze([] as const),
     merged_place: "",
     governs: Object.freeze([

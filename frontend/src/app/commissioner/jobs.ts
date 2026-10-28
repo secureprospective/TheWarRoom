@@ -13,6 +13,10 @@ export type Job = {
 };
 export type Jobs = { league: string; name: string; revision: number; jobs: Job[] };
 
+export const startingJob = (jobs?: Jobs) => jobs?.jobs.find(job => job.id === 'seed');
+// The startup draft's job opens the draft room on the startup draft rather than on a control.
+export const startupDraftJob = 'startup_draft';
+
 export function parseJobs(v: unknown): Jobs {
   const r = object(v, 'League jobs', ['league', 'name', 'revision', 'jobs']);
   return {

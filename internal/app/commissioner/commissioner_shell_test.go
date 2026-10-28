@@ -17,7 +17,10 @@ func shellLedgerApp(t *testing.T) (*ledgerFixture, string) {
 		Args: commissioner.RawArgs{Name: "Our league", Preset: commissioner.PresetEmpty, FranchiseCount: 4,
 			Season: 2026},
 		Reason: "Start", Request: "create", Effective: "now", Visibility: "league"}
-	executeCommissionerTest(t, app, raw)
+	// Keep this pre-auto-start ledger fixture unchanged; new creation is covered separately.
+	if _, err := app.history.ExecuteCommissioner(t.Context(), raw, app.session, nil); err != nil {
+		t.Fatal(err)
+	}
 	app.history.SetClock(func() time.Time { return time.Date(2026, 10, 13, 13, 0, 0, 0, time.UTC) })
 	raw.Command, raw.Expected, raw.Request, raw.Visibility = "commish.role.grant", 1, "grant", "private"
 	raw.Args = commissioner.RawArgs{People: &commissioner.RawPeople{

@@ -133,18 +133,25 @@ func (s *Store) CloseFinishedDrafts(ctx context.Context, league string, facts na
 	if err != nil {
 		return err
 	}
-	for _, season := range commissioner.DueDrafts(records, s.now(), s.draftStandings(ctx, league)) {
+	for _, key := range commissioner.DueDrafts(records, s.now(), s.draftStandings(ctx, league)) {
 		records, err = s.nativeRecords(ctx, league)
 		if err != nil {
 			return err
 		}
+		// A rookie draft's request key is as it always was; a startup draft's says it is one.
+		request, kind := fmt.Sprintf("draft-clock.%s.%d.%d", league, key.Season, len(records)), "rookie"
+		if key.Startup {
+			request, kind = fmt.Sprintf("draft-clock.%s.%d.startup.%d", league, key.Season, len(records)), "startup"
+		}
+		if key.Side != "" {
+			request = fmt.Sprintf("draft-clock.%s.%d.startup.%s.%d", league, key.Season, key.Side, len(records))
+		}
 		raw := commissioner.RawCommand{League: league, Command: commissioner.DraftArchive,
-			Args:     commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: season}},
-			Expected: int64(len(records)), Request: fmt.Sprintf("draft-clock.%s.%d.%d", league, season, len(records)),
-			Effective: "now", Visibility: "league"}
+			Args:     commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: key.Season, Startup: key.Startup, Side: key.Side}},
+			Expected: int64(len(records)), Request: request, Effective: "now", Visibility: "league"}
 		if _, err := s.ExecuteCommissionerWithFacts(ctx, raw, commissioner.DraftClockPrincipal,
 			clockDraftAuthorizer{}, facts, time.UTC); err != nil {
-			return fmt.Errorf("close the %d rookie draft: %w", season, err)
+			return fmt.Errorf("close the %d %s draft: %w", key.Season, kind, err)
 		}
 	}
 	return nil

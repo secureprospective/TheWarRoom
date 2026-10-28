@@ -31,8 +31,8 @@ func TestStartupFactsStopsFailuresAndOrdersPublication(t *testing.T) {
 			}
 			return stop != "missing", nil
 		},
-			step("publish"), step("compile"), func(context.Context) { calls = append(calls, "warm") }, func(context.Context) { calls = append(calls, "fit") }, func(string) { calls = append(calls, "log") })
-		want := []string{"exists", "publish", "compile", "warm", "fit"}
+			step("publish"), step("compile"), func(context.Context) { calls = append(calls, "warm") }, func(string) { calls = append(calls, "log") })
+		want := []string{"exists", "publish", "compile", "warm"}
 		switch stop {
 		case "missing", "manifest error":
 			want = want[:1]

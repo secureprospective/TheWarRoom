@@ -16,13 +16,6 @@ func TestStartAuctionAwardsCardsByOpenBidsNotCreationOrder(t *testing.T) {
 	// A second league shares the real worker/store, without importing any rosters or schedule.
 	f.league = "native.cards"
 	f.execute(t, "creator", commissioner.Create, commissioner.RawArgs{Name: "Cards", Preset: commissioner.PresetDefault32, Season: 2026})
-	raw, err := commissioner.Default32SeedCommand(reserveRecords(t, f), f.league, "start", "Open auction", 1, f.clock.Now())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.store.ExecuteCommissionerWithFacts(t.Context(), raw, "creator", nil, f.facts, time.UTC); err != nil {
-		t.Fatal(err)
-	}
 	for _, seat := range []struct{ team, owner string }{{"franchise.01", "owner.one"}, {"franchise.02", "owner.two"}} {
 		f.execute(t, "creator", "commish.seat.replace", commissioner.RawArgs{People: &commissioner.RawPeople{Franchise: seat.team, Principal: seat.owner}})
 	}
@@ -61,7 +54,7 @@ func TestStartAuctionAwardsCardsByOpenBidsNotCreationOrder(t *testing.T) {
 		t.Fatalf("wrong award: %+v", p)
 	}
 	another, _ := nativecheck.LineCardID("BAL")
-	raw = f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: another, Franchise: "franchise.02", Salary: 40000000, Years: 1}})
+	raw := f.raw(t, commissioner.BidPlace, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: another, Franchise: "franchise.02", Salary: 40000000, Years: 1}})
 	if _, err := f.store.ExecuteCommissionerWithFacts(t.Context(), raw, "owner.two", nil, f.facts, time.UTC); err == nil {
 		t.Fatal("one franchise could win two cards")
 	}

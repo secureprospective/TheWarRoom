@@ -148,7 +148,7 @@ func checkBracketChange(command string, change RawBracketChange, records []Recor
 	if !leagueFranchise(records, change.Team) {
 		return fmt.Errorf("that franchise is not in this app league")
 	}
-	layout := conferencesFor(records, rules, records[0].Command.Args.Franchises)
+	layout := conferencesFor(records, rules, LeagueFranchises(records))
 	if layout.Words != "" {
 		return fmt.Errorf("%s", layout.Words)
 	}

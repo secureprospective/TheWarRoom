@@ -5,7 +5,6 @@ path	feature
 main.go	platform
 internal/app/comms	comms
 internal/app/comms/commstest	comms
-internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
@@ -28,7 +27,6 @@ internal/engine/bid	offers
 internal/engine/competition	commissioner
 internal/engine/contractacts	contracts
 internal/engine/eligibility	contracts
-internal/engine/l4	scoring
 internal/engine/race	race
 internal/engine/rookiedraft	commissioner
 internal/envelope	core
@@ -129,3 +127,9 @@ internal/leaguetransfer	platform
 internal/serverversion	platform
 internal/store/playeridentity	core
 internal/leaguerecovery	platform
+internal/leaguemigration	platform
+internal/leaguemigration/migrationtest	platform
+internal/leaguemigration/mflsource	platform
+internal/playerrecord	core
+internal/store/playerrecord	core
+internal/pickvalue	market

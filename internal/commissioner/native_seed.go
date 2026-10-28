@@ -38,6 +38,9 @@ type RawNativeSnapshot struct {
 	Adjustments []NativeCharge    `json:"adjustments"`
 	// Pool holds free-agent lots: undrafted rookies and unassigned league-start O-Line cards.
 	Pool []NativePoolEntry `json:"pool,omitempty"`
+	// Sides is each franchise's side in a league whose player pools are per side; Go fills it from the
+	// league's rules when the assets are read, and it is absent with one pool. See player_sides.go.
+	Sides map[string]string `json:"sides,omitempty"`
 }
 
 type NativeFranchise struct {
@@ -65,11 +68,16 @@ type NativePlayer struct {
 	ExpirationYear int                   `json:"expirationYear"`
 	ContractStatus domain.ContractStatus `json:"contractStatus"`
 	ContractInfo   string                `json:"contractInfo"`
+	// HeldContractStatus is the contract status exactly as MFL wrote it ("EXT (2024)"), kept by an MFL
+	// import wherever the app's reading of it (ContractStatus) is not the same text.
+	HeldContractStatus string `json:"heldContractStatus,omitempty"`
 }
 
 // NativePoolEntry is an unassigned free agent in the league's player pool.
 type NativePoolEntry struct {
 	Player string `json:"player"`
+	// Side is the side whose pool holds the lot; empty with one pool.
+	Side   string `json:"side,omitempty"`
 	Name   string `json:"name,omitempty"`
 	Season int    `json:"season"`
 }
@@ -96,14 +104,20 @@ type NativeCharge struct {
 	Description string       `json:"description"`
 }
 
+func validFranchiseCount(count int) bool {
+	return count >= minFranchises && count <= maxFranchises
+}
+
 // Validate checks a snapshot captured from held data, as it is recorded.
 func (r RawNativeSnapshot) Validate() error { return r.validate(false) }
 
 // validate checks a snapshot; rolled is true for assets a season rollover has carried past the season they
 // were captured in, whose picks keep their history and whose new season's picks wait for the draft.
 func (r RawNativeSnapshot) validate(rolled bool) error {
-	if r.Season < 1 || r.Season > 9999 || r.RosterAt.IsZero() || r.DraftAt.IsZero() || r.FutureAt.IsZero() ||
-		len(r.Franchises) != legacyTeams || (len(r.Players) == 0 && len(r.Pool) == 0) {
+	if !validFranchiseCount(len(r.Franchises)) {
+		return fmt.Errorf("a league needs between %d and %d franchises", minFranchises, maxFranchises)
+	}
+	if r.Season < 1 || r.Season > 9999 || r.RosterAt.IsZero() || r.DraftAt.IsZero() || r.FutureAt.IsZero() {
 		return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")
 	}
 	franchises, err := r.franchiseIndex()
@@ -182,6 +196,7 @@ func (r RawNativeSnapshot) validateCharges(franchises map[string]bool) error {
 	return nil
 }
 
+// validatePlayers holds each player to one copy a side: with one pool, one copy in the league.
 func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 	players := map[string]bool{}
 	for _, p := range r.Players {
@@ -189,14 +204,15 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 		if err != nil {
 			return fmt.Errorf("held roster player: %w", err)
 		}
-		if id.String() != p.ID || players[p.ID] || !franchises[p.Franchise] || p.Salary < 0 ||
+		copyOn := r.SideOf(p.Franchise) + "/" + p.ID
+		if id.String() != p.ID || players[copyOn] || !franchises[p.Franchise] || p.Salary < 0 ||
 			p.RookieRound < 0 || p.RookieRound > 99 || p.ExpirationYear < 0 || p.ExpirationYear > 9999 {
 			return fmt.Errorf("a held player has repeated or invalid contract details")
 		}
 		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, p.Status) {
 			return fmt.Errorf("a held player has an unknown roster status")
 		}
-		players[p.ID] = true
+		players[copyOn] = true
 	}
 	return nil
 }
@@ -265,9 +281,25 @@ func (a RawArgs) validateNativeSeed() error {
 
 // CheckNativeAppend is run under the ledger append lock; a second request can never reseed.
 func CheckNativeAppend(raw RawCommand, records []Record) error {
+	return checkNativeAppend(raw, records, false)
+}
+
+// CheckNativeRecoveryAppend admits played native rosters only through offline recovery.
+// Normal command execution never uses this entry point.
+func CheckNativeRecoveryAppend(raw RawCommand, records []Record) error {
+	return checkNativeAppend(raw, records, true)
+}
+
+func checkNativeAppend(raw RawCommand, records []Record, recovery bool) error {
 	if raw.Command == Revert {
 		for _, r := range records {
-			if r.Receipt.Entry == raw.Args.Entry && r.Command.Command == NativeSeed {
+			if r.Receipt.Entry != raw.Args.Entry {
+				continue
+			}
+			switch r.Command.Command {
+			case OLineAuctionClose:
+				return Refused(fmt.Errorf("the O-Line auction close is permanent; correct individual assets instead"))
+			case NativeSeed:
 				return Refused(fmt.Errorf("the starting snapshot is permanent; correct individual assets instead"))
 			}
 		}
@@ -275,7 +307,7 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 	if raw.Command != NativeSeed {
 		return nil
 	}
-	if err := checkSeedPreset(raw, records); err != nil {
+	if err := checkSeedSource(raw, records, recovery); err != nil {
 		return Refused(err)
 	}
 	if season := records[0].Command.Args.Season; season != 0 && season != raw.Args.Native.Season {
@@ -290,7 +322,7 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 			return Refused(fmt.Errorf("this league already has its starting snapshot"))
 		}
 	}
-	ids := records[0].Command.Args.Franchises
+	ids := LeagueFranchises(records)
 	for _, f := range raw.Args.Native.Franchises {
 		if !slices.Contains(ids, f.ID) {
 			return Refused(fmt.Errorf("the snapshot must use this app league's franchises"))
@@ -299,21 +331,32 @@ func CheckNativeAppend(raw RawCommand, records []Record) error {
 	return nil
 }
 
-// checkSeedPreset admits a start by the league's preset: a 32-Team Default league starts with O-Line
-// auction lots, a Legacy league from held data that holds no card, and no other league is seeded.
-func checkSeedPreset(raw RawCommand, records []Record) error {
-	switch {
-	case IsDefault32(records):
-		return checkDefault32Start(records, raw.Args.Native)
-	case len(records) == 0 || records[0].Command.Args.Preset != PresetLegacy:
+// checkSeedSource keeps native starts separate from MFL's held-data requirements.
+func checkSeedSource(raw RawCommand, records []Record, recovery bool) error {
+	if len(records) == 0 {
 		return fmt.Errorf("only a Legacy NFL league can be seeded from held data")
-	case len(raw.Args.Native.Players) == 0:
-		return fmt.Errorf("hold the Legacy NFL rosters before seeding")
-	case slices.ContainsFunc(raw.Args.Native.Players, func(p NativePlayer) bool {
-		_, card := nativecheck.LineCardTeam(p.ID)
-		return card
-	}):
-		return fmt.Errorf("a Legacy NFL league is seeded from held data and holds no O-Line cards")
+	}
+	switch LeagueSource(records) {
+	case SourceNative:
+		if recovery {
+			return nil
+		}
+		return checkNativeStart(records, raw.Args.Native)
+	case SourceMFLImport:
+		if len(raw.Args.Native.Players) == 0 && len(raw.Args.Native.Pool) == 0 {
+			return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")
+		}
+		if len(raw.Args.Native.Players) == 0 {
+			return fmt.Errorf("hold the Legacy NFL rosters before seeding")
+		}
+		if slices.ContainsFunc(raw.Args.Native.Players, func(p NativePlayer) bool {
+			_, card := nativecheck.LineCardTeam(p.ID)
+			return card
+		}) {
+			return fmt.Errorf("a Legacy NFL league is seeded from held data and holds no O-Line cards")
+		}
+	default:
+		return fmt.Errorf("choose a native league or an MFL import")
 	}
 	return nil
 }

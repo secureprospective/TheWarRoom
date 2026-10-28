@@ -167,18 +167,18 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 	other.League, other.Request, other.Expected = "native.byverbs", "create", 0
 	other.Command = commissioner.Create
 	other.Args = commissioner.RawArgs{Name: "By commands", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 2}
-	executeCommissionerTest(t, app, other)
+	executeCommissionerTest(t, app, other) // creation also records the league's start
 	other.Command = commissioner.RulesSet
 	for i, s := range []struct{ field, value string }{{"calendar.timezone", `"America/New_York"`},
 		{"calendar.boundary", `"start_of_day"`}} {
 		other.Args = commissioner.RawArgs{Field: s.field, Value: json.RawMessage(s.value)}
-		other.Request, other.Expected = s.field, int64(i+1)
+		other.Request, other.Expected = s.field, int64(i+2)
 		executeCommissionerTest(t, app, other)
 	}
-	executeCommissionerTest(t, app, windowCommandFrom(other, commissioner.WindowSet, "rfa", 3,
+	executeCommissionerTest(t, app, windowCommandFrom(other, commissioner.WindowSet, "rfa", 4,
 		commissioner.RawWindowArgs{ID: "rfa", Start: date(5, 1), End: date(5, 3),
 			Opens: []leaguerules.Action{"rfa_tender"}}))
-	executeCommissionerTest(t, app, windowCommandFrom(other, commissioner.WindowSet, "ufa", 4,
+	executeCommissionerTest(t, app, windowCommandFrom(other, commissioner.WindowSet, "ufa", 5,
 		commissioner.RawWindowArgs{ID: "ufa", Start: date(5, 3), End: date(5, 10),
 			Opens: []leaguerules.Action{"ufa_bid"}}))
 	read := func(league string) commissioner.Calendar {
@@ -202,7 +202,7 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 	// One league moves through the verb, the other through a whole-value rules.set.
 	executeCommissionerTest(t, app, windowCommandFrom(raw, commissioner.WindowMove, "move", 4,
 		commissioner.RawWindowArgs{ID: "ufa", Start: date(5, 4)}))
-	other.Command, other.Request, other.Expected = commissioner.RulesSet, "whole", 5
+	other.Command, other.Request, other.Expected = commissioner.RulesSet, "whole", 6
 	other.Args = commissioner.RawArgs{Field: "calendar.windows", Value: json.RawMessage(`{
 		"rfa":{"Start":{"Month":5,"Day":1},"End":{"Month":5,"Day":3},"Opens":["rfa_tender"]},
 		"ufa":{"Start":{"Month":5,"Day":4},"End":{"Month":5,"Day":10},"Opens":["ufa_bid"]}}`)}
@@ -215,7 +215,7 @@ func TestWindowCommandsAndRulesSetNeverDisagree(t *testing.T) {
 		commissioner.RawWindowArgs{ID: "rfa"}))
 	other.Args = commissioner.RawArgs{Field: "calendar.windows", Value: json.RawMessage(`{
 		"ufa":{"Start":{"Month":5,"Day":4},"End":{"Month":5,"Day":10},"Opens":["ufa_bid"]}}`)}
-	other.Request, other.Expected = "whole-again", 6
+	other.Request, other.Expected = "whole-again", 7
 	executeCommissionerTest(t, app, other)
 	same("removed through window.remove and through rules.set")
 	if strings.Contains(string(rulesWindows(t, app, raw.League)), "rfa") {

@@ -27,6 +27,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/model/fit"
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
@@ -56,8 +57,18 @@ func run(ctx context.Context, path, playersPath string, first, holdout int, out,
 	if err != nil {
 		return err
 	}
-	d := model.Build(obs, lastWeek)
-	moved := modelrun.AtLeaguePositions(d, dir)
+	// The fit reads players through the record, as the app values them: identity is the record's
+	// and each player sits at the position the league lists him.
+	book, err := playerrecord.HeldBook(dir, obs, lastWeek)
+	if err != nil {
+		return fmt.Errorf("fit: %w", err)
+	}
+	d, moved := book.Data, 0
+	for id, pl := range model.Build(obs, lastWeek).Players {
+		if held, ok := book.ID(id); ok && d.Players[held].Position != pl.Position {
+			moved++
+		}
+	}
 	results := fit.Run(d, first, holdout)
 	decay, err := params.DefaultSet().GetGlobal(params.KeyLayer3DecayRate)
 	if err != nil {

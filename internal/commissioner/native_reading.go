@@ -66,10 +66,15 @@ func seedNativeAssets(league string, records []Record) (NativeAssets, error) {
 		if out.Seeded || r.Command.Args.Native == nil {
 			return NativeAssets{}, fmt.Errorf("the league has an invalid starting snapshot history")
 		}
-		if err := r.Command.Args.Native.Validate(); err != nil {
-			return NativeAssets{}, fmt.Errorf("read starting snapshot: %w", err)
+		sides, err := snapshotSides(records)
+		if err != nil {
+			return NativeAssets{}, err
 		}
 		seed := *r.Command.Args.Native
+		seed.Sides = sides
+		if err := seed.Validate(); err != nil {
+			return NativeAssets{}, fmt.Errorf("read starting snapshot: %w", err)
+		}
 		seed.Champions = slices.Clone(seed.Champions)
 		seed.StandingsOrder = slices.Clone(seed.StandingsOrder)
 		seed.Franchises = slices.Clone(seed.Franchises)

@@ -111,7 +111,8 @@ func saveRosterIdentity(ctx context.Context, tx *sql.Tx, point *commissioner.Raw
 	}
 	owners := make([]db.RosterOwner, 0, len(point.Snapshot.Players))
 	for _, player := range point.Snapshot.Players {
-		owners = append(owners, db.RosterOwner{MFL: player.ID, Franchise: player.Franchise})
+		owners = append(owners, db.RosterOwner{MFL: player.ID, Side: point.Snapshot.SideOf(player.Franchise),
+			Franchise: player.Franchise})
 	}
 	if err := db.ReplaceRosterOwnership(ctx, tx, point.League, owners); err != nil {
 		return fmt.Errorf("save league ownership: %w", err)

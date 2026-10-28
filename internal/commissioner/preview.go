@@ -125,6 +125,15 @@ func RulePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, n
 	if err != nil {
 		return Preview{}, fmt.Errorf("describe proposed rule: %w", err)
 	}
+	after := leaguerules.DescribeField(leaguerules.FieldPath(raw.Args.Field), setting).Words
+	if raw.Args.Field == alignmentField {
+		if alignment, ok := setting.(leaguerules.Value[map[string]string]); ok {
+			after, err = alignmentWords(records, alignment)
+			if err != nil {
+				return Preview{}, err
+			}
+		}
+	}
 	out := Preview{Question: catalogue.questions[owner.control],
 		Target: PreviewTarget{League: raw.League, Name: reading.Name, Version: raw.Expected},
 		Fields: []PreviewField{}, Affects: catalogue.affects(owner.control), Blockers: []string{}}
@@ -134,8 +143,7 @@ func RulePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, n
 				continue
 			}
 			out.Fields = append(out.Fields, PreviewField{Label: row.Label, Before: row.Value,
-				BeforeSource: row.Citation, After: leaguerules.DescribeField(
-					leaguerules.FieldPath(raw.Args.Field), setting).Words,
+				BeforeSource: row.Citation, After: after,
 				AfterSource: "Your proposed change", When: timingWords(raw.Effective)})
 			out.Safeguard = row.Safeguards.NextRollover
 			if raw.Effective == "now" {
@@ -143,5 +151,5 @@ func RulePreview(raw RawCommand, records []Record, catalogue PreviewCatalogue, n
 			}
 		}
 	}
-	return out, nil
+	return out, shapePreview(&out, raw, records, now)
 }

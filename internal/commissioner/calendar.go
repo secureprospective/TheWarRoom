@@ -54,7 +54,7 @@ func CheckCalendarAppend(raw RawCommand, records []Record, at time.Time) error {
 }
 
 func leagueFranchise(records []Record, franchise string) bool {
-	for _, id := range records[0].Command.Args.Franchises {
+	for _, id := range LeagueFranchises(records) {
 		if id == franchise {
 			return true
 		}

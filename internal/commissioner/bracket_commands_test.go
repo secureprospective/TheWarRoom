@@ -53,7 +53,7 @@ func TestPlayoffCommandsCarryTheCensusGravity(t *testing.T) {
 
 func TestBracketCommandsRefuseWhatDoesNotBelongToThem(t *testing.T) {
 	good := map[string]RawBracketChange{
-		BracketBuild:      {Season: 2026, Preset: presetLegacyNFL},
+		BracketBuild:      {Season: 2026, Preset: PresetLegacy},
 		BracketEdit:       {Season: 2026, Node: "conference/home", Team: "franchise.01"},
 		BracketSeed:       {Season: 2026, Slot: 2, Team: "franchise.01"},
 		BracketAdvance:    {Season: 2026, Game: "championship", Team: "franchise.01"},
@@ -69,7 +69,7 @@ func TestBracketCommandsRefuseWhatDoesNotBelongToThem(t *testing.T) {
 		BracketEdit:       {Season: 2026, Node: "conference", Team: "franchise.01"},
 		BracketSeed:       {Season: 2026, Slot: 0, Team: "franchise.01"},
 		BracketAdvance:    {Season: 2026, Game: "championship", Team: "01"},
-		BracketPresetSave: {Season: 2026, Name: presetLegacyNFL, Shape: good[BracketPresetSave].Shape},
+		BracketPresetSave: {Season: 2026, Name: PresetLegacy, Shape: good[BracketPresetSave].Shape},
 	}
 	for command, change := range bad {
 		if err := bracketRaw(command, change).Validate(); err == nil {

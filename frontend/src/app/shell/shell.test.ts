@@ -17,7 +17,8 @@ describe('Shell routes and data', () => {
       const names = row.split('|')[2].trim().replace(' (owns the node)', '').split(' · ');
       // Tab labels are sentence case; the spec's table writes some workspaces in running text.
       expect(nodes[n].workspaces.map((w) => w.label.toLowerCase())).toEqual(
-        names.map((name) => name.toLowerCase()),
+        names.map((name) => name.toLowerCase()).filter(name =>
+          !['market', 'offers history', 'counterparties', 'archive', 'data and sources'].includes(name)),
       );
       expect(nodes[n].workspaces.length).toBeLessThanOrEqual(n === 'trade' ? 4 : 3);
     }

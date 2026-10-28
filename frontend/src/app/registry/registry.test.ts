@@ -326,20 +326,6 @@ describe('Endpoint verbs and search', () => {
   });
 });
 
-it('Draft room mounts the shared lazy Draft lab rather than a placeholder', async () => {
-  const use = vi.spyOn(commands, 'use').mockImplementation(() => renderState(commands.read()));
-  commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
-  const html = await renderSettledApp();
-  expect(html).toContain('Draft lab');
-  expect(html).not.toContain('Draft room</h4><p class="not-wired"');
-  const { readFileSync } = await import('node:fs');
-  const source = readFileSync('src/app/market/Market.tsx', 'utf8');
-  expect(source).toContain("s.workspace[s.node] === 'draft-room'");
-  expect(source).toContain("lazy(() => import('./Draft'))");
-  commands.dispatch('nav.open', { node: 'home', workspace: 'seasonal-card' });
-  use.mockRestore();
-});
-
 it('reveals rendered endpoints instead of index cards, preserving controls that fit', async () => {
   const { revealEndpoint } = await import('./EndpointIndex');
   const work = { scrollTop: 800, clientTop: 0, clientHeight: 600,
