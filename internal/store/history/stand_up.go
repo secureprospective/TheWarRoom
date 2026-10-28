@@ -73,7 +73,7 @@ func (s *Store) standUpRecords(ctx context.Context, tx *sql.Tx, point commission
 		source = commissioner.SourceMFLImport
 	}
 	if preset == "" {
-		preset = commissioner.PresetLegacy
+		preset = commissioner.MFLImportPreset()
 	}
 	commands := []commissioner.RawCommand{
 		{League: point.League, Command: commissioner.Create, Args: commissioner.RawArgs{Name: "Recovered league", Preset: preset, Source: source, Season: point.Snapshot.Season, FranchiseCount: len(franchises), Franchises: franchises}, Request: "recovery-create", Reason: "Recover rosters and contracts", Effective: "now", Visibility: "league"},

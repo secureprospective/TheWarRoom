@@ -68,12 +68,8 @@ func bracketPreviewValues(raw RawCommand, records []Record, now time.Time) (map[
 }
 
 func bracketPresetWords(preset string) string {
-	switch preset {
-	case presetLeagueRules:
-		return "the league playoff rules"
-	case presetLegacyNFL:
-		return "the Legacy NFL playoff shape"
-	default:
-		return preset
+	if b, ok := builtInBracketByID(preset); ok {
+		return b.shape
 	}
+	return preset
 }

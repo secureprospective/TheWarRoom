@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { act } from 'react';
-import { button, control, disabled, flush, mount, present, render, settle, type, unmount }
+import { all, button, control, disabled, flush, mount, present, render, settle, type, unmount }
   from './commissionerDom';
 import { open, receipt, stub } from './commissionerStub';
 import { leagueState } from './proxy';
 import { StartLeagueForm } from './StartLeagueForm';
+import controlsWire from './controls.wire.testdata.json';
 
 beforeEach(() => leagueState.forget());
 afterEach(unmount);
@@ -12,9 +13,34 @@ afterEach(unmount);
 const start = 'Start this league';
 const thisYear = new Date().getFullYear();
 describe('Start an app league', () => {
+  it('lists exactly the presets in Go’s catalog, in its order, with the chosen one’s description', async () => {
+    const { app } = stub();
+    const host = await mount(render(StartLeagueForm), app);
+    await open();
+    const options = all(control(host, 'Starting rules'), 'option');
+    expect(options.map(o => [o.props().value, o.textContent]))
+      .toEqual(controlsWire.presets.map(p => [p.id, p.label]));
+    expect(present(host, controlsWire.presets[0].description)).toBe(true);
+    await type(control(host, 'Starting rules'), controlsWire.presets[1].id);
+    expect(present(host, controlsWire.presets[1].description)).toBe(true);
+  });
+  it('starts nothing while the catalog cannot be read', async () => {
+    const { app, calls } = stub({ TargetCommissionerControls: async () => { throw new Error('offline'); } });
+    const host = await mount(render(StartLeagueForm), app);
+    // A new seat drops the controls read before it, so this read is the one that fails.
+    await act(() => leagueState.changeSeat());
+    await type(control(host, 'League name'), 'Our league');
+    await type(control(host, 'Reason'), 'Start');
+    await settle();
+    expect(all(control(host, 'Starting rules'), 'option')).toHaveLength(0);
+    expect(present(host, 'The starting presets could not be read.')).toBe(true);
+    expect(disabled(button(host, start))).toBe(true);
+    expect(calls.sent).toHaveLength(0);
+  });
   it('cannot be confirmed without a typed reason, then sends one create with preset and key', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
+    await open();
     await type(control(host, 'League name'), 'Our league');
     await settle();
     expect(disabled(button(host, start))).toBe(true);
@@ -39,6 +65,7 @@ describe('Start an app league', () => {
   it('offers the 32-Team Default at 32 franchises only', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
+    await open();
     await type(control(host, 'League name'), 'Our league');
     await type(control(host, 'Reason'), 'Start');
     await type(control(host, 'Number of franchises'), '12');
@@ -55,6 +82,7 @@ describe('Start an app league', () => {
   it('offers an empty league of any size and sends that preset', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
+    await open();
     await type(control(host, 'League name'), 'Small league');
     await type(control(host, 'Starting rules'), 'empty');
     await type(control(host, 'Number of franchises'), '12');
@@ -69,6 +97,7 @@ describe('Start an app league', () => {
   it('sends the NFL season the commissioner types, and needs one', async () => {
     const { app, calls } = stub();
     const host = await mount(render(StartLeagueForm), app);
+    await open();
     await type(control(host, 'League name'), 'Our league');
     await type(control(host, 'Reason'), 'Start');
     await type(control(host, 'First NFL season'), '');

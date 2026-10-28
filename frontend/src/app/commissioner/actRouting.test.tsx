@@ -29,7 +29,7 @@ const inScope = (id: string) => actsFor(id).length > 0 || liveDraftControls.has(
   ['CM-021', 'CM-040'].includes(id);
 const entries = entriesOf(parseControls(controlsWire)).filter(e => inScope(e.id));
 async function landing(future: boolean) {
-  const controls = { groups: controlsWire.groups.map(g => ({ ...g,
+  const controls = { ...controlsWire, groups: controlsWire.groups.map(g => ({ ...g,
     controls: g.controls.map(e => ({ ...e, built: e.built || (future && inScope(e.id)) })) })) };
   const { app } = stub({ TargetCommissionerControls: async () => controls,
     TargetCommissionerJobs: async () => jobsWire.fresh });

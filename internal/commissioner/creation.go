@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -13,13 +14,9 @@ import (
 )
 
 const (
-	PresetLegacy = "legacy_nfl"
-	PresetEmpty  = "empty"
-	// PresetDefault32 is the 32-Team Default (DEFAULT-32 spec), offered only at 32 teams.
-	PresetDefault32 = "default_32"
-	legacyTeams     = 32
-	minFranchises   = 2
-	maxFranchises   = 32
+	legacyTeams   = 32
+	minFranchises = 2
+	maxFranchises = 32
 	// firstNFLSeason is the NFL's first season; a league cannot start before it.
 	firstNFLSeason = 1920
 	lastSeason     = 9999
@@ -40,16 +37,11 @@ func franchiseIDs(count int) []string {
 }
 
 func presetSeed(preset string, count, season int) ([]SeedValue, error) {
-	var rules leaguerules.RuleSet
-	switch preset {
-	case PresetLegacy:
-		rules = leaguerules.LegacyNFLForTeams(count)
-	case PresetDefault32:
-		rules = leaguerules.Default32()
-	default:
+	p, _ := presetByID(preset)
+	if !p.seeds() {
 		return nil, nil
 	}
-	changes := leaguerules.SeedChanges(rules, "preset", season, time.Unix(1, 0).UTC())
+	changes := leaguerules.SeedChanges(p.rules(count), "preset", season, time.Unix(1, 0).UTC())
 	seed := make([]SeedValue, len(changes))
 	for i, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
@@ -82,14 +74,12 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, nil
 	}
 	a := r.Args
+	p, _ := presetByID(a.Preset)
 	if a.Source == "" {
-		a.Source = SourceNative
-		if a.Preset == PresetLegacy {
-			a.Source = SourceMFLImport
-		}
+		a.Source = cmp.Or(p.source, SourceNative)
 	}
-	if (a.Preset == PresetLegacy || a.Preset == PresetDefault32) && a.FranchiseCount == 0 {
-		a.FranchiseCount = legacyTeams
+	if a.FranchiseCount == 0 {
+		a.FranchiseCount = p.defaultTeams
 	}
 	if err := a.validatePreset(); err != nil {
 		return r, err
@@ -111,19 +101,11 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 }
 
 func (a RawArgs) validatePreset() error {
-	switch a.Preset {
-	case PresetLegacy, PresetEmpty:
-		if a.FranchiseCount < minFranchises || a.FranchiseCount > maxFranchises {
-			return fmt.Errorf("choose between 2 and 32 franchises")
-		}
-	case PresetDefault32:
-		if a.FranchiseCount != legacyTeams {
-			return fmt.Errorf("the 32-Team Default needs exactly 32 franchises")
-		}
-	default:
-		return fmt.Errorf("start from the 32-Team Default, the Legacy NFL preset or an empty league")
+	p, ok := presetByID(a.Preset)
+	if !ok {
+		return unknownPresetError()
 	}
-	return nil
+	return p.sizeError(a.FranchiseCount)
 }
 
 // validateCreationSeason accepts 0, a league recorded before seasons were numbered; Prepared refuses it
@@ -158,10 +140,9 @@ func (a RawArgs) validateCreation() error {
 	if !slices.Equal(a.Franchises, franchiseIDs(a.FranchiseCount)) {
 		return fmt.Errorf("the new league's franchises do not match its size")
 	}
-	if a.Preset == PresetEmpty && len(a.Seed) != 0 {
+	if p, _ := presetByID(a.Preset); !p.seeds() && len(a.Seed) != 0 {
 		return fmt.Errorf("an empty league starts with every rule waiting for a ruling")
-	}
-	if (a.Preset == PresetLegacy || a.Preset == PresetDefault32) && len(a.Seed) == 0 {
+	} else if p.seeds() && len(a.Seed) == 0 {
 		return fmt.Errorf("a preset league needs its starting values")
 	}
 	seen := make(map[string]bool, len(a.Seed))
@@ -207,27 +188,6 @@ func seedChanges(r Record, season int) ([]leaguerules.Change, error) {
 }
 
 func validRestorePreset(preset string) bool {
-	return preset == "" || preset == PresetEmpty || preset == PresetLegacy || preset == PresetDefault32
-}
-
-func presetHistoryLabel(preset string) string {
-	switch preset {
-	case PresetLegacy:
-		return "the Legacy NFL rules"
-	case PresetDefault32:
-		return "the 32-Team Default rules"
-	default:
-		return "every rule waiting for a ruling"
-	}
-}
-
-func presetPreviewLabel(preset string) string {
-	switch preset {
-	case PresetLegacy:
-		return "Legacy NFL rules"
-	case PresetDefault32:
-		return "32-Team Default rules"
-	default:
-		return "Every rule waits for a ruling"
-	}
+	_, ok := presetByID(preset)
+	return preset == "" || ok
 }

@@ -1,4 +1,4 @@
-import { array, object, text } from '../data/parseValues';
+import { array, integer, object, text } from '../data/parseValues';
 import { commissionerControls } from '../registry/commissioner.gen';
 
 // The Go controls reading (TargetCommissionerControls): every census row, grouped, and whether a person
@@ -7,15 +7,22 @@ import { commissionerControls } from '../registry/commissioner.gen';
 type ControlField = { field: string; label: string };
 export type Control = { id: string; built: boolean; note: string; fields: ControlField[] };
 export type ControlGroup = { id: string; label: string; controls: Control[] };
-export type Controls = { groups: ControlGroup[] };
+// A preset is a named bundle of setting values from Go's catalog; the start form lists exactly these.
+export type StartingPreset = { id: string; label: string; description: string; minTeams: number; maxTeams: number };
+export type Controls = { groups: ControlGroup[]; presets: StartingPreset[] };
 
 function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
 }
 export function parseControls(v: unknown): Controls {
-  const r = object(v, 'League controls', ['groups']);
+  const r = object(v, 'League controls', ['groups', 'presets']);
   return {
+    presets: array(r.presets, 'Starting presets', (x, p) => {
+      const o = object(x, p, ['id', 'label', 'description', 'minTeams', 'maxTeams']);
+      return { id: text(o.id, p), label: text(o.label, p), description: text(o.description, p),
+        minTeams: integer(o.minTeams, `${p}.minTeams`, 1), maxTeams: integer(o.maxTeams, `${p}.maxTeams`, 1) };
+    }),
     groups: array(r.groups, 'Control groups', (g, p) => {
       const o = object(g, p, ['id', 'label', 'controls']);
       return {

@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"cmp"
 	"slices"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -67,13 +68,11 @@ func (s *bracketState) apply(command string, c RawBracketChange) {
 	}
 }
 
-// graph is the bracket shape a season is built from: the league's own, the Legacy NFL's, or a saved one.
+// graph is the bracket shape a season is built from: a built-in one (the league's own, or a preset's) or a
+// saved one.
 func (s bracketState) graph(rules leaguerules.RuleSet) ([]leaguerules.BracketNode, string) {
-	switch s.Preset {
-	case "", presetLeagueRules:
-		return rules.Playoffs.Graph.Value, ""
-	case presetLegacyNFL:
-		return leaguerules.LegacyNFL().Playoffs.Graph.Value, ""
+	if b, ok := builtInBracketByID(cmp.Or(s.Preset, presetLeagueRules)); ok {
+		return b.graph(rules), ""
 	}
 	shape, ok := s.Presets[s.Preset]
 	if !ok {

@@ -13,10 +13,9 @@ const (
 	BracketPresetSave = "bracket.preset.save"
 	BracketAdvance    = "bracket.advance"
 
-	// presetLeagueRules is the bracket shape set in the league's own playoff rules; presetLegacyNFL is the
-	// shape the Legacy NFL preset carries. A saved preset may take neither name.
+	// presetLeagueRules is the bracket shape set in the league's own playoff rules; the league presets
+	// that carry a playoff graph name the others (builtInBrackets). A saved shape may take none of them.
 	presetLeagueRules = "league_rules"
-	presetLegacyNFL   = "legacy_nfl"
 
 	maxBracketGames = 64
 	maxBracketWeek  = 22
@@ -129,7 +128,8 @@ func validPresetID(id string, builtIn bool) bool {
 	if id == "" || len(id) > 40 || strings.Trim(id, "abcdefghijklmnopqrstuvwxyz0123456789_-") != "" {
 		return false
 	}
-	return builtIn || (id != presetLeagueRules && id != presetLegacyNFL)
+	_, taken := builtInBracketByID(id)
+	return builtIn || !taken
 }
 
 func (r RawBracketChange) validatePreset() error {
@@ -187,11 +187,8 @@ func placeWords(place string) string {
 }
 
 func presetWords(id string) string {
-	switch id {
-	case presetLeagueRules:
-		return "the league's playoff rules"
-	case presetLegacyNFL:
-		return "the Legacy NFL bracket"
+	if b, ok := builtInBracketByID(id); ok {
+		return b.words
 	}
 	return "the saved shape " + id
 }

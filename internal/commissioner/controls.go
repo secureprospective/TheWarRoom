@@ -29,6 +29,8 @@ type ControlGroup struct {
 }
 type Controls struct {
 	Groups []ControlGroup `json:"groups"`
+	// Presets are the starting points a new app league may take, from the preset catalog.
+	Presets []StartingPreset `json:"presets"`
 }
 
 // controlGroups gives the census groups the landing shows, each by its first and last row (spec §16.7;
@@ -83,7 +85,7 @@ func controlBuilt(id string, fields []ControlField) bool {
 
 // ControlsReading lists every census row, grouped, in census order.
 func ControlsReading() Controls {
-	out := Controls{Groups: []ControlGroup{}}
+	out := Controls{Groups: []ControlGroup{}, Presets: StartingPresets()}
 	census := governance.CensusControls()
 	for _, g := range controlGroups() {
 		group := ControlGroup{ID: g.id, Label: g.label, Controls: []ControlEntry{}}

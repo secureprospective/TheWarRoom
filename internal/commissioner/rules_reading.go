@@ -290,10 +290,11 @@ func startingSource(preset, state, citation string) string {
 		}
 		return "Needs a ruling: " + detail
 	}
-	if preset == PresetEmpty {
-		return "Empty league default"
+	p := storedPreset(preset, MFLImportPreset)
+	source := p.citation
+	if !p.seeds() {
+		return source
 	}
-	source := presetPreviewLabel(preset)
 	if strings.Contains(citation, "MFL league scoring settings") {
 		return source + " (the league’s MFL scoring)"
 	}

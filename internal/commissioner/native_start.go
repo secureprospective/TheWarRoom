@@ -15,8 +15,8 @@ func LeagueSource(records []Record) string {
 		if args.Source != "" {
 			return args.Source
 		}
-		if args.Preset == PresetLegacy {
-			return SourceMFLImport
+		if p, ok := presetByID(args.Preset); ok {
+			return p.source
 		}
 	}
 	return SourceNative
