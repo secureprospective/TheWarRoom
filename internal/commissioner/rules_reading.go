@@ -293,7 +293,7 @@ func startingSource(preset, state, citation string) string {
 	if preset == PresetEmpty {
 		return "Empty league default"
 	}
-	source := "Legacy NFL rules"
+	source := presetPreviewLabel(preset)
 	if strings.Contains(citation, "MFL league scoring settings") {
 		return source + " (the league’s MFL scoring)"
 	}

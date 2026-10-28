@@ -6,6 +6,7 @@ import { leagueState } from '../commissioner/proxy';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { dialogOf } from '../commissioner/trayHarness';
 import { at, openRoom, people, wire } from './draftHarness';
+import { draftRoom } from './state';
 
 let restore: (() => void) | undefined;
 afterEach(async () => {
@@ -204,6 +205,20 @@ describe('The commissioner’s tray', () => {
       expect(sent[0].args.draft.act).toEqual({ round: 1, original: 'franchise.03', player: '5004',
         replaces: '5001' });
     });
+  it('uses player wording when assigning a startup pick', async () => {
+    at(noon);
+    const reading = { ...wire.running, startup: true };
+    const { host } = await room({ reading });
+    await act(async () => { draftRoom.choose(true); });
+    await settle();
+    const panel = await launch(host, 'Choose a player for round 1 pick 2, Held team 1');
+    expect(panel.textContent).toContain('Choose a player.');
+    expect(panel.textContent).not.toContain('rookie');
+    expect(disabled(button(panel, 'Give this player to the pick'))).toBe(true);
+    await type(control(panel, 'Player'), '5002');
+    await settle();
+    expect(panel.textContent).not.toContain('Choose a player.');
+  });
   it('gives a rookie to the pick on the clock, and to nothing else without one chosen', async () => {
     at(noon);
     const { host, sent } = await room();

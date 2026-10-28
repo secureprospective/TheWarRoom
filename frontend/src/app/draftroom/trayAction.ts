@@ -40,6 +40,12 @@ export const trayWords = {
   open: { title: 'Open the startup draft', confirm: 'Open the startup draft', close: 'Close open the draft' },
 } as const;
 
+export function wordsFor(action: TrayAction, draft: Draft) {
+  if (action.kind === 'assign' && draft.startup) return { title: 'Choose a player for a pick',
+    confirm: 'Give this player to the pick', close: 'Close choose a player' };
+  return trayWords[action.kind];
+}
+
 export type Inputs = { player: string; franchise: string; minutes: string; checkpoint: string };
 export const noInputs: Inputs = { player: '', franchise: '', minutes: '', checkpoint: '' };
 
@@ -52,7 +58,8 @@ const commands = { skip: 'draft.skip', assign: 'draft.assign', insert: 'draft.in
 // what is still missing before the change can be sent, in words; empty once it is whole.
 export function missing(a: TrayAction, draft: Draft, i: Inputs): string {
   if (a.kind === 'skip' && !draft.onClock) return 'No pick is on the clock.';
-  if (['assign', 'insert', 'change'].includes(a.kind) && i.player === '') return 'Choose a rookie.';
+  if (['assign', 'insert', 'change'].includes(a.kind) && i.player === '')
+    return draft.startup ? 'Choose a player.' : 'Choose a rookie.';
   if (a.kind === 'insert' && i.franchise === '') return 'Choose the franchise that gets the extra pick.';
   if (a.kind === 'set' && !(Number(i.minutes) >= 1 && Number.isInteger(Number(i.minutes))))
     return 'Enter the minutes the pick on the clock has left.';

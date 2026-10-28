@@ -59,6 +59,10 @@ describe('Change a rule', () => {
     await type(control(host, 'When it takes effect'), 'now');
     expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(true);
     expect(present(host, 'Reason (required)')).toBe(true);
+    await type(control(host, 'Reason'), '   ');
+    expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(true);
+    await type(control(host, 'Reason'), 'Owners agreed');
+    expect(present(host, 'Needs a typed reason before it can be recorded.')).toBe(false);
   });
   it('sends the next-rollover change once held; the screen shows it waiting by the old value', async () => {
     let landed = false;

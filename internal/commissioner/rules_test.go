@@ -134,6 +134,7 @@ func TestCreationIsExpandedByGo(t *testing.T) {
 func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 	for _, c := range []struct{ preset, state, citation, want string }{
 		{PresetLegacy, "Set", "Census CM-001", "Legacy NFL rules"},
+		{PresetDefault32, "Set", "Rulebook §4", "32-Team Default rules (rulebook section 4)"},
 		{PresetLegacy, "Set", "Census CM-002: carried at setup", "Legacy NFL rules"},
 		{PresetLegacy, "Set", "fact R", "Legacy NFL rules"},
 		{PresetLegacy, "Set", "Rulebook §4; Math §13", "Legacy NFL rules (rulebook section 4)"},

@@ -20,9 +20,11 @@ describe('Start an app league', () => {
     expect(disabled(button(host, start))).toBe(true);
     expect(present(host, 'Needs a typed reason')).toBe(true);
     await type(control(host, 'Reason'), '   ');
+    expect(present(host, 'Needs a typed reason')).toBe(true);
     expect(disabled(button(host, start))).toBe(true);
     await type(control(host, 'Reason'), 'Owners voted to move the league here');
     await settle();
+    expect(present(host, 'Needs a typed reason')).toBe(false);
     expect(disabled(button(host, start))).toBe(false);
     await act(async () => { (button(host, start).props().onClick as () => void)(); });
     await settle();
