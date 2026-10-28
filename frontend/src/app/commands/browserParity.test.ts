@@ -10,7 +10,7 @@ const hidden = new Set(['commandbar.open', 'commandbar.close', 'overlays.close',
 
 const retained = before.filter(c => c.id !== 'offers.filter');
 
-it('retains the browser inventory except removed offer history, with immutable metadata and consistent effects', () => {
+it('retains the browser inventory except removed offer history, with immutable metadata', () => {
   const ids = retained.map(c => c.id).sort();
   expect(Object.keys(local.registry).sort()).toEqual(ids);
   expect(Object.keys(browserCommands).sort()).toEqual(ids);
