@@ -55,8 +55,8 @@ export function StartLeagueForm() {
           <input value={name} onChange={e => setName(e.target.value)} />
         </label>
         <label>Number of franchises
-          <input type="number" min={2} max={32} step={1} value={count}
-            onChange={e => setCount(e.target.value)} />
+          <input type="number" min={starting?.minTeams ?? 2} max={starting?.maxTeams ?? 32} step={1}
+            value={count} onChange={e => setCount(e.target.value)} />
         </label>
         {starting && <p className="change-note">{starting.description}</p>}
         <label>First NFL season
@@ -64,7 +64,11 @@ export function StartLeagueForm() {
             onChange={e => setSeason(e.target.value)} />
         </label>
         <label>Starting rules
-          <select value={preset} onChange={e => setPreset(e.target.value)}>
+          <select value={preset} onChange={e => {
+            const picked = presets.find(p => p.id === e.target.value);
+            setPreset(e.target.value);
+            if (picked && picked.minTeams === picked.maxTeams) setCount(String(picked.minTeams));
+          }}>
             {presets.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
         </label>

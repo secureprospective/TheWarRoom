@@ -149,4 +149,23 @@ describe('Start an app league', () => {
     expect(control(host, 'League name').props().value).toBe('Our league');
     await flush();
   });
+  it('limits the franchise count to the first preset’s size range', async () => {
+    const { app } = stub();
+    const host = await mount(render(StartLeagueForm), app);
+    await open();
+    const input = control(host, 'Number of franchises');
+    const first = controlsWire.presets[0];
+    expect(input.getAttribute('min')).toBe(String(first.minTeams));
+    expect(input.getAttribute('max')).toBe(String(first.maxTeams));
+  });
+  it('sets the franchise count when a fixed-size preset is chosen', async () => {
+    const { app } = stub();
+    const host = await mount(render(StartLeagueForm), app);
+    await open();
+    await type(control(host, 'Starting rules'), 'empty');
+    await type(control(host, 'Number of franchises'), '12');
+    expect(control(host, 'Number of franchises').props().value).toBe('12');
+    await type(control(host, 'Starting rules'), 'default_32');
+    expect(control(host, 'Number of franchises').props().value).toBe('32');
+  });
 });
