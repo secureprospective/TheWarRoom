@@ -27,6 +27,9 @@ type DraftRules struct {
 	StartupPattern Value[OrderPattern]       `json:",omitzero"`
 	StartupYears   Value[int]                `json:",omitzero"`
 	StartupSalary  Value[Money]              `json:",omitzero"`
+	// StartupRookies says whether the incoming rookie class is in the startup draft's pool. It stands
+	// alone: off only leaves the class out of the pool, and never turns a rookie draft on or off.
+	StartupRookies Value[bool] `json:",omitzero"`
 }
 
 func legacyDraft() DraftRules {
@@ -53,11 +56,16 @@ func legacyDraft() DraftRules {
 		StartupPattern: cited[OrderPattern](Snake, startupRuling),
 		StartupYears:   cited[int](1, startupRuling),
 		StartupSalary:  cited[Money](33000000, startupRuling+"; Rulebook §6"),
+		StartupRookies: cited(false, startupRookiesRuling),
 	}
 }
 
 // startupRuling is Christopher's ruling R1 of 2026-10-27: a league's first rosters may be drafted, snake first.
 const startupRuling = "Startup draft ruling R1, 2026-10-27"
+
+// startupRookiesRuling is Christopher's 2026-10-27 setting: the rookie class sits out a startup draft
+// unless the commissioner puts it in.
+const startupRookiesRuling = "Startup draft rookies, 2026-10-27: off unless the commissioner turns it on"
 
 func draftFields() []ruleField {
 	return []ruleField{
@@ -81,6 +89,7 @@ func draftFields() []ruleField {
 		field[OrderPattern]{path: "draft.startupPattern", label: "Startup draft later round pattern", access: func(r *RuleSet) *Value[OrderPattern] { return &r.Draft.StartupPattern }},
 		field[int]{path: "draft.startupYears", label: "Startup draft contract years", access: func(r *RuleSet) *Value[int] { return &r.Draft.StartupYears }},
 		field[Money]{path: "draft.startupSalary", label: "Startup draft salary", access: func(r *RuleSet) *Value[Money] { return &r.Draft.StartupSalary }},
+		field[bool]{path: "draft.startupRookies", label: "Incoming rookie class in the startup draft pool", access: func(r *RuleSet) *Value[bool] { return &r.Draft.StartupRookies }},
 	}
 }
 

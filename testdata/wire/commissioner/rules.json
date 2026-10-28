@@ -13504,6 +13504,28 @@
       "now": "reason"
      },
      "governed": null
+    },
+    {
+     "field": "draft.startupRookies",
+     "label": "Incoming rookie class in the startup draft pool",
+     "value": "Off",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "boolean",
+      "choices": [],
+      "fields": []
+     },
+     "competitive": true,
+     "pending": [],
+     "current": false,
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
     }
    ]
   },

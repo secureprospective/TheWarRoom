@@ -39,6 +39,7 @@ func ruleOwners() []ruleOwner {
 		{"draft.startupRounds", "CM-040", "G2"}, {"draft.startupYears", "CM-040", "G2"},
 		{"draft.startupSalary", "CM-040", "G2"}, {"draft.startupOrder", "CM-041", "G2"},
 		{"draft.startupList", "CM-041", "G2"}, {"draft.startupPattern", "CM-041", "G2"},
+		{"draft.startupRookies", "CM-040", "G2"},
 	}
 }
 

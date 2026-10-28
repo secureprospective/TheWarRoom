@@ -37,6 +37,8 @@ func scoringKindPaths() []FieldPath {
 //     pools existed: an older league keeps the one pool it always had.
 //   - version 7 (2026-10-28) records no range rules, as a new Legacy seed has them, for a seed recorded
 //     before them, so an older league scores exactly as it did.
+//   - version 8 (2026-10-28) records the incoming rookie class out of the startup draft pool, as every
+//     new seed has it, for a seed recorded before the setting.
 func seedUpgrades() []seedUpgrade {
 	return []seedUpgrade{
 		{version: 1, fields: scoringKindPaths(),
@@ -75,6 +77,11 @@ func seedUpgrades() []seedUpgrade {
 		{version: 7, fields: []FieldPath{"scoring.rules"},
 			applies: func(recorded map[FieldPath]Setting) bool {
 				return recorded["scoring.catalogue"] != nil && !anyRecorded(recorded, []FieldPath{"scoring.rules"})
+			},
+			values: legacyValues},
+		{version: 8, fields: []FieldPath{"draft.startupRookies"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"draft.startupRookies"})
 			},
 			values: legacyValues},
 	}

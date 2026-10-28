@@ -124,12 +124,12 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 	if err != nil {
 		return basis, err
 	}
-	draft, err := startupDraftRules(records, open, rules.Draft, key)
+	draft, pool, err := startupDraftRules(records, open, rules.Draft, key)
 	if err != nil {
 		basis.words = draftWords(err)
 		return basis, nil
 	}
-	basis.rules.Draft, basis.start = draft, open.Receipt.RecordedAt
+	basis.rules.Draft, basis.pool, basis.start = draft, pool, open.Receipt.RecordedAt
 	basis.started = !at.Before(basis.start)
 	basis.order, err = rookiedraft.Order(draft, franchises, rookiedraft.StartupPicks(franchises, draft.Rounds.Value), nil)
 	if err != nil {
@@ -147,37 +147,38 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 }
 
 // startupDraftRules are the startup draft's rules: its settings as they stood when it opened, its recorded
-// rounds and first round, and the league's pick clock as it stands.
-func startupDraftRules(records []Record, open Record, now leaguerules.DraftRules, key DraftKey) (leaguerules.DraftRules, error) {
+// rounds and first round, and the league's pick clock as it stands; and its pool, as it stood when it opened.
+func startupDraftRules(records []Record, open Record, now leaguerules.DraftRules,
+	key DraftKey) (leaguerules.DraftRules, rookiedraft.Pool, error) {
 	o := open.Command.Args.DraftOutcome
 	if o == nil {
-		return leaguerules.DraftRules{}, errors.New("the startup draft's opening recorded no seed")
+		return leaguerules.DraftRules{}, "", errors.New("the startup draft's opening recorded no seed")
 	}
 	seed, err := startupSeed(o.Seed)
 	if err != nil {
-		return leaguerules.DraftRules{}, err
+		return leaguerules.DraftRules{}, "", err
 	}
 	then, err := RulesNow(records, open.Receipt.RecordedAt)
 	if err != nil {
-		return leaguerules.DraftRules{}, err
+		return leaguerules.DraftRules{}, "", err
 	}
 	s, err := rookiedraft.ResolveStartup(then)
 	if err != nil {
 		//nolint:wrapcheck // The engine's words are the draft room's: they say which setting needs a ruling.
-		return leaguerules.DraftRules{}, err
+		return leaguerules.DraftRules{}, "", err
 	}
 	s.Rounds = o.Rounds
 	franchises, err := draftFranchises(records, key)
 	if err != nil {
-		return leaguerules.DraftRules{}, err
+		return leaguerules.DraftRules{}, "", err
 	}
 	s.List = slices.DeleteFunc(s.List, func(id string) bool { return !slices.Contains(franchises, id) })
 	first, err := rookiedraft.StartupFirstRound(s, franchises, sideSeed(seed, key.Side))
 	if err != nil {
 		//nolint:wrapcheck // The engine's words are the draft room's: they say what is wrong with the order.
-		return leaguerules.DraftRules{}, err
+		return leaguerules.DraftRules{}, "", err
 	}
-	return rookiedraft.StartupRules(now, s, first), nil
+	return rookiedraft.StartupRules(now, s, first), s.Pool, nil
 }
 
 // sideSeed is the side's own draw from the opening's seed, so the sides' first rounds are independent; a

@@ -767,6 +767,10 @@
       {
        "field": "draft.startupSalary",
        "label": "Startup draft salary"
+      },
+      {
+       "field": "draft.startupRookies",
+       "label": "Incoming rookie class in the startup draft pool"
       }
      ]
     },

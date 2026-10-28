@@ -90,14 +90,6 @@ func pickKey(records []Record, in DraftPickInput) DraftKey {
 	return DraftKey{Season: in.Season}
 }
 
-// poolOf is who a draft may take: a startup draft takes any unrostered player, a rookie draft its class.
-func poolOf(key DraftKey) rookiedraft.Pool {
-	if key.Startup {
-		return rookiedraft.Unrostered
-	}
-	return rookiedraft.RookieClass
-}
-
 func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candidate {
 	candidate := rookiedraft.Candidate{ID: in.Player}
 	if f, ok := facts[in.Player]; ok && f.DraftYearHeld {
@@ -108,7 +100,7 @@ func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candi
 
 func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts nativecheck.Facts,
 	local *time.Location, records []Record, at time.Time) rookiedraft.SelectionBasis {
-	out := rookiedraft.SelectionBasis{Pool: poolOf(basis.key), Exceptions: ScopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
+	out := rookiedraft.SelectionBasis{Pool: basis.pool, Exceptions: ScopedDecisionExceptions(records, ExceptionScope{Franchise: in.Franchise, Player: in.Player}, at), Season: in.Season, Facts: facts, Local: local}
 	if !assets.Seeded {
 		return out
 	}

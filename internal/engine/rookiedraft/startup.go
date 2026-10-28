@@ -16,8 +16,11 @@ type Pool string
 
 const (
 	RookieClass Pool = ""
-	// Unrostered is the startup draft's pool: every held player on no roster, never an O-Line card.
+	// Unrostered is a startup draft's pool with the rookie class in it: every held player on no roster,
+	// never an O-Line card.
 	Unrostered Pool = "unrostered"
+	// UnrosteredVeterans is a startup draft's pool without the incoming rookie class.
+	UnrosteredVeterans Pool = "unrostered_veterans"
 )
 
 // Startup is a startup draft's resolved settings. It fills a new league's empty rosters with the same
@@ -28,14 +31,21 @@ type Startup struct {
 	List    []string
 	Pattern leaguerules.OrderPattern
 	Terms   Terms
+	// Pool is who the startup draft may take: with or without the incoming rookie class.
+	Pool Pool
 }
 
 // ResolveStartup reads the startup draft's settings. A rule set stored before they existed reads them
 // unset, and each then takes its default: rounds to fill the active roster less any O-Line card, a random
-// first round, snake order, and one-year contracts at the lowest minimum salary.
+// first round, snake order, one-year contracts at the lowest minimum salary, and the incoming rookie class
+// left out of the pool.
 func ResolveStartup(r leaguerules.RuleSet) (Startup, error) {
 	d := r.Draft
-	out := Startup{Order: leaguerules.RandomOrder, Pattern: leaguerules.Snake, Terms: Terms{Years: 1}}
+	out := Startup{Order: leaguerules.RandomOrder, Pattern: leaguerules.Snake, Terms: Terms{Years: 1},
+		Pool: UnrosteredVeterans}
+	if d.StartupRookies.State == leaguerules.IsKnown && d.StartupRookies.Value {
+		out.Pool = Unrostered
+	}
 	rounds, err := startupRounds(r)
 	if err != nil {
 		return Startup{}, err
@@ -169,9 +179,11 @@ func admits(pool Pool, season int, c Candidate) error {
 	switch {
 	case pool == RookieClass && (!valid || c.EntrySeason != season):
 		return fmt.Errorf("choose a rookie from this season's player pool")
-	case pool == Unrostered && !valid:
+	case (pool == Unrostered || pool == UnrosteredVeterans) && !valid:
 		return fmt.Errorf("choose a player from this draft's pool")
-	case pool != RookieClass && pool != Unrostered:
+	case pool == UnrosteredVeterans && c.EntrySeason == season:
+		return fmt.Errorf("the incoming rookie class is not in this startup draft's pool")
+	case pool != RookieClass && pool != Unrostered && pool != UnrosteredVeterans:
 		return fmt.Errorf("choose a player from this draft's pool")
 	}
 	if _, card := nativecheck.LineCardTeam(c.ID); card {

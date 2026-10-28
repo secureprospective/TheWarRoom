@@ -314,3 +314,39 @@ func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 		t.Fatalf("single-pool startup digest %s", got)
 	}
 }
+
+// The startup rookies setting, changed through the rule-change flow like any other, puts the incoming
+// rookie class in the startup draft's pool or leaves it out; off is the default.
+func TestStartupRookiesSettingDecidesTheStartupPool(t *testing.T) {
+	for _, c := range []struct {
+		name, value string
+		refused     bool
+	}{{"default", "", true}, {"off", "false", true}, {"on", "true", false}} {
+		t.Run(c.name, func(t *testing.T) {
+			b := startupLeague(t)
+			if c.value != "" {
+				b.set("draft.startupRookies", c.value, "now", seasonMoment(2))
+			}
+			facts := startupFacts()
+			facts["20999"] = nativecheck.PlayerFacts{Name: "Incoming Rookie", Position: leaguerules.WR, Team: "KC",
+				DraftYear: 2026, DraftYearHeld: true}
+			at := seasonMoment(3)
+			b.record(startupRaw(t, DraftStartupOpen, "open"), facts, at)
+			at = at.Add(time.Minute)
+			basis, err := readDraft(b.records, startupKey(b.records), at, nil)
+			if err != nil || basis.draft.OnClock == nil {
+				t.Fatalf("read: %v %q", err, basis.words)
+			}
+			_, err = PlanDraftPick(DraftPickInput{League: "native.test", Season: 2026, Startup: true,
+				Franchise: basis.draft.OnClock.Owner, Player: "20999", Request: "rookie", Expected: int64(len(b.records))},
+				b.records, facts, at, time.UTC, nil)
+			if c.refused != (err != nil) || (err != nil && !strings.Contains(err.Error(), "incoming rookie class")) {
+				t.Fatalf("pick of an incoming rookie: %v, want refused %v", err, c.refused)
+			}
+			rules, err := RulesInForce(b.records, 2026, at)
+			if err != nil || rules.Draft.Rounds != leaguerules.Default32().Draft.Rounds {
+				t.Fatalf("the setting touched the rookie draft: %v", err)
+			}
+		})
+	}
+}

@@ -62,8 +62,10 @@ type DraftOwner struct {
 // draftBasis is one draft replayed from the ledger. words says why it cannot run yet, and is empty once
 // the order is set and the clock can be read.
 type draftBasis struct {
-	key     DraftKey
-	rules   leaguerules.RuleSet
+	key   DraftKey
+	rules leaguerules.RuleSet
+	// pool is who the draft may take; the zero value is the season's rookie class.
+	pool    rookiedraft.Pool
 	owners  []DraftOwner
 	order   []rookiedraft.RoundOrder
 	start   time.Time

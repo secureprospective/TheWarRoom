@@ -38,7 +38,7 @@ func presetLeague(t *testing.T, preset string, teams int) []Record {
 // and preview words and its rules in force hash to what they were before the catalog (20a00b25). The
 // rules reading is pinned too where the citation wording did not change; the 32-Team Default's reading
 // now cites its own preset (see TestStartingCitationNamesTheLeaguesOwnPreset). Player pools and sides
-// (F8) and range rules are the only additions since: without them every digest is unchanged.
+// (F8), range rules and the startup rookies setting are the only additions since: without them every digest is unchanged.
 func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	for _, c := range []struct {
 		preset        string
@@ -70,13 +70,17 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	}
 }
 
-// withoutPools takes the F8 settings and range rules out of a creation, its rules and its reading.
+// withoutPools takes the F8 settings, range rules and startup rookies out of a creation, its rules and its reading.
 func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
-	f8 := func(field string) bool { return field == poolsField || field == sidesField || field == "scoring.rules" }
+	f8 := func(field string) bool {
+		return field == poolsField || field == sidesField || field == "scoring.rules" ||
+			field == "draft.startupRookies"
+	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
+	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
 	sections := []RuleSection{}
 	for _, s := range reading.Sections {
 		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })

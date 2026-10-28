@@ -2,6 +2,7 @@ package rookiedraft
 
 import (
 	"fmt"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -185,5 +186,48 @@ func TestStartupSettingsDefaultsAndRandomOrder(t *testing.T) {
 	s.Order, s.List = leaguerules.CommissionerOrder, franchises[1:]
 	if _, err := StartupFirstRound(s, franchises, 0); err == nil {
 		t.Fatal("a commissioner order missing a franchise was accepted")
+	}
+}
+
+// The startup rookies setting decides only whether the incoming rookie class is in the startup draft's
+// pool: off by default and in every preset, and on puts the class in beside everyone else unrostered.
+func TestStartupRookiesSettingDecidesOnlyThePool(t *testing.T) {
+	veteran := Candidate{ID: "14001", EntrySeason: 2019}
+	rookie := Candidate{ID: "14003", EntrySeason: 2031}
+	undated := Candidate{ID: "14004"}
+	for _, c := range []struct {
+		name    string
+		setting leaguerules.Value[bool]
+		pool    Pool
+		left    []string
+	}{
+		{"unset reads off", leaguerules.Value[bool]{}, UnrosteredVeterans, []string{veteran.ID, undated.ID}},
+		{"off", leaguerules.Known(false), UnrosteredVeterans, []string{veteran.ID, undated.ID}},
+		{"on", leaguerules.Known(true), Unrostered, []string{veteran.ID, rookie.ID, undated.ID}},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			r := leaguerules.Default32()
+			r.Draft.StartupRookies = c.setting
+			before := r.Draft
+			s, err := ResolveStartup(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if s.Pool != c.pool {
+				t.Fatalf("pool %q, want %q", s.Pool, c.pool)
+			}
+			if left := Available(s.Pool, 2031, []Candidate{veteran, rookie, undated}, nil, Draft{}); !slices.Equal(left, c.left) {
+				t.Fatalf("pool %v, want %v", left, c.left)
+			}
+			if !reflect.DeepEqual(r.Draft.Rounds, before.Rounds) || !reflect.DeepEqual(r.Draft.Pricing, before.Pricing) {
+				t.Fatal("the startup rookies setting touched the rookie draft")
+			}
+		})
+	}
+	for name, preset := range map[string]leaguerules.RuleSet{"Legacy": leaguerules.LegacyNFL(),
+		"32-Team Default": leaguerules.Default32(), "16-Team Mirror": leaguerules.Mirror16()} {
+		if v := preset.Draft.StartupRookies; v.State != leaguerules.IsKnown || v.Value {
+			t.Errorf("%s: startup rookies %+v, want off", name, v)
+		}
 	}
 }
