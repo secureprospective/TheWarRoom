@@ -67,8 +67,17 @@ func (b *ledgerBuilder) record(raw RawCommand, facts nativecheck.Facts, at time.
 // runStartup opens the startup draft and makes every pick in turn, each with the first player left.
 func runStartup(t *testing.T, b *ledgerBuilder, facts nativecheck.Facts) time.Time {
 	t.Helper()
+	return runStartupSeeded(t, b, facts, "")
+}
+
+// runStartupSeeded runs the startup draft; a non-empty seed replaces the one the opening drew.
+func runStartupSeeded(t *testing.T, b *ledgerBuilder, facts nativecheck.Facts, seed string) time.Time {
+	t.Helper()
 	at := seasonMoment(3)
 	b.record(startupRaw(t, DraftStartupOpen, "open"), facts, at)
+	if seed != "" {
+		b.records[len(b.records)-1].Command.Args.DraftOutcome.Seed = seed
+	}
 	for i := 0; ; i++ {
 		at = at.Add(time.Minute)
 		basis, err := readDraft(b.records, startupKey(b.records), at, nil)
@@ -281,4 +290,27 @@ func TestStartupListOffersTheLeaguesFranchises(t *testing.T) {
 		}
 	}
 	t.Fatal("no startup list row")
+}
+
+// A single-pool startup draft reads exactly as it did before per-side pools: its room, the assets it
+// signs and the league's jobs hash to what they were at b8a933e4.
+func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
+	b := startupLeague(t)
+	facts := startupFacts()
+	at := runStartupSeeded(t, b, facts, "00000000075bcd15")
+	basis, err := readDraft(b.records, startupKey(b.records), at, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assets, err := NativeAssetsReading("native.test", b.records, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs, err := JobsReading("native.test", b.records, at)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "90ca21fd230f0aa6" {
+		t.Fatalf("single-pool startup digest %s", got)
+	}
 }

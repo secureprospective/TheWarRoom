@@ -106,7 +106,11 @@ func (f *marketFixture) act(t *testing.T, command string, args commissioner.RawA
 	return entry
 }
 
-func TestMarketBodies(t *testing.T) {
+func TestMarketBodies(t *testing.T) { marketBodiesLedger(t) }
+
+// marketBodiesLedger plays every market command once, checking each appended body against its golden.
+func marketBodiesLedger(t *testing.T) *marketFixture {
+	t.Helper()
 	f := newMarketFixture(t)
 	order := make([]string, 32)
 	for i := range order {
@@ -144,4 +148,5 @@ func TestMarketBodies(t *testing.T) {
 	f.act(t, commissioner.TradeReview, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer, Decision: "veto"}}, "dot.c")
 	f.setup = false
 	f.act(t, commissioner.TradeOverride, commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: offer, Decision: "approve"}}, "creator")
+	return f
 }
