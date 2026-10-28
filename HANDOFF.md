@@ -42,3 +42,37 @@ No stored side map: sides are counted from conferences. Fixture timestamp and id
 ## Debt left
 Rookie draft per side; per-side O-Line lots; reserve and rule-exception scoping by franchise; per-side
 contract quote. Older F3a O-Line transition question belongs to Christopher/ClaudeBox.
+Tom (Beelink) — 2026-10-28, `session/migration`. Do not push.
+
+## Where it stands
+- "Migrate my MFL league" engine, M1–M5 (brief `~/fleet/briefs/tom-migration.md`):
+  `internal/leaguemigration` (read, prepare, review, invites, assist), `mflsource` (read-only MFL
+  reader), `commish.league.cutover`, the "Your MFL league" settings entry, the all-or-nothing ledger batch,
+  and six `league.migrate.*` registry commands on the assist door, wired in composition.
+- Proof: round trip on the held Legacy NFL (14432) and 10 synthetic edge leagues, checked against the raw
+  MFL export field by field; 7 injected failure points leave nothing; scripted AI assist run end to end
+  through the registry. Click script: `docs/build-handoffs/MFL_Migration_Click_Test.md`.
+
+## Next move
+Christopher reviews the report. Then the UI debt below, then the click walk (part B) on Claude-OS.
+
+## Blocked on
+Nothing.
+
+## Tried and rejected
+Storing MFL owner emails at import: they would sit in the league-visible ledger. Invites re-read MFL's owners
+(read only) instead. Adding the move's commands to the Wails/native doors: that changes the frozen door
+inventory and generated bindings; they sit on their own assist door until the UI needs them.
+
+## Debt left
+- UI: start-form "Import my MFL league", review screen, cutover confirm, invite screen; and
+  `scoring.rules` shown on the scoring screen. None is built; part B of the click script waits on them.
+- CLI: the move is not on `twr`'s hosted dispatch yet (assist door only).
+- Invites are issued in the app; nothing emails the link. Invitee principal is the owner's email.
+- MFL's owner emails come only with the commissioner's key: offered for 14432 only; other leagues list
+  every owner for a hand invite unless a key is added.
+- `mflsource` has no HTTP test (the MFL client pins MFL's hosts); it composes the existing fetchers.
+- Settings MFL holds but the app has no field for (h2h, rostersPerPlayer, contract-year use) are not read;
+  team-defense or DL/DB positions refuse the import with a plain list.
+- A raw `commish.league.create` with the MFL preset accepts caller-supplied values (same power as setting
+  rules by hand); the move's own path always builds them from the read.
