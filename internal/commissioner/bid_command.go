@@ -94,7 +94,7 @@ func (d bidDetails) incomplete(r RawBidArgs) bool {
 		return true
 	}
 	return (d.franchise && blank(r.Franchise)) || (d.bid && blank(r.Bid)) ||
-		(d.contract && (r.Salary <= 0 || r.Years < 1 || r.Years > 99))
+		(d.contract && (r.Salary <= 0 || r.Years < 1 || r.Years > lastSeason))
 }
 
 func (r RawBidArgs) Validate(command string) error {

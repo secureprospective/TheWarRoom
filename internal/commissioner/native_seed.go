@@ -112,7 +112,7 @@ func (r RawNativeSnapshot) Validate() error { return r.validate(false) }
 // were captured in, whose picks keep their history and whose new season's picks wait for the draft.
 func (r RawNativeSnapshot) validate(rolled bool) error {
 	if !validFranchiseCount(len(r.Franchises)) {
-		return fmt.Errorf("a league needs between 2 and 32 franchises")
+		return fmt.Errorf("a league needs between %d and %d franchises", minFranchises, maxFranchises)
 	}
 	if r.Season < 1 || r.Season > 9999 || r.RosterAt.IsZero() || r.DraftAt.IsZero() || r.FutureAt.IsZero() {
 		return fmt.Errorf("hold the Legacy NFL rosters, franchises and both draft reports before seeding")

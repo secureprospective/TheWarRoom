@@ -11,15 +11,19 @@ export type ControlGroup = { id: string; label: string; controls: Control[] };
 export type StartingPreset = {
   id: string; label: string; description: string; suggestedTeams: number;
 };
-export type Controls = { groups: ControlGroup[]; presets: StartingPreset[] };
+// Teams is how many franchises a new app league may have, as Go allows.
+export type TeamRange = { min: number; max: number };
+export type Controls = { groups: ControlGroup[]; presets: StartingPreset[]; teams: TeamRange };
 
 function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
 }
 export function parseControls(v: unknown): Controls {
-  const r = object(v, 'League controls', ['groups', 'presets']);
+  const r = object(v, 'League controls', ['groups', 'presets', 'teams']);
+  const teams = object(r.teams, 'League sizes', ['min', 'max']);
   return {
+    teams: { min: integer(teams.min, 'League sizes.min', 1), max: integer(teams.max, 'League sizes.max', 1) },
     presets: array(r.presets, 'Starting presets', (x, p) => {
       const o = object(x, p, ['id', 'label', 'description', 'suggestedTeams']);
       return { id: text(o.id, p), label: text(o.label, p), description: text(o.description, p),

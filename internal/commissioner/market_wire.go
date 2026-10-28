@@ -170,7 +170,7 @@ func (p TradePolicy) Validate(r leaguerules.TradesRules) error {
 }
 func (p TradePolicy) invalidLimits() bool {
 	return p.DecideAt < 1 || p.FutureYears < 0 || p.MinimumRound < 1 || p.MaximumRound < p.MinimumRound ||
-		p.Expiry <= 0 || p.MaximumParties < 2 || p.MaximumParties > 3
+		p.Expiry <= 0 || p.MaximumParties < 2
 }
 
 const ReserveClockPrincipal = "native.reserve.clock"

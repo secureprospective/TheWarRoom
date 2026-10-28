@@ -14,9 +14,13 @@ import (
 )
 
 const (
-	legacyTeams   = 32
+	legacyTeams = 32
+	// A head-to-head league needs two franchises to play a game.
 	minFranchises = 2
-	maxFranchises = 32
+	// maxFranchises is the largest league proven to create, seed and read under every native preset
+	// (TestEveryPresetStartsAtTheLargestSize). Nothing in the engine stops at it: each reading grows with
+	// the franchise count, and stays under a second here.
+	maxFranchises = 1000
 	// firstNFLSeason is the NFL's first season; a league cannot start before it.
 	firstNFLSeason = 1920
 	lastSeason     = 9999

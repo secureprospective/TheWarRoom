@@ -41,7 +41,7 @@ func (r RawRosterRestorePoint) Validate() error {
 func (r RawRosterRestorePoint) validateRoster() error {
 	s := r.Snapshot
 	if !validFranchiseCount(len(s.Franchises)) {
-		return fmt.Errorf("a league needs between 2 and 32 franchises")
+		return fmt.Errorf("a league needs between %d and %d franchises", minFranchises, maxFranchises)
 	}
 	if s.Season < 1 || s.Season > 9999 || s.RosterAt.IsZero() || s.DraftAt.IsZero() ||
 		s.FutureAt.IsZero() || len(s.Picks) != 0 ||

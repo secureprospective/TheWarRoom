@@ -46,11 +46,11 @@ func TestSeedAndRestoreFranchiseCounts(t *testing.T) {
 		count int
 		want  string
 	}{
-		{1, "a league needs between 2 and 32 franchises"},
+		{1, "a league needs between 2 and 1000 franchises"},
 		{2, ""},
 		{12, ""},
 		{32, ""},
-		{33, "a league needs between 2 and 32 franchises"},
+		{33, ""},
 	} {
 		t.Run(fmt.Sprint(tc.count), func(t *testing.T) {
 			snapshot := ledgerSnapshot()

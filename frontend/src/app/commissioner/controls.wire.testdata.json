@@ -948,5 +948,9 @@
       "description": "An empty league has no suggested size; every rule waits for a ruling.",
       "suggestedTeams": 0
     }
-  ]
+  ],
+  "teams": {
+    "min": 2,
+    "max": 1000
+  }
 }

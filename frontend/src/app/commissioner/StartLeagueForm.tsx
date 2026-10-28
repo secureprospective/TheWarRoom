@@ -20,6 +20,7 @@ export function StartLeagueForm() {
   const [league, setLeague] = useState(freshId);
   const { outcome, controls } = leagueState.use();
   const presets = controls?.presets ?? [];
+  const teams = controls?.teams;
   const starting = presets.find(p => p.id === chosen) ?? presets[0];
   const preset = starting?.id ?? '';
   const landed = outcome.status === 'done' && outcome.form === 'create' ? outcome.receipt.entry : '';
@@ -39,7 +40,8 @@ export function StartLeagueForm() {
   const blocked = !starting ? 'The starting presets could not be read.'
     : name.trim() === '' ? 'Name the league.'
     : size === 0 ? 'Enter the number of franchises.'
-    : size < 2 || size > 32 ? 'Choose between 2 and 32 franchises.'
+    : teams && (size < teams.min || size > teams.max)
+      ? `Choose between ${teams.min} and ${teams.max} franchises.`
     : year === 0 ? 'Enter the NFL season the league starts in.' : wait;
   return (
     <section className="league-form" aria-label="Start an app league">
@@ -52,7 +54,7 @@ export function StartLeagueForm() {
           <input value={name} onChange={e => setName(e.target.value)} />
         </label>
         <label>Number of franchises
-          <input type="number" min={2} max={32} step={1}
+          <input type="number" min={teams?.min} max={teams?.max} step={1}
             value={count} onChange={e => { setCount(e.target.value); setTypedCount(true); }} />
         </label>
         {starting && <p className="change-note">{starting.description}</p>}

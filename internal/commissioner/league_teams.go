@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -73,8 +74,17 @@ func resizedFranchises(ids []string, n int) []string {
 
 // defaultFranchiseName is the name a franchise starts with until it is renamed.
 func defaultFranchiseName(id string) (string, string) {
-	n := slices.Index(franchiseIDs(maxFranchises), id) + 1
+	n := franchiseNumber(id)
 	return fmt.Sprintf("Franchise %d", n), fmt.Sprintf("F%d", n)
+}
+
+// franchiseNumber is a franchise's seat number from its id, 0 for an id the app did not number.
+func franchiseNumber(id string) int {
+	n, err := strconv.Atoi(strings.TrimPrefix(id, "franchise."))
+	if err != nil || !strings.HasPrefix(id, "franchise.") || n < 1 || fmt.Sprintf("franchise.%02d", n) != id {
+		return 0
+	}
+	return n
 }
 
 // teamsEvents seats the franchises a Teams change lists and removes the rest.
@@ -189,7 +199,7 @@ func checkShapeChange(raw RawCommand, records []Record, at time.Time) error {
 		return nil
 	}
 	if !validFranchiseCount(value.Value) {
-		return Refused(errors.New("rule change refused: choose between 2 and 32 teams"))
+		return Refused(fmt.Errorf("rule change refused: choose between %d and %d teams", minFranchises, maxFranchises))
 	}
 	return checkTeamsTrial(raw, records, at, value.Value, value.Value < teams)
 }

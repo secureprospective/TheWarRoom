@@ -31,6 +31,14 @@ type Controls struct {
 	Groups []ControlGroup `json:"groups"`
 	// Presets are the starting points a new app league may take, from the preset catalog.
 	Presets []StartingPreset `json:"presets"`
+	// Teams is how many franchises a new app league may have.
+	Teams TeamRange `json:"teams"`
+}
+
+// TeamRange is the fewest and most franchises a league may have.
+type TeamRange struct {
+	Min int `json:"min"`
+	Max int `json:"max"`
 }
 
 // controlGroups gives the census groups the landing shows, each by its first and last row (spec §16.7;
@@ -85,7 +93,8 @@ func controlBuilt(id string, fields []ControlField) bool {
 
 // ControlsReading lists every census row, grouped, in census order.
 func ControlsReading() Controls {
-	out := Controls{Groups: []ControlGroup{}, Presets: StartingPresets()}
+	out := Controls{Groups: []ControlGroup{}, Presets: StartingPresets(),
+		Teams: TeamRange{Min: minFranchises, Max: maxFranchises}}
 	census := governance.CensusControls()
 	for _, g := range controlGroups() {
 		group := ControlGroup{ID: g.id, Label: g.label, Controls: []ControlEntry{}}

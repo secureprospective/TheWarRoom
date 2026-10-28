@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -21,7 +22,10 @@ func alignmentWords(records []Record, alignment leaguerules.Value[map[string]str
 	for id := range alignment.Value {
 		ids = append(ids, id)
 	}
-	slices.Sort(ids)
+	// Franchises read in seat order, so franchise.100 follows franchise.99.
+	slices.SortFunc(ids, func(a, b string) int {
+		return cmp.Or(cmp.Compare(franchiseNumber(a), franchiseNumber(b)), cmp.Compare(a, b))
+	})
 	parts := make([]string, 0, len(ids))
 	for _, id := range ids {
 		parts = append(parts, cmpName(names, id)+": "+alignment.Value[id])

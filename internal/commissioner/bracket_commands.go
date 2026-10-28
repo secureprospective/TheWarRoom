@@ -110,7 +110,7 @@ func (r RawBracketChange) validate(command string) error {
 			return fmt.Errorf("choose a bracket place, such as a game's home or away team, and an app franchise")
 		}
 	case BracketSeed:
-		if r.Slot < 1 || r.Slot > 32 || !strings.HasPrefix(r.Team, "franchise.") {
+		if r.Slot < 1 || r.Slot > maxFranchises || !strings.HasPrefix(r.Team, "franchise.") {
 			return fmt.Errorf("choose a seed and an app franchise")
 		}
 	case BracketPresetSave:
