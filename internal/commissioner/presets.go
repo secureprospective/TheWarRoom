@@ -14,17 +14,16 @@ import (
 const (
 	PresetLegacy = "legacy_nfl"
 	PresetEmpty  = "empty"
-	// PresetDefault32 is the 32-Team Default (DEFAULT-32 spec), offered only at 32 teams.
+	// PresetDefault32 is the 32-Team Default (DEFAULT-32 spec).
 	PresetDefault32 = "default_32"
 )
 
 // StartingPreset is what the start form shows of a catalog entry.
 type StartingPreset struct {
-	ID          string `json:"id"`
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	MinTeams    int    `json:"minTeams"`
-	MaxTeams    int    `json:"maxTeams"`
+	ID             string `json:"id"`
+	Label          string `json:"label"`
+	Description    string `json:"description"`
+	SuggestedTeams int    `json:"suggestedTeams"`
 }
 
 // presetEntry is one entry of the catalog: what the form shows, the wording Go writes in the ledger, the
@@ -51,22 +50,21 @@ type presetEntry struct {
 func presetCatalog() []presetEntry {
 	return []presetEntry{
 		{StartingPreset: StartingPreset{ID: PresetDefault32, Label: "32-Team Default",
-			Description: "The 32-Team Default is for 32 franchises: the NFL's divisions, a startup draft " +
+			Description: "The 32-Team Default is built for 32 franchises: the NFL's divisions, a startup draft " +
 				"and its own lineup, roster and scoring. Every value can be changed afterwards.",
-			MinTeams: legacyTeams, MaxTeams: legacyTeams},
+			SuggestedTeams: legacyTeams},
 			native: true, source: SourceNative, defaultTeams: legacyTeams, choice: "the 32-Team Default",
 			history: "the 32-Team Default rules", preview: "32-Team Default rules", citation: "32-Team Default rules",
-			rules: func(int) leaguerules.RuleSet { return leaguerules.Default32() }},
+			rules: leaguerules.Default32ForTeams},
 		{StartingPreset: StartingPreset{ID: PresetLegacy, Label: "Legacy NFL",
-			Description: "The Legacy NFL's rules, as imported from MFL.",
-			MinTeams:    minFranchises, MaxTeams: maxFranchises},
+			Description:    "The Legacy NFL's rules, as imported from MFL.",
+			SuggestedTeams: legacyTeams},
 			source: SourceMFLImport, defaultTeams: legacyTeams, choice: "the Legacy NFL preset",
 			history: "the Legacy NFL rules", preview: "Legacy NFL rules", citation: "Legacy NFL rules",
 			bracket: "the Legacy NFL bracket", bracketShape: "the Legacy NFL playoff shape",
 			rules: leaguerules.LegacyNFLForTeams},
 		{StartingPreset: StartingPreset{ID: PresetEmpty, Label: "Start empty: every rule Needs a ruling",
-			Description: "An empty league works with 2 to 32 franchises; every rule waits for a ruling.",
-			MinTeams:    minFranchises, MaxTeams: maxFranchises},
+			Description: "An empty league has no suggested size; every rule waits for a ruling."},
 			native: true, source: SourceNative, choice: "an empty league",
 			history: "every rule waiting for a ruling", preview: "Every rule waits for a ruling",
 			citation: "Empty league default"},
@@ -115,16 +113,6 @@ func emptyPreset() string {
 }
 
 func (p presetEntry) seeds() bool { return p.rules != nil }
-
-func (p presetEntry) sizeError(count int) error {
-	if count >= p.MinTeams && count <= p.MaxTeams {
-		return nil
-	}
-	if p.MinTeams == p.MaxTeams {
-		return fmt.Errorf("the %s needs exactly %d franchises", p.Label, p.MinTeams)
-	}
-	return fmt.Errorf("choose between %d and %d franchises", p.MinTeams, p.MaxTeams)
-}
 
 func unknownPresetError() error {
 	var names []string

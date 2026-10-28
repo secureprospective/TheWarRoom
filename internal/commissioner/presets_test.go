@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -155,12 +156,33 @@ func TestStartingCitationNamesTheLeaguesOwnPreset(t *testing.T) {
 	}
 }
 
+// A preset only suggests a size: the start form reads the catalog's suggestion and nothing else.
+func TestStartingPresetCarriesOnlyASuggestion(t *testing.T) {
+	typ := reflect.TypeOf(StartingPreset{})
+	var fields []string
+	for i := range typ.NumField() {
+		fields = append(fields, typ.Field(i).Name)
+	}
+	if !slices.Equal(fields, []string{"ID", "Label", "Description", "SuggestedTeams"}) {
+		t.Fatalf("StartingPreset fields: %v", fields)
+	}
+}
+
+// Every native preset creates a league at any size the engine runs, not just its own suggestion.
+func TestEveryNativePresetCreatesAnyAllowedSize(t *testing.T) {
+	for _, p := range ControlsReading().Presets {
+		for _, teams := range []int{2, 12, 20, 32} {
+			presetLeague(t, p.ID, teams)
+		}
+	}
+}
+
 // The start form offers what the catalog offers; Legacy NFL is the MFL import's bundle only.
 func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 	var ids []string
 	for _, p := range ControlsReading().Presets {
 		ids = append(ids, p.ID)
-		if p.Label == "" || p.Description == "" || p.MinTeams < minFranchises || p.MaxTeams > maxFranchises {
+		if p.Label == "" || p.Description == "" || p.SuggestedTeams < 0 || p.SuggestedTeams > maxFranchises {
 			t.Errorf("%s: incomplete catalog entry %+v", p.ID, p)
 		}
 	}

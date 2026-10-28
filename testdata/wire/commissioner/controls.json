@@ -917,16 +917,14 @@
   {
    "id": "default_32",
    "label": "32-Team Default",
-   "description": "The 32-Team Default is for 32 franchises: the NFL's divisions, a startup draft and its own lineup, roster and scoring. Every value can be changed afterwards.",
-   "minTeams": 32,
-   "maxTeams": 32
+   "description": "The 32-Team Default is built for 32 franchises: the NFL's divisions, a startup draft and its own lineup, roster and scoring. Every value can be changed afterwards.",
+   "suggestedTeams": 32
   },
   {
    "id": "empty",
    "label": "Start empty: every rule Needs a ruling",
-   "description": "An empty league works with 2 to 32 franchises; every rule waits for a ruling.",
-   "minTeams": 2,
-   "maxTeams": 32
+   "description": "An empty league has no suggested size; every rule waits for a ruling.",
+   "suggestedTeams": 0
   }
  ]
 }

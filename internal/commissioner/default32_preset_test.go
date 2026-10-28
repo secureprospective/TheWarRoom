@@ -60,12 +60,16 @@ func TestDefault32PresetSeedsTheSpec(t *testing.T) {
 	}
 }
 
-func TestDefault32PresetIsOnlyFor32Teams(t *testing.T) {
-	for _, count := range []int{2, 16, 31} {
-		_, err := (RawCommand{League: "native.test", Command: Create,
+func TestDefault32PresetSeedsAnyAllowedSize(t *testing.T) {
+	for _, count := range []int{2, 16, 31, 32} {
+		raw, err := (RawCommand{League: "native.test", Command: Create,
 			Args: RawArgs{Name: "Ours", Preset: PresetDefault32, FranchiseCount: count, Season: 2026}}).Prepared()
-		if err == nil {
-			t.Errorf("%d teams accepted", count)
+		if err != nil {
+			t.Errorf("%d teams refused: %v", count, err)
+			continue
+		}
+		if err := raw.Args.validateCreation(); err != nil {
+			t.Errorf("%d teams: %v", count, err)
 		}
 	}
 	records := default32League(t)

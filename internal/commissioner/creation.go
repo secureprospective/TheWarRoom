@@ -101,11 +101,13 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 }
 
 func (a RawArgs) validatePreset() error {
-	p, ok := presetByID(a.Preset)
-	if !ok {
+	if _, ok := presetByID(a.Preset); !ok {
 		return unknownPresetError()
 	}
-	return p.sizeError(a.FranchiseCount)
+	if a.FranchiseCount < minFranchises || a.FranchiseCount > maxFranchises {
+		return fmt.Errorf("choose between %d and %d franchises", minFranchises, maxFranchises)
+	}
+	return nil
 }
 
 // validateCreationSeason accepts 0, a league recorded before seasons were numbered; Prepared refuses it

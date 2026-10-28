@@ -371,8 +371,7 @@ export namespace commissioner {
 	    id: string;
 	    label: string;
 	    description: string;
-	    minTeams: number;
-	    maxTeams: number;
+	    suggestedTeams: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new StartingPreset(source);
@@ -383,8 +382,7 @@ export namespace commissioner {
 	        this.id = source["id"];
 	        this.label = source["label"];
 	        this.description = source["description"];
-	        this.minTeams = source["minTeams"];
-	        this.maxTeams = source["maxTeams"];
+	        this.suggestedTeams = source["suggestedTeams"];
 	    }
 	}
 	export class Controls {

@@ -54,6 +54,36 @@ func Default32() RuleSet {
 	return r
 }
 
+// Default32ForTeams adapts the 32-Team Default to a team count without guessing the parts that depend on
+// how many teams there are. At 32 it is the 32-Team Default exactly.
+func Default32ForTeams(count int) RuleSet {
+	r := Default32()
+	r.League.Teams = cited(count, "Legacy template: chosen team count")
+	if count == 32 {
+		return r
+	}
+	// The NFL's eight divisions and their alignment hold 32 franchises only.
+	r.League.Divisions = Needs[int]("Choose the number of divisions for this league's size.")
+	r.League.Alignment = Needs[map[string]string]("Choose which division each franchise belongs to.")
+	r.League.DivisionConferences = Needs[map[string]string]("Choose the conference of each division.")
+	// The playoff field is competitive: the app does not scale the NFL's seven per conference.
+	r.Playoffs.PerConference = Needs[int]("Choose how many teams per conference make the playoffs in this " +
+		"league.")
+	r.Playoffs.DivisionWinners = Needs[int]("Choose the playoff field first, then how many division " +
+		"winners qualify.")
+	r.Playoffs.WildCards = Needs[int]("Choose the playoff field first, then how many wild cards qualify.")
+	r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this playoff field.")
+	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this playoff field.")
+	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the bracket.")
+	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this league.")
+	if count < 4 {
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades.")
+		r.Trades.DOTSeats = Needs[int]("Fewer than four teams: choose how many people review trades.")
+		r.Trades.MaximumParties = Needs[int]("Fewer than four teams: choose the maximum parties in a trade.")
+	}
+	return r
+}
+
 // default32Divisions is the NFL layout in franchise order: four franchises to a division.
 func default32Divisions() []string {
 	return []string{"AFC East", "AFC North", "AFC South", "AFC West", "NFC East", "NFC North", "NFC South", "NFC West"}

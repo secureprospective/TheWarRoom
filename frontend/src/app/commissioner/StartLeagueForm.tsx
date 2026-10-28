@@ -1,15 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ChangeBar } from './ChangeBar';
-import type { StartingPreset } from './controls';
 import { newKey, useRequestKey, type Change } from './forms';
 import { PreviewReview } from './PreviewReview';
 import { leagueState } from './proxy';
 import { useChangePreview } from './useChangePreview';
 
 const freshId = () => `native.${newKey().slice(0, 16)}`;
-const sizeWords = (p: StartingPreset) => p.minTeams === p.maxTeams
-  ? `The ${p.label} is for exactly ${p.minTeams} franchises.`
-  : `Choose between ${p.minTeams} and ${p.maxTeams} franchises.`;
 
 // StartLeagueForm creates an app league, in the side tray. Go expands the franchises and the preset; the
 // form sends the name, the size, the preset, the NFL season the league starts in, and a typed reason. The
@@ -18,6 +14,7 @@ export function StartLeagueForm() {
   const [name, setName] = useState('');
   const [chosen, setPreset] = useState('');
   const [count, setCount] = useState('32');
+  const [typedCount, setTypedCount] = useState(false);
   const [season, setSeason] = useState(() => String(new Date().getFullYear()));
   const [reason, setReason] = useState('');
   const [league, setLeague] = useState(freshId);
@@ -42,7 +39,7 @@ export function StartLeagueForm() {
   const blocked = !starting ? 'The starting presets could not be read.'
     : name.trim() === '' ? 'Name the league.'
     : size === 0 ? 'Enter the number of franchises.'
-    : size < starting.minTeams || size > starting.maxTeams ? sizeWords(starting)
+    : size < 2 || size > 32 ? 'Choose between 2 and 32 franchises.'
     : year === 0 ? 'Enter the NFL season the league starts in.' : wait;
   return (
     <section className="league-form" aria-label="Start an app league">
@@ -55,8 +52,8 @@ export function StartLeagueForm() {
           <input value={name} onChange={e => setName(e.target.value)} />
         </label>
         <label>Number of franchises
-          <input type="number" min={starting?.minTeams ?? 2} max={starting?.maxTeams ?? 32} step={1}
-            value={count} onChange={e => setCount(e.target.value)} />
+          <input type="number" min={2} max={32} step={1}
+            value={count} onChange={e => { setCount(e.target.value); setTypedCount(true); }} />
         </label>
         {starting && <p className="change-note">{starting.description}</p>}
         <label>First NFL season
@@ -67,7 +64,9 @@ export function StartLeagueForm() {
           <select value={preset} onChange={e => {
             const picked = presets.find(p => p.id === e.target.value);
             setPreset(e.target.value);
-            if (picked && picked.minTeams === picked.maxTeams) setCount(String(picked.minTeams));
+            if (picked && !typedCount && picked.suggestedTeams > 0) {
+              setCount(String(picked.suggestedTeams));
+            }
           }}>
             {presets.map(p => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
