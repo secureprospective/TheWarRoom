@@ -4,17 +4,13 @@
 Bee — 2026-10-28, `session/terra-p7-split`. Do not push without direction.
 
 ## Where it stands
-Draft and market history backends removed in `33dfeeb6` and `2334b8eb`; native draft reports,
-market reports and the asset-board model remain. Build, touched-package race tests and composition
-passed. Frontend was not changed and still refers to removed methods.
+Draft, market history and counterparties backends removed; asset-board model and offers provenance remain. Build and touched-package plus composition tests pass. Generated command catalogs updated; frontend feature code still refers to removed methods.
 
 ## Next move
-Remove counterparties, offer archive, sources/archive research and startup wiring; preserve live
-features and the asset-board model. Update frontend and nativegen read inventory in the next slice.
+Continue the scoped backend removal; offers, sources and archive were not removed in P7-3b. Update frontend feature code in its own slice.
 
 ## Blocked on
-No upstream configured; pull and push unavailable. Commissioner fixture regeneration fails its
-catalog test on `commish.league.cutover`; inspect baseline before changing it.
+No upstream configured; pull and push unavailable. `TestNativeCatalogPublication` fails on missing `commish.league.cutover` at baseline `81dc86cb`; not changed here.
 
 ## Tried and rejected
 Wire fixture regeneration produced unrelated volatile changes; discarded them and reran clean.
@@ -106,3 +102,4 @@ Full composition race test timed out; clean non-race composition test passed.
   GUI verification outstanding. Pull blocked by this branch having no upstream.
 Hosted fixture regeneration changed frontend fixtures; reverted under the backend-only constraint.
 Composition race suite timed out under load; non-race suite passed.
+Baseline was tested from a temporary archive inside this worktree rather than using the other worktree, to honor the worktree-only instruction.

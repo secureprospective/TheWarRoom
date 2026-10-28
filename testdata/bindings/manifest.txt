@@ -74,8 +74,6 @@ control.API.TargetSeason
 control.API.TargetSetWindow
 control.API.TargetShellStatus
 control.API.TargetSiteNews
-counterparties.API.TargetCounterpartTeam
-counterparties.API.TargetCounterparties
 draft.API.TargetDraftReports
 draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft

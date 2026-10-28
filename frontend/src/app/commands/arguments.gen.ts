@@ -203,6 +203,7 @@ string
 {
 "league": string;
 "player": string;
+"franchise"?: string;
 "action": string;
 "viewerZone": string;
 "years": number;
@@ -544,7 +545,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -671,7 +673,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -1006,7 +1009,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -1133,7 +1137,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -1443,7 +1448,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 }) | null;
 "deadCents"?: number;
 "season": number;
@@ -1570,7 +1576,8 @@ string
 "salaryCents": number;
 "expirationYear": number;
 "contractStatus": string;
-"contractInfo": string
+"contractInfo": string;
+"heldContractStatus"?: string
 })[];
 "picks": ({
 "compensatory"?: boolean;
@@ -1839,39 +1846,6 @@ string
 string,
 string
 ];
-"counterparties.TargetCounterpartTeam": [
-{
-"scope": {
-"from": number;
-"to": number;
-"tiers": (string)[];
-"windows": (string)[];
-"postures": (string)[];
-"team": string
-};
-"fid": string
-}
-];
-"counterparties.TargetCounterparties": [
-{
-"from": number;
-"to": number;
-"tiers": (string)[];
-"windows": (string)[];
-"postures": (string)[];
-"team": string
-}
-];
-"draft.TargetDraftLab": [
-{
-"from": number;
-"to": number;
-"seasons": number;
-"segments": (string)[];
-"nfl": (string)[];
-"group": string
-}
-];
 "draft.TargetDraftReports": [
 
 ];
@@ -1887,59 +1861,11 @@ boolean
 "market.TargetAssetBoard": [
 
 ];
-"market.TargetAssetProfile": [
-{
-"scope": {
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-};
-"kind": string
-}
-];
-"market.TargetMarket": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
-"market.TargetMarketLists": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
 "market.TargetMarketReports": [
 
 ];
 "market.TargetMarketReportsRefresh": [
 boolean
-];
-"market.TargetMarketStretches": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
-];
-"market.TargetPickClock": [
-{
-"from": number;
-"to": number;
-"phases": (string)[];
-"assets": (string)[];
-"byAge": boolean
-}
 ];
 "now.TargetLiveGame": [
 boolean,

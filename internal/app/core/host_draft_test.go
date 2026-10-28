@@ -47,3 +47,33 @@ func TestDraftFeedsDetachedAndNilDistinct(t *testing.T) {
 		t.Fatal("nil and empty collapsed")
 	}
 }
+
+func assertCounterpartiesDetached(t *testing.T, left, right reflect.Value, path string) {
+	t.Helper()
+	kind := left.Kind()
+	if kind == reflect.Pointer || kind == reflect.Slice || kind == reflect.Map {
+		if !left.IsNil() && left.Pointer() == right.Pointer() && (kind != reflect.Slice || left.Len() > 0) {
+			t.Fatalf("%s shares mutable storage", path)
+		}
+	}
+	if kind == reflect.Pointer && !left.IsNil() {
+		assertCounterpartiesDetached(t, left.Elem(), right.Elem(), path)
+	}
+	if kind == reflect.Struct {
+		for i := range left.NumField() {
+			if left.Type().Field(i).IsExported() {
+				assertCounterpartiesDetached(t, left.Field(i), right.Field(i), path+"."+left.Type().Field(i).Name)
+			}
+		}
+	}
+	if kind == reflect.Slice {
+		for i := range left.Len() {
+			assertCounterpartiesDetached(t, left.Index(i), right.Index(i), path)
+		}
+	}
+	if kind == reflect.Map {
+		for _, key := range left.MapKeys() {
+			assertCounterpartiesDetached(t, left.MapIndex(key), right.MapIndex(key), path)
+		}
+	}
+}

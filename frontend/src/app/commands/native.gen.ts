@@ -258,6 +258,7 @@ const schema22 = {
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"player",Optional:false,Schema:schema2},
+    {Name:"franchise",Optional:true,Schema:schema2},
     {Name:"action",Optional:false,Schema:schema2},
     {Name:"viewerZone",Optional:false,Schema:schema2},
     {Name:"years",Optional:false,Schema:schema15},

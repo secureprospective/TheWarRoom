@@ -14,7 +14,6 @@ import (
 	comms "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contracts "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	control "github.com/secureprospective/TheWarRoom/internal/app/control"
-	counterparties "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	draft "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	market "github.com/secureprospective/TheWarRoom/internal/app/market"
 	now "github.com/secureprospective/TheWarRoom/internal/app/now"
@@ -48,7 +47,6 @@ func legacyDoors() []doorBefore {
 	add("wails", "comms", comms.Commands())
 	add("wails", "contracts", contracts.Commands())
 	add("wails", "control", control.Commands())
-	add("wails", "counterparties", counterparties.Commands())
 	add("wails", "draft", draft.Commands())
 	add("wails", "market", market.Commands())
 	add("wails", "now", now.Commands())
@@ -98,7 +96,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 	sortDoors(before)
 	for name, after := range map[string][]doorBefore{"feature views": legacyDoors(), "executable registry": registryDoors(registry)} {
 		sortDoors(after)
-		if len(before) != 278 || len(after) != len(before) {
+		if len(before) != 276 || len(after) != len(before) {
 			t.Fatalf("%s inventory changed: %d -> %d", name, len(before), len(after))
 		}
 		for i, want := range before {

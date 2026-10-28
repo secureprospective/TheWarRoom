@@ -2,7 +2,7 @@ package catalog
 
 // DesktopCommands is the legacy binding view; availability describes the old adapter, not remote admission.
 func DesktopCommands(feature string, related []Command) []Command {
-	views := map[string]func([]Command) []Command{"archive": archiveDesktop, "commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "counterparties": counterpartiesDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
+	views := map[string]func([]Command) []Command{"archive": archiveDesktop, "commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
 	if view, ok := views[feature]; ok {
 		return view(related)
 	}
@@ -140,13 +140,6 @@ func controlDesktop(_ []Command) []Command {
 		c("TargetSeason", "gm,commish,admin", "G0", "both"), c("TargetShellStatus", "gm,commish,admin", "G0", "both"), heldRead(c("TargetSiteNews", "gm,commish,admin", "G0", "both")),
 		{ID: "window.set", Method: "TargetSetWindow", Version: Unset, Role: "commish,admin",
 			Gravity: "G2", Availability: "both"},
-	}
-}
-
-func counterpartiesDesktop(_ []Command) []Command {
-	return []Command{
-		{ID: Unset, Method: "TargetCounterpartTeam", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-		{ID: Unset, Method: "TargetCounterparties", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 	}
 }
 

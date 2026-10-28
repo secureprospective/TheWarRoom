@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	counterpartiesapp "github.com/secureprospective/TheWarRoom/internal/app/counterparties"
 	offersapp "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
@@ -114,7 +113,7 @@ func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrad
 }
 
 func counterProvenance(d *lab.Data) snapshot.Provenance {
-	return (counterpartiesapp.Service{}).Provenance(d)
+	return snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}
 }
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.

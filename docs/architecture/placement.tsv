@@ -5,7 +5,6 @@ path	feature
 main.go	platform
 internal/app/comms	comms
 internal/app/comms/commstest	comms
-internal/app/counterparties	counterparties
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
