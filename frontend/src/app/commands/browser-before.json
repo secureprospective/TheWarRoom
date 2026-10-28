@@ -236,22 +236,6 @@
       "field",
       "value"
     ],
-    "id": "offers.filter",
-    "label": "Filter Offers"
-  },
-  {
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "field",
-      "value"
-    ],
     "id": "market",
     "label": "Market"
   },

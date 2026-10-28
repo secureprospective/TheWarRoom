@@ -114,7 +114,7 @@ func TestFrozenDoorMetadata(t *testing.T) {
 			counts["browser"]++
 		}
 	}
-	if counts["workflow"] != 42 || counts["browser"] != 62 {
+	if counts["workflow"] != 42 || counts["browser"] != 61 {
 		t.Fatalf("other exposure changed: %v", counts)
 	}
 }
