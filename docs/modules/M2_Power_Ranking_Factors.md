@@ -96,3 +96,27 @@ roster weight, which comes out a little high if anything.
 
 Evidence: `~/fleet/runs/warroom-power-rankings-2026-10-04/` (`power2.py`, `power3.py`, `results3.txt`,
 `results4.txt`, `values.csv`).
+
+## Lineup position boundary
+
+`m2service.LineupRules` translates recognised MFL rule names through
+`normalize.PositionFromMFL`, the same table used by the player directory. Thus `PK` rules
+match model `K` values and `EDGE` rules match `DE`. Unsupported rule names retain their
+existing handling. The solver itself compares the supplied position strings without remapping.
+The counter is shared by board aggregation and projected records (`m2service/outlook.go`).
+
+Other position-to-rule comparisons checked for this mismatch:
+
+| Consumer | Existing handling |
+|---|---|
+| `internal/lineup/rules.go:50` — saved lineups and bye shortfalls | Rule names use `normalize.PositionFromMFL`; `PK` → `K`. |
+| `internal/app/contracts/roster_policy.go:39` — roster position limits | Rule names use the same normalizer. |
+| `internal/app/season/points_reading.go:246` — starter-position report order | Rule names use the same normalizer. |
+| `internal/app/commissioner/native/facts.go:50` — native roster/lineup/contract facts | Engine `K` → native-rule `PK` before native checks. |
+| `internal/commissioner/player_score.go:184` — native feed-position fallback | Feed `K` → native-rule `PK`. |
+| `internal/app/research/reading.go` — kicker-slot disclosure | Group `K` explicitly looks up rule `PK`; no aggregation. |
+| `internal/labcompile/state.go:185` — compiled historical positions | `K` → `PK` before rule-based readings. |
+
+No additional kicker mismatch was found in these source-traced paths. The regression table
+exercises the shared M2 counter with a lower-value required kicker versus a higher-value spare
+receiver, the EDGE alias, unchanged QB/DE positions, counted ages and unchanged supplied inputs.

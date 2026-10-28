@@ -346,3 +346,41 @@ func TestParseStanding_ZeroGamesNeverNaN(t *testing.T) {
 func score(mflID string, value float64) PlayerValue {
 	return PlayerValue{MFLID: mflID, Value: value, Age: math.NaN()}
 }
+
+func TestLineupCountsCanonicalRulePositions(t *testing.T) {
+	for _, tc := range []struct {
+		name, rule, model string
+		defense           string
+	}{
+		{"kicker", "PK", "K", "0"},
+		{"edge alias", "EDGE", "DE", "1"},
+		{"unchanged offense", "QB", "QB", "0"},
+		{"unchanged defense", "DE", "DE", "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			st := league.Starters{Count: "2", IDPStarters: tc.defense, Positions: []league.PositionLimit{
+				{Name: tc.rule, Limit: "1"}, {Name: "WR", Limit: "1-2"},
+			}}
+			svc, err := New(fakeReader{}, fakeRulebook{starters: &st})
+			if err != nil {
+				t.Fatal(err)
+			}
+			c := svc.counter(AggLineup)
+			if c.mode != AggLineup {
+				t.Fatalf("lineup unexpectedly fell back to %s", c.mode)
+			}
+			values := []PlayerValue{
+				{Position: tc.model, Value: 10, Age: 30},
+				{Position: "WR", Value: 40, Age: 20},
+				{Position: "WR", Value: 30, Age: 25},
+			}
+			value, age := c.count(values)
+			if value != 50 || age != 22 {
+				t.Fatalf("%s rule did not count %s: value %v age %v, want 50 and 22", tc.rule, tc.model, value, age)
+			}
+			if values[0].Position != tc.model || st.Positions[0].Name != tc.rule {
+				t.Fatal("normalization mutated the supplied model values or rules")
+			}
+		})
+	}
+}

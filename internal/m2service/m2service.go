@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
+	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -179,7 +180,11 @@ func LineupRules(st league.Starters) (powerrankings.LineupRules, bool) {
 		if !ok {
 			return r, false
 		}
-		r.Slots = append(r.Slots, powerrankings.Slot{Position: p.Name, Min: lo, Max: hi})
+		name := p.Name
+		if pos, _ := normalize.PositionFromMFL(name); pos != "" && pos != domain.PosFlag {
+			name = string(pos)
+		}
+		r.Slots = append(r.Slots, powerrankings.Slot{Position: name, Min: lo, Max: hi})
 	}
 	return r, true
 }
