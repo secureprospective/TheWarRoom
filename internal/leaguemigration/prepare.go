@@ -114,8 +114,8 @@ func (p *preparation) snapshot() (commissioner.RawNativeSnapshot, map[string]str
 func (p *preparation) franchises() []commissioner.NativeFranchise {
 	held := slices.Clone(p.export.Config.Franchises)
 	slices.SortFunc(held, func(a, b league.Franchise) int { return strings.Compare(a.ID, b.ID) })
-	if len(held) < 2 || len(held) > 1000 {
-		p.problem("MFL lists %d franchises; a league needs between 2 and 1000", len(held))
+	if len(held) < 2 || len(held) > 32 {
+		p.problem("MFL lists %d franchises; a league needs between 2 and 32", len(held))
 	}
 	divisions := map[string]bool{}
 	for _, d := range p.export.Config.Divisions {

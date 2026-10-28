@@ -147,7 +147,7 @@ func TestFailurePathsEndInAPlainList(t *testing.T) {
 			e.Rosters[0].Player = "100"
 		}, `"100"`},
 		"partial export: no franchises": {func(e *leaguemigration.Export) { e.Config.Franchises = nil },
-			"a league needs between 2 and 1000"},
+			"a league needs between 2 and 32"},
 		"partial export: roster of an unlisted franchise": {func(e *leaguemigration.Export) {
 			e.Rosters[0].Franchise = "0099"
 		}, `names franchise "0099"`},
