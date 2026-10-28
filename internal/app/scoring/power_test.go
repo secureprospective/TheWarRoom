@@ -47,7 +47,7 @@ func TestBoardWeightsAndDefaultsPerView(t *testing.T) {
 	if w := boardWeights(season.ViewFranchise, 0.3, true, 4); w.Roster != 1 || w.Age != powerrankings.FranchiseAgeWeight {
 		t.Errorf("franchise: %+v", w)
 	}
-	if DefaultAgg(season.ViewSeason) != m2service.AggLineup || DefaultAgg(season.ViewFranchise) != m2service.AggSum {
+	if DefaultAgg(season.ViewSeason) != m2service.AggLineup || DefaultAgg(season.ViewFranchise) != m2service.AggLineup {
 		t.Error("view defaults")
 	}
 }
