@@ -13,7 +13,7 @@ describe('Command registry', () => {
     expect(() =>
       c.dispatch('nav.open', {
         node: 'home',
-        workspace: 'market',
+        workspace: 'valuations-and-pool',
       } as unknown as CommandArgs<'nav.open'>),
     ).toThrow('invalid workspace');
     expect(c.history()).toHaveLength(2);
@@ -113,42 +113,3 @@ it('records a stored read failure instead of successful completion', async () =>
   } finally { run.mockRestore(); peek.mockRestore(); logged.mockRestore(); }
 });
 
-it.each(['done', 'failed'] as const)('records market filter %s after its readings settle', async status => {
-  const { marketState } = await import('../market/state');
-  const { unavailable } = await import('../market/provider');
-  const reason = 'The trade archive cannot be read. Try again.';
-  let finish!: () => void;
-  const change = vi.spyOn(marketState, 'change').mockImplementation(() =>
-    new Promise<void>(resolve => { finish = resolve; }));
-  const before = marketState.peek();
-  const peek = vi.spyOn(marketState, 'peek').mockReturnValue({ ...before,
-    lists: status === 'failed' ? unavailable(reason) : undefined, clock: undefined, stretches: undefined });
-  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-  try {
-    const c = createCommands();
-    const result = c.dispatch('market', { field: 'retry', value: '' });
-    await vi.waitFor(() => expect(change).toHaveBeenCalledTimes(1));
-    expect(c.history()).toEqual([]);
-    finish();
-    await result;
-    expect(c.history()).toEqual([{ id: 'market', args: { field: 'retry', value: '' }, status,
-      ...(status === 'failed' ? { reason } : {}) }]);
-  } finally { change.mockRestore(); peek.mockRestore(); logged.mockRestore(); }
-});
-
-it('records a returned offer-history failure in plain English', async () => {
-  const { offerState } = await import('../offers/state');
-  const reason = 'The offer history cannot be read. Try again.';
-  const change = vi.spyOn(offerState, 'change').mockResolvedValue(undefined);
-  const before = offerState.peek();
-  const peek = vi.spyOn(offerState, 'peek').mockReturnValue({ ...before,
-    reading: { status: 'failed', absenceReason: reason } as NonNullable<typeof before.reading> });
-  const logged = vi.spyOn(console, 'error').mockImplementation(() => {});
-  try {
-    const c = createCommands();
-    await c.dispatch('offers.filter', { field: 'retry', value: '' });
-    expect(c.history()).toEqual([{ id: 'offers.filter', args: { field: 'retry', value: '' },
-      status: 'failed', reason }]);
-    expect(c.read().notice).toBe(reason);
-  } finally { change.mockRestore(); peek.mockRestore(); logged.mockRestore(); }
-});

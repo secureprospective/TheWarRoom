@@ -6,30 +6,10 @@ export function TargetAssetBoard() {
   return window['go']['market']['API']['TargetAssetBoard']();
 }
 
-export function TargetAssetProfile(arg1) {
-  return window['go']['market']['API']['TargetAssetProfile'](arg1);
-}
-
-export function TargetMarket(arg1) {
-  return window['go']['market']['API']['TargetMarket'](arg1);
-}
-
-export function TargetMarketLists(arg1) {
-  return window['go']['market']['API']['TargetMarketLists'](arg1);
-}
-
 export function TargetMarketReports() {
   return window['go']['market']['API']['TargetMarketReports']();
 }
 
 export function TargetMarketReportsRefresh(arg1) {
   return window['go']['market']['API']['TargetMarketReportsRefresh'](arg1);
-}
-
-export function TargetMarketStretches(arg1) {
-  return window['go']['market']['API']['TargetMarketStretches'](arg1);
-}
-
-export function TargetPickClock(arg1) {
-  return window['go']['market']['API']['TargetPickClock'](arg1);
 }

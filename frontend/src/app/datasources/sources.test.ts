@@ -64,7 +64,8 @@ describe('Control Room data and sources', () => {
     for (const id of ['C-07', 'C-08', 'C-09', 'L-34', 'S-09'] as const) {
       const e = endpointById(id);
       expect(e.status).not.toBe('spec');
-      expect(placementRoute(e.placement)).toEqual({ node: 'control', workspace: 'data-and-sources' });
+      expect(e.disposition).toBe('retired');
+      expect(placementRoute(e.placement)).toBeUndefined();
     }
     expect(commands.registry['refresh.run'].args).toEqual(['scope']);
   });

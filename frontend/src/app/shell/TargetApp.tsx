@@ -22,7 +22,6 @@ import { useWorkScrollReset } from './workScroll';
 const ReportDrawer = lazy(() => import('../registry/ReportDrawer'));
 const StatusStrip = lazy(() => import('./StatusStrip'));
 const EntityInspector = lazy(() => import('./EntityInspector'));
-const DataSources = lazy(() => import('../datasources/DataSources'));
 const Contracts = lazy(() => import('../contracts/Contracts'));
 const LazyEndpointIndex = lazy(() =>
   import('../registry/EndpointIndex').then((m) => ({ default: m.EndpointIndex })),
@@ -46,7 +45,6 @@ const TradeDesk = lazy(() => import('./TradeDesk'));
 const Market = lazy(loadMarket);
 const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
-const Archive = lazy(() => import('../archive/Archive'));
 const Comms = lazy(() => import('../comms/Comms'));
 const loadInspector = () => import('./PlayerInspector');
 const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.PlayerInspector })));
@@ -211,7 +209,7 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Trade desk…</p>}>
               <TradeDesk snapshot={snapshot} />
             </Suspense>
-          ) : ['market', 'counterparties', 'offers-history', 'valuations-and-pool', 'draft-room'].includes(
+          ) : ['valuations-and-pool', 'draft-room'].includes(
               workspace.slug,
             ) ? (
             <Suspense fallback={null}>
@@ -225,18 +223,10 @@ export function TargetApp() {
             <Suspense fallback={<p role="status">Opening Race…</p>}>
               <Race />
             </Suspense>
-          ) : s.node === 'pulse' && workspace.slug === 'archive' ? (
-            <Suspense fallback={<p role="status">Opening Archive…</p>}>
-              <Archive />
-            </Suspense>
           ) : s.node === 'home' && workspace.slug === 'digests' ? (
             <Suspense fallback={<p role="status">Opening Digests…</p>}>
               <Comms />
               <Research newsOnly />
-            </Suspense>
-          ) : s.node === 'control' && workspace.slug === 'data-and-sources' ? (
-            <Suspense fallback={<p role="status">Opening Data and sources…</p>}>
-              <DataSources />
             </Suspense>
           ) : s.node === 'control' && workspace.slug === 'app' ? (
             <Suspense fallback={null}>

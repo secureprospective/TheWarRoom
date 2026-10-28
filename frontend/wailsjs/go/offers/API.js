@@ -30,10 +30,6 @@ export function TargetBidWithdraw(arg1) {
   return window['go']['offers']['API']['TargetBidWithdraw'](arg1);
 }
 
-export function TargetOffers(arg1) {
-  return window['go']['offers']['API']['TargetOffers'](arg1);
-}
-
 export function TargetPersonal(arg1) {
   return window['go']['offers']['API']['TargetPersonal'](arg1);
 }

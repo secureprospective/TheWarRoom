@@ -10,7 +10,6 @@ export const nodes = {
   war: {
     label: 'War Room',
     workspaces: [
-      { slug: 'market', label: 'Market', ring: 'Ring 2' },
       { slug: 'valuations-and-pool', label: 'Valuations and pool', ring: 'Ring 2' },
       { slug: 'research', label: 'Research', ring: 'Ring 3' },
     ],
@@ -27,8 +26,6 @@ export const nodes = {
     label: 'Trade Floor',
     workspaces: [
       { slug: 'trade-desk', label: 'Trade desk', ring: 'Ring 1' },
-      { slug: 'offers-history', label: 'Offers history', ring: 'Ring 2' },
-      { slug: 'counterparties', label: 'Counterparties', ring: 'Ring 2' },
       { slug: 'draft-room', label: 'Draft room', ring: 'Ring 2' },
     ],
   },
@@ -37,14 +34,12 @@ export const nodes = {
     workspaces: [
       { slug: 'now', label: 'Now', ring: 'Ring 1' },
       { slug: 'race', label: 'Race', ring: 'Ring 3' },
-      { slug: 'archive', label: 'Archive', ring: 'Ring 3' },
     ],
   },
   control: {
     label: 'Control Room',
     workspaces: [
       { slug: 'app', label: 'App', ring: 'Ring 3' },
-      { slug: 'data-and-sources', label: 'Data and sources', ring: 'Ring 3' },
       { slug: 'league', label: 'League', ring: 'Ring 3' },
     ],
   },
@@ -62,7 +57,6 @@ export function isNode(value: string): value is Node {
   return Object.prototype.hasOwnProperty.call(nodes, value);
 }
 export function routeFor(node: Node, workspace: string): Route | undefined {
-  if (node === 'pulse' && workspace === 'pools-archive') workspace = 'archive';
   return nodes[node].workspaces.some((w) => w.slug === workspace)
     ? ({ node, workspace } as Route)
     : undefined;

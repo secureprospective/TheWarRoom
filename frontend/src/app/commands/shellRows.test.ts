@@ -11,7 +11,8 @@ it('dispatches the verb each phase registry row promises, using one table', asyn
   const player = snapshot.rosters.value[0].players[0].id;
   const franchiseId = snapshot.franchises.value[0].id;
   const cases: { row: EndpointId; invocation: Invocation }[] = [
-    { row: 'S-01', invocation: { verb: 'nav.open', args: { node: 'war', workspace: 'market' } } },
+    { row: 'S-01', invocation: { verb: 'nav.open',
+      args: { node: 'war', workspace: 'valuations-and-pool' } } },
     { row: 'S-02', invocation: { verb: 'inspector.pin',
       args: { entity: { kind: 'player', id: player, franchiseId } } } },
     { row: 'S-04', invocation: { verb: 'calendar.summon', args: {} } },
@@ -56,7 +57,7 @@ it('pins all four entity kinds from any workspace without changing the page, the
   const c = createCommands(() => undefined);
   c.loadSnapshot(snapshot);
   const roster = snapshot.rosters.value[0];
-  c.dispatch('nav.open', { node: 'control', workspace: 'data-and-sources' });
+  c.dispatch('nav.open', { node: 'control', workspace: 'app' });
   for (const entity of [
     { kind: 'player', id: roster.players[0].id, franchiseId: roster.franchiseId },
     { kind: 'franchise', id: snapshot.franchises.value[0].id },
@@ -66,7 +67,7 @@ it('pins all four entity kinds from any workspace without changing the page, the
     c.dispatch('commandbar.open', {});
     c.dispatch('inspector.pin', { entity });
     expect(c.read()).toMatchObject({ node: 'control', inspector: 'rest', commandbar: false,
-      workspace: { control: 'data-and-sources' } });
+      workspace: { control: 'app' } });
     c.dispatch('inspector.close', {});
     expect(c.read().inspector).toBe('closed');
   }

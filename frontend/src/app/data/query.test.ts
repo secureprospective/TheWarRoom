@@ -258,24 +258,3 @@ it('shares a wrapper-owned view without losing independently accepted fields', a
   expect(league.peek()).toEqual({ accounting: 'ledger', news: 'news', pending: false, error: '' });
 });
 
-it('projects frontend scopes to registry arguments without collapsing their cache identity', async () => {
-  type Selection = { from: number; to: number; phases: string[] | null; assets: string[]; byAge: boolean };
-  const read = vi.fn(async (scope: Selection) => scope.phases);
-  const query = createReadQuery('market.TargetMarketLists', {
-    initial: (): { phases?: string[] | null } => ({}), read,
-    arguments: ([scope]: [Selection]): [{ from: number; to: number; phases: string[];
-      assets: string[]; byAge: boolean }] => [{ ...scope, phases: scope.phases ?? [] }],
-    accept: phases => ({ phases }),
-  });
-  const scope: Selection = { from: 2017, to: 2026, phases: null, assets: [], byAge: false };
-  await query.load([scope], { policy: 'cache-first' });
-  await query.load([{ ...scope, phases: [] }], { policy: 'cache-first' });
-  expect(read).toHaveBeenCalledTimes(2);
-  expect(query.peek().phases).toEqual([]);
-  await query.load([scope], { policy: 'cache-first' });
-  expect(read).toHaveBeenCalledTimes(2);
-  expect(query.peek().phases).toBeNull();
-  await query.load([{ ...scope, from: NaN }]);
-  expect(read).toHaveBeenCalledTimes(2);
-  expect(query.peek().error).toContain('expected integer');
-});

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { personalWire, poolWire, rawBid, readOffersWire, subscribeOffers,
+import { personalWire, poolWire, rawBid, subscribeOffers,
   subscribePersonal, subscribePool } from './api';
 import { commands } from '../commands/registry';
 import type { BidFormState } from '../pool/contract';
@@ -21,14 +21,11 @@ const form: BidFormState = {
 
 describe('Offers cluster transport adapter', () => {
   it('routes all thirteen bindings through the feature namespace', async () => {
-    const names = ['TargetOffers', 'TargetPersonal', 'TargetPersonalChange', 'TargetPersonalHandOff',
+    const names = ['TargetPersonal', 'TargetPersonalChange', 'TargetPersonalHandOff',
       'TargetPool', 'TargetPoolRefresh', 'TargetBidPlans', 'TargetBidPreview', 'TargetBidDraft',
       'TargetBidRevise', 'TargetBidHandOff', 'TargetBidPosted', 'TargetBidWithdraw'];
     const api = Object.fromEntries(names.map(name => [name, vi.fn(async () => ({ method: name }))]));
     vi.stubGlobal('window', { go: { offers: { API: api } } });
-    const scope = { from: 2013, to: 2026, direction: 'all', window: '', team: '' };
-    await readOffersWire(scope);
-    expect(api.TargetOffers).toHaveBeenCalledWith(scope);
     await personalWire.read('0001');
     await personalWire.change('0001', 'watch', { action: 'add', entity: 'player', id: '13593' });
     await personalWire.handoff('watch');
@@ -62,8 +59,7 @@ describe('Offers cluster transport adapter', () => {
       vi.stubGlobal('window', window);
       expect(() => personalWire.read('0001')).toThrow('Private lists need the desktop app');
       expect(() => poolWire.plans('0001')).toThrow('The free-agent pool needs the desktop app');
-      await expect(readOffersWire({ from: 2013, to: 2026, direction: 'all', window: '', team: '' }))
-        .rejects.toThrow();
+
     }
   });
 

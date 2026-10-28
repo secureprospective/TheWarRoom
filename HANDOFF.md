@@ -4,13 +4,13 @@
 Bee — 2026-10-28, `session/terra-p7-split`. Do not push without direction.
 
 ## Where it stands
-Offer-history research reads and binding removed in uncommitted changes; live offer observation and asset-board provenance retained. Build, offers/commandcatalog race tests and focused composition tests pass. Frontend untouched as directed; generated frontend command files remain stale.
+Removed historical market, draft-lab, counterparties and offer-history frontend screens and removed Sources/Archive routes. Wails bindings regenerated. Typecheck, 1,572 Vitest tests, Go build, uncached composition tests and bindings freshness pass.
 
 ## Next move
-Resolve the pre-existing commissioner safeguards fixture failure with permission to edit frontend; rerun full composition race tests with a suitable timeout and concurrency. Commit only after gates pass.
+Review the frontend removal and live-test preserved draft room, asset board, player values and pool. Reconcile the generated command catalogue: it still describes the removed offers read and filter; the frontend refuses the filter. `datasources/DataSources.tsx` remains imported by its tests; shared draft report components remain in use.
 
 ## Blocked on
-Commissioner `TestCommissionerCommandSafeguardsWire` expects a stale frontend fixture missing migration commands. Full composition race runs timed out at 10 minutes (parallel 4) and 20 minutes (parallel 16). No upstream configured; pull and push unavailable.
+No upstream configured; pull and push unavailable. Wails generation emits existing missing generic-model warnings despite passing freshness.
 
 ## Tried and rejected
 Wire fixture regeneration produced unrelated volatile changes; discarded them and reran clean.
@@ -104,3 +104,4 @@ Hosted fixture regeneration changed frontend fixtures; reverted under the backen
 Composition race suite timed out under load; non-race suite passed.
 Baseline was tested from a temporary archive inside this worktree rather than using the other worktree, to honor the worktree-only instruction.
 Did not update frontend fixtures or generated frontend command files: outside this slice. Did not commit while required checks are not green.
+Did not alter Go command catalogue or endpoint CSV: outside this frontend slice. Removed workspace endpoints are retired in the frontend registry instead.

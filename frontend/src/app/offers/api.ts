@@ -1,10 +1,8 @@
 import { createMFLClient, type MFLContext } from '../commands/mfl';
-import { TargetOffers } from '../../../wailsjs/go/offers/API';
 import type * as Bindings from '../../../wailsjs/go/offers/API';
 import { offers } from '../../../wailsjs/go/models';
 import { commands } from '../commands/registry';
 import { selectProvider } from '../data/provider';
-import type { Scope } from './provider';
 import type { BidFormState, PoolScope } from '../pool/contract';
 import type { ListChange, ListKind } from '../personal/contract';
 
@@ -17,9 +15,6 @@ function personalGo(): Go {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
     throw new Error('Private lists need the desktop app; no sample data is substituted.');
   return (window as unknown as { go: { offers: { API: Go } } }).go.offers.API;
-}
-export async function readOffersWire(scope: Scope): Promise<unknown> {
-  return TargetOffers(offers.RawOfferScope.createFrom(scope));
 }
 export function rawBid(franchiseId: string, form: BidFormState): offers.RawBidInput {
   const closes = form.closesDate && form.closesTime
