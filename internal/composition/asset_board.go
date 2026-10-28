@@ -88,6 +88,9 @@ func (a *App) assetInput(ctx context.Context) (marketapp.OnField, []string) {
 // value model C-01 values players and picks with. Until a run exists the board says so.
 func (a *App) publishAssetModel(ctx context.Context) {
 	h := a.core.History
+	if h == nil {
+		return
+	}
 	native, ok, err := marketapp.LoadNative(ctx, marketapp.NativeSource{
 		Ready: a.ready,
 		LatestRun: func(ctx context.Context) (history.Run, bool, error) {
