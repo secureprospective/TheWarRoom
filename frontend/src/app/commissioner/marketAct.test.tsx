@@ -127,3 +127,12 @@ it('keeps owner trade actions on the seated owner reading', async () => {
   await readActData('native.seed', ['trade'], 2026, team, 'trade.appeal');
   expect(calls).toEqual([['native.seed', team]]);
 });
+
+it('sends the chosen side with a per-side bid decision, but not a single-pool decision', () => {
+  const def = actTable.find(d => d.command === 'bids.process')!;
+  const held = { league: 'test', revision: 1 };
+  expect(actChange(def, { player: 'side?side=AFC&player=player.1' }, held, 'decide')?.args)
+    .toEqual({ bid: { player: 'player.1', side: 'AFC' } });
+  expect(actChange(def, { player: 'player.1' }, held, 'decide')?.args)
+    .toEqual({ bid: { player: 'player.1' } });
+});

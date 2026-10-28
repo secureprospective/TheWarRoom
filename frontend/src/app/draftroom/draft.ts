@@ -22,7 +22,7 @@ export type Closed = {
 export type Checkpoint = { entry: string; words: string; at: string };
 // startup is the league's startup draft, which fills a new league's empty rosters, not a rookie draft.
 export type Draft = {
-  league: string; season: number; startup: boolean; revision: number;
+  league: string; season: number; startup: boolean; side?: string; revision: number;
   rules: { label: string; words: string }[];
   owners: { id: string; name: string }[]; order: { round: number; words: string; picks: Slot[] }[];
   words: string; start: string; started: boolean; exhausted: boolean; picks: Pick[]; onClock: Clock | null;
@@ -84,13 +84,14 @@ function parseClosed(value: unknown): Closed | null {
 }
 
 export function parseDraft(value: unknown): Draft {
-  const r = object(value, 'Rookie draft', ['league', 'season', 'startup', 'revision', 'rules', 'owners',
-    'order', 'words', 'draft', 'nextOwnedPick', 'closed', 'players', 'available', 'checkpoints']);
+  const r = object(value, 'Rookie draft', ['league', 'season', 'startup', 'side', 'revision', 'rules',
+    'owners', 'order', 'words', 'draft', 'nextOwnedPick', 'closed', 'players', 'available', 'checkpoints']);
   const d = object(r.draft, 'Draft', ['start', 'started', 'exhausted', 'picks', 'onClock']);
   const players = object(r.players, 'Players', Object.keys(Object(r.players) as object));
   return {
     league: text(r.league, 'League'), season: integer(r.season, 'Season', 1),
     startup: r.startup === undefined ? false : flag(r.startup, 'Startup'),
+    ...(r.side === undefined ? {} : { side: text(r.side, 'Side') }),
     revision: integer(r.revision, 'League version', 1),
     rules: array(r.rules, 'Rules', (v, p) => {
       const l = object(v, p, ['label', 'words']);

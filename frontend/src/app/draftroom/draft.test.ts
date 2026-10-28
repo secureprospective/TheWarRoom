@@ -111,3 +111,13 @@ describe('The change the tray sends', () => {
       'assign x franchise.01 0', 'delete']) expect(parseTrayAction(bad)).toBeNull();
   });
 });
+
+it('sends the side of the startup draft for commissioner actions only when present', () => {
+  const draft = parseDraft({ ...wire.running, startup: true, side: 'AFC' });
+  expect(changeOf({ kind: 'pause' }, draft, noInputs, 'pause')?.args)
+    .toEqual({ draft: { season: draft.season, startup: true, side: 'AFC', act: { timer: 'pause' } } });
+  expect(changeOf({ kind: 'pause' }, running, noInputs, 'pause')?.args)
+    .toEqual({ draft: { season: running.season, act: { timer: 'pause' } } });
+  expect(changeOf({ kind: 'open' }, draft, noInputs, 'open')?.args)
+    .toEqual({ draft: { season: draft.season, startup: true } });
+});

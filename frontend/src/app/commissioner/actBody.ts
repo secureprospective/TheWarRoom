@@ -41,6 +41,11 @@ export function actChange(def: ActDefinition, values: ActValues,
     if (tail) args[head] = { ...(args[head] as object | undefined), [tail]: value };
     else args[head] = value;
   }
+  if (def.command === 'bids.process' && typeof args.player === 'string' && args.player.startsWith('side?')) {
+    const choice = new URLSearchParams(args.player.slice(5));
+    args.player = choice.get('player');
+    args.side = choice.get('side');
+  }
   if (def.command === 'commish.abilities.set' && args.franchise === '*') {
     delete args.franchise;
     args.all = true;

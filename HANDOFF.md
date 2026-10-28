@@ -22,3 +22,23 @@ Fixture regeneration changed volatile timestamps and revisions without an intend
 ## Debt left
 Full race suite timed out under concurrent workload; targeted race tests passed. UI affordances for selecting
 franchise in quotes and exception forms have not been implemented or verified.
+Bee — 2026-10-28, `session/terra-side-ui`. Do not push.
+
+## Where it stands
+- Commissioner bid choices identify player and side; the tray sends both. Single-pool choices are unchanged.
+- Startup draft readings identify the viewed side; live commissioner tray actions send it, except open.
+- Build, touched Go race tests and composition retry, frontend suite and typecheck passed. Initial concurrent
+  tests timed out under load. Hosted fixture regeneration made volatile changes; those were discarded.
+
+## Next move
+Review the branch and test AFC and NFC auction decisions and startup draft actions in the GUI.
+
+## Blocked on
+Nothing known; the GUI click-through remains outstanding.
+
+## Tried and rejected
+No stored side map: sides are counted from conferences. Fixture timestamp and identity churn was not retained.
+
+## Debt left
+Rookie draft per side; per-side O-Line lots; reserve and rule-exception scoping by franchise; per-side
+contract quote. Older F3a O-Line transition question belongs to Christopher/ClaudeBox.

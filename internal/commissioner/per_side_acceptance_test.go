@@ -3,6 +3,7 @@ package commissioner_test
 import (
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"slices"
 	"strings"
 	"testing"
@@ -233,8 +234,25 @@ func perSideMarketsAreIndependent(t *testing.T, f *marketFixture) {
 	f.now = f.now.Add(10 * 24 * time.Hour)
 	_, err = f.try(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001"}}, "creator")
 	wantRefusal(t, err, "name the side")
+	choices, err := market.ChoicesReading(rolloverLeague, commissioner.BidsProcess, "creator", f.b.records,
+		f.now, time.UTC, f.facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lots := map[string]string{}
+	for _, choice := range choices.Players {
+		u, parseErr := url.Parse(choice.ID)
+		if parseErr != nil {
+			t.Fatal(parseErr)
+		}
+		lots[u.Query().Get("side")] = u.Query().Get("player")
+	}
+	if lots["AFC"] != "5001" || lots["NFC"] != "5001" {
+		t.Fatalf("choices: %+v", choices.Players)
+	}
 	before := sideState(t, f.assets(t), "NFC")
-	f.must(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001", Side: "AFC"}}, "creator")
+	f.must(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{
+		Player: lots["AFC"], Side: "AFC"}}, "creator")
 	seed := f.assets(t)
 	if i := seed.PlayerOn("AFC", "5001"); i < 0 || seed.Players[i].Franchise != afcTeam {
 		t.Fatalf("AFC award: %+v", seed.Players)
@@ -244,6 +262,13 @@ func perSideMarketsAreIndependent(t *testing.T, f *marketFixture) {
 	}
 	if book := f.book(t); book.Bids.Open("NFC", "5001") == nil {
 		t.Fatal("the NFC auction closed with the AFC one")
+	}
+
+	f.must(t, commissioner.BidsProcess, commissioner.RawArgs{Bid: &commissioner.RawBidArgs{
+		Player: lots["NFC"], Side: "NFC"}}, "creator")
+	seed = f.assets(t)
+	if i := seed.PlayerOn("NFC", "5001"); i < 0 || seed.Players[i].Franchise != nfcTeam {
+		t.Fatalf("NFC award: %+v", seed.Players)
 	}
 
 	// Waivers: an AFC cut opens an AFC window; the NFC side neither claims him nor loses its copy.

@@ -39,6 +39,7 @@ type NativeDraft struct {
 	League      string                   `json:"league"`
 	Season      int                      `json:"season"`
 	Startup     bool                     `json:"startup,omitempty"`
+	Side        string                   `json:"side,omitempty"`
 	Revision    int64                    `json:"revision"`
 	Rules       []RuleLine               `json:"rules"`
 	Owners      []DraftOwner             `json:"owners"`
@@ -177,7 +178,8 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 		return NativeDraft{}, err
 	}
 	through := RecordsThrough(records, scope.At)
-	out := NativeDraft{League: scope.League, Season: scope.Season, Startup: scope.Startup, Revision: int64(len(through)),
+	out := NativeDraft{League: scope.League, Season: scope.Season, Startup: scope.Startup,
+		Side: basis.key.Side, Revision: int64(len(through)),
 		Rules: namedRules(RuleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
 		Words: basis.words, Draft: basis.draft, Players: map[string]DraftPlayer{}, Available: []DraftPlayer{},
 		Checkpoints: []DraftCheckpoint{}}

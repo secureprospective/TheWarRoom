@@ -90,5 +90,6 @@ export function changeOf(a: TrayAction, draft: Draft, i: Inputs, reason: string)
   const act = actOf(a, draft, i);
   return { league: draft.league, command: commands[a.kind], reason: reason.trim(), expected: draft.revision,
     args: { draft: { season: draft.season, ...(draft.startup ? { startup: true } : {}),
+      ...(draft.side && a.kind !== 'open' ? { side: draft.side } : {}),
       ...(act ? { act } : {}) } }, effective: 'now', visibility: 'league' };
 }

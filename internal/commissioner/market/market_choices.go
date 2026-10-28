@@ -2,6 +2,7 @@ package market
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -80,7 +81,11 @@ func (out *Market) readBids(book commissioner.BidBook, v bidViewer,
 			words = decidedBidWords(a.LiveBids())
 		}
 
-		out.Players = append(out.Players, Choice{ID: a.Player, Words: name + " — " + words})
+		id := a.Player
+		if a.Side != "" {
+			id = "side?side=" + url.QueryEscape(a.Side) + "&player=" + url.QueryEscape(a.Player)
+		}
+		out.Players = append(out.Players, Choice{ID: id, Words: name + " — " + words})
 	}
 }
 

@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -179,5 +180,23 @@ func spread(rank map[string]int) competition.PointsFunc {
 	return func(franchise string, _ int) (*leaguerules.Decimal, string) {
 		v := leaguerules.Decimal((1000 - 10*rank[franchise]) * 10000)
 		return &v, ""
+	}
+}
+
+func TestStartupDraftReadingNamesSide(t *testing.T) {
+	b := mirrorLeague(t)
+	at := seasonMoment(3)
+	b.record(startupRaw(t, DraftStartupOpen, "open"), startupFacts(), at)
+	reading, err := NativeDraftReading(RawNativeDraftScope{League: "native.test", Season: 2026,
+		Franchise: "franchise.01", Startup: true, At: at}, b.records, time.UTC, nil, startupFacts())
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(reading)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(body), `"side":"AFC"`) {
+		t.Fatalf("missing side: %s", body)
 	}
 }
