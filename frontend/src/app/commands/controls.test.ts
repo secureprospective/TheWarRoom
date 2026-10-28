@@ -176,4 +176,3 @@ it.each(['war', 'hq', 'trade'] as const)('F: rail %s keeps its name without a na
   expect(html).toContain('aria-label="Open workspace"');
   expect(html).not.toContain('title=');
 });
-

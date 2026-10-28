@@ -6,6 +6,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestBidChoicesDistinguishSides(t *testing.T) {
@@ -23,15 +24,17 @@ func TestBidChoicesDistinguishSides(t *testing.T) {
 func TestStartingOLineLotsAreScopedAndCloseHidesThem(t *testing.T) {
 	for _, side := range []string{"", "AFC", "NFC"} {
 		t.Run(side, func(t *testing.T) {
-			seed := &commissioner.RawNativeSnapshot{Sides: map[string]string{"a": "AFC", "n": "NFC"},
-				Pool: []commissioner.NativePoolEntry{
-					{Player: "990001", Side: "AFC", Name: "ARI O-Line"},
-					{Player: "990001", Side: "NFC", Name: "ARI O-Line"},
-				}}
-			if side == "" {
-				seed.Sides = nil
-				seed.Pool = seed.Pool[:1]
-				seed.Pool[0].Side = ""
+			seed := &commissioner.RawNativeSnapshot{}
+			sides := []string{""}
+			if side != "" {
+				seed.Sides = map[string]string{"a": "AFC", "n": "NFC"}
+				sides = []string{"AFC", "NFC"}
+			}
+			for _, team := range nativecheck.LineCardTeams() {
+				id, _ := nativecheck.LineCardID(team)
+				for _, pool := range sides {
+					seed.Pool = append(seed.Pool, commissioner.NativePoolEntry{Player: id, Side: pool, Name: team + " O-Line"})
+				}
 			}
 			records := []commissioner.Record{
 				{Command: commissioner.RawCommand{Command: commissioner.Create, Args: commissioner.RawArgs{Source: commissioner.SourceNative}}},
@@ -39,11 +42,11 @@ func TestStartingOLineLotsAreScopedAndCloseHidesThem(t *testing.T) {
 			}
 			assets := commissioner.NativeAssets{Seeded: true, Snapshot: seed}
 			book := commissioner.MarketBook{}
-			if rows := unbidStartingLots(assets, book, records, side); len(rows) != 1 {
+			if rows := unbidStartingLots(assets, book, records, side); len(rows) != 32 {
 				t.Fatalf("side lots: %+v", rows)
 			}
 			book.Bids.Auctions = []commissioner.BidAuction{{Player: "990001", Side: side}}
-			if rows := unbidStartingLots(assets, book, records, side); len(rows) != 0 {
+			if rows := unbidStartingLots(assets, book, records, side); len(rows) != 31 {
 				t.Fatal("live auction shown as unbid", rows)
 			}
 			book.Bids.Auctions = nil
