@@ -1,17 +1,20 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-28, `session/terra-p7-deadset`. Do not push without direction.
+Bee — 2026-10-28, `session/terra-p7-split`. Do not push without direction.
 
 ## Where it stands
-Removed inert cap-tier, cushion-guard and Layer 4 parameter definitions and admin labels.
-Legacy database rows are ignored without deletion. Targeted tests and build passed.
+Draft and market history backends removed in `33dfeeb6` and `2334b8eb`; native draft reports,
+market reports and the asset-board model remain. Build, touched-package race tests and composition
+passed. Frontend was not changed and still refers to removed methods.
 
 ## Next move
-Review the commit and test Engine Admin: removed settings should not appear; live settings remain editable.
+Remove counterparties, offer archive, sources/archive research and startup wiring; preserve live
+features and the asset-board model. Update frontend and nativegen read inventory in the next slice.
 
 ## Blocked on
-No upstream configured; `git pull --ff-only` could not run. No push attempted.
+No upstream configured; pull and push unavailable. Commissioner fixture regeneration fails its
+catalog test on `commish.league.cutover`; inspect baseline before changing it.
 
 ## Tried and rejected
 Wire fixture regeneration produced unrelated volatile changes; discarded them and reran clean.
@@ -101,3 +104,5 @@ Full composition race test timed out; clean non-race composition test passed.
 - Next: reviewer/GUI verification of AFC/NFC picks and checkpoint restores. No live GUI run performed.
 - Debt left: inherited cutover catalog/wire failures and bloat baseline drift block full verify;
   GUI verification outstanding. Pull blocked by this branch having no upstream.
+Hosted fixture regeneration changed frontend fixtures; reverted under the backend-only constraint.
+Composition race suite timed out under load; non-race suite passed.
