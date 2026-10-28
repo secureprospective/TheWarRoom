@@ -52,7 +52,7 @@ func presetCatalog() []presetEntry {
 	return []presetEntry{
 		{StartingPreset: StartingPreset{ID: PresetDefault32, Label: "32-Team Default",
 			Description: "The 32-Team Default is for 32 franchises: the NFL's divisions, a startup draft " +
-				"and the DEFAULT-32 lineup, roster and scoring. Every value can be changed afterwards.",
+				"and its own lineup, roster and scoring. Every value can be changed afterwards.",
 			MinTeams: legacyTeams, MaxTeams: legacyTeams},
 			native: true, source: SourceNative, defaultTeams: legacyTeams, choice: "the 32-Team Default",
 			history: "the 32-Team Default rules", preview: "32-Team Default rules", citation: "32-Team Default rules",

@@ -917,7 +917,7 @@
     {
       "id": "default_32",
       "label": "32-Team Default",
-      "description": "The 32-Team Default is for 32 franchises: the NFL's divisions, a startup draft and the DEFAULT-32 lineup, roster and scoring. Every value can be changed afterwards.",
+      "description": "The 32-Team Default is for 32 franchises: the NFL's divisions, a startup draft and its own lineup, roster and scoring. Every value can be changed afterwards.",
       "minTeams": 32,
       "maxTeams": 32
     },

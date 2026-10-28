@@ -367,8 +367,29 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	export class StartingPreset {
+	    id: string;
+	    label: string;
+	    description: string;
+	    minTeams: number;
+	    maxTeams: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new StartingPreset(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.label = source["label"];
+	        this.description = source["description"];
+	        this.minTeams = source["minTeams"];
+	        this.maxTeams = source["maxTeams"];
+	    }
+	}
 	export class Controls {
 	    groups: ControlGroup[];
+	    presets: StartingPreset[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Controls(source);
@@ -377,6 +398,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.groups = this.convertValues(source["groups"], ControlGroup);
+	        this.presets = this.convertValues(source["presets"], StartingPreset);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -4568,6 +4590,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
