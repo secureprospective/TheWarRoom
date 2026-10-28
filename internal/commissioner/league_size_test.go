@@ -4,8 +4,6 @@ import (
 	"slices"
 	"strings"
 	"testing"
-
-	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // A league can have from 2 to maxFranchises franchises; only a size outside that is refused, in words
@@ -14,11 +12,11 @@ func TestFranchiseCountRange(t *testing.T) {
 	for _, c := range []struct {
 		teams int
 		ok    bool
-	}{{1, false}, {2, true}, {32, true}, {33, true}, {100, true}, {maxFranchises, true}, {maxFranchises + 1, false}} {
+	}{{1, false}, {2, true}, {12, true}, {maxFranchises, true}, {maxFranchises + 1, false}} {
 		_, err := (RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours",
 			Preset: PresetEmpty, FranchiseCount: c.teams, Season: 2026}, Request: "create", Effective: "now",
 			Visibility: "league"}).Prepared()
-		if (err == nil) != c.ok || (err != nil && !strings.Contains(err.Error(), "between 2 and 1000")) {
+		if (err == nil) != c.ok || (err != nil && !strings.Contains(err.Error(), "between 2 and 32")) {
 			t.Errorf("%d franchises: %v", c.teams, err)
 		}
 	}
@@ -27,8 +25,7 @@ func TestFranchiseCountRange(t *testing.T) {
 	}
 }
 
-// Every native preset starts, seeds and reads a league at the largest size, and the count-dependent
-// values wait for a ruling there rather than being guessed.
+// Every native preset starts, seeds and reads a league at the cap.
 func TestEveryPresetStartsAtTheLargestSize(t *testing.T) {
 	for _, p := range StartingPresets() {
 		t.Run(p.ID, func(t *testing.T) {
@@ -42,14 +39,14 @@ func TestEveryPresetStartsAtTheLargestSize(t *testing.T) {
 			b.add(create, seasonMoment(1))
 			ids := LeagueFranchises(b.records)
 			if len(ids) != maxFranchises || len(slices.Compact(slices.Sorted(slices.Values(ids)))) != maxFranchises ||
-				ids[999] != "franchise.1000" || ids[98] != "franchise.99" {
+				ids[maxFranchises-1] != "franchise.32" {
 				t.Fatalf("%d franchises, last %s", len(ids), ids[len(ids)-1])
 			}
 			if _, err := RulesReading("native.test", b.records, seasonMoment(2)); err != nil {
 				t.Fatal(err)
 			}
 			people, err := PeopleReading("native.test", "creator", b.records)
-			if err != nil || !slices.ContainsFunc(people.Seats, func(s PeopleSeat) bool { return s.Name == "Franchise 1000" }) {
+			if err != nil || !slices.ContainsFunc(people.Seats, func(s PeopleSeat) bool { return s.Name == "Franchise 32" }) {
 				t.Fatalf("people: %v", err)
 			}
 			if _, err := JobsReading("native.test", b.records, seasonMoment(2)); err != nil {
@@ -61,9 +58,6 @@ func TestEveryPresetStartsAtTheLargestSize(t *testing.T) {
 			}
 			if p.ID == PresetEmpty {
 				return
-			}
-			if rules.League.Alignment.State == leaguerules.IsKnown || rules.Playoffs.Graph.State == leaguerules.IsKnown {
-				t.Fatal("a count-dependent value was guessed at the largest size")
 			}
 			seed, err := NativeStart("native.test", b.records, seasonMoment(2))
 			if err != nil {
@@ -91,12 +85,12 @@ func TestFranchiseNumbersPastNinetyNine(t *testing.T) {
 	}
 }
 
-// The other limits widened with the franchise count: a bracket seed up to the largest league, a trade
+// The other limits follow the franchise cap: a bracket seed up to the largest league, a trade
 // among as many parties as the league allows, and a bid as long as seasons are numbered.
 func TestWidenedLimits(t *testing.T) {
-	seed := bracketRaw(BracketSeed, RawBracketChange{Season: 2026, Slot: 40, Team: "franchise.40"})
+	seed := bracketRaw(BracketSeed, RawBracketChange{Season: 2026, Slot: maxFranchises, Team: "franchise.32"})
 	if err := seed.Validate(); err != nil {
-		t.Fatalf("seed 40: %v", err)
+		t.Fatalf("seed at the cap: %v", err)
 	}
 	seed.Args.Bracket.Slot = maxFranchises + 1
 	if err := seed.Validate(); err == nil {

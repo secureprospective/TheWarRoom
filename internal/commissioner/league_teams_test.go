@@ -150,7 +150,7 @@ func TestTeamsDownRefused(t *testing.T) {
 		{name: "game scored", value: `14`, setup: func(b *ledgerBuilder) {
 			b.add(RawCommand{League: "native.test", Command: ScoreFranchise}, seasonMoment(2))
 		}, want: "teams can't change once the season has games or player moves"},
-		{name: "too many", value: `1001`, want: "choose between 2 and 1000 teams"},
+		{name: "too many", value: `33`, want: "choose between 2 and 32 teams"},
 		{name: "rollover", value: `14`, want: "Teams change takes effect now"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

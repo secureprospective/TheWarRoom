@@ -140,7 +140,7 @@ describe('Start an app league', () => {
     expect(control(host, 'League name').props().value).toBe('');
   });
   it('shows Go’s refusal as written and changes nothing else', async () => {
-    const words = 'Choose between 2 and 1000 franchises';
+    const words = 'Choose between 2 and 32 franchises';
     const { app, calls } = stub({ TargetCommissionerExecute: async () => { throw new Error(words); } });
     const host = await mount(render(StartLeagueForm), app);
     await open();
@@ -158,19 +158,19 @@ describe('Start an app league', () => {
     expect(control(host, 'League name').props().value).toBe('Our league');
     await flush();
   });
-  it('keeps the franchise count box at Go’s 2 to 1000 whatever the preset', async () => {
+  it('keeps the franchise count box at Go’s 2 to 32 whatever the preset', async () => {
     const { app } = stub();
     const host = await mount(render(StartLeagueForm), app);
     await open();
     const countBox = () => control(host, 'Number of franchises');
     expect(countBox().getAttribute('min')).toBe('2');
-    expect(countBox().getAttribute('max')).toBe('1000');
+    expect(countBox().getAttribute('max')).toBe('32');
     await type(control(host, 'Starting rules'), 'empty');
     expect(countBox().getAttribute('min')).toBe('2');
-    expect(countBox().getAttribute('max')).toBe('1000');
+    expect(countBox().getAttribute('max')).toBe('32');
     await type(control(host, 'Starting rules'), 'default_32');
     expect(countBox().getAttribute('min')).toBe('2');
-    expect(countBox().getAttribute('max')).toBe('1000');
+    expect(countBox().getAttribute('max')).toBe('32');
   });
   it('keeps a typed count when the preset changes', async () => {
     const { app } = stub();

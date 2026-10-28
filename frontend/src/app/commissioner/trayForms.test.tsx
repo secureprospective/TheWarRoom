@@ -172,7 +172,7 @@ describe.each(forms)('The $name form', form => {
     expect(calls.sent).toHaveLength(0);
   });
   it('keeps Go’s refusal words when it cannot describe the target or offer a safeguard', async () => {
-    const words = 'Choose between 2 and 1000 franchises';
+    const words = 'Choose between 2 and 32 franchises';
     const refused = { question: '', target: { league: '', name: '', version: 0 }, fields: [],
       affects: { count: null, readings: [], words: 'Not known yet' }, blockers: [words], safeguard: '' };
     const { host, calls } = await landing({ TargetCommissionerPreview: async () => refused });
