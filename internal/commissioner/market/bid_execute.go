@@ -73,6 +73,9 @@ func prepareBidFrame(f commissioner.Frame, raw *commissioner.RawCommand, env Bid
 }
 
 func (x *bidExecution) prepare(raw *commissioner.RawCommand) error {
+	if _, card := nativecheck.LineCardTeam(commissioner.BidPlayerOf(commissioner.Record{Command: *raw}, x.records)); x.state.OLine != nil && card {
+		return fmt.Errorf("the starting O-Line auction is closed")
+	}
 	switch raw.Command {
 	case commissioner.BidPlace:
 		return x.place(raw)

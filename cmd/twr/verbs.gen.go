@@ -77,6 +77,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "bid.place", Label: "place bid", Modes: []string{"preview", "execute"}},
 		{ID: "bid.raise", Label: "raise bid", Modes: []string{"preview", "execute"}},
 		{ID: "bid.withdraw", Label: "withdraw bid", Modes: []string{"preview", "execute"}},
+		{ID: "oline.auction.close", Label: "Close O-Line auction", Modes: []string{"preview", "execute"}},
 		{ID: "bids.process", Label: "process bids", Modes: []string{"preview", "execute"}},
 		{ID: "bids.award.override", Label: "override bids award", Modes: []string{"preview", "execute"}},
 		{ID: "commish.seat.caretaker", Label: "caretaker league seat", Modes: []string{"preview", "execute"}},

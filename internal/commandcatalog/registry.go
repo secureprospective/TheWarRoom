@@ -239,6 +239,9 @@ func (e *Entry) handlers(door Door) map[Mode]Handler {
 }
 
 func commandLabel(id string) string {
+	if id == "oline.auction.close" {
+		return "Close O-Line auction"
+	}
 	if strings.Contains(id, ".") {
 		words := strings.Split(strings.ReplaceAll(id, "_", " "), ".")
 		for i, word := range words {

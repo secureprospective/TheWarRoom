@@ -16,6 +16,9 @@ func ledgerJobs(league string, records []Record, rules leaguerules.RuleSet, at t
 		return nil, err
 	}
 	jobs := transactionJobs(assets, state, rules, at)
+	if leaguerules.OLineOn(rules) {
+		jobs = append(jobs, olineJobs(state, assets.Snapshot)...)
+	}
 	if !assets.Seeded {
 		job := Job{ID: "seed", Name: "Record starting assets", State: JobLive, Controls: []string{},
 			Words: "Record the held franchises, rostered players and draft picks as this league’s starting assets."}

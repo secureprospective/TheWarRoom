@@ -203,7 +203,7 @@ func RolloverPreviewFields(before *RolloverBefore, plan *RolloverPlan) []Preview
 }
 
 func nativePreviewCommand(raw RawCommand) bool {
-	return raw.Args.Native != nil || raw.Args.Override != nil || raw.Args.Correction != nil ||
+	return raw.Command == OLineAuctionClose || raw.Args.Native != nil || raw.Args.Override != nil || raw.Args.Correction != nil ||
 		raw.Args.Waiver != nil || raw.Args.Bid != nil || raw.Args.Trade != nil
 }
 

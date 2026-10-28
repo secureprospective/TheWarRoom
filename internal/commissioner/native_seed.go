@@ -293,7 +293,13 @@ func CheckNativeRecoveryAppend(raw RawCommand, records []Record) error {
 func checkNativeAppend(raw RawCommand, records []Record, recovery bool) error {
 	if raw.Command == Revert {
 		for _, r := range records {
-			if r.Receipt.Entry == raw.Args.Entry && r.Command.Command == NativeSeed {
+			if r.Receipt.Entry != raw.Args.Entry {
+				continue
+			}
+			switch r.Command.Command {
+			case OLineAuctionClose:
+				return Refused(fmt.Errorf("the O-Line auction close is permanent; correct individual assets instead"))
+			case NativeSeed:
 				return Refused(fmt.Errorf("the starting snapshot is permanent; correct individual assets instead"))
 			}
 		}

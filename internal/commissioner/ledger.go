@@ -317,6 +317,8 @@ func recordLabel(r Record) string {
 // familyLabel describes an entry of a command family that writes its own labels: draft, waiver, schedule.
 func familyLabel(r Record) (string, bool) {
 	switch c := r.Command.Command; {
+	case c == OLineAuctionClose:
+		return olineLabel(r.Command.Args.OLineOutcome), true
 	case draftCommand(c):
 		return draftLabel(r), true
 	case WaiverCommand(c):
@@ -349,7 +351,7 @@ func scheduleLabel(r Record) string {
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i, root int, p Projection, principal string, auth Authorizer, hasRollover bool) string {
 	r := records[i]
-	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == Cutover ||
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == Cutover || r.Command.Command == OLineAuctionClose ||
 		liveDraftEntry(r.Command.Command) ||
 		!p.Active[r.Receipt.Entry] {
 		return ""

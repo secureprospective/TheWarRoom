@@ -68,3 +68,22 @@ func TestOperatorRegistryKeepsOfflineAuthorityConsoleOnly(t *testing.T) {
 		t.Fatalf("offline entry accepted a missing handler: %v", err)
 	}
 }
+
+func TestOLineCloseRegistryMetadata(t *testing.T) {
+	commands := NativeCommands(Schema{})
+	for _, c := range commands {
+		if c.ID != "oline.auction.close" {
+			continue
+		}
+		if c.Role != "commish" || c.Undo != "none" || c.Method != "TargetCommissionerExecute" || commandLabel(c.ID) != "Close O-Line auction" {
+			t.Fatalf("close metadata: %+v", c)
+		}
+		for _, field := range c.Arguments.Fields {
+			if field.Name == "args" && len(field.Schema.Fields) != 0 {
+				t.Fatal("close advertises app-owned outcomes")
+			}
+		}
+		return
+	}
+	t.Fatal("close command missing")
+}

@@ -77,7 +77,7 @@ func DefinitionFor(command string) (Definition, error) {
 		return Definition{Gravity: "G3"}, nil
 	case DraftArchive, DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak,
 		RosterReserve, RosterCut, WaiverClaim, WaiverProcess, WaiverOrderSet, WaiverOrderAuto, WaiverOverride,
-		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride,
+		BidPlace, BidRaise, BidWithdraw, BidsProcess, BidsOverride, OLineAuctionClose,
 		ContractEdit, CapAdjust, CapRelief, WindowSet, WindowMove, WindowRemove, ContractActionSet,
 		ScheduleGenerate, ScheduleEdit, SchedulePublish, BracketBuild, BracketEdit, BracketSeed,
 		BracketPresetSave, HistoryLink, PlayerPosition, PlayerPositionClear, ScorePlayer, StatApprove,
@@ -95,6 +95,7 @@ func DefinitionFor(command string) (Definition, error) {
 }
 
 type RawArgs struct {
+	OLineOutcome   *OLineOutcome       `json:"olineOutcome,omitempty"`
 	Correction     *RawCorrection      `json:"correction,omitempty"`
 	Trade          *RawTradeArgs       `json:"trade,omitempty"`
 	TradeOutcome   *TradeState         `json:"tradeOutcome,omitempty"`
@@ -152,9 +153,14 @@ func (a RawArgs) scoringDetails() bool {
 		a.Title != nil || a.Link != nil
 }
 
+// HasMarketDecision identifies app-owned decisions that no request may supply.
+func (a RawArgs) HasMarketDecision() bool {
+	return a.OLineOutcome != nil || a.WaiverOutcome != nil || a.BidOutcome != nil || a.TradeOutcome != nil
+}
+
 // marketDetails covers the arguments of the waiver and bid commands, including the decisions the app writes.
 func (a RawArgs) marketDetails() bool {
-	return a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil || a.Trade != nil || a.TradeOutcome != nil
+	return a.OLineOutcome != nil || a.Waiver != nil || a.WaiverOutcome != nil || a.Bid != nil || a.BidOutcome != nil || a.Trade != nil || a.TradeOutcome != nil
 }
 
 // ownedDetails says whether an argument that belongs to one command is sent with another.
@@ -167,6 +173,8 @@ func (a RawArgs) ownedDetails(command string) bool {
 // validateDecoded checks the commands that decode their own typed argument; handled is false for any other.
 func (a RawArgs) validateDecoded(command string) (handled bool, err error) {
 	switch {
+	case command == OLineAuctionClose:
+		err = a.onlyMarketDetails(func(v *RawArgs) { v.OLineOutcome = nil }, false, "send only the O-Line auction close")
 	case correctionCommand(command):
 		_, err = decodeCorrection(a, command)
 	case isScoreCommand(command):
@@ -325,6 +333,8 @@ func (r RawCommand) validate(requireReason bool) error {
 // recorded now for the league; it is empty for every other command.
 func publicNowRule(command string) string {
 	switch {
+	case command == OLineAuctionClose:
+		return "closing the O-Line auction takes effect now and is visible to every owner"
 	case command == SeasonRollover:
 		return "the season rollover takes effect now and is visible to every owner"
 	case draftCommand(command):
@@ -439,7 +449,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return raw, fmt.Errorf("send exactly one commissioner command")
 	}
-	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
+	if raw.Args.HasMarketDecision() {
 		return raw, fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	if raw.Args.DraftOutcome != nil {
@@ -456,6 +466,7 @@ func decode(body string, requireReason bool) (RawCommand, error) {
 }
 
 func (r RawCommand) Canonical(principal string) (string, error) {
+	r.Args.OLineOutcome = nil
 	r.Args.WaiverOutcome, r.Args.BidOutcome, r.Args.TradeOutcome, r.Args.DraftOutcome = nil, nil, nil, nil
 	definition, err := r.EffectiveDefinition()
 	if err != nil {

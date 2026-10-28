@@ -1,4 +1,10 @@
 {
+  "oline.auction.close": {
+    "args": {},
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": ["commissioner"]
+  },
   "commish.league.create": {
     "args": {
       "name": "Matrix league",

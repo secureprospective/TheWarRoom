@@ -12,7 +12,7 @@ import (
 // Execute dispatches generic and owner market commands to the same atomic append.
 // The store owns retry lookup, current ownership, calendar gates and held-fact legality.
 func (a *Service) Execute(ctx context.Context, raw commissioner.RawCommand) (commissioner.Receipt, error) {
-	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil || raw.Args.DraftOutcome != nil {
+	if raw.Args.HasMarketDecision() || raw.Args.DraftOutcome != nil {
 		return commissioner.Receipt{}, fmt.Errorf("command decisions are made by the app")
 	}
 	raw, err := raw.Prepared()

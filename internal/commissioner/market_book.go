@@ -149,6 +149,7 @@ type WaiverWindow struct {
 type WaiverBookClaim struct{ ID, Franchise, Principal string }
 
 type MarketBook struct {
+	OLine       *OLineOutcome `json:",omitempty"`
 	Windows     []WaiverWindow
 	BaseOrder   []string
 	Order       []string

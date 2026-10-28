@@ -89,6 +89,9 @@ func (x *waiverExecution) prepare(raw *commissioner.RawCommand) error {
 	}
 	if raw.Command == commissioner.RosterCut || raw.Command == commissioner.RosterReserve {
 		rules := commissioner.AllowDebtReduction(x.assets.Snapshot, assets.Snapshot, x.records, x.rules, raw.Args.Waiver.Franchise)
+		if raw.Command == commissioner.RosterCut {
+			rules = commissioner.PendingOLineCutRules(x.state, x.assets.Snapshot, assets.Snapshot, rules, raw.Args.Waiver.Franchise)
+		}
 		return rosterCapAllows(assets.Snapshot, rules, raw.Args.Waiver.Franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: raw.Args.Waiver.Franchise}, x.now)...)
 	}
 	return nil

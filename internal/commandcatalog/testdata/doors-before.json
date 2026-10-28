@@ -3823,5 +3823,20 @@
     "Modes": [
       "read"
     ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "oline.auction.close",
+    "Method": "TargetCommissionerExecute",
+    "Role": "commish",
+    "Gravity": "G2",
+    "Availability": "both",
+    "Permission": "command:oline.auction.close",
+    "Schema": "9767275c25e959271f06e09326ca8da2c921e4b40d08e337b36e6720c301ad16",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
   }
 ]

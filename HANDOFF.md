@@ -119,3 +119,35 @@ Did not alter Go command catalogue or endpoint CSV: outside this frontend slice.
 - Bloat passes: comment 5/5, provenance 0/0, tiny 24/24, duplicates 0/0; update lowered only comment ceiling 13→5. Go build passes; non-race tests: bids 2 pass, history 234 pass/4 skip, core 20 pass, composition 578 pass/2 fail. Boundary checker tests 8 pass.
 - Blocked: boundary check exposes unreviewed migration functions/source, changed adapter sources/functions and stale entries after removing the first blocker. Do not refresh fingerprints to hide changes; needs boundary policy review. Composition parity tests fail on inherited `offers.filter` metadata; both reproduced on the starting commit. Frontend untouched.
 - Next: review migration and other changed boundary wiring against the architecture; reconcile retired offer filter metadata and frozen door tests. No GUI verification performed.
+Bee — 2026-10-28, `session/terra-f9`. Do not push without direction.
+
+## Where it stands
+- `oline.auction.close` / "Close O-Line auction" is commissioner-only in the registry and CLI.
+- Leftover NFL units alphabetically pair with unit-less franchises by stable ID. One-year contracts
+  use the league's lowest known minimum salary; existing auction awards are preserved.
+- Full cap/roster leaves a recorded reservation and a named cut prompt. The restricted due worker
+  retries after room opens, including restart. O-Line off does nothing. No preset branching.
+- Flow and boundaries: `docs/architecture/oline-auction-close.md`.
+- Observed evidence: 10 new race tests pass; commissioner, market, serverhttp, history, leagueservice
+  and commandcatalog full race package runs passed before the final test-only additions. Clean
+  composition: 588 top-level tests / 828 including subtests pass without race. Build, TypeScript,
+  generated catalogs and full golangci-lint pass. Fixture writers were run; volatile hosted values
+  were not retained.
+
+## Next move
+Review the commit, then exercise the close command and jobs cut prompt on a disposable league.
+Pass: no cap overrun; after the requested cut the reserved unit appears exactly once and the
+prompt clears. A standing bid or tie must be decided before close.
+
+## Blocked on / debt left
+- Full composition race run timed out after 15 minutes; clean non-race suite passes.
+- `internal/app/commissioner` has one failure: `TestNativeCatalogPublication` finds the pre-existing
+  recognized `commish.league.cutover` command missing from the native catalog. Not changed here.
+- `make lint` stops on inherited bloat: 25 tiny files against baseline 24. HEAD and candidate both
+  have the same 25; no baseline raised or unrelated file removed. Full golangci-lint: 0 issues.
+- No GUI click-through or dedicated close button added. No full verify/push claimed; no upstream.
+
+## Tried and rejected
+- Do not assign contested lots: outstanding bids/ties require settlement first.
+- Do not overrun even a soft cap or use an exception to bypass the assignment cap check.
+- Do not retain hosted fixture ID/timestamp churn or alter unrelated cutover publication.

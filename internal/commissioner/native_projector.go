@@ -39,10 +39,7 @@ func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *Mar
 func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *MarketBook) error {
 	record := records[i]
 	if TradeCommand(record.Command.Command) {
-		if !assets.Seeded {
-			return fmt.Errorf("record starting assets before trading")
-		}
-		return projectTrade(assets.Snapshot, waivers, record)
+		return projectNativeTrade(assets, waivers, record)
 	}
 	if WaiverCommand(record.Command.Command) {
 		if !assets.Seeded {
@@ -57,6 +54,8 @@ func projectNativeEntry(assets *NativeAssets, records []Record, i int, waivers *
 		return projectBid(assets.Snapshot, waivers, record)
 	}
 	switch record.Command.Command {
+	case OLineAuctionClose:
+		return projectOLineClose(assets.Snapshot, waivers, record.Command.Args.OLineOutcome)
 	case RulesSet:
 		return projectTeamsChange(assets, record)
 	case CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException:
@@ -169,4 +168,11 @@ func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Rec
 		}
 	}
 	return nil
+}
+
+func projectNativeTrade(assets *NativeAssets, book *MarketBook, record Record) error {
+	if !assets.Seeded {
+		return fmt.Errorf("record starting assets before trading")
+	}
+	return projectTrade(assets.Snapshot, book, record)
 }

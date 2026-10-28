@@ -288,7 +288,7 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 // passes requireReason false and reports the missing reason itself.
 func preparedCommand(raw commissioner.RawCommand, principal string,
 	requireReason bool) (commissioner.RawCommand, string, error) {
-	if raw.Args.WaiverOutcome != nil || raw.Args.BidOutcome != nil || raw.Args.TradeOutcome != nil {
+	if raw.Args.HasMarketDecision() {
 		return raw, "", fmt.Errorf("waiver and bid decisions are made by the app")
 	}
 	raw, err := raw.Prepared()
@@ -558,6 +558,14 @@ func prepareMarketAppend(raw *commissioner.RawCommand, principal string, records
 			return fmt.Errorf("check automatic reserve return: %w", commissioner.Refused(err))
 		}
 		return nil
+	}
+	if principal == commissioner.OLineClockPrincipal {
+		if err := checkPendingOLineAppend(*raw, records, now); err != nil {
+			return err
+		}
+	}
+	if err := commissioner.PrepareOLineClose(raw, records, now); err != nil {
+		return fmt.Errorf("close O-Line auction: %w", commissioner.Refused(err))
 	}
 	if err := market.PrepareWaiverAppend(raw, records, now, facts, zone); err != nil {
 		return fmt.Errorf("check waiver action: %w", commissioner.Refused(err))

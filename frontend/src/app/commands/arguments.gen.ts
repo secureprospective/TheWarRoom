@@ -381,6 +381,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;
@@ -845,6 +880,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;
@@ -1284,6 +1354,41 @@ string
 "league": string;
 "command": string;
 "args": {
+"olineOutcome"?: ({
+"assigned": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"pending": ({
+"acquiredVia"?: string;
+"correction"?: string;
+"name"?: string;
+"rookieRound"?: number;
+"pending"?: boolean;
+"restructured"?: boolean;
+"id": string;
+"franchise": string;
+"status": string;
+"salaryCents": number;
+"expirationYear": number;
+"contractStatus": string;
+"contractInfo": string;
+"heldContractStatus"?: string
+})[];
+"words": (string)[]
+}) | null;
 "correction"?: ({
 "franchise"?: string;
 "player"?: string;

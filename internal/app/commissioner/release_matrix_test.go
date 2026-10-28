@@ -256,6 +256,7 @@ schedule.generate
 schedule.publish
 schedule.read
 score.player.read
+oline.auction.close
 season.rollover
 standings.read
 stats.queue.read
