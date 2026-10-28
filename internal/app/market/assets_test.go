@@ -1,14 +1,19 @@
 package market
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 type fakeAssets map[string]Dynasty
@@ -120,5 +125,40 @@ func TestPoolValuesPreserveIDsAndMissingPickModel(t *testing.T) {
 	}
 	if cell := PickValue(nil, 2027, 1, "0001", time.Now()); cell.Text != "Not valued" || cell.Sub != "no model run read yet" || cell.Held {
 		t.Fatal(cell)
+	}
+}
+
+// LoadNative reads nothing before startup came up, publishes nothing before the first model run,
+// and otherwise values the run's players.
+func TestLoadNativeWaitsForStartupAndARun(t *testing.T) {
+	t.Parallel()
+	called := false
+	src := NativeSource{
+		Ready: func() error { return errors.New("starting") },
+		LatestRun: func(context.Context) (history.Run, bool, error) {
+			called = true
+			return history.Run{ID: 7, Season: 2026}, true, nil
+		},
+		Scores: func(context.Context, int64) ([]history.ModelScore, error) {
+			return []history.ModelScore{{MFLID: "0042", Value: model.Value{DynastyPPG: 6.5}}}, nil
+		},
+		Records: func(context.Context) ([]playerrecord.Record, error) { return nil, nil },
+		Params:  params.DefaultSet,
+		Teams:   func() int { return 32 },
+	}
+	if _, ok, err := LoadNative(t.Context(), src); ok || err != nil || called {
+		t.Fatalf("before startup: ok %t err %v read %t", ok, err, called)
+	}
+	src.Ready = func() error { return nil }
+	n, ok, err := LoadNative(t.Context(), src)
+	if !ok || err != nil {
+		t.Fatalf("after a run: ok %t err %v", ok, err)
+	}
+	if d := n.Player("0042", time.Now()); !d.Valued || d.Discounted != 6.5 || d.Seasons != 3 {
+		t.Fatalf("player = %+v", d)
+	}
+	src.LatestRun = func(context.Context) (history.Run, bool, error) { return history.Run{}, false, nil }
+	if _, ok, err := LoadNative(t.Context(), src); ok || err != nil {
+		t.Fatalf("before the first run: ok %t err %v", ok, err)
 	}
 }

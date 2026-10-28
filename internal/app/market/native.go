@@ -1,11 +1,15 @@
 package market
 
 import (
+	"context"
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
 // Native is the native value model as the asset board reads it: each player's dynasty value from
@@ -80,4 +84,67 @@ func (n Native) Pick(year, round int, _ string, _ time.Time) Dynasty {
 		label += fmt.Sprintf(", %d %s out", v.YearsOut, map[bool]string{true: "year", false: "years"}[v.YearsOut == 1])
 	}
 	return Dynasty{Valued: true, Discounted: v.PPG, Seasons: n.seasons, ClassLabel: label}
+}
+
+// NativeSource is what loading the native model reads: the season's latest model run and its
+// scores, every player record, the params and the league's size.
+type NativeSource struct {
+	Ready     func() error // startup came up: the stores below are open
+	LatestRun func(context.Context) (history.Run, bool, error)
+	Scores    func(context.Context, int64) ([]history.ModelScore, error)
+	Records   func(context.Context) ([]playerrecord.Record, error)
+	Params    func() params.Set
+	Teams     func() int
+}
+
+// LoadNative reads the native model's inputs and builds it; ok is false before startup came up or
+// before the first model run.
+func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
+	if err := src.Ready(); err != nil {
+		return Native{}, false, nil //nolint:nilerr // Not ready is no failure here: startup reports its own error.
+	}
+	run, ok, err := src.LatestRun(ctx)
+	if err != nil || !ok {
+		return Native{}, false, wrapNative("latest model run", err)
+	}
+	scores, err := src.Scores(ctx, run.ID)
+	if err != nil {
+		return Native{}, false, wrapNative("model scores", err)
+	}
+	records, err := src.Records(ctx)
+	if err != nil {
+		return Native{}, false, wrapNative("player records", err)
+	}
+	set := src.Params()
+	seasons, err := set.GetGlobal(params.KeyDynastySeasons)
+	if err != nil {
+		return Native{}, false, wrapNative("params", err)
+	}
+	discount, err := set.GetGlobal(params.KeyDynastyDiscount)
+	if err != nil {
+		return Native{}, false, wrapNative("params", err)
+	}
+	values := make(map[string]float64, len(scores))
+	for _, sc := range scores {
+		values[sc.MFLID] = sc.DynastyPPG
+	}
+	return NewNative(NativeInput{Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
+		Discount: discount, Teams: src.Teams()}), true, nil
+}
+
+func wrapNative(step string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return fmt.Errorf("native value model: %s: %w", step, err)
+}
+
+// PublishNative publishes a loaded native model, and logs why one could not be loaded.
+func PublishNative(native Native, ok bool, err error, publish func(Model), logLine func(string)) {
+	if err != nil {
+		logLine("the war room: " + err.Error())
+	}
+	if ok {
+		publish(native)
+	}
 }
