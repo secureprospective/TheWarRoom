@@ -74,3 +74,30 @@ inventory and generated bindings; they sit on their own assist door until the UI
 - A raw `commish.league.create` with the MFL preset accepts caller-supplied values (same power as setting
   rules by hand); the move's own path always builds them from the read.
 Full composition race test timed out; clean non-race composition test passed.
+
+## Bee — Terra L3 rookie drafts, 2026-10-28
+- Baton: review holds it; branch `session/terra-rookie-side`. No push requested or attempted.
+- Implemented in `5c84fae7`, `64ae7233`: rookie keys and replay per counted side; shared league order
+  is validated first, then picks follow their current owner's side, retaining original identities and
+  receiving side-local slots. Shared setup stays league-wide; live acts and close outcomes name a side.
+- Flow: owner/tray command → validated league order → side replay → ledger → side-local roster/pool;
+  storage reloads both drafts, and checkpoint restores compensate only the named side's live entries.
+- Tests reproduce the original combined draft, differing traded originals across rounds, and missing
+  shared-start checkpoints. They cover duplicate refusal without mutation, both copies, traded picks,
+  close/issuance, real database reopen and persistent checkpoint restores. Single-pool digest pins pass.
+- Final race PASS counts (top-level `^--- PASS`): commissioner 254; rookiedraft 33; history 234;
+  composition 588 (isolated 20-minute retry); serverhttp 47. App commissioner: 49 PASS, two FAIL below.
+  History's four opt-in fixture/performance tests skipped. Build and frontend typecheck pass.
+  Frontend: 1,726 pass with a 20-second timeout; default five seconds timed out and cascaded to four fails.
+- Required fixture regeneration ran. Discarded unrelated cutover inventory and volatile hosted identities/
+  timestamps. Clean reruns retained the failures below; no wire fixture changes committed.
+- Blocked gates: app commissioner `TestNativeCatalogPublication` and `TestCommissionerCommandSafeguardsWire`
+  fail on the pre-existing `commish.league.cutover` inventory; both reproduced with original production
+  code via a temporary Go overlay. `make verify` stops at inherited bloat: 25 tiny files versus 24 baseline;
+  all 25 are unchanged from the starting revision. No gates or baselines weakened.
+- Initial combined race run timed out composition at ten minutes; isolated retry passed in 1,156 seconds.
+  Commit hooks pass. Production footprint across affected files: 2,254 → 2,392 physical lines;
+  tests/docs separate. Source trace found no preset branch or new storage representation.
+- Next: reviewer/GUI verification of AFC/NFC picks and checkpoint restores. No live GUI run performed.
+- Debt left: inherited cutover catalog/wire failures and bloat baseline drift block full verify;
+  GUI verification outstanding. Pull blocked by this branch having no upstream.
