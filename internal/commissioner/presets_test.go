@@ -37,7 +37,8 @@ func presetLeague(t *testing.T, preset string, teams int) []Record {
 // The catalog changes where a preset is named, not what a league starts with: each creation, its ledger
 // and preview words and its rules in force hash to what they were before the catalog (20a00b25). The
 // rules reading is pinned too where the citation wording did not change; the 32-Team Default's reading
-// now cites its own preset (see TestStartingCitationNamesTheLeaguesOwnPreset).
+// now cites its own preset (see TestStartingCitationNamesTheLeaguesOwnPreset). Player pools and sides
+// (F8) are the only additions since: without them every digest is unchanged.
 func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	for _, c := range []struct {
 		preset        string
@@ -58,6 +59,7 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		withoutPools(records, &rules, &reading)
 		if got := digest(t, records[0].Command, recordLabel(records[0]),
 			presetPreviewLabel(c.preset), rules); got != c.records {
 			t.Errorf("%s at %d: creation digest %s, want %s", c.preset, c.teams, got, c.records)
@@ -66,6 +68,22 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 			t.Errorf("%s at %d: reading digest %s, want %s", c.preset, c.teams, got, c.read)
 		}
 	}
+}
+
+// withoutPools takes the F8 settings out of a creation, its rules and its reading.
+func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
+	f8 := func(field string) bool { return field == poolsField || field == sidesField }
+	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
+		func(s SeedValue) bool { return f8(s.Field) })
+	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
+	sections := []RuleSection{}
+	for _, s := range reading.Sections {
+		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })
+		if len(s.Rows) != 0 {
+			sections = append(sections, s)
+		}
+	}
+	reading.Sections = sections
 }
 
 func digest(t *testing.T, parts ...any) string {
@@ -90,7 +108,7 @@ func TestAPresetIsTheSameAsSettingItsValuesByHand(t *testing.T) {
 		preset  string
 		teams   int
 		differs []string
-	}{{PresetDefault32, 32, nil}, {PresetLegacy, 32, []string{"league.alignment"}},
+	}{{PresetDefault32, 32, nil}, {PresetMirror16, 16, nil}, {PresetLegacy, 32, []string{"league.alignment"}},
 		{PresetLegacy, 12, []string{"league.alignment"}}} {
 		preset, _ := presetByID(c.preset)
 		started := presetLeague(t, c.preset, c.teams)
@@ -186,7 +204,7 @@ func TestTheStartFormListsTheNativeCatalog(t *testing.T) {
 			t.Errorf("%s: incomplete catalog entry %+v", p.ID, p)
 		}
 	}
-	if !slices.Equal(ids, []string{PresetDefault32, PresetEmpty}) {
+	if !slices.Equal(ids, []string{PresetDefault32, PresetMirror16, PresetEmpty}) {
 		t.Fatalf("start form presets: %v", ids)
 	}
 	if MFLImportPreset() != PresetLegacy {
@@ -202,7 +220,7 @@ func TestOnlyTheCatalogNamesAPreset(t *testing.T) {
 		"tools/hostedfixture/fixture.go":   "hosted wire fixture tool: records an empty test league",
 		"tools/hostedfixture/workflows.go": "hosted wire fixture tool: records an MFL-import practice league",
 	}
-	names := regexp.MustCompile(`\b(PresetDefault32|PresetEmpty|PresetLegacy|IsDefault32)\b`)
+	names := regexp.MustCompile(`\b(PresetDefault32|PresetMirror16|PresetEmpty|PresetLegacy|IsDefault32|IsMirror16)\b`)
 	root := filepath.Join("..", "..")
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

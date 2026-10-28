@@ -97,6 +97,9 @@ func CheckRulesAppend(raw RawCommand, records []Record, at time.Time) error {
 	if err := checkShapeChange(raw, records, at); err != nil {
 		return err
 	}
+	if err := checkSidesChange(raw, records, at); err != nil {
+		return err
+	}
 	trial := make([]Record, len(records), len(records)+1)
 	copy(trial, records)
 	trial = append(trial, Record{Command: raw, Receipt: Receipt{Entry: "proposed." + raw.Request, RecordedAt: at}})

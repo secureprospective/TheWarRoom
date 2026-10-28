@@ -95,7 +95,7 @@ func sectionLabels() map[string]string {
 		"scoring": "Scoring", "standings": "Standings", "cap": "Salary cap", "contracts": "Contracts",
 		"ir": "IR", "taxi": "Taxi squad", "waivers": "Waivers", "bids": "Free-agent bids", "trades": "Trades",
 		"schedule": "Schedule", "playoffs": "Playoffs", "house": "House rules", "calendar": "Calendar",
-		"draft": "Draft", "notify": "Notifications"}
+		"draft": "Draft", "notify": "Notifications", "players": "Player pools"}
 }
 
 // percentFields hold a share of one, which a GM reads as a percentage.
@@ -176,7 +176,8 @@ func catalogueChoices(kind string) []Choice {
 		"reverse_standings", "rolling", "blind", "open", "dot", "commissioner", "start_of_day", "end_of_day",
 		"slow", "live", "skip", "autopick", "standings", "linear", "snake", "random", "win_percentage", "head_to_head",
 		"division_percentage", "conference_percentage", "all_play_percentage", "points", "power_rank",
-		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total"}
+		"QB", "RB", "WR", "TE", "PK", "DT", "DE", "LB", "CB", "S", "OL", "offense", "defense", "total",
+		"one", "per_side"}
 	choices := []Choice{}
 	if validateMenu(kind, "not_an_option") == nil {
 		return choices
@@ -624,6 +625,10 @@ func choiceWords(option string) string {
 		return "DOT"
 	case string(NFLSeasons):
 		return "NFL seasons"
+	case string(OnePool):
+		return "One for the whole league"
+	case string(PerSide):
+		return "One per side: each conference has its own copy of every player"
 	}
 	return plainName(option)
 }

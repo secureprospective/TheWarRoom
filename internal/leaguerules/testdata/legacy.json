@@ -51,6 +51,16 @@
       "State": 0,
       "Value": 0,
       "Citation": "Census CM-005: only for keeper leagues"
+    },
+    "Sides": {
+      "State": 0,
+      "Value": null,
+      "Citation": "Counted from the conferences when each side has its own player pool"
+    },
+    "Pools": {
+      "State": 1,
+      "Value": "one",
+      "Citation": "Census CM-001"
     }
   },
   "Roster": {

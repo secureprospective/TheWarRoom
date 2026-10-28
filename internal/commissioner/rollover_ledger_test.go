@@ -533,8 +533,8 @@ func TestRolloverStoredBeforeConferencesStillValidates(t *testing.T) {
 	if err := json.Unmarshal(body, &record); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(body), "DivisionConferences") {
-		t.Fatal("the frozen record must predate the setting")
+	if strings.Contains(string(body), "DivisionConferences") || strings.Contains(string(body), "Pools") {
+		t.Fatal("the frozen record must predate the settings")
 	}
 	if err := record.validateRolloverRecord(); err != nil {
 		t.Fatal(err)

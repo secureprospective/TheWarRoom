@@ -3,6 +3,7 @@ package commissioner
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 	"unicode"
@@ -88,7 +89,7 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		value := values[i]
 		row := RuleRow{Field: string(field.Path), Label: field.Label, Value: value.Words, State: value.State,
 			Citation: startingSource(preset, value.State, value.Citation), Schema: field.Schema,
-			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)),
+			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)) || field.Path == poolsField,
 			Pending: pending[string(field.Path)], Current: current[i],
 			Unit:       unitFor(field.Path),
 			Safeguards: safeguardsFor(string(field.Path))}
@@ -102,7 +103,8 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 				row.Governed = &g
 			}
 		}
-		if value.Citation == "Counted from the league's franchises" || value.Citation == "Counted from the division alignment" {
+		if slices.Contains([]string{"Counted from the league's franchises", "Counted from the division alignment",
+			sidesCounted, noSides}, value.Citation) {
 			row.Citation, row.ChangedAt, row.Governed = value.Citation, "", nil
 		}
 		if row.Pending == nil {
@@ -123,6 +125,12 @@ func leagueRowWords(row *RuleRow, records []Record, rules leaguerules.RuleSet) e
 	switch row.Field {
 	case alignmentField:
 		words, err := alignmentWords(records, rules.League.Alignment)
+		if err != nil {
+			return err
+		}
+		row.Value = words
+	case sidesField:
+		words, err := sidesWords(records, rules.League.Sides)
 		if err != nil {
 			return err
 		}

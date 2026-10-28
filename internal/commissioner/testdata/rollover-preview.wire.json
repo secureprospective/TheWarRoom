@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "5291bf499dd38dc98b0b62a09401eff6ea4c755092fa8d8e2011b0e7f71ec800",
+  "beforeDigest": "a89e3ac5b0cff5b2b1b774052779c1aa3057f3c9be6c41ca3343ddf999b4890c",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -369,6 +369,16 @@
         "State": 0,
         "Value": 0,
         "Citation": "Census CM-005: only for keeper leagues"
+      },
+      "Sides": {
+        "State": 0,
+        "Value": null,
+        "Citation": "Counted from the conferences when each side has its own player pool"
+      },
+      "Pools": {
+        "State": 1,
+        "Value": "one",
+        "Citation": "Census CM-001"
       }
     },
     "Roster": {

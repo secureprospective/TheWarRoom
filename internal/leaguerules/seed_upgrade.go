@@ -33,6 +33,8 @@ func scoringKindPaths() []FieldPath {
 //     has them, for a seed recorded before the setting; an imported start then carries its own.
 //   - version 5 (2026-10-27, startup draft ruling R1) records the startup draft settings a new Legacy
 //     seed has, for a seed recorded before them, with rounds that fill the league's own recorded roster.
+//   - version 6 (2026-10-27, F8) records one player pool, and no sides, for a seed recorded before player
+//     pools existed: an older league keeps the one pool it always had.
 func seedUpgrades() []seedUpgrade {
 	return []seedUpgrade{
 		{version: 1, fields: scoringKindPaths(),
@@ -63,6 +65,11 @@ func seedUpgrades() []seedUpgrade {
 		{version: 5, fields: startupPaths(),
 			applies: func(recorded map[FieldPath]Setting) bool { return !anyRecorded(recorded, startupPaths()) },
 			values:  startupValues},
+		{version: 6, fields: []FieldPath{"players.pools", "league.sides"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return !anyRecorded(recorded, []FieldPath{"players.pools"})
+			},
+			values: legacyValues},
 	}
 }
 

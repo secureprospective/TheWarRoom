@@ -19,6 +19,12 @@ type LeagueRules struct {
 	Dynasty             Value[bool]
 	Carry               Value[CarryPolicy]
 	Keepers             Value[int]
+	// Sides names the side of each franchise in a league whose player pools are per side: each conference
+	// is a side. It is counted from the alignment and conferences, never set, and fixed once play begins.
+	// Like Pools it is omitted while zero, so a rule set stored before it encodes, and digests, as it did.
+	Sides Value[map[string]string] `json:",omitzero"`
+	// Pools says whether the league holds one copy of every player or one per side.
+	Pools Value[PlayerPools] `json:",omitzero"`
 }
 
 func legacyLeague() LeagueRules {
@@ -33,6 +39,8 @@ func legacyLeague() LeagueRules {
 		Dynasty:             cited[bool](true, "Census CM-005"),
 		Carry:               cited[CarryPolicy](CarryAll, "Census CM-005"),
 		Keepers:             Needs[int]("Census CM-005: only for keeper leagues"),
+		Sides:               Needs[map[string]string]("Counted from the conferences when each side has its own player pool"),
+		Pools:               cited[PlayerPools](OnePool, "Census CM-001"),
 	}
 }
 
@@ -48,6 +56,8 @@ func leagueFields() []ruleField {
 		field[bool]{path: "league.dynasty", label: "Dynasty league", access: func(r *RuleSet) *Value[bool] { return &r.League.Dynasty }},
 		field[CarryPolicy]{path: "league.carry", label: "Roster carry policy", access: func(r *RuleSet) *Value[CarryPolicy] { return &r.League.Carry }},
 		field[int]{path: "league.keepers", label: "Keepers", access: func(r *RuleSet) *Value[int] { return &r.League.Keepers }},
+		field[map[string]string]{path: "league.sides", label: "Sides", access: func(r *RuleSet) *Value[map[string]string] { return &r.League.Sides }},
+		field[PlayerPools]{path: "players.pools", label: "Player pools", access: func(r *RuleSet) *Value[PlayerPools] { return &r.League.Pools }},
 	}
 }
 

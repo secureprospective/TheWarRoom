@@ -312,6 +312,75 @@
       "now": "reason"
      },
      "governed": null
+    },
+    {
+     "field": "league.sides",
+     "label": "Sides",
+     "value": "None: the league has one player pool",
+     "state": "Set",
+     "citation": "One player pool: the league has no sides",
+     "changedAt": "",
+     "schema": {
+      "kind": "map",
+      "choices": [],
+      "fields": [],
+      "key": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      },
+      "element": {
+       "kind": "string",
+       "choices": [],
+       "fields": []
+      }
+     },
+     "competitive": true,
+     "pending": [],
+     "current": {},
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
+    }
+   ]
+  },
+  {
+   "label": "Player pools",
+   "rows": [
+    {
+     "field": "players.pools",
+     "label": "Player pools",
+     "value": "One for the whole league",
+     "state": "Set",
+     "citation": "Legacy NFL rules",
+     "changedAt": "",
+     "schema": {
+      "kind": "string",
+      "choices": [
+       {
+        "value": "one",
+        "label": "One for the whole league"
+       },
+       {
+        "value": "per_side",
+        "label": "One per side: each conference has its own copy of every player"
+       }
+      ],
+      "fields": []
+     },
+     "competitive": true,
+     "nowOnly": true,
+     "pending": [],
+     "current": "one",
+     "unit": "",
+     "safeguards": {
+      "nextRollover": "hold",
+      "now": "reason"
+     },
+     "governed": null
     }
    ]
   },

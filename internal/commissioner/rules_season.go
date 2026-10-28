@@ -163,6 +163,7 @@ func countedShape(rules *leaguerules.RuleSet, records []Record) {
 		rules.League.Divisions = leaguerules.Value[int]{State: leaguerules.IsKnown,
 			Value: leaguerules.DivisionCount(rules.League.Alignment.Value), Citation: "Counted from the division alignment"}
 	}
+	countSides(rules)
 }
 
 // RulesInForce is the one place a native league's rules are resolved. It returns the rules a season

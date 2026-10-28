@@ -79,3 +79,23 @@ func alignTo(r *RuleSet, c Change) {
 		conferences.Value = kept
 	}
 }
+
+// PoolsPerSide says the league holds a copy of every player for each side.
+func PoolsPerSide(r RuleSet) bool {
+	return r.League.Pools.State == IsKnown && r.League.Pools.Value == PerSide
+}
+
+// CountedSides is each franchise's side when the league's player pools are per side: the conference of
+// its division. A franchise with no division, or a division with no conference, has no side yet.
+func CountedSides(r RuleSet) map[string]string {
+	out := map[string]string{}
+	if r.League.Alignment.State != IsKnown || r.League.DivisionConferences.State != IsKnown {
+		return out
+	}
+	for franchise, division := range r.League.Alignment.Value {
+		if side := r.League.DivisionConferences.Value[division]; side != "" {
+			out[franchise] = side
+		}
+	}
+	return out
+}

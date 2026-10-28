@@ -13,9 +13,30 @@ func alignmentWords(records []Record, alignment leaguerules.Value[map[string]str
 	if alignment.State != leaguerules.IsKnown {
 		return leaguerules.DescribeField(alignmentField, alignment).Words, nil
 	}
+	names, err := franchiseNames(records)
+	if err != nil {
+		return "", err
+	}
+	ids := make([]string, 0, len(alignment.Value))
+	for id := range alignment.Value {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	parts := make([]string, 0, len(ids))
+	for _, id := range ids {
+		parts = append(parts, cmpName(names, id)+": "+alignment.Value[id])
+	}
+	if len(parts) == 0 {
+		return "None", nil
+	}
+	return strings.Join(parts, "; "), nil
+}
+
+// franchiseNames is each franchise's current name, as the league directory shows it.
+func franchiseNames(records []Record) (map[string]string, error) {
 	state, err := GovernanceState(records)
 	if err != nil {
-		return "", fmt.Errorf("read alignment names: %w", err)
+		return nil, fmt.Errorf("read alignment names: %w", err)
 	}
 	seats := readSeats(state, LeagueFranchises(records))
 	applyNativeNames(seats, records)
@@ -25,21 +46,5 @@ func alignmentWords(records []Record, alignment leaguerules.Value[map[string]str
 			names[seat.Franchise] = seat.Name
 		}
 	}
-	ids := make([]string, 0, len(alignment.Value))
-	for id := range alignment.Value {
-		ids = append(ids, id)
-	}
-	slices.Sort(ids)
-	parts := make([]string, 0, len(ids))
-	for _, id := range ids {
-		name := names[id]
-		if name == "" {
-			name = id
-		}
-		parts = append(parts, name+": "+alignment.Value[id])
-	}
-	if len(parts) == 0 {
-		return "None", nil
-	}
-	return strings.Join(parts, "; "), nil
+	return names, nil
 }

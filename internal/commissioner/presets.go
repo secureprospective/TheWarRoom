@@ -16,6 +16,9 @@ const (
 	PresetEmpty  = "empty"
 	// PresetDefault32 is the 32-Team Default (DEFAULT-32 spec).
 	PresetDefault32 = "default_32"
+	// PresetMirror16 is the 16-Team Mirror: two sides, each with its own copy of every player.
+	PresetMirror16 = "mirror_16"
+	mirror16Teams  = 16
 )
 
 // StartingPreset is what the start form shows of a catalog entry.
@@ -56,6 +59,14 @@ func presetCatalog() []presetEntry {
 			native: true, source: SourceNative, defaultTeams: legacyTeams, choice: "the 32-Team Default",
 			history: "the 32-Team Default rules", preview: "32-Team Default rules", citation: "32-Team Default rules",
 			rules: leaguerules.Default32ForTeams},
+		{StartingPreset: StartingPreset{ID: PresetMirror16, Label: "16-Team Mirror",
+			Description: "The 16-Team Mirror is built for 16 franchises in two conferences. Each conference is a side " +
+				"with its own copy of every player: the sides meet only on the field and in the final. A startup " +
+				"draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
+			SuggestedTeams: mirror16Teams},
+			native: true, source: SourceNative, defaultTeams: mirror16Teams, choice: "the 16-Team Mirror",
+			history: "the 16-Team Mirror rules", preview: "16-Team Mirror rules", citation: "16-Team Mirror rules",
+			rules: func(int) leaguerules.RuleSet { return leaguerules.Mirror16() }},
 		{StartingPreset: StartingPreset{ID: PresetLegacy, Label: "Legacy NFL",
 			Description:    "The Legacy NFL's rules, as imported from MFL.",
 			SuggestedTeams: legacyTeams},

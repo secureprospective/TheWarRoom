@@ -28,6 +28,10 @@
       {
        "field": "league.initialRosters",
        "label": "First rosters"
+      },
+      {
+       "field": "players.pools",
+       "label": "Player pools"
       }
      ]
     },
@@ -43,6 +47,10 @@
       {
        "field": "league.divisionConferences",
        "label": "Conference of each division"
+      },
+      {
+       "field": "league.sides",
+       "label": "Sides"
       }
      ]
     },
@@ -919,6 +927,13 @@
    "label": "32-Team Default",
    "description": "The 32-Team Default is built for 32 franchises: the NFL's divisions, a startup draft and its own lineup, roster and scoring. Every value can be changed afterwards.",
    "suggestedTeams": 32
+  },
+  {
+   "id": "mirror_16",
+   "label": "16-Team Mirror",
+   "description": "The 16-Team Mirror is for 16 franchises in two conferences. Each conference is a side with its own copy of every player: the sides meet only on the field and in the final. A startup draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
+   "minTeams": 16,
+   "maxTeams": 16
   },
   {
    "id": "empty",

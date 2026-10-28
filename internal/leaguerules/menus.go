@@ -25,6 +25,9 @@ type OrderSource string
 type OrderPattern string
 type TieRule string
 
+// PlayerPools says whether the league holds one copy of every player, or one per side.
+type PlayerPools string
+
 // StartupOrderSource is where a startup draft's first round order comes from.
 type StartupOrderSource string
 
@@ -47,7 +50,11 @@ const (
 	HeadToHead Format         = "head_to_head"
 	ByDraft    InitialRosters = "draft"
 	// ByFreeAgency starts a league with no startup draft: owners fill their rosters by free-agent bids.
-	ByFreeAgency         InitialRosters  = "free_agency"
+	ByFreeAgency InitialRosters = "free_agency"
+	// OnePool is one copy of every player for the whole league.
+	OnePool PlayerPools = "one"
+	// PerSide gives each side (each conference) its own copy of every player; the sides meet only on the field.
+	PerSide              PlayerPools     = "per_side"
 	CarryAll             CarryPolicy     = "all"
 	KeepSome             CarryPolicy     = "keepers"
 	ZeroTopStarter       Penalty         = "zero_top_starter"
