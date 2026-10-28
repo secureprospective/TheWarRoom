@@ -17,6 +17,12 @@ import MyMoves from './MyMoves';
 import { renderState } from './state';
 import { clockDom } from '../clock/testDom';
 
+// The registry prefetches the HQ chunk; a load still pending at teardown fails the run.
+vi.mock('./FranchiseHQMount', async importOriginal => ({
+  ...await importOriginal<typeof import('./FranchiseHQMount')>(),
+  prefetchHQ: () => Promise.resolve({ default: () => null }),
+}));
+
 const demoImports = vi.fn();
 vi.mock('../data/fixtures/envelope-demo.json', () => {
   demoImports();
