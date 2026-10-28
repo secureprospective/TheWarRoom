@@ -32,3 +32,30 @@ func TestMirror16PresetIsCitedAndValid(t *testing.T) {
 		t.Fatalf("startup rounds %d", preset.Draft.StartupRounds.Value)
 	}
 }
+
+func TestMirror16ForTeamsAsksForTheCountDependentValues(t *testing.T) {
+	if !reflect.DeepEqual(Mirror16ForTeams(16), Mirror16()) {
+		t.Error("at 16 the Mirror changed")
+	}
+	want, got := Mirror16(), Mirror16ForTeams(20)
+	if got.League.Teams.State != IsKnown || got.League.Teams.Value != 20 {
+		t.Errorf("teams: %+v, want 20", got.League.Teams)
+	}
+	if got.League.Pools != want.League.Pools {
+		t.Errorf("pools: %+v, want a pool per side", got.League.Pools)
+	}
+	for name, state := range map[string]State{
+		"league.divisions": got.League.Divisions.State, "league.alignment": got.League.Alignment.State,
+		"league.divisionConferences": got.League.DivisionConferences.State,
+		"playoffs.perConference":     got.Playoffs.PerConference.State,
+		"playoffs.graph":             got.Playoffs.Graph.State, "schedule.pattern": got.Schedule.Pattern.State,
+	} {
+		if state != NeedsRuling {
+			t.Errorf("%s: %v, want Needs a ruling", name, state)
+		}
+	}
+	if !reflect.DeepEqual(got.Lineup, want.Lineup) || !reflect.DeepEqual(got.Roster, want.Roster) ||
+		!reflect.DeepEqual(got.Scoring, want.Scoring) {
+		t.Error("lineup, roster or scoring changed with the team count")
+	}
+}

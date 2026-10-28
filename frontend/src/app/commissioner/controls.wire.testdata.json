@@ -931,9 +931,8 @@
     {
       "id": "mirror_16",
       "label": "16-Team Mirror",
-      "description": "The 16-Team Mirror is for 16 franchises in two conferences. Each conference is a side with its own copy of every player: the sides meet only on the field and in the final. A startup draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
-      "minTeams": 16,
-      "maxTeams": 16
+      "description": "The 16-Team Mirror is built for 16 franchises in two conferences. Each conference is a side with its own copy of every player: the sides meet only on the field and in the final. A startup draft runs on each side; there is no O-Line card. Every value can be changed afterwards.",
+      "suggestedTeams": 16
     },
     {
       "id": "empty",

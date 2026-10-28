@@ -66,7 +66,7 @@ func presetCatalog() []presetEntry {
 			SuggestedTeams: mirror16Teams},
 			native: true, source: SourceNative, defaultTeams: mirror16Teams, choice: "the 16-Team Mirror",
 			history: "the 16-Team Mirror rules", preview: "16-Team Mirror rules", citation: "16-Team Mirror rules",
-			rules: func(int) leaguerules.RuleSet { return leaguerules.Mirror16() }},
+			rules: leaguerules.Mirror16ForTeams},
 		{StartingPreset: StartingPreset{ID: PresetLegacy, Label: "Legacy NFL",
 			Description:    "The Legacy NFL's rules, as imported from MFL.",
 			SuggestedTeams: legacyTeams},

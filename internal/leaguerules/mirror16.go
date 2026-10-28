@@ -69,3 +69,33 @@ func mirror16Graph() []BracketNode {
 		node("conference", 15, 0, 0, "winner of semi_1", "winner of semi_2"),
 		node("championship", 16, 0, 0, "conference winner", "conference winner")}
 }
+
+// Mirror16ForTeams is the 16-Team Mirror at any team count. At 16 it is the Mirror exactly; at another
+// count the pools per side, lineup, roster and scoring stay, and every value sized for 16 waits for a
+// ruling. The sides follow once the commissioner places each franchise in a division.
+func Mirror16ForTeams(count int) RuleSet {
+	r := Mirror16()
+	if count == 16 {
+		return r
+	}
+	r.League.Teams = cited(count, mirror16Layout+": chosen team count")
+	r.League.Divisions = Needs[int]("Choose the number of divisions for this league's size.")
+	r.League.Alignment = Needs[map[string]string]("Choose which division each franchise belongs to.")
+	r.League.DivisionConferences = Needs[map[string]string]("Choose the conference, and so the side, of " +
+		"each division.")
+	r.Playoffs.PerConference = Needs[int]("Choose how many teams per conference make the playoffs in this " +
+		"league.")
+	r.Playoffs.DivisionWinners = Needs[int]("Choose the playoff field first, then how many division " +
+		"winners qualify.")
+	r.Playoffs.WildCards = Needs[int]("Choose the playoff field first, then how many wild cards qualify.")
+	r.Playoffs.ByeSeed = Needs[int]("Choose first-round byes for this playoff field.")
+	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this playoff field.")
+	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the bracket.")
+	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this league.")
+	if count < 4 {
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades.")
+		r.Trades.DOTSeats = Needs[int]("Fewer than four teams: choose how many people review trades.")
+		r.Trades.MaximumParties = Needs[int]("Fewer than four teams: choose the maximum parties in a trade.")
+	}
+	return r
+}
