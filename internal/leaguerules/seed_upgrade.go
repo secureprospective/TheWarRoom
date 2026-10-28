@@ -35,6 +35,8 @@ func scoringKindPaths() []FieldPath {
 //     seed has, for a seed recorded before them, with rounds that fill the league's own recorded roster.
 //   - version 6 (2026-10-27, F8) records one player pool, and no sides, for a seed recorded before player
 //     pools existed: an older league keeps the one pool it always had.
+//   - version 7 (2026-10-28) records no range rules, as a new Legacy seed has them, for a seed recorded
+//     before them, so an older league scores exactly as it did.
 func seedUpgrades() []seedUpgrade {
 	return []seedUpgrade{
 		{version: 1, fields: scoringKindPaths(),
@@ -68,6 +70,11 @@ func seedUpgrades() []seedUpgrade {
 		{version: 6, fields: []FieldPath{"players.pools", "league.sides"},
 			applies: func(recorded map[FieldPath]Setting) bool {
 				return !anyRecorded(recorded, []FieldPath{"players.pools"})
+			},
+			values: legacyValues},
+		{version: 7, fields: []FieldPath{"scoring.rules"},
+			applies: func(recorded map[FieldPath]Setting) bool {
+				return recorded["scoring.catalogue"] != nil && !anyRecorded(recorded, []FieldPath{"scoring.rules"})
 			},
 			values: legacyValues},
 	}

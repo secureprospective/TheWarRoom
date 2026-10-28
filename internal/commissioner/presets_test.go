@@ -38,7 +38,7 @@ func presetLeague(t *testing.T, preset string, teams int) []Record {
 // and preview words and its rules in force hash to what they were before the catalog (20a00b25). The
 // rules reading is pinned too where the citation wording did not change; the 32-Team Default's reading
 // now cites its own preset (see TestStartingCitationNamesTheLeaguesOwnPreset). Player pools and sides
-// (F8) are the only additions since: without them every digest is unchanged.
+// (F8) and range rules are the only additions since: without them every digest is unchanged.
 func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	for _, c := range []struct {
 		preset        string
@@ -70,20 +70,42 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 	}
 }
 
-// withoutPools takes the F8 settings out of a creation, its rules and its reading.
+// withoutPools takes the F8 settings and range rules out of a creation, its rules and its reading.
 func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
-	f8 := func(field string) bool { return field == poolsField || field == sidesField }
+	f8 := func(field string) bool { return field == poolsField || field == sidesField || field == "scoring.rules" }
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
+	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	sections := []RuleSection{}
 	for _, s := range reading.Sections {
 		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })
+		for i := range s.Rows {
+			s.Rows[i].Schema = withoutStatChoices(s.Rows[i].Schema)
+		}
 		if len(s.Rows) != 0 {
 			sections = append(sections, s)
 		}
 	}
 	reading.Sections = sections
+}
+
+// withoutStatChoices takes out the stat dictionary a stat key offers, added with range rules.
+func withoutStatChoices(schema leaguerules.ValueSchema) leaguerules.ValueSchema {
+	if len(schema.Choices) != 0 && schema.Choices[0].Value == "passing_td" {
+		schema.Choices = []leaguerules.Choice{}
+	}
+	schema.Fields = slices.Clone(schema.Fields)
+	for i := range schema.Fields {
+		schema.Fields[i].Schema = withoutStatChoices(schema.Fields[i].Schema)
+	}
+	for _, child := range []**leaguerules.ValueSchema{&schema.Key, &schema.Element} {
+		if *child != nil {
+			copied := withoutStatChoices(**child)
+			*child = &copied
+		}
+	}
+	return schema
 }
 
 func digest(t *testing.T, parts ...any) string {

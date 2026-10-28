@@ -114,8 +114,8 @@ describe('Plain rule provenance', () => {
   it('shows the scoring sources and counting settings in plain words', async () => {
     const host = await show(render(LeagueRules), { rules: legacy });
     const source = 'Legacy NFL rules (the league’s MFL scoring)';
-    // Seven scoring settings carry the source: values, rounding and the five rule kinds.
-    expect(host.textContent.split(source)).toHaveLength(8);
+    // Eight scoring settings carry the source: values, rounding and the six rule kinds.
+    expect(host.textContent.split(source)).toHaveLength(9);
     expect(host.textContent).not.toMatch(/Rulebook §|Math §/);
     expect(host.textContent).toContain('Once per player-week');
     expect(host.textContent).toContain('Round each stat’s points to the cent');

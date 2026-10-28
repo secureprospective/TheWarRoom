@@ -135,16 +135,7 @@ func schemaFor(t reflect.Type) ValueSchema {
 			s.Fields = append(s.Fields, SchemaField{f.Name, fieldWords(f.Name), schemaFor(f.Type)})
 		}
 	case reflect.Map, reflect.Slice:
-		s.Kind = "list"
-		if t.Kind() == reflect.Map {
-			s.Kind = "map"
-		}
-		child := schemaFor(t.Elem())
-		s.Element = &child
-		if t.Kind() == reflect.Map {
-			key := schemaFor(t.Key())
-			s.Key = &key
-		}
+		collectionSchema(t, &s)
 	case reflect.Int, reflect.Int64:
 		s.Kind = "count"
 		low := int64(0)
@@ -168,6 +159,26 @@ func schemaFor(t reflect.Type) ValueSchema {
 		reflect.Pointer, reflect.UnsafePointer:
 	}
 	return s
+}
+
+func collectionSchema(t reflect.Type, s *ValueSchema) {
+	s.Kind = "list"
+	if t.Kind() == reflect.Map {
+		s.Kind = "map"
+	}
+	// A stat named as a key or in a list is chosen from the stat dictionary.
+	child := schemaFor(t.Elem())
+	if t.Elem() == reflect.TypeFor[StatID]() {
+		child.Choices = statChoices()
+	}
+	s.Element = &child
+	if t.Kind() == reflect.Map {
+		key := schemaFor(t.Key())
+		if t.Key() == reflect.TypeFor[StatID]() {
+			key.Choices = statChoices()
+		}
+		s.Key = &key
+	}
 }
 
 func catalogueChoices(kind string) []Choice {

@@ -149,6 +149,7 @@ func Default32Scoring() ScoringRules {
 			"pat_missed_or_blocked":   {"pat_missed", "pat_blocked"},
 			"punt_or_other_return_td": {"punt_return_td", "other_return_td"}}, default32Citation),
 		LineUnit: cited(default32LineUnit(), default32Citation),
+		Rules:    cited(map[StatID][]RangeRule{}, default32Citation),
 	}
 	return r
 }

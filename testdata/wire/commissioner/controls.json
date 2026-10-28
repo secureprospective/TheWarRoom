@@ -145,6 +145,10 @@
        "label": "Stats counted as a total of others"
       },
       {
+       "field": "scoring.rules",
+       "label": "Scoring rules by range and position"
+      },
+      {
        "field": "scoring.lineUnit",
        "label": "Team offensive line scoring"
       }

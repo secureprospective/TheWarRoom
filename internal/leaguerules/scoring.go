@@ -8,6 +8,9 @@ type ScoringRules struct {
 	Scales          Value[map[StatID]DistanceScale]
 	Totals          Value[map[StatID][]StatID]
 	LineUnit        Value[LineUnit]
+	// Rules are MFL-style range rules. A rule set stored before they existed reads them unset and omits
+	// them, so it encodes, and digests, as it did.
+	Rules Value[map[StatID][]RangeRule] `json:",omitzero"`
 }
 
 func legacyScoring() ScoringRules {

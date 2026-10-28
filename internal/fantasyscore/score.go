@@ -52,7 +52,7 @@ func Score(rules leaguerules.ScoringRules, position leaguerules.Position, line S
 	if err != nil {
 		return Points{}, nil, err
 	}
-	return countLine(rules, position, line)
+	return countLine(rules, position, withPlayCounts(rules, line))
 }
 
 // countLine prices every recorded stat and its position extras, each rounded on its own.
@@ -68,6 +68,11 @@ func countLine(rules leaguerules.ScoringRules, position leaguerules.Position, li
 		if err != nil {
 			return Points{}, nil, fmt.Errorf("count %s: %w", id, err)
 		}
+		ranged, err := rangeRuleItems(rules, id, position, line)
+		if err != nil {
+			return Points{}, nil, fmt.Errorf("count %s: %w", id, err)
+		}
+		extras = append(extras, ranged...)
 		for _, item := range append([]LineItem{item}, extras...) {
 			if rules.RoundStatPoints.Value && item.Points.State == leaguerules.IsKnown {
 				if item.Points.Value, err = roundCent(item.Points.Value); err != nil {
