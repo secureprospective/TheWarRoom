@@ -112,3 +112,10 @@ Did not alter Go command catalogue or endpoint CSV: outside this frontend slice.
 - Bloat blocks lint: tiny files 27 versus 24. Documented `scripts/bloat.sh --update` refuses any increase; baseline unchanged. Nine files newly tiny and six no longer tiny since its baseline commit, including cleanup and platform moves. Boundary check independently flags `internal/app/core/host_lab.go` decision syntax.
 - Placement, transport, isolated-cache golangci-lint, Wails version, vulnerability scan and bindings freshness pass; Wails emits existing missing-model warnings. Full verify/race suite not run.
 - Next: resolve the ratchet policy conflict and review the lab boundary before rerunning verify. Shared golangci cache produced stale paths from another worktree; isolated cache was clean.
+
+## Bee — Terra gate 2, 2026-10-28
+- Baton: review; `session/terra-gate1`. No upstream configured; pull failed. No push requested.
+- Removed unused `internal/app/core/host_lab.go`; retained `LabFacts` for the asset board. Folds: `internal/app/offers/bids/pricing.go` → `internal/app/offers/bids/plans.go`; `internal/store/history/replay_cache.go` → `internal/store/history/commissioner.go`.
+- Bloat passes: comment 5/5, provenance 0/0, tiny 24/24, duplicates 0/0; update lowered only comment ceiling 13→5. Go build passes; non-race tests: bids 2 pass, history 234 pass/4 skip, core 20 pass, composition 578 pass/2 fail. Boundary checker tests 8 pass.
+- Blocked: boundary check exposes unreviewed migration functions/source, changed adapter sources/functions and stale entries after removing the first blocker. Do not refresh fingerprints to hide changes; needs boundary policy review. Composition parity tests fail on inherited `offers.filter` metadata; both reproduced on the starting commit. Frontend untouched.
+- Next: review migration and other changed boundary wiring against the architecture; reconcile retired offer filter metadata and frozen door tests. No GUI verification performed.
