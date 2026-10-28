@@ -128,6 +128,9 @@ func domainCommandIDs(t *testing.T) map[string]bool {
 			return true
 		})
 	}
+	// Cutover is recorded only through the MFL move's assist door (internal/commandcatalog/migration.go),
+	// which checks the review digest first; the native door must not offer it.
+	delete(ids, commissioner.Cutover)
 	return ids
 }
 
