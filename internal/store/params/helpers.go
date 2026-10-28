@@ -19,7 +19,7 @@ func atof(s, field string) (float64, error) {
 }
 
 // scanDef reads one param_defaults row.
-func scanDef(rows *sql.Rows) (ParamDef, error) {
+func scanDef(rows *sql.Rows, shipped map[string]bool) (ParamDef, bool, error) {
 	var (
 		d                   ParamDef
 		vtype, defv, mn, mx string
@@ -27,36 +27,42 @@ func scanDef(rows *sql.Rows) (ParamDef, error) {
 	)
 	if err := rows.Scan(&d.Key, &d.Position, &vtype, &defv, &mn, &mx,
 		&calibrated, &d.Description); err != nil {
-		return ParamDef{}, fmt.Errorf("params: scan default: %w", err)
+		return ParamDef{}, false, fmt.Errorf("params: scan default: %w", err)
+	}
+	if !shipped[defKey(d.Key, d.Position)] {
+		return ParamDef{}, false, nil
 	}
 	var err error
 	if d.Default, err = atof(defv, "default"); err != nil {
-		return ParamDef{}, err
+		return ParamDef{}, false, err
 	}
 	if d.Min, err = atof(mn, "min"); err != nil {
-		return ParamDef{}, err
+		return ParamDef{}, false, err
 	}
 	if d.Max, err = atof(mx, "max"); err != nil {
-		return ParamDef{}, err
+		return ParamDef{}, false, err
 	}
 	d.Type = ValueType(vtype)
 	d.IsCalibrated = calibrated != 0
-	return d, nil
+	return d, true, nil
 }
 
 // scanOverride reads one param_overrides row into a typed Override.
-func scanOverride(rows *sql.Rows) (Override, error) {
+func scanOverride(rows *sql.Rows, defs map[string]ParamDef) (Override, bool, error) {
 	var (
 		o   Override
 		val string
 	)
 	if err := rows.Scan(&o.Key, &o.Position, &val, &o.Note, &o.UpdatedAt); err != nil {
-		return Override{}, fmt.Errorf("params: scan override: %w", err)
+		return Override{}, false, fmt.Errorf("params: scan override: %w", err)
+	}
+	if _, ok := defs[defKey(o.Key, o.Position)]; !ok {
+		return Override{}, false, nil
 	}
 	v, err := atof(val, "override value")
 	if err != nil {
-		return Override{}, err
+		return Override{}, false, err
 	}
 	o.Value = v
-	return o, nil
+	return o, true, nil
 }

@@ -12,16 +12,8 @@ const global = ""
 
 // Parameter keys. The engine reads by these constants.
 const (
-	// KeyCapTierColdCeiling: salary below this % of the cap is Cold.
-	KeyCapTierColdCeiling = "captier.cold_ceiling_pct"
-	// KeyCapTierHotFloor: salary above this % of the cap is Hot.
-	KeyCapTierHotFloor = "captier.hot_floor_pct"
 	// KeyLayer3DecayRate: the annual age-decay rate.
 	KeyLayer3DecayRate = "layer3.decay_rate"
-	// KeyCushionGuardRAS: the DT RAS threshold above which Cushion Guard applies (SL-021).
-	KeyCushionGuardRAS = "cushion_guard.ras_threshold"
-	// KeyCushionGuardReduct: how much Cushion Guard slows the DT decline.
-	KeyCushionGuardReduct = "cushion_guard.reduction"
 	// KeyDynastySeasons: how many seasons the dynasty measurable counts, this one first.
 	KeyDynastySeasons = "dynasty.seasons"
 	// KeyDynastyDiscount: each later season's weight in the dynasty measurable.
@@ -42,12 +34,6 @@ type ParamDef struct {
 	Max          float64
 	IsCalibrated bool
 	Description  string
-}
-
-// CapTiers are the cap-tier boundaries as percentages of the league cap.
-type CapTiers struct {
-	ColdCeiling float64 // Cold when salary% < ColdCeiling
-	HotFloor    float64 // Hot when salary% > HotFloor; Neutral in between
 }
 
 // Override is an admin value layered over a shipped default; a release may replace the default,

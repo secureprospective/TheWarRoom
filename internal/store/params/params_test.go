@@ -37,13 +37,6 @@ func openPools(t *testing.T, path string) *db.Pools {
 func TestInitializeSeedsDefaults(t *testing.T) {
 	s, _ := openStore(t)
 
-	tiers, err := s.Snapshot().GetCapTiers()
-	if err != nil {
-		t.Fatalf("GetCapTiers: %v", err)
-	}
-	if tiers.ColdCeiling != 1.2 || tiers.HotFloor != 4.8 {
-		t.Fatalf("cap tiers = %+v, want {1.2 4.8}", tiers)
-	}
 	decay, err := s.Snapshot().GetGlobal(KeyLayer3DecayRate)
 	if err != nil {
 		t.Fatalf("GetGlobal decay: %v", err)
@@ -75,21 +68,11 @@ func TestDefinitionsShipCalibratedOnlyWhenFitted(t *testing.T) {
 
 func TestSetOverrideAppliesAndIsRangeAware(t *testing.T) {
 	s, _ := openStore(t)
-	ctx := context.Background()
-
-	if err := s.SetOverride(ctx, KeyCapTierColdCeiling, "", 2.0, "tuned up"); err != nil {
-		t.Fatalf("SetOverride: %v", err)
+	if err := s.SetOverride(context.Background(), KeyLayer3DecayRate, "", 0.2, "tuned"); err != nil {
+		t.Fatal(err)
 	}
-	tiers, err := s.Snapshot().GetCapTiers()
-	if err != nil {
-		t.Fatalf("GetCapTiers: %v", err)
-	}
-	if tiers.ColdCeiling != 2.0 {
-		t.Fatalf("ColdCeiling = %g, want overridden 2.0", tiers.ColdCeiling)
-	}
-	// The un-overridden boundary still reads its default.
-	if tiers.HotFloor != 4.8 {
-		t.Fatalf("HotFloor = %g, want default 4.8", tiers.HotFloor)
+	if v, err := s.Snapshot().GetGlobal(KeyLayer3DecayRate); err != nil || v != 0.2 {
+		t.Fatalf("decay = %g: %v", v, err)
 	}
 }
 
@@ -133,16 +116,13 @@ func TestOverrideNonFiniteRejected(t *testing.T) {
 	s, _ := openStore(t)
 	ctx := context.Background()
 	for _, v := range []float64{math.NaN(), math.Inf(1), math.Inf(-1)} {
-		if err := s.SetOverride(ctx, KeyCapTierColdCeiling, "", v, "bad"); err == nil {
+		if err := s.SetOverride(ctx, KeyLayer3DecayRate, "", v, "bad"); err == nil {
 			t.Fatalf("non-finite override %v accepted, want rejection", v)
 		}
 	}
-	tiers, err := s.Snapshot().GetCapTiers()
-	if err != nil {
-		t.Fatalf("GetCapTiers: %v", err)
-	}
-	if tiers.ColdCeiling != 1.2 {
-		t.Fatalf("ColdCeiling = %g after rejected non-finite, want unchanged 1.2", tiers.ColdCeiling)
+	v, err := s.Snapshot().GetGlobal(KeyLayer3DecayRate)
+	if err != nil || v != 0.03 {
+		t.Fatalf("decay = %g: %v", v, err)
 	}
 }
 
@@ -166,7 +146,7 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	if err := s1.Initialize(ctx); err != nil {
 		t.Fatalf("first Initialize: %v", err)
 	}
-	if err := s1.SetOverride(ctx, KeyCushionGuardRAS, "", 9.0, "tuned"); err != nil {
+	if err := s1.SetOverride(ctx, KeyDynastyDiscount, "", 0.9, "tuned"); err != nil {
 		t.Fatalf("SetOverride: %v", err)
 	}
 
@@ -175,12 +155,12 @@ func TestInitializeDoesNotReseed(t *testing.T) {
 	if err := s2.Initialize(ctx); err != nil {
 		t.Fatalf("second Initialize: %v", err)
 	}
-	ras, err := s2.Snapshot().GetGlobal(KeyCushionGuardRAS)
+	ras, err := s2.Snapshot().GetGlobal(KeyDynastyDiscount)
 	if err != nil {
 		t.Fatalf("GetGlobal: %v", err)
 	}
-	if ras != 9.0 {
-		t.Fatalf("RAS = %g after restart, want surviving override 9.0", ras)
+	if ras != 0.9 {
+		t.Fatalf("RAS = %g after restart, want surviving override 0.9", ras)
 	}
 	if got := len(s2.Definitions()); got != len(defaultParams()) {
 		t.Fatalf("reseed duplicated defaults: %d defs, want %d", got, len(defaultParams()))
@@ -194,7 +174,7 @@ func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
 	ctx := context.Background()
 	_, pools := openStore(t)
 	if _, err := pools.Write().ExecContext(ctx,
-		`DELETE FROM param_defaults WHERE param_key = ?`, KeyCushionGuardReduct); err != nil {
+		`DELETE FROM param_defaults WHERE param_key = ?`, KeyDynastySeasons); err != nil {
 		t.Fatalf("simulate older release: %v", err)
 	}
 	if _, err := pools.Write().ExecContext(ctx,
@@ -206,7 +186,7 @@ func TestInitializeAddsDefaultsMissingFromAnExistingDB(t *testing.T) {
 	if err := s2.Initialize(ctx); err != nil {
 		t.Fatalf("Initialize on existing DB: %v", err)
 	}
-	if _, err := s2.Snapshot().GetGlobal(KeyCushionGuardReduct); err != nil {
+	if _, err := s2.Snapshot().GetGlobal(KeyDynastySeasons); err != nil {
 		t.Fatalf("parameter missing from the existing DB was not added: %v", err)
 	}
 	decay, err := s2.Snapshot().GetGlobal(KeyLayer3DecayRate)
@@ -229,8 +209,8 @@ func TestConcurrentReadsAndOverride(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for j := 0; j < 50; j++ {
-				_, _ = s.Snapshot().GetCapTiers()
-				_, _ = s.Snapshot().GetGlobal(KeyCushionGuardReduct)
+				_, _ = s.Snapshot().GetGlobal(KeyLayer3DecayRate)
+				_, _ = s.Snapshot().GetGlobal(KeyDynastySeasons)
 			}
 		}()
 	}
@@ -238,7 +218,7 @@ func TestConcurrentReadsAndOverride(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		for j := 0; j < 50; j++ {
-			_ = s.SetOverride(ctx, KeyCapTierHotFloor, "", 5.0, "")
+			_ = s.SetOverride(ctx, KeyDynastyDiscount, "", 0.5, "")
 		}
 	}()
 	wg.Wait()
@@ -314,5 +294,37 @@ func TestClearOverrideFollowsTheDefaultAgain(t *testing.T) {
 	}
 	if err := s.ClearOverride(ctx, "nope.not_a_param", ""); err == nil {
 		t.Error("clearing an unknown parameter must fail")
+	}
+}
+
+func TestLegacyOverrideIgnoredOnRestart(t *testing.T) {
+	ctx := context.Background()
+	_, pools := openStore(t)
+	_, err := pools.Write().ExecContext(ctx, `INSERT INTO param_defaults
+ (param_key, position, value_type, default_val, min_val, max_val, is_calibrated, description)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, "l4.film.cap", "WR", "float", "0.05", "0", "0.5", 0, "old")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = pools.Write().ExecContext(ctx, `INSERT INTO param_overrides
+ (param_key, position, value, note, updated_at) VALUES (?, ?, ?, ?, ?)`,
+		"l4.film.cap", "WR", "0.2", "legacy", "2026-01-01")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := New(pools)
+	if err := s.Initialize(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.Snapshot().Values()["l4.film.cap@WR"]; ok {
+		t.Fatal("legacy parameter exposed")
+	}
+	if s.Overridden("l4.film.cap", "WR") {
+		t.Fatal("legacy override exposed")
+	}
+	var value string
+	if err := pools.Read().QueryRowContext(ctx, `SELECT value FROM param_overrides WHERE param_key = ? AND position = ?`,
+		"l4.film.cap", "WR").Scan(&value); err != nil || value != "0.2" {
+		t.Fatalf("legacy data lost: %q %v", value, err)
 	}
 }

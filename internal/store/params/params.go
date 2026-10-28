@@ -1,7 +1,7 @@
 // Package params stores the engine's calibration parameters (cap-tier percentages and other
 // tunables) as shipped defaults plus an admin override layer applied at read time. Storage is a
 // generic (key, position) table with a [Min,Max] range per row, so adding a parameter is a data
-// row, not code. The public surface is typed (GetCapTiers, GetGlobal).
+// row, not code. The public surface includes GetGlobal.
 //
 // It holds percentages and rates only; the cap amount belongs to the rulebook. Writes are
 // admin-only and never go through the transaction coordinator.
@@ -137,19 +137,6 @@ func (p Set) part(model bool) map[string]float64 {
 	out := p.Values()
 	maps.DeleteFunc(out, func(k string, _ float64) bool { return IsModel(k) != model })
 	return out
-}
-
-// GetCapTiers returns the cap-tier boundaries.
-func (p Set) GetCapTiers() (CapTiers, error) {
-	cold, coldOK := p.values[defKey(KeyCapTierColdCeiling, global)]
-	hot, hotOK := p.values[defKey(KeyCapTierHotFloor, global)]
-	if !coldOK {
-		return CapTiers{}, fmt.Errorf("params: missing %s", KeyCapTierColdCeiling)
-	}
-	if !hotOK {
-		return CapTiers{}, fmt.Errorf("params: missing %s", KeyCapTierHotFloor)
-	}
-	return CapTiers{ColdCeiling: cold, HotFloor: hot}, nil
 }
 
 // GetGlobal returns a league-wide parameter. An unknown key is an error, never a silent 0.

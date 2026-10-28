@@ -28,7 +28,6 @@ internal/engine/bid	offers
 internal/engine/competition	commissioner
 internal/engine/contractacts	contracts
 internal/engine/eligibility	contracts
-internal/engine/l4	scoring
 internal/engine/race	race
 internal/engine/rookiedraft	commissioner
 internal/envelope	core

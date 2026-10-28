@@ -1,23 +1,20 @@
 # Handoff
 
 ## Baton
-Bee — 2026-10-28, `session/terra-franchise-scope`. Do not push without direction.
+Bee — 2026-10-28, `session/terra-p7-deadset`. Do not push without direction.
 
 ## Where it stands
-- Scoped reserve exceptions, player decision exceptions and contract quotes by franchise for per-side pools.
-- Legacy player-only exceptions remain valid in single-pool leagues, but do not cross per-side copies.
-- Contract quote schema changed; frozen command metadata updated. Fixture rewrites contained unrelated
-  timestamps and were discarded.
+Removed inert cap-tier, cushion-guard and Layer 4 parameter definitions and admin labels.
+Legacy database rows are ignored without deletion. Targeted tests and build passed.
 
 ## Next move
-Review commits and run the full race suite on a quiet machine. Verify the reserve preview and contract
-quote flows in the UI; the new franchise argument is available at the API boundary.
+Review the commit and test Engine Admin: removed settings should not appear; live settings remain editable.
 
 ## Blocked on
-No upstream configured, so `git pull --ff-only` could not run. No push attempted.
+No upstream configured; `git pull --ff-only` could not run. No push attempted.
 
 ## Tried and rejected
-Fixture regeneration changed volatile timestamps and revisions without an intended wire change.
+Wire fixture regeneration produced unrelated volatile changes; discarded them and reran clean.
 
 ## Debt left
 Full race suite timed out under concurrent workload; targeted race tests passed. UI affordances for selecting
@@ -76,3 +73,4 @@ inventory and generated bindings; they sit on their own assist door until the UI
   team-defense or DL/DB positions refuse the import with a plain list.
 - A raw `commish.league.create` with the MFL preset accepts caller-supplied values (same power as setting
   rules by hand); the move's own path always builds them from the read.
+Full composition race test timed out; clean non-race composition test passed.
