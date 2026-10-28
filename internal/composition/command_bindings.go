@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	archiveapi "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapi "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -22,11 +21,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-func archiveCommandBindings(api *archiveapi.API) map[string]catalog.Binding {
-	return map[string]catalog.Binding{
-		"TargetArchive": catalog.Bind3(api.TargetArchive, "season", "team", "other"),
-	}
-}
 func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetNativeCapCheck":             catalog.Bind2(api.TargetNativeCapCheck, "leagueID", "viewerZone"),
@@ -210,7 +204,6 @@ func tradesCommandBindings(api *tradesapi.API) map[string]catalog.Binding {
 
 func newCommandAPIs(app *App) commandAPIs {
 	return commandAPIs{
-		archive:      archiveapi.New(archiveHost{app.core}),
 		commissioner: newCommissionerAPI(app),
 		comms:        commsapi.New(commsHost{app.core}),
 		contracts:    contractsapi.New(contractsHost{State: app.core, app: app}),
@@ -238,7 +231,6 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 		Service:   leagueservice.New(commissionerHost{State: app.core, app: app}),
 		Migration: app.migrationInputs(),
 		Desktop: map[string]map[string]catalog.Binding{
-			"archive":      archiveCommandBindings(a.archive),
 			"commissioner": commissionerCommandBindings(a.commissioner),
 			"comms":        commsCommandBindings(a.comms),
 			"contracts":    contractsCommandBindings(a.contracts),

@@ -11,8 +11,7 @@ import './reports.css';
 
 export function ReportsView({ board, selected, refreshVerb = 'draft.reports', controls }: {
   board: Board; selected: readonly string[];
-  refreshVerb?: 'draft.reports' | 'market.reports' | 'race.reports' | 'now.reports' | 'research.read'
-    | 'archive.reports';
+  refreshVerb?: 'draft.reports' | 'market.reports' | 'race.reports' | 'now.reports' | 'research.read';
   controls?: ReactNode;
 }) {
   const report = board.reports.find(r => selected.includes(r.id)) ?? board.reports[0];
@@ -25,7 +24,6 @@ export function ReportsView({ board, selected, refreshVerb = 'draft.reports', co
     </div>
     <div className="market-controls">
       {refreshVerb === 'race.reports' || refreshVerb === 'now.reports' || refreshVerb === 'research.read'
-        || refreshVerb === 'archive.reports'
         ? <Act variant="button"
           verb={refreshVerb} args={{ action: 'refresh', value: '' }} label={board.refresh}>
           {board.refresh}

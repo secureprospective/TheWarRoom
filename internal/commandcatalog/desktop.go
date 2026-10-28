@@ -2,7 +2,7 @@ package catalog
 
 // DesktopCommands is the legacy binding view; availability describes the old adapter, not remote admission.
 func DesktopCommands(feature string, related []Command) []Command {
-	views := map[string]func([]Command) []Command{"archive": archiveDesktop, "commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
+	views := map[string]func([]Command) []Command{"commissioner": commissionerDesktop, "comms": commsDesktop, "contracts": contractsDesktop, "control": controlDesktop, "draft": draftDesktop, "market": marketDesktop, "now": nowDesktop, "offers": offersDesktop, "platform": platformDesktop, "race": raceDesktop, "research": researchDesktop, "sources": sourcesDesktop, "trades": tradesDesktop}
 	if view, ok := views[feature]; ok {
 		return view(related)
 	}
@@ -14,12 +14,6 @@ func DesktopCommands(feature string, related []Command) []Command {
 func heldRead(c Command) Command {
 	c.Modes = []Mode{Read}
 	return c
-}
-
-func archiveDesktop(_ []Command) []Command {
-	return []Command{
-		{ID: Unset, Method: "TargetArchive", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
-	}
 }
 
 func commissionerDesktop(related []Command) []Command {

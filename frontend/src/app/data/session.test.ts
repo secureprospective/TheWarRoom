@@ -8,7 +8,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 function query(read: (season: number) => Promise<string> = async season => `held ${season}`) {
-  return createReadQuery('archive.TargetArchive', {
+  return createReadQuery('race.TargetRace', {
     initial: (): { value?: string } => ({}),
     read: (season: number) => read(season), accept: value => ({ value }),
   });

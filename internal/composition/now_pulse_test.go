@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
@@ -105,29 +104,6 @@ func TestPulsePluralAndProjectedBracket(t *testing.T) {
 				t.Fatalf("%q != %q", got, want)
 			}
 		}
-	}
-}
-
-func TestPulseSeriesUsesCurrentOpponent(t *testing.T) {
-	t.Parallel()
-	a := targetTestApp(t)
-	a.core.Week.Number = 5
-	a.core.SeasonLineups = held(pulseLive(t))
-	match := a.core.SeasonLineups.Value.Matchups[0]
-	board, err := archiveapp.New(archiveHost{a.core}).TargetArchive(0, match.Home, "")
-	if err != nil || board.Other != match.Away {
-		t.Fatal("series did not open on current opponent", board.Other, err)
-	}
-	if got := a.archiveOpponent(match.Home); got != match.Away {
-		t.Fatal("home default", got, match.Away)
-	}
-	if got := a.archiveOpponent(match.Away); got != match.Home {
-		t.Fatal("away default", got, match.Home)
-	}
-	a.raceHeld.PublishWeeks(raceFeed(realRace(t, "2026").held.weeks))
-	a.core.SeasonLineups.Value.Week = 4
-	if got := a.archiveOpponent(match.Home); got != match.Away {
-		t.Fatal("weekly schedule default", got, match.Away)
 	}
 }
 

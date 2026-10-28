@@ -638,22 +638,6 @@
       "action",
       "value"
     ],
-    "id": "archive.reports",
-    "label": "League archive reports"
-  },
-  {
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "action",
-      "value"
-    ],
     "id": "race.reports",
     "label": "League race reports"
   },

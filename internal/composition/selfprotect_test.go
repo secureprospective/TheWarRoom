@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
@@ -164,7 +163,6 @@ func TestBindingManifestRejectsHeld(t *testing.T) {
 // boundCatalogs is each bound API's command catalog, by its type.
 func boundCatalogs() map[reflect.Type][]catalog.Command {
 	return map[reflect.Type][]catalog.Command{
-		reflect.TypeFor[*archiveapp.API]():   archiveapp.Commands(),
 		reflect.TypeFor[*commissioner.API](): commissioner.Commands(),
 		reflect.TypeFor[*comms.API]():        comms.Commands(),
 		reflect.TypeFor[*controlapp.API]():   controlapp.Commands(),

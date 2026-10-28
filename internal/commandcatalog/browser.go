@@ -92,7 +92,6 @@ func browserWorkCommands() []BrowserCommand {
 		{ID: "commissioner.execute", Arguments: browserType("{ body: string }"), Label: "Record a league change", Args: strings.Fields("body")},
 		{ID: "control.read", Arguments: browserType("{ action: 'league' | 'news' | 'search' | 'open-accounting'; value: string }"), Label: "Control Room league and site news", Args: strings.Fields("action value")},
 		{ID: "research.read", Arguments: browserType("{ action: string; value: string }"), Label: "Player research", Args: strings.Fields("action value")},
-		{ID: "archive.reports", Arguments: browserType("{ action: string; value: string }"), Label: "League archive reports", Args: strings.Fields("action value")},
 		{ID: "race.reports", Arguments: browserType("{ action: 'refresh' | 'week' | 'team'; value: string }"), Label: "League race reports", Args: strings.Fields("action value")},
 		{ID: "game.follow", Arguments: browserType("{ id: string }"), Label: "Follow NFL game", Args: strings.Fields("id")},
 		{ID: "now.reports", Arguments: browserType("{ action: 'refresh' | 'week' | 'reports-week'; value: string }"), Label: "This week in the league", Args: strings.Fields("action value")},

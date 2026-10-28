@@ -73,9 +73,9 @@ func TestRegistryRejectsUnboundAndUnregisteredMethods(t *testing.T) {
 			in.Desktop["offers"]["TargetPool"] = b
 		},
 		"wrong method": func(in *catalog.RegistryInputs) {
-			b := in.Desktop["archive"]["TargetArchive"]
-			delete(in.Desktop["archive"], "TargetArchive")
-			in.Desktop["archive"]["Unregistered"] = b
+			b := in.Desktop["race"]["TargetRace"]
+			delete(in.Desktop["race"], "TargetRace")
+			in.Desktop["race"]["Unregistered"] = b
 		},
 		"extra feature": func(in *catalog.RegistryInputs) { in.Desktop["unregistered"] = map[string]catalog.Binding{} },
 	}

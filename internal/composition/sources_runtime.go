@@ -65,8 +65,8 @@ func (a *App) compileFactsInBackground() {
 }
 
 // warmArchive reads the verified snapshot into the archive cache once the checked facts are in,
-// so League Pulse › Archive opens without its first-read rebuild (about twenty seconds).
-// The cache is what the first open would have held anyway.
+// so the first archive reader — Comms, for its roster weeks and NFL games — does not pay the
+// first-read rebuild (about twenty seconds). The cache is what that first read would have held anyway.
 func (a *App) warmArchive(ctx context.Context) {
 	began := time.Now()
 	a.core.FactsMu.Lock()
@@ -136,15 +136,7 @@ func (a *App) readCommsArchive(ctx context.Context) (facts.RosterWeekColumns, fa
 	return cache.Facts.RosterWeek, cache.Facts.NflGame, err
 }
 
-func (a *App) configureArchive() {
-	a.core.ArchiveOpponentFallback = a.archiveOpponentFallback
-	a.core.ReadArchive = a.readArchiveFacts
-	a.core.ReadCommsArchive = a.readCommsArchive
-}
-
-func (a *App) archiveOpponentFallback(week int, team string) string {
-	return archiveapp.OpponentFallback(a.raceHeld.Snapshot().Weeks.Value, week, team)
-}
+func (a *App) configureArchive() { a.core.ReadCommsArchive = a.readCommsArchive }
 
 func (a *App) cacheScopes() []sourcesapp.CacheScope {
 	return sourcesapp.CacheScopes(sourcesapp.CacheRefreshers{
@@ -182,10 +174,4 @@ func (h sourcesHost) SourcesPositions() map[string]string {
 }
 func (h sourcesHost) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
 	return sourcesapp.CompileAvailable(h.FactsMu.TryLock, h.FactsMu.Unlock, compile) //nolint:wrapcheck // Preserve compile errors and the busy result.
-}
-
-type archiveHost struct{ *core.State }
-
-func (h archiveHost) ArchiveOpponent(team string) string {
-	return h.ReadArchiveOpponent(team, archiveapp.Opponent)
 }
