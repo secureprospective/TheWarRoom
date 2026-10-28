@@ -14,7 +14,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -25,7 +24,6 @@ import (
 // Host supplies shared snapshots and preserves the whole-operation serializers.
 type Host interface {
 	SharedHost
-	HistoryHost
 	PersonalHost
 	PoolHost
 	BidHost
@@ -39,13 +37,6 @@ type SharedHost interface {
 	OffersZone() *time.Location
 	OffersPools() *db.Pools
 	OffersDirectory(context.Context) (normalize.Lookup, error)
-}
-
-// HistoryHost reads the immutable archive without joining another feature's API.
-type HistoryHost interface {
-	OffersHistoryContext() context.Context
-	OffersLab() (*lab.Data, error)
-	OffersProvenance(*lab.Data) snapshot.Provenance
 }
 
 // PersonalHost supplies detached list inputs and the read-only MFL hand-off.
@@ -97,11 +88,6 @@ type AssetValue struct {
 	NowText, DynastyText   string
 	NowHeld, DynastyHeld   bool
 	NowValue, DynastyValue float64
-}
-
-type TeamOption struct {
-	Fid  string `json:"fid"`
-	Name string `json:"name"`
 }
 
 func (a *API) serializedMove(run func() (BidPlan, error)) (BidPlan, error) {

@@ -91,7 +91,6 @@ offers.API.TargetBidPosted
 offers.API.TargetBidPreview
 offers.API.TargetBidRevise
 offers.API.TargetBidWithdraw
-offers.API.TargetOffers
 offers.API.TargetPersonal
 offers.API.TargetPersonalChange
 offers.API.TargetPersonalHandOff

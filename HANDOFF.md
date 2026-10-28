@@ -4,13 +4,13 @@
 Bee — 2026-10-28, `session/terra-p7-split`. Do not push without direction.
 
 ## Where it stands
-Draft, market history and counterparties backends removed; asset-board model and offers provenance remain. Build and touched-package plus composition tests pass. Generated command catalogs updated; frontend feature code still refers to removed methods.
+Offer-history research reads and binding removed in uncommitted changes; live offer observation and asset-board provenance retained. Build, offers/commandcatalog race tests and focused composition tests pass. Frontend untouched as directed; generated frontend command files remain stale.
 
 ## Next move
-Continue the scoped backend removal; offers, sources and archive were not removed in P7-3b. Update frontend feature code in its own slice.
+Resolve the pre-existing commissioner safeguards fixture failure with permission to edit frontend; rerun full composition race tests with a suitable timeout and concurrency. Commit only after gates pass.
 
 ## Blocked on
-No upstream configured; pull and push unavailable. `TestNativeCatalogPublication` fails on missing `commish.league.cutover` at baseline `81dc86cb`; not changed here.
+Commissioner `TestCommissionerCommandSafeguardsWire` expects a stale frontend fixture missing migration commands. Full composition race runs timed out at 10 minutes (parallel 4) and 20 minutes (parallel 16). No upstream configured; pull and push unavailable.
 
 ## Tried and rejected
 Wire fixture regeneration produced unrelated volatile changes; discarded them and reran clean.
@@ -103,3 +103,4 @@ Full composition race test timed out; clean non-race composition test passed.
 Hosted fixture regeneration changed frontend fixtures; reverted under the backend-only constraint.
 Composition race suite timed out under load; non-race suite passed.
 Baseline was tested from a temporary archive inside this worktree rather than using the other worktree, to honor the worktree-only instruction.
+Did not update frontend fixtures or generated frontend command files: outside this slice. Did not commit while required checks are not green.

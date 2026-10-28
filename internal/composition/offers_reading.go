@@ -27,10 +27,7 @@ type offersHost struct {
 	app *App
 }
 
-func (h offersHost) OffersHistoryContext() context.Context            { return h.app.fallbackParent() }
-func (h offersHost) OffersBuildStamp() string                         { return buildLabel() + " " + buildDate }
-func (h offersHost) OffersLab() (*lab.Data, error)                    { return h.app.lab() }
-func (h offersHost) OffersProvenance(d *lab.Data) snapshot.Provenance { return counterProvenance(d) }
+func (h offersHost) OffersBuildStamp() string { return buildLabel() + " " + buildDate }
 func (h offersHost) OffersDirectory(ctx context.Context) (normalize.Lookup, error) {
 	return h.app.directory(ctx)
 }
@@ -110,10 +107,6 @@ func (a *App) recordOffers(ctx context.Context, pending []leaguefeed.PendingTrad
 			return personal.New(a.core.Pools).ObserveOffers(ctx, owner, a.core.Season, pending, a.core.SeasonTransactions.Value, at)
 		})
 
-}
-
-func counterProvenance(d *lab.Data) snapshot.Provenance {
-	return snapshot.Provenance{Source: "Lab compiled facts sha256:" + lab.DataSHA, Kind: "archive", Freshness: domain.Freshness{State: domain.FreshStale, FetchedAt: d.Built, Note: "Frozen historical input; not current league truth"}}
 }
 
 // archivedOnly reads already held exports; opening a list or the clock never calls MFL.

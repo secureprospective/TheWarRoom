@@ -142,7 +142,6 @@ func nowCommandBindings(api *nowapi.API) map[string]catalog.Binding {
 }
 func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
-		"TargetOffers":          catalog.Bind1Value(api.TargetOffers, "raw"),
 		"TargetPersonal":        catalog.Bind1(api.TargetPersonal, "mine"),
 		"TargetPersonalChange":  catalog.Bind1Error(api.TargetPersonalChange, "raw"),
 		"TargetPersonalHandOff": catalog.Bind1Error(api.TargetPersonalHandOff, "kind"),
