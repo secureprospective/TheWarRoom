@@ -13,7 +13,7 @@ afterEach(unmount);
 const start = 'Start this league';
 const thisYear = new Date().getFullYear();
 describe('Start an app league', () => {
-  it('lists exactly the presets in Go’s catalog, in its order, with the chosen one’s description', async () => {
+  it('lists exactly the presets in Go’s catalog, in order, with the chosen description', async () => {
     const { app } = stub();
     const host = await mount(render(StartLeagueForm), app);
     await open();

@@ -8,7 +8,9 @@ type ControlField = { field: string; label: string };
 export type Control = { id: string; built: boolean; note: string; fields: ControlField[] };
 export type ControlGroup = { id: string; label: string; controls: Control[] };
 // A preset is a named bundle of setting values from Go's catalog; the start form lists exactly these.
-export type StartingPreset = { id: string; label: string; description: string; minTeams: number; maxTeams: number };
+export type StartingPreset = {
+  id: string; label: string; description: string; minTeams: number; maxTeams: number;
+};
 export type Controls = { groups: ControlGroup[]; presets: StartingPreset[] };
 
 function flag(v: unknown, path: string): boolean {
@@ -21,7 +23,8 @@ export function parseControls(v: unknown): Controls {
     presets: array(r.presets, 'Starting presets', (x, p) => {
       const o = object(x, p, ['id', 'label', 'description', 'minTeams', 'maxTeams']);
       return { id: text(o.id, p), label: text(o.label, p), description: text(o.description, p),
-        minTeams: integer(o.minTeams, `${p}.minTeams`, 1), maxTeams: integer(o.maxTeams, `${p}.maxTeams`, 1) };
+        minTeams: integer(o.minTeams, `${p}.minTeams`, 1),
+        maxTeams: integer(o.maxTeams, `${p}.maxTeams`, 1) };
     }),
     groups: array(r.groups, 'Control groups', (g, p) => {
       const o = object(g, p, ['id', 'label', 'controls']);
