@@ -40,7 +40,7 @@ func franchiseIDs(count int) []string {
 
 func presetSeed(preset string, count, season int) ([]SeedValue, error) {
 	p, _ := presetByID(preset)
-	if !p.seeds() {
+	if p.rules == nil {
 		return nil, nil
 	}
 	changes := leaguerules.SeedChanges(p.rules(count), "preset", season, time.Unix(1, 0).UTC())
@@ -90,6 +90,15 @@ func (r RawCommand) Prepared() (RawCommand, error) {
 		return r, fmt.Errorf("choose the NFL season this league starts in")
 	}
 	ids := franchiseIDs(a.FranchiseCount)
+	if p.imported {
+		// The MFL league's own values: Go read them at import, and validateCreation decodes each one.
+		if len(a.Franchises) != 0 && !slices.Equal(a.Franchises, ids) {
+			return r, fmt.Errorf("the app lists a new league's franchises itself")
+		}
+		a.Franchises = ids
+		r.Args = a
+		return r, nil
+	}
 	seed, err := presetSeed(a.Preset, a.FranchiseCount, a.Season)
 	if err != nil {
 		return r, err
@@ -144,7 +153,9 @@ func (a RawArgs) validateCreation() error {
 	if !slices.Equal(a.Franchises, franchiseIDs(a.FranchiseCount)) {
 		return fmt.Errorf("the new league's franchises do not match its size")
 	}
-	if p, _ := presetByID(a.Preset); !p.seeds() && len(a.Seed) != 0 {
+	if p, _ := presetByID(a.Preset); p.imported && a.Source != SourceMFLImport {
+		return fmt.Errorf("a league with its own MFL settings is imported from MFL")
+	} else if !p.seeds() && len(a.Seed) != 0 {
 		return fmt.Errorf("an empty league starts with every rule waiting for a ruling")
 	} else if p.seeds() && len(a.Seed) == 0 {
 		return fmt.Errorf("a preset league needs its starting values")

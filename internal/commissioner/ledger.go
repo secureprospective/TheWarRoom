@@ -289,6 +289,8 @@ func recordLabel(r Record) string {
 		return fmt.Sprintf("Moved the league to season %d", r.Command.Args.Rollover.To)
 	case NativeSeed:
 		return "Recorded the starting rosters, contracts, reserves, franchises and picks from held data"
+	case Cutover:
+		return cutoverLabel
 	case WindowSet, WindowMove, WindowRemove:
 		return windowLabel(r)
 	}
@@ -347,7 +349,8 @@ func scheduleLabel(r Record) string {
 // It asks the same checks a submitted reversal meets; Go still decides when it is sent.
 func undoPlacement(records []Record, i, root int, p Projection, principal string, auth Authorizer, hasRollover bool) string {
 	r := records[i]
-	if r.Command.Command == Create || r.Command.Command == NativeSeed || liveDraftEntry(r.Command.Command) ||
+	if r.Command.Command == Create || r.Command.Command == NativeSeed || r.Command.Command == Cutover ||
+		liveDraftEntry(r.Command.Command) ||
 		!p.Active[r.Receipt.Entry] {
 		return ""
 	}

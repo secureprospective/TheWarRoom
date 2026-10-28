@@ -265,6 +265,7 @@ func (s *Store) checkAppend(ctx context.Context, raw commissioner.RawCommand, pr
 		{"asset correction", func() error { return commissioner.CheckCorrectionAppend(raw, records, now) }},
 		{"native correction", func() error { return commissioner.CheckOverrideAppend(raw, records, now) }},
 		{"starting snapshot", func() error { return commissioner.CheckNativeAppend(raw, records) }},
+		{"move from MFL", func() error { return commissioner.CheckCutoverAppend(raw, records) }},
 		{"league change", func() error { return commissioner.CheckGovernanceAppend(raw, principal, records, now) }},
 		{"league calendar", func() error { return commissioner.CheckCalendarAppend(raw, records, now) }},
 		{"rookie draft", func() error { return commissioner.CheckDraftAppend(raw, records, now, facts.draft) }},

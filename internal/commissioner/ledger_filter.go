@@ -98,7 +98,7 @@ func (r RawLedgerFilter) matches(entry Entry, kind string, from, before time.Tim
 
 func ledgerKind(command string) string {
 	switch command {
-	case Create:
+	case Create, Cutover:
 		return "setup"
 	case RulesSet:
 		return "rules"

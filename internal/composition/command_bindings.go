@@ -250,7 +250,8 @@ func (a commandAPIs) registryInputs(app *App) catalog.RegistryInputs {
 			Pool:  catalog.Shape(reflect.TypeFor[offersapi.RawPoolScope](), "RawPoolScope.Validate"),
 			Owner: catalog.Shape(reflect.TypeFor[offersapi.RawBidOwner](), "RawBidOwner.Validate"),
 		},
-		Service: leagueservice.New(commissionerHost{State: app.core, app: app}),
+		Service:   leagueservice.New(commissionerHost{State: app.core, app: app}),
+		Migration: app.migrationInputs(),
 		Desktop: map[string]map[string]catalog.Binding{
 			"archive":        archiveCommandBindings(a.archive),
 			"commissioner":   commissionerCommandBindings(a.commissioner),

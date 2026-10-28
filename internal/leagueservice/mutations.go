@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // Execute dispatches generic and owner market commands to the same atomic append.
@@ -24,6 +25,8 @@ func (a *Service) Execute(ctx context.Context, raw commissioner.RawCommand) (com
 	switch raw.Command {
 	case commissioner.NativeSeed:
 		return commissioner.Receipt{}, fmt.Errorf("record the starting snapshot through the held-data action")
+	case commissioner.Cutover:
+		return commissioner.Receipt{}, fmt.Errorf("switch a league over from MFL from its review, which shows what differs")
 	case commissioner.LineupSet:
 		return commissioner.Receipt{}, fmt.Errorf("set a lineup from the lineup screen, which asks the league calendar first")
 	case commissioner.DraftPick:
@@ -61,4 +64,38 @@ func ChangeError(err error) error {
 		return fmt.Errorf("league change: %w", err)
 	}
 	return nil
+}
+
+// MigrationLedger is the league store as the move from MFL uses it: the same replay, checks and atomic
+// appends every other league change goes through.
+type MigrationLedger struct {
+	Store *history.Store
+	// Auth is the commissioner authorization in force; nil reads permissions from the league's own ledger.
+	Auth func() commissioner.Authorizer
+}
+
+func (l MigrationLedger) authorizer() commissioner.Authorizer {
+	if l.Auth == nil {
+		return nil
+	}
+	return l.Auth()
+}
+
+// Records replays the league's ledger.
+func (l MigrationLedger) Records(ctx context.Context, league string) ([]commissioner.Record, error) {
+	return Records(ctx, l.Store, league, "move")
+}
+
+// Batch records every change or none.
+func (l MigrationLedger) Batch(ctx context.Context, raws []commissioner.RawCommand,
+	principal string) ([]commissioner.Receipt, error) {
+	receipts, err := l.Store.ExecuteCommissionerBatch(ctx, raws, principal, l.authorizer())
+	return receipts, ChangeError(err)
+}
+
+// Execute records one change.
+func (l MigrationLedger) Execute(ctx context.Context, raw commissioner.RawCommand,
+	principal string) (commissioner.Receipt, error) {
+	receipt, err := l.Store.ExecuteCommissioner(ctx, raw, principal, l.authorizer())
+	return receipt, ChangeError(err)
 }

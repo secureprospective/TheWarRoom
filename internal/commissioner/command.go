@@ -69,7 +69,7 @@ func DefinitionFor(command string) (Definition, error) {
 	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
 	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
-		DraftStartupOpen, ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
+		DraftStartupOpen, ReserveException, Create, Revert, NativeSeed, Cutover, SeasonRollover, CalendarException,
 		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
 		LineupCorrect, BracketAdvance,
 		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,
@@ -239,6 +239,9 @@ func (a RawArgs) foreignRuleArgs(command string) bool {
 }
 
 func (a RawArgs) validateOther(command string) error {
+	if command == Cutover {
+		return a.validateCutover()
+	}
 	if _, isNote := noteDefinitionFor(command); isNote {
 		return a.validateNote()
 	}
@@ -328,6 +331,8 @@ func publicNowRule(command string) string {
 		return "draft changes take effect now and are visible to every owner"
 	case command == NativeSeed:
 		return "the starting snapshot is recorded now for every owner"
+	case command == Cutover:
+		return "moving the league over from MFL takes effect now and is shown to every owner"
 	case windowCommand(command):
 		return "window changes take effect now and are visible to every owner"
 	case isStandingsCommand(command):

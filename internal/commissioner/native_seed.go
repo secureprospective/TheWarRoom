@@ -68,6 +68,9 @@ type NativePlayer struct {
 	ExpirationYear int                   `json:"expirationYear"`
 	ContractStatus domain.ContractStatus `json:"contractStatus"`
 	ContractInfo   string                `json:"contractInfo"`
+	// HeldContractStatus is the contract status exactly as MFL wrote it ("EXT (2024)"), kept by an MFL
+	// import wherever the app's reading of it (ContractStatus) is not the same text.
+	HeldContractStatus string `json:"heldContractStatus,omitempty"`
 }
 
 // NativePoolEntry is an unassigned free agent in the league's player pool.

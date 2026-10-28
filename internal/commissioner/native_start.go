@@ -9,15 +9,10 @@ import (
 )
 
 // LeagueSource is the single compatibility read for records written before Source existed.
+// A league imported from MFL reads as native once it has been moved over (Cutover).
 func LeagueSource(records []Record) string {
-	if len(records) != 0 && records[0].Command.Command == Create {
-		args := records[0].Command.Args
-		if args.Source != "" {
-			return args.Source
-		}
-		if p, ok := presetByID(args.Preset); ok {
-			return p.source
-		}
+	if source := importedSource(records); source != SourceMFLImport || !cutOver(records) {
+		return source
 	}
 	return SourceNative
 }

@@ -19,6 +19,9 @@ const (
 	// PresetMirror16 is the 16-Team Mirror: two sides, each with its own copy of every player.
 	PresetMirror16 = "mirror_16"
 	mirror16Teams  = 16
+	// PresetMFLLeague is an MFL league's own settings, carried value for value by the import: the one
+	// entry whose values Go reads from the league being moved rather than from the catalog.
+	PresetMFLLeague = "mfl_league"
 )
 
 // StartingPreset is what the start form shows of a catalog entry.
@@ -35,6 +38,7 @@ type presetEntry struct {
 	StartingPreset
 
 	native       bool   // offered for a new app league; otherwise only an MFL import or a recovery uses it
+	imported     bool   // the values are the MFL league's own, read by Go at import; rules is nil
 	source       string // where a league from this preset comes from when the caller does not say
 	defaultTeams int    // the size a create without one takes; zero asks the caller
 	choice       string // how a refusal names it among the choices
@@ -79,6 +83,11 @@ func presetCatalog() []presetEntry {
 			native: true, source: SourceNative, choice: "an empty league",
 			history: "every rule waiting for a ruling", preview: "Every rule waits for a ruling",
 			citation: "Empty league default"},
+		{StartingPreset: StartingPreset{ID: PresetMFLLeague, Label: "Your MFL league",
+			Description: "Every setting your MFL league holds, as MFL holds it."},
+			imported: true, source: SourceMFLImport, choice: "your MFL league's own settings",
+			history: "the MFL league's own settings", preview: "Your MFL league's own settings",
+			citation: "Your MFL league"},
 	}
 }
 
@@ -119,16 +128,18 @@ func storedPreset(id string, unnamed func() string) presetEntry {
 }
 
 func emptyPreset() string {
-	i := slices.IndexFunc(presetCatalog(), func(p presetEntry) bool { return p.rules == nil })
+	i := slices.IndexFunc(presetCatalog(), func(p presetEntry) bool { return p.rules == nil && !p.imported })
 	return presetCatalog()[i].ID
 }
 
-func (p presetEntry) seeds() bool { return p.rules != nil }
+func (p presetEntry) seeds() bool { return p.rules != nil || p.imported }
 
 func unknownPresetError() error {
 	var names []string
 	for _, p := range presetCatalog() {
-		names = append(names, p.choice)
+		if !p.imported {
+			names = append(names, p.choice)
+		}
 	}
 	last := len(names) - 1
 	return fmt.Errorf("start from %s or %s", strings.Join(names[:last], ", "), names[last])

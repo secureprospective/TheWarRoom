@@ -149,7 +149,7 @@ func setupCommand(r Record) bool {
 		return true
 	}
 	switch r.Command.Command {
-	case Create, NativeSeed, RulesSet, ContractActionSet, WindowSet, WindowMove, WindowRemove, CalendarException,
+	case Create, NativeSeed, Cutover, RulesSet, ContractActionSet, WindowSet, WindowMove, WindowRemove, CalendarException,
 		Revert, PlayerPosition, PlayerPositionClear, "commish.franchise.edit":
 		return true
 	}

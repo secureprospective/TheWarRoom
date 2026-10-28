@@ -129,3 +129,6 @@ internal/leaguetransfer	platform
 internal/serverversion	platform
 internal/store/playeridentity	core
 internal/leaguerecovery	platform
+internal/leaguemigration	platform
+internal/leaguemigration/migrationtest	platform
+internal/leaguemigration/mflsource	platform
