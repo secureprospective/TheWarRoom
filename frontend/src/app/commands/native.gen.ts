@@ -1091,7 +1091,8 @@ const schema83 = {
     {Name:"pick",Optional:true,Schema:schema81},
     {Name:"act",Optional:true,Schema:schema82},
     {Name:"running",Optional:true,Schema:schema25},
-    {Name:"startup",Optional:true,Schema:schema25}
+    {Name:"startup",Optional:true,Schema:schema25},
+    {Name:"side",Optional:true,Schema:schema2}
   ],
   Items:null,
 } as const;
@@ -3364,6 +3365,7 @@ const schema240 = {
   Fields:[
     {Name:"player",Optional:true,Schema:schema2},
     {Name:"franchise",Optional:true,Schema:schema2},
+    {Name:"side",Optional:true,Schema:schema2},
     {Name:"bid",Optional:true,Schema:schema2},
     {Name:"salaryCents",Optional:true,Schema:schema15},
     {Name:"years",Optional:true,Schema:schema15}

@@ -513,7 +513,8 @@ string
 "to"?: string
 }) | null;
 "running"?: boolean;
-"startup"?: boolean
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -555,6 +556,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -582,6 +584,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -691,9 +694,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
@@ -970,7 +975,8 @@ string
 "to"?: string
 }) | null;
 "running"?: boolean;
-"startup"?: boolean
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -1012,6 +1018,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -1039,6 +1046,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -1148,9 +1156,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
@@ -1402,7 +1412,8 @@ string
 "to"?: string
 }) | null;
 "running"?: boolean;
-"startup"?: boolean
+"startup"?: boolean;
+"side"?: string
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -1444,6 +1455,7 @@ string
 "bid"?: ({
 "player"?: string;
 "franchise"?: string;
+"side"?: string;
 "bid"?: string;
 "salaryCents"?: number;
 "years"?: number
@@ -1471,6 +1483,7 @@ string
 "slot"?: number;
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
 })[];
@@ -1580,9 +1593,11 @@ string
 })[];
 "pool"?: ({
 "player": string;
+"side"?: string;
 "name"?: string;
 "season": number
-})[]
+})[];
+"sides"?: Record<string, string>
 }) | null;
 "exception"?: ({
 "action": string;
