@@ -6,6 +6,7 @@ import (
 	"time"
 
 	scoringapp "github.com/secureprospective/TheWarRoom/internal/app/scoring"
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -36,8 +37,8 @@ func (a *App) checkEngine(ctx context.Context) {
 		},
 		InputsChanged: a.core.History.ModelInputsChanged, Now: a.timeNow, Started: time.Now,
 		DirtyLoad: a.core.ModelDirty.Load, DirtySwap: a.core.ModelDirty.Swap, DirtyStore: a.core.ModelDirty.Store,
-		Directory: a.directory, Run: func(ctx context.Context, lookup normalize.Lookup) (modelrun.Report, error) {
-			return a.runModelLocked(ctx, lookup, a.core.Params.Snapshot())
+		Directory: a.directory, Run: func(ctx context.Context, _ normalize.Lookup) (modelrun.Report, error) {
+			return a.runModelLocked(ctx, a.core.Params.Snapshot())
 		},
 		Finished: a.engineFinished, Log: func(message string) { log.Print(message) },
 	})
@@ -53,16 +54,38 @@ func (a *App) sourceHealthChanged(ctx context.Context) {
 }
 
 // runModelLocked runs with modelMu held; the season snapshot remains under seasonMu.
-func (a *App) runModelLocked(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
+func (a *App) runModelLocked(ctx context.Context, set params.Set) (modelrun.Report, error) {
 	src := scoringapp.ModelSource{EndWeek: func() (string, bool) { return a.core.Rulebook.GetSetting("endWeek") },
 		State: a.core.League.Reader, History: a.core.History,
-		Records: recordstore.New(a.core.HistPools, a.core.History), BuildLabel: buildLabel(), Season: a.core.Season,
+		Records: a.recordStore(), BuildLabel: buildLabel(), Season: a.core.Season,
 		FreeAgents: a.modelFreeAgents}
-	return src.RunModel(ctx, lk, set) //nolint:wrapcheck // the service preserves the existing app error labels
+	return src.RunModel(ctx, set) //nolint:wrapcheck // the service preserves the existing app error labels
 }
 
 func (a *App) modelFreeAgents() []string {
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
 	return scoringapp.FreeAgentIDs(a.core.SeasonFreeAgents.Value)
+}
+
+// recordStore is the player record in the history file. It is cheap to build and holds no state.
+func (a *App) recordStore() *recordstore.Store {
+	return recordstore.New(a.core.HistPools, a.core.History)
+}
+
+// recordIngest connects feed publication to the history-file record store.
+func (a *App) recordIngest() sourcesapp.RecordIngest {
+	return sourcesapp.RecordIngest{Open: a.recordStore().Available,
+		Write: func(ctx context.Context, listing normalize.Lookup) (int, error) {
+			return a.recordStore().Write(ctx, listing, time.Now())
+		},
+		Log: func(line string) { log.Printf("the war room: %s", line) }}
+}
+
+func (a *App) writeRecordOnIngest(ctx context.Context, listing normalize.Lookup, feed string) {
+	sourcesapp.WriteRecordOnIngest(ctx, feed, listing, a.recordIngest())
+}
+
+func (a *App) writeRecordAfterSignals(ctx context.Context) {
+	sourcesapp.WriteRecordAfterSignals(ctx, a.directory, a.recordIngest())
 }

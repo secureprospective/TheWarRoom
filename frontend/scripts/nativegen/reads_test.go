@@ -11,7 +11,7 @@ import (
 
 // auditedReads are the adapters audited onto the shared read tool before the catalog was generated.
 func auditedReads() []string {
-	return []string{"archive.TargetArchive", "comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
+	return []string{"comms.TargetComms", "draft.TargetDraftReports", "market.TargetMarketReports", "race.TargetRace",
 		"control.TargetLeagueSettings", "control.TargetBylaws", "control.TargetAccounting", "control.TargetSiteNews",
 		"contracts.TargetLineup", "trades.TargetTrades", "control.TargetAlerts", "research.TargetResearch",
 		"commissioner.TargetNativeLineup",

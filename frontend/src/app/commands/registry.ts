@@ -440,13 +440,6 @@ export function createCommands(
           () => ['more', 'open'].includes(args.action) ? undefined : m.researchState.peek().error));
       },
     }),
-    'archive.reports': command({
-      id: 'archive.reports',
-      run: (args: BrowserArguments<'archive.reports'>) => {
-        return import('../archive/state').then(m =>
-          completed(m.archiveState.choose(args.action, args.value), () => m.archiveState.peek().error));
-      },
-    }),
     'race.reports': command({
       id: 'race.reports',
       run: (args: BrowserArguments<'race.reports'>) => {

@@ -9,7 +9,11 @@
 package playerrecord
 
 import (
+	"fmt"
+	"math"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/model"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
@@ -45,6 +49,7 @@ type Record struct {
 	Birth    time.Time       // zero when unknown
 	College  string
 	Rookie   int // first NFL season; 0 when unknown
+	Career   Career
 	Draft    Draft
 	// Mislinked is set when history's facts under his MFL link are another player's (their first
 	// NFL season is far from MFL's draft year); those identity facts are set aside.
@@ -68,3 +73,49 @@ const (
 	SourceNFLverse = "nflverse"
 	SourceDerived  = "derived" // computed from other record facts (an overall pick from round and pick)
 )
+
+// Career holds supplied NFL career counts. Nil means unknown, not zero. StartingSeasons
+// is the feed's seasons as a primary starter; no held feed supplies game starts or wins.
+type Career struct {
+	StartingSeasons *int `json:"startingSeasons,omitempty"`
+	Wins            *int `json:"wins,omitempty"`
+	AllPro          *int `json:"allPro,omitempty"`
+	ProBowls        *int `json:"proBowls,omitempty"`
+}
+
+// CareerMeasures are record facts only, never valuation inputs.
+func CareerMeasures() []string {
+	return []string{"context.career_starting_seasons", "context.career_all_pro", "context.career_pro_bowls"}
+}
+
+// AddCareer attaches supplied career facts without changing the valuation's player population.
+func AddCareer(records []Record, obs []model.Obs) error {
+	byMFL := make(map[string]*Record, len(records))
+	for i := range records {
+		byMFL[records[i].MFL] = &records[i]
+	}
+	for _, o := range obs {
+		r := byMFL[o.Player]
+		if r == nil || r.Mislinked {
+			continue
+		}
+		var field **int
+		switch o.Measure {
+		case "context.career_starting_seasons":
+			field = &r.Career.StartingSeasons
+		case "context.career_all_pro":
+			field = &r.Career.AllPro
+		case "context.career_pro_bowls":
+			field = &r.Career.ProBowls
+		default:
+			continue
+		}
+		if o.Season != 0 || o.Week != 0 || o.Value < 0 || o.Value > 1000 || math.Trunc(o.Value) != o.Value {
+			return fmt.Errorf("playerrecord: invalid career count %s for %s: %v", o.Measure, o.Player, o.Value)
+		}
+		n := int(o.Value)
+		*field = &n
+		r.Sources[o.Measure] = SourceNFLverse
+	}
+	return nil
+}

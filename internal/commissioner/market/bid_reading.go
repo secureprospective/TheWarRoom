@@ -159,6 +159,9 @@ func nativeBidsFrame(f commissioner.Frame, franchise, principal string) (NativeB
 	out.ActiveBids = state.Bids.ActiveCount(franchise, "")
 	for i := range state.Bids.Auctions {
 		a := &state.Bids.Auctions[i]
+		if a.Side != assets.Snapshot.SideOf(franchise) {
+			continue
+		}
 		if a.Decided {
 			out.Awards = append(out.Awards, v.award(a))
 			continue
@@ -168,7 +171,7 @@ func nativeBidsFrame(f commissioner.Frame, franchise, principal string) (NativeB
 			out.Players = append(out.Players, row)
 		}
 	}
-	out.Players = append(out.Players, unbidStartingLots(assets, state, records)...)
+	out.Players = append(out.Players, unbidStartingLots(assets, state, records, assets.Snapshot.SideOf(franchise))...)
 	slices.SortFunc(out.Players, func(a, b NativeBidPlayer) int { return strings.Compare(a.Player, b.Player) })
 	return out, nil
 }
@@ -237,9 +240,15 @@ func (v bidViewer) award(a *commissioner.BidAuction) NativeBidAward {
 	return out
 }
 
-func unbidStartingLots(assets commissioner.NativeAssets, state commissioner.MarketBook, records []commissioner.Record) []NativeBidPlayer {
+func unbidStartingLots(assets commissioner.NativeAssets, state commissioner.MarketBook, records []commissioner.Record, side string) []NativeBidPlayer {
 	rows := []NativeBidPlayer{}
+	if state.OLine != nil {
+		return rows
+	}
 	for _, lot := range assets.Snapshot.Pool {
+		if lot.Side != side || assets.Snapshot.OnSide(side, lot.Player) {
+			continue
+		}
 		if commissioner.StartingCardLot(records, lot.Player) && state.Bids.Latest(lot.Side, lot.Player) == nil {
 			rows = append(rows, NativeBidPlayer{Player: lot.Player, Name: lot.Name, Mode: string(leaguerules.Open), ModeWords: "League-start open auction", Closes: "Awaiting first bid"})
 		}

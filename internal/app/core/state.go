@@ -45,11 +45,6 @@ type State struct {
 	// RefreshMarketFeeds runs under RefreshMu; Market's held reports stay at the composition root.
 	RefreshMarketFeeds func(context.Context, bool)
 
-	// ReadArchive runs under FactsMu; its feature-owned cache stays at the composition root.
-	ReadArchive func(context.Context) (report.ArchiveSnapshot, bool, error)
-	// ArchiveOpponentFallback runs under SeasonMu, after the current lineup lookup.
-	ArchiveOpponentFallback func(int, string) string
-
 	ReadSourcesDatabaseChecks func() *report.Report
 	ReadSourcesDirectory      func(context.Context) (normalize.Lookup, error)
 	ReadSourcesSettings       func() (string, bool, error)

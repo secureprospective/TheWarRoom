@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	recordstore "github.com/secureprospective/TheWarRoom/internal/store/playerrecord"
 )
@@ -93,6 +94,7 @@ func (a *App) publishAssetModel(ctx context.Context) {
 		LatestRun: func(ctx context.Context) (history.Run, bool, error) {
 			return h.LatestRun(ctx, a.core.Season, history.RunModel)
 		},
+		Bodies: h.ReferenceBodies, League: ingestion.LeagueID,
 		Scores:  h.ModelScores,
 		Records: recordstore.New(a.core.HistPools, h).Records,
 		Params:  a.core.Params.Snapshot,

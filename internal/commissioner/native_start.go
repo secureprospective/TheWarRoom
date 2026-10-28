@@ -2,6 +2,8 @@ package commissioner
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -49,7 +51,6 @@ func NativeStart(league string, records []Record, now time.Time) (RawNativeSnaps
 		return RawNativeSnapshot{}, err
 	}
 	cards := leaguerules.OLineOn(rules)
-	teams := nativecheck.LineCardTeams()
 	at := now.UTC()
 	seed := RawNativeSnapshot{Season: season, RosterAt: at, DraftAt: at, FutureAt: at,
 		Players: []NativePlayer{}, Picks: []NativePick{}, Adjustments: []NativeCharge{}}
@@ -63,11 +64,15 @@ func NativeStart(league string, records []Record, now time.Time) (RawNativeSnaps
 		seed.Franchises = append(seed.Franchises, NativeFranchise{ID: f.Franchise, HeldID: f.Franchise,
 			Name: f.Name, Abbreviation: f.Abbreviation, Division: division})
 	}
+	if leaguerules.PoolsPerSide(rules) {
+		seed.Sides = maps.Clone(rules.League.Sides.Value)
+	}
 	if cards {
-		for _, team := range teams {
+		for _, team := range nativecheck.LineCardTeams() {
 			card, _ := nativecheck.LineCardID(team)
 			seed.Pool = append(seed.Pool, NativePoolEntry{Player: card, Name: team + " O-Line", Season: season})
 		}
+		seed.Pool = scopedOLineLots(seed)
 	}
 
 	if err := seed.Validate(); err != nil {
@@ -100,18 +105,53 @@ func checkNativeStart(records []Record, seed *RawNativeSnapshot) error {
 
 // checkCardStart admits only the empty start and the complete, unassigned auction pool.
 func checkCardStart(records []Record, seed *RawNativeSnapshot) error {
-	if seed.Season != records[0].Command.Args.Season || len(seed.Picks) != 0 || len(seed.Adjustments) != 0 || len(seed.Players) != 0 || len(seed.Pool) != len(nativecheck.LineCardTeams()) {
-		return fmt.Errorf("an O-Line league starts with empty rosters and all O-Line auction lots")
+	sides, err := LeagueSides(records)
+	if err != nil {
+		return err
+	}
+	want := RawNativeSnapshot{Sides: sides}
+	poolSides := want.SideNames()
+	if len(poolSides) == 0 {
+		poolSides = []string{""}
+	}
+	count := len(nativecheck.LineCardTeams()) * len(poolSides)
+	if seed.Season != records[0].Command.Args.Season || len(seed.Picks) != 0 || len(seed.Adjustments) != 0 ||
+		len(seed.Players) != 0 || len(seed.Pool) != count || !maps.Equal(seed.Sides, sides) {
+		return fmt.Errorf("an O-Line league starts with empty rosters and all O-Line auction lots per pool")
 	}
 	cards := map[string]bool{}
 	for _, lot := range seed.Pool {
 		facts, ok := nativecheck.LineCardFacts(lot.Player)
-		if !ok || cards[lot.Player] || lot.Season != seed.Season || lot.Name != facts.Name {
-			return fmt.Errorf("the starting auction needs each O-Line card exactly once")
+		key := lot.Side + ":" + lot.Player
+		validSide := slices.Contains(poolSides, lot.Side)
+		if !ok || cards[key] || !validSide || lot.Season != seed.Season || lot.Name != facts.Name {
+			return fmt.Errorf("the starting auction needs each O-Line card exactly once per pool")
 		}
-		cards[lot.Player] = true
+		cards[key] = true
 	}
 	return nil
+}
+
+// scopedOLineLots expands old unscoped seed lots without rewriting their ledger entries.
+// Explicit side lots and other pool entries retain their recorded scope.
+func scopedOLineLots(seed RawNativeSnapshot) []NativePoolEntry {
+	if !seed.PerSide() {
+		return seed.Pool
+	}
+	out := make([]NativePoolEntry, 0, len(seed.Pool))
+	for _, lot := range seed.Pool {
+		_, card := nativecheck.LineCardTeam(lot.Player)
+		if !card || lot.Side != "" {
+			out = append(out, lot)
+			continue
+		}
+		for _, side := range seed.SideNames() {
+			scoped := lot
+			scoped.Side = side
+			out = append(out, scoped)
+		}
+	}
+	return out
 }
 
 // startingCardLot distinguishes the open start auction from later free-agent bidding and older
@@ -125,7 +165,9 @@ func StartingCardLot(records []Record, player string) bool {
 	}
 	for _, r := range records {
 		if r.Command.Command == NativeSeed && r.Command.Args.Native != nil {
-			return len(r.Command.Args.Native.Players) == 0 && len(r.Command.Args.Native.Pool) == len(nativecheck.LineCardTeams())
+			seed := r.Command.Args.Native
+			cards := len(nativecheck.LineCardTeams())
+			return len(seed.Players) == 0 && (len(seed.Pool) == cards || len(seed.Pool) == cards*len(seed.SideNames()))
 		}
 	}
 	return false

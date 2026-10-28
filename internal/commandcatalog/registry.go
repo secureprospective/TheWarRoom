@@ -102,7 +102,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 }
 
 func (r *Registry) addDesktop(bindings map[string]map[string]Binding, native, mfl []Command) error {
-	features := strings.Fields("archive commissioner comms contracts control draft market now offers platform race research sources trades")
+	features := strings.Fields("commissioner comms contracts control draft market now offers platform race research sources trades")
 	for _, feature := range features {
 		related := native
 		if feature == "offers" {

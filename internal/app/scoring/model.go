@@ -9,7 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
-	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -20,16 +19,10 @@ type ModelSource struct {
 	EndWeek    func() (string, bool)
 	State      func() state.Reader
 	History    modelrun.Writer
-	Records    RecordStore
+	Records    modelrun.Records
 	BuildLabel string
 	Season     int
 	FreeAgents func() []string
-}
-
-// RecordStore is the player record: written from the feeds before each pass, then read by it.
-type RecordStore interface {
-	modelrun.Records
-	Write(ctx context.Context, listing playerrecord.Listing, asOf time.Time) (int, error)
 }
 
 // EngineDue reports whether a synchronous model pass is needed.
@@ -37,9 +30,8 @@ func EngineDue(now time.Time, last history.Run, exists, changed bool) bool {
 	return changed || !exists || now.Sub(last.AsOf) >= 24*time.Hour
 }
 
-// RunModel values the league with the measurables model (plan Stage 7) and writes a model
-// run. The caller holds its refresh lock.
-func (a ModelSource) RunModel(ctx context.Context, lk normalize.Lookup, set params.Set) (modelrun.Report, error) {
+// RunModel values the stored player records. The caller holds its refresh lock.
+func (a ModelSource) RunModel(ctx context.Context, set params.Set) (modelrun.Report, error) {
 	end, _ := a.EndWeek()
 	last, err := strconv.Atoi(end)
 	if err != nil || last < 1 {
@@ -49,9 +41,6 @@ func (a ModelSource) RunModel(ctx context.Context, lk normalize.Lookup, set para
 		return modelrun.Report{}, fmt.Errorf("app: the player record is not open")
 	}
 	now := time.Now()
-	if _, err := a.Records.Write(ctx, lk, now); err != nil {
-		return modelrun.Report{}, fmt.Errorf("app: write the player record: %w", err)
-	}
 	runner, err := modelrun.New(a.State(), a.Records, a.History, a.BuildLabel)
 	if err != nil {
 		return modelrun.Report{}, fmt.Errorf("app: %w", err)

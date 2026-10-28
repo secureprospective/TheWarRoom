@@ -109,3 +109,6 @@ prior.shuttle,player,seconds,all,20-yard shuttle at the combine.
 prior.three_cone,player,seconds,all,Three-cone drill at the combine.
 prior.vertical,player,inches,all,Vertical jump at the combine.
 prior.weight,player,pounds,all,Weight measured at the combine.
+context.career_starting_seasons,player,seasons,all,Number of NFL seasons as a primary starter in the held draft record; not games started.
+context.career_all_pro,player,count,all,First-team All-Pro selections in the held NFL draft record.
+context.career_pro_bowls,player,count,all,Pro Bowl selections in the held NFL draft record.

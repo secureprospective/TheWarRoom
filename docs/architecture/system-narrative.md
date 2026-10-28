@@ -177,7 +177,7 @@ Offers, Personal and Pool. No API opens a database or starts a worker.
 | `transactions_app.go` | `TransactionRequest` and `buildRequest`, shared by the what-if ledger and release rebase; no binding |
 | `internal/app/control/api.go`, `control_host.go` | `control.API` binds `MFLKeyStatus`, `SetMFLKey`, `DeleteMFLKey` (keyring presence and verified replacement), `GetParams`, `SetParam`, `ResetParam` (the Engine Admin console; reset returns a parameter to its shipped default), `TargetLeagueSettings` (M-091, M-097), `TargetAccounting` and `TargetOpenMFLAccounting` (M-098, M-197; the app only opens MFL's page), `TargetBylaws` (M-185, the league rulebook by section), `TargetSiteNews` (M-141, refreshed when an hour old), `TargetAlerts`, `TargetSeason`, `TargetShellStatus` and `TargetSetWindow(kind, at)` (sets one league window). Its unbound `Held` keeps the private rule names and site news. `control_host.go` is the unbound Host adapter, `control_alerts.go` gathers the alert tray's held inputs and `internal/app/core/host_control.go` copies the season feeds and writes league dates; `frontend/src/app/control/api.ts` alone touches Control transport. |
 | `internal/app/sources/api.go`, `internal/app/core/host_sources.go`, `sources_runtime.go` | `sources.API` binds `LoadCrosswalk`, `GetCrosswalkReport`, `TargetCrosswalk`, `TargetDataSources`, `TargetDataRefresh(scope)` and `SetLeagueArchiveDir(dir)`. Its unbound `Held` deep-clones private crosswalk/signals reports on publication and reads. Core retains shared lookup/season state and whole-operation serializers; main wires shared settings, directory acquisition, league refresh and database-check readings through lower-level callbacks. Startup workers and shared settings remain unbound at root. `frontend/src/app/datasources/api.ts` alone touches Sources transport and owns its shared-provider event subscription. |
-| `archive_app.go`, `asset_board.go` | `TargetArchive(season, team, other)` (the league-history board), `TargetAssetBoard` (C-01 from held weekly scores and, once compiled, the Lab value model; never fetches) |
+| `asset_board.go` | `TargetAssetBoard` (C-01 from held weekly scores and the native player record; never fetches) |
 | `draft_reports_app.go` | `TargetDraftReports` (held exports and model scores only), `TargetDraftReportsRefresh(force)`, `TargetOpenMFLDraftRoom`, `TargetNFLDraft` (held detailed players only) |
 | `internal/app/comms/api.go` | `TargetComms`, `TargetCommsRefresh(force)`, `TargetOpenComms` on the feature API |
 | `research_app.go` | `TargetResearchStatus` |
@@ -553,16 +553,12 @@ league/list changes or a 24-hour-old run make it due. `target:season` refreshes 
 C-07 lists the engine run and its age; completed background checks append their run timestamp
 without changing any scoring formula or using ownership to find points.
 
-League Pulse › Archive: `internal/app/archive/api.go` owns `TargetArchive` and its wire contract.
-`internal/app/core/host_archive.go` resolves the live opponent and detaches the verified facts
-under their existing locks before report construction. `archive_app.go` retains the shared
-checked-cache reader and Race fallback callbacks on `App`; Comms and background compilation
-still consume that cache. `internal/app/archive` reads snapshots (`read.go`) and authors the
-historical reports (`board.go`, `records.go`), using the shared `report.ArchiveSnapshot` contract.
-Only `frontend/src/app/archive/api.ts` touches its generated bindings or runtime events. The lazy
-`frontend/src/app/archive/Archive.tsx` has no MFL Pools report. MFL pool exports remain accepted
-by the offline importer and preserved in the raw archive; native pools and mini games are deferred.
-The shared shell route resolver reads legacy `pools-archive` links as `archive`.
+The League Pulse › Archive screen and its board left the app on 2026-10-28 with the other research
+screens; the imported archive itself is kept. `internal/app/archive` now reads verified snapshots
+only (`read.go`, the shared `report.ArchiveSnapshot` contract); it binds nothing. `sources_runtime.go`
+retains the checked-cache reader on `App`, which Comms (roster weeks and NFL games) and background
+compilation consume. MFL pool exports remain accepted by the offline importer and preserved in the
+raw archive; native pools and mini games are deferred.
 
 `finished_scores.go` re-reads only the last finished week and YTD after the held NFL schedule
 first proves completion, preserving its completion time across hourly passes. With no final flag,

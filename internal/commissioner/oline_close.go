@@ -98,7 +98,7 @@ func initialOLineAssignments(f Frame) ([]NativePlayer, error) {
 		side := seed.SideOf(franchise.ID)
 		lot := slices.IndexFunc(lots, func(l NativePoolEntry) bool {
 			_, card := nativecheck.LineCardTeam(l.Player)
-			return card && (l.Side == side || l.Side == "") && !reserved[side+":"+l.Player] && !seed.OnSide(side, l.Player)
+			return card && l.Side == side && !reserved[side+":"+l.Player] && !seed.OnSide(side, l.Player)
 		})
 		if lot < 0 {
 			return nil, fmt.Errorf("not enough leftover O-Line units for %s", franchise.Name)

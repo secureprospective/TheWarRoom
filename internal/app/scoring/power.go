@@ -92,12 +92,9 @@ func (a Source) Build(
 	return res
 }
 
-// DefaultAgg is how a view counts the roster unless the caller chose: this season the lineup the
-// rules allow, the franchise the whole roster.
-func DefaultAgg(view string) string {
-	if view == season.ViewFranchise {
-		return m2service.AggSum
-	}
+// DefaultAgg is how a view counts the roster unless the caller chose: both views count the lineup
+// the rules allow, so depth a team cannot start (a third QB) does not inflate it (Christopher, 10-28).
+func DefaultAgg(string) string {
 	return m2service.AggLineup
 }
 

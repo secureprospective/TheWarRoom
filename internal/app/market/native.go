@@ -32,6 +32,8 @@ type NativeInput struct {
 	Seasons  int
 	Discount float64
 	Teams    int
+	History  []pickvalue.Pick
+	PickWhy  string
 }
 
 // NewNative builds the native model. Pick Value v1 is fitted on the records' draft capital and the
@@ -39,11 +41,16 @@ type NativeInput struct {
 // and picks say why.
 func NewNative(in NativeInput) Native {
 	n := Native{values: in.Values, season: in.Season, teams: in.Teams, seasons: in.Seasons}
+	if in.PickWhy != "" {
+		n.pickWhy = in.PickWhy
+		return n
+	}
 	history, err := pickvalue.History()
 	if err != nil {
 		n.pickWhy = err.Error()
 		return n
 	}
+	history = append(history, in.History...)
 	players := make([]pickvalue.Player, 0, len(in.Records))
 	for _, r := range in.Records {
 		v, ok := in.Values[r.MFL]
@@ -95,6 +102,8 @@ type NativeSource struct {
 	Records   func(context.Context) ([]playerrecord.Record, error)
 	Params    func() params.Set
 	Teams     func() int
+	Bodies    HeldDraftBodies
+	League    string
 }
 
 // LoadNative reads the native model's inputs and builds it; ok is false before startup came up or
@@ -128,7 +137,12 @@ func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
 	for _, sc := range scores {
 		values[sc.MFLID] = sc.DynastyPPG
 	}
-	return NewNative(NativeInput{Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
+	history, historyErr := HeldPickHistory(ctx, src.Bodies, src.League, run.Season, records)
+	why := ""
+	if historyErr != nil {
+		why = historyErr.Error()
+	}
+	return NewNative(NativeInput{History: history, PickWhy: why, Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
 		Discount: discount, Teams: src.Teams()}), true, nil
 }
 

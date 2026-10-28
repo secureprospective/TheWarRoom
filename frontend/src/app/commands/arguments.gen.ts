@@ -84,8 +84,6 @@ export type BrowserArgumentMap = {
  { action: 'league' | 'news' | 'search' | 'open-accounting'; value: string };
 "research.read":
  { action: string; value: string };
-"archive.reports":
- { action: string; value: string };
 "race.reports":
  { action: 'refresh' | 'week' | 'team'; value: string };
 "game.follow":
@@ -353,11 +351,6 @@ string
 string
 ];
 "offers.TargetBidWithdraw": [
-string
-];
-"archive.TargetArchive": [
-number,
-string,
 string
 ];
 "commissioner.TargetBackupNow": [

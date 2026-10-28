@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"log"
 	"os"
@@ -11,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
+	"github.com/secureprospective/TheWarRoom/internal/app/archive/archivetest"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -129,4 +132,29 @@ func TestHistoryFixturesAreIndependent(t *testing.T) {
 	if _, err := second.core.History.Body(second.core.Ctx, sha); !errors.Is(err, history.ErrNoBody) {
 		t.Fatal("history fixtures share writes", err)
 	}
+}
+
+// Only serial tests call this helper. The on-disk snapshot is immutable after its first compile.
+func reducedArchive(t *testing.T) archiveapp.Snapshot {
+	t.Helper()
+	path := suiteFixturePath(t, "reduced-archive.json")
+	body, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		f := archivetest.Facts(t)
+		body, err = json.Marshal(archiveapp.Snapshot{SHA: f.Fingerprint(), Facts: f})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, body, 0o600); err != nil {
+			t.Fatal(err)
+		}
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	var fixture archiveapp.Snapshot
+	if err := json.Unmarshal(body, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	fixture.Cutoff = archivetest.Cutoff
+	return fixture
 }

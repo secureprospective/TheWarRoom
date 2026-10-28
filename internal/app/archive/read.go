@@ -1,3 +1,7 @@
+// Package archive reads a verified compile of the imported MFL league archive. It holds no state
+// and starts nothing: the caller passes the snapshot it keeps in and gets the verified one back.
+// Not to be confused with internal/archive, the low-level HTTP response recorder that stores every
+// fetch's raw bytes; this package reads the league facts compiled from those bytes.
 package archive
 
 import (
@@ -6,11 +10,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/facts"
 	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/manifest"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
+
+// Snapshot is a verified compile of the league archive: the facts, the SHA the compiler recorded
+// for them, and the newest capture they include. The zero Snapshot means none is held yet.
+type Snapshot = report.ArchiveSnapshot
 
 // History is the part of the history store Read uses: the compile attempts of a manifest name
 // and the manifests they pinned.

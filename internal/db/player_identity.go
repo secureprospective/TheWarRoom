@@ -263,3 +263,11 @@ func CreatePlayerRecord(ctx context.Context, tx *sql.Tx) error {
 	}
 	return nil
 }
+
+// AddPlayerCareer preserves existing records; missing career facts stay explicitly unknown.
+func AddPlayerCareer(ctx context.Context, tx *sql.Tx) error {
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE player_record ADD COLUMN career TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(career))`); err != nil {
+		return fmt.Errorf("migrate player career: %w", err)
+	}
+	return nil
+}

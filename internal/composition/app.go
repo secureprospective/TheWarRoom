@@ -69,7 +69,7 @@ func (a *App) attachSeat(hist *history.Store) {
 	hist.SetVerifiedAliases(a.seat.VerifiedAliases)
 }
 
-// directory returns the cached players Lookup for the season held, fetching it on first use.
+// directory fetches and normalizes the listing once; publication writes its player records.
 func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 	a.core.LookupMu.Lock()
 	defer a.core.LookupMu.Unlock()
@@ -79,6 +79,7 @@ func (a *App) directory(ctx context.Context) (normalize.Lookup, error) {
 		},
 		func(lookup normalize.Lookup, at time.Time) {
 			a.core.Lookup, a.core.HasLookup, a.core.LookupAt = lookup, true, at
+			a.writeRecordOnIngest(ctx, lookup, "MFL's players listing")
 		})
 }
 

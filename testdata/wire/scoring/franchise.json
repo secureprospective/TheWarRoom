@@ -9,7 +9,7 @@
   "ageWeight": 0.5,
   "modelRunID": 0,
   "previousRunID": 0,
-  "aggMode": "sum",
+  "aggMode": "lineup",
   "starterN": 0,
   "freshness": {
     "state": "",

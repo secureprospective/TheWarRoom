@@ -15,22 +15,6 @@ export const browserCommands = {
       "mine"
     ]
   },
-  "archive.reports": {
-    "id": "archive.reports",
-    "label": "League archive reports",
-    "aliases": [],
-    "roles": [
-      "gm",
-      "commish",
-      "admin"
-    ],
-    "gravity": "G0",
-    "undo": "instant",
-    "args": [
-      "action",
-      "value"
-    ]
-  },
   "backup.now": {
     "id": "backup.now",
     "label": "Back up now",
