@@ -16,7 +16,7 @@
         "status": "ok",
         "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals sum the displayed weekly scores, including any held current-week score. Missing weeks are excluded, so a partial history gives a partial total. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",
@@ -68,7 +68,7 @@
         "status": "ok",
         "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals sum the displayed weekly scores, including any held current-week score. Missing weeks are excluded, so a partial history gives a partial total. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",
@@ -170,7 +170,7 @@
         "status": "ok",
         "source": "Source: MFL fantasy points, this league’s scoring · weeks 1–5 as of Oct 11, 2026, 12:00 PM",
         "asOf": "",
-        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.",
+        "how": "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals sum the displayed weekly scores, including any held current-week score. Missing weeks are excluded, so a partial history gives a partial total. A dash means a missing score, not zero. No points enter the scouting prior.",
         "columns": [
           "Player",
           "Pos",

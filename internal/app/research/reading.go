@@ -19,6 +19,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
@@ -224,8 +225,8 @@ func (v researchView) inGroup(p PlayerInfo) bool {
 }
 func (v researchView) stats(id string, mine, group bool) report.Report {
 	title := map[string]string{"M-037": "Player stats", "M-038": "My top performers", "M-040": "Position leaders"}[id]
-	feed := v.feed("playerScores", "YTD")
-	r := researchShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals are MFL’s YTD export; weekly values are its separate weekly fantasy points. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.Zone, "Player", "Pos", "NFL", "Season")
+	feed := v.firstWeeklyFeed()
+	r := researchShell(id, title, "MFL fantasy points under this league’s scoring, not raw passing or rushing yards. Season totals sum the displayed weekly scores, including any held current-week score. Missing weeks are excluded, so a partial history gives a partial total. A dash means a missing score, not zero. No points enter the scouting prior.", feed, v.Zone, "Player", "Pos", "NFL", "Season")
 	r.Source = "Source: MFL fantasy points, this league’s scoring"
 	weekly := v.weekScores(&r)
 	last := max(v.Week-1, 0)
@@ -234,8 +235,7 @@ func (v researchView) stats(id string, mine, group bool) report.Report {
 		r.Note = "Choose your franchise to see your top performers."
 		return r
 	}
-	rows := append([]researchfeeds.Entry{}, Rows(feed)...)
-	sort.SliceStable(rows, func(i, j int) bool { return rows[i].Value > rows[j].Value })
+	rows := weeklyTotals(weekly, v.Week)
 	missing := 0
 	for _, entry := range rows {
 		p := v.player(entry.ID.String())
@@ -263,6 +263,42 @@ func (v researchView) stats(id string, mine, group bool) report.Report {
 	researchEmpty(&r)
 	return r
 }
+func (v researchView) firstWeeklyFeed() Feed[[]researchfeeds.Feed] {
+	for w := 1; w <= v.Week; w++ {
+		if feed := v.feed("playerScores", strconv.Itoa(w)); !feed.FetchedAt.IsZero() {
+			return feed
+		}
+	}
+	return Feed[[]researchfeeds.Feed]{}
+}
+
+func weeklyTotals(weekly map[int]map[string]float64, weeks int) []researchfeeds.Entry {
+	totals := map[string]float64{}
+	for w := 1; w <= weeks; w++ {
+		for id, value := range weekly[w] {
+			totals[id] += value
+		}
+	}
+	rows := make([]researchfeeds.Entry, 0, len(totals))
+	for id, value := range totals {
+		pid, _ := playerid.New(id) // Keys came from validated feed entries.
+		rows = append(rows, researchfeeds.Entry{ID: pid, Value: displayedScore(value)})
+	}
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Value == rows[j].Value {
+			return rows[i].ID.String() < rows[j].ID.String()
+		}
+		return rows[i].Value > rows[j].Value
+	})
+	return rows
+}
+
+// displayedScore keeps sums and sort keys at the precision of their weekly columns.
+func displayedScore(value float64) float64 {
+	rounded, _ := strconv.ParseFloat(strconv.FormatFloat(value, 'f', 2, 64), 64)
+	return rounded
+}
+
 func (v researchView) weekScores(r *report.Report) map[int]map[string]float64 {
 	weekly := map[int]map[string]float64{}
 	var differ []string // per Week: its held time when it differs from week 1's, else ""
@@ -271,7 +307,7 @@ func (v researchView) weekScores(r *report.Report) map[int]map[string]float64 {
 		h := v.feed("playerScores", strconv.Itoa(w))
 		weekly[w] = map[string]float64{}
 		for _, p := range Rows(h) {
-			weekly[w][p.ID.String()] = p.Value
+			weekly[w][p.ID.String()] = displayedScore(p.Value)
 		}
 		base := v.feed("playerScores", "1")
 		if w == 1 {
