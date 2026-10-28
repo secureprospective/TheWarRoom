@@ -252,6 +252,12 @@
     "safeguard": "reason"
   },
   {
+    "command": "commish.league.cutover",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "commish.league.seed_held",
     "effective": "now",
     "field": "",
