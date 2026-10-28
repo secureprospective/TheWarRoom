@@ -47,7 +47,7 @@ func checkpointOf(records []Record, key DraftKey, entry string) (int, error) {
 		return 0, fmt.Errorf("choose a point in this draft's history to restore it to")
 	}
 	r := records[at]
-	if !draftCommand(r.Command.Command) || !ofDraft(r, key) || standingRule(r.Command.Command) ||
+	if !draftCommand(r.Command.Command) || !draftCheckpointMatches(r, key) || standingRule(r.Command.Command) ||
 		!Replay(records).Active[entry] {
 		return 0, fmt.Errorf("choose a point in this draft's history that is still part of it")
 	}

@@ -95,3 +95,15 @@ func rookieOrder(records []Record, key DraftKey, rules leaguerules.DraftRules,
 	}
 	return rookieSideOrder(records, key, order)
 }
+
+// draftCheckpointMatches includes the shared rookie setup as a checkpoint on every side.
+func draftCheckpointMatches(r Record, key DraftKey) bool {
+	if ofDraft(r, key) {
+		return true
+	}
+	if key.Startup || liveDraftEntry(r.Command.Command) {
+		return false
+	}
+	key.Side = ""
+	return ofDraft(r, key)
+}

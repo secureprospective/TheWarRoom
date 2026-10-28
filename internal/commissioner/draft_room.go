@@ -185,7 +185,7 @@ func draftCheckpoints(records []Record, key DraftKey, facts nativecheck.Facts) [
 	out := []DraftCheckpoint{}
 	for _, r := range records {
 		opens := r.Command.Command == DraftStart || r.Command.Command == DraftStartupOpen
-		if !ofDraft(r, key) || !active[r.Receipt.Entry] || standingRule(r.Command.Command) ||
+		if !draftCheckpointMatches(r, key) || !active[r.Receipt.Entry] || standingRule(r.Command.Command) ||
 			(!liveDraftEntry(r.Command.Command) && !opens) {
 			continue
 		}

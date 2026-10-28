@@ -81,6 +81,16 @@ func TestPerSideRookieDraftCopiesTradesCloseAndRestore(t *testing.T) {
 				t.Fatal(err)
 			}
 			b.add(raw, at)
+			if i < 7 {
+				next := sideRookieReading(t, b, facts, at, team).Draft.OnClock
+				before := digest(t, b.records)
+				_, err := PlanDraftPick(DraftPickInput{League: "native.test", Season: 2027,
+					Franchise: next.Owner, Player: player, Request: "duplicate", Expected: int64(len(b.records))},
+					b.records, facts, at, time.UTC, nil)
+				if err == nil || digest(t, b.records) != before {
+					t.Fatal("duplicate pick was not safely refused")
+				}
+			}
 		}
 	}
 	due := DueDrafts(b.records, at, nil)
@@ -155,5 +165,54 @@ func TestPerSideRookieDraftOrdersEachRoundsTradedPicks(t *testing.T) {
 	if len(basis.order) != 2 || basis.order[0].Picks[7].Original != "franchise.09" ||
 		basis.order[1].Picks[0].Original != "franchise.01" {
 		t.Fatalf("traded round order: %+v", basis.order)
+	}
+}
+
+func TestPerSideRookieRestoreToSharedStartAndRejectWrongSideInsert(t *testing.T) {
+	b, facts, at := sideRookieLeague(t)
+	key := DraftKey{Season: 2027, Side: "AFC"}
+	basis, err := readDraft(b.records, key, at, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clock := basis.draft.OnClock
+	raw, err := PlanDraftPick(DraftPickInput{League: "native.test", Season: 2027, Franchise: clock.Owner,
+		Player: "30000", Request: "first", Expected: int64(len(b.records))}, b.records, facts, at, time.UTC, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.add(raw, at)
+	before := digest(t, b.records)
+	raw = RawCommand{League: "native.test", Command: DraftInsert, Request: "wrong-side",
+		Args: RawArgs{Draft: &RawDraftArgs{Season: 2027, Side: "AFC", Act: &RawDraftAct{
+			Round: clock.Round, Original: clock.Original, Franchise: "franchise.09", Player: "30001"}}},
+		Effective: "now", Visibility: "league"}
+	if err := PrepareDraftAppend(&raw, b.records, at, facts, nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := CheckDraftAppend(raw, b.records, at, nil); err == nil {
+		t.Fatal("insert gave the AFC copy to an NFC franchise")
+	}
+	if digest(t, b.records) != before {
+		t.Fatal("refused insert changed the ledger")
+	}
+	reading := sideRookieReading(t, b, facts, at, "franchise.01")
+	start := ""
+	for _, c := range reading.Checkpoints {
+		for _, r := range b.records {
+			if r.Receipt.Entry == c.Entry && r.Command.Command == DraftStart {
+				start = c.Entry
+			}
+		}
+	}
+	if start == "" {
+		t.Fatal("no shared start checkpoint for this side")
+	}
+	b.record(RawCommand{League: "native.test", Command: DraftRevert, Request: "back-to-start",
+		Args:      RawArgs{Draft: &RawDraftArgs{Season: 2027, Side: "AFC", Act: &RawDraftAct{To: start}}},
+		Effective: "now", Visibility: "league"}, facts, at)
+	reading = sideRookieReading(t, b, facts, at, "franchise.01")
+	if !slices.ContainsFunc(reading.Available, func(p DraftPlayer) bool { return p.ID == "30000" }) {
+		t.Fatal("restore to start did not release the side's rookie")
 	}
 }
