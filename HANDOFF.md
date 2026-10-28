@@ -1,6 +1,34 @@
 # Handoff
 
 ## Baton
+Tom (Beelink) — 2026-10-28, `session/player-record`. Do not push.
+
+## Where it stands
+- Brief `~/fleet/briefs/tom-player-record.md`, R1–R4 built. The player record (`internal/playerrecord`,
+  stored in `player_record`, history migration 11) holds draft capital (undrafted is a status), bio,
+  the MFL link and each field's source; `modelrun` reads only its Book, keyed by our ID.
+- Pick Value v1 (`internal/pickvalue`) values picks in dynasty PPG. C-01 reads native values and
+  Pick Value v1 (`market.Native`); `labcompile.Build` and the startup fit are gone.
+- Replay of the 10-27 board: 6 players move on a new input (MFL draft year gives entry age), 49 more
+  by ≤0.014 PPG through the contract tilt's going rate.
+
+## Next move
+Live gate on Claude-OS: the asset board's dynasty and pick cells, and one engine run writing
+`player_record`. Christopher reads the R3 slot table.
+
+## Blocked on
+Nothing.
+
+## Tried and rejected
+Rebuilding Data.Players from the record for every record: players with seasons but no history
+identity would join the position scales and move everyone.
+
+## Debt left
+- Feeds write the record through the engine refresh, not at ingestion; `model_scores` still keys by
+  MFL ID; the record has no college stats or honours of its own.
+- The startup fit hook is gone from `sources.StartupFacts` too; no app code calls `labcompile.Build`.
+- Pick Value v1's slot history is frozen 2017–2026 (`slots_v1.csv`); slot unknown = round mean.
+
 Bee — 2026-10-28, `session/terra-p7-split`. Do not push without direction.
 
 ## Where it stands
