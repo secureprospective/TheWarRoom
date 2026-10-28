@@ -108,3 +108,21 @@ func TestTypedBindingPreservesErrorsAndRejectsTrailingJSON(t *testing.T) {
 		t.Fatal("binding lost validation owner")
 	}
 }
+
+func TestResearchBindingsStayRetired(t *testing.T) {
+	registry, err := catalog.NewRegistry(newCommandAPIs(NewApp()).registryInputs(NewApp()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{
+		"counterparties.TargetCounterparties", "counterparties.TargetCounterpartTeam",
+		"offers.TargetOffers", "draft.TargetDraftLab", "market.TargetMarket",
+		"market.TargetAssetProfile", "market.TargetPickClock", "archive.TargetArchive",
+	} {
+		t.Run(id, func(t *testing.T) {
+			if _, err := registry.Invoke(t.Context(), catalog.WailsDoor, id, "", json.RawMessage(`[]`)); err == nil {
+				t.Fatal("retired research binding remains executable")
+			}
+		})
+	}
+}

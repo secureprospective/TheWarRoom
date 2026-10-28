@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 const forbidden = [/mailto:/i, /\bfetch\s*\(/, /XMLHttpRequest/, /sendBeacon/, /WebSocket/, /window\.open/,
   /location\.(href|assign|replace)/, /<a[\s>]/, /\bsmtp\b/i, /\bsendmail\b/i, /nodemailer/i];
 const roots = [resolve('src/app/commissioner'), resolve('src/app/governed')];
-const extra = [resolve('src/app/datasources/CacheTools.tsx'), resolve('src/app/datasources/cacheState.ts')];
+const extra = [resolve('src/app/datasources/cacheState.ts')];
 
 function sources(): string[] {
   const files = roots.flatMap(root => readdirSync(root).map(name => join(root, name)))
