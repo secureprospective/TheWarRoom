@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -78,4 +79,11 @@ describe('League Pulse › Race', () => {
     expect(() => state.choose('week', 'x')).toThrow('invalid week');
     expect(() => state.choose('team', '17')).toThrow('invalid franchise');
   });
+});
+
+it('keeps schedule abbreviations intact in scrollable intrinsic columns', () => {
+  const css = readFileSync('src/app/draftreports/reports.css', 'utf8');
+  expect(css).toContain('.draft-report[data-endpoint="M-013"] .draft-table-scroll table {\n' +
+    '  width: max-content; min-width: 100%; table-layout: auto;');
+  expect(css).toContain('white-space: nowrap; overflow-wrap: normal;');
 });

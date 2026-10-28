@@ -89,3 +89,10 @@
 .draft-report .draft-table-scroll th .act-button {
   padding: 3px 0; min-width: 0; max-width: 100%; overflow-wrap: anywhere;
 }
+
+.draft-report[data-endpoint="M-013"] .draft-table-scroll table {
+  width: max-content; min-width: 100%; table-layout: auto;
+}
+.draft-report[data-endpoint="M-013"] .draft-table-scroll :is(th, td) {
+  white-space: nowrap; overflow-wrap: normal;
+}
