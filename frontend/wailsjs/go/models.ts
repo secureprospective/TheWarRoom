@@ -2735,6 +2735,40 @@ export namespace commissioner {
 		}
 	}
 	
+	export class OLineOutcome {
+	    assigned: NativePlayer[];
+	    pending: NativePlayer[];
+	    words: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new OLineOutcome(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.assigned = this.convertValues(source["assigned"], NativePlayer);
+	        this.pending = this.convertValues(source["pending"], NativePlayer);
+	        this.words = source["words"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	
 	export class PendingExpiry {
 	    player: string;
@@ -3928,6 +3962,7 @@ export namespace commissioner {
 		}
 	}
 	export class RawArgs {
+	    olineOutcome?: OLineOutcome;
 	    correction?: RawCorrection;
 	    trade?: RawTradeArgs;
 	    tradeOutcome?: TradeState;
@@ -3970,6 +4005,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.olineOutcome = this.convertValues(source["olineOutcome"], OLineOutcome);
 	        this.correction = this.convertValues(source["correction"], RawCorrection);
 	        this.trade = this.convertValues(source["trade"], RawTradeArgs);
 	        this.tradeOutcome = this.convertValues(source["tradeOutcome"], TradeState);
