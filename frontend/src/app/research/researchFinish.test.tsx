@@ -215,3 +215,9 @@ it('renders one shared posted date without raw elapsed wording on all news table
   expect(css).toContain('.draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {');
   expect(css).toContain('overflow-wrap: normal; word-break: normal; white-space: normal;');
 });
+
+it('starter grid uses intrinsic columns and scrolls rather than overlapping names', () => {
+  const css = readFileSync('src/app/research/research.css', 'utf8');
+  expect(css).toContain('width: max-content; min-width: 100%; table-layout: auto;');
+  expect(css).toContain('white-space: nowrap; overflow-wrap: normal;');
+});
