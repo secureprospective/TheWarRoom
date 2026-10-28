@@ -50,6 +50,7 @@ func nativeLeagueMutations() []struct{ id, args string } {
 		{commissioner.DraftTimer, "draft"},
 		{commissioner.DraftRevert, "draft"},
 		{commissioner.DraftArchive, "draft"},
+		{commissioner.DraftStartupOpen, "draft"},
 		{commissioner.WindowSet, "window"},
 		{commissioner.WindowMove, "window"},
 		{commissioner.WindowRemove, "window"},

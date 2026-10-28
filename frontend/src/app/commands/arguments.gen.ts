@@ -220,7 +220,8 @@ string
 "league": string;
 "season": number;
 "franchise": string;
-"at": string
+"at": string;
+"startup"?: boolean
 }
 ];
 "commissioner.TargetNativeFranchiseSchedule": [
@@ -511,7 +512,8 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -593,7 +595,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -625,6 +629,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({
@@ -811,7 +816,8 @@ string
 "franchise": string;
 "player": string;
 "request": string;
-"expected": number
+"expected": number;
+"startup"?: boolean
 }
 ];
 "commissioner.TargetNativeLineupSet": [
@@ -963,7 +969,8 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -1045,7 +1052,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -1077,6 +1086,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({
@@ -1391,7 +1401,8 @@ string
 "seconds"?: number;
 "to"?: string
 }) | null;
-"running"?: boolean
+"running"?: boolean;
+"startup"?: boolean
 }) | null;
 "waiver"?: ({
 "bucket"?: string;
@@ -1473,7 +1484,9 @@ string
 "owner": string;
 "player": string;
 "skipped": boolean
-})[]
+})[];
+"seed"?: string;
+"rounds"?: number
 }) | null;
 "name"?: string;
 "entry"?: string;
@@ -1505,6 +1518,7 @@ string
 }) | null;
 "field"?: string;
 "value"?: unknown;
+"source"?: string;
 "preset"?: string;
 "franchiseCount"?: number;
 "seed"?: ({

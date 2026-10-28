@@ -23,7 +23,7 @@ func draftRulesFor(records []Record, season int, at time.Time) (leaguerules.Rule
 	active := Replay(records).Active
 	for _, r := range records {
 		d := r.Command.Args.Draft
-		if !active[r.Receipt.Entry] || d == nil || d.Season != season {
+		if !active[r.Receipt.Entry] || !ofDraft(r, rookieDraft(season)) {
 			continue
 		}
 		switch r.Command.Command {
@@ -73,7 +73,7 @@ func draftCalendarStart(records []Record, rules leaguerules.RuleSet, season int,
 	}
 	projectDraftCalendar(&clock, records, season, at)
 	for _, w := range clock.Windows {
-		if slices.Contains(w.Opens, draftPickAction) {
+		if w.ID != startupDraftWindow && slices.Contains(w.Opens, draftPickAction) {
 			return w.Start, nil
 		}
 	}

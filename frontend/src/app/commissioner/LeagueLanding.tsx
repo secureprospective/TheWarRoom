@@ -5,8 +5,9 @@ import { entriesOf } from './controls';
 import { DensityScreen } from './DensityScreen';
 import { actsFor, liveDraftControls } from './actTable';
 import { commands } from '../commands/registry';
+import { draftRoom } from '../draftroom/state';
 import { JobsStrip } from './JobsStrip';
-import { startingJob } from './jobs';
+import { startingJob, startupDraftJob } from './jobs';
 import { parseOpen, parseTray, scopedRules, type ActionKind, type LandingView } from './landing';
 import { LeaguePicker } from './LeaguePicker';
 import type { People } from './people';
@@ -52,6 +53,11 @@ export default function LeagueLanding() {
       setView(v => ({ ...v, open: v.open === args.value ? '' : args.value, reveal: undefined }));
       return;
     }
+    if (args.action === 'open' && args.value === startupDraftJob) {
+      draftRoom.choose(true);
+      commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
+      return;
+    }
     const opener = document.activeElement as HTMLElement;
     if (args.action === 'tray' && args.value === 'seed' && selected && startingJob(jobs)) {
       setTray({ kind: 'seed', opener });
@@ -74,6 +80,7 @@ export default function LeagueLanding() {
         return;
       }
       if (liveDraftControls.has(found.control.id)) {
+        draftRoom.choose(false);
         commands.dispatch('nav.open', { node: 'trade', workspace: 'draft-room' });
         return;
       }
@@ -127,7 +134,8 @@ export default function LeagueLanding() {
         <CommissionerActTray key={`${selected}:${tray.control}`} control={tray.control} league={selected}
           opener={tray.opener} background={background.current} onClose={() => setTray(undefined)} />
       </Suspense>}
-      {tray?.kind === 'seed' && startingJob(jobs) && <Suspense fallback={<p role="status">Opening starting assets…</p>}>
+      {tray?.kind === 'seed' && startingJob(jobs) && <Suspense
+        fallback={<p role="status">Opening starting assets…</p>}>
         <SeedTray key={selected} league={selected} opener={tray.opener}
           background={background.current} onClose={() => setTray(undefined)} />
       </Suspense>}

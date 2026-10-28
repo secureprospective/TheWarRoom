@@ -43,6 +43,7 @@ export function DraftForm({ action, draft }: { action: TrayAction; draft: Draft 
   const { preview, wait, safeguard } = useChangePreview(change, request);
   const rookies = draft.available.map(p => ({ value: p.id, text: playerLine(p) }));
   const kind = action.kind;
+  const who = draft.startup ? 'player' : 'rookie';
   return (
     <section className="league-form" aria-label={words.title}>
       <PreviewReview preview={preview} confirm={
@@ -52,7 +53,8 @@ export function DraftForm({ action, draft }: { action: TrayAction; draft: Draft 
       }>
         <PickLine draft={draft} action={action} />
         {(kind === 'assign' || kind === 'insert' || kind === 'change') &&
-          <Choose label={kind === 'change' ? 'The rookie to give this pick' : 'Rookie'} field="player"
+          <Choose field="player"
+            label={kind === 'change' ? `The ${who} to give this pick` : draft.startup ? 'Player' : 'Rookie'}
             inputs={inputs} set={setInputs} options={rookies} />}
         {kind === 'insert' && <Choose label="Franchise that gets the extra pick" field="franchise"
           inputs={inputs} set={setInputs}

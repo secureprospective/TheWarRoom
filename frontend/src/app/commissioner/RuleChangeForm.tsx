@@ -35,7 +35,8 @@ export function RuleChangeForm({ rules, initialField = '' }: { rules: Rules; ini
   const row = rows.find(r => r.field === field);
   const [draft, setDraft] = useState<Draft | undefined>(() =>
     start(rows.find(r => r.field === initialField)));
-  const [effective, setEffective] = useState<Effective>(() => allowedTiming(rows.find(r => r.field === initialField))[0].value);
+  const [effective, setEffective] = useState<Effective>(
+    () => allowedTiming(rows.find(r => r.field === initialField))[0].value);
   const [reason, setReason] = useState('');
   const outcome = leagueState.use().outcome;
   const landed = outcome.status === 'done' && outcome.form === 'rule' ? outcome.receipt.entry : '';

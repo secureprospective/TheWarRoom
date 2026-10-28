@@ -6000,7 +6000,136 @@
       "fields": [],
       "element": {
        "kind": "string",
-       "choices": [],
+       "choices": [
+        {
+         "value": "franchise.01",
+         "label": "Held team 1"
+        },
+        {
+         "value": "franchise.02",
+         "label": "Held team 2"
+        },
+        {
+         "value": "franchise.03",
+         "label": "Held team 3"
+        },
+        {
+         "value": "franchise.04",
+         "label": "Held team 4"
+        },
+        {
+         "value": "franchise.05",
+         "label": "Held team 5"
+        },
+        {
+         "value": "franchise.06",
+         "label": "Held team 6"
+        },
+        {
+         "value": "franchise.07",
+         "label": "Held team 7"
+        },
+        {
+         "value": "franchise.08",
+         "label": "Held team 8"
+        },
+        {
+         "value": "franchise.09",
+         "label": "Held team 9"
+        },
+        {
+         "value": "franchise.10",
+         "label": "Held team 10"
+        },
+        {
+         "value": "franchise.11",
+         "label": "Held team 11"
+        },
+        {
+         "value": "franchise.12",
+         "label": "Held team 12"
+        },
+        {
+         "value": "franchise.13",
+         "label": "Held team 13"
+        },
+        {
+         "value": "franchise.14",
+         "label": "Held team 14"
+        },
+        {
+         "value": "franchise.15",
+         "label": "Held team 15"
+        },
+        {
+         "value": "franchise.16",
+         "label": "Held team 16"
+        },
+        {
+         "value": "franchise.17",
+         "label": "Held team 17"
+        },
+        {
+         "value": "franchise.18",
+         "label": "Held team 18"
+        },
+        {
+         "value": "franchise.19",
+         "label": "Held team 19"
+        },
+        {
+         "value": "franchise.20",
+         "label": "Held team 20"
+        },
+        {
+         "value": "franchise.21",
+         "label": "Held team 21"
+        },
+        {
+         "value": "franchise.22",
+         "label": "Held team 22"
+        },
+        {
+         "value": "franchise.23",
+         "label": "Held team 23"
+        },
+        {
+         "value": "franchise.24",
+         "label": "Held team 24"
+        },
+        {
+         "value": "franchise.25",
+         "label": "Held team 25"
+        },
+        {
+         "value": "franchise.26",
+         "label": "Held team 26"
+        },
+        {
+         "value": "franchise.27",
+         "label": "Held team 27"
+        },
+        {
+         "value": "franchise.28",
+         "label": "Held team 28"
+        },
+        {
+         "value": "franchise.29",
+         "label": "Held team 29"
+        },
+        {
+         "value": "franchise.30",
+         "label": "Held team 30"
+        },
+        {
+         "value": "franchise.31",
+         "label": "Held team 31"
+        },
+        {
+         "value": "franchise.32",
+         "label": "Held team 32"
+        }
+       ],
        "fields": []
       }
      },

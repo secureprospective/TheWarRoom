@@ -57,7 +57,7 @@ export default function DraftRoom() {
   const due = clock && !clock.paused ? clock.deadline : waiting ? draft.start : '';
   const landed = outcome.status === 'done' && outcome.form.startsWith('draft.')
     ? outcome.receipt : undefined;
-  useDraftReading(selected, franchise, due, now, landed?.entry ?? '');
+  useDraftReading(selected, franchise, due, now, landed?.entry ?? '', room.startup);
   useEffect(() => { void leagueState.choose(); }, []);
   useEffect(() => { if (landed) setTray(undefined); }, [landed?.entry]);
   useEffect(() => surfaceActions.register('draftroom', args => {
@@ -72,10 +72,12 @@ export default function DraftRoom() {
   }), [may, draft, people]);
   if (!pending && choices.length === 0 && !leagueError) return null;
   const yourTurn = clock !== null && people?.yourFranchise === clock.owner && draft?.closed === null;
+  const kind = room.startup ? 'startup' : 'rookie';
   return (
-    <section className="draft-room" aria-label="Rookie draft room" aria-busy={room.pending}>
+    <section className="draft-room" aria-label={room.startup ? 'Startup draft room' : 'Rookie draft room'}
+      aria-busy={room.pending}>
       <div ref={background} aria-hidden={tray ? true : undefined}>
-        <h4>{draft ? `${draft.season} rookie draft` : 'Rookie draft'}</h4>
+        <h4>{draft ? `${draft.season} ${kind} draft` : room.startup ? 'Startup draft' : 'Rookie draft'}</h4>
         {leagueError && <p role="alert">{leagueError}</p>}
         {room.error && <p role="alert">{room.error}</p>}
         {!draft && !room.error && !leagueError && <p role="status">Reading the draft…</p>}
@@ -87,6 +89,9 @@ export default function DraftRoom() {
                   {people.seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
                 </select>
               </label>
+            )}
+            {may && draft.startup && !draft.started && draft.closed === null && (
+              <DraftLauncher action={{ kind: 'open' }} text="Open the startup draft" />
             )}
             <DraftClock draft={draft} now={now} may={may} />
             {yourTurn && <YourPick draft={draft} outcome={room.pick} />}

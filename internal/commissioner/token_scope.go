@@ -182,6 +182,10 @@ func tokenDraftTargets(raw RawCommand, records []Record) ([]string, error) {
 	if d.Act == nil || d.Act.Original == "" {
 		return nil, nil
 	}
+	// A startup draft's picks are never traded: each stays with the franchise it began with.
+	if d.Startup {
+		return []string{d.Act.Original, d.Act.Franchise}, nil
+	}
 	targets, err := tokenPickOwner(raw.League, records, d.Season, d.Act.Round, d.Act.Original)
 	return append(targets, d.Act.Franchise), err
 }

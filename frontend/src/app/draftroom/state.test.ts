@@ -59,6 +59,26 @@ describe('The draft room’s reading', () => {
   });
 });
 
+describe('The startup draft room', () => {
+  it('reads the startup draft once chosen, and makes its picks there', async () => {
+    const asked: unknown[] = [];
+    const picked: unknown[] = [];
+    const room = createDraftRoom({
+      pick: async choice => { picked.push(choice); return receipt; },
+      read: async scope => { asked.push(scope); return { ...reading('native.a'), startup: true }; } });
+    room.choose(true);
+    await room.read('native.a', 'franchise.01');
+    expect(asked[0]).toEqual({ league: 'native.a', season: 0, franchise: 'franchise.01',
+      at: '0001-01-01T00:00:00Z', startup: true });
+    expect(room.peek().draft?.startup).toBe(true);
+    await room.pick('franchise.01', '5009');
+    expect(picked[0]).toMatchObject({ league: 'native.a', season: 2027, player: '5009', startup: true });
+    room.choose(false);
+    await room.read('native.a', 'franchise.01');
+    expect(asked.at(-1)).not.toHaveProperty('startup');
+  });
+});
+
 describe('The Draft room is lazy', () => {
   it('is loaded on demand from the Draft room, and so is its tray', () => {
     const market = readFileSync('src/app/market/Market.tsx', 'utf8');
@@ -83,5 +103,5 @@ it('retains refusal wording during retry and fences a read when the room is rese
   room.reset();
   finish(reading('native.a'));
   await pending;
-  expect(room.peek()).toEqual({ error: '', pending: false, pick: { status: 'idle' } });
+  expect(room.peek()).toEqual({ error: '', pending: false, pick: { status: 'idle' }, startup: false });
 });

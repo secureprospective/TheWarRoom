@@ -26,6 +26,7 @@ func generatedVerbs() []commandVerb {
 		{ID: "draft.timer", Label: "timer draft", Modes: []string{"preview", "execute"}},
 		{ID: "draft.revert", Label: "revert draft", Modes: []string{"preview", "execute"}},
 		{ID: "draft.archive", Label: "archive draft", Modes: []string{"preview", "execute"}},
+		{ID: "draft.startup.open", Label: "open draft startup", Modes: []string{"preview", "execute"}},
 		{ID: "calendar.window.set", Label: "set calendar window", Modes: []string{"preview", "execute"}},
 		{ID: "calendar.window.move", Label: "move calendar window", Modes: []string{"preview", "execute"}},
 		{ID: "calendar.window.remove", Label: "remove calendar window", Modes: []string{"preview", "execute"}},

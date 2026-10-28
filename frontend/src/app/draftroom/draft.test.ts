@@ -82,6 +82,15 @@ describe('The change the tray sends', () => {
     expect(changeOf({ kind: 'restore' }, running, { ...noInputs, checkpoint: 'act.1' }, '')?.command)
       .toBe('draft.revert');
   });
+  it('opens a startup draft, and names it on every change to it', () => {
+    const startup = { ...running, startup: true };
+    expect(changeOf({ kind: 'open' }, startup, noInputs, ' Start ')).toEqual({ league: 'native.seed',
+      command: 'draft.startup.open', reason: 'Start', expected: running.revision,
+      args: { draft: { season: 2027, startup: true } }, effective: 'now', visibility: 'league' });
+    expect(changeOf({ kind: 'close' }, startup, noInputs, '')?.args)
+      .toEqual({ draft: { season: 2027, startup: true } });
+    expect(parseTrayAction(trayValue({ kind: 'open' }))).toEqual({ kind: 'open' });
+  });
   it('is not whole until everything it needs is chosen, and says what is missing', () => {
     const ref = { round: 1, original: 'franchise.02', extra: 0 };
     expect(missing({ kind: 'assign', ref }, running, noInputs)).toBe('Choose a rookie.');

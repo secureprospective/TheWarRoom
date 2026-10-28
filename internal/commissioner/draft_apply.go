@@ -11,8 +11,20 @@ import (
 func applyDraftPick(seed *RawNativeSnapshot, record Record) {
 	d := record.Command.Args.Draft
 	p := d.Pick
+	if d.Startup {
+		signStartup(seed, d.Season, p.Player, p.Franchise, p.Round, p.Slot, p.Terms)
+		return
+	}
 	signRookie(seed, d.Season, p.Player, p.Franchise, p.Round, p.Slot, p.Terms)
 	markPick(seed, d.Season, p.Round, p.Original, p.Slot, p.Player)
+}
+
+// signStartup puts a player taken in the startup draft on a roster under the startup draft's contract. He is
+// no rookie, and his pick was the draft's own, so no recorded pick is marked.
+func signStartup(seed *RawNativeSnapshot, season int, player, franchise string, round, slot int, terms rookiedraft.Terms) {
+	seed.Players = append(seed.Players, NativePlayer{ID: player, Franchise: franchise, Status: domain.RosterActive,
+		Salary: terms.Salary, ExpirationYear: season + terms.Years - 1, ContractStatus: domain.CStatusUFA,
+		ContractInfo: fmt.Sprintf("Round %d pick %d of the %d startup draft", round, slot, season)})
 }
 
 // signRookie puts a drafted rookie on a roster under the contract his slot fixed.
@@ -40,6 +52,10 @@ func markPick(seed *RawNativeSnapshot, season, round int, original string, slot 
 func applyDraftTray(seed *RawNativeSnapshot, record Record) {
 	d, o := record.Command.Args.Draft, record.Command.Args.DraftOutcome
 	if o == nil || o.Terms == nil {
+		return
+	}
+	if d.Startup {
+		signStartup(seed, d.Season, d.Act.Player, o.Franchise, d.Act.Round, o.Slot, *o.Terms)
 		return
 	}
 	signRookie(seed, d.Season, d.Act.Player, o.Franchise, d.Act.Round, o.Slot, *o.Terms)

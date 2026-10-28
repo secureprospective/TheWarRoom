@@ -197,7 +197,8 @@ describe('Change a rule', () => {
     expect(present(host, 'Teams: 4 → 6 (adds Franchise 5, Franchise 6) (in force now)')).toBe(true);
     await act(async () => { (button(host, confirm).props().onClick as () => void)(); });
     await settle();
-    expect(calls.sent[0]).toMatchObject({ command: 'commish.rules.set', effective: 'now', reason: 'Two expansion teams',
+    expect(calls.sent[0]).toMatchObject({ command: 'commish.rules.set', effective: 'now',
+      reason: 'Two expansion teams',
       args: { field: 'league.teams', value: 6 } });
   });
   it('will not send a list with a blank entry, and says which', async () => {

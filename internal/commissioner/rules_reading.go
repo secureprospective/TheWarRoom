@@ -88,14 +88,12 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		value := values[i]
 		row := RuleRow{Field: string(field.Path), Label: field.Label, Value: value.Words, State: value.State,
 			Citation: startingSource(preset, value.State, value.Citation), Schema: field.Schema,
-			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)), Pending: pending[string(field.Path)], Current: current[i],
+			Competitive: field.Competitive, NowOnly: shapeField(string(field.Path)),
+			Pending: pending[string(field.Path)], Current: current[i],
 			Unit:       unitFor(field.Path),
 			Safeguards: safeguardsFor(string(field.Path))}
-		if row.Field == alignmentField {
-			row.Value, err = alignmentWords(records, rules.League.Alignment)
-			if err != nil {
-				return Rules{}, err
-			}
+		if err := leagueRowWords(&row, records, rules); err != nil {
+			return Rules{}, err
 		}
 		if source, ok := sources[row.Field]; ok {
 			row.Citation = "Changed in the league ledger"
@@ -117,6 +115,22 @@ func RulesReading(league string, records []Record, now time.Time) (Rules, error)
 		last.Rows = append(last.Rows, row)
 	}
 	return out, nil
+}
+
+// leagueRowWords words a row from the league itself: the alignment by team names, the startup order as a
+// pick from the league's franchises.
+func leagueRowWords(row *RuleRow, records []Record, rules leaguerules.RuleSet) error {
+	switch row.Field {
+	case alignmentField:
+		words, err := alignmentWords(records, rules.League.Alignment)
+		if err != nil {
+			return err
+		}
+		row.Value = words
+	case string(startupListField):
+		row.Schema = franchiseList(row.Schema, draftOwners(records))
+	}
+	return nil
 }
 
 // ruleHistory finds where each in-force value came from and which recorded changes still wait. A
@@ -326,4 +340,21 @@ func governedRules(records []Record) (map[string]Governed, error) {
 			Change: change}
 	}
 	return out, nil
+}
+
+// startupListField is the commissioner's startup draft order: a list of the league's own franchises.
+const startupListField = leaguerules.FieldPath("draft.startupList")
+
+// franchiseList offers the league's franchises, by name, as the choices of a list of franchise ids.
+func franchiseList(schema leaguerules.ValueSchema, owners []DraftOwner) leaguerules.ValueSchema {
+	element := leaguerules.ValueSchema{Kind: "string", Choices: []leaguerules.Choice{}, Fields: []leaguerules.SchemaField{}}
+	if schema.Element != nil {
+		element = *schema.Element
+	}
+	element.Choices = make([]leaguerules.Choice, len(owners))
+	for i, o := range owners {
+		element.Choices[i] = leaguerules.Choice{Value: o.ID, Label: o.Name}
+	}
+	schema.Element = &element
+	return schema
 }

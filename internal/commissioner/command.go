@@ -69,7 +69,7 @@ func DefinitionFor(command string) (Definition, error) {
 	case TradeOffer, TradeAccept, TradeDecline, TradeWithdraw, TradeRecuse, DraftStart, DraftPick, TitleSet:
 		return Definition{Gravity: "G1"}, nil
 	case DraftSkip, DraftAssign, DraftInsert, DraftChange, DraftTimer, DraftRevert,
-		ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
+		DraftStartupOpen, ReserveException, Create, Revert, NativeSeed, SeasonRollover, CalendarException,
 		ScoreFranchise, StandingsRecordAdjust, StandingsOverride, StandingsOverrideClear,
 		LineupCorrect, BracketAdvance,
 		CorrectRoster, CorrectTransaction, CorrectProvenance, CorrectPick, RuleException,

@@ -737,6 +737,8 @@ export namespace commissioner {
 	    slot?: number;
 	    pool?: NativePoolEntry[];
 	    issued?: NativePick[];
+	    seed?: string;
+	    rounds?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new DraftOutcome(source);
@@ -749,6 +751,8 @@ export namespace commissioner {
 	        this.slot = source["slot"];
 	        this.pool = this.convertValues(source["pool"], NativePoolEntry);
 	        this.issued = this.convertValues(source["issued"], NativePick);
+	        this.seed = source["seed"];
+	        this.rounds = source["rounds"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -790,6 +794,7 @@ export namespace commissioner {
 	    player: string;
 	    request: string;
 	    expected: number;
+	    startup?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new DraftPickInput(source);
@@ -803,6 +808,7 @@ export namespace commissioner {
 	        this.player = source["player"];
 	        this.request = source["request"];
 	        this.expected = source["expected"];
+	        this.startup = source["startup"];
 	    }
 	}
 	
@@ -1944,6 +1950,7 @@ export namespace commissioner {
 	    corrections?: Correction[];
 	    league: string;
 	    season: number;
+	    startup?: boolean;
 	    revision: number;
 	    rules: RuleLine[];
 	    owners: DraftOwner[];
@@ -1965,6 +1972,7 @@ export namespace commissioner {
 	        this.corrections = this.convertValues(source["corrections"], Correction);
 	        this.league = source["league"];
 	        this.season = source["season"];
+	        this.startup = source["startup"];
 	        this.revision = source["revision"];
 	        this.rules = this.convertValues(source["rules"], RuleLine);
 	        this.owners = this.convertValues(source["owners"], DraftOwner);
@@ -3574,6 +3582,7 @@ export namespace commissioner {
 	    pick?: RawDraftSelection;
 	    act?: RawDraftAct;
 	    running?: boolean;
+	    startup?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawDraftArgs(source);
@@ -3591,6 +3600,7 @@ export namespace commissioner {
 	        this.pick = this.convertValues(source["pick"], RawDraftSelection);
 	        this.act = this.convertValues(source["act"], RawDraftAct);
 	        this.running = source["running"];
+	        this.startup = source["startup"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -4060,6 +4070,7 @@ export namespace commissioner {
 	    season: number;
 	    franchise: string;
 	    at: time.Time;
+	    startup?: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawNativeDraftScope(source);
@@ -4071,6 +4082,7 @@ export namespace commissioner {
 	        this.season = source["season"];
 	        this.franchise = source["franchise"];
 	        this.at = this.convertValues(source["at"], time.Time);
+	        this.startup = source["startup"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -19,10 +19,14 @@ const (
 	DraftOrderTiebreak = "draft.order.tiebreak"
 	DraftStart         = "draft.start"
 	DraftPick          = "draft.pick"
+	// DraftStartupOpen opens a native league's startup draft; Go records its seed and rounds.
+	DraftStartupOpen = "draft.startup.open"
 
 	// rookieDraftWindow is the calendar window the rookie draft opens in.
 	rookieDraftWindow = "rookie_draft"
-	draftPickAction   = leaguerules.Action("draft_pick")
+	// startupDraftWindow is the calendar window a startup draft opens owners' picks in.
+	startupDraftWindow = "startup_draft"
+	draftPickAction    = leaguerules.Action("draft_pick")
 )
 
 // RawDraftArgs carry the details of one draft command. Running says the commissioner knows the draft
@@ -38,6 +42,8 @@ type RawDraftArgs struct {
 	Pick    *RawDraftSelection       `json:"pick,omitempty"`
 	Act     *RawDraftAct             `json:"act,omitempty"`
 	Running bool                     `json:"running,omitempty"`
+	// Startup names the league's startup draft rather than the season's rookie draft.
+	Startup bool `json:"startup,omitempty"`
 }
 
 // RawDraftSelection is one recorded owner pick. Go builds it from the owner's choice of player: the slot
@@ -54,7 +60,7 @@ type RawDraftSelection struct {
 
 func draftCommand(command string) bool {
 	switch command {
-	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak, DraftStart, DraftPick:
+	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak, DraftStart, DraftPick, DraftStartupOpen:
 		return true
 	}
 	return trayCommand(command) || command == DraftRevert || command == DraftArchive
@@ -82,10 +88,20 @@ func (a RawArgs) validateDraft(command string) error {
 	if err != nil {
 		return err
 	}
+	if d.Startup && !startupCommand(command) {
+		return fmt.Errorf("a startup draft takes its order and start from its settings")
+	}
+	kept.Startup = d.Startup
 	if !reflect.DeepEqual(d, kept) {
 		return fmt.Errorf("send only the details of this draft change")
 	}
 	return nil
+}
+
+// startupCommand is a draft command a startup draft takes: its opening, its picks, the tray, the restore and
+// the close.
+func startupCommand(command string) bool {
+	return command == DraftStartupOpen || liveDraftEntry(command)
 }
 
 // kept is the command's own details, validated; anything else sent with it is refused by the caller.
@@ -93,6 +109,11 @@ func (d RawDraftArgs) kept(command string) (RawDraftArgs, error) {
 	switch command {
 	case DraftPick:
 		return d.keptPick()
+	case DraftStartupOpen:
+		if !d.Startup || d.Running {
+			return d, fmt.Errorf("open the startup draft for its season")
+		}
+		return RawDraftArgs{Season: d.Season}, nil
 	case DraftOrderAuto, DraftOrderSet, DraftOrderPattern, DraftOrderTiebreak, DraftStart:
 		return d.keptSetup(command)
 	}
@@ -152,11 +173,13 @@ func draftLabel(r Record) string {
 		return trayLabel(r)
 	}
 	switch r.Command.Command {
+	case DraftStartupOpen:
+		return fmt.Sprintf("Opened the %s", d.noun())
 	case DraftStart:
 		return fmt.Sprintf("Set the %d rookie draft to start at %s", d.Season, d.At.Format(time.RFC3339))
 	case DraftPick:
-		return fmt.Sprintf("Picked player %s for round %d, pick %d of the %d rookie draft",
-			d.Pick.Player, d.Pick.Round, d.Pick.Slot, d.Season)
+		return fmt.Sprintf("Picked player %s for round %d, pick %d of the %s",
+			d.Pick.Player, d.Pick.Round, d.Pick.Slot, d.noun())
 	case DraftOrderAuto:
 		return fmt.Sprintf("Set the %d rookie draft order from the final standings", d.Season)
 	case DraftOrderSet:
@@ -241,6 +264,10 @@ type DraftOutcome struct {
 	Slot      int               `json:"slot,omitempty"`
 	Pool      []NativePoolEntry `json:"pool,omitempty"`
 	Issued    []NativePick      `json:"issued,omitempty"`
+	// Seed and Rounds are what opening a startup draft fixed: the seed its random first round is drawn
+	// from, in hexadecimal, and its rounds.
+	Seed   string `json:"seed,omitempty"`
+	Rounds int    `json:"rounds,omitempty"`
 }
 
 func trayCommand(command string) bool {
@@ -336,6 +363,9 @@ func (a RawDraftAct) ref() rookiedraft.PickRef {
 func trayLabel(r Record) string {
 	d := r.Command.Args.Draft
 	a := d.Act
+	if a == nil && d.Startup {
+		return fmt.Sprintf("Closed the %s: no picks were issued and no player went to the free-agent pool", d.noun())
+	}
 	if a == nil {
 		return fmt.Sprintf("Closed the %d rookie draft: undrafted rookies went to the free-agent pool and new "+
 			"picks were issued", d.Season)
@@ -343,29 +373,29 @@ func trayLabel(r Record) string {
 	pick := fmt.Sprintf("round %d, %s's pick", a.Round, a.Original)
 	switch r.Command.Command {
 	case DraftSkip:
-		return fmt.Sprintf("Skipped %s in the %d rookie draft", pick, d.Season)
+		return fmt.Sprintf("Skipped %s in the %s", pick, d.noun())
 	case DraftAssign:
-		return fmt.Sprintf("Chose player %s for %s in the %d rookie draft", a.Player, pick, d.Season)
+		return fmt.Sprintf("Chose player %s for %s in the %s", a.Player, pick, d.noun())
 	case DraftInsert:
-		return fmt.Sprintf("Added an extra pick after %s: player %s for %s (%d rookie draft)", pick, a.Player,
-			a.Franchise, d.Season)
+		return fmt.Sprintf("Added an extra pick after %s: player %s for %s (%s)", pick, a.Player,
+			a.Franchise, d.noun())
 	case DraftChange:
-		return fmt.Sprintf("Changed %s from player %s to player %s in the %d rookie draft", pick, a.Replaces,
-			a.Player, d.Season)
+		return fmt.Sprintf("Changed %s from player %s to player %s in the %s", pick, a.Replaces,
+			a.Player, d.noun())
 	case DraftTimer:
 		return timerLabel(d)
 	}
-	return fmt.Sprintf("Restored the %d rookie draft to an earlier point", d.Season)
+	return fmt.Sprintf("Restored the %s to an earlier point", d.noun())
 }
 
 func timerLabel(d *RawDraftArgs) string {
 	switch d.Act.Timer {
 	case TimerPause:
-		return fmt.Sprintf("Paused the %d rookie draft clock", d.Season)
+		return fmt.Sprintf("Paused the %s clock", d.noun())
 	case TimerResume:
-		return fmt.Sprintf("Resumed the %d rookie draft clock", d.Season)
+		return fmt.Sprintf("Resumed the %s clock", d.noun())
 	}
-	return fmt.Sprintf("Set the %d rookie draft clock to %s", d.Season, (time.Duration(d.Act.Seconds) * time.Second))
+	return fmt.Sprintf("Set the %s clock to %s", d.noun(), (time.Duration(d.Act.Seconds) * time.Second))
 }
 
 // validate holds what Go recorded to the command that may carry it: a contract with a rookie given to a pick,
@@ -375,14 +405,35 @@ func (o *DraftOutcome) validate(command string) error {
 	if o == nil {
 		return nil
 	}
+	if command == DraftStartupOpen {
+		return o.validateOpening()
+	}
+	if o.Seed != "" || o.Rounds != 0 {
+		return fmt.Errorf("send only the details of this draft change")
+	}
 	switch {
 	case (command == DraftAssign || command == DraftInsert) && o.Terms != nil && o.Pool == nil && o.Issued == nil:
-		if o.Terms.Years < 1 || o.Terms.Salary < 0 || blank(o.Franchise) || o.Slot < 1 {
-			return fmt.Errorf("a rookie contract needs a franchise, a slot, at least a year and no negative salary")
-		}
-		return nil
+		return o.validateContract()
 	case command == DraftArchive && o.Terms == nil && o.Franchise == "" && o.Slot == 0:
 		return nil
 	}
 	return fmt.Errorf("send only the details of this draft change")
+}
+
+func (o *DraftOutcome) validateContract() error {
+	if o.Terms.Years < 1 || o.Terms.Salary < 0 || blank(o.Franchise) || o.Slot < 1 {
+		return fmt.Errorf("a rookie contract needs a franchise, a slot, at least a year and no negative salary")
+	}
+	return nil
+}
+
+// validateOpening holds a startup draft's opening to the seed and rounds it fixed, and nothing else.
+func (o *DraftOutcome) validateOpening() error {
+	if o.Terms != nil || o.Franchise != "" || o.Slot != 0 || o.Pool != nil || o.Issued != nil {
+		return fmt.Errorf("send only the details of this draft change")
+	}
+	if _, err := startupSeed(o.Seed); err != nil || o.Rounds < 1 {
+		return fmt.Errorf("a startup draft records its seed and at least one round")
+	}
+	return nil
 }

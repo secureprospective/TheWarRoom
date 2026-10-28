@@ -576,6 +576,21 @@
       "second-deputy"
     ]
   },
+  "draft.startup.open": {
+    "args": {
+      "draft": {
+        "season": 2026,
+        "startup": true
+      }
+    },
+    "visibility": "league",
+    "effective": "now",
+    "admittedRoles": [
+      "commissioner",
+      "deputy",
+      "second-deputy"
+    ]
+  },
   "calendar.window.set": {
     "args": {
       "window": {

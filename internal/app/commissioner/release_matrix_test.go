@@ -235,6 +235,7 @@ draft.read
 draft.revert
 draft.skip
 draft.start
+draft.startup.open
 draft.timer
 history.link
 lineup.check

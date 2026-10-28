@@ -9,6 +9,7 @@ import { commands } from '../commands/registry';
 import { actsFor, liveDraftControls } from './actTable';
 import { entriesOf, parseControls } from './controls';
 import { surfaceActions } from './surfaceActions';
+import { draftRoom } from '../draftroom/state';
 import LeagueLanding from './LeagueLanding';
 import { JobsStrip } from './JobsStrip';
 import { parseJobs } from './jobs';
@@ -99,9 +100,29 @@ it('live multi-control jobs prefer the matching act over their rule settings', a
   expect(calls).toHaveBeenLastCalledWith({ screen: 'landing', action: 'open', value: 'CM-037' });
 });
 
+it('the startup draft job opens the draft room on the startup draft', async () => {
+  const nav = vi.spyOn(commands, 'dispatch');
+  const job = { id: 'startup_draft', name: 'Run the startup draft', state: 'live',
+    words: 'Open the startup draft to fill the empty rosters.', opens: '', closes: '',
+    controls: ['CM-042', 'CM-043', 'CM-044', 'CM-045'] };
+  const { app } = stub({ TargetCommissionerControls: async () => controlsWire,
+    TargetCommissionerJobs: async () => ({ ...jobsWire.fresh, jobs: [job] }) });
+  const host = await mount(render(LeagueLanding), app);
+  await act(async () => { await leagueState.choose(); });
+  await settle();
+  draftRoom.choose(false);
+  await click(all(host, 'button').find(b => b.textContent.startsWith('Run the startup draft'))!);
+  await settle();
+  expect(nav).toHaveBeenCalledWith('nav.open', { node: 'trade', workspace: 'draft-room' });
+  expect(draftRoom.peek().startup).toBe(true);
+  expect(host.textContent).not.toMatch(/CM-\d/);
+});
+
 for (const source of ['mfl_import', 'native'] as const) {
   for (const started of [false, true]) {
-    it(`${source} ${started ? 'started' : 'unstarted'} league shows only its available start action`, async () => {
+    const state = started ? 'started' : 'unstarted';
+    const name = `${source} ${state} league shows only its available start action`;
+    it(name, async () => {
       const label = source === 'native' ? 'Start the league' : 'Record starting assets';
       const jobs = { ...jobsWire.fresh, jobs: started ? [] : [{ id: 'seed', name: label,
         state: 'live', words: 'Start this league.', controls: [], opens: '', closes: '' }] };
@@ -109,7 +130,8 @@ for (const source of ['mfl_import', 'native'] as const) {
         TargetCommissionerJobs: async () => jobs });
       const host = await mount(render(LeagueLanding), app);
       await act(async () => { await leagueState.choose(); });
-      await act(async () => surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }));
+      await act(async () =>
+        surfaceActions.run({ screen: 'landing', action: 'group', value: 'constitution' }));
       await settle();
       const launcher = all(host, 'button').find(b => b.textContent === label);
       expect(launcher !== undefined).toBe(!started);

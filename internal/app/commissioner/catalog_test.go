@@ -66,7 +66,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 			t.Errorf("unrecognized native mutation %s", id)
 		}
 	}
-	if len(mutations) != 101 {
+	if len(mutations) != 102 {
 		t.Fatalf("mutation inventory changed: got %d; review the new family's metadata", len(mutations))
 	}
 }

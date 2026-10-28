@@ -23,11 +23,14 @@ func CheckDraftAppend(raw RawCommand, records []Record, at time.Time, standings 
 	if raw.Command == DraftPick {
 		return Refused(fmt.Errorf("a rookie pick is made by the franchise on the clock"))
 	}
+	if raw.Command == DraftStartupOpen {
+		return Refused(checkStartupOpen(raw, records, at))
+	}
 	if liveDraftEntry(raw.Command) {
 		return Refused(checkLiveDraft(raw, records, at, standings))
 	}
-	if _, closed := closeRecord(records, raw.Args.Draft.Season); closed && !standingRule(raw.Command) {
-		return Refused(fmt.Errorf("the %d rookie draft is closed", raw.Args.Draft.Season))
+	if _, closed := closeRecord(records, raw.Args.Draft.key()); closed && !standingRule(raw.Command) {
+		return Refused(fmt.Errorf("the %s is closed", raw.Args.Draft.noun()))
 	}
 	if raw.Command == DraftOrderSet {
 		if err := checkOrderList(raw.Args.Draft, records, at); err != nil {
@@ -50,7 +53,11 @@ func checkBeyondDraftCommands(raw RawCommand, records []Record, at time.Time,
 	case raw.Command == Revert:
 		return true, Refused(checkDraftReversal(raw, records, at, standings))
 	case raw.Command == RulesSet && draftRuleField(raw.Args.Field):
-		return true, Refused(draftReadable(withProposed(raw, records, at), draftsWithPicks(records), at, standings))
+		trial := withProposed(raw, records, at)
+		if err := checkStartupList(trial, at); err != nil {
+			return true, Refused(err)
+		}
+		return true, Refused(draftReadable(trial, draftsWithPicks(records), at, standings))
 	case windowCommand(raw.Command) && raw.Args.Window.ID == rookieDraftWindow && draftStartSet(records):
 		return true, Refused(fmt.Errorf("the rookie draft start was set with the draft start; change it there " +
 			"so the calendar and the draft agree"))
@@ -61,8 +68,8 @@ func checkBeyondDraftCommands(raw RawCommand, records []Record, at time.Time,
 // checkDraftTiming holds a draft change to whether the clock runs.
 func checkDraftTiming(raw RawCommand, records []Record, at time.Time, standings DraftStandings) error {
 	running := false
-	for _, season := range draftSeasons(raw, records) {
-		running = running || draftClockRuns(records, season, at, standings)
+	for _, key := range draftSeasons(raw, records) {
+		running = running || draftClockRuns(records, key, at, standings)
 	}
 	switch {
 	case raw.Command == DraftStart && running:
@@ -84,17 +91,17 @@ func runningMismatch(running bool) error {
 
 // draftSeasons are the drafts a command bears on: its own, or every draft with a recorded start for a
 // standing rule.
-func draftSeasons(raw RawCommand, records []Record) []int {
+func draftSeasons(raw RawCommand, records []Record) []DraftKey {
 	if !standingRule(raw.Command) {
-		return []int{raw.Args.Draft.Season}
+		return []DraftKey{raw.Args.Draft.key()}
 	}
-	seasons := []int{}
+	keys := []DraftKey{}
 	for _, r := range records {
-		if r.Command.Command == DraftStart && !slices.Contains(seasons, r.Command.Args.Draft.Season) {
-			seasons = append(seasons, r.Command.Args.Draft.Season)
+		if r.Command.Command == DraftStart && !slices.Contains(keys, r.Command.Args.Draft.key()) {
+			keys = append(keys, r.Command.Args.Draft.key())
 		}
 	}
-	return seasons
+	return keys
 }
 
 // draftStaysConsistent reads the draft as it would stand with the change and refuses a change that leaves
@@ -111,10 +118,10 @@ func withProposed(raw RawCommand, records []Record, at time.Time) []Record {
 
 // draftReadable holds each draft to being readable: a draft with picks made must keep an order and a clock
 // that still give every one of them its place.
-func draftReadable(trial []Record, seasons []int, at time.Time, standings DraftStandings) error {
-	for _, season := range seasons {
-		basis, err := readDraft(trial, season, at, standings)
-		if err == nil && basis.words != "" && len(draftActs(trial, season)) > 0 {
+func draftReadable(trial []Record, keys []DraftKey, at time.Time, standings DraftStandings) error {
+	for _, key := range keys {
+		basis, err := readDraft(trial, key, at, standings)
+		if err == nil && basis.words != "" && len(draftActs(trial, key)) > 0 {
 			err = errors.New(strings.TrimSuffix(basis.words, "."))
 		}
 		if err != nil {
@@ -125,15 +132,15 @@ func draftReadable(trial []Record, seasons []int, at time.Time, standings DraftS
 }
 
 // draftsWithPicks are the drafts that have a pick, or any other live change, in force.
-func draftsWithPicks(records []Record) []int {
-	active, seasons := Replay(records).Active, []int{}
+func draftsWithPicks(records []Record) []DraftKey {
+	active, keys := Replay(records).Active, []DraftKey{}
 	for _, r := range records {
 		if liveDraftEntry(r.Command.Command) && active[r.Receipt.Entry] &&
-			!slices.Contains(seasons, r.Command.Args.Draft.Season) {
-			seasons = append(seasons, r.Command.Args.Draft.Season)
+			!slices.Contains(keys, r.Command.Args.Draft.key()) {
+			keys = append(keys, r.Command.Args.Draft.key())
 		}
 	}
-	return seasons
+	return keys
 }
 
 func checkDraftReversal(raw RawCommand, records []Record, at time.Time, standings DraftStandings) error {
@@ -156,16 +163,8 @@ func checkDraftReversal(raw RawCommand, records []Record, at time.Time, standing
 
 // checkOrderList holds a recorded order to the league's franchises and the draft's rounds.
 func checkOrderList(d *RawDraftArgs, records []Record, at time.Time) error {
-	franchises := LeagueFranchises(records)
-	seen := map[string]bool{}
-	for _, f := range d.Order {
-		if !slices.Contains(franchises, f) || seen[f] {
-			return fmt.Errorf("list every franchise exactly once")
-		}
-		seen[f] = true
-	}
-	if len(seen) != len(franchises) {
-		return fmt.Errorf("list every franchise exactly once")
+	if err := listsEveryFranchise(d.Order, LeagueFranchises(records)); err != nil {
+		return err
 	}
 	rules, err := RulesNow(records, at)
 	if err != nil {
@@ -181,29 +180,44 @@ func checkOrderList(d *RawDraftArgs, records []Record, at time.Time) error {
 // running; only a restore may touch a closed one; and the change is tried against the draft as it would
 // stand, so the same replay that will read it later is the one that refuses it now.
 func checkLiveDraft(raw RawCommand, records []Record, at time.Time, standings DraftStandings) error {
-	season := raw.Args.Draft.Season
-	basis, err := readDraft(records, season, at, standings)
+	key := raw.Args.Draft.key()
+	basis, err := readDraft(records, key, at, standings)
 	switch {
 	case err != nil:
 		return err
 	case basis.words != "":
 		return fmt.Errorf("the draft is not ready: %s", strings.TrimSuffix(basis.words, "."))
 	case !basis.started:
-		return fmt.Errorf("the %d rookie draft has not started", season)
+		return fmt.Errorf("the %s has not started", key.noun())
 	case basis.closed != nil && raw.Command != DraftRevert:
-		return fmt.Errorf("the %d rookie draft is closed; restore it to an earlier point to reopen it", season)
+		return fmt.Errorf("the %s is closed; restore it to an earlier point to reopen it", key.noun())
 	case raw.Command == DraftRevert:
-		if _, err := checkpointOf(records, season, raw.Args.Draft.Act.To); err != nil {
+		if _, err := checkpointOf(records, key, raw.Args.Draft.Act.To); err != nil {
 			return err
 		}
 	}
-	trial, err := readDraft(withProposed(raw, records, at), season, at, standings)
+	trial, err := readDraft(withProposed(raw, records, at), key, at, standings)
 	if err != nil {
 		return err
 	}
 	if raw.Command == DraftRevert && trial.draft.Exhausted && trial.closed == nil {
 		return fmt.Errorf("every pick would still be used, so the draft would close itself again; restore it " +
 			"to a point before the last pick")
+	}
+	return nil
+}
+
+// listsEveryFranchise holds an order to every franchise of the league exactly once.
+func listsEveryFranchise(order, franchises []string) error {
+	seen := map[string]bool{}
+	for _, f := range order {
+		if !slices.Contains(franchises, f) || seen[f] {
+			return errors.New("list every franchise exactly once")
+		}
+		seen[f] = true
+	}
+	if len(seen) != len(franchises) {
+		return errors.New("list every franchise exactly once")
 	}
 	return nil
 }

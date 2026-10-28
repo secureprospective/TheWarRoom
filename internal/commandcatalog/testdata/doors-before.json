@@ -302,7 +302,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "league-view",
-    "Schema": "6d6f0b39dd87292c117570c1dc6846e738d1d502a2c42a282b1c1d018927e83c",
+    "Schema": "9d2cdd654edba5a476d47216334cd04d75cc7128c488dc6005cd3d95fdaa4e41",
     "Modes": [
       "read"
     ]
@@ -678,7 +678,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.auto",
-    "Schema": "e35de22dd400a86c1658200a5420a31b40efe26c80f95e932765f182918efb72",
+    "Schema": "aa8f7bf15e4a7332fe0944fd0752f15c042becfa96d7493020a28ea6c0b60345",
     "Modes": [
       "preview",
       "execute"
@@ -693,7 +693,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.set",
-    "Schema": "6bb0599f4b2f854b49443fcf63b1565a7708b3a5840161b5e88e86b8eb2982d1",
+    "Schema": "d6fc78ebac4a1e43207f03cefc687cc10c9fcc41274d6545b9672bfcca05306a",
     "Modes": [
       "preview",
       "execute"
@@ -708,7 +708,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.pattern",
-    "Schema": "94569bc3353069a55c4410687cbf81daa013e21236b116daa098ce899a0faeec",
+    "Schema": "339c45bf178c9eef9017c1711444b59bd8a6b79f680a97cfb9973cf5e33b18c5",
     "Modes": [
       "preview",
       "execute"
@@ -723,7 +723,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.tiebreak",
-    "Schema": "157bb395abfd79856bccab6cd584cd24b5c37f8fcbbd10896a47db995ece43d4",
+    "Schema": "d63d71fd269f66c10d31878f9979286d2742e32b07ff7faf64b1576853f74e51",
     "Modes": [
       "preview",
       "execute"
@@ -738,7 +738,7 @@
     "Gravity": "G1",
     "Availability": "both",
     "Permission": "command:draft.start",
-    "Schema": "22104c3899f7a3f9eca8211123911c885a8ad36506956f66c97b5377aa123e93",
+    "Schema": "01cf613e56f4fb2617fc862107b76edad9544f3cd7a0615bab8b98910e3ad442",
     "Modes": [
       "preview",
       "execute"
@@ -753,7 +753,7 @@
     "Gravity": "G1",
     "Availability": "both",
     "Permission": "command:draft.pick",
-    "Schema": "1d44624b27cf54aee0d6ceba72233186d97ea0cd46cc89825372506d263f58d1",
+    "Schema": "8725b52a6b55c770b592f6b9379eb1af85895735b76eeabf6551ebfb8cec72f2",
     "Modes": [
       "execute"
     ]
@@ -767,7 +767,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.skip",
-    "Schema": "e2311e79a32366f7e9ddf4ffa62452f4e5eacc66fe5b2baf8f5b012d26295883",
+    "Schema": "9da7b2c9af5d5e2b7ccf862ae29d8c7cece5ceebc4abd079169a5bd1819b9b3b",
     "Modes": [
       "preview",
       "execute"
@@ -782,7 +782,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.assign",
-    "Schema": "74d7a51ebda9a48f50ebd11025eac9a887ed866342bd8e1c4fee3e8be8810fa1",
+    "Schema": "8172cfb40f179ad1a96154903288722732923b95f1fcaeb07d74c7cfab851ffc",
     "Modes": [
       "preview",
       "execute"
@@ -797,7 +797,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.insert",
-    "Schema": "a1696154e1d326e8d5fe6a488b04c38701cb075ef32c3af3ac6f95fe4890719c",
+    "Schema": "94a8c76923e1c7c072b30c136b6fa913bdbe46ac970fd6026780460c6b7eafc0",
     "Modes": [
       "preview",
       "execute"
@@ -812,7 +812,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.change",
-    "Schema": "08730d5671f08d945e2fd24a4ae13c76ecdd850465a58f9f26ab4dcb459da4a4",
+    "Schema": "8ea8ffbf9b6e38f78ef5a8ba726decd46c0e6eff5e6dd672ea0fb10aece91578",
     "Modes": [
       "preview",
       "execute"
@@ -827,7 +827,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.timer",
-    "Schema": "005ac6719355931eb8e98d16c670423a80ccd7be4058ef58e2ddb5d8cacb75a2",
+    "Schema": "4d9bac885711f6b9340b58a0642dfcbd428b6c8bfd642b264b4f63eb933be074",
     "Modes": [
       "preview",
       "execute"
@@ -842,7 +842,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.revert",
-    "Schema": "bf4ed1ac2a16fe614cf1f345146a25a07ea1cd4493353106dcba9e2661046b82",
+    "Schema": "049cd8cfc934eb3c094a35f776397463fcfeec1d5cfde7c944c9da45ee7072ab",
     "Modes": [
       "preview",
       "execute"
@@ -857,7 +857,22 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.archive",
-    "Schema": "74f9b5f6f08871adaa229dcb4a9a1ea8d8a9899968e9f638f63a72a42968006a",
+    "Schema": "5c5e687a539674185e7f774e8c7a75617c883abf53e33c540dd95098e10cb7d1",
+    "Modes": [
+      "preview",
+      "execute"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "draft.startup.open",
+    "Method": "TargetCommissionerExecute",
+    "Role": "domain",
+    "Gravity": "G3",
+    "Availability": "both",
+    "Permission": "command:draft.startup.open",
+    "Schema": "c5e54cc34fbf10e463506fb548c3684e5c3c8b2abcdec913e5a897459f8f520d",
     "Modes": [
       "preview",
       "execute"
@@ -2518,7 +2533,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "league-view",
-    "Schema": "6d6f0b39dd87292c117570c1dc6846e738d1d502a2c42a282b1c1d018927e83c",
+    "Schema": "9d2cdd654edba5a476d47216334cd04d75cc7128c488dc6005cd3d95fdaa4e41",
     "Modes": [
       "read"
     ]

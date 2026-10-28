@@ -838,6 +838,19 @@ export const readCommands = {
                 "Fields": null,
                 "Items": null
               }
+            },
+            {
+              "Name": "startup",
+              "Optional": true,
+              "Schema": {
+                "Type": "boolean",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
             }
           ],
           "Items": null

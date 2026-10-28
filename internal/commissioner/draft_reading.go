@@ -20,6 +20,8 @@ type RawNativeDraftScope struct {
 	Season    int       `json:"season"`
 	Franchise string    `json:"franchise"`
 	At        time.Time `json:"at"`
+	// Startup asks for the league's startup draft instead of a rookie draft.
+	Startup bool `json:"startup,omitempty"`
 }
 
 func (r RawNativeDraftScope) Validate() error {
@@ -36,6 +38,7 @@ type NativeDraft struct {
 	Corrections []Correction             `json:"corrections,omitempty"`
 	League      string                   `json:"league"`
 	Season      int                      `json:"season"`
+	Startup     bool                     `json:"startup,omitempty"`
 	Revision    int64                    `json:"revision"`
 	Rules       []RuleLine               `json:"rules"`
 	Owners      []DraftOwner             `json:"owners"`
@@ -59,6 +62,7 @@ type DraftOwner struct {
 // draftBasis is one draft replayed from the ledger. words says why it cannot run yet, and is empty once
 // the order is set and the clock can be read.
 type draftBasis struct {
+	key     DraftKey
 	rules   leaguerules.RuleSet
 	owners  []DraftOwner
 	order   []rookiedraft.RoundOrder
@@ -71,7 +75,7 @@ type draftBasis struct {
 
 // readDraft replays the ledger up to an instant. A draft that cannot be read yet is explained in words; an
 // error means the ledger holds a pick that contradicts the draft's own order or clock.
-func readDraft(records []Record, season int, at time.Time, standings DraftStandings) (draftBasis, error) {
+func readDraft(records []Record, key DraftKey, at time.Time, standings DraftStandings) (draftBasis, error) {
 	if standings == nil {
 		standings = NoDraftStandings{}
 	}
@@ -79,11 +83,15 @@ func readDraft(records []Record, season int, at time.Time, standings DraftStandi
 	if len(records) == 0 {
 		return draftBasis{}, fmt.Errorf("this app league has not been created")
 	}
+	if key.Startup {
+		return readStartupDraft(records, key, at)
+	}
+	season := key.Season
 	rules, err := draftRulesFor(records, season, at)
 	if err != nil {
 		return draftBasis{}, err
 	}
-	basis := draftBasis{rules: rules, owners: draftOwners(records)}
+	basis := draftBasis{key: key, rules: rules, owners: draftOwners(records)}
 	basis.start, err = draftCalendarStart(records, rules, season, at)
 	if err != nil {
 		basis.words = draftWords(err)
@@ -116,19 +124,19 @@ func readDraft(records []Record, season int, at time.Time, standings DraftStandi
 			return basis, nil
 		}
 	}
-	basis.draft, err = rookiedraft.ReplayActs(rules.Draft, basis.order, basis.start, at, draftActs(records, season))
+	basis.draft, err = rookiedraft.ReplayActs(rules.Draft, basis.order, basis.start, at, draftActs(records, key))
 	if err != nil {
 		return basis, fmt.Errorf("replay the rookie draft: %w", err)
 	}
-	if closed, ok := closeRecord(records, season); ok {
+	if closed, ok := closeRecord(records, key); ok {
 		basis.closed = &closed
 	}
 	return basis, nil
 }
 
 // draftClockRuns says whether the draft's start has passed, so its clock is counting.
-func draftClockRuns(records []Record, season int, at time.Time, standings DraftStandings) bool {
-	basis, err := readDraft(records, season, at, standings)
+func draftClockRuns(records []Record, key DraftKey, at time.Time, standings DraftStandings) bool {
+	basis, err := readDraft(records, key, at, standings)
 	return err == nil && basis.started
 }
 
@@ -151,19 +159,22 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if len(records) == 0 || !leagueFranchise(records, scope.Franchise) {
 		return NativeDraft{}, fmt.Errorf("choose a franchise in this app league")
 	}
-	if scope.Season == 0 {
+	switch {
+	case scope.Startup && scope.Season == 0:
+		scope.Season = startupKey(records).Season
+	case scope.Season == 0:
 		season, err := draftSeasonNext(scope.League, records, scope.At)
 		if err != nil {
 			return NativeDraft{}, err
 		}
 		scope.Season = season
 	}
-	basis, err := readDraft(records, scope.Season, scope.At, standings)
+	basis, err := readDraft(records, DraftKey{Season: scope.Season, Startup: scope.Startup}, scope.At, standings)
 	if err != nil {
 		return NativeDraft{}, err
 	}
 	through := RecordsThrough(records, scope.At)
-	out := NativeDraft{League: scope.League, Season: scope.Season, Revision: int64(len(through)),
+	out := NativeDraft{League: scope.League, Season: scope.Season, Startup: scope.Startup, Revision: int64(len(through)),
 		Rules: namedRules(RuleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
 		Words: basis.words, Draft: basis.draft, Players: map[string]DraftPlayer{}, Available: []DraftPlayer{},
 		Checkpoints: []DraftCheckpoint{}}
@@ -206,17 +217,21 @@ func namedRules(lines []RuleLine, owners []DraftOwner) []RuleLine {
 
 // draftStatusWords says where a readable draft stands.
 func draftStatusWords(basis draftBasis) string {
+	kind := "rookie"
+	if basis.key.Startup {
+		kind = "startup"
+	}
 	switch {
 	case basis.closed != nil:
-		return "The rookie draft is closed."
+		return "The " + kind + " draft is closed."
 	case basis.draft.Exhausted:
 		return "Every pick has been used; the draft has not been closed."
 	case basis.draft.OnClock != nil && basis.draft.OnClock.Paused:
-		return "The rookie draft is running, and its clock is paused."
+		return "The " + kind + " draft is running, and its clock is paused."
 	case basis.draft.Started:
-		return "The rookie draft is running."
+		return "The " + kind + " draft is running."
 	}
-	return "The rookie draft is waiting to start."
+	return "The " + kind + " draft is waiting to start."
 }
 
 func draftReadingFields() []string {
@@ -273,11 +288,11 @@ func draftOwnership(season int, records []Record) ([]rookiedraft.OwnedPick, erro
 
 // draftActs are the happenings in force for one draft, in ledger order: the picks, the tray, the restores
 // and the close. A restore's checkpoint has set aside what came after it (see setAsideByDraftRestores).
-func draftActs(records []Record, season int) []rookiedraft.Act {
+func draftActs(records []Record, key DraftKey) []rookiedraft.Act {
 	active := Replay(records).Active
 	out := []rookiedraft.Act{}
 	for _, r := range records {
-		if !liveDraftEntry(r.Command.Command) || !active[r.Receipt.Entry] || r.Command.Args.Draft.Season != season {
+		if !liveDraftEntry(r.Command.Command) || !active[r.Receipt.Entry] || !ofDraft(r, key) {
 			continue
 		}
 		if r.Command.Command == DraftPick {

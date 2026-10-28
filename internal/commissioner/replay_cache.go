@@ -11,6 +11,7 @@ type replayKey struct {
 	entry, command, principal, name, target, correction, restore string
 	revision                                                     int64
 	season                                                       int
+	startup                                                      bool
 }
 
 func replayKeyFor(r Record) replayKey {
@@ -20,7 +21,7 @@ func replayKeyFor(r Record) replayKey {
 		k.correction = c.Entry
 	}
 	if d := r.Command.Args.Draft; d != nil {
-		k.season = d.Season
+		k.season, k.startup = d.Season, d.Startup
 		if d.Act != nil {
 			k.restore = d.Act.To
 		}

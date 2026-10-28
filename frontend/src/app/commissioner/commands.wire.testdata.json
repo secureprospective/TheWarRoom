@@ -426,6 +426,12 @@
     "safeguard": "confirm"
   },
   {
+    "command": "draft.startup.open",
+    "effective": "now",
+    "field": "",
+    "safeguard": "reason"
+  },
+  {
     "command": "draft.timer",
     "effective": "now",
     "field": "",

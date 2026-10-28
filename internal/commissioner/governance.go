@@ -114,7 +114,7 @@ func (a GovernanceAuthorizer) Allow(_ string, principal, command string) (string
 func commandControls() map[string]string {
 	return map[string]string{
 		TradeReview: "CM-037", TradeRecuse: "CM-037", TradeAppeal: "CM-037", TradeAppealRule: "CM-037", TradeOverride: "CM-037",
-		DraftStart: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
+		DraftStart: "CM-042", DraftStartupOpen: "CM-042", DraftOrderAuto: "CM-041", DraftOrderSet: "CM-041",
 		DraftOrderPattern: "CM-041", DraftOrderTiebreak: "CM-041",
 		DraftSkip: "CM-043", DraftAssign: "CM-043", DraftInsert: "CM-043", DraftChange: "CM-043",
 		DraftTimer: "CM-043", DraftRevert: "CM-044", DraftArchive: "CM-045",

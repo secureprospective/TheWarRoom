@@ -51,7 +51,8 @@ export function SeedForm({ league }: { league: string }) {
   };
   const ready = !!preview && preview.blockers.length === 0 && reason.trim() !== '' && !sending && !receipt;
   return <section className="league-form" aria-label={label}>
-    <p>{start?.words ?? "Record the held franchises, rostered players and draft picks as this league’s starting assets."}</p>
+    <p>{start?.words ??
+      "Record the held franchises, rostered players and draft picks as this league’s starting assets."}</p>
     <p>No MFL changes are made.</p>
     <PreviewReview preview={review?.preview} confirm={<>
       <label>Reason (required)<textarea value={reason} rows={2} onChange={e => {
