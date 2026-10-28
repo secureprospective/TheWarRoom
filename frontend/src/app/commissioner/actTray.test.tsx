@@ -105,7 +105,8 @@ const cases: { family: string; command: string; fields: Record<string, string | 
     fields: { Franchise: franchise, Season: '2026', 'Cap charge': '-15.25' },
     args: { override: { franchise, season: 2026, amountCents: -1525 } } },
   { family: 'reserve exceptions', command: 'commish.reserve.exception',
-    fields: { Franchise: franchise, Player: player, 'Reserve list': 'ir' }, args: { override: { franchise, player, bucket: 'ir' } } },
+    fields: { Franchise: franchise, Player: player, 'Reserve list': 'ir' },
+    args: { override: { franchise, player, bucket: 'ir' } } },
   { family: 'cap relief', command: 'commish.cap.relief',
     fields: { Franchise: franchise, Player: player, 'Cap relief': '10' },
     args: { override: { franchise, player, amountCents: 1000 } } },
@@ -140,7 +141,9 @@ const cases: { family: string; command: string; fields: Record<string, string | 
     fields: { Season: '2027', Round: '0', 'Place 1': franchise, 'Place 2': 'franchise.02' },
     args: { draft: { season: 2027, round: 0, order: [franchise, 'franchise.02'], running: false } } },
 ];
-for (const perSide of [false, true]) describe(perSide ? 'Side-labelled franchise pickers' : 'One-pool franchise pickers', () => {
+const pickerTitle = (perSide: boolean) =>
+  perSide ? 'Side-labelled franchise pickers' : 'One-pool franchise pickers';
+for (const perSide of [false, true]) describe(pickerTitle(perSide), () => {
   for (const c of cases.filter(c => 'Franchise' in c.fields || 'Applies to' in c.fields))
     it(`${c.command}: lists franchises and submits the chosen ID`, async () => {
       sides = perSide ? { [franchise]: 'AFC', 'franchise.02': 'NFC' } : {};
