@@ -76,7 +76,6 @@ control.API.TargetShellStatus
 control.API.TargetSiteNews
 counterparties.API.TargetCounterpartTeam
 counterparties.API.TargetCounterparties
-draft.API.TargetDraftLab
 draft.API.TargetDraftReports
 draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft

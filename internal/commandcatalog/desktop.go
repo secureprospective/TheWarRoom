@@ -152,7 +152,6 @@ func counterpartiesDesktop(_ []Command) []Command {
 
 func draftDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: Unset, Method: "TargetDraftLab", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetDraftReports", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetDraftReportsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetNFLDraft", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},

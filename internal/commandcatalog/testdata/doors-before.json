@@ -3176,20 +3176,6 @@
     "Door": "wails",
     "Feature": "draft",
     "ID": "unset",
-    "Method": "TargetDraftLab",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
-  },
-  {
-    "Door": "wails",
-    "Feature": "draft",
-    "ID": "unset",
     "Method": "TargetDraftReports",
     "Role": "gm,commish,admin",
     "Gravity": "G0",

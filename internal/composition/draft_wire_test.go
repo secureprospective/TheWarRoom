@@ -47,14 +47,6 @@ func TestDraftWireMatchesGolden(t *testing.T) {
 		{ID: "0816", Name: "Old rookie", Position: "WR", Team: "IND", DraftYear: "2025", DraftRound: "1", DraftPick: "2"},
 		{ID: "0817", Name: "Undrafted", Position: "WR", Team: "IND", DraftYear: "2026"},
 	}}))
-	scope := draftapp.RawDraftScope{From: 2017, To: 2026, Seasons: 3, Group: "DL"}
-	checkDraftWire(t, "lab", draftAPI(a).TargetDraftLab(scope))
-	scope.Segments, scope.NFL = []string{"r1a", "r3"}, []string{"n1"}
-	checkDraftWire(t, "lab-filtered", draftAPI(a).TargetDraftLab(scope))
-	scope.From, scope.To = 2100, 2101
-	checkDraftWire(t, "lab-thin", draftAPI(a).TargetDraftLab(scope))
-	scope.Seasons = 5
-	checkDraftWire(t, "lab-invalid", draftAPI(a).TargetDraftLab(scope))
 	errs := map[string]string{}
 	if err := draftAPI(a).TargetOpenMFLDraftRoom(); err != nil {
 		errs["openDraftRoom"] = err.Error()

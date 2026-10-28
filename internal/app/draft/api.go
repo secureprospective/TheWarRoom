@@ -9,7 +9,6 @@ import (
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
@@ -23,7 +22,6 @@ type Host interface {
 	DraftNext() string
 	DraftDestination() string
 	DraftPlayers(context.Context) report.Held[players.RawPlayer]
-	DraftFacts() (*lab.Data, string, error)
 	RefreshDraftReports(bool) error
 	OpenDraftRoom() error
 }
@@ -31,9 +29,6 @@ type Host interface {
 type API struct{ host Host }
 
 func New(host Host) *API { return &API{host: host} }
-
-// LabReading is concrete so Wails discovers the nested surface models.
-type LabReading report.Reading[report.Surface]
 
 func (a *API) TargetDraftReportsRefresh(force bool) error {
 	return a.host.RefreshDraftReports(force) //nolint:wrapcheck // Preserve the shared refresh refusal exactly.

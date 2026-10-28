@@ -10,7 +10,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
 
@@ -51,38 +50,6 @@ func (s *State) DraftReady() (context.Context, int, *time.Location, error) {
 		zone = time.Local
 	}
 	return s.Ctx, s.Season, zone, nil
-}
-
-// DraftFacts detaches the immutable Lab inputs consumed by Draft and its buy comparison.
-// LabData is fixed before publication and has no shared data mutex.
-func (s *State) DraftFacts() (*lab.Data, string, error) {
-	d, err := s.Lab()
-	if err != nil {
-		return nil, "", err
-	}
-	out := &lab.Data{Built: d.Built, ArchiveThrough: d.ArchiveThrough, LastFinished: d.LastFinished,
-		Draft: slices.Clone(d.Draft), Trades: slices.Clone(d.Trades), Delivered: slices.Clone(d.Delivered)}
-	for i := range out.Draft {
-		out.Draft[i] = cloneDraftPick(out.Draft[i])
-	}
-	for i := range out.Trades {
-		out.Trades[i] = cloneCounterpartyTrade(out.Trades[i])
-	}
-	return out, s.BuildStamp, nil
-}
-
-func cloneDraftPick(p lab.DraftPick) lab.DraftPick {
-	p.Pos = clonePtr(p.Pos)
-	p.Group = clonePtr(p.Group)
-	p.Best = clonePtr(p.Best)
-	p.NflRound = clonePtr(p.NflRound)
-	p.NflPick = clonePtr(p.NflPick)
-	p.Age = clonePtr(p.Age)
-	p.KeptYear2 = clonePtr(p.KeptYear2)
-	p.Wins = clonePointers(p.Wins)
-	p.SlotWins = slices.Clone(p.SlotWins)
-	p.Player = cloneCounterpartyPlayer(p.Player)
-	return p
 }
 
 func (s *State) ReadDraftPlayers(ctx context.Context, parse func([]byte) ([]players.RawPlayer, error)) report.Held[players.RawPlayer] {

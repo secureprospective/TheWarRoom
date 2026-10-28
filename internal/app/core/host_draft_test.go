@@ -9,7 +9,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	"github.com/secureprospective/TheWarRoom/internal/app/core/coretest"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
 func draftState(t *testing.T) (*core.State, *coretest.Transport) {
@@ -46,30 +45,5 @@ func TestDraftFeedsDetachedAndNilDistinct(t *testing.T) {
 	results, future = s.DraftFeeds()
 	if results.Value != nil || future.Value == nil {
 		t.Fatal("nil and empty collapsed")
-	}
-}
-
-func TestDraftFactsDetached(t *testing.T) {
-	s := coretest.New(t).Build()
-	d, err := lab.Load()
-	if err != nil {
-		t.Fatal(err)
-	}
-	s.LabData = func() (*lab.Data, error) { return d, nil }
-	got, _, err := s.DraftFacts()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, field := range []string{"Draft", "Trades", "Delivered"} {
-		left, right := reflect.ValueOf(got).Elem().FieldByName(field), reflect.ValueOf(d).Elem().FieldByName(field)
-		if !reflect.DeepEqual(left.Interface(), right.Interface()) {
-			t.Fatal("facts lost", field)
-		}
-		assertCounterpartiesDetached(t, left, right, field)
-	}
-	*got.Draft[0].Wins[0] = -9
-	got.Draft[0].SlotWins[0] = -9
-	if *d.Draft[0].Wins[0] == -9 || d.Draft[0].SlotWins[0] == -9 {
-		t.Fatal("nested draft storage shared")
 	}
 }

@@ -131,7 +131,6 @@ func draftCommandBindings(api *draftapi.API) map[string]catalog.Binding {
 		"TargetDraftReports":        catalog.Bind0(api.TargetDraftReports),
 		"TargetOpenMFLDraftRoom":    catalog.Bind0Error(api.TargetOpenMFLDraftRoom),
 		"TargetNFLDraft":            catalog.Bind0(api.TargetNFLDraft),
-		"TargetDraftLab":            catalog.Bind1Value(api.TargetDraftLab, "raw"),
 	}
 }
 func marketCommandBindings(api *marketapi.API) map[string]catalog.Binding {
