@@ -18,8 +18,8 @@ import (
 )
 
 // DraftKey names one draft: its season, and whether it is the league's startup draft rather than that
-// season's rookie draft. A rookie draft's records carry no startup flag, so they key as they always did.
-// Side names which side's startup draft in a league with a player pool per side; empty with one pool.
+// season's rookie draft.
+// Side names which side's draft in a league with a player pool per side; empty with one pool.
 type DraftKey struct {
 	Season  int
 	Startup bool
@@ -41,6 +41,9 @@ func (k DraftKey) noun() string {
 	}
 	if k.Startup {
 		return fmt.Sprintf("%d startup draft", k.Season)
+	}
+	if k.Side != "" {
+		return fmt.Sprintf("%d %s rookie draft", k.Season, k.Side)
 	}
 	return fmt.Sprintf("%d rookie draft", k.Season)
 }

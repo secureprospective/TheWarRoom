@@ -62,7 +62,7 @@ func draftSeasonPending(assets NativeAssets, through []Record) (int, bool) {
 	}
 	slices.Sort(seasons)
 	for _, season := range seasons {
-		if _, closed := closeRecord(through, rookieDraft(season)); !closed {
+		if !rookieClosed(through, season) {
 			return season, true
 		}
 	}

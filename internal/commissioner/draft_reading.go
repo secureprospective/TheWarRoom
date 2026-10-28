@@ -101,33 +101,27 @@ func readDraft(records []Record, key DraftKey, at time.Time, standings DraftStan
 		return basis, nil
 	}
 	basis.started = !at.Before(basis.start)
-	owned, err := draftOwnership(season, records)
-	if err != nil {
-		basis.words = draftWords(err)
-		return basis, nil
-	}
-	owned = slices.DeleteFunc(owned, func(p rookiedraft.OwnedPick) bool {
-		return rules.Draft.Rounds.State == leaguerules.IsKnown && p.Round > rules.Draft.Rounds.Value
-	})
 	// A first round that begins reads the standings as they stood when it began, so a result corrected
 	// afterwards cannot move it; before then it follows the results as they are recorded.
 	through := at
 	if basis.started {
 		through = basis.start
 	}
-	basis.order, err = rookiedraft.Order(rules.Draft, LeagueFranchises(records), owned,
-		standings.Final(records, season-1, through))
+	basis.order, err = rookieOrder(records, key, rules.Draft, standings.Final(records, season-1, through))
 	if err != nil {
 		basis.words = draftWords(err)
 		return basis, nil
 	}
-	for _, round := range basis.order {
-		if len(round.Picks) == 0 {
-			basis.words = round.Words
-			return basis, nil
-		}
+	if words := rookieOrderWords(basis.order); words != "" {
+		basis.words = words
+		return basis, nil
 	}
-	basis.draft, err = rookiedraft.ReplayActs(rules.Draft, basis.order, basis.start, at, draftActs(records, key))
+
+	replay := rookiedraft.ReplayActs
+	if key.Side != "" {
+		replay = rookiedraft.ReplaySideActs
+	}
+	basis.draft, err = replay(rules.Draft, basis.order, basis.start, at, draftActs(records, key))
 	if err != nil {
 		return basis, fmt.Errorf("replay the rookie draft: %w", err)
 	}

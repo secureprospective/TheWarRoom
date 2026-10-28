@@ -80,14 +80,11 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 		Visibility: "league"}, nil
 }
 
-// pickKey is the draft a pick is made in: the season's rookie draft, or the franchise's side's startup draft.
+// pickKey is the franchise's side's draft, or the only draft in a single-pool league.
 func pickKey(records []Record, in DraftPickInput) DraftKey {
-	if in.Startup {
-		key := startupKeyOf(records, in.Franchise)
-		key.Season = in.Season
-		return key
-	}
-	return DraftKey{Season: in.Season}
+	key := startupKeyOf(records, in.Franchise)
+	key.Season, key.Startup = in.Season, in.Startup
+	return key
 }
 
 func candidateFrom(facts nativecheck.Facts, in DraftPickInput) rookiedraft.Candidate {

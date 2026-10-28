@@ -93,12 +93,12 @@ func runningMismatch(running bool) error {
 // standing rule.
 func draftSeasons(raw RawCommand, records []Record) []DraftKey {
 	if !standingRule(raw.Command) {
-		return []DraftKey{raw.Args.Draft.key()}
+		return sideDraftKeys(records, raw.Args.Draft.key())
 	}
 	keys := []DraftKey{}
 	for _, r := range records {
 		if r.Command.Command == DraftStart && !slices.Contains(keys, r.Command.Args.Draft.key()) {
-			keys = append(keys, r.Command.Args.Draft.key())
+			keys = append(keys, sideDraftKeys(records, r.Command.Args.Draft.key())...)
 		}
 	}
 	return keys
@@ -181,6 +181,9 @@ func checkOrderList(d *RawDraftArgs, records []Record, at time.Time) error {
 // stand, so the same replay that will read it later is the one that refuses it now.
 func checkLiveDraft(raw RawCommand, records []Record, at time.Time, standings DraftStandings) error {
 	key := raw.Args.Draft.key()
+	if err := checkDraftSide(records, key); err != nil {
+		return err
+	}
 	basis, err := readDraft(records, key, at, standings)
 	switch {
 	case err != nil:

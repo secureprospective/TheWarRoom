@@ -56,10 +56,14 @@ func holdsOf(league string, records []Record, key DraftKey, now time.Time, stand
 	}
 	if assets.Seeded {
 		for _, p := range assets.Snapshot.Players {
-			out.taken[p.ID] = true
+			if assets.Snapshot.SideOf(p.Franchise) == key.Side {
+				out.taken[p.ID] = true
+			}
 		}
 		for _, p := range assets.Snapshot.Pool {
-			out.taken[p.Player] = true
+			if p.Side == key.Side {
+				out.taken[p.Player] = true
+			}
 		}
 	}
 	return out, nil
@@ -136,9 +140,13 @@ func prepareClose(raw *RawCommand, records []Record, now time.Time, facts native
 		if facts[p.ID].Name != "" {
 			name = p.Name
 		}
-		outcome.Pool = append(outcome.Pool, NativePoolEntry{Player: p.ID, Name: name, Season: season})
+		outcome.Pool = append(outcome.Pool, NativePoolEntry{Player: p.ID, Name: name, Season: season, Side: holds.basis.key.Side})
 	}
-	outcome.Issued = issuedPicks(holds, LeagueFranchises(records), season)
+	franchises, err := draftFranchises(records, holds.basis.key)
+	if err != nil {
+		return err
+	}
+	outcome.Issued = issuedPicks(holds, franchises, season)
 	raw.Args.DraftOutcome = outcome
 	return nil
 }
@@ -203,8 +211,12 @@ func draftSeasonsKnown(records []Record) []DraftKey {
 	active := Replay(records).Active
 	for _, r := range records {
 		started := r.Command.Command == DraftStart || r.Command.Command == DraftStartupOpen
-		if started && active[r.Receipt.Entry] && !slices.Contains(keys, r.Command.Args.Draft.key()) {
-			keys = append(keys, r.Command.Args.Draft.key())
+		if started && active[r.Receipt.Entry] {
+			for _, key := range sideDraftKeys(records, r.Command.Args.Draft.key()) {
+				if !slices.Contains(keys, key) {
+					keys = append(keys, key)
+				}
+			}
 		}
 	}
 	return keys
