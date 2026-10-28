@@ -108,10 +108,14 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 		}
 		return fmt.Errorf("choose a franchise in this app league")
 	}
-	for i := range seed.Players {
+	side, err := seed.TargetSide(value.Franchise)
+	if err != nil {
+		return err
+	}
+	if i := seed.PlayerOn(side, value.Player); i >= 0 {
 		player := &seed.Players[i]
-		if player.ID != value.Player {
-			continue
+		if value.Franchise != "" && player.Franchise != value.Franchise {
+			return fmt.Errorf("choose a player on that franchise's recorded roster")
 		}
 		switch record.Command.Command {
 		case ContractEdit:

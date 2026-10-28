@@ -38,6 +38,9 @@ type RawNativeSnapshot struct {
 	Adjustments []NativeCharge    `json:"adjustments"`
 	// Pool holds free-agent lots: undrafted rookies and unassigned league-start O-Line cards.
 	Pool []NativePoolEntry `json:"pool,omitempty"`
+	// Sides is each franchise's side in a league whose player pools are per side; Go fills it from the
+	// league's rules when the assets are read, and it is absent with one pool. See player_sides.go.
+	Sides map[string]string `json:"sides,omitempty"`
 }
 
 type NativeFranchise struct {
@@ -70,6 +73,8 @@ type NativePlayer struct {
 // NativePoolEntry is an unassigned free agent in the league's player pool.
 type NativePoolEntry struct {
 	Player string `json:"player"`
+	// Side is the side whose pool holds the lot; empty with one pool.
+	Side   string `json:"side,omitempty"`
 	Name   string `json:"name,omitempty"`
 	Season int    `json:"season"`
 }
@@ -188,6 +193,7 @@ func (r RawNativeSnapshot) validateCharges(franchises map[string]bool) error {
 	return nil
 }
 
+// validatePlayers holds each player to one copy a side: with one pool, one copy in the league.
 func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 	players := map[string]bool{}
 	for _, p := range r.Players {
@@ -195,14 +201,15 @@ func (r RawNativeSnapshot) validatePlayers(franchises map[string]bool) error {
 		if err != nil {
 			return fmt.Errorf("held roster player: %w", err)
 		}
-		if id.String() != p.ID || players[p.ID] || !franchises[p.Franchise] || p.Salary < 0 ||
+		copyOn := r.SideOf(p.Franchise) + "/" + p.ID
+		if id.String() != p.ID || players[copyOn] || !franchises[p.Franchise] || p.Salary < 0 ||
 			p.RookieRound < 0 || p.RookieRound > 99 || p.ExpirationYear < 0 || p.ExpirationYear > 9999 {
 			return fmt.Errorf("a held player has repeated or invalid contract details")
 		}
 		if !slices.Contains([]domain.RosterStatus{domain.RosterActive, domain.RosterIR, domain.RosterTaxi}, p.Status) {
 			return fmt.Errorf("a held player has an unknown roster status")
 		}
-		players[p.ID] = true
+		players[copyOn] = true
 	}
 	return nil
 }

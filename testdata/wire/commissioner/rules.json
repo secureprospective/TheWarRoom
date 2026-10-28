@@ -316,9 +316,9 @@
     {
      "field": "league.sides",
      "label": "Sides",
-     "value": "None: the league has one player pool",
+     "value": "None",
      "state": "Set",
-     "citation": "One player pool: the league has no sides",
+     "citation": "No player pool per side: the league has no sides",
      "changedAt": "",
      "schema": {
       "kind": "map",

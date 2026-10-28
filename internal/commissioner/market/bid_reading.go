@@ -240,7 +240,7 @@ func (v bidViewer) award(a *commissioner.BidAuction) NativeBidAward {
 func unbidStartingLots(assets commissioner.NativeAssets, state commissioner.MarketBook, records []commissioner.Record) []NativeBidPlayer {
 	rows := []NativeBidPlayer{}
 	for _, lot := range assets.Snapshot.Pool {
-		if commissioner.StartingCardLot(records, lot.Player) && state.Bids.Latest(lot.Player) == nil {
+		if commissioner.StartingCardLot(records, lot.Player) && state.Bids.Latest(lot.Side, lot.Player) == nil {
 			rows = append(rows, NativeBidPlayer{Player: lot.Player, Name: lot.Name, Mode: string(leaguerules.Open), ModeWords: "League-start open auction", Closes: "Awaiting first bid"})
 		}
 	}

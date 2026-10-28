@@ -13,11 +13,13 @@ import (
 // RawBidArgs names a recorded player or bid and the contract an owner offers. It never carries a decision,
 // a price the app works out or an owner identity.
 type RawBidArgs struct {
-	Player    string       `json:"player,omitempty"`
-	Franchise string       `json:"franchise,omitempty"`
-	Bid       string       `json:"bid,omitempty"`
-	Salary    domain.Money `json:"salaryCents,omitempty"`
-	Years     int          `json:"years,omitempty"`
+	Player    string `json:"player,omitempty"`
+	Franchise string `json:"franchise,omitempty"`
+	// Side names whose copy of the player has its bids decided, in a league with a pool per side.
+	Side   string       `json:"side,omitempty"`
+	Bid    string       `json:"bid,omitempty"`
+	Salary domain.Money `json:"salaryCents,omitempty"`
+	Years  int          `json:"years,omitempty"`
 }
 
 // BidResult is how one bid fared when its player's bids were decided.

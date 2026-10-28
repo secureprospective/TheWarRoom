@@ -22,11 +22,11 @@ func TestSinglePoolLaws(t *testing.T) {
 		}},
 		{"open and latest auction", func(t *testing.T) {
 			b := MarketBook{Bids: BidBook{Auctions: []BidAuction{{Player: "1000", Decided: true}, {Player: "1000"}}}}
-			if b.Bids.Open("1000") != &b.Bids.Auctions[1] || b.Bids.Latest("1000") != &b.Bids.Auctions[1] {
+			if b.Bids.Open("", "1000") != &b.Bids.Auctions[1] || b.Bids.Latest("", "1000") != &b.Bids.Auctions[1] {
 				t.Fatal("open or latest did not find newest auction")
 			}
 			b.Bids.Auctions[1].Decided = true
-			if b.Bids.Open("1000") != nil || b.Bids.Latest("1000") != &b.Bids.Auctions[1] {
+			if b.Bids.Open("", "1000") != nil || b.Bids.Latest("", "1000") != &b.Bids.Auctions[1] {
 				t.Fatal("decided auction state incorrect")
 			}
 		}},

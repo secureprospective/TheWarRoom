@@ -48,8 +48,11 @@ func (out *Market) readBids(book commissioner.BidBook, v bidViewer,
 	for i := range book.Auctions {
 		a := &book.Auctions[i]
 		name := v.name(a.Player)
+		if a.Side != "" {
+			name = a.Side + ": " + name
+		}
 		if a.Decided {
-			if book.Latest(a.Player) != a {
+			if book.Latest(a.Side, a.Player) != a {
 				continue
 			}
 			for _, bid := range a.Bids {

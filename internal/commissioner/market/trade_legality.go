@@ -16,6 +16,11 @@ func (x tradeExecution) legal(t commissioner.TradeState) error {
 	if err := checkTradeAssets(t, x.rules.Season); err != nil {
 		return err
 	}
+	for _, id := range t.Parties {
+		if x.seed.SideOf(id) != x.seed.SideOf(t.Parties[0]) {
+			return fmt.Errorf("players stay on their own side of the league: trade only with teams on your side")
+		}
+	}
 	hasPicks := slices.ContainsFunc(t.Assets, func(a commissioner.TradeAsset) bool { return a.Player == "" })
 	candidate := *x.seed
 	candidate.Players, candidate.Picks = slices.Clone(x.seed.Players), slices.Clone(x.seed.Picks)

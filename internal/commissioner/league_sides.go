@@ -17,7 +17,7 @@ const (
 	// sidesCounted is the citation on the sides of a league whose player pools are per side.
 	sidesCounted = "Counted from the conferences: each conference is a side"
 	// noSides is the citation on the sides of a league with one player pool.
-	noSides = "One player pool: the league has no sides"
+	noSides = "No player pool per side: the league has no sides"
 )
 
 // errPoolsInPlay refuses a player pools change once the league has played or moved a player.
@@ -49,6 +49,21 @@ func LeagueSides(records []Record) (map[string]string, error) {
 		return nil, nil
 	}
 	return rules.League.Sides.Value, nil
+}
+
+// snapshotSides is the sides the native assets carry: the league's sides when any change or the preset
+// could have given it a pool per side, and none otherwise, without resolving the rules of a league that
+// never could.
+func snapshotSides(records []Record) (map[string]string, error) {
+	if !slices.ContainsFunc(records, func(r Record) bool {
+		return r.Command.Command == RulesSet && r.Command.Args.Field == poolsField ||
+			r.Command.Command == Create && slices.ContainsFunc(r.Command.Args.Seed, func(s SeedValue) bool {
+				return s.Field == poolsField && strings.Contains(string(s.Value), string(leaguerules.PerSide))
+			})
+	}) {
+		return nil, nil
+	}
+	return LeagueSides(records)
 }
 
 // sideField says a change of this rule can change the league's sides.
@@ -141,7 +156,7 @@ func sidesWords(records []Record, sides leaguerules.Value[map[string]string]) (s
 		return leaguerules.DescribeField(sidesField, sides).Words, nil
 	}
 	if len(sides.Value) == 0 {
-		return "None: the league has one player pool", nil
+		return "None", nil
 	}
 	names, err := franchiseNames(records)
 	if err != nil {

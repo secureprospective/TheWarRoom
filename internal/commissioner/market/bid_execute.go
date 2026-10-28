@@ -102,7 +102,7 @@ func (x *bidExecution) place(raw *commissioner.RawCommand) error {
 	if err := x.bidBar(args.Player, args.Franchise); err != nil {
 		return err
 	}
-	auction := x.state.Bids.Open(args.Player)
+	auction := x.state.Bids.Open(x.assets.Snapshot.SideOf(args.Franchise), args.Player)
 	if auction != nil {
 		if _, held := auction.ActiveFor(args.Franchise); held {
 			return fmt.Errorf("you already have a bid on %s; raise it instead", x.name(args.Player))
@@ -158,11 +158,12 @@ func (x *bidExecution) standingBid(args *commissioner.RawBidArgs) (*commissioner
 // bidBar refuses a player who cannot be bid on: one on a roster, one still on waivers, or one this franchise
 // released this season when the league bars re-signing him.
 func (x *bidExecution) bidBar(player, franchise string) error {
-	if slices.ContainsFunc(x.assets.Snapshot.Players, func(p commissioner.NativePlayer) bool { return p.ID == player }) {
+	side := x.assets.Snapshot.SideOf(franchise)
+	if x.assets.Snapshot.OnSide(side, player) {
 		return fmt.Errorf("%s is on a roster; only free agents can be bid on", x.name(player))
 	}
 	for _, w := range x.state.Windows {
-		if w.Player.ID != player {
+		if w.Player.ID != player || w.Side != side {
 			continue
 		}
 		if !w.Processed {
@@ -263,7 +264,10 @@ func (x *bidExecution) decide(raw *commissioner.RawCommand) error {
 	args := raw.Args.Bid
 	var auction *commissioner.BidAuction
 	if raw.Command == commissioner.BidsProcess {
-		if auction = x.state.Bids.Open(args.Player); auction == nil {
+		if err := x.sideNamed(args.Side); err != nil {
+			return err
+		}
+		if auction = x.state.Bids.Open(args.Side, args.Player); auction == nil {
 			return fmt.Errorf("%s has no bids waiting for a decision", x.name(args.Player))
 		}
 	} else {
@@ -272,14 +276,16 @@ func (x *bidExecution) decide(raw *commissioner.RawCommand) error {
 			//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 			return err
 		}
-		if auction = found; !auction.Decided || x.state.Bids.Latest(auction.Player) != auction {
+		if auction = found; !auction.Decided || x.state.Bids.Latest(auction.Side, auction.Player) != auction {
 			return fmt.Errorf("correct only the newest decision on a player")
 		}
 		// The corrected decision is tested without counting the previous winner twice.
-		x.assets.Snapshot.Players = slices.DeleteFunc(slices.Clone(x.assets.Snapshot.Players),
-			func(p commissioner.NativePlayer) bool { return p.ID == auction.Player })
+		seed := x.assets.Snapshot
+		x.assets.Snapshot.Players = slices.DeleteFunc(slices.Clone(seed.Players), func(p commissioner.NativePlayer) bool {
+			return p.ID == auction.Player && seed.SideOf(p.Franchise) == auction.Side
+		})
 	}
-	if err := x.clearsWaivers(auction.Player); err != nil {
+	if err := x.clearsWaivers(auction.Side, auction.Player); err != nil {
 		return err
 	}
 	live := auction.LiveBids()
@@ -303,6 +309,19 @@ func (x *bidExecution) decide(raw *commissioner.RawCommand) error {
 	return nil
 }
 
+// sideNamed holds a decision in a league with a pool per side to one of its sides, and one with one pool
+// to none.
+func (x *bidExecution) sideNamed(side string) error {
+	sides := x.assets.Snapshot.SideNames()
+	if side == "" && len(sides) != 0 {
+		return fmt.Errorf("each side has its own copy of this player: name the side whose bids are decided")
+	}
+	if side != "" && !slices.Contains(sides, side) {
+		return fmt.Errorf("choose a side of this league")
+	}
+	return nil
+}
+
 func (x *bidExecution) overrideAward(raw *commissioner.RawCommand, a *commissioner.BidAuction, eligible []nativecheck.AwardBid, outcome *commissioner.BidOutcome) error {
 	winner := raw.Args.Bid.Franchise
 	bid, held := a.ActiveFor(winner)
@@ -318,9 +337,9 @@ func (x *bidExecution) overrideAward(raw *commissioner.RawCommand, a *commission
 }
 
 // clearsWaivers refuses to decide bids on a player who is still on waivers.
-func (x *bidExecution) clearsWaivers(player string) error {
+func (x *bidExecution) clearsWaivers(side, player string) error {
 	for _, w := range x.state.Windows {
-		if w.Player.ID == player && !w.Processed {
+		if w.Player.ID == player && w.Side == side && !w.Processed {
 			return fmt.Errorf("%s is still on waivers, and bids are decided once he clears them", x.name(player))
 		}
 	}

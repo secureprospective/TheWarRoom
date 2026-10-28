@@ -737,6 +737,7 @@ export namespace commissioner {
 	}
 	export class NativePoolEntry {
 	    player: string;
+	    side?: string;
 	    name?: string;
 	    season: number;
 	
@@ -747,6 +748,7 @@ export namespace commissioner {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.player = source["player"];
+	        this.side = source["side"];
 	        this.name = source["name"];
 	        this.season = source["season"];
 	    }
@@ -1562,6 +1564,7 @@ export namespace commissioner {
 	    picks: NativePick[];
 	    adjustments: NativeCharge[];
 	    pool?: NativePoolEntry[];
+	    sides?: Record<string, string>;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawNativeSnapshot(source);
@@ -1582,6 +1585,7 @@ export namespace commissioner {
 	        this.picks = this.convertValues(source["picks"], NativePick);
 	        this.adjustments = this.convertValues(source["adjustments"], NativeCharge);
 	        this.pool = this.convertValues(source["pool"], NativePoolEntry);
+	        this.sides = source["sides"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -3420,6 +3424,7 @@ export namespace commissioner {
 	export class RawBidArgs {
 	    player?: string;
 	    franchise?: string;
+	    side?: string;
 	    bid?: string;
 	    salaryCents?: number;
 	    years?: number;
@@ -3432,6 +3437,7 @@ export namespace commissioner {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.player = source["player"];
 	        this.franchise = source["franchise"];
+	        this.side = source["side"];
 	        this.bid = source["bid"];
 	        this.salaryCents = source["salaryCents"];
 	        this.years = source["years"];
@@ -11628,6 +11634,22 @@ export namespace leaguerules {
 	
 	
 	
+	export class Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_PlayerPools_ {
+	    State: number;
+	    Value: string;
+	    Citation: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Value_github_com_secureprospective_TheWarRoom_internal_leaguerules_PlayerPools_(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.State = source["State"];
+	        this.Value = source["Value"];
+	        this.Citation = source["Citation"];
+	    }
+	}
 	
 	
 	

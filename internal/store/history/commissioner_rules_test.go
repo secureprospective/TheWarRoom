@@ -204,6 +204,12 @@ func TestCommissionerPresets(t *testing.T) {
 				}
 				continue
 			}
+			if row.Field == "league.sides" {
+				if row.State != "Set" || row.Value != "None" || row.Citation != "No player pool per side: the league has no sides" {
+					t.Fatalf("empty league sides: %+v", row)
+				}
+				continue
+			}
 			if row.State != "Needs a ruling" || row.Value != "Needs a ruling" ||
 				row.Citation != "Needs a ruling" || row.ChangedAt != "" {
 				t.Fatalf("empty league invented %s: %+v", row.Field, row)

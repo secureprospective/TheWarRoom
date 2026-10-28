@@ -1592,7 +1592,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:bid.place",
-    "Schema": "49b6796b2ba5fe51fffdc40f642974d524ebf16b8af8f3769354339712c07fad",
+    "Schema": "6f79d8ea558adfe55d6446475babf6bf349f1fe91cc4e6d0b974efef9a5c7951",
     "Modes": [
       "preview",
       "execute"
@@ -1607,7 +1607,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:bid.raise",
-    "Schema": "a28b11833d05bba3f788e428693ddc9191aa2193b851eeb59d6f8754a28d8508",
+    "Schema": "f2b586cea20534418422c83f50501e9a204aa52cf08502012e60663ea345ac10",
     "Modes": [
       "preview",
       "execute"
@@ -1622,7 +1622,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:bid.withdraw",
-    "Schema": "70ed9c47fb096706dae3ae79f606b87dceaeed0469ee306b3084201d1cbd89f8",
+    "Schema": "80950859ae47dd7726c0c6c6212b66df5e0654017f205a475b46d5a6116757d9",
     "Modes": [
       "preview",
       "execute"
@@ -1637,7 +1637,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:bids.process",
-    "Schema": "c09bb54a875ad17a1e5665bd365d70e774ed76478af8188ebcfe6292bfd5fca5",
+    "Schema": "502e0166b996bbf2bf247b245e0f3e5b05133928020a3da74b467d18362993cd",
     "Modes": [
       "preview",
       "execute"
@@ -1652,7 +1652,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:bids.award.override",
-    "Schema": "d3a9ad5af3fc5838121feff9ce4099bb05d2d1a97a3ac64057796ee7b990504b",
+    "Schema": "64f22cfb8b832196cb665e3073c9dff3ea08e3bfb7b5285b8ee7d5f1c2e2dcd2",
     "Modes": [
       "preview",
       "execute"

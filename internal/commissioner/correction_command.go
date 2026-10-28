@@ -71,7 +71,8 @@ func (r RawCorrection) Validate(command string) error {
 			return fmt.Errorf("choose the recorded transaction to reverse")
 		}
 	case CorrectProvenance:
-		expected.Player, expected.Via = r.Player, r.Via
+		// The franchise names whose copy is meant; a league with a player pool per side requires it.
+		expected.Player, expected.Via, expected.Franchise = r.Player, r.Via, r.Franchise
 		if !slices.Contains([]string{"held", "draft", "waiver", "trade", "free_agent", "commissioner"}, r.Via) {
 			return fmt.Errorf("choose how the player was acquired: held, draft, waiver, trade, free_agent or commissioner")
 		}
@@ -184,7 +185,11 @@ func checkExceptionTarget(c RawCorrection, records []Record, now time.Time) erro
 			return fmt.Errorf("choose a franchise in this app league")
 		}
 	case c.Scope.Player != "":
-		if !slices.ContainsFunc(assets.Snapshot.Players, func(p NativePlayer) bool { return p.ID == c.Scope.Player }) {
+		side, err := assets.Snapshot.TargetSide(c.Scope.Franchise)
+		if err != nil {
+			return err
+		}
+		if !assets.Snapshot.OnSide(side, c.Scope.Player) {
 			return fmt.Errorf("choose a recorded roster player")
 		}
 	case c.Scope.Transaction != "":

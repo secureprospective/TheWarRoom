@@ -154,13 +154,19 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 	return checkContract(in)
 }
 
+// recordedPlayer is the player's one recorded copy. With a pool per side a quote by player alone could
+// mean either side's copy, so it is refused rather than guessed.
 func recordedPlayer(seed *commissioner.RawNativeSnapshot, id string) (commissioner.NativePlayer, bool) {
-	for _, p := range seed.Players {
-		if p.ID == id {
-			return p, true
+	var found []commissioner.NativePlayer
+	for _, side := range append([]string{""}, seed.SideNames()...) {
+		if i := seed.PlayerOn(side, id); i >= 0 {
+			found = append(found, seed.Players[i])
 		}
 	}
-	return commissioner.NativePlayer{}, false
+	if len(found) != 1 {
+		return commissioner.NativePlayer{}, false
+	}
+	return found[0], true
 }
 
 // contractCheck is what checkContract judges: the rules and rosters, the player, and the calendar's answer.
