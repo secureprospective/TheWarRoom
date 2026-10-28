@@ -188,7 +188,7 @@ func TestCommissionerPeopleCommandsAndRestart(t *testing.T) {
 		t.Fatalf("commands missing from projection: %+v", f)
 	}
 	before, err := s.CommissionerPeople(t.Context(), "native.test", "creator")
-	if err != nil || before.DOTStatus != "Needs a ruling: DOT has 0 of 4 seats" ||
+	if err != nil || before.DOTStatus != "Needs a ruling: trade review needs at least one seat" ||
 		len(before.Invites) != 1 || before.Invites[0].Status != "Revoked" {
 		t.Fatalf("people projection: %+v %v", before, err)
 	}

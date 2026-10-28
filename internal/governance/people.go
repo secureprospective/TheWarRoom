@@ -125,9 +125,6 @@ func (e RoleGranted) apply(s *State) error {
 	if e.Role == CoCommissioner && s.HasRole(e.Principal, CoCommissioner) {
 		return fmt.Errorf("that person is already a co-commissioner")
 	}
-	if e.Role == DOT && !s.HasRole(e.Principal, DOT) && len(s.members(DOT)) >= 10 {
-		return fmt.Errorf("dOT already has its maximum of 10 seats")
-	}
 	s.grant(e.Principal, e.Role)
 	if e.Role == CoCommissioner {
 		s.coCommissioners = append(s.coCommissioners, e.Principal)

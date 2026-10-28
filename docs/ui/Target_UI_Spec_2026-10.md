@@ -617,7 +617,7 @@ is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the regis
 | 4b | Taxi | Flexible; default 3 calendar years and under |
 | 5 | Contracts | Each rulebook action kept; every number editable; every action on or off; new action kinds later. Covers dead money and the rookie draft |
 | R | Roster size | Default 18–80, IR and taxi excluded |
-| 7a | DOT | 4 to 10 seats; 3 approves or 3 vetoes decides |
+| 7a | DOT | At least one seat; 3 approves or 3 vetoes decides |
 | 7b | DOT appeal | Either team may appeal a veto once to the commissioner; if the commissioner is a party, the co-commissioner decides |
 | 8a | First commissioner | The league's creator, automatically |
 | 8b | Commissioner gone | Steps down, goes inactive past a set period, or is voted out; each a recorded act |
@@ -659,8 +659,8 @@ is `docs/commissioner/Commissioner_Control_Census.md`; its rows are in the regis
 - **Ladder:** Commissioner > Co-commissioner > DOT > Owner. The humans decide who holds each role; the
   app assigns nobody. The last commissioner cannot be revoked.
 - **Co-commissioner:** near-parity (ruling 3).
-- **DOT:** 4 to 10 seats; 3 approves or 3 vetoes decides. A member who is party to the trade is
-  recused. With fewer than 4 seats filled, trade review shows "Needs a ruling: DOT has n of 4 seats"
+- **DOT:** At least one seat; 3 approves or 3 vetoes decides. A member who is party to the trade is
+  recused. With no seat filled, trade review shows "Needs a ruling: trade review needs at least one seat"
   and trades wait. Either team may appeal a veto once (fact 7b). The commissioner may overturn any
   DOT decision as a G3 act with a typed reason, visible to every owner.
 - **Succession:** the league's creator is the first commissioner. A commissioner is gone by stepping

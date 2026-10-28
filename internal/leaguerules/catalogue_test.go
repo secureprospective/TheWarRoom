@@ -26,7 +26,7 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 	for _, f := range fields {
 		byPath[f.Path] = f
 	}
-	if s := byPath["trades.dotSeats"].Schema; *s.Minimum != 4 || *s.Maximum != 10 {
+	if s := byPath["trades.dotSeats"].Schema; *s.Minimum != 1 || s.Maximum != nil {
 		t.Fatalf("DOT seat bounds: %+v", s)
 	}
 	if s := byPath["bids.ufa"].Schema; !reflect.DeepEqual(s.Choices, []Choice{{"blind", "Blind"}, {"open", "Open"}}) {
@@ -61,7 +61,7 @@ func TestDecodeSettingRefusals(t *testing.T) {
 		{"roster.limits", `{"min":71,"max":70}`},
 		{"roster.limits", `null`},
 		{"roster.limits", `{"min":20,"max":70} {}`},
-		{"trades.dotSeats", `11`},
+		{"trades.dotSeats", `0`},
 		{"ir.slots", `-1`},
 		{"bids.ufa", `"sealed"`},
 		{"cap.irShare", `10001`},

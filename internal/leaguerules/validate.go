@@ -109,8 +109,8 @@ func OLineOn(r RuleSet) bool {
 }
 
 func validateRules(r RuleSet) error {
-	if r.Trades.DOTSeats.State == IsKnown && (r.Trades.DOTSeats.Value < 4 || r.Trades.DOTSeats.Value > 10) {
-		return fmt.Errorf("trade review needs between 4 and 10 seats")
+	if r.Trades.DOTSeats.State == IsKnown && r.Trades.DOTSeats.Value < 1 {
+		return fmt.Errorf("trade review needs at least one seat")
 	}
 	for _, share := range []Value[Decimal]{r.Cap.IRShare, r.Cap.TaxiShare} {
 		if share.State == IsKnown && (share.Value < 0 || share.Value > 10000) {

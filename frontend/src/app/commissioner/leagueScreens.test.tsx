@@ -85,7 +85,7 @@ describe('League people screen', () => {
     const host = await show(render(LeaguePeople), { people: peopleWire.commissioner });
     const view = text(host);
     for (const part of ['Franchise 1 (F1)', 'owner-one', 'Vacant', 'Co-commissioner', 'private-deputy',
-      'Needs a ruling: DOT has 0 of 4 seats', 'Trade review seats (DOT): 0',
+      'Needs a ruling: trade review needs at least one seat', 'Trade review seats (DOT): 0',
       'Commissioner removal voting is open', '1 of 4 franchises have voted', 'Voted: Franchise 2 (F2)',
       'The commissioner is serving; no succession is pending', 'You are: Commissioner'])
       expect(view).toContain(part);

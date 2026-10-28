@@ -58,7 +58,7 @@ func tradeReviewers(t *commissioner.TradeState, state governance.State, records 
 		}
 	}
 	eligible, err := governance.Reviewers(state, parties)
-	if len(all) >= 4 && len(eligible) == 0 {
+	if len(all) > 0 && len(eligible) == 0 {
 		t.Status, t.Words = "failed", "No eligible DOT reviewer remains; this trade cannot proceed"
 	}
 	if err != nil {

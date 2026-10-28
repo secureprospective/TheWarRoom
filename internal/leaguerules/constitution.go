@@ -198,8 +198,8 @@ func LegacyNFLForTeams(count int) RuleSet {
 	r.Playoffs.Graph = Needs[[]BracketNode]("Choose a bracket for this smaller playoff field.")
 	r.Playoffs.FinalWeek = Needs[int]("Choose the final week after setting the smaller bracket.")
 	if count < 4 {
-		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades; DOT needs four seats.")
-		r.Trades.DOTSeats = Needs[int]("DOT needs four to ten people; choose reviewers for this small league.")
+		r.Trades.Review = Needs[ReviewRoute]("Fewer than four teams: choose who reviews trades.")
+		r.Trades.DOTSeats = Needs[int]("Choose how many people review trades.")
 	}
 	r.Schedule.Pattern = Needs[SchedulePattern]("Choose how often teams meet in this smaller league.")
 	r.Trades.MaximumParties = cited(min(3, count), "Legacy template: bounded by team count")

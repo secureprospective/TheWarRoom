@@ -107,8 +107,8 @@ func percentFields() map[FieldPath]bool {
 func fieldBounds(path FieldPath, schema *ValueSchema) {
 	switch path {
 	case "trades.dotSeats":
-		low, high := int64(4), int64(10)
-		schema.Minimum, schema.Maximum = &low, &high
+		low := int64(1)
+		schema.Minimum, schema.Maximum = &low, nil
 	case "cap.irShare", "cap.taxiShare":
 		low, high := int64(0), int64(10000)
 		schema.Minimum, schema.Maximum = &low, &high

@@ -168,7 +168,7 @@ func TestCommissionerRulesRefusals(t *testing.T) {
 		ruleCommand("roster.size", `{"min":20,"max":70}`, "next_rollover", "", 1),
 		ruleCommand("roster.limits", `{"min":"twenty","max":70}`, "next_rollover", "", 1),
 		ruleCommand("roster.limits", `{"min":71,"max":70}`, "next_rollover", "", 1),
-		ruleCommand("trades.dotSeats", `11`, "next_rollover", "", 1),
+		ruleCommand("trades.dotSeats", `0`, "next_rollover", "", 1),
 		ruleCommand("playoffs.startWeek", `18`, "now", "Push the playoffs back", 1),
 		ruleCommand("roster.limits", `{"min":20,"max":70}`, "instant", "", 1),
 	} {

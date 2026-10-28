@@ -161,8 +161,8 @@ func (p TradePolicy) Validate(r leaguerules.TradesRules) error {
 	if !slices.Contains([]leaguerules.ReviewRoute{leaguerules.DOTReview, leaguerules.CommissionerReview, leaguerules.NoReview}, p.Route) {
 		return fmt.Errorf("choose who reviews trades")
 	}
-	if p.Route == leaguerules.DOTReview && (r.DOTSeats.State != leaguerules.IsKnown || p.Seats < 4 || p.Seats > 10 || p.DecideAt > p.Seats) {
-		return fmt.Errorf("%s: choose 4 to 10 DOT seats and a decision count within them", "Needs a ruling")
+	if p.Route == leaguerules.DOTReview && (r.DOTSeats.State != leaguerules.IsKnown || p.Seats < 1 || p.DecideAt > p.Seats) {
+		return fmt.Errorf("%s: choose at least one DOT seat and a decision count within it", "Needs a ruling")
 	}
 	return nil
 }

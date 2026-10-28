@@ -99,8 +99,6 @@ func TestInvalidChanges(t *testing.T) {
 	}{
 		{"roster bounds", testChange("roster.limits", Known(bounds(81, 80, ""))), "minimum"},
 		{"lineup bounds", testChange("lineup.positions", Known(map[Position]Bounds{QB: bounds(2, 1, "")})), "minimum"},
-		{"seats eleven", testChange("trades.dotSeats", Known(11)), "between 4 and 10"},
-		{"seats three", testChange("trades.dotSeats", Known(3)), "between 4 and 10"},
 		{"wrong type", testChange("cap.amount", Known(125)), "correct kind"},
 		{"negative money", testChange("cap.amount", Known(Money(-1))), "negative"},
 		{"negative count", testChange("roster.limits", Known(bounds(-1, 80, ""))), "negative"},
@@ -124,10 +122,30 @@ func TestInvalidChanges(t *testing.T) {
 			}
 		})
 	}
-	for _, seats := range []int{4, 10} {
-		if err := testChange("trades.dotSeats", Known(seats)).Validate(); err != nil {
-			t.Fatal(err)
-		}
+}
+func TestDOTSeatsNeedAtLeastOne(t *testing.T) {
+	cases := []struct {
+		name   string
+		seats  int
+		refuse bool
+	}{
+		{"one", 1, false}, {"two", 2, false}, {"three", 3, false},
+		{"eleven", 11, false}, {"forty", 40, false},
+		{"zero", 0, true}, {"negative", -1, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := testChange("trades.dotSeats", Known(tc.seats)).Validate()
+			if tc.refuse {
+				if err == nil {
+					t.Fatalf("seats %d: accepted", tc.seats)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("seats %d: %v", tc.seats, err)
+			}
+		})
 	}
 }
 func TestNoInventedDefaultsAndTiming(t *testing.T) {

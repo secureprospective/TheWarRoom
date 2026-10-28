@@ -79,9 +79,13 @@ func PeopleReading(league, principal string, records []Record) (People, error) {
 			}
 		}
 	}
-	out.DOTStatus = fmt.Sprintf("DOT has %d seats", out.DOTCount)
-	if out.DOTCount < 4 {
-		out.DOTStatus = fmt.Sprintf("Needs a ruling: DOT has %d of 4 seats", out.DOTCount)
+	switch out.DOTCount {
+	case 0:
+		out.DOTStatus = "Needs a ruling: trade review needs at least one seat"
+	case 1:
+		out.DOTStatus = "DOT has 1 seat"
+	default:
+		out.DOTStatus = fmt.Sprintf("DOT has %d seats", out.DOTCount)
 	}
 	if private {
 		out.Invites = readInvites(state, invites)

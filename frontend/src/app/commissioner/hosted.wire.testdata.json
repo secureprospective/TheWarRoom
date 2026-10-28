@@ -4394,8 +4394,7 @@
               "changedAt": "",
               "schema": {
                 "kind": "count",
-                "minimum": 4,
-                "maximum": 10,
+                "minimum": 1,
                 "choices": [],
                 "fields": []
               },
