@@ -59,7 +59,6 @@ type marketHost struct {
 	app *App
 }
 
-func (h marketHost) LabStamp() string { return labStamp() }
 func (h marketHost) AssetInput(ctx context.Context) (marketapp.OnField, []string) {
 	return h.app.assetInput(ctx)
 }

@@ -3240,46 +3240,6 @@
     "Door": "wails",
     "Feature": "market",
     "ID": "unset",
-    "Method": "TargetAssetProfile",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
-  },
-  {
-    "Door": "wails",
-    "Feature": "market",
-    "ID": "unset",
-    "Method": "TargetMarket",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": null
-  },
-  {
-    "Door": "wails",
-    "Feature": "market",
-    "ID": "unset",
-    "Method": "TargetMarketLists",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
-  },
-  {
-    "Door": "wails",
-    "Feature": "market",
-    "ID": "unset",
     "Method": "TargetMarketReports",
     "Role": "gm,commish,admin",
     "Gravity": "G0",
@@ -3301,34 +3261,6 @@
     "Permission": "",
     "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
     "Modes": null
-  },
-  {
-    "Door": "wails",
-    "Feature": "market",
-    "ID": "unset",
-    "Method": "TargetMarketStretches",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
-  },
-  {
-    "Door": "wails",
-    "Feature": "market",
-    "ID": "unset",
-    "Method": "TargetPickClock",
-    "Role": "gm,commish,admin",
-    "Gravity": "G0",
-    "Availability": "both",
-    "Permission": "",
-    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
-    "Modes": [
-      "read"
-    ]
   },
   {
     "Door": "wails",

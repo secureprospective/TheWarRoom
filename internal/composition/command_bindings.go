@@ -136,11 +136,6 @@ func draftCommandBindings(api *draftapi.API) map[string]catalog.Binding {
 func marketCommandBindings(api *marketapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetAssetBoard":           catalog.Bind0(api.TargetAssetBoard),
-		"TargetMarket":               catalog.Bind1Value(api.TargetMarket, "raw"),
-		"TargetMarketLists":          catalog.Bind1Value(api.TargetMarketLists, "raw"),
-		"TargetPickClock":            catalog.Bind1Value(api.TargetPickClock, "raw"),
-		"TargetMarketStretches":      catalog.Bind1Value(api.TargetMarketStretches, "raw"),
-		"TargetAssetProfile":         catalog.Bind1Value(api.TargetAssetProfile, "raw"),
 		"TargetMarketReportsRefresh": catalog.Bind1Error(api.TargetMarketReportsRefresh, "force"),
 		"TargetMarketReports":        catalog.Bind0(api.TargetMarketReports),
 	}

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -18,20 +17,13 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 )
-
-// testStamp is the stamp a test binary's root build label and date produce, as the goldens hold.
-const testStamp = "dev "
-
-var loadLab = sync.OnceValues(lab.Load) //nolint:gochecknoglobals // decode the frozen Lab facts once per test binary
 
 type fakeHost struct {
 	mu         sync.Mutex
 	calls      []string
 	readyErr   error
-	labErr     error
 	refreshErr error
 	week       int
 	now        OnField
@@ -47,14 +39,6 @@ func (h *fakeHost) call(name string) {
 }
 func (h *fakeHost) Ready() error                   { h.call("ready"); return h.readyErr }
 func (h *fakeHost) MarketContext() context.Context { h.call("context"); return context.Background() }
-func (h *fakeHost) LabFacts() (*lab.Data, error) {
-	h.call("lab")
-	if h.labErr != nil {
-		return nil, h.labErr
-	}
-	return loadLab()
-}
-func (h *fakeHost) LabStamp() string { h.call("stamp"); return testStamp }
 func (h *fakeHost) AssetInput(ctx context.Context) (OnField, []string) {
 	h.call("assets")
 	h.inputCtx = ctx
@@ -136,135 +120,6 @@ func TestMarketWireMatchesGolden(t *testing.T) {
 	}
 	checkGolden(t, "assets-unheld", board)
 
-	full := RawMarketScope{From: 2017, To: 2026}
-	thin := RawMarketScope{From: 2100, To: 2101}
-	invalid := RawMarketScope{From: 2026, To: 2017}
-	filtered := RawMarketScope{From: 2017, To: 2026, Phases: []string{"winter", "deadline"}, Assets: []string{"LB", "pick1:next"}, ByAge: true}
-	for name, scope := range map[string]RawMarketScope{"full": full, "thin": thin, "invalid": invalid, "filtered": filtered} {
-		checkGolden(t, "market-"+name, fresh.TargetMarket(scope))
-		checkGolden(t, "lists-"+name, fresh.TargetMarketLists(scope))
-		checkGolden(t, "clock-"+name, fresh.TargetPickClock(scope))
-		checkGolden(t, "stretches-"+name, fresh.TargetMarketStretches(scope))
-	}
-	for name, raw := range map[string]RawMarketAsset{
-		"position": {Scope: full, Kind: "LB"},
-		"anchor":   {Scope: full, Kind: lab.Anchor},
-		"age":      {Scope: RawMarketScope{From: 2017, To: 2026, ByAge: true}, Kind: "WR:prime"},
-		"thin":     {Scope: thin, Kind: "LB"},
-		"invalid":  {Scope: full, Kind: "LB:prime"},
-	} {
-		checkGolden(t, "profile-"+name, fresh.TargetAssetProfile(raw))
-	}
-	broken := New(&fakeHost{labErr: errors.New("fingerprint mismatch")}, &Held{})
-	checkGolden(t, "lists-unloaded", broken.TargetMarketLists(full))
-	checkGolden(t, "profile-unloaded", broken.TargetAssetProfile(RawMarketAsset{Scope: full, Kind: "LB"}))
-}
-
-func TestTargetMarketReading(t *testing.T) {
-	t.Parallel()
-	a := New(&fakeHost{}, &Held{})
-	r := a.TargetMarket(RawMarketScope{From: 2017, To: 2026})
-	if r.Status != report.ReadingOK || r.Count < 80 || r.Threshold != 80 || r.Value.Going == nil {
-		t.Fatal("missing Market reading")
-	}
-	if r.InputSHA != lab.DataSHA || r.BuildStamp != testStamp || r.Cutoff != "2026-10-06T01:42:57+00:00" {
-		t.Fatal("missing provenance")
-	}
-	if r.Provenance.Freshness.State == "live" || r.Provenance.Freshness.FetchedAt != "2026-10-06T15:57:20+00:00" || !strings.Contains(r.Provenance.Source, r.InputSHA) {
-		t.Fatal("archive labelled live")
-	}
-	b, err := json.Marshal(r)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var wire map[string]json.RawMessage
-	if err := json.Unmarshal(b, &wire); err != nil {
-		t.Fatal(err)
-	}
-	for _, key := range []string{"value", "provenance", "status", "absenceReason", "count", "threshold", "baseline", "cutoff", "method", "howCounted", "inputSHA", "buildStamp"} {
-		if _, ok := wire[key]; !ok {
-			t.Errorf("missing %s", key)
-		}
-	}
-	for _, grade := range []string{"\"evidence\"", "\"solid\"", "\"rough\"", "\"thin\""} {
-		if strings.Contains(string(b), grade) {
-			t.Errorf("spread grade leaked: %s", grade)
-		}
-	}
-	if r.HowCounted == "" || r.AbsenceReason != nil {
-		t.Fatal("shell disclosure")
-	}
-	thin := a.TargetMarket(RawMarketScope{From: 2017, To: 2026, Phases: []string{"winter"}})
-	if thin.Status != report.ReadingThin || thin.Count == 0 || thin.Value.Rows != nil || thin.AbsenceReason == nil {
-		t.Fatal("thin reading fabricated data")
-	}
-	for _, raw := range []RawMarketScope{{From: 2026, To: 2017}, {From: 2017, To: 2026, Phases: []string{"bogus"}}, {From: 2017, To: 2026, Phases: []string{"winter", "winter"}}} {
-		failed := a.TargetMarket(raw)
-		if failed.Status != report.ReadingFailed || failed.AbsenceReason == nil {
-			t.Fatal("invalid IPC scope accepted")
-		}
-	}
-}
-
-func TestMarketSurfaceMethods(t *testing.T) {
-	t.Parallel()
-	a := New(&fakeHost{}, &Held{})
-	full := RawMarketScope{From: 2017, To: 2026}
-	methods := []struct {
-		name string
-		read func(RawMarketScope) report.Reading[MarketSurface]
-	}{
-		{"lists", a.TargetMarketLists}, {"clock", a.TargetPickClock}, {"stretches", a.TargetMarketStretches},
-	}
-	for _, method := range methods {
-		t.Run(method.name, func(t *testing.T) {
-			ok := method.read(full)
-			if ok.Status != report.ReadingOK || ok.Count == 0 || ok.HowCounted == "" || ok.Cutoff == "" || ok.InputSHA != lab.DataSHA || len(ok.Value.Sections) == 0 {
-				t.Fatalf("incomplete reading: %+v", ok)
-			}
-			wire, err := json.Marshal(ok)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, grade := range []string{"\"solid\"", "\"rough\"", "\"evidence\""} {
-				if strings.Contains(string(wire), grade) {
-					t.Fatal("grade leaked")
-				}
-			}
-			thin := method.read(RawMarketScope{From: 2100, To: 2101})
-			if thin.Status != report.ReadingThin || thin.AbsenceReason == nil || thin.Count != 0 {
-				t.Fatal("absent scope fabricated data")
-			}
-			failed := method.read(RawMarketScope{From: 2026, To: 2017})
-			if failed.Status != report.ReadingFailed || failed.AbsenceReason == nil {
-				t.Fatal("invalid IPC accepted")
-			}
-		})
-	}
-}
-
-func TestMarketInputValidationAndLoadFailure(t *testing.T) {
-	t.Parallel()
-	for _, raw := range []RawMarketScope{{From: 2017, To: 2026, Assets: []string{"bogus"}}, {From: 2017, To: 2026, Assets: []string{"LB", "LB"}}} {
-		if raw.Validate() == nil {
-			t.Fatal("invalid asset selection accepted")
-		}
-	}
-	host := &fakeHost{labErr: errors.New("fingerprint mismatch")}
-	a := New(host, &Held{})
-	for _, r := range []report.Reading[MarketSurface]{a.TargetMarketLists(RawMarketScope{From: 2017, To: 2026}), a.TargetPickClock(RawMarketScope{From: 2017, To: 2026}), a.TargetMarketStretches(RawMarketScope{From: 2017, To: 2026}), a.TargetAssetProfile(RawMarketAsset{Scope: RawMarketScope{From: 2017, To: 2026}, Kind: "LB"})} {
-		if r.Status != report.ReadingFailed || r.AbsenceReason == nil || !strings.Contains(*r.AbsenceReason, "fingerprint mismatch") {
-			t.Fatal("load failure hidden")
-		}
-	}
-	// An invalid scope is refused before the Lab is read.
-	host.calls = nil
-	_ = a.TargetMarketLists(RawMarketScope{From: 2026, To: 2017})
-	_ = a.TargetAssetProfile(RawMarketAsset{Scope: RawMarketScope{From: 2017, To: 2026}, Kind: "bogus"})
-	_ = a.TargetMarket(RawMarketScope{From: 2026, To: 2017})
-	if len(host.calls) != 0 {
-		t.Fatal("invalid scope reached the host", host.calls)
-	}
 }
 
 func TestMarketReportsReadOrderAndWeek(t *testing.T) {
@@ -366,23 +221,16 @@ func fillWire(v reflect.Value, n *int) {
 	set()
 }
 
-// TestMarketWireTwinsMatch proves WireSurface, WireReading and WireAssetBoard lose nothing: a
-// reading and an asset board with every field set, and empty ones, encode the same before and
-// after conversion.
+// TestMarketWireTwinsMatch checks the asset board wire conversion.
 func TestMarketWireTwinsMatch(t *testing.T) {
 	t.Parallel()
-	var full report.Reading[Surface]
-	n := 0
-	fillWire(reflect.ValueOf(&full).Elem(), &n)
 	var assets Board
+	n := 0
 	fillWire(reflect.ValueOf(&assets).Elem(), &n)
 	for _, c := range []struct {
 		name       string
 		built, got any
 	}{
-		{"full reading", full, WireReading(full, WireSurface)},
-		{"empty reading", report.Reading[Surface]{}, WireReading(report.Reading[Surface]{}, WireSurface)},
-		{"empty section", Surface{Sections: []Section{{}}}, WireSurface(Surface{Sections: []Section{{}}})},
 		{"full asset board", assets, WireAssetBoard(assets)},
 		{"empty asset board", Board{}, WireAssetBoard(Board{})},
 	} {
