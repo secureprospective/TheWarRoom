@@ -442,3 +442,40 @@ describe('Which franchise is shown', () => {
   });
 });
 const commissionerSeat = () => leagueState.peek().people?.seats[0]?.franchise;
+
+describe('Searching the pool for your own pick', () => {
+  const shown = (host: Element, label: string) => all(control(host, label), 'option')
+    .map(o => o.textContent);
+  it('narrows the players shown by the name typed, ignoring case and padding', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner });
+    expect(shown(host, 'Rookie')).toHaveLength(6);
+    await type(control(host, 'Search by name'), '  player, 5003 ');
+    await settle();
+    expect(shown(host, 'Rookie')).toEqual(['Choose…', 'Player, 5003, WR · AAA']);
+  });
+  it('narrows the players shown to the position chosen, and lists every position A–Z', async () => {
+    at(noon);
+    const reading = { ...wire.running,
+      available: wire.running.available.map(p => (p.id === '5003' ? { ...p, position: 'RB' } : p)) };
+    const { host } = await room({ people: people.owner, reading });
+    expect(shown(host, 'Position')).toEqual(['All positions', 'RB', 'WR']);
+    await type(control(host, 'Position'), 'RB');
+    await settle();
+    expect(shown(host, 'Rookie')).toEqual(['Choose…', 'Player, 5003, RB · AAA']);
+  });
+  it('says so when nobody matches the search or position', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner });
+    await type(control(host, 'Search by name'), 'nobody');
+    await settle();
+    expect(host.textContent).toContain('No player matches.');
+    expect(shown(host, 'Rookie')).toEqual(['Choose…']);
+  });
+  it('says Player instead of Rookie on the pool of a startup draft', async () => {
+    at(noon);
+    const { host } = await room({ people: people.owner, reading: { ...wire.running, startup: true } });
+    expect(shown(host, 'Player')).toHaveLength(6);
+    expect(() => control(host, 'Rookie')).toThrow('No field labelled “Rookie”');
+  });
+});
