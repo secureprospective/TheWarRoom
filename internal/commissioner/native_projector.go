@@ -136,7 +136,8 @@ func applyNativeOverride(seed *RawNativeSnapshot, record Record, value RawNative
 	return fmt.Errorf("choose a player on this app league's recorded roster")
 }
 
-func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Record, now time.Time) error {
+func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Record, now time.Time,
+	franchise string, perSide bool) error {
 	active := Replay(records).Active
 	for _, record := range records {
 		if record.Command.Command != ReserveException || !active[record.Receipt.Entry] {
@@ -145,6 +146,9 @@ func applyReserveExceptions(verdicts []nativecheck.ReserveVerdict, records []Rec
 		value, err := decodeOverride(record.Command.Command, record.Command.Args)
 		if err != nil {
 			return err
+		}
+		if (perSide && value.Franchise == "") || (value.Franchise != "" && value.Franchise != franchise) {
+			continue
 		}
 		if value.Until != "" {
 			until, parseErr := time.Parse(time.RFC3339Nano, value.Until)

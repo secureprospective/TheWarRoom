@@ -101,6 +101,8 @@ func ScopedDecisionExceptions(records []Record, scope ExceptionScope, now time.T
 
 func exceptionScopeMatches(want, decision ExceptionScope) bool {
 	switch {
+	case want.Franchise != "" && want.Player != "":
+		return want.Franchise == decision.Franchise && want.Player == decision.Player
 	case want.Franchise != "":
 		return want.Franchise == decision.Franchise
 	case want.Player != "":

@@ -274,7 +274,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "league-view",
-    "Schema": "bffdd0e0d982532641b8020303b66f912903ba5adc460ce09667040098fc092b",
+    "Schema": "8425719f2a76eb2b918b5e01989438c7ae7cfaed855ba48bd10ba76b5a3b22b0",
     "Modes": [
       "read"
     ]
@@ -2505,7 +2505,7 @@
     "Gravity": "G0",
     "Availability": "both",
     "Permission": "league-view",
-    "Schema": "bffdd0e0d982532641b8020303b66f912903ba5adc460ce09667040098fc092b",
+    "Schema": "8425719f2a76eb2b918b5e01989438c7ae7cfaed855ba48bd10ba76b5a3b22b0",
     "Modes": [
       "read"
     ]

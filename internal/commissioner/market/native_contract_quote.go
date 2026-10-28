@@ -3,6 +3,7 @@ package market
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -17,6 +18,7 @@ import (
 type RawContractQuote struct {
 	League      string       `json:"league"`
 	Player      string       `json:"player"`
+	Franchise   string       `json:"franchise,omitempty"`
 	Action      string       `json:"action"`
 	ViewerZone  string       `json:"viewerZone"`
 	Years       int          `json:"years"`
@@ -34,6 +36,9 @@ func (r RawContractQuote) Validate() error {
 	id, err := playerid.New(r.Player)
 	if err != nil || id.String() != r.Player {
 		return fmt.Errorf("choose a player")
+	}
+	if strings.TrimSpace(r.Franchise) != r.Franchise || len(r.Franchise) > 200 {
+		return fmt.Errorf("choose a franchise")
 	}
 	if !nativecheck.ContractAction(r.Action).Known() {
 		return fmt.Errorf("choose a contract action")
@@ -136,8 +141,29 @@ func QuoteContract(raw RawContractQuote, records []commissioner.Record, now time
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("this app league has no recorded rosters to quote"))
 	}
-	player, ok := recordedPlayer(base.Assets.Snapshot, raw.Player)
+	seed := base.Assets.Snapshot
+	player, ok := recordedPlayer(seed, raw.Player)
+	if raw.Franchise != "" {
+		index := seed.PlayerOf(raw.Franchise, raw.Player)
+		ok = index >= 0
+		if ok {
+			player = seed.Players[index]
+		}
+	}
 	if !ok {
+		if raw.Franchise == "" {
+			var franchises []string
+			for _, side := range seed.SideNames() {
+				if index := seed.PlayerOn(side, raw.Player); index >= 0 {
+					franchises = append(franchises, seed.Players[index].Franchise)
+				}
+			}
+			if len(franchises) > 1 {
+				//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
+				return ContractQuote{}, commissioner.Refused(fmt.Errorf("choose a franchise for this player: %s",
+					strings.Join(franchises, ", ")))
+			}
+		}
 		//nolint:wrapcheck // Preserve the original refusal text across the package boundary.
 		return ContractQuote{}, commissioner.Refused(fmt.Errorf("choose a player on this app league's recorded roster"))
 	}

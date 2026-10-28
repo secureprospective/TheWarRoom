@@ -306,3 +306,65 @@ func perSideChangesStayOnTheirSide(t *testing.T, f *marketFixture) {
 			Player: samePlayer}}}}, "owner.nfc")
 	wantRefusal(t, err, "own side of the league")
 }
+
+func TestPerSideQuoteNamesAmbiguousFranchises(t *testing.T) {
+	f := perSideMarket(t, "preset")
+	_, err := market.QuoteContract(market.RawContractQuote{League: rolloverLeague, Player: samePlayer,
+		Action: "cut", ViewerZone: "UTC"}, f.b.records, f.now, time.UTC, f.facts)
+	if err == nil || !strings.Contains(err.Error(), afcTeam) || !strings.Contains(err.Error(), nfcTeam) {
+		t.Fatalf("ambiguous quote should name both franchises: %v", err)
+	}
+	for _, tc := range []struct{ franchise, name string }{{afcTeam, "Team 1"}, {nfcTeam, "Team 9"}} {
+		q, err := market.QuoteContract(market.RawContractQuote{League: rolloverLeague, Player: samePlayer,
+			Franchise: tc.franchise, Action: "cut", ViewerZone: "UTC"}, f.b.records, f.now, time.UTC, f.facts)
+		if err != nil || q.Franchise != tc.name {
+			t.Fatalf("quote %s: %+v, %v", tc.franchise, q, err)
+		}
+	}
+}
+
+func TestPerSideReserveExceptionOnlyAffectsNamedFranchise(t *testing.T) {
+	f := perSideMarket(t, "preset")
+	for i := range f.b.records {
+		if f.b.records[i].Command.Command == commissioner.NativeSeed {
+			f.b.records[i].Command.Args.Native.Players[0].Status = domain.RosterIR
+		}
+	}
+	f.must(t, commissioner.ReserveException, commissioner.RawArgs{Override: &commissioner.RawNativeOverride{
+		Player: samePlayer, Franchise: afcTeam, Bucket: "ir"}}, "commissioner")
+	view, err := commissioner.NativeReserveCheckReading(rolloverLeague, f.b.records, f.now, f.facts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, seat := range view.Franchises {
+		if seat.Franchise != afcTeam && seat.Franchise != nfcTeam {
+			continue
+		}
+		if len(seat.Players) != 1 {
+			t.Fatalf("%s: %+v", seat.Franchise, seat.Players)
+		}
+		got := strings.Contains(seat.Players[0].Words, "commissioner exception")
+		if got != (seat.Franchise == afcTeam) {
+			t.Fatalf("%s: %+v", seat.Franchise, seat.Players[0])
+		}
+	}
+}
+
+func TestPerSidePlayerDecisionExceptionOnlyAffectsNamedCopy(t *testing.T) {
+	f := perSideMarket(t, "preset")
+	scope := &commissioner.ExceptionScope{Franchise: afcTeam, Player: samePlayer}
+	raw := commissioner.RawCommand{League: rolloverLeague, Command: commissioner.RuleException,
+		Args:    commissioner.RawArgs{Correction: &commissioner.RawCorrection{Rule: "ir.eligible", Scope: scope}},
+		Request: "copy.exception", Reason: "Exception", Effective: "now", Visibility: "league"}
+	if err := commissioner.CheckCorrectionAppend(raw, f.b.records, f.now); err != nil {
+		t.Fatal(err)
+	}
+	f.b.add(raw, f.now)
+	for _, franchise := range []string{afcTeam, nfcTeam} {
+		got := commissioner.ScopedDecisionExceptions(f.b.records,
+			commissioner.ExceptionScope{Franchise: franchise, Player: samePlayer}, f.now)
+		if (len(got) == 1) != (franchise == afcTeam) {
+			t.Fatalf("%s: %+v", franchise, got)
+		}
+	}
+}
