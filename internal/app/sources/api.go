@@ -20,14 +20,13 @@ import (
 // Host owns shared state, scheduling and operation serializers, not private reports.
 type Host interface {
 	ServiceHost
-	CrosswalkHost
+	IngestHost
 	SettingsHost
 	ReadingHost
 	CacheHost
 	Ready() error
 	SourcesContext() context.Context
 	RefreshSourcesLeague(context.Context) (int, bool, bool, error)
-	SerializeSourcesLoad(context.Context, func())
 	SerializeSourcesCompile(func() (string, error)) (string, error)
 }
 
@@ -42,6 +41,13 @@ type CrosswalkHost interface {
 	SourcesDirectory(context.Context) (normalize.Lookup, error)
 	SourcesRostered() map[string]string
 	SourcesNames() map[string]string
+}
+
+// IngestHost serializes feed loads and snapshots their resolved player records.
+type IngestHost interface {
+	CrosswalkHost
+	SerializeSourcesLoad(context.Context, func())
+	StoreSourcesRecords(context.Context)
 }
 
 // SettingsHost preserves the shared settings read-modify-write sequence.
@@ -284,6 +290,7 @@ func LoadSignals(ctx context.Context, host Host, held *Held) SignalsReport {
 			_, err := linkDirectory(ctx, host, held)
 			return err
 		})
+		host.StoreSourcesRecords(ctx)
 		held.PublishSignals(rep)
 	})
 	return rep
@@ -313,4 +320,36 @@ func (a *API) TargetCacheClear(scope string) DataActResult {
 	}
 	return DataActResult{OK: true, Summary: "Asked for a fresh copy of " + label +
 		". Each screen shows how fresh what it holds is."}
+}
+
+// RecordIngest writes the player record when a feed that supplies it lands. Open reports
+// whether the history file is open; Write stores the record resolved from the listing and
+// returns how many players it wrote.
+type RecordIngest struct {
+	Open  func() bool
+	Write func(context.Context, normalize.Lookup) (int, error)
+	Log   func(string)
+}
+
+// WriteRecordOnIngest preserves held records on failure; the next ingest retries.
+func WriteRecordOnIngest(ctx context.Context, feed string, listing normalize.Lookup, in RecordIngest) {
+	if !in.Open() {
+		return
+	}
+	n, err := in.Write(ctx, listing)
+	if err != nil {
+		in.Log(fmt.Sprintf("player record not written after %s landed: %v", feed, err))
+		return
+	}
+	in.Log(fmt.Sprintf("player record written after %s landed: %d players", feed, n))
+}
+
+// WriteRecordAfterSignals snapshots the newly ingested facts before notifying readers.
+func WriteRecordAfterSignals(ctx context.Context, listing func(context.Context) (normalize.Lookup, error), in RecordIngest) {
+	lk, err := listing(ctx)
+	if err != nil {
+		in.Log(fmt.Sprintf("player record not written after the signals load: %v", err))
+		return
+	}
+	WriteRecordOnIngest(ctx, "the signals load", lk, in)
 }

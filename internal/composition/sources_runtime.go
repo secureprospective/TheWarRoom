@@ -175,3 +175,5 @@ func (h sourcesHost) SourcesPositions() map[string]string {
 func (h sourcesHost) SerializeSourcesCompile(compile func() (string, error)) (string, error) {
 	return sourcesapp.CompileAvailable(h.FactsMu.TryLock, h.FactsMu.Unlock, compile) //nolint:wrapcheck // Preserve compile errors and the busy result.
 }
+
+func (h sourcesHost) StoreSourcesRecords(ctx context.Context) { h.app.writeRecordAfterSignals(ctx) }

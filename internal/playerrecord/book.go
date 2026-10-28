@@ -3,6 +3,7 @@ package playerrecord
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"slices"
 	"time"
@@ -31,6 +32,9 @@ func (b Book) ID(mfl string) (string, bool) {
 // observation whose link resolves to no one fails the book: dropping it would quietly change
 // the population every player is scaled against.
 func NewBook(records []Record, obs []model.Obs, lastWeek map[int]int, resolve func(mfl string) (string, bool)) (Book, error) {
+	if len(records) == 0 {
+		return Book{}, errors.New("playerrecord: no player has a record yet; MFL's players listing has not been read")
+	}
 	b := Book{Records: make(map[string]Record, len(records)), byMFL: make(map[string]string, len(records))}
 	for _, r := range records {
 		if _, dup := b.byMFL[r.MFL]; dup {

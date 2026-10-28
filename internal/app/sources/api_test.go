@@ -70,7 +70,8 @@ func (h *fakeHost) ClearCache(scope string) (string, bool, error) {
 	h.cleared = append(h.cleared, scope)
 	return "Free agents", true, h.clearErr
 }
-func (h *fakeHost) SourcesContext() context.Context { return context.Background() }
+func (h *fakeHost) StoreSourcesRecords(context.Context) {}
+func (h *fakeHost) SourcesContext() context.Context     { return context.Background() }
 func (h *fakeHost) SourcesInputs() (*history.Store, int, http.RoundTripper, func() (*lab.Data, error)) {
 	return h.hist, 2026, h.transport, lab.Load
 }

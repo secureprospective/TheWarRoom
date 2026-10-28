@@ -71,3 +71,32 @@ func TestDirectoryCachesOnlyNormalizedSuccess(t *testing.T) {
 		t.Fatal(err, held.IDs(), publishes)
 	}
 }
+
+func TestRecordIngestKeepsFailuresVisible(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name                 string
+		open                 bool
+		listingErr, writeErr error
+		writes, logs         int
+	}{
+		{"before startup", false, nil, nil, 0, 0},
+		{"listing failure", true, errors.New("offline"), nil, 0, 1},
+		{"write failure", true, nil, errors.New("disk full"), 1, 1},
+		{"success", true, nil, nil, 1, 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			writes, logs := 0, 0
+			WriteRecordAfterSignals(context.Background(), func(context.Context) (normalize.Lookup, error) {
+				return normalize.Lookup{}, tc.listingErr
+			}, RecordIngest{Open: func() bool { return tc.open },
+				Write: func(context.Context, normalize.Lookup) (int, error) {
+					writes++
+					return 2, tc.writeErr
+				}, Log: func(string) { logs++ }})
+			if writes != tc.writes || logs != tc.logs {
+				t.Fatalf("writes/logs = %d/%d, want %d/%d", writes, logs, tc.writes, tc.logs)
+			}
+		})
+	}
+}

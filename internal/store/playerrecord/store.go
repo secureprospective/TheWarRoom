@@ -34,6 +34,9 @@ func New(pools *db.Pools, features FeatureReader) *Store {
 	return &Store{pools: pools, features: features}
 }
 
+// Available reports whether the history file has opened.
+func (s *Store) Available() bool { return s.pools != nil && s.features != nil }
+
 // Write resolves every player's record from MFL's listing and history's facts as known at asOf,
 // and stores them all in one transaction. A player's MFL link resolves to the permanent ID it
 // already has; a link seen for the first time gets one, once. It returns how many it wrote.

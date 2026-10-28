@@ -33,7 +33,7 @@ func TestEngineRunsWithLoadedInputsAndEmitsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	a.core.Lookup, a.core.HasLookup = lk, true
+	ingestListing(t, a, lk)
 	free, err := playerid.New("0043")
 	if err != nil {
 		t.Fatal(err)
