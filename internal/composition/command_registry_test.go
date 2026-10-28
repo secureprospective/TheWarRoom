@@ -110,7 +110,8 @@ func TestTypedBindingPreservesErrorsAndRejectsTrailingJSON(t *testing.T) {
 }
 
 func TestResearchBindingsStayRetired(t *testing.T) {
-	registry, err := catalog.NewRegistry(newCommandAPIs(NewApp()).registryInputs(NewApp()))
+	app := NewApp()
+	registry, err := catalog.NewRegistry(newCommandAPIs(app).registryInputs(app))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,6 +121,13 @@ func TestResearchBindingsStayRetired(t *testing.T) {
 		"market.TargetAssetProfile", "market.TargetPickClock", "archive.TargetArchive",
 	} {
 		t.Run(id, func(t *testing.T) {
+			for _, entry := range registry.Entries() {
+				for _, door := range entry.Desktop {
+					if door.Feature+"."+door.Command.Method == id {
+						t.Fatal("retired research method remains registered")
+					}
+				}
+			}
 			if _, err := registry.Invoke(t.Context(), catalog.WailsDoor, id, "", json.RawMessage(`[]`)); err == nil {
 				t.Fatal("retired research binding remains executable")
 			}
