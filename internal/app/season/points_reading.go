@@ -11,7 +11,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/race"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -22,7 +21,7 @@ import (
 // shareBar draws value on a shared axis from zero to max, so bars compare down a column.
 func shareBar(value, scale float64, text string) *report.Range {
 	value = math.Max(value, 0)
-	return &report.Range{Interval: lab.Interval{Value: value, Lo: 0, Hi: value}, Max: math.Max(scale, value), Text: text}
+	return &report.Range{Interval: report.Interval{Value: value, Lo: 0, Hi: value}, Max: math.Max(scale, value), Text: text}
 }
 
 func moveText(r PowerRow) string {

@@ -17,7 +17,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 )
 
 // Held is a feed's records as the caller holds them, with their read state.
@@ -276,7 +275,7 @@ func draftValueReport(picks []draftreports.Pick, names map[string]string, values
 				row.Cells[4] = fmt.Sprintf("%s points/game %s the round %d median", distance, direction, p.Round)
 				if expected > 0 {
 					ratio := v / expected
-					row.Range = &report.Range{Interval: lab.Interval{Value: ratio, Lo: ratio, Hi: ratio}, Text: fmt.Sprintf("%s · %.0f%% of same-round expected value", row.Cells[4], ratio*100)}
+					row.Range = &report.Range{Interval: report.Interval{Value: ratio, Lo: ratio, Hi: ratio}, Text: fmt.Sprintf("%s · %.0f%% of same-round expected value", row.Cells[4], ratio*100)}
 				}
 			}
 		}

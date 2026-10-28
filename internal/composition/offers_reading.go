@@ -81,7 +81,7 @@ func offersMarketFacts(facts map[string][]MarketFact) map[string][]report.Market
 				cell.Value = &value
 			}
 			if fact.Range != nil {
-				value := report.Range(*fact.Range)
+				value := report.Range{Max: fact.Range.Max, Interval: report.Interval(fact.Range.Interval), Text: fact.Range.Text}
 				cell.Range = &value
 			}
 			out[id][i] = cell

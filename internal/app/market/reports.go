@@ -24,7 +24,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/marketfeeds"
-	"github.com/secureprospective/TheWarRoom/internal/lab"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/offline"
 )
@@ -164,7 +163,7 @@ func factOn(spec reportSpec, feed HeldFeed, p *marketfeeds.Player, scale float64
 		if spec.kind == marketfeeds.AAV {
 			fact.Text = fmt.Sprintf("$%.1f of a $1,000 league pool · $%.1f–$%.1f", p.Value, p.Low, p.High)
 		}
-		fact.Range = &report.Range{Interval: lab.Interval{Value: p.Value, Lo: p.Low, Hi: p.High}, Max: scale, Text: fact.Text}
+		fact.Range = &report.Range{Interval: report.Interval{Value: p.Value, Lo: p.Low, Hi: p.High}, Max: scale, Text: fact.Text}
 	}
 	return fact
 }

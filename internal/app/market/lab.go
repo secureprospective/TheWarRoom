@@ -88,7 +88,7 @@ func Name(kind string) string { return report.AssetName(kind) }
 func Percent(v float64) string { return report.Percent(v) }
 
 // RangeOf words a ratio's interval as a range; nil stays nil.
-func RangeOf(r *lab.Interval) *report.Range { return report.RangeOf(r) }
+func RangeOf(r *lab.Interval) *report.Range { return report.RangeOf(report.IntervalFromLab(r)) }
 
 // FailedMarket is the reading of a market that could not be read, saying why.
 func FailedMarket(err error) report.Reading[lab.Market] {

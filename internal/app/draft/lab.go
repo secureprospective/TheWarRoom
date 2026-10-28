@@ -97,7 +97,7 @@ func draftCellLine(c lab.DraftCell) report.Line {
 	}
 	line := report.Line{Label: label, Count: c.N, Detail: "Too few picks or less than 0.5 slot wins; not a zero"}
 	if c.Ratio != nil {
-		line.Range = report.RangeOf(&lab.Interval{Value: *c.Ratio, Lo: *c.Lo, Hi: *c.Hi})
+		line.Range = report.RangeOf(&report.Interval{Value: *c.Ratio, Lo: *c.Lo, Hi: *c.Hi})
 		line.Detail = slotTone(c.Tone)
 	}
 	if c.Best {
@@ -175,7 +175,7 @@ func draftBuySection(d *lab.Data, s lab.DraftScopeFilter, p lab.DraftPosition) r
 	buy := lab.DraftBuy(m, p.All, p.Group)
 	section := report.Section{ID: "L-22", Title: "Draft it, or buy it", Note: "Cost per delivered win against the going rate in the same seasons; draft stretches and NFL filters do not narrow the trade market.", Rows: []report.Line{}}
 	for _, r := range buy.Rows {
-		line := report.Line{Key: r.Kind, Label: report.AssetName(r.Kind), Count: r.N, Range: report.RangeOf(r.Cost), Detail: "Historical cost per delivered win"}
+		line := report.Line{Key: r.Kind, Label: report.AssetName(r.Kind), Count: r.N, Range: report.RangeOf(report.IntervalFromLab(r.Cost)), Detail: "Historical cost per delivered win"}
 		if buy.Cheapest != nil && r.Kind == *buy.Cheapest {
 			line.Detail += " · lowest priced age in view (not a beyond-chance claim)"
 		}

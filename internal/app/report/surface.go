@@ -43,8 +43,16 @@ func Assets() []string {
 	return []string{"QB", "RB", "WR", "TE", "PK", "DL", "LB", "DB", "pick1:next", "pick2:next", "pick3:next", "pick1:later", "pick2:later", "pick3:later"}
 }
 
+// IntervalFromLab converts a Lab interval at the report boundary.
+func IntervalFromLab(r *lab.Interval) *Interval {
+	if r == nil {
+		return nil
+	}
+	return &Interval{Value: r.Value, Lo: r.Lo, Hi: r.Hi}
+}
+
 // RangeOf words a ratio's interval; nil remains nil.
-func RangeOf(r *lab.Interval) *Range {
+func RangeOf(r *Interval) *Range {
 	if r == nil {
 		return nil
 	}
