@@ -151,3 +151,9 @@ prompt clears. A standing bid or tie must be decided before close.
 - Do not assign contested lots: outstanding bids/ties require settlement first.
 - Do not overrun even a soft cap or use an exception to bypass the assignment cap check.
 - Do not retain hosted fixture ID/timestamp churn or alter unrelated cutover publication.
+
+## Bee — Terra gate 3, 2026-10-28
+- Baton: review; `session/t-bnd`. Pull unavailable: no upstream. Do not push without direction.
+- Removed seven stale boundary rows and added three approved migration adapter rows. Checker still fails on changed offer/report adapters and six changed sources; no other fingerprints refreshed.
+- Go build and boundary checker tests pass. Vitest: 1,569 pass, one fail; `src/app/commands/controls.test.ts` fails alone on line 13 of `browserParity.test.ts` exceeding 110 characters.
+- Next: review the remaining boundary changes and repair the frontend line-length failure. No GUI verification performed.
