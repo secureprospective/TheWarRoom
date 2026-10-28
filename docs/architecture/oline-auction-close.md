@@ -41,3 +41,20 @@ award retained by close and the owner's public ledger reading. Generated catalog
 checks pass. Handwritten production Go across all 18 affected files grows from 4,497 to 4,873
 physical lines (161,603 → 175,592 code points including LF; 161,613 → 175,602 UTF-8 bytes).
 This is a behavior addition, not a debloat claim; tests, docs and generated files are excluded.
+
+## Player pools per side
+
+Native start reads `players.pools` and the counted conference sides, not a preset name. An OL-bounded
+league receives all 32 NFL unit lots in each pool (blank side only for a one-pool league). Admission
+requires each unit exactly once per side. Older unscoped O-Line seed lots expand on the detached read
+without rewriting the ledger; existing single-pool bytes remain unchanged.
+
+Owner bid readings show only that owner's side's auctions and unbid units; awarded/closed units are
+not offered as fresh lots. The league-wide close reserves and checks each franchise's unit on its
+own side. Its cap check, one-year minimum contract, cut prompt and retry use that franchise's copy;
+one side holding or reserving a unit does not consume the other's. The close command itself remains
+league-wide, so standing bids anywhere must be settled first. No new durable outcome shape is needed.
+
+Table tests: `TestOLinePoolsAndCloseFollowPoolSetting`, `TestOLineCapReservationsAndRetryArePerSide`,
+`TestStartingOLineLotsAreScopedAndCloseHidesThem`; old-seed detachment and single-pool digest tests
+cover compatibility. Tests exercise a recorded roster correction making room, not a GUI cut workflow.
