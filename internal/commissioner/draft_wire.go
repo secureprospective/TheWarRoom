@@ -44,6 +44,9 @@ type RawDraftArgs struct {
 	Running bool                     `json:"running,omitempty"`
 	// Startup names the league's startup draft rather than the season's rookie draft.
 	Startup bool `json:"startup,omitempty"`
+	// Side names which side's startup draft, in a league with a player pool per side: each side drafts its
+	// own copy of the pool. The opening names none: it opens every side's draft.
+	Side string `json:"side,omitempty"`
 }
 
 // RawDraftSelection is one recorded owner pick. Go builds it from the owner's choice of player: the slot
@@ -92,6 +95,9 @@ func (a RawArgs) validateDraft(command string) error {
 		return fmt.Errorf("a startup draft takes its order and start from its settings")
 	}
 	kept.Startup = d.Startup
+	if d.Startup && command != DraftStartupOpen {
+		kept.Side = d.Side
+	}
 	if !reflect.DeepEqual(d, kept) {
 		return fmt.Errorf("send only the details of this draft change")
 	}

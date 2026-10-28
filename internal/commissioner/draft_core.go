@@ -93,8 +93,15 @@ func projectStartupCalendar(clock *leagueclock.ActionCalendar, records []Record,
 	}
 	window := leagueclock.ActionWindow{ID: startupDraftWindow, Opens: []leaguerules.Action{draftPickAction},
 		Start: open.Receipt.RecordedAt.UTC()}
-	if closed, ok := closeRecord(records, key); ok {
-		end := closed.Receipt.RecordedAt.UTC()
+	// The window closes when the last side's startup draft does; with one pool, when the draft does.
+	if startupClosed(records) {
+		var end time.Time
+		for _, k := range startupKeys(records) {
+			closed, _ := closeRecord(records, k)
+			if at := closed.Receipt.RecordedAt.UTC(); at.After(end) {
+				end = at
+			}
+		}
 		window.Close = &end
 	}
 	window.Live = !at.Before(window.Start) && (window.Close == nil || at.Before(*window.Close))

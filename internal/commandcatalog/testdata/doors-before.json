@@ -678,7 +678,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.auto",
-    "Schema": "aa8f7bf15e4a7332fe0944fd0752f15c042becfa96d7493020a28ea6c0b60345",
+    "Schema": "d06b83d40b0c5bccb213a2a04ac479e2b4f17695de38c19f34e99a1c67293a8f",
     "Modes": [
       "preview",
       "execute"
@@ -693,7 +693,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.set",
-    "Schema": "d6fc78ebac4a1e43207f03cefc687cc10c9fcc41274d6545b9672bfcca05306a",
+    "Schema": "d48ffea9bb68faab7a9432f6a34c9737fa055fd013973c637b9aeea4ba830a2f",
     "Modes": [
       "preview",
       "execute"
@@ -708,7 +708,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.pattern",
-    "Schema": "339c45bf178c9eef9017c1711444b59bd8a6b79f680a97cfb9973cf5e33b18c5",
+    "Schema": "ab9db55e5d21df60a0d5f6b33e3b620be72539110588894eb28135d4bd9e5007",
     "Modes": [
       "preview",
       "execute"
@@ -723,7 +723,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.order.tiebreak",
-    "Schema": "d63d71fd269f66c10d31878f9979286d2742e32b07ff7faf64b1576853f74e51",
+    "Schema": "3f2a578abcf9b6231509dd8f01bf1bf6759ac308ebe4ab2f53035ee2e62f5947",
     "Modes": [
       "preview",
       "execute"
@@ -738,7 +738,7 @@
     "Gravity": "G1",
     "Availability": "both",
     "Permission": "command:draft.start",
-    "Schema": "01cf613e56f4fb2617fc862107b76edad9544f3cd7a0615bab8b98910e3ad442",
+    "Schema": "c5cc48205f92092d242e7c0f50b236e8ccdcabe202d5d169790697d6064db5f4",
     "Modes": [
       "preview",
       "execute"
@@ -767,7 +767,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.skip",
-    "Schema": "9da7b2c9af5d5e2b7ccf862ae29d8c7cece5ceebc4abd079169a5bd1819b9b3b",
+    "Schema": "e7842ac75eb2ff72e4b69dba46cf7178a2aaf55c451c099c535dc029fb41b96b",
     "Modes": [
       "preview",
       "execute"
@@ -782,7 +782,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.assign",
-    "Schema": "8172cfb40f179ad1a96154903288722732923b95f1fcaeb07d74c7cfab851ffc",
+    "Schema": "96454064829fa0deab9c02d85cff340da4c82da732cb0cf64d6123e7ebda7f66",
     "Modes": [
       "preview",
       "execute"
@@ -797,7 +797,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.insert",
-    "Schema": "94a8c76923e1c7c072b30c136b6fa913bdbe46ac970fd6026780460c6b7eafc0",
+    "Schema": "39c6e3670b6574d13924b23dc324d858662744802b8ca6026361e127c0d76727",
     "Modes": [
       "preview",
       "execute"
@@ -812,7 +812,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.change",
-    "Schema": "8ea8ffbf9b6e38f78ef5a8ba726decd46c0e6eff5e6dd672ea0fb10aece91578",
+    "Schema": "e37650f954b385fe3bf5c0a0eaea3935732617a5d61cc8363e9232cf48f5225d",
     "Modes": [
       "preview",
       "execute"
@@ -827,7 +827,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.timer",
-    "Schema": "4d9bac885711f6b9340b58a0642dfcbd428b6c8bfd642b264b4f63eb933be074",
+    "Schema": "2c583196cd3426a8defd1dc1369e2a8dda979c595d40feca0b76eff9d696d71a",
     "Modes": [
       "preview",
       "execute"
@@ -842,7 +842,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.revert",
-    "Schema": "049cd8cfc934eb3c094a35f776397463fcfeec1d5cfde7c944c9da45ee7072ab",
+    "Schema": "c2735e9104e6ea5751e75c425b88a6aad9b5368f8d304a85d35d877f2aaf71e9",
     "Modes": [
       "preview",
       "execute"
@@ -857,7 +857,7 @@
     "Gravity": "G2",
     "Availability": "both",
     "Permission": "command:draft.archive",
-    "Schema": "5c5e687a539674185e7f774e8c7a75617c883abf53e33c540dd95098e10cb7d1",
+    "Schema": "ec1491b1651b9c42c3c13246477087266302361175120c300e06365734d39b61",
     "Modes": [
       "preview",
       "execute"
@@ -872,7 +872,7 @@
     "Gravity": "G3",
     "Availability": "both",
     "Permission": "command:draft.startup.open",
-    "Schema": "c5e54cc34fbf10e463506fb548c3684e5c3c8b2abcdec913e5a897459f8f520d",
+    "Schema": "d41a0ad321daae7679b53b1f3cd627835f8372f33d15671815194d4c9b54fe3e",
     "Modes": [
       "preview",
       "execute"

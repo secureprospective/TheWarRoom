@@ -169,7 +169,8 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 		}
 		scope.Season = season
 	}
-	basis, err := readDraft(records, DraftKey{Season: scope.Season, Startup: scope.Startup}, scope.At, standings)
+	basis, err := readDraft(records, pickKey(records, DraftPickInput{Season: scope.Season, Startup: scope.Startup,
+		Franchise: scope.Franchise}), scope.At, standings)
 	if err != nil {
 		return NativeDraft{}, err
 	}

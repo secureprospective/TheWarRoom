@@ -68,13 +68,11 @@ func applyDraftTray(seed *RawNativeSnapshot, record Record) {
 // roster to be undrafted.
 func applyDraftChange(seed *RawNativeSnapshot, record Record) {
 	d := record.Command.Args.Draft
-	for i := range seed.Players {
-		if seed.Players[i].ID == d.Act.Replaces {
-			seed.Players[i].ID = d.Act.Player
-		}
+	if i := seed.PlayerOn(d.Side, d.Act.Replaces); i >= 0 {
+		seed.Players[i].ID = d.Act.Player
 	}
 	for i := range seed.Picks {
-		if seed.Picks[i].Player == d.Act.Replaces {
+		if seed.Picks[i].Player == d.Act.Replaces && seed.SideOf(seed.Picks[i].Owner) == d.Side {
 			seed.Picks[i].Player = d.Act.Player
 		}
 	}

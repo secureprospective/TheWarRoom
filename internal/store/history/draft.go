@@ -143,8 +143,11 @@ func (s *Store) CloseFinishedDrafts(ctx context.Context, league string, facts na
 		if key.Startup {
 			request, kind = fmt.Sprintf("draft-clock.%s.%d.startup.%d", league, key.Season, len(records)), "startup"
 		}
+		if key.Side != "" {
+			request = fmt.Sprintf("draft-clock.%s.%d.startup.%s.%d", league, key.Season, key.Side, len(records))
+		}
 		raw := commissioner.RawCommand{League: league, Command: commissioner.DraftArchive,
-			Args:     commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: key.Season, Startup: key.Startup}},
+			Args:     commissioner.RawArgs{Draft: &commissioner.RawDraftArgs{Season: key.Season, Startup: key.Startup, Side: key.Side}},
 			Expected: int64(len(records)), Request: request, Effective: "now", Visibility: "league"}
 		if _, err := s.ExecuteCommissionerWithFacts(ctx, raw, commissioner.DraftClockPrincipal,
 			clockDraftAuthorizer{}, facts, time.UTC); err != nil {

@@ -46,7 +46,7 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err != nil || id.String() != in.Player {
 		return RawCommand{}, Refused(fmt.Errorf("choose a rookie from this season's player pool"))
 	}
-	key := DraftKey{Season: in.Season, Startup: in.Startup}
+	key := pickKey(records, in)
 	basis, err := readDraft(records, key, at, standings)
 	if err != nil {
 		return RawCommand{}, err
@@ -76,8 +76,18 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	selection := RawDraftSelection{Franchise: in.Franchise, Player: in.Player, EntrySeason: in.Season,
 		Round: clock.Round, Slot: clock.Slot, Original: clock.Original, Terms: preview.Terms}
 	return RawCommand{League: in.League, Command: DraftPick, Expected: in.Expected, Request: in.Request,
-		Args: RawArgs{Draft: &RawDraftArgs{Season: in.Season, Startup: in.Startup, Pick: &selection}}, Effective: "now",
+		Args: RawArgs{Draft: &RawDraftArgs{Season: in.Season, Startup: in.Startup, Side: key.Side, Pick: &selection}}, Effective: "now",
 		Visibility: "league"}, nil
+}
+
+// pickKey is the draft a pick is made in: the season's rookie draft, or the franchise's side's startup draft.
+func pickKey(records []Record, in DraftPickInput) DraftKey {
+	if in.Startup {
+		key := startupKeyOf(records, in.Franchise)
+		key.Season = in.Season
+		return key
+	}
+	return DraftKey{Season: in.Season}
 }
 
 // poolOf is who a draft may take: a startup draft takes any unrostered player, a rookie draft its class.
@@ -103,6 +113,9 @@ func pickBasis(assets NativeAssets, basis draftBasis, in DraftPickInput, facts n
 		return out
 	}
 	for _, p := range assets.Snapshot.Players {
+		if assets.Snapshot.SideOf(p.Franchise) != basis.key.Side {
+			continue
+		}
 		out.Players = append(out.Players, rookiedraft.PlayerContract{ID: p.ID, Franchise: p.Franchise,
 			Salary: p.Salary, Status: p.Status})
 	}

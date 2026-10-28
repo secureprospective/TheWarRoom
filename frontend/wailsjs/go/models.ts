@@ -3609,6 +3609,7 @@ export namespace commissioner {
 	    act?: RawDraftAct;
 	    running?: boolean;
 	    startup?: boolean;
+	    side?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawDraftArgs(source);
@@ -3627,6 +3628,7 @@ export namespace commissioner {
 	        this.act = this.convertValues(source["act"], RawDraftAct);
 	        this.running = source["running"];
 	        this.startup = source["startup"];
+	        this.side = source["side"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

@@ -20,10 +20,8 @@ func TestPlayerLookupsNameASide(t *testing.T) {
 		"market/native_contract_cap.go": 1, // inside one franchise's roster, already filtered by franchise
 		"preview_exceptions.go":         1, // preview words over every franchise's reserve verdicts
 		"preview_affects.go":            1, // which franchise a previewed correction touches
-		"draft_apply.go":                2, // the draft per side (F8c) narrows this to its side
-		"draft_close.go":                1, // the draft per side (F8c) narrows this to its side
 	}
-	lookup := regexp.MustCompile(`(\bp|\bother|\bheld|\bstarter)\.(ID|Player) (==|!=) [A-Za-z_]|\.Players\[[^]]+\]\.ID|` +
+	lookup := regexp.MustCompile(`(\bp|\bother|\bheld|\bstarter)\.(ID|Player) (==|!=) [A-Za-z_]|\.Players\[[^]]+\]\.ID (==|!=)|` +
 		`Player\.ID (==|!=) [A-Za-z_]|\.Player == (a\.|player\b|id\b)`)
 	named := regexp.MustCompile(`Side|Franchise|presetEntry`)
 	found := map[string]int{}

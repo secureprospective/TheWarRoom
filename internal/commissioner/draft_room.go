@@ -72,11 +72,16 @@ func (d *NativeDraft) addRoom(basis draftBasis, records []Record, facts nativech
 		return err
 	}
 	if assets.Seeded {
-		for _, p := range assets.Snapshot.Players {
-			taken[p.ID] = true
+		seed := assets.Snapshot
+		for _, p := range seed.Players {
+			if seed.SideOf(p.Franchise) == basis.key.Side {
+				taken[p.ID] = true
+			}
 		}
-		for _, p := range assets.Snapshot.Pool {
-			taken[p.Player] = true
+		for _, p := range seed.Pool {
+			if p.Side == basis.key.Side {
+				taken[p.Player] = true
+			}
 		}
 	}
 	switch {

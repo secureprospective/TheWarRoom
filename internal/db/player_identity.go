@@ -91,12 +91,14 @@ func LinkPlayerExternalID(ctx context.Context, tx *sql.Tx, provider, value, mfl 
 	return nil
 }
 
-// RosterOwner is the stored ownership key. Empty side is the existing single pool;
-// no conference inference or mirrored-league behavior is performed here.
+// RosterOwner is the stored ownership key. Empty side is the single pool; a league with a
+// player pool per side owns each player once per side. The caller names the side.
 type RosterOwner struct{ MFL, Side, Franchise string }
 
+// ReplaceRosterOwnership replaces every side's ownership of the league in the caller's transaction, so
+// both sides are saved together or not at all.
 func ReplaceRosterOwnership(ctx context.Context, tx *sql.Tx, league string, owners []RosterOwner) error {
-	if _, err := tx.ExecContext(ctx, `DELETE FROM player_ownership WHERE league=? AND side=''`, league); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM player_ownership WHERE league=?`, league); err != nil {
 		return fmt.Errorf("replace roster ownership: %w", err)
 	}
 	for _, owner := range owners {
@@ -135,7 +137,8 @@ func GuardPlayerEvidence(ctx context.Context, tx *sql.Tx) error {
 
 // RosterIdentities is a transaction-consistent reading for a private restore point.
 func RosterIdentities(ctx context.Context, tx *sql.Tx, league string) ([]playerid.RawIdentity, error) {
-	rows, err := tx.QueryContext(ctx, `SELECT o.player,e.provider,e.value FROM player_ownership o JOIN player_external_id e ON e.player=o.player WHERE o.league=? AND o.side='' ORDER BY o.player,e.provider,e.value`, league)
+	// A player owned on two sides is one identity: his links are read once.
+	rows, err := tx.QueryContext(ctx, `SELECT DISTINCT o.player,e.provider,e.value FROM player_ownership o JOIN player_external_id e ON e.player=o.player WHERE o.league=? ORDER BY o.player,e.provider,e.value`, league)
 	if err != nil {
 		return nil, fmt.Errorf("read roster identities: %w", err)
 	}

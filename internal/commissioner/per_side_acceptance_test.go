@@ -11,6 +11,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
@@ -43,10 +44,48 @@ func perSideSeed() *commissioner.RawNativeSnapshot {
 	return native
 }
 
-// perSideMarket is a 16-Team Mirror league seeded with perSideSeed, its market open.
-func perSideMarket(t *testing.T) *marketFixture {
+// reachedBy is how an acceptance league gets its per-side pools: from the 16-Team Mirror preset, or as an
+// empty 16-team league whose commissioner sets every one of the preset's values by hand, each through the
+// store's own rule check.
+func reachedBy() []string { return []string{"preset", "by hand"} }
+
+func mirrorBuilder(t *testing.T, how string) *ledgerBuilder {
 	t.Helper()
-	b := newLedger(t, commissioner.PresetMirror16)
+	if how == "preset" {
+		return newLedger(t, commissioner.PresetMirror16)
+	}
+	create, err := commissioner.RawCommand{League: rolloverLeague, Command: commissioner.Create, Args: commissioner.RawArgs{
+		Name: "Ours", Preset: commissioner.PresetEmpty, Season: 2026, FranchiseCount: 16}, Request: "create",
+		Effective: "now", Visibility: "league"}.Prepared()
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := &ledgerBuilder{t: t}
+	b.add(create, seasonMoment(1))
+	bundle := leaguerules.Mirror16()
+	values, current := leaguerules.ReadSettings(bundle), leaguerules.Current(bundle)
+	for i, field := range leaguerules.Catalogue() {
+		if values[i].State == "Needs a ruling" || field.Path == "league.sides" {
+			continue
+		}
+		raw := commissioner.RawCommand{League: rolloverLeague, Command: commissioner.RulesSet,
+			Request: fmt.Sprintf("hand.%d", i), Args: commissioner.RawArgs{Field: string(field.Path), Value: current[i]},
+			Reason: "Set by hand", Effective: "now", Visibility: "league"}
+		if err := commissioner.CheckRulesAppend(raw, b.records, seasonMoment(1)); err != nil {
+			if strings.Contains(err.Error(), "Nothing would change") {
+				continue
+			}
+			t.Fatalf("by hand %s: %v", field.Path, err)
+		}
+		b.add(raw, seasonMoment(1))
+	}
+	return b
+}
+
+// perSideMarket is a per-side league reached one way or the other, seeded with perSideSeed, its market open.
+func perSideMarket(t *testing.T, how string) *marketFixture {
+	t.Helper()
+	b := mirrorBuilder(t, how)
 	b.add(commissioner.RawCommand{League: rolloverLeague, Command: commissioner.NativeSeed,
 		Args: commissioner.RawArgs{Native: perSideSeed()}, Request: "seed", Effective: "now", Visibility: "league"}, seasonMoment(2))
 	for _, rule := range [][2]string{
@@ -152,7 +191,12 @@ func wantRefusal(t *testing.T, err error, words string) {
 }
 
 func TestPerSidePoolsHoldIndependentPlayerCopies(t *testing.T) {
-	f := perSideMarket(t)
+	for _, how := range reachedBy() {
+		t.Run(how, func(t *testing.T) { perSidePoolsHoldIndependentPlayerCopies(t, perSideMarket(t, how)) })
+	}
+}
+
+func perSidePoolsHoldIndependentPlayerCopies(t *testing.T, f *marketFixture) {
 	seed := f.assets(t)
 	afc, nfc := seed.PlayerOn("AFC", samePlayer), seed.PlayerOn("NFC", samePlayer)
 	if afc < 0 || nfc < 0 || seed.Players[afc].Salary != 100 || seed.Players[nfc].Status != domain.RosterIR {
@@ -167,7 +211,12 @@ func TestPerSidePoolsHoldIndependentPlayerCopies(t *testing.T) {
 }
 
 func TestPerSideMarketsAreIndependent(t *testing.T) {
-	f := perSideMarket(t)
+	for _, how := range reachedBy() {
+		t.Run(how, func(t *testing.T) { perSideMarketsAreIndependent(t, perSideMarket(t, how)) })
+	}
+}
+
+func perSideMarketsAreIndependent(t *testing.T, f *marketFixture) {
 	bid := func(franchise string, salary domain.Money) commissioner.RawArgs {
 		return commissioner.RawArgs{Bid: &commissioner.RawBidArgs{Player: "5001", Franchise: franchise, Salary: salary, Years: 1}}
 	}
@@ -221,7 +270,12 @@ func TestPerSideMarketsAreIndependent(t *testing.T) {
 }
 
 func TestPerSideChangesStayOnTheirSide(t *testing.T) {
-	f := perSideMarket(t)
+	for _, how := range reachedBy() {
+		t.Run(how, func(t *testing.T) { perSideChangesStayOnTheirSide(t, perSideMarket(t, how)) })
+	}
+}
+
+func perSideChangesStayOnTheirSide(t *testing.T, f *marketFixture) {
 	before := sideState(t, f.assets(t), "NFC")
 	correction := func(franchise string) commissioner.RawArgs {
 		return commissioner.RawArgs{Correction: &commissioner.RawCorrection{Player: samePlayer, Franchise: franchise,

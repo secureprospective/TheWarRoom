@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,19 +19,26 @@ import (
 
 // DraftKey names one draft: its season, and whether it is the league's startup draft rather than that
 // season's rookie draft. A rookie draft's records carry no startup flag, so they key as they always did.
+// Side names which side's startup draft in a league with a player pool per side; empty with one pool.
 type DraftKey struct {
 	Season  int
 	Startup bool
+	Side    string `json:",omitempty"`
 }
 
 func rookieDraft(season int) DraftKey { return DraftKey{Season: season} }
 
-func (d *RawDraftArgs) key() DraftKey { return DraftKey{Season: d.Season, Startup: d.Startup} }
+func (d *RawDraftArgs) key() DraftKey {
+	return DraftKey{Season: d.Season, Startup: d.Startup, Side: d.Side}
+}
 
 func (d *RawDraftArgs) noun() string { return d.key().noun() }
 
 // noun is the draft as a sentence names it.
 func (k DraftKey) noun() string {
+	if k.Startup && k.Side != "" {
+		return fmt.Sprintf("%d %s startup draft", k.Season, k.Side)
+	}
 	if k.Startup {
 		return fmt.Sprintf("%d startup draft", k.Season)
 	}
@@ -48,9 +56,34 @@ func startupKey(records []Record) DraftKey {
 	return DraftKey{Season: records[0].Command.Args.Season, Startup: true}
 }
 
-// startupOpened is the open in force for the startup draft.
+// startupKeys are the league's startup drafts: one, or with a player pool per side one for each side.
+func startupKeys(records []Record) []DraftKey {
+	sides, err := snapshotSides(records)
+	if err != nil || len(sides) == 0 {
+		return []DraftKey{startupKey(records)}
+	}
+	keys := []DraftKey{}
+	for _, side := range sideNames(sides) {
+		key := startupKey(records)
+		key.Side = side
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+// startupKeyOf is the startup draft a franchise drafts in: its side's.
+func startupKeyOf(records []Record, franchise string) DraftKey {
+	key := startupKey(records)
+	if sides, err := snapshotSides(records); err == nil {
+		key.Side = sides[franchise]
+	}
+	return key
+}
+
+// startupOpened is the open in force for the startup draft. One opening opens every side's draft.
 func startupOpened(records []Record, key DraftKey) (Record, bool) {
 	active := Replay(records).Active
+	key.Side = ""
 	for _, r := range records {
 		if r.Command.Command == DraftStartupOpen && active[r.Receipt.Entry] && ofDraft(r, key) {
 			return r, true
@@ -87,8 +120,11 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 		basis.words = "The startup draft has not been opened."
 		return basis, nil
 	}
-	franchises := LeagueFranchises(records)
-	draft, err := startupDraftRules(records, open, rules.Draft)
+	franchises, err := draftFranchises(records, key)
+	if err != nil {
+		return basis, err
+	}
+	draft, err := startupDraftRules(records, open, rules.Draft, key)
 	if err != nil {
 		basis.words = draftWords(err)
 		return basis, nil
@@ -112,7 +148,7 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 
 // startupDraftRules are the startup draft's rules: its settings as they stood when it opened, its recorded
 // rounds and first round, and the league's pick clock as it stands.
-func startupDraftRules(records []Record, open Record, now leaguerules.DraftRules) (leaguerules.DraftRules, error) {
+func startupDraftRules(records []Record, open Record, now leaguerules.DraftRules, key DraftKey) (leaguerules.DraftRules, error) {
 	o := open.Command.Args.DraftOutcome
 	if o == nil {
 		return leaguerules.DraftRules{}, errors.New("the startup draft's opening recorded no seed")
@@ -131,12 +167,41 @@ func startupDraftRules(records []Record, open Record, now leaguerules.DraftRules
 		return leaguerules.DraftRules{}, err
 	}
 	s.Rounds = o.Rounds
-	first, err := rookiedraft.StartupFirstRound(s, LeagueFranchises(records), seed)
+	franchises, err := draftFranchises(records, key)
+	if err != nil {
+		return leaguerules.DraftRules{}, err
+	}
+	s.List = slices.DeleteFunc(s.List, func(id string) bool { return !slices.Contains(franchises, id) })
+	first, err := rookiedraft.StartupFirstRound(s, franchises, sideSeed(seed, key.Side))
 	if err != nil {
 		//nolint:wrapcheck // The engine's words are the draft room's: they say what is wrong with the order.
 		return leaguerules.DraftRules{}, err
 	}
 	return rookiedraft.StartupRules(now, s, first), nil
+}
+
+// sideSeed is the side's own draw from the opening's seed, so the sides' first rounds are independent; a
+// league with one pool draws from the seed itself.
+func sideSeed(seed uint64, side string) uint64 {
+	if side == "" {
+		return seed
+	}
+	h := fnv.New64a()
+	_, _ = h.Write([]byte(side))
+	return seed ^ h.Sum64()
+}
+
+// draftFranchises are the franchises a draft orders: the league's, or with a pool per side its side's.
+func draftFranchises(records []Record, key DraftKey) ([]string, error) {
+	ids := LeagueFranchises(records)
+	if key.Side == "" {
+		return ids, nil
+	}
+	sides, err := snapshotSides(records)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(slices.Clone(ids), func(id string) bool { return sides[id] != key.Side }), nil
 }
 
 func startupSeed(hex string) (uint64, error) {
@@ -161,6 +226,9 @@ func checkStartupOpen(raw RawCommand, records []Record, at time.Time) error {
 	case key != startupKey(records):
 		return fmt.Errorf("open the startup draft for the league's first season, %d", startupKey(records).Season)
 	}
+	if err := checkStartupSides(records); err != nil {
+		return err
+	}
 	if _, open := startupOpened(records, key); open {
 		return errors.New("the startup draft has already been opened")
 	}
@@ -169,14 +237,25 @@ func checkStartupOpen(raw RawCommand, records []Record, at time.Time) error {
 	if err := prepareStartupOpen(&trial, records, at); err != nil {
 		return err
 	}
-	basis, err := readStartupDraft(withProposed(trial, records, at), key, at)
-	if err != nil {
-		return err
-	}
-	if basis.words != "" {
-		return errors.New(strings.TrimSuffix(basis.words, "."))
+	for _, key := range startupKeys(records) {
+		basis, err := readStartupDraft(withProposed(trial, records, at), key, at)
+		if err != nil {
+			return err
+		}
+		if basis.words != "" {
+			return errors.New(strings.TrimSuffix(basis.words, "."))
+		}
 	}
 	return nil
+}
+
+// checkStartupSides holds a per-side league's startup drafts to a side for every team, as play begins.
+func checkStartupSides(records []Record) error {
+	sides, err := snapshotSides(records)
+	if err != nil || len(sides) == 0 {
+		return err
+	}
+	return completeSides(sides, LeagueFranchises(records))
 }
 
 // prepareStartupOpen records the seed the random first round is drawn from, unpredictably, and the rounds.
@@ -204,7 +283,7 @@ func startupDraftJob(records []Record, rules leaguerules.RuleSet) (Job, bool) {
 		return Job{}, false
 	}
 	key := startupKey(records)
-	if _, closed := closeRecord(records, key); closed {
+	if startupClosed(records) {
 		return Job{}, false
 	}
 	job := Job{ID: "startup_draft", Name: "Run the startup draft", State: JobLive,
@@ -214,6 +293,21 @@ func startupDraftJob(records []Record, rules leaguerules.RuleSet) (Job, bool) {
 		job.Words = fmt.Sprintf("The %s is under way.", key.noun())
 	}
 	return job, true
+}
+
+// startupClosed says every startup draft of the league has closed.
+func startupClosed(records []Record) bool {
+	for _, key := range startupKeys(records) {
+		if _, closed := closeRecord(records, key); !closed {
+			return false
+		}
+	}
+	return true
+}
+
+// sideNames are the distinct sides, in order.
+func sideNames(sides map[string]string) []string {
+	return RawNativeSnapshot{Sides: sides}.SideNames()
 }
 
 // startupPool is every held player still on no roster and undrafted; an O-Line card is never drafted.

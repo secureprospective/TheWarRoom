@@ -100,7 +100,7 @@ func prepareRookie(raw *RawCommand, records []Record, now time.Time, facts nativ
 // keepsReplaced holds a change to a rookie who is still on the roster that drafted him: once he has left it,
 // his pick can no longer be swapped for another player.
 func (h draftHolds) keepsReplaced(player string) error {
-	if !h.assets.Seeded || !slices.ContainsFunc(h.assets.Snapshot.Players, func(p NativePlayer) bool { return p.ID == player }) {
+	if !h.assets.Seeded || !h.assets.Snapshot.OnSide(h.basis.key.Side, player) {
 		return fmt.Errorf("this rookie is no longer on the roster that drafted him, so his pick cannot be changed")
 	}
 	return nil
