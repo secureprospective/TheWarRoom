@@ -35,7 +35,7 @@ func New(host Host, held *Held) *API { return &API{host: host, held: held} }
 const assetTimeout = 120 * time.Second
 
 // TargetAssetBoard reads C-01 from held state: the weekly scores (from their archived copies when
-// no refresh has run this launch) and, once compiled, the Lab's value model. Every rostered player
+// no refresh has run this launch) and, once a model run is read, the native value model. Every rostered player
 // has a row, scored or not. It never fetches.
 func (a *API) TargetAssetBoard() (AssetBoard, error) {
 	if err := a.host.Ready(); err != nil {

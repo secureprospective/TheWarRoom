@@ -60,7 +60,7 @@ func (a *App) compileFactsInBackground() {
 			_, ok, err := a.core.History.LatestManifest(ctx, labFrozenInputs)
 			return ok, err //nolint:wrapcheck // Startup compilation silently skips failed manifest reads as before.
 		}, func(ctx context.Context) error { _, _, err := a.publishLabManifest(ctx); return err },
-			func(ctx context.Context) error { _, err := a.compileFacts(ctx); return err }, a.warmArchive, a.fitAssetModel, func(text string) { log.Print(text) })
+			func(ctx context.Context) error { _, err := a.compileFacts(ctx); return err }, a.warmArchive, func(text string) { log.Print(text) })
 	})
 }
 

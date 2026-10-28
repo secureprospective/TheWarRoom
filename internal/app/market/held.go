@@ -14,7 +14,7 @@ import (
 // none before the first read) and its read state.
 type Feeds = map[string]season.Feed[[]marketfeeds.Feed]
 
-// Held owns Market's private published data: the held market reports and the Lab's value model.
+// Held owns Market's private published data: the held market reports and the native value model.
 // Root refresh writers and readers retain SeasonMu around each feed publication and capture, as
 // they did when the reports lived in shared state; the model needs no outer lock.
 type Held struct {
@@ -46,7 +46,7 @@ func (h *Held) SnapshotFeeds() Feeds {
 	return out
 }
 
-// PublishModel holds the Lab's fitted value model. The fitted model is immutable and its public
+// PublishModel holds the native value model. The fitted model is immutable and its public
 // API exposes no mutation, so the same value is shared rather than copied.
 func (h *Held) PublishModel(model Model) {
 	h.mu.Lock()
@@ -54,7 +54,7 @@ func (h *Held) PublishModel(model Model) {
 	h.model = model
 }
 
-// SnapshotModel returns the held value model; nil until the Lab compiles.
+// SnapshotModel returns the held value model; nil until a model run is read.
 func (h *Held) SnapshotModel() Model {
 	h.mu.Lock()
 	defer h.mu.Unlock()

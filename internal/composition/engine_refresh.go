@@ -44,6 +44,7 @@ func (a *App) checkEngine(ctx context.Context) {
 }
 
 func (a *App) engineFinished(ctx context.Context, started time.Time, rep modelrun.Report) {
+	a.publishAssetModel(ctx)
 	scoringapp.EngineFinished(ctx, started, rep, time.Since, a.core.SeasonChanged, func(message string) { log.Print(message) })
 }
 

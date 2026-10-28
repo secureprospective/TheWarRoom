@@ -148,13 +148,13 @@
    },
    "dynasty": {
     "text": "Not valued",
-    "sub": "The player has no known position or birth date",
+    "sub": "Not in this season's model run",
     "detail": "",
     "held": false
    },
    "market": {
     "text": "Not valued",
-    "sub": "The player has no known position or birth date",
+    "sub": "Not in this season's model run",
     "detail": "",
     "held": false
    },
@@ -170,19 +170,19 @@
     "held": true
    },
    "dynasty": {
-    "text": "2.31 wins",
-    "sub": "next 5 seasons",
-    "detail": "Running back, 24 or younger · this season's unplayed weeks and the 4 after, later ones discounted",
+    "text": "12.31 PPG",
+    "sub": "dynasty · next 3 seasons",
+    "detail": "Native value · expected league points per game this season and the 2 after, later ones discounted",
     "held": true
    },
    "market": {
-    "text": "3.10",
-    "sub": "win-equivalents · 95% 2.40 to 3.90",
-    "detail": "1.00 is the price of one expected win from a next-draft first-round pick",
-    "held": true
+    "text": "No price",
+    "sub": "trades are not priced",
+    "detail": "",
+    "held": false
    },
    "nowValue": 32.25,
-   "dynastyValue": 2.314
+   "dynastyValue": 12.314
   },
   {
    "id": "99999",
@@ -193,22 +193,22 @@
     "held": false
    },
    "dynasty": {
-    "text": "0.05 wins",
-    "sub": "next 5 seasons",
-    "detail": "Kicker, 28 or older · this season's unplayed weeks and the 4 after, later ones discounted",
+    "text": "0.05 PPG",
+    "sub": "dynasty · next 3 seasons",
+    "detail": "Native value · expected league points per game this season and the 2 after, later ones discounted",
     "held": true
    },
    "market": {
-    "text": "−0.03",
-    "sub": "win-equivalents",
-    "detail": "1.00 is the price of one expected win from a next-draft first-round pick. Below zero: in trades the league has valued this kind of player at less than the roster spot he takes",
-    "held": true
+    "text": "No price",
+    "sub": "trades are not priced",
+    "detail": "",
+    "held": false
    },
    "nowValue": 0,
    "dynastyValue": 0.05
   }
  ],
  "nowSource": "Source: MFL fantasy points, this league's scoring · 4 of 4 finished weeks held · as of Oct 11, 2026, 12:00 PM",
- "dynastySource": "Source: the Lab's value model, compiled from the checked league facts",
- "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. Values only; this app moves nothing."
+ "dynastySource": "Source: the native value model's latest run, and Pick Value v1 for picks",
+ "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the native value model's: his expected league points per game over this season and the ones after, later seasons discounted, from his record (draft capital, age, college, combine) and his seasons. A pick is valued in the same units by Pick Value v1: what the players typically taken at its slot are worth. Trades are not priced. Values only; this app moves nothing."
 }

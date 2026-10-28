@@ -175,10 +175,9 @@ func TestAssetBoardReadsHeldModelWithBound(t *testing.T) {
 	if _, ok := host.inputCtx.Deadline(); !ok {
 		t.Fatal("asset read has no deadline")
 	}
-	price := 3.1
-	held.PublishModel(fakeModel{"0042": {Valued: true, Discounted: 2.3, Seasons: 5, ClassLabel: "Linebacker", Price: &price}})
+	held.PublishModel(fakeModel{"0042": {Valued: true, Discounted: 2.3, Seasons: 5, ClassLabel: "Native value"}})
 	after, err := a.TargetAssetBoard()
-	if err != nil || !after.Values[0].Dynasty.Held || !after.Values[0].Market.Held {
+	if err != nil || !after.Values[0].Dynasty.Held || after.Values[0].Market.Held {
 		t.Fatal("held model not read", after, err)
 	}
 	if want := []string{"ready", "context", "assets"}; !reflect.DeepEqual(host.calls[:3], want) {

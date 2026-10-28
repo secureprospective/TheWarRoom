@@ -6,8 +6,8 @@ const wire = {
   values: [{ id: '16162',
     now: { text: '18.40 PPG', sub: 'WR 3/120 · top 3%', detail: '73.60 points in 4 scored weeks',
       held: true },
-    dynasty: { text: 'Not valued yet', sub: 'Lab model not compiled', detail: '', held: false },
-    market: { text: 'Not valued yet', sub: 'Lab model not compiled', detail: '', held: false },
+    dynasty: { text: 'Not valued yet', sub: 'no model run read yet', detail: '', held: false },
+    market: { text: 'Not valued yet', sub: 'no model run read yet', detail: '', held: false },
     nowValue: 18.4, dynastyValue: 0 }],
   nowSource: 'Source: MFL fantasy points', dynastySource: 'Source: the Lab', how: 'Counted.',
 };

@@ -10,13 +10,13 @@
    },
    "dynasty": {
     "text": "Not valued yet",
-    "sub": "Lab model not compiled",
+    "sub": "no model run read yet",
     "detail": "",
     "held": false
    },
    "market": {
     "text": "Not valued yet",
-    "sub": "Lab model not compiled",
+    "sub": "no model run read yet",
     "detail": "",
     "held": false
    },
@@ -25,6 +25,6 @@
   }
  ],
  "nowSource": "Source: MFL fantasy points, this league's scoring · no finished week held yet",
- "dynastySource": "Source: the Lab's value model · not compiled yet",
- "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the Lab's forecast of the wins he adds over five seasons (this season's unplayed weeks and the four after), later seasons discounted; market is what the league has paid for that in trades, in win-equivalents (1.00 is the price of one expected win from a next-draft first-round pick), with the market's 95% range. Each player in a trade also costs a roster spot, so filler can price below zero. Values only; this app moves nothing."
+ "dynastySource": "Source: the native value model · no model run read yet",
+ "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the native value model's: his expected league points per game over this season and the ones after, later seasons discounted, from his record (draft capital, age, college, combine) and his seasons. A pick is valued in the same units by Pick Value v1: what the players typically taken at its slot are worth. Trades are not priced. Values only; this app moves nothing."
 }

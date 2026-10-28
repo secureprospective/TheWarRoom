@@ -553,7 +553,7 @@ func (landingPickModel) Pick(year, round int, orig string, at time.Time) dynasty
 	if year != 2027 || round != 1 || orig != "0001" || at.IsZero() {
 		return dynastyValue{}
 	}
-	return dynastyValue{Valued: true, Discounted: 0.78, Seasons: 5}
+	return dynastyValue{Valued: true, Discounted: 6.78, Seasons: 3}
 }
 
 func TestTradeBuilderLandingPickValue(t *testing.T) {
@@ -561,7 +561,7 @@ func TestTradeBuilderLandingPickValue(t *testing.T) {
 	a, _ := realTradeBuilderApp(t)
 	a.marketHeld.PublishModel(landingPickModel{})
 	got := a.builderPickValue(2027, 1, "0001", time.Now())
-	if !got.Held || got.Text != "0.78 wins" {
+	if !got.Held || got.Text != "6.78 PPG" {
 		t.Fatal(got)
 	}
 }
