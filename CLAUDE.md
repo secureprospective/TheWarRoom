@@ -118,6 +118,12 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
 - **SL-019 is not applied at DT;** the Cushion Guard replaces it. Running both double-protects.
 - **A lost source never stops the board (R11).** It runs on the measures still flowing,
   labelled as reduced; a rebalance applies only when Christopher approves it.
+- **The app houses the settings (10-27, Christopher).** A league is the values of its settings; the
+  engine honours every setting for any league. A preset is a quick named bundle of suggested values
+  applied at creation, nothing more: it never limits a value, never unlocks or forbids another setting,
+  and no code asks which preset a league came from. Each setting stands alone; changing one never forces
+  another. Every setting changes through the one rule-change flow. The only refusals are what the
+  engine truly cannot run, said in plain words. Be accommodating, not restrictive.
 - **Do not reopen locked decisions** or add features the documents don't call for. If a locked
   decision creates a constraint that feels wrong, flag it to Christopher.
 
