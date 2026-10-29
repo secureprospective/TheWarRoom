@@ -763,6 +763,7 @@ it('groups a team filter under the chosen team without offering another team wha
   expect(test.element.textContent).toContain('Selected team · Other (1)');
   expect(test.element.textContent).toContain('Rest of the league (0)');
   expect(test.element.textContent).not.toContain('My team · Mine');
-  const group = nodes(test.root, 'SECTION').find(n => n.getAttribute('aria-label') === 'Selected team · Other (1)')!;
+  const group = nodes(test.root, 'SECTION')
+    .find(n => n.getAttribute('aria-label') === 'Selected team · Other (1)')!;
   expect(group.textContent).not.toContain('What-if');
 });

@@ -120,6 +120,7 @@ describe('Personal live game view', () => {
     expect(state.peek().error).toContain('all sources down');
     expect(() => state.follow('../evil')).toThrow('invalid id');
     const html = render(view()); expect(html).toContain('aria-label="Follow DET at ARI"');
-    expect(html.indexOf('aria-label="Followed game"')).toBeLessThan(html.indexOf('aria-label="Follow an NFL game"'));
+    expect(html.indexOf('aria-label="Followed game"'))
+      .toBeLessThan(html.indexOf('aria-label="Follow an NFL game"'));
   });
 });
