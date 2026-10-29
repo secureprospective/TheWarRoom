@@ -139,6 +139,16 @@ export function createCommands(
     if (forget) return mflKey.read().state === 'connected' ? undefined : 'Not connected';
     return mflField.empty() ? 'Paste your API key in Control Room › App' : undefined;
   }
+  function selectLinkedFranchise(id: string) {
+    if (!snapshot || !validFranchise(snapshot, id)) return;
+    persistFranchise(id, storage());
+    if (state.read().franchiseId === id) return;
+    void prefetchHQ().catch(hqFailure);
+    lineups.refresh(id);
+    trades.refresh(id);
+    alerts.refresh(id);
+    state.write({ franchiseId: id, scrollRevision: state.read().scrollRevision + 1 });
+  }
   async function requestMFL(operation: () => Promise<MFLKeyStatus>, activity: string) {
     if (mflKey.read().pending) return;
     const before = mflKey.read();
@@ -148,6 +158,7 @@ export function createCommands(
       if (before.state === 'connected' && ['rejected', 'unreachable'].includes(status.state)) {
         status.detail = `${status.detail ?? ''} · Previously stored key is unchanged`;
       }
+      if (status.myFranchise) selectLinkedFranchise(status.myFranchise);
       mflKey.write({ ...status, pending: false });
     } catch (cause) {
       mflKey.write({
@@ -622,6 +633,8 @@ export function createCommands(
     if (mine === undefined) return undefined;
     const status = mflKey.read();
     if (mine && mine === status.myFranchise) return undefined;
+    if (status.myFranchise) return 'Switch the franchise view to the team linked to your MFL login. ' +
+      'If it is wrong, reconnect the correct MFL account.';
     return status.teamActionRefusal || 'Checking MFL…';
   }
   type Receipt = { id: Id; args: Readonly<Args<Id>>; status: 'done' | 'failed'; reason?: string };
@@ -711,7 +724,9 @@ export function createCommands(
     loadSnapshot: (value: Snapshot) => {
       snapshot = value;
       prefetchMoves();
-      const franchiseId = loadFranchise(value, storage());
+      const linked = mflKey.read().myFranchise;
+      const franchiseId = linked ? validFranchise(value, linked) : loadFranchise(value, storage());
+      if (linked && franchiseId) persistFranchise(franchiseId, storage());
       if (franchiseId) {
         void prefetchHQ().catch(hqFailure);
         lineups.refresh(franchiseId);

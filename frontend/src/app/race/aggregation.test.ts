@@ -41,7 +41,7 @@ it('starts with Starting lineup and re-reads the power board for each roster cou
     await act(async () => { root.render(createElement(Race)); });
     expect(select()).toBeDefined();
     expect(select().options.map(option => option.textContent))
-      .toEqual(['Whole roster', 'Starting lineup', 'Top N']);
+      .toEqual(['Whole roster', 'Starting lineup', 'Best 21 (any position)']);
     expect(props(select()).value).toBe('lineup');
     expect(TargetRace.mock.calls[0]).toEqual([0, '', '', 'lineup']);
     const refreshes = TargetRaceRefresh.mock.calls.length;

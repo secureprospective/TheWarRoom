@@ -32,6 +32,7 @@ type RaceBoard struct {
 	Weeks     []report.Choice `json:"weeks"`
 	Team      string          `json:"team"`
 	Teams     []report.Choice `json:"teams"`
+	StarterN  int             `json:"starterN"`
 }
 
 func (a *API) TargetRace(week int, team, mine, aggMode string) (RaceBoard, error) {
@@ -74,6 +75,7 @@ type Board struct {
 	Weeks     []report.Choice `json:"weeks"`
 	Team      string          `json:"team"`
 	Teams     []report.Choice `json:"teams"`
+	StarterN  int             `json:"starterN"`
 }
 
 func Build(in season.Snapshot) (Board, error) {
@@ -81,7 +83,8 @@ func Build(in season.Snapshot) (Board, error) {
 	if err != nil {
 		return Board{}, err //nolint:wrapcheck // preserve the shared view validation text
 	}
-	board := Board{Standings: v.Standings(), Week: v.Week, Team: v.Team,
+	starterN := in.Held.Power[season.PowerKey(season.ViewSeason, m2service.AggTopN)].StarterN
+	board := Board{Standings: v.Standings(), Week: v.Week, Team: v.Team, StarterN: starterN,
 		Weeks: v.WeekChoices(), Teams: v.TeamChoices(),
 		Board: report.Board{Title: "League race reports", Loading: "Reading the league race…",
 			Refresh: "Refresh from MFL", HowLabel: "How this is counted", Reports: []report.Report{}}}

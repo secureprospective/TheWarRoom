@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 type fakeHost struct {
@@ -41,7 +42,8 @@ func repoPath(parts ...string) string {
 func TestRaceWireMatchesGo(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
-	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower()}
+	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower(),
+		season.PowerKey(season.ViewSeason, m2service.AggTopN): {StarterN: 21}}
 	board, err := New(&fakeHost{input: in}, &Held{}).TargetRace(in.Week, in.Team, in.Mine, "")
 	if err != nil {
 		t.Fatal(err)
@@ -145,12 +147,38 @@ func TestRaceWireGoldens(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want, err := os.ReadFile(repoPath("testdata", "wire", "race", name+".json"))
+		path := repoPath("testdata", "wire", "race", name+".json")
+		if os.Getenv("TWR_WRITE_WIRE") == "1" {
+			if err := os.WriteFile(path, append(got, '\n'), 0o644); err != nil { //nolint:gosec // committed fixture
+				t.Fatal(err)
+			}
+			continue
+		}
+		want, err := os.ReadFile(path)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if string(want) != string(append(got, '\n')) {
 			t.Fatal(name, "wire golden changed")
 		}
+	}
+}
+
+func TestRaceStarterCountAcrossModes(t *testing.T) {
+	in := realRace(t, "2026")
+	in.Held.Power = map[string]season.PowerRankingsResult{
+		season.PowerKey(season.ViewSeason, m2service.AggTopN): {StarterN: 21},
+	}
+	api := New(&fakeHost{input: in}, &Held{})
+	for _, mode := range []string{"", "sum", "lineup", "topn"} {
+		board, err := api.TargetRace(0, "", "", mode)
+		if err != nil || board.StarterN != 21 {
+			t.Fatalf("mode %q: count %d, error %v", mode, board.StarterN, err)
+		}
+	}
+	delete(in.Held.Power, season.PowerKey(season.ViewSeason, m2service.AggTopN))
+	board, err := api.TargetRace(0, "", "", "lineup")
+	if err != nil || board.StarterN != 0 {
+		t.Fatalf("unknown: count %d, error %v", board.StarterN, err)
 	}
 }

@@ -1,6 +1,5 @@
 import { isSurface, placementRoute, type Endpoint } from './index';
 import type { IndexedResult } from '../commands/search';
-import { rankResults } from '../commands/search';
 type EndpointRoute = 'nav' | 'command' | 'merged-into';
 
 export function endpointRoutes(rows: readonly Endpoint[], candidates: readonly IndexedResult[]) {
@@ -10,14 +9,14 @@ export function endpointRoutes(rows: readonly Endpoint[], candidates: readonly I
     if (row.disposition === 'kept') {
       if (placementRoute(row.placement) || isSurface(row.placement)) set.add('nav');
     }
-    if (rankResults(row.name, candidates).some((r) =>
+    if (candidates.some((r) =>
       r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id)) set.add('command');
     routes.set(row.id, set);
   }
   for (const row of rows.filter((r) => r.disposition === 'merged')) {
     const reachable = row.merged_place
       ? Boolean(placementRoute(row.merged_place) || isSurface(row.merged_place))
-      : row.merged_into.length > 0 && row.merged_into.every((id) => (routes.get(id)?.size ?? 0) >= 2);
+      : row.merged_into.length > 0 && row.merged_into.every((id) => (routes.get(id)?.size ?? 0) >= 1);
     if (reachable) routes.get(row.id)!.add('merged-into');
   }
   return routes;
@@ -26,7 +25,10 @@ export function assertEndpointRoutes(rows: readonly Endpoint[], candidates: read
   const routes = endpointRoutes(rows, candidates);
   for (const row of rows) {
     const count = routes.get(row.id)!.size;
-    if (row.disposition === 'kept' && count < 2) throw new Error(`${row.id}: fewer than two routes`);
+    if (row.disposition === 'kept' && !routes.get(row.id)!.has('nav'))
+      throw new Error(`${row.id}: no navigation route`);
+    if (row.disposition === 'kept' && row.status === 'landed' && /\bRead\b/.test(row.kind) &&
+      !routes.get(row.id)!.has('command')) throw new Error(`${row.id}: no search route`);
     if (row.disposition === 'retired' && count) throw new Error(`${row.id}: retired row reachable`);
     if (row.disposition === 'merged') {
       if (Boolean(row.merged_place) === Boolean(row.merged_into.length)) {

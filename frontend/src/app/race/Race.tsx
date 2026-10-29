@@ -23,7 +23,7 @@ export function RaceView({ race, selected, aggMode = 'lineup' }: {
           onChange={e => dispatch('race.reports', { action: 'aggMode', value: e.target.value })}>
           <option value="sum">Whole roster</option>
           <option value="lineup">Starting lineup</option>
-          <option value="topn">Top N</option>
+          <option value="topn">Best {race.starterN || 'starters'} (any position)</option>
         </select>
       </label>}
       {weekReports.includes(shown.id) && <label>Week{' '}

@@ -360,12 +360,14 @@ it('withdraw does not leave a duplicate pool notice', async () => {
   expect(state.peek().notice).toBe('');
 });
 
-it('Inspector card link and plan-a-bid both navigate to the pool work column', () => {
+it('Inspector card link and plan-a-bid both navigate to the pool work column', async () => {
   for (const field of ['pool-open', 'pool-plan'] as const) {
     const c = createCommands(() => undefined);
     c.dispatch('nav.open', { node: 'hq', workspace: 'my-moves' });
     c.dispatch('market', { field, value: 'bid-1' });
     expect(c.read()).toMatchObject({ node: 'war', workspace: { war: 'valuations-and-pool' } });
+    // With no franchise the market command fails later; let its log land before teardown.
+    await tick();
   }
 });
 

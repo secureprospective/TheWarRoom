@@ -18,7 +18,10 @@ describe('League Pulse › Race', () => {
     expect(markup).toContain('<label>Roster count');
     expect(markup).toContain('<option value="lineup" selected="">Starting lineup</option>');
     expect(markup).toContain('Whole roster');
-    expect(markup).toContain('Top N');
+    expect(markup).toContain('Best 21 (any position)');
+    const unknown = parseRace({ ...wire.race, starterN: 0 });
+    expect(html(createElement(RaceView, { race: unknown, selected: [id] })))
+      .toContain('Best starters (any position)');
   });
   it.each(wire.race.board.reports.map(r => [r.id]))('%s opens below the standings and its buttons', id => {
     const markup = view(id);
@@ -63,6 +66,7 @@ describe('League Pulse › Race', () => {
       change(copy);
       return () => parseRace(copy);
     };
+    expect(bad(r => { r.starterN = -1; })).toThrow('starterN');
     expect(bad(r => { r.week = 9; })).toThrow('week outside');
     expect(bad(r => { r.team = '0099'; })).toThrow('team outside');
     expect(bad(r => { r.standings.id = 'M-011'; })).toThrow('M-002');

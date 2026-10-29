@@ -12352,6 +12352,7 @@ export namespace race {
 	    weeks: report.Choice[];
 	    team: string;
 	    teams: report.Choice[];
+	    starterN: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new RaceBoard(source);
@@ -12365,6 +12366,7 @@ export namespace race {
 	        this.weeks = this.convertValues(source["weeks"], report.Choice);
 	        this.team = source["team"];
 	        this.teams = this.convertValues(source["teams"], report.Choice);
+	        this.starterN = source["starterN"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

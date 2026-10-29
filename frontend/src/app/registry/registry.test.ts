@@ -168,7 +168,7 @@ describe('Endpoint map', () => {
     for (const row of endpoints) {
       expect([...routes.get(row.id)!]).toEqual(
         row.disposition === 'kept'
-          ? ['nav', 'command']
+          ? (row.status === 'landed' && /\bRead\b/.test(row.kind) ? ['nav', 'command'] : ['nav'])
           : row.disposition === 'merged'
             ? ['merged-into']
             : [],
@@ -218,7 +218,7 @@ describe('Endpoint map', () => {
     const mutate = (id: EndpointId, patch: Partial<Endpoint>) =>
       endpoints.map((r) => (r.id === id ? ({ ...r, ...patch } as Endpoint) : r));
     expect(() => assertEndpointRoutes(mutate('M-001', { placement: '' }), candidates)).toThrow(
-      'M-001: fewer than two routes',
+      'M-001: no navigation route',
     );
     expect(() =>
       assertEndpointRoutes(mutate('M-150', { merged_into: ['M-006'] }), candidates),
@@ -239,20 +239,20 @@ describe('Endpoint map', () => {
 });
 
 describe('Endpoint verbs and search', () => {
-  it('offers all kept endpoints by their own name and never offers retired or merged rows', () => {
-    const offered = candidates.filter((r) => r.kind === 'endpoint');
-    expect(offered).toHaveLength(endpoints.filter(e => e.disposition === 'kept').length);
-    for (const row of endpoints) {
-      const match = rankResults(row.name, candidates).find(
-        (r) => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === row.id,
-      );
-      expect(Boolean(match)).toBe(row.disposition === 'kept');
-    }
-    const result = rankResults('M-033', candidates)[0];
-    expect(result.label).toContain('M-033 · Trades O=05 · Trade Floor › Trade desk');
+  it('offers landed reports by plain name, not internal or dormant entries', () => {
+    const offered = candidates.filter(r => r.kind === 'endpoint');
+    const visible = endpoints.filter(e =>
+      e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind));
+    expect(offered).toHaveLength(visible.length);
+    expect(offered.every(r => !/\b(?:[A-Z]+-\d|O=\w)/.test(r.label))).toBe(true);
+    for (const id of ['S-14', 'C-06.1'])
+      expect(offered.some(r =>
+        r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
+    const result = offered.find(r =>
+      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-054')!;
+    expect(result.label).not.toContain('O=');
     runResult(executor, result);
-    expect(executor.read().node).toBe('trade');
-    expect(executor.read().endpointIds).toEqual(['M-033']);
+    expect(executor.read().endpointIds).toEqual(['M-054']);
   });
   it('ranks endpoints after equally matching places and before players', () => {
     const result = rankResults('same', [
