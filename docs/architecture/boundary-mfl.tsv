@@ -12,10 +12,10 @@ fence	internal/ingestion/salaryadjustments	-
 fence	internal/ingestion/transactions	-
 fence	internal/ingestion/weeklyresults	-
 fence	internal/leaguemigration/mflsource	-
+fence	internal/leaguemigration/migrationtest	-
 fence	internal/mfl	-
 fence	internal/mflkey	-
 seam	internal/composition	-
-seam	internal/leaguemigration	-
 # slice 2b/3
 debt	internal/app/commissioner/native	internal/ingestion/draftreports
 # slice 2b/3
@@ -71,8 +71,6 @@ debt	internal/app/race	internal/ingestion/leagueschedule
 # slice 2b/3
 debt	internal/app/race	internal/ingestion/leaguestandings
 # slice 2b/3
-debt	internal/app/research	internal/ingestion/league
-# slice 2b/3
 debt	internal/app/scoring	internal/ingestion/leagueschedule
 # slice 2b/3
 debt	internal/app/scoring	internal/ingestion/leaguestandings
@@ -106,10 +104,6 @@ debt	internal/ingestion/playerscores	internal/mfl
 debt	internal/ingestion/researchfeeds	internal/mfl
 # slice 2b/3
 debt	internal/ingestion/sitenews	internal/mfl
-# slice 2b/3
-debt	internal/leaguemigration/migrationtest	internal/ingestion/draftreports
-# slice 2b/3
-debt	internal/leaguemigration/migrationtest	internal/ingestion/league
 # slice 2b/3
 debt	internal/lineup	internal/ingestion/league
 # slice 2b/3

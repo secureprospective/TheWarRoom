@@ -37,15 +37,15 @@ func AppLeagueID(mflLeague string, season int) string {
 	return fmt.Sprintf("native.mfl-%s-%d", strings.TrimSpace(mflLeague), season)
 }
 
-func (s *Service) read(ctx context.Context, mflLeague string) (Export, error) {
+func (s *Service) read(ctx context.Context, mflLeague string) (Candidate, error) {
 	if strings.TrimSpace(mflLeague) == "" {
-		return Export{}, fmt.Errorf("name the MFL league to move, by its MFL league number")
+		return Candidate{}, fmt.Errorf("name the MFL league to move, by its MFL league number")
 	}
 	src, err := s.Source(mflLeague)
 	if err != nil {
-		return Export{}, &ReadError{"league", err}
+		return Candidate{}, &ReadError{"league", err}
 	}
-	return Read(ctx, src, s.Now())
+	return src.Read(ctx, s.Now()) //nolint:wrapcheck // Preserve the source read refusal verbatim.
 }
 
 // Preparation is what an import would land, in plain words; nothing is recorded by preparing.
@@ -70,7 +70,7 @@ func (s *Service) Prepare(ctx context.Context, mflLeague string) (Preparation, e
 	}
 	out := Preparation{League: AppLeagueID(mflLeague, export.Season), Name: export.Name, Season: export.Season,
 		Notes: []string{}, Problems: []string{}}
-	plan, err := Prepare(export)
+	plan, err := export.prepared()
 	if problems, ok := AsProblems(err); ok {
 		out.Problems = problems
 		return out, nil
@@ -93,7 +93,7 @@ func (s *Service) Import(ctx context.Context, mflLeague, reason, principal strin
 	if err != nil {
 		return nil, err
 	}
-	plan, err := Prepare(export)
+	plan, err := export.prepared()
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (s *Service) Review(ctx context.Context, req Request) (Review, error) {
 	if err != nil {
 		return Review{}, err
 	}
-	plan, err := Prepare(export)
+	plan, err := export.prepared()
 	if err != nil {
 		return Review{}, err
 	}

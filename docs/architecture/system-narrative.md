@@ -1083,3 +1083,21 @@ writes; reconnect reads do not replay changes. Only an explicit checked confirma
 record a server change. The MFL mirror remains separate from the native event ledger: a mirror
 replacement cannot replace recorded native assets or cap. The fixture boundary tests and
 Christopher’s separate Block E acceptance walk are listed in `tools/twr-practice/README.md`.
+
+
+### Read-only MFL import port
+
+`leaguemigration.Source.Read` returns a native-owned `Candidate`: source metadata, held-ID
+owners, a native `Plan`, and actionable preparation problems. `mflsource` owns the whole raw
+read and MFL settings/roster translation. Read failures return no candidate; malformed reads
+retain metadata/problems but no plan. `Service` reads afresh for prepare, import, review and
+invitations; invitations can still use owners when the current source cannot prepare a plan.
+Only the native service invokes the atomic destination ledger batch. Source league identity,
+held franchise/player IDs, read timestamps and refusal wording are unchanged.
+
+`boundary-mfl.tsv` no longer exempts the destination package. It fences the MFL adapter and
+its MFL-only `migrationtest` fixture reader/builders; the latter are test support, not a native
+runtime escape. Native callers cannot import either. Research's `LeagueReference` port exposes
+only held franchise names and starter limits, implemented by the MFL config adapter without
+fetching. Composition wiring and its frozen fingerprints remain unchanged. Other reference
+views still carry explicit debt; this is a direct-import fence, not transitive isolation.

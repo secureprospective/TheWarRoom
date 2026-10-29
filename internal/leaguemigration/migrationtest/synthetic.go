@@ -7,6 +7,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 )
 
 // Spec is the shape of a synthetic MFL league.
@@ -49,7 +50,7 @@ func Specs() map[string]Spec {
 }
 
 // Synthetic builds an MFL league from a spec, every value written as MFL writes it.
-func Synthetic(name string, s Spec) leaguemigration.Export {
+func Synthetic(name string, s Spec) mflsource.Export {
 	players := s.Players
 	if players == 0 {
 		players = 6
@@ -67,7 +68,7 @@ func Synthetic(name string, s Spec) leaguemigration.Export {
 	}
 	config.Starters, config.ScoringRules = lineup(s), scoring(s)
 	config.Conferences, config.Divisions = alignment(s)
-	out := leaguemigration.Export{LeagueID: fmt.Sprintf("9%04d", s.Teams), Name: name, Season: 2026,
+	out := mflsource.Export{LeagueID: fmt.Sprintf("9%04d", s.Teams), Name: name, Season: 2026,
 		Config: config, ReadAt: ReadAt, Players: map[string]string{}}
 	franchise := 0
 	for d, size := range append([]int{}, s.Divisions...) {
@@ -99,12 +100,12 @@ func Synthetic(name string, s Spec) leaguemigration.Export {
 		}
 		out.Owners = append(out.Owners, owner)
 	}
-	out.Adjustments = []leaguemigration.Adjustment{{ID: "adj-1", Franchise: fid(2), Amount: "1.5", Description: "Dead money"},
+	out.Adjustments = []mflsource.Adjustment{{ID: "adj-1", Franchise: fid(2), Amount: "1.5", Description: "Dead money"},
 		{ID: "adj-2", Franchise: fid(1), Amount: "-0.25", Description: "Cap credit"}}
 	if s.NoSalaries {
 		out.Adjustments = nil
 	}
-	out.Champions = []leaguemigration.Champion{{Season: 2025, Franchise: fid(3)}}
+	out.Champions = []mflsource.Champion{{Season: 2025, Franchise: fid(3)}}
 	return out
 }
 
@@ -168,12 +169,12 @@ func scoring(s Spec) []league.PositionRuleSet {
 	return rules
 }
 
-func rosters(s Spec, players int) []leaguemigration.Rostered {
+func rosters(s Spec, players int) []mflsource.Rostered {
 	statuses := []string{"ROSTER", "ROSTER", "INJURED_RESERVE", "TAXI_SQUAD"}
 	if s.NoReserves {
 		statuses = []string{"ROSTER"}
 	}
-	var out []leaguemigration.Rostered
+	var out []mflsource.Rostered
 	for f := 1; f <= s.Teams; f++ {
 		if s.EmptyFranchise && f == s.Teams {
 			continue
@@ -181,7 +182,7 @@ func rosters(s Spec, players int) []leaguemigration.Rostered {
 		for p := range players {
 			// Leading zeros are part of an MFL id: 0007 and 7 are different players.
 			id := fmt.Sprintf("%04d", f*100+p)
-			r := leaguemigration.Rostered{Franchise: fid(f), Player: id, Status: statuses[p%len(statuses)],
+			r := mflsource.Rostered{Franchise: fid(f), Player: id, Status: statuses[p%len(statuses)],
 				Salary: strconv.FormatFloat(0.5+float64(p)*1.25, 'f', 2, 64), ContractYear: strconv.Itoa(2026 + p%4),
 				ContractStatus: "UFA", ContractInfo: fmt.Sprintf("Signed %d", 2023+p%3)}
 			if s.NoSalaries {

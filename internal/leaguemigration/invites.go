@@ -14,7 +14,7 @@ import (
 // prepareInvites lists one invitation per franchise from MFL's owners, matched by the MFL franchise id
 // the starting snapshot keeps. A franchise whose seat is held shows as claimed; one with an invitation
 // already sent shows as sent; one MFL lists no usable email for is listed, never guessed.
-func prepareInvites(league string, export Export, app AppLeague, state governance.State) Invites {
+func prepareInvites(league string, export Candidate, app AppLeague, state governance.State) Invites {
 	owners := map[string]Owner{}
 	for _, o := range export.Owners {
 		owners[o.Franchise] = o

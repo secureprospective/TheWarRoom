@@ -1,4 +1,4 @@
-package leaguemigration
+package mflsource
 
 import (
 	"cmp"
@@ -6,34 +6,23 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
-// Plan is an MFL league ready to land: the creation with its own settings, the starting snapshot, the
-// owners for the invitations, and notes on what waits for the commissioner. Go builds every part of it
-// from the read; no caller supplies rosters or settings.
-type Plan struct {
-	Create commissioner.RawArgs
-	Seed   commissioner.RawNativeSnapshot
-	Rules  leaguerules.RuleSet
-	Owners []Owner
-	Notes  []string
-	// Mapping is each MFL franchise id's app franchise.
-	Mapping map[string]string
-}
-
 // Prepare checks the read and builds the plan. Anything missing or unreadable is listed in Problems;
 // nothing is guessed, and a league with problems gets no plan.
-func Prepare(export Export) (Plan, error) {
+func Prepare(export Export) (leaguemigration.Plan, error) {
 	p := preparation{export: export}
-	plan := Plan{}
+	plan := leaguemigration.Plan{}
 	rules, problems, notes := Settings(export.Config)
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
@@ -45,10 +34,10 @@ func Prepare(export Export) (Plan, error) {
 			"start a new app league instead")
 	}
 	if len(p.problems) > 0 {
-		return Plan{}, &Problems{List: p.problems}
+		return leaguemigration.Plan{}, &leaguemigration.Problems{List: p.problems}
 	}
 	if err := plan.Seed.Validate(); err != nil {
-		return Plan{}, &Problems{List: []string{"the league's rosters and picks do not hold together: " + err.Error()}}
+		return leaguemigration.Plan{}, &leaguemigration.Problems{List: []string{"the league's rosters and picks do not hold together: " + err.Error()}}
 	}
 	create, err := (commissioner.RawCommand{League: "native.check", Command: commissioner.Create, Args: plan.Create,
 		Request: "check", Reason: "check", Effective: "now", Visibility: "league"}).Prepared()
@@ -56,7 +45,7 @@ func Prepare(export Export) (Plan, error) {
 		err = create.Validate()
 	}
 	if err != nil {
-		return Plan{}, &Problems{List: []string{"the league's settings do not hold together: " + err.Error()}}
+		return leaguemigration.Plan{}, &leaguemigration.Problems{List: []string{"the league's settings do not hold together: " + err.Error()}}
 	}
 	plan.Create = create.Args
 	return plan, nil
@@ -72,7 +61,7 @@ func (p *preparation) problem(format string, args ...any) {
 }
 
 func (p *preparation) create(rules leaguerules.RuleSet) commissioner.RawArgs {
-	changes := leaguerules.SeedChanges(rules, "", p.export.Season, epoch)
+	changes := leaguerules.SeedChanges(rules, "", p.export.Season, time.Unix(1, 0).UTC())
 	seed := make([]commissioner.SeedValue, 0, len(changes))
 	for _, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
@@ -316,13 +305,13 @@ func (p *preparation) champions(seed *commissioner.RawNativeSnapshot, mapping ma
 }
 
 // owners are MFL's owners under their app franchises, in franchise order.
-func (p *preparation) owners(mapping map[string]string) []Owner {
-	out := make([]Owner, 0, len(p.export.Owners))
+func (p *preparation) owners(mapping map[string]string) []leaguemigration.Owner {
+	out := make([]leaguemigration.Owner, 0, len(p.export.Owners))
 	for _, o := range p.export.Owners {
 		if id, ok := mapping[o.Franchise]; ok {
-			out = append(out, Owner{Franchise: id, Name: strings.TrimSpace(o.Name), Email: strings.TrimSpace(o.Email)})
+			out = append(out, leaguemigration.Owner{Franchise: id, Name: strings.TrimSpace(o.Name), Email: strings.TrimSpace(o.Email)})
 		}
 	}
-	slices.SortFunc(out, func(a, b Owner) int { return strings.Compare(a.Franchise, b.Franchise) })
+	slices.SortFunc(out, func(a, b leaguemigration.Owner) int { return strings.Compare(a.Franchise, b.Franchise) })
 	return out
 }

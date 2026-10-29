@@ -96,3 +96,9 @@ model each failed their guard before being reverted (Codex §M3).
 Move handoff/withdrawal, evidence refresh/watch scheduling and roster-verdict rebasing policy
 live in `internal/app/platform`.
 Composition retains raw cross-feature observation assembly and release/contract revalidation adapters.
+
+
+MFL migration reading/translation lives in `internal/leaguemigration/mflsource`; the native
+`internal/leaguemigration` service owns its `Source`/`Candidate` port and destination writes.
+`internal/leaguemigration/migrationtest` is fenced MFL-only fixture support. Research consumes
+held names/limits through `internal/app/research.LeagueReference`, not MFL config fields.

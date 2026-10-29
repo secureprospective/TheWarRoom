@@ -14,7 +14,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
@@ -89,6 +88,13 @@ type Board struct {
 	Scope     Scope         `json:"scope"`
 }
 
+// LeagueReference is the held directory and starter limits needed by research.
+// Implementations read local reference data; they never refresh the source.
+type LeagueReference interface {
+	FranchiseName(id string) (string, bool)
+	StarterLimit(position string) (string, bool)
+}
+
 // Snapshot is a detached reading input. Published feed payloads and Lookup are immutable;
 // the root copies mutable map indexes while holding its locks before calling Build.
 type Snapshot struct {
@@ -100,7 +106,7 @@ type Snapshot struct {
 	Mirror     state.MirrorSnapshot
 	Injuries   Feed[[]leaguefeed.Injury]
 	Schedules  map[int]Feed[[]nflschedule.RawWeek]
-	Config     league.RawConfig
+	Config     LeagueReference
 	Week       int
 	Zone       *time.Location
 	Now        time.Time
@@ -167,9 +173,9 @@ func (v researchView) player(id string) PlayerInfo {
 	}
 	label := "Free agent"
 	if owner != "" {
-		for _, f := range v.Config.Franchises {
-			if f.ID == owner {
-				label = f.Name
+		if v.Config != nil {
+			if name, ok := v.Config.FranchiseName(owner); ok {
+				label = name
 			}
 		}
 		if label == "Free agent" {
@@ -370,8 +376,8 @@ func (v researchView) slotNote() string {
 	if code == "" {
 		return ""
 	}
-	for _, p := range v.Config.Starters.Positions {
-		if p.Name == code && p.Limit != "0" && p.Limit != "0-0" {
+	if v.Config != nil {
+		if limit, ok := v.Config.StarterLimit(code); ok && limit != "0" && limit != "0-0" {
 			return ""
 		}
 	}
@@ -509,7 +515,7 @@ func researchLastLabel(week int) string {
 }
 
 // Player resolves a held directory/roster identity without a reading or live state.
-func Player(lookup normalize.Lookup, mirror state.MirrorSnapshot, config league.RawConfig, id string) PlayerInfo {
+func Player(lookup normalize.Lookup, mirror state.MirrorSnapshot, config LeagueReference, id string) PlayerInfo {
 	return (researchView{Snapshot: Snapshot{Lookup: lookup, Mirror: mirror, Config: config}}).player(id)
 }
 
