@@ -751,3 +751,19 @@ it.each(['keydown', 'pointerdown', 'scroll'])('wires open RowMenu dismissal to d
   Object.assign(details, { open: true }); events.dispatchEvent(new Event('scroll'));
   expect((details as unknown as HTMLDetailsElement).open).toBe(true);
 });
+
+it('groups a team filter under the chosen team without offering another team what-ifs', async () => {
+  shell();
+  setContractsFilter({ field: 'team', value: '0002' });
+  const value = readings();
+  value.table.value!.rows = [{ ...player.player, franchiseId: '0002', team: 'Other' }];
+  const p = provider();
+  p.contracts = vi.fn().mockResolvedValue(value);
+  const test = await mount(createElement(Contracts, { snapshot: heldSnapshot(), provider: p }));
+  expect(test.element.textContent).toContain('Selected team · Other (1)');
+  expect(test.element.textContent).toContain('Rest of the league (0)');
+  expect(test.element.textContent).not.toContain('My team · Mine');
+  const group = nodes(test.root, 'SECTION')
+    .find(n => n.getAttribute('aria-label') === 'Selected team · Other (1)')!;
+  expect(group.textContent).not.toContain('What-if');
+});

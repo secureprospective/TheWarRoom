@@ -250,6 +250,10 @@ export default function Contracts({
   if (!s.franchiseId) return <FranchisePicker snapshot={snapshot} />;
   const cap = readings?.cap.value;
   const table = readings?.table.value;
+  const groupTeam = filters.team || s.franchiseId;
+  const groupOwn = own && groupTeam === s.franchiseId;
+  const groupName = (groupTeam === s.franchiseId ? cap?.team : undefined) ??
+    options.teams.find(team => team.id === groupTeam)?.name ?? groupTeam;
   return (
     <div ref={root} className="contracts">
       {own ? <>
@@ -339,7 +343,7 @@ export default function Contracts({
         <Act variant="button" verb="contracts.set" args={{ field: 'desc', value: !filters.desc }}>
           {filters.desc ? 'Descending' : 'Ascending'}
         </Act>
-        <p>{own ? 'My team first.' : 'Selected team first.'}</p>
+        <p>{groupOwn ? 'My team first.' : 'Selected team first.'}</p>
       </section>
       <ContractReading
         title="Every contract in the league"
@@ -353,13 +357,12 @@ export default function Contracts({
           ) : (
             <div className="contract-table-container">
               <ContractGroup
-                title={`${own ? 'My team' : 'Selected team'} · ${cap?.team ??
-                  options.teams.find((team) => team.id === s.franchiseId)?.name ?? s.franchiseId}`}
-                rows={table.rows.filter((row) => row.franchiseId === s.franchiseId)}
-                mine whatif={whatif.reading?.value}
+                title={`${groupOwn ? 'My team' : 'Selected team'} · ${groupName}`}
+                rows={table.rows.filter((row) => row.franchiseId === groupTeam)}
+                mine={groupOwn} whatif={groupOwn ? whatif.reading?.value : undefined}
               />
               <ContractGroup title="Rest of the league"
-                rows={table.rows.filter((row) => row.franchiseId !== s.franchiseId)} mine={false} />
+                rows={table.rows.filter((row) => row.franchiseId !== groupTeam)} mine={false} />
             </div>
           ))}
         {table && (

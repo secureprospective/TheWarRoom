@@ -244,7 +244,8 @@ describe('Endpoint verbs and search', () => {
     const visible = endpoints.filter(e =>
       e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind));
     expect(offered).toHaveLength(visible.length);
-    expect(offered.every(r => !/\b(?:[A-Z]+-\d|O=\w)/.test(r.label))).toBe(true);
+    expect(offered.every(r => !/\b(?:[A-Z]+-\d|[OR]=\w)/.test(r.label))).toBe(true);
+    expect(rankResults('league switcher', candidates).every(r => !r.label.includes('dormant'))).toBe(true);
     for (const id of ['S-14', 'C-06.1'])
       expect(offered.some(r =>
         r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
