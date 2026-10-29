@@ -97,9 +97,9 @@ func TestCompetingPlansChangeTheSameWeekOrTrade(t *testing.T) {
 		left, right envelope.Spec
 		want        bool
 	}{
-		{week("lineup.set", 5), week("lineup.set", 5), true}, {week("lineup.set", 5), week("lineup.set", 6), false},
-		{trade("trade.accept", "t1"), trade("trade.accept", "t1"), true}, {trade("trade.revoke", "t1"), trade("trade.revoke", "t2"), false},
-		{trade("trade.accept", "t1"), trade("trade.reject", "t1"), false}, {week("roster.ir", 5), week("roster.ir", 5), false},
+		{week("mfl.lineup.set", 5), week("mfl.lineup.set", 5), true}, {week("mfl.lineup.set", 5), week("mfl.lineup.set", 6), false},
+		{trade("mfl.trade.accept", "t1"), trade("mfl.trade.accept", "t1"), true}, {trade("trade.revoke", "t1"), trade("trade.revoke", "t2"), false},
+		{trade("mfl.trade.accept", "t1"), trade("trade.reject", "t1"), false}, {week("roster.ir", 5), week("roster.ir", 5), false},
 	} {
 		if got := Competing(tc.left, tc.right); got != tc.want {
 			t.Errorf("%+v %+v: %v", tc.left, tc.right, got)

@@ -7,7 +7,7 @@ export function lineupReceipt(state: EnvelopeState = 'ready'): Receipt {
   return {
     correlationId: 'lineup-test',
     spec: {
-      intent: 'lineup.set', leagueId: '14432', franchiseId: '0025',
+      intent: 'mfl.lineup.set', leagueId: '14432', franchiseId: '0025',
       subject: { players: starters, picks: [] },
       expected: { lineup: { week: 5, starters, baseline: saved } },
       gravity: 'G1', undo: 'reversible',

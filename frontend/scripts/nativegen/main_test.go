@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	app "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
@@ -71,7 +70,11 @@ func TestStaleGenerationRefusedWithoutWriting(t *testing.T) {
 }
 
 func TestMFLClientCatalogParity(t *testing.T) {
-	body, err := generate(offers.MFLCommands())
+	commands, err := registryCommands(catalog.MFLDoor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := generate(commands)
 	if err != nil {
 		t.Fatal(err)
 	}

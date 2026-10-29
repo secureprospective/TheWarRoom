@@ -15,6 +15,21 @@ function typeChecks() {
 void typeChecks;
 
 describe('local MFL reference command transport', () => {
+  it('dispatches both renamed plans and refuses the old names', async () => {
+    const port = vi.fn().mockResolvedValue({ state: 'ready' });
+    const client = createMFLClient(port);
+    const requests: MFLRequest[] = [
+      { command: 'mfl.lineup.set', mode: 'execute', arguments: { franchiseId: '0025', starters: ['0042'] } },
+      { command: 'mfl.trade.accept', mode: 'execute', arguments: { franchiseId: '0025', tradeId: '77' } },
+    ];
+    for (const request of requests) {
+      await client.invoke(request, { ...desktop, ownerAction: true });
+      expect(port).toHaveBeenLastCalledWith({ ...request, version: '1' });
+      expect(() => client.invoke({ ...request, command: request.command.slice(4) } as unknown as MFLRequest,
+        { ...desktop, ownerAction: true })).toThrow();
+    }
+    expect(port).toHaveBeenCalledTimes(2);
+  });
   it('retains the catalog version, roles and read-only request', async () => {
     const port = vi.fn().mockResolvedValue({ plans: [] });
     const client = createMFLClient(port);
@@ -23,7 +38,7 @@ describe('local MFL reference command transport', () => {
     }
     expect(port).toHaveBeenCalledTimes(3);
     expect(port).toHaveBeenLastCalledWith({ ...read, version: '1' });
-    expect(Object.keys(mflCommands)).toHaveLength(9);
+    expect(Object.keys(mflCommands)).toHaveLength(11);
   });
 
   it('fails closed for every hosted route, including execute and MFL keys', () => {

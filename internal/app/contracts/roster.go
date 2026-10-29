@@ -86,9 +86,9 @@ func Competing(left, right envelope.Spec) bool {
 		return false
 	}
 	switch left.Intent {
-	case "lineup.set":
+	case "mfl.lineup.set":
 		return left.Expected.Lineup.Week == right.Expected.Lineup.Week
-	case "trade.accept", "trade.reject", "trade.revoke":
+	case "mfl.trade.accept", "trade.reject", "trade.revoke":
 		return left.Expected.Trade.TradeID == right.Expected.Trade.TradeID
 	default:
 		return false

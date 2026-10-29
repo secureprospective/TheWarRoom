@@ -113,7 +113,7 @@ func contractsDesktop(_ []Command) []Command {
 		{ID: Unset, Method: "TargetCheckLineup", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetContractActs", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
 		{ID: Unset, Method: "TargetContracts", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
-		{ID: "lineup.set", Method: "TargetDraftLineup", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
+		{ID: "mfl.lineup.set", Method: "TargetDraftLineup", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetLineup", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPlayerContract", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetReleasePlans", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
@@ -219,7 +219,7 @@ func sourcesDesktop(_ []Command) []Command {
 
 func tradesDesktop(_ []Command) []Command {
 	return []Command{
-		{ID: "trade.accept", Method: "TargetDraftTradeAccept", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
+		{ID: "mfl.trade.accept", Method: "TargetDraftTradeAccept", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "both"},
 		{ID: Unset, Method: "TargetTradeBuilder", Version: Unset, Role: "gm,commish", Gravity: "G2", Availability: "desktop"},
 		{ID: Unset, Method: "TargetTradeBuilderPreview", Version: Unset, Role: "gm,commish", Gravity: "G1", Availability: "desktop", Modes: []Mode{Preview}},
 		heldRead(Command{ID: Unset, Method: "TargetTradeBuilderRead", Version: Unset, Role: "gm,commish", Gravity: "G0", Availability: "desktop"}),
@@ -250,6 +250,27 @@ func MFLCommands(shapes MFLShapes) []Command {
 		mflCommand("mfl.bid.withdraw", "TargetBidWithdraw", "G2", Execute, plan, "draft-new-local-plan", "local-bid-plan"),
 	}
 }
+
+// MFLPlanCommands names the existing lineup and incoming-offer plans without granting native authority.
+func MFLPlanCommands() []Command {
+	text := Schema{Type: "string"}
+	lineup := Schema{Type: "object", Validator: "TargetDraftLineup owner and starter checks", Fields: []Field{
+		{Name: "franchiseId", Schema: text},
+		{Name: "starters", Schema: Schema{Type: "array", Items: &text}},
+	}}
+	trade := Schema{Type: "object", Validator: "TargetDraftTradeAccept owner and pending-offer checks", Fields: []Field{
+		{Name: "franchiseId", Schema: text}, {Name: "tradeId", Schema: text},
+	}}
+	commands := []Command{
+		mflCommand("mfl.lineup.set", "TargetDraftLineup", "G1", Execute, lineup, "withdraw-local-plan", "held-lineup,local-plans"),
+		mflCommand("mfl.trade.accept", "TargetDraftTradeAccept", "G2", Execute, trade, "withdraw-local-plan", "held-pending-trades,local-plans"),
+	}
+	for i := range commands {
+		commands[i].Role = "gm,commish"
+	}
+	return commands
+}
+
 func mflCommand(id, method, gravity string, mode Mode, args Schema, undo, facts string) Command {
 	safeguards := "Raw-validation+local-plan-state; no MFL submissions"
 	if gravity == "G2" {

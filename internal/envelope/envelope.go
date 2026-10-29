@@ -364,6 +364,13 @@ func (e Envelope) Created() time.Time { return e.created }
 // Restore rebuilds a stored envelope by replaying its audit through the transition table; a
 // history the table cannot produce is an error naming the entry, never repaired.
 func Restore(id string, created time.Time, spec Spec, audit []AuditEntry) (Envelope, error) {
+	// Old move-log rows are append-only. Normalize only while reading, never at a command door.
+	switch spec.Intent {
+	case "lineup.set":
+		spec.Intent = "mfl.lineup.set"
+	case "trade.accept":
+		spec.Intent = "mfl.trade.accept"
+	}
 	e, err := New(created, spec, func() string { return id })
 	if err != nil {
 		return Envelope{}, fmt.Errorf("envelope: restore construction: %w", err)

@@ -45,7 +45,7 @@ func TestMovePolicies(t *testing.T) {
 		want   envelope.Predicate
 	}{
 		{"roster.ir", envelope.IRPredicate{}}, {"roster.taxi", envelope.TaxiPredicate{}},
-		{"lineup.set", envelope.LineupPredicate{}}, {"trade.accept", envelope.TradePredicate{}},
+		{"mfl.lineup.set", envelope.LineupPredicate{}}, {"mfl.trade.accept", envelope.TradePredicate{}},
 		{"trade.propose", envelope.TradeActPredicate{}}, {"trade.reject", envelope.TradeActPredicate{}},
 		{"trade.revoke", envelope.TradeActPredicate{}}, {"bid.submit", envelope.BidPredicate{}},
 		{envelope.CutIntent, envelope.ReleasePredicate{}}, {envelope.BuyoutIntent, envelope.ReleasePredicate{}},
@@ -133,7 +133,7 @@ func TestMoveEvidenceAndWatchability(t *testing.T) {
 		want   bool
 	}{
 		{"roster.ir", envelope.Landed, "old", true}, {"roster.ir", envelope.HandedOff, "new", false},
-		{"trade.accept", envelope.HandedOff, "new", false}, {"trade.propose", envelope.HandedOff, "new", true},
+		{"mfl.trade.accept", envelope.HandedOff, "new", false}, {"trade.propose", envelope.HandedOff, "new", true},
 		{"trade.reject", envelope.HandedOff, "old", false},
 	} {
 		before := makeMove(tc.intent, envelope.HandedOff, "old")

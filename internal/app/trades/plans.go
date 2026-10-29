@@ -293,7 +293,7 @@ func (s PlanWorkflow) Handoff(ctx context.Context, r RawTradeBuilder, snap snaps
 		return fmt.Errorf("trade hand-off load: %w", err)
 	}
 	spec := e.Receipt().Spec
-	if spec.FranchiseID != r.Mine || !envelope.IsTrade(spec.Intent) || spec.Intent == "trade.accept" {
+	if spec.FranchiseID != r.Mine || !envelope.IsTrade(spec.Intent) || spec.Intent == "mfl.trade.accept" {
 		return fmt.Errorf("trade hand-off outside scope")
 	}
 	if err := s.CheckExitPending(r.Mine, spec); err != nil {

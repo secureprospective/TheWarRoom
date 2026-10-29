@@ -28,10 +28,10 @@ func MovePredicate(intent string) envelope.Predicate {
 		envelope.CutIntent:    envelope.ReleasePredicate{},
 		envelope.BuyoutIntent: envelope.ReleasePredicate{},
 		"rfa.tender":          envelope.ContractPredicate{}, "fa.resign": envelope.ContractPredicate{}, "contract.tag": envelope.ContractPredicate{}, "contract.extend": envelope.ContractPredicate{}, "contract.restructure": envelope.ContractPredicate{},
-		"roster.taxi":   envelope.TaxiPredicate{},
-		"lineup.set":    envelope.LineupPredicate{},
-		"trade.accept":  envelope.TradePredicate{},
-		"trade.propose": envelope.TradeActPredicate{}, "trade.reject": envelope.TradeActPredicate{}, "trade.revoke": envelope.TradeActPredicate{},
+		"roster.taxi":      envelope.TaxiPredicate{},
+		"mfl.lineup.set":   envelope.LineupPredicate{},
+		"mfl.trade.accept": envelope.TradePredicate{},
+		"trade.propose":    envelope.TradeActPredicate{}, "trade.reject": envelope.TradeActPredicate{}, "trade.revoke": envelope.TradeActPredicate{},
 		"bid.submit": envelope.BidPredicate{},
 	}
 	return registry[intent]
@@ -50,7 +50,7 @@ func SaveMoveEvidence(before, after envelope.Envelope) bool {
 		return true
 	}
 	old, next := before.Receipt(), after.Receipt()
-	if !envelope.IsTrade(old.Spec.Intent) || old.Spec.Intent == "trade.accept" || len(next.Audit) == 0 {
+	if !envelope.IsTrade(old.Spec.Intent) || old.Spec.Intent == "mfl.trade.accept" || len(next.Audit) == 0 {
 		return false
 	}
 	return len(old.Audit) == 0 || old.Audit[len(old.Audit)-1].Note != next.Audit[len(next.Audit)-1].Note

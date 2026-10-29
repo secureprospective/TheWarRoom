@@ -11,6 +11,8 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 	handler := func(context.Context, json.RawMessage) (json.RawMessage, error) { return json.RawMessage(`null`), nil }
 	valid := Entry{ID: "test.read", Label: "Read the test", Definition: completeCommand(), Native: map[Mode]Handler{Read: handler}}
 	tests := map[string]func(*Registry){
+		"unqualified MFL":               func(r *Registry) { r.entries[0].MFL = r.entries[0].Native; r.entries[0].Native = nil },
+		"shared native MFL":             func(r *Registry) { r.entries[0].ID = "mfl.test"; r.entries[0].MFL = r.entries[0].Native },
 		"duplicate ID":                  func(r *Registry) { r.entries = append(r.entries, r.entries[0]) },
 		"missing native handler":        func(r *Registry) { r.entries[0].Native[Read] = nil },
 		"unsupported mode":              func(r *Registry) { r.entries[0].Native[Execute] = handler },

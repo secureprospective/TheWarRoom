@@ -87,9 +87,9 @@ func TestRosterDraftRefusesBeforeLocksAndWrites(t *testing.T) {
 	if _, err := s.Draft("roster.ir", "mine", "0042"); err == nil {
 		t.Fatal("missing snapshot accepted")
 	}
-	receipts := []envelope.Receipt{{Spec: envelope.Spec{Intent: envelope.BidIntent}}, {Spec: envelope.Spec{Intent: "roster.ir"}}, {Spec: envelope.Spec{Intent: envelope.CutIntent}}, {Spec: envelope.Spec{Intent: "contract.extend"}}, {Spec: envelope.Spec{Intent: "trade.accept"}}}
+	receipts := []envelope.Receipt{{Spec: envelope.Spec{Intent: envelope.BidIntent}}, {Spec: envelope.Spec{Intent: "roster.ir"}}, {Spec: envelope.Spec{Intent: envelope.CutIntent}}, {Spec: envelope.Spec{Intent: "contract.extend"}}, {Spec: envelope.Spec{Intent: "mfl.trade.accept"}}}
 	rail := RosterRail(receipts)
-	if len(rail) != 2 || rail[0].Spec.Intent != "roster.ir" || rail[1].Spec.Intent != "trade.accept" {
+	if len(rail) != 2 || rail[0].Spec.Intent != "roster.ir" || rail[1].Spec.Intent != "mfl.trade.accept" {
 		t.Fatal(rail)
 	}
 }

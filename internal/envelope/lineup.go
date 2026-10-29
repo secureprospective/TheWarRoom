@@ -18,7 +18,7 @@ func validateExpected(s Spec) error {
 	if s.Expected.Trade != nil {
 		return fmt.Errorf("envelope: trade change requires trade.accept")
 	}
-	if s.Intent == "lineup.set" {
+	if s.Intent == "mfl.lineup.set" {
 		return validateLineupExpected(s)
 	}
 
@@ -79,7 +79,7 @@ type LineupCheck struct {
 // Evaluate blocks on every outside reason, an unknown baseline, a starter not on the active
 // roster, an illegal lineup, or a lineup equal to the saved one; partial but legal passes.
 func (c LineupCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
-	if s.Intent != "lineup.set" || s.Expected.Lineup == nil {
+	if s.Intent != "mfl.lineup.set" || s.Expected.Lineup == nil {
 		return CheckResult{Blocked: true, Note: "lineup check does not cover this intent"}
 	}
 	blocks := slices.Clone(c.Blocks)
@@ -150,7 +150,7 @@ func (LineupPredicate) Evaluate(s Spec, obs Observation) Verdict {
 	l := s.Expected.Lineup
 	reason := ""
 	switch {
-	case l == nil || s.Intent != "lineup.set":
+	case l == nil || s.Intent != "mfl.lineup.set":
 		reason = "lineup intent missing"
 	case obs.Lineups.Provenance.Freshness.State == domain.FreshFail:
 		reason = "lineup feed failed"
@@ -204,7 +204,7 @@ func DraftLineup(
 		req.Baseline = nil
 	}
 	spec := Spec{
-		Intent: "lineup.set", LeagueID: req.LeagueID, FranchiseID: req.FranchiseID,
+		Intent: "mfl.lineup.set", LeagueID: req.LeagueID, FranchiseID: req.FranchiseID,
 		Subject: Subject{Players: req.Starters},
 		Expected: ExpectedChange{Lineup: &ExpectedLineup{
 			Week: req.Week, Starters: req.Starters, Baseline: req.Baseline,

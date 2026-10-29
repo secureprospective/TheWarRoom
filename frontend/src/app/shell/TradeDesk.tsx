@@ -28,10 +28,10 @@ export function OfferCard({ offer, franchiseId }: { offer: TradeOffer; franchise
   const pending = commands.useMoves((s) => s.drafting[key]);
   const error = commands.useMoves((s) => s.draftErrors[key]);
   const receipt = commands.useMoves((s) => s.moves.find((r) =>
-    r.spec.franchiseId === franchiseId && r.spec.intent === 'trade.accept' &&
+    r.spec.franchiseId === franchiseId && r.spec.intent === 'mfl.trade.accept' &&
     r.spec.expected.trade?.tradeId === offer.tradeId));
   const exits = commands.useMoves(s => s.moves).filter(r => r.spec.franchiseId === franchiseId &&
-    r.spec.expected.trade?.tradeId === offer.tradeId && r.spec.intent !== 'trade.accept');
+    r.spec.expected.trade?.tradeId === offer.tradeId && r.spec.intent !== 'mfl.trade.accept');
   // One live exit plan per offer: while one stands, the card offers its removal, not a second plan.
   const exitPlanned = exits.some(r => livePlan.has(r.state));
   const knownExpiry = !offer.expires.startsWith('0001-');

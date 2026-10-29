@@ -1,7 +1,7 @@
 {
  "correlationId": "lineup-ID",
  "spec": {
-  "intent": "lineup.set",
+  "intent": "mfl.lineup.set",
   "leagueId": "14432",
   "franchiseId": "0025",
   "subject": {

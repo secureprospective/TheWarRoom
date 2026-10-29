@@ -42,6 +42,7 @@ const mflClient = createMFLClient(request => {
     case 'mfl.bid.handoff': return go.TargetBidHandOff(request.arguments.id);
     case 'mfl.bid.posted': return go.TargetBidPosted(request.arguments.id);
     case 'mfl.bid.withdraw': return go.TargetBidWithdraw(request.arguments.id);
+    default: throw new Error('Choose a free-agent pool or bid plan action.');
   }
 });
 export const poolWire = {

@@ -1,3 +1,4 @@
+import { createMFLClient } from '../commands/mfl';
 import type * as Bindings from '../../../wailsjs/go/trades/API';
 import type { trades } from '../../../wailsjs/go/models';
 
@@ -16,8 +17,14 @@ export async function targetTrades(franchiseId: string): Promise<unknown> {
   return bindings().TargetTrades(franchiseId);
 }
 
+const acceptPlans = createMFLClient(request => {
+  if (request.command !== 'mfl.trade.accept') throw new Error('Choose an incoming-offer plan.');
+  return bindings().TargetDraftTradeAccept(request.arguments.franchiseId, request.arguments.tradeId);
+});
 export async function targetDraftTradeAccept(franchiseId: string, tradeId: string): Promise<unknown> {
-  return bindings().TargetDraftTradeAccept(franchiseId, tradeId);
+  return acceptPlans.invoke({
+    command: 'mfl.trade.accept', mode: 'execute', arguments: { franchiseId, tradeId },
+  }, { availability: 'desktop', role: 'gm', ownerAction: true });
 }
 
 export async function targetTradeBuilderRead(franchiseId: string): Promise<unknown> {

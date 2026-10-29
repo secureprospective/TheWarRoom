@@ -113,7 +113,7 @@ export function EnvelopeRail({ receipt, snapshot }: { receipt: Receipt; snapshot
       <RemoveTradePlan receipt={receipt} />
       {receipt.state === 'ready' && <p>Ready is not MFL-accepted</p>}
       {receipt.state === 'ready' && receipt.spec.intent.startsWith('trade.') &&
-        receipt.spec.intent !== 'trade.accept' ? <Act variant="button" verb="trade.builder"
+        receipt.spec.intent !== 'mfl.trade.accept' ? <Act variant="button" verb="trade.builder"
           args={{ action: 'handoff', mine: receipt.spec.franchiseId, id: receipt.correlationId }}
           label={receipt.spec.intent === 'trade.propose' ? "Copy the deal and open MFL's trade desk"
             : receipt.spec.intent === 'trade.reject' ? "Open MFL's trade desk to reject"

@@ -37,7 +37,7 @@ export function tradeReceipt(state: EnvelopeState = 'ready', note = ''): Receipt
   return {
     correlationId: 'trade-901',
     spec: {
-      intent: 'trade.accept', leagueId: '14432', franchiseId: '0025',
+      intent: 'mfl.trade.accept', leagueId: '14432', franchiseId: '0025',
       subject: { players: ['16195'], picks: ['FP_0007_2027_1'] },
       expected: { trade: {
         tradeId: '901', offering: '0007', accepting: '0025',
