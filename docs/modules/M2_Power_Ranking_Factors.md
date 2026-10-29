@@ -1,5 +1,11 @@
 # Power rankings — the factor table (research, 2026-10-04)
 
+
+> **2026-10-28 ruling:** both views now default to the legal lineup. Franchise power adds
+> Pick Value v2 for the next two drafts at `power.pick_weight` (default 0.6); season power
+> still excludes picks. The research/results below are historical, not the current pick policy.
+> Current implementation and limits: `docs/architecture/pick-value.md`.
+
 **Status:** decided 2026-10-04 and built on `session/power-ranking-factors` (Core Build Plan R10-1…R10-7).
 The first pass below used a stand-in for the model's values; the re-run on the model's own Now and
 Dyn (the last section) set the shipped numbers and changed two verdicts (#6's curve, #14).

@@ -113,9 +113,12 @@ const (
 func (a *App) powerRankings(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness,
 	schedule func(context.Context) []leagueschedule.RawScheduleWeek, weight float64, autoWeight bool, mode, view string,
 ) PowerRankingsResult {
-	src := scoringapp.Source{History: a.core.History, Season: a.core.Season, State: a.core.League.Reader, Rules: a.core.Rulebook,
+	return wirePower(a.powerSource().Build(ctx, standings, fresh, schedule, weight, autoWeight, mode, view))
+}
+
+func (a *App) powerSource() scoringapp.Source {
+	return scoringapp.Source{History: a.core.History, Season: a.core.Season, State: a.core.League.Reader, Rules: a.core.Rulebook,
 		Picks: a.powerPicks, Ages: a.ages, SeasonWeeks: a.seasonWeeks, DeadCap: a.core.League.DeadCap}
-	return wirePower(src.Build(ctx, standings, fresh, schedule, weight, autoWeight, mode, view))
 }
 
 func defaultAgg(view string) string { return scoringapp.DefaultAgg(view) }
@@ -215,13 +218,20 @@ func (a *App) pickSettingChanged(key string, ok bool) {
 		return
 	}
 	prior := held.Power[ViewFranchise]
-	rebuilt := a.powerRankings(ctx, held.Standings.Value, prior.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek { return nil }, 0, false, defaultAgg(ViewFranchise), ViewFranchise)
+	src := a.powerSource()
+	src.Ages = func(context.Context) func(string) float64 {
+		a.core.LookupMu.Lock()
+		lookup := a.core.Lookup
+		a.core.LookupMu.Unlock()
+		return scoringapp.PlayerAges(lookup, nil, a.timeNow())
+	}
+	rebuilt := src.Build(ctx, held.Standings.Value, prior.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek { return nil }, 0, false, defaultAgg(ViewFranchise), ViewFranchise)
 	if !rebuilt.OK {
 		return
 	}
 	if held.Power == nil {
 		held.Power = map[string]season.PowerRankingsResult{}
 	}
-	held.Power[ViewFranchise] = racePowerResult(rebuilt)
+	held.Power[ViewFranchise] = rebuilt
 	a.raceHeld.PublishStandings(held.Standings, held.Power, true)
 }

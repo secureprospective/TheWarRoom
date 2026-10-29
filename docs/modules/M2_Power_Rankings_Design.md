@@ -1,6 +1,7 @@
 # M2 — Power Rankings: Design + Research (pre-build)
 
-**Status:** DESIGN LOCKED (pending 2 small confirms), NO CODE WRITTEN YET.
+**Status:** Historical design/research. Current implementation: `docs/architecture/pick-value.md`
+and `docs/modules/M2_Power_Ranking_Factors.md` (including the 2026-10-28 ruling).
 **Branch:** `session/m2-power-rankings` (off main, clean).
 **Date:** 2026-07-18.
 **Spec source:** `docs/modules/Module_Specifications.md` → "Module 2: Weekly Power Rankings".
