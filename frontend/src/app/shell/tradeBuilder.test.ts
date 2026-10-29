@@ -111,3 +111,10 @@ it('keeps older trade plans in My moves using the shared receipt rail', async ()
   expect(html).toContain('Trade proposal');
   expect(html).toContain('Remove plan');
 });
+
+it('explains why the franchise picker is unavailable when its read is refused', async () => {
+  const { BuilderUnavailable } = await import('./TradeBuilder');
+  const html = renderToStaticMarkup(createElement(BuilderUnavailable,
+    { error: 'Connect your MFL account to act for your team.' }));
+  expect(html).toContain('Franchises are unavailable: Connect your MFL account');
+});

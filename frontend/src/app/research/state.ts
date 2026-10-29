@@ -16,13 +16,16 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
   // A status-poll failure during refresh survives the read's success, as before the shared query.
   const empty = (): State => ({ error: '', status: '', scope: initial, pages: {} });
   const store = createStore<State & ReadStatus>(() => ({ ...empty(), pending: false }));
+  let sourceRefresh = false;
   const query = createReadQuery('research.TargetResearch', {
     initial: empty, store, read: scope => reader.read(scope),
-    accept: research => ({ research, error: store.getState().error }),
+    accept: research => ({ research }),
+    failure: cause => sourceRefresh ? 'Research could not be refreshed. Please try again.' : String(cause),
   });
   let polls = 0;
   async function load(refresh = false, news = false, league = false, force = false) {
     const request = ++polls;
+    sourceRefresh = refresh || news;
     let polling: ReturnType<typeof setInterval> | undefined;
     store.setState({ status: '' });
     // Only refresh/news are steps before the read; a plain scope change reads immediately.
@@ -32,8 +35,8 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
         polling = setInterval(() => {
           void reader.status!().then(status => {
             if (request === polls && store.getState().pending) store.setState({ status });
-          }).catch(cause => {
-            if (request === polls) store.setState({ error: String(cause) });
+          }).catch(() => {
+            if (request === polls) store.setState({ status: 'Waiting for the refresh to finish' });
           });
         }, 250);
       }

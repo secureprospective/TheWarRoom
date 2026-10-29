@@ -9,6 +9,15 @@ import { reportState } from './state';
 import type { Board } from './provider';
 import './reports.css';
 
+export function ReportNavigation({ board, selected }: { board: Board; selected: readonly string[] }) {
+  const report = board.reports.find(r => selected.includes(r.id)) ?? board.reports[0];
+  return <><h4>{board.title}</h4>
+    <div className="market-controls" aria-label={board.title}>
+      {board.reports.map(r => <Act variant="text"
+        key={r.id} verb="endpoint.open" args={{ id: r.id as EndpointId }}
+        label={r.title} active={report.id === r.id}>{r.title}</Act>)}
+    </div></>;
+}
 export function ReportsView({ board, selected, refreshVerb = 'draft.reports', controls }: {
   board: Board; selected: readonly string[];
   refreshVerb?: 'draft.reports' | 'market.reports' | 'race.reports' | 'now.reports' | 'research.read';
@@ -16,12 +25,7 @@ export function ReportsView({ board, selected, refreshVerb = 'draft.reports', co
 }) {
   const report = board.reports.find(r => selected.includes(r.id)) ?? board.reports[0];
   return <div className="market draft-reports">
-    <h4>{board.title}</h4>
-    <div className="market-controls" aria-label={board.title}>
-      {board.reports.map(r => <Act variant="text"
-        key={r.id} verb="endpoint.open" args={{ id: r.id as EndpointId }}
-        label={r.title} active={report.id === r.id}>{r.title}</Act>)}
-    </div>
+    <ReportNavigation board={board} selected={selected} />
     <div className="market-controls">
       {refreshVerb === 'race.reports' || refreshVerb === 'now.reports' || refreshVerb === 'research.read'
         ? <Act variant="button"

@@ -34,3 +34,10 @@
 .draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {
   overflow-wrap: normal; word-break: normal; white-space: normal;
 }
+
+.research-grid .draft-report[data-endpoint="M-048"] .draft-table-scroll table {
+  width: max-content; min-width: 100%; table-layout: auto;
+}
+.research-grid .draft-report[data-endpoint="M-048"] .draft-table-scroll :is(th, td) {
+  white-space: nowrap; overflow-wrap: normal;
+}

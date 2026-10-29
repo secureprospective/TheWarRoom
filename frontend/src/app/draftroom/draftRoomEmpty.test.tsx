@@ -6,9 +6,10 @@ let restore: (() => void) | undefined;
 afterEach(async () => { await unmount(); restore?.(); vi.restoreAllMocks(); });
 
 // This file's league state has never chosen a league, which is how a first-time install reads.
-it('shows nothing in the Draft room where no app league has been started', async () => {
+it('explains how to use the Draft room when no app league has been started', async () => {
   const opened = await openRoom({ leagues: [] });
   restore = opened.restore;
-  expect(opened.host.textContent).toBe('');
+  expect(opened.host.textContent).toContain('No app league has been started.');
+  expect(opened.host.textContent).toContain('Create a league in Control Room');
   expect(opened.reads).toHaveLength(0);
 });

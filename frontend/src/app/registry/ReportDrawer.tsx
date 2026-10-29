@@ -4,17 +4,25 @@ import { nodeKeys, nodes } from '../shell/nodes';
 import { endpointsAt, surfacePlaces, type Placement } from './index';
 import './registry.css';
 
+const researchNames: Record<string, string> = {
+  'M-038': 'My top performers', 'M-037': 'Player stats', 'M-040': 'Position leaders',
+  'M-057': 'NFL injuries', 'M-051': 'Injuries by NFL team', 'M-048': 'NFL depth charts',
+  'M-052': 'MFL-wide activity', 'M-053': 'Points allowed by position',
+  'M-054': 'Points allowed per NFL team', 'M-060': 'My players’ news',
+};
+function reportName(id: string, name: string) {
+  return researchNames[id] ?? name.replace(/\s+O=\w+/gi, '');
+}
 export function reportGroups(query: string) {
   const places = [
     ...nodeKeys.flatMap(node => nodes[node].workspaces.map(w => `${nodes[node].label} › ${w.label}`)),
     ...surfacePlaces,
   ] as Placement[];
   const needle = query.trim().toLowerCase();
-  // Keep placed, kept rows with a Read role (including hybrids and gated reads), regardless of status.
-  // Match name, GM question, id and place like command-bar substrings, without its eight-result cap.
   return places.map(place => ({ place, rows: endpointsAt(place).filter(row =>
-    /\bRead\b/.test(row.kind) &&
-    [row.name, row.gm_question, row.id, place].some(text => text.toLowerCase().includes(needle)),
+    /\bRead\b/.test(row.kind) && row.status === 'landed' &&
+    [reportName(row.id, row.name), row.gm_question, row.id, place]
+      .some(text => text.toLowerCase().includes(needle)),
   ) })).filter(group => group.rows.length);
 }
 
@@ -36,12 +44,10 @@ export default function ReportDrawer() {
           <ul>
             {rows.map(row => (
               <li key={row.id}>
-                <Act variant="card" verb="endpoint.open" args={{ id: row.id }} label={`Open ${row.name}`}>
-                  <strong>{row.name}</strong>
+                <Act variant="card" verb="endpoint.open" args={{ id: row.id }}
+                  label={`Open ${reportName(row.id, row.name)}`}>
+                  <strong>{reportName(row.id, row.name)}</strong>
                   {row.gm_question && row.gm_question !== '—' && <span>{row.gm_question}</span>}
-                  {row.status !== 'landed' && <small>
-                    {row.status === 'built' ? 'Built, not yet landed live' : 'Not wired'}
-                  </small>}
                 </Act>
               </li>
             ))}

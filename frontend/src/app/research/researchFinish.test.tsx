@@ -160,6 +160,16 @@ describe('One paged news list', () => {
     expect(headlineButtons()).toHaveLength(60);
     expect(descendants(element).some(e => e.textContent === 'Show 25 more')).toBe(false);
   });
+  it('keeps report navigation visible when roster news is selected and expanded', async () => {
+    const { researchState } = await import('./state');
+    const render = () => renderToStaticMarkup(createElement(ResearchView, {
+      research: fixture, selected: ['M-060'],
+    }));
+    expect(render()).toContain('Position leaders');
+    await researchState.choose('more', 'M-060');
+    expect(render()).toContain('Position leaders');
+    expect(render()).toContain('My players’ news');
+  });
   it('does not render Inspector headlines a second time among the held facts', () => {
     const article = fixture.articles[0];
     const player: PlayerReading = { ...fixture.players[0], report: {
@@ -214,4 +224,10 @@ it('renders one shared posted date without raw elapsed wording on all news table
   expect(css).toContain('.draft-report[data-endpoint="M-058"] .draft-table-scroll :is(th, td),');
   expect(css).toContain('.draft-report[data-endpoint="M-060"] .draft-table-scroll :is(th, td) {');
   expect(css).toContain('overflow-wrap: normal; word-break: normal; white-space: normal;');
+});
+
+it('starter grid uses intrinsic columns and scrolls rather than overlapping names', () => {
+  const css = readFileSync('src/app/research/research.css', 'utf8');
+  expect(css).toContain('width: max-content; min-width: 100%; table-layout: auto;');
+  expect(css).toContain('white-space: nowrap; overflow-wrap: normal;');
 });
