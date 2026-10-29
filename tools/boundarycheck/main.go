@@ -68,6 +68,9 @@ func run(root string, inventory bool, output io.Writer) error {
 	if err := checkSources(keys, current, baseline); err != nil {
 		return err
 	}
+	if err := checkMFL(root); err != nil {
+		return err
+	}
 	_, err = fmt.Fprintf(output, "boundarycheck: %d frozen functions/sources; no unreviewed composition/core changes\n", len(current))
 	if err != nil {
 		return fmt.Errorf("write result: %w", err)

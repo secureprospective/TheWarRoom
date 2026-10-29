@@ -14,6 +14,8 @@ func boundaryFixture(t *testing.T, source string) string {
 	fixtureWrite(t, root, "internal/composition/adapter.go", source)
 	fixtureWrite(t, root, "internal/app/core/state.go", "package core\n")
 	fixtureWrite(t, root, "docs/architecture/boundary-adapters.tsv", "")
+	fixtureWrite(t, root, "go.mod", "module example.com/project\n")
+	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv", "fence\tinternal/mfl\t-\n")
 	return root
 }
 
@@ -149,6 +151,64 @@ func TestBoundaryIncludesSemanticDirectivesButNotOrdinaryComments(t *testing.T) 
 		fixtureWrite(t, root, "internal/composition/adapter.go", directive+"package composition\nfunc adapter() int {return 1}")
 		if err := run(root, false, &bytes.Buffer{}); err == nil || !strings.Contains(err.Error(), "changed boundary source") {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestMFLBoundaryRejectsForbiddenImports(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	fixtureWrite(t, root, "internal/native/illegal.go", "package native\nimport _ \"example.com/project/internal/mfl\"\n")
+	if err := checkMFL(root); err == nil || !strings.Contains(err.Error(), "internal/native imports fenced internal/mfl") {
+		t.Fatal(err)
+	}
+}
+
+func TestMFLBoundaryAllowsMigrationSeam(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv", "fence\tinternal/mfl\t-\nseam\tinternal/leaguemigration\t-\n")
+	fixtureWrite(t, root, "internal/leaguemigration/source.go", "package leaguemigration\nimport _ \"example.com/project/internal/mfl\"\n")
+	if err := checkMFL(root); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestMFLBoundaryRejectsNewDebtAndStaleDebt(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv", "fence\tinternal/mfl\t-\ndebt\tinternal/legacy\tinternal/mfl\n")
+	fixtureWrite(t, root, "internal/legacy/old.go", "package legacy\nimport _ \"example.com/project/internal/mfl\"\n")
+	if err := checkMFL(root); err != nil {
+		t.Fatal(err)
+	}
+	fixtureWrite(t, root, "internal/newdomain/new.go", "package newdomain\nimport _ \"example.com/project/internal/mfl\"\n")
+	if err := checkMFL(root); err == nil || !strings.Contains(err.Error(), "internal/newdomain imports fenced") {
+		t.Fatal(err)
+	}
+	if err := os.Remove(filepath.Join(root, "internal/newdomain/new.go")); err != nil {
+		t.Fatal(err)
+	}
+	fixtureWrite(t, root, "internal/legacy/old.go", "package legacy\n")
+	if err := checkMFL(root); err == nil || !strings.Contains(err.Error(), "stale MFL debt") {
+		t.Fatal(err)
+	}
+}
+
+func TestMFLBoundaryLeavesSharedPackagesAvailable(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	rules, err := readMFLRules("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{
+		"internal/envelope", "internal/app/platform", "internal/app/contracts",
+		"internal/app/offers", "internal/app/offers/bids", "internal/app/trades",
+		"internal/store/state", "internal/store/moves",
+	} {
+		if rules.fences[target] {
+			t.Fatalf("shared package %s is fenced", target)
+		}
+		fixtureWrite(t, root, "internal/native/import.go", "package native\nimport _ \"example.com/project/"+target+"\"\n")
+		if err := checkMFL(root); err != nil {
+			t.Fatalf("shared package %s: %v", target, err)
 		}
 	}
 }
