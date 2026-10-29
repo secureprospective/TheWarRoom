@@ -3,7 +3,7 @@ package composition
 import (
 	"testing"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"

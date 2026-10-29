@@ -12,9 +12,11 @@ import (
 	"testing"
 	"time"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -795,10 +797,10 @@ func TestOwnerActionsRefuseWithoutChangingState(t *testing.T) {
 
 func ownerActionState(t *testing.T, a *App) string {
 	t.Helper()
-	var sessions []state.WhatIfSession
+	var sessions []mflwhatif.WhatIfSession
 	var receipts []envelope.Receipt
 	for _, fid := range []string{"0001", "0025"} {
-		s, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, fid)
+		s, _, err := mflwhatif.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, fid)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -811,7 +813,7 @@ func ownerActionState(t *testing.T, a *App) string {
 	}
 	mirror, stamp, _ := a.core.League.ContractsView()
 	body, err := json.Marshal(struct {
-		Sessions []state.WhatIfSession
+		Sessions []mflwhatif.WhatIfSession
 		Plans    []envelope.Receipt
 		Mirror   state.MirrorSnapshot
 		Stamp    string
@@ -825,7 +827,7 @@ func ownerActionState(t *testing.T, a *App) string {
 func TestTradeCounterpartyProjectionIgnoresPrivateWhatIf(t *testing.T) {
 	a, _ := realTradeBuilderApp(t)
 	first := builderCall(t, a, realDeal()).Preview
-	sessions := state.NewWhatIfSessions(a.core.WhatifPools)
+	sessions := mflwhatif.NewWhatIfSessions(a.core.WhatifPools)
 	if _, found, err := sessions.Load(a.core.Ctx, "0025"); err != nil || found {
 		t.Fatal("preview opened other owner's session", err)
 	}

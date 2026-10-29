@@ -60,7 +60,7 @@ INSERT INTO contract_year_changes VALUES (?, ?, '0001', 2026, 0, 100, 'cut', 'te
 			t.Fatal(err)
 		}
 	}
-	if err := NewWhatIfSessions(pools).Save(ctx, WhatIfSession{Mine: "0001", Generation: "whatif:0001:1"}); err != nil {
+	if _, err := pools.Write().ExecContext(ctx, `INSERT INTO whatif_sessions (franchise_id, session) VALUES (?, ?)`, "0001", `{"mine":"0001","generation":"whatif:0001:1"}`); err != nil {
 		t.Fatal(err)
 	}
 	before := map[string]map[string]int{}
@@ -82,7 +82,7 @@ INSERT INTO contract_year_changes VALUES (?, ?, '0001', 2026, 0, 100, 'cut', 'te
 		t.Fatal(err)
 	}
 	defer func() { _ = pools.Close() }()
-	if _, _, err := NewWhatIfSessions(pools).Load(ctx, "0001"); err != nil { // the upgrade path
+	if err := InitializeWhatIf(ctx, pools); err != nil {
 		t.Fatal(err)
 	}
 	for _, league := range generations {
@@ -95,7 +95,8 @@ INSERT INTO contract_year_changes VALUES (?, ?, '0001', 2026, 0, 100, 'cut', 'te
 			t.Fatalf("%s lost rows: %v -> %v", league, before[league], after)
 		}
 	}
-	if _, found, err := NewWhatIfSessions(pools).Load(ctx, "0001"); err != nil || !found {
+	var saved string
+	if err := pools.Read().QueryRowContext(ctx, `SELECT session FROM whatif_sessions WHERE franchise_id = ?`, "0001").Scan(&saved); err != nil || saved != `{"mine":"0001","generation":"whatif:0001:1"}` {
 		t.Fatal("saved session lost", err)
 	}
 	for _, table := range []string{"dead_cap_ledger", "contract_year_changes", "season_phases"} {

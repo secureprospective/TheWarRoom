@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -73,7 +75,7 @@ func TestReleaseDraftFromWhatIfAndMirrorIsolation(t *testing.T) {
 	if plan.Receipt.State != envelope.Ready || plan.Charge != "$7,000,000" || !strings.Contains(plan.Confirmation, "$7,000,000 dead cap this season") || !strings.Contains(plan.Receipt.Spec.Target.URL, "O=257") {
 		t.Fatalf("plan %+v", plan)
 	}
-	session, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
+	session, _, err := mflwhatif.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +306,7 @@ func TestReleaseWithdrawPathsFreePlayerSlot(t *testing.T) {
 				action = "buyout"
 			}
 			plan := planRelease(t, a, action, "0042")
-			session, _, err := state.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
+			session, _, err := mflwhatif.NewWhatIfSessions(a.core.WhatifPools).Load(a.core.Ctx, "0001")
 			if err != nil {
 				t.Fatal(err)
 			}

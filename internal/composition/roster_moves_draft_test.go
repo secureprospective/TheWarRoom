@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -48,7 +48,7 @@ func TestRosterDraftTargetsAndDirections(t *testing.T) {
 				r.Spec.Expected.RosterStatus != tc.want || r.Spec.Intent != tc.intent {
 				t.Fatalf("draft: %+v %v", r, err)
 			}
-			if err := platformapp.ValidateMoveURL(r.Spec.Target.URL); err != nil {
+			if err := planwatch.ValidateMoveURL(r.Spec.Target.URL); err != nil {
 				t.Fatal(err)
 			}
 			stored, err := a.core.Moves.Get(a.core.Ctx, r.CorrelationID)

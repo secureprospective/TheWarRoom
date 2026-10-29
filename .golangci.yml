@@ -152,11 +152,11 @@ linters:
             - "!**/internal/app/archive/**"
             - "!**/internal/app/commissioner/**"
             - "!**/internal/app/comms/**"
-            - "!**/internal/app/contracts/**"
+            - "!**/internal/app/mflref/contracts/**"
             - "!**/internal/app/control/**"
             - "!**/internal/app/counterparties/**"
             - "!**/internal/app/draft/**"
-            - "!**/internal/app/trades/**"
+            - "!**/internal/app/mflref/trades/**"
             - "!**/internal/app/scoring/**"
             - "!**/internal/app/sources/**"
             - "!**/internal/app/market/**"
@@ -167,6 +167,7 @@ linters:
             - "!**/internal/app/now/**"
             - "!**/internal/app/offers/**"
             - "!**/internal/app/platform/**"
+            - "!**/internal/app/mflref/planwatch/**"
           allow:
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
@@ -211,11 +212,11 @@ linters:
         app-contracts-no-siblings:
           list-mode: lax
           files:
-            - "**/internal/app/contracts/**"
+            - "**/internal/app/mflref/contracts/**"
           allow:
             - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
-            - github.com/secureprospective/TheWarRoom/internal/app/contracts$
-            - github.com/secureprospective/TheWarRoom/internal/app/contracts/
+            - github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts$
+            - github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
             - github.com/secureprospective/TheWarRoom/internal/app/season$
@@ -276,6 +277,7 @@ linters:
           files:
             - "**/internal/app/platform/**"
           allow:
+            - github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch$
             - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
             - github.com/secureprospective/TheWarRoom/internal/app/platform$
             - github.com/secureprospective/TheWarRoom/internal/app/platform/
@@ -399,11 +401,11 @@ linters:
         app-trades-no-siblings:
           list-mode: lax
           files:
-            - "**/internal/app/trades/**"
+            - "**/internal/app/mflref/trades/**"
           allow:
             - github.com/secureprospective/TheWarRoom/internal/commandcatalog$
-            - github.com/secureprospective/TheWarRoom/internal/app/trades$
-            - github.com/secureprospective/TheWarRoom/internal/app/trades/
+            - github.com/secureprospective/TheWarRoom/internal/app/mflref/trades$
+            - github.com/secureprospective/TheWarRoom/internal/app/mflref/trades/
             - github.com/secureprospective/TheWarRoom/internal/app/report$
             - github.com/secureprospective/TheWarRoom/internal/app/report/
             - github.com/secureprospective/TheWarRoom/internal/app/season$

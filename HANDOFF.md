@@ -1,37 +1,42 @@
 # Handoff
 
 ## Baton
-Review — 2026-10-29, `session/p9-s2b`. Implementation committed; no push authorized.
+Review — 2026-10-29, `session/p9-s3`. Coherent what-if/watcher slice; no push authorized.
 
 ## Where it stands
-- `leaguemigration.Source.Read` returns native `Candidate`/`Plan`; raw read, Prepare
-  translation and settings now belong to `leaguemigration/mflsource`.
-- Native writer loses its boundary seam exemption. Candidate preserves held-ID owners
-  and actionable problems, including invitation reads of currently malformed sources.
-- Research reads held names/limits through `LeagueReference`; MFL config implements it.
-- MFL debt 53 → 50: one reference port removes an import; two MFL fixture-builder
-  pairs become a fenced fixture source (not erased imports). Only composition retains
-  a runtime seam exemption. No composition/core fingerprints changed.
-- No commands/features retired, shared NFL ingestion moved, network writes or pushes.
+- Frozen contracts and trade plans moved under `internal/app/mflref`; local watcher
+  polling, landing, roster-plan checks and binding implementation belong to planwatch.
+  Platform promotes those methods for desktop compatibility (one explicit debt pair).
+- Session model/lifecycle belongs to `internal/mflref/whatif`; raw SQL, mirror types
+  and the unchanged shared whatif.db migration sequence remain in state. No stores
+  import another store. Old literal sessions/plans survive file close/reopen.
+- Fence debt 50 → 47: trade source pair and three archived commstest source pairs
+  become reference-owned; platform compatibility adds one pair. Every pair has a reason.
+- Native domain roots get transitive production-import checks; legacy debt and
+  composition cannot launder a native path. Mixed adapters remain named direct debt.
+- Exactly 13 authorized composition fingerprints refreshed; imports/selectors only.
+  No commands retired, schemas renamed, engine/native policy changed or MFL writes.
 
 ## Evidence
-- Final scoped race batches: 86 top-level PASS; 11 preparation fixtures and 11 stored
-  roundtrips PASS. Malformed source, read/record rollback, fresh fake-source
-  Prepare → Import → Review and corrected-source retry PASS.
-- Real source adapter exercised with guarded fake HTTP transport: zero write requests.
-- `make lint`, `make boundary` PASS (159 fingerprints); pinned pnpm 10.34.3 frozen
-  install/build PASS. Existing large-chunk warning remains. Hooks run on commit.
-- Worktree-only detailed debt reasons, logs and moves: `_x/REPORT.md`, `_x/MOVED.md`.
+- Scoped race batches: 324 top-level PASS (219 packages/tool, 98 touched composition,
+  7 migration); 11 preparation fixtures + 11 stored roundtrips PASS.
+- Restart/stale mirror, raw old-data reopen, native-rule/MFL separation, guarded
+  source observation and no-MFL-write checks PASS. No GUI or full-suite claim.
+- Lint, boundary (159 fingerprints), placement, generated doors and frontend build PASS.
+  Wails regenerated without output changes; bindings-fresh PASS. Commit uses hooks.
+- Worktree-only details, logs and move ledger: `_x/REPORT.md`, `_x/MOVED-s3.md`.
 
-## Next move / blocked on
-- Independent review; no GUI acceptance or full-suite claim.
-- Remaining 50 pairs: typed held ports/frozen root-core wiring, MFL-only shared-source
-  transport readers, and slice-3 rule/what-if/state policy. Transitive closure is not
-  enforced yet. Further frozen adapter changes require explicit review, not rehashing.
-- `_p9/`, `_x/`, `.lintcache/` are untracked scratch/cache, not deliverables.
+## Next move / debt
+- Review this coherent first half. Remaining mixed ownership: envelope rule predicates,
+  offers/bids plan policy, state trade plans/schema, moves persistence; shared lineup
+  rule policy; held native-seed source types and other direct source-reading adapters.
+- Do not claim all mixed application adapters have native transitive isolation.
+  Native roots are explicit in `docs/architecture/boundary-mfl.tsv`; expand only after
+  removing their held-source debt. Platform is a compatibility facade, not native core.
+- Reviewer GUI check: existing MFL what-if survives restart; a newer mirror says stale
+  until Reset; handed-off owner plan lands after source refresh, with no MFL submission.
 
 ## Tried and rejected
-- Leaving raw MFL config/draft types on the native Source port: still couples writer
-  to fenced packages. Adapter now returns the prepared native plan and problems.
-- Separate tiny Plan-only file: failed bloat ratchet; native contract stays together
-  in `export.go`. No baseline increase or boundary fingerprint refresh.
+- A second session store importing state: violates store ownership. Keep raw record SQL
+  next to its shared migration; move the reference model/lifecycle instead.
+- Standalone tiny binding file: bloat ratchet rejected it. Bindings live with plan actions.

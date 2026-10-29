@@ -8,7 +8,7 @@ github.com/secureprospective/TheWarRoom/internal/app/archive	303.657
 github.com/secureprospective/TheWarRoom/internal/app/commissioner	542.256
 github.com/secureprospective/TheWarRoom/internal/app/commissioner/native	1.024
 github.com/secureprospective/TheWarRoom/internal/app/comms	3.844
-github.com/secureprospective/TheWarRoom/internal/app/contracts	21.175
+github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts	21.175
 github.com/secureprospective/TheWarRoom/internal/app/control	1.189
 github.com/secureprospective/TheWarRoom/internal/app/core	30.356
 github.com/secureprospective/TheWarRoom/internal/app/counterparties	122.831
@@ -25,7 +25,7 @@ github.com/secureprospective/TheWarRoom/internal/app/report	1.019
 github.com/secureprospective/TheWarRoom/internal/app/research	7.876
 github.com/secureprospective/TheWarRoom/internal/app/scoring	1.034
 github.com/secureprospective/TheWarRoom/internal/app/sources	20.954
-github.com/secureprospective/TheWarRoom/internal/app/trades	1.220
+github.com/secureprospective/TheWarRoom/internal/app/mflref/trades	1.220
 github.com/secureprospective/TheWarRoom/internal/archive	1.079
 github.com/secureprospective/TheWarRoom/internal/commandcatalog	1.039
 github.com/secureprospective/TheWarRoom/internal/commissioner	252.301

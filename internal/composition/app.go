@@ -13,10 +13,10 @@ import (
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"

@@ -100,7 +100,11 @@ func finishDoorSources(wails, cli, bar *strings.Builder, features map[string]boo
 	slices.Sort(names)
 	wails.WriteString("import (\n")
 	for _, name := range names {
-		fmt.Fprintf(wails, "%sapi %q\n", name, "github.com/secureprospective/TheWarRoom/internal/app/"+name)
+		owner := name
+		if name == "contracts" || name == "trades" {
+			owner = "mflref/" + name
+		}
+		fmt.Fprintf(wails, "%sapi %q\n", name, "github.com/secureprospective/TheWarRoom/internal/app/"+owner)
 	}
 	wails.WriteString(")\ntype commandAPIs struct {\n")
 	for _, name := range names {

@@ -8,8 +8,8 @@ internal/app/comms/commstest	comms
 internal/app/archive	archive
 internal/app/archive/archivetest	archive
 internal/app/commissioner	commissioner
-internal/app/contracts	contracts
-internal/app/contracts/contractstest	contracts
+internal/app/mflref/contracts	contracts
+internal/app/mflref/contracts/contractstest	contracts
 internal/app/draft	draft
 internal/app/draft/drafttest	draft
 internal/app/market	market
@@ -106,7 +106,7 @@ internal/app/control	control
 internal/app/season/seasontest	platform
 internal/app/now	now
 internal/app/now/nowtest	now
-internal/app/trades	trades
+internal/app/mflref/trades	trades
 internal/app/core	core
 internal/app/core/coretest	core
 internal/commandcatalog	core
@@ -133,3 +133,5 @@ internal/leaguemigration/mflsource	platform
 internal/playerrecord	core
 internal/store/playerrecord	core
 internal/pickvalue	market
+internal/app/mflref/planwatch	platform
+internal/mflref/whatif	contracts

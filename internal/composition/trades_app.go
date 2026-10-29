@@ -4,12 +4,15 @@ import (
 	"context"
 	"time"
 
-	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
-	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
+
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
@@ -124,10 +127,10 @@ func (a *App) tradeSimulation(ctx context.Context, mine, other string) (tradesap
 	//nolint:wrapcheck // Preserve what-if service errors.
 	return (tradesapp.SimulationWorkflow{
 		Scratch: db.OpenScratch,
-		Open: func(ctx context.Context, scratch *db.Pools, fid string) (state.WhatIfSession, *state.Store, error) {
+		Open: func(ctx context.Context, scratch *db.Pools, fid string) (mflwhatif.WhatIfSession, *state.Store, error) {
 			return contractsapp.ScratchWhatIf(ctx, contractsapp.StoresOf(a.core), scratch, fid)
 		},
-		Mirror: func(ctx context.Context, fid string) (state.WhatIfSession, error) {
+		Mirror: func(ctx context.Context, fid string) (mflwhatif.WhatIfSession, error) {
 			return contractsapp.MirrorWhatIf(ctx, contractsapp.StoresOf(a.core), fid)
 		},
 		Load: contractsapp.LoadWhatIf,
@@ -153,7 +156,7 @@ func (a *App) tradeClockReasons(ctx context.Context) []string {
 	return tradesapp.ClockReasons(func() (snapshot.Sourced[leagueclock.Reading], error) { return a.targetClock(ctx) }, time.Now, time.Local)
 }
 
-func tradeCentsCorrection(p state.MirrorPlayer, afterOwner string, s state.WhatIfSession) domain.Money {
+func tradeCentsCorrection(p state.MirrorPlayer, afterOwner string, s mflwhatif.WhatIfSession) domain.Money {
 	return tradesapp.CentsCorrection(p, afterOwner, s)
 }
 func tradeDeadlineReasons(now time.Time, windows []leagueclock.Window) []string {
@@ -175,7 +178,7 @@ func (a *App) tradePlans() tradesapp.PlanWorkflow {
 		},
 		Own: a.requireOwnFranchise, Project: a.tradeProjection, Supersede: func(ctx context.Context, e envelope.Envelope, now time.Time) error {
 			return contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now)
-		}, Audit: a.logMove, Changed: a.core.MovesChanged, HandOff: a.tradeBuilderHandOff, State: a.tradeState, ValidateURL: platformapp.ValidateMoveURL, OpenURL: a.core.OpenURL, Wake: a.wakeMoves}
+		}, Audit: a.logMove, Changed: a.core.MovesChanged, HandOff: a.tradeBuilderHandOff, State: a.tradeState, ValidateURL: planwatch.ValidateMoveURL, OpenURL: a.core.OpenURL, Wake: a.wakeMoves}
 }
 
 func (h tradesHost) TradeRequest(franchise string, offer leaguefeed.PendingTrade) envelope.TradeRequest {

@@ -448,9 +448,16 @@ func TestWatcherUnknownIntentLoggedOnce(t *testing.T) {
 	}
 }
 
-type moveFeedTransport struct{ requests []string }
+type moveFeedTransport struct {
+	requests []string
+	writes   int
+}
 
 func (m *moveFeedTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.Method != http.MethodGet || !strings.HasSuffix(r.URL.Path, "/export") {
+		m.writes++
+		return nil, errors.New("MFL writes forbidden")
+	}
 	feed := r.URL.Query().Get("TYPE")
 	m.requests = append(m.requests, feed)
 	bodies := map[string]string{
@@ -494,7 +501,7 @@ func TestWatcherIRRefreshThroughRealAdapters(t *testing.T) {
 	if err := a.checkMoves(a.core.Ctx); err != nil {
 		t.Fatal(err)
 	}
-	if storedMove(t, a).State() != envelope.Landed || events != 1 ||
+	if transport.writes != 0 || storedMove(t, a).State() != envelope.Landed || events != 1 ||
 		a.core.RostersCheckedAt.IsZero() || a.core.RulesCheckedAt.Load() == 0 ||
 		!reflect.DeepEqual(transport.requests, []string{"league", "rules", "rosters", "salaryAdjustments"}) {
 		t.Fatalf("state %s events %d requests %v", storedMove(t, a).State(), events, transport.requests)
