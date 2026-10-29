@@ -127,8 +127,9 @@ it('loads identity at live startup: own-team Act enabled without Control Room; o
   expect(read).toHaveBeenCalledTimes(1);
   await act(async () => { finish(status); });
   expect(button('Plan for 0025')?.disabled).toBe(false);
-  expect(button(status.teamActionRefusal)?.disabled).toBe(true);
-  expect(container.textContent).toContain(status.teamActionRefusal);
+  const recovery = 'Switch the franchise view to the team linked to your MFL login. If it is wrong, reconnect the correct MFL account.';
+  expect(button(recovery)?.disabled).toBe(true);
+  expect(container.textContent).toContain(recovery);
   expect(c.history()).toEqual([]);
   expect(read).toHaveBeenCalledTimes(1);
   act(() => mounted?.render(createElement(MFLConnection)));
@@ -307,7 +308,7 @@ it('keeps the picker for viewing and shows Go refusal words on team-action butto
   c.dispatch('franchise.set', { franchiseId: other });
   expect(c.read().franchiseId).toBe(other);
   expect(c.readMFLKey().myFranchise).toBe('0025');
-  expect(button()).toContain('Go: only your own team.');
+  expect(button()).toContain('Switch the franchise view to the team linked to your MFL login.');
   expect(button()).toContain('disabled=');
   const picker = renderToStaticMarkup(createElement(FranchisePicker, { snapshot }));
   expect(picker).toContain('View a franchise');
@@ -316,9 +317,9 @@ it('keeps the picker for viewing and shows Go refusal words on team-action butto
   expect(c.teamActionReason('contracts.set', { field: 'sort', value: 'name' })).toBeUndefined();
   expect(c.teamActionReason('contracts.set', {
     field: 'whatif', value: { mine: other, action: 'reset' },
-  })).toBe(status.teamActionRefusal);
+  })).toContain('Switch the franchise view');
   expect(c.teamActionReason('trade.builder', { action: 'preview', mine: other }))
-    .toBe(status.teamActionRefusal);
+    .toContain('Switch the franchise view');
   read.mockResolvedValue({ ...absent, teamActionRefusal: 'Go: connect your MFL account.' });
   await c.loadMFLKey();
   expect(button()).toContain('Go: connect your MFL account.');
