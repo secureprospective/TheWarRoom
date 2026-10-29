@@ -224,7 +224,7 @@ func (c *comparison) picks() {
 
 // settings compares every setting the import carries; the counted ones are read from the franchises.
 func (c *comparison) settings() {
-	skip := carried()
+	skip := CarriedFields()
 	app := map[leaguerules.FieldPath]leaguerules.Setting{}
 	for _, ch := range leaguerules.SeedChanges(c.app.Rules, "", 0, epoch) {
 		app[ch.Field] = ch.New

@@ -169,3 +169,29 @@ type ruleEntry struct {
 type ttext struct {
 	T string `json:"$t"`
 }
+
+// FranchiseName resolves a held name without fetching or defaulting missing names.
+func (c RawConfig) FranchiseName(id string) (string, bool) {
+	name, found := "", false
+	for _, f := range c.Franchises {
+		if f.ID == id {
+			name, found = f.Name, true
+		}
+	}
+	return name, found
+}
+
+// StarterLimit returns a held limit, preferring an open slot if repeated entries exist.
+func (c RawConfig) StarterLimit(position string) (string, bool) {
+	limit, found := "", false
+	for _, p := range c.Starters.Positions {
+		if p.Name != position {
+			continue
+		}
+		limit, found = p.Limit, true
+		if limit != "0" && limit != "0-0" {
+			return limit, true
+		}
+	}
+	return limit, found
+}

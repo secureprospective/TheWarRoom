@@ -11,6 +11,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 )
 
@@ -29,7 +30,7 @@ func (l migrationLedger) Execute(ctx context.Context, raw commissioner.RawComman
 	return l.s.ExecuteCommissioner(ctx, raw, principal, nil)
 }
 
-func migrationService(t *testing.T, export leaguemigration.Export) (*leaguemigration.Service, *Store, *migrationtest.Source) {
+func migrationService(t *testing.T, export mflsource.Export) (*leaguemigration.Service, *Store, *migrationtest.Source) {
 	t.Helper()
 	s, c, _ := newStore(t)
 	c.now = migrationtest.ReadAt.Add(time.Hour)
@@ -39,13 +40,13 @@ func migrationService(t *testing.T, export leaguemigration.Export) (*leaguemigra
 	return svc, s, src
 }
 
-func migrationLeagues(t *testing.T) map[string]leaguemigration.Export {
+func migrationLeagues(t *testing.T) map[string]mflsource.Export {
 	t.Helper()
 	legacy, err := migrationtest.Legacy()
 	if err != nil {
 		t.Fatal(err)
 	}
-	out := map[string]leaguemigration.Export{"Legacy NFL 14432": legacy}
+	out := map[string]mflsource.Export{"Legacy NFL 14432": legacy}
 	for name, spec := range migrationtest.Specs() {
 		out[name] = migrationtest.Synthetic(name, spec)
 	}
@@ -91,7 +92,7 @@ func TestMigrationRoundTrip(t *testing.T) {
 	}
 }
 
-func assertNativeEqualsMFL(t *testing.T, s *Store, svc *leaguemigration.Service, export leaguemigration.Export,
+func assertNativeEqualsMFL(t *testing.T, s *Store, svc *leaguemigration.Service, export mflsource.Export,
 	req leaguemigration.Request) {
 	t.Helper()
 	ctx := t.Context()
@@ -103,7 +104,7 @@ func assertNativeEqualsMFL(t *testing.T, s *Store, svc *leaguemigration.Service,
 		t.Fatal("after the cutover the league must be native")
 	}
 	export.ReadAt = svc.Now() // the instant the service read MFL at
-	plan, err := leaguemigration.Prepare(export)
+	plan, err := mflsource.Prepare(export)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +190,7 @@ func TestMigrationReviewWordsADifferencePerFranchise(t *testing.T) {
 	}
 	// MFL moves on after the import: two contracts change and a pick is traded.
 	changed := src.Export
-	changed.Rosters = append([]leaguemigration.Rostered{}, changed.Rosters...)
+	changed.Rosters = append([]mflsource.Rostered{}, changed.Rosters...)
 	changed.Rosters[0].Salary, changed.Rosters[1].ContractYear = "9.99", "2031"
 	changed.Future = append(changed.Future[:0:0], changed.Future...)
 	changed.Future[1].Owner = "0005"

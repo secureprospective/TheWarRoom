@@ -16,6 +16,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 
@@ -37,21 +38,21 @@ func read(path string) ([]byte, error) {
 
 // Legacy is the Legacy NFL (MFL league 14432) as the app holds it: its 2026 league, rules, rosters and
 // both draft reports.
-func Legacy() (leaguemigration.Export, error) {
+func Legacy() (mflsource.Export, error) {
 	leagueBody, err := read("internal/ingestion/league/testdata/league-2026.json")
 	if err != nil {
-		return leaguemigration.Export{}, err
+		return mflsource.Export{}, err
 	}
 	rulesBody, err := read("internal/ingestion/league/testdata/rules-2026.json")
 	if err != nil {
-		return leaguemigration.Export{}, err
+		return mflsource.Export{}, err
 	}
 	config, err := league.Parse(leagueBody, rulesBody)
 	if err != nil {
-		return leaguemigration.Export{}, fmt.Errorf("parse league: %w", err)
+		return mflsource.Export{}, fmt.Errorf("parse league: %w", err)
 	}
 	config.CurrentSeason = 2026
-	out := leaguemigration.Export{LeagueID: "14432", Name: "Legacy NFL", Season: 2026, Config: config,
+	out := mflsource.Export{LeagueID: "14432", Name: "Legacy NFL", Season: 2026, Config: config,
 		ReadAt: ReadAt, Players: map[string]string{}}
 	if out.Rosters, err = legacyRosters(); err != nil {
 		return out, err
@@ -85,7 +86,7 @@ func Legacy() (leaguemigration.Export, error) {
 	return out, nil
 }
 
-func legacyRosters() ([]leaguemigration.Rostered, error) {
+func legacyRosters() ([]mflsource.Rostered, error) {
 	body, err := read("internal/ingestion/testdata/comms/rosters-2026.json")
 	if err != nil {
 		return nil, err
@@ -103,10 +104,10 @@ func legacyRosters() ([]leaguemigration.Rostered, error) {
 	if err := json.Unmarshal(body, &env); err != nil {
 		return nil, fmt.Errorf("parse rosters: %w", err)
 	}
-	var out []leaguemigration.Rostered
+	var out []mflsource.Rostered
 	for _, f := range env.Rosters.Franchise {
 		for _, p := range f.Player {
-			out = append(out, leaguemigration.Rostered{Franchise: f.ID, Player: p.ID, Status: p.Status,
+			out = append(out, mflsource.Rostered{Franchise: f.ID, Player: p.ID, Status: p.Status,
 				Salary: p.Salary, ContractYear: p.ContractYear, ContractStatus: p.ContractStatus,
 				ContractInfo: p.ContractInfo})
 		}
@@ -117,7 +118,7 @@ func legacyRosters() ([]leaguemigration.Rostered, error) {
 // Source serves one fixture league as MFL would. FailAt names the part that fails, as MFL going away
 // mid-read would; it never writes anything.
 type Source struct {
-	Export leaguemigration.Export
+	Export mflsource.Export
 	FailAt string
 	Reads  int
 }
@@ -133,20 +134,20 @@ func (s *Source) fail(part string) error {
 	return nil
 }
 
-func (s *Source) League(context.Context) (leaguemigration.LeagueRead, error) {
+func (s *Source) League(context.Context) (mflsource.LeagueRead, error) {
 	if err := s.fail("league"); err != nil {
-		return leaguemigration.LeagueRead{}, err
+		return mflsource.LeagueRead{}, err
 	}
 	e := s.Export
-	return leaguemigration.LeagueRead{ID: e.LeagueID, Name: e.Name, Config: e.Config, Owners: e.Owners,
+	return mflsource.LeagueRead{ID: e.LeagueID, Name: e.Name, Config: e.Config, Owners: e.Owners,
 		Champions: e.Champions}, nil
 }
 
-func (s *Source) Rosters(context.Context) ([]leaguemigration.Rostered, error) {
+func (s *Source) Rosters(context.Context) ([]mflsource.Rostered, error) {
 	return s.Export.Rosters, s.fail("rosters")
 }
 
-func (s *Source) Adjustments(context.Context) ([]leaguemigration.Adjustment, error) {
+func (s *Source) Adjustments(context.Context) ([]mflsource.Adjustment, error) {
 	return s.Export.Adjustments, s.fail("adjustments")
 }
 
@@ -165,4 +166,8 @@ func pid(raw string) *playerid.PlayerID {
 		panic(err)
 	}
 	return &id
+}
+
+func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
+	return mflsource.ReadCandidate(ctx, s, now) //nolint:wrapcheck // Fixtures preserve production source refusals.
 }

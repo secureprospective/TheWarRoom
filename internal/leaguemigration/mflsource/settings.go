@@ -1,12 +1,14 @@
-package leaguemigration
+package mflsource
 
 import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
@@ -15,14 +17,6 @@ const citation = "Your MFL league"
 
 // notHeld is the citation of a setting MFL does not hold: it waits for the commissioner's ruling.
 const notHeld = "Your MFL league does not hold this setting"
-
-// carried are the settings the app counts or carries from the starting snapshot itself (the franchises,
-// their divisions and conferences), so the translator leaves them to it and the review reads them from
-// the franchises instead.
-func carried() map[leaguerules.FieldPath]bool {
-	return map[leaguerules.FieldPath]bool{"league.teams": true, "league.divisions": true, "league.alignment": true,
-		"league.divisionConferences": true, "league.sides": true}
-}
 
 // Settings carries an MFL league's settings into the app value for value. What MFL holds is set as MFL
 // holds it; what it does not hold waits for a ruling and is listed; what MFL holds but the app cannot
@@ -270,9 +264,9 @@ func (t *translation) regularWeeks(config league.RawConfig) (int, bool) {
 
 // waiting lists the settings MFL does not hold, by their labels on the rules screen.
 func (t *translation) waiting(r leaguerules.RuleSet) {
-	skip := carried()
+	skip := leaguemigration.CarriedFields()
 	var labels []string
-	for _, c := range leaguerules.SeedChanges(r, "", 0, epoch) {
+	for _, c := range leaguerules.SeedChanges(r, "", 0, time.Unix(1, 0).UTC()) {
 		if skip[c.Field] || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
 			continue
 		}

@@ -8,12 +8,13 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // assertAppHoldsSource checks the native league against the raw MFL export directly, never through the
 // import's own translation, so a field the import itself dropped fails here by name.
-func assertAppHoldsSource(t *testing.T, export leaguemigration.Export, app leaguemigration.AppLeague) {
+func assertAppHoldsSource(t *testing.T, export mflsource.Export, app leaguemigration.AppLeague) {
 	t.Helper()
 	held := map[string]string{}
 	for _, f := range app.Snapshot.Franchises {
@@ -66,7 +67,7 @@ func assertAppHoldsSource(t *testing.T, export leaguemigration.Export, app leagu
 	assertSettingsHoldSource(t, export, app.Rules)
 }
 
-func assertPicksAndChargesHoldSource(t *testing.T, export leaguemigration.Export, app leaguemigration.AppLeague,
+func assertPicksAndChargesHoldSource(t *testing.T, export mflsource.Export, app leaguemigration.AppLeague,
 	held map[string]string) {
 	t.Helper()
 	picks := map[string]bool{}
@@ -114,7 +115,7 @@ func assertPicksAndChargesHoldSource(t *testing.T, export leaguemigration.Export
 	}
 }
 
-func assertSettingsHoldSource(t *testing.T, export leaguemigration.Export, r leaguerules.RuleSet) {
+func assertSettingsHoldSource(t *testing.T, export mflsource.Export, r leaguerules.RuleSet) {
 	t.Helper()
 	c := export.Config
 	number := func(raw string) int { n, _ := strconv.Atoi(raw); return n }

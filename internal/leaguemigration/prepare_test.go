@@ -8,13 +8,14 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	ingestleague "github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-func leagues(t *testing.T) map[string]leaguemigration.Export {
+func leagues(t *testing.T) map[string]mflsource.Export {
 	t.Helper()
-	out := map[string]leaguemigration.Export{}
+	out := map[string]mflsource.Export{}
 	legacy, err := migrationtest.Legacy()
 	if err != nil {
 		t.Fatal(err)
@@ -31,7 +32,7 @@ func TestEveryFixtureLeaguePreparesWhole(t *testing.T) {
 	for name, export := range leagues(t) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			plan, err := leaguemigration.Prepare(export)
+			plan, err := mflsource.Prepare(export)
 			if err != nil {
 				problems, _ := leaguemigration.AsProblems(err)
 				t.Fatalf("%v: %q", err, problems)
@@ -57,7 +58,7 @@ func TestLegacySettingsAreItsOwnNotThePreset(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	plan, err := leaguemigration.Prepare(legacy)
+	plan, err := mflsource.Prepare(legacy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +84,7 @@ func TestEdgeLeagueSettings(t *testing.T) {
 	t.Parallel()
 	plan := func(name string) leaguemigration.Plan {
 		t.Helper()
-		p, err := leaguemigration.Prepare(migrationtest.Synthetic(name, migrationtest.Specs()[name]))
+		p, err := mflsource.Prepare(migrationtest.Synthetic(name, migrationtest.Specs()[name]))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -128,47 +129,47 @@ func contains(list []string, part string) bool {
 
 func TestFailurePathsEndInAPlainList(t *testing.T) {
 	t.Parallel()
-	base := func() leaguemigration.Export {
+	base := func() mflsource.Export {
 		return migrationtest.Synthetic("Base", migrationtest.Specs()["8 teams"])
 	}
 	tests := map[string]struct {
-		mutate func(*leaguemigration.Export)
+		mutate func(*mflsource.Export)
 		want   string
 	}{
-		"duplicate player": {func(e *leaguemigration.Export) {
+		"duplicate player": {func(e *mflsource.Export) {
 			dup := e.Rosters[0]
 			dup.Franchise = "0002"
 			e.Rosters = append(e.Rosters, dup)
 		}, "is listed twice"},
-		"unknown player": {func(e *leaguemigration.Export) { delete(e.Players, e.Rosters[0].Player) },
+		"unknown player": {func(e *mflsource.Export) { delete(e.Players, e.Rosters[0].Player) },
 			"not in MFL's player list"},
-		"leading zeros dropped": {func(e *leaguemigration.Export) {
+		"leading zeros dropped": {func(e *mflsource.Export) {
 			e.Players["100"] = "No zeros"
 			e.Rosters[0].Player = "100"
 		}, `"100"`},
-		"partial export: no franchises": {func(e *leaguemigration.Export) { e.Config.Franchises = nil },
+		"partial export: no franchises": {func(e *mflsource.Export) { e.Config.Franchises = nil },
 			"a league needs between 2 and 32"},
-		"partial export: roster of an unlisted franchise": {func(e *leaguemigration.Export) {
+		"partial export: roster of an unlisted franchise": {func(e *mflsource.Export) {
 			e.Rosters[0].Franchise = "0099"
 		}, `names franchise "0099"`},
-		"partial export: no rosters": {func(e *leaguemigration.Export) { e.Rosters = nil }, "no rostered players"},
-		"unreadable salary":          {func(e *leaguemigration.Export) { e.Rosters[0].Salary = "lots" }, "not an amount"},
-		"unknown roster status": {func(e *leaguemigration.Export) { e.Rosters[0].Status = "BENCH" },
+		"partial export: no rosters": {func(e *mflsource.Export) { e.Rosters = nil }, "no rostered players"},
+		"unreadable salary":          {func(e *mflsource.Export) { e.Rosters[0].Salary = "lots" }, "not an amount"},
+		"unknown roster status": {func(e *mflsource.Export) { e.Rosters[0].Status = "BENCH" },
 			"roster status"},
-		"unreadable scoring": {func(e *leaguemigration.Export) {
+		"unreadable scoring": {func(e *mflsource.Export) {
 			e.Config.ScoringRules[0].Rules[0].Points = "*lots"
 		}, "scoring could not be read"},
-		"unknown position": {func(e *leaguemigration.Export) {
+		"unknown position": {func(e *mflsource.Export) {
 			e.Config.Starters.Positions = append(e.Config.Starters.Positions, league("Def"))
 		}, `"Def"`},
-		"nameless franchise": {func(e *leaguemigration.Export) { e.Config.Franchises[2].Name = "" }, "has no name"},
+		"nameless franchise": {func(e *mflsource.Export) { e.Config.Franchises[2].Name = "" }, "has no name"},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			export := base()
 			tc.mutate(&export)
-			plan, err := leaguemigration.Prepare(export)
+			plan, err := mflsource.Prepare(export)
 			problems, ok := leaguemigration.AsProblems(err)
 			if !ok || len(plan.Seed.Franchises) != 0 || len(plan.Create.Seed) != 0 {
 				t.Fatalf("a broken league produced a plan: %v", err)
@@ -186,7 +187,7 @@ func TestReadStopsAtTheFirstUnreachablePart(t *testing.T) {
 		t.Run(part, func(t *testing.T) {
 			t.Parallel()
 			src := &migrationtest.Source{Export: migrationtest.Synthetic("x", migrationtest.Specs()["8 teams"]), FailAt: part}
-			export, err := leaguemigration.Read(t.Context(), src, migrationtest.ReadAt)
+			export, err := mflsource.Read(t.Context(), src, migrationtest.ReadAt)
 			var read *leaguemigration.ReadError
 			if !errors.As(err, &read) || !errors.Is(err, migrationtest.ErrUnreachable) || export.Name != "" {
 				t.Fatalf("a failed read must end with nothing held: %v %+v", err, export.Name)

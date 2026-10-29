@@ -163,11 +163,19 @@ func TestMFLBoundaryRejectsForbiddenImports(t *testing.T) {
 	}
 }
 
-func TestMFLBoundaryAllowsMigrationSeam(t *testing.T) {
+func TestMFLBoundaryAllowsSourceAdapterNotDestinationWriter(t *testing.T) {
 	root := boundaryFixture(t, "package composition\n")
-	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv", "fence\tinternal/mfl\t-\nseam\tinternal/leaguemigration\t-\n")
-	fixtureWrite(t, root, "internal/leaguemigration/source.go", "package leaguemigration\nimport _ \"example.com/project/internal/mfl\"\n")
+	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv",
+		"fence\tinternal/mfl\t-\nfence\tinternal/leaguemigration/mflsource\t-\n")
+	fixtureWrite(t, root, "internal/leaguemigration/mflsource/source.go",
+		"package mflsource\nimport _ \"example.com/project/internal/mfl\"\n")
 	if err := checkMFL(root); err != nil {
+		t.Fatal(err)
+	}
+	fixtureWrite(t, root, "internal/leaguemigration/writer.go",
+		"package leaguemigration\nimport _ \"example.com/project/internal/mfl\"\n")
+	if err := checkMFL(root); err == nil || !strings.Contains(err.Error(),
+		"internal/leaguemigration imports fenced internal/mfl") {
 		t.Fatal(err)
 	}
 }

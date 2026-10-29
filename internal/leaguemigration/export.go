@@ -1,6 +1,4 @@
-// Package leaguemigration moves a league from MFL into the app: it reads the MFL league (read only), lands
-// it whole as a league that follows MFL, compares the two before the switch, and prepares the owner
-// invitations. MFL is never written to; a move given up is started again from a fresh read.
+// Package leaguemigration lands a read-only source plan in the native league ledger.
 package leaguemigration
 
 import (
@@ -9,63 +7,37 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
-	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // epoch is the instant stored values are encoded at; the ledger records the real instant.
 var epoch = time.Unix(1, 0).UTC() //nolint:gochecknoglobals // a fixed instant, read only
 
-// Export is an MFL league as one read of it found it, every value as MFL states it.
-type Export struct {
-	LeagueID    string
-	Name        string
-	Season      int
-	Config      league.RawConfig
-	Rosters     []Rostered
-	Adjustments []Adjustment
-	Draft       []draftreports.Pick
-	Future      []draftreports.FuturePick
-	Owners      []Owner
-	// Players names each player MFL's player list holds, by MFL id.
-	Players   map[string]string
-	Champions []Champion
-	ReadAt    time.Time
+// Source reads a fresh candidate without changing the source league.
+type Source interface {
+	Read(ctx context.Context, now time.Time) (Candidate, error)
 }
 
-// Rostered is one rostered player's contract as MFL states it; Salary is MFL's raw millions ("1.30").
-type Rostered struct {
-	Franchise, Player, Status, Salary, ContractYear, ContractStatus, ContractInfo string
+// Candidate separates source reading and translation from native ledger writes.
+// Problems block import, but owners remain available for invitation review.
+type Candidate struct {
+	Name     string
+	Season   int
+	Owners   []Owner
+	Plan     Plan
+	Problems []string
 }
 
-// Adjustment is one MFL salary adjustment; Amount is MFL's raw millions, negative for a credit.
-type Adjustment struct{ ID, Franchise, Amount, Description string }
+func (c Candidate) prepared() (Plan, error) {
+	if len(c.Problems) > 0 {
+		return Plan{}, &Problems{List: c.Problems}
+	}
+	return c.Plan, nil
+}
 
 // Owner is the owner MFL lists for a franchise; either may be blank.
 type Owner struct{ Franchise, Name, Email string }
-
-// Champion is the franchise MFL records as a past season's champion.
-type Champion struct {
-	Season    int
-	Franchise string
-}
-
-// Source reads one MFL league. Every method only reads; none may change anything on MFL.
-type Source interface {
-	League(ctx context.Context) (LeagueRead, error)
-	Rosters(ctx context.Context) ([]Rostered, error)
-	Adjustments(ctx context.Context) ([]Adjustment, error)
-	Draft(ctx context.Context) ([]draftreports.Pick, []draftreports.FuturePick, error)
-	Players(ctx context.Context) (map[string]string, error)
-}
-
-// LeagueRead is MFL's league export: its settings, franchises, owners and past champions.
-type LeagueRead struct {
-	ID, Name  string
-	Config    league.RawConfig
-	Owners    []Owner
-	Champions []Champion
-}
 
 // ReadError says which part of the MFL league could not be read. Nothing is imported when a read fails.
 type ReadError struct {
@@ -79,38 +51,6 @@ func (e *ReadError) Error() string {
 }
 
 func (e *ReadError) Unwrap() error { return e.Err }
-
-// Read reads the whole league from MFL in one pass. A failure at any part ends the read with a ReadError,
-// and the caller holds nothing partial.
-func Read(ctx context.Context, src Source, now time.Time) (Export, error) {
-	var out Export
-	read, err := src.League(ctx)
-	if err != nil {
-		return Export{}, &ReadError{"league settings and franchises", err}
-	}
-	out.LeagueID, out.Name, out.Config, out.Owners, out.Champions = read.ID, read.Name, read.Config,
-		read.Owners, read.Champions
-	out.Season = read.Config.CurrentSeason
-	steps := []struct {
-		part string
-		run  func() error
-	}{
-		{"rosters and contracts", func() (err error) { out.Rosters, err = src.Rosters(ctx); return wrapped(err) }},
-		{"salary adjustments", func() (err error) { out.Adjustments, err = src.Adjustments(ctx); return wrapped(err) }},
-		{"draft picks", func() (err error) { out.Draft, out.Future, err = src.Draft(ctx); return wrapped(err) }},
-		{"player list", func() (err error) { out.Players, err = src.Players(ctx); return wrapped(err) }},
-	}
-	for _, step := range steps {
-		if err := step.run(); err != nil {
-			return Export{}, &ReadError{step.part, err}
-		}
-		if err := ctx.Err(); err != nil {
-			return Export{}, &ReadError{step.part, err}
-		}
-	}
-	out.ReadAt = now.UTC()
-	return out, nil
-}
 
 // Problems is everything that stops an import, in plain words. A league with problems is not imported.
 type Problems struct{ List []string }
@@ -131,10 +71,23 @@ func AsProblems(err error) ([]string, bool) {
 	return nil, false
 }
 
-// wrapped keeps the reader's own error under the ReadError that names the part.
-func wrapped(err error) error {
-	if err == nil {
-		return nil
-	}
-	return fmt.Errorf("%w", err)
+// Plan is an MFL league ready to land: the creation with its own settings, the starting snapshot, the
+// owners for the invitations, and notes on what waits for the commissioner. Go builds every part of it
+// from the read; no caller supplies rosters or settings.
+type Plan struct {
+	Create commissioner.RawArgs
+	Seed   commissioner.RawNativeSnapshot
+	Rules  leaguerules.RuleSet
+	Owners []Owner
+	Notes  []string
+	// Mapping is each MFL franchise id's app franchise.
+	Mapping map[string]string
+}
+
+// CarriedFields are the settings the app counts or carries from the starting snapshot itself (the franchises,
+// their divisions and conferences), so the translator leaves them to it and the review reads them from
+// the franchises instead.
+func CarriedFields() map[leaguerules.FieldPath]bool {
+	return map[leaguerules.FieldPath]bool{"league.teams": true, "league.divisions": true, "league.alignment": true,
+		"league.divisionConferences": true, "league.sides": true}
 }

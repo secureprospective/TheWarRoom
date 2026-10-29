@@ -45,44 +45,44 @@ type owners struct {
 func (s *Source) year() string { return strconv.Itoa(s.season) }
 
 // League reads the settings, scoring, franchises and divisions, then the name and owners.
-func (s *Source) League(ctx context.Context) (leaguemigration.LeagueRead, error) {
+func (s *Source) League(ctx context.Context) (LeagueRead, error) {
 	config, err := league.Discover(ctx, s.Client, s.ID, s.Now().Year())
 	if err != nil {
-		return leaguemigration.LeagueRead{}, fmt.Errorf("read league: %w", err)
+		return LeagueRead{}, fmt.Errorf("read league: %w", err)
 	}
 	s.season = config.CurrentSeason
 	env, err := ingestion.FetchLeagueExport[owners](ctx, s.Client, "league", s.year(), s.ID, nil)
 	if err != nil {
-		return leaguemigration.LeagueRead{}, fmt.Errorf("read league owners: %w", err)
+		return LeagueRead{}, fmt.Errorf("read league owners: %w", err)
 	}
-	out := leaguemigration.LeagueRead{ID: s.ID, Name: env.League.Name, Config: config}
+	out := LeagueRead{ID: s.ID, Name: env.League.Name, Config: config}
 	for _, f := range env.League.Franchises.Franchise {
 		out.Owners = append(out.Owners, leaguemigration.Owner{Franchise: f.ID, Name: f.OwnerName, Email: f.Email})
 	}
 	return out, nil
 }
 
-func (s *Source) Rosters(ctx context.Context) ([]leaguemigration.Rostered, error) {
+func (s *Source) Rosters(ctx context.Context) ([]Rostered, error) {
 	raw, err := rosters.Fetch(ctx, s.Client, s.year(), s.ID)
 	if err != nil {
 		return nil, fmt.Errorf("read rosters: %w", err)
 	}
-	out := make([]leaguemigration.Rostered, 0, len(raw))
+	out := make([]Rostered, 0, len(raw))
 	for _, r := range raw {
-		out = append(out, leaguemigration.Rostered{Franchise: r.FranchiseID, Player: r.PlayerID, Status: r.Status,
+		out = append(out, Rostered{Franchise: r.FranchiseID, Player: r.PlayerID, Status: r.Status,
 			Salary: r.Salary, ContractYear: r.ContractYear, ContractStatus: r.ContractStatus, ContractInfo: r.ContractInfo})
 	}
 	return out, nil
 }
 
-func (s *Source) Adjustments(ctx context.Context) ([]leaguemigration.Adjustment, error) {
+func (s *Source) Adjustments(ctx context.Context) ([]Adjustment, error) {
 	raw, err := salaryadjustments.Fetch(ctx, s.Client, s.year(), s.ID)
 	if err != nil {
 		return nil, fmt.Errorf("read salary adjustments: %w", err)
 	}
-	out := make([]leaguemigration.Adjustment, 0, len(raw))
+	out := make([]Adjustment, 0, len(raw))
 	for _, a := range raw {
-		out = append(out, leaguemigration.Adjustment{ID: a.ID, Franchise: a.FranchiseID, Amount: a.Amount,
+		out = append(out, Adjustment{ID: a.ID, Franchise: a.FranchiseID, Amount: a.Amount,
 			Description: a.Description})
 	}
 	return out, nil
@@ -106,4 +106,25 @@ func (s *Source) Players(context.Context) (map[string]string, error) {
 		return nil, fmt.Errorf("the app holds no player list yet; refresh it, then import again")
 	}
 	return players, nil
+}
+
+// Read reads every source part before preparing a native plan. A malformed plan
+// retains its metadata and owners so preparation and invitation wording stay intact.
+func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
+	return ReadCandidate(ctx, s, now)
+}
+
+// ReadCandidate adapts a raw read-only source to the native migration port.
+func ReadCandidate(ctx context.Context, src Reader, now time.Time) (leaguemigration.Candidate, error) {
+	export, err := Read(ctx, src, now)
+	if err != nil {
+		return leaguemigration.Candidate{}, err
+	}
+	plan, err := Prepare(export)
+	problems, ok := leaguemigration.AsProblems(err)
+	if err != nil && !ok {
+		return leaguemigration.Candidate{}, err
+	}
+	return leaguemigration.Candidate{Name: export.Name, Season: export.Season,
+		Owners: export.Owners, Plan: plan, Problems: problems}, nil
 }
