@@ -163,8 +163,19 @@ func TestStartupCompletionWithoutFreshMirror(t *testing.T) {
 		if failed {
 			a.core.StartupErr = errors.New("store floor failed")
 		}
-		a.core.SeasonChanged = func(context.Context) { t.Error("unexpected health update") }
+		health := 0
+		a.core.SeasonChanged = func(context.Context) {
+			select {
+			case <-a.core.Started:
+			default:
+				t.Error("health update before startup publication")
+			}
+			health++
+		}
 		a.finishStartup(t.Context(), failed)
+		if health != 1 {
+			t.Fatalf("got %d health updates, want 1", health)
+		}
 		select {
 		case <-a.core.Started:
 		default:

@@ -85,6 +85,7 @@ func Fetch(ctx context.Context, c *mfl.Client, year, leagueID string) ([]RawRost
 // fetch rather than being dropped. It honors ctx between franchises.
 func flatten(ctx context.Context, env rostersEnvelope) ([]RawRoster, error) {
 	var out []RawRoster
+	seen := make(map[[2]string]int)
 	for _, f := range env.Rosters.Franchise {
 		select {
 		case <-ctx.Done():
@@ -107,6 +108,15 @@ func flatten(ctx context.Context, env rostersEnvelope) ([]RawRoster, error) {
 			if err := rr.Validate(); err != nil {
 				return nil, err
 			}
+			// MFL double-lists IR/taxi players as ROSTER; keep the specific status row.
+			key := [2]string{rr.FranchiseID, rr.PlayerID}
+			if index, exists := seen[key]; exists {
+				if strings.TrimSpace(rr.Status) != "ROSTER" {
+					out[index] = rr
+				}
+				continue
+			}
+			seen[key] = len(out)
 			out = append(out, rr)
 		}
 	}

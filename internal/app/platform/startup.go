@@ -65,8 +65,9 @@ func StartupFailure(err error, logLine func(string)) error {
 	return nil
 }
 
-func FinishStartup(failure error, refreshed bool, publish, revalidate func()) {
+func FinishStartup(failure error, refreshed bool, publish, revalidate, changed func()) {
 	publish()
+	defer changed()
 	if failure != nil || !refreshed {
 		return
 	}
