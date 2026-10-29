@@ -9,7 +9,7 @@ it('routes the namespaced local lineup plan to the existing desktop binding', as
   const receipt = lineupReceipt();
   const TargetDraftLineup = vi.fn().mockResolvedValue(receipt);
   vi.stubGlobal('window', { go: { contracts: { API: { TargetDraftLineup } } } });
-  const starters = receipt.spec.expected.lineup.starters;
+  const starters = receipt.spec.expected.lineup?.starters ?? [];
   expect(parseReceipt(await targetDraftLineup('0025', starters)).spec.intent).toBe('mfl.lineup.set');
   expect(TargetDraftLineup).toHaveBeenCalledExactlyOnceWith('0025', starters);
   TargetDraftLineup.mockRejectedValueOnce(new Error('local plan refused'));
