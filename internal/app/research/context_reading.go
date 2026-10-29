@@ -75,8 +75,12 @@ func (v researchView) depthName(r researchfeeds.RawDepth) (string, bool, bool) {
 func (v researchView) depthReport() report.Report {
 	r := researchShell("M-048", "NFL depth charts", "Only the newest nflverse snapshot is shown. Formation groups follow the source’s formation order, then slot and depth rank. ▸ marks your players. Identity joins use gsis, then ESPN through the held crosswalk; an unmatched player stays visible by nflverse’s name and is labelled. The grid shows rank-one players at each position, including different formations.", v.Held.Depth, v.Zone, "Player", "Position", "Depth")
 	r.Source = "Source: nflverse depth charts · latest snapshot"
+	if len(v.Held.Depth.Value) == 0 {
+		r.Note = "NFL starters are not available yet; refresh from sources."
+		return r
+	}
 	if v.Held.LinkError != "" {
-		r.Note += " Crosswalk unavailable: " + v.Held.LinkError
+		r.Note += " Player links are unavailable; NFL names are still shown."
 	}
 	if len(v.Held.Depth.Value) > 0 {
 		r.Summary = append(r.Summary, report.Row{Cells: []string{"Snapshot", depthTime(v.Held.Depth.Value[0].DT, v.Zone)}})
@@ -84,36 +88,30 @@ func (v researchView) depthReport() report.Report {
 	if v.scope.Depth == "grid" {
 		return v.depthGrid(r)
 	}
-	misses := 0
 	for _, d := range v.Held.Depth.Value {
 		if v.scope.Team != "" && Team(d.Team) != v.scope.Team {
 			continue
 		}
-		name, mine, matched := v.depthName(d)
-		if !matched {
-			misses++
-		}
+		name, mine, _ := v.depthName(d)
 		r.Rows = append(r.Rows, report.Row{Cells: []string{name, d.Position, fmt.Sprint(d.Rank)}, Mine: mine, Group: Team(d.Team) + " · " + d.Group})
 	}
-	r.Note += fmt.Sprintf(" %d displayed depth slots have no held MFL identity link (not a roster status).", misses)
-	r.Note += v.depthMissNote(false)
-	researchEmpty(&r)
+	if len(r.Rows) == 0 {
+		r.Status, r.Note = "empty", "No NFL starters match these choices."
+	} else {
+		r.Note += v.depthMissNote(false)
+	}
 	return r
 }
 func (v researchView) depthGrid(r report.Report) report.Report {
 	cells := map[string]map[string][]string{}
 	positions := map[string]bool{}
-	misses := 0
 	for _, d := range v.Held.Depth.Value {
 		if d.Rank != 1 || v.scope.Team != "" && Team(d.Team) != v.scope.Team {
 			continue
 		}
-		name, mine, matched := v.depthName(d)
+		name, mine, _ := v.depthName(d)
 		if mine {
 			name = "▸ " + name
-		}
-		if !matched {
-			misses++
 		}
 		team := Team(d.Team)
 		if cells[team] == nil {
@@ -124,6 +122,10 @@ func (v researchView) depthGrid(r report.Report) report.Report {
 		if !slices.Contains(names, name) {
 			cells[team][d.Position] = append(names, name)
 		}
+	}
+	if len(cells) == 0 {
+		r.Status, r.Note = "empty", "No NFL starters match these choices."
+		return r
 	}
 	cols := []string{}
 	for p := range positions {
@@ -149,8 +151,7 @@ func (v researchView) depthGrid(r report.Report) report.Report {
 		}
 		r.Rows = append(r.Rows, row)
 	}
-	r.Note += fmt.Sprintf(" %d starter slots have no held MFL identity link (*). ▸ marks your players.", misses) + v.depthMissNote(true)
-	researchEmpty(&r)
+	r.Note += v.depthMissNote(true)
 	return r
 }
 func (v researchView) newsReport(mine bool) (report.Report, []Article) {

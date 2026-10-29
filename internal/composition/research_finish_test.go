@@ -91,7 +91,9 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
-	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
+	ctx, cancel := context.WithCancel(a.core.Ctx)
+	defer cancel()
+	a.core.Ctx = ctx
 	a.core.RefreshMu.Lock()
 	done := make(chan error, 1)
 	go func() { done <- researchAPI(a).TargetResearchRefresh(false) }()
@@ -100,6 +102,7 @@ func TestResearchStatusWhileWaitingForLaunchRefresh(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 	status := researchAPI(a).TargetResearchStatus()
+	cancel()
 	a.core.RefreshMu.Unlock()
 	if err := <-done; err == nil {
 		t.Fatal("cancelled fixture refresh passed")

@@ -195,7 +195,7 @@ func refreshQualifier(loss string) string {
 		return ""
 	}
 	if strings.Contains(strings.ToLower(loss), "archived copy") {
-		return " · archived copy; refresh pending"
+		return " · Archived copy; refresh pending"
 	}
 	return " · refresh needed"
 }
@@ -262,7 +262,15 @@ func (v researchView) depthMissNote(starters bool) string {
 			other++
 		}
 	}
-	return fmt.Sprintf(" Of those slots: %d offensive line, %d punter/holder/long snapper, %d other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.", line, special, other)
+	count := line + special + other
+	if count == 0 {
+		return ""
+	}
+	label := fmt.Sprintf(" %d displayed depth slots have no held MFL identity link (not a roster status).", count)
+	if starters {
+		label = fmt.Sprintf(" %d starter slots have no held MFL identity link (*). ▸ marks your players.", count)
+	}
+	return label + fmt.Sprintf(" Of those slots: %d offensive line, %d punter/holder/long snapper, %d other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.", line, special, other)
 }
 
 func (v researchView) playerCutCharge(r *report.Report, id string) {

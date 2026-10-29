@@ -29,14 +29,15 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 				calls = append(calls, "brackets")
 				return nil, domain.Freshness{}, nil
 			}, PublishBrackets: func([]leaguefeed.Bracket, domain.Freshness, error) { calls = append(calls, "publish brackets") },
-			Standings: func(context.Context) ([]leaguestandings.RawStanding, domain.Freshness, error) {
+			Standings: func(ctx context.Context) ([]leaguestandings.RawStanding, domain.Freshness, error) {
+				network = ctx
 				calls = append(calls, "standings")
 				if failed {
 					return nil, domain.Freshness{}, errors.New("offline")
 				}
 				return nil, domain.Freshness{}, nil
 			},
-			Schedule: func(ctx context.Context) []leagueschedule.RawScheduleWeek { network = ctx; schedules++; return nil }, Power: func(ctx context.Context, _ []leaguestandings.RawStanding, _ domain.Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
+			Schedule: func(context.Context) []leagueschedule.RawScheduleWeek { schedules++; return nil }, Power: func(ctx context.Context, _ []leaguestandings.RawStanding, _ domain.Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
 				if network.Err() == nil || ctx.Err() != nil || network == ctx {
 					t.Fatal("history shares the spent network budget")
 				}

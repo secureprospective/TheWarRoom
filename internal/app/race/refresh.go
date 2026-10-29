@@ -3,6 +3,7 @@ package race
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
@@ -41,15 +42,19 @@ func Refresh(parent context.Context, source RefreshSource) {
 	standings, sf, serr := source.Standings(ctx)
 	power := map[string]season.PowerRankingsResult{}
 	if serr == nil {
-		schedule := source.Schedule(ctx)
 		cancel()
+		schedule := sync.OnceValue(func() []leagueschedule.RawScheduleWeek {
+			scheduleCtx, scheduleCancel := context.WithTimeout(parent, 30*time.Second)
+			defer scheduleCancel()
+			return source.Schedule(scheduleCtx)
+		})
 		// Archive fallback may succeed after the network budget expires. History reads
 		// get their own budget, starting after network reads and the refresh lock.
-		boardCtx, boardCancel := context.WithTimeout(parent, 2*time.Minute)
-		defer boardCancel()
 		for _, view := range []string{season.ViewSeason, season.ViewFranchise} {
 			for _, mode := range []string{m2service.AggLineup, m2service.AggSum, m2service.AggTopN} {
-				power[season.PowerKey(view, mode)] = source.Power(boardCtx, standings, sf, func(context.Context) []leagueschedule.RawScheduleWeek { return schedule }, mode, view)
+				boardCtx, boardCancel := context.WithTimeout(parent, 2*time.Minute)
+				power[season.PowerKey(view, mode)] = source.Power(boardCtx, standings, sf, func(context.Context) []leagueschedule.RawScheduleWeek { return schedule() }, mode, view)
+				boardCancel()
 			}
 		}
 	}

@@ -138,6 +138,14 @@ type RefreshSteps struct {
 }
 
 func (s RefreshSteps) Run(ctx context.Context, force bool) error {
+	if err := ctx.Err(); err != nil {
+		return fmt.Errorf("research refresh: %w", err)
+	}
+	// The NFL source must not wait behind MFL's backoff and weekly score reads.
+	s.Status("Reading NFL depth charts")
+	depthCtx, depthCancel := context.WithTimeout(ctx, 30*time.Second)
+	s.Depth(depthCtx, force)
+	depthCancel()
 	week := s.Week()
 	for _, kind := range Kinds() {
 		s.Status("Reading " + FeedLabel(kind))
@@ -163,8 +171,6 @@ func (s RefreshSteps) Run(ctx context.Context, force bool) error {
 		s.Status("Reading this week’s NFL schedule")
 		s.Schedule(ctx, week, force)
 	}
-	s.Status("Reading NFL depth charts")
-	s.Depth(ctx, force)
 	return nil
 }
 

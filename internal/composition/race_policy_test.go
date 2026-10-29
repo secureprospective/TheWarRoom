@@ -17,8 +17,8 @@ func TestRaceRefreshSerializationAndCaptureOrder(t *testing.T) {
 	var calls atomic.Int32
 	entered, release := make(chan struct{}, 2), make(chan struct{})
 	s.RefreshRaceFeeds = func(ctx context.Context) {
-		if _, ok := ctx.Deadline(); !ok {
-			t.Error("refresh has no deadline")
+		if ctx != s.Ctx {
+			t.Error("refresh budget started before the serializer")
 		}
 		if s.RefreshMu.TryLock() {
 			s.RefreshMu.Unlock()

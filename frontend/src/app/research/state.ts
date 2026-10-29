@@ -53,7 +53,8 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
           .map(report => report.title) ?? [])];
         const status = missing.length
           ? `Refresh finished. Missing or out of date: ${missing.join(', ')}. Try refreshing again.`
-          : refreshFailed ? 'Refresh finished, but research sources could not all be updated. Try refreshing again.'
+          : refreshFailed
+            ? 'Refresh finished. Some research sources could not be updated; try refreshing again.'
             : 'Refresh complete.';
         store.setState({ status });
       }
