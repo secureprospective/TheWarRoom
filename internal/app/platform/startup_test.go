@@ -86,23 +86,31 @@ func TestStartupNonfatalLogFailureAndLaunchRefreshSelection(t *testing.T) {
 }
 
 func TestFinishStartupPublishesBeforeConditionalRevalidation(t *testing.T) {
-	for _, fail := range []bool{false, true} {
-		for _, refreshed := range []bool{false, true} {
-			published, revalidated := false, false
-			failure := error(nil)
-			if fail {
-				failure = context.Canceled
+	for _, tt := range []struct {
+		name      string
+		failure   error
+		refreshed bool
+	}{
+		{name: "failed", failure: context.Canceled, refreshed: true},
+		{name: "failed without refresh", failure: context.Canceled},
+		{name: "not refreshed"},
+		{name: "success", refreshed: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var calls []string
+			FinishStartup(tt.failure, tt.refreshed,
+				func() { calls = append(calls, "publish") },
+				func() { calls = append(calls, "revalidate") },
+				func() { calls = append(calls, "season changed") })
+			want := []string{"publish"}
+			if tt.failure == nil && tt.refreshed {
+				want = append(want, "revalidate")
 			}
-			FinishStartup(failure, refreshed, func() { published = true }, func() {
-				if !published {
-					t.Fatal("revalidate before ready")
-				}
-				revalidated = true
-			})
-			if !published || revalidated != (!fail && refreshed) {
-				t.Fatal(published, revalidated)
+			want = append(want, "season changed")
+			if !reflect.DeepEqual(calls, want) {
+				t.Fatalf("startup effects = %v, want %v", calls, want)
 			}
-		}
+		})
 	}
 }
 

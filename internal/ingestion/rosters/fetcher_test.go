@@ -3,6 +3,8 @@ package rosters
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -82,6 +84,53 @@ func TestFlatten_FiltersAggregatesAndMapsFields(t *testing.T) {
 	}
 	if first.ContractInfo != "note" {
 		t.Errorf("contractInfo not mapped, got %q", first.ContractInfo)
+	}
+}
+
+func TestFlatten_DoubleListingKeepsSpecificStatus(t *testing.T) {
+	for _, status := range []string{"INJURED_RESERVE", "TAXI_SQUAD"} {
+		for _, specificFirst := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/specificFirst=%t", status, specificFirst), func(t *testing.T) {
+				regular := playerBlock{ID: "0835", Salary: "7", Status: "ROSTER"}
+				specific := playerBlock{ID: "0835", Salary: "1.30", ContractYear: "2026",
+					ContractStatus: "UFA ", ContractInfo: "reserve note", Status: status}
+				players := []playerBlock{regular, specific}
+				if specificFirst {
+					players = []playerBlock{specific, regular}
+				}
+				players = append(players, playerBlock{ID: "13128", Status: "ROSTER"})
+				env := rostersEnvelope{}
+				env.Rosters.Franchise = []franchiseBlock{
+					{ID: "0001", Player: players},
+					{ID: "0032", Player: []playerBlock{regular}},
+				}
+				got, err := flatten(context.Background(), env)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := []RawRoster{
+					{FranchiseID: "0001", PlayerID: "0835", Salary: "1.30", ContractYear: "2026",
+						ContractStatus: "UFA ", ContractInfo: "reserve note", Status: status},
+					{FranchiseID: "0001", PlayerID: "13128", Status: "ROSTER"},
+					{FranchiseID: "0032", PlayerID: "0835", Salary: "7", Status: "ROSTER"},
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("flatten = %+v, want %+v", got, want)
+				}
+			})
+		}
+	}
+}
+
+func TestFlatten_MalformedDuplicateFailsLoud(t *testing.T) {
+	env := rostersEnvelope{}
+	env.Rosters.Franchise = []franchiseBlock{{ID: "0001", Player: []playerBlock{
+		{ID: "0835", Salary: "7", Status: "TAXI_SQUAD"},
+		{ID: "0835", Salary: "invalid", Status: "ROSTER"},
+	}}}
+	got, err := flatten(context.Background(), env)
+	if err == nil || got != nil {
+		t.Fatalf("malformed duplicate must fail without partial rows: got %+v, err %v", got, err)
 	}
 }
 

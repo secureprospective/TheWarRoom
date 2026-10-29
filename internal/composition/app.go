@@ -155,11 +155,10 @@ func (a *App) settleStartupFailure() {
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
 	platformapp.FinishStartup(a.core.StartupErr, refreshed, func() { close(a.core.Started) }, func() {
-		defer a.sourceHealthChanged(ctx)
 		a.core.RefreshMu.Lock()
 		defer a.core.RefreshMu.Unlock()
 		a.revalidateReadyRosterMoves(ctx)
-	})
+	}, func() { a.sourceHealthChanged(ctx) })
 }
 
 // domReady is the Wails OnDomReady hook: the window is up, so the launch refresh and the signals
