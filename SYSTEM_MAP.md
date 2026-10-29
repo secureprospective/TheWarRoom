@@ -101,4 +101,4 @@ Composition retains raw cross-feature observation assembly and release/contract 
 MFL migration reading/translation lives in `internal/leaguemigration/mflsource`; the native
 `internal/leaguemigration` service owns its `Source`/`Candidate` port and destination writes.
 `internal/leaguemigration/migrationtest` is fenced MFL-only fixture support. Research consumes
-held names/limits through `internal/app/research.LeagueReference`, not MFL config fields.
+held names/limits through `LeagueReference` in `internal/app/research`, not MFL config fields.
