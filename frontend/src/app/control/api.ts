@@ -34,6 +34,7 @@ export const setLeagueWindow = TargetSetWindow;
 
 // ParamsResult is the admin parameters payload, as the Data and sources screen reads it.
 export type ParamsResult = control.ParamsResult;
+export type ParamView = control.ParamView;
 
 export async function copyHelperConnection(connection: string): Promise<boolean> {
   const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');

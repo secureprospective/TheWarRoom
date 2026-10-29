@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { control } from '../../../wailsjs/go/models';
+import type { ParamView } from './api';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
 import { dataState } from '../datasources/state';
 
-function PickSetting({ param, busy }: { param: control.ParamView; busy: boolean }) {
+function PickSetting({ param, busy }: { param: ParamView; busy: boolean }) {
   const [value, setValue] = useState(String(param.value));
   useEffect(() => setValue(String(param.value)), [param.value]);
   const n = Number(value);
@@ -29,10 +29,12 @@ function PickSetting({ param, busy }: { param: control.ParamView; busy: boolean 
 export default function PickSettings() {
   const s = dataState.use();
   useEffect(() => { void dataState.loadParams(); }, []);
-  const params = s.params?.params.filter(p => p.key === 'power.pick_weight' || p.key === 'pickvalue.discount');
+  const params = s.params?.params.filter(p =>
+    p.key === 'power.pick_weight' || p.key === 'pickvalue.discount');
   return <section aria-label="Future draft picks" aria-busy={s.pending || Boolean(s.busy)}>
     <h3>Future draft picks</h3>
-    <p>Picks add to the franchise power rankings. They do not count in this season’s view or change player values.</p>
+    <p>Picks add to the franchise power rankings.
+      They do not count in this season’s view or change player values.</p>
     {s.error && <p role="alert">{s.error}</p>}
     {s.result && <p role="status">{s.result}</p>}
     {!params && !s.error && <p role="status">Reading pick settings…</p>}

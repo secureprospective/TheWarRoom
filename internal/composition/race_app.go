@@ -121,13 +121,7 @@ func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
 	return season.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
 }
 
-func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult {
-	rows := make([]season.PowerRow, len(p.Rows))
-	for i, row := range p.Rows {
-		rows[i] = season.PowerRow(row)
-	}
-	return season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, PickWeight: p.PickWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
-}
+func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult { return p }
 
 type raceHost struct{ *core.State }
 

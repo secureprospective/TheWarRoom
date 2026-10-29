@@ -47,7 +47,9 @@ export function createDataState(provider: DataProvider) {
       } else if (action.kind === 'parameter') {
         await provider.parameter(action.key, action.position, action.value);
         await paramsOnly.load([]);
-        if (!store.getState().error) store.setState({ result: action.value === null ? 'Default restored.' : 'Setting saved.' });
+        if (!store.getState().error) store.setState({
+          result: action.value === null ? 'Default restored.' : 'Setting saved.',
+        });
         return;
       }
       const error = await read();

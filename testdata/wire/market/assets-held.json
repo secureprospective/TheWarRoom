@@ -209,6 +209,6 @@
   }
  ],
  "nowSource": "Source: MFL fantasy points, this league's scoring · 4 of 4 finished weeks held · as of Oct 11, 2026, 12:00 PM",
- "dynastySource": "Source: the native value model's latest run, and Pick Value v1 for picks",
- "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the native value model's: his expected league points per game over this season and the ones after, later seasons discounted, from his record (draft capital, age, college, combine) and his seasons. A pick is valued in the same units by Pick Value v1: what the players typically taken at its slot are worth. Trades are not priced. Values only; this app moves nothing."
+ "dynastySource": "Source: the native value model's latest run, and Pick Value v2 for picks",
+ "how": "On-field-now is points per game in this league's scoring over the finished weeks MFL has scored, counting only weeks in which the player has a score, ranked against every player at his position with a score this season. Dynasty value is the native value model's: his expected league points per game over this season and the ones after, later seasons discounted, from his record (draft capital, age, college, combine) and his seasons. A pick is valued in the same units by Pick Value v2: what the players typically taken at its slot are worth. Trades are not priced. Values only; this app moves nothing."
 }

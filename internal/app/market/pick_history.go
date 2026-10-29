@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguearchive"
@@ -145,4 +148,28 @@ func NativePickHistory(drafts []commissioner.NativeDraft, season int, records []
 
 func rookieCapital(d playerrecord.Draft, year int) bool {
 	return d.Year == year && (d.Status == playerrecord.Undrafted || (d.Status == playerrecord.Drafted && d.Overall > 0))
+}
+
+// PowerPickSource prices current inventory against one named model run and the live settings.
+type PowerPickSource struct {
+	Native    NativeSource
+	Params    *params.Store
+	Inventory []draftreports.FuturePick
+	Owners    []string
+	At        time.Time
+}
+
+func PowerPicks(ctx context.Context, run history.Run, src PowerPickSource) m2service.PickCapital {
+	capital := m2service.PickCapital{}
+	if src.Params == nil {
+		return capital
+	}
+	capital.Weight, _ = src.Params.Snapshot().GetGlobal(params.KeyPowerPickWeight)
+	src.Native.LatestRun = func(context.Context) (history.Run, bool, error) { return run, true, nil }
+	model, ok, err := LoadNative(ctx, src.Native)
+	if err != nil || !ok {
+		return capital
+	}
+	capital.Totals = PickTotals(model, src.Inventory, run.Season, src.Owners, src.At)
+	return capital
 }
