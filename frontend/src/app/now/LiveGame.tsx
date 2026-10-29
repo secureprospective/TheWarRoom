@@ -105,13 +105,12 @@ function score(g: Game) {
 }
 export function LiveGameView({ view, mine = true }: { view: LiveView; mine?: boolean }) {
   const g = view.followed;
-  return <>
+  return <section className="live-game" aria-label="Current NFL week live games">
     {g && <div className="followed-bar market-controls" aria-label="Followed game">
         <strong>{score(g)} · {gameTime(g)}</strong>
         <Act variant="button" verb="game.follow"
         args={{ id: '' }} label="Stop following game">Stop following</Act>
       </div>}
-    <section className="live-game" aria-label="Current NFL week live games">
     <h4>Current NFL week</h4>
     <div className="market-controls game-strip" aria-label="Follow an NFL game">
       {view.games.map(game => <Act variant="button" key={game.id} verb="game.follow"
@@ -138,7 +137,7 @@ export function LiveGameView({ view, mine = true }: { view: LiveView; mine?: boo
       empty={mine ? 'No held play has a starter from your matchup yet.' : spineEmpty(false, false)} />
     <p>Plays held for {view.weekHeld} of {view.weekGames} games this week: games you followed and
       finals you opened. Other games are not read until you follow them.</p>
-  </section></>;
+  </section>;
 }
 export default function LiveGame() {
   const state = liveState.use(); const mine = commands.use().franchiseId;

@@ -1,4 +1,5 @@
 import { createElement } from 'react';
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { Field, fieldPositions, gameTime, kickoffText, LiveGameView, PlaySpine, spineEmpty }
@@ -11,6 +12,11 @@ import pregameWire from './live-pregame.testdata.json';
 const view = () => parseLive(wire);
 const render = (v: ReturnType<typeof view>) => renderToStaticMarkup(createElement(LiveGameView, { view: v }));
 describe('Personal live game view', () => {
+  it('bounds the sticky followed bar to the live game section', () => {
+    const html = render(view());
+    expect(html.indexOf('class="live-game"')).toBeLessThan(html.indexOf('class="followed-bar'));
+    expect(readFileSync('src/app/now/livegame.css', 'utf8')).toMatch(/followed-bar[^}]*position: sticky/);
+  });
   it('places scrimmage and first-down lines in both possession directions', () => {
     const state = { possession: '22', down: 1, distance: 10, yardLine: 35, toEndzone: 65 };
     expect(fieldPositions(state, true)).toEqual({ line: 35, first: 45, direction: 1 });
@@ -114,6 +120,6 @@ describe('Personal live game view', () => {
     expect(state.peek().error).toContain('all sources down');
     expect(() => state.follow('../evil')).toThrow('invalid id');
     const html = render(view()); expect(html).toContain('aria-label="Follow DET at ARI"');
-    expect(html.indexOf('aria-label="Followed game"')).toBeLessThan(html.indexOf('class="live-game"'));
+    expect(html.indexOf('aria-label="Followed game"')).toBeLessThan(html.indexOf('aria-label="Follow an NFL game"'));
   });
 });
