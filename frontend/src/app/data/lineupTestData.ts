@@ -4,7 +4,7 @@ import { parseLineup } from './parseLineup';
 
 function directoryPlayers(): Player[] {
   const raw: { id: string; name: string; position: string }[] = JSON.parse(readFileSync(
-    '../internal/lineup/testdata/directory-0025.json', 'utf8',
+    '../internal/mflref/lineup/testdata/directory-0025.json', 'utf8',
   ));
   return raw.map((p) => ({ ...p, position: (p.position === 'PK' ? 'K' : p.position) as Position }));
 }
@@ -40,7 +40,7 @@ export function heldLineup(): LineupReading {
 export function heldSnapshot(): Snapshot {
   const players = directoryPlayers();
   const roster: { player: { id: string; status: RosterPlayer['rosterStatus'] | 'INJURED_RESERVE' }[] } =
-    JSON.parse(readFileSync('../internal/lineup/testdata/roster-0025.json', 'utf8'));
+    JSON.parse(readFileSync('../internal/mflref/lineup/testdata/roster-0025.json', 'utf8'));
   const provenance = heldLineup().provenance;
   return {
     league: { value: { season: 2026, franchiseCount: 32 }, provenance },
