@@ -71,7 +71,8 @@ export default function DraftRoom() {
     if (action && may && draft) setTray({ ...action, opener: document.activeElement as HTMLElement });
   }), [may, draft, people]);
   if (!pending && choices.length === 0 && !leagueError) return <section className="draft-room">
-    <h4>Draft room</h4><p>No app league has been started. Create a league in Control Room to use the draft.</p>
+    <h4>Draft room</h4>
+    <p>No app league has been started. Create a league in Control Room to use the draft.</p>
   </section>;
   const yourTurn = clock !== null && people?.yourFranchise === clock.owner && draft?.closed === null;
   const kind = room.startup ? 'startup' : 'rookie';
