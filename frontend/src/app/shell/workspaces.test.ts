@@ -169,3 +169,8 @@ it('opens with / and Ctrl+K but never intercepts typing', () => {
   }
   expect(c.read().commandbar).toBe(false);
 });
+
+it('leaves space for the trade desk when applying Trade Season', () => {
+  expect(presets.trade.inspector).toBe('closed');
+  expect(presets.trade.comms).toBe(false);
+});

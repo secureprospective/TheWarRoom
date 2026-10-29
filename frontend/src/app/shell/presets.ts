@@ -45,8 +45,8 @@ export const presets = {
     label: 'Trade Season',
     route: { node: 'trade', workspace: 'trade-desk' },
     density: 'tactical',
-    inspector: 'expanded',
-    comms: true,
+    inspector: 'closed',
+    comms: false,
     roles: ['gm', 'commish', 'admin'],
   },
   admin: {
