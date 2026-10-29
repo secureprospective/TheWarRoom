@@ -281,7 +281,7 @@ type pass struct {
 }
 
 func newPass(book playerrecord.Book, spec Spec) (pass, error) {
-	p := pass{book: book, data: book.Data, scales: book.Data.Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
+	p := pass{book: book, data: book.Data, scales: scoredSeasons(book.Data).Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
 	for _, pos := range model.Positions() {
 		m, err := model.ParamsFrom(pos, func(key string) (float64, error) {
 			return spec.Params.GetPosition(key, string(pos))
@@ -304,6 +304,21 @@ func newPass(book playerrecord.Book, spec Spec) (pass, error) {
 		return pass{}, fmt.Errorf("modelrun: %w", err)
 	}
 	return p, nil
+}
+
+// scoredSeasons keeps snap-only seasons out of the league-points scale. Runtime reads
+// season totals; a missing total is not a season of zero fantasy points.
+func scoredSeasons(data model.Data) model.Data {
+	out := model.Data{Players: data.Players, Seasons: map[string]map[int]*model.Season{}}
+	for id, seasons := range data.Seasons {
+		out.Seasons[id] = map[int]*model.Season{}
+		for year, s := range seasons {
+			if s.HasTotal {
+				out.Seasons[id][year] = s
+			}
+		}
+	}
+	return out
 }
 
 // playerInput is everything the model read for one player; the run's inputs hash covers it.
@@ -337,7 +352,11 @@ func (ps pass) value(id string) (history.ModelScore, playerInput, string) {
 		Mislinked: rec.Mislinked}
 	for y := ps.season - 3; y <= ps.season; y++ {
 		s := ps.data.Seasons[id][y]
-		if s == nil || s.Games() == 0 {
+		ready, why := seasonReady(s, y)
+		if why != "" {
+			return history.ModelScore{}, playerInput{}, why
+		}
+		if !ready {
 			continue
 		}
 		past := model.Past{Year: y, Games: float64(s.Games()), Pct: ps.scale(pos, y).Pct(s.PPG())}
@@ -367,6 +386,19 @@ func (ps pass) value(id string) (history.ModelScore, playerInput, string) {
 		v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
 	}
 	return history.ModelScore{MFLID: rec.MFL, Position: string(pos), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
+}
+
+func seasonReady(s *model.Season, year int) (bool, string) {
+	if s == nil {
+		return false, ""
+	}
+	if s.Games() > 0 && !s.HasTotal {
+		return false, fmt.Sprintf("league points for %d are not ready", year)
+	}
+	if s.Games() == 0 && s.HasTotal {
+		return false, fmt.Sprintf("games played for %d are not ready", year)
+	}
+	return s.Games() > 0, ""
 }
 
 // AgePull is the engine's age pull that today's board applies at age; an unknown age is the arc's
