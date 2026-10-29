@@ -13,6 +13,24 @@ const html = renderToStaticMarkup;
 const view = (id: string) => html(createElement(RaceView, { race: race(), selected: [id] }));
 
 describe('League Pulse › Race', () => {
+  it('keeps the last board during a roster-count read and offers one safe retry line', async () => {
+    let reject!: (error: Error) => void;
+    const reader: RaceReader = { read: vi.fn(async () => race()), refresh: vi.fn(async () => {}) };
+    const state = createRaceState(reader, () => '0001');
+    await state.load(false);
+    const good = state.peek().race;
+    reader.read = () => new Promise((_, fail) => { reject = fail; });
+    const reading = state.choose('aggMode', 'sum');
+    expect(state.peek().pending).toBe(true);
+    expect(state.peek().race).toBe(good);
+    reject(new Error('history: scan run: context deadline exceeded'));
+    await reading;
+    expect(state.peek().race).toBe(good);
+    expect(state.peek().error).toBe('Power rankings could not be updated. Try refreshing again.');
+    reader.read = async () => race();
+    await state.load(false);
+    expect(state.peek().error).toBe('');
+  });
   it.each(['M-008', 'C-02'])('offers roster counts with Starting lineup selected for %s', id => {
     const markup = view(id);
     expect(markup).toContain('<label>Roster count');

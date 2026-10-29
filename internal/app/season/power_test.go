@@ -18,6 +18,17 @@ func TestFranchiseReportNamesPickWeightAndLeavesUnreadableBlank(t *testing.T) {
 	if !strings.Contains(r.How, "weight 0.6 (Pick Value v2)") || !strings.Contains(r.How, "next two drafts") {
 		t.Fatal(r.How)
 	}
+	res.Error = "history: scan run: context deadline exceeded"
+	v.in.Held.Power[ViewFranchise] = res
+	stale := v.Power(ViewFranchise)
+	if len(stale.Rows) != len(r.Rows) || stale.Note != "Power rankings could not be updated. Try refreshing again." {
+		t.Fatal(stale)
+	}
+	res.OK = false
+	v.in.Held.Power[ViewFranchise] = res
+	if failed := v.Power(ViewFranchise); strings.Contains(failed.Note, "history:") || len(failed.Rows) != 0 {
+		t.Fatal(failed)
+	}
 	if strings.Contains(powerHow(PowerRankingsResult{View: ViewSeason}), "Pick Value") {
 		t.Fatal("this season counted picks")
 	}

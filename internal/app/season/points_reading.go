@@ -83,11 +83,14 @@ func (v View) Power(view string) report.Report {
 	case r.Status == "failed":
 		return r
 	case !held || !res.OK:
-		r.Status, r.Note = "failed", strings.TrimSpace("Power rankings unavailable. "+res.Error)
+		r.Status, r.Note = "failed", "Power rankings are unavailable. Try refreshing again."
 		return r
 	case len(res.Rows) == 0:
 		r.Status, r.Note = "empty", "No model run is held for this season; run the app's model first."
 		return r
+	}
+	if res.Error != "" {
+		r.Status, r.Note = "stale", "Power rankings could not be updated. Try refreshing again."
 	}
 	r.How = powerHow(res)
 	for _, p := range res.Rows {
