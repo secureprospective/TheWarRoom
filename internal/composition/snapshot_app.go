@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
+
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
@@ -87,7 +89,7 @@ func (a *App) targetClock(parent context.Context) (snapshot.Sourced[leagueclock.
 }
 
 func (a *App) draftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error) {
-	return (platformapp.RosterDraft{ //nolint:wrapcheck // Preserve draft admission and persistence errors.
+	return (planwatch.RosterDraft{ //nolint:wrapcheck // Preserve draft admission and persistence errors.
 		Ready: a.ready, Own: a.requireOwnFranchise, Snapshot: func() (snapshot.Snapshot, bool) {
 			a.core.TargetSnapshotMu.Lock()
 			defer a.core.TargetSnapshotMu.Unlock()
@@ -111,7 +113,7 @@ func (a *App) listMoves(franchiseID string) ([]envelope.Receipt, error) {
 	snap := a.core.TargetSnapshot
 	a.core.TargetSnapshotMu.Unlock()
 	labelTradeReceipts(receipts, snap)
-	return platformapp.RosterRail(receipts), nil
+	return planwatch.RosterRail(receipts), nil
 }
 
 func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
@@ -119,5 +121,5 @@ func (a *App) rosterMoveTarget(option string) (envelope.Target, []string) {
 	if a.core.MFLClient != nil {
 		host = a.core.MFLClient.LeagueHost()
 	}
-	return platformapp.RosterMoveTarget(host, a.core.Season, ingestion.LeagueID, option)
+	return planwatch.RosterMoveTarget(host, a.core.Season, ingestion.LeagueID, option)
 }

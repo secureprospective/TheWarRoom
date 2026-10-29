@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -20,21 +20,19 @@ import (
 type Host interface {
 	Snapshot() (snapshot.Snapshot, error)
 	Clock() (snapshot.Sourced[leagueclock.Reading], error)
-	// DraftRosterMove drafts an IR ("roster.ir") or taxi ("roster.taxi") plan into the move log.
-	DraftRosterMove(intent, franchiseID, playerID string) (envelope.Receipt, error)
-	Moves(franchiseID string) ([]envelope.Receipt, error)
-	HandOff(correlationID string) (envelope.Receipt, error)
-	CheckMoves() error
-	WithdrawRoster(correlationID string) (envelope.Receipt, error)
+	planwatch.Host
 	// PlayerName is a player's directory name, if the directory has one.
 	PlayerName(mflID string) (string, bool)
 	PhotosOff() bool
 }
 
 // API is the platform binding. It holds no state.
-type API struct{ host Host }
+type API struct {
+	host Host
+	*planwatch.API
+}
 
-func New(host Host) *API { return &API{host: host} }
+func New(host Host) *API { return &API{host: host, API: planwatch.New(host)} }
 
 // PhotoView is what a player card needs to show a photo: Go decides whether to ask for one and
 // writes its alt text (W1). An empty Src means show the fallback without any request.
@@ -71,37 +69,6 @@ func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {
 // TargetClock reads the phase log and commissioner calendar from the local store; no network.
 func (a *API) TargetClock() (snapshot.Sourced[leagueclock.Reading], error) {
 	return a.host.Clock() //nolint:wrapcheck // Preserve the binding's existing error text.
-}
-
-//nolint:wrapcheck // Preserve the binding's existing error text.
-func (a *API) TargetDraftIR(franchiseID, playerID string) (envelope.Receipt, error) {
-	return a.host.DraftRosterMove("roster.ir", franchiseID, playerID)
-}
-
-//nolint:wrapcheck // Preserve the binding's existing error text.
-func (a *API) TargetDraftTaxi(franchiseID, playerID string) (envelope.Receipt, error) {
-	return a.host.DraftRosterMove("roster.taxi", franchiseID, playerID)
-}
-
-func (a *API) TargetMoves(franchiseID string) ([]envelope.Receipt, error) {
-	return a.host.Moves(franchiseID) //nolint:wrapcheck // Preserve the binding's existing error text.
-}
-
-// TargetHandOff marks a Ready move handed off, saves it, then opens its MFL page; the owner
-// submits on MFL and the watcher looks for the change. Nothing is saved or opened on an error.
-func (a *API) TargetHandOff(correlationID string) (envelope.Receipt, error) {
-	return a.host.HandOff(correlationID) //nolint:wrapcheck // Preserve the binding's existing error text.
-}
-
-// TargetCheckMoves asks the watcher for a pass now (rate limited to one a minute); it returns at
-// once.
-func (a *API) TargetCheckMoves() error {
-	return a.host.CheckMoves() //nolint:wrapcheck // Preserve the binding's existing error text.
-}
-
-// TargetWithdrawRoster removes an IR/taxi plan without making any MFL change.
-func (a *API) TargetWithdrawRoster(correlationID string) (envelope.Receipt, error) {
-	return a.host.WithdrawRoster(correlationID) //nolint:wrapcheck // Preserve the binding's existing error text.
 }
 
 // TargetPhoto is a player card's photo: its address and alt text, or no address when photos are

@@ -4,17 +4,17 @@ package composition
 import (
 	commissionerapi "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	commsapi "github.com/secureprospective/TheWarRoom/internal/app/comms"
-	contractsapi "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapi "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draftapi "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapi "github.com/secureprospective/TheWarRoom/internal/app/market"
+	contractsapi "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapi "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	nowapi "github.com/secureprospective/TheWarRoom/internal/app/now"
 	offersapi "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	platformapi "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	raceapi "github.com/secureprospective/TheWarRoom/internal/app/race"
 	researchapi "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sourcesapi "github.com/secureprospective/TheWarRoom/internal/app/sources"
-	tradesapi "github.com/secureprospective/TheWarRoom/internal/app/trades"
 )
 
 type commandAPIs struct {

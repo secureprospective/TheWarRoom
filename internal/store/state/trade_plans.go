@@ -25,7 +25,7 @@ const tradePlansDDL = `CREATE TABLE IF NOT EXISTS trade_plans (
  id TEXT PRIMARY KEY, franchise_id TEXT NOT NULL, plan TEXT NOT NULL);`
 
 func (s *TradePlans) schema(ctx context.Context) error {
-	return initializeWhatIf(ctx, s.pools)
+	return InitializeWhatIf(ctx, s.pools)
 }
 func (s *TradePlans) Save(ctx context.Context, p TradePlan) error {
 	if err := s.schema(ctx); err != nil {

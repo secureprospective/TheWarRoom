@@ -9,7 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -105,6 +105,14 @@ func TestWhatIfStaleBlocksAllChangesUntilReset(t *testing.T) {
 	t.Parallel()
 	a := whatIfTestApp(t)
 	start := whatIfCall(t, a, "cut", "0042", "")
+	restart := NewApp()
+	restart.core.MyFranchise = "0001"
+	restart.core.Ctx = a.core.Ctx
+	restart.core.WhatifPools = a.core.WhatifPools
+	restart.core.League = a.core.League
+	restart.core.Rulebook = a.core.Rulebook
+	close(restart.core.Started)
+	a = restart
 	replaceWhatIfMirror(t, a, 11*100_000_000)
 	for _, action := range []string{"read", "buyout", "undo"} {
 		r := whatIfCall(t, a, action, "0043", start.Value.Moves[0].ID)

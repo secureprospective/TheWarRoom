@@ -5,7 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -20,7 +22,7 @@ func TestMissingPaidCellBlocksWhatIf(t *testing.T) {
 	defer func() { _ = pools.Close() }()
 	a.core.WhatifPools = pools
 	snap, _, _ := a.core.League.ContractsView()
-	session := state.WhatIfSession{Generation: "invalid-cap", Mine: "0001", Snapshot: snap, TaxiPercent: 100, IRPercent: 100}
+	session := mflwhatif.WhatIfSession{Generation: "invalid-cap", Mine: "0001", Snapshot: snap, TaxiPercent: 100, IRPercent: 100}
 	store, err := contractsapp.LoadWhatIf(a.core.Ctx, a.core.WhatifPools, session)
 	if err != nil {
 		t.Fatal(err)

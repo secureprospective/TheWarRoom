@@ -6,9 +6,9 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 )

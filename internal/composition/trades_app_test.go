@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"

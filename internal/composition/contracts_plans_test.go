@@ -9,7 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
 
 	"github.com/secureprospective/TheWarRoom/internal/envelope"

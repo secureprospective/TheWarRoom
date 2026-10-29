@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -25,11 +25,11 @@ func (a *App) handOffMove(correlationID string) (envelope.Receipt, error) {
 	return a.moveActions().HandOff(ctx, correlationID) //nolint:wrapcheck // Preserve move transition and authorization errors.
 }
 
-func (a *App) requestMovesPass() error { return platformapp.RequestMovesPass(a.ready, a.wakeMoves) } //nolint:wrapcheck // Preserve startup errors.
+func (a *App) requestMovesPass() error { return planwatch.RequestMovesPass(a.ready, a.wakeMoves) } //nolint:wrapcheck // Preserve startup errors.
 
 func (a *App) wakeMoves() { a.core.WakeMoves() }
 
-func (a *App) logMove(e envelope.Envelope) { a.core.MovesLog(platformapp.MoveLog(e)) }
+func (a *App) logMove(e envelope.Envelope) { a.core.MovesLog(planwatch.MoveLog(e)) }
 
 // withBidFacts gives a bid plan's predicate the contract it looks for, which lives in bid_facts.
 
@@ -40,14 +40,14 @@ func (a *App) refreshedObservation(
 ) (envelope.Observation, error) {
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
-	return platformapp.ReadMoveObservation(ctx, sources, a.refreshMoveSources, a.moveObservation) //nolint:wrapcheck // Preserve observation errors.
+	return planwatch.ReadMoveObservation(ctx, sources, a.refreshMoveSources, a.moveObservation) //nolint:wrapcheck // Preserve observation errors.
 }
 
 func (a *App) refreshMoveSources(ctx context.Context, sources map[envelope.Source]bool) error {
-	return (platformapp.MoveRefresh{Pause: a.seasonPauseFunc, Awaiting: a.core.Moves.Awaiting, Recent: a.recentMoveSource, Refresh: a.refreshMoveSource}).Run(ctx, sources) //nolint:wrapcheck // Preserve watcher refresh errors.
+	return (planwatch.MoveRefresh{Pause: a.seasonPauseFunc, Awaiting: a.core.Moves.Awaiting, Recent: a.recentMoveSource, Refresh: a.refreshMoveSource}).Run(ctx, sources) //nolint:wrapcheck // Preserve watcher refresh errors.
 }
 func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) error {
-	return (platformapp.MoveSourceRefresh{ //nolint:wrapcheck // Preserve source refresh errors.
+	return (planwatch.MoveSourceRefresh{ //nolint:wrapcheck // Preserve source refresh errors.
 		Override: a.core.MovesRefresh, Rosters: func(ctx context.Context) error {
 			_, err := a.refreshLeagueLocked(ctx, a.core.Rulebook, a.core.League)
 			return err
@@ -55,7 +55,7 @@ func (a *App) refreshMoveSource(ctx context.Context, source envelope.Source) err
 }
 
 func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error) {
-	return (platformapp.MoveObservation{ //nolint:wrapcheck // Preserve observation context.
+	return (planwatch.MoveObservation{ //nolint:wrapcheck // Preserve observation context.
 		Snapshot: func(ctx context.Context) (snapshot.Snapshot, error) {
 			return snapshot.Build(ctx, snapshot.NewSource(a.core.League, a.core.Rulebook), snapshot.Directory{}, snapshot.Injuries{})
 		},
@@ -79,7 +79,7 @@ func (a *App) moveObservation(ctx context.Context) (envelope.Observation, error)
 func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 	a.core.SeasonMu.Lock()
 	defer a.core.SeasonMu.Unlock()
-	return (platformapp.MoveSourceFeeds{Transactions: a.core.SeasonTransactions.FeedState(), Lineups: a.core.SeasonLineups.FeedState(), Pending: a.core.SeasonPendingTrades.FeedState()}).Recent(source, handed, a.core.MovesNow)
+	return (planwatch.MoveSourceFeeds{Transactions: a.core.SeasonTransactions.FeedState(), Lineups: a.core.SeasonLineups.FeedState(), Pending: a.core.SeasonPendingTrades.FeedState()}).Recent(source, handed, a.core.MovesNow)
 }
 
 // revalidateReadyRosterMoves returns Ready IR and taxi plans whose player's held eligibility
@@ -87,7 +87,7 @@ func (a *App) recentMoveSource(source envelope.Source, handed time.Time) bool {
 // Invalidate to Stale, then Rebase). Unknown eligibility never yanks a plan: MFL decides, as
 // it does at hand-off. The caller holds refreshMu.
 func (a *App) revalidateReadyRosterMoves(ctx context.Context) {
-	(platformapp.RosterRevalidation{Release: a.revalidateReleaseAfterRefresh, ContractsAvailable: a.core.Moves != nil && a.core.Whatif != nil,
+	(planwatch.RosterRevalidation{Release: a.revalidateReleaseAfterRefresh, ContractsAvailable: a.core.Moves != nil && a.core.Whatif != nil,
 		Contracts: func(ctx context.Context) error {
 			a.core.MovesMu.Lock()
 			defer a.core.MovesMu.Unlock()
@@ -114,7 +114,7 @@ func (a *App) returnPlanToDraft(ctx context.Context, id string, decision eligibi
 }
 
 func (a *App) revalidateReleaseAfterRefresh(ctx context.Context) {
-	platformapp.RevalidateRelease(ctx, a.core.Moves != nil && a.core.Whatif != nil, func(ctx context.Context) error {
+	planwatch.RevalidateRelease(ctx, a.core.Moves != nil && a.core.Whatif != nil, func(ctx context.Context) error {
 		a.core.MovesMu.Lock()
 		defer a.core.MovesMu.Unlock()
 		return contractsapp.RevalidateReleasePlans(ctx, a.core)
@@ -132,18 +132,18 @@ func (a *App) withdrawRosterMove(correlationID string) (envelope.Receipt, error)
 	return a.moveActions().Withdraw(ctx, correlationID) //nolint:wrapcheck // Preserve move transition and authorization errors.
 }
 
-func (a *App) moveActions() platformapp.MoveActions {
-	return platformapp.MoveActions{Store: a.core.Moves, Own: a.requireOwnFranchise, Now: a.core.MovesNow,
+func (a *App) moveActions() planwatch.MoveActions {
+	return planwatch.MoveActions{Store: a.core.Moves, Own: a.requireOwnFranchise, Now: a.core.MovesNow,
 		Open: func(target string) { a.core.OpenURL(a.core.Ctx, target) }, Audit: a.logMove,
 		Changed: func() { a.core.MovesChanged(a.core.Ctx) }, Wake: a.wakeMoves}
 }
-func (a *App) moveWatch() platformapp.MoveWatch {
-	return platformapp.MoveWatch{Store: a.core.Moves, Unknown: a.core.MovesUnknown, Log: a.core.MovesLog,
+func (a *App) moveWatch() planwatch.MoveWatch {
+	return planwatch.MoveWatch{Store: a.core.Moves, Unknown: a.core.MovesUnknown, Log: a.core.MovesLog,
 		Audit: a.logMove, Now: a.core.MovesNow, Observation: a.refreshedObservation,
 		Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock, Changed: a.core.MovesChanged}
 }
-func (a *App) rosterPlanReview() platformapp.RosterPlanReview {
-	return platformapp.RosterPlanReview{Store: a.core.Moves, Now: a.core.MovesNow, Log: a.core.MovesLog, Audit: a.logMove}
+func (a *App) rosterPlanReview() planwatch.RosterPlanReview {
+	return planwatch.RosterPlanReview{Store: a.core.Moves, Now: a.core.MovesNow, Log: a.core.MovesLog, Audit: a.logMove}
 }
 
 func newMovesTimer(delay time.Duration) (<-chan time.Time, func()) {
@@ -152,10 +152,10 @@ func newMovesTimer(delay time.Duration) (<-chan time.Time, func()) {
 }
 
 func (a *App) watchMoves(parent context.Context) { a.movePolling().Run(parent) }
-func (a *App) movePolling() platformapp.MovePolling {
-	return platformapp.MovePolling{Now: a.core.MovesNow, Timer: a.core.MovesTimer, Wake: a.core.MovesWake, Timeout: refreshTimeout, Check: a.checkMoves, Log: a.core.MovesLog, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock, Awaiting: a.core.Moves.Awaiting}
+func (a *App) movePolling() planwatch.MovePolling {
+	return planwatch.MovePolling{Now: a.core.MovesNow, Timer: a.core.MovesTimer, Wake: a.core.MovesWake, Timeout: refreshTimeout, Check: a.checkMoves, Log: a.core.MovesLog, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock, Awaiting: a.core.Moves.Awaiting}
 }
 
 func (a *App) requireOwnFranchise(franchise string) error {
-	return platformapp.AuthorizeTeam(franchise, a.ready, a.core.WithTeamIdentity) //nolint:wrapcheck // Preserve shared team authorization refusals.
+	return planwatch.AuthorizeTeam(franchise, a.ready, a.core.WithTeamIdentity) //nolint:wrapcheck // Preserve shared team authorization refusals.
 }

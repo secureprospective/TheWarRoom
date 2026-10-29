@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -47,63 +46,6 @@ func (s MirrorStamps) NewerThan(old MirrorStamps) bool {
 	return stampNewer(s.Rosters, old.Rosters) || stampNewer(s.Contract, old.Contract) || stampNewer(s.DeadCap, old.DeadCap)
 }
 
-type WhatIfMove struct {
-	ID          string       `json:"id"`
-	Kind        string       `json:"kind"`
-	Player      string       `json:"player"`
-	Name        string       `json:"name"`
-	Charge      domain.Money `json:"charge"`
-	Explanation string       `json:"explanation"`
-}
-
-type WhatIfSession struct {
-	Generation  string         `json:"generation"`
-	Mine        string         `json:"mine"`
-	Stamps      MirrorStamps   `json:"stamps"`
-	Snapshot    MirrorSnapshot `json:"snapshot"`
-	SeedUsed    domain.Money   `json:"seedUsed"`
-	TaxiPercent float64        `json:"taxiPercent"`
-	IRPercent   float64        `json:"irPercent"`
-	Used        domain.Money   `json:"used"`
-	Cap         *domain.Money  `json:"cap"`
-	Moves       []WhatIfMove   `json:"moves"`
-}
-
-// WhatIfSessions publishes one complete session per franchise. Failed replays leave the
-// previous session intact; generation state is isolated from the legacy transaction screens.
-type WhatIfSessions struct{ pools *db.Pools }
-
-func NewWhatIfSessions(pools *db.Pools) *WhatIfSessions { return &WhatIfSessions{pools: pools} }
-
-func (s *WhatIfSessions) Load(ctx context.Context, mine string) (WhatIfSession, bool, error) {
-	if err := initializeWhatIf(ctx, s.pools); err != nil {
-		return WhatIfSession{}, false, fmt.Errorf("what-if schema: %w", err)
-	}
-	var raw string
-	err := s.pools.Read().QueryRowContext(ctx, `SELECT session FROM whatif_sessions WHERE franchise_id = ?`, mine).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return WhatIfSession{}, false, nil
-	}
-	if err != nil {
-		return WhatIfSession{}, false, fmt.Errorf("what-if load: %w", err)
-	}
-	var out WhatIfSession
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
-		return out, false, fmt.Errorf("what-if decode: %w", err)
-	}
-	return out, true, nil
-}
-func (s *WhatIfSessions) Save(ctx context.Context, session WhatIfSession) error {
-	raw, err := json.Marshal(session)
-	if err != nil {
-		return fmt.Errorf("what-if encode: %w", err)
-	}
-	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO whatif_sessions (franchise_id, session) VALUES (?, ?) ON CONFLICT(franchise_id) DO UPDATE SET session = excluded.session`, session.Mine, string(raw)); err != nil {
-		return fmt.Errorf("what-if save: %w", err)
-	}
-	return nil
-}
-
 // SnapshotSource keeps seeding pinned to the stored baseline during replay and restart.
 type SnapshotSource struct{ Snapshot MirrorSnapshot }
 
@@ -114,9 +56,6 @@ func (s SnapshotSource) Rosters(ctx context.Context) ([]domain.Roster, error) {
 func (s SnapshotSource) Adjustments(context.Context) ([]Adjustment, error) {
 	return s.Snapshot.Adjustments, nil
 }
-
-func (s WhatIfSession) TaxiCapPercent() float64 { return s.TaxiPercent }
-func (s WhatIfSession) IRCapPercent() float64   { return s.IRPercent }
 
 func stampNewer(current, baseline string) bool {
 	if current == "" {
@@ -160,3 +99,27 @@ func (m *Mirror) ReleaseStamps(ctx context.Context, player, mine string) (Mirror
 }
 
 const whatIfSessionsDDL = `CREATE TABLE IF NOT EXISTS whatif_sessions (franchise_id TEXT PRIMARY KEY, session TEXT NOT NULL);`
+
+// WhatIfRecords stores session JSON under the shared whatif.db migration sequence.
+type WhatIfRecords struct{ pools *db.Pools }
+
+func NewWhatIfRecords(pools *db.Pools) *WhatIfRecords { return &WhatIfRecords{pools: pools} }
+
+func (s *WhatIfRecords) Load(ctx context.Context, mine string) (string, bool, error) {
+	var raw string
+	err := s.pools.Read().QueryRowContext(ctx, `SELECT session FROM whatif_sessions WHERE franchise_id = ?`, mine).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, fmt.Errorf("session read: %w", err)
+	}
+	return raw, true, nil
+}
+
+func (s *WhatIfRecords) Save(ctx context.Context, mine, raw string) error {
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO whatif_sessions (franchise_id, session) VALUES (?, ?) ON CONFLICT(franchise_id) DO UPDATE SET session = excluded.session`, mine, raw); err != nil {
+		return fmt.Errorf("session write: %w", err)
+	}
+	return nil
+}

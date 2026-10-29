@@ -4,11 +4,13 @@ import (
 	"context"
 	"strconv"
 
-	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
+
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -57,7 +59,7 @@ func (h contractsHost) ReleaseTarget() envelope.Target {
 }
 
 func (h contractsHost) ValidateMoveURL(target string) error {
-	return platformapp.ValidateMoveURL(target) //nolint:wrapcheck // Preserve the shared move URL refusal.
+	return planwatch.ValidateMoveURL(target) //nolint:wrapcheck // Preserve the shared move URL refusal.
 }
 
 func (h contractsHost) AcquisitionSnapshot(mine string) (snapshot.Snapshot, error) {
@@ -86,7 +88,7 @@ func (h contractsHost) AcquisitionTeams(ctx context.Context, snap snapshot.Snaps
 	return out
 }
 
-func (h contractsHost) AcquisitionCorrection(p state.MirrorPlayer, s state.WhatIfSession) domain.Money {
+func (h contractsHost) AcquisitionCorrection(p state.MirrorPlayer, s mflwhatif.WhatIfSession) domain.Money {
 	return tradeCentsCorrection(p, "", s)
 }
 

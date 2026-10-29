@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
@@ -127,7 +127,7 @@ func (h controlHost) ResetParam(key, position string) controlapp.SetParamResult 
 func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {
 	return controlapp.MFLKeyStatus{
 		State: state, League: ingestion.LeagueID, Season: a.core.Season,
-		MyFranchise: a.core.MyFranchise, TeamActionRefusal: platformapp.OwnFranchiseRefusal(a.core.MyFranchise, ""),
+		MyFranchise: a.core.MyFranchise, TeamActionRefusal: planwatch.OwnFranchiseRefusal(a.core.MyFranchise, ""),
 		VerifiedAt: a.core.KeyVerifiedAt, Detail: detail,
 	}
 }

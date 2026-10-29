@@ -9,9 +9,11 @@ import (
 	"testing"
 	"time"
 
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
+	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
+
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
-	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -85,13 +87,13 @@ func unchangedWhatIf(t *testing.T, label string, before, after map[string][]stri
 // (and on first use published) in whatif.db, and both scratch ledgers seeded there too.
 func oldTradeProjection(a *App) func(context.Context, tradesapp.RawTradeBuilder, snapshot.Snapshot) (tradesapp.TradeBuilderPlan, error) {
 	simulate := tradesapp.SimulationWorkflow{Scratch: db.OpenScratch,
-		Open: func(ctx context.Context, _ *db.Pools, fid string) (state.WhatIfSession, *state.Store, error) {
+		Open: func(ctx context.Context, _ *db.Pools, fid string) (mflwhatif.WhatIfSession, *state.Store, error) {
 			return contractsapp.OpenWhatIf(ctx, contractsapp.StoresOf(a.core), contractsapp.RawWhatIfRequest{Mine: fid, Action: "read"})
 		},
-		Mirror: func(ctx context.Context, fid string) (state.WhatIfSession, error) {
+		Mirror: func(ctx context.Context, fid string) (mflwhatif.WhatIfSession, error) {
 			return contractsapp.MirrorWhatIf(ctx, contractsapp.StoresOf(a.core), fid)
 		},
-		Load: func(ctx context.Context, _ *db.Pools, s state.WhatIfSession) (*state.Store, error) {
+		Load: func(ctx context.Context, _ *db.Pools, s mflwhatif.WhatIfSession) (*state.Store, error) {
 			return contractsapp.LoadWhatIf(ctx, a.core.WhatifPools, s)
 		}, Now: time.Now}
 	return (tradesapp.ProjectionWorkflow{Simulate: simulate.Run, Stamps: a.core.League.Stamps, Possessive: possessive,

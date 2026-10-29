@@ -12,17 +12,17 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/app/comms"
-	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/app/draft"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	"github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	"github.com/secureprospective/TheWarRoom/internal/app/offers"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	raceapp "github.com/secureprospective/TheWarRoom/internal/app/race"
 	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/app/sources"
-	"github.com/secureprospective/TheWarRoom/internal/app/trades"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 

@@ -16,103 +16,115 @@ fence	internal/leaguemigration/migrationtest	-
 fence	internal/mfl	-
 fence	internal/mflkey	-
 seam	internal/composition	-
-# slice 2b/3
+# Native seed adapter reads held MFL draft/rule types; source translation remains debt.
 debt	internal/app/commissioner/native	internal/ingestion/draftreports
-# slice 2b/3
+# Native seed adapter reads held MFL draft/rule types; source translation remains debt.
 debt	internal/app/commissioner/native	internal/ingestion/league
-# slice 2b/3
+# Reference communications connection state retains the MFL key port.
 debt	internal/app/comms	internal/mflkey
-# slice 2b/3
-debt	internal/app/comms/commstest	internal/ingestion/league
-# slice 2b/3
-debt	internal/app/comms/commstest	internal/ingestion/rosters
-# slice 2b/3
-debt	internal/app/comms/commstest	internal/ingestion/transactions
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/league
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/livescoring
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/pendingtrades
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/rosters
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/salaryadjustments
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/ingestion/transactions
-# slice 2b/3
+# Reference connection/status and held league sources remain in mixed control API.
 debt	internal/app/control	internal/mflkey
-# slice 2b/3
+# Frozen resource root holds typed MFL source/client ports; no new native decision authority.
 debt	internal/app/core	internal/ingestion/draftreports
-# slice 2b/3
+# Frozen resource root holds typed MFL source/client ports; no new native decision authority.
 debt	internal/app/core	internal/ingestion/league
-# slice 2b/3
+# Frozen resource root holds typed MFL source/client ports; no new native decision authority.
 debt	internal/app/core	internal/mfl
-# slice 2b/3
+# Frozen resource root holds typed MFL source/client ports; no new native decision authority.
 debt	internal/app/core	internal/mflkey
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/core/coretest	internal/mfl
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/core/coretest	internal/mflkey
-# slice 2b/3
+# Mixed draft desk still reads held MFL draft reports.
 debt	internal/app/draft	internal/ingestion/draftreports
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/draft/drafttest	internal/ingestion/draftreports
-# slice 2b/3
+# Mixed asset board still reads held MFL draft reports.
 debt	internal/app/market	internal/ingestion/draftreports
-# slice 2b/3
+# Mixed now board still reads MFL weekly results.
 debt	internal/app/now	internal/ingestion/weeklyresults
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/offers/offerstest	internal/ingestion/league
-# slice 2b/3
+# Reference free-agent pool source remains inside the mixed offers area.
 debt	internal/app/offers/pool	internal/ingestion/freeagents
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/race	internal/ingestion/leagueschedule
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/race	internal/ingestion/leaguestandings
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/scoring	internal/ingestion/leagueschedule
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/scoring	internal/ingestion/leaguestandings
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/season	internal/ingestion/league
-# slice 2b/3
+# Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/season	internal/ingestion/leaguestandings
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/season/seasontest	internal/ingestion/league
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/season/seasontest	internal/ingestion/leaguestandings
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/season/seasontest	internal/ingestion/playoffs
-# slice 2b/3
+# Archived MFL fixture builder; mixed fixture ownership has not been split.
 debt	internal/app/season/seasontest	internal/ingestion/weeklyresults
-# slice 2b/3
-debt	internal/app/trades	internal/ingestion/draftreports
-# slice 2b/3
+# Shared transport/export helpers still construct MFL read requests.
 debt	internal/ingestion	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/injuries	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/marketfeeds	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/nflschedule	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/players	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/playerscores	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/researchfeeds	internal/mfl
-# slice 2b/3
+# Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/sitenews	internal/mfl
-# slice 2b/3
+# MFL lineup rule policy remains in shared lineup; native legality uses nativecheck.
 debt	internal/lineup	internal/ingestion/league
-# slice 2b/3
+# MFL schedule/standings service remains a shared reference dependency.
 debt	internal/m2service	internal/ingestion/league
-# slice 2b/3
+# MFL schedule/standings service remains a shared reference dependency.
 debt	internal/m2service	internal/ingestion/leagueschedule
-# slice 2b/3
+# MFL schedule/standings service remains a shared reference dependency.
 debt	internal/m2service	internal/ingestion/leaguestandings
-# slice 2b/3
+# MFL roster translation remains in shared source normalization.
 debt	internal/normalize	internal/ingestion/rosters
-# slice 2b/3
+# MFL mirror rulebook still stores and compares parsed source rule types.
 debt	internal/store/rulebook	internal/ingestion/league
+fence	internal/app/mflref/contracts	-
+fence	internal/app/mflref/contracts/contractstest	-
+fence	internal/app/mflref/trades	-
+fence	internal/app/mflref/planwatch	-
+fence	internal/app/comms/commstest	-
+# Compatibility binding facade; implementation belongs to reference planwatch.
+# Compatibility facade promotes reference-owned plan bindings; public platform method names stay stable.
+debt	internal/app/platform	internal/app/mflref/planwatch
+# Native roots: every production dependency is checked, with no debt-edge exemption.
+native	internal/commissioner	-
+native	internal/leagueservice	-
+native	internal/leaguerules	-
+native	internal/leagueweek	-
+native	internal/nativecheck	-
+native	internal/store/history	-
+native	internal/leaguemigration	-
+fence	internal/mflref/whatif	-
+native	internal/engine	-
+native	internal/model	-
+native	internal/domain	-

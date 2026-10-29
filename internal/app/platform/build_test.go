@@ -101,3 +101,12 @@ func TestSetupLogging_PrunesToMax(t *testing.T) {
 		t.Fatalf("PruneLogs kept %d files, want <= %d", len(matches), MaxLogFiles)
 	}
 }
+
+func TestBuildLabel(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct{ version, commit, want string }{{"dev", "", "dev"}, {"v1", "abc1234", "v1 (abc1234)"}} {
+		if got := BuildLabel(tc.version, tc.commit); got != tc.want {
+			t.Errorf("label = %q, want %q", got, tc.want)
+		}
+	}
+}

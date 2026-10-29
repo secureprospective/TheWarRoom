@@ -11,17 +11,17 @@ import (
 
 	commissioner "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	comms "github.com/secureprospective/TheWarRoom/internal/app/comms"
-	contracts "github.com/secureprospective/TheWarRoom/internal/app/contracts"
 	control "github.com/secureprospective/TheWarRoom/internal/app/control"
 	draft "github.com/secureprospective/TheWarRoom/internal/app/draft"
 	market "github.com/secureprospective/TheWarRoom/internal/app/market"
+	contracts "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
+	trades "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	now "github.com/secureprospective/TheWarRoom/internal/app/now"
 	offers "github.com/secureprospective/TheWarRoom/internal/app/offers"
 	platform "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	race "github.com/secureprospective/TheWarRoom/internal/app/race"
 	research "github.com/secureprospective/TheWarRoom/internal/app/research"
 	sources "github.com/secureprospective/TheWarRoom/internal/app/sources"
-	trades "github.com/secureprospective/TheWarRoom/internal/app/trades"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 )
 
