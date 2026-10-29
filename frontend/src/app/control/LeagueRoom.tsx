@@ -4,6 +4,7 @@ import { commands } from '../commands/registry';
 import { ReportView } from '../reports/ReportView';
 import { controlState, matching } from './state';
 import './control.css';
+const PickSettings = lazy(() => import('./PickSettings'));
 
 const LeagueLanding = lazy(() => import('../commissioner/LeagueLanding'));
 
@@ -17,6 +18,9 @@ export function LeagueRoom() {
       {s.error && <p role="alert">{s.error}</p>}
       <Suspense fallback={<p role="status">Reading the league…</p>}>
         <LeagueLanding />
+      </Suspense>
+      <Suspense fallback={<p role="status">Reading pick settings…</p>}>
+        <PickSettings />
       </Suspense>
       <details className="mfl-reference">
         <summary>From MFL (reference only): settings, by-laws and accounting</summary>
