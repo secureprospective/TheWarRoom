@@ -21,7 +21,8 @@ export function reportGroups(query: string) {
   const needle = query.trim().toLowerCase();
   return places.map(place => ({ place, rows: endpointsAt(place).filter(row =>
     /\bRead\b/.test(row.kind) && row.status === 'landed' &&
-    [reportName(row.id, row.name), row.gm_question, row.id, place].some(text => text.toLowerCase().includes(needle)),
+    [reportName(row.id, row.name), row.gm_question, row.id, place]
+      .some(text => text.toLowerCase().includes(needle)),
   ) })).filter(group => group.rows.length);
 }
 
@@ -43,7 +44,8 @@ export default function ReportDrawer() {
           <ul>
             {rows.map(row => (
               <li key={row.id}>
-                <Act variant="card" verb="endpoint.open" args={{ id: row.id }} label={`Open ${reportName(row.id, row.name)}`}>
+                <Act variant="card" verb="endpoint.open" args={{ id: row.id }}
+                  label={`Open ${reportName(row.id, row.name)}`}>
                   <strong>{reportName(row.id, row.name)}</strong>
                   {row.gm_question && row.gm_question !== '—' && <span>{row.gm_question}</span>}
                 </Act>
