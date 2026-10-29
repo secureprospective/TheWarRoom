@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/eligibility"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 

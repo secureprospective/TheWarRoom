@@ -1,22 +1,24 @@
+// Package bid checks the frozen MFL local bid-plan policy without I/O.
 package bid
 
 import (
 	"fmt"
 	"strings"
 
+	bidmath "github.com/secureprospective/TheWarRoom/internal/engine/bid"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 )
 
 // The §6 limits. Money is cents.
 const (
-	MaxYears  = 4
 	MaxActive = 30
 
 	oneYearCap domain.Money = 1_200_000_000 // $12M
 	midTierCap domain.Money = 2_400_000_000 // $24M
 
-	minStep   Points = 100  // each new bid beats the last by at least 0.1
-	snipeStep Points = 1000 // after the 20-hour mark, by a full point
+	minStep   bidmath.Points = 100  // each new bid beats the last by at least 0.1
+	snipeStep bidmath.Points = 1000 // after the 20-hour mark, by a full point
 
 	lateSeasonWeek   = 12 // after it only playoff teams bid, 1-year only
 	multiYearCloseWk = 13 // multi-year bids close at its end; later weeks are the playoffs
@@ -79,21 +81,15 @@ func (f finding) result() Result {
 	return Result{f.rule, f.label, f.verdict, f.reason, marks[f.verdict]}
 }
 
-// Experience is NFL years (season minus draft year); Known is false without a real draft year.
-type Experience struct {
-	Years int
-	Known bool
-}
-
 // Input is everything the rules read about one bid plan.
 type Input struct {
 	Salary      domain.Money // annual, flat across the years
 	Years       int
 	Minimum     domain.Money // the §6 minimum for the player's experience
-	Experience  Experience
-	Snipe       bool    // the owner says the bid lands after the 20-hour mark
-	Beat        *Points // the bid to beat, as the owner typed it
-	Active      int     // the owner's other active bid plans
+	Experience  bidmath.Experience
+	Snipe       bool            // the owner says the bid lands after the 20-hour mark
+	Beat        *bidmath.Points // the bid to beat, as the owner typed it
+	Active      int             // the owner's other active bid plans
 	Conditional *ConditionalDrop
 	Room        *domain.Money
 	Week        int  // the NFL week in play; 0 outside the season
@@ -170,19 +166,19 @@ func verdict(ok bool) Verdict {
 }
 
 func length(in Input) finding {
-	ok := in.Years >= 1 && in.Years <= MaxYears
-	reason := fmt.Sprintf("%d-year bid; the longest allowed is %d years", in.Years, MaxYears)
+	ok := in.Years >= 1 && in.Years <= bidmath.MaxYears
+	reason := fmt.Sprintf("%d-year bid; the longest allowed is %d years", in.Years, bidmath.MaxYears)
 	if !ok {
-		reason = fmt.Sprintf("A bid runs 1 to %d years, not %d", MaxYears, in.Years)
+		reason = fmt.Sprintf("A bid runs 1 to %d years, not %d", bidmath.MaxYears, in.Years)
 	}
 	return finding{RuleLength, "Length", verdict(ok), reason}
 }
 
 func flat(in Input) finding {
 	ok := in.Salary > 0
-	reason := fmt.Sprintf("%s a year, the same in each of the %d years", MoneyText(in.Salary), in.Years)
+	reason := fmt.Sprintf("%s a year, the same in each of the %d years", bidmath.MoneyText(in.Salary), in.Years)
 	if in.Years == 1 {
-		reason = fmt.Sprintf("%s a year for its 1 year", MoneyText(in.Salary))
+		reason = fmt.Sprintf("%s a year for its 1 year", bidmath.MoneyText(in.Salary))
 	}
 	if !ok {
 		reason = "Enter one annual salary above $0; it is the same every year"
@@ -194,7 +190,7 @@ func snap(in Input) finding {
 	ok := domain.RoundToNearest10k(in.Salary) == in.Salary
 	reason := "Salary is on the $10,000 grid"
 	if !ok {
-		reason = fmt.Sprintf("%s is not on the $10,000 grid", MoneyText(in.Salary))
+		reason = fmt.Sprintf("%s is not on the $10,000 grid", bidmath.MoneyText(in.Salary))
 	}
 	return finding{RuleSnap, "$10k grid", verdict(ok), reason}
 }
@@ -205,9 +201,9 @@ func minimum(in Input) finding {
 	if !in.Experience.Known {
 		basis = "no draft year on file, so the rookie minimum"
 	}
-	reason := fmt.Sprintf("At or above the %s minimum (%s)", MoneyText(in.Minimum), basis)
+	reason := fmt.Sprintf("At or above the %s minimum (%s)", bidmath.MoneyText(in.Minimum), basis)
 	if !ok {
-		reason = fmt.Sprintf("Below the %s minimum salary (%s)", MoneyText(in.Minimum), basis)
+		reason = fmt.Sprintf("Below the %s minimum salary (%s)", bidmath.MoneyText(in.Minimum), basis)
 	}
 	return finding{RuleMinimum, "Minimum salary", verdict(ok), reason}
 }
@@ -218,9 +214,9 @@ func oneYear(in Input) finding {
 		return finding{RuleOneYear, "1-year limit", Pass, "Applies to 1-year bids only"}
 	case in.Salary > oneYearCap:
 		return finding{RuleOneYear, "1-year limit", Fail,
-			fmt.Sprintf("A 1-year bid is capped at %s", MoneyText(oneYearCap))}
+			fmt.Sprintf("A 1-year bid is capped at %s", bidmath.MoneyText(oneYearCap))}
 	}
-	return finding{RuleOneYear, "1-year limit", Pass, fmt.Sprintf("At or under %s", MoneyText(oneYearCap))}
+	return finding{RuleOneYear, "1-year limit", Pass, fmt.Sprintf("At or under %s", bidmath.MoneyText(oneYearCap))}
 }
 
 func tierYears(in Input) finding {
@@ -233,7 +229,7 @@ func tierYears(in Input) finding {
 	}
 	if in.Years < need {
 		return finding{RuleTierYears, "Years for the salary", Fail,
-			fmt.Sprintf("A %s bid needs at least %d years", MoneyText(in.Salary), need)}
+			fmt.Sprintf("A %s bid needs at least %d years", bidmath.MoneyText(in.Salary), need)}
 	}
 	return finding{RuleTierYears, "Years for the salary", Pass,
 		fmt.Sprintf("%s needs at least %d %s", tierText(need), need, plural(need, "year"))}
@@ -243,11 +239,11 @@ func tierYears(in Input) finding {
 func tierText(need int) string {
 	switch need {
 	case 3:
-		return "Over " + MoneyText(midTierCap)
+		return "Over " + bidmath.MoneyText(midTierCap)
 	case 2:
-		return "Over " + MoneyText(oneYearCap) + " up to " + MoneyText(midTierCap)
+		return "Over " + bidmath.MoneyText(oneYearCap) + " up to " + bidmath.MoneyText(midTierCap)
 	}
-	return "Up to " + MoneyText(oneYearCap)
+	return "Up to " + bidmath.MoneyText(oneYearCap)
 }
 
 func plural(n int, noun string) string {
@@ -266,7 +262,7 @@ func increment(in Input) finding {
 	if in.Snipe {
 		step, name = snipeStep, "a full point (Snipe)"
 	}
-	points, err := Score(in.Salary, in.Years)
+	points, err := bidmath.Score(in.Salary, in.Years)
 	need := *in.Beat + step
 	if err != nil || points < need {
 		return finding{RuleIncrement, label, Fail,
@@ -318,24 +314,24 @@ func capRoom(in Input) finding {
 		return finding{RuleCapRoom, label, Info, "Cap room is not available; the commissioner's cap rules decide"}
 	}
 	after := *in.Room - in.Salary
-	reason := fmt.Sprintf("%s a year against %s of room leaves %s", MoneyText(in.Salary),
-		MoneyText(*in.Room), MoneyText(after))
+	reason := fmt.Sprintf("%s a year against %s of room leaves %s", bidmath.MoneyText(in.Salary),
+		bidmath.MoneyText(*in.Room), bidmath.MoneyText(after))
 	if after >= 0 {
 		return finding{RuleCapRoom, label, Pass, reason}
 	}
 	if in.Conditional == nil {
 		return finding{RuleCapRoom, label, Fail, fmt.Sprintf(
 			"%s a year is %s over your %s of room. Name a conditional drop to cover it.",
-			MoneyText(in.Salary), MoneyText(-after), MoneyText(*in.Room))}
+			bidmath.MoneyText(in.Salary), bidmath.MoneyText(-after), bidmath.MoneyText(*in.Room))}
 	}
 	drop := in.Conditional
 	freed := drop.Salary - drop.DeadCap
 	if after+freed < 0 {
 		return finding{RuleCapRoom, label, Fail, fmt.Sprintf(
 			"Dropping %s frees %s after %s dead cap; still %s short. Choose a drop that covers it.",
-			drop.Name, MoneyText(freed), MoneyText(drop.DeadCap), MoneyText(-after-freed))}
+			drop.Name, bidmath.MoneyText(freed), bidmath.MoneyText(drop.DeadCap), bidmath.MoneyText(-after-freed))}
 	}
 	return finding{RuleCapRoom, label, Pass, fmt.Sprintf(
 		"Covered if you win: the commissioner drops %s (%s freed after %s dead cap)",
-		drop.Name, MoneyText(freed), MoneyText(drop.DeadCap))}
+		drop.Name, bidmath.MoneyText(freed), bidmath.MoneyText(drop.DeadCap))}
 }

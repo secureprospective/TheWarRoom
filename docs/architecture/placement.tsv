@@ -29,7 +29,7 @@ internal/engine/contractacts	contracts
 internal/engine/eligibility	contracts
 internal/engine/race	race
 internal/engine/rookiedraft	commissioner
-internal/envelope	core
+internal/mflref/envelope	core
 internal/facts	sources
 internal/fantasyscore	commissioner
 internal/fantasyscore/source	commissioner
@@ -67,7 +67,7 @@ internal/leagueclock	control
 internal/leaguefeed	control
 internal/leaguerules	commissioner
 internal/leagueweek	control
-internal/lineup	contracts
+internal/mflref/lineup	contracts
 internal/m2service	scoring
 internal/manifest	sources
 internal/measures	sources
@@ -83,7 +83,7 @@ internal/playerid	core
 internal/powerrankings	scoring
 internal/snapshot	core
 internal/store/history	core
-internal/store/moves	platform
+internal/store/mflref/moves	platform
 internal/store/params	control
 internal/store/personal	offers
 internal/store/rulebook	control
@@ -100,7 +100,7 @@ internal/app/research/researchtest	research
 internal/app/offers	offers
 internal/app/offers/personal	offers
 internal/app/offers/pool	offers
-internal/app/offers/bids	offers
+internal/app/mflref/bids	offers
 internal/app/race	race
 internal/app/control	control
 internal/app/season/seasontest	platform
@@ -135,3 +135,6 @@ internal/store/playerrecord	core
 internal/pickvalue	market
 internal/app/mflref/planwatch	platform
 internal/mflref/whatif	contracts
+internal/app/mflref/seed	commissioner
+internal/store/mflref/tradeplans	trades
+internal/mflref/bid	offers

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 type MovePolling struct {

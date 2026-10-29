@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func TestMFLRenamedPlansDispatchAndPersist(t *testing.T) {

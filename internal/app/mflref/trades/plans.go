@@ -10,11 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/tradeplans"
+
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 
 type PlanReceipts interface {
@@ -28,8 +29,8 @@ type PlanWorkflow struct {
 	Request      func(string, leaguefeed.PendingTrade) envelope.TradeRequest
 	Now          func() time.Time
 	Lock, Unlock func()
-	SavePlan     func(context.Context, state.TradePlan) error
-	Plans        func(context.Context, string) ([]state.TradePlan, error)
+	SavePlan     func(context.Context, tradeplans.TradePlan) error
+	Plans        func(context.Context, string) ([]tradeplans.TradePlan, error)
 	Own          func(string) error
 	Project      func(context.Context, RawTradeBuilder, snapshot.Snapshot) (TradeBuilderPlan, error)
 	Supersede    func(context.Context, envelope.Envelope, time.Time) error
@@ -66,7 +67,7 @@ func (s PlanWorkflow) Keep(ctx context.Context, r RawTradeBuilder, blocks []stri
 	if err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
-	if err := s.SavePlan(ctx, state.TradePlan{ID: id, Mine: r.Mine, Other: r.Other, Give: r.Give, Get: r.Get, Rationale: r.Rationale}); err != nil {
+	if err := s.SavePlan(ctx, tradeplans.TradePlan{ID: id, Mine: r.Mine, Other: r.Other, Give: r.Give, Get: r.Get, Rationale: r.Rationale}); err != nil {
 		return envelope.Receipt{}, fmt.Errorf("trade draft: %w", err)
 	}
 	if err := s.Receipts.Save(ctx, e); err != nil {

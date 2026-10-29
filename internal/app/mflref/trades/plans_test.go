@@ -8,11 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/tradeplans"
+
 	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -49,7 +51,7 @@ func TestPlanKeepSaveOrderAndFailure(t *testing.T) {
 		calls := []string{}
 		service := PlanWorkflow{Receipts: store, Request: planRequest, Now: func() time.Time { return at },
 			Lock: func() { calls = append(calls, "lock") }, Unlock: func() { calls = append(calls, "unlock") },
-			SavePlan: func(context.Context, state.TradePlan) error { calls = append(calls, "plan"); return nil },
+			SavePlan: func(context.Context, tradeplans.TradePlan) error { calls = append(calls, "plan"); return nil },
 			Changed: func(context.Context) {
 				if store.value.State() != envelope.Ready {
 					t.Fatal("event before receipt save")
@@ -99,8 +101,8 @@ func TestPlanHandoffRechecksAndSavesBeforeBrowser(t *testing.T) {
 	effects := []string{}
 	blocked := true
 	service := PlanWorkflow{Receipts: store, Now: func() time.Time { return at }, Lock: func() {}, Unlock: func() {},
-		Plans: func(context.Context, string) ([]state.TradePlan, error) {
-			return []state.TradePlan{{ID: "plan", Mine: "0001", Other: "0002"}}, nil
+		Plans: func(context.Context, string) ([]tradeplans.TradePlan, error) {
+			return []tradeplans.TradePlan{{ID: "plan", Mine: "0001", Other: "0002"}}, nil
 		},
 		Own: func(string) error { return nil },
 		Project: func(context.Context, RawTradeBuilder, snapshot.Snapshot) (TradeBuilderPlan, error) {

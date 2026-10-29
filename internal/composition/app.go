@@ -35,7 +35,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
-	"github.com/secureprospective/TheWarRoom/internal/store/moves"
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"

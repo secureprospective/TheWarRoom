@@ -14,6 +14,7 @@ func boundaryFixture(t *testing.T, source string) string {
 	fixtureWrite(t, root, "internal/composition/adapter.go", source)
 	fixtureWrite(t, root, "internal/app/core/state.go", "package core\n")
 	fixtureWrite(t, root, "docs/architecture/boundary-adapters.tsv", "")
+	fixtureWrite(t, root, "docs/architecture/boundary-mfl-commands.tsv", strings.Join(mflCommandSurface(), "\n")+"\n")
 	fixtureWrite(t, root, "go.mod", "module example.com/project\n")
 	fixtureWrite(t, root, "docs/architecture/boundary-mfl.tsv", "fence\tinternal/mfl\t-\n")
 	return root
@@ -207,9 +208,9 @@ func TestMFLBoundaryLeavesSharedPackagesAvailable(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, target := range []string{
-		"internal/envelope", "internal/app/platform", "internal/app/contracts",
-		"internal/app/offers", "internal/app/offers/bids", "internal/app/trades",
-		"internal/store/state", "internal/store/moves",
+		"internal/domain", "internal/app/platform",
+		"internal/app/offers", "internal/engine/bid",
+		"internal/store/state", "internal/snapshot",
 	} {
 		if rules.fences[target] {
 			t.Fatalf("shared package %s is fenced", target)

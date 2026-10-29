@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/engine/contractacts"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func TestContractMigrationUpRoundTripAndAtomicValidation(t *testing.T) {

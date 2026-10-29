@@ -12,7 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/moves"
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/rulebook"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )

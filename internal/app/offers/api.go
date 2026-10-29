@@ -12,12 +12,12 @@ import (
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
-	"github.com/secureprospective/TheWarRoom/internal/store/moves"
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/moves"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
 

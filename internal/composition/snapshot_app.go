@@ -10,10 +10,10 @@ import (
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 // MoveStore is the local envelope ledger, not an MFL writer.

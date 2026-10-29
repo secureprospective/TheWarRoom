@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/tradeplans"
+
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -50,7 +52,7 @@ func TestPreRelocationSessionsAndPlansSurviveFileRestart(t *testing.T) {
 	if !(state.MirrorStamps{Rosters: "2026-10-02T00:00:00Z"}).NewerThan(saved.Stamps) {
 		t.Fatal("lost stale baseline")
 	}
-	plans, err := state.NewTradePlans(pools).List(ctx, "0001")
+	plans, err := tradeplans.NewTradePlans(pools, state.InitializeWhatIf).List(ctx, "0001")
 	if err != nil || len(plans) != 1 || plans[0].ID != "trade-old-1" || plans[0].Give[0] != "0042" || plans[0].Rationale != "saved before relocation" {
 		t.Fatalf("plans: %+v %v", plans, err)
 	}

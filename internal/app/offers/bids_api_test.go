@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/offers/offerstest"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func TestBidPreviewShowsGoFigures(t *testing.T) {

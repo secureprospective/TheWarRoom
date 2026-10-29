@@ -46,3 +46,18 @@ func TestMFLNativeMathRootsAreDeclared(t *testing.T) {
 		}
 	}
 }
+
+func TestMFLFreezeRejectsNewCommandAndReferencePackage(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	current := append(mflCommandSurface(), "mfl\tmfl.synthetic.new\tTargetSynthetic\t1\tdesktop")
+	if err := checkMFLCommandSurface(root, current); err == nil || !strings.Contains(err.Error(), "unreviewed MFL command: mfl\tmfl.synthetic.new") {
+		t.Fatal(err)
+	}
+	if err := checkMFLCommandSurface(root, mflCommandSurface()); err != nil {
+		t.Fatal(err)
+	}
+	fixtureWrite(t, root, "internal/mflref/new/read.go", "package newref\n")
+	if err := checkMFL(root); err == nil || !strings.Contains(err.Error(), "unreviewed MFL reference package: internal/mflref/new") {
+		t.Fatal(err)
+	}
+}

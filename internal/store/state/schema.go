@@ -231,3 +231,6 @@ func guardWhatIfJSON(ctx context.Context, tx *sql.Tx) error {
 	}
 	return nil
 }
+
+const tradePlansDDL = `CREATE TABLE IF NOT EXISTS trade_plans (
+ id TEXT PRIMARY KEY, franchise_id TEXT NOT NULL, plan TEXT NOT NULL);`

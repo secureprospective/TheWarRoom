@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
@@ -58,14 +60,14 @@ func DraftBid(at time.Time, req BidRequest, check BidCheck, generate func() stri
 
 // BidCheck runs the §6 bid rules on a prepared Input; they read no roster, so the snapshot
 // is unused.
-type BidCheck struct{ Input bid.Input }
+type BidCheck struct{ Input bidrules.Input }
 
 func (c BidCheck) Evaluate(s Spec, _ snapshot.Snapshot) CheckResult {
 	if s.Intent != BidIntent {
 		return CheckResult{Blocked: true, Note: "bid check does not cover this intent"}
 	}
-	results := bid.Check(c.Input)
-	return CheckResult{Blocked: bid.Blocked(results), Note: bid.Note(results)}
+	results := bidrules.Check(c.Input)
+	return CheckResult{Blocked: bidrules.Blocked(results), Note: bidrules.Note(results)}
 }
 
 // BidPredicate lands a bid by the rosters export: on the owner's roster with the planned

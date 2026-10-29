@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/tradeplans"
+
 	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/mflref/planwatch"
@@ -15,9 +17,9 @@ import (
 	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )
@@ -170,11 +172,11 @@ func (a *App) requireTradePlanFranchise(ctx context.Context, r tradesapp.RawTrad
 
 func (a *App) tradePlans() tradesapp.PlanWorkflow {
 	return tradesapp.PlanWorkflow{Receipts: a.core.Moves, Request: (tradesHost{State: a.core, app: a}).TradeRequest, Now: a.core.MovesNow, Lock: a.core.MovesMu.Lock, Unlock: a.core.MovesMu.Unlock,
-		SavePlan: func(ctx context.Context, plan state.TradePlan) error {
-			return state.NewTradePlans(a.core.WhatifPools).Save(ctx, plan)
+		SavePlan: func(ctx context.Context, plan tradeplans.TradePlan) error {
+			return tradeplans.NewTradePlans(a.core.WhatifPools, state.InitializeWhatIf).Save(ctx, plan)
 		},
-		Plans: func(ctx context.Context, mine string) ([]state.TradePlan, error) {
-			return state.NewTradePlans(a.core.WhatifPools).List(ctx, mine)
+		Plans: func(ctx context.Context, mine string) ([]tradeplans.TradePlan, error) {
+			return tradeplans.NewTradePlans(a.core.WhatifPools, state.InitializeWhatIf).List(ctx, mine)
 		},
 		Own: a.requireOwnFranchise, Project: a.tradeProjection, Supersede: func(ctx context.Context, e envelope.Envelope, now time.Time) error {
 			return contractsapp.SupersedeMoves(ctx, a.core.Moves, e, now)

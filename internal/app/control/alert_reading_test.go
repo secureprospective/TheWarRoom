@@ -12,7 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
-	"github.com/secureprospective/TheWarRoom/internal/lineup"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/lineup"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )

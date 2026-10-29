@@ -142,7 +142,7 @@ func TestRejectAndRevokeNeverClaimRejectedOrLanded(t *testing.T) {
 	}
 }
 func TestTradeActOnRealTransactionsAndDecodedPendingFixture(t *testing.T) {
-	body, err := os.ReadFile("../ingestion/transactions/testdata/transactions.json")
+	body, err := os.ReadFile("../../ingestion/transactions/testdata/transactions.json")
 	if err != nil {
 		t.Fatal(err)
 	}

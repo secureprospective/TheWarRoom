@@ -113,7 +113,10 @@ func checkMFL(root string) error {
 			return fmt.Errorf("stale MFL debt: %s", key)
 		}
 	}
-	return checkNativeClosure(rules, graph)
+	if err := checkNativeClosure(rules, graph); err != nil {
+		return err
+	}
+	return checkMFLCommandSurface(root, mflCommandSurface())
 }
 
 func inspectMFLImports(root, path, prefix string, entry fs.DirEntry, rules mflRules, seen map[string]bool, graph map[string][]string) error {
@@ -125,6 +128,9 @@ func inspectMFLImports(root, path, prefix string, entry fs.DirEntry, rules mflRu
 		return fmt.Errorf("MFL importer path: %w", relErr)
 	}
 	importer := filepath.ToSlash(rel)
+	if referencePackage(importer) && !rules.fences[importer] {
+		return fmt.Errorf("unreviewed MFL reference package: %s", importer)
+	}
 	file, parseErr := parser.ParseFile(token.NewFileSet(), path, nil, parser.ImportsOnly)
 	if parseErr != nil {
 		return fmt.Errorf("parse imports %s: %w", path, parseErr)
@@ -195,4 +201,13 @@ func fencedPath(path string, fences map[string]bool, graph map[string][]string, 
 		}
 	}
 	return nil
+}
+
+func referencePackage(path string) bool {
+	for _, root := range []string{"internal/mflref/", "internal/app/mflref/", "internal/store/mflref/"} {
+		if strings.HasPrefix(path, root) {
+			return true
+		}
+	}
+	return false
 }
