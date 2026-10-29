@@ -191,3 +191,24 @@ func TestMFLBoundaryRejectsNewDebtAndStaleDebt(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestMFLBoundaryLeavesSharedPackagesAvailable(t *testing.T) {
+	root := boundaryFixture(t, "package composition\n")
+	rules, err := readMFLRules("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, target := range []string{
+		"internal/envelope", "internal/app/platform", "internal/app/contracts",
+		"internal/app/offers", "internal/app/offers/bids", "internal/app/trades",
+		"internal/store/state", "internal/store/moves",
+	} {
+		if rules.fences[target] {
+			t.Fatalf("shared package %s is fenced", target)
+		}
+		fixtureWrite(t, root, "internal/native/import.go", "package native\nimport _ \"example.com/project/"+target+"\"\n")
+		if err := checkMFL(root); err != nil {
+			t.Fatalf("shared package %s: %v", target, err)
+		}
+	}
+}
