@@ -75,7 +75,9 @@ describe('Player research', () => {
     r.refresh = vi.fn(async () => { throw new Error('fixture unavailable'); });
     await state.choose('refresh', '');
     expect(state.peek().research).toBe(fixture);
-    expect(state.peek().error).toBe('Research could not be refreshed. Please try again.');
+    expect(state.peek().error).toBe('');
+    expect(state.peek().status).toContain('Refresh finished');
+    expect(state.peek().status).not.toContain('fixture unavailable');
     r.refresh = vi.fn(async () => undefined);
     await state.choose('refresh', '');
     expect(state.peek().error).toBe('');

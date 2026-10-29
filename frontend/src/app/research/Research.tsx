@@ -125,6 +125,7 @@ export default function Research({ newsOnly = false }: { newsOnly?: boolean }) {
     {state.pending && <p role="status">
       {newsOnly ? 'Reading rostered player news…' : state.status || 'Reading held research copies'}
     </p>}
+    {!state.pending && !state.error && state.status && <p role="status">{state.status}</p>}
     {state.error && <p role="alert">{state.error}</p>}
     {state.research && (newsOnly ? <NewsView research={state.research} />
       : <ResearchView research={state.research} selected={selected} />)}

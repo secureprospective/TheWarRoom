@@ -112,7 +112,10 @@ func TestResearchRefreshStepsOrderAndCancellation(t *testing.T) {
 	calls := []string{}
 	s := RefreshSteps{
 		Week: func() int { return 2 }, Status: func(string) {}, Pause: func(context.Context, time.Duration) error { return nil },
-		Feed: func(_ context.Context, kind, week string, force bool) {
+		Feed: func(ctx context.Context, kind, week string, force bool) {
+			if deadline, ok := ctx.Deadline(); !ok || time.Until(deadline) > 15*time.Second {
+				t.Fatal("unbounded source read")
+			}
 			if !force {
 				t.Fatal("lost force")
 			}
@@ -228,7 +231,7 @@ func TestRefreshReadingKeepsAdmissionCaptureAndCleanupOrder(t *testing.T) {
 				}, Feed: func(context.Context, string, string, bool) { t.Fatal("feed after failed pause") },
 			}
 		})
-	want := []string{"ready", "context", "status:Waiting for the MFL refresh to finish", "lock", "capture", "step", "pause", "clear", "unlock"}
+	want := []string{"ready", "status:Waiting for the MFL refresh to finish", "lock", "context", "capture", "step", "pause", "clear", "unlock"}
 	if !errors.Is(err, failure) || !reflect.DeepEqual(calls, want) || !errors.Is(observed.Err(), context.Canceled) {
 		t.Fatal(calls, err, observed)
 	}

@@ -148,14 +148,14 @@ func (s RefreshSteps) Run(ctx context.Context, force bool) error {
 		if kind == "playerScores" {
 			window = "YTD"
 		}
-		s.Feed(ctx, kind, window, force)
+		s.readFeed(ctx, kind, window, force)
 	}
 	for w := 1; w <= week; w++ {
 		s.Status(fmt.Sprintf("Reading week %d of %d", w, week))
 		if err := s.Pause(ctx, time.Second); err != nil {
 			return err
 		}
-		s.Feed(ctx, "playerScores", strconv.Itoa(w), force)
+		s.readFeed(ctx, "playerScores", strconv.Itoa(w), force)
 	}
 	s.Status("Reading NFL injuries")
 	s.Injuries(ctx)
@@ -166,6 +166,12 @@ func (s RefreshSteps) Run(ctx context.Context, force bool) error {
 	s.Status("Reading NFL depth charts")
 	s.Depth(ctx, force)
 	return nil
+}
+
+func (s RefreshSteps) readFeed(parent context.Context, kind, week string, force bool) {
+	ctx, cancel := context.WithTimeout(parent, 15*time.Second)
+	defer cancel()
+	s.Feed(ctx, kind, week, force)
 }
 
 func ReadDepth(ctx, fallback context.Context, season int, bodies ArchivedBodies,
@@ -226,10 +232,10 @@ func RefreshReading(force bool, ready func() error, parent func() context.Contex
 	if err := ready(); err != nil {
 		return fmt.Errorf("research refresh: %w", err)
 	}
-	ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
-	defer cancel()
 	status("Waiting for the MFL refresh to finish")
 	return serialize(func() error {
+		ctx, cancel := context.WithTimeout(parent(), 2*time.Minute)
+		defer cancel()
 		defer status("")
 		return steps().Run(ctx, force)
 	})

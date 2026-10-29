@@ -47,7 +47,7 @@ describe('Research transport adapter', () => {
       expect(researchAvailable()).toBe(false);
       const state = createResearchState(researchAPI, () => '');
       await state.load();
-      expect(state.peek().error).toContain('no browser fixture is substituted');
+      expect(state.peek().error).toBe('Research could not be read. Please try refreshing again.');
       expect(state.peek().pending).toBe(false);
       const stop = subscribeResearch(() => { throw new Error('browser event fired'); });
       await flush();

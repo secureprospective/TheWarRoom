@@ -27,6 +27,25 @@ afterEach(async () => {
   }
 });
 describe('Research live-look fixes', () => {
+  it('finishes once, names missing reports, and clears old progress on a complete refresh', async () => {
+    const partial = { ...fixture, board: { ...fixture.board,
+      reports: fixture.board.reports.map((report, index) => ({ ...report,
+        status: index === 0 ? 'stale' as const : report.status })) } };
+    const reader: ResearchReader = { read: async () => partial,
+      refresh: async () => { throw new Error('playerScores: context deadline exceeded'); },
+      news: async () => undefined, open: async () => undefined };
+    const state = createResearchState(reader, () => '0001');
+    await state.load(true);
+    expect(state.peek().status).toMatch(/^Refresh finished\. Missing or out of date: /);
+    expect(state.peek().status).not.toMatch(/playerScores|context deadline/);
+    const complete = { ...fixture, board: { ...fixture.board,
+      reports: fixture.board.reports.map(report => ({ ...report, status: 'ok' as const })) } };
+    reader.read = async () => complete;
+    reader.refresh = async () => undefined;
+    await state.load(true);
+    expect(state.peek().status).toBe('Refresh complete.');
+    expect(state.peek().error).toBe('');
+  });
   it('submits the search through the native Enter form path and its submit button', async () => {
     const document = new KeyDocument();
     const element = document.createElement('div');
@@ -117,6 +136,8 @@ describe('Research live-look fixes', () => {
     expect(state.peek().status).toBe(status);
     finish?.(); await pending;
     expect(state.peek().pending).toBe(false);
+    expect(state.peek().status).toBe('Refresh complete.');
+    expect(state.peek().status).not.toContain('Reading week');
     expect(vi.getTimerCount()).toBe(0);
   });
 });

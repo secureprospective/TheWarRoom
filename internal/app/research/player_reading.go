@@ -24,16 +24,9 @@ type PlayerReading struct {
 
 func HeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() {
-		if loss != "" {
-			return loss
-		}
 		return "No held copy available"
 	}
-	text := "as of " + report.Time(at, zone)
-	if loss != "" {
-		text += " · " + loss
-	}
-	return text
+	return "as of " + report.Time(at, zone) + refreshQualifier(loss)
 }
 func (v researchView) playerReading(id string, names map[string]string, how string) PlayerReading {
 	p := v.player(id)
@@ -194,11 +187,17 @@ func newsHeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() { // a finished read with no copy says why, like every other held fact
 		return HeldTime(at, loss, zone)
 	}
-	text := "held · fetched " + report.Time(at, zone)
-	if loss != "" {
-		text += " · " + loss
+	return "held · fetched " + report.Time(at, zone) + refreshQualifier(loss)
+}
+
+func refreshQualifier(loss string) string {
+	if loss == "" {
+		return ""
 	}
-	return text
+	if strings.Contains(strings.ToLower(loss), "archived copy") {
+		return " · archived copy; refresh pending"
+	}
+	return " · refresh needed"
 }
 
 func newsPosted(wording string, fetched time.Time, zone *time.Location) (string, float64) {
