@@ -61,7 +61,7 @@ func TestTopPercentRoundsUp(t *testing.T) {
 	}
 }
 
-// The native model values a player by his run value and a pick by Pick Value v1 in the same
+// The native model values a player by his run value and a pick by Pick Value v2 in the same
 // units; a past draft and a player the run did not value say why.
 func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 	t.Parallel()
@@ -83,7 +83,7 @@ func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 	}
 	first, third := n.Pick(2026, 1, "0001", time.Now()), n.Pick(2026, 3, "0001", time.Now())
 	if !first.Valued || !third.Valued || !(first.Discounted > third.Discounted) || first.Seasons != 3 ||
-		!strings.HasPrefix(first.ClassLabel, "Pick Value v1, round 1") {
+		!strings.HasPrefix(first.ClassLabel, "Pick Value v2, round 1") {
 		t.Fatalf("picks: %+v %+v", first, third)
 	}
 	if later := n.Pick(2027, 1, "0001", time.Now()); math.Abs(later.Discounted-0.75*first.Discounted) > 1e-9 ||
@@ -94,7 +94,7 @@ func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 		t.Fatalf("a past draft = %+v", past)
 	}
 	if none := NewNative(NativeInput{Values: values, Season: 2026, Seasons: 3, Discount: 0.75, Teams: 32}).Pick(2026, 1, "", time.Now()); none.Valued ||
-		!strings.HasPrefix(none.Reason, "Pick Value v1 not available") {
+		!strings.HasPrefix(none.Reason, "Pick Value v2 not available") {
 		t.Fatalf("no records = %+v", none)
 	}
 }

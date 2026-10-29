@@ -137,3 +137,95 @@ func TestHistoryIsTheLeaguesDrafts(t *testing.T) {
 		t.Error("no drafted player must refuse the fit")
 	}
 }
+
+// The whole curve is non-increasing: a later pick is never worth more than an earlier one. v1's
+// band means rose at 61 of the 159 steps from 1.01 to 5.32.
+func TestCurveIsNonIncreasing(t *testing.T) {
+	m := fit(t)
+	prev, clamped := math.Inf(1), 0
+	for n := 1; n <= curveLength; n++ {
+		v := m.Selection(n, 0)
+		if v.PPG > prev {
+			t.Fatalf("selection %d (%.4f) is worth more than selection %d (%.4f)", n, v.PPG, n-1, prev)
+		}
+		if v.Clamped {
+			clamped++
+		}
+		prev = v.PPG
+	}
+	t.Logf("%d of %d selections held down to the curve's running minimum", clamped, curveLength)
+	// The same holds slot by slot through Pick, in the league's own rounds.
+	prev = math.Inf(1)
+	for r := 1; r <= 5; r++ {
+		for s := 1; s <= 32; s++ {
+			v, err := m.Pick(2026, r, s, 32)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if v.PPG > prev {
+				t.Fatalf("%d.%02d (%.4f) is worth more than the pick before it (%.4f)", r, s, v.PPG, prev)
+			}
+			prev = v.PPG
+		}
+	}
+	first, _ := m.Pick(2026, 1, 1, 32)
+	last, _ := m.Pick(2026, 1, 32, 32)
+	if !(first.PPG > last.PPG) {
+		t.Errorf("1.01 (%.2f) must be worth more than 1.32 (%.2f)", first.PPG, last.PPG)
+	}
+}
+
+// flat is four classes of 260 drafted players all worth the same, keeping only the picks keep
+// says: a pick with no record is a player out of the league.
+func flat(keep func(overall int) bool) []Player {
+	var out []Player
+	for year := 2023; year <= 2026; year++ {
+		for o := 1; o <= 260; o++ {
+			if !keep(o) {
+				continue
+			}
+			out = append(out, Player{Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: year, Overall: o},
+				Value: 10, Valued: true})
+		}
+	}
+	return out
+}
+
+// The denominator is every NFL pick the band holds across the classes fitted, not the records
+// that survive: a drafted player the league no longer lists counts as zero. Measured on the band
+// means themselves, before the curve is held down. v1 divided by the survivors and read about
+// 30% high at the top of the first round.
+func TestMissingRecordsCountAsZero(t *testing.T) {
+	h, err := History()
+	if err != nil {
+		t.Fatal(err)
+	}
+	all, err := Fit(h, flat(func(int) bool { return true }), 2026, 0.75)
+	if err != nil {
+		t.Fatal(err)
+	}
+	half, err := Fit(h, flat(func(o int) bool { return o%2 == 1 }), 2026, 0.75)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Selections 1, 12, 38 and 102 are 1.01, 1.12, 2.06 and 4.06 of a 32-team draft.
+	for _, n := range []int{1, 12, 38, 102} {
+		full, thin := all.rawSelection(n), half.rawSelection(n)
+		if thin.Expected != full.Expected {
+			t.Errorf("selection %d: the denominator moved with the records, %d against %d", n,
+				thin.Expected, full.Expected)
+		}
+		if thin.Players >= full.Players {
+			t.Errorf("selection %d: dropping half the records left %d of %d", n, thin.Players, full.Players)
+		}
+		undrafted := 1 - full.Undrafted
+		wantFull := 10 * undrafted * float64(full.Players) / float64(full.Expected)
+		wantThin := 10 * undrafted * float64(thin.Players) / float64(thin.Expected)
+		t.Logf("selection %d: %.3f with every record (%d of %d), %.3f with half of them (%d of %d)", n,
+			full.PPG, full.Players, full.Expected, thin.PPG, thin.Players, thin.Expected)
+		if math.Abs(full.PPG-wantFull) > 1e-9 || math.Abs(thin.PPG-wantThin) > 1e-9 {
+			t.Errorf("selection %d = %.6f and %.6f, want %.6f and %.6f: the missing must count as zero",
+				n, full.PPG, thin.PPG, wantFull, wantThin)
+		}
+	}
+}

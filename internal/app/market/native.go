@@ -13,7 +13,7 @@ import (
 )
 
 // Native is the native value model as the asset board reads it: each player's dynasty value from
-// the latest model run, and Pick Value v1 for picks, both in dynasty points per game.
+// the latest model run, and Pick Value v2 for picks, both in dynasty points per game.
 type Native struct {
 	values  map[string]float64 // dynasty points per game by the board's player ID (MFL's)
 	picks   *pickvalue.Model   // nil when it could not be fitted; pickWhy says why
@@ -36,7 +36,7 @@ type NativeInput struct {
 	PickWhy  string
 }
 
-// NewNative builds the native model. Pick Value v1 is fitted on the records' draft capital and the
+// NewNative builds the native model. Pick Value v2 is fitted on the records' draft capital and the
 // run's values; when it cannot be (no draft history or no recent class) players are still valued
 // and picks say why.
 func NewNative(in NativeInput) Native {
@@ -74,7 +74,7 @@ func (n Native) Player(pid string, _ time.Time) Dynasty {
 	return Dynasty{Valued: true, Discounted: v, Seasons: n.seasons, ClassLabel: "Native value"}
 }
 
-// Pick values a pick by its round with Pick Value v1; the slot is not known until the order is.
+// Pick values a pick by its round with Pick Value v2; the slot is not known until the order is.
 func (n Native) Pick(year, round int, _ string, _ time.Time) Dynasty {
 	if n.picks == nil {
 		return Dynasty{Reason: pickvalue.Version + " not available: " + n.pickWhy}
