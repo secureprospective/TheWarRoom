@@ -7,6 +7,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 // Host captures the private and shared season data together and owns refresh serialization.
@@ -33,12 +34,23 @@ type RaceBoard struct {
 	Teams     []report.Choice `json:"teams"`
 }
 
-func (a *API) TargetRace(week int, team, mine string) (RaceBoard, error) {
+func (a *API) TargetRace(week int, team, mine, aggMode string) (RaceBoard, error) {
 	if err := a.host.Ready(); err != nil {
 		return RaceBoard{}, fmt.Errorf("race: startup: %w", err)
 	}
 	in := a.host.RaceInput(a.held.Snapshot)
 	in.Week, in.Team, in.Mine = week, team, mine
+	for _, view := range []string{season.ViewSeason, season.ViewFranchise} {
+		mode := m2service.ResolveAggMode(aggMode, season.DefaultAgg(view))
+		if mode != season.DefaultAgg(view) {
+			key := season.PowerKey(view, mode)
+			if result, ok := in.Held.Power[key]; ok {
+				in.Held.Power[view] = result
+			} else {
+				delete(in.Held.Power, view)
+			}
+		}
+	}
 	b, err := Build(in)
 	return wireRace(b), err
 }

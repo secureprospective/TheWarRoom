@@ -20,6 +20,9 @@ export function createDataState(provider: DataProvider) {
       return { crosswalk, params };
     }, accept: value => value,
   });
+  const paramsOnly = createReadQuery('control.GetParams', {
+    initial, store: sources.store, read: () => provider.params(), accept: params => ({ params }),
+  });
   const store = sources.store;
   async function read() {
     const actionError = store.getState().error;
@@ -43,6 +46,11 @@ export function createDataState(provider: DataProvider) {
         if (!result.ok) store.setState({ error: result.error });
       } else if (action.kind === 'parameter') {
         await provider.parameter(action.key, action.position, action.value);
+        await paramsOnly.load([]);
+        if (!store.getState().error) store.setState({
+          result: action.value === null ? 'Default restored.' : 'Setting saved.',
+        });
+        return;
       }
       const error = await read();
       if (error) {
@@ -55,6 +63,6 @@ export function createDataState(provider: DataProvider) {
       store.setState(s => ({ error: String(cause), outcomes: { ...s.outcomes, [busy]: String(cause) } }));
     } finally { store.setState({ busy: '' }); }
   }
-  return { use: sources.use, read: store.getState, run };
+  return { use: sources.use, read: store.getState, run, loadParams: () => paramsOnly.load([]) };
 }
 export const dataState = createDataState(dataProvider);

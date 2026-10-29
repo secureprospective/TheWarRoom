@@ -1,6 +1,7 @@
 package composition
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -8,6 +9,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft"
@@ -382,4 +389,51 @@ func TestDraftReadingSurvivesReopeningAndFixesTheWire(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkWire(t, "internal/commissioner/testdata/native-draft.wire.json", body, "native draft")
+}
+
+func TestNativeLedgerFeedsPickValueAfterReplayAndRestart(t *testing.T) {
+	f := draftApp(t)
+	f.scheduled(t, 3, 2, 1)
+	f.seated(t, 3)
+	f.now = draftStartAt().Add(time.Hour)
+	f.asOwner(3)
+	f.pick(t, draftTeam(3), "5001")
+	records := []playerrecord.Record{{MFL: "5001", Draft: playerrecord.Draft{Year: 2027, Status: playerrecord.Drafted, Overall: 5}}}
+	for pass := 0; pass < 2; pass++ {
+		drafts, err := f.app.core.History.PickValueDrafts(t.Context(), draftLeague)
+		if err != nil {
+			t.Fatal(err)
+		}
+		h, slots := marketapp.NativePickHistory(drafts, 2027, records)
+		if len(h) != 1 || h[0].Selection != 1 || h[0].NFLOverall != 5 || slots[marketapp.PickKey{Year: 2027, Round: 1, Original: draftTeam(2)}] != 2 {
+			t.Fatal(h, slots)
+		}
+		src := f.app.nativeValueSource()
+		src.League = draftLeague
+		src.LatestRun = func(context.Context) (history.Run, bool, error) { return history.Run{ID: 1, Season: 2027}, true, nil }
+		src.Scores = func(context.Context, int64) ([]history.ModelScore, error) {
+			return []history.ModelScore{{MFLID: "5001", Value: model.Value{DynastyPPG: 10}}}, nil
+		}
+		src.Records = func(context.Context) ([]playerrecord.Record, error) { return records, nil }
+		src.Params = params.DefaultSet
+		src.Teams = func() int { return 32 }
+		n, ok, err := marketapp.LoadNative(t.Context(), src)
+		if err != nil || !ok || !n.Pick(2027, 1, draftTeam(3), f.now).Valued {
+			t.Fatal(ok, err, n)
+		}
+		f.reopen(t)
+	}
+}
+
+func TestPickValueReadsExplicitOrderBeforeDraftStart(t *testing.T) {
+	f := draftApp(t)
+	f.draftCommand(t, commissioner.DraftOrderSet, commissioner.RawDraftArgs{Season: draftSeason, Order: draftOrder(3, 2, 1)})
+	drafts, err := f.app.core.History.PickValueDrafts(t.Context(), draftLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, slots := marketapp.NativePickHistory(drafts, 2026, nil)
+	if slots[marketapp.PickKey{Year: draftSeason, Round: 1, Original: draftTeam(3)}] != 1 || slots[marketapp.PickKey{Year: draftSeason, Round: 1, Original: draftTeam(2)}] != 2 {
+		t.Fatal("explicit order was lost until the clock started", slots)
+	}
 }

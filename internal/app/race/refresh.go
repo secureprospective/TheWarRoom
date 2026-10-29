@@ -11,6 +11,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 type RefreshSource struct {
@@ -21,7 +22,7 @@ type RefreshSource struct {
 	PublishBrackets  func([]leaguefeed.Bracket, domain.Freshness, error)
 	Standings        func(context.Context) ([]leaguestandings.RawStanding, domain.Freshness, error)
 	Schedule         func(context.Context) []leagueschedule.RawScheduleWeek
-	Power            func(context.Context, []leaguestandings.RawStanding, domain.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek, string) season.PowerRankingsResult
+	Power            func(context.Context, []leaguestandings.RawStanding, domain.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek, string, string) season.PowerRankingsResult
 	PublishStandings func([]leaguestandings.RawStanding, domain.Freshness, error, map[string]season.PowerRankingsResult, bool)
 }
 
@@ -41,7 +42,9 @@ func Refresh(ctx context.Context, source RefreshSource) {
 	if serr == nil {
 		schedule := sync.OnceValue(func() []leagueschedule.RawScheduleWeek { return source.Schedule(ctx) })
 		for _, view := range []string{season.ViewSeason, season.ViewFranchise} {
-			power[view] = source.Power(ctx, standings, sf, func(context.Context) []leagueschedule.RawScheduleWeek { return schedule() }, view)
+			for _, mode := range []string{m2service.AggLineup, m2service.AggSum, m2service.AggTopN} {
+				power[season.PowerKey(view, mode)] = source.Power(ctx, standings, sf, func(context.Context) []leagueschedule.RawScheduleWeek { return schedule() }, mode, view)
+			}
 		}
 	}
 	source.PublishStandings(standings, sf, serr, power, serr == nil)

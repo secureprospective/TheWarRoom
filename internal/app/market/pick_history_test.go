@@ -7,6 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/engine/rookiedraft"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+
 	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 )
@@ -96,5 +100,52 @@ func TestDraftSlotSelectionUsesThatDraftsWidth(t *testing.T) {
 				t.Fatalf("historical width replaced by today's league: %+v %v", h, err)
 			}
 		})
+	}
+}
+
+func TestPickTotalsMissingAndOwnerHorizon(t *testing.T) {
+	at := time.Time{}
+	owners := []string{"zero", "buyer", "missing"}
+	inventory := []draftreports.FuturePick{{Year: 2027, Round: 1, Original: "original", Owner: "buyer"}, {Year: 2028, Round: 1, Owner: "buyer"}, {Year: 2029, Round: 1, Owner: "buyer"}, {Year: 2026, Round: 1, Owner: "buyer"}, {Year: 2027, Round: 2, Owner: "missing"}}
+	model := pickTotalModel{}
+	got := PickTotals(model, inventory, 2026, owners, at)
+	if got["buyer"] != 4 || got["zero"] != 0 {
+		t.Fatal(got)
+	}
+	if _, ok := got["missing"]; ok {
+		t.Fatal("unreadable pick became zero", got)
+	}
+	if PickTotals(nil, inventory, 2026, owners, at) != nil || PickTotals(model, nil, 2026, owners, at) != nil {
+		t.Fatal("missing inputs became zero")
+	}
+	if got := PickTotals(model, []draftreports.FuturePick{}, 2026, owners, at); len(got) != 3 {
+		t.Fatal("known empty inventory not zero", got)
+	}
+}
+
+type pickTotalModel struct{}
+
+func (pickTotalModel) Player(string, time.Time) Dynasty { return Dynasty{} }
+func (pickTotalModel) Pick(_ int, round int, _ string, _ time.Time) Dynasty {
+	return Dynasty{Valued: round == 1, Discounted: 2}
+}
+
+func TestNativeHistoryDoesNotIncludeStartupSkipsUnknownOrFuture(t *testing.T) {
+	records := []playerrecord.Record{{MFL: "0042", Draft: playerrecord.Draft{Year: 2027, Status: playerrecord.Drafted, Overall: 5}}, {MFL: "0043", Draft: playerrecord.Draft{Year: 2027, Status: playerrecord.Undrafted}}}
+	order := []rookiedraft.RoundOrder{{Round: 1, Picks: []rookiedraft.Pick{{OwnedPick: rookiedraft.OwnedPick{Round: 1, Original: "seller", Owner: "buyer"}, Slot: 1}, {OwnedPick: rookiedraft.OwnedPick{Round: 1, Original: "other", Owner: "other"}, Slot: 2}}}}
+	drafts := []commissioner.NativeDraft{{Season: 2027, Order: order, Draft: rookiedraft.Draft{Picks: []rookiedraft.Result{
+		{Pick: rookiedraft.Pick{OwnedPick: rookiedraft.OwnedPick{Round: 1}, Slot: 1}, Player: "0042"},
+		{Pick: rookiedraft.Pick{OwnedPick: rookiedraft.OwnedPick{Round: 2}, Slot: 2}, Player: "0043"},
+		{Pick: rookiedraft.Pick{OwnedPick: rookiedraft.OwnedPick{Round: 1}, Slot: 2}, Player: "0042", Skipped: true},
+		{Pick: rookiedraft.Pick{OwnedPick: rookiedraft.OwnedPick{Round: 1}, Slot: 2}, Player: "missing"},
+		{Pick: rookiedraft.Pick{OwnedPick: rookiedraft.OwnedPick{Round: 1}, Slot: 2}, Player: "0042", Extra: 1},
+	}}}, {Season: 2027, Startup: true, Order: order, Draft: rookiedraft.Draft{Picks: []rookiedraft.Result{{Player: "0042"}}}}}
+	h, slots := NativePickHistory(drafts, 2027, records)
+	if len(h) != 2 || h[0].NFLOverall != 5 || h[1].NFLOverall != 0 || h[1].Selection != 4 || slots[PickKey{Year: 2027, Round: 1, Original: "seller"}] != 1 {
+		t.Fatal(h, slots)
+	}
+	h, _ = NativePickHistory(drafts, 2026, records)
+	if len(h) != 0 {
+		t.Fatal("future draft trained curve", h)
 	}
 }

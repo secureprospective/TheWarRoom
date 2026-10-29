@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"strings"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
@@ -13,7 +16,7 @@ import (
 )
 
 // Native is the native value model as the asset board reads it: each player's dynasty value from
-// the latest model run, and Pick Value v1 for picks, both in dynasty points per game.
+// the latest model run, and Pick Value v2 for picks, both in dynasty points per game.
 type Native struct {
 	values  map[string]float64 // dynasty points per game by the board's player ID (MFL's)
 	picks   *pickvalue.Model   // nil when it could not be fitted; pickWhy says why
@@ -21,11 +24,19 @@ type Native struct {
 	season  int
 	teams   int
 	seasons int
+	slots   map[PickKey]int
 }
 
-// NativeInput is what the native model is built from: the latest model run's dynasty values by
-// MFL ID, every player record, and the run's season, horizon and discount, and the league's size.
+// PickKey identifies a pick by its original franchise, not its current owner.
+type PickKey struct {
+	Year, Round int
+	Original    string
+}
+
+// NativeInput supplies player values, records, rookie history and explicit slot orders.
 type NativeInput struct {
+	League   string
+	Slots    map[PickKey]int
 	Values   map[string]float64
 	Records  []playerrecord.Record
 	Season   int
@@ -36,16 +47,19 @@ type NativeInput struct {
 	PickWhy  string
 }
 
-// NewNative builds the native model. Pick Value v1 is fitted on the records' draft capital and the
+// NewNative builds the native model. Pick Value v2 is fitted on the records' draft capital and the
 // run's values; when it cannot be (no draft history or no recent class) players are still valued
 // and picks say why.
 func NewNative(in NativeInput) Native {
-	n := Native{values: in.Values, season: in.Season, teams: in.Teams, seasons: in.Seasons}
+	n := Native{values: in.Values, season: in.Season, teams: in.Teams, seasons: in.Seasons, slots: in.Slots}
 	if in.PickWhy != "" {
 		n.pickWhy = in.PickWhy
 		return n
 	}
 	history, err := pickvalue.History()
+	if strings.HasPrefix(in.League, "native.") {
+		history, err = nil, nil
+	}
 	if err != nil {
 		n.pickWhy = err.Error()
 		return n
@@ -74,19 +88,23 @@ func (n Native) Player(pid string, _ time.Time) Dynasty {
 	return Dynasty{Valued: true, Discounted: v, Seasons: n.seasons, ClassLabel: "Native value"}
 }
 
-// Pick values a pick by its round with Pick Value v1; the slot is not known until the order is.
-func (n Native) Pick(year, round int, _ string, _ time.Time) Dynasty {
+// Pick uses the explicit order when known, otherwise the round mean.
+func (n Native) Pick(year, round int, original string, _ time.Time) Dynasty {
 	if n.picks == nil {
 		return Dynasty{Reason: pickvalue.Version + " not available: " + n.pickWhy}
 	}
 	if year < n.season {
 		return Dynasty{Reason: fmt.Sprintf("The %d draft is past", year)}
 	}
-	v, err := n.picks.Pick(year, round, 0, max(n.teams, 1))
+	slot := n.slots[PickKey{Year: year, Round: round, Original: original}]
+	v, err := n.picks.Pick(year, round, slot, max(n.teams, 1))
 	if err != nil {
 		return Dynasty{Reason: err.Error()}
 	}
 	label := fmt.Sprintf("%s, round %d, slot not yet known", pickvalue.Version, round)
+	if slot > 0 {
+		label = fmt.Sprintf("%s, %d.%02d", pickvalue.Version, round, slot)
+	}
 	if v.YearsOut > 0 {
 		label += fmt.Sprintf(", %d %s out", v.YearsOut, map[bool]string{true: "year", false: "years"}[v.YearsOut == 1])
 	}
@@ -96,14 +114,15 @@ func (n Native) Pick(year, round int, _ string, _ time.Time) Dynasty {
 // NativeSource is what loading the native model reads: the season's latest model run and its
 // scores, every player record, the params and the league's size.
 type NativeSource struct {
-	Ready     func() error // startup came up: the stores below are open
-	LatestRun func(context.Context) (history.Run, bool, error)
-	Scores    func(context.Context, int64) ([]history.ModelScore, error)
-	Records   func(context.Context) ([]playerrecord.Record, error)
-	Params    func() params.Set
-	Teams     func() int
-	Bodies    HeldDraftBodies
-	League    string
+	Ready        func() error // startup came up: the stores below are open
+	LatestRun    func(context.Context) (history.Run, bool, error)
+	Scores       func(context.Context, int64) ([]history.ModelScore, error)
+	Records      func(context.Context) ([]playerrecord.Record, error)
+	Params       func() params.Set
+	Teams        func() int
+	Bodies       HeldDraftBodies
+	League       string
+	NativeDrafts func(context.Context, string) ([]commissioner.NativeDraft, error)
 }
 
 // LoadNative reads the native model's inputs and builds it; ok is false before startup came up or
@@ -129,7 +148,7 @@ func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
 	if err != nil {
 		return Native{}, false, wrapNative("params", err)
 	}
-	discount, err := set.GetGlobal(params.KeyDynastyDiscount)
+	discount, err := set.GetGlobal(params.KeyPickValueDiscount)
 	if err != nil {
 		return Native{}, false, wrapNative("params", err)
 	}
@@ -137,12 +156,12 @@ func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
 	for _, sc := range scores {
 		values[sc.MFLID] = sc.DynastyPPG
 	}
-	history, historyErr := HeldPickHistory(ctx, src.Bodies, src.League, run.Season, records)
+	history, slots, historyErr := src.pickHistory(ctx, run.Season, records)
 	why := ""
 	if historyErr != nil {
 		why = historyErr.Error()
 	}
-	return NewNative(NativeInput{History: history, PickWhy: why, Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
+	return NewNative(NativeInput{League: src.League, Slots: slots, History: history, PickWhy: why, Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
 		Discount: discount, Teams: src.Teams()}), true, nil
 }
 
@@ -161,4 +180,20 @@ func PublishNative(native Native, ok bool, err error, publish func(Model), logLi
 	if ok {
 		publish(native)
 	}
+}
+
+func (src NativeSource) pickHistory(ctx context.Context, season int, records []playerrecord.Record) ([]pickvalue.Pick, map[PickKey]int, error) {
+	if strings.HasPrefix(src.League, "native.") {
+		if src.NativeDrafts == nil {
+			return nil, nil, fmt.Errorf("Pick Value needs this league's rookie draft history")
+		}
+		drafts, err := src.NativeDrafts(ctx, src.League)
+		if err != nil {
+			return nil, nil, fmt.Errorf("read native rookie drafts: %w", err)
+		}
+		h, slots := NativePickHistory(drafts, season, records)
+		return h, slots, nil
+	}
+	h, err := HeldPickHistory(ctx, src.Bodies, src.League, season, records)
+	return h, nil, err
 }

@@ -114,10 +114,14 @@ func (h controlHost) Params() controlapp.ParamsResult {
 	return controlapp.ReadParams(h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params })
 }
 func (h controlHost) SetParam(key, position string, value float64) controlapp.SetParamResult {
-	return controlapp.SetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position, value)
+	result := controlapp.SetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position, value)
+	h.app.pickSettingChanged(key, result.OK)
+	return result
 }
 func (h controlHost) ResetParam(key, position string) controlapp.SetParamResult {
-	return controlapp.ResetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position)
+	result := controlapp.ResetParameter(func() context.Context { return h.app.core.Ctx }, h.app.ready, func() controlapp.ParameterStore { return h.app.core.Params }, key, position)
+	h.app.pickSettingChanged(key, result.OK)
+	return result
 }
 
 func (a *App) keyStatus(state, detail string) controlapp.MFLKeyStatus {

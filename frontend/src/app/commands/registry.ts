@@ -443,7 +443,7 @@ export function createCommands(
     'race.reports': command({
       id: 'race.reports',
       run: (args: BrowserArguments<'race.reports'>) => {
-        if (!['refresh', 'week', 'team'].includes(args.action))
+        if (!['refresh', 'week', 'team', 'aggMode'].includes(args.action))
           throw new Error('League race: invalid action');
         return import('../race/state').then(m =>
           completed(m.raceState.choose(args.action, args.value), () => m.raceState.peek().error));

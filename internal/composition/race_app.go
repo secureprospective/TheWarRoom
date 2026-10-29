@@ -18,7 +18,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playoffs"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 func (a *App) refreshRace(ctx context.Context) {
@@ -58,8 +57,8 @@ func (a *App) refreshRace(ctx context.Context) {
 		Standings: a.standingsOrArchive, Schedule: func(ctx context.Context) []leagueschedule.RawScheduleWeek {
 			return scoringapp.RemainingSchedule(ctx, a.leagueScheduleOrArchive)
 		},
-		Power: func(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, view string) season.PowerRankingsResult {
-			p := a.powerRankings(ctx, standings, fresh, schedule, 0, true, m2service.ResolveAggMode("", defaultAgg(view)), view)
+		Power: func(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
+			p := a.powerRankings(ctx, standings, fresh, schedule, 0, true, mode, view)
 			return racePowerResult(p)
 		},
 		PublishStandings: func(rows []leaguestandings.RawStanding, fresh Freshness, err error, power map[string]season.PowerRankingsResult, replace bool) {
@@ -121,13 +120,7 @@ func raceFeed[T any](h heldSeasonFeed[T]) season.Feed[T] {
 	return season.Feed[T]{Value: h.Value, FetchedAt: h.FetchedAt, RefreshError: h.RefreshError, ReadPending: h.ReadPending}
 }
 
-func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult {
-	rows := make([]season.PowerRow, len(p.Rows))
-	for i, row := range p.Rows {
-		rows[i] = season.PowerRow(row)
-	}
-	return season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
-}
+func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult { return p }
 
 type raceHost struct{ *core.State }
 

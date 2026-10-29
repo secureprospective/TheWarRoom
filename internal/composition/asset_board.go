@@ -88,19 +88,23 @@ func (a *App) assetInput(ctx context.Context) (marketapp.OnField, []string) {
 // publishAssetModel reads the latest model run and the player record and publishes the native
 // value model C-01 values players and picks with. Until a run exists the board says so.
 func (a *App) publishAssetModel(ctx context.Context) {
+	native, ok, err := marketapp.LoadNative(ctx, a.nativeValueSource())
+	marketapp.PublishNative(native, ok, err, a.marketHeld.PublishModel, func(text string) { log.Print(text) })
+}
+
+func (a *App) nativeValueSource() marketapp.NativeSource {
 	h := a.core.History
-	native, ok, err := marketapp.LoadNative(ctx, marketapp.NativeSource{
+	return marketapp.NativeSource{
 		Ready: a.ready,
 		LatestRun: func(ctx context.Context) (history.Run, bool, error) {
 			return h.LatestRun(ctx, a.core.Season, history.RunModel)
 		},
-		Bodies: h.ReferenceBodies, League: ingestion.LeagueID,
+		Bodies: h.ReferenceBodies, League: ingestion.LeagueID, NativeDrafts: h.PickValueDrafts,
 		Scores:  h.ModelScores,
 		Records: recordstore.New(a.core.HistPools, h).Records,
 		Params:  a.core.Params.Snapshot,
 		Teams:   func() int { return len(a.core.League.Reader().Franchises()) },
-	})
-	marketapp.PublishNative(native, ok, err, a.marketHeld.PublishModel, func(text string) { log.Print(text) })
+	}
 }
 
 func (h marketHost) RefreshMarket(force bool) error {

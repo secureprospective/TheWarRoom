@@ -187,3 +187,19 @@ it('does not start detail reads after sources fails, and retries without replayi
   expect(state.read().error).toBe('');
   expect(state.read().outcomes.photos).toBe('Error: sources unavailable');
 });
+
+it('changes and resets a pick parameter without reading or fetching unrelated sources', async () => {
+  const p = provider();
+  const changes: Array<[string, string, number | null]> = [];
+  p.parameter = async (...args) => { changes.push(args); };
+  p.read = async () => { throw new Error('must not read sources'); };
+  p.crosswalk = async () => { throw new Error('must not read crosswalk'); };
+  const s = createDataState(p);
+  await s.loadParams();
+  for (const value of [.6, 0, 1, null]) {
+    await s.run({ kind: 'parameter', key: 'power.pick_weight', position: '', value });
+    expect(s.read().error).toBe('');
+    expect(s.read().result).toBe(value === null ? 'Default restored.' : 'Setting saved.');
+  }
+  expect(changes).toEqual([.6, 0, 1, null].map(value => ['power.pick_weight', '', value]));
+});

@@ -1,41 +1,38 @@
 # Handoff
 
 ## Baton
-Review — 2026-10-28, `session/fix-correctness`. No push requested or attempted.
+Review — 2026-10-28, `session/pick-value`. No push authorized or attempted.
 
 ## Where it stands
-- `9da2c766`: reject another explicit playerScores YEAR during archive selection;
-  Research totals sum exactly their displayed weekly scores at display precision.
-- `4afc9ba8`: normalize M2 starter-rule positions through the existing player-directory
-  mapping, fixing PK/K and EDGE/DE. Other inspected comparisons are listed in
-  `docs/modules/M2_Power_Ranking_Factors.md`.
-- Continuation found no unfinished tracked changes and required no further code edits.
-  Both fixes have recorded failing-before evidence in `.tmp/bug1-before.log` and
-  `.tmp/bug2-before.log`.
+- Existing pick-value work through `cf5ae56d` is preserved. Native power composition still
+  selects MFL; see `docs/architecture/pick-value.md` for the integration limits and evidence.
+- U8 restores roster count on both Power Rankings reports: Whole roster, Starting lineup
+  (default), Top N. N comes from the league starter count, as before; no numeric input existed.
+- `TargetRace(week, team, mine, aggMode)` selects detached held boards; empty mode defaults
+  to lineup in both views. Refresh calculates all six view/mode boards with one schedule read.
+  Pick-setting changes rebuild every franchise mode without changing season/player values.
+- Wails bindings and command argument/read schemas regenerated. Flow documented in
+  `docs/architecture/system-narrative.md`.
 
-## Evidence and limits
-- Continuation targeted race batch: 200 top-level PASS, two opt-in live tests skipped;
-  composition Research slice: 14 PASS. Logs: `.tmp/continuation-targeted.json` and
-  `.tmp/continuation-composition.json`.
-- Prior full `make verify` on the same code exceeded ten minutes in Go tests and ended
-  with 120 packages passing, one failing. Lint, vulnerabilities, binding freshness and
-  TypeScript passed; frontend tests/build/CSP were not reached. See `.tmp/verify.log`.
-  Not rerun on unchanged code; no all-green full-gate claim.
-- The sole failure was the inherited long Unix-socket temporary path in
-  `cmd/twr-server:TestFaultsShowOnPrivateDashboardOnly`. Its directly executed race
-  binary passes with relative in-worktree TMPDIR: `.tmp/continuation-socket.log`.
-- `.lintcache/` remains untracked local lint output. No GUI or live-source acceptance.
+## Evidence
+- Targeted Go `-race`: 68 unique top-level tests PASS across Race, Season, Scoring,
+  command catalog, binding generation and the composition slice. Final affected scoring /
+  composition batch also PASS. Logs: `.tmp/u8/`.
+- Calculation fixture proves sum 200 / lineup 110 / top-N 190 in BOTH views, and reads do not
+  fetch. Forcing the composition edge back to default mode fails the regression.
+- Targeted Vitest: 51 PASS. One full run: 1,580 PASS / 1 formatting failure; fixed five long
+  lines, then 42 focused tests PASS including the formatting gate and Race interaction.
+  No second full run. Typecheck PASS after the fix. `pnpm build` PASS before formatting fix.
+- Mechanical UI detector: no findings. No GUI/live acceptance or aggregate verify claimed.
 
-## Next move
-Review fixes and run disposable-profile acceptance: Research totals must equal visible
-weeks before/after source refresh plus engine work; AggLineup must count the required
-kicker rather than a spare receiver. CI still owes a complete green gate.
-
-## Blocked on
-Full-gate Unix-socket path handling and unreached frontend checks; reviewer/live acceptance.
+## Next move / blocked on
+- Review and native GUI click-through on a disposable profile: open each Power Rankings
+  report, confirm Starting lineup is selected, change each mode and check roster values /
+  counting explanation update without a refresh. Other report controls must remain unchanged.
+- CI/full verification remains unrun here by instruction. Existing native integration debt
+  remains; initial untracked `.tmp-env.sh` and prior `.tmp/pickcalc` harness are untouched.
 
 ## Tried and rejected
-- Matching only the league URL year: engine history uses another explicit score YEAR.
-- Trusting independent YTD for displayed totals: partial or differently refreshed weeks
-  can disagree. The visible weekly evidence owns this total.
-- Kicker-only exception in the counter: normalize recognized rule aliases at the boundary.
+- Re-fetching for a mode change: violates the held-read contract; refresh publishes all modes.
+- Treating Top N as an arbitrary new number: the original used the league starter count.
+- Inferring future pick slots from standings: existing pick-value ruling remains unchanged.

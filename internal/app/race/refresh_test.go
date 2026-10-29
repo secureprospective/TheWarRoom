@@ -35,15 +35,15 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 				}
 				return nil, domain.Freshness{}, nil
 			},
-			Schedule: func(context.Context) []leagueschedule.RawScheduleWeek { schedules++; return nil }, Power: func(ctx context.Context, _ []leaguestandings.RawStanding, _ domain.Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, view string) season.PowerRankingsResult {
-				calls = append(calls, view)
+			Schedule: func(context.Context) []leagueschedule.RawScheduleWeek { schedules++; return nil }, Power: func(ctx context.Context, _ []leaguestandings.RawStanding, _ domain.Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
+				calls = append(calls, view+":"+mode)
 				schedule(ctx)
 				schedule(ctx)
-				return season.PowerRankingsResult{View: view}
+				return season.PowerRankingsResult{View: view, AggMode: mode}
 			},
 			PublishStandings: func(_ []leaguestandings.RawStanding, _ domain.Freshness, _ error, power map[string]season.PowerRankingsResult, replace bool) {
 				calls = append(calls, "publish standings")
-				if replace == failed || (failed && len(power) != 0) || (!failed && len(power) != 2) {
+				if replace == failed || (failed && len(power) != 0) || (!failed && len(power) != 6) {
 					t.Fatal("power replacement policy changed")
 				}
 			},
@@ -51,7 +51,11 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 		Refresh(t.Context(), source)
 		want := []string{"weeks", "publish weeks", "pause", "brackets", "publish brackets", "pause", "standings"}
 		if !failed {
-			want = append(want, season.ViewSeason, season.ViewFranchise)
+			for _, view := range []string{season.ViewSeason, season.ViewFranchise} {
+				for _, mode := range []string{"lineup", "sum", "topn"} {
+					want = append(want, view+":"+mode)
+				}
+			}
 		}
 		want = append(want, "publish standings")
 		if !reflect.DeepEqual(calls, want) || (!failed && schedules != 1) || (failed && schedules != 0) {

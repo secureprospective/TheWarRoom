@@ -328,3 +328,45 @@ func TestLegacyOverrideIgnoredOnRestart(t *testing.T) {
 		t.Fatalf("legacy data lost: %q %v", value, err)
 	}
 }
+
+func TestPickSettingsIndependentValidatedAndPersistent(t *testing.T) {
+	s, pools := openStore(t)
+	before := s.Snapshot().Model()
+	for key, want := range map[string]float64{KeyPowerPickWeight: .6, KeyPickValueDiscount: .75} {
+		got, err := s.Snapshot().GetGlobal(key)
+		if err != nil || got != want {
+			t.Fatal(key, got, err)
+		}
+		for _, bad := range []float64{-0.01, 1.01, math.NaN(), math.Inf(1)} {
+			if err := s.SetOverride(t.Context(), key, "", bad, "test"); err == nil {
+				t.Fatal("accepted", key, bad)
+			}
+			got, _ = s.Snapshot().GetGlobal(key)
+			if got != want {
+				t.Fatal("refusal changed state", key, got)
+			}
+		}
+		if err := s.SetOverride(t.Context(), key, "", .2, "test"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	reopened := New(pools)
+	if err := reopened.Initialize(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{KeyPowerPickWeight, KeyPickValueDiscount} {
+		got, _ := reopened.Snapshot().GetGlobal(key)
+		if got != .2 {
+			t.Fatal("not persisted", key, got)
+		}
+		if err := reopened.ClearOverride(t.Context(), key, ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for key, want := range before {
+		got := s.Snapshot().Model()[key]
+		if got != want {
+			t.Fatal("pick setting changed player model", key)
+		}
+	}
+}

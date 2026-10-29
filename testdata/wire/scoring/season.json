@@ -7,6 +7,7 @@
   "weight": 0.5714285714285714,
   "weightAuto": true,
   "ageWeight": 0,
+  "pickWeight": 0,
   "modelRunID": 0,
   "previousRunID": 0,
   "aggMode": "lineup",

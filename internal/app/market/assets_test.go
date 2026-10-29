@@ -61,7 +61,7 @@ func TestTopPercentRoundsUp(t *testing.T) {
 	}
 }
 
-// The native model values a player by his run value and a pick by Pick Value v1 in the same
+// The native model values a player by his run value and a pick by Pick Value v2 in the same
 // units; a past draft and a player the run did not value say why.
 func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 	t.Parallel()
@@ -83,7 +83,7 @@ func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 	}
 	first, third := n.Pick(2026, 1, "0001", time.Now()), n.Pick(2026, 3, "0001", time.Now())
 	if !first.Valued || !third.Valued || !(first.Discounted > third.Discounted) || first.Seasons != 3 ||
-		!strings.HasPrefix(first.ClassLabel, "Pick Value v1, round 1") {
+		!strings.HasPrefix(first.ClassLabel, "Pick Value v2, round 1") {
 		t.Fatalf("picks: %+v %+v", first, third)
 	}
 	if later := n.Pick(2027, 1, "0001", time.Now()); math.Abs(later.Discounted-0.75*first.Discounted) > 1e-9 ||
@@ -94,7 +94,7 @@ func TestNativeValuesPlayersAndPicksInOneUnit(t *testing.T) {
 		t.Fatalf("a past draft = %+v", past)
 	}
 	if none := NewNative(NativeInput{Values: values, Season: 2026, Seasons: 3, Discount: 0.75, Teams: 32}).Pick(2026, 1, "", time.Now()); none.Valued ||
-		!strings.HasPrefix(none.Reason, "Pick Value v1 not available") {
+		!strings.HasPrefix(none.Reason, "Pick Value v2 not available") {
 		t.Fatalf("no records = %+v", none)
 	}
 }
@@ -160,5 +160,62 @@ func TestLoadNativeWaitsForStartupAndARun(t *testing.T) {
 	src.LatestRun = func(context.Context) (history.Run, bool, error) { return history.Run{}, false, nil }
 	if _, ok, err := LoadNative(t.Context(), src); ok || err != nil {
 		t.Fatalf("before the first run: ok %t err %v", ok, err)
+	}
+}
+
+func TestNativeUsesKnownSlotAndKeepsUnknownRoundMean(t *testing.T) {
+	var records []playerrecord.Record
+	values := map[string]float64{}
+	for i := 1; i <= 260; i++ {
+		id := fmt.Sprintf("%05d", i)
+		records = append(records, playerrecord.Record{MFL: id, Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: i}})
+		values[id] = float64(261 - i)
+	}
+	n := NewNative(NativeInput{Records: records, Values: values, Season: 2026, Discount: .75, Teams: 32,
+		Slots: map[PickKey]int{{Year: 2027, Round: 1, Original: "early"}: 1, {Year: 2027, Round: 1, Original: "late"}: 32}})
+	early, late := n.Pick(2027, 1, "early", time.Time{}), n.Pick(2027, 1, "late", time.Time{})
+	if !early.Valued || !late.Valued || early.Discounted <= late.Discounted || !strings.Contains(early.ClassLabel, "1.01") {
+		t.Fatal(early, late)
+	}
+	unknown := n.Pick(2027, 1, "unknown", time.Time{})
+	mean, err := n.picks.Pick(2027, 1, 0, 32)
+	if err != nil || unknown.Discounted != mean.PPG {
+		t.Fatal(unknown, mean, err)
+	}
+}
+
+func TestLoadNativePickDiscountDoesNotFollowDynastyDiscount(t *testing.T) {
+	values := params.DefaultSet().Values()
+	src := NativeSource{Ready: func() error { return nil },
+		LatestRun: func(context.Context) (history.Run, bool, error) { return history.Run{Season: 2026}, true, nil },
+		Scores: func(context.Context, int64) ([]history.ModelScore, error) {
+			return []history.ModelScore{{MFLID: "0042", Value: model.Value{DynastyPPG: 10}}}, nil
+		},
+		Records: func(context.Context) ([]playerrecord.Record, error) {
+			return []playerrecord.Record{{MFL: "0042", Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: 5}}}, nil
+		},
+		Params: func() params.Set { return params.SetOf(values) }, Teams: func() int { return 32 }}
+	load := func() Native {
+		t.Helper()
+		n, ok, err := LoadNative(t.Context(), src)
+		if !ok || err != nil {
+			t.Fatal(ok, err)
+		}
+		return n
+	}
+	before := load()
+	values[params.KeyDynastyDiscount] = .1
+	after := load()
+	if before.Pick(2027, 1, "", time.Time{}).Discounted != after.Pick(2027, 1, "", time.Time{}).Discounted {
+		t.Fatal("dynasty knob repriced picks")
+	}
+	values[params.KeyPickValueDiscount] = .5
+	own := load()
+	now := own.Pick(2026, 1, "", time.Time{})
+	if now.Discounted <= 0 || math.Abs(own.Pick(2027, 1, "", time.Time{}).Discounted-now.Discounted*.5) > 1e-9 {
+		t.Fatal("pick knob ignored")
+	}
+	if own.Player("0042", time.Time{}).Discounted != 10 {
+		t.Fatal("pick knob repriced player")
 	}
 }

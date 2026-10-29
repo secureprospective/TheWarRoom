@@ -165,7 +165,7 @@ func platformCommandBindings(api *platformapi.API) map[string]catalog.Binding {
 }
 func raceCommandBindings(api *raceapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
-		"TargetRace":        catalog.Bind3(api.TargetRace, "week", "team", "mine"),
+		"TargetRace":        catalog.Bind4(api.TargetRace, "week", "team", "mine", "aggMode"),
 		"TargetRaceRefresh": catalog.Bind1Error(api.TargetRaceRefresh, "force"),
 	}
 }

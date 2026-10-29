@@ -85,7 +85,7 @@ export type BrowserArgumentMap = {
 "research.read":
  { action: string; value: string };
 "race.reports":
- { action: 'refresh' | 'week' | 'team'; value: string };
+ { action: 'refresh' | 'week' | 'team' | 'aggMode'; value: string };
 "game.follow":
  { id: string };
 "now.reports":
@@ -2024,6 +2024,7 @@ string
 ];
 "race.TargetRace": [
 number,
+string,
 string,
 string
 ];

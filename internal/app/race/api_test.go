@@ -42,7 +42,7 @@ func TestRaceWireMatchesGo(t *testing.T) {
 	t.Parallel()
 	in := realRace(t, "2026")
 	in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower()}
-	board, err := New(&fakeHost{input: in}, &Held{}).TargetRace(in.Week, in.Team, in.Mine)
+	board, err := New(&fakeHost{input: in}, &Held{}).TargetRace(in.Week, in.Team, in.Mine, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -96,13 +96,13 @@ func TestRaceWireTwins(t *testing.T) {
 
 func TestRaceAPIStartupDenialAndOrder(t *testing.T) {
 	h := &fakeHost{readyErr: errors.New("fixture startup failed")}
-	_, err := New(h, &Held{}).TargetRace(40, "unknown", "unknown")
+	_, err := New(h, &Held{}).TargetRace(40, "unknown", "unknown", "")
 	if err == nil || err.Error() != "race: startup: fixture startup failed" || !reflect.DeepEqual(h.calls, []string{"ready"}) {
 		t.Fatal(err, h.calls)
 	}
 	h = &fakeHost{input: season.Snapshot{Zone: time.UTC}}
 	api := New(h, &Held{})
-	if _, err = api.TargetRace(40, "", ""); err == nil || err.Error() != "race: week 40 has no scored games" || !reflect.DeepEqual(h.calls, []string{"ready", "input"}) {
+	if _, err = api.TargetRace(40, "", "", ""); err == nil || err.Error() != "race: week 40 has no scored games" || !reflect.DeepEqual(h.calls, []string{"ready", "input"}) {
 		t.Fatal(err, h.calls)
 	}
 	h.refreshErr = errors.New("race refresh: fixture failure")
@@ -117,7 +117,7 @@ func TestRaceAPIUsesItsHolder(t *testing.T) {
 	publish(held, in.Held)
 	in.Held = season.Held{}
 	h := &fakeHost{input: in, useHeld: true}
-	b, err := New(h, held).TargetRace(0, "0001", "0001")
+	b, err := New(h, held).TargetRace(0, "0001", "0001", "")
 	if err != nil || len(b.Standings.Rows) == 0 || !reflect.DeepEqual(h.calls, []string{"ready", "input"}) {
 		t.Fatal(err, h.calls)
 	}
@@ -130,7 +130,7 @@ func TestRaceWireGoldens(t *testing.T) {
 			in = realRace(t, "2026")
 			in.Held.Power = map[string]season.PowerRankingsResult{season.ViewSeason: testPower()}
 		}
-		b, err := New(&fakeHost{input: in}, &Held{}).TargetRace(in.Week, in.Team, in.Mine)
+		b, err := New(&fakeHost{input: in}, &Held{}).TargetRace(in.Week, in.Team, in.Mine, "")
 		if err != nil {
 			t.Fatal(err)
 		}
