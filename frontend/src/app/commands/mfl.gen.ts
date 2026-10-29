@@ -113,6 +113,39 @@ const schema8 = {
   ],
   Items:null,
 } as const;
+const schema9 = {
+  Type:"array",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:schema1,
+} as const;
+const schema10 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"TargetDraftLineup owner and starter checks",
+  Nullable:false,
+  Fields:[
+    {Name:"franchiseId",Optional:false,Schema:schema1},
+    {Name:"starters",Optional:false,Schema:schema9}
+  ],
+  Items:null,
+} as const;
+const schema11 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"TargetDraftTradeAccept owner and pending-offer checks",
+  Nullable:false,
+  Fields:[
+    {Name:"franchiseId",Optional:false,Schema:schema1},
+    {Name:"tradeId",Optional:false,Schema:schema1}
+  ],
+  Items:null,
+} as const;
 export const mflCommands = {
 "mfl.pool.read": {
   definition: {
@@ -284,5 +317,43 @@ export const mflCommands = {
     "Arguments": schema8
   },
   phrase: "withdraw mfl bid",
+},
+"mfl.lineup.set": {
+  definition: {
+    "ID": "mfl.lineup.set",
+    "Method": "TargetDraftLineup",
+    "Version": "1",
+    "Role": "gm,commish",
+    "Gravity": "G1",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "withdraw-local-plan",
+    "Facts": "held-lineup,local-plans",
+    "Safeguards": "Raw-validation+local-plan-state; no MFL submissions",
+    "Arguments": schema10
+  },
+  phrase: "set mfl lineup",
+},
+"mfl.trade.accept": {
+  definition: {
+    "ID": "mfl.trade.accept",
+    "Method": "TargetDraftTradeAccept",
+    "Version": "1",
+    "Role": "gm,commish",
+    "Gravity": "G2",
+    "Availability": "desktop",
+    "Permission": "local-desktop-owner",
+    "Modes": [
+      "execute"
+    ],
+    "Undo": "withdraw-local-plan",
+    "Facts": "held-pending-trades,local-plans",
+    "Safeguards": "Raw-validation+local-plan-state; no MFL submissions; explicit-owner-action",
+    "Arguments": schema11
+  },
+  phrase: "accept mfl trade",
 },
 } as const;

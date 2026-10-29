@@ -468,7 +468,7 @@ describe('Inspector IR and taxi Acts', () => {
   it('shows opening and a hand-off failure inline, and excludes unrelated lineup receipts', async () => {
     const { executor, provider } = held('ROSTER');
     const ready = forSubject({ ...receipt, state: 'ready' as const, audit: receipt.audit.slice(0, 1) });
-    const unrelated = { ...ready, correlationId: 'lineup', spec: { ...ready.spec, intent: 'lineup.set' } };
+    const unrelated = { ...ready, correlationId: 'lineup', spec: { ...ready.spec, intent: 'mfl.lineup.set' } };
     vi.spyOn(provider, 'moves').mockResolvedValue([unrelated, ready]);
     let reject!: (cause: Error) => void;
     const handoff = vi.spyOn(provider, 'handOff').mockImplementation(() =>

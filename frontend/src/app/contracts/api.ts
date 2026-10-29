@@ -1,3 +1,4 @@
+import { createMFLClient } from '../commands/mfl';
 import type * as Bindings from '../../../wailsjs/go/contracts/API';
 import type { contracts, snapshot } from '../../../wailsjs/go/models';
 
@@ -29,8 +30,14 @@ export async function targetLineup(franchiseId: string): Promise<unknown> {
 export async function targetCheckLineup(franchiseId: string, starters: string[]): Promise<unknown> {
   return bindings().TargetCheckLineup(franchiseId, starters);
 }
+const lineupPlans = createMFLClient(request => {
+  if (request.command !== 'mfl.lineup.set') throw new Error('Choose a lineup plan.');
+  return bindings().TargetDraftLineup(request.arguments.franchiseId, request.arguments.starters);
+});
 export async function targetDraftLineup(franchiseId: string, starters: string[]): Promise<unknown> {
-  return bindings().TargetDraftLineup(franchiseId, starters);
+  return lineupPlans.invoke({
+    command: 'mfl.lineup.set', mode: 'execute', arguments: { franchiseId, starters },
+  }, { availability: 'desktop', role: 'gm' });
 }
 export async function targetRosterReports(mine: string): Promise<unknown> {
   return bindings().TargetRosterReports(mine);

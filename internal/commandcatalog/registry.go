@@ -64,7 +64,7 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	}
 	r := &Registry{entries: operatorEntries(), service: in.Service}
 	native := NativeCommands(in.Seed)
-	mfl := MFLCommands(in.MFL)
+	mfl := append(MFLCommands(in.MFL), MFLPlanCommands()...)
 	for _, c := range native {
 		handlers, err := nativeHandlers(c, in)
 		if err != nil {
@@ -73,7 +73,8 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 		r.entries = append(r.entries, Entry{ID: c.ID, Label: commandLabel(c.ID), Definition: c, CLI: strings.HasPrefix(c.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
 	}
 	for _, c := range mfl {
-		b, ok := in.Desktop["offers"][c.Method]
+		feature := mflFeature(c)
+		b, ok := in.Desktop[feature][c.Method]
 		if !ok || b.Handler == nil {
 			return nil, fmt.Errorf("MFL command %s has no handler", c.ID)
 		}
@@ -106,7 +107,12 @@ func (r *Registry) addDesktop(bindings map[string]map[string]Binding, native, mf
 	for _, feature := range features {
 		related := native
 		if feature == "offers" {
-			related = mfl
+			related = nil
+			for _, c := range mfl {
+				if mflFeature(c) == feature {
+					related = append(related, c)
+				}
+			}
 		}
 		declarations := DesktopCommands(feature, related)
 		if len(bindings[feature]) != len(declarations) {
@@ -153,6 +159,9 @@ func (r *Registry) Validate() error {
 			return fmt.Errorf("missing or duplicate registry entry %s", entry.ID)
 		}
 		seen[entry.ID] = true
+		if entry.MFL != nil && (entry.Native != nil || !strings.HasPrefix(entry.ID, "mfl.")) {
+			return fmt.Errorf("MFL command %s must be namespaced and separate from native", entry.ID)
+		}
 		if err := entry.validate(); err != nil {
 			return fmt.Errorf("registry %s: %w", entry.ID, err)
 		}
@@ -315,4 +324,15 @@ func NewOperatorRegistry() (*Registry, error) {
 		return nil, err
 	}
 	return registry, nil
+}
+
+func mflFeature(c Command) string {
+	switch c.Method {
+	case "TargetDraftLineup":
+		return "contracts"
+	case "TargetDraftTradeAccept":
+		return "trades"
+	default:
+		return "offers"
+	}
 }

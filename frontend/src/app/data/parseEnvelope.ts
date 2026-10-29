@@ -27,7 +27,7 @@ function expectedChange(
   value: unknown, path: string, intent: string, players: string[], franchiseId: string,
 ): EnvelopeSpec['expected'] {
   const r = object(value, path, ['player', 'rosterStatus', 'lineup', 'trade']);
-  if (['trade.accept', 'trade.propose', 'trade.reject', 'trade.revoke'].includes(intent)) {
+  if (['mfl.trade.accept', 'trade.propose', 'trade.reject', 'trade.revoke'].includes(intent)) {
     for (const key of ['player', 'rosterStatus', 'lineup']) {
       if (r[key] !== undefined) throw new Error(`${path}.${key}: forbidden for trade.accept`);
     }
@@ -48,7 +48,7 @@ function expectedChange(
     } };
   }
   if (r.trade !== undefined) throw new Error(`${path}.trade: not a trade intent`);
-  if (intent !== 'lineup.set') {
+  if (intent !== 'mfl.lineup.set') {
     if (r.lineup !== undefined) throw new Error(`${path}.lineup: not a lineup intent`);
     const player = id(r.player, `${path}.player`, true);
     if (!players.includes(player)) throw new Error(`${path}.player: must be a subject`);

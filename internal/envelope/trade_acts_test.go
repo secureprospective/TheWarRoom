@@ -222,7 +222,7 @@ func TestTradePlanRemovalStopsAtHandOff(t *testing.T) {
 			if _, err := handed.WithdrawTrade(at.Add(2 * time.Minute)); err == nil {
 				t.Fatal("removed a plan already handed off to MFL")
 			}
-			e.spec.Intent = "trade.accept"
+			e.spec.Intent = "mfl.trade.accept"
 			if _, err := e.WithdrawTrade(at.Add(time.Minute)); err == nil {
 				t.Fatal("accept removal changed")
 			}

@@ -84,6 +84,9 @@ func frozenCommandMatrix(t *testing.T) parityMatrix {
 			m.add(row.ID, "commandbar", role, "local", nil)
 		}
 	}
+	for _, c := range catalog.MFLPlanCommands() {
+		m.add(c.ID, "mfl", c.Role, c.Permission, c.Modes)
+	}
 	return m
 }
 

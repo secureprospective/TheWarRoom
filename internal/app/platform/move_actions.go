@@ -34,7 +34,7 @@ func (s MoveActions) HandOff(ctx context.Context, correlationID string) (envelop
 	if err := s.Own(e.Receipt().Spec.FranchiseID); err != nil {
 		return envelope.Receipt{}, err
 	}
-	if envelope.IsTrade(e.Receipt().Spec.Intent) && e.Receipt().Spec.Intent != "trade.accept" {
+	if envelope.IsTrade(e.Receipt().Spec.Intent) && e.Receipt().Spec.Intent != "mfl.trade.accept" {
 		return envelope.Receipt{}, fmt.Errorf("trade Act needs its trade-desk pre-flight and confirmation")
 	}
 	if envelope.IsRelease(e.Receipt().Spec.Intent) {

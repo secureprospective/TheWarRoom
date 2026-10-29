@@ -383,3 +383,54 @@ func legacyMovesFile(t *testing.T, source *db.Pools, table string) (*Store, *db.
 	}
 	return New(pools), pools
 }
+
+func TestLegacyMFLPlanNamesReadWithoutRewriting(t *testing.T) {
+	for _, old := range []string{"lineup.set", "trade.accept"} {
+		t.Run(old, func(t *testing.T) {
+			store, pools := testStore(t)
+			at := time.Date(2026, 10, 7, 12, 0, 0, 0, time.UTC)
+			spec := testMove(t, old, at).Receipt().Spec
+			spec.Intent = "mfl." + old
+			if old == "lineup.set" {
+				spec.Expected = envelope.ExpectedChange{Lineup: &envelope.ExpectedLineup{Week: 5, Starters: spec.Subject.Players, Baseline: spec.Subject.Players}}
+				spec.Gravity = envelope.G1
+			} else {
+				spec.Subject.Picks = []string{"FP_0001_2027_1"}
+				spec.Expected = envelope.ExpectedChange{Trade: &envelope.ExpectedTrade{TradeID: "77", Offering: "0002", Accepting: "0001", OfferingGives: []string{"0042"}, AcceptingGives: []string{"FP_0001_2027_1"}}}
+			}
+			audit := []envelope.AuditEntry{{At: at, From: envelope.Draft, Event: envelope.ChecksPass, To: envelope.Ready, Note: "saved before rename"}}
+			want, err := envelope.Restore(old, at, spec, audit)
+			if err != nil {
+				t.Fatal(err)
+			}
+			spec.Intent = old
+			body, err := json.Marshal(spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := pools.Write().ExecContext(t.Context(), `INSERT INTO move_envelopes (correlation_id, created, spec) VALUES (?, ?, ?)`, old, at.Format(timestampLayout), string(body)); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := pools.Write().ExecContext(t.Context(), `INSERT INTO move_audit (correlation_id, sequence, at, from_state, event, to_state, note) VALUES (?, ?, ?, ?, ?, ?, ?)`, old, 0, at.Format(timestampLayout), envelope.Draft, envelope.ChecksPass, envelope.Ready, "saved before rename"); err != nil {
+				t.Fatal(err)
+			}
+			got, err := store.Get(t.Context(), old)
+			if err != nil || !reflect.DeepEqual(got.Receipt(), want.Receipt()) {
+				t.Fatalf("legacy read: %+v %v", got.Receipt(), err)
+			}
+			if err := store.Save(t.Context(), got); err != nil {
+				t.Fatal(err)
+			}
+			var stored string
+			if err := pools.Read().QueryRowContext(t.Context(), `SELECT spec FROM move_envelopes WHERE correlation_id = ?`, old).Scan(&stored); err != nil {
+				t.Fatal(err)
+			}
+			if stored != string(body) {
+				t.Fatal("rewrote append-only legacy plan")
+			}
+			if _, err := envelope.New(at, spec, func() string { return "new" }); err == nil {
+				t.Fatal("old name accepted for new plan")
+			}
+		})
+	}
+}

@@ -66,7 +66,7 @@ func registryDoors(registry *catalog.Registry) []doorBefore {
 		if entry.Native != nil {
 			add("native", "commissioner", entry.Definition)
 		}
-		if entry.MFL != nil {
+		if entry.MFL != nil && entry.Definition.Method != "TargetDraftLineup" && entry.Definition.Method != "TargetDraftTradeAccept" {
 			add("mfl", "offers", entry.Definition)
 		}
 		for _, desktop := range entry.Desktop {
@@ -84,6 +84,17 @@ func TestFrozenDoorMetadata(t *testing.T) {
 	var before []doorBefore
 	if err := json.Unmarshal(body, &before); err != nil {
 		t.Fatal(err)
+	}
+	for i := range before {
+		if before[i].Door != "wails" {
+			continue
+		}
+		switch before[i].Feature + "." + before[i].Method {
+		case "contracts.TargetDraftLineup":
+			before[i].ID = "mfl.lineup.set"
+		case "trades.TargetDraftTradeAccept":
+			before[i].ID = "mfl.trade.accept"
+		}
 	}
 	app := NewApp()
 	apis := newCommandAPIs(app)

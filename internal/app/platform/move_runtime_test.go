@@ -209,7 +209,7 @@ func TestRosterRevalidationOrderingAndCandidateAdmission(t *testing.T) {
 	calls := []string{}
 	s := RosterRevalidation{Release: func(context.Context) { calls = append(calls, "release") }, ContractsAvailable: true, Contracts: func(context.Context) error { calls = append(calls, "contracts"); return nil }, Ready: func() error { return nil },
 		List: func(context.Context) ([]envelope.Receipt, error) {
-			return []envelope.Receipt{{CorrelationID: "ready", State: envelope.Ready, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "blocked", State: envelope.Blocked, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "trade", State: envelope.Ready, Spec: envelope.Spec{Intent: "trade.accept"}}}, nil
+			return []envelope.Receipt{{CorrelationID: "ready", State: envelope.Ready, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "blocked", State: envelope.Blocked, Spec: envelope.Spec{Intent: "roster.ir"}}, {CorrelationID: "trade", State: envelope.Ready, Spec: envelope.Spec{Intent: "mfl.trade.accept"}}}, nil
 		},
 		Snapshot: func(context.Context) (snapshot.Snapshot, error) {
 			calls = append(calls, "snapshot")

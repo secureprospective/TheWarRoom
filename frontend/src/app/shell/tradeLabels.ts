@@ -16,7 +16,7 @@ export function tradeRailLabels(receipt: Receipt, snapshot: Snapshot) {
     players.get(token)?.name?.split(',')[0] || assets.get(token) || 'Unnamed asset')
     .join(', ');
   return {
-    header: receipt.spec.intent === 'trade.accept' ? `Offer ${trade.tradeId} · ${other?.name || otherId}`
+    header: receipt.spec.intent === 'mfl.trade.accept' ? `Offer ${trade.tradeId} · ${other?.name || otherId}`
       : `Trade · ${other?.name || 'Franchise name unavailable'}`,
     summary: `+${names(outgoing ? trade.acceptingGives : trade.offeringGives)} ` +
       `−${names(outgoing ? trade.offeringGives : trade.acceptingGives)}`,

@@ -1,7 +1,7 @@
 {
  "correlationId": "fixture-correlation",
  "spec": {
-  "intent": "trade.accept",
+  "intent": "mfl.trade.accept",
   "leagueId": "14432",
   "franchiseId": "0025",
   "subject": {

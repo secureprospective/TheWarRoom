@@ -110,7 +110,7 @@ type TradeCheck struct {
 }
 
 func (c TradeCheck) Evaluate(s Spec, snap snapshot.Snapshot) CheckResult {
-	if s.Intent != "trade.accept" || s.Expected.Trade == nil {
+	if s.Intent != "mfl.trade.accept" || s.Expected.Trade == nil {
 		return CheckResult{Blocked: true, Note: "trade check does not cover this intent"}
 	}
 	if reason := TradeFeedReason(c.PendingTrades.Provenance); reason != "" {
@@ -269,7 +269,7 @@ func DraftTrade(
 		return Envelope{}, fmt.Errorf("draft trade: %w", err)
 	}
 	spec := Spec{
-		Intent: "trade.accept", LeagueID: req.LeagueID, FranchiseID: req.FranchiseID,
+		Intent: "mfl.trade.accept", LeagueID: req.LeagueID, FranchiseID: req.FranchiseID,
 		Subject: subject, Expected: ExpectedChange{Trade: &req.Trade},
 		Gravity: G2, Undo: Irreversible, Target: req.Target, Deadline: req.Deadline,
 	}

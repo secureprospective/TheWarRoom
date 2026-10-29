@@ -10,11 +10,11 @@ import (
 )
 
 func IsTrade(intent string) bool {
-	return slices.Contains([]string{"trade.accept", "trade.propose", "trade.reject", "trade.revoke"}, intent)
+	return slices.Contains([]string{"mfl.trade.accept", "trade.propose", "trade.reject", "trade.revoke"}, intent)
 }
 
 func validTradeIntentScope(intent string, t ExpectedTrade, mine string) bool {
-	if intent == "trade.accept" || intent == "trade.reject" {
+	if intent == "mfl.trade.accept" || intent == "trade.reject" {
 		return validTradeScope(t, mine)
 	}
 	return t.TradeID != "" && t.Offering == mine && t.Accepting != "" && t.Accepting != mine &&

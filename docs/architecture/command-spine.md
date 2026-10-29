@@ -152,3 +152,34 @@ registry and invokes its checked handler; it never starts listeners or app servi
 The application registry knows the operation but supplies no native/MFL/Wails/
 workflow/browser/agent-CLI handler for it. The operator fixture preserves main's
 execute-only/offline-operator boundary; tests refuse every other door and mode.
+
+## MFL command namespace (Part 9, slice 1)
+
+The complete local MFL dispatch context has eleven commands: `mfl.pool.read`,
+`mfl.pool.refresh`, `mfl.bid.plans`, `mfl.bid.preview`, `mfl.bid.submit`,
+`mfl.bid.revise`, `mfl.bid.handoff`, `mfl.bid.posted`, `mfl.bid.withdraw`,
+`mfl.lineup.set` and `mfl.trade.accept`. The last two replace the colliding
+MFL plan names; native `lineup.set` and `trade.accept` are unchanged.
+
+Flow: generated MFL schema → frontend contracts/trades adapter → unchanged
+Wails method → owner/Raw checks → local envelope and append-only move log.
+The registry also dispatches the qualified logical names to those same methods.
+Neither qualified name is a native/hosted action; old names are not MFL aliases.
+`Registry.Validate` rejects every unqualified MFL entry or shared native/MFL entry;
+namespace tests exercise both rejection paths and audit the command definitions.
+Real composition dispatch tests save both plans and observe zero MFL requests.
+
+`envelope.Restore` alone maps legacy stored `lineup.set`/`trade.accept` intents
+on read. Stored JSON and audit entries remain unchanged, and saving the restored
+plan is idempotent. New envelopes require qualified names. Store tests cover both
+legacy rows; the normal watcher, hand-off, supersession and receipt parser use the
+qualified intents. No native ledger records are renamed.
+
+This audit covers every MFL dispatch-context command, not every local browser
+control or unnamed legacy desktop binding that reads MFL facts. Browser verbs
+such as `lineup.edit` and `trade.builder`, existing what-if, and watched plans
+remain frozen and visible; package/feature isolation belongs to later slices.
+API signatures are unchanged, so Wails JS/models do not need regeneration.
+The MFL and all-door generators and endpoint CSV generator were run; only the
+MFL table and endpoint projection changed. No generated registry Markdown door
+exists in this repository; this section records the audited boundary.
