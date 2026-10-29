@@ -127,7 +127,8 @@ it('loads identity at live startup: own-team Act enabled without Control Room; o
   expect(read).toHaveBeenCalledTimes(1);
   await act(async () => { finish(status); });
   expect(button('Plan for 0025')?.disabled).toBe(false);
-  const recovery = 'Switch the franchise view to the team linked to your MFL login. If it is wrong, reconnect the correct MFL account.';
+  const recovery = 'Switch the franchise view to the team linked to your MFL login. ' +
+    'If it is wrong, reconnect the correct MFL account.';
   expect(button(recovery)?.disabled).toBe(true);
   expect(container.textContent).toContain(recovery);
   expect(c.history()).toEqual([]);

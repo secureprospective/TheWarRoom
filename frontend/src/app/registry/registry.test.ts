@@ -241,12 +241,15 @@ describe('Endpoint map', () => {
 describe('Endpoint verbs and search', () => {
   it('offers landed reports by plain name, not internal or dormant entries', () => {
     const offered = candidates.filter(r => r.kind === 'endpoint');
-    const visible = endpoints.filter(e => e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind));
+    const visible = endpoints.filter(e =>
+      e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind));
     expect(offered).toHaveLength(visible.length);
     expect(offered.every(r => !/\b(?:[A-Z]+-\d|O=\w)/.test(r.label))).toBe(true);
     for (const id of ['S-14', 'C-06.1'])
-      expect(offered.some(r => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
-    const result = offered.find(r => r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-054')!;
+      expect(offered.some(r =>
+        r.invocation.verb === 'endpoint.open' && r.invocation.args.id === id)).toBe(false);
+    const result = offered.find(r =>
+      r.invocation.verb === 'endpoint.open' && r.invocation.args.id === 'M-054')!;
     expect(result.label).not.toContain('O=');
     runResult(executor, result);
     expect(executor.read().endpointIds).toEqual(['M-054']);

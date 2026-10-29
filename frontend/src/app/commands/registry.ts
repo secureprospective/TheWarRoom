@@ -622,7 +622,8 @@ export function createCommands(
     if (mine === undefined) return undefined;
     const status = mflKey.read();
     if (mine && mine === status.myFranchise) return undefined;
-    if (status.myFranchise) return 'Switch the franchise view to the team linked to your MFL login. If it is wrong, reconnect the correct MFL account.';
+    if (status.myFranchise) return 'Switch the franchise view to the team linked to your MFL login. ' +
+      'If it is wrong, reconnect the correct MFL account.';
     return status.teamActionRefusal || 'Checking MFL…';
   }
   type Receipt = { id: Id; args: Readonly<Args<Id>>; status: 'done' | 'failed'; reason?: string };

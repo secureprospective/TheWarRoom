@@ -68,7 +68,8 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
       });
     }
   }
-  for (const row of endpoints.filter((e) => e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind))) {
+  for (const row of endpoints.filter((e) =>
+    e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind))) {
     results.push({
       label: row.name.replace(/\s+O=\w+/gi, ''),
       aliases: [row.name],
