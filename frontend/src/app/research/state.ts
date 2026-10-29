@@ -13,19 +13,17 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
     research?: Research; error: string; status: string;
     scope: Scope; pages: Record<string, number>;
   };
-  // A status-poll failure during refresh survives the read's success, as before the shared query.
   const empty = (): State => ({ error: '', status: '', scope: initial, pages: {} });
   const store = createStore<State & ReadStatus>(() => ({ ...empty(), pending: false }));
-  let sourceRefresh = false;
   const query = createReadQuery('research.TargetResearch', {
     initial: empty, store, read: scope => reader.read(scope),
     accept: research => ({ research }),
-    failure: cause => sourceRefresh ? 'Research could not be refreshed. Please try again.' : String(cause),
+    failure: () => 'Research could not be read. Please try refreshing again.',
   });
   let polls = 0;
   async function load(refresh = false, news = false, league = false, force = false) {
     const request = ++polls;
-    sourceRefresh = refresh || news;
+    let refreshFailed = false;
     let polling: ReturnType<typeof setInterval> | undefined;
     store.setState({ status: '' });
     // Only refresh/news are steps before the read; a plain scope change reads immediately.
@@ -40,11 +38,27 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
           });
         }, 250);
       }
-      if (refresh) await reader.refresh(force);
+      if (refresh) {
+        try { await reader.refresh(force); } catch { refreshFailed = true; }
+      }
       if (news) await reader.news(league ? '' : mine());
     } : undefined;
     const reading = query.load(() => [{ ...store.getState().scope, mine: mine() }], { before });
-    try { await reading; } finally { if (polling) clearInterval(polling); }
+    try {
+      await reading;
+      if (request === polls && refresh && !store.getState().error) {
+        const research = store.getState().research;
+        const missing = [...new Set(research?.board.reports
+          .filter(report => ['failed', 'stale'].includes(report.status))
+          .map(report => report.title) ?? [])];
+        const status = missing.length
+          ? `Refresh finished. Missing or out of date: ${missing.join(', ')}. Try refreshing again.`
+          : refreshFailed
+            ? 'Refresh finished. Some research sources could not be updated; try refreshing again.'
+            : 'Refresh complete.';
+        store.setState({ status });
+      }
+    } finally { if (polling) clearInterval(polling); }
   }
   async function choose(action: string, value: string) {
     if (action === 'more') {

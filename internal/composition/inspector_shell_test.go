@@ -108,8 +108,8 @@ func TestNowNamesCarryHeldInspectorIdentities(t *testing.T) {
 			}
 		}
 	}
-	if got := researchHeldTime(time.Time{}, "fixture feed failed", time.UTC); got != "fixture feed failed" {
-		t.Fatal("missing feed hid the reason", got)
+	if got := researchHeldTime(time.Time{}, "fixture feed failed", time.UTC); got != "No held copy available" {
+		t.Fatal("missing feed leaked its raw error", got)
 	}
 }
 
@@ -198,7 +198,7 @@ func TestInspectorMissingFeedsGiveCompletedReadReasons(t *testing.T) {
 			t.Fatal("completed read has no terminal reason", row.Cells)
 		}
 	}
-	if got := researchHeldTime(time.Time{}, "fixture depth failed", time.UTC); got != "fixture depth failed" {
-		t.Fatal("failure reason was hidden", got)
+	if got := researchHeldTime(time.Time{}, "fixture depth failed", time.UTC); got != "No held copy available" {
+		t.Fatal("raw failure reason reached the owner", got)
 	}
 }

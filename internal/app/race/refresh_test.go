@@ -18,6 +18,7 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 	t.Parallel()
 	for _, failed := range []bool{false, true} {
 		var calls []string
+		var network context.Context
 		schedules := 0
 		source := RefreshSource{Pause: func(context.Context, time.Duration) error { calls = append(calls, "pause"); return nil },
 			Weeks: func(context.Context) ([]leaguefeed.WeekResult, domain.Freshness, error) {
@@ -28,7 +29,8 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 				calls = append(calls, "brackets")
 				return nil, domain.Freshness{}, nil
 			}, PublishBrackets: func([]leaguefeed.Bracket, domain.Freshness, error) { calls = append(calls, "publish brackets") },
-			Standings: func(context.Context) ([]leaguestandings.RawStanding, domain.Freshness, error) {
+			Standings: func(ctx context.Context) ([]leaguestandings.RawStanding, domain.Freshness, error) {
+				network = ctx
 				calls = append(calls, "standings")
 				if failed {
 					return nil, domain.Freshness{}, errors.New("offline")
@@ -36,6 +38,9 @@ func TestRefreshKeepsPublicationOrderAndOneSchedule(t *testing.T) {
 				return nil, domain.Freshness{}, nil
 			},
 			Schedule: func(context.Context) []leagueschedule.RawScheduleWeek { schedules++; return nil }, Power: func(ctx context.Context, _ []leaguestandings.RawStanding, _ domain.Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
+				if network.Err() == nil || ctx.Err() != nil || network == ctx {
+					t.Fatal("history shares the spent network budget")
+				}
 				calls = append(calls, view+":"+mode)
 				schedule(ctx)
 				schedule(ctx)
@@ -100,14 +105,14 @@ func TestRaceRefreshReadingAdmissionAndDeadline(t *testing.T) {
 	var observed context.Context
 	if err := RefreshReading(true, func() error { return nil }, fresh, func() context.Context { return t.Context() }, func(ctx context.Context) {
 		observed = ctx
-		if _, ok := ctx.Deadline(); !ok {
-			t.Fatal("missing deadline")
+		if ctx != t.Context() {
+			t.Fatal("read budget started before the refresh lock")
 		}
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if !errors.Is(observed.Err(), context.Canceled) {
-		t.Fatal("context retained")
+	if observed.Err() != nil {
+		t.Fatal("refresh canceled its caller's lifetime")
 	}
 	if err := RefreshReading(true, func() error { return errors.New("failed") }, func() season.Held { t.Fatal("capture before ready"); return held }, nil, nil); err == nil || err.Error() != "race refresh: startup: failed" {
 		t.Fatal(err)

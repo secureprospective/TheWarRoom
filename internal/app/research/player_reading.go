@@ -24,16 +24,9 @@ type PlayerReading struct {
 
 func HeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() {
-		if loss != "" {
-			return loss
-		}
 		return "No held copy available"
 	}
-	text := "as of " + report.Time(at, zone)
-	if loss != "" {
-		text += " · " + loss
-	}
-	return text
+	return "as of " + report.Time(at, zone) + refreshQualifier(loss)
 }
 func (v researchView) playerReading(id string, names map[string]string, how string) PlayerReading {
 	p := v.player(id)
@@ -194,11 +187,17 @@ func newsHeldTime(at time.Time, loss string, zone *time.Location) string {
 	if at.IsZero() { // a finished read with no copy says why, like every other held fact
 		return HeldTime(at, loss, zone)
 	}
-	text := "held · fetched " + report.Time(at, zone)
-	if loss != "" {
-		text += " · " + loss
+	return "held · fetched " + report.Time(at, zone) + refreshQualifier(loss)
+}
+
+func refreshQualifier(loss string) string {
+	if loss == "" {
+		return ""
 	}
-	return text
+	if strings.Contains(strings.ToLower(loss), "archived copy") {
+		return " · Archived copy; refresh pending"
+	}
+	return " · refresh needed"
 }
 
 func newsPosted(wording string, fetched time.Time, zone *time.Location) (string, float64) {
@@ -263,7 +262,15 @@ func (v researchView) depthMissNote(starters bool) string {
 			other++
 		}
 	}
-	return fmt.Sprintf(" Of those slots: %d offensive line, %d punter/holder/long snapper, %d other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.", line, special, other)
+	count := line + special + other
+	if count == 0 {
+		return ""
+	}
+	label := fmt.Sprintf(" %d displayed depth slots have no held MFL identity link (not a roster status).", count)
+	if starters {
+		label = fmt.Sprintf(" %d starter slots have no held MFL identity link (*). ▸ marks your players.", count)
+	}
+	return label + fmt.Sprintf(" Of those slots: %d offensive line, %d punter/holder/long snapper, %d other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.", line, special, other)
 }
 
 func (v researchView) playerCutCharge(r *report.Report, id string) {

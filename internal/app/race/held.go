@@ -37,7 +37,14 @@ func (h *Held) PublishStandings(feed season.Feed[[]leaguestandings.RawStanding],
 	feed.Value = slices.Clone(feed.Value)
 	h.value.Standings = feed
 	if replacePower {
-		h.value.Power = clonePower(power)
+		next := clonePower(power)
+		for key, board := range next {
+			if previous, ok := h.value.Power[key]; !board.OK && ok && previous.OK {
+				previous.Error = "Power rankings could not be updated. Try refreshing again."
+				next[key] = previous
+			}
+		}
+		h.value.Power = next
 	}
 }
 

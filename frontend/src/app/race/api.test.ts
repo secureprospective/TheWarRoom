@@ -28,7 +28,7 @@ describe('Race transport adapter', () => {
     const state = createRaceState(raceAPI, () => '');
     await state.load(false);
     expect(state.peek().error).toContain(
-      'League race reports require the desktop app; no browser fixture is substituted.',
+      'Power rankings could not be updated. Try refreshing again.',
     );
     expect(state.peek().pending).toBe(false);
     await expect(raceAPI.refresh(false)).rejects.toThrow('require the desktop app');

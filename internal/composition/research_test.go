@@ -331,6 +331,11 @@ func TestResearchWireGoldens(t *testing.T) {
 	checkGolden(t, "research", "player-unheld", player)
 	a.researchStatus("Reading fantasy points")
 	checkGolden(t, "research", "status", researchAPI(a).TargetResearchStatus())
+	// This error fixture cancels MFL, while the independent NFL source is already fresh.
+	editResearch(a, func(value *researchHeld) {
+		value.depth = in.held.depth
+		value.depth.FetchedAt = time.Now()
+	})
 	a.core.SeasonPause = func(context.Context, time.Duration) error { return context.Canceled }
 	errors := map[string]string{}
 	if err := researchAPI(a).TargetResearchRefresh(false); err != nil {

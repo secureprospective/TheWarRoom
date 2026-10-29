@@ -11,6 +11,7 @@ export function createRaceState(reader: RaceReader, mine: () => string) {
     initial: (): Selection => ({ week: 0, team: null, aggMode: 'lineup' }),
     read: (...args) => reader.read(...args),
     accept: race => ({ race, week: race.week, team: race.team }),
+    failure: () => 'Power rankings could not be updated. Try refreshing again.',
   });
   const load = (refresh: boolean, force = false) => query.load(() => {
     const { week, team, aggMode } = query.peek();

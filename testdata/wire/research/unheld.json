@@ -108,7 +108,7 @@
    {
     "id": "M-048",
     "title": "NFL depth charts",
-    "note": "Report data unavailable; refresh from MFL to fill this report. Refresh failed. Try refreshing from MFL again. 0 displayed depth slots have no held MFL identity link (not a roster status). Of those slots: 0 offensive line, 0 punter/holder/long snapper, 0 other. These are NFL depth slots, including repeated formations, not missing fantasy roster players; names remain visible but roster ownership cannot be joined without an identity link.",
+    "note": "NFL starters are not available yet; refresh from sources.",
     "status": "failed",
     "source": "Source: nflverse depth charts · latest snapshot",
     "asOf": "As of: not fetched",
