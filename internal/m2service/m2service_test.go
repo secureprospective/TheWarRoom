@@ -84,7 +84,7 @@ func TestBuildBoard_AggregatesBlendsAndJoins(t *testing.T) {
 		score("1003", 200),
 	}
 
-	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, "sum")
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, "sum", PickCapital{})
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -151,7 +151,7 @@ func TestBuildBoard_ResultsFallBackFromAllPlayToPointsFor(t *testing.T) {
 			PerfNone, map[string]float64{"0001": 0, "0002": 0}},
 	}
 	for _, c := range cases {
-		board, err := svc.BuildBoard(c.standings, nil, powerrankings.Weights{Roster: 0.6}, AggSum)
+		board, err := svc.BuildBoard(c.standings, nil, powerrankings.Weights{Roster: 0.6}, AggSum, PickCapital{})
 		if err != nil {
 			t.Fatalf("%s: %v", c.name, err)
 		}
@@ -185,7 +185,7 @@ func TestBuildBoard_FranchiseWithNoScoresContributesZero(t *testing.T) {
 	}
 	scores := []PlayerValue{score("1001", 100)}
 
-	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggSum)
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggSum, PickCapital{})
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -208,7 +208,7 @@ func TestBuildBoard_EmptyInputsAreNoOps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	board, err := svc.BuildBoard(nil, nil, powerrankings.Weights{Roster: 0.5}, AggSum)
+	board, err := svc.BuildBoard(nil, nil, powerrankings.Weights{Roster: 0.5}, AggSum, PickCapital{})
 	if err != nil {
 		t.Fatalf("BuildBoard(empty): %v", err)
 	}
@@ -228,7 +228,7 @@ func TestBuildBoard_UnmappedFranchiseFallsBackToLabeledID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0099"}}, nil, powerrankings.Weights{Roster: 0.5}, AggSum)
+	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0099"}}, nil, powerrankings.Weights{Roster: 0.5}, AggSum, PickCapital{})
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -249,7 +249,7 @@ func TestBuildBoard_TopNDegradesToSumWithoutStarterCount(t *testing.T) {
 	standings := []leaguestandings.RawStanding{{FranchiseID: "0001"}}
 	scores := []PlayerValue{score("1001", 42)}
 
-	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggTopN)
+	board, err := svc.BuildBoard(standings, scores, powerrankings.Weights{Roster: 0.5}, AggTopN, PickCapital{})
 	if err != nil {
 		t.Fatalf("BuildBoard: %v", err)
 	}
@@ -382,5 +382,42 @@ func TestLineupCountsCanonicalRulePositions(t *testing.T) {
 				t.Fatal("normalization mutated the supplied model values or rules")
 			}
 		})
+	}
+}
+
+func TestPicksAddAfterLineupWithoutChangingAge(t *testing.T) {
+	rd := fakeReader{players: map[string]state.PlayerState{"1": {FranchiseID: "A"}, "2": {FranchiseID: "A"}, "3": {FranchiseID: "B"}}}
+	svc, err := New(rd, fakeRulebook{starters: &league.Starters{Count: "1", IDPStarters: "0", Positions: []league.PositionLimit{{Name: "QB", Limit: "1"}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	standings := []leaguestandings.RawStanding{{FranchiseID: "A"}, {FranchiseID: "B"}}
+	values := []PlayerValue{{MFLID: "1", Position: "QB", Value: 10, Age: 30}, {MFLID: "2", Position: "QB", Value: 8, Age: 20}, {MFLID: "3", Position: "QB", Value: 12, Age: 25}}
+	wt := powerrankings.Weights{Roster: 1}
+	base, err := svc.BuildBoard(standings, values, wt, AggLineup, PickCapital{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, total := range []float64{0, 10, math.NaN(), math.Inf(1), -1} {
+		b, err := svc.BuildBoard(standings, values, wt, AggLineup, PickCapital{Totals: map[string]float64{"A": total, "B": 0}, Weight: .6})
+		if err != nil {
+			t.Fatal(err)
+		}
+		var a Row
+		for _, r := range b.Rows {
+			if r.FranchiseID == "A" {
+				a = r
+			}
+		}
+		if a.Age != 30 || b.Mode != AggLineup || b.StarterN != 1 {
+			t.Fatal("bench/picks changed lineup or age", a, b)
+		}
+		if total == 10 {
+			if a.RosterValue != 16 || a.PickValue != 10 || !a.HasPicks || a.Rank != 1 || base.Rows[0].FranchiseID != "B" {
+				t.Fatal("picks did not add after lineup", a, base)
+			}
+		} else if a.RosterValue != 10 || math.IsNaN(a.PickValue) || math.IsInf(a.PickValue, 0) {
+			t.Fatal("unreadable picks affected board", a)
+		}
 	}
 }

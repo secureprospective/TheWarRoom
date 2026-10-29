@@ -126,7 +126,7 @@ func racePowerResult(p PowerRankingsResult) season.PowerRankingsResult {
 	for i, row := range p.Rows {
 		rows[i] = season.PowerRow(row)
 	}
-	return season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
+	return season.PowerRankingsResult{OK: p.OK, Error: p.Error, View: p.View, Weight: p.Weight, AgeWeight: p.AgeWeight, PickWeight: p.PickWeight, ModelRunID: p.ModelRunID, AggMode: p.AggMode, StarterN: p.StarterN, Performance: p.Performance, WeeksScored: p.WeeksScored, Rows: rows}
 }
 
 type raceHost struct{ *core.State }

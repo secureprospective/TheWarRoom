@@ -31,6 +31,7 @@ type History interface {
 
 // Source supplies live reads in their original order; it owns no held state.
 type Source struct {
+	Picks       func(context.Context, history.Run) m2service.PickCapital
 	History     History
 	Season      int
 	State       func() state.Reader
@@ -79,7 +80,11 @@ func (a Source) Build(
 		if i == 0 {
 			now = values[season.ViewSeason]
 		}
-		if boards[i], err = svc.BuildBoard(standings, values[view], wt, mode); err != nil {
+		picks := m2service.PickCapital{}
+		if view == season.ViewFranchise && a.Picks != nil {
+			picks = a.Picks(ctx, run)
+		}
+		if boards[i], err = svc.BuildBoard(standings, values[view], wt, mode, picks); err != nil {
 			return fail(err)
 		}
 	}
@@ -116,7 +121,7 @@ func boardWeights(view string, weight float64, auto bool, played int) powerranki
 func fillBoard(res *season.PowerRankingsResult, runs []history.Run, boards []m2service.Board, outlooks map[string]m2service.Outlook) {
 	res.Label = fmt.Sprintf("Roster value: model run #%d, league points per game (%s)", runs[0].ID, viewMeasure(res.View))
 	res.ModelRunID, res.Weight, res.AggMode, res.StarterN = runs[0].ID, boards[0].Weight, boards[0].Mode, boards[0].StarterN
-	res.Performance = boards[0].Performance
+	res.Performance, res.PickWeight = boards[0].Performance, boards[0].PickWeight
 	was := map[string]int{}
 	if len(boards) > 1 {
 		res.PreviousRunID = runs[1].ID
@@ -176,7 +181,7 @@ func powerRows(rows []m2service.Row, was map[string]int, outlooks map[string]m2s
 		row := season.PowerRow{
 			Rank: r.Rank, FranchiseID: r.FranchiseID, Name: r.Name,
 			PowerScore: r.PowerScore, RosterZ: r.RosterZ, MFLPerfZ: r.MFLPerfZ, AgeZ: r.AgeZ,
-			RosterValue: r.RosterValue, Results: r.Results,
+			RosterValue: r.RosterValue, Results: r.Results, PickValue: r.PickValue, HasPicks: r.HasPicks,
 			H2HW: r.H2HW, H2HL: r.H2HL, H2HT: r.H2HT,
 			AllPlayW: r.AllPlayW, AllPlayL: r.AllPlayL, AllPlayT: r.AllPlayT,
 			PF: r.PF, PA: r.PA, PP: r.PP, Pwr: r.Pwr, AltPwr: r.AltPwr,

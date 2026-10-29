@@ -60,6 +60,8 @@ type Row struct {
 	MFLPerfZ   float64
 	AgeZ       float64
 
+	PickValue   float64
+	HasPicks    bool
 	RosterValue float64
 	Age         float64 // the counted players' value-weighted age; NaN when none is known
 	Results     float64 // the result the blend read, in [0,1]: all-play win% or points for ÷ the league's best
@@ -75,6 +77,7 @@ type Board struct {
 	Rows        []Row
 	Mode        string
 	StarterN    int
+	PickWeight  float64
 	Weight      float64
 	AgeWeight   float64
 	Performance string // PerfAllPlay, PerfPointsFor, or PerfNone before any result
@@ -105,10 +108,11 @@ func (s *Service) BuildBoard(
 	values []PlayerValue,
 	wt powerrankings.Weights,
 	aggMode string,
+	picks PickCapital,
 ) (Board, error) {
 	c := s.counter(ResolveAggMode(aggMode, AggLineup))
 
-	inputs, parsed, perf, err := s.buildBlendInputs(standings, values, c)
+	inputs, parsed, perf, err := s.buildBlendInputs(standings, values, c, picks)
 	if err != nil {
 		return Board{}, err
 	}
@@ -123,10 +127,11 @@ func (s *Service) BuildBoard(
 		n = c.rules.Total
 	}
 	return Board{
-		Rows:        s.buildRows(blended, parsed),
+		Rows:        s.buildRows(blended, parsed, picks),
 		Mode:        c.mode,
 		StarterN:    n,
 		Weight:      powerrankings.ClampWeight(wt.Roster),
+		PickWeight:  picks.weight(),
 		AgeWeight:   wt.Age,
 		Performance: perf,
 	}, nil
@@ -212,6 +217,7 @@ func (s *Service) buildBlendInputs(
 	standings []leaguestandings.RawStanding,
 	values []PlayerValue,
 	c counter,
+	picks PickCapital,
 ) ([]powerrankings.Input, map[string]parsedStanding, string, error) {
 	byFranchise := s.byFranchise(values)
 
@@ -237,6 +243,9 @@ func (s *Service) buildBlendInputs(
 	for _, st := range standings {
 		ps := parsed[st.FranchiseID]
 		value, age := c.count(byFranchise[st.FranchiseID])
+		if v, ok := picks.value(st.FranchiseID); ok {
+			value += picks.weight() * v
+		}
 		in := powerrankings.Input{FranchiseID: st.FranchiseID, RosterValue: value, Age: age}
 		switch perf {
 		case PerfAllPlay:
@@ -297,13 +306,15 @@ func (c counter) count(vals []PlayerValue) (value, age float64) {
 }
 
 // buildRows joins the blended scores with MFL's display columns and the rulebook's names.
-func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parsedStanding) []Row {
+func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parsedStanding, picks PickCapital) []Row {
 	names := s.rb.FranchiseNames()
 	rows := make([]Row, 0, len(blended))
 	for _, b := range blended {
 		ps := parsed[b.FranchiseID]
+		pickValue, hasPicks := picks.value(b.FranchiseID)
 		rows = append(rows, Row{
-			Rank:        b.Rank,
+			Rank:      b.Rank,
+			PickValue: pickValue, HasPicks: hasPicks,
 			FranchiseID: b.FranchiseID,
 			Name:        domain.FranchiseLabel(names, b.FranchiseID),
 			PowerScore:  b.PowerScore,
@@ -403,4 +414,26 @@ func atofOrZero(s string) (float64, error) {
 		return 0, fmt.Errorf("parse float field %q: %w", s, err)
 	}
 	return f, nil
+}
+
+// PickCapital is the next two drafts' unweighted dynasty PPG by current owner. Nil totals mean
+// unavailable, not zero picks. Missing or invalid totals leave that franchise's score untouched.
+type PickCapital struct {
+	Totals map[string]float64
+	Weight float64
+}
+
+func (p PickCapital) value(id string) (float64, bool) {
+	v, ok := p.Totals[id]
+	if !ok || math.IsNaN(v) || math.IsInf(v, 0) || v < 0 {
+		return 0, false
+	}
+	return v, true
+}
+
+func (p PickCapital) weight() float64 {
+	if math.IsNaN(p.Weight) || math.IsInf(p.Weight, 0) {
+		return 0
+	}
+	return min(max(p.Weight, 0), 1)
 }

@@ -18,6 +18,8 @@ type PowerRow struct {
 	MFLPerfZ   float64 `json:"mflPerfZ"`
 	AgeZ       float64 `json:"ageZ"`
 
+	PickValue   float64 `json:"pickValue"`
+	HasPicks    bool    `json:"hasPicks"`
 	RosterValue float64 `json:"rosterValue"`
 	Results     float64 `json:"results"` // what the blend read, in [0,1]; Performance names it
 	Age         float64 `json:"age"`     // the counted players' value-weighted age; 0 when none is known
@@ -62,6 +64,7 @@ type PowerRankingsResult struct {
 	Weight     float64 `json:"weight"`
 	WeightAuto bool    `json:"weightAuto"`
 	AgeWeight  float64 `json:"ageWeight"`
+	PickWeight float64 `json:"pickWeight"`
 	// ModelRunID is the model run ranked; PreviousRunID the one the deltas compare with (0: none).
 	ModelRunID    int64            `json:"modelRunID"`
 	PreviousRunID int64            `json:"previousRunID"`
@@ -76,9 +79,8 @@ type PowerRankingsResult struct {
 
 // The two M2 views (plan Stage 8): this season ranks on-field-now blended with the standings;
 // the franchise ranks dynasty and the roster's age, because this season's record says little
-// about the next five. Each view counts the roster its own way by default: this season the
-// lineup the rules allow, the franchise the whole roster, whose young bench grows into starters
-// (docs/modules/M2_Power_Ranking_Factors.md).
+// about the next five. Both views count the starting lineup by default; future picks add to
+// franchise value only.
 const (
 	ViewSeason    = "season"
 	ViewFranchise = "franchise"

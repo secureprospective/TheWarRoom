@@ -14,6 +14,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
+	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 )
@@ -52,7 +53,7 @@ func powerHow(res PowerRankingsResult) string {
 			"counting against it: age weighs %.1f against value, both on one scale. That weight was fitted on the "+
 			"league's own 2022–2025 seasons, where older rosters scored worse over the next two seasons than their "+
 			"dynasty value alone said. This season's results do not count. The blend runs from 0 (last) to 1 (first); "+
-			"moves compare with the board from the previous model run.", aggText(res), res.ModelRunID, res.AgeWeight)
+			"moves compare with the board from the previous model run. Picks from the next two drafts add to the counted players at weight %.2g (%s), before the common scale; they do not change roster age. An unreadable pick total is blank and does not change the score.", aggText(res), res.ModelRunID, res.AgeWeight, res.PickWeight, pickvalue.Version)
 	}
 	perf := map[string]string{m2service.PerfAllPlay: "all-play win percentage",
 		m2service.PerfPointsFor: "points for, as a share of the league's best"}[res.Performance]
@@ -73,7 +74,7 @@ func (v View) Power(view string) report.Report {
 		[]string{"Rank", "Franchise", "Move", "Record", "Roster value", "Results", "Blend"}
 	if view == ViewFranchise {
 		id, title, columns = "C-02", "Power rankings: the franchise",
-			[]string{"Rank", "Franchise", "Move", "Roster value", "Roster age", "Blend"}
+			[]string{"Rank", "Franchise", "Move", "Roster value", "Picks", "Roster age", "Blend"}
 	}
 	r := shell(id, title, "", v.in.Held.Standings, v.in.Zone, columns...)
 	r.Source = "Source: MFL standings and the app's model"
@@ -97,7 +98,11 @@ func (v View) Power(view string) report.Report {
 			if p.Age > 0 {
 				age = fmt.Sprintf("%.1f", p.Age)
 			}
-			cells = append(cells, value, age)
+			picks := ""
+			if p.HasPicks {
+				picks = fmt.Sprintf("%.1f", p.PickValue)
+			}
+			cells = append(cells, value, picks, age)
 		} else {
 			result := strings.TrimPrefix(fmt.Sprintf("%.3f", p.Results), "0")
 			if res.Performance == m2service.PerfPointsFor {
