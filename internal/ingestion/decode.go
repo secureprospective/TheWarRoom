@@ -151,6 +151,10 @@ func sameExport(raw, export string, season int, leagueless bool) bool {
 	if q.Get("TYPE") != export || u.Path != "/"+strconv.Itoa(season)+"/export" {
 		return false
 	}
+	// playerScores can serve a different score season through the current league's host.
+	if year := q.Get("YEAR"); export == "playerScores" && year != "" && year != strconv.Itoa(season) {
+		return false
+	}
 	l := q.Get("L")
 	return l == LeagueID || (leagueless && l == "")
 }

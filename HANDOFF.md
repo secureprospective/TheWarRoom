@@ -1,51 +1,41 @@
 # Handoff
 
 ## Baton
-Review — 2026-10-28, `session/revamp-cleanup`. No push requested or attempted.
+Review — 2026-10-28, `session/fix-correctness`. No push requested or attempted.
 
 ## Where it stands
-- C1: Archive removal `0ba00108`; orphan Sources views and authoritative endpoint retirement
-  `6e20d3bc`; registry absence assertions `9539f060`. Counterparties/offer-history/Lab APIs were
-  already absent at the starting revision. Live shared services stay; see
-  `docs/architecture/research-cleanup.md` for callers and retained data.
-- C2(a): `7887f4be` writes player records at listing/signals publication, not valuation.
-- C2(b): `3d4a4cd6` retains supplied starting-season and All-Pro/Pro Bowl counts, with provenance.
-  Migration 12 adds career facts without deleting records; server release 5 names the schema.
-  No registered held feed supplies game starts or player wins; these are not fabricated.
-- C2(c), partial: `420b9a71`, `8134d167` extend Pick Value v1 from held post-2026 MFL drafts,
-  preserving each draft's own slot width. Native-ledger rookie drafts are not connected.
-- C3: `49d56975` gives each counted side its own O-Line lots, owner bid readings and close
-  reservations; old unscoped seed lots expand on detached reads. Test fixture correction
-  `82cd9b75`. One-pool/two-pool close, cap prompt and retry tests pass.
-- Approved held 10-28 value-board replay: 2,278 players, zero movers; all Score fields equal.
-  Affected handwritten production: 6,921 → 5,450 physical lines versus `e3bc9d41`;
-  tests/docs/generated output excluded.
+- `9da2c766`: reject another explicit playerScores YEAR during archive selection;
+  Research totals sum exactly their displayed weekly scores at display precision.
+- `4afc9ba8`: normalize M2 starter-rule positions through the existing player-directory
+  mapping, fixing PK/K and EDGE/DE. Other inspected comparisons are listed in
+  `docs/modules/M2_Power_Ranking_Factors.md`.
+- Continuation found no unfinished tracked changes and required no further code edits.
+  Both fixes have recorded failing-before evidence in `.tmp/bug1-before.log` and
+  `.tmp/bug2-before.log`.
 
 ## Evidence and limits
-- Full `make verify` ran once, Go 1.26.10, isolated lint cache. Lint, boundary, vulnerability,
-  bindings freshness and typecheck passed. Go: 119 packages passed, two failed; composition
-  passed its full race run. Verify did not reach its frontend stage and is NOT claimed green.
-- The two failures: incomplete new O-Line test fixture (fixed; market's 26 top-level race tests
-  pass), and a Unix socket exceeding its path limit under this worktree's long temp path.
-  The socket test passes with a directly run race test binary and relative in-worktree GOTMPDIR.
-- Final touched-package evidence: C2(c) 32 top-level race PASS; final composition slice 19 PASS;
-  C1 retirement 1 PASS / eight cases. Earlier record/source batch 53 PASS; career/feed/version
-  batch 24 PASS; migration slice nine PASS. Logs are in `.tmp/` and are not committed.
-- Frontend ran once at the end: 1,575 Vitest PASS / 132 files; build, bundle budget and CSP checks
-  pass. Final Go build passes. No GUI acceptance or per-side worker/restart click-through.
+- Continuation targeted race batch: 200 top-level PASS, two opt-in live tests skipped;
+  composition Research slice: 14 PASS. Logs: `.tmp/continuation-targeted.json` and
+  `.tmp/continuation-composition.json`.
+- Prior full `make verify` on the same code exceeded ten minutes in Go tests and ended
+  with 120 packages passing, one failing. Lint, vulnerabilities, binding freshness and
+  TypeScript passed; frontend tests/build/CSP were not reached. See `.tmp/verify.log`.
+  Not rerun on unchanged code; no all-green full-gate claim.
+- The sole failure was the inherited long Unix-socket temporary path in
+  `cmd/twr-server:TestFaultsShowOnPrivateDashboardOnly`. Its directly executed race
+  binary passes with relative in-worktree TMPDIR: `.tmp/continuation-socket.log`.
+- `.lintcache/` remains untracked local lint output. No GUI or live-source acceptance.
 
 ## Next move
-Review the commits, connect native-ledger draft slots if required, then live-test both O-Line
-sides and the cut/retry flow on a disposable league. A passing cut frees only its franchise's
-room and issues its reserved one-year unit exactly once; the other side's copy is unchanged.
+Review fixes and run disposable-profile acceptance: Research totals must equal visible
+weeks before/after source refresh plus engine work; AggLineup must count the required
+kicker rather than a spare receiver. CI still owes a complete green gate.
 
 ## Blocked on
-No technical blocker to review. Full verify has no final all-green run; it was not rerun after
-fixes, per the brief's once-only requirement. Native draft slot input and GUI acceptance remain.
+Full-gate Unix-socket path handling and unreached frontend checks; reviewer/live acceptance.
 
 ## Tried and rejected
-- Lazy record writes during valuation: removed, so the runner cannot invent its own record.
-- Removing Sources/Offers packages wholesale: live ingestion, health, settings, pool/bid and
-  personal-list/refresh commands still call them. No stored history or schema was destroyed.
-- Treating starting seasons as game starts, or weighted approximate value as wins: not the feed's
-  meaning. Missing facts stay unknown and do not change the approved valuation inputs.
+- Matching only the league URL year: engine history uses another explicit score YEAR.
+- Trusting independent YTD for displayed totals: partial or differently refreshed weeks
+  can disagree. The visible weekly evidence owns this total.
+- Kicker-only exception in the counter: normalize recognized rule aliases at the boundary.

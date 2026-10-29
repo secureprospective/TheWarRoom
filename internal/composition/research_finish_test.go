@@ -21,6 +21,7 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 	in := realResearch(t)
 	a := targetTestApp(t)
 	a.core.Lookup, a.core.HasLookup = in.lookup, true
+	a.core.Week.Number = 1
 	if _, err := a.core.League.Replace(a.core.Ctx, in.mirror); err != nil {
 		t.Fatal(err)
 	}
@@ -49,8 +50,8 @@ func TestResearchColdOpenReadsArchiveBeforeFetch(t *testing.T) {
 		t.Fatal("opening blocked behind launch refresh")
 	}
 	r := reportByID(t, wireBoard(out.Board), "M-037")
-	if len(r.Rows) == 0 || !strings.Contains(r.Note, "Archived copy") || !strings.Contains(r.AsOf, reportTime(at, time.Local)) {
-		t.Fatal(r.Note, r.AsOf, len(r.Rows))
+	if len(r.Rows) == 0 || r.Status != "stale" || !strings.Contains(r.Source, "Archived copy") || !strings.Contains(r.Source, reportTime(at, time.Local)) {
+		t.Fatal(r.Status, r.Note, r.Source, len(r.Rows))
 	}
 	if len(a.core.SeasonInjuries.Value) == 0 {
 		t.Fatal("cold injury archive not served")
@@ -115,6 +116,7 @@ func TestResearchSnapshotDetachesMutableIndexes(t *testing.T) {
 	t.Parallel()
 	a := targetTestApp(t)
 	fixture := realResearch(t)
+	a.core.Week.Number = fixture.week
 	a.publishResearch(fixture.held)
 	editResearch(a, func(value *researchHeld) { value.links["gsis:fixture"] = "16162" })
 	a.now.schedules = map[int]heldSeasonFeed[[]nflschedule.RawWeek]{1: {FetchedAt: fixture.now}}

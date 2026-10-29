@@ -61,3 +61,18 @@ func TestCheckAPIError(t *testing.T) {
 		})
 	}
 }
+
+func TestSameExportScoreSeason(t *testing.T) {
+	for _, tc := range []struct {
+		query string
+		want  bool
+	}{
+		{"", true}, {"&YEAR=2026", true}, {"&YEAR=2025", false}, {"&YEAR=garbage", false},
+	} {
+		t.Run(tc.query, func(t *testing.T) {
+			if got := SameExport("/2026/export?TYPE=playerScores&L=14432&W=YTD"+tc.query, "playerScores", 2026); got != tc.want {
+				t.Fatalf("score season %q matched = %t, want %t", tc.query, got, tc.want)
+			}
+		})
+	}
+}

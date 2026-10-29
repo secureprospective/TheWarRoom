@@ -1,4 +1,4 @@
-import {defineConfig, type Plugin} from 'vite'
+import {defineConfig, type Plugin} from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // Content-Security-Policy for the built app: same-origin scripts only, no eval, nothing remote.
@@ -32,6 +32,7 @@ function csp(): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), csp()],
+  test: {setupFiles: ['src/test/hqPrefetchStub.ts']},
   build: {
     manifest: true,
     rolldownOptions: {
