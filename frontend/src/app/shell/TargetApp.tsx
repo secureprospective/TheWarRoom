@@ -53,6 +53,15 @@ const PlayerInspector = lazy(() => loadInspector().then((m) => ({ default: m.Pla
 const snapshotWorkspaces = ['hq/lineup-and-roster', 'hq/contracts-and-cap', 'hq/my-moves',
   'trade/trade-desk'];
 
+export function OwnerFooter({ snapshot }: { snapshot?: Snapshot }) {
+  const { franchiseId } = commands.use();
+  const { myFranchise } = commands.useMFLKey();
+  return <div className="me">
+    <b>{snapshot?.franchises.value.find((f) => f.id === (myFranchise || franchiseId))?.name}</b>
+    <span>GM</span>
+  </div>;
+}
+
 export function TargetApp() {
   const s = commands.use();
   const root = useRef<HTMLDivElement>(null);
@@ -144,10 +153,7 @@ export function TargetApp() {
             Status
           </Act>
         </div>
-        <div className="me">
-          <b>{snapshot?.franchises.value.find((f) => f.id === s.franchiseId)?.name}</b>
-          <span>GM</span>
-        </div>
+        <OwnerFooter snapshot={snapshot} />
       </aside>
       <section className="ws" aria-label={node.label}>
         <header className="ws-head">
