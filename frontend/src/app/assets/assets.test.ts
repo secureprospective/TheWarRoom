@@ -115,7 +115,8 @@ it('fences overlapping board reads and keeps failed cell wording during retry', 
 it.each([
   { held: true, text: '12.00 PPG', sub: 'dynasty · next 3 seasons · reduced inputs',
     detail: 'league points for 2024 are not ready' },
-  { held: false, text: 'Not valued', sub: 'No usable season: games played for 2025 are not ready', detail: '' },
+  { held: false, text: 'Not valued',
+    sub: 'No usable season: games played for 2025 are not ready', detail: '' },
 ])('keeps input gaps visible in player and pick cells: $text', async cell => {
   const { createElement } = await import('react');
   const { renderToStaticMarkup } = await import('react-dom/server');
