@@ -97,11 +97,7 @@ func (a Source) Build(
 	return res
 }
 
-// DefaultAgg is how a view counts the roster unless the caller chose: both views count the lineup
-// the rules allow, so depth a team cannot start (a third QB) does not inflate it (Christopher, 10-28).
-func DefaultAgg(string) string {
-	return m2service.AggLineup
-}
+func DefaultAgg(view string) string { return season.DefaultAgg(view) }
 
 // boardWeights are the view's blend weights. The franchise ranks on the roster and its age
 // alone; this season blends the roster with results at the caller's weight, or with auto the

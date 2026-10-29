@@ -16,7 +16,7 @@ describe('Race transport adapter', () => {
     const TargetRaceRefresh = vi.fn(async () => {});
     vi.stubGlobal('window', { go: { race: { API: { TargetRace, TargetRaceRefresh } } } });
     expect((await raceAPI.read(3, '0001', '0001')).standings.id).toBe('M-002');
-    expect(TargetRace).toHaveBeenCalledWith(3, '0001', '0001');
+    expect(TargetRace).toHaveBeenCalledWith(3, '0001', '0001', '');
     await raceAPI.refresh(true);
     expect(TargetRaceRefresh).toHaveBeenCalledWith(true);
     TargetRace.mockResolvedValueOnce({ ...wire.race, week: 99 });

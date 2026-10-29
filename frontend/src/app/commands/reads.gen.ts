@@ -1886,6 +1886,19 @@ export const readCommands = {
           "Fields": null,
           "Items": null
         }
+      },
+      {
+        "Name": "aggMode",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
       }
     ],
     "Items": null

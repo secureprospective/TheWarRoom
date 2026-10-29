@@ -2,7 +2,8 @@ import { parseRace, type Race } from './contract';
 import type * as Bindings from '../../../wailsjs/go/race/API';
 
 export type RaceReader = {
-  read(week: number, team: string, mine: string): Promise<Race>; refresh(force: boolean): Promise<void>;
+  read(week: number, team: string, mine: string, aggMode?: string): Promise<Race>;
+  refresh(force: boolean): Promise<void>;
 };
 function bindings(): typeof Bindings {
   if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
@@ -10,7 +11,8 @@ function bindings(): typeof Bindings {
   return (window as unknown as { go: { race: { API: typeof Bindings } } }).go.race.API;
 }
 export const raceAPI: RaceReader = {
-  read: async (week, team, mine) => parseRace(await bindings().TargetRace(week, team, mine)),
+  read: async (week, team, mine, aggMode = '') =>
+    parseRace(await bindings().TargetRace(week, team, mine, aggMode)),
   refresh: async force => bindings().TargetRaceRefresh(force),
 };
 

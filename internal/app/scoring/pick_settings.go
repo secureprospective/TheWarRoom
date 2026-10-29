@@ -6,6 +6,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 )
 
@@ -34,14 +35,17 @@ func PickSettingChanged(parent context.Context, key string, ok bool, src PickSet
 	if len(held.Standings.Value) == 0 {
 		return
 	}
-	prior := held.Power[season.ViewFranchise]
-	rebuilt := src.Board.Build(ctx, held.Standings.Value, prior.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek { return nil }, 0, false, DefaultAgg(season.ViewFranchise), season.ViewFranchise)
-	if !rebuilt.OK {
-		return
-	}
 	if held.Power == nil {
 		held.Power = map[string]season.PowerRankingsResult{}
 	}
-	held.Power[season.ViewFranchise] = rebuilt
+	for _, mode := range []string{m2service.AggLineup, m2service.AggSum, m2service.AggTopN} {
+		key := season.PowerKey(season.ViewFranchise, mode)
+		prior := held.Power[key]
+		rebuilt := src.Board.Build(ctx, held.Standings.Value, prior.Freshness, func(context.Context) []leagueschedule.RawScheduleWeek { return nil }, 0, false, mode, season.ViewFranchise)
+		if !rebuilt.OK {
+			return
+		}
+		held.Power[key] = rebuilt
+	}
 	src.Publish(held)
 }

@@ -13,6 +13,13 @@ const html = renderToStaticMarkup;
 const view = (id: string) => html(createElement(RaceView, { race: race(), selected: [id] }));
 
 describe('League Pulse › Race', () => {
+  it.each(['M-008', 'C-02'])('offers roster counts with Starting lineup selected for %s', id => {
+    const markup = view(id);
+    expect(markup).toContain('<label>Roster count');
+    expect(markup).toContain('<option value="lineup" selected="">Starting lineup</option>');
+    expect(markup).toContain('Whole roster');
+    expect(markup).toContain('Top N');
+  });
   it.each(wire.race.board.reports.map(r => [r.id]))('%s opens below the standings and its buttons', id => {
     const markup = view(id);
     const report = race().board.reports.find(r => r.id === id)!;
@@ -69,15 +76,18 @@ describe('League Pulse › Race', () => {
     const state = createRaceState(reader, () => '0001');
     await state.load(true);
     expect(reader.refresh).toHaveBeenCalledWith(false);
-    expect(reader.read).toHaveBeenLastCalledWith(0, '0001', '0001');
+    expect(reader.read).toHaveBeenLastCalledWith(0, '0001', '0001', 'lineup');
     await state.choose('week', '2');
-    expect(reader.read).toHaveBeenLastCalledWith(2, '0001', '0001');
+    expect(reader.read).toHaveBeenLastCalledWith(2, '0001', '0001', 'lineup');
     await state.choose('team', '0017');
-    expect(reader.read).toHaveBeenLastCalledWith(3, '0017', '0001');
+    expect(reader.read).toHaveBeenLastCalledWith(3, '0017', '0001', 'lineup');
     await state.choose('refresh', '');
     expect(reader.refresh).toHaveBeenLastCalledWith(true);
     expect(() => state.choose('week', 'x')).toThrow('invalid week');
     expect(() => state.choose('team', '17')).toThrow('invalid franchise');
+    const before = state.peek();
+    expect(() => state.choose('aggMode', 'unknown')).toThrow('invalid roster count');
+    expect(state.peek()).toBe(before);
   });
 });
 

@@ -1,7 +1,10 @@
 // Package season holds shared season view models.
 package season
 
-import "github.com/secureprospective/TheWarRoom/internal/domain"
+import (
+	"github.com/secureprospective/TheWarRoom/internal/domain"
+	"github.com/secureprospective/TheWarRoom/internal/m2service"
+)
 
 // PowerRow is one franchise's power-ranking row: the blended score, its two components, and
 // MFL's report columns from the same standings call. Display values only. RankDelta is the move
@@ -85,3 +88,14 @@ const (
 	ViewSeason    = "season"
 	ViewFranchise = "franchise"
 )
+
+// DefaultAgg counts the legal starting lineup in both views, so unusable depth cannot inflate value.
+func DefaultAgg(string) string { return m2service.AggLineup }
+
+// PowerKey keeps the default boards available to shared season readers.
+func PowerKey(view, mode string) string {
+	if mode == "" || mode == DefaultAgg(view) {
+		return view
+	}
+	return view + ":" + mode
+}

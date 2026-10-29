@@ -18,7 +18,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/playoffs"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/m2service"
 )
 
 func (a *App) refreshRace(ctx context.Context) {
@@ -58,8 +57,8 @@ func (a *App) refreshRace(ctx context.Context) {
 		Standings: a.standingsOrArchive, Schedule: func(ctx context.Context) []leagueschedule.RawScheduleWeek {
 			return scoringapp.RemainingSchedule(ctx, a.leagueScheduleOrArchive)
 		},
-		Power: func(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, view string) season.PowerRankingsResult {
-			p := a.powerRankings(ctx, standings, fresh, schedule, 0, true, m2service.ResolveAggMode("", defaultAgg(view)), view)
+		Power: func(ctx context.Context, standings []leaguestandings.RawStanding, fresh Freshness, schedule func(context.Context) []leagueschedule.RawScheduleWeek, mode, view string) season.PowerRankingsResult {
+			p := a.powerRankings(ctx, standings, fresh, schedule, 0, true, mode, view)
 			return racePowerResult(p)
 		},
 		PublishStandings: func(rows []leaguestandings.RawStanding, fresh Freshness, err error, power map[string]season.PowerRankingsResult, replace bool) {
