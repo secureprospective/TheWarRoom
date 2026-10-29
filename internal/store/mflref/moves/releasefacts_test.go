@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func storedRelease(t *testing.T, id string) (envelope.Envelope, envelope.ReleaseFacts) {

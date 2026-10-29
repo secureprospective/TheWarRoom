@@ -1,4 +1,5 @@
-package native
+// Package mflseed translates held MFL inputs into a validated native starting snapshot.
+package mflseed
 
 import (
 	"cmp"
@@ -45,8 +46,8 @@ func Franchises(held []league.Franchise) ([]commissioner.NativeFranchise, map[st
 	return out, mapping
 }
 
-// SeedPlayers keeps each rostered player's name from the held player directory, so a plan can name them.
-func SeedPlayers(seed *commissioner.RawNativeSnapshot, snap state.MirrorSnapshot, mapping map[string]string,
+// Players keeps each rostered player's name from the held player directory, so a plan can name them.
+func Players(seed *commissioner.RawNativeSnapshot, snap state.MirrorSnapshot, mapping map[string]string,
 	directory []snapshot.Player) {
 	names := make(map[string]string, len(directory))
 	for _, p := range directory {
@@ -64,8 +65,8 @@ func SeedPlayers(seed *commissioner.RawNativeSnapshot, snap state.MirrorSnapshot
 	}
 }
 
-// SeedPicks records the held draft results and future picks under their native owners.
-func SeedPicks(seed *commissioner.RawNativeSnapshot, results []draftreports.Pick,
+// Picks records the held draft results and future picks under their native owners.
+func Picks(seed *commissioner.RawNativeSnapshot, results []draftreports.Pick,
 	future []draftreports.FuturePick, mapping map[string]string) {
 	for _, p := range results {
 		pick := commissioner.NativePick{Season: seed.Season, Round: p.Round, Slot: p.Slot,
@@ -109,8 +110,8 @@ func CaptureSeed(source SeedSource) (commissioner.RawNativeSnapshot, error) {
 	franchises, mapping := Franchises(config.Franchises)
 	seed.Franchises, seed.Conferences = franchises, Conferences(config)
 	directory := source.Directory()
-	SeedPlayers(&seed, snap, mapping, directory)
-	SeedPicks(&seed, results.Value, future.Value, mapping)
+	Players(&seed, snap, mapping, directory)
+	Picks(&seed, results.Value, future.Value, mapping)
 	if err := seed.Validate(); err != nil {
 		return commissioner.RawNativeSnapshot{}, fmt.Errorf("held starting snapshot: %w", err)
 	}

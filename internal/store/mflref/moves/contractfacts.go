@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func (s *Store) SaveContract(ctx context.Context, e envelope.Envelope, f envelope.ContractFacts) error {

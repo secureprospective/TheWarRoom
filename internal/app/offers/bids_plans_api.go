@@ -6,13 +6,15 @@ import (
 	"strings"
 	"time"
 
-	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
+	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
+
+	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/bids"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -35,10 +37,10 @@ type BidPlan struct {
 	Contract string                  `json:"contract"`
 	BeatText string                  `json:"beatText"`
 	// Form is the plan's figures as the bid form takes them back: millions, points, ids.
-	Form   BidForm      `json:"form"`
-	State  string       `json:"state"`
-	Status string       `json:"status"`
-	Rules  []bid.Result `json:"rules"`
+	Form   BidForm           `json:"form"`
+	State  string            `json:"state"`
+	Status string            `json:"status"`
+	Rules  []bidrules.Result `json:"rules"`
 	// RuleSummary is Go's one line for the rules that pass; the others are shown in full.
 	RuleSummary string      `json:"ruleSummary"`
 	Post        string      `json:"post"`
@@ -70,14 +72,14 @@ type bidPlanBrief struct{ ID, State string }
 // is handed off they were what the owner posted against, so none are shown.
 func (a *API) bidPlan(ctx context.Context, r envelope.Receipt, f envelope.BidFacts) BidPlan {
 	line := "Player name unavailable"
-	rules := []bid.Result{}
+	rules := []bidrules.Result{}
 	var problem string
 	if r.State == envelope.Blocked || r.State == envelope.Ready || r.State == envelope.Draft {
 		in, found, err := a.bidInput(ctx, bidEntry{franchise: r.Spec.FranchiseID, facts: f}, r.CorrelationID)
 		if err != nil {
 			problem = err.Error()
 		} else {
-			line, rules = found, bid.Check(in)
+			line, rules = found, bidrules.Check(in)
 		}
 	} else if lk, err := a.host.OffersDirectory(ctx); err == nil {
 		if facts, ok := lk.Facts(f.Player.String()); ok {
@@ -90,7 +92,7 @@ func (a *API) bidPlan(ctx context.Context, r envelope.Receipt, f envelope.BidFac
 	}
 	summary := ""
 	if len(rules) > 0 {
-		summary = bid.Summary(rules)
+		summary = bidrules.Summary(rules)
 	}
 	return BidPlan{Receipt: noted(r), Facts: f, Player: line, Salary: amountOf(f.Salary), Points: f.Points.String(),
 		Contract: bid.ContractText(f.Salary, f.Years), BeatText: beatText(f), Form: formOf(f),
@@ -233,8 +235,8 @@ func (a *API) TargetBidHandOff(id string) (BidPlan, error) {
 		if err != nil {
 			return envelope.Envelope{}, err
 		}
-		if rules := bid.Check(in); bid.Blocked(rules) {
-			return envelope.Envelope{}, fmt.Errorf("the rules no longer pass: %s", bid.Note(rules))
+		if rules := bidrules.Check(in); bidrules.Blocked(rules) {
+			return envelope.Envelope{}, fmt.Errorf("the rules no longer pass: %s", bidrules.Note(rules))
 		}
 		return e.HandOffManual(a.host.OffersNow(), "post text copied for ProBoards; nothing was posted for you")
 	})
@@ -338,7 +340,7 @@ func formOf(f envelope.BidFacts) BidForm        { return BidForm(bidsapp.FormOf(
 func sentenceEnd(s string) string               { return bidsapp.SentenceEnd(s) }
 func noted(r envelope.Receipt) envelope.Receipt { return bidsapp.Noted(r) }
 func beatText(f envelope.BidFacts) string       { return bidsapp.BeatText(f) }
-func bidActions(s envelope.State, status string, rules []bid.Result, problem string) []BidAction {
+func bidActions(s envelope.State, status string, rules []bidrules.Result, problem string) []BidAction {
 	actions := bidsapp.BidActions(s, status, rules, problem)
 	out := make([]BidAction, len(actions))
 	for i, a := range actions {

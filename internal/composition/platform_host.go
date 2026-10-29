@@ -7,9 +7,9 @@ import (
 	"time"
 
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 

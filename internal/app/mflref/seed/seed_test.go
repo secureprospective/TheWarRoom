@@ -1,4 +1,5 @@
-package native
+// Package mflseed translates held MFL inputs into a validated native starting snapshot.
+package mflseed
 
 import (
 	"reflect"
@@ -49,7 +50,7 @@ func TestTheStartingSnapshotNumbersFranchisesAndKeepsHeldAssets(t *testing.T) {
 		t.Fatalf("franchises are numbered in held-id order: %+v %v", franchises, mapping)
 	}
 	seed := commissioner.RawNativeSnapshot{Season: 2026}
-	SeedPlayers(&seed, state.MirrorSnapshot{
+	Players(&seed, state.MirrorSnapshot{
 		Players: []state.MirrorPlayer{{MFLID: "0099", FranchiseID: "0002", RosterStatus: domain.RosterActive,
 			Salary: 5, ContractYear: 2028, ContractStatus: domain.CStatusUFA, ContractInfo: "x"},
 			{MFLID: "0098", FranchiseID: "0001"}},
@@ -63,7 +64,7 @@ func TestTheStartingSnapshotNumbersFranchisesAndKeepsHeldAssets(t *testing.T) {
 		t.Fatalf("players keep their held contracts and directory names: %+v %+v", seed.Players, seed.Adjustments)
 	}
 	player := mustID(t, "5001")
-	SeedPicks(&seed, []draftreports.Pick{{Round: 1, Slot: 2, Franchise: "0002", Player: &player},
+	Picks(&seed, []draftreports.Pick{{Round: 1, Slot: 2, Franchise: "0002", Player: &player},
 		{Round: 1, Slot: 3, Franchise: "0001", Skipped: true}},
 		[]draftreports.FuturePick{{Year: 2027, Round: 2, Original: "0001", Owner: "0002"}}, mapping)
 	wantPicks := []commissioner.NativePick{{Season: 2026, Round: 1, Slot: 2, Owner: "franchise.02", Player: "5001"},

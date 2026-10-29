@@ -12,7 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
-	"github.com/secureprospective/TheWarRoom/internal/lineup"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/lineup"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"

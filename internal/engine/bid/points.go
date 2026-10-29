@@ -1,6 +1,4 @@
-// Package bid is the free-agent auction's arithmetic and rules (rulebook §6): bid points, the
-// minimum salary by experience, and the named checks a bid plan must pass. Pure: every input
-// arrives as a parameter, and money is exact cents.
+// Package bid provides exact bid arithmetic shared by reference plans and transaction pricing.
 package bid
 
 import (
@@ -140,4 +138,19 @@ func (p Post) Text() string {
 		lines = append(lines, "Snipe")
 	}
 	return strings.Join(lines, "\n")
+}
+
+const MaxYears = 4
+
+// Experience is NFL years (season minus draft year); Known is false without a real draft year.
+type Experience struct {
+	Years int
+	Known bool
+}
+
+func plural(n int, noun string) string {
+	if n == 1 {
+		return noun
+	}
+	return noun + "s"
 }

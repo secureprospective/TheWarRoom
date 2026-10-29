@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -17,12 +19,12 @@ func bidFacts(t *testing.T) BidFacts {
 	return BidFacts{Player: mustTestID(t), Salary: 500_000_000, Years: 3, Points: 7000}
 }
 
-func passingBid() bid.Input {
-	return bid.Input{Salary: 500_000_000, Years: 3, Minimum: bid.MinimumSalary(3),
+func passingBid() bidrules.Input {
+	return bidrules.Input{Salary: 500_000_000, Years: 3, Minimum: bid.MinimumSalary(3),
 		Experience: bid.Experience{Years: 3, Known: true}, WeekKnown: true}
 }
 
-func draftedBid(t *testing.T, input bid.Input) Envelope {
+func draftedBid(t *testing.T, input bidrules.Input) Envelope {
 	t.Helper()
 	e, err := DraftBid(bidAt(), BidRequest{LeagueID: "1", FranchiseID: "0001", Facts: bidFacts(t)},
 		BidCheck{Input: input}, func() string { return "bid-1" })

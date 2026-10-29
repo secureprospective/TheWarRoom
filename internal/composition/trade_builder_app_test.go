@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/store/mflref/tradeplans"
+
 	mflwhatif "github.com/secureprospective/TheWarRoom/internal/mflref/whatif"
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
@@ -20,9 +22,9 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
@@ -205,7 +207,7 @@ func TestTradeBuilderDeadlineOwnershipPersistenceAndSafeHandoff(t *testing.T) {
 		t.Fatalf("not ready: %+v", saved)
 	}
 	id := saved.ID
-	plans, err := state.NewTradePlans(a.core.WhatifPools).List(a.core.Ctx, r.Mine)
+	plans, err := tradeplans.NewTradePlans(a.core.WhatifPools, state.InitializeWhatIf).List(a.core.Ctx, r.Mine)
 	if err != nil || len(plans) != 1 || plans[0].ID != id {
 		t.Fatal(plans, err)
 	}

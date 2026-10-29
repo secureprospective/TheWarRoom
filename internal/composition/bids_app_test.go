@@ -11,9 +11,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 )

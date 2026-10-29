@@ -16,8 +16,8 @@ import (
 
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )

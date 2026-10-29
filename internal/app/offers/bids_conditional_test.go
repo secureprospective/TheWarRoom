@@ -4,9 +4,10 @@ import (
 	"strings"
 	"testing"
 
+	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
-	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
@@ -93,7 +94,7 @@ func TestConditionalOptionsCoveringFirstAndShortfall(t *testing.T) {
 		t.Fatalf("covering options not first: %+v", p.ConditionalDrops)
 	}
 	for _, r := range p.Rules {
-		if r.Rule == bid.RuleCapRoom && r.Verdict != bid.Fail {
+		if r.Rule == bidrules.RuleCapRoom && r.Verdict != bidrules.Fail {
 			t.Fatal(r)
 		}
 	}

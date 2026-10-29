@@ -6,9 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	bidrules "github.com/secureprospective/TheWarRoom/internal/mflref/bid"
+
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
 	"github.com/secureprospective/TheWarRoom/internal/transactions"
 )
@@ -81,7 +83,7 @@ func BeatText(f envelope.BidFacts) string {
 	return text
 }
 
-func BidActions(s envelope.State, status string, rules []bid.Result, problem string) []Action {
+func BidActions(s envelope.State, status string, rules []bidrules.Result, problem string) []Action {
 	copyPost := Action{ID: "hand-off", Label: "Copy ProBoards post"}
 	again := Action{ID: "copy", Label: "Copy post again"}
 	switch {
@@ -111,12 +113,12 @@ func BidActions(s envelope.State, status string, rules []bid.Result, problem str
 	return []Action{}
 }
 
-func BidBlockReason(rules []bid.Result, problem string) string {
+func BidBlockReason(rules []bidrules.Result, problem string) string {
 	if problem != "" {
 		return problem
 	}
-	if bid.Blocked(rules) {
-		return bid.Note(rules)
+	if bidrules.Blocked(rules) {
+		return bidrules.Note(rules)
 	}
 	return ""
 }

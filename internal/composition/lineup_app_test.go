@@ -26,7 +26,7 @@ func (s lineupRulesSource) Fetch(context.Context) (league.RawConfig, error) { re
 
 func lineupTestRules(t *testing.T, a *App, bad bool) {
 	t.Helper()
-	body, err := os.ReadFile("internal/lineup/testdata/league.json")
+	body, err := os.ReadFile("internal/mflref/lineup/testdata/league.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func lineupTestRules(t *testing.T, a *App, bad bool) {
 func lineupTestSnapshot(t *testing.T, a *App) []string {
 	t.Helper()
 	// Real roster export joined to the archived 2026 directory subset.
-	body, err := os.ReadFile("internal/lineup/testdata/directory-0025.json")
+	body, err := os.ReadFile("internal/mflref/lineup/testdata/directory-0025.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func lineupTestSnapshot(t *testing.T, a *App) []string {
 		pos, _ := normalize.PositionFromMFL(p.Position)
 		snap.Players.Value = append(snap.Players.Value, snapshot.Player{ID: pid, Position: pos, Name: p.Name})
 	}
-	body, err = os.ReadFile("internal/lineup/testdata/roster-0025.json")
+	body, err = os.ReadFile("internal/mflref/lineup/testdata/roster-0025.json")
 	if err != nil {
 		t.Fatal(err)
 	}

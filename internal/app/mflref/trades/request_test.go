@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 )
 

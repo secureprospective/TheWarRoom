@@ -1,4 +1,5 @@
-package state
+// Package tradeplans persists local MFL trade plans in the existing whatif database.
+package tradeplans
 
 import (
 	"context"
@@ -17,15 +18,17 @@ type TradePlan struct {
 	Rationale string   `json:"rationale"`
 }
 
-type TradePlans struct{ pools *db.Pools }
+type TradePlans struct {
+	pools      *db.Pools
+	initialize func(context.Context, *db.Pools) error
+}
 
-func NewTradePlans(pools *db.Pools) *TradePlans { return &TradePlans{pools: pools} }
-
-const tradePlansDDL = `CREATE TABLE IF NOT EXISTS trade_plans (
- id TEXT PRIMARY KEY, franchise_id TEXT NOT NULL, plan TEXT NOT NULL);`
+func NewTradePlans(pools *db.Pools, initialize func(context.Context, *db.Pools) error) *TradePlans {
+	return &TradePlans{pools: pools, initialize: initialize}
+}
 
 func (s *TradePlans) schema(ctx context.Context) error {
-	return InitializeWhatIf(ctx, s.pools)
+	return s.initialize(ctx, s.pools)
 }
 func (s *TradePlans) Save(ctx context.Context, p TradePlan) error {
 	if err := s.schema(ctx); err != nil {

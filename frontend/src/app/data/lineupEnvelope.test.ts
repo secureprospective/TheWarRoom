@@ -7,7 +7,7 @@ import ir from './fixtures/envelope-demo.json';
 describe('intent-aware lineup boundary', () => {
   it('parses the Go DraftLineup test starter set and keeps IR receipts unchanged', () => {
     const raw: { id: string; position: string }[] = JSON.parse(readFileSync(
-      '../internal/lineup/testdata/players-0025.json', 'utf8',
+      '../internal/mflref/lineup/testdata/players-0025.json', 'utf8',
     ));
     const receipt = lineupReceipt();
     const baseline = raw.map((p) => p.id);

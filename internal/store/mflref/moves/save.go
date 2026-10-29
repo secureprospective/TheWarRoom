@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 // Save stores a new envelope or appends the audit entries not yet stored; saving the same state

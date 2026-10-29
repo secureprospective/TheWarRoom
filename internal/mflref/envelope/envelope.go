@@ -1,6 +1,6 @@
 // Package envelope keeps plans separate from MFL truth: an envelope is a planned move whose state
 // changes only through the transition table, and "Ready" means the app checked it, never that MFL
-// accepted it. The core performs no I/O. internal/store/moves owns the append-only SQLite
+// accepted it. The core performs no I/O. internal/store/mflref/moves owns the append-only SQLite
 // envelope and audit tables.
 package envelope
 

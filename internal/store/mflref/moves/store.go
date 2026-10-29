@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 var ErrNotFound = errors.New("moves: not found")

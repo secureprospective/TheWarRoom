@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func actionIDs(plan BidPlan) string {

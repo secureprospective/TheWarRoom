@@ -9,10 +9,10 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 
+	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/bids"
 	contractsapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/contracts"
-	bidsapp "github.com/secureprospective/TheWarRoom/internal/app/offers/bids"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func TestContractPendingCanBeWithdrawn(t *testing.T) {

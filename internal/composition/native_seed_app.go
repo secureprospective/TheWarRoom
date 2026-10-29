@@ -4,7 +4,7 @@ import (
 	"context"
 
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
-	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/seed"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"

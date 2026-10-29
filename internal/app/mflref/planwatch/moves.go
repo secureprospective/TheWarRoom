@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/secureprospective/TheWarRoom/internal/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
 func ValidateMoveURL(target string) error {

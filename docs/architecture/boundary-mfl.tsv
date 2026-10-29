@@ -16,10 +16,6 @@ fence	internal/leaguemigration/migrationtest	-
 fence	internal/mfl	-
 fence	internal/mflkey	-
 seam	internal/composition	-
-# Native seed adapter reads held MFL draft/rule types; source translation remains debt.
-debt	internal/app/commissioner/native	internal/ingestion/draftreports
-# Native seed adapter reads held MFL draft/rule types; source translation remains debt.
-debt	internal/app/commissioner/native	internal/ingestion/league
 # Reference communications connection state retains the MFL key port.
 debt	internal/app/comms	internal/mflkey
 # Reference connection/status and held league sources remain in mixed control API.
@@ -44,20 +40,12 @@ debt	internal/app/core	internal/ingestion/league
 debt	internal/app/core	internal/mfl
 # Frozen resource root holds typed MFL source/client ports; no new native decision authority.
 debt	internal/app/core	internal/mflkey
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/core/coretest	internal/mfl
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/core/coretest	internal/mflkey
 # Mixed draft desk still reads held MFL draft reports.
 debt	internal/app/draft	internal/ingestion/draftreports
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/draft/drafttest	internal/ingestion/draftreports
 # Mixed asset board still reads held MFL draft reports.
 debt	internal/app/market	internal/ingestion/draftreports
 # Mixed now board still reads MFL weekly results.
 debt	internal/app/now	internal/ingestion/weeklyresults
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/offers/offerstest	internal/ingestion/league
 # Reference free-agent pool source remains inside the mixed offers area.
 debt	internal/app/offers/pool	internal/ingestion/freeagents
 # Mixed reference standings/schedule/rule reading has not been split.
@@ -72,14 +60,6 @@ debt	internal/app/scoring	internal/ingestion/leaguestandings
 debt	internal/app/season	internal/ingestion/league
 # Mixed reference standings/schedule/rule reading has not been split.
 debt	internal/app/season	internal/ingestion/leaguestandings
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/season/seasontest	internal/ingestion/league
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/season/seasontest	internal/ingestion/leaguestandings
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/season/seasontest	internal/ingestion/playoffs
-# Archived MFL fixture builder; mixed fixture ownership has not been split.
-debt	internal/app/season/seasontest	internal/ingestion/weeklyresults
 # Shared transport/export helpers still construct MFL read requests.
 debt	internal/ingestion	internal/mfl
 # Shared source reader still uses MFL read transport; not an MFL policy relocation.
@@ -96,8 +76,6 @@ debt	internal/ingestion/playerscores	internal/mfl
 debt	internal/ingestion/researchfeeds	internal/mfl
 # Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/sitenews	internal/mfl
-# MFL lineup rule policy remains in shared lineup; native legality uses nativecheck.
-debt	internal/lineup	internal/ingestion/league
 # MFL schedule/standings service remains a shared reference dependency.
 debt	internal/m2service	internal/ingestion/league
 # MFL schedule/standings service remains a shared reference dependency.
@@ -128,3 +106,32 @@ fence	internal/mflref/whatif	-
 native	internal/engine	-
 native	internal/model	-
 native	internal/domain	-
+fence	internal/mflref/envelope	-
+fence	internal/mflref/lineup	-
+fence	internal/mflref/bid	-
+fence	internal/store/mflref/moves	-
+fence	internal/store/mflref/tradeplans	-
+fence	internal/app/mflref/bids	-
+fence	internal/app/mflref/seed	-
+# Mixed control reading displays local MFL plan receipts without native mutation authority.
+debt	internal/app/control	internal/mflref/envelope
+# Mixed control reading displays local MFL plan receipts without native mutation authority.
+debt	internal/app/control	internal/mflref/lineup
+# Shared resource root retains typed local-plan store/envelope ports; composition owns their lifecycle.
+debt	internal/app/core	internal/store/mflref/moves
+# Shared resource root retains typed local-plan store/envelope ports; composition owns their lifecycle.
+debt	internal/app/core	internal/mflref/envelope
+# Mixed offers facade delegates frozen local bid policy; personal offers stay shared.
+debt	internal/app/offers	internal/mflref/envelope
+# Mixed offers facade delegates frozen local bid policy; personal offers stay shared.
+debt	internal/app/offers	internal/store/mflref/moves
+# Mixed offers facade delegates frozen local bid policy; personal offers stay shared.
+debt	internal/app/offers	internal/mflref/bid
+# Mixed offers facade delegates frozen local bid policy; personal offers stay shared.
+debt	internal/app/offers	internal/app/mflref/bids
+# Offline MFL mirror/report fixture builders; never native production dependencies.
+fence	internal/app/core/coretest	-
+fence	internal/app/draft/drafttest	-
+fence	internal/app/offers/offerstest	-
+fence	internal/app/season/seasontest	-
+fence	internal/app/now/nowtest	-
