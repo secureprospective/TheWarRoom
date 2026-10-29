@@ -3,7 +3,7 @@ import { parseBoard, report, type Board, type Report } from '../reports/contract
 
 export type Choice = { value: string; label: string };
 export type Race = {
-  standings: Report; board: Board; week: number; weeks: Choice[]; team: string; teams: Choice[];
+  standings: Report; board: Board; week: number; weeks: Choice[]; team: string; teams: Choice[]; starterN: number;
 };
 export const choice = (v: unknown, p: string): Choice => {
   const c = object(v, p, ['value', 'label']);
@@ -11,11 +11,11 @@ export const choice = (v: unknown, p: string): Choice => {
 };
 export function parseRace(v: unknown): Race {
   const p = 'League race';
-  const r = object(v, p, ['standings', 'board', 'week', 'weeks', 'team', 'teams']);
+  const r = object(v, p, ['standings', 'board', 'week', 'weeks', 'team', 'teams', 'starterN']);
   const race = {
     standings: report(r.standings, `${p}.standings`), board: parseBoard(r.board),
     week: integer(r.week, p), weeks: array(r.weeks, p, choice),
-    team: text(r.team, p), teams: array(r.teams, p, choice),
+    team: text(r.team, p), teams: array(r.teams, p, choice), starterN: integer(r.starterN, `${p}.starterN`),
   };
   if (race.standings.id !== 'M-002') throw new Error(`${p}: standings must be M-002`);
   if (race.week !== 0 && !race.weeks.some(w => w.value === String(race.week)))
