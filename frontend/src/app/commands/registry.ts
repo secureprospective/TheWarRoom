@@ -650,7 +650,8 @@ export function createCommands(
         state.write({ commandbar: false });
       }
       if (result instanceof Promise) {
-        return result.then(() => record('done'), cause => record('failed', cause, true));
+        return result.then(() => record('done'), cause => record('failed', cause,
+          id !== 'research.read' || ['open', 'more'].includes((savedArgs as { action?: string }).action ?? '')));
       }
       record('done');
     } catch (cause) {

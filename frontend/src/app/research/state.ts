@@ -18,7 +18,8 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
   const store = createStore<State & ReadStatus>(() => ({ ...empty(), pending: false }));
   const query = createReadQuery('research.TargetResearch', {
     initial: empty, store, read: scope => reader.read(scope),
-    accept: research => ({ research, error: store.getState().error }),
+    accept: research => ({ research }),
+    failure: () => 'Research could not be refreshed. Please try again.',
   });
   let polls = 0;
   async function load(refresh = false, news = false, league = false, force = false) {
@@ -32,8 +33,8 @@ export function createResearchState(reader: ResearchReader, mine: () => string) 
         polling = setInterval(() => {
           void reader.status!().then(status => {
             if (request === polls && store.getState().pending) store.setState({ status });
-          }).catch(cause => {
-            if (request === polls) store.setState({ error: String(cause) });
+          }).catch(() => {
+            if (request === polls) store.setState({ status: 'Waiting for the refresh to finish' });
           });
         }, 250);
       }

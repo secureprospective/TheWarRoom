@@ -75,7 +75,10 @@ describe('Player research', () => {
     r.refresh = vi.fn(async () => { throw new Error('fixture unavailable'); });
     await state.choose('refresh', '');
     expect(state.peek().research).toBe(fixture);
-    expect(state.peek().error).toContain('fixture unavailable');
+    expect(state.peek().error).toBe('Research could not be refreshed. Please try again.');
+    r.refresh = vi.fn(async () => undefined);
+    await state.choose('refresh', '');
+    expect(state.peek().error).toBe('');
     let first: ((value: typeof fixture) => void) | undefined;
     let second: ((value: typeof fixture) => void) | undefined;
     r.read = vi.fn().mockImplementationOnce(() => new Promise(resolve => { first = resolve; }))
@@ -99,11 +102,11 @@ describe('Player research', () => {
       const pending = state.choose('refresh', '');
       expect(state.peek().status).toBe('Waiting for the MFL refresh to finish');
       await vi.advanceTimersByTimeAsync(250);
-      expect(state.peek().error).toContain('status unavailable');
+      expect(state.peek().error).toBe('');
       finish();
       await pending;
       expect(state.peek()).toMatchObject({ research: fixture, pending: false });
-      expect(state.peek().error).toContain('status unavailable');
+      expect(state.peek().error).toBe('');
       await vi.advanceTimersByTimeAsync(1000);
       expect(r.status).toHaveBeenCalledTimes(1);
     } finally { vi.useRealTimers(); }
