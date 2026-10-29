@@ -32,12 +32,14 @@ it('lists every kept, placed read in nav order, including hybrids and unlanded r
   const groups = reportGroups('');
   const rows = groups.flatMap(group => group.rows);
   const expected = endpoints.filter(row => row.disposition === 'kept' && row.placement &&
-    row.kind.split(/[ /()]+/).includes('Read'));
+    row.status === 'landed' && row.kind.split(/[ /()]+/).includes('Read'));
   expect(rows.map(row => row.id).sort()).toEqual(expected.map(row => row.id).sort());
   expect(rows.length).toBeGreaterThan(8);
   expect(rows.some(row => row.kind === 'Decide/Read')).toBe(true);
   expect(rows.some(row => row.kind === 'Read (gated)')).toBe(true);
-  expect(rows.some(row => row.status === 'spec')).toBe(true);
+  expect(rows.every(row => row.status === 'landed')).toBe(true);
+  expect(reportGroups('Position leaders').flatMap(group => group.rows).map(row => row.id)).toContain('M-040');
+  expect(reportGroups('Top Passers')).toEqual([]);
   const places = [...nodeKeys.flatMap(node => nodes[node].workspaces
     .map(w => `${nodes[node].label} › ${w.label}`)), ...surfacePlaces];
   expect(groups.map(group => group.place)).toEqual(places.filter(place =>
@@ -72,8 +74,9 @@ it('typing narrows the drawer; a report Act opens its id and closes the drawer',
     expect(host.textContent).toContain(report.name);
     expect(host.textContent).toContain(report.gm_question);
     expect(host.textContent).toContain('League Pulse › Race');
-    expect(host.textContent).toContain('Not wired');
-    expect(host.textContent).toContain('Built, not yet landed live');
+    expect(host.textContent).not.toContain('Not wired');
+    expect(host.textContent).not.toMatch(/O=\d/);
+    expect(host.textContent).not.toContain('Built, not yet landed live');
     const total = buttons().length;
     await act(async () => { props(input()).onChange({ target: { value: 'c-02' } }); });
     expect(props(input()).value).toBe('c-02');
