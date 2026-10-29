@@ -125,3 +125,6 @@ native	internal/nativecheck	-
 native	internal/store/history	-
 native	internal/leaguemigration	-
 fence	internal/mflref/whatif	-
+native	internal/engine	-
+native	internal/model	-
+native	internal/domain	-

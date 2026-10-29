@@ -12,13 +12,13 @@ Review — 2026-10-29, `session/p9-s3`. Coherent what-if/watcher slice; no push 
   import another store. Old literal sessions/plans survive file close/reopen.
 - Fence debt 50 → 47: trade source pair and three archived commstest source pairs
   become reference-owned; platform compatibility adds one pair. Every pair has a reason.
-- Native domain roots get transitive production-import checks; legacy debt and
+- Native domain and pure engine/model roots get transitive production-import checks; legacy debt and
   composition cannot launder a native path. Mixed adapters remain named direct debt.
 - Exactly 13 authorized composition fingerprints refreshed; imports/selectors only.
   No commands retired, schemas renamed, engine/native policy changed or MFL writes.
 
 ## Evidence
-- Scoped race batches: 324 top-level PASS (219 packages/tool, 98 touched composition,
+- Scoped race batches: 325 top-level PASS (220 packages/tool, 98 touched composition,
   7 migration); 11 preparation fixtures + 11 stored roundtrips PASS.
 - Restart/stale mirror, raw old-data reopen, native-rule/MFL separation, guarded
   source observation and no-MFL-write checks PASS. No GUI or full-suite claim.
