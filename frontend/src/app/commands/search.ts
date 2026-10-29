@@ -68,10 +68,10 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
       });
     }
   }
-  for (const row of endpoints.filter((e) => e.disposition === 'kept')) {
+  for (const row of endpoints.filter((e) => e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind))) {
     results.push({
-      label: `${row.id} · ${row.name} · ${row.placement}`,
-      aliases: [row.name, row.id],
+      label: row.name.replace(/\s+O=\w+/gi, ''),
+      aliases: [row.name],
       kind: 'endpoint',
       invocation: { verb: 'endpoint.open', args: { id: row.id } },
     });
@@ -86,9 +86,9 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
   for (const roster of snapshot?.rosters.value ?? []) {
     for (const player of roster.players) {
       const identity = players.get(player.id);
-      const name = identity?.name ?? player.id;
+      const name = identity?.name ?? 'Player name unavailable';
       const owner = owners.get(roster.franchiseId);
-      const context = [name, identity?.position, identity?.team, owner ?? roster.franchiseId]
+      const context = [name, identity?.position, identity?.team, owner ?? 'Franchise name unavailable']
         .filter(Boolean).join(' · ');
       results.push({
         label: context,
