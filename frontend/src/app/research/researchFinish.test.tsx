@@ -160,6 +160,16 @@ describe('One paged news list', () => {
     expect(headlineButtons()).toHaveLength(60);
     expect(descendants(element).some(e => e.textContent === 'Show 25 more')).toBe(false);
   });
+  it('keeps report navigation visible when roster news is selected and expanded', async () => {
+    const { researchState } = await import('./state');
+    const render = () => renderToStaticMarkup(createElement(ResearchView, {
+      research: fixture, selected: ['M-060'],
+    }));
+    expect(render()).toContain('Position leaders');
+    await researchState.choose('more', 'M-060');
+    expect(render()).toContain('Position leaders');
+    expect(render()).toContain('My players’ news');
+  });
   it('does not render Inspector headlines a second time among the held facts', () => {
     const article = fixture.articles[0];
     const player: PlayerReading = { ...fixture.players[0], report: {

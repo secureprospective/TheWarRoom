@@ -2,7 +2,7 @@ import { subscribeResearch } from './api';
 import { useEffect, useState } from 'react';
 import { Act } from '../commands/Act';
 import { commands } from '../commands/registry';
-import { ReportsView } from '../draftreports/Reports';
+import { ReportNavigation, ReportsView } from '../draftreports/Reports';
 import { ReportView } from '../reports/ReportView';
 import { researchState } from './state';
 import type { Research as ResearchBoard } from './contract';
@@ -97,7 +97,8 @@ export function ResearchView({ research, selected }: {
         </li>)}</ul>
       </>}
     </section>
-    {shown.id === 'M-060' ? <NewsView research={research} mine /> :
+    {shown.id === 'M-060' ? <><ReportNavigation board={research.board} selected={[shown.id]} />
+      <NewsView research={research} mine /></> :
       <ReportsView board={research.board} selected={[shown.id]} refreshVerb="research.read"
         controls={controls} />}
   </section>;
