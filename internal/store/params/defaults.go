@@ -19,6 +19,16 @@ func defaultParams() []ParamDef {
 			Description: "Dynasty: weight of each later season against the one before",
 		},
 		{
+			Key: KeyPickValueDiscount, Position: global, Type: TypeFloat,
+			Default: 0.75, Min: 0, Max: 1,
+			Description: "Pick Value: weight of each later draft against the one before",
+		},
+		{
+			Key: KeyPowerPickWeight, Position: global, Type: TypeFloat,
+			Default: 0.6, Min: 0, Max: 1,
+			Description: "Power rankings: how much a future draft pick counts in the franchise view",
+		},
+		{
 			Key: KeyDynastyContractTilt, Position: global, Type: TypeFloat,
 			Default: 0.06, Min: 0, Max: 0.25,
 			Description: "Dynasty: most a contract's price and length move a value, as a share",

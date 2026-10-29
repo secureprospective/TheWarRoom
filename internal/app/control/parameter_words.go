@@ -7,6 +7,8 @@ import (
 
 func ParameterWords(key, description string) (label, group string) {
 	fixed := map[string][2]string{
+		"power.pick_weight":     {"How much a future draft pick counts", "Power rankings"},
+		"pickvalue.discount":    {"Weight of each later draft", "Pick Value"},
 		"layer3.decay_rate":     {"Annual age decline", "Board age adjustment"},
 		"dynasty.seasons":       {"Seasons counted, starting this season", "Dynasty horizon"},
 		"dynasty.discount":      {"Weight of each later season", "Dynasty horizon"},

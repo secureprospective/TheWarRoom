@@ -156,3 +156,16 @@ func (s *Store) CloseFinishedDrafts(ctx context.Context, league string, facts na
 	}
 	return nil
 }
+
+// PickValueDrafts reads one league only; no write, fetch, or cross-league pooling.
+func (s *Store) PickValueDrafts(ctx context.Context, league string) ([]commissioner.NativeDraft, error) {
+	records, err := s.nativeRecords(ctx, league)
+	if err != nil {
+		return nil, err
+	}
+	drafts, err := commissioner.PickValueDrafts(records, s.now(), s.draftStandings(ctx, league))
+	if err != nil {
+		return nil, fmt.Errorf("read Pick Value draft history: %w", err)
+	}
+	return drafts, nil
+}

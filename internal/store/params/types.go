@@ -17,7 +17,9 @@ const (
 	// KeyDynastySeasons: how many seasons the dynasty measurable counts, this one first.
 	KeyDynastySeasons = "dynasty.seasons"
 	// KeyDynastyDiscount: each later season's weight in the dynasty measurable.
-	KeyDynastyDiscount = "dynasty.discount"
+	KeyDynastyDiscount   = "dynasty.discount"
+	KeyPickValueDiscount = "pickvalue.discount"
+	KeyPowerPickWeight   = "power.pick_weight"
 	// KeyDynastyContractTilt: the most a contract's price and length move a dynasty value.
 	KeyDynastyContractTilt = "dynasty.contract_tilt"
 )

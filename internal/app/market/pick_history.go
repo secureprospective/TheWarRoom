@@ -3,8 +3,11 @@ package market
 import (
 	"context"
 	"fmt"
+	"math"
 	"slices"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguearchive"
@@ -69,12 +72,77 @@ func draftSlots(year int, picks []draftreports.Pick, byMFL map[string]playerreco
 			continue
 		}
 		d, ok := byMFL[p.Player.String()]
-		if !ok || d.Year != year || (d.Status != playerrecord.Undrafted &&
-			(d.Status != playerrecord.Drafted || d.Overall < 1)) {
+		if !ok || !rookieCapital(d, year) {
 			continue
 		}
 		out = append(out, pickvalue.Pick{Year: year, Round: p.Round, Slot: p.Slot,
 			Selection: (p.Round-1)*teams + p.Slot, NFLOverall: d.Overall})
 	}
 	return out
+}
+
+// PickTotals reads the next two drafts without substituting zero for unreadable inventory or
+// an unreadable value. One bad pick blanks its owner's total, not any other franchise's.
+func PickTotals(model Model, inventory []draftreports.FuturePick, season int, owners []string, at time.Time) map[string]float64 {
+	if model == nil || inventory == nil {
+		return nil
+	}
+	totals := make(map[string]float64, len(owners))
+	for _, id := range owners {
+		totals[id] = 0
+	}
+	missing := map[string]bool{}
+	for _, p := range inventory {
+		if p.Year <= season || p.Year > season+2 {
+			continue
+		}
+		v := model.Pick(p.Year, p.Round, p.Original, at)
+		if !v.Valued || math.IsNaN(v.Discounted) || math.IsInf(v.Discounted, 0) || v.Discounted < 0 {
+			missing[p.Owner] = true
+			continue
+		}
+		totals[p.Owner] += v.Discounted
+	}
+	for id := range missing {
+		delete(totals, id)
+	}
+	return totals
+}
+
+// NativePickHistory uses the replayed rookie selections, not raw ledger commands: corrections
+// replace players and restored/skipped picks cannot train the curve. Orders follow originals.
+func NativePickHistory(drafts []commissioner.NativeDraft, season int, records []playerrecord.Record) ([]pickvalue.Pick, map[PickKey]int) {
+	byMFL := make(map[string]playerrecord.Draft, len(records))
+	for _, r := range records {
+		byMFL[r.MFL] = r.Draft
+	}
+	var out []pickvalue.Pick
+	slots := map[PickKey]int{}
+	for _, draft := range drafts {
+		if draft.Startup {
+			continue
+		}
+		teams := 0
+		for _, round := range draft.Order {
+			teams = max(teams, len(round.Picks))
+			for _, p := range round.Picks {
+				slots[PickKey{Year: draft.Season, Round: p.Round, Original: p.Original}] = p.Slot
+			}
+		}
+		if draft.Season > season {
+			continue
+		}
+		for _, p := range draft.Draft.Picks {
+			d, ok := byMFL[p.Player]
+			if !ok || p.Player == "" || p.Skipped || p.Forfeited || p.Extra > 0 || !rookieCapital(d, draft.Season) {
+				continue
+			}
+			out = append(out, pickvalue.Pick{Year: draft.Season, Round: p.Round, Slot: p.Slot, Selection: (p.Round-1)*teams + p.Slot, NFLOverall: d.Overall})
+		}
+	}
+	return out, slots
+}
+
+func rookieCapital(d playerrecord.Draft, year int) bool {
+	return d.Year == year && (d.Status == playerrecord.Undrafted || (d.Status == playerrecord.Drafted && d.Overall > 0))
 }
