@@ -3,7 +3,8 @@ import { parseBoard, report, type Board, type Report } from '../reports/contract
 
 export type Choice = { value: string; label: string };
 export type Race = {
-  standings: Report; board: Board; week: number; weeks: Choice[]; team: string; teams: Choice[]; starterN: number;
+  standings: Report; board: Board; week: number; weeks: Choice[]; team: string; teams: Choice[];
+  starterN: number;
 };
 export const choice = (v: unknown, p: string): Choice => {
   const c = object(v, p, ['value', 'label']);
