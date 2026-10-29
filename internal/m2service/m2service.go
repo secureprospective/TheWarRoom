@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leaguestandings"
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
 	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -51,6 +52,7 @@ func New(st state.Reader, rb FranchiseSource) (*Service, error) {
 
 // Row is one franchise's board row: the blended score, MFL's report columns and the name.
 type Row struct {
+	model.InputStatus
 	Rank        int
 	FranchiseID string
 	Name        string
@@ -94,6 +96,7 @@ const (
 // PlayerValue is one player's value in the view being ranked, in league points per game, with
 // the position he was valued at and his age (NaN when unknown).
 type PlayerValue struct {
+	model.InputStatus
 	MFLID    string
 	Position string
 	Value    float64
@@ -127,7 +130,7 @@ func (s *Service) BuildBoard(
 		n = c.rules.Total
 	}
 	return Board{
-		Rows:        s.buildRows(blended, parsed, picks),
+		Rows:        s.buildRows(blended, parsed, picks, s.inputStatus(values)),
 		Mode:        c.mode,
 		StarterN:    n,
 		Weight:      powerrankings.ClampWeight(wt.Roster),
@@ -264,9 +267,36 @@ func (s *Service) buildBlendInputs(
 func (s *Service) byFranchise(values []PlayerValue) map[string][]PlayerValue {
 	out := map[string][]PlayerValue{}
 	for _, v := range values {
-		if p, ok := s.state.Player(v.MFLID); ok {
+		if p, ok := s.state.Player(v.MFLID); ok && !v.Unavailable {
 			out[p.FranchiseID] = append(out[p.FranchiseID], v)
 		}
+	}
+	return out
+}
+
+// inputStatus labels partial rosters even when the missing player's value could not enter a lineup.
+func (s *Service) inputStatus(values []PlayerValue) map[string]model.InputStatus {
+	byID := make(map[string]PlayerValue, len(values))
+	for _, v := range values {
+		byID[v.MFLID] = v
+	}
+	out := map[string]model.InputStatus{}
+	for _, fid := range s.state.Franchises() {
+		roster, _ := s.state.Roster(fid)
+		status := model.InputStatus{}
+		valued := 0
+		for _, p := range roster {
+			v, ok := byID[p.MFLID]
+			if ok && !v.Unavailable {
+				valued++
+			}
+			if !ok {
+				v.InputStatus = model.InputStatus{Unavailable: true, Reason: "Not in this season's model run"}
+			}
+			status.Merge(v.InputStatus)
+		}
+		status.Unavailable = valued == 0 && len(roster) > 0
+		out[fid] = status
 	}
 	return out
 }
@@ -306,15 +336,18 @@ func (c counter) count(vals []PlayerValue) (value, age float64) {
 }
 
 // buildRows joins the blended scores with MFL's display columns and the rulebook's names.
-func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parsedStanding, picks PickCapital) []Row {
+func (s *Service) buildRows(blended []powerrankings.Row, parsed map[string]parsedStanding, picks PickCapital, status map[string]model.InputStatus) []Row {
 	names := s.rb.FranchiseNames()
 	rows := make([]Row, 0, len(blended))
 	for _, b := range blended {
 		ps := parsed[b.FranchiseID]
 		pickValue, hasPicks := picks.value(b.FranchiseID)
+		input := status[b.FranchiseID]
+		input.Merge(picks.Status[b.FranchiseID])
 		rows = append(rows, Row{
-			Rank:      b.Rank,
-			PickValue: pickValue, HasPicks: hasPicks,
+			InputStatus: input,
+			Rank:        b.Rank,
+			PickValue:   pickValue, HasPicks: hasPicks,
 			FranchiseID: b.FranchiseID,
 			Name:        domain.FranchiseLabel(names, b.FranchiseID),
 			PowerScore:  b.PowerScore,
@@ -419,6 +452,7 @@ func atofOrZero(s string) (float64, error) {
 // PickCapital is the next two drafts' unweighted dynasty PPG by current owner. Nil totals mean
 // unavailable, not zero picks. Missing or invalid totals leave that franchise's score untouched.
 type PickCapital struct {
+	Status map[string]model.InputStatus
 	Totals map[string]float64
 	Weight float64
 }

@@ -10,11 +10,14 @@ import (
 // MFL's report columns from the same standings call. Display values only. RankDelta is the move
 // since the board built from the previous model run; DeltaOK is false when there is none.
 type PowerRow struct {
-	Rank        int    `json:"rank"`
-	FranchiseID string `json:"franchiseID"`
-	Name        string `json:"name"`
-	RankDelta   int    `json:"rankDelta"`
-	DeltaOK     bool   `json:"deltaOK"`
+	ReducedInputs bool   `json:"reducedInputs,omitempty"`
+	Unavailable   bool   `json:"unavailable,omitempty"`
+	ValueReason   string `json:"valueReason,omitempty"`
+	Rank          int    `json:"rank"`
+	FranchiseID   string `json:"franchiseID"`
+	Name          string `json:"name"`
+	RankDelta     int    `json:"rankDelta"`
+	DeltaOK       bool   `json:"deltaOK"`
 
 	PowerScore float64 `json:"powerScore"` // weighted z-blend, scaled to [0,1]
 	RosterZ    float64 `json:"rosterZ"`    // 0 = league average

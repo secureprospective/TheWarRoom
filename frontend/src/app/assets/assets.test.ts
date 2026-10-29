@@ -111,3 +111,20 @@ it('fences overlapping board reads and keeps failed cell wording during retry', 
   expect(state.peek().error).toBe('');
   expect(state.cellFor(state.peek(), '99999', 'now').text).toBe('No score');
 });
+
+it.each([
+  { held: true, text: '12.00 PPG', sub: 'dynasty · next 3 seasons · reduced inputs',
+    detail: 'league points for 2024 are not ready' },
+  { held: false, text: 'Not valued',
+    sub: 'No usable season: games played for 2025 are not ready', detail: '' },
+])('keeps input gaps visible in player and pick cells: $text', async cell => {
+  const { createElement } = await import('react');
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { AssetCellView } = await import('./AssetNumber');
+  const board = parseAssetBoard({ ...wire, values: [{ ...wire.values[0], dynasty: cell }] });
+  const html = renderToStaticMarkup(createElement(AssetCellView, { cell: board.values[0].dynasty }));
+  expect(html).toContain(cell.text);
+  expect(html).toContain(cell.sub);
+  if (cell.detail) expect(html).toContain(cell.detail);
+  if (!cell.held) expect(html).not.toContain('0.00');
+});

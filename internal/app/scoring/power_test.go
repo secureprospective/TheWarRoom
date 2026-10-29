@@ -1,7 +1,11 @@
 package scoring
 
 import (
+	"context"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 
@@ -49,5 +53,35 @@ func TestBoardWeightsAndDefaultsPerView(t *testing.T) {
 	}
 	if DefaultAgg(season.ViewSeason) != m2service.AggLineup || DefaultAgg(season.ViewFranchise) != m2service.AggLineup {
 		t.Error("view defaults")
+	}
+}
+
+type statusHistory struct{ scores []history.ModelScore }
+
+func (h statusHistory) LatestRun(context.Context, int, history.RunKind) (history.Run, bool, error) {
+	return history.Run{}, false, nil
+}
+func (h statusHistory) PreviousRun(context.Context, history.Run) (history.Run, bool, error) {
+	return history.Run{}, false, nil
+}
+func (h statusHistory) ModelScores(context.Context, int64) ([]history.ModelScore, error) {
+	return h.scores, nil
+}
+
+func TestScoringCarriesInputStatusIntoBothTeamViews(t *testing.T) {
+	status := model.InputStatus{ReducedInputs: true, Reason: "league points for 2024 are not ready"}
+	a := Source{History: statusHistory{scores: []history.ModelScore{{MFLID: "0042", InputStatus: status, Value: model.Value{NowPPG: 12, DynastyPPG: 10}}}}}
+	values, err := a.playerValues(t.Context(), 1, func(string) float64 { return 25 })
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, view := range []string{season.ViewSeason, season.ViewFranchise} {
+		if values[view][0].InputStatus != status {
+			t.Fatal(view, values)
+		}
+	}
+	rows := powerRows([]m2service.Row{{InputStatus: status, FranchiseID: "0001"}}, nil, nil)
+	if !rows[0].ReducedInputs || rows[0].ValueReason != status.Reason {
+		t.Fatal(rows)
 	}
 }

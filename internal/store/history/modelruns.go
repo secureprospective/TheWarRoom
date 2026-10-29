@@ -21,6 +21,7 @@ type ModelScore struct {
 	MFLID    string
 	Position string
 	model.Value
+	model.InputStatus
 	Inputs []string
 }
 
@@ -55,7 +56,7 @@ func (s *Store) WriteModelRun(ctx context.Context, nr NewModelRun) (Run, bool, e
 	}
 	return s.writeRun(ctx, p, func(tx *sql.Tx, runID int64) error {
 		for _, sc := range nr.Scores {
-			inputs, err := json.Marshal(sc.Inputs)
+			inputs, err := encodeModelInputs(sc)
 			if err != nil {
 				return fmt.Errorf("history: encode inputs of %s: %w", sc.MFLID, err)
 			}
@@ -85,6 +86,12 @@ func validModelScores(scores []ModelScore) (string, error) {
 		}
 		seen[sc.MFLID] = true
 		v := sc.Value
+		if (sc.ReducedInputs || sc.Unavailable) && sc.Reason == "" {
+			return "", fmt.Errorf("history: %s needs its missing-input reason", sc.MFLID)
+		}
+		if sc.Unavailable && v != (model.Value{}) {
+			return "", fmt.Errorf("history: unavailable player %s carries a numeric value", sc.MFLID)
+		}
 		if !numeric.Finite(v.Now, v.NowPPG, v.Dynasty, v.DynastyPPG, v.Prior, v.PastGames, v.SeasonGames,
 			v.ZPast, v.ZNow, v.OnField) {
 			return "", fmt.Errorf("history: %s has a non-finite model field", sc.MFLID)
@@ -103,7 +110,7 @@ func validModelScores(scores []ModelScore) (string, error) {
 const modelCols = `mfl_id, position, now, now_ppg, dynasty, dynasty_ppg, prior,
 	past_games, season_games, z_past, z_now, on_field, inputs`
 
-// ModelScores returns a model run's scores, highest dynasty value first.
+// ModelScores returns a run's values and unavailable entries, highest dynasty value first.
 func (s *Store) ModelScores(ctx context.Context, runID int64) ([]ModelScore, error) {
 	rows, err := s.pools.Read().QueryContext(ctx, `SELECT `+modelCols+` FROM model_scores
 WHERE run_id = ? ORDER BY dynasty_ppg DESC, mfl_id ASC`, runID)
@@ -120,7 +127,7 @@ WHERE run_id = ? ORDER BY dynasty_ppg DESC, mfl_id ASC`, runID)
 			&v.PastGames, &v.SeasonGames, &v.ZPast, &v.ZNow, &v.OnField, &inputs); err != nil {
 			return nil, fmt.Errorf("history: scan model score: %w", err)
 		}
-		if err := json.Unmarshal([]byte(inputs), &sc.Inputs); err != nil {
+		if err := decodeModelInputs(inputs, &sc); err != nil {
 			return nil, fmt.Errorf("history: model score %s inputs: %w", sc.MFLID, err)
 		}
 		out = append(out, sc)
@@ -139,4 +146,38 @@ SELECT 1 FROM loads WHERE added > 0 AND error = '' AND loaded_at > ?)`, formatTi
 		return false, fmt.Errorf("history: engine input changes: %w", err)
 	}
 	return changed, nil
+}
+
+// modelInputs keeps status in the existing JSON column; old runs contain just name arrays.
+type modelInputs struct {
+	Names []string
+	model.InputStatus
+}
+
+func encodeModelInputs(sc ModelScore) ([]byte, error) {
+	if !sc.ReducedInputs && !sc.Unavailable && sc.Reason == "" {
+		b, err := json.Marshal(sc.Inputs)
+		if err != nil {
+			return nil, fmt.Errorf("encode input names: %w", err)
+		}
+		return b, nil
+	}
+	b, err := json.Marshal(modelInputs{Names: sc.Inputs, InputStatus: sc.InputStatus})
+	if err != nil {
+		return nil, fmt.Errorf("encode input status: %w", err)
+	}
+	return b, nil
+}
+
+func decodeModelInputs(text string, sc *ModelScore) error {
+	if strings.HasPrefix(strings.TrimSpace(text), "{") {
+		var in modelInputs
+		if err := json.Unmarshal([]byte(text), &in); err != nil {
+			return fmt.Errorf("decode input status: %w", err)
+		}
+		sc.Inputs, sc.InputStatus = in.Names, in.InputStatus
+	} else if err := json.Unmarshal([]byte(text), &sc.Inputs); err != nil {
+		return fmt.Errorf("decode input names: %w", err)
+	}
+	return nil
 }

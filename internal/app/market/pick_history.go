@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/m2service"
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 
@@ -87,29 +88,43 @@ func draftSlots(year int, picks []draftreports.Pick, byMFL map[string]playerreco
 // PickTotals reads the next two drafts without substituting zero for unreadable inventory or
 // an unreadable value. One bad pick blanks its owner's total, not any other franchise's.
 func PickTotals(model Model, inventory []draftreports.FuturePick, season int, owners []string, at time.Time) map[string]float64 {
-	if model == nil || inventory == nil {
-		return nil
+	return pickCapital(model, inventory, season, owners, at).Totals
+}
+
+func pickCapital(values Model, inventory []draftreports.FuturePick, season int, owners []string, at time.Time) m2service.PickCapital {
+	capital := m2service.PickCapital{}
+	if values == nil || inventory == nil {
+		return capital
 	}
-	totals := make(map[string]float64, len(owners))
+	capital.Totals = make(map[string]float64, len(owners))
+	capital.Status = make(map[string]model.InputStatus, len(owners))
 	for _, id := range owners {
-		totals[id] = 0
+		capital.Totals[id] = 0
 	}
-	missing := map[string]bool{}
 	for _, p := range inventory {
 		if p.Year <= season || p.Year > season+2 {
 			continue
 		}
-		v := model.Pick(p.Year, p.Round, p.Original, at)
+		v := values.Pick(p.Year, p.Round, p.Original, at)
+		status := capital.Status[p.Owner]
+		status.Merge(model.InputStatus{ReducedInputs: v.ReducedInputs, Reason: v.Reason})
 		if !v.Valued || math.IsNaN(v.Discounted) || math.IsInf(v.Discounted, 0) || v.Discounted < 0 {
-			missing[p.Owner] = true
-			continue
+			status.Unavailable = true
+			status.ReducedInputs = true
+			if status.Reason == "" {
+				status.Reason = "A future pick has no usable value"
+			}
+		} else {
+			capital.Totals[p.Owner] += v.Discounted
 		}
-		totals[p.Owner] += v.Discounted
+		capital.Status[p.Owner] = status
 	}
-	for id := range missing {
-		delete(totals, id)
+	for id, status := range capital.Status {
+		if status.Unavailable {
+			delete(capital.Totals, id)
+		}
 	}
-	return totals
+	return capital
 }
 
 // NativePickHistory uses the replayed rookie selections, not raw ledger commands: corrections
@@ -170,6 +185,7 @@ func PowerPicks(ctx context.Context, run history.Run, src PowerPickSource) m2ser
 	if err != nil || !ok {
 		return capital
 	}
-	capital.Totals = PickTotals(model, src.Inventory, run.Season, src.Owners, src.At)
+	priced := pickCapital(model, src.Inventory, run.Season, src.Owners, src.At)
+	capital.Totals, capital.Status = priced.Totals, priced.Status
 	return capital
 }

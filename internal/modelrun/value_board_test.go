@@ -133,6 +133,9 @@ func TestValueBoardReplay(t *testing.T) {
 	data := book.Data
 	result := boardResult{Report: report, Parameters: effective}
 	for _, sc := range capture.run.Scores {
+		if sc.Unavailable {
+			continue
+		}
 		facts, _ := dir.Facts(sc.MFLID)
 		id, _ := book.ID(sc.MFLID)
 		pl := book.Player(id)

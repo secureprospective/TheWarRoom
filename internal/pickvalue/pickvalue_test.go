@@ -2,8 +2,10 @@ package pickvalue
 
 import (
 	"math"
+	"strings"
 	"testing"
 
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 )
 
@@ -227,5 +229,35 @@ func TestMissingRecordsCountAsZero(t *testing.T) {
 			t.Errorf("selection %d = %.6f and %.6f, want %.6f and %.6f: the missing must count as zero",
 				n, full.PPG, thin.PPG, wantFull, wantThin)
 		}
+	}
+}
+
+func TestPickBandsRetainMissingSeasonReasons(t *testing.T) {
+	h, err := History()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, allBad := range []bool{false, true} {
+		t.Run(map[bool]string{false: "reduced", true: "unavailable"}[allBad], func(t *testing.T) {
+			players := flat(func(int) bool { return true })
+			why := "league points for 2024 are not ready"
+			for i := range players {
+				players[i].InputStatus = model.InputStatus{ReducedInputs: !allBad, Unavailable: allBad, Reason: why}
+				players[i].Valued = !allBad
+			}
+			m, err := Fit(h, players, 2026, .75)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, slot := range []int{0, 1} {
+				v, err := m.Pick(2027, 1, slot, 32)
+				if err != nil || !v.ReducedInputs || v.Unavailable != allBad || !strings.Contains(v.Reason, why) {
+					t.Fatal(v, err)
+				}
+				if !allBad && v.PPG <= 0 {
+					t.Fatal("usable values lost", v)
+				}
+			}
+		})
 	}
 }

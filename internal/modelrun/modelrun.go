@@ -16,7 +16,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -153,11 +155,15 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 		}
 		scores, inputs = append(scores, sc), append(inputs, in)
 	}
-	if len(scores) == 0 {
+	if len(scores) == 0 && len(rep.Excluded) == 0 {
 		return Report{}, fmt.Errorf("modelrun: no player could be valued for season %d", spec.Season)
 	}
 	if err := r.tilt(book, scores, inputs, spec, pass); err != nil {
 		return Report{}, err
+	}
+	valued := len(scores)
+	for _, e := range rep.Excluded {
+		scores = append(scores, history.ModelScore{MFLID: e.MFLID, InputStatus: model.InputStatus{Unavailable: true, Reason: e.Reason}})
 	}
 	hash, err := inputsHash(inputs, rep.Excluded)
 	if err != nil {
@@ -170,7 +176,7 @@ func (r *Runner) Run(ctx context.Context, spec Spec) (Report, error) {
 	if err != nil {
 		return Report{}, fmt.Errorf("modelrun: write %d scores (season %d): %w", len(scores), spec.Season, err)
 	}
-	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, len(scores)
+	rep.RunID, rep.Unchanged, rep.Scored = run.ID, !written, valued
 	return rep, nil
 }
 
@@ -281,7 +287,7 @@ type pass struct {
 }
 
 func newPass(book playerrecord.Book, spec Spec) (pass, error) {
-	p := pass{book: book, data: book.Data, scales: book.Data.Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
+	p := pass{book: book, data: book.Data, scales: scoredSeasons(book.Data).Scales(), params: map[domain.Position]model.Params{}, season: spec.Season}
 	for _, pos := range model.Positions() {
 		m, err := model.ParamsFrom(pos, func(key string) (float64, error) {
 			return spec.Params.GetPosition(key, string(pos))
@@ -306,6 +312,21 @@ func newPass(book playerrecord.Book, spec Spec) (pass, error) {
 	return p, nil
 }
 
+// scoredSeasons keeps snap-only seasons out of the league-points scale. Runtime reads
+// season totals; a missing total is not a season of zero fantasy points.
+func scoredSeasons(data model.Data) model.Data {
+	out := model.Data{Players: data.Players, Seasons: map[string]map[int]*model.Season{}}
+	for id, seasons := range data.Seasons {
+		out.Seasons[id] = map[int]*model.Season{}
+		for year, s := range seasons {
+			if s.HasTotal && s.Games() > 0 {
+				out.Seasons[id][year] = s
+			}
+		}
+	}
+	return out
+}
+
 // playerInput is everything the model read for one player; the run's inputs hash covers it.
 type playerInput struct {
 	ID        string // our permanent ID
@@ -315,8 +336,9 @@ type playerInput struct {
 	Past      []model.Past
 	Current   model.Past
 	Mislinked bool
-	// TodayTotal, TodayCurrentPPG and TodayPull feed today's board rule where the fit did not
-	// keep the model; this season's pace stands in only when there is no total last season.
+	Skipped   []string
+	// TodayTotal is the latest usable past season's total; the current pace stands in
+	// when there is no usable past season. TodayPull applies the points-based age rule.
 	TodayTotal, TodayCurrentPPG, TodayPull float64
 }
 
@@ -335,17 +357,9 @@ func (ps pass) value(id string) (history.ModelScore, playerInput, string) {
 	pl := ps.book.Player(id)
 	in := playerInput{ID: id, MFLID: rec.MFL, Position: pos, Player: pl, Current: model.Past{Year: ps.season},
 		Mislinked: rec.Mislinked}
-	for y := ps.season - 3; y <= ps.season; y++ {
-		s := ps.data.Seasons[id][y]
-		if s == nil || s.Games() == 0 {
-			continue
-		}
-		past := model.Past{Year: y, Games: float64(s.Games()), Pct: ps.scale(pos, y).Pct(s.PPG())}
-		if y == ps.season {
-			in.Current = past
-		} else {
-			in.Past = append(in.Past, past)
-		}
+	unusable := ps.readSeasons(&in)
+	if unusable && len(in.Past) == 0 && in.Current.Games == 0 {
+		return history.ModelScore{}, in, "No usable season: " + strings.Join(in.Skipped, "; ")
 	}
 	scale := ps.scale(pos, ps.season-1)
 	if scale.Len() == 0 {
@@ -353,20 +367,83 @@ func (ps pass) value(id string) (history.ModelScore, playerInput, string) {
 	}
 	v := m.Value(&pl, in.Past, in.Current, ps.horizon, scale)
 	if !m.BoardKept {
-		pull, err := AgePull(pos, pl.AgeAt(ps.season), ps.decay)
+		var err error
+		v, err = ps.todayValue(&in, v, scale)
 		if err != nil {
-			return history.ModelScore{}, playerInput{}, err.Error()
+			return history.ModelScore{}, in, err.Error()
 		}
-		if last := ps.data.Seasons[id][ps.season-1]; last != nil && last.Games() > 0 {
-			in.TodayTotal = last.PPG() * float64(last.Games())
-		}
-		if cur := ps.data.Seasons[id][ps.season]; cur != nil && cur.Games() > 0 {
-			in.TodayCurrentPPG = cur.PPG()
-		}
-		in.TodayPull = pull
-		v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
 	}
-	return history.ModelScore{MFLID: rec.MFL, Position: string(pos), Value: v, Inputs: inputNames(m, &pl, in)}, in, ""
+
+	return history.ModelScore{MFLID: rec.MFL, Position: string(pos), Value: v, Inputs: inputNames(m, &pl, in),
+		InputStatus: model.InputStatus{ReducedInputs: len(in.Skipped) > 0, Reason: strings.Join(in.Skipped, "; ")}}, in, ""
+}
+
+func (ps pass) readSeasons(in *playerInput) bool {
+	unusable := false
+	for y := ps.season - 3; y <= ps.season; y++ {
+		s := ps.data.Seasons[in.ID][y]
+		ready, why := seasonReady(s, y)
+		if why != "" {
+			in.Skipped = append(in.Skipped, why)
+			unusable = true
+			continue
+		}
+		if !ready {
+			if s != nil && s.HasTotal {
+				in.Skipped = append(in.Skipped, fmt.Sprintf("no games recorded for %d (season not used)", y))
+			}
+			continue
+		}
+		past := model.Past{Year: y, Games: float64(s.Games()), Pct: ps.scale(in.Position, y).Pct(s.PPG())}
+		if y == ps.season {
+			in.Current = past
+		} else {
+			in.Past = append(in.Past, past)
+		}
+	}
+	return unusable
+}
+
+func (ps pass) todayValue(in *playerInput, v model.Value, scale model.Scale) (model.Value, error) {
+	if len(in.Past) == 0 && in.Current.Games == 0 {
+		return model.Value{}, fmt.Errorf("no usable season of league points is held for this player's points-based value")
+	}
+	pull, err := AgePull(in.Position, in.Player.AgeAt(ps.season), ps.decay)
+	if err != nil {
+		return model.Value{}, err
+	}
+	if len(in.Past) > 0 {
+		last := in.Past[len(in.Past)-1]
+		s := ps.data.Seasons[in.ID][last.Year]
+		in.TodayTotal = s.PPG() * float64(s.Games())
+		if last.Year < ps.season-1 {
+			why := fmt.Sprintf("league points for %d are not ready", ps.season-1)
+			if !slices.Contains(in.Skipped, why) {
+				in.Skipped = append(in.Skipped, why)
+			}
+		}
+	}
+	if in.Current.Games > 0 {
+		in.TodayCurrentPPG = ps.data.Seasons[in.ID][ps.season].PPG()
+	}
+
+	in.TodayPull = pull
+	v = model.TodayRule(v, in.TodayTotal, in.TodayCurrentPPG, pull, scale)
+	return v, nil
+}
+
+func seasonReady(s *model.Season, year int) (bool, string) {
+	if s == nil {
+		return false, ""
+	}
+	if s.Games() > 0 && !s.HasTotal {
+		return false, fmt.Sprintf("league points for %d are not ready", year)
+	}
+	// A zero total with no games is an empty season, not broken production evidence.
+	if s.Games() == 0 && s.HasTotal && s.Total != 0 {
+		return false, fmt.Sprintf("games played for %d are not ready", year)
+	}
+	return s.Games() > 0, ""
 }
 
 // AgePull is the engine's age pull that today's board applies at age; an unknown age is the arc's

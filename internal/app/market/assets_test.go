@@ -189,10 +189,18 @@ func TestLoadNativePickDiscountDoesNotFollowDynastyDiscount(t *testing.T) {
 	src := NativeSource{Ready: func() error { return nil },
 		LatestRun: func(context.Context) (history.Run, bool, error) { return history.Run{Season: 2026}, true, nil },
 		Scores: func(context.Context, int64) ([]history.ModelScore, error) {
-			return []history.ModelScore{{MFLID: "0042", Value: model.Value{DynastyPPG: 10}}}, nil
+			var scores []history.ModelScore
+			for i := 1; i <= 260; i++ {
+				scores = append(scores, history.ModelScore{MFLID: fmt.Sprintf("%04d", i), Value: model.Value{DynastyPPG: 10}})
+			}
+			return scores, nil
 		},
 		Records: func(context.Context) ([]playerrecord.Record, error) {
-			return []playerrecord.Record{{MFL: "0042", Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: 5}}}, nil
+			var records []playerrecord.Record
+			for i := 1; i <= 260; i++ {
+				records = append(records, playerrecord.Record{MFL: fmt.Sprintf("%04d", i), Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: i}})
+			}
+			return records, nil
 		},
 		Params: func() params.Set { return params.SetOf(values) }, Teams: func() int { return 32 }}
 	load := func() Native {
@@ -217,5 +225,56 @@ func TestLoadNativePickDiscountDoesNotFollowDynastyDiscount(t *testing.T) {
 	}
 	if own.Player("0042", time.Time{}).Discounted != 10 {
 		t.Fatal("pick knob repriced player")
+	}
+}
+
+func TestNativeCarriesReducedAndUnavailableInputsToCells(t *testing.T) {
+	why := "league points for 2024 are not ready"
+	src := NativeSource{Ready: func() error { return nil }, LatestRun: func(context.Context) (history.Run, bool, error) { return history.Run{ID: 1, Season: 2026}, true, nil },
+		Scores: func(context.Context, int64) ([]history.ModelScore, error) {
+			return []history.ModelScore{
+				{MFLID: "0042", Value: model.Value{DynastyPPG: 12}, InputStatus: model.InputStatus{ReducedInputs: true, Reason: why}},
+				{MFLID: "0043", InputStatus: model.InputStatus{Unavailable: true, Reason: "No usable season: " + why}},
+			}, nil
+		}, Records: func(context.Context) ([]playerrecord.Record, error) { return nil, nil }, Params: params.DefaultSet, Teams: func() int { return 32 }}
+	native, ok, err := LoadNative(t.Context(), src)
+	if err != nil || !ok {
+		t.Fatal(ok, err)
+	}
+	board := WireAssetBoard(BuildBoard(OnField{Cells: map[string]Cell{}}, native, time.Time{}, []string{"0042", "0043"}))
+	reduced, unavailable := board.Values[0].Dynasty, board.Values[1].Dynasty
+	if !reduced.Held || !strings.Contains(reduced.Sub, "reduced inputs") || !strings.Contains(reduced.Detail, why) {
+		t.Fatal(reduced)
+	}
+	if unavailable.Held || unavailable.Text != "Not valued" || !strings.Contains(unavailable.Sub, why) || strings.Contains(unavailable.Text, "0.00") {
+		t.Fatal(unavailable)
+	}
+}
+
+func TestNativePickCarriesReducedInputsAndAllMissingReason(t *testing.T) {
+	var records []playerrecord.Record
+	values := map[string]float64{}
+	status := map[string]model.InputStatus{}
+	why := "league points for 2024 are not ready"
+	for i := 1; i <= 260; i++ {
+		id := fmt.Sprintf("%04d", i)
+		records = append(records, playerrecord.Record{MFL: id, Draft: playerrecord.Draft{Status: playerrecord.Drafted, Year: 2026, Overall: i}})
+		values[id] = 10
+		status[id] = model.InputStatus{ReducedInputs: true, Reason: why}
+	}
+	input := NativeInput{Records: records, Values: values, Status: status, Season: 2026, Seasons: 3, Teams: 32, Discount: .75}
+	n := NewNative(input)
+	cell := PickValue(n, 2027, 1, "", time.Time{})
+	if !cell.Held || !strings.Contains(cell.Sub, "reduced inputs") || !strings.Contains(cell.Detail, why) {
+		t.Fatal(cell)
+	}
+	for id := range values {
+		delete(values, id)
+		status[id] = model.InputStatus{Unavailable: true, Reason: "No usable season: " + why}
+	}
+	n = NewNative(input)
+	cell = PickValue(n, 2027, 1, "", time.Time{})
+	if cell.Held || cell.Text != "Not valued" || !strings.Contains(cell.Sub, why) {
+		t.Fatal(cell)
 	}
 }
