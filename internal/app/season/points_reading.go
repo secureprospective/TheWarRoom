@@ -94,17 +94,9 @@ func (v View) Power(view string) report.Report {
 	}
 	r.How = powerHow(res)
 	for _, p := range res.Rows {
-		value := fmt.Sprintf("%.1f", p.RosterValue)
+		value, picks, age := powerValues(p)
 		cells := []string{strconv.Itoa(p.Rank), v.Name(p.FranchiseID), moveText(p)}
 		if view == ViewFranchise {
-			age := "—"
-			if p.Age > 0 {
-				age = fmt.Sprintf("%.1f", p.Age)
-			}
-			picks := ""
-			if p.HasPicks {
-				picks = fmt.Sprintf("%.1f", p.PickValue)
-			}
 			cells = append(cells, value, picks, age)
 		} else {
 			result := strings.TrimPrefix(fmt.Sprintf("%.3f", p.Results), "0")
@@ -116,9 +108,40 @@ func (v View) Power(view string) report.Report {
 		blend := fmt.Sprintf("%.2f", p.PowerScore)
 		row := v.Row(p.FranchiseID, append(cells, blend)...)
 		row.Range = shareBar(p.PowerScore, 1, "Blend "+blend+" of 1")
+		if p.ValueReason != "" {
+			row.Titles = make([]string, len(row.Cells))
+			for i := range row.Titles {
+				row.Titles[i] = p.ValueReason
+			}
+		}
 		r.Rows = append(r.Rows, row)
 	}
 	return r
+}
+
+func powerValues(p PowerRow) (value, picks, age string) {
+	value = fmt.Sprintf("%.1f", p.RosterValue)
+	if p.Unavailable {
+		value = "Unavailable"
+	} else if p.ReducedInputs {
+		value += " · reduced inputs"
+	}
+	age = "—"
+	if p.Age > 0 {
+		age = fmt.Sprintf("%.1f", p.Age)
+	}
+	picks = ""
+	if p.HasPicks {
+		picks = fmt.Sprintf("%.1f", p.PickValue)
+		if p.ReducedInputs {
+			picks += " · reduced inputs"
+		}
+	}
+	if !p.HasPicks && p.ValueReason != "" {
+		picks = "Unavailable"
+	}
+
+	return value, picks, age
 }
 
 func (v View) AllPlay() report.Report {

@@ -3,6 +3,7 @@ package model
 import (
 	"math"
 	"slices"
+	"strings"
 )
 
 // Past is one of a player's seasons as evidence: its year, the games he played and his
@@ -126,6 +127,26 @@ func (p Params) Value(pl *Player, past []Past, current Past, h Horizon, scale Sc
 	}
 	v.Dynasty, v.DynastyPPG = sumPct/weight, sumPPG/weight
 	return v
+}
+
+// InputStatus describes gaps in the production evidence behind a value.
+type InputStatus struct {
+	ReducedInputs bool   `json:"reducedInputs,omitempty"`
+	Unavailable   bool   `json:"unavailable,omitempty"`
+	Reason        string `json:"reason,omitempty"`
+}
+
+// Merge carries every distinct missing-input reason into an aggregate.
+func (s *InputStatus) Merge(other InputStatus) {
+	s.ReducedInputs = s.ReducedInputs || other.ReducedInputs || other.Unavailable
+	for _, reason := range strings.Split(other.Reason, "; ") {
+		if reason != "" && !slices.Contains(strings.Split(s.Reason, "; "), reason) {
+			if s.Reason != "" {
+				s.Reason += "; "
+			}
+			s.Reason += reason
+		}
+	}
 }
 
 // TodayRule values a player by today's board rule where the fit kept it over the model

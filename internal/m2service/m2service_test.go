@@ -2,7 +2,10 @@ package m2service
 
 import (
 	"math"
+	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/model"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
@@ -418,6 +421,50 @@ func TestPicksAddAfterLineupWithoutChangingAge(t *testing.T) {
 			}
 		} else if a.RosterValue != 10 || math.IsNaN(a.PickValue) || math.IsInf(a.PickValue, 0) {
 			t.Fatal("unreadable picks affected board", a)
+		}
+	}
+}
+
+type rosterReader struct{ fakeReader }
+
+func (r rosterReader) Franchises() []string { return []string{"0001", "0002"} }
+func (r rosterReader) Roster(fid string) ([]state.PlayerState, bool) {
+	var roster []state.PlayerState
+	for _, p := range r.players {
+		if p.FranchiseID == fid {
+			roster = append(roster, p)
+		}
+	}
+	return roster, true
+}
+
+func TestTeamValueRetainsReducedAndUnavailableReasons(t *testing.T) {
+	why := "league points for 2024 are not ready"
+	rd := rosterReader{fakeReader{players: map[string]state.PlayerState{
+		"1001": {MFLID: "1001", FranchiseID: "0001"}, "1002": {MFLID: "1002", FranchiseID: "0001"}, "1003": {MFLID: "1003", FranchiseID: "0002"},
+	}}}
+	svc, err := New(rd, fakeRulebook{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	vals := []PlayerValue{
+		{MFLID: "1001", Value: 10, InputStatus: model.InputStatus{ReducedInputs: true, Reason: why}},
+		{MFLID: "1002", InputStatus: model.InputStatus{Unavailable: true, Reason: "games played for 2025 are not ready"}},
+		{MFLID: "1003", InputStatus: model.InputStatus{Unavailable: true, Reason: why}},
+	}
+	board, err := svc.BuildBoard([]leaguestandings.RawStanding{{FranchiseID: "0001"}, {FranchiseID: "0002"}}, vals, powerrankings.Weights{Roster: 1}, AggSum, PickCapital{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range board.Rows {
+		if !row.ReducedInputs || !strings.Contains(row.Reason, why) {
+			t.Fatal(row)
+		}
+		if row.FranchiseID == "0001" && (row.Unavailable || row.RosterValue != 10 || !strings.Contains(row.Reason, "games played for 2025")) {
+			t.Fatal(row)
+		}
+		if row.FranchiseID == "0002" && (!row.Unavailable || row.RosterValue != 0) {
+			t.Fatal(row)
 		}
 	}
 }

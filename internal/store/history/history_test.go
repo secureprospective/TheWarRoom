@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -692,5 +693,48 @@ SELECT 43,kind,season,as_of,param_set_id,engine,inputs_hash,scores_hash,missing_
 	}
 	if missing != 0 {
 		t.Fatal("initialization invented a missing parent")
+	}
+}
+
+func TestModelInputStatusSurvivesStorage(t *testing.T) {
+	s, _, _ := newStore(t)
+	nr := modelRun(2)
+	nr.Scores[0].InputStatus = model.InputStatus{ReducedInputs: true, Reason: "league points for 2024 are not ready"}
+	nr.Scores = append(nr.Scores, ModelScore{MFLID: "0099", InputStatus: model.InputStatus{Unavailable: true, Reason: "No usable season: games played for 2025 are not ready"}})
+	run, _, err := s.WriteModelRun(t.Context(), nr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.ModelScores(t.Context(), run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byID := map[string]ModelScore{}
+	for _, sc := range got {
+		byID[sc.MFLID] = sc
+	}
+	for _, want := range nr.Scores {
+		sc := byID[want.MFLID]
+		if sc.InputStatus != want.InputStatus || !slices.Equal(sc.Inputs, want.Inputs) || sc.Value != want.Value {
+			t.Fatalf("lost stored value or reason: %+v, want %+v", sc, want)
+		}
+	}
+	nr.Scores[0].Reason = "games played for 2024 are not ready"
+	next, written, err := s.WriteModelRun(t.Context(), nr)
+	if err != nil || !written || next.ScoresHash == run.ScoresHash {
+		t.Fatal("reason change did not make a new run", next, written, err)
+	}
+	old, err := s.ModelScores(t.Context(), run.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, sc := range old {
+		if sc.MFLID == "13604" && sc.Reason == nr.Scores[0].Reason {
+			t.Fatal("rewrote old run")
+		}
+	}
+	nr.Scores[2].DynastyPPG = 1
+	if _, _, err := s.WriteModelRun(t.Context(), nr); err == nil {
+		t.Fatal("stored unavailable player with numeric value")
 	}
 }

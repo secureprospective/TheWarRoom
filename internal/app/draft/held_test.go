@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -102,5 +103,20 @@ func TestNextDraftReadOrderAndFailure(t *testing.T) {
 				t.Fatalf("%q calls %v", got, calls)
 			}
 		})
+	}
+}
+
+func TestDraftValuesNeverInventZeroForUnavailablePlayers(t *testing.T) {
+	why := "No usable season: league points for 2025 are not ready"
+	h := &fakeHistory{ok: true, run: history.Run{ID: 1, AsOf: time.Now()}, scores: []history.ModelScore{
+		{MFLID: "0042", InputStatus: model.InputStatus{Unavailable: true, Reason: why}},
+		{MFLID: "0043", Value: model.Value{DynastyPPG: 5}, InputStatus: model.InputStatus{ReducedInputs: true, Reason: "games played for 2024 are not ready"}},
+	}}
+	values, note := Values(t.Context(), h, 2026, func([]string) []string { return nil }, time.UTC)
+	if _, ok := values["0042"]; ok {
+		t.Fatal("unavailable became a numeric zero", values)
+	}
+	if values["0043"] != 5 || !strings.Contains(note, why) || !strings.Contains(note, "games played for 2024") {
+		t.Fatal(values, note)
 	}
 }

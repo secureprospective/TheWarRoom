@@ -41,10 +41,20 @@ func Values(ctx context.Context, h History, season int, describe func(names []st
 	if err != nil {
 		return values, "Engine points unavailable: " + err.Error()
 	}
+	note := ValueNote(run, describe(run.MissingMeasures), zone)
 	for _, s := range scores {
-		values[s.MFLID] = s.DynastyPPG
+		if !s.Unavailable {
+			values[s.MFLID] = s.DynastyPPG
+		}
+		if s.Reason != "" {
+			qualifier := "Unavailable"
+			if s.ReducedInputs {
+				qualifier = "Reduced inputs"
+			}
+			note += " " + qualifier + " for " + s.MFLID + ": " + s.Reason + "."
+		}
 	}
-	return values, ValueNote(run, describe(run.MissingMeasures), zone)
+	return values, note
 }
 
 // ValueNote names the engine run and, in plain words, the player information it lacked;

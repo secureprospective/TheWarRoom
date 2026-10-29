@@ -146,3 +146,26 @@ that had been inferred from snaps; it did not change any engine value or candida
 Debt left: live/fresher outcomes, a held free-agent pool, independent external outcome spot-checks, and
 owner adjudication of the candidates. Downloads publication awaits permission to write outside
 this worktree. No valuation tuning or fleet/app deployment is part of this change.
+
+## Reduced season inputs (F1 v2)
+
+Intended slice: `modelrun.pass.value` skips an incomplete season before building production
+inputs; complete-input scales keep the snap-only correction. A player with incomplete seasons
+and no usable one is unavailable. An explicit zero total with no games is an empty season,
+not contradictory production: it is labelled unused, but a prior-only rookie stays valued. The
+points-based kicker fallback uses the latest usable past season, or current pace; without either
+it is unavailable rather than an invented zero. The run stores
+input status beside input names in the existing JSON column (legacy name arrays remain readable).
+Market carries status to player/pick cells; Scoring carries it to team rows without adding
+unavailable players to totals. Pick Value retains its missing-record denominator but labels
+reduced bands and refuses a number when no valued contributor remains. No real profile writes.
+
+F1 v2 exercised on the held run-5 replay: 2,258 valued, 1,891 movers against 2,278, and
+20 unavailable with stored reasons (8 rostered, 12 free agents). Richardson, Ty Simpson,
+Bradley Chubb and Ty Okada are valued and labelled reduced; 107 reduced values total,
+zero zero-valued outputs. Tests: 369 top-level Go PASS plus 4 opt-in skips in the nine affected
+packages, 14 composition PASS, all under `-race`; 8 asset Vitest PASS; frontend build PASS.
+Logs and replay receipts: `.tmp/f1-v2/`. Handwritten production: 12 affected files,
+3,083 → 3,342 physical lines against `bd2a5083`; tests/docs/generated excluded.
+Independent review and disposable-profile click test remain unrun. The status JSON reader
+accepts old name arrays; old binaries do not understand new status-bearing input objects.

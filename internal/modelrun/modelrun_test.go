@@ -196,6 +196,9 @@ func TestUniversePreservesEveryRosterValueAndValuesFreeAgentsOnce(t *testing.T) 
 	}
 	after := map[string]history.ModelScore{}
 	for _, score := range h.written[0].Scores {
+		if score.Unavailable {
+			continue
+		}
 		if _, duplicate := after[score.MFLID]; duplicate {
 			t.Fatal("valued twice", score.MFLID)
 		}

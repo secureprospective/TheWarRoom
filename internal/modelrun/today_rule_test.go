@@ -147,3 +147,36 @@ func TestKickerWithoutLastSeasonIsValuedOnThisSeasonsPace(t *testing.T) {
 	}
 	t.Fatal("the new kicker was not valued")
 }
+
+func TestKickerUsesLastUsableSeasonInsteadOfInventingZero(t *testing.T) {
+	for _, hasPast := range []bool{true, false} {
+		t.Run(fmt.Sprint(hasPast), func(t *testing.T) {
+			h, _, dir, _ := kickers()
+			spec := Spec{Season: 2026, AsOf: time.Now(), Params: params.DefaultSet(), LastWeek: 17}
+			book, err := (Held{dir, h}).Book(t.Context(), BookQuery(spec))
+			if err != nil {
+				t.Fatal(err)
+			}
+			id, _ := book.ID("0410")
+			book.Data.Seasons[id] = map[int]*model.Season{}
+			if hasPast {
+				book.Data.Seasons[id][2024] = &model.Season{HasTotal: true, Total: 100, Points: map[int]float64{1: 0, 2: 0, 3: 0, 4: 0}}
+				book.Data.Seasons[id][2025] = &model.Season{Points: map[int]float64{1: 0}}
+			}
+			ps, err := newPass(book, spec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sc, _, why := ps.value(id)
+			if !hasPast {
+				if why == "" {
+					t.Fatal("no production became a silent zero", sc)
+				}
+				return
+			}
+			if why != "" || sc.DynastyPPG <= 0 || !sc.ReducedInputs {
+				t.Fatal(sc, why)
+			}
+		})
+	}
+}

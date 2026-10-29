@@ -47,11 +47,12 @@ type Cell struct {
 // mean of its expected league points per game over Seasons seasons, this one first (a player's
 // from the latest model run, a pick's from Pick Value v1).
 type Dynasty struct {
-	Discounted float64
-	Seasons    int
-	ClassLabel string
-	Valued     bool
-	Reason     string
+	Discounted    float64
+	Seasons       int
+	ClassLabel    string
+	Valued        bool
+	Reason        string
+	ReducedInputs bool
 }
 
 // Model values a player or a pick at a moment. The caller holds none until the first model run
@@ -167,6 +168,10 @@ func ValueCells(d Dynasty) (Cell, Cell, float64) {
 		Sub: fmt.Sprintf("dynasty · next %d seasons", d.Seasons),
 		Detail: fmt.Sprintf("%s · expected league points per game this season and the %d after, later ones discounted",
 			d.ClassLabel, max(d.Seasons-1, 0))}
+	if d.ReducedInputs {
+		dynasty.Sub += " · reduced inputs"
+		dynasty.Detail += "; " + d.Reason
+	}
 	market := Cell{Text: "No price", Sub: "trades are not priced"}
 	return dynasty, market, d.Discounted
 }

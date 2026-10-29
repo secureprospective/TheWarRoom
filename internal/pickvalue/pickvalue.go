@@ -12,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 )
 
@@ -66,26 +67,32 @@ type Player struct {
 	Draft  playerrecord.Draft
 	Value  float64
 	Valued bool
+	model.InputStatus
 }
 
 // Model is Pick Value fitted on one run's values.
 type Model struct {
-	season    int
-	discount  float64
-	history   []Pick
-	drafted   []capital // the recent classes' drafted players, by overall pick
-	classes   int       // number of NFL classes, including missing records
-	undrafted float64   // their undrafted players' mean value
-	curve     []Value   // selection 1..curveLength at yearsOut 0, non-increasing in PPG
+	season          int
+	discount        float64
+	history         []Pick
+	drafted         []capital // the recent classes' drafted players, by overall pick
+	classes         int       // number of NFL classes, including missing records
+	undraftedStatus model.InputStatus
+	undraftedValued int
+	undrafted       float64 // their undrafted players' mean value
+	curve           []Value // selection 1..curveLength at yearsOut 0, non-increasing in PPG
 }
 
 type capital struct {
 	overall int
 	value   float64
+	valued  bool
+	status  model.InputStatus
 }
 
 // Value is a pick's value and how it was reached.
 type Value struct {
+	model.InputStatus
 	PPG       float64 // dynasty points per game, discounted for years out
 	BandLow   float64 // the band's overall NFL picks
 	BandHigh  float64
@@ -112,14 +119,15 @@ func Fit(history []Pick, players []Player, season int, discount float64) (Model,
 			continue
 		}
 		v := 0.0
-		if p.Valued {
+		if p.Valued && !p.Unavailable {
 			v = p.Value
 		}
 		switch {
 		case d.Status == playerrecord.Drafted && d.Overall > 0:
-			m.drafted = append(m.drafted, capital{d.Overall, v})
+			m.drafted = append(m.drafted, capital{overall: d.Overall, value: v, valued: p.Valued && !p.Unavailable, status: p.InputStatus})
 		case d.Status == playerrecord.Undrafted:
 			undrafted = append(undrafted, v)
+			m.recordUndrafted(p)
 		}
 	}
 	if len(m.drafted) == 0 {
@@ -131,18 +139,30 @@ func Fit(history []Pick, players []Player, season int, discount float64) (Model,
 	return m, nil
 }
 
+func (m *Model) recordUndrafted(p Player) {
+	m.undraftedStatus.Merge(p.InputStatus)
+	if p.Valued && !p.Unavailable {
+		m.undraftedValued++
+	} else {
+		m.undraftedStatus.Merge(model.InputStatus{Unavailable: true, Reason: "Some recent undrafted players have no value"})
+	}
+}
+
 // fitCurve values every selection once and holds the curve down to a running minimum, so a later
 // pick is never worth more than an earlier one. The raw band means are not monotone: one league's
 // drafts overlap heavily at neighbouring slots, and the percentile band itself moves about.
 func (m Model) fitCurve() []Value {
 	curve := make([]Value, curveLength)
 	floor := math.Inf(1)
+	var previous Value
 	for i := range curve {
 		v := m.rawSelection(i + 1)
 		if v.PPG > floor {
 			v.PPG, v.Clamped = floor, true
+			v.Merge(previous.InputStatus)
+			v.Unavailable = v.Unavailable || previous.Unavailable
 		}
-		floor = v.PPG
+		floor, previous = v.PPG, v
 		curve[i] = v
 	}
 	return curve
@@ -171,11 +191,22 @@ func (m Model) rawSelection(n int) Value {
 	if len(caps) > 0 {
 		v.BandLow, v.BandHigh = quantile(caps, 0.25), quantile(caps, 0.75)
 	}
+	return m.bandValue(v)
+}
+
+func (m Model) bandValue(v Value) Value {
 	var sum float64
+	valued := 0
 	for _, c := range m.drafted {
 		if float64(c.overall) >= v.BandLow && float64(c.overall) <= v.BandHigh {
 			sum += c.value
 			v.Players++
+			v.Merge(c.status)
+			if c.valued {
+				valued++
+			} else {
+				v.Merge(model.InputStatus{Unavailable: true, Reason: "Some recent drafted players have no value"})
+			}
 		}
 	}
 	// Missing records still occupy their NFL draft slots in every fitted class.
@@ -184,6 +215,19 @@ func (m Model) rawSelection(n int) Value {
 	drafted := 0.0
 	if v.Expected > 0 {
 		drafted = sum / float64(v.Expected)
+	}
+	if v.Expected > v.Players {
+		v.Merge(model.InputStatus{ReducedInputs: true, Reason: "Some recent NFL draft slots have no player record"})
+	}
+	if v.Undrafted > 0 {
+		v.Merge(m.undraftedStatus)
+		if m.undraftedValued == 0 {
+			v.Merge(model.InputStatus{ReducedInputs: true, Reason: "Recent undrafted player values are not ready"})
+		}
+	}
+	v.Unavailable = (valued == 0 || v.Undrafted == 1) && (v.Undrafted == 0 || m.undraftedValued == 0)
+	if v.Unavailable && v.Reason == "" {
+		v.Reason = "No valued players in this pick band"
 	}
 	v.PPG = (1-v.Undrafted)*drafted + v.Undrafted*m.undrafted
 	return v
@@ -213,6 +257,8 @@ func (m Model) Pick(year, round, slot, teams int) (Value, error) {
 	var sum Value
 	for s := 1; s <= teams; s++ {
 		v := m.Selection((round-1)*teams+s, out)
+		sum.Merge(v.InputStatus)
+		sum.Unavailable = sum.Unavailable || v.Unavailable
 		sum.PPG += v.PPG / float64(teams)
 		sum.BandLow += v.BandLow / float64(teams)
 		sum.BandHigh += v.BandHigh / float64(teams)

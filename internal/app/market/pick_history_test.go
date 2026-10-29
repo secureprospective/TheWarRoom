@@ -62,8 +62,11 @@ func TestPickSlotsContinueAfter2026(t *testing.T) {
 				t.Fatal("frozen approved sample changed")
 			}
 			n := NewNative(NativeInput{History: h, Records: records, Season: season, Discount: 0.75, Teams: 4})
-			if season >= 2027 && (n.picks == nil || !n.Pick(season+1, 1, "", time.Now()).Valued) {
-				t.Fatal("new slots did not reach Pick Value v1", n.pickWhy)
+			if season >= 2027 {
+				v := n.Pick(season+1, 1, "", time.Now())
+				if n.picks == nil || v.Valued || v.Reason == "" {
+					t.Fatal("history fitted without player values must explain its unavailable value", n.pickWhy, v)
+				}
 			}
 		})
 	}
@@ -123,11 +126,14 @@ func TestPickTotalsMissingAndOwnerHorizon(t *testing.T) {
 	}
 }
 
-type pickTotalModel struct{}
+type pickTotalModel struct {
+	reduced bool
+	reason  string
+}
 
 func (pickTotalModel) Player(string, time.Time) Dynasty { return Dynasty{} }
-func (pickTotalModel) Pick(_ int, round int, _ string, _ time.Time) Dynasty {
-	return Dynasty{Valued: round == 1, Discounted: 2}
+func (m pickTotalModel) Pick(_ int, round int, _ string, _ time.Time) Dynasty {
+	return Dynasty{Valued: round == 1, Discounted: 2, ReducedInputs: m.reduced, Reason: m.reason}
 }
 
 func TestNativeHistoryDoesNotIncludeStartupSkipsUnknownOrFuture(t *testing.T) {
@@ -147,5 +153,17 @@ func TestNativeHistoryDoesNotIncludeStartupSkipsUnknownOrFuture(t *testing.T) {
 	h, _ = NativePickHistory(drafts, 2026, records)
 	if len(h) != 0 {
 		t.Fatal("future draft trained curve", h)
+	}
+}
+
+func TestPickCapitalRetainsReducedAndMissingInputReasons(t *testing.T) {
+	why := "league points for 2024 are not ready"
+	inventory := []draftreports.FuturePick{{Year: 2027, Round: 1, Owner: "buyer"}, {Year: 2027, Round: 2, Owner: "missing"}}
+	capital := pickCapital(pickTotalModel{reduced: true, reason: why}, inventory, 2026, []string{"buyer", "missing"}, time.Time{})
+	if capital.Totals["buyer"] != 2 || !capital.Status["buyer"].ReducedInputs || capital.Status["buyer"].Reason != why {
+		t.Fatal(capital)
+	}
+	if _, ok := capital.Totals["missing"]; ok || !capital.Status["missing"].Unavailable || capital.Status["missing"].Reason != why {
+		t.Fatal(capital)
 	}
 }

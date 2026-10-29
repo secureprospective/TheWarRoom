@@ -9,6 +9,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
+	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/pickvalue"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -18,6 +19,7 @@ import (
 // Native is the native value model as the asset board reads it: each player's dynasty value from
 // the latest model run, and Pick Value v2 for picks, both in dynasty points per game.
 type Native struct {
+	status  map[string]model.InputStatus
 	values  map[string]float64 // dynasty points per game by the board's player ID (MFL's)
 	picks   *pickvalue.Model   // nil when it could not be fitted; pickWhy says why
 	pickWhy string
@@ -37,6 +39,7 @@ type PickKey struct {
 type NativeInput struct {
 	League   string
 	Slots    map[PickKey]int
+	Status   map[string]model.InputStatus
 	Values   map[string]float64
 	Records  []playerrecord.Record
 	Season   int
@@ -51,7 +54,7 @@ type NativeInput struct {
 // run's values; when it cannot be (no draft history or no recent class) players are still valued
 // and picks say why.
 func NewNative(in NativeInput) Native {
-	n := Native{values: in.Values, season: in.Season, teams: in.Teams, seasons: in.Seasons, slots: in.Slots}
+	n := Native{values: in.Values, status: in.Status, season: in.Season, teams: in.Teams, seasons: in.Seasons, slots: in.Slots}
 	if in.PickWhy != "" {
 		n.pickWhy = in.PickWhy
 		return n
@@ -68,7 +71,7 @@ func NewNative(in NativeInput) Native {
 	players := make([]pickvalue.Player, 0, len(in.Records))
 	for _, r := range in.Records {
 		v, ok := in.Values[r.MFL]
-		players = append(players, pickvalue.Player{Draft: r.Draft, Value: v, Valued: ok})
+		players = append(players, pickvalue.Player{Draft: r.Draft, Value: v, Valued: ok, InputStatus: in.Status[r.MFL]})
 	}
 	m, err := pickvalue.Fit(history, players, in.Season, in.Discount)
 	if err != nil {
@@ -82,10 +85,14 @@ func NewNative(in NativeInput) Native {
 // Player values a player by his dynasty value in the latest model run.
 func (n Native) Player(pid string, _ time.Time) Dynasty {
 	v, ok := n.values[pid]
+	status := n.status[pid]
+	if status.Unavailable {
+		return Dynasty{Reason: status.Reason}
+	}
 	if !ok {
 		return Dynasty{Reason: "Not in this season's model run"}
 	}
-	return Dynasty{Valued: true, Discounted: v, Seasons: n.seasons, ClassLabel: "Native value"}
+	return Dynasty{Valued: true, Discounted: v, Seasons: n.seasons, ClassLabel: "Native value", ReducedInputs: status.ReducedInputs, Reason: status.Reason}
 }
 
 // Pick uses the explicit order when known, otherwise the round mean.
@@ -101,6 +108,9 @@ func (n Native) Pick(year, round int, original string, _ time.Time) Dynasty {
 	if err != nil {
 		return Dynasty{Reason: err.Error()}
 	}
+	if v.Unavailable {
+		return Dynasty{Reason: v.Reason}
+	}
 	label := fmt.Sprintf("%s, round %d, slot not yet known", pickvalue.Version, round)
 	if slot > 0 {
 		label = fmt.Sprintf("%s, %d.%02d", pickvalue.Version, round, slot)
@@ -108,7 +118,7 @@ func (n Native) Pick(year, round int, original string, _ time.Time) Dynasty {
 	if v.YearsOut > 0 {
 		label += fmt.Sprintf(", %d %s out", v.YearsOut, map[bool]string{true: "year", false: "years"}[v.YearsOut == 1])
 	}
-	return Dynasty{Valued: true, Discounted: v.PPG, Seasons: n.seasons, ClassLabel: label}
+	return Dynasty{Valued: true, Discounted: v.PPG, Seasons: n.seasons, ClassLabel: label, ReducedInputs: v.ReducedInputs, Reason: v.Reason}
 }
 
 // NativeSource is what loading the native model reads: the season's latest model run and its
@@ -153,15 +163,19 @@ func LoadNative(ctx context.Context, src NativeSource) (Native, bool, error) {
 		return Native{}, false, wrapNative("params", err)
 	}
 	values := make(map[string]float64, len(scores))
+	status := make(map[string]model.InputStatus, len(scores))
 	for _, sc := range scores {
-		values[sc.MFLID] = sc.DynastyPPG
+		status[sc.MFLID] = sc.InputStatus
+		if !sc.Unavailable {
+			values[sc.MFLID] = sc.DynastyPPG
+		}
 	}
 	history, slots, historyErr := src.pickHistory(ctx, run.Season, records)
 	why := ""
 	if historyErr != nil {
 		why = historyErr.Error()
 	}
-	return NewNative(NativeInput{League: src.League, Slots: slots, History: history, PickWhy: why, Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
+	return NewNative(NativeInput{League: src.League, Slots: slots, History: history, PickWhy: why, Status: status, Values: values, Records: records, Season: run.Season, Seasons: int(math.Round(seasons)),
 		Discount: discount, Teams: src.Teams()}), true, nil
 }
 

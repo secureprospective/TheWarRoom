@@ -161,7 +161,7 @@ func (a Source) playerValues(ctx context.Context, runID int64, age func(string) 
 	now := make([]m2service.PlayerValue, len(scores))
 	dyn := make([]m2service.PlayerValue, len(scores))
 	for i, s := range scores {
-		now[i] = m2service.PlayerValue{MFLID: s.MFLID, Position: s.Position, Value: s.NowPPG, Age: age(s.MFLID)}
+		now[i] = m2service.PlayerValue{MFLID: s.MFLID, Position: s.Position, InputStatus: s.InputStatus, Value: s.NowPPG, Age: age(s.MFLID)}
 		dyn[i] = now[i]
 		dyn[i].Value = s.DynastyPPG
 	}
@@ -175,6 +175,7 @@ func powerRows(rows []m2service.Row, was map[string]int, outlooks map[string]m2s
 	for _, r := range rows {
 		o := outlooks[r.FranchiseID]
 		row := season.PowerRow{
+			ReducedInputs: r.ReducedInputs, Unavailable: r.Unavailable, ValueReason: r.Reason,
 			Rank: r.Rank, FranchiseID: r.FranchiseID, Name: r.Name,
 			PowerScore: r.PowerScore, RosterZ: r.RosterZ, MFLPerfZ: r.MFLPerfZ, AgeZ: r.AgeZ,
 			RosterValue: r.RosterValue, Results: r.Results, PickValue: r.PickValue, HasPicks: r.HasPicks,

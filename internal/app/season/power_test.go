@@ -34,3 +34,27 @@ func TestFranchiseReportNamesPickWeightAndLeavesUnreadableBlank(t *testing.T) {
 	}
 
 }
+
+func TestPowerReportNamesReducedAndUnavailableInputs(t *testing.T) {
+	why := "league points for 2024 are not ready"
+	for _, view := range []string{ViewSeason, ViewFranchise} {
+		t.Run(view, func(t *testing.T) {
+			res := PowerRankingsResult{OK: true, View: view, Rows: []PowerRow{
+				{FranchiseID: "a", RosterValue: 10, HasPicks: true, PickValue: 2, ReducedInputs: true, ValueReason: why},
+				{FranchiseID: "b", Unavailable: true, ReducedInputs: true, ValueReason: "No usable season: " + why},
+			}}
+			v := View{Names: map[string]string{}, in: Snapshot{Zone: time.UTC, Held: Held{
+				Standings: Feed[[]leaguestandings.RawStanding]{FetchedAt: time.Now()}, Power: map[string]PowerRankingsResult{view: res},
+			}}}
+			r := v.Power(view)
+			if !strings.Contains(strings.Join(r.Rows[0].Cells, " "), "reduced inputs") || !strings.Contains(strings.Join(r.Rows[1].Cells, " "), "Unavailable") {
+				t.Fatal(r.Rows)
+			}
+			for _, row := range r.Rows {
+				if !strings.Contains(strings.Join(row.Titles, " "), why) {
+					t.Fatal("lost reason", row)
+				}
+			}
+		})
+	}
+}
