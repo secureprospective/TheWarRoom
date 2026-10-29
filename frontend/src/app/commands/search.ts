@@ -71,7 +71,7 @@ export function searchCandidates(executor: Executor, snapshot?: Snapshot): Index
   for (const row of endpoints.filter((e) =>
     e.disposition === 'kept' && e.status === 'landed' && /\bRead\b/.test(e.kind))) {
     results.push({
-      label: row.name.replace(/\s+O=\w+/gi, ''),
+      label: row.name.replace(/\s+[OR]=\w+/gi, ''),
       aliases: [row.name],
       kind: 'endpoint',
       invocation: { verb: 'endpoint.open', args: { id: row.id } },

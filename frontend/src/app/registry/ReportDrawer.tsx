@@ -11,7 +11,7 @@ const researchNames: Record<string, string> = {
   'M-054': 'Points allowed per NFL team', 'M-060': 'My players’ news',
 };
 function reportName(id: string, name: string) {
-  return researchNames[id] ?? name.replace(/\s+O=\w+/gi, '');
+  return researchNames[id] ?? name.replace(/\s+[OR]=\w+/gi, '');
 }
 export function reportGroups(query: string) {
   const places = [

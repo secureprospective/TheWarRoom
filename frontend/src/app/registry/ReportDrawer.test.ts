@@ -75,7 +75,7 @@ it('typing narrows the drawer; a report Act opens its id and closes the drawer',
     expect(host.textContent).toContain(report.gm_question);
     expect(host.textContent).toContain('League Pulse › Race');
     expect(host.textContent).not.toContain('Not wired');
-    expect(host.textContent).not.toMatch(/O=\d/);
+    expect(host.textContent).not.toMatch(/[OR]=\w/);
     expect(host.textContent).not.toContain('Built, not yet landed live');
     const total = buttons().length;
     await act(async () => { props(input()).onChange({ target: { value: 'c-02' } }); });
