@@ -12,6 +12,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/releasetrust"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -215,6 +216,35 @@ func runVersion(args []string, output io.Writer) error {
 func report(output io.Writer, line string) error {
 	if _, err := fmt.Fprintln(output, line); err != nil {
 		return fmt.Errorf("report: %w", err)
+	}
+	return nil
+}
+
+func runVerifyRelease(args []string, output io.Writer) error {
+	flags := flag.NewFlagSet("twr-server verify-release", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	root := flags.String("root", "/etc/twr-release/root.json", "installed, independently trusted public root")
+	cache := flags.String("cache", "/var/lib/twr-release", "private persistent trust cache; use one verifier at a time; never clear it to retry")
+	directory := flags.String("metadata", "", "folder containing delivered TUF metadata")
+	bundle := flags.String("bundle", "", "server bundle to authenticate, never run or unpack")
+	installed := flags.Int("installed-release", 0, "installed server's monotonic release number (required)")
+	if err := flags.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			flags.SetOutput(output)
+			flags.PrintDefaults()
+			return nil
+		}
+		return fmt.Errorf("release not checked; run twr-server verify-release -help and correct the options")
+	}
+	if flags.NArg() != 0 || *directory == "" || *bundle == "" || *installed < 1 {
+		return fmt.Errorf("release not checked; provide -metadata, -bundle and -installed-release, then try again")
+	}
+	release, digest, err := releasetrust.VerifyServerBundle(*root, *cache, *directory, *bundle, *installed)
+	if err != nil {
+		return fmt.Errorf("release refused; keep the installed server and ask your release provider for a fresh signed bundle and metadata; do not clear the trust cache")
+	}
+	if _, err := fmt.Fprintf(output, "verified release %d sha256 %s\n", release, digest); err != nil {
+		return fmt.Errorf("report verified release: %w", err)
 	}
 	return nil
 }

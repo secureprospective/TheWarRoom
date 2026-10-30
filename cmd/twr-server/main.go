@@ -52,6 +52,8 @@ func subcommand(ctx context.Context, name string, args []string, output io.Write
 		return true, runRestore(ctx, args, os.Stdin, output)
 	case "reset-sign-ins":
 		return true, runResetSignIns(ctx, args, os.Stdin, output)
+	case "verify-release":
+		return true, runVerifyRelease(args, output)
 	case "upgrade":
 		return true, runUpgrade(ctx, args, output)
 	case "version":
