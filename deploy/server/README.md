@@ -157,3 +157,5 @@ unencrypted backing storage. No owners connect until the integrated release gate
 
 Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the new bundle's
 `upgrade.sh`; never rerun the installer or replace only the binary over newer data.
+
+Staging drills (throwaway Proxmox VM, real installer and Tunnel): [STAGING.md](STAGING.md).
