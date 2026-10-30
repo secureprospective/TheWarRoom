@@ -112,3 +112,43 @@ R1 as built must include:
 4. **Version stamp.** `projection_version` on the projection set; a rule or schema change forces a per-league re-project; reads refuse an old version.
 5. **Corrections off the commit path.** A superseding event marks projections stale; re-projection runs as its own job in one atomic transaction with rollback. The save path stays at O(one event).
 6. **Sequencing (GLM's simpler option, adopted as step 1).** First ship the fold as an in-memory per-league cache, rebuilt at startup and after supersede, which proves correctness. Then persist it as projection tables for server mode, where multiple reader processes can't share memory (Beam's point). Same fold code both steps.
+
+## 9. Double-check pass (10-30) — corrections to sections 1–8
+Every claim re-checked against origin/main. What held, what was wrong, and what the plan now says.
+
+**Held (verified)**
+- Live games are not written per poll. `composition/now_app.go:216` polls on `core.Network`; only `core.Fetches` (`app.go:213`, `archive.Transport`) archives, and live doesn't use it.
+- Model runs have no retention (deletes only in a migration quarantine). Personal tables have no league column; one entry per player per kind (`personal_marker` UNIQUE). `league_event` indexes = UNIQUE(league,stream,revision) + partial `commissioner_request`.
+
+**Wrong in sections 1/3 — corrected**
+1. **Real file layout** (`app/platform/database_runtime.go:59–61`, `offsite/archive.go:49`):
+   - `thewarroom.db`: main schema (personal, envelopes, bid_facts, params, rulebook, mirror, player identity, audit chain, recovery)
+   - `history.db`: native ledger, closed books, stats, feed archive, models
+   - `whatif.db`: the `state` schema
+   - `server.db`: accounts (server mode)
+
+   Section 1 named "stores" as if they were files; they aren't.
+2. **The `state` tables (contracts, rosters, dead_cap_ledger, contract_years…) live in `whatif.db`. That's the MFL contract what-if sandbox (`composition/app.go:252`), not league truth.** Native D17–D20 come from ledger folds. The R1 projections are therefore new tables in the league file, not a reuse of `state`.
+3. **R9 was aimed at the wrong table.** `bid_facts` is the MFL move-envelope bid record (keyed by the owner's own envelope). Native bids are ledger events read through `TargetNativeBids`/`TargetNativeBidAction`. Sealed filtering (owner sees own; commish sees all, per Q4) belongs in the native bid read and in `proj_bid_open`.
+4. **A memory projection cache already exists:** `commissioner/replay_cache.go` (`WithReplayCache`, a bounded memory-only projection for compensation replay). Panel step 6 ("in-memory fold first") extends this cache to every domain fold. It doesn't start fresh. Reads are still slow because records are re-read from SQL and the other domain folds aren't memoized.
+5. **WAL:** SQLite's default auto-checkpoint (1,000 pages) is active; section 4 overstated "no checkpoint config". The real risk is a long read transaction pinning the WAL. The guard is `journal_size_limit` plus a WAL size watch.
+
+**New restructure item (missed before)**
+- **R10 — split shared NFL data out of the league file.** One database per league (ruled) means `history.db` can't stay as it is: it mixes per-league truth (ledger, closed books, league models) with data every league shares (observations, loads, fetch_log, raw_archive at 224 MB, measures, sources) and player identity. Copying the shared data into each league file would multiply the biggest tables by the number of leagues. Target layout:
+  - **league file (one per league):** ledger, closed books, R1 projections, personal items, trade threads, league-scored model results, envelopes/bid facts, rulebook, params
+  - **shared NFL file (one per server):** observations + obs_latest, loads, fetch_log, raw_archive, measures/sources, player identity, league-independent model inputs
+  - **server.db:** accounts, sessions, tokens, audit, server release
+
+  Reads that need both use read-only attach or two pools; writes never span files.
+- **R7 widened:** `fetch_log` writes a row for every archived fetch (`store/history/archive.go:18`), so it grows even when bodies dedupe. The same 30-day rule applies to unpinned `fetch_log` rows.
+
+**Endpoint check (all `Target*` reads on main)**
+| Group | Endpoints | Read path today | After plan |
+|---|---|---|---|
+| Native league (fold the ledger) | `TargetNative*` (~30: Standings, Lineup, Bids, Waivers, Trades, Draft, CapCheck, Results, Week…), `TargetCommissioner*` (Ledger, People, Market, Jobs, Preview, Rules, Schedule…) | re-fold from `league_event` each call | **R1 projections + R8 indexes.** This is every endpoint over 100 ms today. |
+| Live / week | `TargetNow`, `TargetLiveGame`, `TargetRace`, `TargetSeason`, `TargetClock` | memory Held + history reads | unchanged, plus R6 obs_latest for week results |
+| Personal | `TargetPersonal*`, `TargetBid*` (MFL path), `TargetTradeBuilder*`, `TargetWhatIf` | main / whatif | R3 `personal_item`; trade builder versions move there |
+| Feeds/market | `TargetPool`, `TargetMarketReports`, `TargetAssetBoard`, `TargetDraftReports`, `TargetResearch*`, `TargetDataSources` | history stats + models | R5 model_latest, R10 shared file |
+| Ops | `TargetBackupNow`, `TargetShellStatus`, `TargetCache*`, `TargetDataRefresh` | server | unchanged |
+
+**Net:** the plan's shape holds (ledger stays truth; projections for speed; retention; private store). It now has **10 items (R1–R10)**. The two that change the build's foundation are **R1 (projections)** and **R10 (league file vs shared NFL file)**. Both must land before any new-screen endpoint is built on top.
