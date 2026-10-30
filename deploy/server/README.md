@@ -20,7 +20,7 @@ speaks TLS; cloudflared verifies its private origin certificate directly. No
 | `bundle.sh` → release bundle | GoReleaser OSS builds the static Linux binary. Official GoReleaser and Cloudflare assets have pinned SHA-256 digests. Package scripts and the existing preview registry alongside them; no state or secrets. |
 | `proxmox.sh` → Proxmox | Validate settings, require a running Proxmox firewall and synchronized host chrony, select/download Alpine template, allocate a fresh CT on the selected VLAN. Never overwrite another CT/firewall. On failure stop and retain this CT, without enabling boot. |
 | Proxmox firewall → CT | Default-deny ingress/egress. DHCP is the bootstrap exception; IPv6 egress is denied entirely. IPv4 private/shared/link-local/reserved/multicast and every directly connected host subnet are denied before public HTTPS/Tunnel permits. DNS is restricted to public resolver 1.1.1.1. No CT-to-LAN DNS dependency. |
-| `install.sh` → CT | Install OpenRC/bubblewrap; remove any template SSH server; create separate service identities, private SQLite state, TLS and authenticator keys. Refuse reinstall before modifying state. Start real hosted mode and verify its TLS/application response. |
+| `install.sh` → CT | Install OpenRC/bubblewrap; remove any template SSH server; create separate service identities, private SQLite state, TLS and authenticator keys. Pin the personally authenticated bundle root as root:root 0644 at `/etc/twr-release/root.json`, never replacing an existing pin; create root:root 0700 `/var/lib/twr-release`. Refuse reinstall before modifying state. Start real hosted mode and verify its TLS/application response. |
 | OpenRC → `twr-sandbox` → Go | Non-root, no capabilities, private PID/user/mount/IPC/UTS namespaces. Only persistent writable mount is `/var/lib/twr`; `/tmp`, `/run` and minimal `/dev` are disposable. No host root/home, Tunnel credential or external filesystem is mounted. Share the CT network only for loopback TLS; Proxmox owns lateral-network containment. |
 | `cloudflare.sh` → Cloudflare API | API token is an owner-only transient file/header, not a process argument. Create a locally managed Tunnel and new proxied DNS record; refuse an occupied hostname. Install its separate scoped credential, local ingress rules and origin CA automatically. Delete API token input on exit. |
 | cloudflared → origin | Only the configured hostname's `/v1/` routes reach `https://127.0.0.1:8443`, verified as `localhost` with the installed CA. Everything else is an edge 404. Origin trusts exactly `127.0.0.1` for `CF-Connecting-IP`; missing/forged peer metadata is refused. Metrics/readiness bind `127.0.0.1:20241`, never public ingress. |
@@ -38,8 +38,10 @@ owner-facing APIs, not host administration.
 
 ## One-command installation
 
-From an already provisioned Proxmox host, with the trusted release bundle and
-this installer delivered together:
+From an already provisioned Proxmox host, with the personally authenticated release bundle (including `root.json`) and
+this installer delivered together. Independently confirm the public root digest using
+[the release ceremony](../../docs/delivery/Release_Trust.md); downloading a root beside
+an untrusted archive is not verification:
 
 ```sh
 bash deploy/server/proxmox.sh ./twr-server-alpine-amd64.tar.gz
@@ -84,15 +86,20 @@ account is repointed in place and that old Tunnel deleted ([RESTORE.md](RESTORE.
 Inside this worktree, with Go on PATH:
 
 ```sh
-bash deploy/server/bundle.sh .scratch/server.tar.gz
+bash scripts/release/test.sh
+bash deploy/server/bundle.sh .scratch/server.tar.gz /path/to/authenticated/root.json
 bash deploy/server/test-alpine.sh
 ```
 
 The builder uses checksum-pinned GoReleaser OSS 2.19.0 and cloudflared 2026.10.3,
 both from their publishers' GitHub repositories. `goreleaser.yaml` is build
 configuration, not a complete signed release pipeline. `bundle.sh` assembles the
-server, Tunnel binary and deployment files. Backup dependencies and their source checks are documented in BACKUPS.md. TUF trust/distribution is slice 43, not provided by a checksum
-printed next to an unsigned archive.
+server, Tunnel binary and deployment files. Backup dependencies and their source checks are documented in BACKUPS.md. Sign this archive with `release.py targets --server-bundle <archive>` (alongside the
+required public config), following [Release_Trust.md](../../docs/delivery/Release_Trust.md).
+The signer records `twr_server_release` from `internal/serverversion`; never infer that
+number by executing delivery bytes. A checksum printed beside an unsigned archive is
+not authentication. Production key custody and first-install authentication remain
+operator ceremony gates.
 
 The test uses a digest-pinned disposable Alpine Docker container, with an init
 reaper and privileges confined to that container for nested namespace setup. Its
@@ -101,6 +108,10 @@ production databases, Cloudflare credentials or real MFL calls. It executes:
 
 - GoReleaser-built real hosted binary, OpenRC start/restart and verified TLS;
 - reinstallation refusal with unchanged key/database digests;
+- throwaway-key signed-bundle upgrade and byte-flipped, truncated, script, expired,
+  metadata rollback, lower-release and missing-root refusals: no service stop, unchanged
+  installed binary/database hashes, no candidate marker; a separately signed probe proves
+  candidate checks run non-root inside the service sandbox;
 - 0600 database/key modes, successful state write, refused `/usr` and config
   writes/mounts; no home/Tunnel credential visibility inside the service sandbox;
 - refusal of origin TLS via the CT's non-loopback interface and of wrong CA;
@@ -155,7 +166,7 @@ unencrypted backing storage. No owners connect until the integrated release gate
 
 ## Updating an installed server
 
-Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the new bundle's
-`upgrade.sh`; never rerun the installer or replace only the binary over newer data.
+Update the server before desktop apps. Use [UPGRADE.md](UPGRADE.md) and the installed
+`/usr/local/libexec/twr-upgrade` with the intact bundle and metadata folder; never rerun the installer or replace only the binary over newer data.
 
 Staging drills (throwaway Proxmox VM, real installer and Tunnel): [STAGING.md](STAGING.md).

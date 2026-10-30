@@ -2,7 +2,9 @@
 # Release assembly; no credentials or league state are included.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
-[[ $# == 1 ]]
+[[ $# == 2 ]] || { echo 'Give the output bundle path and authenticated public root.json.' >&2; exit 1; }
+root=$(realpath "$2")
+[[ -f "$root" ]]
 out=$(realpath -m "$1")
 [[ $out == "$PWD/"* ]] || { echo 'Output must stay inside this worktree.' >&2; exit 1; }
 mkdir -p "$PWD/.scratch"
@@ -25,6 +27,7 @@ curl --fail --location --silent --show-error --connect-timeout 10 --max-time 180
 echo '053b80b0a23031a038fdbf3c073f59f82b8f1f152aa67971d7383ffafc0dbab0  cloudflared' | (cd "$work" && sha256sum -c -)
 cp deploy/server/{install.sh,backup-setup.sh,restore.sh,upgrade.sh,reset-sign-ins.sh,status.sh,cloudflare.sh,twr-sandbox,twr-server.initd,cloudflared.initd,twr-logrotate,proxmox.sh} "$work/"
 cp deploy/server/{README.md,UPGRADE.md,RESTORE.md,BACKUPS.md,CHECKLIST.md} "$work/"
+cp "$root" "$work/root.json"
 cp docs/ui/endpoint-registry.csv "$work/"
 mkdir -p "$(dirname "$out")"
 tar -czf "$out" -C "$work" .

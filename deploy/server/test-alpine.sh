@@ -3,18 +3,22 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 [[ -f .scratch/server.tar.gz ]] || { echo 'Run bundle.sh .scratch/server.tar.gz first.' >&2; exit 1; }
+fixtures=$(mktemp -d "$PWD/.scratch/release-test.XXXXXX")
+scripts/release/.venv/bin/python deploy/server/test-release-fixtures.py .scratch/server.tar.gz "$fixtures/delivery"
+fixtures=${fixtures#"$PWD/"}
 image=alpine:3.23@sha256:ff7f0c727dd796aa36787bfcd9a64bf35a6ce72a73451b3359fde849b6703d63
 name="twr-cs34-test-$$"
 trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
 # Privileges apply only to this disposable container's namespaces. No host mounts
 # except the read-only candidate; no host network/PID namespace or real secrets.
 docker run -d --init --name "$name" --privileged -v "$PWD:/src:ro" "$image" sleep 600 >/dev/null
-docker exec "$name" sh -ec '
+docker exec -e "DELIVERY=/src/$fixtures/delivery" "$name" sh -ec '
   mkdir -p /root/twr /run/openrc
   touch /run/openrc/softlevel
   tar xzf /src/.scratch/server.tar.gz -C /root/twr
+  cp "$DELIVERY/root.json" /root/twr/root.json
   apk add --no-cache bash shellcheck
-  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh
+  shellcheck /src/deploy/server/proxmox.sh /src/deploy/server/install.sh /src/deploy/server/backup-setup.sh /src/deploy/server/restore.sh /src/deploy/server/upgrade.sh /src/deploy/server/reset-sign-ins.sh /src/deploy/server/status.sh /src/deploy/server/cloudflare.sh /src/deploy/server/test-alpine.sh /src/deploy/server/bundle.sh /src/deploy/server/twr-sandbox
   mkdir /tmp/host-tools
   cat > /tmp/host-tools/stub <<'\''STUB'\''
 #!/bin/sh
@@ -69,7 +73,7 @@ STUB
   # Spare-host restore refuses a bad key before touching state, then restarts the fresh install.
   before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
   : > /tmp/backup-service-calls
-  if printf "endpoint\nbucket\naccess\nsecret\nnot-a-key\n" | PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-restore > /tmp/restore-result 2>&1; then exit 1; fi
+  if printf "endpoint\nbucket\naccess\nsecret\nnot-a-key\n\n" | PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-restore > /tmp/restore-result 2>&1; then exit 1; fi
   grep -F "restore key is not right" /tmp/restore-result
   grep -F "twr-server --ifstopped start" /tmp/backup-service-calls
   [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
@@ -79,9 +83,9 @@ STUB
   printf "alpine drill\n" | PATH=/tmp/backup-tools:$PATH sh /usr/local/libexec/twr-reset-sign-ins | grep -F "on 0 accounts"
   [ -z "$(find /var/lib/twr ! -user twr)" ]
   # A second install refuses without replacing authoritative state or keys.
-  before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)
+  before=$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db /etc/twr-release/root.json)
   if sh /root/twr/install.sh; then exit 1; fi
-  [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db)" ]
+  [ "$before" = "$(sha256sum /etc/twr/authenticator.key /var/lib/twr/server.db /etc/twr-release/root.json)" ]
   [ "$(stat -c %a /var/lib/twr)" = 700 ]
   [ "$(stat -c %U:%G /var/lib/twr)" = twr:twr ]
   [ "$(readlink /etc/periodic/hourly/twr-logrotate)" = /etc/periodic/daily/logrotate ]
@@ -96,9 +100,9 @@ STUB
   [ "$(stat -c %a /var/lib/twr/server.log)" = 600 ]
   rc-service crond status
   # Reuse the exact deployed namespace/mount options, replacing only its payload.
-  sed "/  \/usr\/local\/bin\/twr-server hosted/,$ d" /usr/local/libexec/twr-sandbox > /tmp/probe
-  cat >> /tmp/probe <<'\''PROBE'\''
-  /bin/sh -ec '\''
+  cat > /tmp/probe <<'\''PROBE'\''
+#!/bin/sh
+exec /usr/local/libexec/twr-sandbox /bin/sh -ec '\''
     touch /var/lib/twr/write-probe
     if touch /usr/forbidden; then exit 1; fi
     if touch /etc/twr/forbidden; then exit 1; fi
@@ -142,6 +146,8 @@ PROBE
   grep -F "PROBLEM  Backups and history: Could not be read" /tmp/status-result
   rc-service twr-server start
   sleep 2
+  test "$(stat -c %a:%U:%G /etc/twr-release/root.json)" = 644:root:root
+  test "$(stat -c %a:%U:%G /var/lib/twr-release)" = 700:root:root
   # The real upgrade wrapper stops/starts OpenRC and verifies TLS. Only Tunnel is stubbed:
   # this disposable CT has no Cloudflare credentials and never contacts a real account.
   apk add --no-cache sqlite
@@ -156,29 +162,65 @@ exec /sbin/rc-service "$@"
 SERVICE
   chmod 755 /tmp/upgrade-tools/rc-service
   rc-service twr-server stop
-  sqlite3 /var/lib/twr/server.db "DROP TABLE server_release; PRAGMA user_version=7;"
+  sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=1;"
   chown twr:twr /var/lib/twr/server.db
-  PATH=/tmp/upgrade-tools:$PATH sh /root/twr/upgrade.sh /root/twr/twr-server > /tmp/upgrade-result
+  PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/upgrade-result
   cat /tmp/upgrade-result
   grep -F "Server upgrade ready" /tmp/upgrade-result
   rc-service twr-server status
   saved=$(find /var/lib/twr/upgrades -name checkpoint.json)
   test -n "$saved"
   /usr/local/bin/twr-server checkpoint -db /var/lib/twr/server.db -check "$saved"
-  test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 8
+  test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 12
   grep -F "twr-tunnel --ifstopped start" /tmp/upgrade-tunnel-calls
-  # A binary-only downgrade is rejected before services stop or the file changes.
+  # Freeze live DB writes so unchanged-state assertions measure the wrapper only.
   rc-service twr-server stop
+  cat > /tmp/upgrade-tools/rc-service <<'\''SERVICE'\''
+#!/bin/sh
+printf "%s\n" "$*" >> /tmp/upgrade-service-calls
+exit 0
+SERVICE
+  chmod 755 /tmp/upgrade-tools/rc-service
+  for case in byte-flipped truncated script expired rollback lower-release no-pinned-root sandbox; do
+    : > /tmp/upgrade-service-calls
+    before=$(sha256sum /usr/local/bin/twr-server /var/lib/twr/server.db)
+    pinned=$(sha256sum /etc/twr-release/root.json)
+    delivery="$DELIVERY/$case"
+    if [ "$case" = no-pinned-root ]; then
+      delivery="$DELIVERY/good"
+      mv /etc/twr-release/root.json /etc/twr-release/root.saved
+    fi
+    if PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$delivery/server.tar.gz" "$delivery" > /tmp/upgrade-refusal 2>&1; then
+      cat /tmp/upgrade-refusal; exit 1
+    fi
+    cat /tmp/upgrade-refusal
+    test ! -s /tmp/upgrade-service-calls
+    test "$before" = "$(sha256sum /usr/local/bin/twr-server /var/lib/twr/server.db)"
+    if [ "$case" = sandbox ]; then
+      grep -Fx sandbox-ok /var/lib/twr/candidate-marker
+      rm /var/lib/twr/candidate-marker
+    else
+      test ! -e /usr/local/bin/twr-server.next
+      test ! -e /var/lib/twr/candidate-marker
+    fi
+    if [ "$case" = no-pinned-root ]; then
+      grep -F "reinstall from a verified bundle" /tmp/upgrade-refusal
+      mv /etc/twr-release/root.saved /etc/twr-release/root.json
+    fi
+    test "$pinned" = "$(sha256sum /etc/twr-release/root.json)"
+    echo "Upgrade refusal $case: PASS"
+  done
+  echo "Upgrade signed good bundle: PASS"
   sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=999;"
   before=$(sha256sum /var/lib/twr/server.db)
-  : > /tmp/upgrade-tunnel-calls
-  if PATH=/tmp/upgrade-tools:$PATH sh /root/twr/upgrade.sh /root/twr/twr-server > /tmp/upgrade-refusal 2>&1; then exit 1; fi
+  : > /tmp/upgrade-service-calls
+  if PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/newer-file/server.tar.gz" "$DELIVERY/newer-file" > /tmp/upgrade-refusal 2>&1; then exit 1; fi
   grep -F "Reinstall the newer server bundle" /tmp/upgrade-refusal
   test "$before" = "$(sha256sum /var/lib/twr/server.db)"
-  test ! -s /tmp/upgrade-tunnel-calls
-  sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=1;"
+  test ! -s /tmp/upgrade-service-calls
+  sqlite3 /var/lib/twr/server.db "UPDATE server_release SET release=5;"
   rc-service twr-server start
   sleep 2
   sh /src/deploy/server/test-cloudflare.sh
 '
-echo 'Alpine install, OpenRC start/restart, TLS, loopback-only bind, filesystem/capability sandbox and console dashboard: PASS'
+echo 'Alpine install, signed upgrade/refusals, OpenRC, TLS, sandbox and dashboard: PASS'
