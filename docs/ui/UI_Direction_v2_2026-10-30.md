@@ -100,3 +100,8 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - **Breadth: more is better now.** Past restrictions were to cut slop. Open lineup lock, all-play and total-points formats, schedule patterns, and a rookie lottery option. Make sure everything needed to function exists.
 - **Control Room look:** functional, user-friendly and intuitive first; Christopher is less critical of the look here.
 - **R3 engine bug logged:** owners can withdraw a standing bid (`market/bid_execute.go` withdraw); R3 says a bid ends only when legally outbid.
+
+## Permission hierarchy rulings (10-30, night)
+- **Permission sets** (Terra research, `docs/ui/research/commish-permission-hierarchy-terra-2026-10-30.md`): the commissioner builds named sets of commands and grants them to people (scope: league or teams; expiry optional). Additive to Commissioner / Co-commish / DOT; never a promotion; only the commissioner creates or grants; grants private, actions public; edits are staged and versioned.
+- **P1 YES:** commissioner-only actions MAY be delegated through a set (rollover, standings override and record adjust, DOT override, appeal ruling, cutover, league create, engine, O-Line close, contract action set). Granting one asks a typed reason. **Never delegable:** role grant/revoke, deputy order, succession settings (they could promote a delegate or take the seat).
+- **P2 NO:** trade votes count only from DOT members. A set cannot carry `trade.review` / `trade.recuse`; trade sets are for processing (reversals, pick ownership, waiver/bid runs), not voting.
