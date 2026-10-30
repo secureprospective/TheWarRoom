@@ -557,3 +557,4 @@ Code citations checked on origin/main: `GameSpread = 50.0` and `FranchiseAgeWeig
 - Q-M2 D06: RULED — show two magic numbers: to make the playoffs, and for a bye.
 - Q-M4 D33: RULED — this-week and rest-of-season lineup change shown side by side, equal size.
 - Open: is an owner's chosen posture visible to the league?
+- Q posture visibility: RULED — owner's chosen posture is PUB (league sees it).
