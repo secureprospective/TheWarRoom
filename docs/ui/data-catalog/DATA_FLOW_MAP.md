@@ -148,6 +148,8 @@ Layer = build order: L0 trunks exist, L1 aggregators, L2 models, L3 private stor
 | D75 | Freshness | EXISTS | app/report | PUB | every feed | every tile | per feed | 0 |
 | D76 | CR search | NEW | frontend over CMSH data | CMSH | CR data only | CR | on load | 5 |
 | D77 | Rookie slot salary | EXISTS | engine/rookiedraft | PUB | leaguerules SlotPrice | HM, D41 | on rule change | 0 |
+| D79 | Waivers: claims, priority, processing | EXISTS | commissioner/market (waiver_execute/legality/reading) | SEALED claims until processing; priority PUB | owner claims, D61 rules | WR, CR jobs | on process | 0 |
+| D80 | College game context for prospects | NEW | ingestion (new source) | PUB | college feed | WR scouting | weekly in season | 4 |
 | D78 | How acquired | PARTIAL | transactions | PUB | T3 | HM, LP | on move | 1 |
 
 ## 5. Build layers (dependency order)
@@ -176,3 +178,38 @@ The order L1 → L2 → L3 is fixed by data dependencies. L4 and L5 can run in p
 4. **Mock inspectors half-bind:** build rule, no ruling. Every drawer binds to the selected entity, the WR partner selector swaps shelf and direction, and plan checks run per plan.
 5. **Models without algorithms (L2):** each gets a method doc and replay proof before it ships. The listed order is the build order.
 6. **Engine leads:** `market/bid_execute.go:136` withdraw() (R3 bug), and `nativecheck/bids.go:186` cap, which D20 resolves. The 7 jobs with no producer are L5 D60.
+
+## 8. Tie-out — every catalog item mapped (Terra pass, Claude triage, 10-30)
+Terra mapped all 1,890 items (`tie-{HQ,WR,LP,HM,CR}.md`; input = output count on every screen). 135 SPLIT, ~54 UNMAPPED, ~10 CLASS-CONFLICT. Claude triage:
+
+**Real gaps → added to the map**
+- D79 Waivers (CR-023/024/219–226, CR-222): built on main, missing from the map.
+- D80 College game context (WR-334/340): a new data source, L4.
+- Private UI preferences (HQ-211 drawer, HM-010 palette, HM-175, WR-359 rail shortcuts): fold into D58, renamed "Layout + UI prefs", PRIV.
+- Unread/attention state (WR-003/005): PRIV read-marks on D30 threads and D56 alerts.
+- Owner time zone (CR-199): account profile field (store/accounts), PRIV/CMSH.
+- Server telemetry (CR-470–474, 481): the D72 NEW part, already noted; now named per row.
+
+**Mapping misses, not gaps (domain already covers them)**
+- Fantasy schedule (LP-109/149/154/248–254, CR-256–258) → D04 ScheduleGrid/ScheduleByWeek.
+- Live NFL box stats (LP-265–273) → D08 (livegame ParseSummary).
+- Archive verification checks (LP-192/210/220) → D47. Week-by-week standings (LP-310) → D02 replayed per week.
+- Alert check failure/retry (HM-027/128/129) → D56. Clipped count (HM-044) → UI.
+- League creation date, migration provenance (CR-429/430) → governance LeagueCreated + commandcatalog MigrationEntries.
+- Last commish action, last command (CR-371/550) → D23 ledger filter. Auction duration (CR-238) → D61.
+- Previews (CR-187/194/328/535) → D61 backend preview + command dry-run. **The correction "would this flip a result" preview (CR-328) is PARTIAL**: it needs a replay of the week, and joins L1.
+- Competitive window seasons (WR-012) → D28. Trait vocabulary (WR-335) → D44, a static taxonomy.
+
+**Class conflicts resolved**
+- HQ-036/038/075 unsaved lineup edits: a new class, **CLIENT** (in-memory draft, never stored). Not a conflict.
+- HQ-184 envelope shows my own bid: the owner seeing their own sealed bid is allowed. Not a conflict.
+- WR-245/246, HM-203 outbid name/amount: covered by the 10-30 sealed ruling (mock copy change).
+- CR-034/035 feed and backup status in the commish job feed: the commish job shows a pass/fail summary (CMSH); the detail stays OPS. On a self-hosted league the commish is often also the admin. CLAIMED, my call.
+- CR-472 auth trouble per team: that's support for a team, so it's CMSH, not OPS.
+- **CR-237 sealed bid count shown to the commish, and CR-219–226 pending waiver claims → RULING NEEDED** (Q4 below).
+
+## 9. Rulings log
+- Q1 bid visibility: SEALED + Home outbid alert (10-30).
+- Q2 role variants: identical owner screens (10-30).
+- Q3 co-owner private space: asked, answer "Yes" ambiguous, re-asked.
+- Q4 before a window closes, what may the commish see of sealed bids and waiver claims: nothing, counts only, or everything?
