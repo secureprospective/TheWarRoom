@@ -16,7 +16,7 @@ The approved mocks are fixed (HQ v10, War Room v6, Pulse v14, Home v5, Control R
 | **PUB** league-public | every member | engines/feeds only | Same bytes for every viewer. Cache once per league. |
 | **LEDGER** public record | every member (filtered by Audience) | commands only, via ledger | Append-only. Actor + "via AI" stamped. Commish corrections are new rows, never edits. |
 | **PRIV** per-franchise private | that franchise only | that franchise | Never in a league cache, never in a commish view, never in search, never in exports other than its owner's. |
-| **SEALED** private until an event | the owner; everyone at the reveal event | the owner | Becomes PUB/LEDGER at the reveal (window close, trade accept). Bids are SEALED. |
+| **SEALED** private until an event | the owner + commish office (Q4); everyone at the reveal event | the owner | Becomes PUB/LEDGER at the reveal (window close, trade accept). Bids are SEALED. |
 | **CMSH** commissioner office | permission-set holders | commish office | Gated by the single `mayRun` check. Never leaks into owner screens except via ledger. |
 | **OPS** server operator | server-admin (R10) | server | League data never flows here, only health. |
 | **DERIV-PRIV** | owner | computed | Model output run on PRIV input (e.g. a lens applied to *my* plan). Same isolation as PRIV; compute per request, never cache league-wide. |
@@ -211,8 +211,8 @@ Terra mapped all 1,890 items (`tie-{HQ,WR,LP,HM,CR}.md`; input = output count on
 ## 9. Rulings log
 - Q1 bid visibility: SEALED + Home outbid alert (10-30).
 - Q2 role variants: identical owner screens (10-30).
-- Q3 co-owner private space: asked, answer "Yes" ambiguous, re-asked.
-- Q4 before a window closes, what may the commish see of sealed bids and waiver claims: nothing, counts only, or everything?
+- Q3 co-owner private space: RULED 10-30 — co-owners SHARE one private space per franchise (matches store/personal keyed by franchise; no change).
+- Q4 commish and sealed bids/claims: RULED 10-30 — EVERYTHING. The commish office sees every open bid and claim (amounts, teams) before reveal. SEALED now means sealed from other owners, not from CMSH. Plan items: CR mock copy "bids are private even to the commish" changes; CR-237 and CR-219–226 resolve to CMSH; isolation test 2 becomes "no OWNER other than the bidder sees it before close; the commish office does, and every commish view of an open bid is ledgered as a view" (proposed, to confirm).
 
 ## 10. Half-built areas — what exists vs what to add (Claude, origin/main, 10-30)
 Method: a targeted git grep for the missing field, then the hit opened to confirm it. "0 hits" = the whole field is to build.
