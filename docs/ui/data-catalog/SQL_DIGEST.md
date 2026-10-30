@@ -97,3 +97,6 @@ It covers watch/stars/lanes, notes, plans, versions/pocket, scouting, snooze, la
 - D8 one file vs one per league: already slated for the client/server panel. R2 makes either answer safe.
 - Retention windows (R5/R7 "N days"): measure on the thick3 fixture before setting them. Never guess.
 - R1 is the biggest structural change and touches the command write path. It is a durable, standard-setting decision, so it goes to an expert panel before the build (CLAUDE.md gate).
+
+## 7. Rulings
+- 10-30: **one database per league** (resolves growth-catalog D8). R2 drops from urgent leak to a guard: personal rows stay per franchise inside the league file; any shared/server-wide file must never hold league-private rows.
