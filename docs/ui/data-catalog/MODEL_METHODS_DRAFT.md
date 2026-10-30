@@ -554,3 +554,6 @@ Code citations checked on origin/main: `GameSpread = 50.0` and `FranchiseAgeWeig
 - Q-M3 D05 power weights: RULED — one fitted set for every league, with commissioner sliders to adjust (a league setting; the fitted set is the default).
 - Q-M5 D28 posture: RULED — the owner sets their own posture (contend / retool / rebuild). The model's classification becomes a suggestion; the lens uses the owner's choice. Open: is the owner's chosen posture visible to the league?
 - Q-M2, Q-M4: re-asked in plain words.
+- Q-M2 D06: RULED — show two magic numbers: to make the playoffs, and for a bye.
+- Q-M4 D33: RULED — this-week and rest-of-season lineup change shown side by side, equal size.
+- Open: is an owner's chosen posture visible to the league?
