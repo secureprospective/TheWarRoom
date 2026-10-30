@@ -81,7 +81,7 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - Research: `research/league-pulse-reorg-opinion-2026-10-30.md`, `plans-tab-opinion-2026-10-30.md`, `scouting-notes-research-2026-10-30.md`.
 
 ## Home (10-30)
-- Three subtabs: BRIEF · DEPTH CHARTS · NFL STATS (rail leaves under Home). Palette leaves jet black; slate is the pick, with graphite and grey on a mock switch for comparison.
+- Three subtabs: BRIEF · DEPTH CHARTS · NFL STATS (rail leaves under Home). Palette: SLATE (ruled 10-30): dark blue-grey, distinct from HQ cool grey, War Room smoky, Pulse jet black.
 - Brief: customizable 3x2 tile grid (default subject to season phase; custom never moves on its own), overflow drawer instead of displacement, one-row alert band outside the layout (all screens), NFL news front and center, broadcast-style top-5-per-position ticker, transactions with typed blocks (WIRE = solid green).
 - Full cards sized to content: news (blurb + player panel), trade (side by side), other transactions (narrow). Player career card (MFL-style: bio, league contract, NEWS / season STATS with FFB pts / PROJ / CAREER) opens from any player name on Home. Ruled exception to inspector-only, like the Draft Room scouting card.
 - Depth charts: team picker by division, OFF / DEF / ST five-deep grid, names coloured by league ownership. Source TBD (Sleeper depth order / ESPN); Ourlads is reference only.
