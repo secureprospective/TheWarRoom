@@ -149,7 +149,7 @@ Layer = build order: L0 trunks exist, L1 aggregators, L2 models, L3 private stor
 | D76 | CR search | NEW | frontend over CMSH data | CMSH | CR data only | CR | on load | 5 |
 | D77 | Rookie slot salary | EXISTS | engine/rookiedraft | PUB | leaguerules SlotPrice | HM, D41 | on rule change | 0 |
 | D79 | Waivers: claims, priority, processing | EXISTS | commissioner/market (waiver_execute/legality/reading) | SEALED claims until processing; priority PUB | owner claims, D61 rules | WR, CR jobs | on process | 0 |
-| D80 | College game context for prospects | NEW | ingestion (new source) | PUB | college feed | WR scouting | weekly in season | 4 |
+| D80 | College game context for prospects | PARTIAL | app/sources college (CollegeFootballData, needs free key) | PUB | college feed | WR scouting | weekly in season | 4 |
 | D78 | How acquired | PARTIAL | transactions | PUB | T3 | HM, LP | on move | 1 |
 
 ## 5. Build layers (dependency order)
@@ -213,3 +213,42 @@ Terra mapped all 1,890 items (`tie-{HQ,WR,LP,HM,CR}.md`; input = output count on
 - Q2 role variants: identical owner screens (10-30).
 - Q3 co-owner private space: asked, answer "Yes" ambiguous, re-asked.
 - Q4 before a window closes, what may the commish see of sealed bids and waiver claims: nothing, counts only, or everything?
+
+## 10. Half-built areas — what exists vs what to add (Claude, origin/main, 10-30)
+Method: a targeted git grep for the missing field, then the hit opened to confirm it. "0 hits" = the whole field is to build.
+
+| # | Exists (confirmed) | To add |
+|---|---|---|
+| D03 | race Order/HeadToHead | "which step broke the tie" output (0 hits) |
+| D05 | Blend, ExpectedWins, WinProbability | components FORM/LINEUP/HEALTH/ALL-PLAY/RUN-IN, weekly history, why-moved (0 hits) |
+| D08 | livegame/espn.go current play: down, distance, yardLine | stored list of every play + drive summary + per-play fantasy delta |
+| D09 | market.OnFieldNow, app/now MatchSpine/InspectLiveBox | compact stat line per slot |
+| D10 | livegame Followed (league-level) | per-owner follow kind in store/personal |
+| D11 | weekly projections via marketfeeds (MFL-sourced) | native ranges (floor/ceiling), rank vs position, rest of season |
+| D20 | contracts + deadcap inputs | the runway aggregator itself (0 hits) |
+| D21 | mflref/envelope (MFL path only) | native-mode lifecycle states (0 native hits) |
+| D23 | ledger + governance Audience | actor + "via AI" stamp on entries (0 hits in commissioner/ledger.go), kind filter |
+| D30 | app/offers RecordOffers | rounds/counters/turn/expiry (no real hits) |
+| D33 | powerrankings.Lineup | per-trade before/after lineup delta |
+| D36 | bid legality per bid | sum of open bids vs cap room (0 hits) + withdraw() fix |
+| D38 | store/personal kind `watch` (+ app/offers personal_api) | lanes + stars |
+| D42 | ADP, ranks, AAV feeds (marketfeeds) | tiers, "likely there at #N" (0 hits) |
+| D43 | AutoPick rule menu | per-owner draft queue (0 real hits; "Queue" = stat queue) |
+| D45 | store/personal kind `note` | per-player thread shape (multiple dated notes) |
+| D52 | sitenews feed, core SourcesRostered | relevance score per franchise |
+| D54 | fantasyscore + nflverse stats | saved views (0 hits), CSV export |
+| D55 | playerrecord career, app/sources college | bio fields ht/wt/draft slot in one read |
+| D59 | weekly points (D12) | leaders query (0 hits); trivial |
+| D60 | TargetCommissionerJobs read | the 7 missing producers |
+| D62 | presets exist for brackets only | rule-set presets apply/compare; history = ledger filter |
+| D66 | exceptions scattered (archive, sources, market) | one unified "in force" read with expiry |
+| D67 | correct.pick (move/award correction) | grant/swap/forfeit/condition/void |
+| D68 | accounts TOTP | commish reset (0 hits) |
+| D69 | store/personal LastSeen, governance LastActivity | one per-owner read for CR |
+| D70 | TargetCommissionerNotices (notices, notes, mail log) | AI draft |
+| D72 | serverstatus Checks, backups | telemetry p95/requests (0 hits) |
+| D78 | commissioner native_seed AcquiredVia | expose per player on HM/LP |
+| D80 | college source (needs a free CFBD key) | game-context read per prospect |
+| CR-328 | correction preview | "would this flip a result" replay (0 hits) |
+
+Pattern: the half-built areas are mostly **one missing read or one missing field on a built store**. The heavy new work stays where the map already put it: D20 runway, D05/D06 models, D30 threads, D36 cap sum, D23 actor stamp.
