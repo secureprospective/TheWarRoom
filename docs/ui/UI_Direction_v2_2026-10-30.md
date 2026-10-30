@@ -28,9 +28,10 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 
 ## Mocks (docs/ui/mocks/)
 - `rail-mock-v1.html`: rail options (option 3 ruled).
-- `franchise-hq-mock-v8.html`: Franchise HQ, all three workspaces, RFA/UFA contract caps, content-sized release drawer, release drawer with G3 hold, Customize mode.
+- `franchise-hq-mock-v9.html`: Franchise HQ, all three workspaces, RFA/UFA contract caps, content-sized release drawer, release drawer with G3 hold, Customize mode.
 - `glm-rail-funnel-2026-10-30.md`: GLM 5.3 rail tree. Leads only; triaged in session.
 
 ## Contract end (10-30)
 - Final-year cap shows RFA (lime) or UFA (signal yellow) as a textured rubber block with a legend. These hues are classification only and sit outside the five meaning colours; always paired with a letter or legend.
 - Drawers are sized to their content; a confirm drops in below the actions instead of covering them.
+- Bottom drawers sit above the tray so the pull tabs stay visible, size to their rows, and pair a data table with a summary side panel (Taxi: could-stash list; IR: candidates + return timeline; What-if: stackable moves with live cap/roster/projection totals).

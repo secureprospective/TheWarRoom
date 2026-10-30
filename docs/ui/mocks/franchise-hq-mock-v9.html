@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>TheWarRoom: Franchise HQ mock v8 (2026-10-30)</title>
+<title>TheWarRoom: Franchise HQ mock v9 (2026-10-30)</title>
 <style>
 :root{
   --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
@@ -153,7 +153,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
 .pull[aria-expanded=true]{transform:translateY(0);border-color:var(--edge-hi);color:var(--ink)}
 
 /* bottom drawer */
-.bdrawer{position:absolute;left:0;right:0;bottom:0;height:46%;background:var(--tile);border-top:3px solid var(--edge-hi);
+.bdrawer{position:absolute;left:0;right:0;bottom:var(--trayh,52px);max-height:60%;background:var(--tile);border-top:3px solid var(--edge-hi);
   transform:translateY(102%);transition:transform 120ms ease-out;z-index:6;display:grid;grid-template-rows:auto 1fr}
 .bdrawer::before{content:"";position:absolute;left:0;right:0;top:-3px;height:5px;background:var(--hazard)}
 .bdrawer.open{transform:none}
@@ -161,8 +161,33 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
 .bd-head h2{font-size:15px}
 .bd-head .sub{font:11px var(--mono);color:var(--ink3)}
 .bd-head .x{margin-left:auto;font:11px var(--mono);border:1px solid var(--edge);padding:2px 6px;color:var(--ink3)}
-.bd-body{display:grid;grid-template-columns:repeat(4,1fr);min-height:0}
-.bd-body .slot{height:34px;grid-template-columns:34px 1fr 90px;border-right:1px solid var(--rule)}
+.bd-body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;overflow:hidden}
+.bd-main{min-width:0;border-right:2px solid var(--black)}
+.bd-side{display:flex;flex-direction:column}
+.bd-side .ch{border-top:0}
+.sum{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--black)}
+.sum div{padding:10px 14px;border-right:1px solid var(--rule)}
+.sum div:nth-child(2n){border-right:0}
+.sum div:nth-child(n+3){border-top:1px solid var(--rule)}
+.sum b{display:block;font:700 18px var(--mono)} .sum span{font:10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.bt td{height:30px}
+.bt .btn{padding:2px 8px;font-size:10px}
+.yrs{display:inline-flex;gap:2px;vertical-align:-1px}.yrs i{width:10px;height:10px;border:1px solid var(--ink3)}.yrs i.u{background:var(--edge-hi);border-color:var(--edge-hi)}
+.tl{display:grid;grid-template-columns:repeat(9,1fr);margin:12px 14px 14px;border:1px solid var(--edge)}
+.tl div{height:54px;border-right:1px solid var(--rule);padding:4px 6px;font:10px var(--mono);color:var(--ink3);position:relative}
+.tl div:last-child{border-right:0}
+.tl div.now{background:var(--raised);color:var(--ink)}
+.tl b{position:absolute;left:4px;right:4px;bottom:5px;font:600 10px var(--mono);color:var(--black);background:var(--edge-hi);padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wi{display:grid;grid-template-columns:22px 52px 1fr auto;gap:10px;align-items:center;padding:0 14px;height:34px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform 70ms linear}
+.wi:hover{background:var(--raised);transform:translateX(2px)}
+.wi .box{width:14px;height:14px;border:2px solid var(--edge)}
+.wi.on{background:var(--raised)} .wi.on .box{background:var(--edge-hi);border-color:var(--edge-hi)}
+.wi .k{font:600 10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.wi .d{font:12px var(--mono)}
+.sum .delta .ok{color:var(--green)}.sum .delta .warn{color:var(--amber)}
+.sum .delta span{font:inherit}
+.sum .delta{display:block;padding:0;border:0;font:11px var(--mono);color:var(--ink3);margin-top:2px}
+
 .elig{font:10px var(--mono);color:var(--ink3);text-align:right}
 
 /* ---------- inspector + custom drawers ---------- */
@@ -585,6 +610,39 @@ pulls.forEach(p=>p.onclick=()=>{const open=p.getAttribute('aria-expanded')==='tr
   if(open){bd.classList.remove('open');return}const d=dr[p.dataset.d];bdT.textContent=d[0];bdS.textContent=d[1];
   bdB.innerHTML=d[2].map(x=>`<div class="slot"><span class="pg">${x[0]}</span><span class="nm">${x[1]}</span><span class="elig">${x[2]}</span></div>`).join('');
   p.setAttribute('aria-expanded','true');bd.classList.add('open')});
+
+/* ---------- v9: bottom drawers sized to their data ---------- */
+const TAXI=[['WR','Tez Johnson','TB',1,0.75,68,'Promote now: beats McMillan (7.9) at WR'],['RB','Kaleb Johnson','PIT',1,0.90,74,''],['QB','Jaxson Dart','NYG',1,1.10,70,''],
+ ['TE','Mason Taylor','NYJ',1,0.60,63,''],['DE','Mykel Williams','SF',1,0.85,72,''],['CB','Will Johnson','ARI',1,0.95,71,''],['S','Xavier Watts','ATL',2,0.55,66,'Last taxi year after 2026']];
+const STASH=[['RB','Trey Benson','ARI','yr 2 · eligible'],['WR','Troy Franklin','DEN','yr 2 · eligible'],['DT','Ruke Orhorhoro','ATL','yr 2 · eligible']];
+const IRL=[['WR','Brian Thomas Jr.','JAX','Ankle','Wk 11','2w',3.10,'Activate needs 1 active spot'],['LB','Jeremiah Trotter','PHI','Knee','Wk 12','3w',0.70,''],['RB','MarShawn Lloyd','GB','Hamstring','Season','—',0.80,'Done for 2026 · counts on cap']];
+const IRC=[['WR','Puka Nacua','LAR','Q · shoulder','Can move to IR if ruled OUT'],['S','Brian Branch','DET','Q · ankle','Watch Friday report']];
+const WI=[['CUT','Zach Charbonnet',0.45,0,-1,0],['TAXI','Move Trey Benson to taxi',0.40,0,-1,0],['PROMO','Promote Tez Johnson',-0.75,0,1,1.2],['SIGN','Sign FA DE Chop Robinson · 1 yr',-1.10,0,1,7.0],
+ ['IR','Puka Nacua to IR',0,0,-1,-16.9],['EXT','Extend Aidan Hutchinson · 3 yrs',0,-6.20,0,0],['TRADE','Odunze + 2027 R2 for Hall',-0.60,-0.60,0,0.9]];
+let wiOn=new Set();
+function bdTaxi(){bdT.textContent='Taxi squad';bdS.textContent='7 of 8 · first 3 NFL seasons · taxi pay is off the active cap';
+  bdB.innerHTML=`<div class="bd-main"><table class="ct bt"><thead><tr><th>POS</th><th>PLAYER</th><th>NFL YR</th><th>TAXI LEFT</th><th>SALARY</th><th>VALUE</th><th style="text-align:left">NOTE</th><th></th></tr></thead><tbody>${
+   TAXI.map(t=>`<tr><td><span class="pg">${t[0]}</span></td><td>${t[1]}<small>${t[2]}</small></td><td>${t[3]}</td><td><span class="yrs">${[1,2,3].map(y=>`<i class="${y<=t[3]?'u':''}"></i>`).join('')}</span> ${3-t[3]}</td><td>${t[4].toFixed(2)}</td><td>${t[5]}</td><td style="text-align:left;font-family:var(--sans);font-size:12px;color:${t[6].startsWith('Promote')?'var(--green)':t[6]?'var(--amber)':'var(--ink3)'}">${t[6]||'—'}</td><td><button class="btn">PROMOTE</button></td></tr>`).join('')}</tbody></table></div>
+   <div class="bd-side"><div class="sum"><div><b>7 / 8</b><span>TAXI SLOTS</span></div><div><b>41 / 44</b><span>ACTIVE</span></div><div><b>$5.70M</b><span>TAXI PAY</span></div><div><b class="ok">+1</b><span>OPEN TAXI SLOT</span></div></div>
+   <div class="ch"><b>COULD STASH · 3</b><span>active, still eligible</span></div>${STASH.map(x=>`<div class="drow" style="grid-template-columns:34px 1fr auto"><span class="pg">${x[0]}</span><span>${x[1]} <small style="color:var(--ink3);font:11px var(--mono)">${x[2]} · ${x[3]}</small></span><button class="btn" style="padding:2px 8px;font-size:10px">TO TAXI</button></div>`).join('')}</div>`}
+function bdIR(){bdT.textContent='Injured reserve';bdS.textContent='3 of 12 · IR frees an active spot, not cap';
+  bdB.innerHTML=`<div class="bd-main"><table class="ct bt"><thead><tr><th>POS</th><th>PLAYER</th><th>INJURY</th><th>BACK</th><th>IN</th><th>SALARY</th><th style="text-align:left">NOTE</th><th></th></tr></thead><tbody>${
+   IRL.map(t=>`<tr><td><span class="pg">${t[0]}</span></td><td>${t[1]}<small>${t[2]}</small></td><td style="text-align:left;font-family:var(--sans)">${t[3]}</td><td>${t[4]}</td><td class="${t[5]==='2w'?'warn':''}">${t[5]}</td><td>${t[6].toFixed(2)}</td><td style="text-align:left;font-family:var(--sans);font-size:12px;color:var(--ink2)">${t[7]||'—'}</td><td>${t[4]==='Season'?'':'<button class="btn">ACTIVATE</button>'}</td></tr>`).join('')}</tbody></table>
+   <div class="ch" style="border-top:1px solid var(--edge)"><b>RETURNS · WEEKS 9–17</b><span>plan the active spot before they come back</span></div>
+   <div class="tl">${[9,10,11,12,13,14,15,16,17].map(w=>`<div class="${w===9?'now':''}">WK ${w}${w===11?'<b>B. Thomas Jr.</b>':w===12?'<b>J. Trotter</b>':''}</div>`).join('')}</div></div>
+   <div class="bd-side"><div class="sum"><div><b>3 / 12</b><span>IR SLOTS</span></div><div><b>41 / 44</b><span>ACTIVE</span></div><div><b>$4.60M</b><span>IR PAY · ON CAP</span></div><div><b class="warn">Wk 11</b><span>NEXT RETURN</span></div></div>
+   <div class="ch"><b>IR CANDIDATES · 2</b><span>on your roster</span></div>${IRC.map(x=>`<div class="drow" style="grid-template-columns:34px 1fr auto"><span class="pg">${x[0]}</span><span>${x[1]} <small style="color:var(--amber);font:11px var(--mono)">${x[3]}</small></span><button class="btn" style="padding:2px 8px;font-size:10px">TO IR</button><span class="why" style="grid-column:2/4">${x[4]}</span></div>`).join('')}</div>`}
+function bdWhat(){bdT.textContent='What-if';bdS.textContent='Tick moves to stack them. Nothing is saved or sent.';
+  const t=[...wiOn].map(i=>WI[i]),room=6.40+t.reduce((a,x)=>a+x[2],0),room27=23.20+t.reduce((a,x)=>a+x[3],0),act=41+t.reduce((a,x)=>a+x[4],0),pj=171.2+t.reduce((a,x)=>a+x[5],0);
+  const c=(v,base,u='')=>`<span class="${v>base?'ok':v<base?'warn':''}">${v>base?'+':''}${(v-base).toFixed(u?0:2)}${u}</span>`;
+  bdB.innerHTML=`<div class="bd-main">${WI.map((w,i)=>`<div class="wi ${wiOn.has(i)?'on':''}" data-wi="${i}"><span class="box"></span><span class="k">${w[0]}</span><span>${w[1]}</span><span class="d">${w[2]?(w[2]>0?'+':'')+w[2].toFixed(2)+'M':''}${w[3]?(w[2]?' · ':'')+'2027: '+w[3].toFixed(2)+'M':''}</span></div>`).join('')}</div>
+   <div class="bd-side"><div class="sum"><div><b>$${room.toFixed(2)}M</b><span>ROOM 2026</span><span class="delta">${c(room,6.40)}M</span></div><div><b>$${room27.toFixed(2)}M</b><span>ROOM 2027</span><span class="delta">${c(room27,23.20)}M</span></div>
+   <div><b class="${act>44?'warn':''}">${act} / 44</b><span>ACTIVE</span><span class="delta">${c(act,41,' ')}</span></div><div><b>${pj.toFixed(1)}</b><span>WEEK 9 PROJ</span><span class="delta">${c(pj,171.2,' ')}</span></div></div>
+   <div class="tray" style="background:none;margin-top:auto"><span class="msg">${t.length} stacked${act>44?' · <span class="warn">over the active limit</span>':''}</span><button class="btn sp" id="wiClr">CLEAR</button><button class="btn g2">SEND TO MY MOVES</button></div></div>`;
+  bdB.querySelectorAll('[data-wi]').forEach(e=>e.onclick=()=>{const i=+e.dataset.wi;wiOn.has(i)?wiOn.delete(i):wiOn.add(i);bdWhat()});
+  const cl=document.getElementById('wiClr');if(cl)cl.onclick=()=>{wiOn.clear();bdWhat()}}
+pulls.forEach(p=>p.onclick=()=>{const open=p.getAttribute('aria-expanded')==='true';pulls.forEach(x=>x.setAttribute('aria-expanded','false'));
+  if(open){bd.classList.remove('open');return}({taxi:bdTaxi,ir:bdIR,whatif:bdWhat})[p.dataset.d]();p.setAttribute('aria-expanded','true');bd.classList.add('open')});
 bdX.onclick=()=>{bd.classList.remove('open');pulls.forEach(x=>x.setAttribute('aria-expanded','false'))};
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){picked=null;bdX.onclick();draw()}});
 idr.onclick=e=>{const b=e.target.closest('.idr>button');if(b)b.parentElement.classList.toggle('open')};
@@ -593,6 +651,7 @@ function inline(){const box=inl;box.innerHTML='';const room=box.clientHeight;let
     box.insertAdjacentHTML('beforeend',`<div class="sec">${d[0].toUpperCase()} · ${d[1].split(' ·')[0]}<span>also in the pull tab</span></div>`+
       d[2].map(x=>`<div class="slot"><span class="pg">${x[0]}</span><span class="nm">${x[1]}</span><span class="elig">${x[2]}</span><span></span></div>`).join(''))}}
 addEventListener('resize',inline);
+const setTray=()=>document.documentElement.style.setProperty('--trayh',document.querySelector('.tray').offsetHeight+'px');setTray();addEventListener('resize',setTray);
 draw();inline();
 
 /* ---------- v7: workspace switching ---------- */
