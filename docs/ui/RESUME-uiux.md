@@ -1,89 +1,98 @@
-# TheWarRoom UI/UX groundwork: RESUME (2026-10-30, compact-safe #3)
+# TheWarRoom UI/UX groundwork: RESUME (2026-10-30, compact-safe #4)
 
 ## 1. What we are doing
-We are building HTML mocks screen by screen, each one approved by Christopher from his screenshots.
-- Franchise HQ v10 and War Room v6 are DONE.
-- NOW: **League Pulse**. Christopher's rule is one tab at a time, from easiest to hardest.
-  - Archive: DONE (good).
-  - Live: DONE ("pretty stinking cool").
-  - **NEXT: Race, then Matchups.**
+We build HTML mocks one screen at a time, and Christopher approves each from his screenshots.
+- DONE: Franchise HQ v10, War Room v6, League Pulse v14.
+- **NEXT: the Home screen mock.** After that comes Control Room (commissioner area; it gets its own focused pass).
 
-Repo and branch:
+Where it lives:
 - Beelink `chris@192.168.1.191:/home/chris/work/TheWarRoom`, worktree `.worktrees/uiux`, branch `session/ui-ux-groundwork`.
 - Local only, NOT pushed. SSH key `/root/.ssh/beelink`.
-- The main checkout belongs to another session (`session/league-history-pwa`). **Don't touch it.**
+- The main checkout is another session's (`session/league-history-pwa`). Don't touch it.
+- Commit with `GOTOOLCHAIN=go1.26.10`, never `--no-verify`.
 
 ## 2. Harness
-- **Pulse mock source** lives in the scratchpad. Build order:
-  `head + base.css + pulse.css + </style></head> + pulse.body.html + pulse.js1 js2 js3 js4 js6 js5`
-  - **js6 must come BEFORE js5.** js5 holds the init and the wiring. js6 holds Archive v2 and overrides renderArch through hoisting.
-  - Build command:
-    `{ printf '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>…</title>\n<style>\n'; cat base.css pulse.css; printf '\n</style>\n</head>\n'; cat pulse.body.html pulse.js1 pulse.js2 pulse.js3 pulse.js4 pulse.js6 pulse.js5; } > pulse-mock-vN.html`
-  - If the scratchpad is lost, take everything from the committed `docs/ui/mocks/league-pulse-mock-v7.html`.
-- **Shots:** `$SCRATCH/shot.sh <abs html> <abs png> 1920,1080 "go('race')"`. Console errors print to stdout. Also check at 2550,1352.
-- **Testing live ticks:** pass `"go('live');tick();tick()"` as the shot's JS.
-- **Publish:** scp the mock to Beelink `~/Downloads/` and to the worktree `docs/ui/mocks/league-pulse-mock-vN.html`, then commit with the Co-Authored-By trailer.
-- **"check SS":** `ls -1t /home/chris/content/feedback/ | head`. The last one read is `2026-10-30_13-20.png` (the Live layout request).
-- **Terra opinion pass:**
-  - Write the brief to `~/fleet/briefs/purge/<name>.md`.
-  - Launch: `ssh -f … 'rm -f ~/fleet/runs/terra-uiux/completion.txt; TERRA_WT=uiux TERRA_BRIEF=<name>.md TERRA_THINKING=high nohup ~/fleet/bin/launch-terra-reorg.sh >/dev/null 2>&1 &'`.
-  - Done when `completion.txt` exists.
+- **Pulse source** lives in the scratchpad (`/tmp/claude-0/-root/ceeceeaf-c38e-4b3f-bddd-137d1de3f99a/scratchpad/`):
+  - Build order: `base.css + pulse.css`, then `pulse.body.html`, then `pulse.js1 js2 js3 js4 js6 js7 js5`.
+  - js5 (init and wiring) must be LAST.
+  - js7 is Race v2. It overrides renderStand/renderRace by hoisting.
+  - If the scratchpad is lost, take everything from the committed `docs/ui/mocks/league-pulse-mock-v14.html`.
+- **A new screen (Home)** should reuse `base.css` (the shared shell: rail, tabs, inspector, pulls). Copy the shell markup from the pulse or HQ mock.
+- **Shots:** `$SCRATCH/shot.sh <abs html> <abs png> 1920,1080 "<js>"`.
+  - Console errors print to stdout.
+  - The JS must NOT contain `#`, because sed uses it as the delimiter. Use `querySelectorAll('.cls')` instead.
+  - Also check at 2550,1352.
+  - `rm -rf $SCRATCH/hcr` afterwards.
+- **Publish:** scp to Beelink `~/Downloads/` and to the worktree `docs/ui/mocks/`, commit with the trailers, and give him the `file:///home/chris/Downloads/...` path.
+- **"check SS":** `ls -1t /home/chris/content/feedback/ | head`. The last one read is `2026-10-30_14-14.png`.
+- **Terra opinion pass:** brief in `~/fleet/briefs/purge/<name>.md`, launched with `ssh -f … TERRA_WT=uiux TERRA_BRIEF=<name>.md TERRA_THINKING=high nohup ~/fleet/bin/launch-terra-reorg.sh`. Done when `~/fleet/runs/terra-uiux/completion.txt` exists.
 
 ## 3. Status
 | Item | State |
 |---|---|
 | Franchise HQ v10, War Room v6 | APPROVED |
-| League Pulse reorg (Terra opinion + my edits): 4 tabs Matchups · Live · Race · Archive, no new rail node | APPROVED |
-| Archive (v2): franchise history, eras by owner, win% bars + rank-of-32 + stamps (DIV TITLE + best result), hover tip, season story, playoff run, WHO WAS HERE lineage / HOW WE GOT HERE moves, trophy shelf → full-screen TROPHY CASE drawer, FRANCHISE/LEAGUE toggle | "in a good place", may revisit later |
-| Live (v3–v6): field + follow bar on top; center = raised MY MATCHUP card (16 v 16, OFFENSE/DEFENSE groups, compact stat shorthand, solid TD tags first, clock chip, brown football = on field by possession); right = IN THIS GAME (natural height) + PLAY-BY-PLAY fills the rest; ball/LOS slide + dashed gain trail on new play | APPROVED |
-| v7 jet-black Pulse palette (neutral black, soft warm-white text ~84%), truer-green field | just shipped, awaiting his look |
-| Race (v1: standings + my road left; center PLAYOFF PATH bigs/odds/scenarios ↔ POWER; drawers TIEBREAKERS/BRACKET/PRODUCTION) | NEXT. Not reviewed yet in the one-at-a-time pass |
-| Matchups (v1: game list, score header, across/classic) | after Race |
+| League Pulse v14: Live · Race · Archive | APPROVED ("in a good place") |
+| UI_Direction_v2: War Room and Pulse sections added | committed b1f5a448 |
+| Home mock | NEXT, not started |
+| Control Room mock | after Home |
 
 ## 4. Artifacts
-Worktree `docs/ui/`:
-- Mocks: `mocks/league-pulse-mock-v1..v7.html` (v7 is current).
-- Research: `research/league-pulse-reorg-opinion-2026-10-30.md`.
-
-Commits on the branch: bd9a2b47 v1 → e27521ac v2 → acf63970 v3 → ee90a5a4 v4 → 1e22d5b7 v5 → 08f8e9f2 v6 → 75f45479 v7 (plus this resume).
+- Worktree `docs/ui/`:
+  - Mocks: `franchise-hq-mock-v10.html`, `warroom-mock-v6.html`, `league-pulse-mock-v14.html` (current), `rail-mock-v1.html`.
+  - Research: `research/*.md`.
+  - `UI_Direction_v2_2026-10-30.md` (81 lines) is the ruling sheet. **Read it before designing Home.**
+- Recent commits: eb22e0c0 v8, ee3a6695 v9, 2939359f v10, e334b7f0 v11, 14aa4173 v12, 9fdfe95f v13, b1f5a448 v14 + UI_Direction.
 
 ## 5. Current bug
 None.
+- Known mock-only gap: the SCHEDULE drawer data doesn't match the Race run-in schedule (SCH). This is cosmetic and was not raised.
 
 ## 6. Refuted — do not retry
-- **Lightening a raised card's fill ("smoked out"):** REJECTED. Cards keep the page colour; lift comes only from the light border, the hard black shadow and the hazard top edge. This is saved in memory.
-- **Narrow 10-column seed ladder in Race:** it truncated names and duplicated the standings. Replaced by a 2-column odds list.
-- **Long prose stat lines** ("16 car, 71 yds"): too busy. Use the shorthand "16-71 rush | 0-23 rec" with the TD tag FIRST so it never clips.
-- **Orange or yellow border for the matchup card:** I chose white instead, because orange means warning or action elsewhere.
-- **Everything earlier still applies:** no PRICED OUT-style owner judgments, no emoji, no big pale buttons, no page scroll, names never truncated in narrow columns.
+- Lightening a card fill ("smoked out"). Keep the page colour inside cards.
+- A rank sparkline inside the power table. Rank charts live in WHY IT MOVED.
+- Score text sitting on the bar.
+- A 1–16 fixed scale on the rank charts. It flattens the movement, so zoom each chart to the team's own range.
+- LIVE tags in the matchup list. Show the win % per team, coloured text only.
+- One win % per game. Show one per team.
+- A narrow seed ladder that truncates names.
+- Long prose stat lines.
+- An orange border on the card.
+- Invented owner-judgment states.
+- Page scroll.
+- Truncated names.
+- Emoji.
 
-## 7. Decisions (Christopher, 10-30)
-- **Live is the main game-day / TV screen.** My matchup goes center, side by side. Play-by-play of the selected NFL game auto-fills the right column below "in this game", which is never cut off.
-- **On-field football:** offense players get it when their team has the ball; defense players get it when the opponent has the ball.
-- **Field animation:** the light version is done. A full play animation is for later.
-- **League Pulse palette = jet black.** The War Room stays smoky and HQ stays cool grey.
-- **Archive:**
-  - It defaults to the user's team.
-  - Eras by owner explain "how did we get here".
-  - The trophy case is a small shelf that opens to a full card; the information leads.
-  - Animated trophies come later.
-- **Still OPEN from before:**
-  1. Write "center card = exception to inspector-only" into the rule sheet?
-  2. Should "one-of" bids be allowed?
-  3. `UI_Direction_v2` still lacks the War Room and Pulse rulings.
+## 7. Decisions (10-30)
+All of them are in UI_Direction_v2 (Look/Space/Rail/Interaction/HQ/War Room/League Pulse). Highlights:
+- Matchups is not a tab. Live's left list holds the matchups, and clicking one fills the center card.
+- Power Rankings is first-class, because the offseason is most of the year.
+- The schedule (run-in) drives the projected seed and the bubble flag.
+
+**OPEN, ask him:**
+1. Race default view by phase (power rankings in the offseason?).
+2. Window labels ("win now", "rebuilding") shown league-wide?
+3. Write "center card = exception to inspector-only" into the rule sheet?
+4. Should "one-of" bids be allowed?
 
 ## 8. Ledger
-Everything is committed on the local branch. Nothing pushed; pushing hasn't been discussed.
+Everything is committed on the local branch. Nothing is pushed; pushing hasn't been discussed.
 
 ## 9. Next actions
-1. On "we are back": start the **Race** tab pass. Screenshot the v7 race view (`go('race')`), do a slop pass in jet black, and propose the improvements. Christopher steers each tab.
-2. Then **Matchups**: re-check it under jet black. Live already shows my matchup, so Matchups should focus on the whole league's week.
-3. Later, add the War Room and Pulse rulings to `UI_Direction_v2`.
+1. On "we are back": read `docs/ui/UI_Direction_v2_2026-10-30.md` and this file.
+2. Start Home.
+   - Ask Christopher the goal of Home first; never infer the session goal.
+   - Then propose a one-screen layout that pulls from HQ / War Room / Pulse: NOW line, this-week matchup, decisions due, race snapshot, league moments.
+   - Then build `home-mock-v1.html` on `base.css`.
+3. Raise the 4 open rulings when there's a natural pause.
 
 ## 10. Environment
-- Nothing running. Terra is idle.
-- Headless Chrome profile reaped.
-- Beelink filing check passes.
+- Nothing is running. Terra is idle.
+- Filing check exit 0.
+- Old PNGs and superseded mocks were reaped from the scratchpad.
 
 ## 11. Honest status
-Mocks only; all data is illustrative. The stat shorthand and the on-field logic are mock logic. In the real build they need the live feed's possession flag and stat lines.
+These are mocks only, and all the data is illustrative. The engine math needed is not built yet:
+- win % per game
+- run-in projection
+- dynasty components
+- on-field possession flag
