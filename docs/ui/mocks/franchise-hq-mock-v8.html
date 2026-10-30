@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>TheWarRoom: Franchise HQ mock v7 (2026-10-30)</title>
+<title>TheWarRoom: Franchise HQ mock v8 (2026-10-30)</title>
 <style>
 :root{
   --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
@@ -212,7 +212,14 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
 .ct td:first-child{text-align:left;width:44px}
 .ct td.off{color:var(--edge)}
 .ct td.yr{background:hsla(220,8%,82%,.035);border-left:1px solid var(--rule)}
-.ct td.last{box-shadow:inset -3px 0 0 var(--edge-hi)}
+.ct td.last{position:relative;padding-right:18px}
+:root{--rfa:hsl(84,90%,52%);--ufa:hsl(54,100%,54%)}
+.cap-end{position:absolute;right:3px;top:5px;bottom:5px;width:9px;border:1px solid var(--black)}
+.cap-end,.key-cap{background-image:repeating-linear-gradient(45deg,hsla(220,25%,2%,.55) 0 1px,transparent 1px 3px),repeating-linear-gradient(-45deg,hsla(220,25%,2%,.35) 0 1px,transparent 1px 3px)}
+.cap-end.rfa,.key-cap.rfa{background-color:var(--rfa)} .cap-end.ufa,.key-cap.ufa{background-color:var(--ufa)}
+.key-cap{display:inline-block;width:9px;height:13px;border:1px solid var(--black);vertical-align:-2px;margin:0 5px 0 12px}
+.fa{font:700 10px var(--mono);letter-spacing:.08em;padding:1px 5px;color:var(--black);border:1px solid var(--black)}
+.fa.rfa{background:var(--rfa)} .fa.ufa{background:var(--ufa)}
 .ct tr{transition:transform 70ms linear;cursor:pointer}
 .ct tbody tr:hover{background:var(--raised);transform:translateX(2px)}
 .ct tr.sel{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
@@ -233,16 +240,27 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
 .clock{font:600 11px var(--mono);color:var(--amber);white-space:nowrap}
 .clock.cold{color:var(--ink2)}
 /* side drawer + nested G3 */
-.sdrawer{position:absolute;top:0;right:0;bottom:0;width:460px;background:var(--tile);border-left:3px solid var(--edge-hi);
+.sdrawer{position:absolute;top:0;right:0;max-height:100%;width:460px;border-bottom:3px solid var(--edge-hi);background:var(--tile);border-left:3px solid var(--edge-hi);
   transform:translateX(104%);transition:transform 120ms ease-out;z-index:7;display:flex;flex-direction:column}
 .sdrawer::before{content:"";position:absolute;left:-3px;top:0;bottom:0;width:6px;background:var(--hazard)}
 .sdrawer.open{transform:none}
-.sd-body{padding:14px 18px;display:grid;gap:4px;align-content:start}
+.sd-body{padding:0 18px 14px;display:grid;gap:0;align-content:start;overflow:hidden}
+.sd-sec{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3);padding:14px 0 6px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between}
+.sd-sec span{font-weight:400;letter-spacing:.04em}
+.kv2{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+.rb{display:grid;grid-template-columns:40px 1fr 70px;gap:10px;align-items:center;font:11px var(--mono);padding:5px 0}
+.rb .bar{position:relative;height:12px;border:1px solid var(--edge);background:var(--sunken)}
+.rb .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--edge-hi)}
+.rb .bar i.was{background:transparent;border-right:2px dashed var(--ink3)}
+.alt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule)}
+.alt b{font-size:13px}.alt small{grid-column:1;font:11px var(--mono);color:var(--ink2)}
+.alt .btn{grid-row:1/3;grid-column:2;padding:3px 8px;font-size:10px}
+.sd-act{display:flex;gap:8px;padding:12px 18px;border-top:2px solid var(--black);background:var(--sunken)}
 .sd-body .kv{font-size:13px;padding:7px 0}
 .sd-body .note{font-size:12px;color:var(--ink2);margin:10px 0}
-.nested{position:absolute;left:18px;right:18px;bottom:18px;background:var(--sunken);border:3px solid var(--edge-hi);padding:16px;
+.nested{display:none;margin:0 18px 18px;background:var(--sunken);border:3px solid var(--edge-hi);padding:16px;
   transform:translateY(10px);opacity:0;pointer-events:none;transition:transform 100ms ease-out,opacity 100ms linear}
-.nested.open{transform:none;opacity:1;pointer-events:auto}
+.nested.open{display:block;transform:none;opacity:1;pointer-events:auto}
 .nested h3{font-size:15px}
 .nested .g3{font:700 10px var(--mono);letter-spacing:.14em;color:var(--red);margin-bottom:6px}
 .hold{position:relative;display:block;width:100%;margin-top:12px;border:3px solid var(--edge-hi);padding:12px;font:700 12px var(--mono);letter-spacing:.12em;overflow:hidden;touch-action:none}
@@ -362,7 +380,7 @@ body.editing #sc .leaf .grab{display:inline}
 
   <section class="ws capws" id="ws-cap">
     <div class="ctable">
-      <div class="ch"><b>CONTRACTS · 41</b><span>click a row for its release plan · edge marks the final year</span></div>
+      <div class="ch"><b>CONTRACTS · 41</b><span>final year ends in<i class="key-cap rfa"></i>RFA · team can match<i class="key-cap ufa"></i>UFA · walks free</span></div>
       <div class="ct-wrap"><table class="ct"><thead><tr><th>POS</th><th>PLAYER</th><th class="sorted">2026 ▼</th><th>2027</th><th>2028</th><th>2029</th><th>DEAD IF CUT</th><th>VALUE</th><th>$ / VALUE</th></tr></thead><tbody id="ctb"></tbody></table></div>
     </div>
     <div class="cside">
@@ -400,15 +418,23 @@ body.editing #sc .leaf .grab{display:inline}
   <section class="sdrawer" id="sd" aria-label="Release plan">
     <div class="bd-head"><h2>Release plan · <span id="sdN">-</span></h2><button class="x" id="sdX">ESC</button></div>
     <div class="sd-body">
-      <div class="kv"><span>Salary this year</span><span id="sdS">-</span></div>
-      <div class="kv"><span>Years left after this one</span><span id="sdY">-</span></div>
-      <div class="kv"><span>Dead cap, this year</span><span id="sdD" class="warn">-</span></div>
-      <div class="kv"><span>Dead cap, next year</span><span id="sdD2">-</span></div>
-      <div class="kv"><span>Cap room after release</span><span id="sdR" class="ok">-</span></div>
-      <div class="kv"><span>Roster after</span><span>40 / 44 active</span></div>
-      <p class="note">Releasing is permanent on MFL. The app prepares the move and opens the exact MFL page; it lands when MFL's own data shows it.</p>
-      <div style="display:flex;gap:8px"><button class="btn" id="sdWhat">TRY IN WHAT-IF</button><button class="btn g2" id="sdGo">PREPARE RELEASE</button></div>
+      <div class="sd-sec">THE COST<span id="sdFA"></span></div>
+      <div class="kv2">
+        <div class="kv"><span>Salary this year</span><span id="sdS">-</span></div>
+        <div class="kv"><span>Years left after</span><span id="sdY">-</span></div>
+        <div class="kv"><span>Dead cap now</span><span id="sdD" class="warn">-</span></div>
+        <div class="kv"><span>Dead cap next yr</span><span id="sdD2">-</span></div>
+        <div class="kv"><span>Room after</span><span id="sdR" class="ok">-</span></div>
+        <div class="kv"><span>Roster after</span><span>40 / 44</span></div>
+      </div>
+      <div class="sd-sec">CAP ROOM, BEFORE ┆ AFTER<span>dashed = today</span></div>
+      <div id="sdRun"></div>
+      <div class="sd-sec">YOUR LINEUP<span id="sdSlot"></span></div>
+      <div class="alt" style="border:0"><b id="sdLu">-</b><small id="sdLu2">-</small></div>
+      <div class="sd-sec">BEFORE YOU CUT<span>other ways out</span></div>
+      <div id="sdAlt"></div>
     </div>
+    <div class="sd-act"><button class="btn" id="sdWhat">TRY IN WHAT-IF</button><button class="btn g2" id="sdGo" style="margin-left:auto">PREPARE RELEASE</button></div>
     <div class="nested" id="nest" role="dialog" aria-label="Confirm release">
       <div class="g3">IRREVERSIBLE</div>
       <h3>Release <span id="nN">-</span></h3>
@@ -588,7 +614,8 @@ const C=[['QB','Jayden Daniels','WAS',[4.10,4.10,4.10],88],['RB','Bijan Robinson
  ['S','Brian Branch','DET',[1.30,1.30],77],['LB','Edgerrin Cooper','GB',[0.90,0.90,0.90],76],['RB','Zach Charbonnet','SEA',[0.90],62],['DE','Jared Verse','LAR',[0.95,0.95,0.95],80],
  ['WR','Jalen McMillan','TB',[0.70,0.70],63],['WR','Xavier Legette','CAR',[0.80,0.80,0.80],61],['TE','Brenton Strange','JAX',[0.60],55],['OL','Lions O-Line','DET',[0.40],58]];
 const fm=v=>'$'+v.toFixed(2)+'M';
-ctb.innerHTML=C.map((c,i)=>{const yrs=[0,1,2,3].map(k=>c[3][k]!=null?`<td class="yr ${k===c[3].length-1?'last':''}">${c[3][k].toFixed(2)}</td>`:`<td class="yr off">·</td>`).join('');
+const FA=C.map((c,i)=>(c[4]>=78||i%3===0)?'rfa':'ufa');
+ctb.innerHTML=C.map((c,i)=>{const yrs=[0,1,2,3].map(k=>c[3][k]!=null?`<td class="yr ${k===c[3].length-1?'last':''}">${c[3][k].toFixed(2)}${k===c[3].length-1?`<i class="cap-end ${FA[i]}" title="${FA[i].toUpperCase()}"></i>`:''}</td>`:`<td class="yr off">·</td>`).join('');
   const dead=(c[3][0]*0.5).toFixed(2),eff=c[3][0]/c[4]*100;
   return `<tr data-i="${i}"><td><span class="pg">${c[0]}</span></td><td>${c[1]}<small>${c[2]}</small></td>${yrs}<td>${dead}</td><td>${c[4]}</td><td class="${eff<2.2?'ok':eff>5.5?'warn':''}">${eff.toFixed(1)}</td></tr>`}).join('');
 const RUN=[['2026',84,8.9,'6.40'],['2027',71,3.1,'23.20'],['2028',44,0,'50.40'],['2029',22,0,'70.20']];
@@ -601,8 +628,22 @@ dec.innerHTML=DEC.map(d=>`<div class="drow"><span class="pg">${d[0]}</span><span
 dead.innerHTML=[['RB','Khalil Herbert','Released Wk 7','$0.30M','2026 only'],['WR','Mike Williams','Released 2025','$2.20M','thru 2027'],['DE','Za\'Darius Smith','Released 2025','$3.10M','2026 only'],['QB','Kirk Cousins','Traded 2025','$2.40M','thru 2027']]
  .map(d=>`<div class="drow" style="grid-template-columns:34px 1fr auto auto"><span class="pg">${d[0]}</span><span>${d[1]} <small style="color:var(--ink3);font:11px var(--mono)">${d[2]}</small></span><span class="mono">${d[3]}</span><span class="mono" style="color:var(--ink3);font-size:11px">${d[4]}</span></div>`).join('');
 /* release drawer */
-function sdOpen(i){const c=C[i];sdN.textContent=nN.textContent=c[1];sdS.textContent=fm(c[3][0]);sdY.textContent=c[3].length-1;
-  sdD.textContent=fm(c[3][0]*.5);sdD2.textContent=c[3].length>1?fm(c[3][1]*.25):'$0.00M';sdR.textContent=fm(6.40+c[3][0]*.5);iN.textContent=c[1];
+function sdFill(i){const c=C[i],cut=c[3][0]*.5;
+  sdFA.innerHTML=`ends ${2025+c[3].length} as <b class="fa ${FA[i]}">${FA[i].toUpperCase()}</b>`;
+  const rows=[['2026',6.40,6.40+cut],['2027',23.20,23.20+(c[3].length>1?c[3][1]*.75:0)]];
+  sdRun.innerHTML=rows.map(([y,a,b])=>`<div class="rb"><span>${y}</span><span class="bar"><i style="width:${Math.min(100,b/30*100)}%"></i><i class="was" style="width:${a/30*100}%"></i></span><b style="text-align:right" class="ok">${fm(b)}</b></div>`).join('');
+  const start=slots.findIndex(s=>s.pid&&P[s.pid].name===c[1]);
+  if(start>=0){const sub=benchIds().filter(id=>fits(id,start)).sort((a,b)=>eff(b)-eff(a))[0];
+    sdSlot.textContent=slots[start].code+' starter';sdLu.textContent=sub?`${P[sub].name} steps in at ${slots[start].code}`:'Slot goes empty';
+    sdLu2.textContent=sub?`${P[sub].proj.toFixed(1)} proj vs ${P[slots[start].pid].proj.toFixed(1)} · ${(P[sub].proj-P[slots[start].pid].proj).toFixed(1)} this week`:'No eligible bench player'}
+  else{sdSlot.textContent='bench';sdLu.textContent='Not in your starting 19';sdLu2.textContent='Lineup unchanged · frees one active roster spot'}
+  const yrs=c[3].length;sdAlt.innerHTML=[
+    [`Trade him · ${c[0]==='K'?'3 teams are short at K':'2 teams list '+c[0]+' as a need'}`,`Owner 3, Owner 9${c[0]==='K'?', Owner 21':''} · value ${c[4]} trades for a late pick`,'ADD TO TRADE'],
+    [yrs>1?'Ride it out':'Let it expire',yrs>1?`Costs ${fm(c[3].slice(1).reduce((a,b)=>a+b,0))} more · ends ${2025+yrs} as ${FA[i].toUpperCase()}`:`Costs ${fm(c[3][0]-cut)} more than cutting · then ${FA[i]==='rfa'?'you can match offers':'he walks free'}`,'KEEP'],
+    ['Taxi squad','Not eligible · past his 3rd NFL season','—']]
+   .map(a=>`<div class="alt"><b>${a[0]}</b><small>${a[1]}</small>${a[2]==='—'?'<span class="mono" style="grid-row:1/3;grid-column:2;color:var(--ink3)">—</span>':`<button class="btn">${a[2]}</button>`}</div>`).join('')}
+function sdOpen(i){const c=C[i];sdFill(i);sdN.textContent=nN.textContent=c[1];sdS.textContent=fm(c[3][0]);sdY.textContent=c[3].length-1;
+  sdD.textContent=fm(c[3][0]*.5);sdD2.textContent=c[3].length>1?fm(c[3][1]*.25):'$0.00M';sdR.textContent=fm(6.40+c[3][0]*.5);iN.textContent=c[1];document.querySelector('.ihead .sub').textContent=`${c[2]} · ${fm(c[3][0])} thru ${2025+c[3].length} · ${FA[i].toUpperCase()}`;document.querySelector('.ihead .pg').textContent=c[0];
   ctb.querySelectorAll('tr').forEach(r=>r.classList.toggle('sel',+r.dataset.i===i));nest.classList.remove('open');resetHold();sd.classList.add('open')}
 function sdClose(){sd.classList.remove('open');nest.classList.remove('open')}
 ctb.onclick=e=>{const r=e.target.closest('tr');if(r)sdOpen(+r.dataset.i)};
