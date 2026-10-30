@@ -1,4 +1,4 @@
-# Control Room: the complete tree (v1, 2026-10-30)
+# Control Room: the complete tree (v1 + Sol triage, 2026-10-30)
 
 Draft for Christopher, then Sol (organization review), then Claude triage. Built by Claude from the code on
 `origin/main` 364379ba, not from memory. Every leaf cites where it comes from.
@@ -288,5 +288,41 @@ nodes; this tree's overlap table replaces it at the screen level.
 10. No guided flow for expanding/shrinking the league.
 11. Flagship rulings with no Control Room home yet: decision windows (labels per team, owner-side), new-owner kit (People › Seats → invite should attach it), custom trophy case (Pulse), progress bars, rebuild coach — owner features; only the new-owner kit touches the commissioner.
 
-## 6. Open questions for Christopher (after triage)
-(filled after Sol review)
+## 6. Sol review and Claude triage (2026-10-30)
+Sol 6.1 review: Beelink `~/fleet/runs/sol-uiux/stdout.log` (read-only, `origin/main` 364379ba). Each
+point was checked by Claude in the code before it was accepted.
+
+### Accepted (verified in code)
+| # | Finding | Verified at | Change to the tree |
+|---|---|---|---|
+| T1 | Owners can withdraw a standing bid: `withdraw()` only checks the bid is theirs and live | `internal/commissioner/market/bid_execute.go:136` | **Conflicts with R3** (a bid ends only when legally outbid). Engine fix, logged as a ruled bug, not a question |
+| T2 | Jobs don't emit vacant franchises, pending invites, open votes or inactivity | `jobs_league.go` emits only seed, stat_queue, in_season, communications, rookie_draft, dot_review, playoffs, waivers, bids | Those four rows are relabelled **G** (job row missing) |
+| T3 | Built jobs missing from the tree: Record starting assets, In-season operations, startup draft, O-Line must-cut | `jobs_league.go`, `draft_startup.go`, `oline_close.go` | Added to Jobs |
+| T4 | Search matches control names, questions and rule labels, not current values | `ControlSearch.tsx:7` | M1 corrected: search finds labels and questions; value search is **G** |
+| T5 | "Undo anything" is false: MFL cutover is permanent | `migration.go:49-54` | Undo reads "every change except cutover, which says so before it runs" |
+| T6 | Missing leaves: accept invitation, record activity, step aside from review (`trade.recuse`), `contract.action.set` alias, withdraw notice, local sign-in after restore | `commands.wire.testdata.json`, `LeagueOps.tsx`, `LocalSignIn.tsx` | Added to People, Fix and League Ops |
+| T7 | Unbuilt per the controls fixture: titles (CM-048), history link (CM-049), engine parameters (CM-055); awards (CM-050) deferred | `controls.wire.testdata.json` | Status split into three columns: **command / screen / workflow**; no blanket B |
+| T8 | Two-click budget fails: cap rule = 4+ clicks, five common tasks = 3 | tree §2–3 | **Navigation rule changed:** a branch opens straight onto ready launchers (the top tasks of that branch); rule families are **filter chips** on one Rules list, not a level of the tree. Cap rule: Rules → type/chip "cap" → edit = 2 |
+| T9 | Rename families: C Scoring & standings, D Cap & contracts ("Money" reads as dues, which is retired), H Rulebook & notifications | rules fixture + README | Renamed. Cross-links (IR/taxi salary share from Rosters, RFA from Player movement, deadline from Trades) are aliases to one home |
+| T10 | Sides is derived, never set | `constitution.go` comment | Shown read-only with "counted from conferences" |
+| T11 | Placement: seed held league → League Ops › Leagues; titles + history link → Pulse Archive with a commissioner layer | `migration.go`, census CM-048/049 | Moved |
+| T12 | Situations must say what is still manual, and claim no command that doesn't exist ("stat queue hold" has none) | command fixture | Each situation gets three lines: tools, still manual, check afterwards. "Hold" removed; marked **G** |
+| T13 | New situations: commissioner is a trade party (recuse → co-commish appeal), tied blind auction, startup draft stalls, invite won't redeem, wrong historical franchise | command fixture | Added |
+| T14 | Real gaps: no pick-forfeit (penalty) command; no RFA match-dispute command | command fixture (verified: no such verb) | **G**; commissioner can only fix through `correct.pick` / contract edit today |
+| T15 | Deep links from a Job to an owner screen must carry league, season/week, entity, permission and a return path; blind bids stay private even to the commissioner (R2 ruling) | `HostedWorkflows.tsx` | Added to the M7 overlap rule |
+| T16 | Server admin and league admin are separate permissions (R10 operator ruling agrees) | ruling R10 | League Ops splits into **League** (comms, ledger, data, migration, leagues) and **Server** (status, backups, restore, upgrade; operator role) |
+
+### Rejected or qualified
+| # | Sol said | Why not taken |
+|---|---|---|
+| X1 | Escalate the authenticator reset: `internal/accounts/README.md:102,149` says no commissioner-reset door | The README predates Christopher's **10-30 ruling** (TOTP opt-in; the commissioner can reset an owner's authenticator). The ruling stands; the README describes what was built before it. Kept as **R, unbuilt**, its own slice |
+| X2 | Open bids aren't totalled against cap (G6) | Partly checked: `nativecheck/bids.go:186` says cap is "judged by the caller". The caller wasn't traced. **Lead, not finding**: verify when T1 is fixed |
+| X3 | G3 auction "too broad" because free-agency start uses bids | Accepted as qualified: a free-agency start is a bid auction. The remaining gap is MFL's draft + auction mix only |
+| X4 | Awards entry in Archive | Kept as deferred with the side-games suite (ruling), shown honestly as "later" |
+
+### Questions only Christopher can answer
+Q1. Pick forfeiture as a penalty (T14): should the commissioner get a "take away a pick" penalty command,
+    or are penalties out of scope?
+Q2. Breadth (standing ruling: open rigid settings on sight). Confirming the order for the build backlog:
+    lineup lock first (it's missing entirely), then all-play / total-points formats, then schedule patterns,
+    then a rookie draft lottery option. Any of these you do NOT want?
