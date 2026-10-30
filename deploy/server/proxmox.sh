@@ -39,6 +39,8 @@ fi
 [[ $hostname =~ ^[a-z0-9][a-z0-9.-]+\.[a-z]{2,}$ && $hostname == *."$zone" ]] || stop "The hostname should end in .$zone, like league.$zone."
 [[ $replace == yes || $replace == no ]] || stop 'Answer yes or no to replacing a lost server.'
 if [[ $replace == yes ]]; then replace=true; else replace=false; fi
+# Terminal paste can wrap the hidden input in bracketed-paste markers or spaces.
+token=${token//$'\e[200~'/}; token=${token//$'\e[201~'/}; token=${token//[[:space:]]/}
 [[ $token =~ ^[a-zA-Z0-9_-]+$ ]] || stop "That Cloudflare API token does not look right; copy it again from Cloudflare."
 [[ ! -e /etc/pve/lxc/$ctid.conf && ! -e /etc/pve/firewall/$ctid.fw ]] || stop "Container $ctid already exists; choose another number."
 work=$(mktemp -d)
@@ -61,10 +63,11 @@ pveam update
 template=$(pveam available --section system | awk '$2 ~ /^alpine-3\.23-default_.*amd64.tar.xz$/ {print $2}' | sort -V | tail -1)
 [[ -n $template ]] || { echo 'No Alpine 3.23 amd64 template is available.' >&2; exit 1; }
 pveam download "$templates" "$template"
-pct create "$ctid" "$templates:vztmpl/$template" --hostname "twr-$ctid" \
+# The owner-only umask would make the rootfs unreadable to the unprivileged mapping.
+(umask 022; pct create "$ctid" "$templates:vztmpl/$template" --hostname "twr-$ctid" \
   --unprivileged 1 --features nesting=1 --cores 2 --memory 1024 --swap 0 \
   --rootfs "$storage:4" --onboot 0 --nameserver 1.1.1.1 \
-  --net0 "name=eth0,bridge=$bridge,tag=$vlan,ip=dhcp,ip6=manual,firewall=1"
+  --net0 "name=eth0,bridge=$bridge,tag=$vlan,ip=dhcp,ip6=manual,firewall=1")
 created=1
 {
   cat <<'RULES'
