@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>TheWarRoom: Franchise HQ mock v9 (2026-10-30)</title>
+<title>TheWarRoom: Franchise HQ mock v10 (2026-10-30)</title>
 <style>
 :root{
   --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
@@ -56,7 +56,14 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .ws-tabs{display:flex;align-items:stretch;border-bottom:2px solid var(--black);background:var(--sunken)}
 .ws-tabs button{padding:11px 16px;font:600 11px var(--mono);letter-spacing:.1em;color:var(--ink3);border-right:1px solid var(--black)}
 .ws-tabs button[aria-selected=true]{color:var(--ink);background:var(--canvas);box-shadow:inset 0 3px 0 var(--edge-hi)}
-.ws-tabs .cmd{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--ink3);font:11px var(--mono)}
+.queue{margin-left:auto;display:flex;align-items:stretch;border-left:2px solid var(--black);transition:transform 70ms linear}
+.queue:hover{transform:translateY(1px)}
+.queue .ql{display:flex;align-items:center;padding:0 12px;font:700 10px var(--mono);letter-spacing:.14em;background:var(--tile);background-image:var(--knurl);color:var(--ink)}
+.queue .qn{display:flex;align-items:center;padding:0 10px;font:700 10px var(--mono);letter-spacing:.08em;border-left:1px solid var(--black);color:var(--ink2)}
+.queue .qn.need{background:var(--amber);color:var(--black)}
+.queue .qn.dim{color:var(--ink3)}
+.queue.on .ql{background:var(--edge-hi);color:var(--black)}
+.ws-tabs .cmd{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--ink3);font:11px var(--mono)}
 .ws-tabs .cmd kbd{border:1px solid var(--edge);padding:1px 5px;color:var(--ink2)}
 
 /* the franchise plate: one line, every number earns its place */
@@ -99,7 +106,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .mu-rows div{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;padding:0 14px;height:28px;align-items:center;border-bottom:1px solid var(--rule);font-size:12px}
 .mu-rows div:nth-child(odd){border-right:1px solid var(--rule)}
 .mu-rows .n{text-align:right}
-.slot{display:grid;grid-template-columns:52px 34px minmax(170px,300px) 64px 52px 44px 1fr;align-items:center;gap:8px;height:30px;
+.slot{display:grid;grid-template-columns:52px 34px 230px 150px 64px 52px 44px 1fr;align-items:center;gap:8px;height:30px;
   padding:0 14px;border-bottom:1px solid var(--rule);transition:transform 70ms linear;cursor:pointer}
 .slot:hover{background:var(--raised);transform:translateX(2px)}
 .slot .sl{font:600 10px var(--mono);letter-spacing:.06em;color:var(--ink3)}
@@ -108,11 +115,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .slot .pr{font-family:var(--mono);text-align:right}
 .slot .st{font:600 10px var(--mono);text-align:right}
 .st.bye{color:var(--ink3)} .st.q{color:var(--amber)} .st.out{color:var(--red)} .st.live{color:var(--blue)}
-.form{display:flex;gap:3px;align-items:flex-end;height:18px;justify-self:end;padding-right:6px}
-.form i{width:14px;background:var(--ink3)}
-.form i:last-child{background:var(--edge-hi)}
+.form{position:relative;display:flex;gap:2px;align-items:flex-end;height:22px;justify-self:start;border-bottom:1px solid var(--edge)}
+.form i{width:11px;background:hsl(220,10%,38%);transition:transform 70ms linear}
+.form i.up{background:var(--ink)}
+.form i.bye{height:100%!important;background:repeating-linear-gradient(-45deg,var(--ink3) 0 2px,transparent 2px 5px);opacity:.6}
+.form .pj{position:absolute;left:0;width:63px;height:0;border-top:1px dashed var(--edge-hi);pointer-events:none}
+.form b{font:10px var(--mono);color:var(--ink2);margin-left:8px;align-self:center;font-weight:400}
+.form i:hover{transform:scaleY(1.08);outline:1px solid var(--edge-hi)}
+.blist .form i{width:9px}.blist .form .pj{width:53px}.blist .form b{display:none}
 .form em{font:10px var(--mono);color:var(--ink3);font-style:normal;margin-right:6px;align-self:center}
-@container (max-width:900px){.form{display:none}}
+@container (max-width:640px){.board .col:first-child .form{display:none}}
 .board .col:first-child{container-type:inline-size}
 .slot.gap{background:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.22) 0 6px,hsla(220,25%,2%,.6) 6px 12px);outline:2px solid var(--edge-hi);outline-offset:-2px;box-shadow:inset 6px 0 0 var(--amber)}
 .slot.gap .sl{color:var(--ink);padding-left:4px}
@@ -135,7 +147,7 @@ body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
 .inl{flex:1;min-height:0;overflow:hidden}
 .inl .sec{border-top:2px solid var(--black)}
 .inl .slot{height:30px;grid-template-columns:34px minmax(150px,1fr) 64px 52px}
-.blist .slot{height:30px;grid-template-columns:34px minmax(150px,1fr) 64px 52px}
+.blist .slot{height:30px;grid-template-columns:34px minmax(130px,190px) 96px 58px 44px 1fr}
 .blist::-webkit-scrollbar{width:8px} .blist::-webkit-scrollbar-thumb{background:var(--edge)}
 
 /* action tray: the only home for commit controls */
@@ -354,7 +366,7 @@ body.editing #sc .leaf .grab{display:inline}
   <div class="ws-tabs" role="tablist">
     <button role="tab" data-ws="lineup" aria-selected="true">LINEUP AND ROSTER</button>
     <button role="tab" data-ws="cap" aria-selected="false">CONTRACTS AND CAP</button>
-    <button role="tab" data-ws="moves" aria-selected="false">MY MOVES <span class="warn">·2</span></button>
+    <button class="queue" data-ws="moves" aria-label="My moves queue"><span class="ql">MY MOVES</span><span class="qn need">2 NEED YOU</span><span class="qn">2 WAITING</span><span class="qn dim">3 LANDED</span></button>
     <div class="cmd"><kbd>/</kbd> lineup.swap out=… in=…</div>
   </div>
 
@@ -553,16 +565,20 @@ function bench(pid){const i=slots.findIndex(s=>s.pid===pid);if(i<0)return;slots[
 
 /* ---------- render ---------- */
 const tag=(pid)=>`<span class="pg drag" data-pid="${pid}" title="Drag to move">${P[pid].pos}</span>`;
-function srow(s,i){if(!s.pid)return `<div class="slot gap ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span><span></span><span class="nm">Empty · drop any defender</span><span class="elig">—</span><span class="pr">0.0</span><span class="st warn">OPEN</span></div>`;
-  const p=P[s.pid];return `<div class="slot ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span>${tag(s.pid)}<span class="nm">${p.name}<small>${p.team}</small></span><span class="elig">${p.opp}</span><span class="pr">${p.proj.toFixed(1)}</span><span class="st ${p.st}">${stx[p.st]||''}</span>${form(p)}</div>`}
-function form(p){const h=[...p.name].reduce((a,c)=>a+c.charCodeAt(0),0);const w=[0,1,2,3,4].map(k=>Math.max(.15,Math.min(1,(p.proj/22)*(.6+((h*(k+3))%9)/10))));
-  return `<span class="form"><em>L5</em>${w.map(v=>`<i style="height:${Math.round(v*100)}%"></i>`).join('')}</span>`}
+function srow(s,i){if(!s.pid)return `<div class="slot gap ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span><span></span><span class="nm">Empty · drop any defender</span><span></span><span class="elig">—</span><span class="pr">0.0</span><span class="st warn">OPEN</span></div>`;
+  const p=P[s.pid];return `<div class="slot ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span>${tag(s.pid)}<span class="nm">${p.name}<small>${p.team}</small></span>${form(p)}<span class="elig">${p.opp}</span><span class="pr">${p.proj.toFixed(1)}</span><span class="st ${p.st}">${stx[p.st]||''}</span></div>`}
+// last five weeks: bright = beat this week's projection, dashed line = projection, hatched = bye
+function form(p){const h=[...p.name].reduce((a,c)=>a+c.charCodeAt(0),0),byeAt=h%7===0?h%5:-1;
+  let sd=h*9301+49297;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+  const pts=[0,1,2,3,4].map(k=>k===byeAt?null:+(p.proj*(.35+rnd()*1.15)).toFixed(1));
+  const top=Math.max(p.proj,...pts.filter(x=>x!=null))*1.08,real=pts.filter(x=>x!=null),avg=real.reduce((a,b)=>a+b,0)/real.length;
+  return `<span class="form" title="Last 5 weeks vs this week's projection ${p.proj.toFixed(1)}">${pts.map((v,k)=>v==null?`<i class="bye" title="Wk ${4+k} · bye"></i>`:`<i class="${v>=p.proj?'up':''}" style="height:${Math.max(6,Math.round(v/top*100))}%" title="Wk ${4+k} · ${v.toFixed(1)}"></i>`).join('')}<span class="pj" style="bottom:${Math.round(p.proj/top*20)}px"></span><b>avg ${avg.toFixed(1)}</b></span>`}
 function draw(){
   const sum=side=>slots.filter(s=>s.side===side).reduce((a,s)=>a+Math.max(eff(s.pid),0),0);
   off_.innerHTML=slots.map((s,i)=>s.side==='off'?srow(s,i):'').join('');def_.innerHTML=slots.map((s,i)=>s.side==='def'?srow(s,i):'').join('');
   muUs.textContent=(sum('off')+sum('def')).toFixed(1);oSum.textContent=sum('off').toFixed(1);dSum.textContent=sum('def').toFixed(1);tSum.textContent=(sum('off')+sum('def')).toFixed(1);
   const b=benchIds().filter(id=>fpos==='ALL'||P[id].pos===fpos).sort((a,c)=>P[c].proj-P[a].proj);bCount.textContent=benchIds().length;
-  bench_.innerHTML=b.map(id=>`<div class="slot ${picked===id?'picked':''}" data-b="${id}">${tag(id)}<span class="nm">${P[id].name}<small>${P[id].team}</small></span><span class="elig">${P[id].opp}</span><span class="pr">${P[id].proj.toFixed(1)}</span></div>`).join('');
+  bench_.innerHTML=b.map(id=>`<div class="slot ${picked===id?'picked':''}" data-b="${id}">${tag(id)}<span class="nm">${P[id].name}<small>${P[id].team}</small></span>${form(P[id])}<span class="elig">${P[id].opp}</span><span class="pr">${P[id].proj.toFixed(1)}</span></div>`).join('');
   const gaps=slots.filter(s=>!s.pid).length,q=slots.filter(s=>s.pid&&P[s.pid].st==='q').length,bye=slots.filter(s=>s.pid&&P[s.pid].st==='bye').length;
   chk.innerHTML=(gaps+bye?'<span class="warn">●</span> ':'<span class="ok">●</span> ')+[gaps&&`${gaps} empty`,bye&&`${bye} on bye`,q&&`${q} questionable`].filter(Boolean).join(' · ')||'<span class="ok">●</span> Lineup is full';
   msg.innerHTML=changes.length?`<b style="color:var(--ink)">${changes.length} change${changes.length>1?'s':''}</b> · ${changes.slice(-4).join(' · ')}`:'No changes. Drag a tag, or pick a bench player then a dashed slot.';
@@ -659,6 +675,7 @@ draw();inline();
 const trayLineup=[...document.querySelectorAll('.tray > *')];
 function ws(name){document.querySelectorAll('.ws').forEach(x=>x.classList.toggle('on',x.id==='ws-'+name));
   document.querySelectorAll('[role=tab][data-ws]').forEach(t=>t.setAttribute('aria-selected',t.dataset.ws===name));
+  document.querySelector('.queue').classList.toggle('on',name==='moves');
   document.querySelectorAll('.node .leaf[data-ws]').forEach(l=>l.classList.toggle('sel',l.dataset.ws===name));
   document.querySelectorAll('.pulls,#discard,.tray .g2,.tray .solid').forEach(x=>x.style.visibility=name==='lineup'?'visible':'hidden');
   msg.innerHTML=name==='cap'?'Contracts read only here. Every cut, extension or tag opens as a drawer you confirm.':name==='moves'?'Every move you prepare lives here until MFL\'s own data proves it landed.':msg.innerHTML;
