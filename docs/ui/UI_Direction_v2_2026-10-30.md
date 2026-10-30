@@ -93,4 +93,4 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - Window labels ("win now", "rebuilding") show league-wide.
 - Center cards (scouting, player career, news, trade) are an approved exception to inspector-only; more areas will use them.
 - Control Room covers both day-to-day commissioner jobs and league setup/settings; co-commissioner gets near-parity.
-- Open: "one-of bids" (to be re-explained).
+- **R3 One-of bids: NO.** A bid is a bid. No conditional or grouped bids. Every open bid counts against cap room; total bids can never exceed available cap. A bid ends only when legally outbid (or it wins). Reason: bids are signals other owners act on, so they must be binding.

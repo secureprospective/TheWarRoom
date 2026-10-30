@@ -53,14 +53,14 @@ All prior ones are in UI_Direction_v2. New this window:
 - **R1** Race defaults to Power Rankings in the offseason: YES.
 - **R2** Window labels shown league-wide: YES.
 - **R4** Center cards are an approved exception to inspector-only; more areas will use them.
-- **R3 "one-of bids"**: he didn't understand the question. Re-explain it plainly (it came from the War Room Market discussion; find the original wording in UI_Direction / warroom mock, NOT by regex on the JSONL) and re-ask.
+- **R3 one-of bids: NO** — a bid is a bid; all open bids count against cap; cancel only when legally outbid. Recorded in UI_Direction.
 
 ## 8. Ledger
 Everything committed on the local branch; nothing pushed; pushing not discussed.
 
 ## 9. Next actions
 1. On "we are back": read this file + UI_Direction_v2.
-2. Re-ask R3 (one-of bids) in plain words.
+2. (done) R3 ruled NO.
 3. Control Room: read memories `project_warroom_k3_rulings`, `project_warroom_commish_full_control`, `project_warroom_commish_surface_process`, `project_warroom_cli_ai_actors`, `project_warroom_rules_are_league_data`; then propose a one-screen layout with subtabs (jobs vs setup), confirm, optionally Sol 2nd opinion, then build `control-room-mock-v1.html`.
 
 ## 10. Environment
