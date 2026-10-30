@@ -92,7 +92,7 @@ func (r RawDesktop) Validate() error {
 		return (accounts.RawRecovery{Username: r.Username, Code: r.Code, Password: r.Password}).Validate() //nolint:wrapcheck // Local boundary returns validation only.
 	case "enroll":
 		return (accounts.RawEnrollment{Username: r.Username, Password: r.Password, Code: r.Code}).Validate() //nolint:wrapcheck // Local boundary returns validation only.
-	case "login", "totp-begin", "totp-confirm", "totp-step-up":
+	case "login", "totp-begin", "totp-confirm", "totp-step-up", "recovery-codes":
 		if err := (accounts.RawCredentials{Username: r.Username, Password: r.Password}).Validate(); err != nil {
 			return fmt.Errorf("desktop credentials: %w", err)
 		}
@@ -128,6 +128,8 @@ type DesktopView struct {
 	Confirmation  string        `json:"confirmation"`
 	Seats         []DesktopSeat `json:"seats"`
 	HelperPreview string        `json:"helperPreview,omitempty"`
+	// RecoveryCodes are shown once, right after they are printed; the server keeps only digests.
+	RecoveryCodes []string `json:"recoveryCodes,omitempty"`
 }
 
 type DesktopSeat struct {
@@ -190,6 +192,8 @@ func (d *Desktop) actLocked(ctx context.Context, raw RawDesktop, view DesktopVie
 		return d.login(ctx, raw, view)
 	case "recover":
 		return d.recoverAccount(ctx, raw, view)
+	case "recovery-codes":
+		return d.printRecoveryCodes(ctx, raw, view)
 	case "enroll":
 		body, err := postDesktop(ctx, d, serverhttp.EnrollmentPath, enrollmentBody{1, enrollmentCredentials{raw.Code, raw.Username, raw.Password}})
 		if err != nil {
@@ -219,6 +223,26 @@ func (d *Desktop) recoverAccount(ctx context.Context, raw RawDesktop, view Deskt
 		return view, err
 	}
 	view.Message = "Password reset. Sign in with your new password. Set up your authenticator again if required."
+	return view, nil
+}
+
+// printRecoveryCodes replaces the account's unused codes. It needs a fresh authenticator check.
+func (d *Desktop) printRecoveryCodes(ctx context.Context, raw RawDesktop, view DesktopView) (DesktopView, error) {
+	if d.proof == "" {
+		return view, fmt.Errorf("verify a fresh authenticator code first, then print new recovery codes")
+	}
+	request := serverhttp.RawRecoveryCodesRequest{Protocol: 1, Username: raw.Username, Password: raw.Password}
+	body, err := postDesktop(ctx, d, serverhttp.RecoveryCodesPath, request)
+	if err != nil {
+		return view, err
+	}
+	var response serverhttp.RecoveryCodesResponse
+	if err := decodeDesktop(body, &response); err != nil {
+		return view, err
+	}
+	view.RecoveryCodes = response.Codes
+	view.Message = "New recovery codes. Write them down or print them now; they will not be shown again. " +
+		"Each works once. Your old codes no longer work."
 	return view, nil
 }
 

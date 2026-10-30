@@ -219,11 +219,11 @@ func TestSpareHostRestoreDrill(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := restoreSpareHost(ctx, sets, wrong, restoreSettings(wrong), target, filepath.Join(t.TempDir(), "wrong"), io.Discard); !errors.Is(err, offsite.ErrRestoreKey) {
+	if err := restoreSpareHost(ctx, sets, wrong, restoreSettings(wrong), target, filepath.Join(t.TempDir(), "wrong"), time.Time{}, io.Discard); !errors.Is(err, offsite.ErrRestoreKey) {
 		t.Fatalf("wrong key: %v", err)
 	}
 	var report bytes.Buffer
-	if err := restoreSpareHost(ctx, sets, restoreKey, restoreSettings(restoreKey), target, stage, &report); err != nil {
+	if err := restoreSpareHost(ctx, sets, restoreKey, restoreSettings(restoreKey), target, stage, time.Time{}, &report); err != nil {
 		t.Fatal(err)
 	}
 	// What restore.sh does as root: install the ready files, drop the fresh database's sidecars.
@@ -316,7 +316,7 @@ func TestRestoreRefusesServerHoldingLeague(t *testing.T) {
 		t.Fatal(err)
 	}
 	stage := filepath.Join(t.TempDir(), "restore")
-	err = restoreSpareHost(t.Context(), sets, restoreKey, restoreSettings(restoreKey), filepath.Join(dir, "server.db"), stage, io.Discard)
+	err = restoreSpareHost(t.Context(), sets, restoreKey, restoreSettings(restoreKey), filepath.Join(dir, "server.db"), stage, time.Time{}, io.Discard)
 	if err == nil || !strings.Contains(err.Error(), "freshly installed") || sets.opened != 0 {
 		t.Fatalf("restore over a live league: %v (opened %d)", err, sets.opened)
 	}
@@ -347,7 +347,7 @@ func TestRestoreDoesNotSkipNewerReleaseForOlderBackup(t *testing.T) {
 	if err := migrateServer(t.Context(), target); err != nil {
 		t.Fatal(err)
 	}
-	err = restoreSpareHost(t.Context(), sets, key, restoreSettings(key), target, stage, io.Discard)
+	err = restoreSpareHost(t.Context(), sets, key, restoreSettings(key), target, stage, time.Time{}, io.Discard)
 	if !errors.Is(err, errNewerSet) || sets.opened != 1 {
 		t.Fatalf("silently fell back to an older league: %v (opened %d)", err, sets.opened)
 	}

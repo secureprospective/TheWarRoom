@@ -12,6 +12,9 @@ import (
 
 const objectFormat = "20060102T150405.000000000Z"
 
+// SetTime reads when a recovery set was saved from its object name.
+func SetTime(name string) (time.Time, error) { return objectTime(name) }
+
 func objectTime(name string) (time.Time, error) {
 	if !strings.HasPrefix(name, "sets/") || !strings.HasSuffix(name, ".tar.gz.age") {
 		return time.Time{}, fmt.Errorf("not a recovery set")

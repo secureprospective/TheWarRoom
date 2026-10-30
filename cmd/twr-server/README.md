@@ -109,6 +109,7 @@ migration and persisted verified-alias configuration are not supplied here.
 | `/v1/auth/totp/begin` | `protocol`, `username`, `password`; returns setup `seed` once. |
 | `/v1/auth/totp/confirm` | Same plus six-digit `code`; consumes confirmation code. |
 | `/v1/auth/totp/step-up` | Same plus a fresh `code`; returns `recent_auth`. |
+| `/v1/auth/recovery-codes` | `protocol`, `username`, `password` plus `X-TWR-Recent-Auth`; returns eight new `codes` once. |
 | `/v1/native/ledger` | `protocol`, `league`; authorized ledger. |
 | `/v1/native/preview` | `protocol`, `command` (RawCommand); shared-service dry run. |
 | `/v1/native/execute` | Same command envelope; shared-service receipt, including canonical retries. |
@@ -141,6 +142,11 @@ account authority, never league authority. It consumes the shared authentication
 allowance and password-work budget. Successful reset revokes devices, removes old factors,
 and consumes the code. The native desktop Account recovery tab uses this route and then
 returns to sign-in. Console recovery remains the fallback when no unused code is available.
+
+**New recovery codes:** `POST /v1/auth/recovery-codes` needs the password and a fresh
+authenticator proof (`X-TWR-Recent-Auth`, five minutes). It replaces every unused code with
+eight new ones, returns them once, stores only digests and writes an audit row. The desktop
+Authenticator tab shows a Print new recovery codes button after a verified code.
 
 Public proxy/Tunnel, SSE and deployment/key-custody drills remain separate gates.
 
