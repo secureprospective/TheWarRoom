@@ -126,7 +126,7 @@ Layer = build order: L0 trunks exist, L1 aggregators, L2 models, L3 private stor
 | D53 | Depth charts | NEW | ingestion | PUB | feeds | HM | daily | 4 |
 | D54 | Stat tables / saved views | PARTIAL | fantasyscore; views personal | PUB / PRIV views | nflverse | HM | weekly | 4 |
 | D55 | Bio + career | PARTIAL | playerrecord | PUB | T4 | HM | weekly | 1 |
-| D56 | Alerts | EXISTS | app/control | per-franchise derived (PUB inputs) | D14, D16, D17, D34 | HM | on input | 0 |
+| D56 | Alerts (+ Outbid, ruled 10-30) | EXISTS + new producer | app/control | per-franchise derived (PUB inputs; Outbid carries no rival data) | D14, D16, D17, D34, bid execute | HM | on input | 0 |
 | D57 | Snooze | NEW | store/personal (kind) | PRIV | owner | HM | on change | 3 |
 | D58 | Home layout/pins | NEW | store/personal (kind) | PRIV | owner | SH, HM | on change | 3 |
 | D59 | Leaders ticker | PARTIAL | fantasyscore | PUB | D09/D12 | HM | live | 1 |
@@ -170,8 +170,8 @@ The order L1 → L2 → L3 is fixed by data dependencies. L4 and L5 can run in p
 7. DERIV-PRIV results are never written to a shared cache.
 
 ## 7. Open items — status
-1. **Bid visibility (D37):** RULING NEEDED. The map assumes SEALED, which follows R2 "no early peeking". Under that reading the WR outbid card would say "You've been outbid", with no name or amount until the window closes.
-2. **Role variants on owner screens:** RULING NEEDED. Proposal: owner screens are identical for every role, the commish sees their own team, and office powers live only in Control Room and its deep links.
+1. **Bid visibility (D37): RULED 10-30 — SEALED.** Outbid owner sees "You've been outbid", with no rival name or amount until the window closes; then the result is in the ledger. Plan items: (a) the WR v6 outbid card shows name + amount, so its copy changes to the sealed text (this is the one ruled change to an approved mock); (b) **Home alert**: an "Outbid" alert joins D56 (producer = bid execute event, per franchise, urgent while the window is open, deep-links to the WR bid), and D57 snooze applies to it; (c) isolation test 2 covers the alert payload (no name or amount).
+2. **Role variants: RULED 10-30 — identical.** Owner screens render the same for every role; the commish sees their own team there; office powers live only in Control Room and its deep links. Build rule: no role checks in owner-screen code.
 3. **Co-owners and private space (new):** RULING NEEDED. `store/personal` is per franchise. Should co-owners share one private space (the current code) or have one each?
 4. **Mock inspectors half-bind:** build rule, no ruling. Every drawer binds to the selected entity, the WR partner selector swaps shelf and direction, and plan checks run per plan.
 5. **Models without algorithms (L2):** each gets a method doc and replay proof before it ships. The listed order is the build order.
