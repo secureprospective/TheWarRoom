@@ -38,3 +38,44 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - A closed drawer is fully gone: no peeking header. Every add or change must have a functional or aesthetic reason.
 - Row data packs beside the name it describes (form bars next to the player, not at the far edge). Form bars: last 5 weeks, bright = beat this week's projection, dashed line = projection, hatched = bye, avg beside, values on hover; on bench rows too.
 - My Moves is a queue, not a workspace tab: its own control in the tab bar with counts (needs you / waiting / landed).
+
+## War Room (10-30)
+- Trade Floor folds into War Room: the back room for consequential planning, transactions and the offseason. Five areas: Table (direction), Trade Desk, Market, Draft Room, Plans.
+- Trade Desk: two-lens calculator with "their read"; send/get trays organized with colour definition; A/B/C versions. Pocket is a drawer of saved unsent trades with stale flags.
+- Market: a draft bid can be removed; a placed bid is final, and only being outbid invalidates it.
+- Draft Room: the center scouting card is approved (an exception to inspector-only, still to be written into the rule sheet). Draft order shows rounds, traded picks and live fill.
+- Plans is a private thinking desk. It holds checklists per calendar event, ranked needs and live summaries of Trade Desk, Market and Draft Room. Nothing executes from Plans.
+- The bottom calendar strip is reserved for future franchise-sim play controls. Reserve the space only; don't build it.
+- Players, picks and names are physical draggable objects everywhere.
+- Never invent system states for owner judgments ("PRICED OUT", "NEXT UP"). Show only states the machinery really produces.
+- Filter buttons look like real machine buttons. Screens are built for long hours: easy on the eyes.
+- Palette: smoky.
+
+## League Pulse (10-30)
+- Three tabs: Live · Race · Archive. No new rail node. Matchups is not a tab; it lives inside Live.
+- Palette: jet black (neutral black, soft warm-white text at about 84%), with a truer-green field. It is the most-used and TV screen, so it must never glare. The War Room stays smoky and HQ stays cool grey.
+- Raised cards keep the page colour inside. Lift comes only from a light border, a hard black shadow and a hazard top edge. A lighter card fill is rejected.
+- Live is the game-day / TV screen:
+  - Left: MATCHUPS | NFL GAMES toggle, opening on Matchups. My game is pinned, then the NFC and AFC sides. Each row has a win % per team, coloured text only (green ≥65, amber ≤35); no LIVE tags.
+  - Clicking a matchup fills the center card; MY MATCHUP ‹ returns to mine.
+  - Center: field and follow bar on top, with a light ball/LOS slide on each new play.
+  - Center card: 16 v 16 starters in OFFENSE/DEFENSE groups, shorthand stat lines ("16-71 rush | 0-23 rec") with solid TD tags first, a clock chip, and a football icon when the player is on the field (offense when their team has the ball, defense when the opponent has it).
+  - Right: IN THIS GAME at natural height (never cut off); the selected game's play-by-play fills the rest.
+  - Bottom pulls: MATCHUP BOX, WEEK STORY, SCHEDULE, STAT CHANGES and NFL BOX SCORE. Each follows the selected matchup.
+- Race:
+  - Standings: SEEDS | DIVISIONS × AFC | NFC, with power rank and odds columns. My Road shows my win % per remaining game.
+  - Power Rankings is first-class, because most of the year is offseason. Three horizons:
+    - THIS SEASON: form 30, lineup 30, health 15, all-play 15, run-in 10.
+    - DYNASTY · 3 YR: Best 21 value 35, age 20, picks 20, cap 15, depth 10, plus peak year.
+    - BLEND: 60/40.
+  - Every part shows a rank of 1–16, with weights visible. The score is a number followed by a thin bar; text never sits on the bar. Each team carries a window label, and VS RECORD shows seed minus power rank.
+  - Rank movement is not drawn in the table. WHY IT MOVED has THIS WEEK (notes) / THIS SEASON (segmented rank charts: square per week, green climb, amber fall, zoomed to the team's range) / LAST 12 MONTHS (blend rank plus trades, drafts and FA).
+  - Playoff Picture: seed now → projected. The run-in grid covers wks 10–14 with opponent and win % cells; division leaders are outlined. Flags read "N IN A ROW vs ★" / SOFT FINISH, and a team that projects out of the playoffs is tagged BUBBLE. Odds follow the projection. Below sit the projected bracket and THIS WEEK MOVES IT.
+  - Engine needs: per-game win probability from power, run-in projection, and dynasty components from valuation. None of these exist yet.
+- Archive: full franchise history, defaulting to my team. Eras by owner explain "how did we get here". The chart has stamps (DIV TITLE / PLAYOFFS / PLAYOFF WIN / conference champ / CHAMPION). A trophy shelf opens a full-screen TROPHY CASE. FRANCHISE | LEAGUE toggle.
+- Open: Race default view by phase (power in the offseason?); window labels shown league-wide (yes/no).
+
+## Mocks added (10-30)
+- `warroom-mock-v6.html`: War Room, current.
+- `league-pulse-mock-v14.html`: League Pulse, current. v1–v13 are history.
+- Research: `research/league-pulse-reorg-opinion-2026-10-30.md`, `plans-tab-opinion-2026-10-30.md`, `scouting-notes-research-2026-10-30.md`.
