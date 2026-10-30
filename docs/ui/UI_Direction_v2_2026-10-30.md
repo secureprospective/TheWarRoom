@@ -79,3 +79,11 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - `warroom-mock-v6.html`: War Room, current.
 - `league-pulse-mock-v14.html`: League Pulse, current. v1–v13 are history.
 - Research: `research/league-pulse-reorg-opinion-2026-10-30.md`, `plans-tab-opinion-2026-10-30.md`, `scouting-notes-research-2026-10-30.md`.
+
+## Home (10-30)
+- Three subtabs: BRIEF · DEPTH CHARTS · NFL STATS (rail leaves under Home). Palette leaves jet black; slate is the pick, with graphite and grey on a mock switch for comparison.
+- Brief: customizable 3x2 tile grid (default subject to season phase; custom never moves on its own), overflow drawer instead of displacement, one-row alert band outside the layout (all screens), NFL news front and center, broadcast-style top-5-per-position ticker, transactions with typed blocks (WIRE = solid green).
+- Full cards sized to content: news (blurb + player panel), trade (side by side), other transactions (narrow). Player career card (MFL-style: bio, league contract, NEWS / season STATS with FFB pts / PROJ / CAREER) opens from any player name on Home. Ruled exception to inspector-only, like the Draft Room scouting card.
+- Depth charts: team picker by division, OFF / DEF / ST five-deep grid, names coloured by league ownership. Source TBD (Sleeper depth order / ESPN); Ourlads is reference only.
+- NFL stats: saved views, position / weeks / ownership / team / minimum filters, sortable, FFB PTS and FFB/G scored with league rules.
+- `home-mock-v5.html` is current; v1–v4 are history.
