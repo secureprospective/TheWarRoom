@@ -1,6 +1,13 @@
 #!/bin/sh
 set -eu
 umask 077
+if [ "$#" = 0 ]; then
+  set -- /usr/local/bin/twr-server hosted -listen 127.0.0.1:8443 \
+  -db /var/lib/twr/server.db -tls-cert /etc/twr/origin.pem \
+  -tls-key /etc/twr/origin.key -totp-key-file /etc/twr/authenticator.key \
+  -backup-config /etc/twr/backup.json -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1 \
+  -status-socket /var/lib/twr/status.sock
+fi
 exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop ALL \
   --ro-bind /usr /usr --ro-bind /lib /lib --ro-bind /bin /bin \
   --ro-bind /etc/twr /etc/twr --ro-bind /etc/ssl/certs /etc/ssl/certs --proc /proc --dev /dev \
@@ -8,8 +15,4 @@ exec bwrap --unshare-all --share-net --die-with-parent --new-session --cap-drop 
   --chdir /var/lib/twr --clearenv --setenv PATH /usr/bin:/bin \
   --setenv HOME /var/lib/twr --setenv TMPDIR /var/lib/twr \
   --setenv GOMEMLIMIT 768MiB --setenv GOMAXPROCS 2 \
-  /usr/local/bin/twr-server hosted -listen 127.0.0.1:8443 \
-  -db /var/lib/twr/server.db -tls-cert /etc/twr/origin.pem \
-  -tls-key /etc/twr/origin.key -totp-key-file /etc/twr/authenticator.key \
-  -backup-config /etc/twr/backup.json -preview-registry /etc/twr/endpoint-registry.csv -trusted-proxy 127.0.0.1 \
-  -status-socket /var/lib/twr/status.sock
+  "$@"

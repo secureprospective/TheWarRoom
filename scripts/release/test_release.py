@@ -101,6 +101,15 @@ class ReleaseTests(unittest.TestCase):
                        str(self.downloads), "https://updates.example.org/targets/",
                        fetcher=self.fetcher, bootstrap=self.root.to_bytes())
 
+    def test_server_bundle_release_custom(self):
+        targets, _ = release.prepare_targets(
+            self.root, self.config, [], 1, server_bundles=[self.artifact])
+        custom = targets.to_dict()["signed"]["targets"][self.artifact.name]["custom"]
+        self.assertEqual(custom, {"twr_server_release": release.server_release()})
+        self.assertGreaterEqual(custom["twr_server_release"], 1)
+        desktop, _ = release.prepare_targets(self.root, self.config, [self.artifact], 1)
+        self.assertNotIn("custom", desktop.to_dict()["signed"]["targets"][self.artifact.name])
+
     def test_signed_artifact_and_public_config_download(self):
         repo = self.repository("valid")
         # Exercise actual publisher linking and finalization as well.
