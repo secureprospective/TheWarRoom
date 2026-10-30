@@ -100,3 +100,4 @@ It covers watch/stars/lanes, notes, plans, versions/pocket, scouting, snooze, la
 
 ## 7. Rulings
 - 10-30: **one database per league** (resolves growth-catalog D8). R2 drops from urgent leak to a guard: personal rows stay per franchise inside the league file; any shared/server-wide file must never hold league-private rows.
+- 10-30: **retention approved** — forecasts: keep latest + each week's final + replay-pinned, delete the rest after 7 days; feed files: keep any used to score a week, delete the rest after 30 days. Check both on thick3 before locking.
