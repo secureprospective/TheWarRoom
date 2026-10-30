@@ -1,0 +1,892 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>TheWarRoom · Control Room mock v1</title><style>
+:root{
+  --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
+  --ink:hsl(220,20%,94%); --ink2:hsl(220,12%,74%); --ink3:hsl(220,10%,56%);
+  --edge:hsl(220,10%,28%); --edge-hi:hsl(220,8%,82%); --black:hsl(220,25%,2%); --rule:hsl(220,15%,13%);
+  --green:hsl(145,50%,58%); --blue:hsl(210,80%,66%); --amber:hsl(38,92%,58%); --red:hsl(358,75%,62%);
+  --mono:"JetBrains Mono","DejaVu Sans Mono",monospace; --sans:"Inter","Noto Sans",system-ui,sans-serif;
+  --knurl:repeating-linear-gradient(45deg,hsla(0,0%,100%,.035) 0 1px,transparent 1px 4px),
+          repeating-linear-gradient(-45deg,hsla(0,0%,0%,.35) 0 1px,transparent 1px 4px);
+  --hazard:repeating-linear-gradient(-45deg,var(--edge-hi) 0 6px,var(--black) 6px 12px);
+  --hatch:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.10) 0 5px,transparent 5px 10px);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--canvas);color:var(--ink);font:13px/1.35 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.mono,.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.shell{display:grid;grid-template-columns:224px 1fr 316px;height:100%}
+
+/* ---------- rail (option 3, ruled) ---------- */
+.rail{background:var(--tile);background-image:var(--knurl);border-right:3px solid var(--black);display:flex;flex-direction:column}
+.rail-head{padding:14px 14px 12px;border-bottom:2px solid var(--black)}
+.lg{font:700 12px var(--mono);letter-spacing:.16em}
+.ph{margin-top:6px;font:11px var(--mono);color:var(--ink2)} .ph i{font-style:normal;color:var(--green)}
+.rail-body{flex:1;padding:6px 0;overflow:hidden}
+.gl{padding:10px 14px 4px;font:600 10px var(--mono);letter-spacing:.16em;color:var(--ink3)}
+.node>.nb{width:100%;display:flex;align-items:center;gap:10px;padding:8px 14px;text-align:left;font-weight:600;border-left:4px solid transparent;transition:transform 70ms linear}
+.nb .k{font:11px var(--mono);color:var(--ink3);width:10px}
+.nb .car{margin-left:auto;font:11px var(--mono);color:var(--ink3)}
+.nb:hover{transform:translateX(2px);background:var(--raised)}
+.node.open>.nb{background:var(--raised);border-image:var(--hazard) 1}
+.node.open .car{transform:rotate(90deg)}
+.mark{width:6px;height:6px;background:var(--green);margin-left:4px}
+.leaf{display:flex;gap:6px;width:100%;padding:5px 14px 5px 26px;text-align:left;color:var(--ink2);font-size:12.5px;transition:transform 70ms linear}
+.leaf:hover{color:var(--ink);transform:translateX(2px)}
+.leaf .tr{font-family:var(--mono);color:var(--edge)}
+.leaf.sel{color:var(--ink);font-weight:600} .leaf.sel .tr::after{content:"▮";color:var(--edge-hi)}
+.leaf.now{border:1px solid var(--edge);margin:2px 10px 4px 22px;width:calc(100% - 32px);padding-left:8px;color:var(--ink)}
+.tag{font:700 9px var(--mono);letter-spacing:.12em;background:var(--edge-hi);color:var(--black);padding:1px 4px;align-self:center}
+.rail-foot{border-top:2px solid var(--black);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink3)}
+
+/* ---------- shared controls ---------- */
+.btn{border:2px solid var(--edge);padding:6px 11px;font:600 11px var(--mono);letter-spacing:.06em;transition:transform 70ms linear,box-shadow 70ms linear}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
+.btn:active{transform:none;box-shadow:none}
+.btn.g2{border-width:2px;border-color:var(--edge-hi)}
+.btn.solid{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.pg{display:inline-block;min-width:26px;text-align:center;border:1px solid var(--ink3);font:600 10px var(--mono);padding:0 3px;color:var(--ink2)}
+
+/* ---------- workspace ---------- */
+.work{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;min-width:0;overflow:hidden}
+.ws-tabs{display:flex;align-items:stretch;border-bottom:2px solid var(--black);background:var(--sunken)}
+.ws-tabs button{padding:11px 16px;font:600 11px var(--mono);letter-spacing:.1em;color:var(--ink3);border-right:1px solid var(--black)}
+.ws-tabs button[aria-selected=true]{color:var(--ink);background:var(--canvas);box-shadow:inset 0 3px 0 var(--edge-hi)}
+.queue{margin-left:auto;display:flex;align-items:stretch;border-left:2px solid var(--black);transition:transform 70ms linear}
+.queue:hover{transform:translateY(1px)}
+.queue .ql{display:flex;align-items:center;padding:0 12px;font:700 10px var(--mono);letter-spacing:.14em;background:var(--tile);background-image:var(--knurl);color:var(--ink)}
+.queue .qn{display:flex;align-items:center;padding:0 10px;font:700 10px var(--mono);letter-spacing:.08em;border-left:1px solid var(--black);color:var(--ink2)}
+.queue .qn.need{background:var(--amber);color:var(--black)}
+.queue .qn.dim{color:var(--ink3)}
+.queue.on .ql{background:var(--edge-hi);color:var(--black)}
+.ws-tabs .cmd{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--ink3);font:11px var(--mono)}
+.ws-tabs .cmd kbd{border:1px solid var(--edge);padding:1px 5px;color:var(--ink2)}
+
+/* the franchise plate: one line, every number earns its place */
+.plate{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
+.who b{font-size:20px;letter-spacing:-.01em}
+.who div{font:11px var(--mono);color:var(--ink2);margin-top:3px}
+.cap{display:grid;gap:6px}
+.cap-top{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink3);letter-spacing:.08em}
+.cap-top b{color:var(--ink);font-weight:600}
+.cap-bar{display:flex;height:12px;border:1px solid var(--edge);background:var(--sunken)}
+.cap-bar span{height:100%;border-right:2px solid var(--black)}
+.seg-c{background:var(--edge-hi)} .seg-d{background:var(--hatch),var(--ink3)} .seg-r{background:transparent}
+.cap-key{display:flex;gap:16px;font:11px var(--mono);color:var(--ink2)}
+.cap-key i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px;border:1px solid var(--edge)}
+.check{border:2px solid var(--edge-hi);padding:8px 12px;display:grid;gap:2px;min-width:190px}
+.check .h{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.check .v{font-weight:600}
+.check .v .warn{color:var(--amber)}
+.check .t{font:11px var(--mono);color:var(--amber)}
+
+/* main board: starters | bench, both fixed-height */
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(430px,32%);gap:0;min-height:0;border-bottom:2px solid var(--black)}
+.col{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.col:last-child{border-right:0}
+.sec{display:flex;justify-content:space-between;padding:7px 14px 5px;font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3);background:var(--sunken);border-bottom:1px solid var(--edge)}
+.sec span{font-weight:400}
+.ch{display:flex;align-items:baseline;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--edge)}
+.ch b{font:700 11px var(--mono);letter-spacing:.14em}
+.ch span{font:11px var(--mono);color:var(--ink3)}
+.slots{flex:none}
+.mu{flex:1;min-height:0;overflow:hidden;border-top:2px solid var(--black);display:flex;flex-direction:column}
+.mu-h{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 14px;gap:14px;border-bottom:1px solid var(--edge)}
+.mu-h .side b{display:block;font:700 22px var(--mono)}
+.mu-h .side span{font:11px var(--mono);color:var(--ink3)}
+.mu-h .them{text-align:right}
+.wp{width:260px;display:grid;gap:4px;text-align:center;font:11px var(--mono);color:var(--ink2)}
+.wp .bar{display:flex;height:10px;border:1px solid var(--edge)}
+.wp .bar i{background:var(--edge-hi)}
+.mu-rows{display:grid;grid-template-columns:1fr 1fr;align-content:start}
+.mu-rows div{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;padding:0 14px;height:28px;align-items:center;border-bottom:1px solid var(--rule);font-size:12px}
+.mu-rows div:nth-child(odd){border-right:1px solid var(--rule)}
+.mu-rows .n{text-align:right}
+.slot{display:grid;grid-template-columns:52px 34px 230px 150px 64px 52px 44px 1fr;align-items:center;gap:8px;height:30px;
+  padding:0 14px;border-bottom:1px solid var(--rule);transition:transform 70ms linear;cursor:pointer}
+.slot:hover{background:var(--raised);transform:translateX(2px)}
+.slot .sl{font:600 10px var(--mono);letter-spacing:.06em;color:var(--ink3)}
+.slot .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .nm small{color:var(--ink3);font:11px var(--mono);margin-left:6px}
+.slot .pr{font-family:var(--mono);text-align:right}
+.slot .st{font:600 10px var(--mono);text-align:right}
+.st.bye{color:var(--ink3)} .st.q{color:var(--amber)} .st.out{color:var(--red)} .st.live{color:var(--blue)}
+.form{position:relative;display:flex;gap:2px;align-items:flex-end;height:22px;justify-self:start;border-bottom:1px solid var(--edge)}
+.form i{width:10px;background:hsl(220,9%,30%);transition:transform 70ms linear}
+.form i.up{background:hsl(220,10%,62%)}
+.form i.bye{height:100%!important;background:repeating-linear-gradient(-45deg,hsl(220,9%,34%) 0 2px,transparent 2px 5px)}
+.form .pj{position:absolute;left:0;width:58px;height:0;border-top:1px dashed hsl(220,8%,50%);pointer-events:none}
+.form b{font:10px var(--mono);color:var(--ink2);margin-left:8px;align-self:center;font-weight:400}
+.form i:hover{transform:scaleY(1.08);outline:1px solid var(--edge-hi)}
+.blist .form i{width:9px}.blist .form .pj{width:53px}.blist .form b{display:none}
+.form em{font:10px var(--mono);color:var(--ink3);font-style:normal;margin-right:6px;align-self:center}
+@container (max-width:640px){.board .col:first-child .form{display:none}}
+.board .col:first-child{container-type:inline-size}
+.slot.gap{background:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.22) 0 6px,hsla(220,25%,2%,.6) 6px 12px);outline:2px solid var(--edge-hi);outline-offset:-2px;box-shadow:inset 6px 0 0 var(--amber)}
+.slot.gap .sl{color:var(--ink);padding-left:4px}
+.slot.gap .st{background:var(--amber);color:var(--black);text-align:center;padding:2px 0;font-weight:700}
+.slot.gap .nm{color:var(--ink);font-weight:600;background:var(--black);padding:2px 8px;justify-self:start}
+.slot.target{outline:1px dashed var(--edge-hi);outline-offset:-3px}
+.drag{cursor:grab;touch-action:none;transition:transform 70ms linear,box-shadow 70ms linear}
+.drag:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi);color:var(--ink)}
+.ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi);box-shadow:3px 3px 0 var(--black);padding:2px 8px}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
+.slot.over{background:var(--raised);outline:2px solid var(--edge-hi);outline-offset:-2px}
+.bench.dropzone .blist{outline:2px dashed var(--edge-hi);outline-offset:-4px}
+.slot.chg{box-shadow:inset 4px 0 0 var(--edge-hi);background:var(--raised)}
+.slot.picked{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
+
+.bench .filters{display:flex;gap:3px;padding:8px 14px;border-bottom:1px solid var(--edge)}
+.chip{font:600 10px var(--mono);padding:2px 0;flex:1;text-align:center;border:1px solid var(--edge);color:var(--ink2)}
+.chip[aria-pressed=true]{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.blist{flex:none;max-height:calc(30px * 22);overflow:auto}
+.inl{flex:1;min-height:0;overflow:hidden}
+.inl .sec{border-top:2px solid var(--black)}
+.inl .slot{height:30px;grid-template-columns:34px minmax(150px,1fr) 64px 52px}
+.blist .slot{height:30px;grid-template-columns:34px minmax(130px,190px) 96px 58px 44px 1fr}
+.blist::-webkit-scrollbar{width:8px} .blist::-webkit-scrollbar-thumb{background:var(--edge)}
+
+/* action tray: the only home for commit controls */
+.tray{display:flex;align-items:center;gap:10px;padding:10px 20px;white-space:nowrap;background:var(--sunken)}
+.tray .msg{font:12px var(--mono);color:var(--ink2);overflow:hidden;text-overflow:ellipsis;margin-left:8px}
+.tray .sp{margin-left:auto}
+
+/* pull tabs: physical handles on the bottom edge */
+.pulls{display:flex;gap:6px;align-self:stretch;margin:-10px 0}
+.pull{display:flex;gap:8px;align-items:center;padding:0 12px;background:var(--tile);background-image:var(--knurl);
+  border:2px solid var(--edge);border-top:0;font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink2);
+  transform:translateY(-3px);transition:transform 70ms linear}
+.pull:hover{transform:translateY(0);color:var(--ink);border-color:var(--edge-hi)}
+.pull b{color:var(--ink);font-weight:700}
+.pull[aria-expanded=true]{transform:translateY(0);border-color:var(--edge-hi);color:var(--ink)}
+
+/* bottom drawer */
+.bdrawer{position:absolute;left:0;right:0;bottom:var(--trayh,52px);max-height:60%;background:var(--tile);border-top:3px solid var(--edge-hi);
+  transform:translateY(102%);transition:transform 120ms ease-out;z-index:6;display:grid;grid-template-rows:auto 1fr}
+.bdrawer::before{content:"";position:absolute;left:0;right:0;top:-3px;height:5px;background:var(--hazard)}
+.bdrawer:not(.open){transform:translateY(calc(100% + var(--trayh,52px) + 8px));visibility:hidden;transition:transform 120ms ease-out,visibility 0s 120ms}
+.bdrawer.open{transform:none;visibility:visible}
+.bd-head{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:2px solid var(--black)}
+.bd-head h2{font-size:15px}
+.bd-head .sub{font:11px var(--mono);color:var(--ink3)}
+.bd-head .x{margin-left:auto;font:11px var(--mono);border:1px solid var(--edge);padding:2px 6px;color:var(--ink3)}
+.bd-body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;overflow:hidden}
+.bd-main{min-width:0;border-right:2px solid var(--black)}
+.bd-side{display:flex;flex-direction:column}
+.bd-side .ch{border-top:0}
+.sum{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--black)}
+.sum div{padding:10px 14px;border-right:1px solid var(--rule)}
+.sum div:nth-child(2n){border-right:0}
+.sum div:nth-child(n+3){border-top:1px solid var(--rule)}
+.sum b{display:block;font:700 18px var(--mono)} .sum span{font:10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.bt td{height:30px}
+.bt .btn{padding:2px 8px;font-size:10px}
+.yrs{display:inline-flex;gap:2px;vertical-align:-1px}.yrs i{width:10px;height:10px;border:1px solid var(--ink3)}.yrs i.u{background:var(--edge-hi);border-color:var(--edge-hi)}
+.tl{display:grid;grid-template-columns:repeat(9,1fr);margin:12px 14px 14px;border:1px solid var(--edge)}
+.tl div{height:54px;border-right:1px solid var(--rule);padding:4px 6px;font:10px var(--mono);color:var(--ink3);position:relative}
+.tl div:last-child{border-right:0}
+.tl div.now{background:var(--raised);color:var(--ink)}
+.tl b{position:absolute;left:4px;right:4px;bottom:5px;font:600 10px var(--mono);color:var(--black);background:var(--edge-hi);padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wi{display:grid;grid-template-columns:22px 52px 1fr auto;gap:10px;align-items:center;padding:0 14px;height:34px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform 70ms linear}
+.wi:hover{background:var(--raised);transform:translateX(2px)}
+.wi .box{width:14px;height:14px;border:2px solid var(--edge)}
+.wi.on{background:var(--raised)} .wi.on .box{background:var(--edge-hi);border-color:var(--edge-hi)}
+.wi .k{font:600 10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.wi .d{font:12px var(--mono)}
+.sum .delta .ok{color:var(--green)}.sum .delta .warn{color:var(--amber)}
+.sum .delta span{font:inherit}
+.sum .delta{display:block;padding:0;border:0;font:11px var(--mono);color:var(--ink3);margin-top:2px}
+
+.elig{font:10px var(--mono);color:var(--ink3);text-align:right}
+
+/* ---------- inspector + custom drawers ---------- */
+.insp{background:var(--tile);border-left:3px solid var(--black);display:grid;grid-template-rows:auto auto 1fr auto auto;min-height:0}
+.ihead{padding:14px 16px 12px;border-bottom:2px solid var(--black)}
+.ihead .top{display:flex;justify-content:space-between;align-items:center}
+.ihead .on{font:600 11px var(--mono);color:var(--blue)}
+.ihead .nm{font-size:17px;font-weight:700;margin-top:6px}
+.ihead .sub{color:var(--ink2);font-size:12px;margin-top:2px}
+.nums{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--black)}
+.nums div{padding:12px 16px}
+.nums div+div{border-left:1px solid var(--edge)}
+.nums b{display:block;font:700 26px var(--mono)}
+.nums span{font:11px var(--mono);color:var(--ink3)}
+.idrawers{overflow:hidden;min-height:0}
+.idr{border-bottom:1px solid var(--black)}
+.idr>button{width:100%;display:flex;align-items:center;gap:8px;padding:9px 16px;font:600 11px var(--mono);letter-spacing:.08em;color:var(--ink2);text-align:left;transition:transform 70ms linear}
+.idr>button:hover{color:var(--ink);transform:translateX(2px)}
+.idr>button .c{margin-left:auto;color:var(--ink3)}
+.idr.open>button{color:var(--ink);background:var(--raised);box-shadow:inset 3px 0 0 var(--edge-hi)}
+.idr .body{display:none;padding:10px 16px 12px;background:var(--canvas)}
+.idr.open .body{display:block}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);font-size:12px}
+.kv span:last-child{font-family:var(--mono)}
+.mine{font:9px var(--mono);letter-spacing:.1em;border:1px solid var(--edge);padding:0 4px;color:var(--ink3)}
+.arc{display:flex;align-items:flex-end;gap:3px;height:46px;margin-top:4px}
+.arc i{flex:1;background:var(--ink3)} .arc i.now{background:var(--edge-hi)}
+.iact{border-top:2px solid var(--black);padding:12px 16px;display:grid;gap:8px}
+.iact .h{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.ia{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ifoot{border-top:2px solid var(--black);padding:10px 16px;display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink3)}
+.ifoot button{color:var(--ink2);border:1px dashed var(--edge);padding:3px 8px}
+.ok{color:var(--green)} .warn{color:var(--amber)}
+
+/* ---------- v7: workspaces, cap, moves, release, customize ---------- */
+.ws{display:none}.ws.on{display:grid}
+.work{grid-template-rows:auto auto 1fr auto}
+.capws{grid-template-columns:minmax(0,1fr) minmax(430px,32%);min-height:0;border-bottom:2px solid var(--black)}
+.ctable{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.ct-wrap{flex:1;min-height:0;overflow:auto}
+.ct{width:100%;border-collapse:collapse}
+.ct th{position:sticky;top:0;z-index:1;background:var(--sunken);text-align:right;font:600 10px var(--mono);letter-spacing:.12em;color:var(--ink3);padding:7px 10px;border-bottom:2px solid var(--black);white-space:nowrap}
+.ct th:nth-child(-n+2){text-align:left}
+.ct th.sorted{color:var(--ink)}
+.ct td{height:30px;padding:0 10px;border-bottom:1px solid var(--rule);text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.ct td:nth-child(2){text-align:left;font-family:var(--sans);font-size:13px}
+.ct td:first-child{text-align:left;width:44px}
+.ct td.off{color:var(--edge)}
+.ct td.yr{background:hsla(220,8%,82%,.035);border-left:1px solid var(--rule)}
+.ct td.last{position:relative;padding-right:18px}
+:root{--rfa:hsl(84,90%,52%);--ufa:hsl(54,100%,54%)}
+.cap-end{position:absolute;right:3px;top:5px;bottom:5px;width:9px;border:1px solid var(--black)}
+.cap-end,.key-cap{background-image:repeating-linear-gradient(45deg,hsla(220,25%,2%,.55) 0 1px,transparent 1px 3px),repeating-linear-gradient(-45deg,hsla(220,25%,2%,.35) 0 1px,transparent 1px 3px)}
+.cap-end.rfa,.key-cap.rfa{background-color:var(--rfa)} .cap-end.ufa,.key-cap.ufa{background-color:var(--ufa)}
+.key-cap{display:inline-block;width:9px;height:13px;border:1px solid var(--black);vertical-align:-2px;margin:0 5px 0 12px}
+.fa{font:700 10px var(--mono);letter-spacing:.08em;padding:1px 5px;color:var(--black);border:1px solid var(--black)}
+.fa.rfa{background:var(--rfa)} .fa.ufa{background:var(--ufa)}
+.ct tr{transition:transform 70ms linear;cursor:pointer}
+.ct tbody tr:hover{background:var(--raised);transform:translateX(2px)}
+.ct tr.sel{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
+.ct td small{color:var(--ink3);font:11px var(--mono);margin-left:6px}
+.cside{display:flex;flex-direction:column;min-height:0}
+.run{padding:10px 14px 12px;display:grid;gap:9px;border-bottom:2px solid var(--black)}
+.run .y{display:grid;grid-template-columns:40px 1fr 74px;gap:10px;align-items:center;font:11px var(--mono)}
+.run .y .bar{display:flex;height:14px;border:1px solid var(--edge);background:var(--sunken)}
+.run .y .bar span{height:100%;border-right:2px solid var(--black)}
+.run .y b{text-align:right;font-weight:600}
+.run .y.tight b{color:var(--amber)}
+.dec{flex:1;min-height:0;overflow:hidden}
+.drow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule)}
+.drow .nm{font-weight:600}
+.drow .why{grid-column:2/4;font:11px var(--mono);color:var(--ink2);margin-top:-4px}
+.drow .ops{grid-column:2/4;display:flex;gap:6px}
+.drow .ops .btn{padding:3px 8px;font-size:10px}
+.clock{font:600 11px var(--mono);color:var(--amber);white-space:nowrap}
+.clock.cold{color:var(--ink2)}
+/* side drawer + nested G3 */
+.sdrawer{position:absolute;top:0;right:0;max-height:100%;width:460px;border-bottom:3px solid var(--edge-hi);background:var(--tile);border-left:3px solid var(--edge-hi);
+  transform:translateX(104%);transition:transform 120ms ease-out;z-index:7;display:flex;flex-direction:column}
+.sdrawer::before{content:"";position:absolute;left:-3px;top:0;bottom:0;width:6px;background:var(--hazard)}
+.sdrawer.open{transform:none}
+.sd-body{padding:0 18px 14px;display:grid;gap:0;align-content:start;overflow:hidden}
+.sd-sec{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3);padding:14px 0 6px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between}
+.sd-sec span{font-weight:400;letter-spacing:.04em}
+.kv2{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+.rb{display:grid;grid-template-columns:40px 1fr 70px;gap:10px;align-items:center;font:11px var(--mono);padding:5px 0}
+.rb .bar{position:relative;height:12px;border:1px solid var(--edge);background:var(--sunken)}
+.rb .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--edge-hi)}
+.rb .bar i.was{background:transparent;border-right:2px dashed var(--ink3)}
+.alt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule)}
+.alt b{font-size:13px}.alt small{grid-column:1;font:11px var(--mono);color:var(--ink2)}
+.alt .btn{grid-row:1/3;grid-column:2;padding:3px 8px;font-size:10px}
+.sd-act{display:flex;gap:8px;padding:12px 18px;border-top:2px solid var(--black);background:var(--sunken)}
+.sd-body .kv{font-size:13px;padding:7px 0}
+.sd-body .note{font-size:12px;color:var(--ink2);margin:10px 0}
+.nested{display:none;margin:0 18px 18px;background:var(--sunken);border:3px solid var(--edge-hi);padding:16px;
+  transform:translateY(10px);opacity:0;pointer-events:none;transition:transform 100ms ease-out,opacity 100ms linear}
+.nested.open{display:block;transform:none;opacity:1;pointer-events:auto}
+.nested h3{font-size:15px}
+.nested .g3{font:700 10px var(--mono);letter-spacing:.14em;color:var(--red);margin-bottom:6px}
+.hold{position:relative;display:block;width:100%;margin-top:12px;border:3px solid var(--edge-hi);padding:12px;font:700 12px var(--mono);letter-spacing:.12em;overflow:hidden;touch-action:none}
+.hold .fill{position:absolute;inset:0;background:var(--hazard);transform:scaleX(0);transform-origin:left;opacity:.6}
+.hold span{position:relative;background:var(--black);padding:2px 8px}
+.hold.go .fill{transform:scaleX(1);transition:transform 600ms linear}
+.hold.done{border-color:var(--green)} .hold.done span{color:var(--green)}
+/* my moves: envelope pipeline */
+.movews{grid-template-columns:repeat(4,1fr);grid-template-rows:auto 1fr;min-height:0;border-bottom:2px solid var(--black)}
+.mlog{grid-column:1/-1;display:flex;flex-direction:column;min-height:0;border-top:2px solid var(--black)}
+.mlog .ct td:nth-child(2){font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.mlog .ct td:nth-child(3){text-align:left;font-family:var(--sans);font-size:13px}
+.mlog .ct td:nth-child(4),.mlog .ct td:nth-child(5){text-align:left}
+.mlog .ct th{text-align:left}
+.lane{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.lane:last-child{border-right:0}
+.lane .ch b{display:flex;gap:8px;align-items:center}
+.lane .cards{min-height:0;overflow:hidden;padding:10px;display:grid;gap:8px;align-content:start}
+.mv{border:1px solid var(--edge);background:var(--tile);padding:10px 12px;display:grid;gap:5px;transition:transform 70ms linear,box-shadow 70ms linear;cursor:pointer}
+.mv:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
+.mv.g2{border-width:2px}
+.mv .top{display:flex;justify-content:space-between;font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
+.mv .what{font-weight:600}
+.mv .chk{font:11px var(--mono);color:var(--ink2)}
+.mv .bot{display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink3);border-top:1px solid var(--rule);padding-top:6px}
+.mv .bot .btn{padding:2px 8px;font-size:10px}
+.st-ok{color:var(--green)} .st-bad{color:var(--red)} .st-wait{color:var(--amber)} .st-info{color:var(--blue)}
+.mv.blocked{background:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.07) 0 6px,transparent 6px 12px),var(--tile)}
+/* customize */
+.leaf .pin{display:none;margin-left:auto;font-family:var(--mono);color:var(--ink3)}
+body.editing .leaf .pin{display:inline}
+body.editing .leaf .pin.on{color:var(--edge-hi)}
+body.editing .rail{outline:2px dashed var(--edge-hi);outline-offset:-6px}
+body.editing #sc .leaf .grab{display:inline}
+.leaf .grab{display:none;font-family:var(--mono);color:var(--ink3)}
+.rail-foot .btn{padding:3px 8px;font-size:10px}
+.rail-foot .btn[aria-pressed=true]{background:var(--edge-hi);color:var(--black)}
+body.cr{--canvas:hsl(214,24%,10%);--sunken:hsl(214,28%,6.5%);--tile:hsl(214,20%,13%);--raised:hsl(214,18%,17%);
+  --ink:hsl(210,22%,90%);--ink2:hsl(212,12%,71%);--ink3:hsl(212,10%,55%);--edge:hsl(214,14%,27%);--edge-hi:hsl(210,14%,78%);--black:hsl(216,32%,4%);--rule:hsl(214,18%,15%)}
+.work{display:flex;flex-direction:column;min-width:0;overflow:hidden;position:relative}
+.ws-tabs{flex:none}
+.cr-find{flex:none;display:flex;gap:10px;align-items:center;padding:10px 16px;border-bottom:2px solid var(--black);background:var(--sunken);position:relative}
+.cr-find input{flex:1;background:var(--tile);border:1px solid var(--edge);color:var(--ink);font:13px var(--sans);padding:8px 10px}
+.cr-find input:focus{outline:2px solid var(--edge-hi);outline-offset:-1px}
+.cr-find .hint{font:11px var(--mono);color:var(--ink3)}
+.cr-res{position:absolute;left:16px;right:16px;top:46px;background:var(--raised);border:2px solid var(--edge-hi);z-index:40;display:none;max-height:520px;overflow:hidden}
+.cr-res.open{display:block}
+.cr-res button{display:flex;width:100%;gap:10px;padding:7px 10px;text-align:left;border-bottom:1px solid var(--rule)}
+.cr-res button:hover,.cr-res button.k{background:var(--tile)}
+.cr-res .ty{font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3);width:84px;flex:none;padding-top:2px}
+.cr-res .lb b{font-weight:600} .cr-res .lb span{display:block;color:var(--ink2);font-size:12px}
+.cr-main{flex:1;min-height:0;display:none;padding:14px 16px;gap:14px;overflow:hidden}
+.cr-main.on{display:flex}
+.cr-col{display:flex;flex-direction:column;gap:12px;min-width:0;min-height:0}
+.cr-panel{background:var(--tile);border:1px solid var(--edge);border-top:3px solid var(--black);display:flex;flex-direction:column;min-height:0}
+.cr-ph{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--rule);font:600 11px var(--mono);letter-spacing:.12em;color:var(--ink2)}
+.cr-ph .sp{flex:1} .cr-ph .ct{color:var(--ink3);font-weight:400;letter-spacing:0}
+.cr-pb{padding:10px 12px;min-height:0;overflow:hidden}
+.cr-launch{display:grid;grid-template-columns:1fr;gap:6px}
+.cr-launch button,.cr-act{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--raised);border:1px solid var(--edge);text-align:left;transition:transform 70ms linear}
+.cr-launch button:hover,.cr-act:hover{transform:translateX(2px);border-color:var(--edge-hi)}
+.cr-launch .kb{margin-left:auto;font:10px var(--mono);color:var(--ink3)}
+.cr-grp{font:600 10px var(--mono);letter-spacing:.14em;color:var(--ink3);padding:8px 0 4px}
+.cr-job{display:grid;grid-template-columns:8px 1fr auto auto;gap:10px;align-items:center;padding:7px 8px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform 70ms linear}
+.cr-job:hover{background:var(--raised);transform:translateX(2px)}
+.cr-job.sel{background:var(--raised);box-shadow:inset 3px 0 0 var(--edge-hi)}
+.cr-job .dot{width:8px;height:8px}
+.st-live{background:var(--green)} .st-up{background:var(--blue)} .st-block{background:var(--amber)} .st-unbuilt{background:var(--ink3)} .st-need{background:var(--red)}
+.cr-job .nm b{font-weight:600} .cr-job .nm span{display:block;color:var(--ink2);font-size:12px}
+.cr-job .cnt{font:700 13px var(--mono)}
+.cr-job .when{font:11px var(--mono);color:var(--ink2);min-width:96px;text-align:right}
+.cr-chips{display:flex;flex-wrap:wrap;gap:6px}
+.cr-chip{padding:4px 9px;border:1px solid var(--edge);font:600 11px var(--mono);color:var(--ink2);background:var(--sunken)}
+.cr-chip[aria-pressed=true]{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.cr-chip .c{opacity:.7;margin-left:4px;font-weight:400}
+table.cr-t{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+.cr-t th{text-align:left;font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3);padding:6px 8px;border-bottom:2px solid var(--black);background:var(--sunken)}
+.cr-t td{padding:6px 8px;border-bottom:1px solid var(--rule);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-t tr.rw{cursor:pointer} .cr-t tr.rw:hover td{background:var(--raised)}
+.cr-t tr.sel td{background:var(--raised);box-shadow:inset 0 -1px 0 var(--edge-hi)}
+.cr-t td.v{font-family:var(--mono);font-size:12px;color:var(--ink)}
+.cr-st{font:700 10px var(--mono);letter-spacing:.06em;padding:1px 6px;border:1px solid var(--black)}
+.cr-st.set{background:var(--raised);color:var(--ink2)} .cr-st.need{background:var(--red);color:var(--black)}
+.cr-st.plan{background:var(--blue);color:var(--black)} .cr-st.fixed{background:var(--edge-hi);color:var(--black)}
+.cr-st.pend{background:var(--amber);color:var(--black)}
+.cr-st.live{background:var(--green);color:var(--black)}
+.cr-pager{display:flex;gap:6px;align-items:center;padding:8px 12px;border-top:1px solid var(--rule);font:11px var(--mono);color:var(--ink3)}
+.cr-pager .sp{flex:1}
+.cr-sit{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cr-sit button{display:flex;flex-direction:column;gap:3px;text-align:left;padding:9px 11px;background:var(--raised);border:1px solid var(--edge);min-height:58px;transition:transform 70ms linear}
+.cr-sit button:hover{transform:translateY(-1px);border-color:var(--edge-hi)}
+.cr-sit .cat{font:600 9.5px var(--mono);letter-spacing:.12em;color:var(--ink3)}
+.cr-sit b{font-weight:600;font-size:13px}
+.cr-fix{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.cr-fix button{display:flex;flex-direction:column;gap:4px;text-align:left;padding:12px;background:var(--raised);border:1px solid var(--edge);min-height:84px}
+.cr-fix button:hover{border-color:var(--edge-hi)}
+.cr-fix b{font-size:14px} .cr-fix span{color:var(--ink2);font-size:12px} .cr-fix i{font:normal 10.5px var(--mono);color:var(--ink3);margin-top:auto}
+.cr-cal{position:relative;height:128px;margin:4px 0 0}
+.cr-cal .mo{position:absolute;top:0;bottom:0;border-left:1px solid var(--rule);font:10px var(--mono);color:var(--ink3);padding-left:4px}
+.cr-cal .w{position:absolute;height:20px;background:var(--raised);border:1px solid var(--edge-hi);font:600 10.5px var(--mono);padding:2px 5px;white-space:nowrap;overflow:hidden;cursor:grab}
+.cr-cal .w.ins{background:hsl(145,30%,22%);border-color:var(--green)}
+.cr-cal .w.dl{background:hsl(358,35%,24%);border-color:var(--red)}
+.cr-cal .today{position:absolute;top:14px;bottom:0;width:2px;background:var(--amber)}
+.cr-cal .today::after{content:"TODAY";position:absolute;bottom:0;left:4px;font:700 9px var(--mono);color:var(--amber)}
+.cr-desk{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr;gap:12px;flex:1;min-height:0}
+.cr-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12.5px}
+.cr-kv span{color:var(--ink3)} .cr-kv b{font-weight:500;text-align:right;font-family:var(--mono);font-size:12px}
+.cr-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:10px}
+.cr-btn{padding:6px 10px;border:1px solid var(--edge);background:var(--raised);font:600 11.5px var(--sans)}
+.cr-btn:hover{border-color:var(--edge-hi)}
+.cr-btn.pri{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.cr-btn.g3{border-color:var(--red);color:var(--red)}
+.cr-btn.sm{padding:3px 7px;font-size:11px}
+.cr-two{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.cr-ppl td.seat{font:11px var(--mono)}
+.cr-dot{display:inline-block;width:7px;height:7px;margin-right:6px}
+.cr-led{font-size:12px} .cr-led div{display:grid;grid-template-columns:86px 92px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid var(--rule)}
+.cr-led .t{font:11px var(--mono);color:var(--ink3)} .cr-led .a{font:600 11px var(--mono)}
+.cr-ai{font:700 9px var(--mono);background:var(--blue);color:var(--black);padding:0 4px;margin-left:4px}
+/* inspector */
+.insp{overflow:hidden}
+.cr-ins{padding:14px;display:flex;flex-direction:column;gap:10px;height:100%;overflow:hidden}
+.cr-ins h3{font-size:15px;font-weight:600}
+.cr-ins .sub{color:var(--ink2);font-size:12px}
+.cr-ins .big{font:600 15px var(--mono);padding:10px;background:var(--sunken);border:1px solid var(--edge);white-space:normal;word-break:break-word}
+.cr-ins .lbl{font:600 10px var(--mono);letter-spacing:.12em;color:var(--ink3);margin-top:4px}
+.cr-ins .gov{display:flex;flex-wrap:wrap;gap:4px}
+.cr-ins .gov span{font:11px var(--mono);border:1px solid var(--edge);padding:1px 6px;color:var(--ink2)}
+.cr-ins .hist div{font-size:12px;padding:4px 0;border-bottom:1px solid var(--rule);color:var(--ink2)}
+.cr-ins .foot{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+.cr-ins .lock{font:11px var(--mono);color:var(--amber)}
+/* editor tray */
+.cr-tray{flex:none;border-top:3px solid var(--black);background:var(--tile);display:flex;flex-direction:column}
+.cr-ed{display:none;padding:10px 16px;gap:14px;align-items:flex-start;border-bottom:1px solid var(--rule)}
+.cr-ed.open{display:flex}
+.cr-ed .f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cr-ed label{font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
+.cr-ed input,.cr-ed select,.cr-ed textarea{background:var(--sunken);border:1px solid var(--edge);color:var(--ink);font:13px var(--sans);padding:6px 8px}
+.cr-ed textarea{resize:none;height:54px}
+.cr-ed .pv{flex:1;background:var(--sunken);border:1px solid var(--edge);padding:8px 10px;font-size:12px;color:var(--ink2);min-height:54px}
+.cr-ed .pv b{color:var(--ink)} .cr-ed .pv .warn{color:var(--amber)}
+.cr-seg{display:flex} .cr-seg button{padding:5px 9px;border:1px solid var(--edge);font:600 11px var(--mono);color:var(--ink2);background:var(--sunken)}
+.cr-seg button+button{border-left:0} .cr-seg button[aria-pressed=true]{background:var(--edge-hi);color:var(--black)}
+.cr-cmd{display:flex;align-items:center;gap:10px;padding:8px 16px}
+.cr-cmd .pr{font:700 12px var(--mono);color:var(--ink3)}
+.cr-cmd input{flex:1;background:var(--sunken);border:1px solid var(--edge);color:var(--ink);font:12.5px var(--mono);padding:7px 9px}
+.cr-cmd .out{font:11.5px var(--mono);color:var(--ink2);max-width:46%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-hold{position:relative;overflow:hidden;padding:7px 14px;border:1px solid var(--red);color:var(--ink);font:700 11.5px var(--mono);background:var(--raised);user-select:none}
+.cr-hold i{position:absolute;left:0;top:0;bottom:0;width:0;background:hsla(358,75%,62%,.45)}
+.cr-hold.go i{width:100%;transition:width 900ms linear}
+.cr-hold span{position:relative}
+/* center card */
+.cr-scrim{position:absolute;inset:0;background:hsla(216,32%,4%,.62);display:none;z-index:50}
+.cr-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;max-height:88%;background:var(--tile);border:2px solid var(--edge-hi);display:none;z-index:51;flex-direction:column;overflow:hidden}
+.cr-card.open,.cr-scrim.open{display:flex}
+.cr-card.wide{width:1060px}
+.cr-ch{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:2px solid var(--black);background:var(--raised)}
+.cr-ch h2{font-size:16px} .cr-ch .sub{color:var(--ink2);font-size:12px} .cr-ch .x{margin-left:auto;font:11px var(--mono);color:var(--ink2)}
+.cr-cb{padding:14px 16px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.cr-steps div{display:grid;grid-template-columns:22px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--rule)}
+.cr-steps .no{font:700 12px var(--mono);color:var(--ink3)}
+.cr-steps code{font:11.5px var(--mono);color:var(--ink2)}
+.cr-note{padding:8px 10px;border-left:3px solid var(--amber);background:var(--sunken);font-size:12.5px;color:var(--ink2)}
+.cr-note.ok{border-color:var(--green)}
+.cr-sides{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cr-sides>div{background:var(--sunken);border:1px solid var(--edge);padding:10px}
+.cr-sides h4{font:600 11px var(--mono);letter-spacing:.1em;color:var(--ink2);margin-bottom:6px}
+.cr-sides li{list-style:none;padding:3px 0;font-size:13px;display:flex;justify-content:space-between}
+.cr-sides ul{padding:0}
+.cr-votes{display:flex;gap:6px;align-items:center;font:12px var(--mono)}
+.cr-votes i{width:18px;height:18px;border:1px solid var(--edge);display:inline-block}
+.cr-votes i.y{background:var(--green)} .cr-votes i.n{background:var(--red)}
+.cr-toast{position:absolute;right:16px;bottom:96px;background:var(--raised);border:1px solid var(--green);padding:8px 12px;font:12px var(--mono);display:none;z-index:60}
+.cr-toast.on{display:block}
+.cr-lock{font:10px var(--mono);color:var(--amber);margin-left:6px}
+.cr-mini{margin-top:10px;font-size:12px}.cr-mini>div:not(.cr-grp){display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:8px;padding:5px 0;border-bottom:1px solid var(--rule)}
+.cr-mini span:first-child{color:var(--ink)} .cr-mini span{color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-sit button{min-height:76px} .cr-sit .fs{color:var(--ink2);font-size:12px;margin-top:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.cr-ppl td{padding:9px 8px}
+</style></head>
+<body class="cr">
+<div class="shell">
+<nav class="rail" aria-label="Main">
+  <div class="rail-head"><div class="lg">THE WAR ROOM</div><div class="ph">Legacy NFL · <i>Wk 9 · in season</i></div></div>
+  <div class="rail-body">
+    <div class="gl">LEAGUE</div>
+    <div class="node"><button class="nb"><span class="k">1</span>Home<span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">2</span>War Room<span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">3</span>Franchise HQ<span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">4</span>League Pulse<span class="car">›</span></button></div>
+    <div class="node open"><button class="nb"><span class="k">5</span>Control Room<span class="mark"></span><span class="car">›</span></button>
+      <div id="rtree"></div>
+    </div>
+  </div>
+  <div class="rail-foot"><span id="whoami">Signed in: Commissioner</span><button class="btn" id="rolesw" title="Mock: see the room as the co-commissioner">VIEW AS CO-COMMISH</button></div>
+</nav>
+
+<main class="work">
+  <div class="ws-tabs" role="tablist" id="tabs"></div>
+  <div class="cr-find">
+    <input id="find" placeholder="Find anything: a rule, a job, a fix, a team, a situation ... (press /)" autocomplete="off">
+    <span class="hint">searches names, questions and current values</span>
+    <div class="cr-res" id="res"></div>
+  </div>
+
+  <section class="cr-main" id="v-jobs"></section>
+  <section class="cr-main" id="v-sit"></section>
+  <section class="cr-main" id="v-rules"></section>
+  <section class="cr-main" id="v-season"></section>
+  <section class="cr-main" id="v-fix"></section>
+  <section class="cr-main" id="v-picks"></section>
+  <section class="cr-main" id="v-people"></section>
+  <section class="cr-main" id="v-league"></section>
+  <section class="cr-main" id="v-server"></section>
+
+  <div class="cr-tray">
+    <div class="cr-ed" id="ed"></div>
+    <div class="cr-cmd">
+      <span class="pr">COMMAND ›</span>
+      <input id="cmd" placeholder="type a command, e.g.  cap.amount 130M   ·   pick.grant team=Owls round=3 season=2027 reason=&quot;pick'em winner&quot;">
+      <span class="out" id="cmdout">Every screen action is also a command.</span>
+    </div>
+  </div>
+  <div class="cr-toast" id="toast"></div>
+  <div class="cr-scrim" id="scrim"></div>
+  <div class="cr-card" id="card" role="dialog" aria-modal="true"></div>
+</main>
+
+<aside class="insp" id="insp"></aside>
+</div>
+<script>
+const RULES=[["A", "League shape", "league.teams", "Teams", "32", "Set", "Counted from the league's franchises", 1, [], "count", []], ["A", "League shape", "league.conferences", "Conferences", "2", "Set", "Legacy NFL rules", 1, [], "count", []], ["A", "League shape", "league.divisions", "Divisions", "8", "Set", "Legacy NFL rules", 1, [], "count", []], ["A", "League shape", "league.format", "Competition format", "Head to head", "Set", "Legacy NFL rules", 1, ["Head to head", "Head to head"], "string", []], ["A", "League shape", "league.initialRosters", "First rosters", "Draft", "Set", "Legacy NFL rules", 1, ["Draft", "Free agency"], "string", []], ["A", "League shape", "league.alignment", "Division alignment", "Needs a ruling", "Needs a ruling", "Needs a ruling: carried at setup", 1, [], "map", []], ["A", "League shape", "league.divisionConferences", "Conference of each division", "Needs a ruling", "Needs a ruling", "Needs a ruling: carried at setup", 1, [], "map", []], ["A", "League shape", "league.dynasty", "Dynasty league", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["A", "League shape", "league.carry", "Roster carry policy", "All", "Set", "Legacy NFL rules", 1, ["All", "Keepers"], "string", []], ["A", "League shape", "league.keepers", "Keepers", "Needs a ruling", "Needs a ruling", "Needs a ruling: only for keeper leagues", 1, [], "count", []], ["A", "League shape", "league.sides", "Sides", "None", "Set", "No player pool per side: the league has no sides", 1, [], "map", []], ["A", "Player pools", "players.pools", "Player pools", "One for the whole league", "Set", "Legacy NFL rules", 1, ["One for the whole league", "One per side: each conference has its own copy of every player"], "string", []], ["B", "Roster", "roster.limits", "Active roster size", "18 to 80", "Set", "Legacy NFL rules", 1, [], "record", ["Minimum", "Maximum"]], ["B", "Roster", "roster.reserveExcluded", "Reserves excluded from roster size", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["B", "Roster", "roster.positionBounds", "Roster position limits", "None", "Set", "Legacy NFL rules", 1, [], "map", []], ["B", "Lineup", "lineup.positions", "Starting position limits", "CB: 2 to 4; DE: 2 to 4; DT: 2 to 4; LB: 2 to 4; PK: Exactly 1; QB: Exactly 1; RB: 1 to 3; S: 2 to 4; TE: 1 to 3; WR: 2 to 5", "Set", "Legacy NFL rules", 1, [], "map", []], ["B", "Lineup", "lineup.groups", "Starting group limits", "Defense: Exactly 12; Offense: At most 8; Total: Exactly 21", "Set", "Legacy NFL rules", 1, [], "map", []], ["B", "Lineup", "lineup.invalidPenalty", "Invalid lineup penalty", "Zero top starter", "Set", "Legacy NFL rules (rulebook section 3)", 1, ["Zero top starter", "Zero slot", "None"], "string", []], ["B", "Lineup", "lineup.missedFlag", "Flag missed lineups", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["C", "Scoring", "scoring.roundStatPoints", "Round each stat’s points to the cent", "On", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "boolean", []], ["C", "Scoring", "scoring.catalogue", "Scoring values", "Assist: Label: Assisted tackle; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: LB; CB; S; QB; RB; WR; TE; PK; Once: Off; Assist line: Label: Defensive line assisted tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: DT; DE; Once: Off; Blocked extra point: Label: Blocked extra point; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked fg: Label: Blocked field goal; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked fg td: Label: Blocked field goal touchdown; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: DT; DE; LB; CB; S; Once: Off; Blocked punt: Label: Blocked punt; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: None; Once: Off; Blocked punt td: Label: Blocked punt touchdown; Group: Defense; Used: On; Points: 7; Bonuses: None; Positions: DT; DE; LB; CB; S; Once: Off; Fg made 0 39: Label: Field goal made from 0 to 39 yards; Group: Kicking; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Fg made 40 49: Label: Field goal made from 40 to 49 yards; Group: Kicking; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fg made 50 59: Label: Field goal made from 50 to 59 yards; Group: Kicking; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Fg made 60 99: Label: Field goal made from 60 to 99 yards; Group: Kicking; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fg missed 0 29: Label: Field goal missed from 0 to 29 yards; Group: Kicking; Used: On; Points: -3; Bonuses: None; Positions: None; Once: Off; Fg missed 30 99: Label: Field goal missed from 30 yards or longer; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Forced fumble: Label: Forced fumble; Group: Fumbles; Used: On; Points: 4; Bonuses: None; Positions: None; Once: Off; Fumble lost: Label: Fumbles lost; Group: Fumbles; Used: Off; Points: -2; Bonuses: None; Positions: None; Once: Off; Fumble recovery tds: Label: Fumble recovery touchdown; Group: Fumbles; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Fumbles total: Label: All fumbles; Group: Fumbles; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Interception caught: Label: Interception caught; Group: Defense; Used: On; Points: 5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Interception caught secondary: Label: Interception caught (cornerbacks and safeties); Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: CB; S; Once: Off; Interception return td: Label: Interception return touchdown; Group: Defense; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Interception return yards: Label: Interception return yards; Group: Defense; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Interception thrown: Label: Interception thrown; Group: Passing; Used: On; Points: -2; Bonuses: None; Positions: None; Once: Off; Kickoff return td: Label: Kickoff return touchdown; Group: Returns; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Kickoff return yards: Label: Kickoff return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Long pass: Label: Long pass; Group: Passing; Used: On; Points: 0; Bonuses: At: 40; Points: 1; Positions: None; Once: Off; Long reception: Label: Long reception; Group: Receiving; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Long rush: Label: Long rush; Group: Rushing; Used: On; Points: 0; Bonuses: At: 20; Points: 1; At: 40; Points: 1; Positions: None; Once: Off; Opponent fumble recovery: Label: Opponent fumble recovery; Group: Fumbles; Used: On; Points: 3; Bonuses: None; Positions: None; Once: Off; Opponent fumble recovery yards: Label: Opponent fumble recovery yards; Group: Fumbles; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Other return td: Label: Other return touchdown (such as a missed field goal); Group: Returns; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Own fumble recovery: Label: Own fumble recovery; Group: Fumbles; Used: On; Points: 2; Bonuses: None; Positions: None; Once: On; Pass defensed: Label: Pass defensed; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; LB; QB; RB; WR; TE; PK; Once: Off; Pass defensed secondary: Label: Pass defensed (cornerbacks and safeties); Group: Defense; Used: On; Points: 3; Bonuses: None; Positions: CB; S; Once: Off; Passing td: Label: Passing touchdown; Group: Passing; Used: On; Points: 5; Bonuses: None; Positions: None; Once: Off; Passing two point: Label: Passing two point conversion; Group: Passing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Passing yards: Label: Passing yards; Group: Passing; Used: On; Points: 0.05; Bonuses: None; Positions: None; Once: Off; Pat blocked: Label: Extra point blocked; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Pat made: Label: Extra point made; Group: Kicking; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Pat missed: Label: Extra point missed; Group: Kicking; Used: On; Points: -1; Bonuses: None; Positions: None; Once: Off; Punt return td: Label: Punt return touchdown; Group: Returns; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Punt return yards: Label: Punt return yards; Group: Returns; Used: On; Points: 0.025; Bonuses: None; Positions: None; Once: Off; Qb hit: Label: Quarterback hit; Group: Defense; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Receiving td: Label: Receiving touchdown; Group: Receiving; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Receiving two point: Label: Receiving two point conversion; Group: Receiving; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Receiving yards: Label: Receiving yards; Group: Receiving; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Reception: Label: Reception; Group: Receiving; Used: On; Points: 1; Bonuses: None; Positions: None; Once: Off; Rushing attempt: Label: Rushing attempt; Group: Rushing; Used: On; Points: 0.15; Bonuses: None; Positions: None; Once: Off; Rushing td: Label: Rushing touchdown; Group: Rushing; Used: On; Points: 6; Bonuses: None; Positions: None; Once: Off; Rushing two point: Label: Rushing two point conversion; Group: Rushing; Used: On; Points: 2; Bonuses: None; Positions: None; Once: Off; Rushing yards: Label: Rushing yards; Group: Rushing; Used: On; Points: 0.1; Bonuses: None; Positions: None; Once: Off; Sack: Label: Sack; Group: Defense; Used: On; Points: 4.5; Bonuses: None; Positions: None; Once: Off; Safety: Label: Safety; Group: Defense; Used: On; Points: 10; Bonuses: None; Positions: None; Once: Off; Tackle: Label: Tackle; Group: Defense; Used: On; Points: 1.5; Bonuses: None; Positions: LB; QB; RB; WR; TE; PK; Once: Off; Tackle for loss: Label: Tackle for loss; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: None; Once: Off; Tackle line: Label: Defensive line tackle; Group: Defense; Used: On; Points: 2.5; Bonuses: None; Positions: DT; DE; Once: Off; Tackle secondary: Label: Tackle (cornerbacks and safeties); Group: Defense; Used: On; Points: 2; Bonuses: None; Positions: CB; S; Once: Off", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.extras", "Extra points by position", "None", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.ranges", "Scoring ranges", "Assist: Minimum: 0; Maximum: 99; Assist line: Minimum: 0; Maximum: 99; Blocked extra point: Minimum: 0; Maximum: 10; Blocked fg: Minimum: 0; Maximum: 10; Blocked fg td: Minimum: 0; Maximum: 10; Blocked punt: Minimum: 0; Maximum: 10; Blocked punt td: Minimum: 0; Maximum: 10; Forced fumble: Minimum: 0; Maximum: 10; Fumble recovery tds: Minimum: 0; Maximum: 10; Fumbles total: Minimum: 0; Maximum: 10; Interception caught: Minimum: 0; Maximum: 10; Interception caught secondary: Minimum: 0; Maximum: 10; Interception return td: Minimum: 0; Maximum: 10; Interception return yards: Minimum: -50; Maximum: 999; Interception thrown: Minimum: 0; Maximum: 10; Kickoff return td: Minimum: 0; Maximum: 10; Kickoff return yards: Minimum: -50; Maximum: 999; Opponent fumble recovery: Minimum: 0; Maximum: 10; Opponent fumble recovery yards: Minimum: -50; Maximum: 999; Other return td: Minimum: 0; Maximum: 10; Own fumble recovery: Minimum: 1; Maximum: 10; Pass defensed: Minimum: 0; Maximum: 99; Pass defensed secondary: Minimum: 0; Maximum: 99; Passing td: Minimum: 0; Maximum: 20; Passing two point: Minimum: 0; Maximum: 10; Passing yards: Minimum: -50; Maximum: 999; Pat blocked: Minimum: 0; Maximum: 10; Pat made: Minimum: 0; Maximum: 10; Pat missed: Minimum: 0; Maximum: 10; Punt return td: Minimum: 0; Maximum: 10; Punt return yards: Minimum: -50; Maximum: 999; Qb hit: Minimum: 0; Maximum: 10; Receiving td: Minimum: 0; Maximum: 10; Receiving two point: Minimum: 0; Maximum: 10; Receiving yards: Minimum: -50; Maximum: 999; Reception: Minimum: 0; Maximum: 99; Rushing attempt: Minimum: 0; Maximum: 99; Rushing td: Minimum: 0; Maximum: 10; Rushing two point: Minimum: 0; Maximum: 10; Rushing yards: Minimum: -50; Maximum: 999; Sack: Minimum: 0; Maximum: 25; Safety: Minimum: 0; Maximum: 10; Tackle: Minimum: 0; Maximum: 99; Tackle for loss: Minimum: 0; Maximum: 25; Tackle line: Minimum: 0; Maximum: 99; Tackle secondary: Minimum: 0; Maximum: 99", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.scales", "Points by play distance", "None", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.totals", "Stats counted as a total of others", "None", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.rules", "Scoring rules by range and position", "None", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "map", []], ["C", "Scoring", "scoring.lineUnit", "Team offensive line scoring", "Used: Off; Weights: None; Labels: None; No sack: 0; Sacks: None; Clamped: Off; Clamp: 0", "Set", "Legacy NFL rules (the league’s MFL scoring)", 1, [], "record", ["Used", "Weights", "Labels", "No sack", "Sacks", "Clamped", "Clamp"]], ["C", "Standings", "standings.criteria", "Standings tie breakers", "Win percentage; Head to head; Division percentage; Conference percentage; All play percentage; Points; Power rank", "Set", "Legacy NFL rules", 1, [], "list", []], ["D", "Salary cap", "cap.amount", "Salary cap", "$125,000,000", "Set", "Legacy NFL rules (rulebook section 1)", 1, [], "cents", []], ["D", "Salary cap", "cap.enforcement", "Cap enforcement", "Hard", "Set", "Legacy NFL rules", 1, ["Hard", "Soft"], "string", []], ["D", "Salary cap", "cap.irShare", "IR salary share", "100%", "Set", "Legacy NFL rules (rulebook section 1)", 1, [], "ten_thousandths", []], ["D", "Salary cap", "cap.taxiShare", "Taxi salary share", "100%", "Set", "Legacy NFL rules (rulebook section 1)", 1, [], "ten_thousandths", []], ["D", "Salary cap", "cap.quantum", "Money rounding increment", "$10,000", "Set", "Legacy NFL rules", 1, [], "cents", []], ["D", "Salary cap", "cap.complianceDeadline", "Soft cap compliance deadline", "Needs a ruling", "Needs a ruling", "Needs a ruling", 1, [], "date", []], ["D", "Contracts", "contracts.maximumYears", "Maximum new contract years", "4", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["D", "Contracts", "contracts.flatSalaries", "Flat annual salaries", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["D", "Contracts", "contracts.minimumSalaries", "Minimum bidding salaries", "Maximum unlimited: Off; Years: Exactly 0; Minimum: $330,000; Maximum unlimited: Off; Years: Exactly 1; Minimum: $380,000; Maximum unlimited: Off; Years: Exactly 2; Minimum: $430,000; Maximum unlimited: Off; Years: Exactly 3; Minimum: $480,000; Maximum unlimited: Off; Years: 4 to 6; Minimum: $530,000; Maximum unlimited: Off; Years: 7 to 9; Minimum: $580,000; Maximum unlimited: On; Years: At least 10; Minimum: $630,000", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "list", []], ["D", "Contracts", "contracts.deadCap", "Release dead cap rate", "35%", "Set", "Legacy NFL rules", 1, [], "ten_thousandths", []], ["D", "Contracts", "contracts.restructuredDeadCap", "Restructured release dead cap rate", "50%", "Set", "Legacy NFL rules", 1, [], "ten_thousandths", []], ["D", "Contracts", "contracts.claimClearsDeadCap", "Waiver claim clears dead cap", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["D", "Contracts", "contracts.releaseReSignSameSeason", "Re-sign a released player this season", "Off", "Set", "Legacy NFL rules (rulebook section 8)", 1, [], "boolean", []], ["D", "Contracts", "contracts.tag", "Franchise tag rules", "Enabled: On; Annual limit: 1; Top players: 5; Floor multiplier: 1.2; Consecutive limit: 2; Second multiplier: 1.2; Extension multiplier: 1.2; Exclude playoff contracts: On", "Set", "Legacy NFL rules (rulebook section 9)", 1, [], "record", ["Enabled", "Annual limit", "Top players", "Floor multiplier", "Consecutive limit", "Second multiplier", "Extension multiplier", "Exclude playoff contracts"]], ["D", "Contracts", "contracts.extension", "Contract extension rules", "Enabled: On; Annual limit: 1; Minimum remaining: 1; Added years: 3; Total years: 6; Multiplier: 1.5; Floors: CB: $3,000,000; DE: $7,000,000; DT: $4,000,000; LB: $8,000,000; PK: $3,000,000; QB: $15,000,000; RB: $8,000,000; S: $5,000,000; TE: $8,000,000; WR: $10,000,000; Repeat before free agency: Off; UFA eligible: Off", "Set", "Legacy NFL rules (rulebook section 10)", 1, [], "record", ["Enabled", "Annual limit", "Minimum remaining", "Added years", "Total years", "Multiplier", "Floors", "Repeat before free agency", "UFA eligible"]], ["D", "Contracts", "contracts.restructure", "Contract restructure rules", "Enabled: On; Annual limit: 1; Per contract: 1; Extra per extension: 1; Tiers: At: $3,000,000; Amount: $1,000,000; At: $6,000,000; Amount: $2,000,000; At: $12,000,000; Amount: $3,000,000; Conserve total: On; Existing years only: On", "Set", "Legacy NFL rules (rulebook section 11)", 1, [], "record", ["Enabled", "Annual limit", "Per contract", "Extra per extension", "Tiers", "Conserve total", "Existing years only"]], ["D", "Contracts", "contracts.buyout", "Contract buyout rules", "Enabled: On; Annual limit: 2; Offseason only: On; One year allowed: Off; Rates: 2: 0.6; 3: 0.75; 4: 0.9; Rebid next offseason: On", "Set", "Legacy NFL rules (rulebook section 12)", 1, [], "record", ["Enabled", "Annual limit", "Offseason only", "One year allowed", "Rates", "Rebid next offseason"]], ["D", "Contracts", "contracts.tender", "Restricted free agent tender rules", "Enabled: On; Prices: Price: $600,000; Rounds: 5; Price: $1,000,000; Rounds: 4; Price: $1,500,000; Rounds: 3; Price: $2,500,000; Rounds: 2; Price: $5,000,000; Rounds: 1; Price: $6,500,000; Rounds: 1; 2; Prior salary multiplier: 1.1; Match window: 1 day; Compensatory allowed: Off", "Set", "Legacy NFL rules (rulebook section 7)", 1, [], "record", ["Enabled", "Prices", "Prior salary multiplier", "Match window", "Compensatory allowed"]], ["D", "Contracts", "contracts.reSign", "Restricted free agent re-sign rules", "Enabled: On; Premiums: 1: 0; 2: 0.15; 3: 0.3; 4: 0.45", "Set", "Legacy NFL rules (rulebook section 7)", 1, [], "record", ["Enabled", "Premiums"]], ["D", "Contracts", "contracts.retirement", "Retirement rules", "Enabled: On; Rate: 0.3", "Set", "Legacy NFL rules (rulebook section 13)", 1, [], "record", ["Enabled", "Rate"]], ["D", "Contracts", "contracts.death", "Player death rules", "Enabled: On; Rate: 0", "Set", "Legacy NFL rules (rulebook section 13)", 1, [], "record", ["Enabled", "Rate"]], ["D", "Contracts", "contracts.capRelief", "Cap relief appeals", "Enabled: On; Reasons: Career-ending injury; Recurring injury; Behavioral suspension", "Set", "Legacy NFL rules (rulebook section 13)", 1, [], "record", ["Enabled", "Reasons"]], ["B", "IR", "ir.autoReturn", "Automatically return ineligible IR players", "Off", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["B", "IR", "ir.slots", "IR spots", "12", "Set", "Legacy NFL rules", 1, [], "count", []], ["B", "IR", "ir.eligible", "IR eligible designations", "IR; PUP; NFI; Out; Suspended", "Set", "Legacy NFL rules", 1, [], "list", []], ["B", "IR", "ir.mustLeaveHealthy", "Leave IR when healthy", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["B", "Taxi squad", "taxi.autoPromote", "Automatically promote ineligible taxi players", "Off", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["B", "Taxi squad", "taxi.slots", "Taxi spots", "8", "Set", "Legacy NFL rules (rulebook section 2)", 1, [], "count", []], ["B", "Taxi squad", "taxi.maximumYears", "Taxi experience limit", "3", "Set", "Legacy NFL rules", 1, [], "count", []], ["B", "Taxi squad", "taxi.basis", "Taxi experience measure", "Calendar years", "Set", "Legacy NFL rules", 1, ["Calendar years", "Career games", "NFL seasons"], "string", []], ["E", "Waivers", "waivers.trigger", "Waiver trigger", "Cut", "Set", "Legacy NFL rules", 1, ["Cut"], "string", []], ["E", "Waivers", "waivers.duration", "Waiver period", "1 day", "Set", "Legacy NFL rules", 1, [], "nanoseconds", []], ["E", "Waivers", "waivers.method", "Waiver priority", "Reverse standings", "Set", "Legacy NFL rules", 1, ["Reverse standings", "Rolling"], "string", []], ["E", "Free-agent bids", "bids.ufa", "Unrestricted free agent bidding", "Open", "Set", "Legacy NFL rules", 1, ["Blind", "Open"], "string", []], ["E", "Free-agent bids", "bids.rfa", "Restricted free agent bidding", "Open", "Set", "Legacy NFL rules", 1, ["Blind", "Open"], "string", []], ["E", "Free-agent bids", "bids.yearMultipliers", "Bid year multipliers", "1; 1.2; 1.4; 1.6", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "list", []], ["E", "Free-agent bids", "bids.maximumActive", "Maximum active bids", "30", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["E", "Free-agent bids", "bids.oneYearMaximum", "One year bid limit", "$12,000,000", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "cents", []], ["E", "Free-agent bids", "bids.tiers", "Bid salary length limits", "Salary: Maximum unlimited: Off; Minimum: $12,000,000; Maximum: $24,000,000; Minimum years: 2; Lower inclusive: Off; Salary: Maximum unlimited: On; Minimum: $24,000,000; Maximum: Needs a ruling; Minimum years: 3; Lower inclusive: Off", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "list", []], ["E", "Free-agent bids", "bids.minimumIncrement", "Minimum bid increase", "0.1", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "ten_thousandths", []], ["E", "Free-agent bids", "bids.standFor", "Time a bid must stand to win", "1 day", "Set", "Legacy NFL rules", 1, [], "nanoseconds", []], ["E", "Free-agent bids", "bids.snipeAfter", "Late bid threshold", "20 hours", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "nanoseconds", []], ["E", "Free-agent bids", "bids.snipeIncrement", "Late bid minimum increase", "1", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "ten_thousandths", []], ["E", "Free-agent bids", "bids.multiYearEndWeek", "Last multi year bidding week", "13", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["E", "Free-agent bids", "bids.playoffOnlyAfterWeek", "Playoff only bidding after week", "12", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["E", "Free-agent bids", "bids.playoffMaximumYears", "Playoff bid maximum years", "1", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["E", "Free-agent bids", "bids.playoffCapLifted", "Lift one year bid cap in playoffs", "On", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "boolean", []], ["E", "Free-agent bids", "bids.pointDecimals", "Bid point decimal places", "3", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "count", []], ["E", "Trades", "trades.review", "Trade review", "DOT", "Set", "Legacy NFL rules (rulebook section 14)", 1, ["None", "DOT", "Commissioner"], "string", []], ["E", "Trades", "trades.dotSeats", "Trade review seats", "Needs a ruling", "Needs a ruling", "Needs a ruling: actual seats chosen by league", 1, [], "count", []], ["E", "Trades", "trades.decideAt", "Votes to approve or veto", "3", "Set", "Legacy NFL rules", 1, [], "count", []], ["E", "Trades", "trades.futureYears", "Future pick trading years", "2", "Set", "Legacy NFL rules (rulebook section 14)", 1, [], "count", []], ["E", "Trades", "trades.rounds", "Tradable pick rounds", "1 to 5", "Set", "Legacy NFL rules", 1, [], "record", ["Minimum", "Maximum"]], ["E", "Trades", "trades.rosterGate", "Refuse invalid rosters", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["E", "Trades", "trades.offerExpiry", "Trade offer lifetime", "7 days", "Set", "Legacy NFL rules", 1, [], "nanoseconds", []], ["E", "Trades", "trades.maximumParties", "Maximum trade parties", "3", "Set", "Legacy NFL rules", 1, [], "count", []], ["E", "Trades", "trades.compensatoryPicks", "Trade compensatory picks", "Off", "Set", "Legacy NFL rules (rulebook section 14)", 1, [], "boolean", []], ["E", "Trades", "trades.capSpace", "Trade salary cap space", "Off", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["E", "Trades", "trades.acceptedWithdrawal", "Withdraw accepted trades", "Off", "Set", "Legacy NFL rules (rulebook section 14)", 1, [], "boolean", []], ["F", "Schedule", "schedule.regularWeeks", "Regular season weeks", "13", "Set", "Legacy NFL rules (rulebook section 5)", 1, [], "count", []], ["F", "Schedule", "schedule.pattern", "Schedule pattern", "Division weighted", "Set", "Legacy NFL rules", 1, [], "string", []], ["F", "Playoffs", "playoffs.perConference", "Playoff teams per conference", "7", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.divisionWinners", "Division winners per conference", "4", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.wildCards", "Wild cards per conference", "3", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.byeSeed", "First round bye seed", "1", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.seeding", "Playoff seeding", "Division winners first", "Set", "Legacy NFL rules", 1, [], "string", []], ["F", "Playoffs", "playoffs.reseed", "Reseed playoff rounds", "On", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["F", "Playoffs", "playoffs.startWeek", "First playoff week", "14", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.finalWeek", "Final playoff week", "17", "Set", "Legacy NFL rules", 1, [], "count", []], ["F", "Playoffs", "playoffs.homeBonus", "Home field points", "3", "Set", "Legacy NFL rules (rulebook section 5)", 1, [], "ten_thousandths", []], ["F", "Playoffs", "playoffs.graph", "Playoff bracket", "Game: Wildcard 2; Week: 14; Home seed: 2; Away seed: 7; Home winner: None; Away winner: None; Game: Wildcard 3; Week: 14; Home seed: 3; Away seed: 6; Home winner: None; Away winner: None; Game: Wildcard 4; Week: 14; Home seed: 4; Away seed: 5; Home winner: None; Away winner: None; Game: Division 1; Week: 15; Home seed: 1; Away seed: Needs a ruling; Home winner: None; Away winner: lowest remaining seed; Game: Division 2; Week: 15; Home seed: Needs a ruling; Away seed: Needs a ruling; Home winner: highest remaining seed; Away winner: other remaining seed; Game: Conference; Week: 16; Home seed: Needs a ruling; Away seed: Needs a ruling; Home winner: division winner; Away winner: division winner; Game: Championship; Week: 17; Home seed: Needs a ruling; Away seed: Needs a ruling; Home winner: conference winner; Away winner: conference winner", "Set", "Legacy NFL rules", 1, [], "list", []], ["H", "House rules", "house.texts", "House rules", "Legacy-reference: docs/league-rules/Official_Rulebook.md v2026 (read-only reference)", "Set", "Legacy NFL rules", 0, [], "map", []], ["F", "Calendar", "calendar.windows", "League action windows", "Contracts: Start: 1 March; End: 30 April; Opens: Needs a ruling; Dated start: Needs a ruling; Dated end: Needs a ruling; Cut buyout: Start: 25 August; End: 1 September; Opens: Cut; Buyout; Dated start: Needs a ruling; Dated end: Needs a ruling; Lineups: Start: 1 March; End: Needs a ruling; Opens: Lineup; Dated start: Needs a ruling; Dated end: Needs a ruling; Open fa: Start: 19 May; End: Needs a ruling; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Resign: Start: 10 May; End: 15 May; Opens: Resign; Dated start: Needs a ruling; Dated end: Needs a ruling; Rfa tenders: Start: 1 May; End: 3 May; Opens: Rfa tender; Dated start: Needs a ruling; Dated end: Needs a ruling; Rookie draft: Start: 14 July; End: Needs a ruling; Opens: Draft pick; Dated start: Needs a ruling; Dated end: Needs a ruling; Ufa: Start: 3 May; End: 10 May; Opens: Ufa bid; Dated start: Needs a ruling; Dated end: Needs a ruling; Waivers: Start: 1 March; End: Needs a ruling; Opens: Cut; Waiver claim; Dated start: Needs a ruling; Dated end: Needs a ruling", "Set", "Legacy NFL rules", 1, [], "map", []], ["F", "Calendar", "calendar.timezone", "League timezone", "America/New_York", "Set", "Legacy NFL rules", 0, [], "string", []], ["F", "Calendar", "calendar.boundary", "Shared date boundary", "Needs a ruling", "Needs a ruling", "Needs a ruling: commissioner chooses", 1, ["Start of day", "End of day"], "string", []], ["F", "Calendar", "calendar.rollover", "Season rollover instant", "Needs a ruling", "Needs a ruling", "Needs a ruling: March 1 requires a dated season", 1, [], "date", []], ["F", "Calendar", "calendar.rolloverDate", "Annual rollover date", "1 March", "Set", "Legacy NFL rules", 1, [], "record", ["Month", "Day"]], ["F", "Calendar", "calendar.tradeDeadline", "Trade deadline", "Needs a ruling", "Needs a ruling", "Needs a ruling: exact instant chosen by commissioner", 1, [], "date", []], ["F", "Calendar", "calendar.tradeDeadlineWeek", "Trade deadline week", "9", "Set", "Legacy NFL rules", 1, [], "count", []], ["G", "Draft", "draft.mode", "Draft pace", "Slow", "Set", "Legacy NFL rules", 1, ["Slow", "Live"], "string", []], ["G", "Draft", "draft.clock", "Draft pick clock", "6 hours", "Set", "Legacy NFL rules", 1, [], "nanoseconds", []], ["G", "Draft", "draft.onExpire", "Expired draft clock", "Skip", "Set", "Legacy NFL rules", 1, ["Skip", "Autopick"], "string", []], ["G", "Draft", "draft.timeouts", "Draft timeouts", "Unlimited: On; Count: Needs a ruling", "Set", "Legacy NFL rules", 1, [], "record", ["Unlimited", "Count"]], ["G", "Draft", "draft.rounds", "Draft rounds", "5", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "count", []], ["G", "Draft", "draft.maximumPicks", "Maximum rookie picks per team", "15", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "count", []], ["G", "Draft", "draft.forfeitExtra", "Forfeit extra rookie picks", "On", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "boolean", []], ["G", "Draft", "draft.pricing", "Rookie draft salaries", "1: Slots: 1 to 10; Salary: $3,000,000; Slots: 11 to 15; Salary: $2,400,000; Slots: 16 to 20; Salary: $2,000,000; Slots: 21 to 32; Salary: $1,500,000; 2: Slots: 1 to 12; Salary: $1,420,000; Slots: 13 to 24; Salary: $1,250,000; Slots: 25 to 32; Salary: $1,080,000; 3: Slots: 1 to 16; Salary: $830,000; Slots: 17 to 32; Salary: $670,000; 4: Slots: 1 to 32; Salary: $600,000; 5: Slots: 1 to 32; Salary: $500,000", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "map", []], ["G", "Draft", "draft.lengths", "Rookie contract years", "1: 5; 2: 3; 3: 3; 4: 3; 5: 3", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "map", []], ["G", "Draft", "draft.rfaAfter", "Rookie restricted free agency", "1: Off; 2: On; 3: On; 4: On; 5: On", "Set", "Legacy NFL rules (rulebook section 15)", 1, [], "map", []], ["G", "Draft", "draft.orderSource", "First round draft order", "Standings", "Set", "Legacy NFL rules", 1, ["Standings"], "string", []], ["G", "Draft", "draft.order", "Draft order overrides", "None", "Set", "Legacy NFL rules", 1, [], "map", []], ["G", "Draft", "draft.laterPattern", "Later round draft pattern", "Needs a ruling", "Needs a ruling", "Needs a ruling", 1, ["Linear", "Snake"], "string", []], ["G", "Draft", "draft.tieRule", "Draft order tie breaker", "Needs a ruling", "Needs a ruling", "Needs a ruling", 1, [], "string", []], ["G", "Draft", "draft.startupRounds", "Startup draft rounds", "80", "Set", "Legacy NFL rules", 1, [], "count", []], ["G", "Draft", "draft.startupOrder", "Startup draft first round order", "Random", "Set", "Legacy NFL rules", 1, ["Commissioner", "Random"], "string", []], ["G", "Draft", "draft.startupList", "Startup draft order set by the commissioner", "None", "Set", "Legacy NFL rules", 1, [], "list", []], ["G", "Draft", "draft.startupPattern", "Startup draft later round pattern", "Snake", "Set", "Legacy NFL rules", 1, ["Linear", "Snake"], "string", []], ["G", "Draft", "draft.startupYears", "Startup draft contract years", "1", "Set", "Legacy NFL rules", 1, [], "count", []], ["G", "Draft", "draft.startupSalary", "Startup draft salary", "$330,000", "Set", "Legacy NFL rules (rulebook section 6)", 1, [], "cents", []], ["G", "Draft", "draft.startupRookies", "Incoming rookie class in the startup draft pool", "Off", "Set", "Legacy NFL rules", 1, [], "boolean", []], ["H", "Notifications", "notify.transactions", "Tell the league about transactions", "On", "Set", "Legacy NFL rules", 0, [], "boolean", []], ["H", "Notifications", "notify.reminders", "Remind owners of deadlines", "On", "Set", "Legacy NFL rules", 0, [], "boolean", []], ["B", "Lineup", "lineup.lock", "Lineup lock", "Each player locks at his own kickoff", "Planned", "Ruled 10-30 (breadth); MFL C4 weekly/game-time lock", 1, ["Each player at his kickoff", "Whole lineup at first kickoff of the week", "Weekly day and hour"], "string", []], ["A", "League shape", "league.format+", "Competition format: more choices", "Head to head", "Planned", "Ruled 10-30 (breadth); MFL C1", 1, ["Head to head", "All-play", "Total points", "Head to head + all-play"], "string", []], ["F", "Schedule", "schedule.pattern+", "Schedule pattern: more choices", "Division weighted", "Planned", "Ruled 10-30 (breadth)", 1, ["Division weighted", "Round robin", "Random", "Hand built"], "string", []], ["G", "Draft", "draft.orderSource+", "First round order: lottery", "Standings", "Planned", "Ruled 10-30 (breadth)", 1, ["Standings", "Lottery among non-playoff teams", "Commissioner sets"], "string", []], ["E", "Free-agent bids", "bids.binding", "Bids are binding (R3)", "Always: open bids total no more than cap room; a bid ends only when legally outbid", "Fixed rule", "Ruled 10-30 (R3): not a setting", 1, [], "fixed", []]];
+// ---------- data ----------
+const TEAMS=["Owls","Kodiaks","Mudcats","Sentinels","Gold Rush","Tundra","Harbor Kings","Ironclads","Foxhounds","Marauders","Copperheads","Lumberjacks","Night Owls","Bison","Riveters","Stormriders",
+ "Pioneers","Gators","Blacksmiths","Comets","Highlanders","Vipers","Ospreys","Grizzlies","Mariners","Outlaws","Raptors","Wolfpack","Rangers","Thunder","Badgers","Monarchs"];
+const FAM={A:"League & teams",B:"Rosters & lineups",C:"Scoring & standings",D:"Cap & contracts",E:"Player movement",F:"Season shape",G:"Draft",H:"Rulebook & notifications"};
+const GOV={A:["League Pulse · standings","Schedule","Franchise HQ"],B:["Franchise HQ · lineup","Franchise HQ · roster","War Room · move check"],C:["League Pulse · live","Home · ticker","Franchise HQ · points"],
+ D:["Franchise HQ · cap","War Room · bids","War Room · trades"],E:["War Room · market","War Room · trades","Home · transactions"],F:["League Pulse · race","League Pulse · bracket","Calendar"],G:["Draft room","Franchise HQ · picks"],H:["Home · news","Rulebook"]};
+const BRANCHES=[["jobs","JOBS"],["sit","SITUATIONS"],["rules","RULES"],["season","SEASON DESK"],["fix","FIX"],["picks","PICKS"],["people","PEOPLE"],["league","LEAGUE"],["server","SERVER"]];
+// jobs: id, state, name, words, count, when, opens(view or card), controls
+const JOBS=[
+ ["stat","live","Stat corrections","2 feed changes waiting · one flips a result",2,"due Tue 9:00","statcard","CM-031"],
+ ["trade","live","Trade review (DOT)","Kodiaks ⇄ Mudcats · 2 of 3 approvals",1,"closes in 19h","tradecard","CM-037"],
+ ["appeal","live","Trade appeal","Tundra appeals the veto of Tundra ⇄ Owls",1,"rule by Sat","appealcard","CM-037"],
+ ["waivers","live","Waiver run","6 claims on 4 players · runs at window close",6,"runs Wed 3:00","season","CM-035"],
+ ["bids","live","Bid processing","3 cleared players · bids resolve when they stand 24h",3,"next Thu","season","CM-036"],
+ ["mustcut","live","Must-cut teams","Gators over roster max (81/80) · no auto-cut",1,"no deadline","mustcard","CM-028"],
+ ["vacant","live","Vacant franchise","Comets has no owner since Oct 21 · caretaker seated",1,"9 days","people","CM-019"],
+ ["missed","live","Missed lineups","Comets (caretaker) and Bison flagged for wk 9",2,"locks Sun 12:00","missedcard","CM-004"],
+ ["softcap","up","Soft-cap compliance","Not in use: cap is hard",0,"—","rules:cap.enforcement","CM-008"],
+ ["notice","up","Weekly notice","Week 9 newsletter not sent",1,"Fri","league","CM-052"],
+ ["deadline","up","Trade deadline","Week 9 · deadline instant not set",0,"Nov 2","rules:calendar.tradeDeadline","CM-025"],
+ ["playoffs","up","Playoff seeding","Seeds build after week 13",0,"Dec 8","season","CM-046"],
+ ["rollover","block","Rollover","Rollover instant needs a ruling",0,"Mar 1","rules:calendar.rollover","CM-027"],
+ ["setup","block","League setup","8 rules still need a ruling",8,"—","rules:need","CM-001"],
+ ["feeds","live","Feed health","ESPN live scores 14 min stale · nflverse fine",1,"now","server","CM-054"],
+ ["backup","up","Backups","Last backup 02:00 · next 02:00",0,"OK","server","—"],
+ ["invites","up","Pending invites","1 invite not redeemed (Comets)",1,"6 days left","people","CM-019"],
+ ["votes","up","Open votes","None open",0,"—","people","CM-022"],
+ ["notif","unbuilt","Notifications & refresh schedule","Not built yet",0,"—","league","CM-051"]];
+const STATE={live:["st-live","NEEDS YOU"],up:["st-up","UPCOMING"],block:["st-block","BLOCKED"],unbuilt:["st-unbuilt","NOT BUILT"]};
+const SITS=[
+ ["GAMES","An NFL game is cancelled or postponed",[["Hold the stat queue for that game","stat.queue.hold game=…","G"],["Adjust affected player scores","commish.score.player","B"],["Or adjust whole franchise scores","commish.score.franchise","B"],["Decide the result: replay, tie, or set it","commish.standings.record.adjust","B"],["Override the rule that would apply","rule.exception","B"],["Tell the league what you decided","commish.notice.publish","B"]],"Which result counts is your call; the app does not guess.","Standings, playoff seeds and the waiver order after the change."],
+ ["GAMES","An NFL stat was corrected",[["Open the stat queue","stats.queue","B"],["Approve or reject (shows if a result flips)","commish.stat.queue.approve","B"],["Post a notice if a result flipped","commish.notice.publish","B"]],"Nothing.","The week's results and standings."],
+ ["GAMES","The stat feed is wrong or silent",[["Enter the stat by hand with its source","commish.stat.correct","B"],["Check feed health","Server › Feeds","B"]],"Finding the true number.","Live scores for that game."],
+ ["PLAYERS","The feed has a player at the wrong position",[["Override the position","commish.player.position","B"],["Clear it when the feed is fixed","commish.player.position.clear","B"]],"Nothing.","Lineup validity for teams that start him."],
+ ["PLAYERS","A player retires or dies",[["Contract rules apply automatically (retirement 30%, death 0%)","Rules › Cap & contracts","B"],["Adjust the cap by hand if needed","commish.cap.adjust","B"]],"Deciding any exception.","That team's cap."],
+ ["PLAYERS","Career-ending injury or suspension: cap relief",[["Grant cap relief (reasons from the rules)","commish.cap.relief","B"]],"Judging the appeal.","That team's cap."],
+ ["OWNERS","An owner vanished mid-season",[["Seat yourself as caretaker","commish.seat.caretaker","B"],["Set the team's lineup each week","commish.lineup.correct","B"],["Invite a new owner","commish.seat.invite","B"],["Hand the seat over","commish.seat.replace","B"]],"Finding a new owner.","Missed-lineup flags stop once the caretaker sets lineups."],
+ ["OWNERS","An owner wants out",[["Remove the owner (team, contracts and picks stay)","commish.seat.remove","B"],["Caretaker until filled","commish.seat.caretaker","B"],["Invite a replacement","commish.seat.invite","B"]],"Finding the replacement.","Pending trades and bids from that team."],
+ ["OWNERS","A new owner can't redeem the invitation",[["Revoke the old invite","commish.seat.invite.revoke","B"],["Send a new one","commish.seat.invite","B"],["Help with sign-in","Server › Sign-in help","B"]],"Talking to the owner.","Seat shows filled."],
+ ["OWNERS","An owner lost their authenticator",[["Reset their authenticator (ruled 10-30)","account.totp.reset","R"],["They sign in and can set it up again","—","R"]],"Confirming it is really them.","Ledger shows the reset."],
+ ["TRADES","A trade looks like collusion",[["Let the DOT vote","trade.review","B"],["Overturn the DOT (typed reason, visible)","trade.override","B"],["Party may appeal once","trade.appeal","B"]],"The judgement.","Both rosters and caps."],
+ ["TRADES","The commissioner is a party to a trade",[["Step aside from the review","trade.recuse","B"],["Co-commissioner rules on any appeal","trade.appeal.rule","B"]],"Nothing.","—"],
+ ["TRADES","A trade went through by mistake",[["Reverse it with compensating entries","correct.transaction","B"],["Or undo the ledger entry","commish.correction.revert","B"]],"Agreeing with both owners.","Rosters, caps and picks of both teams."],
+ ["ROSTERS","A player was cut by mistake",[["Put him back","correct.roster","B"],["Restore the contract","commish.contract.edit","B"],["Remove the dead cap","commish.cap.adjust","B"]],"Nothing.","Waiver claims already placed on him."],
+ ["ROSTERS","A team is over the roster limit",[["See the must-cut job (no auto-cut by design)","Jobs › Must-cut","B"],["Allow it for a time","commish.reserve.exception","B"]],"Getting the owner to cut.","Lineup validity."],
+ ["ROSTERS","Someone needs IR or taxi outside the rules",[["Allow it, time-boxed","commish.reserve.exception","B"]],"Nothing.","Roster count."],
+ ["MONEY","A team is over the cap",[["Adjust the cap for that team","commish.cap.adjust","B"],["Or allow it until a date","rule.exception","B"]],"Nothing.","Bids and trades for that team."],
+ ["MONEY","A contract was entered wrong",[["Edit the contract","commish.contract.edit","B"]],"Nothing.","Cap and pending trades."],
+ ["MARKET","A waiver or bid was awarded wrong",[["Override the waiver award","waivers.award.override","B"],["Override the bid award","bids.award.override","B"]],"Nothing.","The losing team's cap and roster."],
+ ["MARKET","A blind auction ends tied",[["Process by the tie rule","bids.process","B"],["Or award by hand","bids.award.override","B"]],"Bids stay private, even to you.","—"],
+ ["CALENDAR","One action is needed outside its window",[["Allow one action for one team, time-boxed","commish.calendar.exception","B"]],"Nothing; it is visible to all owners.","—"],
+ ["CALENDAR","A deadline needs to move",[["Drag the window on the calendar","calendar.window.move","B"]],"Telling the league.","Everything that window opens."],
+ ["DRAFT","A draft pick went wrong",[["Change the pick","draft.change","B"],["Skip, assign or insert","draft.skip / assign / insert","B"],["Restore a checkpoint","draft.revert","B"]],"Nothing.","Rookie contracts."],
+ ["DRAFT","The startup draft stalls",[["Pause or reset the clock","draft.timer","B"],["Skip or assign the pick","draft.skip / draft.assign","B"]],"Nudging the owner.","—"],
+ ["PICKS","A mini-game winner earns a pick",[["Create and grant the pick","pick.grant","R"],["Tell the league","commish.notice.publish","B"]],"Running the mini-game (side games are later).","That team's pick count against the draft maximum."],
+ ["PICKS","A team is penalised with a lost pick",[["Forfeit the pick (typed reason, visible)","pick.forfeit","R"]],"The decision.","Draft order for that round."],
+ ["PICKS","A pick belongs to the wrong team",[["Move the pick","correct.pick","B"]],"Nothing.","Both teams' pick lists."],
+ ["STANDINGS","Standings must be set by hand",[["Adjust a team's record","commish.standings.record.adjust","B"],["Or set the full order","commish.standings.override","B"]],"Nothing.","Seeds and draft order."],
+ ["STANDINGS","A playoff game must be decided by hand",[["Advance the team (reason)","bracket.advance","B"]],"The decision.","Next round."],
+ ["RULES","A rule loophole shows up mid-season",[["Change the rule (next rollover by default)","commish.rules.set","B"],["Close it now with a reason","commish.rules.set effective=now","B"],["Override single outcomes meanwhile","rule.exception","B"]],"Writing what the rule means.","Everything the rule governs."],
+ ["RULES","A house rule exists only in words",[["Add it to the rulebook text","rules.text.add","B"],["Words become an enforced rule (later, chat)","—","G"]],"Enforcing it by hand.","—"],
+ ["LEAGUE","The league expands or shrinks",[["Change teams, conferences, divisions","Rules › League & teams","B"],["Re-align divisions","league.alignment","B"],["Guided expansion flow","—","G"]],"Expansion draft, new owners.","Schedule, playoffs, draft order."],
+ ["LEAGUE","The commissioner steps down or goes quiet",[["Step down, naming a successor","commish.succession.stepdown","B"],["Deputy takes over after inactivity","commish.succession.takeover","B"]],"Nothing.","Roles."],
+ ["LEAGUE","The league wants a new commissioner",[["Open a vote-out or election (co-commish or DOT)","commish.succession.voteout.open","B"],["Owners vote","commish.vote.cast","B"]],"Campaigning.","Roles."],
+ ["LEAGUE","Undo a change",[["Revert any ledger entry (except the MFL cutover, which says so first)","commish.correction.revert","B"]],"Nothing.","Whatever the entry touched."],
+ ["LEAGUE","Bring in an AI helper",[["Connect an AI agent: job, scope, expiry","People › AI agents","R"]],"Watching what it does (ledger shows 'via AI').","—"]];
+const SYN={0:"weather hamlin emergency suspended",6:"left quit gone abandoned missing absent",7:"left quit leave sell",9:"2fa totp phone lost locked",10:"cheat unfair lopsided veto",13:"dropped released accident",16:"cap space over money",24:"reward prize minigame pickem contest",25:"penalty punish take away",30:"loophole exploit",31:"expansion contraction add teams",33:"impeach remove commissioner"};
+const PICKS=[];
+(function(){let id=1;for(const s of [2026,2027,2028])for(let r=1;r<=5;r++)for(let t=0;t<32;t++){
+  let own=t,cond="",st="Active",src="Original";
+  if(s===2027&&r===3&&t===1){own=2;src="Trade Oct 12"}
+  if(s===2027&&r===1&&t===9){own=7;src="Trade Sep 3";cond="Top-5 protected"}
+  if(s===2026&&r===2&&t===14){st="Forfeited";src="Penalty: roster deadline"}
+  if(s===2026&&r===4&&t===5){own=5;src="Original"}
+  PICKS.push({id:id++,s,r,orig:TEAMS[t],own:TEAMS[own],cond,st,src});}
+ PICKS.push({id:id++,s:2027,r:3,orig:"League",own:"Owls",cond:"",st:"Active",src:"Granted: 2026 pick'em winner"});})();
+const LEDGER=[["Oct 30 14:02","Commissioner","Approved stat change: Kincaid rush yds 61→64 (no result flip)"],
+ ["Oct 30 11:40","Co-commish","Seated as caretaker of Comets",""],["Oct 29 22:10","DOT · Sentinels","Approved Kodiaks ⇄ Mudcats (2 of 3)"],
+ ["Oct 29 18:05","Commissioner","Rule change pending next rollover: Maximum active bids 30 → 35"],["Oct 29 09:30","AI for Commissioner","Drafted week 9 notice (confirmed by commissioner)","ai"],
+ ["Oct 28 21:15","Commissioner","Calendar exception: Tundra may restructure until Nov 1"],["Oct 28 08:00","System","Waiver run: 4 awards"],["Oct 27 16:44","Commissioner","Invite sent: Comets"],["Oct 27 09:12","System","Bids processed: 2 awards"],["Oct 26 20:30","Commissioner","Notice: Week 8 recap pinned"],["Oct 25 18:02","DOT · Kodiaks","Vetoed Tundra ⇄ Owls (3 of 3)"],["Oct 24 11:15","Co-commish","Score: Bison +2.0 wk 7 (feed outage)"],["Oct 23 08:00","System","Waiver run: 6 awards"],["Oct 22 21:40","Commissioner","Rule: Trade offer lifetime 7 days (now)"],["Oct 21 10:05","Commissioner","Owner removed: Comets (left the league)"],["Oct 20 16:22","Commissioner","Position: T. Hill RB → WR"],["Oct 19 14:00","System","Backup restored test: OK"],["Oct 18 09:30","Commissioner","Stat rejected: Branch solo tackles (feed error)"],["Oct 17 19:48","Commissioner","Calendar: draft start Jul 14 set"],["Oct 16 12:10","System","Upgrade to 0.51"],["Oct 15 08:00","System","Waiver run: 3 awards"]];
+let ROLE="C",TAB="jobs",FAMSEL="all",PAGE=0,SELRULE=null,PENDING=[];
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("on"),2600)}
+// ---------- shell ----------
+function renderTabs(){$("#tabs").innerHTML=BRANCHES.map(([k,l])=>{const n=k==="jobs"?JOBS.filter(j=>j.state==="live"||j[1]==="live").length:"";return `<button role="tab" data-tab="${k}" aria-selected="${k===TAB}">${l}${n?` <span class="cr-st live">${n}</span>`:""}</button>`}).join("")}
+function renderRail(){const leaves={jobs:"Jobs",sit:"Situations",rules:"Rules",season:"Season desk",fix:"Fix",picks:"Picks",people:"People",league:"League",server:"Server"};
+ const ks=Object.keys(leaves);$("#rtree").innerHTML=ks.map((k,i)=>`<button class="leaf${k===TAB?" sel":""}" data-tab="${k}"><span class="tr">${i===ks.length-1?"└":"├"}</span>${leaves[k]}</button>`).join("")}
+function go(tab,arg){TAB=tab;renderTabs();renderRail();document.querySelectorAll(".cr-main").forEach(e=>e.classList.remove("on"));$("#v-"+tab).classList.add("on");VIEWS[tab](arg);closeEd()}
+const VIEWS={};
+// ---------- center card ----------
+function openCard(title,sub,body,wide){const c=$("#card");c.className="cr-card open"+(wide?" wide":"");
+ c.innerHTML=`<div class="cr-ch"><div><h2>${title}</h2><div class="sub">${sub||""}</div></div><button class="x" data-close>ESC ✕</button></div><div class="cr-cb">${body}</div>`;$("#scrim").classList.add("open")}
+function closeCard(){$("#card").className="cr-card";$("#scrim").classList.remove("open")}
+// ---------- editor tray ----------
+function closeEd(){$("#ed").classList.remove("open");$("#ed").innerHTML="";if(TAB==="rules"&&typeof fitRules==="function")setTimeout(fitRules,0)}
+function openEd(html){const e=$("#ed");e.innerHTML=html;e.classList.add("open")}
+function holdBtn(label,cmd,done){return `<button class="cr-hold" data-hold="${esc(cmd)}" data-done="${esc(done||"Recorded on the ledger")}"><i></i><span>HOLD TO ${label}</span></button>`}
+function confirmBtn(label,cmd,done){return `<button class="cr-btn pri" data-fire="${esc(cmd)}" data-done="${esc(done||"Recorded on the ledger")}">${label}</button>`}
+function record(cmd,done){LEDGER.unshift(["just now",ROLE==="C"?"Commissioner":"Co-commish",done]);$("#cmdout").textContent="› "+cmd;toast(done);closeEd();closeCard();if(TAB==="league")VIEWS.league()}
+// ---------- inspector ----------
+function insp(html){$("#insp").innerHTML=`<div class="cr-ins">${html}</div>`}
+function inspDefault(){const live=JOBS.filter(j=>j[1]==="live");insp(`<h3>Control Room</h3><div class="sub">${live.length} things need you · ${JOBS.filter(j=>j[1]==="block").length} blocked</div>
+ <div class="lbl">HOW TO FIND ANYTHING</div><div class="sub">1 · Jobs come to you (this page).<br>2 · Situations: pick what happened, get the tools in order.<br>3 · Search box or <b>/</b>: any rule, team, job or fix.<br>4 · Type a command at the bottom.</div>
+ <div class="lbl">SAFETY</div><div class="sub">Every change previews who it affects, asks the right confirm (click · hold · typed reason), lands on the ledger owners can read, and can be undone.</div>
+ <div class="lbl">LATEST ON THE LEDGER</div><div class="hist">${LEDGER.slice(0,7).map(l=>`<div><b style="color:var(--ink)">${l[1]}</b> · ${esc(l[2])}<br><span class="mono" style="font-size:10.5px">${l[0]}</span></div>`).join("")}</div><div class="lbl">YOUR ROLE</div><div class="sub">${ROLE==="C"?"Commissioner: every control.":"Co-commissioner: everything except roles, deputy order, standings override, rollover and engine (shown locked)."}</div>`)}
+// ---------- search ----------
+function searchIndex(){const out=[];
+ RULES.forEach(r=>out.push(["RULE",r[3],FAM[r[0]]+" · "+r[4],()=>{go("rules");pickRule(r[2])}]));
+ JOBS.forEach(j=>out.push(["JOB",j[2],j[3],()=>{go("jobs");openJob(j[0])}]));
+ SITS.forEach((s,i)=>out.push(["SITUATION",s[1],s[0],()=>{go("sit");openSit(i)},SYN[i]||""]));
+ FIXES.forEach((f,i)=>out.push(["FIX",f[0],f[1],()=>{go("fix");openFix(i)}]));
+ TEAMS.forEach(t=>out.push(["TEAM",t,"seat · picks · roster",()=>{go("people");pickTeam(t)}]));
+ PICKACTS.forEach((p,i)=>out.push(["PICKS",p[0],p[1],()=>{go("picks");pickAct(i)}]));
+ return out}
+function runSearch(q){const r=$("#res");q=q.trim().toLowerCase();if(!q){r.classList.remove("open");return}
+ const words=q.split(/\s+/),need=Math.ceil(words.length/2);const hits=searchIndex().map(h=>{const t=(h[0]+" "+h[1]+" "+h[2]+" "+(h[4]||"")).toLowerCase();return [h,words.filter(w=>t.includes(w)).length]}).filter(x=>x[1]>=need).sort((a,b)=>b[1]-a[1]).map(x=>x[0]).slice(0,12);
+ r._hits=hits;r.innerHTML=hits.length?hits.map((h,i)=>`<button data-hit="${i}" class="${i===0?"k":""}"><span class="ty">${h[0]}</span><span class="lb"><b>${esc(h[1])}</b><span>${esc(h[2])}</span></span></button>`).join(""):`<button><span class="ty">—</span><span class="lb"><b>Nothing matches</b><span>Try fewer words, or a situation: “owner left”, “game cancelled”.</span></span></button>`;r.classList.add("open")}
+// ---------- JOBS ----------
+const LAUNCH=[["Approve stat changes","stat"],["Review a trade","trade"],["Run waivers now","waivers"],["Send a league notice","notice"],["Invite an owner","invite"],["Grant or move a pick","pick"],["Fix something","fix"],["Change a rule","rule"]];
+VIEWS.jobs=function(){const grp=s=>JOBS.filter(j=>j[1]===s);
+ const row=j=>`<div class="cr-job" data-job="${j[0]}"><i class="dot ${STATE[j[1]][0]}"></i><div class="nm"><b>${j[2]}</b><span>${j[3]}</span></div><span class="cnt">${j[4]||""}</span><span class="when">${j[5]}</span></div>`;
+ const sec=(s,l)=>{const g=grp(s);return g.length?`<div class="cr-grp">${l} · ${g.length}</div>`+g.map(row).join(""):""};
+ $("#v-jobs").innerHTML=`<div class="cr-col" style="width:250px;flex:none"><div class="cr-panel"><div class="cr-ph">QUICK ACTIONS</div><div class="cr-pb cr-launch">${LAUNCH.map(l=>`<button data-launch="${l[1]}">${l[0]}<span class="kb">›</span></button>`).join("")}</div></div>
+  <div class="cr-panel" style="flex:1"><div class="cr-ph">THIS WEEK</div><div class="cr-pb cr-kv"><span>Week</span><b>9 of 13</b><span>Lineups lock</span><b>Sun 12:00</b><span>Waivers run</span><b>Wed 3:00</b><span>Trade deadline</span><b>wk 9 · instant unset</b><span>Next window</span><b>Playoffs wk 14</b><span>Last backup</span><b>02:00 · OK</b></div></div></div>
+ <div class="cr-col" style="flex:1"><div class="cr-panel" style="flex:1"><div class="cr-ph">JOBS<span class="sp"></span><span class="ct">live first · then upcoming · blocked · not built</span></div>
+  <div class="cr-pb cr-two" style="padding-top:0;flex:1"><div>${sec("live","NEEDS YOU")}</div><div>${sec("up","UPCOMING")}${sec("block","BLOCKED")}${sec("unbuilt","NOT BUILT")}</div></div></div></div>`;inspDefault()};
+function openJob(id){const j=JOBS.find(x=>x[0]===id);if(!j)return;document.querySelectorAll(".cr-job").forEach(e=>e.classList.toggle("sel",e.dataset.job===id));
+ insp(`<h3>${j[2]}</h3><div class="sub">${j[3]}</div><div class="cr-kv"><span>State</span><b>${STATE[j[1]][1]}</b><span>When</span><b>${j[5]}</b><span>Census</span><b>${j[7]}</b></div><div class="foot"><button class="cr-btn pri" data-jobopen="${id}">OPEN</button></div>`);
+ const o=j[6];if(o==="statcard")return statCard();if(o==="tradecard")return tradeCard();if(o==="appealcard")return appealCard();if(o==="mustcard")return mustCard();if(o==="missedcard")return missedCard();
+ if(o.startsWith("rules:")){go("rules");const f=o.slice(6);if(f==="need"){FAMSEL="need";VIEWS.rules()}else pickRule(f);return}
+ if(VIEWS[o])go(o)}
+function statCard(){openCard("Stat corrections · 2 waiting","Feed changes queue here; nothing changes a score until you approve",`
+ <table class="cr-t"><thead><tr><th style="width:24%">PLAYER</th><th>STAT</th><th style="width:90px">WAS</th><th style="width:90px">NOW</th><th style="width:28%">EFFECT</th></tr></thead><tbody>
+ <tr><td>J. Kincaid · BUF RB</td><td>Rushing yards wk 8</td><td class="v">61</td><td class="v">64</td><td>Owls +0.30 · no result changes</td></tr>
+ <tr><td>T. Branch · DET S</td><td>Solo tackles wk 8</td><td class="v">7</td><td class="v">6</td><td style="color:var(--amber)">Sentinels −1.50 · <b>flips Sentinels–Tundra</b></td></tr></tbody></table>
+ <div class="cr-note">A flip changes a result: standings, seeds and waiver order follow. You need a typed reason for that one.</div>
+ <div class="cr-btns">${confirmBtn("APPROVE KINCAID","commish.stat.queue.approve id=41","Approved: Kincaid 61→64")}<button class="cr-btn">REJECT KINCAID</button><span style="flex:1"></span><input placeholder="Reason for the flip (required)" style="background:var(--sunken);border:1px solid var(--edge);color:var(--ink);padding:6px 8px;width:300px">${holdBtn("APPROVE BRANCH","commish.stat.queue.approve id=42 reason=…","Approved with flip: Branch 7→6")}<button class="cr-btn">REJECT BRANCH</button></div>`,true)}
+function tradeCard(){openCard("Trade review · Kodiaks ⇄ Mudcats","Proposed Oct 28 · DOT decides at 3 approvals or 3 vetoes · closes in 19h",`
+ <div class="cr-sides"><div><h4>KODIAKS GET</h4><ul><li>WR D. Moore <span class="mono">$8.2M · 2y</span></li><li>2027 R3 (Mudcats) <span class="mono">pick</span></li></ul><div class="sub">Cap after: $4.1M room · roster 76/80</div></div>
+ <div><h4>MUDCATS GET</h4><ul><li>RB B. Robinson <span class="mono">$6.0M · 3y</span></li><li>LB R. Smith <span class="mono">$3.4M · 1y</span></li></ul><div class="sub">Cap after: $1.8M room · roster 79/80</div></div></div>
+ <div class="cr-votes">DOT <i class="y"></i><i class="y"></i><i></i> · vetoes <i></i><i></i><i></i> <span class="sub">· Sentinels, Harbor Kings approved · Kodiaks seat recused</span></div>
+ <div class="cr-note ok">Both rosters valid after the trade · both under the hard cap.</div>
+ <div class="cr-btns"><button class="cr-btn">CAST MY DOT VOTE ›</button><span style="flex:1"></span><span class="sub">Commissioner override (reason, visible to all owners):</span>${holdBtn("OVERRIDE: APPROVE","trade.override id=88 decision=approve","Trade approved by override")}${holdBtn("OVERRIDE: VETO","trade.override id=88 decision=veto","Trade vetoed by override")}</div>
+ <div class="sub">Same card the owners see in War Room › Trades; you get the extra buttons.</div>`,true)}
+function appealCard(){openCard("Trade appeal · Tundra ⇄ Owls","The DOT vetoed 3–0 on Oct 27; Tundra appealed (one appeal per party)",`
+ <div class="cr-note">Tundra: “We were both under the cap and the values were even by every chart.”</div>
+ <div class="cr-sides"><div><h4>TUNDRA GET</h4><ul><li>QB J. Allen <span class="mono">$14.0M · 2y</span></li></ul></div><div><h4>OWLS GET</h4><ul><li>QB C. Stroud <span class="mono">$5.1M · 3y</span></li><li>2027 R1 (Tundra)</li></ul></div></div>
+ <div class="cr-btns"><input placeholder="Your ruling, in words (required, visible)" style="flex:1;background:var(--sunken);border:1px solid var(--edge);color:var(--ink);padding:6px 8px">${holdBtn("UPHOLD VETO","trade.appeal.rule id=87 decision=uphold","Appeal ruled: veto upheld")}${holdBtn("OVERTURN","trade.appeal.rule id=87 decision=overturn","Appeal ruled: trade stands")}</div>`)}
+function mustCard(){openCard("Must-cut · Gators 81 / 80","Over the active roster maximum after a waiver claim. The app never cuts for an owner.",`
+ <div class="cr-kv"><span>Since</span><b>Oct 29 08:00</b><span>Owner notified</span><b>Yes · twice</b><span>Lineup</span><b>still valid</b></div>
+ <div class="cr-note">Your choices: wait, allow it for a time, or cut a player for them (a correction, with a reason).</div>
+ <div class="cr-btns">${confirmBtn("REMIND OWNER","notify.owner team=Gators","Reminder sent")}${holdBtn("ALLOW UNTIL SUN","commish.reserve.exception team=Gators until=Sun","Exception: Gators 81 until Sun")}<button class="cr-btn g3" data-go="fix">CUT FOR THEM ›</button></div>`)}
+function missedCard(){openCard("Missed lineups · week 9","Flagged by the rule “Flag missed lineups”; lineups lock Sun 12:00",`
+ <table class="cr-t"><thead><tr><th>TEAM</th><th>PROBLEM</th><th>OWNER</th><th style="width:220px"></th></tr></thead><tbody>
+ <tr><td>Comets</td><td>3 starters on bye</td><td>vacant · you are caretaker</td><td><button class="cr-btn sm pri">SET LINEUP (CARETAKER) ›</button></td></tr>
+ <tr><td>Bison</td><td>QB slot empty</td><td>active · last seen 6d</td><td><button class="cr-btn sm">REMIND</button> <button class="cr-btn sm">CORRECT AFTER LOCK ›</button></td></tr></tbody></table>
+ <div class="sub">Caretaker lineups open Franchise HQ › Lineup for that team, with the caretaker banner.</div>`,true)}
+// ---------- SITUATIONS ----------
+let SITCAT="ALL";
+VIEWS.sit=function(){const cats=["ALL",...new Set(SITS.map(s=>s[0]))];
+ $("#v-sit").innerHTML=`<div class="cr-col" style="flex:1"><div class="cr-chips">${cats.map(c=>`<button class="cr-chip" data-sitcat="${c}" aria-pressed="${c===SITCAT}">${c}<span class="c">${c==="ALL"?SITS.length:SITS.filter(s=>s[0]===c).length}</span></button>`).join("")}</div>
+ <div class="cr-sit">${SITS.map((s,i)=>SITCAT==="ALL"||s[0]===SITCAT?`<button data-sit="${i}"><span class="cat">${s[0]}</span><b>${s[1]}</b><span class="fs">${s[2].length} step${s[2].length>1?"s":""} · first: ${s[2][0][0]}</span></button>`:"").join("")}</div></div>`;
+ insp(`<h3>Situations</h3><div class="sub">Real league trouble arrives as a story. Pick the story; you get the tools in order, what is still up to you, and what to check afterwards.</div><div class="lbl">MISSING ONE?</div><div class="sub">Every tool is also reachable from Fix, Rules and the command line. Situations are the short way in.</div>`)};
+function openSit(i){const s=SITS[i],tag={B:"",R:'<span class="cr-st plan">RULED · NOT BUILT</span>',G:'<span class="cr-st need">GAP</span>'};
+ openCard(s[1],s[0],`<div class="cr-steps">${s[2].map((st,k)=>`<div><span class="no">${k+1}</span><span>${st[0]} ${tag[st[2]]}<br><code>${st[1]}</code></span><button class="cr-btn sm" ${st[2]==="B"?"":"disabled style='opacity:.4'"} data-step="${esc(st[1])}">OPEN ›</button></div>`).join("")}</div>
+ <div class="cr-note">Still up to you: ${s[3]}</div><div class="cr-note ok">Check afterwards: ${s[4]}</div>`)}
+// ---------- RULES ----------
+let PER=19;
+VIEWS.rules=function(){const need=RULES.filter(r=>r[5]==="Needs a ruling").length,plan=RULES.filter(r=>r[5]==="Planned").length;
+ let rows=FAMSEL==="all"?RULES:FAMSEL==="need"?RULES.filter(r=>r[5]==="Needs a ruling"):FAMSEL==="plan"?RULES.filter(r=>r[5]==="Planned"):FAMSEL==="pend"?RULES.filter(r=>PENDING.includes(r[2])):RULES.filter(r=>r[0]===FAMSEL);
+ const pages=Math.max(1,Math.ceil(rows.length/PER));PAGE=Math.min(PAGE,pages-1);const vis=rows.slice(PAGE*PER,PAGE*PER+PER);
+ const chip=(k,l,n)=>`<button class="cr-chip" data-fam="${k}" aria-pressed="${FAMSEL===k}">${l}<span class="c">${n}</span></button>`;
+ const st=r=>PENDING.includes(r[2])?'<span class="cr-st pend">NEXT ROLLOVER</span>':r[5]==="Needs a ruling"?'<span class="cr-st need">NEEDS A RULING</span>':r[5]==="Planned"?'<span class="cr-st plan">PLANNED</span>':r[5]==="Fixed rule"?'<span class="cr-st fixed">FIXED</span>':'<span class="cr-st set">SET</span>';
+ $("#v-rules").innerHTML=`<div class="cr-col" style="flex:1"><div class="cr-chips">${chip("all","ALL",RULES.length)}${Object.entries(FAM).map(([k,l])=>chip(k,l,RULES.filter(r=>r[0]===k).length)).join("")}
+  ${chip("need","NEEDS A RULING",need)}${chip("pend","PENDING",PENDING.length)}${chip("plan","PLANNED (BREADTH)",plan)}</div>
+  <div class="cr-panel" style="flex:1"><table class="cr-t"><thead><tr><th style="width:15%">SECTION</th><th style="width:27%">RULE</th><th>VALUE</th><th style="width:150px">STATE</th><th style="width:44px">⚖</th></tr></thead><tbody>
+  ${vis.map(r=>`<tr class="rw${SELRULE===r[2]?" sel":""}" data-rule="${r[2]}"><td style="color:var(--ink3)">${r[1]}</td><td>${r[3]}</td><td class="v">${esc(r[4])}</td><td>${st(r)}</td><td title="competitive: changes default to next rollover">${r[7]?"⚖":""}</td></tr>`).join("")}</tbody></table>
+  <div class="cr-pager"><span>${rows.length} rules · page ${PAGE+1} of ${pages}</span><span class="sp"></span><button class="cr-btn sm" data-page="-1">‹ PREV</button><button class="cr-btn sm" data-page="1">NEXT ›</button><span>⚖ = competitive: changes wait for next rollover unless you choose now</span></div></div></div>`;fitRules();
+ if(!SELRULE)insp(`<h3>Rules</h3><div class="sub">All ${RULES.length} league rules on one list. The chips filter; they are not menus. Click any rule to see what it governs and change it.</div><div class="lbl">PRESETS</div><div class="sub">Apply a whole bundle: 32-Team Default · 16-Team Mirror · Legacy NFL · Your MFL league · Start empty.</div><div class="foot"><button class="cr-btn">APPLY A PRESET ›</button><button class="cr-btn">COMPARE TO A PRESET ›</button></div>`)};
+function fitN(sel){const p=document.querySelector(sel+" .cr-panel:last-of-type");if(!p||!p.offsetParent)return 0;const tr=p.querySelector("tbody tr"),th=p.querySelector("thead"),pg=p.querySelector(".cr-pager");if(!tr)return 0;return Math.max(8,Math.floor((p.clientHeight-th.offsetHeight-pg.offsetHeight-6)/tr.offsetHeight))}
+function fitRules(){const n=fitN("#v-rules");if(n&&n!==PER){PER=n;VIEWS.rules()}}
+function fitPicks(){const n=fitN("#v-picks");if(n&&n!==PKPER){PKPER=n;VIEWS.picks()}}
+function pickRule(f){const r=RULES.find(x=>x[2]===f);if(!r)return;SELRULE=f;FAMSEL=FAMSEL==="all"||FAMSEL===r[0]?FAMSEL:r[0];
+ const rows=FAMSEL==="all"?RULES:RULES.filter(x=>x[0]===FAMSEL);PAGE=Math.floor(rows.indexOf(r)/PER);if(PAGE<0)PAGE=0;VIEWS.rules();
+ const fixed=r[5]==="Fixed rule",plan=r[5]==="Planned";const rows2=FAMSEL==="all"?RULES:RULES.filter(x=>x[0]===FAMSEL);const pg=Math.floor(rows2.indexOf(r)/PER);if(pg!==PAGE&&pg>=0){PAGE=pg;VIEWS.rules()}
+ insp(`<div class="sub">${FAM[r[0]]} › ${r[1]}</div><h3>${r[3]}</h3><div class="big">${esc(r[4])}</div>
+  <div class="cr-kv"><span>State</span><b>${r[5]}</b><span>Source</span><b style="white-space:normal">${esc(r[6]||"—")}</b><span>Command</span><b>${r[2]}</b><span>Competitive</span><b>${r[7]?"yes":"no"}</b></div>
+  ${r[8].length?`<div class="lbl">CHOICES</div><div class="sub">${r[8].join(" · ")}</div>`:""}${r[10].length?`<div class="lbl">PARTS</div><div class="sub">${r[10].join(" · ")}</div>`:""}
+  <div class="lbl">CHANGES THESE OWNER SCREENS</div><div class="gov">${GOV[r[0]].map(g=>`<span>${g}</span>`).join("")}</div>
+  <div class="lbl">HISTORY</div><div class="hist"><div>Season start · ${esc(r[6]||"set")}</div></div>
+  <div class="foot">${fixed?'<div class="lock">Fixed rule (ruling R3): not a setting.</div>':plan?'<div class="lock">Planned (breadth ruling 10-30): not built yet.</div><button class="cr-btn" data-edit="'+f+'">PREVIEW THE CONTROL ›</button>':`<button class="cr-btn pri" data-edit="${f}">CHANGE ›</button><button class="cr-btn">ONE-OFF EXCEPTION ›</button>`}</div>`)}
+function editRule(f){setTimeout(fitRules,0);const r=RULES.find(x=>x[2]===f);const input=r[8].length?`<select>${[...new Set(r[8])].map(c=>`<option${c===r[4]?" selected":""}>${c}</option>`).join("")}</select>`:`<input value="${esc(r[4])}" style="width:260px">`;
+ openEd(`<div class="f"><label>${r[3].toUpperCase()}</label>${input}</div>
+ <div class="f"><label>TAKES EFFECT</label><div class="cr-seg" data-seg><button aria-pressed="${r[7]?"true":"false"}">NEXT ROLLOVER</button><button aria-pressed="${r[7]?"false":"true"}">NOW</button></div></div>
+ <div class="f" style="width:230px"><label>REASON (REQUIRED IF NOW)</label><textarea placeholder="Why, in words owners will read"></textarea></div>
+ <div class="pv"><b>Preview</b> · affects all 32 teams · governs ${GOV[r[0]].join(", ")}.<br>${r[7]?'<span class="warn">Competitive rule: mid-season it waits for the Mar 1 rollover unless you choose NOW.</span>':"Takes effect at once."}<br>Undo: revert the ledger entry.</div>
+ <div class="f" style="align-self:flex-end;gap:6px"><button class="cr-btn pri" data-pend="${f}">SAVE</button><button class="cr-btn" data-x>CANCEL</button></div>`)}
+// ---------- SEASON DESK ----------
+VIEWS.season=function(){const M=["MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC","JAN","FEB"],x=m=>(m/12*100).toFixed(2)+"%";
+ const W=[["Contract window Mar 1–Apr 30",0,1.97,0],["RFA tenders May 1–3",2,.6,1],["UFA May 3–10",2.1,.6,2],["Re-sign May 10–15",2.6,.7,3],["Open FA from May 19",2.6,1.4,0],["Rookie draft Jul 14",4.45,.9,1],["Cut day · buyouts",5.8,.9,2],["Regular season wk 1–13",6.2,3,1,"ins"],["Trade deadline wk 9",7.95,1,3,"dl"],["Playoffs 14–17",9.2,1,0,"ins"],["Rollover Mar 1",11.1,.9,1,"dl"]];
+ $("#v-season").innerHTML=`<div class="cr-col" style="flex:1"><div class="cr-panel"><div class="cr-ph">LEAGUE YEAR · drag a window to move it · click to edit<span class="sp"></span><span class="ct">timezone America/New_York · owners see their own time</span></div>
+ <div class="cr-pb"><div class="cr-cal">${M.map((m,i)=>`<div class="mo" style="left:${x(i)}">${m}</div>`).join("")}${W.map(w=>`<div class="w ${w[4]||""}" data-win="${w[0]}" style="left:${x(w[1])};width:${x(w[2])};top:${18+w[3]*26}px">${w[0]}</div>`).join("")}<div class="today" style="left:${x(7.95)}"></div></div></div></div>
+ <div class="cr-desk">
+  ${desk("WAIVERS","6 claims · 4 players",[["Window","24h after a cut"],["Priority","Reverse standings"],["Next run","Wed 3:00"]],["RUN NOW|waivers.process","SET ORDER BY HAND|waivers.order.set","AUTO ORDER|waivers.order.auto","FIX AN AWARD|waivers.award.override"],`<div class="cr-grp">CLAIMS</div><div><span>K. Shaheed</span><span>Gators, Owls</span><span>#3 Gators</span></div><div><span>T. Tuten</span><span>Bison, Tundra, Comets</span><span>#1 Comets</span></div><div><span>D. Vele</span><span>Kodiaks</span><span>#14 Kodiaks</span></div><div><span>J. Reed</span><span>Owls, Marauders</span><span>#9 Owls</span></div>`)}
+  ${desk("BIDS","3 auctions open",[["Mode","UFA open · RFA open"],["Stand to win","24h"],["Blind bids","private, even to you"]],["PROCESS CLEARED|bids.process","FIX AN AWARD|bids.award.override","CLOSE O-LINE AUCTION|oline.auction.close"],`<div class="cr-grp">OPEN AUCTIONS</div><div><span>R. White RB</span><span>3 bids</span><span>stands 14h</span></div><div><span>M. Wilson WR</span><span>1 bid</span><span>stands 22h</span></div><div><span>L. Floyd LB</span><span>2 bids</span><span>cleared · process</span></div>`)}
+  ${desk("DRAFT","Rookie draft Jul 14 · slow · 6h clock",[["Order","Standings · later rounds need a ruling"],["Rounds","5"],["Startup draft","not used"]],["SET ORDER|draft.order.set","START|draft.start","OPEN DRAFT ROOM TRAY ›|draft","REVERT|draft.revert","ARCHIVE|draft.archive"],`<div class="cr-grp">2027 ROUND 1 (PROJECTED)</div><div><span>1 Comets</span><span>2 Bison</span><span>3 Gators</span></div><div><span>4 Riveters</span><span>5 Pioneers</span><span>6 Badgers</span></div><div><span>7 Vipers</span><span>8 Thunder</span><span>9 Ospreys</span></div>`)}
+  ${desk("SCHEDULE","13 weeks · division weighted",[["Published","Aug 30"],["Edits this season","0"]],["EDIT A GAME|schedule.edit","REGENERATE|schedule.generate","PUBLISH|schedule.publish"],`<div class="cr-grp">WEEK 9</div><div><span>Kodiaks @ Mudcats</span><span>Sentinels @ Gold Rush</span><span>Tundra @ Owls</span></div><div><span>Harbor Kings @ Ironclads</span><span>Comets @ Bison</span><span>Gators @ Vipers</span></div><div><span>+ 10 more games</span><span></span><span></span></div>`)}
+  ${desk("PLAYOFFS","7 per conference · wk 14–17",[["Bracket","Legacy NFL preset"],["Seeds","build after wk 13"],["Home field","+3"]],["BUILD BRACKET|bracket.build","EDIT|bracket.edit","SEED A SLOT|bracket.seed","ADVANCE (OVERRIDE)|bracket.advance","TITLE LABEL|title.set"],`<div class="cr-grp">SEEDS IF IT ENDED TODAY</div><div><span>AFC 1 Sentinels</span><span>2 Harbor Kings</span><span>3 Kodiaks</span></div><div><span>NFC 1 Owls</span><span>2 Tundra</span><span>3 Ironclads</span></div><div><span>bubble: Mudcats, Gold Rush</span><span></span><span></span></div>`)}
+  ${desk("ROLLOVER","Mar 1 · instant needs a ruling",[["Contracts","age a year"],["Expiring","pending, not released"],["Rule changes waiting","1"]],["SET INSTANT|calendar.rollover","PREVIEW (DRY RUN)|season.rollover dry_run=true","RUN ROLLOVER|season.rollover"],`<div class="cr-grp">BEFORE YOU RUN IT</div><div><span>Rollover instant</span><span>needs a ruling</span><span></span></div><div><span>Pending rule changes</span><span>1 (bids 30→35)</span><span></span></div><div><span>Backup taken first</span><span>automatic</span><span></span></div>`)}
+ </div></div>`;
+ insp(`<h3>Season desk</h3><div class="sub">Running the year: the calendar on top, the machinery below. Rules say how things work; this is where you run them or step in.</div><div class="lbl">AUTOMATIC</div><div class="sub">Waivers and bids resolve themselves at window close. These buttons are the manual trigger and the overrides.</div>`)};
+function desk(t,sub,kv,acts,extra){return `<div class="cr-panel"><div class="cr-ph">${t}<span class="sp"></span><span class="ct">${sub}</span></div><div class="cr-pb" style="display:flex;flex-direction:column;flex:1"><div class="cr-kv">${kv.map(k=>`<span>${k[0]}</span><b>${k[1]}</b>`).join("")}</div>${extra?`<div class="cr-mini">${extra}</div>`:""}
+ <div class="cr-btns">${acts.map(a=>{const[l,c]=a.split("|");const lock=ROLE!=="C"&&c==="season.rollover";return `<button class="cr-btn${l.startsWith("RUN ROLL")?" g3":""}" data-act="${esc(c)}" data-lbl="${esc(l)}" ${lock?"disabled":""}>${l}${lock?'<span class="cr-lock">C ONLY</span>':""}</button>`}).join("")}</div></div></div>`}
+// ---------- FIX ----------
+const FIXES=[["A stat","approve, reject or enter a stat by hand","commish.stat.correct",[["Player","T. Branch"],["Week","8"],["Stat","Solo tackles"],["Value","6"],["Source","NFL GSIS"]]],
+ ["A score","add or take points from a player or team","commish.score.player",[["Player or team","Sentinels"],["Week","8"],["Points (+/−)","-1.5"]]],
+ ["A lineup","set the lineup that counts, after the lock","commish.lineup.correct",[["Team","Bison"],["Week","9"],["Lineup","open the lineup board ›"]]],
+ ["A player","position the feed got wrong","commish.player.position",[["Player","T. Hill"],["Position","WR"]]],
+ ["A roster","add or remove a player by correction","correct.roster",[["Team","Gators"],["Player","K. Shaheed"],["Action","remove"]]],
+ ["A transaction","reverse a trade, claim or move","correct.transaction",[["Transaction","Trade 88 · Kodiaks ⇄ Mudcats"]]],
+ ["Money","contract, cap adjustment, cap relief","commish.contract.edit",[["Player","D. Moore"],["Years","2"],["Salary","$8.2M"]]],
+ ["Standings","a record, or the full order","commish.standings.record.adjust",[["Team","Tundra"],["W-L-T","5-3-1"]]],
+ ["A rule outcome","one exception to an automatic rule","rule.exception",[["Rule","Roster limits"],["Who","Gators"],["Until","Sun"]]],
+ ["A window","one action outside its window","commish.calendar.exception",[["Action","Restructure"],["Team","Tundra"],["Until","Nov 1"]]],
+ ["Reserve","IR or taxi outside the rules","commish.reserve.exception",[["Player","B. Purdy"],["Bucket","IR"],["Until","wk 11"]]],
+ ["Undo","revert any ledger entry","commish.correction.revert",[["Entry","pick one from the ledger ›"]]]];
+VIEWS.fix=function(){$("#v-fix").innerHTML=`<div class="cr-col" style="flex:1"><div class="cr-fix">${FIXES.map((f,i)=>`<button data-fix="${i}"><b>${f[0]}</b><span>${f[1]}</span><i>${f[2]}</i></button>`).join("")}</div>
+ <div class="cr-note">Every fix: preview first (who it touches, does a result flip), a typed reason, and it lands on the ledger owners can read. Picks have their own page.</div>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;min-height:0"><div class="cr-panel"><div class="cr-ph">EXCEPTIONS IN FORCE<span class="sp"></span><span class="ct">they end on their own</span></div><div class="cr-pb">
+ <table class="cr-t"><thead><tr><th>WHAT</th><th>WHO</th><th style="width:110px">ENDS</th><th style="width:100px"></th></tr></thead><tbody>
+ <tr><td>Roster over 80</td><td>Gators</td><td>Sun 12:00</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Restructure outside window</td><td>Tundra</td><td>Nov 1</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>IR without designation</td><td>Owls · B. Purdy</td><td>wk 11</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Position override</td><td>T. Hill → WR</td><td>until cleared</td><td><button class="cr-btn sm">CLEAR</button></td></tr>
+ <tr><td>Cap over limit</td><td>Riveters</td><td>Nov 15</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Taxi beyond 3 years</td><td>Pioneers · R. Doubs</td><td>end of season</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Bid limit: 31 active</td><td>Marauders</td><td>Nov 4</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Caretaker lineups</td><td>Comets</td><td>owner seated</td><td><button class="cr-btn sm">END NOW</button></td></tr>
+ <tr><td>Draft timer paused</td><td>—</td><td>none active</td><td></td></tr>
+ <tr><td>Standings override</td><td>—</td><td>none active</td><td></td></tr></tbody></table></div></div>
+ <div class="cr-panel"><div class="cr-ph">RECENT FIXES<span class="sp"></span><span class="ct">click to undo</span></div><div class="cr-pb">
+ <table class="cr-t"><thead><tr><th style="width:90px">WHEN</th><th>FIX</th><th style="width:90px">BY</th><th style="width:70px"></th></tr></thead><tbody>
+ <tr><td>Oct 30</td><td>Stat: Kincaid rush yds 61→64</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Oct 28</td><td>Window: Tundra may restructure</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Oct 21</td><td>Score: Bison +2.0 wk 7 (feed outage)</td><td>Co-commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Oct 14</td><td>Roster: restore K. Allen to Owls</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Oct 02</td><td>Pick: 2027 R3 Kodiaks → Mudcats</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Sep 29</td><td>Contract: D. Moore 3y → 2y (entry error)</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Sep 22</td><td>Position: T. Hill RB → WR</td><td>Co-commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Sep 15</td><td>Waiver award: Tuten → Comets (order bug)</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Sep 10</td><td>Cap relief: Marauders · J. Burrow $6.0M</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr>
+ <tr><td>Sep 08</td><td>Lineup wk 1: Badgers (app outage)</td><td>Commish</td><td><button class="cr-btn sm">UNDO</button></td></tr></tbody></table></div></div></div></div>`;
+ insp(`<h3>Fix</h3><div class="sub">Something went wrong with one thing. Pick the thing. If you don't know which, try Situations.</div>`)};
+function openFix(i){const f=FIXES[i];insp(`<h3>Fix · ${f[0]}</h3><div class="sub">${f[1]}</div><div class="lbl">COMMAND</div><div class="sub mono">${f[2]}</div>`);
+ openEd(f[3].map(k=>`<div class="f"><label>${k[0].toUpperCase()}</label><input value="${esc(k[1])}" style="width:150px"></div>`).join("")+
+ `<div class="f" style="width:230px"><label>REASON (REQUIRED)</label><textarea placeholder="Visible to owners"></textarea></div><div class="pv"><b>Preview</b> · touches 1 team${i===1?' · <span class="warn">flips Sentinels–Tundra wk 8</span>':""}. Undo: revert the entry.</div>
+ <div class="f" style="align-self:flex-end;gap:6px">${holdBtn("APPLY",f[2],"Fix recorded: "+f[0])}<button class="cr-btn" data-x>CANCEL</button></div>`)}
+// ---------- PICKS ----------
+const PICKACTS=[["Create and grant a pick","from nothing, e.g. a mini-game reward","pick.grant"],["Move a pick","to another team","correct.pick"],["Swap two picks","between teams","pick.swap"],["Forfeit a pick","penalty; it leaves the draft","pick.forfeit"],["Add a condition","protection, or depends on a result","pick.condition"],["Void or restore","a granted or forfeited pick","pick.void"]];
+let PKTEAM="All",PKSEASON=2027,PKPAGE=0,PKPER=16;
+VIEWS.picks=function(){let rows=PICKS.filter(p=>p.s===PKSEASON&&(PKTEAM==="All"||p.own===PKTEAM||p.orig===PKTEAM));const per=PKPER,pages=Math.max(1,Math.ceil(rows.length/per));PKPAGE=Math.min(PKPAGE,pages-1);
+ const vis=rows.slice(PKPAGE*per,PKPAGE*per+per),odd=PICKS.filter(p=>p.s===PKSEASON&&(p.own!==p.orig||p.st!=="Active"||p.cond));
+ $("#v-picks").innerHTML=`<div class="cr-col" style="width:280px;flex:none"><div class="cr-panel"><div class="cr-ph">DO SOMETHING WITH A PICK</div><div class="cr-pb cr-launch">${PICKACTS.map((p,i)=>`<button data-pickact="${i}"><span><b>${p[0]}</b><br><span class="sub">${p[1]}</span></span><span class="kb">›</span></button>`).join("")}</div></div>
+  <div class="cr-note">Commissioner has full power over picks (ruling 10-30). New pick commands are <b>ruled, not built</b>; moving a pick exists today.</div></div>
+ <div class="cr-col" style="flex:1"><div class="cr-chips">${[2026,2027,2028].map(s=>`<button class="cr-chip" data-pks="${s}" aria-pressed="${s===PKSEASON}">${s}</button>`).join("")}<span style="width:12px"></span>
+  <select id="pkteam" style="background:var(--sunken);border:1px solid var(--edge);color:var(--ink);padding:3px 6px"><option>All</option>${TEAMS.map(t=>`<option${t===PKTEAM?" selected":""}>${t}</option>`).join("")}</select>
+  <span class="sub" style="margin-left:auto">${odd.length} non-standard picks in ${PKSEASON}</span></div>
+ <div class="cr-panel" style="flex:1"><table class="cr-t"><thead><tr><th style="width:70px">ROUND</th><th>ORIGINAL</th><th>OWNED BY</th><th>CONDITION</th><th>HOW</th><th style="width:110px">STATUS</th></tr></thead><tbody>
+ ${vis.map(p=>`<tr class="rw" data-pick="${p.id}"><td class="v">R${p.r}</td><td>${p.orig}</td><td>${p.own!==p.orig?"<b>"+p.own+"</b>":p.own}</td><td>${p.cond||"—"}</td><td style="color:var(--ink2)">${p.src}</td><td>${p.st==="Active"?'<span class="cr-st set">ACTIVE</span>':'<span class="cr-st need">'+p.st.toUpperCase()+"</span>"}</td></tr>`).join("")}</tbody></table>
+ <div class="cr-pager"><span>${rows.length} picks · page ${PKPAGE+1} of ${pages}</span><span class="sp"></span><button class="cr-btn sm" data-pkpage="-1">‹ PREV</button><button class="cr-btn sm" data-pkpage="1">NEXT ›</button></div></div></div>`;
+ insp(`<h3>Picks</h3><div class="sub">Every pick in the league, any season. Click a pick for its history; use the actions on the left to change anything.</div><div class="lbl">LIMITS THAT STILL APPLY</div><div class="sub">Draft rules: max 15 rookie picks per team, extras forfeited (you can lift that in Rules › Draft).</div>`)};
+function pickAct(i){const p=PICKACTS[i];const lk=p[2]==="correct.pick"?"":'<span class="cr-st plan">RULED · NOT BUILT</span>';
+ openEd(`<div class="f"><label>ACTION</label><b>${p[0]} ${lk}</b></div><div class="f"><label>SEASON</label><input value="2027" style="width:70px"></div><div class="f"><label>ROUND</label><input value="3" style="width:50px"></div>
+ <div class="f"><label>${i===0?"GIVE TO":"TEAM"}</label><select>${TEAMS.map(t=>`<option>${t}</option>`).join("")}</select></div>${i===2?`<div class="f"><label>WITH</label><select>${TEAMS.map(t=>`<option>${t}</option>`).join("")}</select></div>`:""}${i===4?`<div class="f"><label>CONDITION</label><input value="Top-5 protected" style="width:150px"></div>`:""}
+ <div class="f" style="width:220px"><label>REASON (VISIBLE)</label><textarea>${i===0?"2026 pick'em winner":""}</textarea></div><div class="pv"><b>Preview</b> · ${i===0?"Owls gain a 2027 R3 from the league (slot after the last R3 pick). Owls would hold 16 rookie picks: over the max of 15. Lift the max, or the extra is forfeited at the draft.":"Shows the pick before and after, and the draft order."}</div>
+ <div class="f" style="align-self:flex-end;gap:6px">${holdBtn("APPLY",p[2],p[0]+" recorded")}<button class="cr-btn" data-x>CANCEL</button></div>`)}
+function pickHist(id){const p=PICKS.find(x=>x.id==id);insp(`<div class="sub">${p.s} round ${p.r}</div><h3>${p.orig} R${p.r} → ${p.own}</h3><div class="cr-kv"><span>Status</span><b>${p.st}</b><span>Condition</span><b>${p.cond||"none"}</b><span>How</span><b style="white-space:normal">${p.src}</b></div>
+ <div class="lbl">HISTORY</div><div class="hist"><div>Issued at the ${p.s-2} draft close</div>${p.src!=="Original"?`<div>${p.src}</div>`:""}</div><div class="foot"><button class="cr-btn" data-pickact="1">MOVE ›</button><button class="cr-btn" data-pickact="4">ADD CONDITION ›</button><button class="cr-btn g3" data-pickact="3">FORFEIT ›</button></div>`)}
+// ---------- PEOPLE ----------
+const SEAT={Comets:"caretaker",Bison:"quiet 6d"};const ROLES={Owls:"Commissioner",Ironclads:"Co-commish #1",Sentinels:"DOT","Harbor Kings":"DOT",Kodiaks:"DOT"};
+VIEWS.people=function(){const half=n=>TEAMS.slice(n,n+16).map(t=>`<tr class="rw" data-team="${t}"><td>${t}</td><td class="seat">${SEAT[t]==="caretaker"?'<span class="cr-st pend">CARETAKER</span>':SEAT[t]?'<span style="color:var(--amber)">'+SEAT[t]+"</span>":"owner seated"}</td><td style="color:var(--ink2)">${ROLES[t]||""}</td><td class="seat" style="color:var(--ink3)">${t==="Bison"?"6d":t==="Comets"?"—":((t.length*7)%23+1)+"h"}</td><td class="seat" style="color:var(--ink3)">${["Owls","Tundra","Ironclads"].includes(t)?"2FA":""}</td></tr>`).join("");
+ $("#v-people").innerHTML=`<div class="cr-col" style="flex:1"><div class="cr-panel" style="flex:1"><div class="cr-ph">FRANCHISES & SEATS<span class="sp"></span><span class="ct">click a team</span></div><div class="cr-pb cr-two" style="flex:1">
+ <table class="cr-t cr-ppl"><thead><tr><th>TEAM</th><th>SEAT</th><th>ROLE</th><th style="width:50px">SEEN</th><th style="width:40px"></th></tr></thead><tbody>${half(0)}</tbody></table><table class="cr-t cr-ppl"><thead><tr><th>TEAM</th><th>SEAT</th><th>ROLE</th><th style="width:50px">SEEN</th><th style="width:40px"></th></tr></thead><tbody>${half(16)}</tbody></table></div></div></div>
+ <div class="cr-col" style="width:380px;flex:none">
+  ${desk("ROLES","1 commish · 1 co-commish · 3 DOT",[["Deputy order","Ironclads #1"],["Grants","private"]],["GRANT ROLE|commish.role.grant","REVOKE ROLE|commish.role.revoke","DEPUTY ORDER|commish.deputy.order"])}
+  ${desk("SUCCESSION","no vote open",[["Inactivity","14d season · 30d off"],["Last commish action","today"]],["STEP DOWN|commish.succession.stepdown","INACTIVITY RULES|commish.succession.inactivity.set","OPEN VOTE-OUT|commish.succession.voteout.open","OPEN ELECTION|commish.succession.election.open"])}
+  ${desk("ABILITIES & AI","all 32 identical",[["Owner abilities","13 on · 2 off"],["AI agents","none connected"]],["SET ABILITIES|commish.abilities.set","WHO SEES WHAT|commish.visibility.set","CONNECT AN AI AGENT ›|agent"])}
+ </div>`;
+ insp(`<h3>People</h3><div class="sub">Who holds each team, and who holds each role. Role grants and invites are private; seat changes are visible to owners.</div>`)};
+function pickTeam(t){document.querySelectorAll("[data-team]").forEach(e=>e.classList.toggle("sel",e.dataset.team===t));
+ insp(`<div class="sub">Franchise</div><h3>${t}</h3><div class="cr-kv"><span>Seat</span><b>${SEAT[t]||"owner seated"}</b><span>Role</span><b>${ROLES[t]||"owner"}</b><span>Authenticator</span><b>${t==="Owls"?"on":"off"}</b><span>Picks 2027</span><b>${PICKS.filter(p=>p.s===2027&&p.own===t&&p.st==="Active").length}</b></div>
+ <div class="foot"><button class="cr-btn" data-act="commish.franchise.edit" data-lbl="RENAME">RENAME / ABBREVIATION</button><button class="cr-btn" data-act="commish.seat.invite" data-lbl="INVITE OWNER">INVITE OWNER</button><button class="cr-btn" data-act="commish.seat.caretaker" data-lbl="CARETAKER SEAT">SEAT ME AS CARETAKER</button>
+ <button class="cr-btn" data-act="account.totp.reset" data-lbl="RESET AUTHENTICATOR">RESET AUTHENTICATOR <span class="cr-st plan">NOT BUILT</span></button><button class="cr-btn g3" data-act="commish.seat.replace" data-lbl="REPLACE OWNER">REPLACE OWNER</button><button class="cr-btn g3" data-act="commish.seat.remove" data-lbl="REMOVE OWNER">REMOVE OWNER</button>
+ <button class="cr-btn" data-go="picks">SEE PICKS ›</button></div>`)}
+// ---------- LEAGUE ----------
+VIEWS.league=function(){$("#v-league").innerHTML=`<div class="cr-col" style="width:440px;flex:none"><div class="cr-panel"><div class="cr-ph">TELL THE LEAGUE</div><div class="cr-pb" style="display:flex;flex-direction:column;gap:8px">
+  <div class="cr-seg" data-seg><button aria-pressed="true">NOTICE</button><button aria-pressed="false">NEWSLETTER</button><button aria-pressed="false">LEAGUE NOTE</button></div>
+  <textarea style="height:120px;background:var(--sunken);border:1px solid var(--edge);color:var(--ink);padding:8px;resize:none">Week 9: trade deadline is Sunday at kickoff. Comets are under caretaker while we find a new owner.</textarea>
+  <div class="cr-btns" style="margin:0"><label class="sub"><input type="checkbox" checked> Pin to top</label><span style="flex:1"></span><button class="cr-btn">LET AI DRAFT IT</button>${confirmBtn("PUBLISH","commish.notice.publish pin=true","Notice published")}</div></div></div>
+  ${desk("DATA & ENGINE","feeds and valuation",[["ESPN live","14 min stale"],["nflverse","fresh 06:10"],["Sleeper edge stats","fresh"],["Engine parameters","none defined"]],["REFRESH NOW|data.refresh","CLEAR A CACHE|cache.clear","ENGINE (C ONLY)|engine.set"])}
+  ${desk("LEAGUES","Legacy NFL",[["Source","native · migrated from MFL"],["Created","Oct 2026"]],["NEW LEAGUE (PRESET)|commish.league.create","MIGRATE AN MFL LEAGUE ›|league.migrate.prepare","SEED A HELD LEAGUE|commish.league.seed_held"])}
+  ${desk("RULEBOOK","what owners read",[["Official rulebook","v2026 · read-only text"],["House rules","3 entries"],["Words → enforced rule","later (chat campaign)"]],["ADD A HOUSE RULE|rules.text.add","REMOVE ONE|rules.text.remove","OPEN THE RULEBOOK ›|rulebook"])}</div>
+ <div class="cr-col" style="flex:1"><div class="cr-panel" style="flex:1"><div class="cr-ph">LEDGER · every change, who, why<span class="sp"></span><span class="ct">owners see this, minus role grants and invites</span></div><div class="cr-pb cr-led"><div class="cr-chips" style="display:flex;border:0;padding:0 0 8px">${["ALL","RULES","FIXES","TRADES","PEOPLE","VIA AI","SYSTEM"].map((c,i)=>`<button class="cr-chip" aria-pressed="${i===0}">${c}</button>`).join("")}</div>
+ ${LEDGER.slice(0,22).map(l=>`<div><span class="t">${l[0]}</span><span class="a">${l[1]}${l[3]==="ai"?'<span class="cr-ai">VIA AI</span>':""}</span><span>${esc(l[2])}</span></div>`).join("")}</div></div></div>`;
+ insp(`<h3>League</h3><div class="sub">Talking to the league, the record of every change, the data feeds, and the leagues on this server.</div>`)};
+// ---------- SERVER ----------
+VIEWS.server=function(){$("#v-server").innerHTML=`<div class="cr-desk" style="grid-template-columns:repeat(3,1fr)">
+ ${desk("STATUS","all good",[["Server","v0.51 · up 12d"],["Tunnel","connected"],["Signed-in devices","41"],["Database","412 MB"]],["DOWNLOAD STATUS REPORT|status"],`<div class="cr-grp">LAST 24 HOURS</div><div><span>Requests</span><span>18,402</span><span>p95 84 ms</span></div><div><span>Errors</span><span>3</span><span>all retried</span></div><div><span>Disk</span><span>41% used</span><span></span></div><div><span>Memory</span><span>310 MB</span><span></span></div>`)}
+ ${desk("BACKUPS","Cloudflare R2 · encrypted",[["Last","today 02:00 · OK"],["Kept","30 daily · 12 monthly"],["Next","02:00"]],["BACK UP NOW|backup.now","RESTORE…|restore"],`<div class="cr-grp">RECENT</div><div><span>Oct 30 02:00</span><span>OK</span><span>38 MB</span></div><div><span>Oct 29 02:00</span><span>OK</span><span>38 MB</span></div><div><span>Oct 28 02:00</span><span>OK</span><span>37 MB</span></div><div><span>Oct 27 02:00</span><span>retried · OK</span><span>37 MB</span></div>`)}
+ ${desk("UPGRADES","signed bundles only",[["Running","0.51"],["Available","0.52 · signature OK"]],["UPGRADE TO 0.52|upgrade"],`<div class="cr-grp">WHAT IS NEW IN 0.52</div><div><span>Faster rules list</span><span></span><span></span></div><div><span>Draft room timer fix</span><span></span><span></span></div><div><span>Backup takes before upgrade</span><span>automatic</span><span></span></div>`)}
+ ${desk("SIGN-IN HELP","for owners who are stuck",[["Authenticator","optional · 3 owners use it"],["Locked out","none"]],["RESET AN AUTHENTICATOR|account.totp.reset","SIGN OUT ALL DEVICES OF…|auth.revoke","RECOVERY CODES|auth.recovery"],`<div class="cr-grp">RECENT SIGN-IN TROUBLE</div><div><span>Bison</span><span>wrong password ×3</span><span>Oct 24</span></div><div><span>Comets (new)</span><span>invite not redeemed</span><span>Oct 27</span></div>`)}
+ ${desk("FEEDS","score truth ladder",[["Live","ESPN → Sleeper"],["Final","nflverse"],["ESPN","14 min stale"]],["RETRY ESPN|data.refresh scope=espn","SWITCH LIVE TO SLEEPER|data.provider"],`<div class="cr-grp">CHECKS</div><div><span>ESPN live</span><span>stale 14 min</span><span>retrying</span></div><div><span>Sleeper</span><span>fresh</span><span>edge stats</span></div><div><span>nflverse</span><span>fresh 06:10</span><span>finals</span></div><div><span>Week 8 compare</span><span>2 differences</span><span>in stat queue</span></div>`)}
+ ${desk("ROLES ON THIS SERVER","separate from league roles",[["Server admin","Commissioner"],["Support","none"]],["GRANT SUPPORT (NOT BUILT)|support","GRANT SERVER ADMIN (NOT BUILT)|operator"],`<div class="cr-grp">WHAT EACH CAN DO</div><div><span>Server admin</span><span>backups, upgrades, sign-in</span><span>no league power</span></div><div><span>Support</span><span>diagnose, safe repairs</span><span>no results/rosters</span></div>`)}</div>`;
+ insp(`<h3>Server</h3><div class="sub">The machine the league runs on. Server admin is a separate permission from commissioner (ruling R10).</div>`)};
+
+const RO=new ResizeObserver(()=>{if(TAB==="rules")fitRules();if(TAB==="picks")fitPicks()});["#v-rules","#v-picks"].forEach(q=>RO.observe(document.querySelector(q)));
+// ---------- wiring ----------
+const CMDS={"cap.amount":v=>{go("rules");pickRule("cap.amount");editRule("cap.amount");return "opened Salary cap with "+v},"pick.grant":()=>{go("picks");pickAct(0);return "opened Create and grant a pick"},
+ "waivers.process":()=>{go("season");return "Waivers: confirm on the Season desk"},"help":()=>"Try: cap.amount 130M · pick.grant · waivers.process · find owner left"};
+document.addEventListener("click",e=>{const t=e.target.closest("button,[data-job],[data-rule],[data-pick],[data-team],[data-win],.cr-scrim");if(!t)return;const d=t.dataset;
+ if(t.id==="scrim"||d.close!==undefined)return closeCard();
+ if(d.tab)return go(d.tab);
+ if(d.hit!==undefined){const h=$("#res")._hits[+d.hit];$("#res").classList.remove("open");$("#find").value="";return h[3]()}
+ if(d.job)return openJob(d.job);
+ if(d.jobopen)return openJob(d.jobopen);
+ if(d.launch){const m={stat:()=>openJob("stat"),trade:()=>openJob("trade"),waivers:()=>go("season"),notice:()=>go("league"),invite:()=>go("people"),pick:()=>go("picks"),fix:()=>go("fix"),rule:()=>{go("rules");$("#find").focus()}};return m[d.launch]()}
+ if(d.sitcat){SITCAT=d.sitcat;return VIEWS.sit()}
+ if(d.sit!==undefined)return openSit(+d.sit);
+ if(d.step){closeCard();const s=d.step;if(s.includes("›")){const b=s.split("›")[0].trim().toLowerCase();const k={rules:"rules",server:"server",people:"people",jobs:"jobs"}[b];if(k)return go(k)}
+  const r=RULES.find(x=>s.includes(x[2]));if(r){go("rules");return pickRule(r[2])}const fi=FIXES.findIndex(f=>s.startsWith(f[2]));if(fi>=0){go("fix");return openFix(fi)}
+  if(s.startsWith("trade")){go("jobs");return openJob("trade")}if(s.startsWith("pick")||s==="correct.pick"){go("picks");return pickAct(1)}if(s.startsWith("draft")||s.startsWith("waivers")||s.startsWith("bids")||s.startsWith("bracket")||s.startsWith("calendar"))return go("season");
+  if(s.includes("seat")||s.includes("succession")||s.includes("vote"))return go("people");if(s.includes("notice"))return go("league");if(s.includes("stats.queue")||s.includes("stat.queue"))return statCard();return go("fix")}
+ if(d.fam){FAMSEL=d.fam;PAGE=0;SELRULE=null;return VIEWS.rules()}
+ if(d.page){const n=+d.page;PAGE=Math.max(0,PAGE+n);return VIEWS.rules()}
+ if(d.rule)return pickRule(d.rule);
+ if(d.edit)return editRule(d.edit);
+ if(d.pend){const r=RULES.find(x=>x[2]===d.pend);const now=$("#ed [data-seg] button:nth-child(2)").getAttribute("aria-pressed")==="true";if(!now&&!PENDING.includes(d.pend))PENDING.push(d.pend);record("commish.rules.set field="+d.pend,(now?"Changed now: ":"Pending next rollover: ")+r[3]);return VIEWS.rules()}
+ if(t.parentElement&&t.parentElement.dataset.seg!==undefined){[...t.parentElement.children].forEach(b=>b.setAttribute("aria-pressed",b===t));return}
+ if(d.x!==undefined)return closeEd();
+ if(d.fire)return record(d.fire,d.done);
+ if(d.fix!==undefined)return openFix(+d.fix);
+ if(d.go){closeCard();return go(d.go)}
+ if(d.pickact!==undefined){if(TAB!=="picks")go("picks");return pickAct(+d.pickact)}
+ if(d.pick)return pickHist(d.pick);
+ if(d.pks){PKSEASON=+d.pks;PKPAGE=0;return VIEWS.picks()}
+ if(d.pkpage){PKPAGE=Math.max(0,PKPAGE+ +d.pkpage);return VIEWS.picks()}
+ if(d.team)return pickTeam(d.team);
+ if(d.win){openEd(`<div class="f"><label>WINDOW</label><b>${d.win}</b></div><div class="f"><label>OPENS</label><input value="May 3" style="width:100px"></div><div class="f"><label>CLOSES</label><input value="May 10" style="width:100px"></div><div class="f"><label>WHAT IT OPENS</label><input value="UFA bids" style="width:160px"></div><div class="pv"><b>Preview</b> · moves for all owners; reminders follow the new dates.</div><div class="f" style="align-self:flex-end;gap:6px">${holdBtn("MOVE","calendar.window.move id="+d.win,"Window moved: "+d.win)}<button class="cr-btn" data-x>CANCEL</button></div>`);return}
+ if(d.act){const c=d.act;if(c==="draft")return toast("Opens the Draft room with the commissioner tray");if(c==="agent")return openCard("Connect an AI agent","Ruled 10-24 · the wizard is not built yet",`<div class="cr-steps"><div><span class="no">1</span><span>Pick the job: missing-owner team · support · command-line helper</span><span></span></div><div><span class="no">2</span><span>Scope and expiry (e.g. Comets only, 30 days)</span><span></span></div><div><span class="no">3</span><span>Pick the tool (Claude Code, Codex, pi): get a token and setup to copy</span><span></span></div><div><span class="no">4</span><span>Status: last used, actions taken, revoke</span><span></span></div></div><div class="cr-note">The agent acts for you; anything big still asks you to confirm, and the ledger says “via AI”.</div>`);
+  const g3=/remove|replace|rollover$|revert|restore|upgrade|override/.test(c);
+  openEd(`<div class="f"><label>ACTION</label><b>${d.lbl}</b><span class="sub mono">${c}</span></div><div class="f" style="width:300px"><label>${g3?"REASON (REQUIRED)":"NOTE (OPTIONAL)"}</label><textarea></textarea></div><div class="pv"><b>Preview</b> · shows who this touches before anything changes.${/not built|NOT BUILT/.test(d.lbl)||/totp|support|operator/.test(c)?'<br><span class="warn">Ruled, not built yet.</span>':""}</div><div class="f" style="align-self:flex-end;gap:6px">${g3?holdBtn("CONFIRM",c,d.lbl+" recorded"):confirmBtn("CONFIRM",c,d.lbl+" recorded")}<button class="cr-btn" data-x>CANCEL</button></div>`);return}
+ if(t.id==="rolesw"){ROLE=ROLE==="C"?"CC":"C";$("#whoami").textContent="Signed in: "+(ROLE==="C"?"Commissioner":"Co-commissioner");t.textContent=ROLE==="C"?"VIEW AS CO-COMMISH":"VIEW AS COMMISH";return go(TAB)}
+});
+// hold to fire
+document.addEventListener("pointerdown",e=>{const h=e.target.closest(".cr-hold");if(!h)return;h.classList.add("go");h._t=setTimeout(()=>{h.classList.remove("go");record(h.dataset.hold,h.dataset.done)},900)});
+["pointerup","pointerleave"].forEach(ev=>document.addEventListener(ev,e=>{document.querySelectorAll(".cr-hold.go").forEach(h=>{clearTimeout(h._t);h.classList.remove("go")})},true));
+document.addEventListener("change",e=>{if(e.target.id==="pkteam"){PKTEAM=e.target.value;PKPAGE=0;VIEWS.picks()}});
+$("#find").addEventListener("input",e=>runSearch(e.target.value));
+$("#find").addEventListener("keydown",e=>{if(e.key==="Enter"){const h=$("#res")._hits;if(h&&h[0]){$("#res").classList.remove("open");e.target.value="";h[0][3]()}}if(e.key==="Escape"){$("#res").classList.remove("open");e.target.blur()}});
+$("#cmd").addEventListener("keydown",e=>{if(e.key!=="Enter")return;const v=e.target.value.trim(),[k,...a]=v.split(/\s+/);const f=CMDS[k];
+ if(f)$("#cmdout").textContent="› "+f(a.join(" "));else if(k==="find"){$("#find").value=a.join(" ");runSearch(a.join(" "));$("#find").focus()}else $("#cmdout").textContent="Not a command. Type help.";e.target.value=""});
+document.addEventListener("keydown",e=>{if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$("#find").focus()}if(e.key==="Escape"){closeCard();closeEd()}});
+go("jobs");
+</script></body></html>
