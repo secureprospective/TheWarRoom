@@ -548,3 +548,9 @@ Code citations checked on origin/main: `GameSpread = 50.0` and `FranchiseAgeWeig
 - Q-M3 D05: power weights fitted once for every league, or a commish setting?
 - Q-M4 D33: when this week's and rest-of-season deltas differ, which one is the headline?
 - Q-M5 D28: is an old contender in its last push labelled RETOOL or REBUILD?
+
+## 14. Rulings on the model questions (Christopher, 10-30)
+- Q-M1 D35 rivals: RULED — show rival owner names. Clicking a player opens that player's bid history (revealed past windows only).
+- Q-M3 D05 power weights: RULED — one fitted set for every league, with commissioner sliders to adjust (a league setting; the fitted set is the default).
+- Q-M5 D28 posture: RULED — the owner sets their own posture (contend / retool / rebuild). The model's classification becomes a suggestion; the lens uses the owner's choice. Open: is the owner's chosen posture visible to the league?
+- Q-M2, Q-M4: re-asked in plain words.
