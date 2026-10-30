@@ -1,10 +1,11 @@
-# TheWarRoom UI/UX groundwork: RESUME (2026-10-30 night, compact-safe #6)
+# TheWarRoom UI/UX groundwork: RESUME (2026-10-30 night, compact-safe #7)
 
 ## 1. What we are doing
 HTML mocks, one screen at a time; Christopher approves from screenshots/clicks.
 - DONE: Franchise HQ v10, War Room v6, League Pulse v14, Home v5 (slate).
 - **Control Room mock v1: in a good place** (Christopher 10-30: "really good start", "we are in a good place"). Last pass = de-slop + hover/focus states, commit 3c66f76c.
-- NEXT: Christopher picks: (a) Control Room build plan (tree + Sol critique + rulings → plan), or (b) next screen. ASK; don't infer.
+- DONE 10-30 eve: data-stub catalog of all 5 approved mocks, Claude + Terra independently, compared (commit 84bee24f, `docs/ui/data-catalog/`).
+- **NEXT (Christopher, compact-safe #7 args): the DATA FLOW MAP.** "What we agreed to on the mockups is non-negotiable going into the build. Know the data flows: what's shared, what feeds into the next, what needs isolation." Plus address the two "open in both catalogs" items.
 - He asked: "laser focused, maintain this level of excellence" next session.
 
 Where: Beelink `chris@192.168.1.191:/home/chris/work/TheWarRoom`, worktree `.worktrees/uiux`, branch `session/ui-ux-groundwork` (local only, NOT pushed). Key `/root/.ssh/beelink`. Main checkout = other session (`session/league-history-pwa`), don't touch. Commit with `GOTOOLCHAIN=go1.26.10`, never `--no-verify`. Code truth lives on `origin/main` 364379ba — read with `git show origin/main:<path>` (the worktree base is old).
@@ -38,6 +39,12 @@ Where: Beelink `chris@192.168.1.191:/home/chris/work/TheWarRoom`, worktree `.wor
 - `docs/ui/UI_Direction_v2_2026-10-30.md` — all rulings (read before any design).
 - Commits tonight: 894e30c7 R3 · b7aa98cf tree · 77899aac triage · 4cf7cd23 rulings · 1a5e2490 mock v1 · 27876edd permissions · 7aca01a1 critique fixes · bd0a23da P1/P2 · 3c66f76c de-slop.
 
+## 4b. Data catalog (84bee24f, worktree docs/ui/data-catalog/)
+- `claude-catalog-2026-10-30.md` — 330 rows (SH/HQ/WR/LP/HM/CR) + SOURCE MAP D01–D78 (domain → EXISTS 27 / PARTIAL 31 / NEW 27, evidence = exported funcs on origin/main per package, rows).
+- `terra-{HQ,WR,LP,HM,CR}.md` — 1,890 atomic rows (stub checklist). Terra NEW counts inflated (opened few files) — trust Claude source map for built/not.
+- `COMPARE.md` — coverage agrees; findings.
+- Key existing packages: engine/race (seeding, H2H, bubble), powerrankings (WinProbability, ExpectedWins, Blend), app/season (AllPlay, brackets, schedule grid), ingestion/livegame (scoreboard, possession, scoring plays), app/now (live spines/box), app/control (alerts: lineup/bye/IR, CompareAlerts), mflref/envelope (move envelopes), app/offers (TargetBid* draft/plan/posted, pool), store/personal (private offers, LastSeen), app/market (PickValue, DynastyCells), playerrecord (career), governance (roles, votes, elections, LastActivity, appeal), leagueclock (Calendar), transactions/deadcap, store/accounts TOTP, serverstatus, app/platform backup.
+
 ## 5. Current bug
 None known.
 
@@ -58,14 +65,22 @@ None known.
 - TOTP reset by commish ruled 10-30 (accounts README predates it; not a conflict).
 
 ## 8. Ledger
-All committed on local branch; nothing pushed; pushing not discussed.
+All committed on local branch through 84bee24f (catalogs) + this resume; nothing pushed; pushing not discussed.
+
+## 8b. Open items to address (from catalogs)
+1. **Bid visibility conflict** → needs Christopher ruling: WR shows outbidder name+amount; Home says runner-up sealed until window; CR says bids private even to commish; R2 "no early peeking".
+2. **Role variants on owner screens unspecified** (what commish/co-commish/DOT see differently on HQ/WR/LP/HM).
+3. Mock inspectors half-bind (build must drive every drawer from the selected entity); WR partner selector must swap shelf/direction; plan checks per plan.
+4. Simulation outputs with no algorithm yet: playoff odds/magic/bye%, bid win odds/est. win price/rivals, power components, age curves, team needs, posture lens, Best 21.
 
 ## 9. Next actions
-1. On "we are back": read this file + `UI_Direction_v2`. Ask Christopher: Control Room build plan, or next screen?
-2. If build plan: fold tree §5 gaps + Sol critique carry-overs (reuse RuleChangeForm/previews/safeguards; shared owner cards + deep links with return route; guided flows for mistaken-cut repair, RFA match dispute, expansion) + rulings (P1/P2, R3 bug, picks, breadth) into a plan doc; propose slices; Christopher confirms before anything is dispatched.
+1. On "we are back": read this file + `docs/ui/data-catalog/COMPARE.md` + the SOURCE MAP section of `claude-catalog-2026-10-30.md`.
+2. Address open items: put the bid-visibility question to Christopher (one AskUserQuestion, options: sealed until window for all / outbid owner sees top amount only, not name / full: name+amount) and the role-variant question (propose: owner screens identical for all roles; commish extras live only in Control Room + deep links; confirm).
+3. Build the DATA FLOW MAP doc `docs/ui/data-catalog/DATA_FLOW_MAP.md`: for each D01–D78 domain → owner (package/store), producers → consumers (screens/rows), shared vs per-user-private vs commish-only vs public-ledger ISOLATION class, what feeds what (e.g. contracts+deadcap → cap runway → HQ/WR/Home/plans; valuation → Best21 → power → race/odds), refresh/trigger, and build order (dependency layers). Verify every "EXISTS" claim by opening the package (git show origin/main), not by name. Consider Terra cross-check pass after draft (slice per layer).
+4. Then (later): Control Room build plan: fold tree §5 gaps + Sol critique carry-overs (reuse RuleChangeForm/previews/safeguards; shared owner cards + deep links with return route; guided flows for mistaken-cut repair, RFA match dispute, expansion) + rulings (P1/P2, R3 bug, picks, breadth) into a plan doc; propose slices; Christopher confirms before anything is dispatched.
 
 ## 10. Environment
-Nothing running. Sol + Terra idle (completion files present). Filing check exit 0. Scratchpad 670K.
+Nothing running. Terra chain finished (CHAIN-DONE); Sol idle. Filing check exit 0. Scratchpad 755K.
 
 ## 11. Honest status
 Mocks only; data illustrative except the 130 rule rows and command list (real, from origin/main). Not built: permission-sets engine (Terra est. 12–21 days), pick commands beyond move, TOTP reset, support/operator roles, 7 job producers, breadth options, lineup lock.
