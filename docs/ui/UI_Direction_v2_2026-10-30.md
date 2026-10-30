@@ -94,3 +94,9 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - Center cards (scouting, player career, news, trade) are an approved exception to inspector-only; more areas will use them.
 - Control Room covers both day-to-day commissioner jobs and league setup/settings; co-commissioner gets near-parity.
 - **R3 One-of bids: NO.** A bid is a bid. No conditional or grouped bids. Every open bid counts against cap room; total bids can never exceed available cap. A bid ends only when legally outbid (or it wins). Reason: bids are signals other owners act on, so they must be binding.
+
+## Control Room rulings (10-30, evening)
+- **Picks are fully fluid for the commissioner:** create, grant (mini-game rewards can be picks), forfeit (penalty), move, swap, attach a condition, void. Keep pick controls general so the side-games suite can use them.
+- **Breadth: more is better now.** Past restrictions were to cut slop. Open lineup lock, all-play and total-points formats, schedule patterns, and a rookie lottery option. Make sure everything needed to function exists.
+- **Control Room look:** functional, user-friendly and intuitive first; Christopher is less critical of the look here.
+- **R3 engine bug logged:** owners can withdraw a standing bid (`market/bid_execute.go` withdraw); R3 says a bid ends only when legally outbid.
