@@ -35,3 +35,4 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - Final-year cap shows RFA (lime) or UFA (signal yellow) as a textured rubber block with a legend. These hues are classification only and sit outside the five meaning colours; always paired with a letter or legend.
 - Drawers are sized to their content; a confirm drops in below the actions instead of covering them.
 - Bottom drawers sit above the tray so the pull tabs stay visible, size to their rows, and pair a data table with a summary side panel (Taxi: could-stash list; IR: candidates + return timeline; What-if: stackable moves with live cap/roster/projection totals).
+- A closed drawer is fully gone: no peeking header. Every add or change must have a functional or aesthetic reason.
