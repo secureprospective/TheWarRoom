@@ -19,10 +19,11 @@ printf 'NEW R2 Secret Access Key (hidden): '
 stty -echo 2>/dev/null || true; IFS= read -r secret; stty echo 2>/dev/null || true; printf '\n'
 printf 'Restore key, the line beginning AGE-SECRET-KEY-1 (hidden): '
 stty -echo 2>/dev/null || true; IFS= read -r key; stty echo 2>/dev/null || true; printf '\n'
+printf 'Restore from an older day? Type YYYY-MM-DD, or press Enter for the newest backup: '; IFS= read -r before
 rc-service twr-server --ifstarted stop
 # Secrets travel over stdin, never argv or files. The service user does the work.
-printf '%s\n' "$endpoint" "$bucket" "$access" "$secret" "$key" |
-  jq -Rn '[inputs] | {endpoint:.[0],bucket:.[1],access_key:.[2],secret_key:.[3],restore_key:.[4]}' |
+printf '%s\n' "$endpoint" "$bucket" "$access" "$secret" "$key" "$before" |
+  jq -Rn '[inputs] | {endpoint:.[0],bucket:.[1],access_key:.[2],secret_key:.[3],restore_key:.[4],before:.[5]}' |
   su -s /bin/sh twr -c "/usr/local/bin/twr-server restore -db /var/lib/twr/server.db -stage $stage"
 unset secret key
 install -m 600 -o twr -g twr "$stage/ready/authenticator.key" /etc/twr/authenticator.key

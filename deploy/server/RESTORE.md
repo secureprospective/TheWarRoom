@@ -113,8 +113,10 @@ hostname **does not point to a TheWarRoom server**, stop and call Christopher.
    - the **new** Access Key ID from step 2a;
    - the **new** Secret Access Key from step 2a (hidden as you type);
    - the restore key from the envelope, the whole line beginning `AGE-SECRET-KEY-1`
-     (hidden as you type; capital or small letters both work).
-4. It downloads the newest backup, unlocks it, checks it and installs it. This takes a
+     (hidden as you type; capital or small letters both work);
+   - optionally a date (YYYY-MM-DD) to go back to an older backup, for example from
+     before a bad change. Press Enter to use the newest backup.
+4. It downloads the newest backup (or the newest saved on or before your date), unlocks it, checks it and installs it. This takes a
    few minutes. The restore key is only held in memory and is never saved on the server.
 
 If it says **the restore key does not unlock this backup**, check the key letter by
@@ -194,10 +196,10 @@ code, or the console account recovery in
 
 ## What the tools do (for Christopher)
 
-`twr-restore` stops the fresh service and passes the five answers to
+`twr-restore` stops the fresh service and passes the six answers to
 `twr-server restore` over stdin, running as the service user. That command refuses a
 target database that already holds accounts or league entries. It lists `sets/` newest
-first, streams each set through `offsite.Restore` into a new private folder, and checks
+first (dropping sets saved after the optional `before` date, unopened), streams each set through `offsite.Restore` into a new private folder, and checks
 the staged database against the `checkpoint.json` saved inside the same set. A set with
 no league (from a fresh install backed up by mistake), a damaged set or a checkpoint
 mismatch is skipped with a printed reason; a key that unlocks nothing stops at once.

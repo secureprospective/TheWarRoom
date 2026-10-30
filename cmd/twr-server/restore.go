@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -31,6 +32,8 @@ type rawRestoreInput struct {
 	AccessKey  string `json:"access_key"`
 	SecretKey  string `json:"secret_key"`
 	RestoreKey string `json:"restore_key"`
+	// Before is optional: restore the newest set saved on or before this UTC date (YYYY-MM-DD).
+	Before string `json:"before,omitempty"`
 }
 
 func (rawRestoreInput) String() string     { return "[restore input redacted]" }
@@ -65,15 +68,25 @@ func runRestore(ctx context.Context, args []string, input io.Reader, output io.W
 	if err != nil {
 		return fmt.Errorf("that restore key is not right: use the line beginning AGE-SECRET-KEY-1 from the sealed copy")
 	}
+	var before time.Time
+	if raw.Before != "" {
+		day, err := time.Parse(time.DateOnly, strings.TrimSpace(raw.Before))
+		if err != nil {
+			return fmt.Errorf("that date is not right: use YYYY-MM-DD, or leave it blank for the newest backup")
+		}
+		before = day.AddDate(0, 0, 1)
+	}
 	config := offsite.RawConfig{Endpoint: raw.Endpoint, Bucket: raw.Bucket, AccessKey: raw.AccessKey, SecretKey: raw.SecretKey, Recipient: identity.Recipient().String()}
 	r2, err := offsite.NewR2(config)
 	if err != nil {
 		return fmt.Errorf("check the R2 settings: %w", err)
 	}
-	return restoreSpareHost(ctx, r2, identity, config, *target, *stage, output)
+	return restoreSpareHost(ctx, r2, identity, config, *target, *stage, before, output)
 }
 
-func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X25519Identity, config offsite.RawConfig, target, stage string, output io.Writer) error {
+// restoreSpareHost installs the newest usable set; a non-zero before skips sets saved at or after it.
+func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X25519Identity, config offsite.RawConfig,
+	target, stage string, before time.Time, output io.Writer) error {
 	if info, err := os.Stat(target); err != nil || !info.Mode().IsRegular() {
 		return fmt.Errorf("restore needs this server's installed database")
 	}
@@ -83,12 +96,9 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 	if err := os.Mkdir(stage, 0700); err != nil {
 		return fmt.Errorf("create restore folder: %w", err)
 	}
-	names, err := sets.Sets(ctx)
+	names, err := candidateSets(ctx, sets, before)
 	if err != nil {
-		return fmt.Errorf("list backups: %w", err)
-	}
-	if len(names) == 0 {
-		return fmt.Errorf("no backups were found in that bucket")
+		return err
 	}
 	for i, name := range names[:min(len(names), 64)] {
 		dir := filepath.Join(stage, fmt.Sprintf("set-%02d", i))
@@ -108,6 +118,27 @@ func restoreSpareHost(ctx context.Context, sets recoverySets, identity *age.X255
 		return activateRestore(ctx, dir, filepath.Join(stage, "ready"), name, captured, config, output)
 	}
 	return fmt.Errorf("no usable backup was found; nothing was installed")
+}
+
+// candidateSets lists sets newest first; a non-zero before drops sets saved at or after it, unopened.
+func candidateSets(ctx context.Context, sets recoverySets, before time.Time) ([]string, error) {
+	names, err := sets.Sets(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list backups: %w", err)
+	}
+	if len(names) == 0 {
+		return nil, fmt.Errorf("no backups were found in that bucket")
+	}
+	if !before.IsZero() {
+		names = slices.DeleteFunc(names, func(name string) bool {
+			at, err := offsite.SetTime(name)
+			return err != nil || !at.Before(before)
+		})
+		if len(names) == 0 {
+			return nil, fmt.Errorf("no backup was saved on or before that date; nothing was installed")
+		}
+	}
+	return names, nil
 }
 
 // unlockSet decrypts and validates one set, compares it with the checkpoint saved inside
