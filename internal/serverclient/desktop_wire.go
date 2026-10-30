@@ -29,7 +29,7 @@ type enrollmentBody struct {
 	Enrollment enrollmentCredentials `json:"enrollment"`
 }
 type desktopPayload interface {
-	serverhttp.RawRecoveryRequest | serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest |
+	serverhttp.RawRecoveryRequest | serverhttp.RawRecoveryCodesRequest | serverhttp.RawRevoke | loginBody | enrollmentBody | serverhttp.RawAuthenticator | serverhttp.RawNativeRequest |
 		serverhttp.RawAgentTokenRequest
 }
 
@@ -187,6 +187,11 @@ func desktopRefusal(path string, status int) error {
 			return fmt.Errorf("too many recovery attempts. Wait a minute, then try again")
 		}
 		return fmt.Errorf("recovery refused. Check your username and unused printed code, or contact the server operator for audited console recovery")
+	case serverhttp.RecoveryCodesPath:
+		if status == 429 {
+			return fmt.Errorf("too many attempts. Wait a minute, then try again")
+		}
+		return fmt.Errorf("new recovery codes refused. Check your password, then verify a fresh authenticator code and try again")
 	case serverhttp.EnrollmentPath:
 		return fmt.Errorf("enrollment refused: the code may be expired, used, or for a different username. Ask your commissioner for a new personally handed code; codes last 48 hours")
 	case serverhttp.LoginPath:

@@ -59,7 +59,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
       if (args.value === 'submit') return run(screen === 'recovery' ? 'recover'
         : screen === 'join' ? 'enroll' : screen === 'authenticator' ? 'totp-step-up' : 'login');
       const actions: NativeAction[] = [
-        'totp-begin', 'totp-confirm', 'enter', 'forget', 'revoke-device', 'revoke-all',
+        'totp-begin', 'totp-confirm', 'recovery-codes', 'enter', 'forget', 'revoke-device', 'revoke-all',
       ];
       const action = actions.find(value => value === args.value);
       if (action) return run(action);
@@ -143,12 +143,17 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
           inputMode={screen === 'authenticator' ? 'numeric' : 'text'}
           onChange={e => setCode(e.target.value)} /></label>}
       {view.seed && <p className="native-seed">Private setup key: <code>{view.seed}</code></p>}
+      {view.recoveryCodes && <ol className="native-seed" aria-label="New recovery codes">
+        {view.recoveryCodes.map(c => <li key={c}><code>{c}</code></li>)}</ol>}
       <div className="native-actions">
         {screen === 'authenticator' && <>
           <Act variant="button" verb="commissioner.surface" args={args('check', 'totp-begin')}
             disabled={pending || !username || !password} label="Get setup key">Get setup key</Act>
           <Act variant="button" verb="commissioner.surface" args={args('check', 'totp-confirm')}
             disabled={pending || code.length !== 6 || !password} label="Confirm setup">Confirm setup</Act>
+          <Act variant="button" verb="commissioner.surface" args={args('check', 'recovery-codes')}
+            disabled={pending || !username || !password} label="Print new recovery codes">
+            Print new recovery codes</Act>
         </>}
         <Act variant="button" verb="commissioner.surface" args={args('check', 'submit')}
           submit disabled={pending} label={submitLabel}>{submitLabel}</Act>

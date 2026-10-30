@@ -2,7 +2,7 @@
 import type { NativeRequest } from '../commands/native';
 import { object, text } from '../data/parseValues';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
-  | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up';
+  | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up' | 'recovery-codes';
 export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
 export type NativeView = {
@@ -12,6 +12,8 @@ export type NativeView = {
   franchise: string; franchiseName: string; seed: string;
   // A helper's connection line is shown once; a confirmation code covers one change.
   connection: string; helperId: string; confirmation: string; seats: NativeSeat[];
+  // New recovery codes are shown once, right after they are printed.
+  recoveryCodes?: string[];
 };
 const updateListeners = new Set<(view: NativeView) => void>();
 export function subscribeNativeUpdate(listener: (view: NativeView) => void): () => void {
@@ -27,9 +29,11 @@ export function parseNativeView(raw: unknown): NativeView {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) throw new Error('Unreadable desktop response.');
   const value = raw as Record<string, unknown>;
   if (Object.keys(value).length !== textKeys.length + 1 + ('helperPreview' in value ? 1 : 0)
-      + ('update' in value ? 1 : 0)
+      + ('update' in value ? 1 : 0) + ('recoveryCodes' in value ? 1 : 0)
     || ('update' in value && value.update !== 'app' && value.update !== 'server')
     || ('helperPreview' in value && typeof value.helperPreview !== 'string')
+    || ('recoveryCodes' in value && (!Array.isArray(value.recoveryCodes) || value.recoveryCodes.length !== 8
+      || !value.recoveryCodes.every(c => typeof c === 'string' && c.length === 43)))
     || textKeys.some(key => typeof value[key] !== 'string')
     || !Array.isArray(value.seats) || !value.seats.every(isSeat)
     || !String(value.server).startsWith('https://') || !String(value.league).startsWith('native.'))

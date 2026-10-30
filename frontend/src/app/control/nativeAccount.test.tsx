@@ -148,6 +148,10 @@ describe('native desktop account access', () => {
     await expect(nativeStartup()).resolves.toBeNull();
     expect(() => parseNativeView({ ...initial, bearer: 'must-not-cross' })).toThrow();
     expect(() => parseNativeView({ ...initial, league: 3 })).toThrow();
+    const codes = Array.from({ length: 8 }, (_, i) => String(i).repeat(43));
+    expect(parseNativeView({ ...initial, recoveryCodes: codes }).recoveryCodes).toEqual(codes);
+    expect(() => parseNativeView({ ...initial, recoveryCodes: codes.slice(1) })).toThrow();
+    expect(() => parseNativeView({ ...initial, recoveryCodes: [...codes.slice(1), 3] })).toThrow();
     fetcher.mockResolvedValue({ ok: false, text: async () => 'Fresh code required' });
     await expect(nativeAction('totp-step-up', 'owner', 'password', '123456'))
       .rejects.toThrow('Fresh code required');
