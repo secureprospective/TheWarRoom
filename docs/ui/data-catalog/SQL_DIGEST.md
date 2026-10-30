@@ -101,3 +101,14 @@ It covers watch/stars/lanes, notes, plans, versions/pocket, scouting, snooze, la
 ## 7. Rulings
 - 10-30: **one database per league** (resolves growth-catalog D8). R2 drops from urgent leak to a guard: personal rows stay per franchise inside the league file; any shared/server-wide file must never hold league-private rows.
 - 10-30: **retention approved** — forecasts: keep latest + each week's final + replay-pinned, delete the rest after 7 days; feed files: keep any used to score a week, delete the rest after 30 days. Check both on thick3 before locking.
+
+## 8. Expert panel on R1 (10-30) — APPROVED WITH CHANGES
+Seats: beam-free and glm-5.3-flash-free (free Zen), both APPROVE WITH CHANGES. nemotron-3.5-super-vl-free hung for 15 min with no output and was stopped; decided on two agreeing seats. Brief: `~/fleet/briefs/purge/panel-r1.md`; answers in `~/fleet/runs/glm-panel-{beam-free,mech}/stdout.log`.
+
+R1 as built must include:
+1. **Two-part proof.** (a) Rebuild-from-ledger compare in CI and nightly. (b) An independent check: golden fixtures of ledger-to-expected-state written from the rules, not from the fold code, because a fold bug shared by both paths would pass (a).
+2. **Canonical compare.** Ordered rows, integer cents for all money, no floats in projections.
+3. **Cursor at read time.** Each projection set stores the last ledger revision it folded. A read whose cursor ≠ the league's max revision refuses and triggers a rebuild, so stale data is caught on read, not overnight.
+4. **Version stamp.** `projection_version` on the projection set; a rule or schema change forces a per-league re-project; reads refuse an old version.
+5. **Corrections off the commit path.** A superseding event marks projections stale; re-projection runs as its own job in one atomic transaction with rollback. The save path stays at O(one event).
+6. **Sequencing (GLM's simpler option, adopted as step 1).** First ship the fold as an in-memory per-league cache, rebuilt at startup and after supersede, which proves correctness. Then persist it as projection tables for server mode, where multiple reader processes can't share memory (Beam's point). Same fold code both steps.
