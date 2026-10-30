@@ -30,7 +30,7 @@ instance owned: deploy exactly one hosted handler and share its password budget.
 
 - JSON: 256 KiB; enrollment retains its tighter 8 KiB cap. No hosted seed-upload
   route exists yet; its planned 2 MiB exception must be added with that route.
-- Headers: Go MaxHeaderBytes 16 KiB (net/http permits its normal parsing slack).
+- Headers: 16 KiB cap (MaxHeaderBytes 8 KiB; net/http reads ~4 KiB past it on new connections, ~8 KiB on reused ones; Drill 51 found 20 KiB accepted at 16 KiB).
 - Header/body/write/idle network deadlines: 5/10/5/30 seconds, preserved in the
   shared server constructor. Request contexts: auth 10 seconds, commands 5 seconds.
   Context cancellation is cooperative, not preemption of pure engine CPU work;
