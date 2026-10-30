@@ -87,3 +87,10 @@ Function with form is welcome; slop is not. Approved on HQ: this-week matchup pa
 - Depth charts: team picker by division, OFF / DEF / ST five-deep grid, names coloured by league ownership. Source TBD (Sleeper depth order / ESPN); Ourlads is reference only.
 - NFL stats: saved views, position / weeks / ownership / team / minimum filters, sortable, FFB PTS and FFB/G scored with league rules.
 - `home-mock-v5.html` is current; v1–v4 are history.
+
+## Rulings (10-30, late)
+- Race defaults to Power Rankings in the offseason.
+- Window labels ("win now", "rebuilding") show league-wide.
+- Center cards (scouting, player career, news, trade) are an approved exception to inspector-only; more areas will use them.
+- Control Room covers both day-to-day commissioner jobs and league setup/settings; co-commissioner gets near-parity.
+- Open: "one-of bids" (to be re-explained).
