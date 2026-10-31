@@ -42,6 +42,7 @@ const AppSettings = lazy(() => import('./AppSettings').then((m) => ({ default: m
 const CommandBar = lazy(() => import('../commands/CommandBar').then((m) => ({ default: m.CommandBar })));
 const HomePulseMount = lazy(() => import('./HomePulseMount'));
 const TradeDesk = lazy(() => import('./TradeDesk'));
+const WarRoom = lazy(() => import('./WarRoom'));
 const Market = lazy(loadMarket);
 const Research = lazy(() => import('../research/Research'));
 const Race = lazy(() => import('../race/Race'));
@@ -101,6 +102,8 @@ export function TargetApp() {
   const workspaces: readonly { slug: string; label: string; ring: string }[] = node.workspaces;
   const workspace = workspaces.find((w) => w.slug === s.workspace[s.node])!;
   const placement = `${node.label} › ${workspace.label}` as Placement;
+  if (s.node === 'war' && workspace.slug !== 'research' && snapshot) return <Suspense
+    fallback={<p role="status">Opening War Room…</p>}><WarRoom snapshot={snapshot} /></Suspense>;
   if (s.node === 'hq' && snapshot) return <>
     <FranchiseHQMount snapshot={snapshot} />
     <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot}
