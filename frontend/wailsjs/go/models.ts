@@ -12851,6 +12851,7 @@ export namespace personal {
 	    text: string;
 	    action: string;
 	    at?: string;
+	    with?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawChange(source);
@@ -12865,6 +12866,7 @@ export namespace personal {
 	        this.text = source["text"];
 	        this.action = source["action"];
 	        this.at = source["at"];
+	        this.with = source["with"];
 	    }
 	}
 
