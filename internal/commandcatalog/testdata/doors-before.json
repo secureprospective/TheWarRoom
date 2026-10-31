@@ -3866,5 +3866,19 @@
     "Permission": "franchise-view",
     "Role": "gm,commish",
     "Schema": "3c3358f4c5a050ace33c4425ae79eab04de300172da9c3fa2f5653f937ffa777"
+  },
+  {
+    "Door": "wails",
+    "Feature": "market",
+    "ID": "unset",
+    "Method": "TargetAgeArc",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": [
+      "read"
+    ]
   }
 ]

@@ -78,6 +78,7 @@ draft.API.TargetDraftReports
 draft.API.TargetDraftReportsRefresh
 draft.API.TargetNFLDraft
 draft.API.TargetOpenMFLDraftRoom
+market.API.TargetAgeArc
 market.API.TargetAssetBoard
 market.API.TargetMarketReports
 market.API.TargetMarketReportsRefresh
