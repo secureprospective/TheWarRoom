@@ -138,6 +138,10 @@ export function TargetNativeLineupSet(arg1) {
   return window['go']['commissioner']['API']['TargetNativeLineupSet'](arg1);
 }
 
+export function TargetNativeMoves(arg1, arg2) {
+  return window['go']['commissioner']['API']['TargetNativeMoves'](arg1, arg2);
+}
+
 export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
   return window['go']['commissioner']['API']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
 }

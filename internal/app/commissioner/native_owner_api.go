@@ -20,6 +20,11 @@ func (a *API) TargetNativeTradeAction(raw commissioner.RawCommand) (commissioner
 	return a.reads.Execute(a.host.CommissionerContext(), raw)
 }
 
+// TargetNativeMoves reads only the requesting franchise's native move lifecycle.
+func (a *API) TargetNativeMoves(league, franchise string) (market.NativeMoves, error) {
+	return a.reads.TargetNativeMoves(league, franchise) //nolint:wrapcheck // The shared service supplies user-facing context.
+}
+
 // TargetNativeTrades reads the league's native trade desk; viewer is the seated owner's franchise.
 func (a *API) TargetNativeTrades(league, viewer string) (market.NativeTrades, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.

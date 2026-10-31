@@ -73,6 +73,8 @@ export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promi
 
 export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>;
 
+export function TargetNativeMoves(arg1:string,arg2:string):Promise<market.NativeMoves>;
+
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
 
 export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;

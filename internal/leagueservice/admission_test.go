@@ -83,6 +83,7 @@ func TestHostedReadsAndPreviewsRequireCredential(t *testing.T) {
 			{"TargetNativeBracket", []any{"native.test", 2026}},
 			{"TargetStatQueue", []any{"native.test", 2026}},
 			{"TargetNativeScorePreview", []any{body}},
+			{"TargetNativeMoves", []any{"native.test", "franchise.01"}},
 			{"TargetNativeTrades", []any{"native.test", "franchise.01"}},
 			{"TargetNativeWaivers", []any{"native.test", "franchise.01", at}},
 			{"TargetNativeBids", []any{"native.test", "franchise.01"}},

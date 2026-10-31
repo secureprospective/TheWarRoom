@@ -11537,6 +11537,195 @@ export namespace market {
 		    return a;
 		}
 	}
+	export class NativeMoveAudit {
+	    at: time.Time;
+	    from: string;
+	    event: string;
+	    to: string;
+	    note: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMoveAudit(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.at = this.convertValues(source["at"], time.Time);
+	        this.from = source["from"];
+	        this.event = source["event"];
+	        this.to = source["to"];
+	        this.note = source["note"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NativeMoveTarget {
+	    kind: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMoveTarget(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	    }
+	}
+	export class NativeMoveSubject {
+	    players: string[];
+	    picks: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMoveSubject(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.players = source["players"];
+	        this.picks = source["picks"];
+	    }
+	}
+	export class NativeMoveSpec {
+	    intent: string;
+	    leagueId: string;
+	    franchiseId: string;
+	    subject: NativeMoveSubject;
+	    // Go type: struct {}
+	    expected: any;
+	    gravity: string;
+	    undo: string;
+	    target: NativeMoveTarget;
+	    deadline?: time.Time;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMoveSpec(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.intent = source["intent"];
+	        this.leagueId = source["leagueId"];
+	        this.franchiseId = source["franchiseId"];
+	        this.subject = this.convertValues(source["subject"], NativeMoveSubject);
+	        this.expected = this.convertValues(source["expected"], Object);
+	        this.gravity = source["gravity"];
+	        this.undo = source["undo"];
+	        this.target = this.convertValues(source["target"], NativeMoveTarget);
+	        this.deadline = this.convertValues(source["deadline"], time.Time);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class NativeMove {
+	    correlationId: string;
+	    spec: NativeMoveSpec;
+	    state: string;
+	    audit: NativeMoveAudit[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMove(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.correlationId = source["correlationId"];
+	        this.spec = this.convertValues(source["spec"], NativeMoveSpec);
+	        this.state = source["state"];
+	        this.audit = this.convertValues(source["audit"], NativeMoveAudit);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
+	
+	
+	export class NativeMoves {
+	    league: string;
+	    franchise: string;
+	    planned: NativeMove[];
+	    reason: string;
+	    moves: NativeMove[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeMoves(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.planned = this.convertValues(source["planned"], NativeMove);
+	        this.reason = source["reason"];
+	        this.moves = this.convertValues(source["moves"], NativeMove);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class NativeTradeOffer {
 	    vetoNumber: number;
 	    appealedVetoNumber: number;

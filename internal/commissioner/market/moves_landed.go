@@ -17,16 +17,16 @@ func tradeMoveWords(t NativeTradeOffer) string {
 	return strings.Join(words, " · ")
 }
 
-func tradeMoveTime(t NativeTradeOffer, records []commissioner.Record) time.Time {
-	at := t.OfferedAt
+func tradeMoveEvidence(t NativeTradeOffer, records []commissioner.Record) (time.Time, string) {
+	at, entry := t.OfferedAt, t.ID
 	active := commissioner.Replay(records).Active
 	for _, r := range records {
 		if v := r.Command.Args.TradeOutcome; active[r.Receipt.Entry] && v != nil &&
 			(v.ID == t.ID || r.Receipt.Entry == t.ID) {
-			at = r.Receipt.RecordedAt
+			at, entry = r.Receipt.RecordedAt, r.Receipt.Entry
 		}
 	}
-	return at
+	return at, entry
 }
 
 func (out *NativeMoves) appendLanded(records []commissioner.Record, book commissioner.MarketBook) {

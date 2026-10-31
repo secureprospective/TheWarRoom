@@ -32,6 +32,7 @@ commissioner.API.TargetNativeHouseRules
 commissioner.API.TargetNativeLineup
 commissioner.API.TargetNativeLineupCheck
 commissioner.API.TargetNativeLineupSet
+commissioner.API.TargetNativeMoves
 commissioner.API.TargetNativePlayerScore
 commissioner.API.TargetNativeReserveCheck
 commissioner.API.TargetNativeResults

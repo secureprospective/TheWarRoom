@@ -3824,5 +3824,33 @@
       "preview",
       "execute"
     ]
+  },
+  {
+    "Availability": "both",
+    "Door": "native",
+    "Feature": "commissioner",
+    "Gravity": "G0",
+    "ID": "moves.read",
+    "Method": "TargetNativeMoves",
+    "Modes": [
+      "read"
+    ],
+    "Permission": "franchise-view",
+    "Role": "domain",
+    "Schema": "3c3358f4c5a050ace33c4425ae79eab04de300172da9c3fa2f5653f937ffa777"
+  },
+  {
+    "Availability": "both",
+    "Door": "wails",
+    "Feature": "commissioner",
+    "Gravity": "G0",
+    "ID": "moves.read",
+    "Method": "TargetNativeMoves",
+    "Modes": [
+      "read"
+    ],
+    "Permission": "franchise-view",
+    "Role": "gm,commish",
+    "Schema": "3c3358f4c5a050ace33c4425ae79eab04de300172da9c3fa2f5653f937ffa777"
   }
 ]

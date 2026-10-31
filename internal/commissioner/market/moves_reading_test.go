@@ -21,3 +21,18 @@ func TestNativeMoveReceiptAdapter(t *testing.T) {
 		t.Fatalf("native record was disguised as an MFL transition: %+v", m)
 	}
 }
+
+func TestNativeMoveScopeValidation(t *testing.T) {
+	for _, scope := range []RawNativeMovesScope{
+		{League: "native.test", Franchise: "franchise.01"},
+		{League: "native.", Franchise: "franchise.01"},
+		{League: "12345", Franchise: "franchise.01"},
+		{League: "native.test", Franchise: " "},
+		{League: "native.test ", Franchise: "franchise.01"},
+	} {
+		valid := scope.League == "native.test" && scope.Franchise == "franchise.01"
+		if err := scope.Validate(); (err == nil) != valid {
+			t.Fatalf("scope %+v: %v", scope, err)
+		}
+	}
+}

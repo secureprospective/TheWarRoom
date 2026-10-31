@@ -278,5 +278,11 @@
     "modes": [
       "execute"
     ]
+  },
+  {
+    "command": "moves.read",
+    "modes": [
+      "read"
+    ]
   }
 ]

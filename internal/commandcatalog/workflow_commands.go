@@ -65,6 +65,9 @@ func workflowReads() map[string]WorkflowCommand {
 		"waivers.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeWaivers(r.League, r.Franchise, time.Now().UTC()))
 		}),
+		"moves.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
+			return workflowJSON(s.TargetNativeMoves(r.League, r.Franchise))
+		}),
 		"trades.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeTrades(r.League, r.Viewer))
 		}),

@@ -66,7 +66,7 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "draft.read":
 		kept.Franchise, kept.Season, kept.At = r.Franchise, r.Season, r.At
 		return kept, r.Franchise != ""
-	case "bids.read":
+	case "bids.read", "moves.read":
 		kept.Franchise = r.Franchise
 		return kept, r.Franchise != ""
 	case "waivers.read":
@@ -141,7 +141,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
+	market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

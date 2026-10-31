@@ -60,6 +60,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeSeed", "commish", "G3"},
 		{"TargetNativeStandings", "gm,commish,admin", "G0"},
 		{"TargetNativeTradeAction", "gm,commish", "G3"},
+		{"TargetNativeMoves", "gm,commish", "G0"},
 		{"TargetNativeTrades", "gm,commish", "G0"},
 		{"TargetNativeWaiverAction", "gm,commish", "G3"},
 		{"TargetNativeWaivers", "gm,commish", "G0"},

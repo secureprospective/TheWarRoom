@@ -167,3 +167,32 @@ func (a *Service) TargetNativeAssets(leagueID string) (commissioner.NativeAssets
 	}
 	return assets, nil
 }
+
+// TargetNativeMoves reads a single committed ledger snapshot; it never creates or submits a plan.
+func (a *Service) TargetNativeMoves(league, franchise string) (market.NativeMoves, error) {
+	if err := (market.RawNativeMovesScope{League: league, Franchise: franchise}).Validate(); err != nil {
+		return market.NativeMoves{}, fmt.Errorf("move scope: %w", err)
+	}
+	if err := a.admitRead(league, "moves.read", franchise); err != nil {
+		return market.NativeMoves{}, err
+	}
+	if err := a.host.Ready(); err != nil {
+		return market.NativeMoves{}, fmt.Errorf("moves startup: %w", err)
+	}
+	principal, err := a.host.CommissionerPrincipal()
+	if err != nil {
+		return market.NativeMoves{}, fmt.Errorf("moves identity: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.viewContext(a.host.CommissionerContext()), refreshTimeout)
+	defer cancel()
+	records, err := a.host.CommissionerRecords(ctx, league)
+	if err != nil {
+		return market.NativeMoves{}, fmt.Errorf("move records: %w", err)
+	}
+	reading, err := market.NativeMovesReading(league, franchise, principal, records,
+		a.host.CommissionerNow(), a.host.CommissionerZone(), a.host.NativeFacts())
+	if err != nil {
+		return market.NativeMoves{}, fmt.Errorf("native moves: %w", err)
+	}
+	return reading, nil
+}

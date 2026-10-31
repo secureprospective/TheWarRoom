@@ -60,13 +60,30 @@ func nativeMove(league, franchise, id, intent, state, note string, at time.Time)
 		Spec: NativeMoveSpec{Intent: intent, LeagueID: league, FranchiseID: franchise,
 			Subject: NativeMoveSubject{Players: []string{}, Picks: []string{}},
 			Gravity: "G0", Undo: "irreversible", Target: NativeMoveTarget{Kind: "native"}},
-		Audit: []NativeMoveAudit{{At: at, From: "draft", Event: "recorded", To: state, Note: note}}}
+		Audit: []NativeMoveAudit{{At: at.UTC(), From: "draft", Event: "recorded", To: state, Note: note}}}
+}
+
+type RawNativeMovesScope struct {
+	League    string `json:"league"`
+	Franchise string `json:"franchise"`
+}
+
+func (r RawNativeMovesScope) Validate() error {
+	if !strings.HasPrefix(r.League, "native.") || len(r.League) <= len("native.") || len(r.League) > 128 ||
+		strings.TrimSpace(r.League) != r.League || strings.TrimSpace(r.Franchise) == "" ||
+		strings.TrimSpace(r.Franchise) != r.Franchise || len(r.Franchise) > 128 {
+		return fmt.Errorf("choose an app league and franchise")
+	}
+	return nil
 }
 
 func NativeMovesReading(league, franchise, principal string, records []commissioner.Record, at time.Time,
 	zone *time.Location, facts nativecheck.Facts) (NativeMoves, error) {
-	if !strings.HasPrefix(league, "native.") || len(league) <= len("native.") || strings.TrimSpace(franchise) == "" || at.IsZero() {
-		return NativeMoves{}, fmt.Errorf("choose an app league, franchise and reading time")
+	if err := (RawNativeMovesScope{League: league, Franchise: franchise}).Validate(); err != nil {
+		return NativeMoves{}, err
+	}
+	if at.IsZero() {
+		return NativeMoves{}, fmt.Errorf("choose when to read moves")
 	}
 	for _, r := range records {
 		if r.Command.League != league {
@@ -110,7 +127,10 @@ func (out *NativeMoves) appendPendingBids(bids NativeBids) {
 		m := nativeMove(out.League, out.Franchise, p.YourBid.ID, commissioner.BidPlace, "handed_off",
 			p.Name+": "+p.YourBid.Contract+" · "+p.Closes, p.YourBid.PlacedAt)
 		m.Spec.Subject.Players = append(m.Spec.Subject.Players, p.Player)
-		m.Spec.Deadline = p.ClosesAt
+		if p.ClosesAt != nil {
+			deadline := p.ClosesAt.UTC()
+			m.Spec.Deadline = &deadline
+		}
 		out.Moves = append(out.Moves, m)
 	}
 }
@@ -130,7 +150,8 @@ func (out *NativeMoves) appendPendingWaivers(waivers NativeWaivers, records []co
 				m := nativeMove(out.League, out.Franchise, c.ID, commissioner.WaiverClaim, "handed_off",
 					p.Name+": claim waiting for processing · "+p.Closes, r.Receipt.RecordedAt)
 				m.Spec.Subject.Players = append(m.Spec.Subject.Players, p.Player)
-				m.Spec.Deadline = &p.ClosesAt
+				deadline := p.ClosesAt.UTC()
+				m.Spec.Deadline = &deadline
 				out.Moves = append(out.Moves, m)
 			}
 		}
@@ -158,9 +179,15 @@ func (out *NativeMoves) appendWaitingTrades(trades NativeTrades, records []commi
 		if state == "" {
 			continue
 		}
-		m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, state, tradeMoveWords(t), tradeMoveTime(t, records))
+		at, entry := tradeMoveEvidence(t, records)
+		words := tradeMoveWords(t)
+		if state == "landed" {
+			words += " · Committed in league ledger: " + entry
+		}
+		m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, state, words, at)
 		if t.Status == "offered" {
-			m.Spec.Deadline = &t.ExpiresAt
+			deadline := t.ExpiresAt.UTC()
+			m.Spec.Deadline = &deadline
 		}
 		for _, asset := range t.Assets {
 			if asset.Player != "" {

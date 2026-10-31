@@ -108,7 +108,7 @@ func releaseReadInputs(t *testing.T, name string, typ reflect.Type, league strin
 	case "TargetNativeLineup":
 		args[1].SetString("franchise.01")
 		args[2].SetInt(1)
-	case "TargetNativeBids", "TargetNativeTrades", "TargetNativeWaivers":
+	case "TargetNativeMoves", "TargetNativeBids", "TargetNativeTrades", "TargetNativeWaivers":
 		args[1].SetString("franchise.01")
 	}
 	if len(args) > 0 && args[0].Kind() == reflect.Struct {
@@ -270,6 +270,7 @@ trade.override
 trade.recuse
 trade.review
 trade.withdraw
+moves.read
 trades.read
 waivers.award.override
 waivers.claim

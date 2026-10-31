@@ -267,6 +267,10 @@ string
 string,
 number
 ];
+"commissioner.TargetNativeMoves": [
+string,
+string
+];
 "commissioner.TargetNativeTrades": [
 string,
 string
@@ -2131,6 +2135,7 @@ export type WorkflowArgumentMap = {
 "results.read": NativeArguments<"results.read">;
 "native.roster.check": NativeArguments<"native.roster.check">;
 "standings.read": NativeArguments<"standings.read">;
+"moves.read": NativeArguments<"moves.read">;
 "trades.read": NativeArguments<"trades.read">;
 "waivers.read": NativeArguments<"waivers.read">;
 "season.rollover": NativeArguments<"season.rollover">;
