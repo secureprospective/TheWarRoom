@@ -379,6 +379,37 @@ const schema32 = {
   Type:"object",
   Enum:null,
   Format:"",
+  Validator:"RawLineupDeltaScope.Validate",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"franchise",Optional:false,Schema:schema2},
+    {Name:"partner",Optional:false,Schema:schema2},
+    {Name:"give",Optional:false,Schema:schema30},
+    {Name:"get",Optional:false,Schema:schema30},
+    {Name:"season",Optional:false,Schema:schema15},
+    {Name:"week",Optional:false,Schema:schema15}
+  ],
+  Items:null,
+} as const;
+const schema33 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"TargetNativeProjections",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"players",Optional:false,Schema:schema2},
+    {Name:"season",Optional:false,Schema:schema15},
+    {Name:"week",Optional:false,Schema:schema15}
+  ],
+  Items:null,
+} as const;
+const schema34 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
   Validator:"TargetNativePlayerScore",
   Nullable:false,
   Fields:[
@@ -389,7 +420,7 @@ const schema32 = {
   ],
   Items:null,
 } as const;
-const schema33 = {
+const schema35 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -400,7 +431,7 @@ const schema33 = {
   ],
   Items:null,
 } as const;
-const schema34 = {
+const schema36 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -413,7 +444,7 @@ const schema34 = {
   ],
   Items:null,
 } as const;
-const schema35 = {
+const schema37 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -424,7 +455,7 @@ const schema35 = {
   ],
   Items:null,
 } as const;
-const schema36 = {
+const schema38 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -436,7 +467,7 @@ const schema36 = {
   ],
   Items:null,
 } as const;
-const schema37 = {
+const schema39 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -448,7 +479,7 @@ const schema37 = {
   ],
   Items:null,
 } as const;
-const schema38 = {
+const schema40 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -460,7 +491,7 @@ const schema38 = {
   ],
   Items:null,
 } as const;
-const schema39 = {
+const schema41 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -473,7 +504,7 @@ const schema39 = {
   ],
   Items:null,
 } as const;
-const schema40 = {
+const schema42 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -488,7 +519,7 @@ const schema40 = {
   ],
   Items:null,
 } as const;
-const schema41 = {
+const schema43 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -500,7 +531,7 @@ const schema41 = {
   ],
   Items:null,
 } as const;
-const schema42 = {
+const schema44 = {
   Type:"string",
   Enum:[
     "commish.league.create"
@@ -511,7 +542,7 @@ const schema42 = {
   Fields:null,
   Items:null,
 } as const;
-const schema43 = {
+const schema45 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -525,7 +556,7 @@ const schema43 = {
   ],
   Items:null,
 } as const;
-const schema44 = {
+const schema46 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -533,8 +564,8 @@ const schema44 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema42},
-    {Name:"args",Optional:false,Schema:schema43},
+    {Name:"command",Optional:false,Schema:schema44},
+    {Name:"args",Optional:false,Schema:schema45},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -544,7 +575,7 @@ const schema44 = {
   ],
   Items:null,
 } as const;
-const schema45 = {
+const schema47 = {
   Type:"string",
   Enum:[
     "commish.correction.revert"
@@ -555,7 +586,7 @@ const schema45 = {
   Fields:null,
   Items:null,
 } as const;
-const schema46 = {
+const schema48 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -566,7 +597,7 @@ const schema46 = {
   ],
   Items:null,
 } as const;
-const schema47 = {
+const schema49 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -574,8 +605,8 @@ const schema47 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema45},
-    {Name:"args",Optional:false,Schema:schema46},
+    {Name:"command",Optional:false,Schema:schema47},
+    {Name:"args",Optional:false,Schema:schema48},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -585,7 +616,7 @@ const schema47 = {
   ],
   Items:null,
 } as const;
-const schema48 = {
+const schema50 = {
   Type:"string",
   Enum:[
     "commish.rules.set"
@@ -596,7 +627,7 @@ const schema48 = {
   Fields:null,
   Items:null,
 } as const;
-const schema49 = {
+const schema51 = {
   Type:"json",
   Enum:null,
   Format:"",
@@ -605,7 +636,7 @@ const schema49 = {
   Fields:null,
   Items:null,
 } as const;
-const schema50 = {
+const schema52 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -613,11 +644,11 @@ const schema50 = {
   Nullable:false,
   Fields:[
     {Name:"field",Optional:true,Schema:schema2},
-    {Name:"value",Optional:true,Schema:schema49}
+    {Name:"value",Optional:true,Schema:schema51}
   ],
   Items:null,
 } as const;
-const schema51 = {
+const schema53 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -625,8 +656,8 @@ const schema51 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema48},
-    {Name:"args",Optional:false,Schema:schema50},
+    {Name:"command",Optional:false,Schema:schema50},
+    {Name:"args",Optional:false,Schema:schema52},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -636,7 +667,7 @@ const schema51 = {
   ],
   Items:null,
 } as const;
-const schema52 = {
+const schema54 = {
   Type:"string",
   Enum:[
     "contract.action.set"
@@ -647,7 +678,7 @@ const schema52 = {
   Fields:null,
   Items:null,
 } as const;
-const schema53 = {
+const schema55 = {
   Type:"boolean",
   Enum:null,
   Format:"",
@@ -656,7 +687,7 @@ const schema53 = {
   Fields:null,
   Items:null,
 } as const;
-const schema54 = {
+const schema56 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -664,23 +695,23 @@ const schema54 = {
   Nullable:true,
   Fields:[
     {Name:"action",Optional:false,Schema:schema2},
-    {Name:"on",Optional:false,Schema:schema53},
-    {Name:"params",Optional:false,Schema:schema49}
+    {Name:"on",Optional:false,Schema:schema55},
+    {Name:"params",Optional:false,Schema:schema51}
   ],
   Items:null,
 } as const;
-const schema55 = {
+const schema57 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"contractAction",Optional:true,Schema:schema54}
+    {Name:"contractAction",Optional:true,Schema:schema56}
   ],
   Items:null,
 } as const;
-const schema56 = {
+const schema58 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -688,8 +719,8 @@ const schema56 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema52},
-    {Name:"args",Optional:false,Schema:schema55},
+    {Name:"command",Optional:false,Schema:schema54},
+    {Name:"args",Optional:false,Schema:schema57},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -699,7 +730,7 @@ const schema56 = {
   ],
   Items:null,
 } as const;
-const schema57 = {
+const schema59 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -713,7 +744,7 @@ const schema57 = {
   ],
   Items:null,
 } as const;
-const schema58 = {
+const schema60 = {
   Type:"string",
   Enum:[
     "season.rollover"
@@ -724,7 +755,7 @@ const schema58 = {
   Fields:null,
   Items:null,
 } as const;
-const schema59 = {
+const schema61 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -736,18 +767,18 @@ const schema59 = {
   ],
   Items:null,
 } as const;
-const schema60 = {
+const schema62 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"rollover",Optional:true,Schema:schema59}
+    {Name:"rollover",Optional:true,Schema:schema61}
   ],
   Items:null,
 } as const;
-const schema61 = {
+const schema63 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -755,8 +786,8 @@ const schema61 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema58},
-    {Name:"args",Optional:false,Schema:schema60},
+    {Name:"command",Optional:false,Schema:schema60},
+    {Name:"args",Optional:false,Schema:schema62},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -766,7 +797,7 @@ const schema61 = {
   ],
   Items:null,
 } as const;
-const schema62 = {
+const schema64 = {
   Type:"string",
   Enum:[
     "commish.calendar.exception"
@@ -777,7 +808,7 @@ const schema62 = {
   Fields:null,
   Items:null,
 } as const;
-const schema63 = {
+const schema65 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -790,18 +821,18 @@ const schema63 = {
   ],
   Items:null,
 } as const;
-const schema64 = {
+const schema66 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"exception",Optional:true,Schema:schema63}
+    {Name:"exception",Optional:true,Schema:schema65}
   ],
   Items:null,
 } as const;
-const schema65 = {
+const schema67 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -809,8 +840,8 @@ const schema65 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema62},
-    {Name:"args",Optional:false,Schema:schema64},
+    {Name:"command",Optional:false,Schema:schema64},
+    {Name:"args",Optional:false,Schema:schema66},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -820,7 +851,7 @@ const schema65 = {
   ],
   Items:null,
 } as const;
-const schema66 = {
+const schema68 = {
   Type:"string",
   Enum:[
     "correct.roster"
@@ -831,7 +862,7 @@ const schema66 = {
   Fields:null,
   Items:null,
 } as const;
-const schema67 = {
+const schema69 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -844,7 +875,7 @@ const schema67 = {
   ],
   Items:null,
 } as const;
-const schema68 = {
+const schema70 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -857,7 +888,7 @@ const schema68 = {
   ],
   Items:null,
 } as const;
-const schema69 = {
+const schema71 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -869,26 +900,26 @@ const schema69 = {
     {Name:"action",Optional:true,Schema:schema2},
     {Name:"entry",Optional:true,Schema:schema2},
     {Name:"via",Optional:true,Schema:schema2},
-    {Name:"pick",Optional:true,Schema:schema67},
+    {Name:"pick",Optional:true,Schema:schema69},
     {Name:"owner",Optional:true,Schema:schema2},
     {Name:"rule",Optional:true,Schema:schema2},
-    {Name:"scope",Optional:true,Schema:schema68},
+    {Name:"scope",Optional:true,Schema:schema70},
     {Name:"until",Optional:true,Schema:schema2}
   ],
   Items:null,
 } as const;
-const schema70 = {
+const schema72 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"correction",Optional:true,Schema:schema69}
+    {Name:"correction",Optional:true,Schema:schema71}
   ],
   Items:null,
 } as const;
-const schema71 = {
+const schema73 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -896,38 +927,8 @@ const schema71 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema66},
-    {Name:"args",Optional:false,Schema:schema70},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema72 = {
-  Type:"string",
-  Enum:[
-    "correct.transaction"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema73 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:correct.transaction",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema72},
-    {Name:"args",Optional:false,Schema:schema70},
+    {Name:"command",Optional:false,Schema:schema68},
+    {Name:"args",Optional:false,Schema:schema72},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -940,7 +941,7 @@ const schema73 = {
 const schema74 = {
   Type:"string",
   Enum:[
-    "correct.provenance"
+    "correct.transaction"
   ],
   Format:"",
   Validator:"",
@@ -952,12 +953,12 @@ const schema75 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:correct.provenance",
+  Validator:"RawCommand.Validate/ValidatePreview:correct.transaction",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema74},
-    {Name:"args",Optional:false,Schema:schema70},
+    {Name:"args",Optional:false,Schema:schema72},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -970,7 +971,7 @@ const schema75 = {
 const schema76 = {
   Type:"string",
   Enum:[
-    "correct.pick"
+    "correct.provenance"
   ],
   Format:"",
   Validator:"",
@@ -982,12 +983,12 @@ const schema77 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:correct.pick",
+  Validator:"RawCommand.Validate/ValidatePreview:correct.provenance",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema76},
-    {Name:"args",Optional:false,Schema:schema70},
+    {Name:"args",Optional:false,Schema:schema72},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1000,7 +1001,7 @@ const schema77 = {
 const schema78 = {
   Type:"string",
   Enum:[
-    "rule.exception"
+    "correct.pick"
   ],
   Format:"",
   Validator:"",
@@ -1012,12 +1013,12 @@ const schema79 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:rule.exception",
+  Validator:"RawCommand.Validate/ValidatePreview:correct.pick",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema78},
-    {Name:"args",Optional:false,Schema:schema70},
+    {Name:"args",Optional:false,Schema:schema72},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1030,7 +1031,7 @@ const schema79 = {
 const schema80 = {
   Type:"string",
   Enum:[
-    "draft.order.auto"
+    "rule.exception"
   ],
   Format:"",
   Validator:"",
@@ -1039,6 +1040,36 @@ const schema80 = {
   Items:null,
 } as const;
 const schema81 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:rule.exception",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema80},
+    {Name:"args",Optional:false,Schema:schema72},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema82 = {
+  Type:"string",
+  Enum:[
+    "draft.order.auto"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema83 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1051,7 +1082,7 @@ const schema81 = {
   ],
   Items:null,
 } as const;
-const schema82 = {
+const schema84 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1064,11 +1095,11 @@ const schema82 = {
     {Name:"round",Optional:false,Schema:schema15},
     {Name:"slot",Optional:false,Schema:schema15},
     {Name:"original",Optional:false,Schema:schema2},
-    {Name:"terms",Optional:false,Schema:schema81}
+    {Name:"terms",Optional:false,Schema:schema83}
   ],
   Items:null,
 } as const;
-const schema83 = {
+const schema85 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1087,7 +1118,7 @@ const schema83 = {
   ],
   Items:null,
 } as const;
-const schema84 = {
+const schema86 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1101,26 +1132,26 @@ const schema84 = {
     {Name:"pattern",Optional:true,Schema:schema2},
     {Name:"tie",Optional:true,Schema:schema2},
     {Name:"at",Optional:true,Schema:schema24},
-    {Name:"pick",Optional:true,Schema:schema82},
-    {Name:"act",Optional:true,Schema:schema83},
+    {Name:"pick",Optional:true,Schema:schema84},
+    {Name:"act",Optional:true,Schema:schema85},
     {Name:"running",Optional:true,Schema:schema25},
     {Name:"startup",Optional:true,Schema:schema25},
     {Name:"side",Optional:true,Schema:schema2}
   ],
   Items:null,
 } as const;
-const schema85 = {
+const schema87 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"draft",Optional:true,Schema:schema84}
+    {Name:"draft",Optional:true,Schema:schema86}
   ],
   Items:null,
 } as const;
-const schema86 = {
+const schema88 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1128,38 +1159,8 @@ const schema86 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema80},
-    {Name:"args",Optional:false,Schema:schema85},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema87 = {
-  Type:"string",
-  Enum:[
-    "draft.order.set"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema88 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.order.set",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema87},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"command",Optional:false,Schema:schema82},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1172,7 +1173,7 @@ const schema88 = {
 const schema89 = {
   Type:"string",
   Enum:[
-    "draft.order.pattern"
+    "draft.order.set"
   ],
   Format:"",
   Validator:"",
@@ -1184,12 +1185,12 @@ const schema90 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.order.pattern",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.order.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema89},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1202,7 +1203,7 @@ const schema90 = {
 const schema91 = {
   Type:"string",
   Enum:[
-    "draft.order.tiebreak"
+    "draft.order.pattern"
   ],
   Format:"",
   Validator:"",
@@ -1214,12 +1215,12 @@ const schema92 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.order.tiebreak",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.order.pattern",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema91},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1232,7 +1233,7 @@ const schema92 = {
 const schema93 = {
   Type:"string",
   Enum:[
-    "draft.start"
+    "draft.order.tiebreak"
   ],
   Format:"",
   Validator:"",
@@ -1244,12 +1245,12 @@ const schema94 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.start",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.order.tiebreak",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema93},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1260,6 +1261,36 @@ const schema94 = {
   Items:null,
 } as const;
 const schema95 = {
+  Type:"string",
+  Enum:[
+    "draft.start"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema96 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.start",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema95},
+    {Name:"args",Optional:false,Schema:schema87},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema97 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1276,40 +1307,10 @@ const schema95 = {
   ],
   Items:null,
 } as const;
-const schema96 = {
-  Type:"string",
-  Enum:[
-    "draft.skip"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema97 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.skip",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema96},
-    {Name:"args",Optional:false,Schema:schema85},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
 const schema98 = {
   Type:"string",
   Enum:[
-    "draft.assign"
+    "draft.skip"
   ],
   Format:"",
   Validator:"",
@@ -1321,12 +1322,12 @@ const schema99 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.assign",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.skip",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema98},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1339,7 +1340,7 @@ const schema99 = {
 const schema100 = {
   Type:"string",
   Enum:[
-    "draft.insert"
+    "draft.assign"
   ],
   Format:"",
   Validator:"",
@@ -1351,12 +1352,12 @@ const schema101 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.insert",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.assign",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema100},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1369,7 +1370,7 @@ const schema101 = {
 const schema102 = {
   Type:"string",
   Enum:[
-    "draft.change"
+    "draft.insert"
   ],
   Format:"",
   Validator:"",
@@ -1381,12 +1382,12 @@ const schema103 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.change",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.insert",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema102},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1399,7 +1400,7 @@ const schema103 = {
 const schema104 = {
   Type:"string",
   Enum:[
-    "draft.timer"
+    "draft.change"
   ],
   Format:"",
   Validator:"",
@@ -1411,12 +1412,12 @@ const schema105 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.timer",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.change",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema104},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1429,7 +1430,7 @@ const schema105 = {
 const schema106 = {
   Type:"string",
   Enum:[
-    "draft.revert"
+    "draft.timer"
   ],
   Format:"",
   Validator:"",
@@ -1441,12 +1442,12 @@ const schema107 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.revert",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.timer",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema106},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1459,7 +1460,7 @@ const schema107 = {
 const schema108 = {
   Type:"string",
   Enum:[
-    "draft.archive"
+    "draft.revert"
   ],
   Format:"",
   Validator:"",
@@ -1471,12 +1472,12 @@ const schema109 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.archive",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.revert",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema108},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1489,7 +1490,7 @@ const schema109 = {
 const schema110 = {
   Type:"string",
   Enum:[
-    "draft.startup.open"
+    "draft.archive"
   ],
   Format:"",
   Validator:"",
@@ -1501,12 +1502,12 @@ const schema111 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:draft.startup.open",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.archive",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema110},
-    {Name:"args",Optional:false,Schema:schema85},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1519,7 +1520,7 @@ const schema111 = {
 const schema112 = {
   Type:"string",
   Enum:[
-    "calendar.window.set"
+    "draft.startup.open"
   ],
   Format:"",
   Validator:"",
@@ -1531,49 +1532,12 @@ const schema113 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"month",Optional:false,Schema:schema15},
-    {Name:"day",Optional:false,Schema:schema15}
-  ],
-  Items:null,
-} as const;
-const schema114 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"id",Optional:false,Schema:schema2},
-    {Name:"start",Optional:true,Schema:schema113},
-    {Name:"end",Optional:true,Schema:schema113},
-    {Name:"opens",Optional:true,Schema:schema30}
-  ],
-  Items:null,
-} as const;
-const schema115 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-    {Name:"window",Optional:true,Schema:schema114}
-  ],
-  Items:null,
-} as const;
-const schema116 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.set",
+  Validator:"RawCommand.Validate/ValidatePreview:draft.startup.open",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema112},
-    {Name:"args",Optional:false,Schema:schema115},
+    {Name:"args",Optional:false,Schema:schema87},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1583,10 +1547,10 @@ const schema116 = {
   ],
   Items:null,
 } as const;
-const schema117 = {
+const schema114 = {
   Type:"string",
   Enum:[
-    "calendar.window.move"
+    "calendar.window.set"
   ],
   Format:"",
   Validator:"",
@@ -1594,16 +1558,53 @@ const schema117 = {
   Fields:null,
   Items:null,
 } as const;
+const schema115 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"month",Optional:false,Schema:schema15},
+    {Name:"day",Optional:false,Schema:schema15}
+  ],
+  Items:null,
+} as const;
+const schema116 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"id",Optional:false,Schema:schema2},
+    {Name:"start",Optional:true,Schema:schema115},
+    {Name:"end",Optional:true,Schema:schema115},
+    {Name:"opens",Optional:true,Schema:schema30}
+  ],
+  Items:null,
+} as const;
+const schema117 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"window",Optional:true,Schema:schema116}
+  ],
+  Items:null,
+} as const;
 const schema118 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.move",
+  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema117},
-    {Name:"args",Optional:false,Schema:schema115},
+    {Name:"command",Optional:false,Schema:schema114},
+    {Name:"args",Optional:false,Schema:schema117},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1616,7 +1617,7 @@ const schema118 = {
 const schema119 = {
   Type:"string",
   Enum:[
-    "calendar.window.remove"
+    "calendar.window.move"
   ],
   Format:"",
   Validator:"",
@@ -1628,12 +1629,12 @@ const schema120 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.remove",
+  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.move",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema119},
-    {Name:"args",Optional:false,Schema:schema115},
+    {Name:"args",Optional:false,Schema:schema117},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1646,7 +1647,7 @@ const schema120 = {
 const schema121 = {
   Type:"string",
   Enum:[
-    "commish.contract.edit"
+    "calendar.window.remove"
   ],
   Format:"",
   Validator:"",
@@ -1655,53 +1656,15 @@ const schema121 = {
   Items:null,
 } as const;
 const schema122 = {
-  Type:"integer",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:null,
-  Items:null,
-} as const;
-const schema123 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"player",Optional:true,Schema:schema2},
-    {Name:"franchise",Optional:true,Schema:schema2},
-    {Name:"years",Optional:true,Schema:schema122},
-    {Name:"salaryCents",Optional:true,Schema:schema122},
-    {Name:"amountCents",Optional:true,Schema:schema122},
-    {Name:"season",Optional:true,Schema:schema15},
-    {Name:"bucket",Optional:true,Schema:schema2},
-    {Name:"until",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema124 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-    {Name:"override",Optional:true,Schema:schema123}
-  ],
-  Items:null,
-} as const;
-const schema125 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.contract.edit",
+  Validator:"RawCommand.Validate/ValidatePreview:calendar.window.remove",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema121},
-    {Name:"args",Optional:false,Schema:schema124},
+    {Name:"args",Optional:false,Schema:schema117},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1711,10 +1674,10 @@ const schema125 = {
   ],
   Items:null,
 } as const;
-const schema126 = {
+const schema123 = {
   Type:"string",
   Enum:[
-    "commish.cap.adjust"
+    "commish.contract.edit"
   ],
   Format:"",
   Validator:"",
@@ -1722,16 +1685,54 @@ const schema126 = {
   Fields:null,
   Items:null,
 } as const;
+const schema124 = {
+  Type:"integer",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:null,
+  Items:null,
+} as const;
+const schema125 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"player",Optional:true,Schema:schema2},
+    {Name:"franchise",Optional:true,Schema:schema2},
+    {Name:"years",Optional:true,Schema:schema124},
+    {Name:"salaryCents",Optional:true,Schema:schema124},
+    {Name:"amountCents",Optional:true,Schema:schema124},
+    {Name:"season",Optional:true,Schema:schema15},
+    {Name:"bucket",Optional:true,Schema:schema2},
+    {Name:"until",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema126 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"override",Optional:true,Schema:schema125}
+  ],
+  Items:null,
+} as const;
 const schema127 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.cap.adjust",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.contract.edit",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema126},
-    {Name:"args",Optional:false,Schema:schema124},
+    {Name:"command",Optional:false,Schema:schema123},
+    {Name:"args",Optional:false,Schema:schema126},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1744,7 +1745,7 @@ const schema127 = {
 const schema128 = {
   Type:"string",
   Enum:[
-    "commish.cap.relief"
+    "commish.cap.adjust"
   ],
   Format:"",
   Validator:"",
@@ -1756,12 +1757,12 @@ const schema129 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.cap.relief",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.cap.adjust",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema128},
-    {Name:"args",Optional:false,Schema:schema124},
+    {Name:"args",Optional:false,Schema:schema126},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1774,7 +1775,7 @@ const schema129 = {
 const schema130 = {
   Type:"string",
   Enum:[
-    "commish.reserve.exception"
+    "commish.cap.relief"
   ],
   Format:"",
   Validator:"",
@@ -1786,12 +1787,12 @@ const schema131 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.reserve.exception",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.cap.relief",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema130},
-    {Name:"args",Optional:false,Schema:schema124},
+    {Name:"args",Optional:false,Schema:schema126},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1804,7 +1805,7 @@ const schema131 = {
 const schema132 = {
   Type:"string",
   Enum:[
-    "schedule.generate"
+    "commish.reserve.exception"
   ],
   Format:"",
   Validator:"",
@@ -1813,6 +1814,36 @@ const schema132 = {
   Items:null,
 } as const;
 const schema133 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.reserve.exception",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema132},
+    {Name:"args",Optional:false,Schema:schema126},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema134 = {
+  Type:"string",
+  Enum:[
+    "schedule.generate"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema135 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1825,16 +1856,16 @@ const schema133 = {
   ],
   Items:null,
 } as const;
-const schema134 = {
+const schema136 = {
   Type:"array",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:null,
-  Items:schema133,
+  Items:schema135,
 } as const;
-const schema135 = {
+const schema137 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1844,23 +1875,23 @@ const schema135 = {
     {Name:"weeks",Optional:true,Schema:schema15},
     {Name:"pattern",Optional:true,Schema:schema2},
     {Name:"week",Optional:true,Schema:schema15},
-    {Name:"games",Optional:true,Schema:schema134},
+    {Name:"games",Optional:true,Schema:schema136},
     {Name:"published",Optional:true,Schema:schema25}
   ],
   Items:null,
 } as const;
-const schema136 = {
+const schema138 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"schedule",Optional:true,Schema:schema135}
+    {Name:"schedule",Optional:true,Schema:schema137}
   ],
   Items:null,
 } as const;
-const schema137 = {
+const schema139 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1868,38 +1899,8 @@ const schema137 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema132},
-    {Name:"args",Optional:false,Schema:schema136},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema138 = {
-  Type:"string",
-  Enum:[
-    "schedule.edit"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema139 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:schedule.edit",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema138},
-    {Name:"args",Optional:false,Schema:schema136},
+    {Name:"command",Optional:false,Schema:schema134},
+    {Name:"args",Optional:false,Schema:schema138},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1912,7 +1913,7 @@ const schema139 = {
 const schema140 = {
   Type:"string",
   Enum:[
-    "schedule.publish"
+    "schedule.edit"
   ],
   Format:"",
   Validator:"",
@@ -1924,12 +1925,12 @@ const schema141 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:schedule.publish",
+  Validator:"RawCommand.Validate/ValidatePreview:schedule.edit",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema140},
-    {Name:"args",Optional:false,Schema:schema136},
+    {Name:"args",Optional:false,Schema:schema138},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -1942,7 +1943,7 @@ const schema141 = {
 const schema142 = {
   Type:"string",
   Enum:[
-    "bracket.build"
+    "schedule.publish"
   ],
   Format:"",
   Validator:"",
@@ -1951,6 +1952,36 @@ const schema142 = {
   Items:null,
 } as const;
 const schema143 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:schedule.publish",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema142},
+    {Name:"args",Optional:false,Schema:schema138},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema144 = {
+  Type:"string",
+  Enum:[
+    "bracket.build"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema145 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1966,16 +1997,16 @@ const schema143 = {
   ],
   Items:null,
 } as const;
-const schema144 = {
+const schema146 = {
   Type:"array",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:null,
-  Items:schema143,
+  Items:schema145,
 } as const;
-const schema145 = {
+const schema147 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -1990,22 +2021,22 @@ const schema145 = {
     {Name:"game",Optional:true,Schema:schema2},
     {Name:"team",Optional:true,Schema:schema2},
     {Name:"name",Optional:true,Schema:schema2},
-    {Name:"shape",Optional:true,Schema:schema144}
+    {Name:"shape",Optional:true,Schema:schema146}
   ],
   Items:null,
 } as const;
-const schema146 = {
+const schema148 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"bracket",Optional:true,Schema:schema145}
+    {Name:"bracket",Optional:true,Schema:schema147}
   ],
   Items:null,
 } as const;
-const schema147 = {
+const schema149 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2013,38 +2044,8 @@ const schema147 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema142},
-    {Name:"args",Optional:false,Schema:schema146},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema148 = {
-  Type:"string",
-  Enum:[
-    "bracket.edit"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema149 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bracket.edit",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema148},
-    {Name:"args",Optional:false,Schema:schema146},
+    {Name:"command",Optional:false,Schema:schema144},
+    {Name:"args",Optional:false,Schema:schema148},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2057,7 +2058,7 @@ const schema149 = {
 const schema150 = {
   Type:"string",
   Enum:[
-    "bracket.seed"
+    "bracket.edit"
   ],
   Format:"",
   Validator:"",
@@ -2069,12 +2070,12 @@ const schema151 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bracket.seed",
+  Validator:"RawCommand.Validate/ValidatePreview:bracket.edit",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema150},
-    {Name:"args",Optional:false,Schema:schema146},
+    {Name:"args",Optional:false,Schema:schema148},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2087,7 +2088,7 @@ const schema151 = {
 const schema152 = {
   Type:"string",
   Enum:[
-    "bracket.preset.save"
+    "bracket.seed"
   ],
   Format:"",
   Validator:"",
@@ -2099,12 +2100,12 @@ const schema153 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bracket.preset.save",
+  Validator:"RawCommand.Validate/ValidatePreview:bracket.seed",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema152},
-    {Name:"args",Optional:false,Schema:schema146},
+    {Name:"args",Optional:false,Schema:schema148},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2117,7 +2118,7 @@ const schema153 = {
 const schema154 = {
   Type:"string",
   Enum:[
-    "bracket.advance"
+    "bracket.preset.save"
   ],
   Format:"",
   Validator:"",
@@ -2129,12 +2130,12 @@ const schema155 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bracket.advance",
+  Validator:"RawCommand.Validate/ValidatePreview:bracket.preset.save",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema154},
-    {Name:"args",Optional:false,Schema:schema146},
+    {Name:"args",Optional:false,Schema:schema148},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2147,7 +2148,7 @@ const schema155 = {
 const schema156 = {
   Type:"string",
   Enum:[
-    "commish.standings.record.adjust"
+    "bracket.advance"
   ],
   Format:"",
   Validator:"",
@@ -2156,6 +2157,36 @@ const schema156 = {
   Items:null,
 } as const;
 const schema157 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:bracket.advance",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema156},
+    {Name:"args",Optional:false,Schema:schema148},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema158 = {
+  Type:"string",
+  Enum:[
+    "commish.standings.record.adjust"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema159 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2171,18 +2202,18 @@ const schema157 = {
   ],
   Items:null,
 } as const;
-const schema158 = {
+const schema160 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"standings",Optional:true,Schema:schema157}
+    {Name:"standings",Optional:true,Schema:schema159}
   ],
   Items:null,
 } as const;
-const schema159 = {
+const schema161 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2190,38 +2221,8 @@ const schema159 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema156},
-    {Name:"args",Optional:false,Schema:schema158},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema160 = {
-  Type:"string",
-  Enum:[
-    "commish.standings.override"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema161 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.standings.override",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema160},
-    {Name:"args",Optional:false,Schema:schema158},
+    {Name:"command",Optional:false,Schema:schema158},
+    {Name:"args",Optional:false,Schema:schema160},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2234,7 +2235,7 @@ const schema161 = {
 const schema162 = {
   Type:"string",
   Enum:[
-    "commish.standings.override.clear"
+    "commish.standings.override"
   ],
   Format:"",
   Validator:"",
@@ -2246,12 +2247,12 @@ const schema163 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.standings.override.clear",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.standings.override",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema162},
-    {Name:"args",Optional:false,Schema:schema158},
+    {Name:"args",Optional:false,Schema:schema160},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2264,7 +2265,7 @@ const schema163 = {
 const schema164 = {
   Type:"string",
   Enum:[
-    "commish.stat.queue.approve"
+    "commish.standings.override.clear"
   ],
   Format:"",
   Validator:"",
@@ -2276,40 +2277,12 @@ const schema165 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"item",Optional:true,Schema:schema2},
-    {Name:"player",Optional:true,Schema:schema2},
-    {Name:"season",Optional:true,Schema:schema15},
-    {Name:"week",Optional:true,Schema:schema15},
-    {Name:"stat",Optional:true,Schema:schema2},
-    {Name:"value",Optional:true,Schema:schema122},
-    {Name:"source",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema166 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-    {Name:"stat",Optional:true,Schema:schema165}
-  ],
-  Items:null,
-} as const;
-const schema167 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.queue.approve",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.standings.override.clear",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema164},
-    {Name:"args",Optional:false,Schema:schema166},
+    {Name:"args",Optional:false,Schema:schema160},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2319,10 +2292,10 @@ const schema167 = {
   ],
   Items:null,
 } as const;
-const schema168 = {
+const schema166 = {
   Type:"string",
   Enum:[
-    "commish.stat.queue.reject"
+    "commish.stat.queue.approve"
   ],
   Format:"",
   Validator:"",
@@ -2330,16 +2303,44 @@ const schema168 = {
   Fields:null,
   Items:null,
 } as const;
+const schema167 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"item",Optional:true,Schema:schema2},
+    {Name:"player",Optional:true,Schema:schema2},
+    {Name:"season",Optional:true,Schema:schema15},
+    {Name:"week",Optional:true,Schema:schema15},
+    {Name:"stat",Optional:true,Schema:schema2},
+    {Name:"value",Optional:true,Schema:schema124},
+    {Name:"source",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema168 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"stat",Optional:true,Schema:schema167}
+  ],
+  Items:null,
+} as const;
 const schema169 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.queue.reject",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.queue.approve",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema168},
-    {Name:"args",Optional:false,Schema:schema166},
+    {Name:"command",Optional:false,Schema:schema166},
+    {Name:"args",Optional:false,Schema:schema168},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2352,7 +2353,7 @@ const schema169 = {
 const schema170 = {
   Type:"string",
   Enum:[
-    "commish.stat.correct"
+    "commish.stat.queue.reject"
   ],
   Format:"",
   Validator:"",
@@ -2364,12 +2365,12 @@ const schema171 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.correct",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.queue.reject",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema170},
-    {Name:"args",Optional:false,Schema:schema166},
+    {Name:"args",Optional:false,Schema:schema168},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2382,7 +2383,7 @@ const schema171 = {
 const schema172 = {
   Type:"string",
   Enum:[
-    "commish.player.position"
+    "commish.stat.correct"
   ],
   Format:"",
   Validator:"",
@@ -2394,39 +2395,12 @@ const schema173 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"player",Optional:true,Schema:schema2},
-    {Name:"position",Optional:true,Schema:schema2},
-    {Name:"franchise",Optional:true,Schema:schema2},
-    {Name:"season",Optional:true,Schema:schema15},
-    {Name:"week",Optional:true,Schema:schema15},
-    {Name:"delta",Optional:true,Schema:schema122}
-  ],
-  Items:null,
-} as const;
-const schema174 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-    {Name:"score",Optional:true,Schema:schema173}
-  ],
-  Items:null,
-} as const;
-const schema175 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.player.position",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.stat.correct",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema172},
-    {Name:"args",Optional:false,Schema:schema174},
+    {Name:"args",Optional:false,Schema:schema168},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2436,10 +2410,10 @@ const schema175 = {
   ],
   Items:null,
 } as const;
-const schema176 = {
+const schema174 = {
   Type:"string",
   Enum:[
-    "commish.player.position.clear"
+    "commish.player.position"
   ],
   Format:"",
   Validator:"",
@@ -2447,16 +2421,43 @@ const schema176 = {
   Fields:null,
   Items:null,
 } as const;
+const schema175 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"player",Optional:true,Schema:schema2},
+    {Name:"position",Optional:true,Schema:schema2},
+    {Name:"franchise",Optional:true,Schema:schema2},
+    {Name:"season",Optional:true,Schema:schema15},
+    {Name:"week",Optional:true,Schema:schema15},
+    {Name:"delta",Optional:true,Schema:schema124}
+  ],
+  Items:null,
+} as const;
+const schema176 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"score",Optional:true,Schema:schema175}
+  ],
+  Items:null,
+} as const;
 const schema177 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.player.position.clear",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.player.position",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema176},
-    {Name:"args",Optional:false,Schema:schema174},
+    {Name:"command",Optional:false,Schema:schema174},
+    {Name:"args",Optional:false,Schema:schema176},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2469,7 +2470,7 @@ const schema177 = {
 const schema178 = {
   Type:"string",
   Enum:[
-    "commish.score.player"
+    "commish.player.position.clear"
   ],
   Format:"",
   Validator:"",
@@ -2481,12 +2482,12 @@ const schema179 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.score.player",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.player.position.clear",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema178},
-    {Name:"args",Optional:false,Schema:schema174},
+    {Name:"args",Optional:false,Schema:schema176},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2499,7 +2500,7 @@ const schema179 = {
 const schema180 = {
   Type:"string",
   Enum:[
-    "commish.score.franchise"
+    "commish.score.player"
   ],
   Format:"",
   Validator:"",
@@ -2511,12 +2512,12 @@ const schema181 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.score.franchise",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.score.player",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema180},
-    {Name:"args",Optional:false,Schema:schema174},
+    {Name:"args",Optional:false,Schema:schema176},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2529,7 +2530,7 @@ const schema181 = {
 const schema182 = {
   Type:"string",
   Enum:[
-    "commish.lineup.set"
+    "commish.score.franchise"
   ],
   Format:"",
   Validator:"",
@@ -2538,6 +2539,36 @@ const schema182 = {
   Items:null,
 } as const;
 const schema183 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.score.franchise",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema182},
+    {Name:"args",Optional:false,Schema:schema176},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema184 = {
+  Type:"string",
+  Enum:[
+    "commish.lineup.set"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema185 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2551,18 +2582,18 @@ const schema183 = {
   ],
   Items:null,
 } as const;
-const schema184 = {
+const schema186 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"lineup",Optional:true,Schema:schema183}
+    {Name:"lineup",Optional:true,Schema:schema185}
   ],
   Items:null,
 } as const;
-const schema185 = {
+const schema187 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2570,38 +2601,8 @@ const schema185 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema182},
-    {Name:"args",Optional:false,Schema:schema184},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema186 = {
-  Type:"string",
-  Enum:[
-    "commish.lineup.correct"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema187 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.lineup.correct",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema186},
-    {Name:"args",Optional:false,Schema:schema184},
+    {Name:"command",Optional:false,Schema:schema184},
+    {Name:"args",Optional:false,Schema:schema186},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2614,7 +2615,7 @@ const schema187 = {
 const schema188 = {
   Type:"string",
   Enum:[
-    "title.set"
+    "commish.lineup.correct"
   ],
   Format:"",
   Validator:"",
@@ -2626,35 +2627,12 @@ const schema189 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:true,
-  Fields:[
-    {Name:"season",Optional:false,Schema:schema15},
-    {Name:"label",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema190 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-    {Name:"title",Optional:true,Schema:schema189}
-  ],
-  Items:null,
-} as const;
-const schema191 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:title.set",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.lineup.correct",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema188},
-    {Name:"args",Optional:false,Schema:schema190},
+    {Name:"args",Optional:false,Schema:schema186},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2664,7 +2642,60 @@ const schema191 = {
   ],
   Items:null,
 } as const;
+const schema190 = {
+  Type:"string",
+  Enum:[
+    "title.set"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema191 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:true,
+  Fields:[
+    {Name:"season",Optional:false,Schema:schema15},
+    {Name:"label",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
 const schema192 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+    {Name:"title",Optional:true,Schema:schema191}
+  ],
+  Items:null,
+} as const;
+const schema193 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:title.set",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema190},
+    {Name:"args",Optional:false,Schema:schema192},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema194 = {
   Type:"string",
   Enum:[
     "history.link"
@@ -2675,7 +2706,7 @@ const schema192 = {
   Fields:null,
   Items:null,
 } as const;
-const schema193 = {
+const schema195 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2687,18 +2718,18 @@ const schema193 = {
   ],
   Items:null,
 } as const;
-const schema194 = {
+const schema196 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"link",Optional:true,Schema:schema193}
+    {Name:"link",Optional:true,Schema:schema195}
   ],
   Items:null,
 } as const;
-const schema195 = {
+const schema197 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2706,8 +2737,8 @@ const schema195 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema192},
-    {Name:"args",Optional:false,Schema:schema194},
+    {Name:"command",Optional:false,Schema:schema194},
+    {Name:"args",Optional:false,Schema:schema196},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2717,7 +2748,7 @@ const schema195 = {
   ],
   Items:null,
 } as const;
-const schema196 = {
+const schema198 = {
   Type:"string",
   Enum:[
     "commish.notice.publish"
@@ -2728,7 +2759,7 @@ const schema196 = {
   Fields:null,
   Items:null,
 } as const;
-const schema197 = {
+const schema199 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2740,18 +2771,18 @@ const schema197 = {
   ],
   Items:null,
 } as const;
-const schema198 = {
+const schema200 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"note",Optional:true,Schema:schema197}
+    {Name:"note",Optional:true,Schema:schema199}
   ],
   Items:null,
 } as const;
-const schema199 = {
+const schema201 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2759,38 +2790,8 @@ const schema199 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema196},
-    {Name:"args",Optional:false,Schema:schema198},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema200 = {
-  Type:"string",
-  Enum:[
-    "commish.whatsnew.post"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema201 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.whatsnew.post",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema200},
-    {Name:"args",Optional:false,Schema:schema198},
+    {Name:"command",Optional:false,Schema:schema198},
+    {Name:"args",Optional:false,Schema:schema200},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2803,7 +2804,7 @@ const schema201 = {
 const schema202 = {
   Type:"string",
   Enum:[
-    "trade.offer"
+    "commish.whatsnew.post"
   ],
   Format:"",
   Validator:"",
@@ -2812,6 +2813,36 @@ const schema202 = {
   Items:null,
 } as const;
 const schema203 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.whatsnew.post",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema202},
+    {Name:"args",Optional:false,Schema:schema200},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema204 = {
+  Type:"string",
+  Enum:[
+    "trade.offer"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema205 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2827,16 +2858,16 @@ const schema203 = {
   ],
   Items:null,
 } as const;
-const schema204 = {
+const schema206 = {
   Type:"array",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:null,
-  Items:schema203,
+  Items:schema205,
 } as const;
-const schema205 = {
+const schema207 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2846,23 +2877,23 @@ const schema205 = {
     {Name:"id",Optional:true,Schema:schema2},
     {Name:"franchise",Optional:true,Schema:schema2},
     {Name:"parties",Optional:true,Schema:schema30},
-    {Name:"assets",Optional:true,Schema:schema204},
+    {Name:"assets",Optional:true,Schema:schema206},
     {Name:"decision",Optional:true,Schema:schema2}
   ],
   Items:null,
 } as const;
-const schema206 = {
+const schema208 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"trade",Optional:true,Schema:schema205}
+    {Name:"trade",Optional:true,Schema:schema207}
   ],
   Items:null,
 } as const;
-const schema207 = {
+const schema209 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -2870,38 +2901,8 @@ const schema207 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema202},
-    {Name:"args",Optional:false,Schema:schema206},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema208 = {
-  Type:"string",
-  Enum:[
-    "trade.accept"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema209 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.accept",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema208},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"command",Optional:false,Schema:schema204},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2914,7 +2915,7 @@ const schema209 = {
 const schema210 = {
   Type:"string",
   Enum:[
-    "trade.decline"
+    "trade.accept"
   ],
   Format:"",
   Validator:"",
@@ -2926,12 +2927,12 @@ const schema211 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.decline",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.accept",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema210},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2944,7 +2945,7 @@ const schema211 = {
 const schema212 = {
   Type:"string",
   Enum:[
-    "trade.withdraw"
+    "trade.decline"
   ],
   Format:"",
   Validator:"",
@@ -2956,12 +2957,12 @@ const schema213 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.withdraw",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.decline",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema212},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -2974,7 +2975,7 @@ const schema213 = {
 const schema214 = {
   Type:"string",
   Enum:[
-    "trade.review"
+    "trade.withdraw"
   ],
   Format:"",
   Validator:"",
@@ -2986,12 +2987,12 @@ const schema215 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.review",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.withdraw",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema214},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3004,7 +3005,7 @@ const schema215 = {
 const schema216 = {
   Type:"string",
   Enum:[
-    "trade.recuse"
+    "trade.review"
   ],
   Format:"",
   Validator:"",
@@ -3016,12 +3017,12 @@ const schema217 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.recuse",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.review",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema216},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3034,7 +3035,7 @@ const schema217 = {
 const schema218 = {
   Type:"string",
   Enum:[
-    "trade.appeal"
+    "trade.recuse"
   ],
   Format:"",
   Validator:"",
@@ -3046,12 +3047,12 @@ const schema219 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.appeal",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.recuse",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema218},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3064,7 +3065,7 @@ const schema219 = {
 const schema220 = {
   Type:"string",
   Enum:[
-    "trade.appeal.rule"
+    "trade.appeal"
   ],
   Format:"",
   Validator:"",
@@ -3076,12 +3077,12 @@ const schema221 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.appeal.rule",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.appeal",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema220},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3094,7 +3095,7 @@ const schema221 = {
 const schema222 = {
   Type:"string",
   Enum:[
-    "trade.override"
+    "trade.appeal.rule"
   ],
   Format:"",
   Validator:"",
@@ -3106,12 +3107,12 @@ const schema223 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:trade.override",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.appeal.rule",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema222},
-    {Name:"args",Optional:false,Schema:schema206},
+    {Name:"args",Optional:false,Schema:schema208},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3124,7 +3125,7 @@ const schema223 = {
 const schema224 = {
   Type:"string",
   Enum:[
-    "roster.reserve"
+    "trade.override"
   ],
   Format:"",
   Validator:"",
@@ -3133,6 +3134,36 @@ const schema224 = {
   Items:null,
 } as const;
 const schema225 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:trade.override",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema224},
+    {Name:"args",Optional:false,Schema:schema208},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema226 = {
+  Type:"string",
+  Enum:[
+    "roster.reserve"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema227 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3148,18 +3179,18 @@ const schema225 = {
   ],
   Items:null,
 } as const;
-const schema226 = {
+const schema228 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"waiver",Optional:true,Schema:schema225}
+    {Name:"waiver",Optional:true,Schema:schema227}
   ],
   Items:null,
 } as const;
-const schema227 = {
+const schema229 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3167,38 +3198,8 @@ const schema227 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema224},
-    {Name:"args",Optional:false,Schema:schema226},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema228 = {
-  Type:"string",
-  Enum:[
-    "roster.cut"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema229 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:roster.cut",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema228},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"command",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3211,7 +3212,7 @@ const schema229 = {
 const schema230 = {
   Type:"string",
   Enum:[
-    "waivers.claim"
+    "roster.cut"
   ],
   Format:"",
   Validator:"",
@@ -3223,12 +3224,12 @@ const schema231 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:waivers.claim",
+  Validator:"RawCommand.Validate/ValidatePreview:roster.cut",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema230},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3241,7 +3242,7 @@ const schema231 = {
 const schema232 = {
   Type:"string",
   Enum:[
-    "waivers.process"
+    "waivers.claim"
   ],
   Format:"",
   Validator:"",
@@ -3253,12 +3254,12 @@ const schema233 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:waivers.process",
+  Validator:"RawCommand.Validate/ValidatePreview:waivers.claim",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema232},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3271,7 +3272,7 @@ const schema233 = {
 const schema234 = {
   Type:"string",
   Enum:[
-    "waivers.order.set"
+    "waivers.process"
   ],
   Format:"",
   Validator:"",
@@ -3283,12 +3284,12 @@ const schema235 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:waivers.order.set",
+  Validator:"RawCommand.Validate/ValidatePreview:waivers.process",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema234},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3301,7 +3302,7 @@ const schema235 = {
 const schema236 = {
   Type:"string",
   Enum:[
-    "waivers.order.auto"
+    "waivers.order.set"
   ],
   Format:"",
   Validator:"",
@@ -3313,12 +3314,12 @@ const schema237 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:waivers.order.auto",
+  Validator:"RawCommand.Validate/ValidatePreview:waivers.order.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema236},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3331,7 +3332,7 @@ const schema237 = {
 const schema238 = {
   Type:"string",
   Enum:[
-    "waivers.award.override"
+    "waivers.order.auto"
   ],
   Format:"",
   Validator:"",
@@ -3343,12 +3344,12 @@ const schema239 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:waivers.award.override",
+  Validator:"RawCommand.Validate/ValidatePreview:waivers.order.auto",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema238},
-    {Name:"args",Optional:false,Schema:schema226},
+    {Name:"args",Optional:false,Schema:schema228},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3361,7 +3362,7 @@ const schema239 = {
 const schema240 = {
   Type:"string",
   Enum:[
-    "bid.place"
+    "waivers.award.override"
   ],
   Format:"",
   Validator:"",
@@ -3370,6 +3371,36 @@ const schema240 = {
   Items:null,
 } as const;
 const schema241 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:waivers.award.override",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema240},
+    {Name:"args",Optional:false,Schema:schema228},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema242 = {
+  Type:"string",
+  Enum:[
+    "bid.place"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema243 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3385,18 +3416,18 @@ const schema241 = {
   ],
   Items:null,
 } as const;
-const schema242 = {
+const schema244 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"bid",Optional:true,Schema:schema241}
+    {Name:"bid",Optional:true,Schema:schema243}
   ],
   Items:null,
 } as const;
-const schema243 = {
+const schema245 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3404,38 +3435,8 @@ const schema243 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema240},
-    {Name:"args",Optional:false,Schema:schema242},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema244 = {
-  Type:"string",
-  Enum:[
-    "bid.raise"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema245 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bid.raise",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema244},
-    {Name:"args",Optional:false,Schema:schema242},
+    {Name:"command",Optional:false,Schema:schema242},
+    {Name:"args",Optional:false,Schema:schema244},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3448,7 +3449,7 @@ const schema245 = {
 const schema246 = {
   Type:"string",
   Enum:[
-    "bid.withdraw"
+    "bid.raise"
   ],
   Format:"",
   Validator:"",
@@ -3460,12 +3461,12 @@ const schema247 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bid.withdraw",
+  Validator:"RawCommand.Validate/ValidatePreview:bid.raise",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema246},
-    {Name:"args",Optional:false,Schema:schema242},
+    {Name:"args",Optional:false,Schema:schema244},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3478,7 +3479,7 @@ const schema247 = {
 const schema248 = {
   Type:"string",
   Enum:[
-    "oline.auction.close"
+    "bid.withdraw"
   ],
   Format:"",
   Validator:"",
@@ -3490,23 +3491,12 @@ const schema249 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:[
-
-  ],
-  Items:null,
-} as const;
-const schema250 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:oline.auction.close",
+  Validator:"RawCommand.Validate/ValidatePreview:bid.withdraw",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema248},
-    {Name:"args",Optional:false,Schema:schema249},
+    {Name:"args",Optional:false,Schema:schema244},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3516,10 +3506,10 @@ const schema250 = {
   ],
   Items:null,
 } as const;
-const schema251 = {
+const schema250 = {
   Type:"string",
   Enum:[
-    "bids.process"
+    "oline.auction.close"
   ],
   Format:"",
   Validator:"",
@@ -3527,16 +3517,27 @@ const schema251 = {
   Fields:null,
   Items:null,
 } as const;
+const schema251 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:[
+
+  ],
+  Items:null,
+} as const;
 const schema252 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bids.process",
+  Validator:"RawCommand.Validate/ValidatePreview:oline.auction.close",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema251},
-    {Name:"args",Optional:false,Schema:schema242},
+    {Name:"command",Optional:false,Schema:schema250},
+    {Name:"args",Optional:false,Schema:schema251},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3549,7 +3550,7 @@ const schema252 = {
 const schema253 = {
   Type:"string",
   Enum:[
-    "bids.award.override"
+    "bids.process"
   ],
   Format:"",
   Validator:"",
@@ -3561,12 +3562,12 @@ const schema254 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:bids.award.override",
+  Validator:"RawCommand.Validate/ValidatePreview:bids.process",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema253},
-    {Name:"args",Optional:false,Schema:schema242},
+    {Name:"args",Optional:false,Schema:schema244},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3579,7 +3580,7 @@ const schema254 = {
 const schema255 = {
   Type:"string",
   Enum:[
-    "commish.seat.caretaker"
+    "bids.award.override"
   ],
   Format:"",
   Validator:"",
@@ -3588,6 +3589,36 @@ const schema255 = {
   Items:null,
 } as const;
 const schema256 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:bids.award.override",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema255},
+    {Name:"args",Optional:false,Schema:schema244},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema257 = {
+  Type:"string",
+  Enum:[
+    "commish.seat.caretaker"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema258 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3616,18 +3647,18 @@ const schema256 = {
   ],
   Items:null,
 } as const;
-const schema257 = {
+const schema259 = {
   Type:"object",
   Enum:null,
   Format:"",
   Validator:"",
   Nullable:false,
   Fields:[
-    {Name:"people",Optional:true,Schema:schema256}
+    {Name:"people",Optional:true,Schema:schema258}
   ],
   Items:null,
 } as const;
-const schema258 = {
+const schema260 = {
   Type:"object",
   Enum:null,
   Format:"",
@@ -3635,38 +3666,8 @@ const schema258 = {
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema255},
-    {Name:"args",Optional:false,Schema:schema257},
-    {Name:"reason",Optional:false,Schema:schema2},
-    {Name:"expected",Optional:false,Schema:schema15},
-    {Name:"request",Optional:false,Schema:schema2},
-    {Name:"effective",Optional:false,Schema:schema2},
-    {Name:"visibility",Optional:false,Schema:schema2},
-    {Name:"gravity",Optional:true,Schema:schema2}
-  ],
-  Items:null,
-} as const;
-const schema259 = {
-  Type:"string",
-  Enum:[
-    "commish.franchise.edit"
-  ],
-  Format:"",
-  Validator:"",
-  Nullable:false,
-  Fields:null,
-  Items:null,
-} as const;
-const schema260 = {
-  Type:"object",
-  Enum:null,
-  Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.franchise.edit",
-  Nullable:false,
-  Fields:[
-    {Name:"league",Optional:false,Schema:schema2},
-    {Name:"command",Optional:false,Schema:schema259},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"command",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3679,7 +3680,7 @@ const schema260 = {
 const schema261 = {
   Type:"string",
   Enum:[
-    "commish.seat.invite"
+    "commish.franchise.edit"
   ],
   Format:"",
   Validator:"",
@@ -3691,12 +3692,12 @@ const schema262 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.franchise.edit",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema261},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3709,7 +3710,7 @@ const schema262 = {
 const schema263 = {
   Type:"string",
   Enum:[
-    "commish.seat.invite.revoke"
+    "commish.seat.invite"
   ],
   Format:"",
   Validator:"",
@@ -3721,12 +3722,12 @@ const schema264 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite.revoke",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema263},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3739,7 +3740,7 @@ const schema264 = {
 const schema265 = {
   Type:"string",
   Enum:[
-    "commish.seat.invite.redeem"
+    "commish.seat.invite.revoke"
   ],
   Format:"",
   Validator:"",
@@ -3751,12 +3752,12 @@ const schema266 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite.redeem",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite.revoke",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema265},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3769,7 +3770,7 @@ const schema266 = {
 const schema267 = {
   Type:"string",
   Enum:[
-    "commish.seat.remove"
+    "commish.seat.invite.redeem"
   ],
   Format:"",
   Validator:"",
@@ -3781,12 +3782,12 @@ const schema268 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.remove",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.invite.redeem",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema267},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3799,7 +3800,7 @@ const schema268 = {
 const schema269 = {
   Type:"string",
   Enum:[
-    "commish.seat.replace"
+    "commish.seat.remove"
   ],
   Format:"",
   Validator:"",
@@ -3811,12 +3812,12 @@ const schema270 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.replace",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.remove",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema269},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3829,7 +3830,7 @@ const schema270 = {
 const schema271 = {
   Type:"string",
   Enum:[
-    "commish.abilities.set"
+    "commish.seat.replace"
   ],
   Format:"",
   Validator:"",
@@ -3841,12 +3842,12 @@ const schema272 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.abilities.set",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.seat.replace",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema271},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3859,7 +3860,7 @@ const schema272 = {
 const schema273 = {
   Type:"string",
   Enum:[
-    "commish.visibility.set"
+    "commish.abilities.set"
   ],
   Format:"",
   Validator:"",
@@ -3871,12 +3872,12 @@ const schema274 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.visibility.set",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.abilities.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema273},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3889,7 +3890,7 @@ const schema274 = {
 const schema275 = {
   Type:"string",
   Enum:[
-    "commish.role.grant"
+    "commish.visibility.set"
   ],
   Format:"",
   Validator:"",
@@ -3901,12 +3902,12 @@ const schema276 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.role.grant",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.visibility.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema275},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3919,7 +3920,7 @@ const schema276 = {
 const schema277 = {
   Type:"string",
   Enum:[
-    "commish.role.revoke"
+    "commish.role.grant"
   ],
   Format:"",
   Validator:"",
@@ -3931,12 +3932,12 @@ const schema278 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.role.revoke",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.role.grant",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema277},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3949,7 +3950,7 @@ const schema278 = {
 const schema279 = {
   Type:"string",
   Enum:[
-    "commish.deputy.order"
+    "commish.role.revoke"
   ],
   Format:"",
   Validator:"",
@@ -3961,12 +3962,12 @@ const schema280 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.deputy.order",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.role.revoke",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema279},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -3979,7 +3980,7 @@ const schema280 = {
 const schema281 = {
   Type:"string",
   Enum:[
-    "commish.succession.stepdown"
+    "commish.deputy.order"
   ],
   Format:"",
   Validator:"",
@@ -3991,12 +3992,12 @@ const schema282 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.stepdown",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.deputy.order",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema281},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4009,7 +4010,7 @@ const schema282 = {
 const schema283 = {
   Type:"string",
   Enum:[
-    "commish.succession.accept"
+    "commish.succession.stepdown"
   ],
   Format:"",
   Validator:"",
@@ -4021,12 +4022,12 @@ const schema284 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.accept",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.stepdown",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema283},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4039,7 +4040,7 @@ const schema284 = {
 const schema285 = {
   Type:"string",
   Enum:[
-    "commish.succession.decline"
+    "commish.succession.accept"
   ],
   Format:"",
   Validator:"",
@@ -4051,12 +4052,12 @@ const schema286 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.decline",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.accept",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema285},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4069,7 +4070,7 @@ const schema286 = {
 const schema287 = {
   Type:"string",
   Enum:[
-    "commish.succession.inactivity.set"
+    "commish.succession.decline"
   ],
   Format:"",
   Validator:"",
@@ -4081,12 +4082,12 @@ const schema288 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.inactivity.set",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.decline",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema287},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4099,7 +4100,7 @@ const schema288 = {
 const schema289 = {
   Type:"string",
   Enum:[
-    "commish.succession.activity"
+    "commish.succession.inactivity.set"
   ],
   Format:"",
   Validator:"",
@@ -4111,12 +4112,12 @@ const schema290 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.activity",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.inactivity.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema289},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4129,7 +4130,7 @@ const schema290 = {
 const schema291 = {
   Type:"string",
   Enum:[
-    "commish.succession.takeover"
+    "commish.succession.activity"
   ],
   Format:"",
   Validator:"",
@@ -4141,12 +4142,12 @@ const schema292 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.takeover",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.activity",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema291},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4159,7 +4160,7 @@ const schema292 = {
 const schema293 = {
   Type:"string",
   Enum:[
-    "commish.succession.voteout.open"
+    "commish.succession.takeover"
   ],
   Format:"",
   Validator:"",
@@ -4171,12 +4172,12 @@ const schema294 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.voteout.open",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.takeover",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema293},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4189,7 +4190,7 @@ const schema294 = {
 const schema295 = {
   Type:"string",
   Enum:[
-    "commish.succession.election.open"
+    "commish.succession.voteout.open"
   ],
   Format:"",
   Validator:"",
@@ -4201,12 +4202,12 @@ const schema296 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.election.open",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.voteout.open",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema295},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4219,7 +4220,7 @@ const schema296 = {
 const schema297 = {
   Type:"string",
   Enum:[
-    "commish.succession.periods.set"
+    "commish.succession.election.open"
   ],
   Format:"",
   Validator:"",
@@ -4231,12 +4232,12 @@ const schema298 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.periods.set",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.election.open",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema297},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4249,7 +4250,7 @@ const schema298 = {
 const schema299 = {
   Type:"string",
   Enum:[
-    "commish.vote.cast"
+    "commish.succession.periods.set"
   ],
   Format:"",
   Validator:"",
@@ -4261,12 +4262,12 @@ const schema300 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.cast",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.succession.periods.set",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema299},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4279,7 +4280,7 @@ const schema300 = {
 const schema301 = {
   Type:"string",
   Enum:[
-    "commish.vote.close"
+    "commish.vote.cast"
   ],
   Format:"",
   Validator:"",
@@ -4291,12 +4292,12 @@ const schema302 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.close",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.cast",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema301},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4309,7 +4310,7 @@ const schema302 = {
 const schema303 = {
   Type:"string",
   Enum:[
-    "commish.vote.tiebreak"
+    "commish.vote.close"
   ],
   Format:"",
   Validator:"",
@@ -4321,12 +4322,42 @@ const schema304 = {
   Type:"object",
   Enum:null,
   Format:"",
-  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.tiebreak",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.close",
   Nullable:false,
   Fields:[
     {Name:"league",Optional:false,Schema:schema2},
     {Name:"command",Optional:false,Schema:schema303},
-    {Name:"args",Optional:false,Schema:schema257},
+    {Name:"args",Optional:false,Schema:schema259},
+    {Name:"reason",Optional:false,Schema:schema2},
+    {Name:"expected",Optional:false,Schema:schema15},
+    {Name:"request",Optional:false,Schema:schema2},
+    {Name:"effective",Optional:false,Schema:schema2},
+    {Name:"visibility",Optional:false,Schema:schema2},
+    {Name:"gravity",Optional:true,Schema:schema2}
+  ],
+  Items:null,
+} as const;
+const schema305 = {
+  Type:"string",
+  Enum:[
+    "commish.vote.tiebreak"
+  ],
+  Format:"",
+  Validator:"",
+  Nullable:false,
+  Fields:null,
+  Items:null,
+} as const;
+const schema306 = {
+  Type:"object",
+  Enum:null,
+  Format:"",
+  Validator:"RawCommand.Validate/ValidatePreview:commish.vote.tiebreak",
+  Nullable:false,
+  Fields:[
+    {Name:"league",Optional:false,Schema:schema2},
+    {Name:"command",Optional:false,Schema:schema305},
+    {Name:"args",Optional:false,Schema:schema259},
     {Name:"reason",Optional:false,Schema:schema2},
     {Name:"expected",Optional:false,Schema:schema15},
     {Name:"request",Optional:false,Schema:schema2},
@@ -4831,6 +4862,44 @@ export const nativeCommands = {
   },
   phrase: "check lineup",
 },
+"lineupdelta.read": {
+  definition: {
+    "ID": "lineupdelta.read",
+    "Method": "TargetNativeLineupDelta",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger,stat-evidence,player-facts",
+    "Safeguards": "none",
+    "Arguments": schema32
+  },
+  phrase: "read lineupdelta",
+},
+"projections.read": {
+  definition: {
+    "ID": "projections.read",
+    "Method": "TargetNativeProjections",
+    "Version": "1",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Modes": [
+      "read"
+    ],
+    "Undo": "none",
+    "Facts": "ledger,stat-evidence",
+    "Safeguards": "none",
+    "Arguments": schema33
+  },
+  phrase: "read projections",
+},
 "score.player.read": {
   definition: {
     "ID": "score.player.read",
@@ -4846,7 +4915,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "none",
-    "Arguments": schema32
+    "Arguments": schema34
   },
   phrase: "read score player",
 },
@@ -4865,7 +4934,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema33
+    "Arguments": schema35
   },
   phrase: "check native league reserve",
 },
@@ -4884,7 +4953,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "none",
-    "Arguments": schema34
+    "Arguments": schema36
   },
   phrase: "read results",
 },
@@ -4903,7 +4972,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema35
+    "Arguments": schema37
   },
   phrase: "check native league roster",
 },
@@ -4922,7 +4991,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "none",
-    "Arguments": schema36
+    "Arguments": schema38
   },
   phrase: "read standings",
 },
@@ -4941,7 +5010,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema37
+    "Arguments": schema39
   },
   phrase: "read moves",
 },
@@ -4960,7 +5029,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "none",
-    "Arguments": schema38
+    "Arguments": schema40
   },
   phrase: "read trades",
 },
@@ -4979,7 +5048,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "none",
-    "Arguments": schema39
+    "Arguments": schema41
   },
   phrase: "read waivers",
 },
@@ -4998,7 +5067,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,schedule",
     "Safeguards": "none",
-    "Arguments": schema40
+    "Arguments": schema42
   },
   phrase: "read week",
 },
@@ -5017,7 +5086,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "none",
-    "Arguments": schema41
+    "Arguments": schema43
   },
   phrase: "read statistics queue",
 },
@@ -5037,7 +5106,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema44
+    "Arguments": schema46
   },
   phrase: "create league league",
 },
@@ -5057,7 +5126,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema47
+    "Arguments": schema49
   },
   phrase: "revert league correction",
 },
@@ -5077,7 +5146,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema51
+    "Arguments": schema53
   },
   phrase: "set league rules",
 },
@@ -5097,7 +5166,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema56
+    "Arguments": schema58
   },
   phrase: "set contract action",
 },
@@ -5117,7 +5186,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "held-mirror",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema57
+    "Arguments": schema59
   },
   phrase: "seed held league league",
 },
@@ -5137,7 +5206,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema61
+    "Arguments": schema63
   },
   phrase: "rollover season",
 },
@@ -5157,7 +5226,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema65
+    "Arguments": schema67
   },
   phrase: "exception league calendar",
 },
@@ -5177,7 +5246,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema71
+    "Arguments": schema73
   },
   phrase: "roster correct",
 },
@@ -5197,7 +5266,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema73
+    "Arguments": schema75
   },
   phrase: "transaction correct",
 },
@@ -5217,7 +5286,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema75
+    "Arguments": schema77
   },
   phrase: "provenance correct",
 },
@@ -5237,7 +5306,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema77
+    "Arguments": schema79
   },
   phrase: "pick correct",
 },
@@ -5257,7 +5326,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema79
+    "Arguments": schema81
   },
   phrase: "exception rule",
 },
@@ -5277,7 +5346,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema86
+    "Arguments": schema88
   },
   phrase: "automatically draft order",
 },
@@ -5297,7 +5366,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema88
+    "Arguments": schema90
   },
   phrase: "set draft order",
 },
@@ -5317,7 +5386,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema90
+    "Arguments": schema92
   },
   phrase: "pattern draft order",
 },
@@ -5337,7 +5406,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema92
+    "Arguments": schema94
   },
   phrase: "tiebreak draft order",
 },
@@ -5357,7 +5426,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema94
+    "Arguments": schema96
   },
   phrase: "start draft",
 },
@@ -5376,7 +5445,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "on-clock owner selection; server fixes slot and contract",
-    "Arguments": schema95
+    "Arguments": schema97
   },
   phrase: "pick draft",
 },
@@ -5396,7 +5465,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema97
+    "Arguments": schema99
   },
   phrase: "skip draft",
 },
@@ -5416,7 +5485,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema99
+    "Arguments": schema101
   },
   phrase: "assign draft",
 },
@@ -5436,7 +5505,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema101
+    "Arguments": schema103
   },
   phrase: "insert draft",
 },
@@ -5456,7 +5525,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema103
+    "Arguments": schema105
   },
   phrase: "change draft",
 },
@@ -5476,7 +5545,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema105
+    "Arguments": schema107
   },
   phrase: "timer draft",
 },
@@ -5496,7 +5565,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema107
+    "Arguments": schema109
   },
   phrase: "revert draft",
 },
@@ -5516,7 +5585,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema109
+    "Arguments": schema111
   },
   phrase: "archive draft",
 },
@@ -5536,7 +5605,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema111
+    "Arguments": schema113
   },
   phrase: "open draft startup",
 },
@@ -5556,7 +5625,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema116
+    "Arguments": schema118
   },
   phrase: "set calendar window",
 },
@@ -5576,7 +5645,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema118
+    "Arguments": schema120
   },
   phrase: "move calendar window",
 },
@@ -5596,7 +5665,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema120
+    "Arguments": schema122
   },
   phrase: "remove calendar window",
 },
@@ -5616,7 +5685,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema125
+    "Arguments": schema127
   },
   phrase: "edit league contract",
 },
@@ -5636,7 +5705,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema127
+    "Arguments": schema129
   },
   phrase: "adjust league salary cap",
 },
@@ -5656,7 +5725,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema129
+    "Arguments": schema131
   },
   phrase: "relief league salary cap",
 },
@@ -5676,7 +5745,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema131
+    "Arguments": schema133
   },
   phrase: "exception league reserve",
 },
@@ -5696,7 +5765,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema137
+    "Arguments": schema139
   },
   phrase: "generate schedule",
 },
@@ -5716,7 +5785,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema139
+    "Arguments": schema141
   },
   phrase: "edit schedule",
 },
@@ -5736,7 +5805,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema141
+    "Arguments": schema143
   },
   phrase: "publish schedule",
 },
@@ -5756,7 +5825,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema147
+    "Arguments": schema149
   },
   phrase: "build bracket",
 },
@@ -5776,7 +5845,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema149
+    "Arguments": schema151
   },
   phrase: "edit bracket",
 },
@@ -5796,7 +5865,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema151
+    "Arguments": schema153
   },
   phrase: "seed bracket",
 },
@@ -5816,7 +5885,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema153
+    "Arguments": schema155
   },
   phrase: "save bracket preset",
 },
@@ -5836,7 +5905,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema155
+    "Arguments": schema157
   },
   phrase: "advance bracket",
 },
@@ -5856,7 +5925,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema159
+    "Arguments": schema161
   },
   phrase: "adjust league standings record",
 },
@@ -5876,7 +5945,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema161
+    "Arguments": schema163
   },
   phrase: "override league standings",
 },
@@ -5896,7 +5965,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema163
+    "Arguments": schema165
   },
   phrase: "clear league standings override",
 },
@@ -5916,7 +5985,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema167
+    "Arguments": schema169
   },
   phrase: "approve league statistics queue",
 },
@@ -5936,7 +6005,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema169
+    "Arguments": schema171
   },
   phrase: "reject league statistics queue",
 },
@@ -5956,7 +6025,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema171
+    "Arguments": schema173
   },
   phrase: "correct league statistics",
 },
@@ -5976,7 +6045,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema175
+    "Arguments": schema177
   },
   phrase: "position league player",
 },
@@ -5996,7 +6065,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema177
+    "Arguments": schema179
   },
   phrase: "clear league player position",
 },
@@ -6016,7 +6085,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema179
+    "Arguments": schema181
   },
   phrase: "player league score",
 },
@@ -6036,7 +6105,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema181
+    "Arguments": schema183
   },
   phrase: "franchise league score",
 },
@@ -6056,7 +6125,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema185
+    "Arguments": schema187
   },
   phrase: "set league lineup",
 },
@@ -6076,7 +6145,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts,schedule,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema187
+    "Arguments": schema189
   },
   phrase: "correct league lineup",
 },
@@ -6096,7 +6165,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,stat-evidence",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema191
+    "Arguments": schema193
   },
   phrase: "set title",
 },
@@ -6116,7 +6185,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema195
+    "Arguments": schema197
   },
   phrase: "link history",
 },
@@ -6136,7 +6205,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema199
+    "Arguments": schema201
   },
   phrase: "publish league notice",
 },
@@ -6156,7 +6225,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema201
+    "Arguments": schema203
   },
   phrase: "post league news",
 },
@@ -6176,7 +6245,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema207
+    "Arguments": schema209
   },
   phrase: "offer trade",
 },
@@ -6196,7 +6265,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema209
+    "Arguments": schema211
   },
   phrase: "accept trade",
 },
@@ -6216,7 +6285,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema211
+    "Arguments": schema213
   },
   phrase: "decline trade",
 },
@@ -6236,7 +6305,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema213
+    "Arguments": schema215
   },
   phrase: "withdraw trade",
 },
@@ -6256,7 +6325,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema215
+    "Arguments": schema217
   },
   phrase: "review trade",
 },
@@ -6276,7 +6345,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema217
+    "Arguments": schema219
   },
   phrase: "recuse trade",
 },
@@ -6296,7 +6365,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema219
+    "Arguments": schema221
   },
   phrase: "appeal trade",
 },
@@ -6316,7 +6385,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema221
+    "Arguments": schema223
   },
   phrase: "rule trade appeal",
 },
@@ -6336,7 +6405,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema223
+    "Arguments": schema225
   },
   phrase: "override trade",
 },
@@ -6356,7 +6425,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema227
+    "Arguments": schema229
   },
   phrase: "reserve roster",
 },
@@ -6376,7 +6445,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema229
+    "Arguments": schema231
   },
   phrase: "cut roster",
 },
@@ -6396,7 +6465,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema231
+    "Arguments": schema233
   },
   phrase: "claim waivers",
 },
@@ -6416,7 +6485,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema233
+    "Arguments": schema235
   },
   phrase: "process waivers",
 },
@@ -6436,7 +6505,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema235
+    "Arguments": schema237
   },
   phrase: "set waivers order",
 },
@@ -6456,7 +6525,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema237
+    "Arguments": schema239
   },
   phrase: "automatically waivers order",
 },
@@ -6476,7 +6545,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema239
+    "Arguments": schema241
   },
   phrase: "override waivers award",
 },
@@ -6496,7 +6565,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema243
+    "Arguments": schema245
   },
   phrase: "place bid",
 },
@@ -6516,7 +6585,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema245
+    "Arguments": schema247
   },
   phrase: "raise bid",
 },
@@ -6536,7 +6605,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema247
+    "Arguments": schema249
   },
   phrase: "withdraw bid",
 },
@@ -6556,7 +6625,7 @@ export const nativeCommands = {
     "Undo": "none",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema250
+    "Arguments": schema252
   },
   phrase: "close oline auction",
 },
@@ -6576,7 +6645,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema252
+    "Arguments": schema254
   },
   phrase: "process bids",
 },
@@ -6596,7 +6665,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger,player-facts",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema254
+    "Arguments": schema256
   },
   phrase: "override bids award",
 },
@@ -6616,7 +6685,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema258
+    "Arguments": schema260
   },
   phrase: "caretaker league seat",
 },
@@ -6636,7 +6705,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema260
+    "Arguments": schema262
   },
   phrase: "edit league franchise",
 },
@@ -6656,7 +6725,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema262
+    "Arguments": schema264
   },
   phrase: "invite league seat",
 },
@@ -6676,7 +6745,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema264
+    "Arguments": schema266
   },
   phrase: "revoke league seat invite",
 },
@@ -6696,7 +6765,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema266
+    "Arguments": schema268
   },
   phrase: "redeem league seat invite",
 },
@@ -6716,7 +6785,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema268
+    "Arguments": schema270
   },
   phrase: "remove league seat",
 },
@@ -6736,7 +6805,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema270
+    "Arguments": schema272
   },
   phrase: "replace league seat",
 },
@@ -6756,7 +6825,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema272
+    "Arguments": schema274
   },
   phrase: "set league abilities",
 },
@@ -6776,7 +6845,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema274
+    "Arguments": schema276
   },
   phrase: "set league visibility",
 },
@@ -6796,7 +6865,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema276
+    "Arguments": schema278
   },
   phrase: "grant league role",
 },
@@ -6816,7 +6885,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema278
+    "Arguments": schema280
   },
   phrase: "revoke league role",
 },
@@ -6836,7 +6905,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema280
+    "Arguments": schema282
   },
   phrase: "order league deputy",
 },
@@ -6856,7 +6925,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema282
+    "Arguments": schema284
   },
   phrase: "stepdown league succession",
 },
@@ -6876,7 +6945,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema284
+    "Arguments": schema286
   },
   phrase: "accept league succession",
 },
@@ -6896,7 +6965,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema286
+    "Arguments": schema288
   },
   phrase: "decline league succession",
 },
@@ -6916,7 +6985,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema288
+    "Arguments": schema290
   },
   phrase: "set league succession inactivity",
 },
@@ -6936,7 +7005,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema290
+    "Arguments": schema292
   },
   phrase: "activity league succession",
 },
@@ -6956,7 +7025,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema292
+    "Arguments": schema294
   },
   phrase: "takeover league succession",
 },
@@ -6976,7 +7045,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema294
+    "Arguments": schema296
   },
   phrase: "open league succession voteout",
 },
@@ -6996,7 +7065,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema296
+    "Arguments": schema298
   },
   phrase: "open league succession election",
 },
@@ -7016,7 +7085,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema298
+    "Arguments": schema300
   },
   phrase: "set league succession periods",
 },
@@ -7036,7 +7105,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema300
+    "Arguments": schema302
   },
   phrase: "cast league vote",
 },
@@ -7056,7 +7125,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema302
+    "Arguments": schema304
   },
   phrase: "close league vote",
 },
@@ -7076,7 +7145,7 @@ export const nativeCommands = {
     "Undo": "checked-reversal",
     "Facts": "ledger",
     "Safeguards": "RawCommand.EffectiveDefinition+MissingReason",
-    "Arguments": schema304
+    "Arguments": schema306
   },
   phrase: "tiebreak league vote",
 },

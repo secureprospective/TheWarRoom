@@ -7,6 +7,8 @@ import { FranchisePicker } from './FranchisePicker';
 import { WarRoomHeader, WarRoomEmpty } from './WarRoomHeader';
 import { readWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
 import { unavailable } from './hqModel';
+import { WarRoomTrade } from './WarRoomTrade';
+import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTrade';
 import './warroom.css';
 export type WarRoomTab = 'desk' | 'market' | 'draft' | 'plans';
 export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; native?: WarRoomNative }) {
@@ -24,7 +26,10 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const [tab, setTab] = useState<WarRoomTab>('desk');
   const [drawer, setDrawer] = useState<'pocket' | 'offers'>();
   const week = native ? 0 : clock?.value.week ?? 0;
+  const [deal, changeDeal] = useState<WarRoomDeal>({ partner: '', give: [], get: [] });
+  const [selected, select] = useState<WarRoomAsset>();
   const context = { snapshot, mine, week, native };
+  const catalog = useWarRoomRead(JSON.stringify([native?.league, mine]), () => readWarRoomCatalog(context));
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
   const deadlines = native ? [] : clock?.provenance.freshness.state === 'fail' ? [] :
@@ -60,7 +65,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           trade.build with=… send=… get=…</div></div>
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={header.reading} />
-      <section className="desk ws on"><WarRoomEmpty /></section>
+      <WarRoomTrade context={context} catalog={catalog.reading} deal={deal} change={changeDeal} select={select} />
       <div className="cal" aria-label="Calendar">{deadlines.length ? deadlines.map(d => <div
         className="ev" key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
         <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
@@ -69,11 +74,11 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
         key={d} className="pull" aria-expanded={drawer === d} onClick={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</button>)}
       </div><span className="msg" title={header.error ?? header.reading?.errors.join(' · ')}>{unavailable}
-      </span><button className="btn sp" disabled>SAVE TO POCKET</button><button className="btn" disabled>
+      </span><button className="btn sp" disabled>SAVE TO POCKET</button><button className="btn" onClick={() => changeDeal({ ...deal, give: [], get: [] })}>
         CLEAR</button><button className="btn solid g2" disabled>SEND</button></div>
       {drawer && <div className="bdrawer open"><div className="bd-head"><h2>{drawer === 'pocket' ?
         'Pocket' : 'Negotiations'}</h2><button className="x" onClick={() => setDrawer(undefined)}>ESC
         </button></div><div className="bd-body pocket"><WarRoomEmpty /></div></div>}
-    </main><aside className="insp" aria-label="Inspector"><WarRoomEmpty /></aside>
+    </main><aside className="insp" aria-label="Inspector"><div className="ihead"><div className="nm">{selected?.name ?? unavailable}</div></div><WarRoomEmpty /></aside>
   </div></div>;
 }
