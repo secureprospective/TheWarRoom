@@ -95,6 +95,47 @@ func TestNativeCapRunway(t *testing.T) {
 	}
 }
 
+func TestNativeCapRunwayHorizonFollowsLeagueSettings(t *testing.T) {
+	t.Parallel()
+	const million = domain.Money(100_000_000)
+	runway := func(t *testing.T, maxYears int, players []NativePlayer) []NativeCapYear {
+		t.Helper()
+		rules := leaguerules.LegacyNFL()
+		rules.Season = 2026
+		rules.Cap.Amount.Value = 90 * leaguerules.Money(million)
+		rules.Contracts.MaximumYears = leaguerules.Known[int](maxYears)
+		seed := &RawNativeSnapshot{Season: 2026, Players: players}
+		got, err := NativeCapRunway(NativeBase{Assets: NativeAssets{Snapshot: seed}, Rules: rules}, "f01")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return got
+	}
+	for _, tt := range []struct {
+		name      string
+		maxYears  int
+		players   []NativePlayer
+		wantYears int
+		wantLast  int
+	}{
+		{"three-year setting", 3, nil, 3, 2028},
+		{"five-year setting", 5, nil, 5, 2030},
+		{"contract beyond the setting", 3, []NativePlayer{
+			{Franchise: "f01", Salary: million, Status: domain.RosterActive, ExpirationYear: 2031}}, 6, 2031},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			got := runway(t, tt.maxYears, tt.players)
+			if len(got) != tt.wantYears || got[len(got)-1].Season != tt.wantLast {
+				t.Fatalf("runway = %d years ending %d, want %d ending %d",
+					len(got), got[len(got)-1].Season, tt.wantYears, tt.wantLast)
+			}
+		})
+	}
+	if len(runway(t, 3, nil)) == len(runway(t, 5, nil)) {
+		t.Fatal("changing maximumYears did not change the runway")
+	}
+}
+
 func TestNativeCapRunwayUsesExistingSharesAndPerEntryRounding(t *testing.T) {
 	t.Parallel()
 	rules := leaguerules.LegacyNFL()

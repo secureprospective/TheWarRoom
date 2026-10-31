@@ -19,17 +19,19 @@ type NativeCapYear struct {
 	RoomCents      *domain.Money `json:"roomCents"`
 }
 
-// NativeCapRunway projects held flat contracts and dated charges over the HQ's four seasons using
-// today's cap rules, without assuming renewals, future moves or cap growth. Standing charges persist;
-// a contract without an end year stays unchanged, as it does at rollover.
+// NativeCapRunway projects held flat contracts and dated charges over the league's contract horizon
+// using today's cap rules, without assuming renewals, future moves or cap growth. The horizon is the
+// longer of the league's maximum contract years and this franchise's last player expiration. Standing
+// charges persist; a contract without an end year stays unchanged, as it does at rollover.
 func NativeCapRunway(base NativeBase, franchise string) ([]NativeCapYear, error) {
 	seed, rules := base.Assets.Snapshot, base.Rules
 	cuts := map[string]bool{}
 	for _, record := range base.Records {
 		cuts[record.Receipt.Entry] = record.Command.Command == RosterCut
 	}
-	out := make([]NativeCapYear, 0, 4)
-	for season := rules.Season; season < rules.Season+4; season++ {
+	horizon := runwayHorizon(seed.Players, franchise, rules.Season, rules.Contracts.MaximumYears.Value)
+	out := make([]NativeCapYear, 0, horizon)
+	for season := rules.Season; season < rules.Season+horizon; season++ {
 		players := []nativecheck.CapPlayer{}
 		charges, liveCharges := []domain.Money{}, []domain.Money{}
 		for _, p := range seed.Players {
@@ -66,4 +68,14 @@ func NativeCapRunway(base NativeBase, franchise string) ([]NativeCapYear, error)
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func runwayHorizon(players []NativePlayer, franchise string, firstSeason, maxYears int) int {
+	horizon := max(maxYears, 1)
+	for _, p := range players {
+		if p.Franchise == franchise {
+			horizon = max(horizon, p.ExpirationYear-firstSeason+1)
+		}
+	}
+	return horizon
 }
