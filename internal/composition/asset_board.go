@@ -2,14 +2,20 @@ package composition
 
 import (
 	"context"
+	"errors"
 	"log"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
 	marketapp "github.com/secureprospective/TheWarRoom/internal/app/market"
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
 	researchapp "github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
+	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	recordstore "github.com/secureprospective/TheWarRoom/internal/store/playerrecord"
 )
 
@@ -119,5 +125,24 @@ func (h marketHost) RefreshMarket(force bool) error {
 func (h marketHost) AgeArcSource() marketapp.AgeArcSource {
 	src := h.app.nativeValueSource()
 	return marketapp.AgeArcSource{Book: recordstore.New(h.app.core.HistPools, h.app.core.History).Book,
-		LatestRun: src.LatestRun, Scores: src.Scores, Params: src.Params, Season: h.app.core.Season}
+		LatestRun: src.LatestRun, Scores: src.Scores, Params: src.Params, RunParams: h.ageArcRunParams,
+		Games: h.app.nflGamesPerSeason, Season: h.app.core.Season}
+}
+
+// nflGamesPerSeason reads the season's games from the held NFL schedule, with the league's last
+// scoring week as the explicit fallback when the whole schedule is not held.
+func (a *App) nflGamesPerSeason(_ context.Context, _ int) (int, error) {
+	a.core.SeasonMu.Lock()
+	held := slices.Collect(maps.Values(a.now.schedules))
+	fallback := a.core.Rulebook.ActiveConfig().EndWeek
+	a.core.SeasonMu.Unlock()
+	games, err := nowapp.GamesPerSeason(slices.Values(held),
+		func(f heldSeasonFeed[[]nflschedule.RawWeek]) []nflschedule.RawWeek { return f.Value }, fallback)
+	return games, errors.Join(err)
+}
+
+// ageArcRunParams reads the parameter set a model run scored with, in the form the arc reads.
+func (h marketHost) ageArcRunParams(ctx context.Context, paramSetID string) (params.Set, bool, error) {
+	set, ok, err := marketapp.StoredParams(ctx, h.app.core.History.RunParams, paramSetID)
+	return set, ok, errors.Join(err)
 }
