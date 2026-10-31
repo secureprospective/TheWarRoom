@@ -138,11 +138,28 @@ func (out *NativeMoves) appendWaitingTrades(trades NativeTrades) {
 		if !slices.Contains(t.Parties, out.Franchise) {
 			continue
 		}
-		if t.Status == "review" || t.Status == "appealed" ||
-			(t.Status == "offered" && slices.Contains(t.Accepted, out.Franchise)) {
-			m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, "handed_off", t.Words, t.OfferedAt)
-			m.Spec.Deadline = &t.ExpiresAt
-			out.Moves = append(out.Moves, m)
+		state := ""
+		switch t.Status {
+		case "offered":
+			state = "handed_off"
+			if !slices.Contains(t.Accepted, out.Franchise) {
+				state = "needs_you"
+			}
+		case "review", "appealed":
+			state = "handed_off"
 		}
+		if state == "" {
+			continue
+		}
+		m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, state, t.Words, t.OfferedAt)
+		m.Spec.Deadline = &t.ExpiresAt
+		for _, asset := range t.Assets {
+			if asset.Player != "" {
+				m.Spec.Subject.Players = append(m.Spec.Subject.Players, asset.Player)
+			} else {
+				m.Spec.Subject.Picks = append(m.Spec.Subject.Picks, fmt.Sprintf("%d round %d · %s", asset.Season, asset.Round, asset.Original))
+			}
+		}
+		out.Moves = append(out.Moves, m)
 	}
 }
