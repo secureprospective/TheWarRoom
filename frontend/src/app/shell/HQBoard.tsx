@@ -4,6 +4,7 @@ import type { LineupReading, Snapshot } from '../data/contract';
 import type { HQSettings } from './hqModel';
 import { unavailable } from './hqModel';
 import { formPoints, totalProjection } from './hqPlayerData';
+import type { Injury } from './hqPlayerData';
 import type { Now } from '../now/contract';
 import type { RosterFacts } from './hqRosterFacts';
 
@@ -11,7 +12,7 @@ export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: {
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
   settings: HQSettings; values: Map<string, number>; facts?: RosterFacts;
-  byes?: Map<string, number>; now?: Now; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
+  byes?: Map<string, number>; injuries?: Injury[]; now?: Now; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
   place?: (id: string, out?: string) => void; bench?: (id: string) => void };
 const defensive = (position?: string) => ['DT', 'DE', 'LB', 'CB', 'S', 'DL', 'DB'].includes(position ?? '');
 export type HQSlot = { code: string; side: 'off' | 'def'; id?: string };
@@ -50,7 +51,7 @@ export function FormChart({ id, facts, projection }: { id: string; facts?: Roste
     <b>avg {(points.reduce((n, p) => n + p.points, 0) / points.length).toFixed(1)}</b>
   </span>;
 }
-export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, now,
+export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, injuries, now,
   select, place, bench }: HQBoardProps) {
   const [filter, setFilter] = useState('ALL');
   const [picked, setPicked] = useState<string>();
@@ -137,7 +138,8 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
         active={filter === pos} onAction={() => setFilter(pos)}>{pos}</HQAct>)}</div>
       <div className="blist">{benchPlayers.filter(p => filter === 'ALL' || p.position === filter).map(p =>
         row(p.id))}
-        {!benchPlayers.length && <p className="empty">{unavailable}</p>}</div><div className="inl" />
+        {!benchPlayers.length && <p className="empty">{unavailable}</p>}</div><InlineReserves snapshot={snapshot} mine={mine} settings={settings}
+          injuries={injuries} select={select} />
     </div>
     {drag && <span className="pg ghost" style={{ transform: `translate(${drag.x}px,${drag.y}px)`
       }}>{directory.get(drag.id)?.position ?? '—'}</span>}
@@ -179,4 +181,29 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
         {delta === undefined ? '—' : `${delta > 0 ? '+' : ''}${delta.toFixed(1)}`}</span>
     </div>) : <p className="empty">{unavailable}</p>}</div>
   </div>;
+}
+
+export function InlineReserves({ snapshot, mine, settings, injuries, select }: {
+  snapshot: Snapshot; mine: string; settings: HQSettings; injuries?: Injury[];
+  select: (id: string) => void;
+}) {
+  const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
+  return <div className="inl">{(['taxi', 'ir'] as const).map(kind => {
+    const players = roster.filter(p => p.rosterStatus === (kind === 'ir' ? 'IR' : 'TAXI_SQUAD'));
+    return <div key={kind}><div className="sec">{kind === 'ir' ? 'INJURED RESERVE' : 'TAXI SQUAD'}
+      {' · '}{players.length} of {settings[kind] ?? unavailable}<span>also in the pull tab</span></div>
+      {players.map(p => {
+        const player = snapshot.players.value.find(v => v.id === p.id);
+        const injury = injuries?.find(i => i.id === p.id);
+        const back = injury?.returnWeek && injury.returnSeason === snapshot.league.value.season
+          ? `Wk ${injury.returnWeek}` : injury?.returnSeason &&
+            injury.returnSeason > snapshot.league.value.season ? 'Season' : unavailable;
+        return <HQAct key={p.id} className="slot" onAction={() => select(p.id)}>
+          <span className="pg">{player?.position ?? '—'}</span>
+          <span className="nm">{player?.name ?? p.id}</span>
+          <span className="elig" title={injury?.returnReason}>{kind === 'ir' ? back :
+            player?.isRookie ? 'yr 1' : unavailable}</span><span />
+        </HQAct>;
+      })}</div>;
+  })}</div>;
 }

@@ -113,7 +113,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
             undefined : editor.reading}
             settings={rules} values={projections(snapshot, market.value, editor.reading?.week)}
               facts={facts.reading}
-            byes={byeWeeks(snapshot, reports.reading)} now={now.value} changed={editor.changes}
+            injuries={injuries.reading} byes={byeWeeks(snapshot, reports.reading)} now={now.value} changed={editor.changes}
               canEdit={!editor.reason && !teamReason}
             select={id => { void commands.dispatch('inspector.open', { subject: { kind: 'player', id,
               franchiseId: mine } }); }}

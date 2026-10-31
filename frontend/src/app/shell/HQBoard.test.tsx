@@ -76,3 +76,21 @@ it('renders real opponent projection only when the existing preview reports comp
   preview.summary[0].cells[1] = '1';
   expect(render()).not.toContain('164.9'); expect(render()).toContain(unavailable);
 });
+
+it('renders inline taxi and IR from roster reads and reacts to capacity changes', async () => {
+  const { InlineReserves } = await import('./HQBoard');
+  const snapshot = heldSnapshot();
+  const roster = snapshot.rosters.value.find(r => r.franchiseId === '0025')!;
+  roster.players = roster.players.slice(0, 2);
+  roster.players[0].rosterStatus = 'TAXI_SQUAD';
+  roster.players[1].rosterStatus = 'IR';
+  snapshot.players.value.find(p => p.id === roster.players[0].id)!.isRookie = true;
+  const render = (taxi: number) => renderToStaticMarkup(<InlineReserves snapshot={snapshot} mine="0025"
+    settings={{ positions: [], taxi, ir: 12 }} select={() => {}} injuries={[{
+      id: roster.players[1].id, status: 'IR', details: 'Ankle', returnSeason: snapshot.league.value.season,
+      returnWeek: 11, returnReason: 'Reported return',
+    }]} />);
+  expect(render(8)).toContain('TAXI SQUAD'); expect(render(8)).toContain('1 of 8');
+  expect(render(8)).toContain('yr 1'); expect(render(8)).toContain('Wk 11');
+  expect(render(9)).toContain('1 of 9'); expect(render(9)).not.toContain('1 of 8');
+});
