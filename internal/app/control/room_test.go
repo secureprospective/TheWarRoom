@@ -163,3 +163,15 @@ func TestControlRoomWire(t *testing.T) {
 }
 
 func repoPath(path string) string { return filepath.Join("..", "..", "..", path) }
+
+func TestHQLeagueNameFollowsHeldLeagueExport(t *testing.T) {
+	t.Parallel()
+	r := realSettingsReport(t)
+	if len(r.Summary) != 1 || r.Summary[0].Cells[1] != "Legacy NFL" {
+		t.Fatal(r.Summary)
+	}
+	cfg := league.RawConfig{Name: "Renamed league", RosterSize: "80"}
+	if got := LeagueSettingsReport(cfg, nil, "").Summary[0].Cells[1]; got != cfg.Name {
+		t.Fatal(got)
+	}
+}

@@ -90,7 +90,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
   const tab = s.workspace.hq;
   const navigate = (workspace: 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves') => { void
     commands.dispatch('nav.open', { node: 'hq', workspace }); };
-  return <HQShell root={root} liveCount={live?.games.filter(g => g.status === 'in').length} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
+  return <HQShell root={root} leagueName={settings.value?.summary.find(r => r.cells[0] === 'League name')?.cells[1]} liveCount={live?.games.filter(g => g.status === 'in').length} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
     navigateNode={node => { void commands.dispatch('nav.open', { node }); }}
     queue={<HQQueue available={movesReady && plans.reading?.errors.length === 0}
       moves={mergeHQMoves(moves.map(r => ({ id: r.correlationId, state: r.state,

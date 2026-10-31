@@ -32,6 +32,9 @@ func LeagueSettingsReport(cfg league.RawConfig, names map[string]string, diction
 		return r
 	}
 	r.Note = dictionaryNote
+	if cfg.Name != "" {
+		r.Summary = append(r.Summary, report.Row{Cells: []string{"League name", cfg.Name}})
+	}
 	row := func(group, k, v string) { r.Rows = append(r.Rows, report.Row{Group: group, Cells: []string{k, v}}) }
 	row("Season", "Scoring weeks", fmt.Sprintf("Weeks %s to %s; the regular season ends after week %s", cfg.StartWeek, cfg.EndWeek, cfg.LastRegularSeasonWeek))
 	row("Season", "Standings order", tiebreakText(cfg.StandingsSort))

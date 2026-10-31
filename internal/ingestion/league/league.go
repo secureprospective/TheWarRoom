@@ -78,6 +78,7 @@ func Parse(leagueBody, rulesBody []byte) (RawConfig, error) {
 func mapLeague(le leagueEnvelope) RawConfig {
 	l := le.League
 	cfg := RawConfig{
+		Name:                        l.Name,
 		SalaryCapAmount:             l.SalaryCapAmount,
 		RosterSize:                  l.RosterSize,
 		TaxiSquad:                   l.TaxiSquad,
