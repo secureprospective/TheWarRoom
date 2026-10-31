@@ -7,6 +7,11 @@ import { FranchisePicker } from './FranchisePicker';
 import { WarRoomHeader, WarRoomEmpty } from './WarRoomHeader';
 import { readWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
 import { unavailable } from './hqModel';
+import { WarRoomInspector } from './WarRoomInspector';
+import { WarRoomPlans } from './WarRoomPlans';
+import { WarRoomDrawers } from './WarRoomDrawers';
+import { readWarRoomCalendar, type WarRoomEvent } from './warroomCalendar';
+import { changeWarRoomTarget } from './warroomMarket';
 import { WarRoomMarket } from './WarRoomMarket';
 import { WarRoomDraft } from './WarRoomDraft';
 import { WarRoomTrade } from './WarRoomTrade';
@@ -34,7 +39,9 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const catalog = useWarRoomRead(JSON.stringify([native?.league, mine]), () => readWarRoomCatalog(context));
   const header = useWarRoomRead(JSON.stringify([native?.league, mine, week]), () =>
     readWarRoomHeader(context));
-  const deadlines = native ? [] : clock?.provenance.freshness.state === 'fail' ? [] :
+  const calendar = useWarRoomRead(JSON.stringify([native?.league, mine, snapshot.league.value.season]),
+    () => readWarRoomCalendar(context));
+  const deadlines: WarRoomEvent[] = native ? calendar.reading ?? [] : clock?.provenance.freshness.state === 'fail' ? [] :
     clock?.value.deadlines ?? [];
   const deadline = deadlines.find(d => /trade/i.test(d.id + d.label));
   const navigate = (node: 'home' | 'war' | 'hq' | 'pulse' | 'control') => {
@@ -72,7 +79,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           room={header.reading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
           tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
             select({ token: id, name, position: snapshot.players.value.find(p => p.id === id)?.position })}
-            /> : <section className="three ws on"><WarRoomEmpty /></section>}
+            /> : <WarRoomPlans />}
       <div className="cal" aria-label="Calendar">{deadlines.length ? deadlines.map(d => <div
         className="ev" key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
         <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :
@@ -83,9 +90,15 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       </div><span className="msg" title={header.error ?? header.reading?.errors.join(' · ')}>{unavailable}
       </span><button className="btn sp" disabled>SAVE TO POCKET</button><button className="btn" onClick={() => changeDeal({ ...deal, give: [], get: [] })}>
         CLEAR</button><button className="btn solid g2" disabled>SEND</button></div>
-      {drawer && <div className="bdrawer open"><div className="bd-head"><h2>{drawer === 'pocket' ?
-        'Pocket' : 'Negotiations'}</h2><button className="x" onClick={() => setDrawer(undefined)}>ESC
-        </button></div><div className="bd-body pocket"><WarRoomEmpty /></div></div>}
-    </main><aside className="insp" aria-label="Inspector"><div className="ihead"><div className="nm">{selected?.name ?? unavailable}</div></div><WarRoomEmpty /></aside>
+      {drawer && <WarRoomDrawers context={context} drawer={drawer} close={() => setDrawer(undefined)} />}
+    </main><WarRoomInspector context={context} asset={selected} add={selected &&
+      catalog.reading?.teams.some(t => (t.id === mine || t.id === deal.partner) && t.assets.some(a =>
+        a.token === selected.token)) ? () => {
+        const side = catalog.reading?.teams.find(t => t.assets.some(a => a.token === selected.token))?.id
+          === mine ? 'give' : 'get';
+        if (!deal[side].includes(selected.token)) changeDeal({ ...deal, [side]: [...deal[side],
+          selected.token] }); setTab('desk');
+      } : undefined} watch={!native && selected && !selected.pick ? () =>
+        changeWarRoomTarget(context, selected.token, false) : undefined} />
   </div></div>;
 }

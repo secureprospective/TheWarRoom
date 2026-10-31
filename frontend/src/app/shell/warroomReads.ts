@@ -29,14 +29,15 @@ export async function readWarRoomHeader({ snapshot, mine, week, native }: WarRoo
     result.errors.push(String(e)); } };
   await Promise.all([
     attempt(async () => { const settings = report(await controlAPI.settings(), 'Settings');
-      result.starterN = settingsFromReport(settings).starters; }),
+      result.starterN = settingsFromReport(settings).starters;
+      result.name = settings.rows.find(r => r.cells[0] === 'League name')?.cells[1]; }),
     attempt(async () => { const race = await raceAPI.read(week, mine, mine, 'topn');
       Object.assign(result, standingFromReport(race.standings));
       result.starterN = race.starterN;
-      const power = race.board.reports.find(r => r.id === 'M-003');
+      const power = race.board.reports.find(r => r.id === 'M-008');
       const row = power?.rows.find(r => r.mine);
       if (row && power) {
-        const score = power.columns.findIndex(c => /power|points|score/i.test(c));
+        const score = power.columns.findIndex(c => c === 'Roster value');
         if (score >= 0) result.best = row.cells[score];
         result.rank = row.cells[0];
       }
