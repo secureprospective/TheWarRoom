@@ -94,3 +94,14 @@ it('renders inline taxi and IR from roster reads and reacts to capacity changes'
   expect(render(8)).toContain('yr 1'); expect(render(8)).toContain('Wk 11');
   expect(render(9)).toContain('1 of 9'); expect(render(9)).not.toContain('1 of 8');
 });
+
+it('renders five weekly bars, hatched bye, projection and average from the extended held read', () => {
+  const research = { report: { rows: Array.from({ length: 5 }, (_, i) => ({
+    cells: [`Form · Wk ${i + 4}`, i === 2 ? 'not held' : String(i * 2)],
+  })) } } as PlayerReading;
+  const html = renderToStaticMarkup(<FormChart id="0042" week={9} bye={6} projection={9}
+    facts={new Map([['0042', { research, error: '' }]])} />);
+  expect((html.match(/<i /g) ?? []).length).toBe(5);
+  expect(html).toContain('class="bye"'); expect(html).toContain('Wk 6 · bye');
+  expect(html).toContain('avg 4.0'); expect(html).toContain('class="pj"');
+});

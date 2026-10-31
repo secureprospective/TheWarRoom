@@ -44,6 +44,7 @@ func (v researchView) playerReading(id string, names map[string]string, how stri
 	v.playerDepth(&r, id)
 	v.playerPoints(&r, p)
 	v.playerForm(&r, p)
+	v.playerWeeklyForm(&r, p.ID, 5)
 	v.playerCutCharge(&r, id)
 	news := v.newsHeld(id)
 	articles := []Article{}
@@ -339,4 +340,20 @@ func FeedLabel(kind string) string {
 // Kinds is the ordered set of Research exports read by the root refresh coordinator.
 func Kinds() []string {
 	return []string{"playerScores", "topAdds", "topDrops", "topStarters", "topOwns", "topTrades", "pointsAllowed"}
+}
+
+func (v researchView) playerWeeklyForm(r *report.Report, id string, window int) {
+	for week := max(v.Week-window, 1); week < v.Week; week++ {
+		feed := v.feed("playerScores", strconv.Itoa(week))
+		points := "not held"
+		for _, score := range Rows(feed) {
+			if score.ID.String() == id {
+				points = fmt.Sprintf("%.2f", score.Value)
+				break
+			}
+		}
+		r.Rows = append(r.Rows, report.Row{Cells: []string{
+			fmt.Sprintf("Form · Wk %d", week), points, HeldTime(feed.FetchedAt, feed.RefreshError, v.Zone),
+		}})
+	}
 }

@@ -36,19 +36,25 @@ export function boardSlots(reading: HQLineup | undefined, settings: HQSettings):
   while (slots.length < reading.starterCount) slots.push({ code: '—', side: 'off' });
   return slots;
 }
-export function FormChart({ id, facts, projection }: { id: string; facts?: RosterFacts; projection?: number
-  }) {
+export function FormChart({ id, facts, projection, week, bye }: { id: string; facts?: RosterFacts;
+  projection?: number; week?: number; bye?: number }) {
   const points = formPoints(facts?.get(id)?.research);
-  if (!points.length) return <span className="form"><em>{unavailable}</em></span>;
+  if (!points.length && !week) return <span className="form"><em>{unavailable}</em></span>;
   const max = Math.max(1, projection ?? 0, ...points.map(p => Math.abs(p.points))) * 1.08;
-  return <span className="form" title={`${points.length} held finished weeks`}>
-    {points.map(p => <i key={p.week} className={projection !== undefined && p.points >= projection ? 'up' :
+  const weeks = week ? Array.from({ length: Math.min(5, Math.max(0, week - 1)) },
+    (_, i) => Math.max(1, week - 5) + i) : points.map(p => p.week);
+  const real = points.filter(p => p.week !== bye);
+  return <span className="form" title={`${points.length} held finished weeks · last 5 vs projection`}>
+    {weeks.map(w => { const p = points.find(p => p.week === w);
+      if (w === bye) return <i key={w} className="bye" title={`Wk ${w} · bye`} />;
+      if (!p) return <i key={w} className="missing" title={`Wk ${w} · ${unavailable}`} />;
+      return <i key={p.week} className={projection !== undefined && p.points >= projection ? 'up' :
       ''}
       style={{ height: `${Math.max(6, Math.abs(p.points) / max * 100)}%` }}
-        title={`Wk ${p.week} · ${p.points.toFixed(1)}`} />)}
+        title={`Wk ${p.week} · ${p.points.toFixed(1)}`} />; })}
     {projection !== undefined && <span className="pj" style={{ bottom: `${Math.max(0, projection) / max *
       20}px` }} />}
-    <b>avg {(points.reduce((n, p) => n + p.points, 0) / points.length).toFixed(1)}</b>
+    <b>avg {real.length ? (real.reduce((n, p) => n + p.points, 0) / real.length).toFixed(1) : '—'}</b>
   </span>;
 }
 export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, injuries, now,
@@ -100,7 +106,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       <span className="nm">{player?.name ?? id}<small>{player?.team}</small></span>
       {noContext ? <span className="form" style={{ gridColumn: slot ? '4 / 6' : '3 / 5' }}>
         <em>{unavailable}</em></span> : <>
-        <FormChart id={id} facts={facts} projection={values.get(id)} />
+        <FormChart id={id} facts={facts} projection={values.get(id)} week={reading?.week} bye={byes?.get(id)} />
         <span className="elig" title={usage?.reason || unavailable}>{bye ? 'BYE' : usage?.opponent ||
           '—'}</span>
       </>}
