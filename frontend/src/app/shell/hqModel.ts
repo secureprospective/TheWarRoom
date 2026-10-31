@@ -1,0 +1,44 @@
+import type { LineupReading, Snapshot } from '../data/contract';
+import type { Report } from '../reports/contract';
+import type { Readings } from '../contracts/contract';
+
+export const unavailable = 'Not available yet';
+export type HQSettings = { active?: number; ir?: number; taxi?: number; starters?: number;
+  offence?: number; defence?: number; positions: { code: string; min: number; max: number }[] };
+export type HQCap = { season: number; committed?: number; dead?: number; room?: number; max?: number };
+export function money(value?: number | null): string {
+  return value == null ? unavailable : `$${(value / 100_000_000).toFixed(2)}M`;
+}
+export function settingsFromReport(report?: Report): HQSettings {
+  const rows = report?.status === 'ok' || report?.status === 'stale' ? report.rows : [];
+  const count = (label: string) => {
+    const value = rows.find(r => r.cells[0] === label)?.cells[1];
+    return value && /^\d+(?: players)?$/.test(value) ? Number.parseInt(value, 10) : undefined;
+  };
+  const positions = rows.filter(r => r.group === 'Starters').flatMap(r => {
+    const match = /^(?:Exactly (\d+)|(\d+) to (\d+))$/.exec(r.cells[1]);
+    if (!match) return [];
+    return [{ code: r.cells[0] === 'PK' ? 'K' : r.cells[0],
+      min: Number(match[1] ?? match[2]), max: Number(match[1] ?? match[3]) }];
+  });
+  return { active: count('Roster size'), ir: count('Injured reserve'), taxi: count('Taxi squad'),
+    starters: count('Starters each week'), offence: count("Offensive starters (MFL's count)"),
+    defence: count("Defensive starters (MFL's count)"), positions };
+}
+export function capFromReads(snapshot: Snapshot, mine: string, contracts?: Readings): HQCap {
+  const franchise = snapshot.franchises.value.find(f => f.id === mine);
+  const cap = contracts?.cap.value;
+  // Signed salary adjustments are not necessarily dead money. Never relabel their sum as dead cap.
+  return { season: cap?.season ?? snapshot.league.value.season,
+    max: cap?.cap?.cents ?? snapshot.league.value.salaryCap,
+    room: cap?.room?.cents ?? franchise?.capRoom };
+}
+export function lineupCheck(reading?: LineupReading, error?: string): string {
+  if (!reading || error || reading.rulesSource.freshness.state === 'fail') return unavailable;
+  if (!reading.check.full || !reading.check.legal)
+    return reading.check.problems.map(p => p.message).join(' · ') || 'Lineup is partial';
+  return 'Lineup is full';
+}
+export function capacity(count: number, limit?: number): string {
+  return `${count} / ${limit ?? unavailable}`;
+}

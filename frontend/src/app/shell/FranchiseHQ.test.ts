@@ -7,7 +7,8 @@ import { FixtureProvider } from '../data/provider';
 import { commands, createCommands } from '../commands/registry';
 import * as slots from '../look/Slots';
 import * as lineups from './lineups';
-import { FranchiseHQ } from './FranchiseHQ';
+import { LineupRoster } from './LineupRoster';
+import { franchiseRoster } from './roster';
 import { clockDom, TestElement } from '../clock/testDom';
 
 const globals = ['window', 'document', 'IS_REACT_ACT_ENVIRONMENT'].map((key) => ({
@@ -66,7 +67,8 @@ async function setup(read: () => Promise<LineupReading>, cached = false) {
     outside += 1;
     return createElement('div', null,
       createElement('p', null, 'Outside roster'),
-      createElement(FranchiseHQ, { snapshot: value }));
+      createElement(LineupRoster, { snapshot: value, franchiseId: '0025',
+        roster: franchiseRoster(value, '0025'), selected: c.read().subject, cap: null }));
   }
   const dom = clockDom([]);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -90,7 +92,7 @@ function expectReserves(root: TestElement, snapshot: Snapshot) {
     expect(groups.find((g) => g.startsWith(`${name} ·`))).toContain(`${name} · ${count}`);
   }
 }
-describe('HQ saved lineup', () => {
+describe('HQ saved lineup read and editor', () => {
   it('shows full legal starters and bench in reading order, leaving IR and Taxi alone', async () => {
     const r = heldLineup();
     const test = await setup(vi.fn().mockResolvedValue(r), true);
