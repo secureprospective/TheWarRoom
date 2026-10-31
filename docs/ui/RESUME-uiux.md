@@ -52,3 +52,40 @@ All local branches; nothing pushed; main untouched. Resume committed on build/HQ
 
 ## 10. HONEST STATUS
 HQ backend done; HQ screen layout done; interactions (drag/cascade/save, matchup win %, live, drawer actions, tabs) NOT done; zero real-league verification yet. ETA HQ functional ~Nov 1–2 if Sol's evening window completes D–I.
+
+## 12. UPDATE 16:10 CT (after compaction #11) — SUPERSEDES §3/§9 where they differ
+- OpenCode free (DeepSeek AND GLM) went SILENT 15:10–15:35 (0-byte output; `opencode run "pong"` returns nothing). Ping before any dispatch. WR-D38 DeepSeek runs killed; logs ~/fleet/runs/glm-WR-D38-stall1, glm-WR-D38.
+- build/HQ-wire b519cf43: research wire golden regenerated (Sol's 207f44f3 added "Form · Wk N" rows to the SHARED research player reading — additive, visible on research screen too).
+- build/WR-D38 (.worktrees/wr-d38) 52f7822d, rebased on b519cf43: personal store action "swap" + RawChange.With for kind watch (rank targets within a position lane). Stars = existing watch add/remove; bid state = existing TargetNativeBids (yourBid/youLead; blind = own bid only). Need tag (D27) + est. win (D35) have no source → show "not available". No new binding. 20 tests PASS -race. FRONTEND NOT WIRED.
+- build/D11-replay (.worktrees/d11-replay), rebased on b519cf43: 4b2013db/031927dd harness+proof (docs/ui/data-catalog/D11-REPLAY.md), ae1653bc+83f9e7d6 internal/projection (Params/DefaultParams/NewShape/Project) + store/history NativeProjections + binding TargetNativeProjections (projections.read, league-view G0, players = comma string ≤120, native.* leagues only) + all checklist items (doors 283, manifest, release_matrix inventory, bindings fresh), 32fe5fc8 memo keyed league|season|sha256(json rules.Scoring)|file shas. Contract batch all ok (composition, serverhttp, commandcatalog, app/commissioner, leagueservice, store/history, projection).
+- Replay results: coverage 84% PASS; Spearman QB 0.429 FAIL (bar .45), RB .638/WR .535/TE .533 PASS; shrink beats raw 9/10 (TE fails); matchup step adds nothing (cap .10 → .430; .20 hurts) → not shipped; current-season-only (prior 0) worse → prior seasons required. ROS-vs-final-PF bar NOT run. Debt: first-call latency on a real league unmeasured; positions from nflverse labels, not league's.
+- Harness: `go run ./tools/d11replay -dir ~/fleet/runs/config-study-p5-2026-10-26/cache [-prior -half -min -cap]` ~5 s.
+
+## NEXT ACTIONS (now)
+1. 18:17 CT: `gpt-build.sh sol high hq-wire ~/fleet/briefs/build/HQ-FIX.md sol-HQ-FIX2` + done-watcher (hq-wire clean at b519cf43; Sol must not regress the golden).
+2. Me meanwhile: D33 lineup delta (method MODEL_METHODS_DRAFT §6; reuse powerrankings.Lineup + m2service.LineupRules; candidate value = D11 median via store NativeProjections) — on a new worktree off build/D11-replay; replay proof per §6 bars.
+3. After HQ-FIX: merge D11 + WR-D38 into HQ line; wire D11 ranges into HQ drawer; fixture walk both sizes; real-league walk.
+
+## 13. UPDATE 16:36 CT (after compaction #12)
+- build/D33-delta (.worktrees/d33) off build/D11-replay: 36751f06 internal/lineupdelta (Rules adapter leaguerules→powerrankings, Compute before/after both parties: enters/leaves/benched/promoted, perWeek + thisWeek w/o bye/Out, unprojected named) + store/history NativeLineupDelta(TradeSides) + leagueservice RawLineupDeltaScope + binding TargetNativeLineupDelta (lineupdelta.read, franchise-view, G0; doors 285, schema 530fde5d…, manifest sorted, release matrix, boundary tsv refreshed). Contract batch all ok. c69dce27 tools/d33replay + docs/ui/data-catalog/D33-REPLAY.md.
+- D33 replay on REAL league 14432 MFL exports (~/fleet/runs/d33-replay, 2023–25, 164 sides): (i) PASS 73% p=.002, (ii) PASS r=.548 slope 1.06 (trade's own effect; raw MFL optimal change r=.22 noisy), (iii) FAIL 64% (owners keep starting 4/10) → tile wording "your best lineup would bench X", (iv) PASS 100%.
+- League 14432 MFL exports work read-only without login (transactions, weeklyResults, players, league).
+- D28 RULING 10-31: owner selects posture (contend/retool/rebuild); no classifier; lens λ follows the pick. Open: public or private label.
+
+## 14. UPDATE 16:50 CT — SUPERSEDES earlier NEXT ACTIONS
+- build/D33-delta = build/WR-base (649fefbf): D11 + D33 (36751f06, replay c69dce27) + D38 swap (b730ed4e) + R3 bid cap fix 649fefbf (internal/commissioner/market/bid_cap.go openBidsFit: other standing bids count against cap, cap only, matched by Side+Player; test composition TestNativeOpenBidsTogetherMustFitTheCap, proven failing without fix). Regression batch all ok (composition, leagueservice, commissioner/..., store/history, nativecheck).
+- build/WR-wire (.worktrees/wr-wire) = HQ-wire 08dd9975 + all WR-base commits cherry-picked (top a3ea876b), frontend dist built, bindings fresh. Brief ~/fleet/briefs/build/WR-WIRE.md (5.2 KB).
+- Brief ~/fleet/briefs/build/A12-withdraw.md for Tom (owners can't withdraw native bids; commish removal via recorded correction or STOP). Tom resets Nov 1 03:00 CT. Works in .worktrees/d33.
+- D25 Best 21 EXISTS (Race power mode topn). D27/D28 replay needs as-of model runs (modelrun.Spec{Season,AsOf} supports it) but no DB with held features found on Beelink (archived DBs lack model tables) → locate on staging VM before D27.
+- RULING 10-31: D28 posture = OWNER SELECTS contend/retool/rebuild; lens λ .65/.50/.30 follows it; no classifier. OPEN QUESTION asked: is the chosen posture public or private? Await answer.
+- Gate lesson: internal/commissioner TestPlayerLookupsNameASide forbids player lookup by id alone (mirrored leagues) — match side too.
+
+## NEXT ACTIONS (now)
+1. At 18:17 CT (timer buytayx5b; if dead check time): launch BOTH with done-watchers:
+   `ssh -f … 'nohup ~/fleet/bin/gpt-build.sh sol high hq-wire ~/fleet/briefs/build/HQ-FIX.md sol-HQ-FIX2 >/dev/null 2>&1 &'`
+   `ssh -f … 'nohup ~/fleet/bin/gpt-build.sh sol high wr-wire ~/fleet/briefs/build/WR-WIRE.md sol-WR-WIRE >/dev/null 2>&1 &'`
+   Watch ~/fleet/runs/<run>/completion.txt.
+2. Get Christopher's answer on posture public/private, then build D28 store (owner setting) + lens.
+3. Nov 1 03:00: dispatch Tom on A12-withdraw.md.
+4. Review Sol outputs; fixture walk both sizes; real-league walk; Christopher click test.
+5. D27: find held-feature DB (staging VM), then method + as-of replay.
