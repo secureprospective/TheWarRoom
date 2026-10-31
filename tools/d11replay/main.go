@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -193,19 +194,30 @@ func (r *replay) matchup(p params, pos leaguerules.Position, opp string, season,
 }
 
 // samples are every player's and every position's weighted weeks strictly before (season, week).
-func (r *replay) samples(p params, season, week int) (map[string][]ws, map[leaguerules.Position][]ws) {
-	player := map[string][]ws{}
-	position := map[leaguerules.Position][]ws{}
+func (p params) projection() research.ProjectionParams {
+	return research.ProjectionParams{HalfLifeWeeks: p.half, PriorWeight: p.prior, MinScores: p.minS, FloorQ: p.lo, CeilQ: p.hi}
+}
+
+// shapes are every player's and every position's shapes for (season, week), from the shipped
+// research.NewShape so the replay proves the code the app runs.
+func (r *replay) shapes(p params, season, week int) (map[string]research.Shape, map[leaguerules.Position]research.Shape) {
+	pp := p.projection()
+	player := map[string]research.Shape{}
+	weeks := map[leaguerules.Position][]research.WeekScore{}
 	for id, h := range r.hist {
+		var own []research.WeekScore
 		for _, o := range h {
 			if key(o) >= season*100+week {
 				break
 			}
-			if w := weight(o, season, week, p.half, p.prior); w > 0 {
-				player[id] = append(player[id], ws{o.pts, w})
-				position[r.pos[id]] = append(position[r.pos[id]], ws{o.pts, w})
-			}
+			own = append(own, research.WeekScore{Season: o.season, Week: o.week, Points: o.pts})
 		}
+		player[id] = research.NewShape(own, season, week, pp)
+		weeks[r.pos[id]] = append(weeks[r.pos[id]], own...)
+	}
+	position := map[leaguerules.Position]research.Shape{}
+	for pos, w := range weeks {
+		position[pos] = research.NewShape(w, season, week, pp)
 	}
 	return player, position
 }
@@ -213,9 +225,9 @@ func (r *replay) samples(p params, season, week int) (map[string][]ws, map[leagu
 func (r *replay) walk(p params) {
 	for _, season := range []int{2024, 2025} {
 		for week := 2; week <= 18; week++ {
-			player, position := r.samples(p, season, week)
+			player, position := r.shapes(p, season, week)
 			for id, h := range r.hist {
-				if act, ok := scored(h, season, week); ok && len(position[r.pos[id]]) > 0 {
+				if act, ok := scored(h, season, week); ok && position[r.pos[id]].Games() > 0 {
 					mult := r.matchup(p, r.pos[id], r.opp[fmt.Sprintf("%s|%d|%d", id, season, week)], season, week)
 					r.score(p, id, player[id], position[r.pos[id]], act, mult, fmt.Sprintf("%d|%d|%s", season, week, r.pos[id]))
 				}
@@ -233,10 +245,13 @@ func scored(h []obs, season, week int) (float64, bool) {
 	return 0, false
 }
 
-func (r *replay) score(p params, id string, ps, pos []ws, act, mult float64, k string) {
-	games := float64(len(ps))
-	mix := mixture(ps, pos, games/(games+p.minS))
-	f, m, c := quant(mix, p.lo), quant(mix, 0.5)*mult, quant(mix, p.hi)*mult
+func (r *replay) score(p params, id string, own, pos research.Shape, act, mult float64, k string) {
+	pp := p.projection()
+	rg, ok := research.Project(own, pos, pp)
+	if !ok {
+		return
+	}
+	f, m, c := rg.Floor, rg.Median*mult, rg.Ceiling*mult
 	s := r.byPos[r.pos[id]]
 	if s == nil {
 		s = &res{}
@@ -246,11 +261,11 @@ func (r *replay) score(p params, id string, ps, pos []ws, act, mult float64, k s
 	if act >= f && act <= c {
 		s.in++
 	}
-	if games > 0 && games < p.minS {
+	if games := float64(own.Games()); games > 0 && games < p.minS {
+		raw, _ := research.Project(own, research.Shape{}, pp)
 		s.nThin++
 		s.se += (m - act) * (m - act)
-		rm := quant(ps, 0.5)
-		s.seRaw += (rm - act) * (rm - act)
+		s.seRaw += (raw.Median - act) * (raw.Median - act)
 	}
 	r.weekly[k] = append(r.weekly[k], pr{m, act})
 }
@@ -282,60 +297,7 @@ func (r *replay) report(p params) {
 	_, _ = fmt.Fprintf(out, "ALL  %6d  %6.1f%%\n", tn, 100*float64(tin)/float64(tn))
 }
 
-type ws struct{ v, w float64 }
-
 func key(o obs) int { return o.season*100 + o.week }
-
-func weight(o obs, season, week int, half, prior float64) float64 {
-	if o.season == season {
-		return math.Pow(0.5, float64(week-o.week)/half)
-	}
-	if season-o.season <= 2 {
-		return prior
-	}
-	return 0
-}
-
-// mixture scales the player's sample to share of the total weight, the position's to the rest.
-func mixture(player, position []ws, share float64) []ws {
-	sum := func(s []ws) float64 {
-		t := 0.0
-		for _, x := range s {
-			t += x.w
-		}
-		return t
-	}
-	out := make([]ws, 0, len(player)+len(position))
-	if sp := sum(player); sp > 0 && share > 0 {
-		for _, x := range player {
-			out = append(out, ws{x.v, x.w / sp * share})
-		}
-	} else {
-		share = 0
-	}
-	sq := sum(position)
-	for _, x := range position {
-		out = append(out, ws{x.v, x.w / sq * (1 - share)})
-	}
-	return out
-}
-
-func quant(s []ws, q float64) float64 {
-	c := append([]ws(nil), s...)
-	sort.Slice(c, func(a, b int) bool { return c[a].v < c[b].v })
-	var tot float64
-	for _, x := range c {
-		tot += x.w
-	}
-	acc := 0.0
-	for _, x := range c {
-		acc += x.w
-		if acc >= q*tot {
-			return x.v
-		}
-	}
-	return c[len(c)-1].v
-}
 
 func spearman(v []pr) float64 {
 	n := len(v)

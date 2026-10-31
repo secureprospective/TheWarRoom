@@ -2,7 +2,7 @@
 
 Method: docs/ui/data-catalog/MODEL_METHODS_DRAFT.md §7 steps 1–4 (weighted weekly history, p10/p50/p90,
 shrink toward the position distribution, `-cap` = step-4 matchup factor). Injury modifiers (step 5) not replayed.
-Harness: `go run ./tools/d11replay -dir <cache with stats_player_week_2023-2025.csv.gz>` (~40 s).
+Harness: `go run ./tools/d11replay -dir <cache with stats_player_week_2023-2025.csv.gz>` (~5 s). It calls the shipped `research.NewShape`/`research.Project` (internal/app/research/projection.go), so these numbers are the app code.
 Scoring: leaguerules.Default32Scoring() through fantasyscore.Score — the league's own rules.
 Walk-forward: every REG week 2–18 of 2024 and 2025, using only weeks before it. Scored on players who
 recorded a stat line that week (DNP weeks are not in the sample — availability is D14/D15's job).
