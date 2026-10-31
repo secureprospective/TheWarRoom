@@ -1,7 +1,7 @@
 # D11 native projections — replay proof (2026-10-31)
 
-Method: docs/ui/data-catalog/MODEL_METHODS_DRAFT.md §7 steps 1–3 (weighted weekly history, p10/p50/p90,
-shrink toward the position distribution). No matchup factor (step 4) and no injury modifiers (step 5) yet.
+Method: docs/ui/data-catalog/MODEL_METHODS_DRAFT.md §7 steps 1–4 (weighted weekly history, p10/p50/p90,
+shrink toward the position distribution, `-cap` = step-4 matchup factor). Injury modifiers (step 5) not replayed.
 Harness: `go run ./tools/d11replay -dir <cache with stats_player_week_2023-2025.csv.gz>` (~40 s).
 Scoring: leaguerules.Default32Scoring() through fantasyscore.Score — the league's own rules.
 Walk-forward: every REG week 2–18 of 2024 and 2025, using only weeks before it. Scored on players who
@@ -32,7 +32,16 @@ recorded a stat line that week (DNP weeks are not in the sample — availability
 ## Dial sweep (prior 0.5/1.0, half-life 4/16, both)
 Nothing moves QB above 0.434 (half 16), and coverage stays 83.7–84.0%. Keep the method defaults.
 
+## Matchup factor (step 4), opponent's points allowed to the position, last 8 games, rank → [1−cap, 1+cap]
+| cap | QB ρ | RB ρ | WR ρ | TE ρ | ALL coverage |
+|---|---|---|---|---|---|
+| 0 | 0.429 | 0.638 | 0.535 | 0.533 | 84.0% |
+| 0.10 (method) | 0.430 | 0.639 | 0.535 | 0.534 | 83.8% |
+| 0.20 | 0.406 | 0.636 | 0.528 | 0.529 | 83.4% |
+The matchup step adds nothing measurable at 0.10 and hurts at 0.20. It does not fix QB.
+
 ## Read
-Ship steps 1–3 with the QB and TE weakness shown, not hidden. Likely QB cause (unproven): backups who take
-a few snaps count as "played", and starter changes drive QB weekly rank. D13 (usage) now exists, so the
-matchup factor (step 4) can be replayed next; it is the method's own fix for median truth.
+Ship steps 1–3 with the QB and TE weakness shown, not hidden. Drop step 4 (matchup): replay shows no gain, so
+it would be added complexity with no value (or ship it at cap 0, off). Likely QB cause (unproven): backups who
+take a few snaps count as "played", and starter changes drive QB weekly rank — that is an availability
+question (D14/D15 + depth chart), not a projection question.
