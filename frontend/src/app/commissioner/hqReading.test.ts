@@ -95,3 +95,16 @@ it('reads native cut costs and before/after cap without changing the contract', 
   } });
   expect(() => parseNativeCut(quote, 'native.seed', '0042')).toThrow('another player');
 });
+
+it('resolves human division standings from alignment settings, never ledger ids', async () => {
+  const { nativeHQStanding } = await import('./hqReading');
+  const changed = parseRules(structuredClone(rules));
+  const alignment = changed.sections.flatMap(s => s.rows).find(r => r.field === 'league.alignment')!;
+  const rows = [{ franchise: 'franchise.01', division: 'division.1' },
+    { franchise: 'franchise.02', division: 'division.1' }];
+  expect(nativeHQStanding(changed, rows, 'franchise.02')).toBeUndefined();
+  alignment.current = { 'franchise.01': 'NFC West', 'franchise.02': 'NFC West' };
+  expect(nativeHQStanding(changed, rows, 'franchise.02')).toBe('2nd NFC West');
+  alignment.current = { 'franchise.01': 'NFC West', 'franchise.02': 'NFC East' };
+  expect(nativeHQStanding(changed, rows, 'franchise.02')).toBe('1st NFC East');
+});

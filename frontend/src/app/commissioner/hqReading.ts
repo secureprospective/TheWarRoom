@@ -9,7 +9,21 @@ import type { HQCap, HQSettings } from '../shell/hqModel';
 import type { HQLineup } from '../shell/HQBoard';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from './api';
+import { ordinal } from '../shell/hqPlayerData';
 
+export function nativeHQStanding(rules: Rules | undefined,
+  rows: { franchise: string; division: string }[], mine: string): string | undefined {
+  const raw = rules?.sections.flatMap(s => s.rows).find(r =>
+    r.field === 'league.alignment' && r.state === 'Set')?.current;
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const alignment = new Map(Object.entries(raw).map(([id, value]) => [id, text(value, 'Division')]));
+  const name = alignment.get(mine);
+  // Older seeds contain only ledger identifiers, not display names.
+  if (!name || /^division[._]\d+$/i.test(name)) return undefined;
+  const group = rows.filter(r => alignment.get(r.franchise) === name);
+  const index = group.findIndex(r => r.franchise === mine);
+  return index < 0 ? undefined : `${ordinal(index + 1)} ${name}`;
+}
 export function nativeHQSettings(rules: Rules): HQSettings {
   const rows = rules.sections.flatMap(s => s.rows);
   const current = (field: string) => rows.find(r => r.field === field && r.state === 'Set')?.current;
@@ -104,6 +118,8 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
     if (integer((value as { revision: unknown }).revision, 'Reading revision') !== revision)
       throw new Error('League changed during the read; refresh before using this region');
   };
+  let leagueRules: Rules | undefined;
+  let standingRows: { franchise: string; division: string }[] = [];
   const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const apply = async (read: () => Promise<void>) => { try { await read(); } catch (e) {
@@ -114,7 +130,7 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
       sameRevision(r.data);
       const rules = parseRules(r.data); if (rules.league !== league) throw new
         Error('Rules belong to another league');
-      result.settings = nativeHQSettings(rules); result.leagueName = rules.name; }),
+      leagueRules = rules; result.settings = nativeHQSettings(rules); result.leagueName = rules.name; }),
     apply(async () => { const r = await port({ command: 'native.cap.check', mode: 'read', arguments: {
       league, viewerZone: zone } }); sameRevision(r.data); result.runway = nativeHQCap(r.data, league,
         mine); }),
@@ -141,9 +157,8 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
         Record<string, unknown>;
         return { franchise: text(row.franchise, p), rank: integer(row.rank, p), record: text(row.record,
           p), division: row.division === undefined ? '' : text(row.division, p) }; });
-      const row = rows.find(r => r.franchise === mine); if (row) { result.record = row.record;
-        result.standing = `${rows.filter(r => r.division === row.division).indexOf(row) +
-          1} · ${row.division}`; } }),
+      standingRows = rows;
+      result.record = rows.find(r => r.franchise === mine)?.record; }),
     apply(async () => { const r = await port({ command: 'week.read', mode: 'read', arguments: { league,
       franchise: mine, season, localZone: zone, at: new Date().toISOString() } });
       const raw = object(r.data, 'Native week', ['schedule', 'current', 'nextWeek', 'message']);
@@ -157,6 +172,7 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
         undefined : integer(raw.nextWeek, 'Next week', 1);
     }),
   ]);
+  result.standing = nativeHQStanding(leagueRules, standingRows, mine);
   if (result.week) await apply(async () => {
     const r = await port({ command: 'lineup.read', mode: 'read', arguments: { league, franchise: mine,
       week: result.week!, at: '' } });

@@ -95,13 +95,18 @@ export function totalProjection(ids: string[], values: Map<string, number>): str
   return ids.every(id => values.has(id)) ? ids.reduce((sum, id) => sum + values.get(id)!, 0).toFixed(1) :
     unavailable;
 }
+export function ordinal(rank: number): string {
+  const suffix = rank % 100 >= 11 && rank % 100 <= 13 ? 'th' :
+    ({ 1: 'st', 2: 'nd', 3: 'rd' } as Record<number, string>)[rank % 10] ?? 'th';
+  return `${rank}${suffix}`;
+}
 export function standingFromReport(report?: Report): { record?: string; standing?: string } {
   if (!report || !['ok', 'stale'].includes(report.status)) return {};
   const row = report.rows.find(r => r.mine);
   if (!row) return {};
   const group = report.rows.filter(r => r.group === row.group);
   return { record: row.cells[report.columns.indexOf('Record')],
-    standing: `${group.indexOf(row) + 1}${row.group ? ` · ${row.group}` : ''}` };
+    standing: `${ordinal(group.indexOf(row) + 1)}${row.group ? ` ${row.group}` : ''}` };
 }
 
 export function byeWeeks(snapshot: Snapshot, reports?: Report[]): Map<string, number> {
