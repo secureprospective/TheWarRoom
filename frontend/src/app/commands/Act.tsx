@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, type CSSProperties, type AriaRole } from 'react';
 import { commands, dispatch, type CommandId, type CommandArgs } from './registry';
 type Variant = 'rail' | 'tab' | 'density' | 'icon' | 'text' | 'button' | 'card' | 'command';
 type ActProps<K extends CommandId> = {
@@ -14,6 +14,11 @@ type ActProps<K extends CommandId> = {
   disabled?: boolean;
   submit?: boolean;
   densityKey?: string;
+  className?: string;
+  style?: CSSProperties;
+  role?: AriaRole;
+  selected?: boolean;
+  attributes?: Record<`data-${string}`, string | undefined>;
 };
 export function Act<K extends CommandId>(props: ActProps<K>) {
   return commands.isTeamAction(props.verb, props.args) ? <TeamAct {...props} /> : ActButton(props);
@@ -35,7 +40,7 @@ function ActButton<K extends CommandId>({
   controls,
   disabled,
   submit = false,
-  densityKey,
+  densityKey, className, style, role, selected, attributes,
 }: ActProps<K> & { refusal?: string }) {
   disabled = disabled || Boolean(refusal) || !commands.canDispatch(verb);
   const accessibleLabel = refusal ?? label ?? commands.registry[verb].label;
@@ -45,9 +50,11 @@ function ActButton<K extends CommandId>({
     ? accessibleLabel : undefined;
   return (
     <button
+      {...attributes}
+      style={style} role={role} aria-selected={selected}
       type={submit ? 'submit' : 'button'}
       disabled={disabled}
-      className={`act act-${variant}${active ? ' on' : ''}`}
+      className={`act act-${variant}${active ? ' on' : ''}${className ? ` ${className}` : ''}`}
       data-d={densityKey}
       aria-label={accessibleLabel}
       aria-pressed={active}

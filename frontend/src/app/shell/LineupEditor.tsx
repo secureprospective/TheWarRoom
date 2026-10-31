@@ -14,7 +14,8 @@ import { lineupGroups, lineupPending, lineupText, lineupVerdict } from './roster
 import { provenanceSlot } from '../cards/playerModel';
 import type { franchiseRoster } from './roster';
 
-export default function LineupEditor({ snapshot, roster, franchiseId, selected, cap, reading, error, render }: {
+export default function LineupEditor({ snapshot, roster, franchiseId, selected, cap, reading, error, render
+  }: {
   snapshot: Snapshot;
   reading?: LineupReading;
   error?: string;
@@ -23,11 +24,13 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
   selected: PlayerSubject | null;
   cap: ReactNode;
   render?: (editor: { reading?: LineupReading; error?: string; changes: string[];
-    draft: boolean; saveReason?: string; reason?: string; checkError?: string }) => ReactNode;
+    draft: boolean; saveReason?: string; reason?: string; checkError?: string; checkPending?: boolean }) =>
+      ReactNode;
 }) {
   const { draft: held, receiptId } = commands.useLineupEdit();
   const draft = held?.franchiseId === franchiseId ? held : null;
-  const { check, error: checkError } = useDraftCheck(commands.checkLineup, draft, reading?.check);
+  const { check, error: checkError, pending: checkPending } = useDraftCheck(commands.checkLineup, draft,
+    reading?.check);
   const edited = useMemo(() => draft && reading ? draftReading(snapshot, reading, draft, check) : reading,
     [snapshot, reading, draft, check]);
   const active = new Set(roster.groups[0].players.map((p) => p.id));
@@ -46,7 +49,7 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
     : roster.groups,
     [snapshot, roster, edited]);
   if (render) return <>{render({ reading: edited, error, changes, draft: Boolean(draft),
-    saveReason, reason, checkError })}</>;
+    saveReason, reason, checkError, checkPending })}</>;
   return (
     <>
       <div className="lineup-actions">

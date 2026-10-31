@@ -8,8 +8,10 @@ import type { Board, Report } from '../reports/contract';
 import type { PlayerReading } from '../research/contract';
 
 function report(id: string): Report { return { id, title: 'Projected points · NFL week 5', status: 'ok',
-  source: '', asOf: '', how: '', note: '', columns: ['Player', 'Points'], summary: [], link: null, rows: [] }; }
-const board = (r: Report): Board => ({ title: '', loading: '', refresh: '', howLabel: '', mflLabel: '', mflUrl: '', reports: [r] });
+  source: '', asOf: '', how: '', note: '', columns: ['Player', 'Points'], summary: [], link: null, rows: []
+    }; }
+const board = (r: Report): Board => ({ title: '', loading: '', refresh: '', howLabel: '', mflLabel: '',
+  mflUrl: '', reports: [r] });
 describe('HQ starter and bench board', () => {
   it('maps projections only to a unique player and the requested week, never missing to zero', () => {
     const snap = heldSnapshot(); const p = snap.players.value[0]; const r = report('M-046');
@@ -24,7 +26,8 @@ describe('HQ starter and bench board', () => {
   it('renders saved starter and bench names, actual projections, and honest missing form/opponents', () => {
     const snapshot = heldSnapshot(); const reading = heldLineup(); const id = reading.starters[0].id;
     const html = renderToStaticMarkup(<HQBoard snapshot={snapshot} mine="0025" reading={reading}
-      settings={{ positions: [], starters: reading.starterCount }} values={new Map([[id, 17.25]])} select={() => {}} />);
+      settings={{ positions: [], starters: reading.starterCount }} values={new Map([[id, 17.25]])}
+        select={() => {}} />);
     expect(html).toContain(snapshot.players.value.find(p => p.id === id)!.name!);
     expect(html).toContain('17.3');
     expect(html).toContain('STARTING 21');
@@ -38,9 +41,12 @@ describe('HQ starter and bench board', () => {
     expect(boardSlots(undefined, { positions: [] })).toEqual([]);
   });
   it('charts only held finished scores, retaining real zero and negative weeks', () => {
-    const research = { report: { rows: [{ cells: ['Form', 'W2: 0.00, W3: -2.25, W4: 15.50 · 4.42 PPG'] }] } } as PlayerReading;
-    expect(formPoints(research)).toEqual([{ week: 2, points: 0 }, { week: 3, points: -2.25 }, { week: 4, points: 15.5 }]);
-    const html = renderToStaticMarkup(<FormChart id="1" projection={10} facts={new Map([['1', { research, error: '' }]])} />);
+    const research = { report: { rows: [{ cells: ['Form', 'W2: 0.00, W3: -2.25, W4: 15.50 · 4.42 PPG'] }] }
+      } as PlayerReading;
+    expect(formPoints(research)).toEqual([{ week: 2, points: 0 }, { week: 3, points: -2.25 }, { week: 4,
+      points: 15.5 }]);
+    const html = renderToStaticMarkup(<FormChart id="1" projection={10} facts={new Map([['1', { research,
+      error: '' }]])} />);
     expect(html).toContain('Wk 3 · -2.3'); expect(html).toContain('3 held finished weeks');
     expect(renderToStaticMarkup(<FormChart id="none" />)).toContain(unavailable);
   });
@@ -50,4 +56,23 @@ describe('HQ starter and bench board', () => {
     expect(byeWeeks(snapshot, [r]).get(player.id)).toBe(5);
     expect(byeWeeks(snapshot).size).toBe(0);
   });
+});
+
+it('renders real opponent projection only when the existing preview reports complete inputs', async () => {
+  const { HQMatchup } = await import('./HQBoard');
+  const matchup = report('X-03'); matchup.columns = ['Slot', 'Mine', 'Points', 'Opponent', 'Points'];
+  matchup.summary = [{ cells: ['Opponent', 'Other team'], range: null }];
+  matchup.rows = [{ cells: ['QB', 'My QB', '', 'Other QB', ''], range: null }];
+  matchup.entities = [{ kind: 'player', id: '0042', text: 'My QB' },
+    { kind: 'player', id: '0043', text: 'Other QB' }];
+  const preview = report('M-018'); preview.rows = [{ cells: ['Mine', '171.2', 'Other team', '164.9', 'Mine'],
+    mine: true, range: null }];
+  preview.summary = [{ cells: ['Starters MFL does not project', '0'], range: null }];
+  const now = { matchup, board: board(preview), week: 5, weeks: [], reportWeek: 5, reportWeeks: [],
+    waiting: '' };
+  const render = () => renderToStaticMarkup(<HQMatchup now={now} ownProjection="171.2"
+    values={new Map([['0042', 22.1], ['0043', 20.8]])} />);
+  expect(render()).toContain('164.9'); expect(render()).toContain('+1.3');
+  preview.summary[0].cells[1] = '1';
+  expect(render()).not.toContain('164.9'); expect(render()).toContain(unavailable);
 });

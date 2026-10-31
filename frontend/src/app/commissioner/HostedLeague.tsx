@@ -34,7 +34,9 @@ export default function HostedLeague(props: {
 }) {
   const [showHQ, setHQ] = useState(props.hq ?? false);
   if (showHQ) return <Suspense fallback={<p>Opening your franchise…</p>}>
-    <NativeFranchiseHQ league={props.league} mine={props.franchise} name={props.name} port={props.port} leave={() => setHQ(false)} />
+    <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
+      mine={props.franchise} name={props.name} port={props.port}
+      leave={() => setHQ(false)} />
   </Suspense>;
   return <HostedWorkRoom {...props} />;
 }

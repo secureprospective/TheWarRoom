@@ -10,7 +10,8 @@ import { raceAPI } from '../race/api';
 export function useHQRead<K extends ReadCommandId, T>(command: K, args: ReadArguments<K>,
   read: (...args: ReadArguments<K>) => Promise<T>, enabled = true) {
   const query = useMemo(() => createReadQuery(command, {
-    initial: (): { value?: T } => ({}), read, accept: value => ({ value }),
+    initial: (): { value?: T; scope?: string } => ({}), read,
+    accept: (value, accepted) => ({ value, scope: JSON.stringify(accepted) }),
   }), [command, read]);
   const key = JSON.stringify(args);
   useEffect(() => {
@@ -23,7 +24,8 @@ export function useHQRead<K extends ReadCommandId, T>(command: K, args: ReadArgu
     // The canonical binding arguments, not the array's render identity, own the request lifetime.
   }, [query, key, enabled]);
   const state = query.use();
-  return { ...state, value: enabled && !state.error && !state.pending ? state.value : undefined };
+  return { ...state, value: enabled && state.scope === key && !state.error && !state.pending ? state.value
+    : undefined };
 }
 export const readHQSettings = async () => report(await controlAPI.settings(), 'League settings');
 export const readHQRace = (week: number, team: string, mine: string, mode: string) =>
@@ -34,3 +36,15 @@ export const hqEvents = { onChange: (load: () => void) => {
   const moves = commands.onMovesChange(load);
   return () => { season(); moves(); };
 } };
+
+export async function addHQTrade(mine: string, player: string): Promise<void> {
+  const { builderAction, useBuilder } = await import('./tradeBuilderState');
+  await builderAction({ action: 'read', mine });
+  const state = useBuilder.getState();
+  if (state.error) throw new Error(state.error);
+  const asset = state.reading?.value?.teams.find(t => t.id === mine)?.assets
+    .find(a => a.token === player);
+  if (!asset) throw new Error('This player is not on your held trade roster. Refresh before retrying.');
+  if (!state.give.includes(asset.token)) await builderAction({ action: 'give', value: asset.token });
+  await commands.dispatch('nav.open', { node: 'trade', workspace: 'trade-desk' });
+}

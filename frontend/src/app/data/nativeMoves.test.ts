@@ -23,7 +23,8 @@ describe('native HQ move receipt adapter', () => {
     expect(parseNativeMoves(raw).moves[0].state).toBe(state);
   });
 
-  it.each(['state', 'scope', 'target', 'audit', 'plans', 'url', 'unknown'])('rejects malformed %s', change => {
+  it.each(['state', 'scope', 'target', 'audit', 'plans', 'url', 'unknown'])(
+    'rejects malformed %s', change => {
     const raw = copy();
     if (change === 'state') raw.moves[0].state = 'ready';
     if (change === 'scope') raw.moves[0].spec.franchiseId = 'franchise.99';

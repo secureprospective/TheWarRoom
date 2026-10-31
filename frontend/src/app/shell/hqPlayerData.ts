@@ -5,7 +5,8 @@ import type { PlayerReading } from '../research/contract';
 import { unavailable } from './hqModel';
 
 export function finite(value: unknown, path: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${path}: expected finite number`);
+  if (typeof value !== 'number' || !Number.isFinite(value)) throw new
+    Error(`${path}: expected finite number`);
   return value;
 }
 const nullable = (v: unknown, p: string) => v === null ? undefined : finite(v, p);
@@ -30,20 +31,24 @@ export type Arc = { age: number; points: { season: number; age: number; level: n
   peakStart: number; peakEnd: number; reason: string };
 export function parseArc(value: unknown): Arc {
   const r = object(value, 'Age arc', ['age', 'points', 'peakStart', 'peakEnd', 'paramsFallback']);
-  return { age: finite(r.age, 'Age'), peakStart: integer(r.peakStart, 'Peak start'), peakEnd: integer(r.peakEnd, 'Peak end'),
+  return { age: finite(r.age, 'Age'), peakStart: integer(r.peakStart, 'Peak start'), peakEnd:
+    integer(r.peakEnd, 'Peak end'),
     reason: r.paramsFallback === undefined ? '' : text(r.paramsFallback, 'Arc fallback'),
     points: array(r.points, 'Arc points', (v, p) => {
       const row = object(v, p, ['season', 'age', 'level', 'survival']);
-      return { season: integer(row.season, p), age: finite(row.age, p), level: finite(row.level, p), survival: finite(row.survival, p) };
+      return { season: integer(row.season, p), age: finite(row.age, p), level: finite(row.level, p),
+        survival: finite(row.survival, p) };
     }) };
 }
 export type Injury = { id: string; status: string; details: string; returnSeason?: number;
   returnWeek?: number; returnReason: string };
 export function parseInjuries(value: unknown): Injury[] {
   return array(value, 'Injuries', (v, p) => {
-    const r = object(v, p, ['id', 'status', 'details', 'expReturn', 'returnSeason', 'returnWeek', 'returnReason']);
+    const r = object(v, p, ['id', 'status', 'details', 'expReturn', 'returnSeason', 'returnWeek',
+      'returnReason']);
     if (r.expReturn !== undefined) text(r.expReturn, p);
-    return { id: text(r.id, p), status: text(r.status, p), details: r.details === undefined ? '' : text(r.details, p),
+    return { id: text(r.id, p), status: text(r.status, p), details: r.details === undefined ? '' :
+      text(r.details, p),
       returnSeason: r.returnSeason === undefined ? undefined : integer(r.returnSeason, p),
       returnWeek: r.returnWeek === undefined ? undefined : integer(r.returnWeek, p),
       returnReason: r.returnReason === undefined ? '' : text(r.returnReason, p) };
@@ -55,7 +60,8 @@ export function parseNotes(value: unknown): { player: string; notes: Note[]; cou
   const player = text(r.player, 'Notes player');
   const notes = array(r.notes, 'Notes', (v, p) => {
     const row = object(v, p, ['kind', 'entity', 'id', 'text', 'at', 'order']);
-    if (row.kind !== 'note' || row.entity !== 'player' || row.id !== player) throw new Error('Notes belong to another player');
+    if (row.kind !== 'note' || row.entity !== 'player' || row.id !== player) throw new
+      Error('Notes belong to another player');
     return { text: text(row.text, p), at: timestamp(row.at, p), order: integer(row.order, p, 1) };
   });
   const count = integer(r.count, 'Note count');
@@ -68,7 +74,8 @@ export function researchFact(reading: PlayerReading | undefined, label: string):
 }
 export function formPoints(reading?: PlayerReading): { week: number; points: number }[] {
   const fact = researchFact(reading, 'Form') ?? '';
-  return Array.from(fact.matchAll(/W(\d+): (-?\d+(?:\.\d+)?)/g), m => ({ week: Number(m[1]), points: Number(m[2]) }));
+  return Array.from(fact.matchAll(/W(\d+): (-?\d+(?:\.\d+)?)/g), m => ({ week: Number(m[1]), points:
+    Number(m[2]) }));
 }
 export function projections(snapshot: Snapshot, board?: Board, week?: number): Map<string, number> {
   const result = new Map<string, number>();
@@ -79,12 +86,14 @@ export function projections(snapshot: Snapshot, board?: Board, week?: number): M
   for (const player of snapshot.players.value) {
     if (!player.name || snapshot.players.value.filter(p => p.name === player.name).length !== 1) continue;
     const rows = projection.rows.filter(r => r.cells[0] === player.name);
-    if (rows.length === 1 && /^-?\d+(?:\.\d+)?$/.test(rows[0].cells[1])) result.set(player.id, Number(rows[0].cells[1]));
+    if (rows.length === 1 && /^-?\d+(?:\.\d+)?$/.test(rows[0].cells[1])) result.set(player.id,
+      Number(rows[0].cells[1]));
   }
   return result;
 }
 export function totalProjection(ids: string[], values: Map<string, number>): string {
-  return ids.every(id => values.has(id)) ? ids.reduce((sum, id) => sum + values.get(id)!, 0).toFixed(1) : unavailable;
+  return ids.every(id => values.has(id)) ? ids.reduce((sum, id) => sum + values.get(id)!, 0).toFixed(1) :
+    unavailable;
 }
 export function standingFromReport(report?: Report): { record?: string; standing?: string } {
   if (!report || !['ok', 'stale'].includes(report.status)) return {};

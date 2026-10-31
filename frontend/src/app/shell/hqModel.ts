@@ -4,8 +4,10 @@ import type { Readings } from '../contracts/contract';
 
 export const unavailable = 'Not available yet';
 export type HQSettings = { active?: number; ir?: number; taxi?: number; starters?: number;
-  offence?: number; defence?: number; positions: { code: string; min: number; max: number }[] };
-export type HQCap = { season: number; committed?: number; dead?: number; room?: number; max?: number };
+  offence?: number; defence?: number; reserveExcluded?: boolean; positions: { code: string; min: number;
+    max?: number }[] };
+export type HQCap = { season: number; committed?: number; dead?: number; room?: number; max?: number; ir?:
+  number };
 export function money(value?: number | null): string {
   return value == null ? unavailable : `$${(value / 100_000_000).toFixed(2)}M`;
 }

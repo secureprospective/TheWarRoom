@@ -1,15 +1,55 @@
 # Franchise HQ v10 wiring
 
-The locked `docs/ui/mocks/franchise-hq-mock-v10.html` owns layout and styling.
-`FranchiseHQ` replaces only the HQ route's outer shell; other workspaces keep their shell.
-Feature API adapters call existing held reads; parsers reject malformed replies before mapping.
-`useHQRead` uses the shared keyed query, fences late replies, and re-reads on season/move events.
-The existing contract reader retains its own request fencing. A failed or pending read displays
-`Not available yet`, never mock fixtures or a previous franchise's facts.
+Visual authority: `docs/ui/mocks/franchise-hq-mock-v10.html`, unchanged. The HQ route uses
+`HQShell` and the scoped copy of its CSS; other workspaces retain their existing shell.
+The native account's hosted franchise opens the same shell. Its Control Room rail destination
+returns to the existing hosted workflows/account surface. No backend or generated bindings changed.
 
-The snapshot supplies franchise/roster identity and cap limit/room. The settings report supplies
-roster, IR, taxi and starter counts and position limits. The lineup read supplies saved starters
-and legality; existing command-registry drafts remain the sole owner of lineup edits.
-Signed MFL adjustments are not necessarily dead money: no sum is relabelled as dead cap.
+## Data and state owners
 
-This is a staged local build; the report records the final wired regions and remaining gaps.
+| Route | Responsibility, state and failure boundary |
+|---|---|
+| Feature `api.ts` adapters → existing reads → parsers → HQ presentation | No new endpoint, external refresh, scoring or cap business rule. Unknown values stay absent. MFL signed adjustments are never relabelled dead money. |
+| `useHQRead` / existing `useContractRead` | Complete argument keys, current-scope checks, late-response fencing, season/move subscriptions and cleanup. Failed or pending reads do not borrow another selection's facts. |
+| `LineupRoster` → `LineupEditor` → `HQBoard` | Existing command-registry draft owns membership; existing Go check owns legality. HQ supplies presentation, settings-derived counts and selected-player interaction. Pending draft checks do not claim the saved verdict is current. |
+| `HQAct` → `Act` → existing `commissioner.surface` | Scoped local view callbacks; handlers unregister on unmount. Actual guarded team actions retain their existing Acts. No callback is serialized into a command argument. |
+| Inspector → notes read/change → notes reread | The backend owns count, text and dated-note identity. Removing one note sends its read timestamp. No invented local note count or successful-write fallback. Native hosted seats never borrow local MFL private lists. |
+| What-if/release → existing local session and release-plan APIs | Backend-authored figures and prices. Holding saves an existing local release plan, never submits a roster move to MFL. A native cut uses `contract.quote`, read-only. |
+| `readNativeHQ` → existing hosted workflow admission → native reads | No bearer credentials in frontend state. Scope/season checks and matching revisions where supplied; inconsistent regions become unavailable. Selected-player cut quotes are separately scoped and revision-fenced. |
+| Moves → existing receipts plus bid/release/contract plan reads | Deduplicated identities, explicit partial-source failure, withdrawn plans excluded. Native `needs_you` stays native, using the existing native receipt parser. No assumption that all-history moves constitute a season ledger. |
+
+MFL projections expose player names, not IDs: only unique exact directory names are joined, and
+only for the matching week. Missing projections are never zero. Matchup totals from M-018 require
+complete inputs; player deltas join report entities to real projections. Form charts use only the
+three finished weeks the existing research report actually exposes, not five fabricated bars.
+
+## Settings consumed
+
+MFL: salary cap from snapshot/contract reads; M-091 roster size, IR size, taxi size, weekly starter
+count, offensive/defensive starter counts and position minimum/maximum limits. Contract durations
+and annual schedules come from roster/contracts reads; future annual amounts retain the read's
+inference reason. Clock deadlines are read, never reconstructed from a weekday literal.
+
+Native: `roster.limits`, `roster.reserveExcluded`, `ir.slots`, `taxi.slots`, `lineup.positions` and
+`lineup.groups` from the rules reading. Reserve-inclusive roster limits subtract actual reserves for
+the displayed active allowance. Cap limit, reserve salary charges, current/future commitments, dead
+money and room come from the cap check/runway; its horizon follows backend contract settings.
+Cut costs and cap before/after come from the native contract quote. No frontend pricing or preset
+branch. There is no literal league cap, squad capacity, starter count or contract horizon.
+
+## Verification and limits
+
+Mapping/empty-state tests cover the plate, starters/bench, projections, byes, form, matchup,
+inspector, usage, arc, notes, reserve tables, runway, moves, native reads and cut quote. Mounted tests
+exercise note add/remove, bench selection/placement/filtering, stale replies and private-list
+isolation. Trade-draft tests observe no submission and unchanged state after a failed roster read.
+Settings fixtures change capacities, lineup counts and cap values. The shared release hold is
+exercised for early cancellation and callback-only confirmation.
+
+The bundle gate now follows MyMoves' actual static dependency graph instead of assuming the shared
+rail chunk is named EnvelopeRail. It still rejects eager rail/form/fixture leaks; its deliberate
+violations pass the self-test. No budget or security requirement was weakened.
+
+Known incomplete behavior is recorded in `docs/build-handoffs/HQ-WIRE-report.md`; no exact pixel or
+live Wails acceptance is claimed. The existing editor is membership-based: named slot persistence,
+compatible-target-only dragging and the mock's weakest-player cascade/autofill are not implemented.

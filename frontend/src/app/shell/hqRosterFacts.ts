@@ -15,7 +15,8 @@ export async function readRosterFacts(ids: string[]): Promise<RosterFacts> {
     ]);
     return [id, { usage: usage.status === 'fulfilled' ? usage.value : undefined,
       research: research.status === 'fulfilled' ? research.value : undefined,
-      error: [usage, research].flatMap(r => r.status === 'rejected' ? [String(r.reason)] : []).join(' · ') }] as const;
+      error: [usage, research].flatMap(r => r.status === 'rejected' ? [String(r.reason)] : []).join(' · ')
+        }] as const;
   }));
   return new Map(entries);
 }

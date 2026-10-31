@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from './FranchisePicker';
+import { useHQMovePlans, mergeHQMoves } from './hqMovePlans';
 import { HQMoves } from './HQMoves';
 import { EnvelopeRail } from './EnvelopeRail';
 import { useWorkAnchor } from './workScroll';
@@ -30,13 +31,17 @@ export default function MyMoves({ snapshot, executor = commands, appearance }: {
   const loading = executor.useMoves((state) => state.movesLoading[franchiseId]);
   const error = executor.useMoves((state) => state.movesErrors[franchiseId]);
   const demo = executor.useMoves((state) => state.demo);
+  const plans = useHQMovePlans(franchiseId, appearance === 'hq' && !fixture && Boolean(franchiseId));
   const receipts = moves.filter((r) => r.spec.franchiseId === franchiseId);
   const visible = receipts.filter((r, i) => i < 15 || r.spec.intent === 'trade.propose');
   if (!fixture && !franchiseId) return <FranchisePicker snapshot={snapshot} />;
-  if (appearance === 'hq') return <HQMoves snapshot={snapshot} available={loading === false && !error}
-    reason={error} moves={error ? [] : receipts.map(r => ({ id: r.correlationId, intent: r.spec.intent,
+  if (appearance === 'hq') return <HQMoves snapshot={snapshot} available={loading === false && !error &&
+    plans.reading?.errors.length === 0}
+    reason={error || plans.error || plans.reading?.errors.join(' · ')}
+    moves={mergeHQMoves(error ? [] : receipts.map(r => ({ id: r.correlationId, intent: r.spec.intent,
       state: r.state, note: r.audit.at(-1)?.note ?? '', at: r.audit.at(-1)?.at ?? '',
-      players: r.spec.subject.players, handoff: () => { void executor.dispatch('move.handoff', { correlationId: r.correlationId }); } }))} />;
+      players: r.spec.subject.players, handoff: () => { void executor.dispatch('move.handoff', {
+        correlationId: r.correlationId }); } })), plans.reading?.moves ?? [])} />;
   return (
     <section ref={root} className="my-moves">
       <h4>My moves</h4>

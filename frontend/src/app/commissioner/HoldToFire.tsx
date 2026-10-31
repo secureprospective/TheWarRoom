@@ -4,13 +4,14 @@ import { commands } from '../commands/registry';
 import { createHold, holdMs } from './hold';
 
 type Props = { label: string; body: string; disabled?: boolean; ms?: number; answer?: string;
-  onConfirm?(): void }; 
+  appearance?: 'hq'; onConfirm?(): void };
 const holdKey = (key: string) => key === ' ' || key === 'Enter';
 
 // HoldToFire confirms a change that needs a deliberate act: hold the pointer, Space or Enter for about
 // 600 ms. Releasing early cancels. Held long enough it sends `body` through commissioner.execute, once.
 // It is self-contained so chunk 4 can move it to the shared shell.
-export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '', onConfirm }: Props) {
+export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer = '', onConfirm, appearance
+  }: Props) {
   const latest = useRef(body);
   latest.current = body;
   const confirm = useRef(onConfirm);
@@ -54,7 +55,8 @@ export function HoldToFire({ label, body, disabled = false, ms = holdMs, answer 
       onKeyDown={e => { if (holdKey(e.key)) { e.preventDefault(); start(); } }}
       onKeyUp={e => { if (holdKey(e.key)) release(); }}>
       <Act verb="commissioner.execute" args={{ body }} variant="button" label={label}
-        disabled={disabled} submit>
+        disabled={disabled} submit className={appearance === 'hq' ? `hold ${holding ? 'go' : ''}` :
+          undefined}>
         <span className="hold-fill" aria-hidden="true"
           style={{ transitionDuration: holding ? `${ms}ms` : '120ms' }} />
         <span className="hold-label">{label}</span>

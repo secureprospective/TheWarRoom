@@ -63,3 +63,7 @@ export function useReading<T>(
 }
 
 export const useLineup = useReading<LineupReading>;
+
+export function useCachedLineup(store: ReturnType<typeof createLineups>, id: string) {
+  return useSyncExternalStore(store.subscribe, () => store.peek(id));
+}

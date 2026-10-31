@@ -103,7 +103,8 @@ export function TargetApp() {
   const placement = `${node.label} › ${workspace.label}` as Placement;
   if (s.node === 'hq' && snapshot) return <>
     <FranchiseHQMount snapshot={snapshot} />
-    <div className="twr-app"><Suspense fallback={null}><CommandBar snapshot={snapshot} /></Suspense></div>
+    <div className="twr-app"><Suspense fallback={undefined}><CommandBar snapshot={snapshot}
+      /></Suspense></div>
   </>;
   return (
     <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
