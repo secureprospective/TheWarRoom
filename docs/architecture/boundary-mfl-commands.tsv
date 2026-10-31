@@ -31,6 +31,7 @@ platform	unset	TargetClock	unset	both
 platform	unset	TargetDraftIR	unset	both
 platform	unset	TargetDraftTaxi	unset	both
 platform	unset	TargetHandOff	unset	desktop
+platform	unset	TargetInjuries	unset	both
 platform	unset	TargetMoves	unset	both
 platform	unset	TargetPhoto	unset	both
 platform	unset	TargetSnapshot	unset	both

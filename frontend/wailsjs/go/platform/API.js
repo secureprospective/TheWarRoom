@@ -22,6 +22,10 @@ export function TargetHandOff(arg1) {
   return window['go']['platform']['API']['TargetHandOff'](arg1);
 }
 
+export function TargetInjuries() {
+  return window['go']['platform']['API']['TargetInjuries']();
+}
+
 export function TargetMoves(arg1) {
   return window['go']['platform']['API']['TargetMoves'](arg1);
 }

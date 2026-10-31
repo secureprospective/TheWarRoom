@@ -2,13 +2,17 @@ package composition
 
 import (
 	"context"
+	"maps"
 	"net/http"
 	"path/filepath"
 	"time"
 
+	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 	"github.com/secureprospective/TheWarRoom/internal/headshot"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -21,6 +25,17 @@ type platformHost struct{ app *App }
 func (a *App) platformAPI() *platformapp.API { return platformapp.New(platformHost{app: a}) }
 
 func (h platformHost) Snapshot() (snapshot.Snapshot, error) { return h.app.takeSnapshot() }
+
+func (h platformHost) Injuries() ([]leaguefeed.Injury, error) { return h.app.injuryReturns(), nil }
+
+func (a *App) injuryReturns() []leaguefeed.Injury {
+	a.core.SeasonMu.Lock()
+	defer a.core.SeasonMu.Unlock()
+	weeks := controlapp.FlattenScheduleWeeks(maps.Values(a.now.schedules), func(feed heldSeasonFeed[[]nflschedule.RawWeek]) []nflschedule.RawWeek {
+		return feed.Value
+	})
+	return controlapp.InjuryReturns(a.core.SeasonInjuries.Value, weeks)
+}
 
 func (h platformHost) Clock() (snapshot.Sourced[leagueclock.Reading], error) {
 	return h.app.targetClock(h.app.core.Ctx)

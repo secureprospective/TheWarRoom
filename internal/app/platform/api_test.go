@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
@@ -20,6 +21,9 @@ type fakeHost struct {
 }
 
 func (h *fakeHost) Snapshot() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, nil }
+func (h *fakeHost) Injuries() ([]leaguefeed.Injury, error) {
+	return nil, nil
+}
 func (h *fakeHost) Clock() (snapshot.Sourced[leagueclock.Reading], error) {
 	return snapshot.Sourced[leagueclock.Reading]{}, nil
 }

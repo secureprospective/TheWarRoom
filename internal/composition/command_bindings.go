@@ -157,6 +157,7 @@ func platformCommandBindings(api *platformapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetSnapshot":       catalog.Bind0(api.TargetSnapshot),
 		"TargetClock":          catalog.Bind0(api.TargetClock),
+		"TargetInjuries":       catalog.Bind0(api.TargetInjuries),
 		"TargetDraftIR":        catalog.Bind2(api.TargetDraftIR, "franchiseID", "playerID"),
 		"TargetDraftTaxi":      catalog.Bind2(api.TargetDraftTaxi, "franchiseID", "playerID"),
 		"TargetMoves":          catalog.Bind1(api.TargetMoves, "franchiseID"),

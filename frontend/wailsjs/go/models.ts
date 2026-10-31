@@ -6932,6 +6932,30 @@ export namespace leaguefeed {
 	}
 	
 	
+	export class Injury {
+	    id: string;
+	    status: string;
+	    details?: string;
+	    expReturn?: string;
+	    returnSeason?: number;
+	    returnWeek?: number;
+	    returnReason?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Injury(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.status = source["status"];
+	        this.details = source["details"];
+	        this.expReturn = source["expReturn"];
+	        this.returnSeason = source["returnSeason"];
+	        this.returnWeek = source["returnWeek"];
+	        this.returnReason = source["returnReason"];
+	    }
+	}
 	export class PlayerScore {
 	    id: string;
 	    score: number;

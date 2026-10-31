@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/app/report"
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/leagueclock"
+	"github.com/secureprospective/TheWarRoom/internal/leaguefeed"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 )
 
@@ -19,6 +20,7 @@ import (
 // binding's original locks, startup check and error text.
 type Host interface {
 	Snapshot() (snapshot.Snapshot, error)
+	Injuries() ([]leaguefeed.Injury, error)
 	Clock() (snapshot.Sourced[leagueclock.Reading], error)
 	planwatch.Host
 	// PlayerName is a player's directory name, if the directory has one.
@@ -64,6 +66,13 @@ func PhotoRoutes(photos http.Handler) http.Handler {
 
 func (a *API) TargetSnapshot() (snapshot.Snapshot, error) {
 	return a.host.Snapshot() //nolint:wrapcheck // Preserve the binding's existing error text.
+}
+
+// TargetInjuries is the held NFL injury report with each expected return resolved to its NFL
+// week. Existing injury fields are unchanged; ReturnSeason, ReturnWeek and ReturnReason are
+// added.
+func (a *API) TargetInjuries() ([]leaguefeed.Injury, error) {
+	return a.host.Injuries() //nolint:wrapcheck // Preserve the binding's existing error text.
 }
 
 // TargetClock reads the phase log and commissioner calendar from the local store; no network.

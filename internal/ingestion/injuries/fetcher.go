@@ -28,12 +28,13 @@ const Export = "injuries"
 var errEmptyInjuries = errors.New("injuries: response contained zero players")
 
 // RawInjury is one injury row as MFL sends it. Status is MFL's open vocabulary; the
-// eligibility rules classify it. Details and ExpReturn are display text, never parsed.
+// eligibility rules classify it. Details is display text; ExpReturn is display text and the
+// input to ReturnWeek.
 type RawInjury struct {
 	ID        string // MFL player id, leading zeros kept
 	Status    string // "IR", "IR-R", "IR-PUP", "IR-NFI", "Out", "Suspended", …
 	Details   string // e.g. "Knee - PCL", display only
-	ExpReturn string // e.g. "Feb 15, 2027", display only
+	ExpReturn string // e.g. "Feb 15, 2027"
 }
 
 // Validate checks shape: a valid player id and a non-empty status, so an eligibility rule can
