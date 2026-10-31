@@ -89,3 +89,28 @@ HQ backend done; HQ screen layout done; interactions (drag/cascade/save, matchup
 3. Nov 1 03:00: dispatch Tom on A12-withdraw.md.
 4. Review Sol outputs; fixture walk both sizes; real-league walk; Christopher click test.
 5. D27: find held-feature DB (staging VM), then method + as-of replay.
+
+## 15. UPDATE 17:30 CT
+- D27 committed 72f3ee4f (internal/teamneeds + tools/d27replay + D27-REPLAY.md). Results:
+  - The method FAILS as a predictor: the surplus check got 65% (bar 70%), the needs check 12% (bar 50%).
+  - It ships descriptive only, with no grade words.
+  - The pick-equivalence check was not run. The DB copy is kept at ~/fleet/runs/d27-replay/history-copy.db.
+- RULING: the posture label is PUBLIC to the whole league (Win now/Retool/Rebuild). Brief ~/fleet/briefs/build/D28-posture.md is for Tom, after A12, in .worktrees/d33.
+- NEXT: 18:17 launch both Sol lanes; 03:00 Tom runs A12 then D28.
+- 17:35 CT:
+  - Sol lanes are armed on the Beelink: ~/fleet/bin/sol-at-1817.sh (pid in ~/fleet/runs/sol-at-1817.pid).
+  - It launches both lanes at 18:20 CT and retries each lane up to 3 times, 15 min apart, if it hits the usage limit.
+  - DO NOT launch by hand. My watcher is b0qh8u29g; it waits on that PID.
+  - Baseline at both heads: go build ok, tsc ok, worktrees clean.
+
+## NEXT ACTIONS (17:40 CT, supersedes)
+1. When watcher b0qh8u29g fires (or check: `kill -0 $(cat ~/fleet/runs/sol-at-1817.pid)`):
+   - Read ~/fleet/runs/sol-HQ-FIX2 and ~/fleet/runs/sol-WR-WIRE (completion.txt, stdout.log).
+   - If stderr shows "usage limit" 3 times, relaunch after the next reset.
+2. Review Sol commits (start heads 08dd9975 HQ, a3ea876b WR). Then:
+   - Fixture walk at 1920 and 2550 against the mocks.
+   - Real-league walk.
+   - List wrong numbers.
+3. Nov 1 03:00 CT: dispatch Tom on ~/fleet/briefs/build/A12-withdraw.md, then D28-posture.md (.worktrees/d33).
+4. D27 pick-equivalence bar: fit pickvalue as of each date. DB copy at ~/fleet/runs/d27-replay/history-copy.db (412 MB; delete once done).
+5. Christopher click test HQ, then War Room.
