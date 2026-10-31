@@ -134,6 +134,10 @@ export function TargetNativeLineupCheck(arg1) {
   return window['go']['commissioner']['API']['TargetNativeLineupCheck'](arg1);
 }
 
+export function TargetNativeLineupDelta(arg1) {
+  return window['go']['commissioner']['API']['TargetNativeLineupDelta'](arg1);
+}
+
 export function TargetNativeLineupSet(arg1) {
   return window['go']['commissioner']['API']['TargetNativeLineupSet'](arg1);
 }

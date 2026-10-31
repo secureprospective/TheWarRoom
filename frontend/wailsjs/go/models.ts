@@ -6589,6 +6589,46 @@ export namespace envelope {
 
 export namespace history {
 	
+	export class NativeLineupDelta {
+	    league: string;
+	    season: number;
+	    week: number;
+	    you: lineupdelta.Side;
+	    them: lineupdelta.Side;
+	    notes: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeLineupDelta(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.you = this.convertValues(source["you"], lineupdelta.Side);
+	        this.them = this.convertValues(source["them"], lineupdelta.Side);
+	        this.notes = source["notes"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class NativeProjection {
 	    player: string;
 	    position?: string;
@@ -10889,6 +10929,35 @@ export namespace leaguerules {
 
 }
 
+export namespace leagueservice {
+	
+	export class RawLineupDeltaScope {
+	    league: string;
+	    franchise: string;
+	    partner: string;
+	    give: string[];
+	    get: string[];
+	    season: number;
+	    week: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawLineupDeltaScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.partner = source["partner"];
+	        this.give = source["give"];
+	        this.get = source["get"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	    }
+	}
+
+}
+
 export namespace lineup {
 	
 	export class Problem {
@@ -10921,6 +10990,85 @@ export namespace lineup {
 	        this.full = source["full"];
 	        this.legal = source["legal"];
 	        this.problems = this.convertValues(source["problems"], Problem);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
+export namespace lineupdelta {
+	
+	export class Change {
+	    kind: string;
+	    player: string;
+	    position: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Change(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.kind = source["kind"];
+	        this.player = source["player"];
+	        this.position = source["position"];
+	    }
+	}
+	export class Starter {
+	    player: string;
+	    position: string;
+	    ppg: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Starter(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.position = source["position"];
+	        this.ppg = source["ppg"];
+	    }
+	}
+	export class Side {
+	    franchise: string;
+	    before: Starter[];
+	    after: Starter[];
+	    perWeek: number;
+	    thisWeek: number;
+	    changes: Change[];
+	    unprojected: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Side(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.before = this.convertValues(source["before"], Starter);
+	        this.after = this.convertValues(source["after"], Starter);
+	        this.perWeek = source["perWeek"];
+	        this.thisWeek = source["thisWeek"];
+	        this.changes = this.convertValues(source["changes"], Change);
+	        this.unprojected = source["unprojected"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {

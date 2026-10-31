@@ -51,6 +51,8 @@ type ResultsHost interface {
 	NativeResults(ctx context.Context, league string, season, week int) (commissioner.NativeResults, error)
 	NativeProjections(ctx context.Context, league string, season, week int,
 		players []string) (history.NativeProjections, error)
+	NativeLineupDelta(ctx context.Context, league string, season, week int,
+		trade history.TradeSides) (history.NativeLineupDelta, error)
 	NativeStandings(ctx context.Context, league string, season int) (commissioner.NativeStandings, error)
 	NativeScorePreview(ctx context.Context, raw commissioner.RawCommand) (commissioner.ScorePreview, error)
 	NativeBracket(ctx context.Context, league string, season int) (commissioner.NativeBracket, error)

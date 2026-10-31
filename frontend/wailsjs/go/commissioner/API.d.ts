@@ -3,6 +3,7 @@
 import {commissioner} from '../models';
 import {market} from '../models';
 import {accounts} from '../models';
+import {leagueservice} from '../models';
 import {history} from '../models';
 import {time} from '../models';
 
@@ -71,6 +72,8 @@ export function TargetNativeHouseRules(arg1:string):Promise<commissioner.NativeH
 export function TargetNativeLineup(arg1:string,arg2:string,arg3:number,arg4:string):Promise<commissioner.NativeLineup>;
 
 export function TargetNativeLineupCheck(arg1:commissioner.RawNativeLineup):Promise<commissioner.NativeLineupCheck>;
+
+export function TargetNativeLineupDelta(arg1:leagueservice.RawLineupDeltaScope):Promise<history.NativeLineupDelta>;
 
 export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>;
 
