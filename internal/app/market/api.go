@@ -16,6 +16,7 @@ type Host interface {
 	MarketContext() context.Context
 	// AssetInput hydrates and reads Research's finished-week scores, and lists every rostered id.
 	AssetInput(context.Context) (OnField, []string)
+	AgeArcSource() AgeArcSource
 	MarketWeek() int
 	// CaptureMarket runs snapshot under the shared lock the root writers publish under.
 	CaptureMarket(snapshot func() Feeds) Feeds
@@ -45,6 +46,16 @@ func (a *API) TargetAssetBoard() (AssetBoard, error) {
 	defer cancel()
 	now, rostered := a.host.AssetInput(ctx)
 	return WireAssetBoard(BuildBoard(now, a.held.SnapshotModel(), time.Now(), rostered)), nil
+}
+
+// TargetAgeArc reads the fitted age arc for an MFL player ID.
+func (a *API) TargetAgeArc(id string) (AgeArc, error) {
+	if err := a.host.Ready(); err != nil {
+		return AgeArc{}, fmt.Errorf("age arc: startup: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(a.host.MarketContext(), assetTimeout)
+	defer cancel()
+	return ReadAgeArc(ctx, a.host.AgeArcSource(), id)
 }
 
 func (a *API) TargetMarketReportsRefresh(force bool) error {

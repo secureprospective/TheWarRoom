@@ -123,6 +123,7 @@ func draftCommandBindings(api *draftapi.API) map[string]catalog.Binding {
 func marketCommandBindings(api *marketapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetAssetBoard":           catalog.Bind0(api.TargetAssetBoard),
+		"TargetAgeArc":               catalog.Bind1(api.TargetAgeArc, "id"),
 		"TargetMarketReportsRefresh": catalog.Bind1Error(api.TargetMarketReportsRefresh, "force"),
 		"TargetMarketReports":        catalog.Bind0(api.TargetMarketReports),
 	}

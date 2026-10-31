@@ -152,6 +152,7 @@ func marketDesktop(_ []Command) []Command {
 	}
 	return []Command{
 		heldRead(read("TargetAssetBoard", "G0")),
+		heldRead(read("TargetAgeArc", "G0")),
 		heldRead(read("TargetMarketReports", "G0")),
 		read("TargetMarketReportsRefresh", "G1"),
 	}

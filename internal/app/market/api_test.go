@@ -44,7 +44,8 @@ func (h *fakeHost) AssetInput(ctx context.Context) (OnField, []string) {
 	h.inputCtx = ctx
 	return h.now, h.rostered
 }
-func (h *fakeHost) MarketWeek() int { h.call("week"); return h.week }
+func (h *fakeHost) AgeArcSource() AgeArcSource { return AgeArcSource{} }
+func (h *fakeHost) MarketWeek() int            { h.call("week"); return h.week }
 func (h *fakeHost) CaptureMarket(snapshot func() Feeds) Feeds {
 	h.call("capture")
 	return snapshot()

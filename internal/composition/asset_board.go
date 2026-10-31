@@ -115,3 +115,9 @@ func (h marketHost) RefreshMarket(force bool) error {
 		h.RefreshMarketFeeds(ctx, force)
 	})
 }
+
+func (h marketHost) AgeArcSource() marketapp.AgeArcSource {
+	src := h.app.nativeValueSource()
+	return marketapp.AgeArcSource{Book: recordstore.New(h.app.core.HistPools, h.app.core.History).Book,
+		LatestRun: src.LatestRun, Scores: src.Scores, Params: src.Params, Season: h.app.core.Season}
+}
