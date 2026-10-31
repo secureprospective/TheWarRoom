@@ -52,3 +52,16 @@ All local branches; nothing pushed; main untouched. Resume committed on build/HQ
 
 ## 10. HONEST STATUS
 HQ backend done; HQ screen layout done; interactions (drag/cascade/save, matchup win %, live, drawer actions, tabs) NOT done; zero real-league verification yet. ETA HQ functional ~Nov 1–2 if Sol's evening window completes D–I.
+
+## 12. UPDATE 16:10 CT (after compaction #11) — SUPERSEDES §3/§9 where they differ
+- OpenCode free (DeepSeek AND GLM) went SILENT 15:10–15:35 (0-byte output; `opencode run "pong"` returns nothing). Ping before any dispatch. WR-D38 DeepSeek runs killed; logs ~/fleet/runs/glm-WR-D38-stall1, glm-WR-D38.
+- build/HQ-wire b519cf43: research wire golden regenerated (Sol's 207f44f3 added "Form · Wk N" rows to the SHARED research player reading — additive, visible on research screen too).
+- build/WR-D38 (.worktrees/wr-d38) 52f7822d, rebased on b519cf43: personal store action "swap" + RawChange.With for kind watch (rank targets within a position lane). Stars = existing watch add/remove; bid state = existing TargetNativeBids (yourBid/youLead; blind = own bid only). Need tag (D27) + est. win (D35) have no source → show "not available". No new binding. 20 tests PASS -race. FRONTEND NOT WIRED.
+- build/D11-replay (.worktrees/d11-replay), rebased on b519cf43: 4b2013db/031927dd harness+proof (docs/ui/data-catalog/D11-REPLAY.md), ae1653bc+83f9e7d6 internal/projection (Params/DefaultParams/NewShape/Project) + store/history NativeProjections + binding TargetNativeProjections (projections.read, league-view G0, players = comma string ≤120, native.* leagues only) + all checklist items (doors 283, manifest, release_matrix inventory, bindings fresh), 32fe5fc8 memo keyed league|season|sha256(json rules.Scoring)|file shas. Contract batch all ok (composition, serverhttp, commandcatalog, app/commissioner, leagueservice, store/history, projection).
+- Replay results: coverage 84% PASS; Spearman QB 0.429 FAIL (bar .45), RB .638/WR .535/TE .533 PASS; shrink beats raw 9/10 (TE fails); matchup step adds nothing (cap .10 → .430; .20 hurts) → not shipped; current-season-only (prior 0) worse → prior seasons required. ROS-vs-final-PF bar NOT run. Debt: first-call latency on a real league unmeasured; positions from nflverse labels, not league's.
+- Harness: `go run ./tools/d11replay -dir ~/fleet/runs/config-study-p5-2026-10-26/cache [-prior -half -min -cap]` ~5 s.
+
+## NEXT ACTIONS (now)
+1. 18:17 CT: `gpt-build.sh sol high hq-wire ~/fleet/briefs/build/HQ-FIX.md sol-HQ-FIX2` + done-watcher (hq-wire clean at b519cf43; Sol must not regress the golden).
+2. Me meanwhile: D33 lineup delta (method MODEL_METHODS_DRAFT §6; reuse powerrankings.Lineup + m2service.LineupRules; candidate value = D11 median via store NativeProjections) — on a new worktree off build/D11-replay; replay proof per §6 bars.
+3. After HQ-FIX: merge D11 + WR-D38 into HQ line; wire D11 ranges into HQ drawer; fixture walk both sizes; real-league walk.
