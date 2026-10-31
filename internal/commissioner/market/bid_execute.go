@@ -249,7 +249,11 @@ func (x *bidExecution) rosterAllowsContract(player, franchise string, salary dom
 	if commissioner.StartingCardLot(x.records, player) {
 		rules.Roster.Limits.Value.Min = leaguerules.Known(0)
 	}
-	return rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: player}, x.now)...)
+	exceptions := commissioner.ScopedDecisionExceptions(x.records, commissioner.ExceptionScope{Franchise: franchise, Player: player}, x.now)
+	if err := rosterCapAllows(&candidate, rules, franchise, x.facts, x.zone, exceptions...); err != nil {
+		return err
+	}
+	return x.openBidsFit(&candidate, rules, player, franchise, exceptions)
 }
 
 // experienceYears is the player's NFL seasons so far. Without a real draft year the player is a rookie.
