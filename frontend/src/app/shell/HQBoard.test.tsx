@@ -62,17 +62,21 @@ it('renders real opponent projection only when the existing preview reports comp
   const { HQMatchup } = await import('./HQBoard');
   const matchup = report('X-03'); matchup.columns = ['Slot', 'Mine', 'Points', 'Opponent', 'Points'];
   matchup.summary = [{ cells: ['Opponent', 'Other team'], range: null }];
-  matchup.rows = [{ cells: ['QB', 'My QB', '', 'Other QB', ''], range: null }];
+  matchup.rows = [{ cells: ['QB', 'My QB', '', 'Other QB', ''], range: null },
+    { cells: ['Total', '', '70.5', '', '66.1'], range: null }];
   matchup.entities = [{ kind: 'player', id: '0042', text: 'My QB' },
     { kind: 'player', id: '0043', text: 'Other QB' }];
   const preview = report('M-018'); preview.rows = [{ cells: ['Mine', '171.2', 'Other team', '164.9', 'Mine'],
     mine: true, range: null }];
-  preview.summary = [{ cells: ['Starters MFL does not project', '0'], range: null }];
+  preview.summary = [{ cells: ['Starters MFL does not project', '0'], range: null },
+    { cells: ['My win probability', '62.1%'], range: null }];
   const now = { matchup, board: board(preview), week: 5, weeks: [], reportWeek: 5, reportWeeks: [],
     waiting: '' };
   const render = () => renderToStaticMarkup(<HQMatchup now={now} ownProjection="171.2"
     values={new Map([['0042', 22.1], ['0043', 20.8]])} />);
   expect(render()).toContain('164.9'); expect(render()).toContain('+1.3');
+  expect(render()).toContain('62.1%'); expect(render()).toContain('score 70.5');
+  expect(render()).toContain('score 66.1'); expect(render()).not.toContain('sl\">Total');
   preview.summary[0].cells[1] = '1';
   expect(render()).not.toContain('164.9'); expect(render()).toContain(unavailable);
 });

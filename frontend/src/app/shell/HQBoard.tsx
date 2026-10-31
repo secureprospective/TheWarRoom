@@ -184,6 +184,9 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
   now?: Now; values?: Map<string, number>; ownProjection?: string;
 }) {
   const report = now?.matchup;
+  const actual = report?.rows.find(r => r.cells[0] === 'Total');
+  const probability = now?.board.reports.find(r => r.id === 'M-018' && ['ok', 'stale'].includes(r.status))
+    ?.summary.find(r => r.cells[0] === 'My win probability')?.cells[1];
   const opponent = report?.summary.find(r => r.cells[0] === 'Opponent')?.cells[1];
   const previews = now?.board.reports.find(r => r.id === 'M-018');
   const preview = previews?.rows.find(r => r.mine);
@@ -195,7 +198,7 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
     const identities = report?.entities?.filter(e => e.kind === 'player' && name.includes(e.text)) ?? [];
     return identities.length === 1 ? values.get(identities[0].id) : undefined;
   };
-  const rows = report && ['ok', 'stale'].includes(report.status) ? report.rows.map(r => {
+  const rows = report && ['ok', 'stale'].includes(report.status) ? report.rows.filter(r => r.cells[0] !== 'Total').map(r => {
     const mine = projected(r.cells[1]), theirs = projected(r.cells[3]);
     return { row: r, mine, theirs, delta: mine === undefined || theirs === undefined ? undefined : mine -
       theirs };
@@ -205,9 +208,9 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
     <span>closest matchups first</span></div>
     <div className="mu-h"><div className="side"><b data-empty={ownProjection ===
       unavailable}>{ownProjection}</b>
-      <span>you · proj</span></div><div className="wp">{unavailable}</div>
+      <span>you · proj · score {actual?.cells[2] ?? '—'}</span></div><div className="wp">{probability ?? unavailable}</div>
       <div className="side them"><b data-empty={opponentProjection === unavailable}>{opponentProjection}</b>
-        <span>{opponent ?? unavailable} · proj</span></div></div>
+        <span>{opponent ?? unavailable} · proj · score {actual?.cells[4] ?? '—'}</span></div></div>
     <div className="mu-rows">{rows.length ? rows.map(({ row, mine, theirs, delta }, i) => <div key={i}>
       <span className="sl">{row.cells[0]}</span><span>{row.cells[1]} {mine?.toFixed(1)} vs {row.cells[3]}
         {theirs?.toFixed(1)}</span>
