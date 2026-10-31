@@ -4,6 +4,7 @@ package personal
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -37,6 +38,9 @@ type RawChange struct {
 	Action string `json:"action"`
 	// At identifies one dated note when removing it; notes are otherwise appended.
 	At string `json:"at,omitempty"`
+	// With is the other watched player in a "swap": the screen ranks targets within a position
+	// lane, so it names the lane neighbour and the two trade ranks.
+	With string `json:"with,omitempty"`
 }
 
 func (r RawChange) Validate() error {
@@ -59,7 +63,10 @@ func (r RawChange) Validate() error {
 }
 
 func (r RawChange) validAction() bool {
-	if !slices.Contains([]string{"add", "remove", "up", "down"}, r.Action) {
+	if r.Action == "swap" {
+		return r.Kind == "watch" && r.Entity == "player" && r.At == "" && r.validWith()
+	}
+	if r.With != "" || !slices.Contains([]string{"add", "remove", "up", "down"}, r.Action) {
 		return false
 	}
 	if r.Kind == "note" {
@@ -76,6 +83,11 @@ func (r RawChange) validAction() bool {
 		return false
 	}
 	return r.Action != "up" && r.Action != "down" || r.Kind == "draft"
+}
+
+func (r RawChange) validWith() bool {
+	pid, err := playerid.New(r.With)
+	return err == nil && pid.String() == r.With && r.With != r.ID
 }
 
 func (r RawChange) validNoteAt() bool {
@@ -185,6 +197,8 @@ func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
 			_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries WHERE mine=? AND kind=? AND entity=? AND entity_id=?`,
 				r.Mine, r.Kind, r.Entity, r.ID)
 		}
+	case "swap":
+		err = swapWatch(ctx, tx, r)
 	default:
 		err = reorder(ctx, tx, r)
 	}
@@ -193,6 +207,37 @@ func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("personal: commit: %w", err)
+	}
+	return nil
+}
+
+// swapWatch trades the ranks of two watched players; both must be on the owner's list.
+func swapWatch(ctx context.Context, tx *sql.Tx, r RawChange) error {
+	ordinal := func(id string) (int, error) {
+		var n int
+		err := tx.QueryRowContext(ctx, `SELECT ordinal FROM personal_entries
+ WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`, r.Mine, id).Scan(&n)
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, fmt.Errorf("personal: watched player is not listed")
+		}
+		if err != nil {
+			return 0, fmt.Errorf("personal: swap read: %w", err)
+		}
+		return n, nil
+	}
+	a, err := ordinal(r.ID)
+	if err != nil {
+		return err
+	}
+	b, err := ordinal(r.With)
+	if err != nil {
+		return err
+	}
+	for id, n := range map[string]int{r.ID: b, r.With: a} {
+		if _, err := tx.ExecContext(ctx, `UPDATE personal_entries SET ordinal=?
+ WHERE mine=? AND kind='watch' AND entity='player' AND entity_id=?`, n, r.Mine, id); err != nil {
+			return fmt.Errorf("personal: swap: %w", err)
+		}
 	}
 	return nil
 }
