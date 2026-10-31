@@ -140,6 +140,7 @@ func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetPersonal":        catalog.Bind1(api.TargetPersonal, "mine"),
 		"TargetPersonalChange":  catalog.Bind1Error(api.TargetPersonalChange, "raw"),
+		"TargetPersonalNotes":   catalog.Bind2(api.TargetPersonalNotes, "mine", "playerID"),
 		"TargetPersonalHandOff": catalog.Bind1Error(api.TargetPersonalHandOff, "kind"),
 		"TargetPool":            catalog.Bind1Value(api.TargetPool, "raw"),
 		"TargetPoolRefresh":     catalog.Bind1Error(api.TargetPoolRefresh, "force"),

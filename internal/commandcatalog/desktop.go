@@ -171,6 +171,7 @@ func offersDesktop(related []Command) []Command {
 	return append(related, []Command{
 		{ID: Unset, Method: "TargetPersonal", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalChange", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: Unset, Method: "TargetPersonalNotes", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetPersonalHandOff", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "desktop"},
 	}...)
 }

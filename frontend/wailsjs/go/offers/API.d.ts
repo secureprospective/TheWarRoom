@@ -24,6 +24,8 @@ export function TargetPersonalChange(arg1:personal.RawChange):Promise<void>;
 
 export function TargetPersonalHandOff(arg1:string):Promise<void>;
 
+export function TargetPersonalNotes(arg1:string,arg2:string):Promise<offers.PersonalNotes>;
+
 export function TargetPool(arg1:offers.RawPoolScope):Promise<report.Reading_github_com_secureprospective_TheWarRoom_internal_app_offers_Pool_>;
 
 export function TargetPoolRefresh(arg1:boolean):Promise<void>;

@@ -12443,6 +12443,40 @@ export namespace offers {
 		    return a;
 		}
 	}
+	export class PersonalNotes {
+	    player: string;
+	    notes: personal.Entry[];
+	    count: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PersonalNotes(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.notes = this.convertValues(source["notes"], personal.Entry);
+	        this.count = source["count"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class PersonalPlayer {
 	    id: string;
 	    status: string;
@@ -12575,6 +12609,7 @@ export namespace personal {
 	    id: string;
 	    text: string;
 	    action: string;
+	    at?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new RawChange(source);
@@ -12588,6 +12623,7 @@ export namespace personal {
 	        this.id = source["id"];
 	        this.text = source["text"];
 	        this.action = source["action"];
+	        this.at = source["at"];
 	    }
 	}
 

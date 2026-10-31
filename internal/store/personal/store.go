@@ -22,6 +22,12 @@ type Entry struct {
 	Order  int    `json:"order"`
 }
 
+// Thread is one player's dated notes, newest first, with the total held.
+type Thread struct {
+	Notes []Entry `json:"notes"`
+	Count int     `json:"count"`
+}
+
 type RawChange struct {
 	Mine   string `json:"mine"`
 	Kind   string `json:"kind"`
@@ -29,6 +35,8 @@ type RawChange struct {
 	ID     string `json:"id"`
 	Text   string `json:"text"`
 	Action string `json:"action"`
+	// At identifies one dated note when removing it; notes are otherwise appended.
+	At string `json:"at,omitempty"`
 }
 
 func (r RawChange) Validate() error {
@@ -41,9 +49,7 @@ func (r RawChange) Validate() error {
 	if err := r.validateEntity(); err != nil {
 		return err
 	}
-	if !slices.Contains([]string{"add", "remove", "up", "down"}, r.Action) ||
-		(r.Action == "up" || r.Action == "down") && r.Kind != "draft" ||
-		r.Kind == "note" && r.Action != "add" {
+	if !r.validAction() {
 		return fmt.Errorf("personal: invalid action")
 	}
 	if r.invalidText() {
@@ -52,8 +58,37 @@ func (r RawChange) Validate() error {
 	return nil
 }
 
+func (r RawChange) validAction() bool {
+	if !slices.Contains([]string{"add", "remove", "up", "down"}, r.Action) {
+		return false
+	}
+	if r.Kind == "note" {
+		switch r.Action {
+		case "add":
+			return r.At == ""
+		case "remove":
+			return r.validNoteAt()
+		default:
+			return false
+		}
+	}
+	if r.At != "" {
+		return false
+	}
+	return r.Action != "up" && r.Action != "down" || r.Kind == "draft"
+}
+
+func (r RawChange) validNoteAt() bool {
+	if r.At == "" {
+		return false
+	}
+	_, err := time.Parse(time.RFC3339Nano, r.At)
+	return err == nil
+}
+
 func (r RawChange) invalidText() bool {
-	return len(r.Text) > 8000 || strings.IndexByte(r.Text, 0) >= 0 || r.Kind == "note" && strings.TrimSpace(r.Text) == ""
+	return len(r.Text) > 8000 || strings.IndexByte(r.Text, 0) >= 0 ||
+		r.Kind == "note" && r.Action == "add" && strings.TrimSpace(r.Text) == ""
 }
 
 func (r RawChange) validateEntity() error {
@@ -104,6 +139,29 @@ func (s *Store) Read(ctx context.Context, mine string) ([]Entry, error) {
 	return entries, nil
 }
 
+// PlayerNotes returns one franchise's notes for a player, newest first.
+func (s *Store) PlayerNotes(ctx context.Context, mine, playerID string) (Thread, error) {
+	rows, err := s.pools.Read().QueryContext(ctx, `SELECT kind,entity,entity_id,text,at,ordinal
+ FROM personal_entries WHERE mine=? AND kind='note' AND entity='player' AND entity_id=?
+ ORDER BY at DESC,ordinal DESC`, mine, playerID)
+	if err != nil {
+		return Thread{}, fmt.Errorf("personal: player notes: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	notes := []Entry{}
+	for rows.Next() {
+		var e Entry
+		if err := rows.Scan(&e.Kind, &e.Entity, &e.ID, &e.Text, &e.At, &e.Order); err != nil {
+			return Thread{}, fmt.Errorf("personal: player note scan: %w", err)
+		}
+		notes = append(notes, e)
+	}
+	if err := rows.Err(); err != nil {
+		return Thread{}, fmt.Errorf("personal: player note rows: %w", err)
+	}
+	return Thread{Notes: notes, Count: len(notes)}, nil
+}
+
 func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
 	if err := r.Validate(); err != nil {
 		return err
@@ -119,8 +177,14 @@ func (s *Store) Change(ctx context.Context, r RawChange, at time.Time) error {
   SELECT ?,?,?,?,?,?,COALESCE(MAX(ordinal),0)+1 FROM personal_entries WHERE mine=? AND kind=?
   ON CONFLICT DO NOTHING`, r.Mine, r.Kind, r.Entity, r.ID, r.Text, at.UTC().Format(time.RFC3339Nano), r.Mine, r.Kind)
 	case "remove":
-		_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries WHERE mine=? AND kind=? AND entity=? AND entity_id=?`,
-			r.Mine, r.Kind, r.Entity, r.ID)
+		if r.Kind == "note" {
+			_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries
+ WHERE mine=? AND kind='note' AND entity=? AND entity_id=? AND at=?`,
+				r.Mine, r.Entity, r.ID, r.At)
+		} else {
+			_, err = tx.ExecContext(ctx, `DELETE FROM personal_entries WHERE mine=? AND kind=? AND entity=? AND entity_id=?`,
+				r.Mine, r.Kind, r.Entity, r.ID)
+		}
 	default:
 		err = reorder(ctx, tx, r)
 	}

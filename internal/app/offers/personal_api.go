@@ -47,6 +47,28 @@ func (a *API) TargetPersonal(mine string) (PersonalReading, error) {
 	return PersonalReading{Entries: entries, Players: a.personalPlayers(entries), Bait: board}, nil
 }
 
+// TargetPersonalNotes reads one player's dated notes for the owning franchise only.
+func (a *API) TargetPersonalNotes(mine, playerID string) (PersonalNotes, error) {
+	if err := a.host.Ready(); err != nil {
+		return PersonalNotes{}, fmt.Errorf("personal: startup: %w", err)
+	}
+	snap, err := a.personalSnapshot(mine)
+	if err != nil {
+		return PersonalNotes{}, err
+	}
+	names, _ := snapshotNames(snap)
+	if names[playerID] == "" {
+		return PersonalNotes{}, fmt.Errorf("personal: unknown player")
+	}
+	ctx, cancel := context.WithTimeout(a.host.OffersContext(), readTimeout)
+	defer cancel()
+	thread, err := personal.New(a.host.OffersPools()).PlayerNotes(ctx, mine, playerID)
+	if err != nil {
+		return PersonalNotes{}, fmt.Errorf("personal: notes: %w", err)
+	}
+	return PersonalNotes{Player: playerID, Notes: thread.Notes, Count: thread.Count}, nil
+}
+
 func (a *API) TargetPersonalChange(raw personal.RawChange) error {
 	if err := raw.Validate(); err != nil {
 		return fmt.Errorf("personal: input: %w", err)
@@ -91,6 +113,12 @@ type PersonalPlayer struct {
 	ID     string   `json:"id"`
 	Status string   `json:"status"`
 	Market []string `json:"market"`
+}
+
+type PersonalNotes struct {
+	Player string           `json:"player"`
+	Notes  []personal.Entry `json:"notes"`
+	Count  int              `json:"count"`
 }
 
 func (a *API) personalPlayers(entries []personal.Entry) []PersonalPlayer {

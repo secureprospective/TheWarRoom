@@ -1991,8 +1991,13 @@ string
 "entity": string;
 "id": string;
 "text": string;
-"action": string
+"action": string;
+"at"?: string
 }
+];
+"offers.TargetPersonalNotes": [
+string,
+string
 ];
 "offers.TargetPersonalHandOff": [
 string

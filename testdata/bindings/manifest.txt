@@ -94,6 +94,7 @@ offers.API.TargetBidWithdraw
 offers.API.TargetPersonal
 offers.API.TargetPersonalChange
 offers.API.TargetPersonalHandOff
+offers.API.TargetPersonalNotes
 offers.API.TargetPool
 offers.API.TargetPoolRefresh
 platform.API.TargetCheckMoves
