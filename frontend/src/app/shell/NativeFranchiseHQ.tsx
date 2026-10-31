@@ -1,3 +1,4 @@
+import { useNativeLineup, NativeLineupReview } from './hqNativeLineup';
 import { HQAct } from './HQAct';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -25,9 +26,11 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
   const [drawer, setDrawer] = useState<'ir' | 'taxi'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();
+  const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error } = useContractRead(JSON.stringify([league, mine]), () => readNativeHQ(league,
+  const { reading, error } = useContractRead(JSON.stringify([league, mine, revision]), () => readNativeHQ(league,
     mine, port), provider);
+  const editor = useNativeLineup(league, mine, reading?.lineup, port);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
   const quote = useContractRead(JSON.stringify([league, mine, chosen]), () => chosen
     ? readNativeCut(league, mine, chosen, port) : Promise.resolve(undefined), provider);
@@ -61,8 +64,9 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
       cap={runway?.[0] ?? { season: snapshot.league.value.season }} check={reading.check ?? unavailable}
       record={reading.record} standing={reading.standing} lock={reading.lock ? { id: 'native-lineup', at:
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} />
-    {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} reading={lineup}
-      settings={settings} values={new Map()} select={select} />
+    {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} key={editor.version} reading={editor.edited}
+      settings={settings} values={new Map()} select={select} canEdit={editor.canEdit}
+      changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
         positions={positions} cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player,
           cut.deadNow]])}
@@ -77,11 +81,13 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
           'TAXI_SQUAD')).length} / {settings[kind] ?? unavailable}</b></HQAct>)}
       <HQAct className="pull" disabled title="Native what-if read is not available">WHAT-IF</HQAct></div>
       <span className="msg" title={[...reading.errors, quote.error ??
-        ''].join(' · ')}>{unavailable}</span><HQAct
-        className="btn sp" disabled>DISCARD</HQAct><HQAct className="btn g2" disabled
-        title="Native plans are not stored yet">CHECK AND SAVE PLAN</HQAct>
+        ''].join(' · ')}>{editor.message}</span><HQAct
+        className="btn sp" disabled={!editor.dirty || editor.state.pending} onAction={editor.discard}>DISCARD</HQAct><HQAct className="btn g2"
+        disabled={!editor.canEdit || !editor.changed.length} onAction={() => { void editor.save(); }}
+        >CHECK AND SAVE PLAN</HQAct>
       <HQAct className="btn solid" disabled
         title="This league is native, not an MFL mirror">OPEN MFL ↗</HQAct></div>
+    <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {drawer && <HQReserves native kind={drawer} snapshot={snapshot} mine={mine} settings={settings}
       countedIRPay={runway?.[0]?.ir}
       week={reading.week} close={() => setDrawer(undefined)} />}

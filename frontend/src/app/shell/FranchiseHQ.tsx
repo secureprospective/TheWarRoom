@@ -56,6 +56,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
   const edit = commands.useLineupEdit();
   const teamReason = commands.useTeamActionReason('lineup.edit', { franchiseId: mine });
   const selectedId = s.subject?.franchiseId === mine ? s.subject.id : heldLineup.reading?.starters[0]?.id;
+  const [boardVersion, setBoardVersion] = useState(0);
   const [releaseId, setRelease] = useState<string>();
   const [drawer, setDrawer] = useState<'taxi' | 'ir' | 'whatif'>();
   useEffect(() => { const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrawer(undefined);
@@ -109,7 +110,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
               editor.error)}
             lock={lock && { ...lock, text: countdown(lock.at, Date.now()) }}
             {...standingFromReport(race.value?.standings)} />
-          {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} reading={editor.error ?
+          {tab === 'lineup-and-roster' ? <HQBoard key={boardVersion} snapshot={snapshot} mine={mine} reading={editor.error ?
             undefined : editor.reading}
             settings={rules} values={projections(snapshot, market.value, editor.reading?.week)}
               facts={facts.reading}
@@ -117,10 +118,13 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
               canEdit={!editor.reason && !teamReason}
             select={id => { void commands.dispatch('inspector.open', { subject: { kind: 'player', id,
               franchiseId: mine } }); }}
-            place={(id, out) => { if (editor.reading?.starters.some(p => p.id === id)) return;
+            assign={ids => {
               if (!editor.draft) commands.dispatch('lineup.edit', { franchiseId: mine });
-              if (out && out !== id) commands.dispatch('lineup.toggle', { playerId: out });
-              if (out !== id) commands.dispatch('lineup.toggle', { playerId: id }); }}
+              const current = editor.reading?.starters.map(p => p.id) ?? [];
+              for (const playerId of current.filter(id => !ids.includes(id)).concat(
+                ids.filter(id => !current.includes(id))))
+                commands.dispatch('lineup.toggle', { playerId });
+            }}
             bench={id => { if (!editor.draft) commands.dispatch('lineup.edit', { franchiseId: mine });
               commands.dispatch('lineup.toggle', { playerId: id }); }} />
             : tab === 'contracts-and-cap' ? <HQContracts snapshot={snapshot} mine={mine}
@@ -142,7 +146,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
               `${editor.changes.length} players changed from saved` :
               'No changes. Swaps stay a plan until you save.')}</span>
             <HQAct className="btn sp" disabled={!editor.draft} onAction={() => { void
-              commands.dispatch('lineup.cancel', {}); }}>DISCARD</HQAct>
+              commands.dispatch('lineup.cancel', {}); setBoardVersion(n => n + 1); }}>DISCARD</HQAct>
             <Act variant="button" className="btn g2" verb="lineup.draft" args={{}}
               disabled={Boolean(editor.saveReason || teamReason)} label={teamReason ||
                 editor.saveReason}>CHECK AND SAVE PLAN</Act>
