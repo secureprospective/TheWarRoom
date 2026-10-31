@@ -200,6 +200,7 @@ func researchDesktop(_ []Command) []Command {
 		{ID: Unset, Method: "TargetResearch", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetResearchRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchNewsRefresh", Version: Unset, Role: "gm,commish,admin", Gravity: "G1", Availability: "both"},
+		{ID: Unset, Method: "TargetPlayerUsage", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both", Modes: []Mode{Read}},
 		{ID: Unset, Method: "TargetResearchPlayer", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetResearchStatus", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "both"},
 		{ID: Unset, Method: "TargetOpenResearchArticle", Version: Unset, Role: "gm,commish,admin", Gravity: "G0", Availability: "desktop"},

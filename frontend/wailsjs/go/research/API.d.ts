@@ -4,6 +4,8 @@ import {research} from '../models';
 
 export function TargetOpenResearchArticle(arg1:string,arg2:string):Promise<void>;
 
+export function TargetPlayerUsage(arg1:string):Promise<research.PlayerUsage>;
+
 export function TargetResearch(arg1:research.RawResearchScope):Promise<research.ResearchBoard>;
 
 export function TargetResearchNewsRefresh(arg1:string):Promise<void>;

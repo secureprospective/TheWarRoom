@@ -1788,6 +1788,32 @@ export const readCommands = {
     "Items": null
   }
 },
+"market.TargetAgeArc": {
+  "command": "desktop.market.TargetAgeArc",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "id",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "market.TargetMarketReports": {
   "command": "desktop.market.TargetMarketReports",
   "arguments": {
@@ -2106,6 +2132,32 @@ export const readCommands = {
               }
             }
           ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"research.TargetPlayerUsage": {
+  "command": "desktop.research.TargetPlayerUsage",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "playerID",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
           "Items": null
         }
       }

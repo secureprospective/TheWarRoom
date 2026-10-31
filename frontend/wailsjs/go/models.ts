@@ -13203,6 +13203,36 @@ export namespace report {
 
 export namespace research {
 	
+	export class PlayerUsage {
+	    snapShare?: number;
+	    targetShare?: number;
+	    carryShare?: number;
+	    weeksUsed: number;
+	    opponent: string;
+	    allowedPoints?: number;
+	    allowedRank?: number;
+	    teams: number;
+	    label: string;
+	    reason: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PlayerUsage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.snapShare = source["snapShare"];
+	        this.targetShare = source["targetShare"];
+	        this.carryShare = source["carryShare"];
+	        this.weeksUsed = source["weeksUsed"];
+	        this.opponent = source["opponent"];
+	        this.allowedPoints = source["allowedPoints"];
+	        this.allowedRank = source["allowedRank"];
+	        this.teams = source["teams"];
+	        this.label = source["label"];
+	        this.reason = source["reason"];
+	    }
+	}
 	export class RawResearchScope {
 	    mine: string;
 	    search: string;

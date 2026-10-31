@@ -111,6 +111,7 @@ platform.API.TargetWithdrawRoster
 race.API.TargetRace
 race.API.TargetRaceRefresh
 research.API.TargetOpenResearchArticle
+research.API.TargetPlayerUsage
 research.API.TargetResearch
 research.API.TargetResearchNewsRefresh
 research.API.TargetResearchPlayer

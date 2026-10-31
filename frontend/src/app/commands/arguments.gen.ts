@@ -1961,6 +1961,9 @@ boolean
 "market.TargetAssetBoard": [
 
 ];
+"market.TargetAgeArc": [
+string
+];
 "market.TargetMarketReports": [
 
 ];
@@ -2019,6 +2022,9 @@ string
 "platform.TargetHandOff": [
 string
 ];
+"platform.TargetInjuries": [
+
+];
 "platform.TargetMoves": [
 string
 ];
@@ -2056,6 +2062,9 @@ boolean
 boolean
 ];
 "research.TargetResearchNewsRefresh": [
+string
+];
+"research.TargetPlayerUsage": [
 string
 ];
 "research.TargetResearchPlayer": [

@@ -178,6 +178,7 @@ func researchCommandBindings(api *researchapi.API) map[string]catalog.Binding {
 		"TargetResearch":            catalog.Bind1(api.TargetResearch, "raw"),
 		"TargetResearchRefresh":     catalog.Bind1Error(api.TargetResearchRefresh, "force"),
 		"TargetResearchNewsRefresh": catalog.Bind1Error(api.TargetResearchNewsRefresh, "mine"),
+		"TargetPlayerUsage":         catalog.Bind1(api.TargetPlayerUsage, "playerID"),
 		"TargetResearchPlayer":      catalog.Bind1(api.TargetResearchPlayer, "id"),
 		"TargetResearchStatus":      catalog.Bind0Value(api.TargetResearchStatus),
 		"TargetOpenResearchArticle": catalog.Bind2Error(api.TargetOpenResearchArticle, "id", "article"),

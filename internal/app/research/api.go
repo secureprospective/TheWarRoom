@@ -70,6 +70,32 @@ func (a *API) TargetResearchPlayer(id string) (ResearchPlayerReading, error) {
 	return WirePlayer(ReadPlayer(in, pid.String(), a.host.ResearchNames(), "How this is counted")), nil
 }
 
+// TargetPlayerUsage reads one player's last-four-week usage and his next NFL matchup.
+func (a *API) TargetPlayerUsage(id string) (PlayerUsage, error) {
+	pid, err := playerid.New(id)
+	if err != nil {
+		return PlayerUsage{}, fmt.Errorf("player usage: %w", err)
+	}
+	if err := a.host.Ready(); err != nil {
+		return PlayerUsage{}, fmt.Errorf("player usage: %w", err)
+	}
+	in := a.host.ResearchSnapshot()
+	if _, _, ok := in.Lookup.DisplayFacts(pid.String()); !ok {
+		return PlayerUsage{}, fmt.Errorf("player usage: player not in the held directory")
+	}
+	usageHost, ok := a.host.(UsageHost)
+	if !ok {
+		return PlayerUsage{}, fmt.Errorf("player usage: weekly history is not available")
+	}
+	source := usageHost.UsageSource()
+	rows, err := source.Rows()
+	if err != nil {
+		return PlayerUsage{}, fmt.Errorf("player usage: %w", err)
+	}
+	p := Player(in.Lookup, in.Mirror, in.Config, pid.String())
+	return ReadPlayerUsage(in, pid.String(), p.Position, source.Season, rows), nil
+}
+
 func (a *API) TargetResearchStatus() string { return a.held.SnapshotStatus() }
 
 func (a *API) TargetOpenResearchArticle(id, article string) error {
