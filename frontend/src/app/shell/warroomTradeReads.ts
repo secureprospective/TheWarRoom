@@ -1,3 +1,4 @@
+import { ageAt } from '../cards/format';
 import { array, choice, object, text } from '../data/parseValues';
 import type { TradeAsset } from '../data/contract';
 import { targetTradeBuilderRead, targetTradeBuilderPreview } from '../trades/api';
@@ -10,7 +11,8 @@ import { newKey } from '../commissioner/forms';
 import type { WarRoomContext } from './warroomReads';
 import { finite } from './hqPlayerData';
 import { money } from './hqModel';
-export type WarRoomAsset = TradeAsset & { pick?: { season: number; round: number; original: string } };
+export type WarRoomAsset = TradeAsset & { age?: number;
+  pick?: { season: number; round: number; original: string } };
 export type WarRoomCatalog = { teams: { id: string; name: string; assets: WarRoomAsset[] }[];
   revision?: number };
 export type WarRoomDeal = { partner: string; give: string[]; get: string[] };
@@ -42,7 +44,8 @@ export async function readWarRoomCatalog(c: WarRoomContext): Promise<WarRoomCata
   if (!c.native) {
     const r = parseBuilder(await targetTradeBuilderRead(c.mine));
     if (!r.value || r.status !== 'ok') throw new Error(r.absenceReason ?? 'No trade catalog');
-    return { teams: r.value.teams };
+    return { teams: r.value.teams.map(t => ({ ...t, assets: t.assets.map(a => ({ ...a,
+      age: ageAt(c.snapshot.players.value.find(p => p.id === a.token)?.birthdate, new Date()) })) })) };
   }
   const { data } = await (c.native.port ?? hostedWorkflow)({ command: 'native.assets.read', mode: 'read',
     arguments: { league: c.native.league } });
@@ -53,7 +56,9 @@ export async function readWarRoomCatalog(c: WarRoomContext): Promise<WarRoomCata
     assets: [...roster.players.filter(p => p.franchise === f.value).map(p => {
       const contract = snapshot.rosters.value.find(r => r.franchiseId === f.value)?.players.find(r =>
         r.id === p.id);
-      return { token: p.id, name: p.name, contract: contract ? `${money(contract.salary)} · ${
+      return { token: p.id, name: p.name,
+        position: c.snapshot.players.value.find(i => i.id === p.id)?.position,
+        contract: contract ? `${money(contract.salary)} · ${
         contract.yearsRemaining ?? 'Not available yet'} yrs · ${contract.contractStatus}` : undefined };
     }), ...roster.picks.filter(p => p.owner === f.value).map(p => ({ token:
       `pick:${p.season}:${p.round}:${p.original}`, name: `${p.season} round ${p.round}`, pick: p }))] })) };
@@ -95,4 +100,33 @@ export async function readWarRoomDelta(c: WarRoomContext, catalog: WarRoomCatalo
     r.you.franchise !== c.mine || r.them.franchise !== deal.partner)
     throw new Error('Lineup delta belongs to another proposal scope');
   return r;
+}
+
+export async function readWarRoomPartner(c: WarRoomContext, partner: string) {
+  if (!partner) return undefined;
+  if (!c.native) {
+    const { raceAPI } = await import('../race/api');
+    const { standingFromReport } = await import('./hqPlayerData');
+    const race = await raceAPI.read(c.week, partner, partner, 'topn');
+    return { record: standingFromReport(race.standings).record,
+      room: c.snapshot.franchises.value.find(f => f.id === partner)?.capRoom };
+  }
+  const native = c.native;
+  const port = native.port ?? hostedWorkflow;
+  const [standings, cap] = await Promise.all([
+    port({ command: 'standings.read', mode: 'read', arguments: { league: native.league,
+      season: c.snapshot.league.value.season } }),
+    port({ command: 'native.cap.check', mode: 'read', arguments: { league: native.league,
+      viewerZone: Intl.DateTimeFormat().resolvedOptions().timeZone } }),
+  ]);
+  const { parseHostedStandings } = await import('../commissioner/hostedMarkets');
+  const { nativeHQCap } = await import('../commissioner/hqReading');
+  const checked = parseHostedStandings(standings.data);
+  if (checked.league !== native.league) throw new Error('Partner standings belong to another league');
+  const raw = standings.data as { computed: { franchise: string; record: string }[];
+    override?: { rows: { franchise: string; record: string }[] } };
+  const rows = raw.override?.rows ?? raw.computed;
+  const row = rows.find(r => text(r.franchise, 'Standing franchise') === partner);
+  return { record: row && text(row.record, 'Partner record'),
+    room: nativeHQCap(cap.data, native.league, partner)[0]?.room };
 }

@@ -2,20 +2,22 @@ import { array, integer, object, text } from '../data/parseValues';
 import { personalWire, swapPersonalTargets } from '../offers/api';
 import { parsePersonal, type Entry } from '../personal/contract';
 import { poolProvider } from '../pool/provider';
+import { parseHostedWaivers } from '../commissioner/hostedMarkets';
 import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
 import type { WarRoomContext } from './warroomReads';
 import { unavailable } from './hqModel';
 export type WarRoomMarketPlayer = { id: string; name: string; position: string; age?: string;
   minimum?: string; value?: string };
-export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string };
+export type WarRoomOwnBid = { player: string; name: string; contract: string; state: string;
+  kind?: 'plan' | 'placed' };
 export type WarRoomMarketReading = { players?: WarRoomMarketPlayer[]; bids?: WarRoomOwnBid[];
   targets?: Entry[]; errors: string[] };
 export function parseWarRoomOwnBids(value: unknown, league: string, mine: string): WarRoomOwnBid[] {
   const r = object(value, 'Bids', ['league', 'franchise', 'revision', 'season', 'mode', 'activeBids',
     'activeLimit', 'players', 'awards', 'notes']);
   if (r.league !== league || r.franchise !== mine) throw new Error('Bids belong to another franchise');
-  return array(r.players, 'Bid players', (v, p) => {
+  return array(r.players, 'Bid players', (v, p): WarRoomOwnBid | undefined => {
     const row = object(v, p, ['player', 'name', 'mode', 'modeWords', 'leader', 'bids', 'yourBid', 'youLead',
       'lateAt', 'lateWords', 'lateNow', 'closesAt', 'closes']);
     if (!row.yourBid) return undefined;
@@ -24,7 +26,8 @@ export function parseWarRoomOwnBids(value: unknown, league: string, mine: string
     if (bid.franchise !== mine) throw new Error('Private bid scope changed');
     if (typeof row.youLead !== 'boolean') throw new Error('Unreadable own bid state');
     return { player: text(row.player, p), name: text(row.name, p), contract: text(bid.contract, p),
-      state: row.youLead ? 'HIGH BID' : 'OUTBID' };
+      state: row.mode === 'blind' ? 'PLACED · PRIVATE' : row.youLead ? 'HIGH BID' : 'OUTBID',
+      kind: 'placed' as const };
   }).filter((b): b is WarRoomOwnBid => b !== undefined);
 }
 export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarketReading> {
@@ -40,10 +43,31 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
         const roster = parseHostedRoster(r.data);
         if (roster.league !== native.league) throw new Error('Pool belongs to another league');
         result.players = roster.pool.map(p => ({ id: p.value, name: p.label, position: unavailable }));
+        if (c.week) for (let offset = 0; offset < result.players.length; offset += 120) {
+          const players = result.players.slice(offset, offset + 120);
+          const { data } = await port({ command: 'projections.read', mode: 'read', arguments: {
+            league: native.league, players: players.map(p => p.id).join(','),
+            season: c.snapshot.league.value.season, week: c.week } });
+          const projections = parseWarRoomProjections(data, native.league,
+            c.snapshot.league.value.season, c.week);
+          for (const player of players) player.position = projections.find(p => p.player === player.id)
+            ?.position ?? unavailable;
+        }
       }),
       apply(async () => { const r = await port({ command: 'bids.read', mode: 'read', arguments: {
-        league: native.league, franchise: c.mine } }); result.bids = parseWarRoomOwnBids(r.data, native.league, c.mine); }),
+        league: native.league, franchise: c.mine } });
+        result.bids = parseWarRoomOwnBids(r.data, native.league,
+          c.mine); }),
     ]);
+    await apply(async () => {
+      const { data } = await port({ command: 'waivers.read', mode: 'read', arguments: {
+        league: native.league, franchise: c.mine, at: new Date().toISOString() } });
+      const waivers = parseHostedWaivers(data);
+      if (waivers.league !== native.league || waivers.franchise !== c.mine)
+        throw new Error('Waivers belong to another franchise');
+      for (const p of waivers.players) if (!result.players?.some(player => player.id === p.player))
+        (result.players ??= []).push({ id: p.player, name: p.name, position: unavailable });
+    });
     return result;
   }
   await Promise.all([
@@ -61,7 +85,7 @@ export async function readWarRoomMarket(c: WarRoomContext): Promise<WarRoomMarke
       if (bids.status === 'failed' || bids.status === 'not_wired') throw new Error(bids.absenceReason ??
         'Bid plans unavailable');
       result.bids = bids.value.plans.filter(p => p.franchiseId === c.mine).map(p => ({ player: p.playerId,
-        name: p.player, contract: p.contract, state: p.status || p.state }));
+        name: p.player, contract: p.contract, state: p.status || p.state, kind: 'plan' }));
     }),
   ]);
   return result;
@@ -89,7 +113,8 @@ export function parseWarRoomProjections(value: unknown, league: string, season: 
   if (r.league !== league || r.season !== season || r.week !== week)
     throw new Error('Projections belong to another league or week');
   return array(r.players, 'Player projections', (v, p) => {
-    const s = object(v, p, ['player', 'position', 'floor', 'median', 'ceiling', 'games', 'available', 'words']);
+    const s = object(v, p, ['player', 'position', 'floor', 'median', 'ceiling', 'games',
+      'available', 'words']);
     const points = (v: unknown) => { if (typeof v !== 'number' || !Number.isFinite(v)) throw new
       Error('Invalid projection'); return v; };
     if (typeof s.available !== 'boolean') throw new Error('Unreadable projection availability');

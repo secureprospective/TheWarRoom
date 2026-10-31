@@ -7,7 +7,7 @@ import { readPersonalNotes, personalWire } from '../offers/api';
 import { readNativeCut, type NativeCut } from '../commissioner/hqReading';
 import { hostedWorkflow } from '../commissioner/api';
 import { parseArc, parseNotes, type Arc } from './hqPlayerData';
-import { parseWarRoomProjections } from './warroomMarket';
+import { parseWarRoomProjections } from './warroomMarketReads';
 import type { WarRoomContext } from './warroomReads';
 export type WarRoomInspectorReading = { research?: PlayerReading; arc?: Arc;
   contract?: Reading<PlayerContract>; cut?: NativeCut; notes?: ReturnType<typeof parseNotes>;

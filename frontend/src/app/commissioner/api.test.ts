@@ -11,8 +11,9 @@ afterEach(() => {
 it('routes every moved method through the generated Commissioner module', async () => {
   const calls = Object.fromEntries(methods.map(([name]) => [name, vi.fn(async () => name)]));
   vi.stubGlobal('window', { go: { commissioner: { API: calls } } });
-  expect(methods).toHaveLength(48);
-  expect(methods.map(([name]) => name)).toContain('TargetNativeMoves');
+  expect(methods).toHaveLength(50);
+  for (const name of ['TargetNativeMoves', 'TargetNativeLineupDelta', 'TargetNativeProjections'])
+    expect(methods.map(([method]) => method)).toContain(name);
   for (const [name, method] of methods) {
     const call = method as (...args: unknown[]) => Promise<unknown>;
     const args = ['scope', { request: 'retry-key' }, 2026, 1, 'UTC', 'viewer', 'extra'];

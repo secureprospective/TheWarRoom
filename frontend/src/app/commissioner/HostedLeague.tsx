@@ -1,3 +1,4 @@
+import { HQAct as WarRoomAct } from '../shell/HQAct';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Act } from '../commands/Act';
 import { surfaceActions } from './surfaceActions';
@@ -43,7 +44,7 @@ export default function HostedLeague(props: {
       mine={props.franchise} name={props.name} port={props.port}
       leave={() => setHQ(false)} />
   </Suspense>;
-  return <><button onClick={() => setWar(true)}>War Room</button><HostedWorkRoom {...props} /></>;
+  return <><WarRoomAct onAction={() => setWar(true)}>War Room</WarRoomAct><HostedWorkRoom {...props} /></>;
 }
 function HostedWorkRoom({
   league,

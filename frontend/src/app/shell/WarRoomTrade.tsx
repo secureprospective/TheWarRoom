@@ -1,21 +1,25 @@
+import { HQAct as WarRoomAct } from './HQAct';
 import { useState } from 'react';
 import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
-import { readWarRoomDelta, readWarRoomPreview, type WarRoomAsset, type WarRoomCatalog,
-  type WarRoomDeal, type WarRoomDeltaSide } from './warroomTrade';
+import { readWarRoomDelta, readWarRoomPreview, readWarRoomPartner, type WarRoomAsset, type WarRoomCatalog,
+  type WarRoomDeal, type WarRoomDeltaSide } from './warroomTradeReads';
 import { WarRoomEmpty } from './WarRoomHeader';
-import { unavailable } from './hqModel';
-
-export function WarRoomAssetBlock({ asset, used, select, toggle, from }: { asset: WarRoomAsset;
-  used?: boolean; select: (a: WarRoomAsset) => void; toggle: () => void; from: string }) {
-  return <div className={`blk ${asset.pick || !asset.position ? 'pick' : ''} ${used ? 'sel' : ''}`}
+import { money, unavailable } from './hqModel';
+export function WarRoomAssetBlock({ asset, used, select, toggle, from, inTray }: { asset: WarRoomAsset;
+  used?: boolean; inTray?: boolean; select: (a: WarRoomAsset) => void; toggle: () => void; from: string }) {
+  return <div className={`blk ${asset.pick || asset.token.startsWith('pick:') ? 'pick' : ''} ${
+    used ? 'sel' : ''} ${inTray ? 'trow' : ''}`}
     draggable onDragStart={e => e.dataTransfer.setData('application/warroom-asset', JSON.stringify({
       from, token: asset.token }))}>
-    <button className="ps" aria-label={`${used ? 'Remove' : 'Add'} ${asset.name}`} onClick={toggle}>
-      {asset.position ?? (asset.pick ? 'PK' : '—')}</button>
-    <button className="nm" onClick={() => select(asset)} title={asset.contract}>{asset.name}
-      <small>{asset.contract ?? unavailable}</small></button><span className="ag">{unavailable}</span>
+    <WarRoomAct className="ps" label={`${used ? 'Remove' : 'Add'} ${asset.name}`} onAction={toggle}>
+      {asset.position ?? (asset.pick ? 'PK' : '—')}</WarRoomAct>
+    <WarRoomAct className="nm" onAction={() => select(asset)} title={asset.contract}>{asset.name}
+      <small>{asset.contract ?? unavailable}</small>
+      </WarRoomAct>
+      <span className="ag">{asset.age ?? unavailable}</span>
     <span className="vl" title={asset.now?.detail}>{asset.now?.held ? asset.now.text : unavailable}</span>
+    {inTray && <span className="v3">{unavailable}</span>}
   </div>;
 }
 export function WarRoomDeltaSidePanel({ side, name, names }: { side?: WarRoomDeltaSide; name: string;
@@ -44,29 +48,33 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
   const mine = catalog?.teams.find(t => t.id === context.mine);
   const theirs = catalog?.teams.find(t => t.id === deal.partner);
   const key = JSON.stringify([context.native?.league, context.mine, context.week, catalog?.revision, deal]);
+  const partner = useWarRoomRead(JSON.stringify([context.native?.league, deal.partner, context.week]),
+    () => readWarRoomPartner(context, deal.partner));
   const preview = useWarRoomRead(key, async () => catalog && deal.partner &&
     deal.give.length + deal.get.length ? readWarRoomPreview(context, catalog, deal) : undefined);
   const delta = useWarRoomRead(key, async () => catalog ? readWarRoomDelta(context, catalog, deal) :
     undefined);
   const toggle = (side: 'give' | 'get', token: string) => change({ ...deal, [side]: deal[side].includes(
     token) ? deal[side].filter(t => t !== token) : [...deal[side], token] });
-  const block = (a: WarRoomAsset, side: 'give' | 'get') => <WarRoomAssetBlock key={a.token} asset={a}
-    from={side === 'give' ? context.mine : deal.partner} select={select}
+  const block = (a: WarRoomAsset, side: 'give' | 'get', inTray = false) => <WarRoomAssetBlock
+    key={a.token} asset={a}
+    inTray={inTray} from={side === 'give' ? context.mine : deal.partner} select={select}
     used={deal[side].includes(a.token)} toggle={() => toggle(side, a.token)} />;
   const names = new Map(catalog?.teams.flatMap(t => t.assets.map(a => [a.token, a.name] as const)));
   return <section className="desk ws on" aria-label="Trade desk"><div className="shelf">
     <div className="ch"><b>MY SHELF</b><span>drag to SEND</span></div><div className="bench">
       <div className="filters">{['ALL', ...new Set(mine?.assets.map(a => a.position ?? (a.pick ? 'PICKS' :
-        '—')))].map(p => <button key={p} className="chip" aria-pressed={p === filter}
-          onClick={() => setFilter(p)}>{p}</button>)}</div></div><div className="list">
+        '—')))].map(p => <WarRoomAct key={p} className="chip" active={p === filter}
+          onAction={() => setFilter(p)}>{p}</WarRoomAct>)}</div></div><div className="list">
       {mine?.assets.length ? mine.assets.filter(a => filter === 'ALL' || (a.position ?? (a.pick ? 'PICKS' :
         '—')) === filter).map(a => block(a, 'give')) : <WarRoomEmpty />}</div></div>
-    <div className="build"><div className="vers" role="tablist"><button role="tab"
-      aria-selected> CURRENT DRAFT</button><button className="add" disabled title={unavailable}>+ VERSION
-      </button><span className="t">unsent · only you see this</span></div>
+    <div className="build"><div className="vers" role="tablist"><WarRoomAct role="tab"
+      selected> CURRENT DRAFT</WarRoomAct><WarRoomAct className="add" disabled title={unavailable}>+ VERSION
+      </WarRoomAct><span className="t">unsent · only you see this</span></div>
       <div className="trays">{(['give', 'get'] as const).map(side => {
         const team = side === 'give' ? mine : theirs;
-        return <div className="tray2" data-side={side === 'give' ? 'me' : 'them'} key={side} onDragOver={e => e.preventDefault()} onDrop={e => {
+        return <div className="tray2" data-side={side === 'give' ? 'me' : 'them'} key={side}
+          onDragOver={e => e.preventDefault()} onDrop={e => {
           e.preventDefault();
           try { const raw: unknown = JSON.parse(e.dataTransfer.getData('application/warroom-asset'));
             if (!raw || typeof raw !== 'object') return;
@@ -77,7 +85,7 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
         }}><div className="ch"><b>{side === 'give' ? 'YOU SEND' : 'YOU GET'}</b></div>
           <div className="tcols"><span /><span /><span>AGE</span><span className="y">YOU</span>
             <span className="t">THEM</span></div><div className="zone">{deal[side].length ? team?.assets
-              .filter(a => deal[side].includes(a.token)).map(a => block(a, side)) :
+              .filter(a => deal[side].includes(a.token)).map(a => block(a, side, true)) :
               <div className="hint">Drag players or picks here</div>}</div>
           <div className="tot"><span>{side === 'give' ? 'total sent' : 'total received'}</span>
             <b>{unavailable}</b></div></div>;
@@ -101,7 +109,9 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
       {catalog?.teams.filter(t => t.id !== context.mine).map(t => <option key={t.id} value={t.id}>
         {t.name}</option>)}</select><span className="dir">{unavailable}</span></div>
       {['Record · cap room', 'Needs', 'Spare'].map(label => <div className="kv" key={label}>
-        <span>{label}</span><span>{unavailable}</span></div>)}<div className="lean">{unavailable}</div>
+        <span>{label}</span><span>{label === 'Record · cap room' ?
+          `${partner.reading?.record ?? unavailable} · ${money(partner.reading?.room)}` : unavailable}
+        </span></div>)}<div className="lean">{unavailable}</div>
     </div><div className="ch"><b>THEIR SHELF</b><span>drag to GET</span></div><div className="list">
       {theirs?.assets.length ? theirs.assets.map(a => block(a, 'get')) : <WarRoomEmpty />}</div></div>
   </section>;

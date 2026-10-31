@@ -1,3 +1,4 @@
+import { HQAct as WarRoomAct } from './HQAct';
 import { useEffect } from 'react';
 import { targetTrades } from '../trades/api';
 import { parseTrades } from '../data/parseTrades';
@@ -34,7 +35,7 @@ export function WarRoomDrawers({ context, drawer, close }: { context: WarRoomCon
     <span className="sub">{drawer === 'pocket' ?
       "Trades you built and haven't sent. Only you can see them. Each one re-checks itself." :
       'Every live trade talk. Open one to answer it on the desk.'}</span>
-    <button className="x" onClick={close}>ESC</button></div><div className="bd-body pocket">
+    <WarRoomAct className="x" onAction={close}>ESC</WarRoomAct></div><div className="bd-body pocket">
     {drawer === 'offers' && offers.reading?.length ? offers.reading.map(o => <div className="pk"
       key={o.id}><div className="top">{o.status}</div><div className="ttl">{o.name}</div>
       <div className="legs">{o.details.map((d, i) => <span key={i}>{d}</span>)}</div>

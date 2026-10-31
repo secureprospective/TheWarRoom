@@ -1,16 +1,17 @@
+import { HQAct as WarRoomAct } from './HQAct';
 import { useState, type ReactNode } from 'react';
 import { useWarRoomRead, type WarRoomContext } from './warroomReads';
-import type { WarRoomAsset } from './warroomTrade';
-import { readWarRoomInspector, changeWarRoomNote } from './warroomInspector';
+import type { WarRoomAsset } from './warroomTradeReads';
+import { readWarRoomInspector, changeWarRoomNote } from './warroomInspectorReads';
 import { researchFact } from './hqPlayerData';
 import { money, unavailable } from './hqModel';
 import { WarRoomEmpty } from './WarRoomHeader';
 function Drawer({ label, detail, children, initial = true }: { label: string; detail?: ReactNode;
   children: ReactNode; initial?: boolean }) {
   const [open, setOpen] = useState(initial);
-  return <div className={`idr ${open ? 'open' : ''}`}><button aria-expanded={open}
-    onClick={() => setOpen(!open)}>{label}{label === 'NOTES' && <span className="mine">MINE</span>}
-    <span className="c">{detail ?? unavailable}</span></button><div className="body" hidden={!open}>
+  return <div className={`idr ${open ? 'open' : ''}`}><WarRoomAct expanded={open}
+    onAction={() => setOpen(!open)}>{label}{label === 'NOTES' && <span className="mine">MINE</span>}
+    <span className="c">{detail ?? unavailable}</span></WarRoomAct><div className="body" hidden={!open}>
       {children}</div></div>;
 }
 export function WarRoomInspector({ context, asset, add, watch }: { context: WarRoomContext;
@@ -56,7 +57,11 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
         nativeContract ? <div className="kv"><span>{context.snapshot.league.value.season}</span>
           <span>{money(nativeContract.salary)} · {nativeContract.contractStatus} · {
             nativeContract.yearsRemaining ?? unavailable} yrs</span></div> : <WarRoomEmpty />}
-      <div className="kv"><span>Dead if cut</span><span>{money(facts?.cut?.deadNow)}</span></div>
+      <div className="kv">
+      <span>Dead if cut</span>
+      <span>{context.native ? money(facts?.cut?.deadNow) :
+        researchFact(research, 'Dead cap if cut today') ?? unavailable}</span>
+      </div>
     </Drawer><Drawer label="VALUE ARC" detail={arc?.points.length ? `age ${arc.points[0].age} → ${
       arc.points[arc.points.length - 1].age}` : undefined}>
       {arc?.points.length ? <div className="arc" title={arc.reason}>{arc.points.map(p => <i key={p.season}
@@ -72,18 +77,21 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
             projection.ceiling.toFixed(1)}` : unavailable}</span></div>}</Drawer>
     <Drawer label="NOTES" detail={facts?.notes?.count} initial={false}>
       {facts?.notes ? facts.notes.notes.map(n => <div key={n.at}><time dateTime={n.at}>{new Date(n.at)
-        .toLocaleDateString()}</time><p>{n.text}</p><button className="btn" disabled={pending}
-        onClick={() => { void changeNote(n.text, n.at); }}>REMOVE</button></div>) : <WarRoomEmpty />}
+        .toLocaleDateString()}</time><p>{n.text}</p><WarRoomAct className="btn" disabled={pending}
+        onAction={() => { void changeNote(n.text, n.at); }}>REMOVE</WarRoomAct></div>) : <WarRoomEmpty />}
       <form onSubmit={e => { e.preventDefault(); if (note.trim()) void changeNote(note); }}>
         <textarea aria-label="Private player note" maxLength={8000} value={note}
           disabled={!!context.native || !facts?.notes || pending} onChange={e => setNote(e.target.value)}
-          /><button className="btn" type="submit" disabled={!!context.native || !facts?.notes || pending ||
-            !note.trim()}>SAVE NOTE</button></form>{error && <p role="alert">{error}</p>}</Drawer></div>
-    <div className="iact"><span className="h">MOVE</span><div className="ia"><button className="btn"
-      disabled={!add} onClick={add}>ADD TO TRADE</button><button className="btn" disabled={!watch || pending}
-      onClick={() => { if (watch) { setPending(true); setError(''); void watch().catch(e => setError(
-        String(e))).finally(() => setPending(false)); } }}>WATCH</button></div></div>
-    <div className="ifoot"><span>/ inspect {asset?.token ?? '…'}</span><button disabled title={unavailable}>
-      + DRAWER</button></div>
+          /><WarRoomAct className="btn" submit disabled={!!context.native || !facts?.notes || pending ||
+            !note.trim()}>SAVE NOTE</WarRoomAct></form>{error && <p role="alert">{error}</p>}</Drawer></div>
+    <div className="iact"><span className="h">MOVE</span><div className="ia"><WarRoomAct className="btn"
+      disabled={!add} onAction={add}>ADD TO TRADE</WarRoomAct>
+      <WarRoomAct className="btn" disabled={!watch || pending}
+      onAction={() => { if (watch) { setPending(true); setError(''); void watch().catch(e => setError(
+        String(e))).finally(() => setPending(false)); } }}>WATCH</WarRoomAct></div></div>
+    <div className="ifoot">
+      <span>/ inspect {asset?.token ?? '…'}</span>
+      <WarRoomAct disabled title={unavailable}>
+      + DRAWER</WarRoomAct></div>
   </aside>;
 }
