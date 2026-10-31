@@ -4,6 +4,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 func (a *API) TargetNativeCapCheck(leagueID, viewerZone string) (commissioner.NativeCapCheck, error) {
@@ -32,6 +33,13 @@ func (a *API) TargetNativeLineupCheck(
 func (a *API) TargetNativeHouseRules(leagueID string) (commissioner.NativeHouseRules, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetNativeHouseRules(leagueID)
+}
+
+// TargetNativeProjections reads D11 projected ranges for a comma-separated list of league players.
+func (a *API) TargetNativeProjections(league, players string, season,
+	week int) (history.NativeProjections, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeProjections(league, players, season, week)
 }
 
 // TargetNativePlayerScore reads only held NFL evidence and the app league's recorded decisions.

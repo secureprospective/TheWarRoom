@@ -53,6 +53,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetNativeLineupCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeLineupSet", "gm,commish", "G2"},
 		{"TargetNativePlayerScore", "gm,commish,admin", "G0"},
+		{"TargetNativeProjections", "gm,commish,admin", "G0"},
 		{"TargetNativeReserveCheck", "gm,commish,admin", "G0"},
 		{"TargetNativeResults", "gm,commish,admin", "G0"},
 		{"TargetNativeRosterCheck", "gm,commish,admin", "G0"},

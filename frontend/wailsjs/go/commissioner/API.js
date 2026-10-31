@@ -146,6 +146,10 @@ export function TargetNativePlayerScore(arg1, arg2, arg3, arg4) {
   return window['go']['commissioner']['API']['TargetNativePlayerScore'](arg1, arg2, arg3, arg4);
 }
 
+export function TargetNativeProjections(arg1, arg2, arg3, arg4) {
+  return window['go']['commissioner']['API']['TargetNativeProjections'](arg1, arg2, arg3, arg4);
+}
+
 export function TargetNativeReserveCheck(arg1) {
   return window['go']['commissioner']['API']['TargetNativeReserveCheck'](arg1);
 }
