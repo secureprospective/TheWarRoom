@@ -14,7 +14,7 @@ import { lineupGroups, lineupPending, lineupText, lineupVerdict } from './roster
 import { provenanceSlot } from '../cards/playerModel';
 import type { franchiseRoster } from './roster';
 
-export default function LineupEditor({ snapshot, roster, franchiseId, selected, cap, reading, error }: {
+export default function LineupEditor({ snapshot, roster, franchiseId, selected, cap, reading, error, render }: {
   snapshot: Snapshot;
   reading?: LineupReading;
   error?: string;
@@ -22,6 +22,8 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
   franchiseId: string;
   selected: PlayerSubject | null;
   cap: ReactNode;
+  render?: (editor: { reading?: LineupReading; error?: string; changes: string[];
+    draft: boolean; saveReason?: string; reason?: string; checkError?: string }) => ReactNode;
 }) {
   const { draft: held, receiptId } = commands.useLineupEdit();
   const draft = held?.franchiseId === franchiseId ? held : null;
@@ -43,6 +45,8 @@ export default function LineupEditor({ snapshot, roster, franchiseId, selected, 
   const groups = useMemo(() => edited && !lineupPending(edited) ? lineupGroups(snapshot, roster, edited)
     : roster.groups,
     [snapshot, roster, edited]);
+  if (render) return <>{render({ reading: edited, error, changes, draft: Boolean(draft),
+    saveReason, reason, checkError })}</>;
   return (
     <>
       <div className="lineup-actions">

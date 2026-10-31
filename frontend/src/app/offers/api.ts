@@ -92,3 +92,6 @@ export function subscribePool(changed: () => void): () => void {
   const season = selectProvider().onSeasonChange(changed);
   return () => { moves(); season(); };
 }
+
+export const readPersonalNotes = async (mine: string, player: string): Promise<unknown> =>
+  personalGo().TargetPersonalNotes(mine, player);

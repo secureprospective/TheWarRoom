@@ -31,3 +31,5 @@ export function subscribeSeason(changed: () => void): () => void {
   });
   return () => { disposed = true; stop?.(); };
 }
+
+export const readAgeArc = async (id: string): Promise<unknown> => bindings(values).TargetAgeArc(id);

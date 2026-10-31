@@ -28,3 +28,9 @@ export function useHQRead<K extends ReadCommandId, T>(command: K, args: ReadArgu
 export const readHQSettings = async () => report(await controlAPI.settings(), 'League settings');
 export const readHQRace = (week: number, team: string, mine: string, mode: string) =>
   raceAPI.read(week, team, mine, mode);
+
+export const hqEvents = { onChange: (load: () => void) => {
+  const season = selectProvider().onSeasonChange(load);
+  const moves = commands.onMovesChange(load);
+  return () => { season(); moves(); };
+} };

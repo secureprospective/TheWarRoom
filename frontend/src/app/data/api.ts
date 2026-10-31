@@ -22,3 +22,5 @@ export function photoReader(): PhotoReader | undefined {
   if (typeof window === 'undefined') return undefined;
   return (window as unknown as GoWindow).go?.platform?.API?.TargetPhoto;
 }
+
+export { TargetInjuries as targetInjuries } from '../../../wailsjs/go/platform/API';

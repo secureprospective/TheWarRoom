@@ -7,6 +7,9 @@ import { commands } from '../commands/registry';
 import { readNFLDraft } from '../draftreports/api';
 import { targetRosterReports } from '../contracts/api';
 
+export async function readRosterReports(mine: string): Promise<Report[]> {
+  return array(await targetRosterReports(mine), 'Roster reports', report);
+}
 export default function RosterReports({ mine, draft = false }: { mine: string; draft?: boolean }) {
   const [reports, setReports] = useState<Report[]>();
   const [error, setError] = useState('');
@@ -17,7 +20,7 @@ export default function RosterReports({ mine, draft = false }: { mine: string; d
         if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
           throw new Error('Roster reports need the desktop app; no sample data is substituted.');
         const reports = draft ? [await readNFLDraft()]
-          : array(await targetRosterReports(mine), 'Roster reports', report);
+          : await readRosterReports(mine);
         if (active) { setReports(reports); setError(''); }
       } catch (cause) { if (active) setError(String(cause)); }
     };

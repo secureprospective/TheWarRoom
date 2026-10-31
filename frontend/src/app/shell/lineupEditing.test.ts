@@ -7,7 +7,8 @@ import type { LineupCheck } from '../data/contract';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import { lineupReceipt } from '../data/lineupReceiptTestData';
 import { clockDom, TestElement } from '../clock/testDom';
-import { FranchiseHQ } from './FranchiseHQ';
+import { LineupRoster } from './LineupRoster';
+import { franchiseRoster } from './roster';
 import * as draftModule from './draftLineup';
 import { EnvelopeRail } from './EnvelopeRail';
 import MyMoves from './MyMoves';
@@ -63,7 +64,8 @@ async function setup() {
   let outside = 0;
   function Outside() {
     outside += 1;
-    return createElement(FranchiseHQ, { snapshot });
+    return createElement(LineupRoster, { snapshot, roster: franchiseRoster(snapshot, '0025'),
+      franchiseId: '0025', selected: c.read().subject, cap: null });
   }
   const rosterRender = vi.spyOn(draftModule, 'useDraftCheck');
   await act(async () => { root.render(createElement(Outside)); });
