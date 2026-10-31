@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from './FranchisePicker';
@@ -10,6 +10,15 @@ import { byeWeeks, projections, standingFromReport } from './hqPlayerData';
 import { hqEvents } from './hqReads';
 import { useLeagueClock } from '../clock/useLeagueClock';
 import { countdown } from '../clock/urgency';
+import { HQShell, type HQTab } from './HQShell';
+import { HQRelease } from './HQRelease';
+import { marketAPI } from '../market/api';
+import { parseAssetBoard } from '../assets/contract';
+import { HQInspector } from './HQInspector';
+import { HQContracts, HQReserves, HQWhatIf } from './HQPanels';
+import MyMoves from './MyMoves';
+import { HQQueue } from './HQMoves';
+import { readHQInjuries } from './hqRosterFacts';
 import { HQHeader } from './HQHeader';
 import { capFromReads, lineupCheck, settingsFromReport, unavailable } from './hqModel';
 import { readHQRace, readHQSettings, useHQRead } from './hqReads';
@@ -20,6 +29,7 @@ import { targetNow } from '../now/api';
 import { parseNow } from '../now/contract';
 import './hq.css';
 
+const readHQAssets = async () => parseAssetBoard(await marketAPI.assetBoard());
 const readHQNow = async (week: number, reportWeek: number, mine: string) => parseNow(await targetNow(week, reportWeek, mine));
 
 export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
@@ -29,6 +39,12 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
 }
 function HQFranchise({ snapshot, mine }: { snapshot: Snapshot; mine: string }) {
   const s = commands.use();
+  const heldLineup = useSyncExternalStore(commands.lineups.subscribe, () => commands.lineups.peek(mine));
+  const selectedId = s.subject?.franchiseId === mine ? s.subject.id : heldLineup.reading?.starters[0]?.id;
+  const [releaseId, setRelease] = useState<string>();
+  const [drawer, setDrawer] = useState<'taxi' | 'ir' | 'whatif'>();
+  useEffect(() => { const key = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrawer(undefined); setRelease(undefined); } };
+    document.addEventListener('keydown', key); return () => document.removeEventListener('keydown', key); }, []);
   const root = useRef<HTMLDivElement>(null);
   const clock = useLeagueClock(root);
   const week = clock?.value.week ?? commands.lineups.peek(mine).reading?.week ?? 0;
@@ -38,6 +54,10 @@ function HQFranchise({ snapshot, mine }: { snapshot: Snapshot; mine: string }) {
   const race = useHQRead('race.TargetRace', [week, mine, mine, ''], readHQRace);
   const now = useHQRead('now.TargetNow', [week, 0, mine], readHQNow);
   const reports = useContractRead(mine, () => readRosterReports(mine), hqEvents);
+  const injuries = useContractRead(mine, readHQInjuries, hqEvents);
+  const moves = commands.useMoves(s => s.moves.filter(r => r.spec.franchiseId === mine));
+  const movesReady = commands.useMoves(s => s.movesLoading[mine] === false && !s.movesErrors[mine]);
+  const assets = useHQRead('market.TargetAssetBoard', [], readHQAssets);
   const market = useHQRead('market.TargetMarketReports', [], readHQMarket);
   const ids = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.map(p => p.id) ?? [];
   const facts = useContractRead(JSON.stringify([mine, ids]), () => readRosterFacts(ids), hqEvents);
@@ -47,30 +67,16 @@ function HQFranchise({ snapshot, mine }: { snapshot: Snapshot; mine: string }) {
   const lock = clock?.value.deadlines.find(d => /lineup|lock/i.test(d.id + d.label));
   const tab = s.workspace.hq;
   const navigate = (workspace: 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves') => { void commands.dispatch('nav.open', { node: 'hq', workspace }); };
-  return <div className="hq-v10 shell" ref={root}>
-    <nav className="rail" aria-label="Main">
-      <div className="rail-head"><div className="lg">THE WAR ROOM</div><div className="ph">{unavailable} · <i>{week ? `Wk ${week}` : unavailable}</i></div></div>
-      <div className="rail-body"><div className="gl">MY SHORTCUTS</div>
-        <button className="leaf" onClick={() => navigate('lineup-and-roster')}>Lineup and roster</button>
-        <button className="leaf" onClick={() => { void commands.dispatch('nav.open', { node: 'war', workspace: 'valuations-and-pool' }); }}>Free-agent pool</button>
-        <button className="leaf" disabled title={unavailable}>Offers</button>
-        <div className="gl">LEAGUE</div>
-        {(['Home', 'War Room', 'Franchise HQ', 'Trade Floor', 'League Pulse', 'Control Room'] as const).map((name, index) => <div className={`node ${index === 2 ? 'open' : ''}`} key={name}>
-          <button className="nb" onClick={() => { void commands.dispatch('nav.open', { node: (['home', 'war', 'hq', 'trade', 'pulse', 'control'] as const)[index] }); }}>
-            <span className="k">{index + 1}</span>{name}<span className="car">›</span></button>
-          {index === 2 && <><button className="leaf now" disabled><span className="tag">NOW</span>{lock?.at ? `Locks ${new Date(lock.at).toLocaleString()}` : unavailable}</button>
-            {(['lineup-and-roster', 'contracts-and-cap', 'my-moves'] as const).map((ws, i) => <button key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`} onClick={() => navigate(ws)}>
-              <span className="tr">{i === 2 ? '└' : '├'}</span>{['Lineup and roster', 'Contracts and cap', 'My moves'][i]}</button>)}</>}
-        </div>)}
-      </div><div className="rail-foot"><button className="btn" disabled title={unavailable}>CUSTOMIZE</button><span>/ command</span></div>
-    </nav>
-    <main className="work">
-      <div className="ws-tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'lineup-and-roster'} onClick={() => navigate('lineup-and-roster')}>LINEUP AND ROSTER</button>
-        <button role="tab" aria-selected={tab === 'contracts-and-cap'} onClick={() => navigate('contracts-and-cap')}>CONTRACTS AND CAP</button>
-        <button className="queue" onClick={() => navigate('my-moves')} aria-label="My moves queue"><span className="ql">MY MOVES</span><span className="qn dim">{unavailable}</span></button>
-        <button className="cmd" onClick={() => { void commands.dispatch('commandbar.open', {}); }}><kbd>/</kbd> lineup.swap out=… in=…</button>
-      </div>
+  return <HQShell root={root} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
+    navigateNode={node => { void commands.dispatch('nav.open', { node }); }}
+    queue={<HQQueue available={movesReady} moves={moves.map(r => ({ id: r.correlationId, state: r.state, intent: r.spec.intent, players: r.spec.subject.players, note: r.audit.at(-1)?.note ?? '', at: r.audit.at(-1)?.at ?? '' }))} />}
+    inspector={<HQInspector snapshot={snapshot} mine={mine} id={selectedId}
+      facts={facts.reading} projection={projections(snapshot, market.value, week).get(selectedId ?? '')}
+      bench={selectedId && commands.lineups.peek(mine).reading?.starters.some(p => p.id === selectedId) ? id => {
+        if (!commands.read().lineupDraft) commands.dispatch('lineup.edit', { franchiseId: mine });
+        commands.dispatch('lineup.toggle', { playerId: id });
+      } : undefined} />}>
+
       <LineupRoster snapshot={snapshot} roster={roster} franchiseId={mine} selected={s.subject} cap={null}
         render={editor => <>
           <HQHeader name={franchise.name ?? mine} active={roster.groups[0].players.length}
@@ -78,7 +84,7 @@ function HQFranchise({ snapshot, mine }: { snapshot: Snapshot; mine: string }) {
             check={editor.checkError ? unavailable : lineupCheck(editor.reading, editor.error)}
             lock={lock && { ...lock, text: countdown(lock.at, Date.now()) }}
             {...standingFromReport(race.value?.standings)} />
-          <HQBoard snapshot={snapshot} mine={mine} reading={editor.error ? undefined : editor.reading}
+          {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} reading={editor.error ? undefined : editor.reading}
             settings={rules} values={projections(snapshot, market.value, editor.reading?.week)} facts={facts.reading}
             byes={byeWeeks(snapshot, reports.reading)} now={now.value} changed={editor.changes} canEdit={!editor.reason}
             select={id => { void commands.dispatch('inspector.open', { subject: { kind: 'player', id, franchiseId: mine } }); }}
@@ -88,14 +94,18 @@ function HQFranchise({ snapshot, mine }: { snapshot: Snapshot; mine: string }) {
               if (out !== id) commands.dispatch('lineup.toggle', { playerId: id }); }}
             bench={id => { if (!editor.draft) commands.dispatch('lineup.edit', { franchiseId: mine });
               commands.dispatch('lineup.toggle', { playerId: id }); }} />
-          <div className="tray"><div className="pulls"><button className="pull" disabled>TAXI <b>{roster.groups[2].players.length} / {rules.taxi ?? unavailable}</b></button><button className="pull" disabled>IR <b>{roster.groups[1].players.length} / {rules.ir ?? unavailable}</b></button><button className="pull" disabled>WHAT-IF</button></div>
+            : tab === 'contracts-and-cap' ? <HQContracts snapshot={snapshot} mine={mine} contracts={contracts.reading} assets={assets.value} facts={facts.reading} select={id => { setRelease(id); void commands.dispatch('inspector.open', { subject: { kind: 'player', id, franchiseId: mine } }); }} />
+            : <MyMoves snapshot={snapshot} appearance="hq" />}
+          <div className="tray"><div className="pulls" style={{ visibility: tab === 'lineup-and-roster' ? 'visible' : 'hidden' }}><button className="pull" aria-expanded={drawer === 'taxi'} onClick={() => setDrawer(drawer === 'taxi' ? undefined : 'taxi')}>TAXI <b>{roster.groups[2].players.length} / {rules.taxi ?? unavailable}</b></button><button className="pull" aria-expanded={drawer === 'ir'} onClick={() => setDrawer(drawer === 'ir' ? undefined : 'ir')}>IR <b>{roster.groups[1].players.length} / {rules.ir ?? unavailable}</b></button><button className="pull" aria-expanded={drawer === 'whatif'} onClick={() => setDrawer(drawer === 'whatif' ? undefined : 'whatif')}>WHAT-IF</button></div>
             <span className="msg" role="status">{editor.checkError || s.notice || (editor.changes.length ? `${editor.changes.length} players changed from saved` : 'No changes. Swaps stay a plan until you save.')}</span>
             <button className="btn sp" disabled={!editor.draft} onClick={() => { void commands.dispatch('lineup.cancel', {}); }}>DISCARD</button>
             <button className="btn g2" disabled={Boolean(editor.saveReason)} title={editor.saveReason} onClick={() => { void commands.dispatch('lineup.draft', {}); }}>CHECK AND SAVE PLAN</button>
-            <button className="btn solid" disabled title={unavailable}>OPEN MFL ↗</button>
+            <button className="btn solid" disabled={!moves.find(r => r.correlationId === commands.read().lineupReceiptId && r.state === 'ready')}
+              title="Open the saved lineup plan on MFL; nothing is submitted by the app" onClick={() => { const id = commands.read().lineupReceiptId; if (id) void commands.dispatch('move.handoff', { correlationId: id }); }}>OPEN MFL ↗</button>
           </div>
+          {(drawer === 'ir' || drawer === 'taxi') && <HQReserves kind={drawer} snapshot={snapshot} mine={mine} settings={rules} injuries={injuries.reading} close={() => setDrawer(undefined)} />}
+          {drawer === 'whatif' && <HQWhatIf mine={mine} close={() => setDrawer(undefined)} />}
+          {releaseId && <HQRelease key={releaseId} id={releaseId} mine={mine} snapshot={snapshot} facts={facts.reading} activeLimit={rules.active} cap={capFromReads(snapshot, mine, contracts.reading)} close={() => setRelease(undefined)} />}
         </>} />
-    </main>
-    <aside className="insp" aria-label="Inspector"><div className="ihead">{unavailable}</div><div /><div className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div className="ifoot">{unavailable}</div></aside>
-  </div>;
+  </HQShell>;
 }

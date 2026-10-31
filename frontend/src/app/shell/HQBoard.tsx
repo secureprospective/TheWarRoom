@@ -6,13 +6,14 @@ import { formPoints, totalProjection } from './hqPlayerData';
 import type { Now } from '../now/contract';
 import type { RosterFacts } from './hqRosterFacts';
 
-export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: LineupReading;
+export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: { id: string; position?: string }[]; bench: { id: string; position?: string }[] };
+export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
   settings: HQSettings; values: Map<string, number>; facts?: RosterFacts;
   byes?: Map<string, number>; now?: Now; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
   place?: (id: string, out?: string) => void; bench?: (id: string) => void };
 const defensive = (position?: string) => ['DT', 'DE', 'LB', 'CB', 'S', 'DL', 'DB'].includes(position ?? '');
 export type HQSlot = { code: string; side: 'off' | 'def'; id?: string };
-export function boardSlots(reading: LineupReading | undefined, settings: HQSettings): HQSlot[] {
+export function boardSlots(reading: HQLineup | undefined, settings: HQSettings): HQSlot[] {
   if (!reading) return [];
   const remaining = [...reading.starters];
   const slots: HQSlot[] = [];
@@ -81,7 +82,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
         if (!canEdit) return;
         e.preventDefault(); moving.current = true;
         e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id, x: e.clientX, y: e.clientY });
-      }}>{player?.position ?? '—'}</span>
+      }}>{reading?.starters.concat(reading.bench).find(p => p.id === id)?.position ?? player?.position ?? '—'}</span>
       <span className="nm">{player?.name ?? id}<small>{player?.team}</small></span>
       <FormChart id={id} facts={facts} projection={values.get(id)} />
       <span className="elig" title={usage?.reason}>{bye ? 'BYE' : usage?.opponent || unavailable}</span>

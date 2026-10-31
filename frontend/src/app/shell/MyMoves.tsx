@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useRef } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
 import { FranchisePicker } from './FranchisePicker';
+import { HQMoves } from './HQMoves';
 import { EnvelopeRail } from './EnvelopeRail';
 import { useWorkAnchor } from './workScroll';
 
@@ -10,9 +11,10 @@ const ReleasePlans = lazy(() => import('../contracts/ReleasePlans'));
 const BidPlans = lazy(() => import('../pool/BidPlans'));
 const ContractActs = lazy(() => import('../contracts/ContractActs'));
 
-export default function MyMoves({ snapshot, executor = commands }: {
+export default function MyMoves({ snapshot, executor = commands, appearance }: {
   snapshot: Snapshot;
   executor?: typeof commands;
+  appearance?: 'hq';
 }) {
   const root = useRef<HTMLElement>(null);
   useWorkAnchor(root, '.bid-plan');
@@ -31,6 +33,10 @@ export default function MyMoves({ snapshot, executor = commands }: {
   const receipts = moves.filter((r) => r.spec.franchiseId === franchiseId);
   const visible = receipts.filter((r, i) => i < 15 || r.spec.intent === 'trade.propose');
   if (!fixture && !franchiseId) return <FranchisePicker snapshot={snapshot} />;
+  if (appearance === 'hq') return <HQMoves snapshot={snapshot} available={loading === false && !error}
+    reason={error} moves={error ? [] : receipts.map(r => ({ id: r.correlationId, intent: r.spec.intent,
+      state: r.state, note: r.audit.at(-1)?.note ?? '', at: r.audit.at(-1)?.at ?? '',
+      players: r.spec.subject.players, handoff: () => { void executor.dispatch('move.handoff', { correlationId: r.correlationId }); } }))} />;
   return (
     <section ref={root} className="my-moves">
       <h4>My moves</h4>

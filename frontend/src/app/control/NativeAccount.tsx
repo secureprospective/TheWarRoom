@@ -92,7 +92,7 @@ export default function NativeAccount({ initial }: { initial: NativeView }) {
     </section>}
     {signedIn && view.franchise && <Suspense fallback={<p>Opening your franchise…</p>}>
       <HostedLeague league={initial.league} franchise={view.franchise}
-        name={view.franchiseName} role={view.role} />
+        name={view.franchiseName} role={view.role} hq />
     </Suspense>}
     {signedIn && view.name && view.seats.length > 0 &&
       <NativeHelpers server={initial.server}
