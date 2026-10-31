@@ -24,6 +24,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import bidsWire from '../../../../testdata/wire/native/bids.json';
 import draftWire from '../../../../testdata/wire/native/draft.json';
 import tradesWire from '../../../../testdata/wire/native/trades.json';
+import { researchAPI } from '../research/api';
 import { controlAPI } from '../control/api';
 import { raceAPI } from '../race/api';
 import { contractsProvider } from '../contracts/provider';
@@ -281,4 +282,13 @@ it('never calls a blind bid outbid when the read deliberately hides leadership',
   const html = renderToStaticMarkup(<WarRoomOwnBids reading={{ bids: own, errors: [] }} />);
   expect(html).toContain('PLACED · PRIVATE'); expect(html).not.toContain('OUTBID');
   expect(html).not.toContain('HIGH BID');
+});
+
+it('does not retain a rejected research identity in the selected inspector reading', async () => {
+  vi.spyOn(researchAPI, 'player').mockResolvedValue({ id: '0043', name: 'Other player', position: 'RB',
+    team: '', franchiseId: '0002', owner: 'Another owner', report: emptyReport(), articles: [],
+    howLabel: '' });
+  const result = await readWarRoomInspector(context(), '0042');
+  expect(result.research).toBeUndefined();
+  expect(result.errors.join(' · ')).toContain('another player');
 });

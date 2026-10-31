@@ -33,8 +33,9 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
     return result;
   }
   await Promise.all([
-    apply(async () => { result.research = await researchAPI.player!(id);
-      if (result.research.id !== id) throw new Error('Research belongs to another player'); }),
+    apply(async () => { const research = await researchAPI.player!(id);
+      if (research.id !== id) throw new Error('Research belongs to another player');
+      result.research = research; }),
     apply(async () => { result.arc = parseArc(await readAgeArc(id)); }),
     apply(async () => { const contract = await contractsProvider().player(id);
       if (contract.value && contract.value.player.id !== id) throw new Error('Wrong player contract');
