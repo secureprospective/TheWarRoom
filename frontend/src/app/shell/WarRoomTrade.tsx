@@ -66,7 +66,7 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
       </button><span className="t">unsent · only you see this</span></div>
       <div className="trays">{(['give', 'get'] as const).map(side => {
         const team = side === 'give' ? mine : theirs;
-        return <div className="tray2" key={side} onDragOver={e => e.preventDefault()} onDrop={e => {
+        return <div className="tray2" data-side={side === 'give' ? 'me' : 'them'} key={side} onDragOver={e => e.preventDefault()} onDrop={e => {
           e.preventDefault();
           try { const raw: unknown = JSON.parse(e.dataTransfer.getData('application/warroom-asset'));
             if (!raw || typeof raw !== 'object') return;

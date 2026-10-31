@@ -7,6 +7,8 @@ import { FranchisePicker } from './FranchisePicker';
 import { WarRoomHeader, WarRoomEmpty } from './WarRoomHeader';
 import { readWarRoomHeader, useWarRoomRead, type WarRoomNative } from './warroomReads';
 import { unavailable } from './hqModel';
+import { WarRoomMarket } from './WarRoomMarket';
+import { WarRoomDraft } from './WarRoomDraft';
 import { WarRoomTrade } from './WarRoomTrade';
 import { readWarRoomCatalog, type WarRoomDeal, type WarRoomAsset } from './warroomTrade';
 import './warroom.css';
@@ -25,7 +27,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
   const clock = useLeagueClock(root);
   const [tab, setTab] = useState<WarRoomTab>('desk');
   const [drawer, setDrawer] = useState<'pocket' | 'offers'>();
-  const week = native ? 0 : clock?.value.week ?? 0;
+  const week = native ? native.week ?? 0 : clock?.value.week ?? 0;
   const [deal, changeDeal] = useState<WarRoomDeal>({ partner: '', give: [], get: [] });
   const [selected, select] = useState<WarRoomAsset>();
   const context = { snapshot, mine, week, native };
@@ -65,7 +67,12 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
           trade.build with=… send=… get=…</div></div>
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={header.reading} />
-      <WarRoomTrade context={context} catalog={catalog.reading} deal={deal} change={changeDeal} select={select} />
+      {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
+        change={changeDeal} select={select} /> : tab === 'market' ? <WarRoomMarket context={context}
+          room={header.reading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :
+          tab === 'draft' ? <WarRoomDraft context={context} select={(id, name, position) =>
+            select({ token: id, name, position: snapshot.players.value.find(p => p.id === id)?.position })}
+            /> : <section className="three ws on"><WarRoomEmpty /></section>}
       <div className="cal" aria-label="Calendar">{deadlines.length ? deadlines.map(d => <div
         className="ev" key={d.id}><span className="w">{d.at ? new Date(d.at).toLocaleDateString() : unavailable}</span>
         <b>{d.label}</b><span className="c">{countdown(d.at, Date.now())}</span></div>) :

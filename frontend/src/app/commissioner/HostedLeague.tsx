@@ -28,17 +28,22 @@ const labels: Record<Tab, string> = {
 const hostedRule = (field: string) =>
   /^(lineup|roster|ir|taxi|draft|bids|waivers|trades|standings|rollover)\./.test(field);
 const bucketNames = { active: 'Active roster', ir: 'Injured reserve', taxi: 'Taxi squad' };
+const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const NativeFranchiseHQ = lazy(() => import('../shell/NativeFranchiseHQ'));
 export default function HostedLeague(props: {
   league: string; franchise: string; name: string; role: string; port?: HostedPort; hq?: boolean;
 }) {
+  const [showWar, setWar] = useState(false);
   const [showHQ, setHQ] = useState(props.hq ?? false);
+  if (showWar) return <Suspense fallback={<p>Opening War Room…</p>}><WarRoomNative
+    league={props.league} mine={props.franchise} port={props.port} leave={() => setWar(false)}
+    /></Suspense>;
   if (showHQ) return <Suspense fallback={<p>Opening your franchise…</p>}>
     <NativeFranchiseHQ key={`${props.league}:${props.franchise}`} league={props.league}
       mine={props.franchise} name={props.name} port={props.port}
       leave={() => setHQ(false)} />
   </Suspense>;
-  return <HostedWorkRoom {...props} />;
+  return <><button onClick={() => setWar(true)}>War Room</button><HostedWorkRoom {...props} /></>;
 }
 function HostedWorkRoom({
   league,

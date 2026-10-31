@@ -95,3 +95,7 @@ export function subscribePool(changed: () => void): () => void {
 
 export const readPersonalNotes = async (mine: string, player: string): Promise<unknown> =>
   personalGo().TargetPersonalNotes(mine, player);
+
+export const swapPersonalTargets = (mine: string, id: string, withPlayer: string): Promise<void> =>
+  personalGo().TargetPersonalChange({ mine, kind: 'watch', entity: 'player', id, text: '', action: 'swap',
+    with: withPlayer });
