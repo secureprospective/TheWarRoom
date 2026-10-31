@@ -61,7 +61,11 @@ type Store struct {
 	records   map[string]recordRevision
 	weeklyMu  sync.Mutex
 	weekly    map[string]weeklyFile
-	wmu       sync.Mutex
+	// projMu guards the one scored projections book, keyed by league, rules digest and files.
+	projMu   sync.Mutex
+	projKey  string
+	projBook projectionBook
+	wmu      sync.Mutex
 	// batchFault, set only by tests, fails a batch after the given step to prove nothing is kept.
 	batchFault func(step int) error
 }

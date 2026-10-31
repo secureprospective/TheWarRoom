@@ -2,6 +2,8 @@ package history
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -137,6 +139,12 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 		return NativeProjections{}, fmt.Errorf("projections: rules: %w", err)
 	}
 	held := map[int][]source.PlayerWeek{}
+	encoded, err := json.Marshal(rules.Scoring)
+	if err != nil {
+		return NativeProjections{}, fmt.Errorf("projections: rules digest: %w", err)
+	}
+	digest := sha256.Sum256(encoded)
+	key := fmt.Sprintf("%s|%d|%x", league, season, digest)
 	for y := season - 2; y <= season; y++ {
 		files, err := s.heldSeason(ctx, y)
 		if errors.Is(err, source.ErrSeasonNotLoaded) || err == nil && len(files) == 0 {
@@ -147,11 +155,25 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 			return NativeProjections{}, fmt.Errorf("projections: %d weeks: %w", y, err)
 		}
 		held[y] = files[0].weeks
+		key += "|" + files[0].sha
 	}
 	ids, err := s.SourceIDs(ctx, "gsis")
 	if err != nil {
 		return NativeProjections{}, err
 	}
-	out.Players = scoreProjectionBook(rules.Scoring, held).project(players, ids, season, week)
+	out.Players = s.projectionBook(key, rules.Scoring, held).project(players, ids, season, week)
 	return out, nil
+}
+
+// projectionBook scores the held weeks once per league, scoring rules in force (by their JSON
+// digest, so a scheduled rule change counts) and held file set.
+func (s *Store) projectionBook(key string, rules leaguerules.ScoringRules,
+	held map[int][]source.PlayerWeek) projectionBook {
+	s.projMu.Lock()
+	defer s.projMu.Unlock()
+	if s.projKey == key && s.projBook.weeks != nil {
+		return s.projBook
+	}
+	s.projKey, s.projBook = key, scoreProjectionBook(rules, held)
+	return s.projBook
 }
