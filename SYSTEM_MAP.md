@@ -31,6 +31,10 @@ Paths are relative to the repo root. `frontend/src/app/` is shortened to `app/`.
 | `core` (app state, shared domain, transport, stores) | — | `internal/app/core`, `internal/app/core/coretest`, `internal/commandcatalog`, `internal/domain`, `internal/playerid`, `internal/numeric`, `internal/mflref/envelope`, `internal/snapshot`, `internal/normalize`, `internal/mfl`, `internal/ingestion`, `internal/store/state`, `internal/store/history`, `internal/store/playeridentity`, `internal/playerrecord`, `internal/store/playerrecord` | — | in each package; command registry in `internal/commandcatalog` (137 native, 11 local MFL, 136 desktop, 42 hosted workflow, 62 browser and one offline operator-console exposure; shared JSON schema); typed desktop ports in `internal/composition/command_bindings.go`; `frontend/scripts/nativegen` inspects the bound registry to generate Wails surface/manifest, CLI verbs, command-bar candidates and unified TS argument maps and the audited held-read projection in `app/commands/reads.gen.ts`; frozen metadata in `internal/commandcatalog/testdata/doors-before.json` with composition parity/dispatch tests; generated browser list and frozen browser fixture in `app/commands`; binding manifest in `internal/composition/selfprotect_test.go` | `docs/data-layer/MFL_API_Specification.md`, `docs/data-layer/MFL_Scoring_Rules_Decode.md` | `internal/ingestion/testdata`, tables: `internal/store/state`, `internal/store/history`, `internal/store/playeridentity`, `internal/store/playerrecord` |
 
 
+Native cap runway: `internal/commissioner/native_runway.go` composes the existing cap counter for four
+seasons per franchise; exposed additively by `TargetNativeCapCheck`. Flow and limits:
+`docs/architecture/cap-runway.md`.
+
 Native creation/start: `internal/commissioner/native_start.go` builds source-selected starting assets.
 The app's `history.ExecuteCommissionerWithFacts` records native Create + start atomically;
 `ledgerJobs` supplies the start job only to unstarted leagues. Flow and evidence:

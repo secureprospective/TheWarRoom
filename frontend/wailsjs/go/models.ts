@@ -1749,6 +1749,26 @@ export namespace commissioner {
 	        this.amountCents = source["amountCents"];
 	    }
 	}
+	export class NativeCapYear {
+	    season: number;
+	    committedCents?: number;
+	    deadCents?: number;
+	    capCents?: number;
+	    roomCents?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeCapYear(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.season = source["season"];
+	        this.committedCents = source["committedCents"];
+	        this.deadCents = source["deadCents"];
+	        this.capCents = source["capCents"];
+	        this.roomCents = source["roomCents"];
+	    }
+	}
 	export class NativeCapFranchise {
 	    exception?: string;
 	    capCents?: number;
@@ -1768,6 +1788,7 @@ export namespace commissioner {
 	    name: string;
 	    abbreviation: string;
 	    charges: NativeCapCharge[];
+	    runway: NativeCapYear[];
 	
 	    static createFrom(source: any = {}) {
 	        return new NativeCapFranchise(source);
@@ -1793,6 +1814,7 @@ export namespace commissioner {
 	        this.name = source["name"];
 	        this.abbreviation = source["abbreviation"];
 	        this.charges = this.convertValues(source["charges"], NativeCapCharge);
+	        this.runway = this.convertValues(source["runway"], NativeCapYear);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1877,6 +1899,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	

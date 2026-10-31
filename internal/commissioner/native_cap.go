@@ -22,6 +22,7 @@ type NativeCapFranchise struct {
 	Name         string            `json:"name"`
 	Abbreviation string            `json:"abbreviation"`
 	Charges      []NativeCapCharge `json:"charges"`
+	Runway       []NativeCapYear   `json:"runway"`
 }
 
 type NativeCapCheck struct {
@@ -107,8 +108,12 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 		if err != nil {
 			return NativeCapCheck{}, err
 		}
+		runway, err := NativeCapRunway(base, seat.Franchise)
+		if err != nil {
+			return NativeCapCheck{}, err
+		}
 		out.Franchises = append(out.Franchises, NativeCapFranchise{CapState: state, Franchise: seat.Franchise,
-			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list})
+			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list, Runway: runway})
 	}
 	return out, nil
 }

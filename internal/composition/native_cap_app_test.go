@@ -274,3 +274,78 @@ func TestNativeCapLocalDeadlineWire(t *testing.T) {
 	}
 	checkWire(t, "internal/commissioner/testdata/native-cap-local-deadline.wire.json", body, "local cap deadline")
 }
+
+func TestNativeCapRunwayIPC(t *testing.T) {
+	t.Parallel()
+	f := capApp(t)
+	f.set(t, "cap.amount", `2000000000`, "now")
+	before := readCap(t, f)
+	body, err := json.Marshal(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wire struct {
+		Franchises []struct {
+			Franchise string                       `json:"franchise"`
+			Runway    []commissioner.NativeCapYear `json:"runway"`
+		} `json:"franchises"`
+	}
+	if err := json.Unmarshal(body, &wire); err != nil {
+		t.Fatal(err)
+	}
+	for _, team := range wire.Franchises {
+		if len(team.Runway) != 4 {
+			t.Fatalf("IPC omitted four-year runway for %s: %+v", team.Franchise, team.Runway)
+		}
+		for i, row := range team.Runway {
+			want := domain.Money(0)
+			if team.Franchise == "franchise.02" {
+				want = 21_180_00000
+				if i == 3 {
+					want = 1_300_00000
+				}
+			}
+			if row.Season != 2026+i || row.CapCents == nil || *row.CapCents != 20_000_00000 ||
+				row.CommittedCents == nil || *row.CommittedCents != want || row.DeadCents == nil || *row.DeadCents != 0 ||
+				row.RoomCents == nil || *row.RoomCents != 20_000_00000-want {
+				t.Fatalf("%s year %d: %+v, want commitments %d", team.Franchise, i, row, want)
+			}
+		}
+	}
+	f.reopen(t)
+	if got := readCap(t, f); !reflect.DeepEqual(got, before) {
+		t.Fatal("runway changed after reopening the native ledger")
+	}
+}
+
+func TestNativeCapRunwayCutAndClaim(t *testing.T) {
+	t.Parallel()
+	f := waiverApp(t)
+	before := capTeam(t, f.legalityFixture).Runway
+	cut := f.cut(t, "1000")
+	after := capTeam(t, f.legalityFixture).Runway
+	for i, row := range after {
+		var salaryDrop, dead domain.Money
+		if i < 3 {
+			salaryDrop = 100_000_000
+		}
+		if i == 0 {
+			dead = 70_000_000
+		}
+		if *row.CommittedCents != *before[i].CommittedCents-salaryDrop || *row.DeadCents != dead ||
+			*row.RoomCents != *before[i].RoomCents+salaryDrop-dead {
+			t.Fatalf("cut runway in %d: %+v; salary drop %d, dead %d", row.Season, row, salaryDrop, dead)
+		}
+	}
+	f.restart(t)
+	if got := capTeam(t, f.legalityFixture).Runway; !reflect.DeepEqual(got, after) {
+		t.Fatal("cut runway changed after physical reopen")
+	}
+	f.claim(t, cut.Entry, "owner.one", "franchise.01")
+	f.now = f.now.Add(24 * time.Hour)
+	f.process(t, cut.Entry)
+	cleared := capTeam(t, f.legalityFixture).Runway
+	if *cleared[0].DeadCents != 0 || *cleared[0].RoomCents != *after[0].RoomCents+70_000_000 {
+		t.Fatalf("claim did not clear recorded dead cap: %+v", cleared[0])
+	}
+}
