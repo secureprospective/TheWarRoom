@@ -42,6 +42,12 @@ func (a *API) TargetNativeProjections(league, players string, season,
 	return a.reads.TargetNativeProjections(league, players, season, week)
 }
 
+// TargetNativeLineupDelta reads what a proposed trade does to both parties' best lineups (D33).
+func (a *API) TargetNativeLineupDelta(raw leagueservice.RawLineupDeltaScope) (history.NativeLineupDelta, error) {
+	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
+	return a.reads.TargetNativeLineupDelta(raw)
+}
+
 // TargetNativePlayerScore reads only held NFL evidence and the app league's recorded decisions.
 func (a *API) TargetNativePlayerScore(league, player string, season,
 	week int) (commissioner.NativePlayerScore, error) {

@@ -380,6 +380,20 @@
   {
     "Door": "native",
     "Feature": "commissioner",
+    "ID": "lineupdelta.read",
+    "Method": "TargetNativeLineupDelta",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "530fde5da58a236b4b425adafd0a405be2aa42f2c94ea6bb2b407549135e0636",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
     "ID": "projections.read",
     "Method": "TargetNativeProjections",
     "Role": "domain",
@@ -2628,6 +2642,20 @@
     "Availability": "both",
     "Permission": "league-view",
     "Schema": "e4740eae0dd34cdc39385adcf40c7b7f2cd7b0d73acc95e160bfc87880125bbe",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "lineupdelta.read",
+    "Method": "TargetNativeLineupDelta",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "franchise-view",
+    "Schema": "530fde5da58a236b4b425adafd0a405be2aa42f2c94ea6bb2b407549135e0636",
     "Modes": [
       "read"
     ]

@@ -89,6 +89,12 @@ func (s *State) NativeProjections(ctx context.Context, league string, season, we
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativeProjections(ctx, league, season, week, players)
 }
+
+func (s *State) NativeLineupDelta(ctx context.Context, league string, season, week int,
+	trade history.TradeSides) (history.NativeLineupDelta, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeLineupDelta(ctx, league, season, week, trade)
+}
 func (s *State) NativeResults(ctx context.Context, league string, season,
 	week int) (commissioner.NativeResults, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.

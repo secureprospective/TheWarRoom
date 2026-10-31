@@ -255,6 +255,7 @@ schedule.franchise.read
 schedule.generate
 schedule.publish
 schedule.read
+lineupdelta.read
 projections.read
 score.player.read
 oline.auction.close
