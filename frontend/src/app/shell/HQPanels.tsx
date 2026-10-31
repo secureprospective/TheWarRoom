@@ -53,10 +53,10 @@ function ContractRow({ row, season, mine, years, facts, select, assets }: { asse
   </tr>;
 }
 export function HQContracts({ snapshot, mine, contracts, runway, facts, select, native = false, assets,
-  positions, cutCosts }: {
+  positions, cutCosts, annual }: {
   snapshot: Snapshot; mine: string; contracts?: Readings; runway?: HQCap[]; facts?: RosterFacts; select:
     (id: string) => void; native?: boolean; assets?: AssetBoard; positions?: Map<string, string>;
-      cutCosts?: Map<string, number>;
+      cutCosts?: Map<string, number>; annual?: Map<string, { season: number; cents: number }[]>;
 }) {
   const season = snapshot.league.value.season;
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
@@ -78,8 +78,8 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
       <tbody>{rows.map(row => native ? <tr key={row.id}>
         <td><span className="pg">{row.position}</span></td><td><HQAct className="contract-row-act"
           onAction={() => select(row.id)}>{row.name}</HQAct></td>{years.map(y => <td className="yr"
-          key={y}>{y === season ? money(row.salary) :
-          unavailable}</td>)}<td>{money(cutCosts?.get(row.id))}</td>
+          key={y}>{money(annual?.get(row.id)?.find(v => v.season === y)?.cents ??
+            (y === season ? row.salary : undefined))}</td>)}<td>{money(cutCosts?.get(row.id))}</td>
           <td>{unavailable}</td><td>{unavailable}</td>
       </tr> : <ContractRow key={row.id} {...{ row, season, mine, years, facts, select, assets }}
         />)}</tbody></table>
@@ -93,10 +93,10 @@ export function HQContracts({ snapshot, mine, contracts, runway, facts, select, 
     <div className="dec"><p className="empty">{unavailable}</p></div></div></section>;
 }
 export function HQReserves({ kind, snapshot, mine, settings, injuries, close, native = false, week,
-  countedIRPay, assets, reserveNotes }: {
+  countedIRPay, assets, reserveNotes, activate }: {
   kind: 'ir' | 'taxi'; snapshot: Snapshot; mine: string; settings: HQSettings; injuries?: Injury[]; close:
     () => void; native?: boolean; week?: number; countedIRPay?: number; assets?: AssetBoard; reserveNotes?:
-      Map<string, string>;
+      Map<string, string>; activate?: (id: string) => void;
 }) {
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
   const players = roster.filter(p => p.rosterStatus === (kind === 'ir' ? 'IR' : 'TAXI_SQUAD'));
@@ -134,11 +134,12 @@ export function HQReserves({ kind, snapshot, mine, settings, injuries, close, na
             : <><td>{unavailable}</td><td>{unavailable}</td><td>{money(p.salary)}</td>
               <td>{value?.held ? value.text : unavailable}</td><td>{reserveNotes?.get(p.id)
               ?? snapshot.eligibility.players[p.id]?.taxi.reason ?? unavailable}</td></>}
-          <td><Act variant="button" className="btn" verb={kind === 'ir' ? 'roster.ir' : 'roster.taxi'}
+          <td>{native ? <HQAct className="btn" disabled={!activate}
+            onAction={() => activate?.(p.id)}>{kind === 'ir' ? 'ACTIVATE' : 'PROMOTE'}</HQAct> :
+            <Act variant="button" className="btn" verb={kind === 'ir' ? 'roster.ir' : 'roster.taxi'}
             args={{ subject: { kind: 'player', id: p.id, franchiseId: mine } }}
-            disabled={native || snapshot.eligibility.players[p.id]?.[kind].verdict === 'ineligible'}>{kind
-              === 'ir' ? 'ACTIVATE' :
-            'PROMOTE'}</Act></td></tr>;
+            disabled={snapshot.eligibility.players[p.id]?.[kind].verdict === 'ineligible'}>{kind
+              === 'ir' ? 'ACTIVATE' : 'PROMOTE'}</Act>}</td></tr>;
       })}</tbody></table>{!players.length && <p className="empty">{unavailable}</p>}
       {kind === 'ir' && <><div className="ch" style={{ borderTop: '1px solid var(--edge)'
         }}><b>RETURNS</b><span>plan the active spot before they come back</span></div>

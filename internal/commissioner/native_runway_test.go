@@ -205,3 +205,22 @@ func TestNativeCapRunwayMissingRulingsAndFailures(t *testing.T) {
 		})
 	}
 }
+
+func TestHQContractYearsUseExistingSchedule(t *testing.T) {
+	t.Parallel()
+	base := NativeBase{Rules: leaguerules.LegacyNFL(), Assets: NativeAssets{Snapshot: &RawNativeSnapshot{
+		Players: []NativePlayer{{ID: "0099", Franchise: "f01", Salary: 100_000_000, ExpirationYear: 2028}},
+	}}}
+	base.Rules.Season = 2026
+	got := nativeContractYears(base, "f01")
+	if len(got) != 1 || len(got[0].Years) != 3 || got[0].Years[2].Cents != 100_000_000 {
+		t.Fatal(got)
+	}
+	base.Rules.Season = 2027
+	if got := nativeContractYears(base, "f01"); len(got[0].Years) != 2 || got[0].Years[0].Season != 2027 {
+		t.Fatal(got)
+	}
+	if got := nativeContractYears(base, "f02"); len(got) != 0 {
+		t.Fatal(got)
+	}
+}

@@ -16,13 +16,19 @@ type NativeCapCharge struct {
 	AmountCents *domain.Money `json:"amountCents"`
 }
 
+type NativeContractYears struct {
+	Player string                     `json:"player"`
+	Years  []nativecheck.SeasonAmount `json:"years"`
+}
+
 type NativeCapFranchise struct {
 	nativecheck.CapState
-	Franchise    string            `json:"franchise"`
-	Name         string            `json:"name"`
-	Abbreviation string            `json:"abbreviation"`
-	Charges      []NativeCapCharge `json:"charges"`
-	Runway       []NativeCapYear   `json:"runway"`
+	Franchise    string                `json:"franchise"`
+	Name         string                `json:"name"`
+	Abbreviation string                `json:"abbreviation"`
+	Charges      []NativeCapCharge     `json:"charges"`
+	Runway       []NativeCapYear       `json:"runway"`
+	Contracts    []NativeContractYears `json:"contracts,omitempty"`
 }
 
 type NativeCapCheck struct {
@@ -113,7 +119,7 @@ func NativeCapCheckReading(scope RawNativeCapScope, records []Record, now time.T
 			return NativeCapCheck{}, err
 		}
 		out.Franchises = append(out.Franchises, NativeCapFranchise{CapState: state, Franchise: seat.Franchise,
-			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list, Runway: runway})
+			Name: seat.Name, Abbreviation: seat.Abbreviation, Charges: list, Runway: runway, Contracts: nativeContractYears(base, seat.Franchise)})
 	}
 	return out, nil
 }
@@ -141,4 +147,16 @@ func nativeCapCharges(charges []NativeCharge, quantum *domain.Money) ([]NativeCa
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func nativeContractYears(base NativeBase, franchise string) []NativeContractYears {
+	out := []NativeContractYears{}
+	for _, p := range base.Assets.Snapshot.Players {
+		if p.Franchise != franchise {
+			continue
+		}
+		out = append(out, NativeContractYears{Player: p.ID, Years: nativecheck.ExistingContractSchedule(
+			base.Rules.Season, nativecheck.Contract{Salary: p.Salary, Expiration: p.ExpirationYear})})
+	}
+	return out
 }

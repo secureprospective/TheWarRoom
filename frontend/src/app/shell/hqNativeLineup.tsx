@@ -27,13 +27,13 @@ export function useNativeLineup(league: string, mine: string, lineup?: HQLineup,
       reason: '', expected: reading.lineup.revision, request: newKey(), effective: 'now',
       visibility: 'private' } }, `Set your week ${reading.lineup.week} lineup`);
   };
-  const reserve = async (player: string) => {
+  const reserve = async (player: string, bucket: 'active' | 'ir' | 'taxi' = 'ir') => {
     const reading = state.reading;
     if (!reading || !room.canChange()) return;
     await room.review({ command: 'roster.reserve', mode: 'preview', arguments: {
-      league, command: 'roster.reserve', args: { waiver: { player, franchise: mine, bucket: 'ir' } },
+      league, command: 'roster.reserve', args: { waiver: { player, franchise: mine, bucket } },
       reason: '', expected: reading.roster.revision, request: newKey(), effective: 'now',
-      visibility: 'league' } }, 'Move player to injured reserve');
+      visibility: 'league' } }, `Move player to ${bucket === 'active' ? 'active roster' : bucket === 'ir' ? 'injured reserve' : 'taxi squad'}`);
   };
   const message = state.error || state.message || (changed.length ? `${changed.length} players changed from saved`
     : 'No changes. Swaps stay a plan until you save.');

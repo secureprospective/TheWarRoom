@@ -14,6 +14,7 @@ import { HQMoves, HQQueue } from './HQMoves';
 import { HQRelease } from './HQRelease';
 import { HQInspector } from './HQInspector';
 import { unavailable } from './hqModel';
+import { HQNativeWhatIf } from './HQNativeWhatIf';
 import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
@@ -23,7 +24,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<HQTab>('lineup-and-roster');
-  const [drawer, setDrawer] = useState<'ir' | 'taxi'>();
+  const [drawer, setDrawer] = useState<'ir' | 'taxi' | 'whatif'>();
   const [release, setRelease] = useState<string>();
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
@@ -57,7 +58,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
     navigateNode={node => { if (node !== 'hq') leave(); }} lock={reading.lock ? { at: reading.lock } :
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
-    inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut}
+    inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut} annual={reading.contracts?.get(chosen ?? '')}
       position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position}
       bench={editor.canEdit && chosen && editor.edited?.starters.some(p => p.id === chosen) ?
         id => editor.assign(editor.edited!.starters.filter(p => p.id !== id).map(p => p.id)) : undefined}
@@ -72,7 +73,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
       settings={settings} values={new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
-        positions={positions} cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player,
+        positions={positions} annual={reading.contracts} cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player,
           cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
@@ -83,7 +84,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
         onAction={() => setDrawer(drawer === kind ? undefined : kind)}>
         {kind.toUpperCase()} <b>{roster.filter(p => p.rosterStatus === (kind === 'ir' ? 'IR' :
           'TAXI_SQUAD')).length} / {settings[kind] ?? unavailable}</b></HQAct>)}
-      <HQAct className="pull" disabled title="Native what-if read is not available">WHAT-IF</HQAct></div>
+      <HQAct className="pull" expanded={drawer === 'whatif'}
+        onAction={() => setDrawer(drawer === 'whatif' ? undefined : 'whatif')}>WHAT-IF</HQAct></div>
       <span className="msg" title={[...reading.errors, quote.error ??
         ''].join(' · ')}>{editor.message}</span><HQAct
         className="btn sp" disabled={!editor.dirty || editor.state.pending} onAction={editor.discard}>DISCARD</HQAct><HQAct className="btn g2"
@@ -92,8 +94,11 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
       <HQAct className="btn solid" disabled
         title="This league is native, not an MFL mirror">OPEN MFL ↗</HQAct></div>
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
-    {drawer && <HQReserves native kind={drawer} snapshot={snapshot} mine={mine} settings={settings}
-      countedIRPay={runway?.[0]?.ir}
+    {drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} mine={mine} chosen={chosen}
+      select={select} cut={cut} beforeRoom={runway?.[0]?.room} close={() => setDrawer(undefined)} />}
+    {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot} mine={mine} settings={settings}
+      countedIRPay={runway?.[0]?.ir} reserveNotes={reading.reserveNotes}
+      activate={editor.canEdit ? id => { setDrawer(undefined); void editor.reserve(id, 'active'); } : undefined}
       week={reading.week} close={() => setDrawer(undefined)} />}
     {release && <HQRelease native id={release} mine={mine} snapshot={snapshot} activeLimit={settings.active}
       cut={cut?.player === release ? cut : undefined} beforeRoom={runway?.[0]?.room}

@@ -71,22 +71,22 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
     </form>{error && <p role="alert">{error}</p>}
   </Drawer>;
 }
-export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut, toIR }: {
+export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut, toIR, annual }: {
   snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts; projection?: number; native?: boolean;
-  bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut;
+  bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?: { season: number; cents: number }[];
 }) {
   return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
-    native, bench, position, cut, toIR }} />
+    native, bench, position, cut, toIR, annual }} />
     : <aside className="insp" aria-label="Inspector"><div className="ihead"><div
       className="nm">{unavailable}</div></div><div className="nums"><div /><div /></div><div
       className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div
       className="ifoot">{unavailable}</div></aside>;
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
-  selectedPosition, cut, toIR
+  selectedPosition, cut, toIR, annual
   }: {
   snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts; projection?: number; native: boolean;
-    bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut;
+    bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?: { season: number; cents: number }[];
 }) {
   const teamReason = commands.useTeamActionReason('lineup.edit', { franchiseId: mine });
   const player = snapshot.players.value.find(p => p.id === id);
@@ -129,7 +129,8 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
         usage={usage.value} projection={projection} position={position} /></Drawer>
       <Drawer title="CONTRACT" detail={contract?.yearsRemaining === undefined ? unavailable :
         `${contract.yearsRemaining} yrs`}>
-        {years.reading?.value?.years.map(y => <KV key={y.season} label={String(y.season)}
+        {native ? annual?.length ? annual.map(y => <KV key={y.season} label={String(y.season)}
+          value={money(y.cents)} />) : <p>{unavailable}</p> : years.reading?.value?.years.map(y => <KV key={y.season} label={String(y.season)}
           value={money(y.cost.cents)} title={y.reason} />) ?? <p>{unavailable}</p>}
         <KV label="Dead cap if cut today" value={native ? money(cut?.deadNow) : researchFact(research,
           'Dead cap if cut today')} />
