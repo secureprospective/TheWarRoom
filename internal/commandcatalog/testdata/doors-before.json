@@ -380,6 +380,20 @@
   {
     "Door": "native",
     "Feature": "commissioner",
+    "ID": "projections.read",
+    "Method": "TargetNativeProjections",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "0fd79f255e51d897595bb13d314df20b833e38c400dae9e67c4305fa188ac2ae",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
     "ID": "native.reserve.check",
     "Method": "TargetNativeReserveCheck",
     "Role": "domain",
@@ -2614,6 +2628,20 @@
     "Availability": "both",
     "Permission": "league-view",
     "Schema": "e4740eae0dd34cdc39385adcf40c7b7f2cd7b0d73acc95e160bfc87880125bbe",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "projections.read",
+    "Method": "TargetNativeProjections",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "0fd79f255e51d897595bb13d314df20b833e38c400dae9e67c4305fa188ac2ae",
     "Modes": [
       "read"
     ]

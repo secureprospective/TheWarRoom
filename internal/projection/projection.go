@@ -1,22 +1,23 @@
-package research
+// Package projection is the D11 native projection range: pure math, no I/O.
+package projection
 
 import (
 	"math"
 	"sort"
 )
 
-// ProjectionParams are the D11 native-projection dials. DefaultProjection holds the values the
+// Params are the D11 native-projection dials. DefaultParams holds the values the
 // replay chose (docs/ui/data-catalog/D11-REPLAY.md); changing one needs a fresh replay.
-type ProjectionParams struct {
+type Params struct {
 	HalfLifeWeeks float64 // this season's weeks lose half their weight every HalfLifeWeeks
 	PriorWeight   float64 // flat weight of each week from the two seasons before
 	MinScores     float64 // games at which a player's own weeks carry half the blend
 	FloorQ, CeilQ float64 // floor and ceiling quantiles
 }
 
-// DefaultProjection is the replay-proven method default.
-func DefaultProjection() ProjectionParams {
-	return ProjectionParams{HalfLifeWeeks: 8, PriorWeight: 1.0 / 3, MinScores: 8, FloorQ: 0.10, CeilQ: 0.90}
+// DefaultParams is the replay-proven method default.
+func DefaultParams() Params {
+	return Params{HalfLifeWeeks: 8, PriorWeight: 1.0 / 3, MinScores: 8, FloorQ: 0.10, CeilQ: 0.90}
 }
 
 // WeekScore is one finished week's fantasy points in the league's scoring.
@@ -42,7 +43,7 @@ type Shape struct {
 
 // NewShape weights the weeks before (season, week): this season's by recency half-life, the two
 // seasons before at the flat prior weight, older ones not at all.
-func NewShape(weeks []WeekScore, season, week int, p ProjectionParams) Shape {
+func NewShape(weeks []WeekScore, season, week int, p Params) Shape {
 	var s Shape
 	for _, ws := range weeks {
 		if w := p.weight(ws, season, week); w > 0 {
@@ -57,7 +58,7 @@ func NewShape(weeks []WeekScore, season, week int, p ProjectionParams) Shape {
 // Games is how many weeks the shape holds.
 func (s Shape) Games() int { return len(s.samples) }
 
-func (p ProjectionParams) weight(ws WeekScore, season, week int) float64 {
+func (p Params) weight(ws WeekScore, season, week int) float64 {
 	switch {
 	case ws.Season == season && ws.Week < week:
 		return math.Pow(0.5, float64(week-ws.Week)/p.HalfLifeWeeks)
@@ -69,7 +70,7 @@ func (p ProjectionParams) weight(ws WeekScore, season, week int) float64 {
 
 // Project blends a player's own shape with his position's: his share is games/(games+MinScores),
 // so a player with no history is the position shape. ok is false when neither has any weeks.
-func Project(player, position Shape, p ProjectionParams) (Range, bool) {
+func Project(player, position Shape, p Params) (Range, bool) {
 	games := float64(player.Games())
 	share := games / (games + p.MinScores)
 	if player.total == 0 {

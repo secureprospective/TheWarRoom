@@ -84,6 +84,11 @@ func (s *State) NativePlayerScore(ctx context.Context, league string,
 	//nolint:wrapcheck // Preserve the original store error for the API wording.
 	return s.History.NativePlayerScore(ctx, league, scope)
 }
+func (s *State) NativeProjections(ctx context.Context, league string, season, week int,
+	players []string) (history.NativeProjections, error) {
+	//nolint:wrapcheck // Preserve the original store error for the API wording.
+	return s.History.NativeProjections(ctx, league, season, week, players)
+}
 func (s *State) NativeResults(ctx context.Context, league string, season,
 	week int) (commissioner.NativeResults, error) {
 	//nolint:wrapcheck // Preserve the original store error for the API wording.

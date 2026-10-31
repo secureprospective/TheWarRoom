@@ -3,6 +3,7 @@
 import {commissioner} from '../models';
 import {market} from '../models';
 import {accounts} from '../models';
+import {history} from '../models';
 import {time} from '../models';
 
 export function TargetBackupNow():Promise<commissioner.BackupResult>;
@@ -76,6 +77,8 @@ export function TargetNativeLineupSet(arg1:string):Promise<commissioner.Receipt>
 export function TargetNativeMoves(arg1:string,arg2:string):Promise<market.NativeMoves>;
 
 export function TargetNativePlayerScore(arg1:string,arg2:string,arg3:number,arg4:number):Promise<commissioner.NativePlayerScore>;
+
+export function TargetNativeProjections(arg1:string,arg2:string,arg3:number,arg4:number):Promise<history.NativeProjections>;
 
 export function TargetNativeReserveCheck(arg1:string):Promise<commissioner.NativeReserveCheck>;
 

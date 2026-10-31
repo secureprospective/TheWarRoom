@@ -13,10 +13,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/secureprospective/TheWarRoom/internal/app/research"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/projection"
 )
 
 type obs struct {
@@ -194,30 +194,30 @@ func (r *replay) matchup(p params, pos leaguerules.Position, opp string, season,
 }
 
 // samples are every player's and every position's weighted weeks strictly before (season, week).
-func (p params) projection() research.ProjectionParams {
-	return research.ProjectionParams{HalfLifeWeeks: p.half, PriorWeight: p.prior, MinScores: p.minS, FloorQ: p.lo, CeilQ: p.hi}
+func (p params) projection() projection.Params {
+	return projection.Params{HalfLifeWeeks: p.half, PriorWeight: p.prior, MinScores: p.minS, FloorQ: p.lo, CeilQ: p.hi}
 }
 
 // shapes are every player's and every position's shapes for (season, week), from the shipped
-// research.NewShape so the replay proves the code the app runs.
-func (r *replay) shapes(p params, season, week int) (map[string]research.Shape, map[leaguerules.Position]research.Shape) {
+// projection.NewShape so the replay proves the code the app runs.
+func (r *replay) shapes(p params, season, week int) (map[string]projection.Shape, map[leaguerules.Position]projection.Shape) {
 	pp := p.projection()
-	player := map[string]research.Shape{}
-	weeks := map[leaguerules.Position][]research.WeekScore{}
+	player := map[string]projection.Shape{}
+	weeks := map[leaguerules.Position][]projection.WeekScore{}
 	for id, h := range r.hist {
-		var own []research.WeekScore
+		var own []projection.WeekScore
 		for _, o := range h {
 			if key(o) >= season*100+week {
 				break
 			}
-			own = append(own, research.WeekScore{Season: o.season, Week: o.week, Points: o.pts})
+			own = append(own, projection.WeekScore{Season: o.season, Week: o.week, Points: o.pts})
 		}
-		player[id] = research.NewShape(own, season, week, pp)
+		player[id] = projection.NewShape(own, season, week, pp)
 		weeks[r.pos[id]] = append(weeks[r.pos[id]], own...)
 	}
-	position := map[leaguerules.Position]research.Shape{}
+	position := map[leaguerules.Position]projection.Shape{}
 	for pos, w := range weeks {
-		position[pos] = research.NewShape(w, season, week, pp)
+		position[pos] = projection.NewShape(w, season, week, pp)
 	}
 	return player, position
 }
@@ -245,9 +245,9 @@ func scored(h []obs, season, week int) (float64, bool) {
 	return 0, false
 }
 
-func (r *replay) score(p params, id string, own, pos research.Shape, act, mult float64, k string) {
+func (r *replay) score(p params, id string, own, pos projection.Shape, act, mult float64, k string) {
 	pp := p.projection()
-	rg, ok := research.Project(own, pos, pp)
+	rg, ok := projection.Project(own, pos, pp)
 	if !ok {
 		return
 	}
@@ -262,7 +262,7 @@ func (r *replay) score(p params, id string, own, pos research.Shape, act, mult f
 		s.in++
 	}
 	if games := float64(own.Games()); games > 0 && games < p.minS {
-		raw, _ := research.Project(own, research.Shape{}, pp)
+		raw, _ := projection.Project(own, projection.Shape{}, pp)
 		s.nThin++
 		s.se += (m - act) * (m - act)
 		s.seRaw += (raw.Median - act) * (raw.Median - act)

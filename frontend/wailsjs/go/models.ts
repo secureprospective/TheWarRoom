@@ -6587,6 +6587,75 @@ export namespace envelope {
 
 }
 
+export namespace history {
+	
+	export class NativeProjection {
+	    player: string;
+	    position?: string;
+	    floor: number;
+	    median: number;
+	    ceiling: number;
+	    games: number;
+	    available: boolean;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeProjection(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.position = source["position"];
+	        this.floor = source["floor"];
+	        this.median = source["median"];
+	        this.ceiling = source["ceiling"];
+	        this.games = source["games"];
+	        this.available = source["available"];
+	        this.words = source["words"];
+	    }
+	}
+	export class NativeProjections {
+	    league: string;
+	    season: number;
+	    week: number;
+	    players: NativeProjection[];
+	    notes: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeProjections(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.week = source["week"];
+	        this.players = this.convertValues(source["players"], NativeProjection);
+	        this.notes = source["notes"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace leagueclock {
 	
 	export class WindowException {

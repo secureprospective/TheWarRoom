@@ -1,4 +1,4 @@
-package research
+package projection
 
 import (
 	"math"
@@ -6,7 +6,7 @@ import (
 )
 
 func TestProjectBlendsTowardPosition(t *testing.T) {
-	p := DefaultProjection()
+	p := DefaultParams()
 	position := NewShape([]WeekScore{{2025, 1, 2}, {2025, 1, 6}, {2025, 1, 10}, {2025, 1, 14}, {2025, 1, 18}}, 2025, 3, p)
 	own := func(n int) Shape {
 		var w []WeekScore
@@ -44,7 +44,7 @@ func TestProjectBlendsTowardPosition(t *testing.T) {
 }
 
 func TestShapeWeights(t *testing.T) {
-	p := DefaultProjection()
+	p := DefaultParams()
 	tests := []struct {
 		name string
 		week WeekScore
@@ -68,7 +68,7 @@ func TestShapeWeights(t *testing.T) {
 }
 
 func TestProjectNothingKnown(t *testing.T) {
-	if _, ok := Project(Shape{}, Shape{}, DefaultProjection()); ok {
+	if _, ok := Project(Shape{}, Shape{}, DefaultParams()); ok {
 		t.Fatal("empty shapes must not project")
 	}
 }
