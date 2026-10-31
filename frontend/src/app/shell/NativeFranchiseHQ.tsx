@@ -58,7 +58,11 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
     inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut}
-      position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position} />}>
+      position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position}
+      bench={editor.canEdit && chosen && editor.edited?.starters.some(p => p.id === chosen) ?
+        id => editor.assign(editor.edited!.starters.filter(p => p.id !== id).map(p => p.id)) : undefined}
+      toIR={editor.canEdit && roster.some(p => p.id === chosen && p.rosterStatus === 'ROSTER') ?
+        id => { void editor.reserve(id); } : undefined} />}>
     <HQHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name ?? name}
       active={roster.filter(p => p.rosterStatus === 'ROSTER').length} settings={settings}
       cap={runway?.[0] ?? { season: snapshot.league.value.season }} check={reading.check ?? unavailable}

@@ -71,22 +71,22 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
     </form>{error && <p role="alert">{error}</p>}
   </Drawer>;
 }
-export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut }: {
+export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut, toIR }: {
   snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts; projection?: number; native?: boolean;
-  bench?: (id: string) => void; position?: string; cut?: NativeCut;
+  bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut;
 }) {
   return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
-    native, bench, position, cut }} />
+    native, bench, position, cut, toIR }} />
     : <aside className="insp" aria-label="Inspector"><div className="ihead"><div
       className="nm">{unavailable}</div></div><div className="nums"><div /><div /></div><div
       className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div
       className="ifoot">{unavailable}</div></aside>;
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
-  selectedPosition, cut
+  selectedPosition, cut, toIR
   }: {
   snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts; projection?: number; native: boolean;
-    bench?: (id: string) => void; position?: string; cut?: NativeCut;
+    bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut;
 }) {
   const teamReason = commands.useTeamActionReason('lineup.edit', { franchiseId: mine });
   const player = snapshot.players.value.find(p => p.id === id);
@@ -143,8 +143,9 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
     </div>
     <div className="iact"><span className="h">ACT ON THIS PLAYER</span><div className="ia">
       <HQAct className="btn" disabled={!bench} onAction={() => bench?.(id)}>BENCH</HQAct>
-      <Act variant="button" className="btn" verb="roster.ir" args={{ subject }}
-        disabled={native || status?.verdict !== 'eligible'} label={status?.reason}>TO IR</Act>
+      {native ? <HQAct className="btn" disabled={!toIR} onAction={() => toIR?.(id)}>TO IR</HQAct> :
+        <Act variant="button" className="btn" verb="roster.ir" args={{ subject }}
+          disabled={status?.verdict !== 'eligible'} label={status?.reason}>TO IR</Act>}
       <HQAct className="btn" disabled={native || Boolean(teamReason)} title={teamReason}
         onAction={() => addHQTrade(mine, id)}>ADD TO TRADE</HQAct>
       <Act variant="button" className="btn" verb="watch.add"

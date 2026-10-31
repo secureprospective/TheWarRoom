@@ -27,9 +27,17 @@ export function useNativeLineup(league: string, mine: string, lineup?: HQLineup,
       reason: '', expected: reading.lineup.revision, request: newKey(), effective: 'now',
       visibility: 'private' } }, `Set your week ${reading.lineup.week} lineup`);
   };
+  const reserve = async (player: string) => {
+    const reading = state.reading;
+    if (!reading || !room.canChange()) return;
+    await room.review({ command: 'roster.reserve', mode: 'preview', arguments: {
+      league, command: 'roster.reserve', args: { waiver: { player, franchise: mine, bucket: 'ir' } },
+      reason: '', expected: reading.roster.revision, request: newKey(), effective: 'now',
+      visibility: 'league' } }, 'Move player to injured reserve');
+  };
   const message = state.error || state.message || (changed.length ? `${changed.length} players changed from saved`
     : 'No changes. Swaps stay a plan until you save.');
-  return { room, state, edited, changed, assign: setIds, version, discard, save, message,
+  return { room, state, edited, changed, assign: setIds, version, discard, save, reserve, message,
     canEdit: room.canChange() && !state.review, dirty: ids !== undefined };
 }
 
@@ -38,12 +46,12 @@ export function NativeLineupReview({ editor, refresh }: {
 }) {
   const { review, pending } = editor.state;
   if (!review) return null;
-  return <div className="bd open" role="dialog" aria-label="Confirm league change">
-    <div className="bd-h"><b>{review.summary}</b><HQAct onAction={editor.room.cancel}>CLOSE</HQAct></div>
-    <div className="bd-body"><p>This changes your league server, not MFL or a local plan.</p>
+  return <div className="bdrawer open" role="dialog" aria-label="Confirm league change">
+    <div className="bd-head"><h2>{review.summary}</h2><HQAct onAction={editor.room.cancel}>CLOSE</HQAct></div>
+    <div className="sd-body"><p>This changes your league server, not MFL or a local plan.</p>
       {review.preview?.fields.map((f, i) => <p key={i}>{f.label}: {String(f.before)} → {String(f.after)}</p>)}
       {review.preview?.blockers.map((b, i) => <p key={i} role="alert">{b}</p>)}
-      {!review.preview?.blockers.length && <HoldToFire label="Confirm league change"
+      {!review.preview?.blockers.length && <HoldToFire appearance="hq" label="Confirm league change"
         body={JSON.stringify(review.request)} disabled={pending || !editor.room.canChange()}
         onConfirm={() => { void editor.room.confirm().then(() => {
           if (!editor.room.peek().error) { editor.discard(); refresh(); }

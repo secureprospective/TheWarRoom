@@ -26,6 +26,12 @@ it('previews native lineup membership with the read revision; discard never exec
       args: { lineup: { season: 2026, franchise: 'franchise.01', week: 1,
         starters: [lineup.bench[0].id] } } }) }), readings['lineup.read'].football);
   await act(async () => editor.discard());
+  await act(async () => { await editor.reserve('0100'); });
+  expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'roster.reserve',
+    mode: 'preview', arguments: expect.objectContaining({ args: {
+      waiver: { player: '0100', franchise: 'franchise.01', bucket: 'ir' } } }) }),
+    readings['lineup.read'].football);
+  await act(async () => editor.discard());
   expect(editor.edited?.starters).toEqual(lineup.starters);
   expect(port.mock.calls.some(([r]) => r.mode === 'execute')).toBe(false);
 });
