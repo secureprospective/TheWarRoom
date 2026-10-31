@@ -1,3 +1,4 @@
+import { useHQLive } from './hqLive';
 import { useCachedLineup } from './lineups';
 import { assertShortList } from './shortList';
 import { useHQMovePlans, mergeHQMoves } from './hqMovePlans';
@@ -52,6 +53,7 @@ export function FranchiseHQ({ snapshot }: { snapshot: Snapshot }) {
 function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: string; roster:
   ReturnType<typeof franchiseRoster> }) {
   const s = commands.use();
+  const live = useHQLive(mine);
   const heldLineup = useCachedLineup(commands.lineups, mine);
   const edit = commands.useLineupEdit();
   const teamReason = commands.useTeamActionReason('lineup.edit', { franchiseId: mine });
@@ -88,7 +90,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
   const tab = s.workspace.hq;
   const navigate = (workspace: 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves') => { void
     commands.dispatch('nav.open', { node: 'hq', workspace }); };
-  return <HQShell root={root} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
+  return <HQShell root={root} liveCount={live?.games.filter(g => g.status === 'in').length} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
     navigateNode={node => { void commands.dispatch('nav.open', { node }); }}
     queue={<HQQueue available={movesReady && plans.reading?.errors.length === 0}
       moves={mergeHQMoves(moves.map(r => ({ id: r.correlationId, state: r.state,
@@ -114,7 +116,7 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
             undefined : editor.reading}
             settings={rules} values={projections(snapshot, market.value, editor.reading?.week)}
               facts={facts.reading}
-            injuries={injuries.reading} byes={byeWeeks(snapshot, reports.reading)} now={now.value} changed={editor.changes}
+            injuries={injuries.reading} byes={byeWeeks(snapshot, reports.reading)} now={now.value} live={live} changed={editor.changes}
               canEdit={!editor.reason && !teamReason}
             select={id => { void commands.dispatch('inspector.open', { subject: { kind: 'player', id,
               franchiseId: mine } }); }}

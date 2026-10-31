@@ -1,3 +1,5 @@
+import { liveTeam } from './hqLive';
+import type { LiveView } from '../now/liveContract';
 import { HQAct } from './HQAct';
 import { fitsSlot, placePlayer } from './hqPlacement';
 import { useRef, useState, type PointerEvent } from 'react';
@@ -13,7 +15,7 @@ export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: {
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
   settings: HQSettings; values: Map<string, number>; facts?: RosterFacts;
-  byes?: Map<string, number>; injuries?: Injury[]; now?: Now; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
+  byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
   place?: (id: string, out?: string) => void; bench?: (id: string) => void;
   assign?: (ids: string[]) => void };
 const defensive = (position?: string) => ['DT', 'DE', 'LB', 'CB', 'S', 'DL', 'DB'].includes(position ?? '');
@@ -59,7 +61,7 @@ export function FormChart({ id, facts, projection, week, bye }: { id: string; fa
     <b>avg {real.length ? (real.reduce((n, p) => n + p.points, 0) / real.length).toFixed(1) : '—'}</b>
   </span>;
 }
-export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, injuries, now,
+export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, injuries, now, live,
   select, place, bench, assign }: HQBoardProps) {
   const [filter, setFilter] = useState('ALL');
   const [picked, setPicked] = useState<string>();
@@ -115,7 +117,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       ?? '';
     const bye = byes?.get(id) === reading?.week;
     const status = bye ? 'BYE' : /Questionable|\bQ\b/i.test(injuryText) ? 'Q' : /^Out\b/i.test(injuryText)
-      ? 'OUT' : /^IR\b/.test(injuryText) ? 'IR' : '';
+      ? 'OUT' : /^IR\b/.test(injuryText) ? 'IR' : liveTeam(player?.team, live) ? 'LIVE' : '';
     return <HQAct key={id} className={`slot ${picked === id ? 'picked' : ''} ${changed.includes(id) ? 'chg'
       : ''} ${(drag?.id || picked) && slot && canPlace((drag?.id || picked)!, slot) ? 'target' : ''}`}
       attributes={{ 'data-player': id, 'data-hq-slot': slot ? String(slots.indexOf(slot)) : undefined }}
@@ -140,7 +142,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       </>}
       <span className="pr" title={values.has(id) ? undefined : unavailable}>
         {values.get(id)?.toFixed(1) ?? '—'}</span>
-      <span className={`st ${status === 'Q' ? 'q' : status === 'BYE' ? 'bye' : 'out'}`}
+      <span className={`st ${status === 'Q' ? 'q' : status === 'BYE' ? 'bye' : status === 'LIVE' ? 'live' : 'out'}`}
         title={injury?.reason}>{status}</span>
     </HQAct>;
   };
@@ -163,6 +165,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
               /><span className="pr">—</span><span className="st warn">OPEN</span></HQAct>)}</div>
       </div>)}
       <HQMatchup now={now} values={values}
+        liveCount={live ? starters.filter(p => liveTeam(directory.get(p.id)?.team, live)).length : undefined}
         ownProjection={reading ? totalProjection(starters.map(p => p.id), values) : unavailable} />
     </div>
     <div className={`col bench ${drag && slots.some(s => s.id === drag.id) ? 'dropzone' : ''}`} data-hq-bench=""><div
@@ -180,8 +183,8 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
   </section>;
 }
 
-export function HQMatchup({ now, values = new Map(), ownProjection = unavailable }: {
-  now?: Now; values?: Map<string, number>; ownProjection?: string;
+export function HQMatchup({ now, values = new Map(), ownProjection = unavailable, liveCount }: {
+  now?: Now; values?: Map<string, number>; ownProjection?: string; liveCount?: number;
 }) {
   const report = now?.matchup;
   const actual = report?.rows.find(r => r.cells[0] === 'Total');
@@ -205,7 +208,7 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
   }).sort((a, b) => Math.abs(a.delta ?? Infinity) - Math.abs(b.delta ?? Infinity)) : [];
   return <div className="mu"><div className="ch"><b>THIS WEEK{opponent ? ` · VS ${opponent.toUpperCase()}`
     : ''}</b>
-    <span>closest matchups first</span></div>
+    <span>{liveCount === undefined ? 'closest matchups first' : `${liveCount} of yours live now`}</span></div>
     <div className="mu-h"><div className="side"><b data-empty={ownProjection ===
       unavailable}>{ownProjection}</b>
       <span>you · proj · score {actual?.cells[2] ?? '—'}</span></div><div className="wp">{probability ?? unavailable}</div>
