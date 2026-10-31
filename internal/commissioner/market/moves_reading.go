@@ -93,7 +93,12 @@ func NativeMovesReading(league, franchise, principal string, records []commissio
 		Reason: "native plans not yet stored", Moves: []NativeMove{}}
 	out.appendPendingBids(bids)
 	out.appendPendingWaivers(waivers, records)
-	out.appendWaitingTrades(trades)
+	out.appendWaitingTrades(trades, records)
+	f, err := commissioner.NewFrame(league, records, at, facts, zone)
+	if err != nil {
+		return NativeMoves{}, fmt.Errorf("read committed moves: %w", err)
+	}
+	out.appendLanded(records, f.Book)
 	return out, nil
 }
 
@@ -132,7 +137,7 @@ func (out *NativeMoves) appendPendingWaivers(waivers NativeWaivers, records []co
 	}
 }
 
-func (out *NativeMoves) appendWaitingTrades(trades NativeTrades) {
+func (out *NativeMoves) appendWaitingTrades(trades NativeTrades, records []commissioner.Record) {
 	for _, t := range trades.Offers {
 		// The desk read is broader than this private queue. No non-party trade enters it.
 		if !slices.Contains(t.Parties, out.Franchise) {
@@ -147,12 +152,16 @@ func (out *NativeMoves) appendWaitingTrades(trades NativeTrades) {
 			}
 		case "review", "appealed":
 			state = "handed_off"
+		case "approved":
+			state = "landed"
 		}
 		if state == "" {
 			continue
 		}
-		m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, state, t.Words, t.OfferedAt)
-		m.Spec.Deadline = &t.ExpiresAt
+		m := nativeMove(out.League, out.Franchise, t.ID, commissioner.TradeOffer, state, tradeMoveWords(t), tradeMoveTime(t, records))
+		if t.Status == "offered" {
+			m.Spec.Deadline = &t.ExpiresAt
+		}
 		for _, asset := range t.Assets {
 			if asset.Player != "" {
 				m.Spec.Subject.Players = append(m.Spec.Subject.Players, asset.Player)
