@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TheWarRoom: left rail mock v1 (2026-10-30)</title>
+<style>
+:root{
+  --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
+  --ink:hsl(220,20%,94%); --ink2:hsl(220,12%,74%); --ink3:hsl(220,10%,56%);
+  --edge:hsl(220,10%,30%); --edge-hi:hsl(220,8%,82%); --black:hsl(220,25%,2%);
+  --green:hsl(145,50%,58%); --blue:hsl(210,80%,64%); --amber:hsl(38,92%,58%); --red:hsl(358,75%,62%);
+  --mono:"JetBrains Mono","DejaVu Sans Mono",monospace; --sans:"Inter","Noto Sans",system-ui,sans-serif;
+  /* rubber grip: fine knurl, matte, no gradients of light */
+  --knurl:repeating-linear-gradient(45deg,hsla(0,0%,100%,.035) 0 1px,transparent 1px 4px),
+          repeating-linear-gradient(-45deg,hsla(0,0%,0%,.35) 0 1px,transparent 1px 4px);
+  /* safety edge: monochrome so it never borrows a meaning colour */
+  --hazard:repeating-linear-gradient(-45deg,var(--edge-hi) 0 6px,var(--black) 6px 12px);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--canvas);color:var(--ink);font:13px/1.4 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.mono{font-family:var(--mono)}
+
+/* ---------- top control strip (mock-only) ---------- */
+.mockbar{height:44px;display:flex;align-items:center;gap:14px;padding:0 14px;border-bottom:2px solid var(--black);background:var(--sunken)}
+.mockbar b{font:600 11px var(--mono);letter-spacing:.12em;color:var(--ink3)}
+.seg{display:flex;border:2px solid var(--edge)}
+.seg button{padding:5px 12px;font:600 11px var(--mono);letter-spacing:.06em;color:var(--ink2);border-right:1px solid var(--edge)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--edge-hi);color:var(--black)}
+.mockbar .note{color:var(--ink3);font-size:12px;margin-left:auto}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:232px 1fr 320px;height:calc(100% - 44px)}
+
+/* ---------- rail ---------- */
+.rail{background:var(--tile);background-image:var(--knurl);border-right:3px solid var(--black);display:flex;flex-direction:column;min-height:0}
+.rail-head{padding:12px 14px 10px;border-bottom:2px solid var(--black)}
+.rail-head .lg{font:700 12px var(--mono);letter-spacing:.14em}
+.rail-head .ph{margin-top:6px;font:11px var(--mono);color:var(--ink2)}
+.rail-head .ph i{font-style:normal;color:var(--amber)}
+.rail-body{flex:1;overflow:hidden;padding:8px 0}
+.group-label{padding:8px 14px 4px;font:600 10px var(--mono);letter-spacing:.16em;color:var(--ink3)}
+.node{position:relative}
+.node>button{width:100%;display:flex;align-items:center;gap:10px;padding:9px 14px;text-align:left;font-weight:600;
+  transition:transform 70ms linear;border-left:4px solid transparent}
+.node>button .k{font:11px var(--mono);color:var(--ink3);width:12px}
+.node>button .car{margin-left:auto;font:11px var(--mono);color:var(--ink3);transition:transform 70ms linear}
+.node>button:hover{transform:translateX(2px);background:var(--raised)}
+.node>button:active{transform:translateX(1px)}
+.node.open>button{background:var(--raised);border-left:4px solid transparent;border-image:var(--hazard) 1}
+.node.open>button .car{transform:rotate(90deg)}
+.node .mark{width:6px;height:6px;margin-left:6px}
+.mark.amber{background:var(--amber)} .mark.green{background:var(--green)}
+.leaves{display:none;padding:2px 0 8px}
+.node.open .leaves{display:block}
+.leaf{display:flex;align-items:center;gap:6px;width:100%;padding:6px 14px 6px 26px;text-align:left;color:var(--ink2);
+  font-size:12.5px;transition:transform 70ms linear}
+.leaf .tr{font-family:var(--mono);color:var(--edge)}
+.leaf:hover{color:var(--ink);transform:translateX(2px)}
+.leaf.sel{color:var(--ink);font-weight:600}
+.leaf.sel .tr::after{content:"▮";color:var(--edge-hi);margin-left:2px}
+.leaf.dim{opacity:.45}
+.leaf .typ{margin-left:auto;font:10px var(--mono);color:var(--ink3)}
+.leaf.now{color:var(--ink);border:1px solid var(--edge);margin:2px 10px 4px 22px;width:calc(100% - 32px);padding-left:8px}
+.leaf.now .tag{font:700 9px var(--mono);letter-spacing:.12em;background:var(--edge-hi);color:var(--black);padding:1px 4px}
+.leaf .pin,.leaf .grab{display:none;font-family:var(--mono);color:var(--ink3)}
+body.editing .leaf .pin, body.editing .leaf .grab{display:inline}
+body.editing .leaf .pin.on{color:var(--edge-hi)}
+body.editing .rail{outline:2px dashed var(--edge-hi);outline-offset:-6px}
+.rail-foot{border-top:2px solid var(--black);padding:10px 14px;display:flex;gap:8px;align-items:center}
+.btn{border:2px solid var(--edge);padding:5px 10px;font:600 11px var(--mono);letter-spacing:.06em;
+  transition:transform 70ms linear, box-shadow 70ms linear}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
+.btn:active{transform:none;box-shadow:none}
+.btn[aria-pressed=true]{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+
+/* ---------- workspace ---------- */
+.work{position:relative;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.work-head{display:flex;align-items:baseline;gap:12px;padding:14px 18px 10px;border-bottom:2px solid var(--black)}
+.work-head h1{font-size:18px}
+.crumb{font:11px var(--mono);color:var(--ink3)}
+.board{margin:14px 18px;border:1px solid var(--edge);height:calc(100% - 120px);overflow:auto}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;background:var(--sunken);text-align:left;font:600 10px var(--mono);letter-spacing:.12em;color:var(--ink3);padding:8px 10px;border-bottom:2px solid var(--black)}
+td{padding:8px 10px;border-bottom:1px solid hsl(220,15%,12%)}
+td.n{font-family:var(--mono);text-align:right}
+tr.row{transition:transform 70ms linear}
+tr.row:hover{background:var(--raised);transform:translateX(2px);cursor:pointer}
+.g{display:inline-block;border:1px solid var(--ink3);font:600 10px var(--mono);padding:0 4px;color:var(--ink2)}
+.ok{color:var(--green)} .warn{color:var(--amber)}
+
+/* ---------- drawers ---------- */
+.drawer{position:absolute;top:0;right:0;bottom:0;width:440px;background:var(--tile);border-left:3px solid var(--edge-hi);
+  transform:translateX(105%);transition:transform 120ms ease-out;display:flex;flex-direction:column;z-index:5}
+.drawer.open{transform:none}
+.drawer::before{content:"";position:absolute;left:-3px;top:0;bottom:0;width:6px;background:var(--hazard);opacity:.9}
+.dhead{display:flex;align-items:center;padding:14px 16px;border-bottom:2px solid var(--black)}
+.dhead h2{font-size:15px}
+.dhead .x{margin-left:auto;font:12px var(--mono);color:var(--ink3);border:1px solid var(--edge);padding:2px 6px}
+.dbody{padding:16px;display:grid;gap:12px}
+.kv{display:flex;justify-content:space-between;border-bottom:1px solid hsl(220,15%,14%);padding:6px 0}
+.kv span:last-child{font-family:var(--mono)}
+.nested{position:absolute;left:24px;right:24px;bottom:24px;background:var(--sunken);border:3px solid var(--edge-hi);
+  padding:16px;transform:translateY(12px);opacity:0;pointer-events:none;transition:transform 100ms ease-out,opacity 100ms linear}
+.nested.open{transform:none;opacity:1;pointer-events:auto}
+.nested h3{font-size:14px;margin-bottom:6px}
+.hold{position:relative;width:100%;margin-top:12px;border:3px solid var(--edge-hi);padding:10px;font:700 12px var(--mono);letter-spacing:.1em;overflow:hidden}
+.hold .fill{position:absolute;inset:0;background:var(--hazard);transform:scaleX(0);transform-origin:left;opacity:.55}
+.hold span{position:relative}
+.hold.go .fill{transform:scaleX(1);transition:transform 600ms linear}
+
+/* ---------- inspector ---------- */
+.insp{background:var(--tile);border-left:3px solid var(--black);display:flex;flex-direction:column;min-height:0}
+.ihead{padding:14px 16px;border-bottom:2px solid var(--black)}
+.ihead .nm{font-size:16px;font-weight:700}
+.ihead .sub{color:var(--ink2);font-size:12px;margin-top:2px}
+.tabs{display:flex;flex-wrap:wrap;border-bottom:2px solid var(--black)}
+.tabs button{padding:8px 10px;font:600 11px var(--mono);color:var(--ink2);border-right:1px solid var(--black)}
+.tabs button[aria-selected=true]{color:var(--ink);background:var(--raised);box-shadow:inset 0 -3px 0 var(--edge-hi)}
+.tabs .add{color:var(--ink3)}
+.ibody{padding:14px 16px;display:grid;gap:10px}
+.big{display:flex;justify-content:space-between;align-items:baseline}
+.big b{font:700 24px var(--mono)}
+.prov{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink3);border-top:1px solid var(--edge);padding-top:8px}
+.picker{border:2px dashed var(--edge);padding:10px;display:none;gap:6px}
+.picker.open{display:grid}
+.picker label{display:flex;gap:8px;align-items:center;color:var(--ink2)}
+
+/* ---------- callout notes (mock-only) ---------- */
+.callout{position:fixed;left:244px;bottom:14px;max-width:560px;background:var(--sunken);border:2px solid var(--edge);padding:10px 12px;font-size:12px;color:var(--ink2);z-index:20}
+.callout b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<div class="mockbar">
+  <b>MOCK · QUESTION B · PICK A RAIL MODEL</b>
+  <div class="seg" role="group" aria-label="Rail model">
+    <button data-mode="fixed" aria-pressed="true">1 · FIXED + NOW</button>
+    <button data-mode="reorder" aria-pressed="false">2 · PHASE REORDER</button>
+    <button data-mode="mine" aria-pressed="false">3 · MY SHORTCUTS + NOW</button>
+  </div>
+  <div class="seg" role="group" aria-label="Phase">
+    <button data-phase="draft" aria-pressed="true">DRAFT</button>
+    <button data-phase="season" aria-pressed="false">SEASON</button>
+  </div>
+  <span class="note">Illustrative data. Nothing here is wired.</span>
+</div>
+
+<div class="shell">
+  <nav class="rail" aria-label="Main">
+    <div class="rail-head">
+      <div class="lg">THE WAR ROOM</div>
+      <div class="ph" id="phaseLine">Legacy NFL · <i>Draft · Rd 2 on clock</i></div>
+    </div>
+    <div class="rail-body" id="railBody"></div>
+    <div class="rail-foot">
+      <button class="btn" id="editBtn" aria-pressed="false">CUSTOMIZE</button>
+      <span class="mono" style="font-size:11px;color:var(--ink3)">/ command</span>
+    </div>
+  </nav>
+
+  <main class="work">
+    <div class="work-head"><h1 id="wsTitle">Contracts and cap</h1><span class="crumb" id="wsCrumb">Franchise HQ ├ Contracts and cap</span></div>
+    <div class="board">
+      <table>
+        <thead><tr><th>POS</th><th>PLAYER</th><th>SALARY</th><th>THRU</th><th>VALUE</th><th>STATUS</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <section class="drawer" id="drawer" aria-label="Release plan">
+      <div class="dhead"><h2>Release plan: <span id="dName">-</span></h2><button class="x" data-close>ESC</button></div>
+      <div class="dbody">
+        <div class="kv"><span>Salary this year</span><span id="dSal">-</span></div>
+        <div class="kv"><span>Dead cap if released now</span><span class="warn">$0.90M</span></div>
+        <div class="kv"><span>Cap room after</span><span class="ok">$6.40M</span></div>
+        <div class="kv"><span>Years left</span><span>2</span></div>
+        <p style="color:var(--ink3);font-size:12px">A side drawer is a task you open and close. The page behind never scrolls, never moves.</p>
+        <button class="btn" id="openConfirm" style="justify-self:start">PREPARE RELEASE</button>
+      </div>
+      <div class="nested" id="nested" role="dialog" aria-label="Confirm release">
+        <h3>Release <span id="nName">-</span>?</h3>
+        <p style="color:var(--ink2);font-size:12px">G3 · irreversible. Hold the bar about 600 ms. Let go early to cancel.</p>
+        <button class="hold" id="hold"><div class="fill"></div><span>HOLD TO RELEASE</span></button>
+        <button class="btn" data-close-nested style="margin-top:10px">BACK</button>
+      </div>
+    </section>
+  </main>
+
+  <aside class="insp" aria-label="Inspector">
+    <div class="ihead"><div class="nm" id="iName">Brock Bowers</div><div class="sub">TE · Las Vegas · $2.40M thru 2028</div></div>
+    <div class="tabs" role="tablist" id="tabs">
+      <button role="tab" aria-selected="true">OVERVIEW</button>
+      <button role="tab" aria-selected="false">CONTRACT</button>
+      <button role="tab" aria-selected="false">WATCH</button>
+      <button class="add" id="addTab">+ DRAWER</button>
+    </div>
+    <div class="ibody">
+      <div class="picker" id="picker">
+        <span class="mono" style="font-size:11px;color:var(--ink3)">ADD YOUR OWN INSPECTOR DRAWER</span>
+        <label><input type="checkbox"> Age arc</label>
+        <label><input type="checkbox"> Trade history with this owner</label>
+        <label><input type="checkbox"> Snap share, last 4</label>
+        <label><input type="checkbox"> My notes</label>
+      </div>
+      <div class="big"><span>On field now</span><b>14.2</b></div>
+      <div class="big"><span>Dynasty value</span><b>91</b></div>
+      <div class="ok" style="font-size:12px">● Cheaper than TE going rate</div>
+      <div class="prov"><span>Thru 2028</span><span>MFL · 12 min ago</span></div>
+    </div>
+  </aside>
+</div>
+
+<div class="callout" id="callout"></div>
+
+<script>
+const T={W:'screen',SD:'drawer',BD:'bottom'};
+const tree={
+  home:{label:'Home',k:'1',leaves:[['Seasonal card','W'],['Alert tray','BD'],['Digests','BD']]},
+  war:{label:'War Room',k:'2',leaves:[['Asset board','W'],['Free-agent pool','W'],['Market reading','W'],['Bid plans','SD']]},
+  hq:{label:'Franchise HQ',k:'3',leaves:[['Lineup and roster','W'],['Contracts and cap','W'],['My moves','W']]},
+  trade:{label:'Trade Floor',k:'4',leaves:[['Trade desk','W'],['Offers','W'],['Draft room','W']]},
+  pulse:{label:'League Pulse',k:'5',leaves:[['Now','W'],['Race','W'],['Reports','BD']]},
+  control:{label:'Control Room',k:'6',leaves:[['App settings','SD'],['League · jobs','W']]},
+};
+const phaseNow={draft:{node:'trade',leaf:'Draft room',mark:'amber'},season:{node:'pulse',leaf:'Now',mark:'green'}};
+let mode='fixed',phase='draft',open='hq',sel='Contracts and cap',editing=false;
+let mine=['Contracts and cap','Free-agent pool'];
+const notes={
+  fixed:'<b>1 · Fixed + NOW.</b> Leaves never move. Each node gets one pinned NOW line at the top that changes with the season. Muscle memory stays intact.',
+  reorder:'<b>2 · Phase reorder (GLM).</b> Leaves re-sort by season; out-of-phase ones sink and dim. Flip DRAFT/SEASON above and watch Trade Floor and League Pulse shuffle.',
+  mine:'<b>3 · My shortcuts + NOW.</b> Option 1, plus a MY SHORTCUTS group the owner fills. Hit CUSTOMIZE: ☆ pins a leaf to the top, ⋮⋮ is the drag grip. Locked again when you leave edit mode.'
+};
+function leafOrder(n){
+  const L=[...tree[n].leaves];
+  if(mode==='reorder'){const p=phaseNow[phase];if(p.node===n)L.sort((a,b)=>(b[0]===p.leaf)-(a[0]===p.leaf));}
+  return L;
+}
+function leafBtn(name,typ,extra=''){
+  const dim=mode==='reorder'&&phase==='draft'&&['Now','Race'].includes(name)||mode==='reorder'&&phase==='season'&&name==='Draft room';
+  return `<button class="leaf ${extra} ${sel===name?'sel':''} ${dim?'dim':''}" data-leaf="${name}">
+    <span class="grab">⋮⋮</span><span class="tr">├</span>${name}
+    <span class="pin ${mine.includes(name)?'on':''}" data-pin="${name}">${mine.includes(name)?'★':'☆'}</span>
+    <span class="typ">${T[typ]}</span></button>`;
+}
+function render(){
+  const p=phaseNow[phase];let h='';
+  if(mode==='mine'){
+    h+='<div class="group-label">MY SHORTCUTS</div>';
+    mine.forEach(m=>h+=leafBtn(m,'W'));
+    h+='<div class="group-label">LEAGUE</div>';
+  }
+  for(const[n,d]of Object.entries(tree)){
+    const mark=p.node===n?`<span class="mark ${p.mark}"></span>`:'';
+    h+=`<div class="node ${open===n?'open':''}"><button data-node="${n}"><span class="k">${d.k}</span>${d.label}${mark}<span class="car">›</span></button><div class="leaves">`;
+    if(mode!=='reorder'&&p.node===n)h+=`<button class="leaf now" data-leaf="${p.leaf}"><span class="tag">NOW</span>${p.leaf}${phase==='draft'?' · you pick in 4':' · 3 games live'}</button>`;
+    leafOrder(n).forEach(([l,t])=>h+=leafBtn(l,t));
+    h+='</div></div>';
+  }
+  railBody.innerHTML=h;callout.innerHTML=notes[mode];
+  phaseLine.innerHTML=phase==='draft'?'Legacy NFL · <i>Draft · Rd 2 on clock</i>':'Legacy NFL · <i style="color:var(--green)">Week 9 · games live</i>';
+}
+railBody.addEventListener('click',e=>{
+  const pin=e.target.closest('[data-pin]');
+  if(pin&&editing){const n=pin.dataset.pin;mine=mine.includes(n)?mine.filter(x=>x!==n):[...mine,n];render();return}
+  const nb=e.target.closest('[data-node]');if(nb){open=open===nb.dataset.node?null:nb.dataset.node;render();return}
+  const lf=e.target.closest('[data-leaf]');if(lf&&!editing){sel=lf.dataset.leaf;wsTitle.textContent=sel;
+    const node=Object.values(tree).find(d=>d.leaves.some(x=>x[0]===sel));wsCrumb.textContent=(node?node.label:'')+' ├ '+sel;render()}
+});
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+document.querySelectorAll('[data-phase]').forEach(b=>b.onclick=()=>{phase=b.dataset.phase;document.querySelectorAll('[data-phase]').forEach(x=>x.setAttribute('aria-pressed',x===b));render()});
+editBtn.onclick=()=>{editing=!editing;document.body.classList.toggle('editing',editing);editBtn.setAttribute('aria-pressed',editing);editBtn.textContent=editing?'DONE':'CUSTOMIZE';if(editing&&mode!=='mine'){mode='mine';document.querySelector('[data-mode=mine]').click()}};
+
+const players=[['QB','Jayden Daniels','$4.10M','2028','88'],['RB','Bijan Robinson','$6.90M','2027','93'],['WR','Puka Nacua','$3.20M','2027','90'],['TE','Brock Bowers','$2.40M','2028','91'],['WR','Rome Odunze','$1.80M','2028','79'],['DE','Aidan Hutchinson','$5.50M','2026','86'],['LB','Jack Campbell','$1.10M','2027','74'],['CB','Quinyon Mitchell','$1.40M','2028','81'],['S','Kyle Hamilton','$3.60M','2026','84'],['RB','Zach Charbonnet','$0.90M','2026','62']];
+rows.innerHTML=players.map(p=>`<tr class="row" data-p="${p[1]}" data-s="${p[2]}"><td><span class="g">${p[0]}</span></td><td>${p[1]}</td><td class="n">${p[2]}</td><td class="n">${p[3]}</td><td class="n">${p[4]}</td><td>${p[3]==='2026'?'<span class="warn">● Expiring</span>':'<span style="color:var(--ink3)">Under contract</span>'}</td></tr>`).join('');
+rows.onclick=e=>{const r=e.target.closest('tr');if(!r)return;dName.textContent=nName.textContent=r.dataset.p;dSal.textContent=r.dataset.s;iName.textContent=r.dataset.p;drawer.classList.add('open')};
+drawer.querySelector('[data-close]').onclick=()=>{nested.classList.remove('open');drawer.classList.remove('open')};
+openConfirm.onclick=()=>nested.classList.add('open');
+document.querySelector('[data-close-nested]').onclick=()=>nested.classList.remove('open');
+let t;hold.onpointerdown=()=>{hold.classList.add('go');t=setTimeout(()=>{hold.querySelector('span').textContent='PREPARED · OPEN MFL';},600)};
+['pointerup','pointerleave'].forEach(ev=>hold.addEventListener(ev,()=>{if(hold.querySelector('span').textContent.startsWith('HOLD')){clearTimeout(t);hold.classList.remove('go')}}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(nested.classList.contains('open'))nested.classList.remove('open');else drawer.classList.remove('open')}
+  if(/^[1-6]$/.test(e.key)&&!e.target.closest('input')){open=Object.keys(tree)[e.key-1];render()}});
+tabs.onclick=e=>{const b=e.target.closest('[role=tab]');if(!b)return;tabs.querySelectorAll('[role=tab]').forEach(x=>x.setAttribute('aria-selected',x===b))};
+addTab.onclick=()=>picker.classList.toggle('open');
+render();
+</script>
+</body>
+</html>

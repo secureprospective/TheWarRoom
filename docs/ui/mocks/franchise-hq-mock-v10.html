@@ -1,0 +1,766 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TheWarRoom: Franchise HQ mock v10 (2026-10-30)</title>
+<style>
+:root{
+  --canvas:hsl(220,20%,6%); --sunken:hsl(220,22%,4%); --tile:hsl(220,18%,9%); --raised:hsl(220,18%,12%);
+  --ink:hsl(220,20%,94%); --ink2:hsl(220,12%,74%); --ink3:hsl(220,10%,56%);
+  --edge:hsl(220,10%,28%); --edge-hi:hsl(220,8%,82%); --black:hsl(220,25%,2%); --rule:hsl(220,15%,13%);
+  --green:hsl(145,50%,58%); --blue:hsl(210,80%,66%); --amber:hsl(38,92%,58%); --red:hsl(358,75%,62%);
+  --mono:"JetBrains Mono","DejaVu Sans Mono",monospace; --sans:"Inter","Noto Sans",system-ui,sans-serif;
+  --knurl:repeating-linear-gradient(45deg,hsla(0,0%,100%,.035) 0 1px,transparent 1px 4px),
+          repeating-linear-gradient(-45deg,hsla(0,0%,0%,.35) 0 1px,transparent 1px 4px);
+  --hazard:repeating-linear-gradient(-45deg,var(--edge-hi) 0 6px,var(--black) 6px 12px);
+  --hatch:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.10) 0 5px,transparent 5px 10px);
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:var(--canvas);color:var(--ink);font:13px/1.35 var(--sans)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+.mono,.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.shell{display:grid;grid-template-columns:224px 1fr 316px;height:100%}
+
+/* ---------- rail (option 3, ruled) ---------- */
+.rail{background:var(--tile);background-image:var(--knurl);border-right:3px solid var(--black);display:flex;flex-direction:column}
+.rail-head{padding:14px 14px 12px;border-bottom:2px solid var(--black)}
+.lg{font:700 12px var(--mono);letter-spacing:.16em}
+.ph{margin-top:6px;font:11px var(--mono);color:var(--ink2)} .ph i{font-style:normal;color:var(--green)}
+.rail-body{flex:1;padding:6px 0;overflow:hidden}
+.gl{padding:10px 14px 4px;font:600 10px var(--mono);letter-spacing:.16em;color:var(--ink3)}
+.node>.nb{width:100%;display:flex;align-items:center;gap:10px;padding:8px 14px;text-align:left;font-weight:600;border-left:4px solid transparent;transition:transform 70ms linear}
+.nb .k{font:11px var(--mono);color:var(--ink3);width:10px}
+.nb .car{margin-left:auto;font:11px var(--mono);color:var(--ink3)}
+.nb:hover{transform:translateX(2px);background:var(--raised)}
+.node.open>.nb{background:var(--raised);border-image:var(--hazard) 1}
+.node.open .car{transform:rotate(90deg)}
+.mark{width:6px;height:6px;background:var(--green);margin-left:4px}
+.leaf{display:flex;gap:6px;width:100%;padding:5px 14px 5px 26px;text-align:left;color:var(--ink2);font-size:12.5px;transition:transform 70ms linear}
+.leaf:hover{color:var(--ink);transform:translateX(2px)}
+.leaf .tr{font-family:var(--mono);color:var(--edge)}
+.leaf.sel{color:var(--ink);font-weight:600} .leaf.sel .tr::after{content:"▮";color:var(--edge-hi)}
+.leaf.now{border:1px solid var(--edge);margin:2px 10px 4px 22px;width:calc(100% - 32px);padding-left:8px;color:var(--ink)}
+.tag{font:700 9px var(--mono);letter-spacing:.12em;background:var(--edge-hi);color:var(--black);padding:1px 4px;align-self:center}
+.rail-foot{border-top:2px solid var(--black);padding:10px 14px;display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink3)}
+
+/* ---------- shared controls ---------- */
+.btn{border:2px solid var(--edge);padding:6px 11px;font:600 11px var(--mono);letter-spacing:.06em;transition:transform 70ms linear,box-shadow 70ms linear}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
+.btn:active{transform:none;box-shadow:none}
+.btn.g2{border-width:2px;border-color:var(--edge-hi)}
+.btn.solid{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.pg{display:inline-block;min-width:26px;text-align:center;border:1px solid var(--ink3);font:600 10px var(--mono);padding:0 3px;color:var(--ink2)}
+
+/* ---------- workspace ---------- */
+.work{position:relative;display:grid;grid-template-rows:auto auto 1fr auto;min-width:0;overflow:hidden}
+.ws-tabs{display:flex;align-items:stretch;border-bottom:2px solid var(--black);background:var(--sunken)}
+.ws-tabs button{padding:11px 16px;font:600 11px var(--mono);letter-spacing:.1em;color:var(--ink3);border-right:1px solid var(--black)}
+.ws-tabs button[aria-selected=true]{color:var(--ink);background:var(--canvas);box-shadow:inset 0 3px 0 var(--edge-hi)}
+.queue{margin-left:auto;display:flex;align-items:stretch;border-left:2px solid var(--black);transition:transform 70ms linear}
+.queue:hover{transform:translateY(1px)}
+.queue .ql{display:flex;align-items:center;padding:0 12px;font:700 10px var(--mono);letter-spacing:.14em;background:var(--tile);background-image:var(--knurl);color:var(--ink)}
+.queue .qn{display:flex;align-items:center;padding:0 10px;font:700 10px var(--mono);letter-spacing:.08em;border-left:1px solid var(--black);color:var(--ink2)}
+.queue .qn.need{background:var(--amber);color:var(--black)}
+.queue .qn.dim{color:var(--ink3)}
+.queue.on .ql{background:var(--edge-hi);color:var(--black)}
+.ws-tabs .cmd{display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--ink3);font:11px var(--mono)}
+.ws-tabs .cmd kbd{border:1px solid var(--edge);padding:1px 5px;color:var(--ink2)}
+
+/* the franchise plate: one line, every number earns its place */
+.plate{display:grid;grid-template-columns:auto 1fr auto;gap:28px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
+.who b{font-size:20px;letter-spacing:-.01em}
+.who div{font:11px var(--mono);color:var(--ink2);margin-top:3px}
+.cap{display:grid;gap:6px}
+.cap-top{display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink3);letter-spacing:.08em}
+.cap-top b{color:var(--ink);font-weight:600}
+.cap-bar{display:flex;height:12px;border:1px solid var(--edge);background:var(--sunken)}
+.cap-bar span{height:100%;border-right:2px solid var(--black)}
+.seg-c{background:var(--edge-hi)} .seg-d{background:var(--hatch),var(--ink3)} .seg-r{background:transparent}
+.cap-key{display:flex;gap:16px;font:11px var(--mono);color:var(--ink2)}
+.cap-key i{display:inline-block;width:9px;height:9px;margin-right:5px;vertical-align:-1px;border:1px solid var(--edge)}
+.check{border:2px solid var(--edge-hi);padding:8px 12px;display:grid;gap:2px;min-width:190px}
+.check .h{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.check .v{font-weight:600}
+.check .v .warn{color:var(--amber)}
+.check .t{font:11px var(--mono);color:var(--amber)}
+
+/* main board: starters | bench, both fixed-height */
+.board{display:grid;grid-template-columns:minmax(0,1fr) minmax(430px,32%);gap:0;min-height:0;border-bottom:2px solid var(--black)}
+.col{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.col:last-child{border-right:0}
+.sec{display:flex;justify-content:space-between;padding:7px 14px 5px;font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3);background:var(--sunken);border-bottom:1px solid var(--edge)}
+.sec span{font-weight:400}
+.ch{display:flex;align-items:baseline;justify-content:space-between;padding:10px 14px 8px;border-bottom:1px solid var(--edge)}
+.ch b{font:700 11px var(--mono);letter-spacing:.14em}
+.ch span{font:11px var(--mono);color:var(--ink3)}
+.slots{flex:none}
+.mu{flex:1;min-height:0;overflow:hidden;border-top:2px solid var(--black);display:flex;flex-direction:column}
+.mu-h{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 14px;gap:14px;border-bottom:1px solid var(--edge)}
+.mu-h .side b{display:block;font:700 22px var(--mono)}
+.mu-h .side span{font:11px var(--mono);color:var(--ink3)}
+.mu-h .them{text-align:right}
+.wp{width:260px;display:grid;gap:4px;text-align:center;font:11px var(--mono);color:var(--ink2)}
+.wp .bar{display:flex;height:10px;border:1px solid var(--edge)}
+.wp .bar i{background:var(--edge-hi)}
+.mu-rows{display:grid;grid-template-columns:1fr 1fr;align-content:start}
+.mu-rows div{display:grid;grid-template-columns:52px 1fr 52px;gap:8px;padding:0 14px;height:28px;align-items:center;border-bottom:1px solid var(--rule);font-size:12px}
+.mu-rows div:nth-child(odd){border-right:1px solid var(--rule)}
+.mu-rows .n{text-align:right}
+.slot{display:grid;grid-template-columns:52px 34px 230px 150px 64px 52px 44px 1fr;align-items:center;gap:8px;height:30px;
+  padding:0 14px;border-bottom:1px solid var(--rule);transition:transform 70ms linear;cursor:pointer}
+.slot:hover{background:var(--raised);transform:translateX(2px)}
+.slot .sl{font:600 10px var(--mono);letter-spacing:.06em;color:var(--ink3)}
+.slot .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .nm small{color:var(--ink3);font:11px var(--mono);margin-left:6px}
+.slot .pr{font-family:var(--mono);text-align:right}
+.slot .st{font:600 10px var(--mono);text-align:right}
+.st.bye{color:var(--ink3)} .st.q{color:var(--amber)} .st.out{color:var(--red)} .st.live{color:var(--blue)}
+.form{position:relative;display:flex;gap:2px;align-items:flex-end;height:22px;justify-self:start;border-bottom:1px solid var(--edge)}
+.form i{width:10px;background:hsl(220,9%,30%);transition:transform 70ms linear}
+.form i.up{background:hsl(220,10%,62%)}
+.form i.bye{height:100%!important;background:repeating-linear-gradient(-45deg,hsl(220,9%,34%) 0 2px,transparent 2px 5px)}
+.form .pj{position:absolute;left:0;width:58px;height:0;border-top:1px dashed hsl(220,8%,50%);pointer-events:none}
+.form b{font:10px var(--mono);color:var(--ink2);margin-left:8px;align-self:center;font-weight:400}
+.form i:hover{transform:scaleY(1.08);outline:1px solid var(--edge-hi)}
+.blist .form i{width:9px}.blist .form .pj{width:53px}.blist .form b{display:none}
+.form em{font:10px var(--mono);color:var(--ink3);font-style:normal;margin-right:6px;align-self:center}
+@container (max-width:640px){.board .col:first-child .form{display:none}}
+.board .col:first-child{container-type:inline-size}
+.slot.gap{background:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.22) 0 6px,hsla(220,25%,2%,.6) 6px 12px);outline:2px solid var(--edge-hi);outline-offset:-2px;box-shadow:inset 6px 0 0 var(--amber)}
+.slot.gap .sl{color:var(--ink);padding-left:4px}
+.slot.gap .st{background:var(--amber);color:var(--black);text-align:center;padding:2px 0;font-weight:700}
+.slot.gap .nm{color:var(--ink);font-weight:600;background:var(--black);padding:2px 8px;justify-self:start}
+.slot.target{outline:1px dashed var(--edge-hi);outline-offset:-3px}
+.drag{cursor:grab;touch-action:none;transition:transform 70ms linear,box-shadow 70ms linear}
+.drag:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi);color:var(--ink)}
+.ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi);box-shadow:3px 3px 0 var(--black);padding:2px 8px}
+body.dragging,body.dragging *{cursor:grabbing!important;user-select:none}
+.slot.over{background:var(--raised);outline:2px solid var(--edge-hi);outline-offset:-2px}
+.bench.dropzone .blist{outline:2px dashed var(--edge-hi);outline-offset:-4px}
+.slot.chg{box-shadow:inset 4px 0 0 var(--edge-hi);background:var(--raised)}
+.slot.picked{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
+
+.bench .filters{display:flex;gap:3px;padding:8px 14px;border-bottom:1px solid var(--edge)}
+.chip{font:600 10px var(--mono);padding:2px 0;flex:1;text-align:center;border:1px solid var(--edge);color:var(--ink2)}
+.chip[aria-pressed=true]{background:var(--edge-hi);color:var(--black);border-color:var(--edge-hi)}
+.blist{flex:none;max-height:calc(30px * 22);overflow:auto}
+.inl{flex:1;min-height:0;overflow:hidden}
+.inl .sec{border-top:2px solid var(--black)}
+.inl .slot{height:30px;grid-template-columns:34px minmax(150px,1fr) 64px 52px}
+.blist .slot{height:30px;grid-template-columns:34px minmax(130px,190px) 96px 58px 44px 1fr}
+.blist::-webkit-scrollbar{width:8px} .blist::-webkit-scrollbar-thumb{background:var(--edge)}
+
+/* action tray: the only home for commit controls */
+.tray{display:flex;align-items:center;gap:10px;padding:10px 20px;white-space:nowrap;background:var(--sunken)}
+.tray .msg{font:12px var(--mono);color:var(--ink2);overflow:hidden;text-overflow:ellipsis;margin-left:8px}
+.tray .sp{margin-left:auto}
+
+/* pull tabs: physical handles on the bottom edge */
+.pulls{display:flex;gap:6px;align-self:stretch;margin:-10px 0}
+.pull{display:flex;gap:8px;align-items:center;padding:0 12px;background:var(--tile);background-image:var(--knurl);
+  border:2px solid var(--edge);border-top:0;font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink2);
+  transform:translateY(-3px);transition:transform 70ms linear}
+.pull:hover{transform:translateY(0);color:var(--ink);border-color:var(--edge-hi)}
+.pull b{color:var(--ink);font-weight:700}
+.pull[aria-expanded=true]{transform:translateY(0);border-color:var(--edge-hi);color:var(--ink)}
+
+/* bottom drawer */
+.bdrawer{position:absolute;left:0;right:0;bottom:var(--trayh,52px);max-height:60%;background:var(--tile);border-top:3px solid var(--edge-hi);
+  transform:translateY(102%);transition:transform 120ms ease-out;z-index:6;display:grid;grid-template-rows:auto 1fr}
+.bdrawer::before{content:"";position:absolute;left:0;right:0;top:-3px;height:5px;background:var(--hazard)}
+.bdrawer:not(.open){transform:translateY(calc(100% + var(--trayh,52px) + 8px));visibility:hidden;transition:transform 120ms ease-out,visibility 0s 120ms}
+.bdrawer.open{transform:none;visibility:visible}
+.bd-head{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:2px solid var(--black)}
+.bd-head h2{font-size:15px}
+.bd-head .sub{font:11px var(--mono);color:var(--ink3)}
+.bd-head .x{margin-left:auto;font:11px var(--mono);border:1px solid var(--edge);padding:2px 6px;color:var(--ink3)}
+.bd-body{display:grid;grid-template-columns:minmax(0,1fr) 380px;min-height:0;overflow:hidden}
+.bd-main{min-width:0;border-right:2px solid var(--black)}
+.bd-side{display:flex;flex-direction:column}
+.bd-side .ch{border-top:0}
+.sum{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--black)}
+.sum div{padding:10px 14px;border-right:1px solid var(--rule)}
+.sum div:nth-child(2n){border-right:0}
+.sum div:nth-child(n+3){border-top:1px solid var(--rule)}
+.sum b{display:block;font:700 18px var(--mono)} .sum span{font:10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.bt td{height:30px}
+.bt .btn{padding:2px 8px;font-size:10px}
+.yrs{display:inline-flex;gap:2px;vertical-align:-1px}.yrs i{width:10px;height:10px;border:1px solid var(--ink3)}.yrs i.u{background:var(--edge-hi);border-color:var(--edge-hi)}
+.tl{display:grid;grid-template-columns:repeat(9,1fr);margin:12px 14px 14px;border:1px solid var(--edge)}
+.tl div{height:54px;border-right:1px solid var(--rule);padding:4px 6px;font:10px var(--mono);color:var(--ink3);position:relative}
+.tl div:last-child{border-right:0}
+.tl div.now{background:var(--raised);color:var(--ink)}
+.tl b{position:absolute;left:4px;right:4px;bottom:5px;font:600 10px var(--mono);color:var(--black);background:var(--edge-hi);padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wi{display:grid;grid-template-columns:22px 52px 1fr auto;gap:10px;align-items:center;padding:0 14px;height:34px;border-bottom:1px solid var(--rule);cursor:pointer;transition:transform 70ms linear}
+.wi:hover{background:var(--raised);transform:translateX(2px)}
+.wi .box{width:14px;height:14px;border:2px solid var(--edge)}
+.wi.on{background:var(--raised)} .wi.on .box{background:var(--edge-hi);border-color:var(--edge-hi)}
+.wi .k{font:600 10px var(--mono);letter-spacing:.08em;color:var(--ink3)}
+.wi .d{font:12px var(--mono)}
+.sum .delta .ok{color:var(--green)}.sum .delta .warn{color:var(--amber)}
+.sum .delta span{font:inherit}
+.sum .delta{display:block;padding:0;border:0;font:11px var(--mono);color:var(--ink3);margin-top:2px}
+
+.elig{font:10px var(--mono);color:var(--ink3);text-align:right}
+
+/* ---------- inspector + custom drawers ---------- */
+.insp{background:var(--tile);border-left:3px solid var(--black);display:grid;grid-template-rows:auto auto 1fr auto auto;min-height:0}
+.ihead{padding:14px 16px 12px;border-bottom:2px solid var(--black)}
+.ihead .top{display:flex;justify-content:space-between;align-items:center}
+.ihead .on{font:600 11px var(--mono);color:var(--blue)}
+.ihead .nm{font-size:17px;font-weight:700;margin-top:6px}
+.ihead .sub{color:var(--ink2);font-size:12px;margin-top:2px}
+.nums{display:grid;grid-template-columns:1fr 1fr;border-bottom:2px solid var(--black)}
+.nums div{padding:12px 16px}
+.nums div+div{border-left:1px solid var(--edge)}
+.nums b{display:block;font:700 26px var(--mono)}
+.nums span{font:11px var(--mono);color:var(--ink3)}
+.idrawers{overflow:hidden;min-height:0}
+.idr{border-bottom:1px solid var(--black)}
+.idr>button{width:100%;display:flex;align-items:center;gap:8px;padding:9px 16px;font:600 11px var(--mono);letter-spacing:.08em;color:var(--ink2);text-align:left;transition:transform 70ms linear}
+.idr>button:hover{color:var(--ink);transform:translateX(2px)}
+.idr>button .c{margin-left:auto;color:var(--ink3)}
+.idr.open>button{color:var(--ink);background:var(--raised);box-shadow:inset 3px 0 0 var(--edge-hi)}
+.idr .body{display:none;padding:10px 16px 12px;background:var(--canvas)}
+.idr.open .body{display:block}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--rule);font-size:12px}
+.kv span:last-child{font-family:var(--mono)}
+.mine{font:9px var(--mono);letter-spacing:.1em;border:1px solid var(--edge);padding:0 4px;color:var(--ink3)}
+.arc{display:flex;align-items:flex-end;gap:3px;height:46px;margin-top:4px}
+.arc i{flex:1;background:var(--ink3)} .arc i.now{background:var(--edge-hi)}
+.iact{border-top:2px solid var(--black);padding:12px 16px;display:grid;gap:8px}
+.iact .h{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3)}
+.ia{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ifoot{border-top:2px solid var(--black);padding:10px 16px;display:flex;justify-content:space-between;font:11px var(--mono);color:var(--ink3)}
+.ifoot button{color:var(--ink2);border:1px dashed var(--edge);padding:3px 8px}
+.ok{color:var(--green)} .warn{color:var(--amber)}
+
+/* ---------- v7: workspaces, cap, moves, release, customize ---------- */
+.ws{display:none}.ws.on{display:grid}
+.work{grid-template-rows:auto auto 1fr auto}
+.capws{grid-template-columns:minmax(0,1fr) minmax(430px,32%);min-height:0;border-bottom:2px solid var(--black)}
+.ctable{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.ct-wrap{flex:1;min-height:0;overflow:auto}
+.ct{width:100%;border-collapse:collapse}
+.ct th{position:sticky;top:0;z-index:1;background:var(--sunken);text-align:right;font:600 10px var(--mono);letter-spacing:.12em;color:var(--ink3);padding:7px 10px;border-bottom:2px solid var(--black);white-space:nowrap}
+.ct th:nth-child(-n+2){text-align:left}
+.ct th.sorted{color:var(--ink)}
+.ct td{height:30px;padding:0 10px;border-bottom:1px solid var(--rule);text-align:right;font-family:var(--mono);font-size:12px;white-space:nowrap}
+.ct td:nth-child(2){text-align:left;font-family:var(--sans);font-size:13px}
+.ct td:first-child{text-align:left;width:44px}
+.ct td.off{color:var(--edge)}
+.ct td.yr{background:hsla(220,8%,82%,.035);border-left:1px solid var(--rule)}
+.ct td.last{position:relative;padding-right:18px}
+:root{--rfa:hsl(84,90%,52%);--ufa:hsl(54,100%,54%)}
+.cap-end{position:absolute;right:3px;top:5px;bottom:5px;width:9px;border:1px solid var(--black)}
+.cap-end,.key-cap{background-image:repeating-linear-gradient(45deg,hsla(220,25%,2%,.55) 0 1px,transparent 1px 3px),repeating-linear-gradient(-45deg,hsla(220,25%,2%,.35) 0 1px,transparent 1px 3px)}
+.cap-end.rfa,.key-cap.rfa{background-color:var(--rfa)} .cap-end.ufa,.key-cap.ufa{background-color:var(--ufa)}
+.key-cap{display:inline-block;width:9px;height:13px;border:1px solid var(--black);vertical-align:-2px;margin:0 5px 0 12px}
+.fa{font:700 10px var(--mono);letter-spacing:.08em;padding:1px 5px;color:var(--black);border:1px solid var(--black)}
+.fa.rfa{background:var(--rfa)} .fa.ufa{background:var(--ufa)}
+.ct tr{transition:transform 70ms linear;cursor:pointer}
+.ct tbody tr:hover{background:var(--raised);transform:translateX(2px)}
+.ct tr.sel{background:var(--raised);box-shadow:inset 4px 0 0 var(--edge-hi)}
+.ct td small{color:var(--ink3);font:11px var(--mono);margin-left:6px}
+.cside{display:flex;flex-direction:column;min-height:0}
+.run{padding:10px 14px 12px;display:grid;gap:9px;border-bottom:2px solid var(--black)}
+.run .y{display:grid;grid-template-columns:40px 1fr 74px;gap:10px;align-items:center;font:11px var(--mono)}
+.run .y .bar{display:flex;height:14px;border:1px solid var(--edge);background:var(--sunken)}
+.run .y .bar span{height:100%;border-right:2px solid var(--black)}
+.run .y b{text-align:right;font-weight:600}
+.run .y.tight b{color:var(--amber)}
+.dec{flex:1;min-height:0;overflow:hidden}
+.drow{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;padding:8px 14px;border-bottom:1px solid var(--rule)}
+.drow .nm{font-weight:600}
+.drow .why{grid-column:2/4;font:11px var(--mono);color:var(--ink2);margin-top:-4px}
+.drow .ops{grid-column:2/4;display:flex;gap:6px}
+.drow .ops .btn{padding:3px 8px;font-size:10px}
+.clock{font:600 11px var(--mono);color:var(--amber);white-space:nowrap}
+.clock.cold{color:var(--ink2)}
+/* side drawer + nested G3 */
+.sdrawer{position:absolute;top:0;right:0;max-height:100%;width:460px;border-bottom:3px solid var(--edge-hi);background:var(--tile);border-left:3px solid var(--edge-hi);
+  transform:translateX(104%);transition:transform 120ms ease-out;z-index:7;display:flex;flex-direction:column}
+.sdrawer::before{content:"";position:absolute;left:-3px;top:0;bottom:0;width:6px;background:var(--hazard)}
+.sdrawer.open{transform:none}
+.sd-body{padding:0 18px 14px;display:grid;gap:0;align-content:start;overflow:hidden}
+.sd-sec{font:700 10px var(--mono);letter-spacing:.14em;color:var(--ink3);padding:14px 0 6px;border-bottom:1px solid var(--edge);display:flex;justify-content:space-between}
+.sd-sec span{font-weight:400;letter-spacing:.04em}
+.kv2{display:grid;grid-template-columns:1fr 1fr;column-gap:22px}
+.rb{display:grid;grid-template-columns:40px 1fr 70px;gap:10px;align-items:center;font:11px var(--mono);padding:5px 0}
+.rb .bar{position:relative;height:12px;border:1px solid var(--edge);background:var(--sunken)}
+.rb .bar i{position:absolute;left:0;top:0;bottom:0;background:var(--edge-hi)}
+.rb .bar i.was{background:transparent;border-right:2px dashed var(--ink3)}
+.alt{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--rule)}
+.alt b{font-size:13px}.alt small{grid-column:1;font:11px var(--mono);color:var(--ink2)}
+.alt .btn{grid-row:1/3;grid-column:2;padding:3px 8px;font-size:10px}
+.sd-act{display:flex;gap:8px;padding:12px 18px;border-top:2px solid var(--black);background:var(--sunken)}
+.sd-body .kv{font-size:13px;padding:7px 0}
+.sd-body .note{font-size:12px;color:var(--ink2);margin:10px 0}
+.nested{display:none;margin:0 18px 18px;background:var(--sunken);border:3px solid var(--edge-hi);padding:16px;
+  transform:translateY(10px);opacity:0;pointer-events:none;transition:transform 100ms ease-out,opacity 100ms linear}
+.nested.open{display:block;transform:none;opacity:1;pointer-events:auto}
+.nested h3{font-size:15px}
+.nested .g3{font:700 10px var(--mono);letter-spacing:.14em;color:var(--red);margin-bottom:6px}
+.hold{position:relative;display:block;width:100%;margin-top:12px;border:3px solid var(--edge-hi);padding:12px;font:700 12px var(--mono);letter-spacing:.12em;overflow:hidden;touch-action:none}
+.hold .fill{position:absolute;inset:0;background:var(--hazard);transform:scaleX(0);transform-origin:left;opacity:.6}
+.hold span{position:relative;background:var(--black);padding:2px 8px}
+.hold.go .fill{transform:scaleX(1);transition:transform 600ms linear}
+.hold.done{border-color:var(--green)} .hold.done span{color:var(--green)}
+/* my moves: envelope pipeline */
+.movews{grid-template-columns:repeat(4,1fr);grid-template-rows:auto 1fr;min-height:0;border-bottom:2px solid var(--black)}
+.mlog{grid-column:1/-1;display:flex;flex-direction:column;min-height:0;border-top:2px solid var(--black)}
+.mlog .ct td:nth-child(2){font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.mlog .ct td:nth-child(3){text-align:left;font-family:var(--sans);font-size:13px}
+.mlog .ct td:nth-child(4),.mlog .ct td:nth-child(5){text-align:left}
+.mlog .ct th{text-align:left}
+.lane{display:flex;flex-direction:column;min-height:0;border-right:2px solid var(--black)}
+.lane:last-child{border-right:0}
+.lane .ch b{display:flex;gap:8px;align-items:center}
+.lane .cards{min-height:0;overflow:hidden;padding:10px;display:grid;gap:8px;align-content:start}
+.mv{border:1px solid var(--edge);background:var(--tile);padding:10px 12px;display:grid;gap:5px;transition:transform 70ms linear,box-shadow 70ms linear;cursor:pointer}
+.mv:hover{transform:translate(-1px,-1px);box-shadow:2px 2px 0 var(--black);border-color:var(--edge-hi)}
+.mv.g2{border-width:2px}
+.mv .top{display:flex;justify-content:space-between;font:600 10px var(--mono);letter-spacing:.1em;color:var(--ink3)}
+.mv .what{font-weight:600}
+.mv .chk{font:11px var(--mono);color:var(--ink2)}
+.mv .bot{display:flex;justify-content:space-between;align-items:center;font:11px var(--mono);color:var(--ink3);border-top:1px solid var(--rule);padding-top:6px}
+.mv .bot .btn{padding:2px 8px;font-size:10px}
+.st-ok{color:var(--green)} .st-bad{color:var(--red)} .st-wait{color:var(--amber)} .st-info{color:var(--blue)}
+.mv.blocked{background:repeating-linear-gradient(-45deg,hsla(220,8%,82%,.07) 0 6px,transparent 6px 12px),var(--tile)}
+/* customize */
+.leaf .pin{display:none;margin-left:auto;font-family:var(--mono);color:var(--ink3)}
+body.editing .leaf .pin{display:inline}
+body.editing .leaf .pin.on{color:var(--edge-hi)}
+body.editing .rail{outline:2px dashed var(--edge-hi);outline-offset:-6px}
+body.editing #sc .leaf .grab{display:inline}
+.leaf .grab{display:none;font-family:var(--mono);color:var(--ink3)}
+.rail-foot .btn{padding:3px 8px;font-size:10px}
+.rail-foot .btn[aria-pressed=true]{background:var(--edge-hi);color:var(--black)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<nav class="rail" aria-label="Main">
+  <div class="rail-head"><div class="lg">THE WAR ROOM</div><div class="ph">Legacy NFL · <i>Wk 9 · 3 live</i></div></div>
+  <div class="rail-body">
+    <div class="gl">MY SHORTCUTS</div>
+    <div id="sc"></div>
+    <div class="gl">LEAGUE</div>
+    <div class="node"><button class="nb"><span class="k">1</span>Home<span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">2</span>War Room<span class="car">›</span></button></div>
+    <div class="node open"><button class="nb"><span class="k">3</span>Franchise HQ<span class="car">›</span></button>
+      <button class="leaf now"><span class="tag">NOW</span>Locks Sun 12:00</button>
+      <button class="leaf sel" data-ws="lineup"><span class="tr">├</span>Lineup and roster<span class="pin" data-pin="Lineup and roster">☆</span></button>
+      <button class="leaf" data-ws="cap"><span class="tr">├</span>Contracts and cap<span class="pin" data-pin="Contracts and cap">☆</span></button>
+      <button class="leaf" data-ws="moves"><span class="tr">└</span>My moves<span class="pin" data-pin="My moves">☆</span></button>
+    </div>
+    <div class="node"><button class="nb"><span class="k">4</span>Trade Floor<span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">5</span>League Pulse<span class="mark"></span><span class="car">›</span></button></div>
+    <div class="node"><button class="nb"><span class="k">6</span>Control Room<span class="car">›</span></button></div>
+  </div>
+  <div class="rail-foot"><button class="btn" id="custom" aria-pressed="false">CUSTOMIZE</button><span>/ command</span></div>
+</nav>
+
+<main class="work">
+  <div class="ws-tabs" role="tablist">
+    <button role="tab" data-ws="lineup" aria-selected="true">LINEUP AND ROSTER</button>
+    <button role="tab" data-ws="cap" aria-selected="false">CONTRACTS AND CAP</button>
+    <button class="queue" data-ws="moves" aria-label="My moves queue"><span class="ql">MY MOVES</span><span class="qn need">2 NEED YOU</span><span class="qn">2 WAITING</span><span class="qn dim">3 LANDED</span></button>
+    <div class="cmd"><kbd>/</kbd> lineup.swap out=… in=…</div>
+  </div>
+
+  <section class="plate">
+    <div class="who"><b>Gridiron Syndicate</b><div>6–2 · 2nd NFC West · 41 / 44 active</div></div>
+    <div class="cap">
+      <div class="cap-top"><span>CAP · 2026</span><span><b>$6.40M</b> ROOM OF $90.00M</span></div>
+      <div class="cap-bar"><span class="seg-c" style="width:84%"></span><span class="seg-d" style="width:8.9%"></span><span class="seg-r" style="flex:1"></span></div>
+      <div class="cap-key"><span><i style="background:var(--edge-hi)"></i>Committed $75.60M</span><span><i style="background:var(--ink3)"></i>Dead $8.00M</span><span><i></i>Room $6.40M</span></div>
+    </div>
+    <div class="check">
+      <span class="h">LINEUP CHECK</span>
+      <span class="v" id="chk"></span>
+      <span class="t">Locks in 2d 05h</span>
+    </div>
+  </section>
+
+  <section class="board ws on" id="ws-lineup">
+    <div class="col">
+      <div class="ch"><b>STARTING 19</b><span>proj <b id="tSum" style="letter-spacing:0;color:var(--ink)">168.2</b></span></div>
+      <div class="sec">OFFENCE · 8<span id="oSum">96.4</span></div>
+      <div class="slots" id="off"></div>
+      <div class="sec">DEFENCE · 11<span id="dSum">71.8</span></div>
+      <div class="slots" id="def"></div>
+      <div class="mu">
+        <div class="ch"><b>THIS WEEK · VS OWNER 14 · IRON CURTAIN</b><span>closest matchups first</span></div>
+        <div class="mu-h"><div class="side"><b id="muUs">171.2</b><span>you · proj</span></div>
+          <div class="wp"><div class="bar"><i style="width:58%"></i></div>58% to win · 3 of yours live now</div>
+          <div class="side them"><b>164.9</b><span>Iron Curtain · proj</span></div></div>
+        <div class="mu-rows">
+          <div><span class="sl">WR</span><span>Nacua 16.9 vs Wilson 16.4</span><span class="n warn">+0.5</span></div>
+          <div><span class="sl">D·FLX</span><span>Open vs Bates 7.2</span><span class="n" style="color:var(--red)">−7.2</span></div>
+          <div><span class="sl">FLEX</span><span>Charbonnet BYE vs Hall 12.1</span><span class="n" style="color:var(--red)">−12.1</span></div>
+          <div><span class="sl">QB</span><span>Daniels 22.1 vs Hurts 20.8</span><span class="n ok">+1.3</span></div>
+          <div><span class="sl">DE</span><span>Hutchinson 9.8 vs Crosby 9.1</span><span class="n ok">+0.7</span></div>
+          <div><span class="sl">TE</span><span>Bowers 13.8 vs Kelce 11.0</span><span class="n ok">+2.8</span></div>
+          <div><span class="sl">K</span><span>Bates 8.3 vs Aubrey 8.9</span><span class="n warn">−0.6</span></div>
+          <div><span class="sl">LB</span><span>Campbell 8.9 vs Baker 8.1</span><span class="n ok">+0.8</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="col bench">
+      <div class="ch"><b>BENCH · <span id="bCount">22</span></b><span>drag a tag into the lineup</span></div>
+      <div class="filters" id="filters"></div>
+      <div class="blist" id="bench"></div>
+      <div class="inl" id="inl"></div>
+    </div>
+  </section>
+
+  <section class="ws capws" id="ws-cap">
+    <div class="ctable">
+      <div class="ch"><b>CONTRACTS · 41</b><span>final year ends in<i class="key-cap rfa"></i>RFA · team can match<i class="key-cap ufa"></i>UFA · walks free</span></div>
+      <div class="ct-wrap"><table class="ct"><thead><tr><th>POS</th><th>PLAYER</th><th class="sorted">2026 ▼</th><th>2027</th><th>2028</th><th>2029</th><th>DEAD IF CUT</th><th>VALUE</th><th>$ / VALUE</th></tr></thead><tbody id="ctb"></tbody></table></div>
+    </div>
+    <div class="cside">
+      <div class="ch"><b>CAP RUNWAY</b><span>committed · dead · room, of $90.00M</span></div>
+      <div class="run" id="run"></div>
+      <div class="ch"><b>DECISIONS DUE · 4</b><span>soonest first</span></div>
+      <div class="dec" id="dec" style="flex:none"></div>
+      <div class="ch" style="border-top:2px solid var(--black)"><b>DEAD CAP · $8.00M</b><span>money on players you no longer have</span></div>
+      <div class="dec" id="dead"></div>
+    </div>
+  </section>
+
+  <section class="ws movews" id="ws-moves">
+    <div class="lane"><div class="ch"><b>PLANNED <span class="mono" style="color:var(--ink3)">2</span></b><span>app checked it</span></div><div class="cards" id="l0"></div></div>
+    <div class="lane"><div class="ch"><b>HANDED OFF <span class="mono" style="color:var(--ink3)">2</span></b><span>waiting on MFL</span></div><div class="cards" id="l1"></div></div>
+    <div class="lane"><div class="ch"><b>LANDED <span class="mono" style="color:var(--ink3)">3</span></b><span>seen in MFL data</span></div><div class="cards" id="l2"></div></div>
+    <div class="lane"><div class="ch"><b>NEEDS YOU <span class="mono" style="color:var(--ink3)">2</span></b><span>failed · stale · not verified</span></div><div class="cards" id="l3"></div></div>
+    <div class="mlog"><div class="ch"><b>SEASON LEDGER · 38 MOVES</b><span>every move you made, as MFL recorded it</span></div>
+      <div class="ct-wrap"><table class="ct"><thead><tr><th>KIND</th><th>WHEN</th><th>MOVE</th><th>CAP</th><th>RESULT</th></tr></thead><tbody id="mlb"></tbody></table></div></div>
+  </section>
+
+  <div class="tray">
+    <div class="pulls">
+    <button class="pull" data-d="taxi" aria-expanded="false">TAXI <b>7/8</b></button>
+    <button class="pull" data-d="ir" aria-expanded="false">IR <b>3/12</b></button>
+    <button class="pull" data-d="whatif" aria-expanded="false">WHAT-IF</button>
+  </div>
+    <span class="msg" id="msg">No changes. Swaps stay a plan until you save.</span>
+    <button class="btn sp" id="discard">DISCARD</button>
+    <button class="btn g2">CHECK AND SAVE PLAN</button>
+    <button class="btn solid">OPEN MFL ↗</button>
+  </div>
+
+
+  <section class="sdrawer" id="sd" aria-label="Release plan">
+    <div class="bd-head"><h2>Release plan · <span id="sdN">-</span></h2><button class="x" id="sdX">ESC</button></div>
+    <div class="sd-body">
+      <div class="sd-sec">THE COST<span id="sdFA"></span></div>
+      <div class="kv2">
+        <div class="kv"><span>Salary this year</span><span id="sdS">-</span></div>
+        <div class="kv"><span>Years left after</span><span id="sdY">-</span></div>
+        <div class="kv"><span>Dead cap now</span><span id="sdD" class="warn">-</span></div>
+        <div class="kv"><span>Dead cap next yr</span><span id="sdD2">-</span></div>
+        <div class="kv"><span>Room after</span><span id="sdR" class="ok">-</span></div>
+        <div class="kv"><span>Roster after</span><span>40 / 44</span></div>
+      </div>
+      <div class="sd-sec">CAP ROOM, BEFORE ┆ AFTER<span>dashed = today</span></div>
+      <div id="sdRun"></div>
+      <div class="sd-sec">YOUR LINEUP<span id="sdSlot"></span></div>
+      <div class="alt" style="border:0"><b id="sdLu">-</b><small id="sdLu2">-</small></div>
+      <div class="sd-sec">BEFORE YOU CUT<span>other ways out</span></div>
+      <div id="sdAlt"></div>
+    </div>
+    <div class="sd-act"><button class="btn" id="sdWhat">TRY IN WHAT-IF</button><button class="btn g2" id="sdGo" style="margin-left:auto">PREPARE RELEASE</button></div>
+    <div class="nested" id="nest" role="dialog" aria-label="Confirm release">
+      <div class="g3">IRREVERSIBLE</div>
+      <h3>Release <span id="nN">-</span></h3>
+      <p class="note" style="margin:6px 0 0">Hold the bar for about half a second. Let go early to cancel.</p>
+      <button class="hold" id="hold"><div class="fill"></div><span id="holdT">HOLD TO RELEASE</span></button>
+      <button class="btn" id="nBack" style="margin-top:10px">BACK</button>
+    </div>
+  </section>
+  <section class="bdrawer" id="bd" aria-label="Roster drawer">
+    <div class="bd-head"><h2 id="bdT">Taxi squad</h2><span class="sub" id="bdS">7 of 8 · first 3 NFL seasons only</span><button class="x" id="bdX">ESC</button></div>
+    <div class="bd-body" id="bdB"></div>
+  </section>
+</main>
+
+<aside class="insp" aria-label="Inspector">
+  <div class="ihead">
+    <div class="top"><span class="pg">TE</span><span class="on">● On field · Q2</span></div>
+    <div class="nm" id="iN">Brock Bowers</div>
+    <div class="sub">Las Vegas · $2.40M thru 2028 · UFA</div>
+  </div>
+  <div class="nums"><div><b>14.2</b><span>pts / game</span></div><div><b>91</b><span>dynasty value</span></div></div>
+  <div class="idrawers" id="idr">
+    <div class="idr open"><button>THIS WEEK<span class="c">vs DEN</span></button><div class="body">
+      <div class="kv"><span>Projection</span><span>13.8</span></div><div class="kv"><span>Target share, last 4</span><span>27%</span></div>
+      <div class="kv"><span>Matchup vs TE</span><span class="ok">● Soft · 24th</span></div></div></div>
+    <div class="idr open"><button>CONTRACT<span class="c">3 yrs</span></button><div class="body">
+      <div class="kv"><span>2026</span><span>$2.40M</span></div><div class="kv"><span>2027</span><span>$2.40M</span></div><div class="kv"><span>2028</span><span>$2.40M</span></div>
+      <div class="kv"><span>Dead cap if cut today</span><span>$1.20M</span></div></div></div>
+    <div class="idr open"><button>AGE ARC <span class="mine">MINE</span><span class="c">24</span></button><div class="body">
+      <div class="arc"><i style="height:30%"></i><i style="height:52%"></i><i class="now" style="height:78%"></i><i style="height:92%"></i><i style="height:100%"></i><i style="height:94%"></i><i style="height:80%"></i><i style="height:60%"></i></div>
+      <div class="kv" style="border:0"><span>Peak window</span><span>2027–2029</span></div></div></div>
+    <div class="idr open"><button>MY NOTES <span class="mine">MINE</span><span class="c">1</span></button><div class="body">
+      <div style="font-size:12px;color:var(--ink2)">Do not sell before 2027 deadline. Owner 14 keeps asking.</div></div></div>
+  </div>
+  <div class="iact"><span class="h">ACT ON THIS PLAYER</span>
+    <div class="ia"><button class="btn">BENCH</button><button class="btn">TO IR</button><button class="btn">ADD TO TRADE</button><button class="btn">WATCH</button></div></div>
+  <div class="ifoot"><span>MFL · 12 min ago</span><button>+ ADD DRAWER</button></div>
+</aside>
+</div>
+
+<script>
+/* ---------- data (illustrative) ---------- */
+const off_=document.getElementById('off'),def_=document.getElementById('def'),bench_=document.getElementById('bench');
+
+const P={};let seq=0;
+const add=(pos,name,team,proj,opp,st='')=>{const id='p'+(seq++);P[id]={id,pos,name,team,proj:+proj,opp,st};return id};
+const slots=[
+ ['QB','off',add('QB','Jayden Daniels','WAS',22.1,'@NYG','live')],['RB','off',add('RB','Bijan Robinson','ATL',18.4,'vs NO')],
+ ['WR','off',add('WR','Puka Nacua','LAR',16.9,'@SF','q')],['FLEX','off',add('TE','Brock Bowers','LV',13.8,'vs DEN','live')],
+ ['FLEX','off',add('WR','Rome Odunze','CHI',11.2,'@GB')],['FLEX','off',add('RB','Zach Charbonnet','SEA',9.6,'BYE','bye')],
+ ['OL','off',add('OL','Lions O-Line','DET',4.1,'vs MIN')],['K','off',add('K','Jake Bates','DET',8.3,'vs MIN')],
+ ['DT','def',add('DT','Jalen Carter','PHI',7.4,'@DAL')],['DE','def',add('DE','Aidan Hutchinson','DET',9.8,'vs SEA','live')],
+ ['LB','def',add('LB','Jack Campbell','DET',8.9,'vs MIN')],['CB','def',add('CB','Quinyon Mitchell','PHI',6.2,'@DAL')],
+ ['CB','def',add('CB','Cooper DeJean','PHI',5.9,'@DAL')],['S','def',add('S','Kyle Hamilton','BAL',8.1,'vs CIN')],
+ ['D·FLX','def',add('LB','Zaire Franklin','IND',7.7,'vs TEN')],['D·FLX','def',add('DE','Will Anderson','HOU',8.6,'vs MIN')],
+ ['D·FLX','def',add('S','Brian Branch','DET',7.0,'@GB','q')],['D·FLX','def',add('LB','Edgerrin Cooper','GB',6.8,'vs DAL')],
+ ['D·FLX','def',null]].map(([code,side,pid])=>({code,side,pid}));
+[['RB','Tyjae Spears','TEN',8.8,'vs DAL'],['WR','Jalen McMillan','TB',7.9,'vs NO'],['WR','Xavier Legette','CAR',7.1,'vs NO'],['TE','Brenton Strange','JAX',6.0,'vs MIA'],
+ ['QB','Bo Nix','DEN',17.6,'vs DAL'],['RB','Trey Benson','ARI',6.4,'vs LV'],['DE','Laiatu Latu','IND',6.9,'vs LV'],['DE','Jared Verse','LAR',7.6,'vs LV'],
+ ['LB','Payton Wilson','PIT',6.3,'vs KC'],['CB','Terrion Arnold','DET',5.4,'vs NO'],['S','Calen Bullock','HOU',5.8,'vs KC'],['DT','Byron Murphy','SEA',5.1,'vs DAL'],
+ ['WR','Troy Franklin','DEN',5.7,'vs KC'],['RB','Blake Corum','LAR',4.9,'vs LV'],['CB','Kool-Aid McKinstry','NO',4.8,'vs DAL'],['LB','Junior Colson','LAC',4.2,'vs KC'],
+ ['S','Malaki Starks','BAL',5.2,'vs KC'],['DT','Ruke Orhorhoro','ATL',3.9,'vs NO'],['WR',"Ja'Lynn Polk",'NE',3.1,'vs DAL'],['TE','Ben Sinnott','WAS',2.8,'vs LV'],
+ ['K','Will Reichard','MIN',7.1,'vs KC'],['OL','Ravens O-Line','BAL',3.8,'vs KC']].forEach(a=>add(...a));
+const elig={QB:['QB'],RB:['RB','FLEX'],WR:['WR','FLEX'],TE:['FLEX'],OL:['OL'],K:['K'],DT:['DT','D·FLX'],DE:['DE','D·FLX'],LB:['LB','D·FLX'],CB:['CB','D·FLX'],S:['S','D·FLX']};
+const fits=(pid,i)=>elig[P[pid].pos].includes(slots[i].code);
+const eff=pid=>!pid?-1:(P[pid].st==='bye'||P[pid].st==='out')?0:P[pid].proj;
+const started=()=>new Set(slots.map(s=>s.pid).filter(Boolean));
+const benchIds=()=>Object.keys(P).filter(id=>!started().has(id));
+const stx={live:'LIVE',q:'Q',bye:'BYE',out:'OUT'};
+let changes=[],flash=new Set(),picked=null,fpos='ALL';
+
+/* ---------- lineup logic: place, cascade, auto-fill ---------- */
+function weakestFor(pid,skip=-1){let best=-1;slots.forEach((s,i)=>{if(i===skip||!fits(pid,i))return;
+  if(best<0||eff(s.pid)<eff(slots[best].pid))best=i});return best}
+function cascade(pid,from,depth){ // a displaced starter looks for a weaker eligible slot before going to the bench
+  if(depth>2){changes.push(`${P[pid].name} to bench`);return}
+  const i=weakestFor(pid,from);
+  if(i>=0&&eff(slots[i].pid)<eff(pid)){const out=slots[i].pid;slots[i].pid=pid;flash.add(i);
+    changes.push(`${P[pid].name} → ${slots[i].code}`);if(out)cascade(out,i,depth+1)}
+  else changes.push(`${P[pid].name} to bench`)}
+function placeAt(pid,i){const out=slots[i].pid;const was=slots.findIndex(s=>s.pid===pid);
+  if(was>=0){ // starter-to-starter: swap if both fit
+    if(out&&!fits(out,was))return false;slots[was].pid=out;slots[i].pid=pid;flash.add(i);flash.add(was);
+    changes.push(`${P[pid].name} ⇄ ${out?P[out].name:'empty'}`);return true}
+  slots[i].pid=pid;flash.add(i);changes.push(`${P[pid].name} in at ${slots[i].code}`);if(out)cascade(out,i,1);return true}
+function autoPlace(pid){const i=weakestFor(pid);if(i<0)return;placeAt(pid,i)}
+function bench(pid){const i=slots.findIndex(s=>s.pid===pid);if(i<0)return;slots[i].pid=null;changes.push(`${P[pid].name} to bench`);
+  const cand=benchIds().filter(id=>id!==pid&&fits(id,i)).sort((a,b)=>eff(b)-eff(a))[0]; // auto-fill the hole
+  if(cand&&eff(cand)>0){slots[i].pid=cand;changes.push(`${P[cand].name} fills ${slots[i].code}`)}flash.add(i)}
+
+/* ---------- render ---------- */
+const tag=(pid)=>`<span class="pg drag" data-pid="${pid}" title="Drag to move">${P[pid].pos}</span>`;
+function srow(s,i){if(!s.pid)return `<div class="slot gap ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span><span></span><span class="nm">Empty · drop any defender</span><span></span><span class="elig">—</span><span class="pr">0.0</span><span class="st warn">OPEN</span></div>`;
+  const p=P[s.pid];return `<div class="slot ${flash.has(i)?'chg':''}" data-i="${i}"><span class="sl">${s.code}</span>${tag(s.pid)}<span class="nm">${p.name}<small>${p.team}</small></span>${form(p)}<span class="elig">${p.opp}</span><span class="pr">${p.proj.toFixed(1)}</span><span class="st ${p.st}">${stx[p.st]||''}</span></div>`}
+// last five weeks: bright = beat this week's projection, dashed line = projection, hatched = bye
+function form(p){const h=[...p.name].reduce((a,c)=>a+c.charCodeAt(0),0),byeAt=h%7===0?h%5:-1;
+  let sd=h*9301+49297;const rnd=()=>(sd=(sd*9301+49297)%233280)/233280;
+  const pts=[0,1,2,3,4].map(k=>k===byeAt?null:+(p.proj*(.35+rnd()*1.15)).toFixed(1));
+  const top=Math.max(p.proj,...pts.filter(x=>x!=null))*1.08,real=pts.filter(x=>x!=null),avg=real.reduce((a,b)=>a+b,0)/real.length;
+  return `<span class="form" title="Last 5 weeks vs this week's projection ${p.proj.toFixed(1)}">${pts.map((v,k)=>v==null?`<i class="bye" title="Wk ${4+k} · bye"></i>`:`<i class="${v>=p.proj?'up':''}" style="height:${Math.max(6,Math.round(v/top*100))}%" title="Wk ${4+k} · ${v.toFixed(1)}"></i>`).join('')}<span class="pj" style="bottom:${Math.round(p.proj/top*20)}px"></span><b>avg ${avg.toFixed(1)}</b></span>`}
+function draw(){
+  const sum=side=>slots.filter(s=>s.side===side).reduce((a,s)=>a+Math.max(eff(s.pid),0),0);
+  off_.innerHTML=slots.map((s,i)=>s.side==='off'?srow(s,i):'').join('');def_.innerHTML=slots.map((s,i)=>s.side==='def'?srow(s,i):'').join('');
+  muUs.textContent=(sum('off')+sum('def')).toFixed(1);oSum.textContent=sum('off').toFixed(1);dSum.textContent=sum('def').toFixed(1);tSum.textContent=(sum('off')+sum('def')).toFixed(1);
+  const b=benchIds().filter(id=>fpos==='ALL'||P[id].pos===fpos).sort((a,c)=>P[c].proj-P[a].proj);bCount.textContent=benchIds().length;
+  bench_.innerHTML=b.map(id=>`<div class="slot ${picked===id?'picked':''}" data-b="${id}">${tag(id)}<span class="nm">${P[id].name}<small>${P[id].team}</small></span>${form(P[id])}<span class="elig">${P[id].opp}</span><span class="pr">${P[id].proj.toFixed(1)}</span></div>`).join('');
+  const gaps=slots.filter(s=>!s.pid).length,q=slots.filter(s=>s.pid&&P[s.pid].st==='q').length,bye=slots.filter(s=>s.pid&&P[s.pid].st==='bye').length;
+  chk.innerHTML=(gaps+bye?'<span class="warn">●</span> ':'<span class="ok">●</span> ')+[gaps&&`${gaps} empty`,bye&&`${bye} on bye`,q&&`${q} questionable`].filter(Boolean).join(' · ')||'<span class="ok">●</span> Lineup is full';
+  msg.innerHTML=changes.length?`<b style="color:var(--ink)">${changes.length} change${changes.length>1?'s':''}</b> · ${changes.slice(-4).join(' · ')}`:'No changes. Drag a tag, or pick a bench player then a dashed slot.';
+  setTimeout(()=>{flash.clear();document.querySelectorAll('.chg').forEach(x=>x.classList.remove('chg'))},900);sizeRows()}
+function sizeRows(){const col=document.querySelector('.board .col');const h=col.clientHeight-col.querySelector('.ch').offsetHeight-2*28;
+  }
+addEventListener('resize',sizeRows);
+
+/* ---------- pointer drag: transform-only ghost ---------- */
+let drag=null;
+document.addEventListener('pointerdown',e=>{const t=e.target.closest('.drag');if(!t)return;e.preventDefault();
+  const pid=t.dataset.pid,r=t.getBoundingClientRect(),g=t.cloneNode(true);g.className='pg ghost';document.body.appendChild(g);
+  drag={pid,g,x0:e.clientX-r.left,y0:e.clientY-r.top,from:benchIds().includes(pid)?'bench':'lineup'};moveGhost(e);
+  document.body.classList.add('dragging');
+  document.querySelectorAll('#off .slot,#def .slot').forEach(s=>s.classList.toggle('target',fits(pid,+s.dataset.i)));
+  if(drag.from==='lineup')document.querySelector('.bench').classList.add('dropzone');});
+function moveGhost(e){drag.g.style.transform=`translate(${e.clientX-drag.x0}px,${e.clientY-drag.y0}px)`;
+  document.querySelectorAll('.over').forEach(x=>x.classList.remove('over'));
+  const el=document.elementFromPoint(e.clientX,e.clientY);const s=el&&el.closest('.slot.target');if(s)s.classList.add('over')}
+document.addEventListener('pointermove',e=>{if(drag)moveGhost(e)});
+document.addEventListener('pointerup',e=>{if(!drag)return;drag.g.remove();document.body.classList.remove('dragging');
+  const el=document.elementFromPoint(e.clientX,e.clientY);const pid=drag.pid,from=drag.from;drag=null;
+  document.querySelectorAll('.target,.over,.dropzone').forEach(x=>x.classList.remove('target','over','dropzone'));
+  if(!el)return draw();const slot=el.closest('#off .slot,#def .slot');
+  if(slot&&fits(pid,+slot.dataset.i))placeAt(pid,+slot.dataset.i);
+  else if(el.closest('.board .col')&&!el.closest('.bench')&&from==='bench')autoPlace(pid); // dropped near the lineup: it finds its own slot
+  else if(el.closest('.bench')&&from==='lineup')bench(pid);
+  picked=null;draw();P[pid]&&(iN.textContent=P[pid].name)});
+
+/* ---------- click path still works: pick, then slot ---------- */
+bench_.addEventListener('click',e=>{if(e.target.closest('.drag'))return;const r=e.target.closest('.slot');if(!r)return;picked=r.dataset.b;iN.textContent=P[picked].name;draw();
+  document.querySelectorAll('#off .slot,#def .slot').forEach(s=>s.classList.toggle('target',fits(picked,+s.dataset.i)))});
+document.querySelector('.board').addEventListener('click',e=>{const s=e.target.closest('#off .slot,#def .slot');if(!s||e.target.closest('.drag'))return;const i=+s.dataset.i;
+  if(picked&&fits(picked,i)){placeAt(picked,i);picked=null;draw();return}if(slots[i].pid)iN.textContent=P[slots[i].pid].name});
+discard.onclick=()=>location.reload();
+
+/* ---------- filters, pulls, inspector ---------- */
+const pos=['ALL','QB','RB','WR','TE','OL','K','DT','DE','LB','CB','S'];
+filters.innerHTML=pos.map(p=>`<button class="chip" data-p="${p}" aria-pressed="${p==='ALL'}">${p}</button>`).join('');
+filters.onclick=e=>{const c=e.target.closest('.chip');if(!c)return;fpos=c.dataset.p;filters.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',x===c));draw()};
+const dr={taxi:['Taxi squad','7 of 8 · first 3 NFL seasons only',[['WR','Tez Johnson','yr 1'],['RB','Kaleb Johnson','yr 1'],['QB','Jaxson Dart','yr 1'],['TE','Mason Taylor','yr 1'],['DE','Mykel Williams','yr 1'],['CB','Will Johnson','yr 1'],['S','Xavier Watts','yr 1']]],
+ ir:['Injured reserve','3 of 12',[['WR','Brian Thomas Jr.','Wk 11'],['LB','Jeremiah Trotter','Wk 12'],['RB','MarShawn Lloyd','Season']]],
+ whatif:['What-if','Try a move against this roster and cap. Nothing is saved.',[['CUT','Zach Charbonnet','+$0.45M'],['TAXI↑','Tez Johnson','−$0.75M'],['IR','Puka Nacua (Q)','+0 slots'],['SIGN','Best FA DE: Chop Robinson','−$1.10M']]]};
+const pulls=document.querySelectorAll('.pull');
+pulls.forEach(p=>p.onclick=()=>{const open=p.getAttribute('aria-expanded')==='true';pulls.forEach(x=>x.setAttribute('aria-expanded','false'));
+  if(open){bd.classList.remove('open');return}const d=dr[p.dataset.d];bdT.textContent=d[0];bdS.textContent=d[1];
+  bdB.innerHTML=d[2].map(x=>`<div class="slot"><span class="pg">${x[0]}</span><span class="nm">${x[1]}</span><span class="elig">${x[2]}</span></div>`).join('');
+  p.setAttribute('aria-expanded','true');bd.classList.add('open')});
+
+/* ---------- v9: bottom drawers sized to their data ---------- */
+const TAXI=[['WR','Tez Johnson','TB',1,0.75,68,'Promote now: beats McMillan (7.9) at WR'],['RB','Kaleb Johnson','PIT',1,0.90,74,''],['QB','Jaxson Dart','NYG',1,1.10,70,''],
+ ['TE','Mason Taylor','NYJ',1,0.60,63,''],['DE','Mykel Williams','SF',1,0.85,72,''],['CB','Will Johnson','ARI',1,0.95,71,''],['S','Xavier Watts','ATL',2,0.55,66,'Last taxi year after 2026']];
+const STASH=[['RB','Trey Benson','ARI','yr 2 · eligible'],['WR','Troy Franklin','DEN','yr 2 · eligible'],['DT','Ruke Orhorhoro','ATL','yr 2 · eligible']];
+const IRL=[['WR','Brian Thomas Jr.','JAX','Ankle','Wk 11','2w',3.10,'Activate needs 1 active spot'],['LB','Jeremiah Trotter','PHI','Knee','Wk 12','3w',0.70,''],['RB','MarShawn Lloyd','GB','Hamstring','Season','—',0.80,'Done for 2026 · counts on cap']];
+const IRC=[['WR','Puka Nacua','LAR','Q · shoulder','Can move to IR if ruled OUT'],['S','Brian Branch','DET','Q · ankle','Watch Friday report']];
+const WI=[['CUT','Zach Charbonnet',0.45,0,-1,0],['TAXI','Move Trey Benson to taxi',0.40,0,-1,0],['PROMO','Promote Tez Johnson',-0.75,0,1,1.2],['SIGN','Sign FA DE Chop Robinson · 1 yr',-1.10,0,1,7.0],
+ ['IR','Puka Nacua to IR',0,0,-1,-16.9],['EXT','Extend Aidan Hutchinson · 3 yrs',0,-6.20,0,0],['TRADE','Odunze + 2027 R2 for Hall',-0.60,-0.60,0,0.9]];
+let wiOn=new Set();
+function bdTaxi(){bdT.textContent='Taxi squad';bdS.textContent='7 of 8 · first 3 NFL seasons · taxi pay is off the active cap';
+  bdB.innerHTML=`<div class="bd-main"><table class="ct bt"><thead><tr><th>POS</th><th>PLAYER</th><th>NFL YR</th><th>TAXI LEFT</th><th>SALARY</th><th>VALUE</th><th style="text-align:left">NOTE</th><th></th></tr></thead><tbody>${
+   TAXI.map(t=>`<tr><td><span class="pg">${t[0]}</span></td><td>${t[1]}<small>${t[2]}</small></td><td>${t[3]}</td><td><span class="yrs">${[1,2,3].map(y=>`<i class="${y<=t[3]?'u':''}"></i>`).join('')}</span> ${3-t[3]}</td><td>${t[4].toFixed(2)}</td><td>${t[5]}</td><td style="text-align:left;font-family:var(--sans);font-size:12px;color:${t[6].startsWith('Promote')?'var(--green)':t[6]?'var(--amber)':'var(--ink3)'}">${t[6]||'—'}</td><td><button class="btn">PROMOTE</button></td></tr>`).join('')}</tbody></table></div>
+   <div class="bd-side"><div class="sum"><div><b>7 / 8</b><span>TAXI SLOTS</span></div><div><b>41 / 44</b><span>ACTIVE</span></div><div><b>$5.70M</b><span>TAXI PAY</span></div><div><b class="ok">+1</b><span>OPEN TAXI SLOT</span></div></div>
+   <div class="ch"><b>COULD STASH · 3</b><span>active, still eligible</span></div>${STASH.map(x=>`<div class="drow" style="grid-template-columns:34px 1fr auto"><span class="pg">${x[0]}</span><span>${x[1]} <small style="color:var(--ink3);font:11px var(--mono)">${x[2]} · ${x[3]}</small></span><button class="btn" style="padding:2px 8px;font-size:10px">TO TAXI</button></div>`).join('')}</div>`}
+function bdIR(){bdT.textContent='Injured reserve';bdS.textContent='3 of 12 · IR frees an active spot, not cap';
+  bdB.innerHTML=`<div class="bd-main"><table class="ct bt"><thead><tr><th>POS</th><th>PLAYER</th><th>INJURY</th><th>BACK</th><th>IN</th><th>SALARY</th><th style="text-align:left">NOTE</th><th></th></tr></thead><tbody>${
+   IRL.map(t=>`<tr><td><span class="pg">${t[0]}</span></td><td>${t[1]}<small>${t[2]}</small></td><td style="text-align:left;font-family:var(--sans)">${t[3]}</td><td>${t[4]}</td><td class="${t[5]==='2w'?'warn':''}">${t[5]}</td><td>${t[6].toFixed(2)}</td><td style="text-align:left;font-family:var(--sans);font-size:12px;color:var(--ink2)">${t[7]||'—'}</td><td>${t[4]==='Season'?'':'<button class="btn">ACTIVATE</button>'}</td></tr>`).join('')}</tbody></table>
+   <div class="ch" style="border-top:1px solid var(--edge)"><b>RETURNS · WEEKS 9–17</b><span>plan the active spot before they come back</span></div>
+   <div class="tl">${[9,10,11,12,13,14,15,16,17].map(w=>`<div class="${w===9?'now':''}">WK ${w}${w===11?'<b>B. Thomas Jr.</b>':w===12?'<b>J. Trotter</b>':''}</div>`).join('')}</div></div>
+   <div class="bd-side"><div class="sum"><div><b>3 / 12</b><span>IR SLOTS</span></div><div><b>41 / 44</b><span>ACTIVE</span></div><div><b>$4.60M</b><span>IR PAY · ON CAP</span></div><div><b class="warn">Wk 11</b><span>NEXT RETURN</span></div></div>
+   <div class="ch"><b>IR CANDIDATES · 2</b><span>on your roster</span></div>${IRC.map(x=>`<div class="drow" style="grid-template-columns:34px 1fr auto"><span class="pg">${x[0]}</span><span>${x[1]} <small style="color:var(--amber);font:11px var(--mono)">${x[3]}</small></span><button class="btn" style="padding:2px 8px;font-size:10px">TO IR</button><span class="why" style="grid-column:2/4">${x[4]}</span></div>`).join('')}</div>`}
+function bdWhat(){bdT.textContent='What-if';bdS.textContent='Tick moves to stack them. Nothing is saved or sent.';
+  const t=[...wiOn].map(i=>WI[i]),room=6.40+t.reduce((a,x)=>a+x[2],0),room27=23.20+t.reduce((a,x)=>a+x[3],0),act=41+t.reduce((a,x)=>a+x[4],0),pj=171.2+t.reduce((a,x)=>a+x[5],0);
+  const c=(v,base,u='')=>`<span class="${v>base?'ok':v<base?'warn':''}">${v>base?'+':''}${(v-base).toFixed(u?0:2)}${u}</span>`;
+  bdB.innerHTML=`<div class="bd-main">${WI.map((w,i)=>`<div class="wi ${wiOn.has(i)?'on':''}" data-wi="${i}"><span class="box"></span><span class="k">${w[0]}</span><span>${w[1]}</span><span class="d">${w[2]?(w[2]>0?'+':'')+w[2].toFixed(2)+'M':''}${w[3]?(w[2]?' · ':'')+'2027: '+w[3].toFixed(2)+'M':''}</span></div>`).join('')}</div>
+   <div class="bd-side"><div class="sum"><div><b>$${room.toFixed(2)}M</b><span>ROOM 2026</span><span class="delta">${c(room,6.40)}M</span></div><div><b>$${room27.toFixed(2)}M</b><span>ROOM 2027</span><span class="delta">${c(room27,23.20)}M</span></div>
+   <div><b class="${act>44?'warn':''}">${act} / 44</b><span>ACTIVE</span><span class="delta">${c(act,41,' ')}</span></div><div><b>${pj.toFixed(1)}</b><span>WEEK 9 PROJ</span><span class="delta">${c(pj,171.2,' ')}</span></div></div>
+   <div class="tray" style="background:none;margin-top:auto"><span class="msg">${t.length} stacked${act>44?' · <span class="warn">over the active limit</span>':''}</span><button class="btn sp" id="wiClr">CLEAR</button><button class="btn g2">SEND TO MY MOVES</button></div></div>`;
+  bdB.querySelectorAll('[data-wi]').forEach(e=>e.onclick=()=>{const i=+e.dataset.wi;wiOn.has(i)?wiOn.delete(i):wiOn.add(i);bdWhat()});
+  const cl=document.getElementById('wiClr');if(cl)cl.onclick=()=>{wiOn.clear();bdWhat()}}
+pulls.forEach(p=>p.onclick=()=>{const open=p.getAttribute('aria-expanded')==='true';pulls.forEach(x=>x.setAttribute('aria-expanded','false'));
+  if(open){bd.classList.remove('open');return}({taxi:bdTaxi,ir:bdIR,whatif:bdWhat})[p.dataset.d]();p.setAttribute('aria-expanded','true');bd.classList.add('open')});
+bdX.onclick=()=>{bd.classList.remove('open');pulls.forEach(x=>x.setAttribute('aria-expanded','false'))};
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){picked=null;bdX.onclick();draw()}});
+idr.onclick=e=>{const b=e.target.closest('.idr>button');if(b)b.parentElement.classList.toggle('open')};
+function inline(){const box=inl;box.innerHTML='';const room=box.clientHeight;let used=0;
+  for(const k of ['taxi','ir']){const d=dr[k];const need=28+d[2].length*30;if(used+need>room)break;used+=need;
+    box.insertAdjacentHTML('beforeend',`<div class="sec">${d[0].toUpperCase()} · ${d[1].split(' ·')[0]}<span>also in the pull tab</span></div>`+
+      d[2].map(x=>`<div class="slot"><span class="pg">${x[0]}</span><span class="nm">${x[1]}</span><span class="elig">${x[2]}</span><span></span></div>`).join(''))}}
+addEventListener('resize',inline);
+const setTray=()=>document.documentElement.style.setProperty('--trayh',document.querySelector('.tray').offsetHeight+'px');setTray();addEventListener('resize',setTray);
+draw();inline();
+
+/* ---------- v7: workspace switching ---------- */
+const trayLineup=[...document.querySelectorAll('.tray > *')];
+function ws(name){document.querySelectorAll('.ws').forEach(x=>x.classList.toggle('on',x.id==='ws-'+name));
+  document.querySelectorAll('[role=tab][data-ws]').forEach(t=>t.setAttribute('aria-selected',t.dataset.ws===name));
+  document.querySelector('.queue').classList.toggle('on',name==='moves');
+  document.querySelectorAll('.node .leaf[data-ws]').forEach(l=>l.classList.toggle('sel',l.dataset.ws===name));
+  document.querySelectorAll('.pulls,#discard,.tray .g2,.tray .solid').forEach(x=>x.style.visibility=name==='lineup'?'visible':'hidden');
+  msg.innerHTML=name==='cap'?'Contracts read only here. Every cut, extension or tag opens as a drawer you confirm.':name==='moves'?'Every move you prepare lives here until MFL\'s own data proves it landed.':msg.innerHTML;
+  document.querySelector('.leaf.now').innerHTML=name==='cap'?'<span class="tag">NOW</span>Tag window shuts in 12d':name==='moves'?'<span class="tag">NOW</span>2 moves need you':'<span class="tag">NOW</span>Locks Sun 12:00';
+  bdX.onclick();sdClose();if(name==='lineup')draw()}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-ws]');if(t&&!e.target.closest('.pin'))ws(t.dataset.ws)});
+
+/* ---------- contracts ledger ---------- */
+const C=[['QB','Jayden Daniels','WAS',[4.10,4.10,4.10],88],['RB','Bijan Robinson','ATL',[6.90,6.90],93],['DE','Aidan Hutchinson','DET',[5.50],86],['WR','Puka Nacua','LAR',[3.20,3.20],90],
+ ['S','Kyle Hamilton','BAL',[3.60],84],['TE','Brock Bowers','LV',[2.40,2.40,2.40],91],['DE','Will Anderson','HOU',[2.90,2.90,2.90,2.90],89],['DT','Jalen Carter','PHI',[2.60,2.60],82],
+ ['WR','Rome Odunze','CHI',[1.80,1.80,1.80],79],['QB','Bo Nix','DEN',[1.70,1.70,1.70],74],['CB','Quinyon Mitchell','PHI',[1.40,1.40,1.40],81],['LB','Zaire Franklin','IND',[1.60],71],
+ ['LB','Jack Campbell','DET',[1.10,1.10],74],['K','Jake Bates','DET',[0.50,0.50],60],['RB','Tyjae Spears','TEN',[1.20],66],['CB','Cooper DeJean','PHI',[1.00,1.00,1.00],78],
+ ['S','Brian Branch','DET',[1.30,1.30],77],['LB','Edgerrin Cooper','GB',[0.90,0.90,0.90],76],['RB','Zach Charbonnet','SEA',[0.90],62],['DE','Jared Verse','LAR',[0.95,0.95,0.95],80],
+ ['WR','Jalen McMillan','TB',[0.70,0.70],63],['WR','Xavier Legette','CAR',[0.80,0.80,0.80],61],['TE','Brenton Strange','JAX',[0.60],55],['OL','Lions O-Line','DET',[0.40],58]];
+const fm=v=>'$'+v.toFixed(2)+'M';
+const FA=C.map((c,i)=>(c[4]>=78||i%3===0)?'rfa':'ufa');
+ctb.innerHTML=C.map((c,i)=>{const yrs=[0,1,2,3].map(k=>c[3][k]!=null?`<td class="yr ${k===c[3].length-1?'last':''}">${c[3][k].toFixed(2)}${k===c[3].length-1?`<i class="cap-end ${FA[i]}" title="${FA[i].toUpperCase()}"></i>`:''}</td>`:`<td class="yr off">·</td>`).join('');
+  const dead=(c[3][0]*0.5).toFixed(2),eff=c[3][0]/c[4]*100;
+  return `<tr data-i="${i}"><td><span class="pg">${c[0]}</span></td><td>${c[1]}<small>${c[2]}</small></td>${yrs}<td>${dead}</td><td>${c[4]}</td><td class="${eff<2.2?'ok':eff>5.5?'warn':''}">${eff.toFixed(1)}</td></tr>`}).join('');
+const RUN=[['2026',84,8.9,'6.40'],['2027',71,3.1,'23.20'],['2028',44,0,'50.40'],['2029',22,0,'70.20']];
+run.innerHTML=RUN.map(([y,c,d,room],k)=>`<div class="y ${k===0?'tight':''}"><span>${y}</span><span class="bar"><span class="seg-c" style="width:${c}%"></span>${d?`<span class="seg-d" style="width:${d}%"></span>`:''}</span><b>$${room}M</b></div>`).join('');
+const DEC=[['DE','Aidan Hutchinson','Contract ends 2026 · value 86 · cheaper than DE going rate','Tag window shuts in 12d',['EXTEND','TAG','LET WALK'],1],
+ ['S','Kyle Hamilton','Contract ends 2026 · value 84','Tag window shuts in 12d',['EXTEND','TAG','LET WALK'],1],
+ ['LB','Zaire Franklin','Ends 2026 · value 71 · 4th-best LB on your roster','After season',['EXTEND','LET WALK'],0],
+ ['RB','Zach Charbonnet','Ends 2026 · value 62 · on bye, behind 3 RBs','After season',['RELEASE NOW','LET WALK'],0]];
+dec.innerHTML=DEC.map(d=>`<div class="drow"><span class="pg">${d[0]}</span><span class="nm">${d[1]}</span><span class="clock ${d[5]?'':'cold'}">${d[3]}</span><span class="why">${d[2]}</span><span class="ops">${d[4].map(o=>`<button class="btn" data-op="${o}" data-n="${d[1]}">${o}</button>`).join('')}</span></div>`).join('');
+dead.innerHTML=[['RB','Khalil Herbert','Released Wk 7','$0.30M','2026 only'],['WR','Mike Williams','Released 2025','$2.20M','thru 2027'],['DE','Za\'Darius Smith','Released 2025','$3.10M','2026 only'],['QB','Kirk Cousins','Traded 2025','$2.40M','thru 2027']]
+ .map(d=>`<div class="drow" style="grid-template-columns:34px 1fr auto auto"><span class="pg">${d[0]}</span><span>${d[1]} <small style="color:var(--ink3);font:11px var(--mono)">${d[2]}</small></span><span class="mono">${d[3]}</span><span class="mono" style="color:var(--ink3);font-size:11px">${d[4]}</span></div>`).join('');
+/* release drawer */
+function sdFill(i){const c=C[i],cut=c[3][0]*.5;
+  sdFA.innerHTML=`ends ${2025+c[3].length} as <b class="fa ${FA[i]}">${FA[i].toUpperCase()}</b>`;
+  const rows=[['2026',6.40,6.40+cut],['2027',23.20,23.20+(c[3].length>1?c[3][1]*.75:0)]];
+  sdRun.innerHTML=rows.map(([y,a,b])=>`<div class="rb"><span>${y}</span><span class="bar"><i style="width:${Math.min(100,b/30*100)}%"></i><i class="was" style="width:${a/30*100}%"></i></span><b style="text-align:right" class="ok">${fm(b)}</b></div>`).join('');
+  const start=slots.findIndex(s=>s.pid&&P[s.pid].name===c[1]);
+  if(start>=0){const sub=benchIds().filter(id=>fits(id,start)).sort((a,b)=>eff(b)-eff(a))[0];
+    sdSlot.textContent=slots[start].code+' starter';sdLu.textContent=sub?`${P[sub].name} steps in at ${slots[start].code}`:'Slot goes empty';
+    sdLu2.textContent=sub?`${P[sub].proj.toFixed(1)} proj vs ${P[slots[start].pid].proj.toFixed(1)} · ${(P[sub].proj-P[slots[start].pid].proj).toFixed(1)} this week`:'No eligible bench player'}
+  else{sdSlot.textContent='bench';sdLu.textContent='Not in your starting 19';sdLu2.textContent='Lineup unchanged · frees one active roster spot'}
+  const yrs=c[3].length;sdAlt.innerHTML=[
+    [`Trade him · ${c[0]==='K'?'3 teams are short at K':'2 teams list '+c[0]+' as a need'}`,`Owner 3, Owner 9${c[0]==='K'?', Owner 21':''} · value ${c[4]} trades for a late pick`,'ADD TO TRADE'],
+    [yrs>1?'Ride it out':'Let it expire',yrs>1?`Costs ${fm(c[3].slice(1).reduce((a,b)=>a+b,0))} more · ends ${2025+yrs} as ${FA[i].toUpperCase()}`:`Costs ${fm(c[3][0]-cut)} more than cutting · then ${FA[i]==='rfa'?'you can match offers':'he walks free'}`,'KEEP'],
+    ['Taxi squad','Not eligible · past his 3rd NFL season','—']]
+   .map(a=>`<div class="alt"><b>${a[0]}</b><small>${a[1]}</small>${a[2]==='—'?'<span class="mono" style="grid-row:1/3;grid-column:2;color:var(--ink3)">—</span>':`<button class="btn">${a[2]}</button>`}</div>`).join('')}
+function sdOpen(i){const c=C[i];sdFill(i);sdN.textContent=nN.textContent=c[1];sdS.textContent=fm(c[3][0]);sdY.textContent=c[3].length-1;
+  sdD.textContent=fm(c[3][0]*.5);sdD2.textContent=c[3].length>1?fm(c[3][1]*.25):'$0.00M';sdR.textContent=fm(6.40+c[3][0]*.5);iN.textContent=c[1];document.querySelector('.ihead .sub').textContent=`${c[2]} · ${fm(c[3][0])} thru ${2025+c[3].length} · ${FA[i].toUpperCase()}`;document.querySelector('.ihead .pg').textContent=c[0];
+  ctb.querySelectorAll('tr').forEach(r=>r.classList.toggle('sel',+r.dataset.i===i));nest.classList.remove('open');resetHold();sd.classList.add('open')}
+function sdClose(){sd.classList.remove('open');nest.classList.remove('open')}
+ctb.onclick=e=>{const r=e.target.closest('tr');if(r)sdOpen(+r.dataset.i)};
+dec.onclick=e=>{const b=e.target.closest('[data-op]');if(!b)return;const i=C.findIndex(c=>c[1]===b.dataset.n);if(b.dataset.op.startsWith('RELEASE'))sdOpen(i);else{iN.textContent=b.dataset.n;msg.innerHTML=`<b style="color:var(--ink)">${b.dataset.op.toLowerCase()}</b> · ${b.dataset.n} · opens its own drawer in the build`}};
+sdX.onclick=sdClose;sdGo.onclick=()=>nest.classList.add('open');nBack.onclick=()=>{nest.classList.remove('open');resetHold()};
+sdWhat.onclick=()=>{sdClose();ws('lineup');document.querySelector('.pull[data-d=whatif]').click()};
+let ht;function resetHold(){clearTimeout(ht);hold.classList.remove('go','done');holdT.textContent='HOLD TO RELEASE'}
+hold.onpointerdown=()=>{if(hold.classList.contains('done'))return;hold.classList.add('go');ht=setTimeout(()=>{hold.classList.add('done');holdT.textContent='PREPARED · OPENING MFL ↗';
+  msg.innerHTML=`<b style="color:var(--ink)">Release ${nN.textContent}</b> · handed off · lands when MFL shows it`},600)};
+['pointerup','pointerleave'].forEach(ev=>hold.addEventListener(ev,()=>{if(!hold.classList.contains('done')){clearTimeout(ht);hold.classList.remove('go')}}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(nest.classList.contains('open')){nest.classList.remove('open');resetHold()}else sdClose()}});
+
+/* ---------- my moves: envelope lanes ---------- */
+const MV=[[0,'SIGN','Extend Jared Verse · 3 yrs $0.95M','Cap ok · roster ok · window open','Ready','st-ok',1,'OPEN MFL'],
+ [0,'LINEUP','Week 9 lineup · 3 swaps','1 slot still empty','Blocked','st-bad',1,'FIX'],
+ [1,'WAIVER','Claim Calen Bullock','Opened MFL 2h ago','Not yet done','st-wait',0,'RE-OPEN'],
+ [1,'TRADE','Odunze + 2027 R2 for Hall','Owner 14 reviewing · DOT next','Awaiting DOT','st-info',1,'VIEW'],
+ [2,'IR','Brian Thomas Jr. to IR','Seen in MFL rosters 09:12','Landed','st-ok',0,''],
+ [2,'TAXI','Tez Johnson to taxi','Seen in MFL rosters Tue','Landed','st-ok',0,''],
+ [2,'BID','Won Trey Benson · $0.40M','Seen in MFL transactions Mon','Landed','st-ok',0,''],
+ [3,'RELEASE','Release Blake Corum','MFL shows him still rostered','Not verified','st-wait',1,'CHECK'],
+ [3,'BID','Bid on Chop Robinson','Cap changed since you planned it','Stale','st-bad',0,'RE-PLAN']];
+[0,1,2,3].forEach(l=>document.getElementById('l'+l).innerHTML=MV.filter(m=>m[0]===l).map(m=>`<div class="mv ${m[6]?'g2':''} ${m[4]==='Blocked'?'blocked':''}"><div class="top"><span>${m[1]}</span><span class="${m[5]}">● ${m[4]}</span></div><div class="what">${m[2]}</div><div class="chk">${m[3]}</div>${m[7]?`<div class="bot"><span>${m[0]===2?'':'prepared today'}</span><button class="btn">${m[7]}</button></div>`:''}</div>`).join(''));
+
+const LOG=[['IR','Wk 9 · Thu 09:12','Brian Thomas Jr. to IR','$0.00M','<span class="st-ok">● Landed</span>'],['TAXI','Wk 9 · Tue','Tez Johnson to taxi','−$0.00M','<span class="st-ok">● Landed</span>'],
+ ['BID','Wk 9 · Mon','Won Trey Benson','−$0.40M','<span class="st-ok">● Landed</span>'],['LINEUP','Wk 8 · Sun 11:40','Week 8 lineup · 2 swaps','—','<span class="st-ok">● Landed</span>'],
+ ['TRADE','Wk 8 · Wed','Sent 2026 R3 for Edgerrin Cooper','−$0.90M','<span class="st-ok">● Landed · DOT passed</span>'],['RELEASE','Wk 7 · Fri','Released Khalil Herbert','+$0.30M · dead $0.30M','<span class="st-ok">● Landed</span>'],
+ ['BID','Wk 7 · Mon','Lost bid on Jaylen Wright · $0.55M','—','<span style="color:var(--ink3)">● Outbid · $0.60M won</span>'],['LINEUP','Wk 7 · Sun 11:52','Week 7 lineup · 1 swap','—','<span class="st-ok">● Landed</span>'],
+ ['SIGN','Wk 6 · Thu','Extended Will Anderson · 4 yrs','−$1.10M','<span class="st-ok">● Landed</span>'],['WAIVER','Wk 6 · Wed','Claimed Payton Wilson','−$0.25M','<span class="st-ok">● Landed</span>'],
+ ['LINEUP','Wk 6 · Sun 12:04','Week 6 lineup · late by 4 min','—','<span class="st-bad">● Missed lock</span>'],['TRADE','Wk 5 · Tue','Offered Spears for 2027 R2','—','<span style="color:var(--ink3)">● Declined</span>']];
+mlb.innerHTML=LOG.map(l=>`<tr><td><span class="pg">${l[0]}</span></td><td>${l[1]}</td><td>${l[2]}</td><td>${l[3]}</td><td>${l[4]}</td></tr>`).join('');
+/* ---------- customize: pin leaves into my shortcuts ---------- */
+let mine=['Lineup and roster','Free-agent pool','Offers'];
+const wsOf={'Lineup and roster':'lineup','Contracts and cap':'cap','My moves':'moves'};
+function drawSC(){sc.innerHTML=mine.map((m,i)=>`<button class="leaf" ${wsOf[m]?`data-ws="${wsOf[m]}"`:''}><span class="grab">⋮⋮ </span><span class="tr">${i===mine.length-1?'└':'├'}</span>${m}</button>`).join('');
+  document.querySelectorAll('.pin').forEach(p=>{const on=mine.includes(p.dataset.pin);p.classList.toggle('on',on);p.textContent=on?'★':'☆'})}
+document.addEventListener('click',e=>{const p=e.target.closest('.pin');if(!p||!document.body.classList.contains('editing'))return;e.stopPropagation();
+  const n=p.dataset.pin;mine=mine.includes(n)?mine.filter(x=>x!==n):[...mine,n];drawSC()},true);
+custom.onclick=()=>{const on=document.body.classList.toggle('editing');custom.setAttribute('aria-pressed',on);custom.textContent=on?'DONE':'CUSTOMIZE'};
+drawSC();
+</script>
+</body>
+</html>
