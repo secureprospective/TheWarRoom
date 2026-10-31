@@ -1,148 +1,54 @@
-# TheWarRoom UI/UX + data planning — RESUME #8 (2026-10-30 late, compact-safe)
+# TheWarRoom UI/UX build — RESUME #11 (2026-10-31 ~15:15 CT, compact-safe)
 
-## 1. What we are doing
-Approved mocks (HQ v10, War Room v6, Pulse v14, Home v5, Control Room v1) are **fixed** going into the build. This session turned them into a complete data plan: catalog → flow map → model methods → SQL digest → staged build queue. **Planning only: no production code was written.** Next: get the docs onto main, then run the build loop.
-Where: Beelink `chris@192.168.1.191:/home/chris/work/TheWarRoom`, worktree `.worktrees/uiux`, branch `session/ui-ux-groundwork` (LOCAL ONLY, not pushed). Key `/root/.ssh/beelink`. Main checkout belongs to another session (`session/league-history-pwa`); don't touch it. Code truth: `origin/main` 364379ba, read with `git show origin/main:<path>`. Commit with `GOTOOLCHAIN=go1.26.10`, never `--no-verify`, trailers Co-Authored-By Claude Opus 5.5 + Claude-Session.
+## 1. WHAT WE ARE DOING (Christopher re-scoped 10-31 — READ FIRST)
+Make the five LOCKED mocks work in the REAL app from the EXISTING backend. Christopher 15:00: "We spent a full day and millions of tokens on the mock ups. Get the real app on target. That means everything, and functional." Mocks docs/ui/mocks/: franchise-hq-mock-v10, warroom-mock-v6, league-pulse-mock-v14, home-mock-v5, control-room-mock-v1 — no deviation. Engines/models/stores WORK: never rebuild/re-fit; add only thin reads that CALL existing code. Order: HQ → War Room → Home → Pulse → Control Room.
+Repo: Beelink `chris@192.168.1.191:~/work/TheWarRoom` (key /root/.ssh/beelink). main = origin/main a16653cd (another session owns the main checkout — don't touch). Each slice = worktree `.worktrees/<name>`, local branch, no push. Fresh worktree: `cd frontend && pnpm install --frozen-lockfile && pnpm build` before commits. Commit with GOTOOLCHAIN=go1.26.10 (+ GOLANGCI_LINT_CACHE per wt), never --no-verify, trailers Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com> + Claude-Session: https://claude.ai/code/session_01QmkZHtxiunWcQ5mSqpHmtv. go is not on ssh PATH: `export PATH=$PATH:/usr/local/go/bin`.
 
-## 2. Agents / harnesses
-- **GPT (Terra/Sol) is OUT of tokens.** Christopher: "lay off the GPT". Don't dispatch them until he says the quota reset.
-- **Free OpenCode:** `~/fleet/bin/run-glm.sh <wt> <brief> <run> <model>` → `~/fleet/runs/glm-<run>/` (stdout.log, completion.txt). Models: `opencode/glm-5.3-flash-free` (he asked to confirm 5.3 free: yes), `opencode/deepseek-v4.1-flash-free`, `opencode/beam-free`. `opencode/nemotron-3.5-super-vl-free` HUNG 15 min with no output; avoid it. Launch with `ssh -f … 'nohup … &'` and arm a background until-loop watcher.
-- Tom (Opus medium) for hard multi-file work. Claude reviews only.
-- Christopher asked for low/medium thinking to save tokens: keep briefs tight and replies short.
-- Terra chain script pattern: scratchpad `tie-chain.sh` (per-screen briefs, `launch-terra-reorg.sh`, run dir `~/fleet/runs/terra-uiux/`).
+## 2. AGENTS
+- GPT: `~/fleet/bin/gpt-build.sh MODEL(sol|terra) THINK WT_NAME BRIEF RUN` → ~/fleet/runs/<RUN>/ (completion.txt, stdout.log). Launch `ssh -f … 'nohup … >/dev/null 2>&1 &'`. **5h window had 10% at 14:35, resets ~18:16 CT; weekly 70% left (reset 6d17h — the weekly reset already happened).** Sol high for everything WarRoom now. Terra FAILED trade-vis 4× (0 commits; stops on design questions) — do not give Terra multi-file/permission work.
+- DeepSeek free: `~/fleet/bin/run-glm.sh <wt-path> <brief> <run> opencode/deepseek-v4.1-flash-free` → ~/fleet/runs/glm-<run>/. Works well SINGLE-lane (D20-fix, D45, D15, D13, recon all good). **Stalled 3× when 2 ran in parallel** (D26 earlier, DIV+FORM today) → one lane only; stalled = stderr mtime stops.
+- Tom (Opus) weekly resets Nov 1 03:00 CT = fallback for hard work.
+- New-binding checklist (builders missed it twice): desktop.go + doors-before.json + testdata/bindings/manifest.txt + parity count in internal/composition/command_parity_test.go + boundary tsv (`go run ./tools/boundarycheck -inventory`) + run go test ./internal/composition/ ./internal/serverhttp/ ./internal/commandcatalog/.
+- Killing a run: `pgrep -f` pattern over ssh kills my own ssh shell — read pid.txt / match /proc cmdline, kill exact PID.
 
-## 3. Status
-| Item | State |
-|---|---|
-| Data catalogs (Claude 330 rows + Terra 1,890) | done, 84bee24f |
-| DATA_FLOW_MAP (isolation classes, chains, D01–D80, layers, tie-out, field check) | done |
-| MODEL_METHODS_DRAFT (GLM) + Claude review §13 + rulings §14 | done |
-| SQL_DIGEST (R1–R10, panel, double-check §9) | done |
-| BUILD_STAGES queue A–G | done, 89837a80 |
-| Push docs to main | **ASKED, not answered** |
-| Build loop | not started |
+## 3. STATUS
+| Slice | Branch | State |
+|---|---|---|
+| HQ backend D20 runway, D21 native moves, D26 age arc, D45 notes, D15 return week, D13 usage+matchup | all combined on **build/HQ-wire** (.worktrees/hq-wire) | ACCEPTED, reviewed, tests run by me. Golden reconcile 7124317f |
+| HQ wiring (Sol) | build/HQ-wire 35cfd303, a421341e, 48ffff78, a8f32ad6; report docs/build-handoffs/HQ-WIRE-report.md | layout matches mock; my fixture walk found gaps → HQ-FIX |
+| HQ-FIX (Sol) | build/HQ-wire: A inline taxi/IR b8334d46, B division name cebe0f69, C 5-week form 207f44f3 DONE | **D–I NOT DONE** (stopped to save quota). Brief ~/fleet/briefs/build/HQ-FIX.md (resume note appended: continue at D). Relaunch at 18:17 CT |
+| Trade offer visibility | build/trade-visibility 2469f208 (Sol) | ACCEPTED. setting trades.offersVisible private/open, default private (Christopher reconfirmed). Debt: co-owners (identity model has none); speed: tradeEntryVisible replays all records per entry (fix only if ledger screen measures slow) |
+| B3 live drives | build/B3-live | ACCEPTED; HQ live badges (HQ-FIX F) may need it merged |
+| B2 tiebreak | build/B2-tiebreak | partial (reuse standings_rank.go, h2h subgroup bug, coin flip at commish finalize) |
+| D11 projection ranges | — | only HQ item needing a NEW model → written method + replay proof before building |
+| A1 split, A4 goldens | parked | |
+| C1/E3 | stopped (rebuilds) | |
 
-## 4. Artifacts (worktree `docs/ui/`)
-- `data-catalog/claude-catalog-2026-10-30.md`, `terra-{HQ,WR,LP,HM,CR}.md`, `COMPARE.md`
-- `data-catalog/tie-{HQ,WR,LP,HM,CR}.md`: Terra tied every one of the 1,890 items to a D# (input = output count on every screen)
-- `data-catalog/DATA_FLOW_MAP.md`: §0 verification, §1 isolation classes, §2 trunks T1–T6, §3 chains C1–C11, §4 domain table D01–D80, §5 layers, §6 isolation tests, §7 open items, §8 tie-out triage, §9 rulings log, §10 half-built field check
-- `data-catalog/MODEL_METHODS_DRAFT.md`: 11 model methods (GLM), §13 Claude review, §14 rulings
-- `data-catalog/SQL_DIGEST.md`: §1 files, §2 latency, §3 R1–R9, §4 storms, §5 read map, §6 open, §7 rulings, §8 panel, §9 double-check corrections + R10 + endpoint map
-- `BUILD_STAGES.md`: the loop queue
-- Commits this window: a4f62445 map · 49e6bd55 · 829c0f70 tie-out · 85ea64cc field check · b8b34c24 · 071e5add methods · 0ded4a1b · 9b189b72 · (posture) · 558be732 SQL digest · 00a50852 · f0830f76 · fdf941ae panel · e872b2fa double-check · 89837a80 build stages
+## 4. ARTIFACTS
+- Screens: scratchpad hq-1920x1080.png, hq-2550x1352.png (Sol fixture), mock-2550.png. Sol's fixture harness: hq-wire/frontend/.tmp/hq/visual.html + native-fixture.json. Serve: `npx vite --host 0.0.0.0 --port 5199` in frontend on Beelink; LAN port is blocked → tunnel `ssh -f -N -L 5199:127.0.0.1:5199`; screenshot with CT105 `env DBUS_SESSION_BUS_ADDRESS=disabled: google-chrome --headless=new --no-sandbox --window-size=W,H --screenshot=… http://127.0.0.1:5199/.tmp/hq/visual.html`. Kill vite + tunnel after.
+- Sol logs from D21: ~/logs/TheWarRoom/hq-d21-sol/.
+- League preview HTML: Beelink ~/Downloads/TheWarRoom-preview.html.
 
-## 5. Key understanding (the "middle" of the session; don't re-derive)
-**Isolation classes:**
-- PUB: league-public
-- LEDGER: append-only public record, actor + via-AI
-- PRIV: per franchise, shared by co-owners
-- SEALED: owner + commish office until reveal
-- PAIR: the two trade parties; commish after accept/appeal
-- CMSH: permission-set holders via one `mayRun`
-- OPS: server admin, no league rows
-- DERIV-PRIV: computed per request, never cached
-- CLIENT: unsaved in-memory edits
+## 5. FINDINGS FROM MY HQ WALK (fixture, vs mock at 2550)
+Missing then: inline taxi/IR (now A), division id (now B), form bars (now C). Fixture too thin to judge numbers. "OPEN MFL" and "lineup.swap out=… in=…" ARE in the mock (not bugs). Cap reading counting expired contracts = intended pending-decision state (verified rollover.go:122-135), not a bug.
 
-The key rule: a PUB model never reads PRIV/SEALED input.
+## 6. REFUTED / DON'T REDO
+- Don't re-fit age arc (internal/model/params.go ArcStep/Survives). Grep internal/model, modelrun, m2service before any model work.
+- Don't give DeepSeek work overlapping a Sol run's brief (DIV/FORM duplicated Sol's A–C; I misread Sol's fresh commits as old).
+- Don't edit the c1faa2aa savvy-progress copy; live = /root/.claude/dev-mods/savvy-progress.
 
-**Trunks:** T1 clock/identity · T2 roster+contracts · T3 ledger · T4 player record · T5 live feed · T6 valuation.
+## 7. DECISIONS (Christopher 10-31)
+Scope above. Correctness first (option 1: wire with honest "Not available yet" only where data truly absent). Tiebreak: walk all real tiebreakers then coin flip recorded in ledger. Trade offers checkbox, DEFAULT PRIVATE (reconfirmed); open = "on the block" engagement driver — open offers must surface where owners look (Home/Pulse) when wired. Peak window 90%. Settings congruence everywhere.
 
-**Chains:**
-- C1 cap: contracts + deadcap → D20 runway, the single source of "room"; bids, trades and plans all call it.
-- C2 value: record → D24 → D26 age → D25 Best 21 → D05 dynasty → D28 → D27 → D32.
-- C3 contend: D11 → power → D06 sim.
-- C4 live: in memory.
-- C5 market: sealed → reveal → ledger → D35 trained on revealed only.
-- C6 trade: PRIV versions → PAIR thread → DOT review → ledger.
-- C7 plans · C8 draft · C9 archive · C10 office · C11 owner shell.
+## 8. LEDGER
+All local branches; nothing pushed; main untouched. Resume committed on build/HQ-wire (docs/ui/RESUME-uiux.md).
 
-**Corrections found by checking code:**
-- store/personal already has kinds watch/bait/note/draft, keyed by franchise (no league column).
-- D77 rookie slot salary EXISTS (`engine/rookiedraft/setup.go` slotSalary).
-- D79 waivers EXIST (commissioner/market waiver_*).
-- D80 college context PARTIAL (app/sources college, needs a free CFBD key).
-- `AcquiredVia` exists in native_seed.
-- `TargetCommissionerJobs`/`Notices` exist.
-- `OnFieldNow` exists.
-- livegame espn.go has down/distance/yardLine.
+## 9. NEXT ACTIONS
+1. At 18:17 CT (timer may have died in compaction — check time): launch `gpt-build.sh sol high hq-wire ~/fleet/briefs/build/HQ-FIX.md sol-HQ-FIX2` + done-watcher. Check git status in hq-wire is clean first.
+2. While waiting: nothing on DeepSeek that overlaps HQ-FIX. Candidate single-lane DeepSeek job: War Room backend gaps (D38 stars/lanes, D33 lineup delta, D27 needs — check catalog + existing code first; D27 may be a new model → plan to Christopher).
+3. When HQ-FIX lands: review commits; re-run fixture walk at both sizes vs mock; then run HQ against Christopher's REAL MFL league (find real-data path: browser fixture mode snapshot.json / hosted server / Claude-OS) and walk it; list wrong numbers.
+4. Merge plan: combine trade-visibility + B3 into the HQ line when wiring needs them.
+5. Then Christopher click-test HQ; then War Room.
 
-**Database truth (verified):**
-- Files:
-  - `thewarroom.db`: main (personal, envelopes, bid_facts = MFL envelope bids, params, rulebook, identity, audit, recovery)
-  - `history.db`: `league_event` ledger, closed books, observations, raw_archive 224 MB, fetch_log, model runs
-  - `whatif.db`: `state` schema = MFL contract what-if sandbox, NOT truth
-  - `server.db`: accounts
-- Native state is a FOLD of `league_event` on every read and save: 0.42 s read / 0.51 s save at 10k events, linear.
-- `commissioner/replay_cache.go` is an existing memory projection cache (compensation replay only).
-- Live polling uses `core.Network`, not the archiving `core.Fetches`, so there are no per-poll writes (verified).
-- fetch_log writes a row per archived fetch.
-- Default SQLite autocheckpoint is active.
-- model_runs/scores have no retention.
-
-**Restructure R1–R10:**
-- R1 projections (panel conditions below)
-- R2 league key (moot with one DB per league; keep as a guard)
-- R3 `personal_item` generic table (the current UNIQUE allows one entry per player per kind)
-- R4 trade_thread/round (PAIR)
-- R5 model_latest + retention
-- R6 obs_latest + pinned scored weeks
-- R7 raw_archive + fetch_log retention
-- R8 ledger indexes (league,kind,recorded_at), (league,actor,recorded_at)
-- R9 sealed filter in the native bid read + proj_bid_open (NOT bid_facts)
-- R10 split into per-league file / shared NFL file / server.db
-
-**Panel (beam + GLM free, approve with changes), required for R1:**
-1. Two proofs: rebuild-compare plus golden fixtures written from the rules.
-2. Canonical compare in integer cents.
-3. Read-time cursor check.
-4. projection_version.
-5. Corrections re-project off the commit path.
-6. Extend the memory cache first, then persist.
-
-**Endpoints:** ~40 `TargetNative*`/`TargetCommissioner*` fold the ledger and are all over 100 ms; they move to projections. Live/personal/feed/ops reads have other fixes.
-
-**Model review fixes (§13):** true age not experience; no look-ahead; order D26→D25→D27→D28 · D11→D33→D32 · D11→D05→D06 · D35 · D42; D28 truth table; D06 precomputed (not per request); injury constants fitted; needs = max(Best-21 gap, starting-slot shortfall).
-
-## 6. Refuted / don't redo
-- Section-1 "store = file" naming was wrong; the `state` tables aren't league truth; R9 on bid_facts was wrong. All corrected in SQL_DIGEST §9.
-- Terra's NEW counts are inflated; trust the Claude source map.
-- Nemotron panel seat hangs.
-- Earlier UI refutations from resume #7 still stand (classes need the cr- prefix, etc.).
-
-## 7. Decisions (10-30, Christopher)
-- **Bids:**
-  - Outbid owner sees only "You've been outbid" until close; Home gets an Outbid alert; WR v6 outbid card copy changes.
-  - The commish office sees EVERYTHING of open bids and waiver claims (Q4); CR mock copy "private even to commish" changes.
-- **Screens:**
-  - Owner screens are identical for every role; office powers only in Control Room.
-  - Co-owners share one private space per franchise.
-- **Models:**
-  - D35: show rival names; clicking a player opens bid history.
-  - D06: two magic numbers (playoffs and bye).
-  - D05: one fitted weight set + commish sliders.
-  - D33: this week and rest of season, equal size.
-  - D28 posture: owner sets their own, the league sees it (PUB).
-- **Database:**
-  - **One database per league.**
-  - Retention: forecasts keep latest + weekly final + replay-pinned, rest after 7 days; feed files keep scored-week pins, rest after 30 days (check on thick3 first).
-  - R1 projections approved by panel with changes.
-- **Build:** staged so each slice fits a context window; he will have me "run them on a loop and get everything done".
-- Earlier rulings (R1–R3, P1/P2, permission sets, picks fluid) are in resume #7 and UI_Direction_v2.
-
-## 8. Ledger
-Everything above is committed on the local branch through 89837a80 plus this resume. Nothing is pushed.
-
-## 9. Next actions
-1. Get Christopher's answer: may I push `session/ui-ux-groundwork` and squash-merge the docs to main so builders see the plan? (Docs only.) If yes: push, open the PR, merge on green.
-2. Start the loop at BUILD_STAGES A1 (R10 file split): write `~/fleet/briefs/build/A1.md`, dispatch Tom (GPT out), arm a watcher, review against "Done =".
-3. Continue the queue in order; stop only for rulings, evidenced problems, or his G-phase click tests.
-4. Optional: write `docs/data-layer` updates into Database_Growth_Catalog (D8 resolved: one DB per league; new rows R1–R10).
-
-## 10. Environment
-- Scratchpad `/tmp/claude-0/-root/ceeceeaf-c38e-4b3f-bddd-137d1de3f99a/scratchpad/`.
-- Copy files with scp; `ssh -n` for commands; pipe content via `cat | ssh 'cat >> file'`.
-- Big-league fixture: `~/logs/TheWarRoom/bigleague-fixtures/thick3-*.db`; `make bench-league`.
-- Run `~/fleet/bin/heavy-ok.sh` before heavy jobs.
-
-## 11. Honest status
-The plan is complete and reviewed but **untested in code**. The latency numbers are measured baselines; the projected "<100 ms after R1" is a design expectation, not yet a measurement. The R10 split is the riskiest slice: it migrates real databases, so it needs a dry run and recovery-log proof. GPT quota is out; the build pace depends on Tom and the free models.
+## 10. HONEST STATUS
+HQ backend done; HQ screen layout done; interactions (drag/cascade/save, matchup win %, live, drawer actions, tabs) NOT done; zero real-league verification yet. ETA HQ functional ~Nov 1–2 if Sol's evening window completes D–I.
