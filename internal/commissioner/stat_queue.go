@@ -182,7 +182,7 @@ func (b queueBuilder) candidate(week StatWeek) (StatQueueItem, bool, error) {
 	}
 	newest := versions[len(versions)-1]
 	id := StatItemID{Season: b.season, Week: week.Week, Player: week.Player, Seq: newest.Seq, Digest: newest.Digest[:statDigestLen]}
-	if newest.Digest == counted.Digest || b.effects.rejected[id] {
+	if newest.Digest == counted.Digest || b.effects.rejected[id] || b.effects.baselines[key].Entry == "" {
 		return StatQueueItem{}, false, nil
 	}
 	return StatQueueItem{ID: id.String(), Player: week.Player, Name: b.name(week.Player), Season: b.season,

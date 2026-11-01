@@ -17,7 +17,7 @@ func TestStatItemIDRoundTripsAndRefusesAnythingElse(t *testing.T) {
 	}
 	for _, bad := range []string{"", "stat.2026.6.0099.3", "item.2026.6.0099.3.0123456789abcdef",
 		"stat.2026.06.0099.3.0123456789abcdef", "stat.2026.6.99.3.0123456789abcdef",
-		"stat.2026.6.0099.0.0123456789abcdef", "stat.2026.23.0099.3.0123456789abcdef",
+		"stat.2026.6.0099.-1.0123456789abcdef", "stat.2026.23.0099.3.0123456789abcdef",
 		"stat.1919.6.0099.3.0123456789abcdef", "stat.2026.6.0099.3.0123456789ABCDEF",
 		"stat.2026.6.0099.3.0123456789abcde", "stat.2026.6.0099.3.0123456789abcdef.x"} {
 		if _, err := ParseStatItemID(bad); err == nil {

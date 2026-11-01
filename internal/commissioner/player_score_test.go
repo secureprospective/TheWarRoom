@@ -41,8 +41,9 @@ func TestNativePlayerScoreRetainsCountedRevisionGaps(t *testing.T) {
 	evidence := completeScoreEvidence()
 	old := *evidence.Held
 	old.Missing = []string{"The counted revision lacks play-by-play"}
-	evidence.Lines = []source.LineRevision{{Seq: 0, Digest: "older", Held: old},
-		{Seq: 1, Digest: "completed", Held: *evidence.Held}}
+	evidence.Lines = []source.LineRevision{{Seq: 0, Digest: source.LineDigest(*old.Week), Held: old},
+		{Seq: 1, Digest: source.LineDigest(*evidence.Held.Week), Held: *evidence.Held}}
+	b.statCommand(StatApprove, RawStatChange{Item: itemOf(evidence.Lines[0])}, 4)
 	out, err := NativePlayerScoreReading("native.test", source.RawNativeScope{Player: "0099", Season: 2026, Week: 1},
 		b.records, evidence, seasonMoment(5))
 	if err != nil || out.Status != "Incomplete" || out.Points != nil || out.PartialPoints == nil ||

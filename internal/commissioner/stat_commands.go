@@ -13,6 +13,8 @@ import (
 )
 
 const (
+	StatFeedPrincipal = "system.stat-feed"
+
 	StatApprove = "commish.stat.queue.approve"
 	StatReject  = "commish.stat.queue.reject"
 	StatCorrect = "commish.stat.correct"
@@ -70,7 +72,7 @@ func ParseStatItemID(text string) (StatItemID, error) {
 var errNotAnItem = errors.New("choose a change from the statistics queue")
 
 func (id StatItemID) inRange() bool {
-	return id.Season >= 1920 && id.Season <= 9999 && id.Week >= 1 && id.Week <= 22 && id.Seq >= 1 &&
+	return id.Season >= 1920 && id.Season <= 9999 && id.Week >= 1 && id.Week <= 22 && id.Seq >= 0 &&
 		len(id.Digest) == statDigestLen && strings.Trim(id.Digest, "0123456789abcdef") == ""
 }
 
