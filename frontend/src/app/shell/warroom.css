@@ -936,8 +936,8 @@
 .wr-v6.embedded{position:relative;inset:auto;z-index:auto;height:100%;min-height:650px;min-width:1040px}
 .wr-v6.embedded .shell{grid-template-columns:minmax(0,1fr) 316px}
 
-.wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto}
-.wr-v6.embedded .work.external-tabs{grid-template-rows:auto minmax(0,1fr) auto auto}
+.wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto}
+.wr-v6.embedded .work:not(.external-tabs){grid-template-rows:auto auto minmax(0,1fr) auto auto}
 .wr-v6.embedded .empty{overflow-wrap:anywhere}
 
 .wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
