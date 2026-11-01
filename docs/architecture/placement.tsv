@@ -141,3 +141,4 @@ internal/mflref/bid	offers
 internal/lineupdelta	trades
 internal/projection	scoring
 internal/teamneeds	trades
+internal/appvalue	scoring
