@@ -3998,5 +3998,33 @@
     "Permission": "",
     "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
     "Modes": null
+  },
+  {
+    "Door": "native",
+    "Feature": "commissioner",
+    "ID": "value.read",
+    "Method": "TargetNativeValues",
+    "Role": "domain",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "4500f80fed8b353a91c631d346a58057b4cf0eb7e007fbc5e01bbbef391edb1b",
+    "Modes": [
+      "read"
+    ]
+  },
+  {
+    "Door": "wails",
+    "Feature": "commissioner",
+    "ID": "value.read",
+    "Method": "TargetNativeValues",
+    "Role": "gm,commish,admin",
+    "Gravity": "G0",
+    "Availability": "both",
+    "Permission": "league-view",
+    "Schema": "4500f80fed8b353a91c631d346a58057b4cf0eb7e007fbc5e01bbbef391edb1b",
+    "Modes": [
+      "read"
+    ]
   }
 ]

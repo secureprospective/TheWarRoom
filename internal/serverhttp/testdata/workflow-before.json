@@ -284,5 +284,11 @@
     "modes": [
       "read"
     ]
+  },
+  {
+    "command": "value.read",
+    "modes": [
+      "read"
+    ]
   }
 ]
