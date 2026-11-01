@@ -136,10 +136,7 @@ func TestPhotoRoutesAnswerTheNativeProbeWithNotFound(t *testing.T) {
 
 func TestBuildLeaguesAddsMirrorAndAppTeamCounts(t *testing.T) {
 	t.Parallel()
-	snap := func() (snapshot.Snapshot, error) {
-		return snapshot.Snapshot{League: snapshot.Sourced[snapshot.League]{
-			Value: snapshot.League{FranchiseCount: 32}}}, nil
-	}
+	snap := func() (int, error) { return 32, nil }
 	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
 		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
 	}
@@ -165,7 +162,7 @@ func TestBuildLeaguesAddsMirrorAndAppTeamCounts(t *testing.T) {
 
 func TestBuildLeaguesNamesTheFailingRead(t *testing.T) {
 	t.Parallel()
-	snap := func() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, nil }
+	snap := func() (int, error) { return 0, nil }
 	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
 		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
 	}
@@ -180,7 +177,7 @@ func TestBuildLeaguesNamesTheFailingRead(t *testing.T) {
 
 func TestBuildLeaguesWithoutMirror(t *testing.T) {
 	t.Parallel()
-	snap := func() (snapshot.Snapshot, error) { return snapshot.Snapshot{}, errors.New("should not read") }
+	snap := func() (int, error) { return 0, errors.New("should not read") }
 	natives := func(context.Context) ([]commissioner.NativeLeague, error) {
 		return []commissioner.NativeLeague{{ID: "native.one", Name: "One"}}, nil
 	}

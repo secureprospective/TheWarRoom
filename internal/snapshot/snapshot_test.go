@@ -306,3 +306,22 @@ func TestSnapshotIncludesUnrosteredDirectoryPlayers(t *testing.T) {
 		t.Fatal("invented roster eligibility")
 	}
 }
+
+func TestFranchiseCountMatchesBuildWithoutDirectory(t *testing.T) {
+	src := testSource()
+	got, err := FranchiseCount(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	built, err := Build(context.Background(), src, testDirectory(t), snapshotInjuries())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got == 0 || got != built.League.Value.FranchiseCount {
+		t.Fatalf("league list count %d, snapshot count %d", got, built.League.Value.FranchiseCount)
+	}
+	src.meta.Season = 0
+	if n, err := FranchiseCount(src); err != nil || n != 0 {
+		t.Fatalf("no season held: %d, %v", n, err)
+	}
+}

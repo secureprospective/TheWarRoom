@@ -31,8 +31,14 @@ func (h platformHost) Leagues() ([]platformapp.League, error) {
 	if err := h.app.ready(); err != nil {
 		return nil, err
 	}
+
+	// The mirror's team count comes from the held stores, not a snapshot: a snapshot waits on
+	// the launch refresh's live MFL fetch, which held the league list ~9 s at first paint.
+	mirrorTeams := func() (int, error) {
+		return snapshot.FranchiseCount(snapshot.NewSource(h.app.core.League, h.app.core.Rulebook))
+	}
 	//nolint:wrapcheck // BuildLeagues already names the failing league read.
-	return platformapp.BuildLeagues(h.app.core.Ctx, h.app.takeSnapshot,
+	return platformapp.BuildLeagues(h.app.core.Ctx, mirrorTeams,
 		h.app.core.Rulebook.ActiveConfig().Name, h.app.core.NativeLeagues, h.app.leagueRecords)
 }
 

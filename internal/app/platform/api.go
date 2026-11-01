@@ -89,10 +89,10 @@ func (a *API) TargetLeagues() ([]League, error) {
 }
 
 // BuildLeagues composes the held MFL league and every app league with its current team count.
-// The snapshot, store and record reads stay in composition; only the list policy lives here.
+// The mirror count, store and record reads stay in composition; only the list policy lives here.
 func BuildLeagues(
 	ctx context.Context,
-	snapshot func() (snapshot.Snapshot, error),
+	mirrorTeams func() (int, error),
 	mirrorName string,
 	natives func(context.Context) ([]commissioner.NativeLeague, error),
 	records func(context.Context, string) ([]commissioner.Record, error),
@@ -103,12 +103,11 @@ func BuildLeagues(
 	}
 	out := make([]League, 0, len(appLeagues)+1)
 	if mirrorName != "" {
-		snap, err := snapshot()
+		teams, err := mirrorTeams()
 		if err != nil {
 			return nil, fmt.Errorf("league list mirror: %w", err)
 		}
-		out = append(out, League{ID: MirrorLeagueID, Name: mirrorName,
-			Teams: snap.League.Value.FranchiseCount, App: false})
+		out = append(out, League{ID: MirrorLeagueID, Name: mirrorName, Teams: teams, App: false})
 	}
 	for _, league := range appLeagues {
 		franchises, err := records(ctx, league.ID)
