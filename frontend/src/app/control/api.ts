@@ -40,3 +40,6 @@ export async function copyHelperConnection(connection: string): Promise<boolean>
   const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');
   return ClipboardSetText(connection);
 }
+
+export const runMigration = (command: string, body: string): Promise<unknown> =>
+  bindings().TargetMFLMigration(command, body);

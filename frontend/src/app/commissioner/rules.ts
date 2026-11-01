@@ -33,7 +33,7 @@ function flag(v: unknown, path: string): boolean {
   if (typeof v !== 'boolean') throw new Error(`${path}: expected true or false`);
   return v;
 }
-function parseSchema(v: unknown, path: string): RuleSchema {
+export function parseSchema(v: unknown, path: string): RuleSchema {
   const r = object(v, path, ['kind', 'minimum', 'maximum', 'choices', 'fields', 'key', 'element']);
   const schema: RuleSchema = {
     kind: choice(r.kind, `${path}.kind`, ruleKinds),

@@ -271,20 +271,27 @@ func (t *translation) regularWeeks(config league.RawConfig) (int, bool) {
 
 // waiting lists the settings MFL does not hold, by their labels on the rules screen.
 func (t *translation) waiting(r leaguerules.RuleSet) {
-	skip := leaguemigration.CarriedFields()
 	var labels []string
+	for _, field := range waitingSettings(r) {
+		labels = append(labels, field.Label)
+	}
+	if len(labels) > 0 {
+		t.notes = append(t.notes, fmt.Sprintf("MFL and the starting settings leave %d settings waiting for your answer: %s", len(labels), strings.Join(labels, ", ")))
+	}
+}
+
+func waitingSettings(r leaguerules.RuleSet) []leaguemigration.WaitingSetting {
+	skip := leaguemigration.CarriedFields()
+	out := []leaguemigration.WaitingSetting{}
 	for _, c := range leaguerules.SeedChanges(r, "", 0, time.Unix(1, 0).UTC()) {
 		if skip[c.Field] || unused(r, c.Field) || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
 			continue
 		}
 		if f, ok := leaguerules.Field(c.Field); ok {
-			labels = append(labels, f.Label)
+			out = append(out, leaguemigration.WaitingSetting{Field: string(f.Path), Label: f.Label, Schema: f.Schema})
 		}
 	}
-	if len(labels) > 0 {
-		t.notes = append(t.notes, fmt.Sprintf("%d settings are neither held by your MFL league nor in the "+
-			"bundle it runs by; each waits for your ruling on the rules screen: %s", len(labels), strings.Join(labels, ", ")))
-	}
+	return out
 }
 
 // unused says a setting does nothing in this league as it stands, so it waits for no ruling: keepers in a

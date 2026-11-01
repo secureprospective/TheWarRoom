@@ -4,6 +4,7 @@ import { commands } from '../commands/registry';
 import { ReportView } from '../reports/ReportView';
 import { controlState, matching } from './state';
 import './control.css';
+const MoveMFL = lazy(() => import('./MoveMFL'));
 const PickSettings = lazy(() => import('./PickSettings'));
 
 const LeagueLanding = lazy(() => import('../commissioner/LeagueLanding'));
@@ -19,6 +20,7 @@ export function LeagueRoom() {
       <Suspense fallback={<p role="status">Reading the league…</p>}>
         <LeagueLanding />
       </Suspense>
+      <Suspense fallback={<p role="status">Opening MFL import…</p>}><MoveMFL /></Suspense>
       <Suspense fallback={<p role="status">Reading pick settings…</p>}>
         <PickSettings />
       </Suspense>

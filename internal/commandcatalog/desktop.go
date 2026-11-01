@@ -131,6 +131,7 @@ func controlDesktop(_ []Command) []Command {
 			Gravity: gravity, Availability: availability}
 	}
 	return []Command{
+		c("TargetMFLMigration", "commish", "G3", "desktop"),
 		c("DeleteMFLKey", "gm,commish,admin", "G2", "desktop"), heldRead(c("GetParams", "gm,commish,admin", "G0", "both")), c("MFLKeyStatus", "gm,commish,admin", "G0", "desktop"), c("ResetParam", "admin", "G2", "both"),
 		c("SetMFLKey", "gm,commish,admin", "G2", "desktop"), c("SetParam", "admin", "G2", "both"), heldRead(c("TargetAccounting", "gm,commish,admin", "G0", "both")), heldRead(c("TargetAlerts", "gm,commish,admin", "G0", "both")),
 		heldRead(c("TargetBylaws", "gm,commish,admin", "G0", "both")), heldRead(c("TargetLeagueSettings", "gm,commish,admin", "G0", "both")), c("TargetOpenMFLAccounting", "gm,commish,admin", "G0", "desktop"),

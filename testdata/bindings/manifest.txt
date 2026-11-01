@@ -71,6 +71,7 @@ control.API.TargetAccounting
 control.API.TargetAlerts
 control.API.TargetBylaws
 control.API.TargetLeagueSettings
+control.API.TargetMFLMigration
 control.API.TargetOpenMFLAccounting
 control.API.TargetSeason
 control.API.TargetSetWindow

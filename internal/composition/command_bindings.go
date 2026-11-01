@@ -98,6 +98,7 @@ func contractsCommandBindings(api *contractsapi.API) map[string]catalog.Binding 
 }
 func controlCommandBindings(api *controlapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
+		"TargetMFLMigration":      catalog.Bind2(api.TargetMFLMigration, "command", "body"),
 		"TargetLeagueSettings":    catalog.Bind0(api.TargetLeagueSettings),
 		"TargetSiteNews":          catalog.Bind0(api.TargetSiteNews),
 		"TargetAccounting":        catalog.Bind0Value(api.TargetAccounting),

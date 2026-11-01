@@ -1101,3 +1101,13 @@ runtime escape. Native callers cannot import either. Research's `LeagueReference
 only held franchise names and starter limits, implemented by the MFL config adapter without
 fetching. Composition wiring and its frozen fingerprints remain unchanged. Other reference
 views still carry explicit debt; this is a direct-import fence, not transitive isolation.
+
+## Desktop MFL move
+
+Control Room's `TargetMFLMigration` forwards validated migration commands to the
+existing migration service. Credentials use the existing OS keyring provider,
+scoped to the requested MFL league and season, never the install's one league ID.
+Creation-time presets fill only missing MFL settings; remaining catalogue answers
+are ordinary rule changes in the same creation transaction. A failed answer rolls
+back the whole league. The new league is selected through the existing shared
+commissioner state. Details and verification limits: `docs/ui/move-mfl.md`.
