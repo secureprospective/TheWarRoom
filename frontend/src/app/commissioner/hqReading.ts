@@ -11,6 +11,7 @@ import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from './api';
 import { selectProvider } from '../data/provider';
 import { ordinal } from '../shell/hqPlayerData';
+import { parseWarRoomProjections } from '../data/nativeProjections';
 
 export function nativeHQStanding(rules: Rules | undefined,
   rows: { franchise: string; division: string }[], mine: string): string | undefined {
@@ -111,7 +112,7 @@ export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSetti
   lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
   reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string;
-  errors: string[] };
+  projections?: Map<string, number>; errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
   Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
@@ -222,6 +223,23 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
         })), bench: held.bench.map(p => ({ id: p.player, position: p.position === 'PK' ? 'K' : p.position })),
       check: { legal: false, full: false, problems: [] }, provenance: snapshot.rosters.provenance,
         rulesSource: snapshot.league.provenance };
+  });
+  if (result.week) await apply(async () => {
+    const players = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.map(p => p.id) ?? [];
+    const values = new Map<string, number>();
+    const seen = new Set<string>();
+    for (let offset = 0; offset < players.length; offset += 120) {
+      const ids = players.slice(offset, offset + 120);
+      const r = await port({ command: 'projections.read', mode: 'read', arguments: { league,
+        players: ids.join(','), season, week: result.week! } });
+      const projections = parseWarRoomProjections(r.data, league, season, result.week!);
+      for (const p of projections) {
+        if (!ids.includes(p.player) || seen.has(p.player)) throw new Error('Projection player scope changed');
+        seen.add(p.player);
+        if (p.available) values.set(p.player, p.median);
+      }
+    }
+    result.projections = values;
   });
   return result;
 }

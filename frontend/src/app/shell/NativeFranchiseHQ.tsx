@@ -68,6 +68,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
     inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut}
+      projection={reading.projections?.get(chosen ?? '')}
       annual={reading.contracts?.get(chosen ?? '')}
       position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position}
       bench={editor.canEdit && chosen && editor.edited?.starters.some(p => p.id === chosen) ?
@@ -83,7 +84,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} /></div>
     {tab === 'lineup-and-roster' ? <HQBoard showContracts snapshot={snapshot} mine={mine} key={editor.version}
       reading={editor.edited} error={reading.errors.join(' · ')}
-      settings={settings} values={new Map()} select={select} canEdit={editor.canEdit}
+      settings={settings} values={reading.projections ?? new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
         positions={positions} annual={reading.contracts} cutCosts={cut?.deadNow === undefined ? undefined :

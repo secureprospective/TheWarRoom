@@ -6,6 +6,7 @@ import rules from '../../../../testdata/wire/commissioner/rules.json';
 import lineup from '../../../../testdata/wire/native/lineup.json';
 import movesWire from '../data/native-moves.wire.testdata.json';
 import week from '../../../../testdata/wire/native/week.json';
+import projections from '../data/projections.wire.testdata.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
 import { nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
@@ -79,12 +80,17 @@ describe('native HQ existing reads', () => {
       'lineup.read': { ...lineup, revision: assets.revision },
     };
     const port = vi.fn<HostedPort>(async request => ({ label: 'Native', writable: false, football: '',
-      data: data[request.command] }));
+      data: request.command === 'projections.read' ? { ...projections, week: request.arguments.week } :
+        data[request.command] }));
     const result = await readNativeHQ(league, mine, port);
     expect(result.errors).toEqual([]); expect(result.lineup?.starters[0].id).toBe('1000');
     expect(result.snapshot.players.value.find(p => p.id === '1008')?.position).toBe('K');
     expect(result.contracts?.get('1000')).toEqual([{ season: 2026, cents: 100000000 },
       { season: 2027, cents: 100000000 }]);
+    expect(result.projections?.get('1000')).toBe(projections.players[0].median);
+    expect(result.projections?.has('1008')).toBe(false);
+    expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'projections.read', arguments:
+      { league, season: 2026, week: 1, players: expect.stringContaining('1000') } }));
     expect(result.week).toBe(1); expect(result.moves).toEqual([]); expect(result.settings.active).toBe(90);
     expect(port.mock.calls.map(c => c[0].command)).toContain('moves.read');
     expect(port.mock.calls.every(c => c[0].mode === 'read')).toBe(true);
@@ -114,7 +120,19 @@ describe('native HQ existing reads', () => {
     expect(unscheduled.lineup?.bench).toHaveLength(lineup.starters.length + lineup.bench.length);
     expect(unscheduled.snapshot.players.value.find(p => p.id === '1008')?.position).toBe('K');
     expect(unscheduled.lock).toBeUndefined();
-    expect(port.mock.calls.at(-1)?.[0]).toMatchObject({ command: 'lineup.read', arguments: { week: 8 } });
+    expect(port.mock.calls.map(([r]) => r)).toContainEqual(expect.objectContaining({
+      command: 'lineup.read', arguments: expect.objectContaining({ week: 8 }) }));
+    for (const invalid of [{ ...projections, league: 'native.other' },
+      { ...projections, players: [{ ...projections.players[0], player: '9999' }] },
+      { ...projections, players: [projections.players[1], projections.players[1]] },
+      { ...projections, players: [{ ...projections.players[0], median: NaN }] }]) {
+      const rejected = await readNativeHQ(league, mine, async request => request.command ===
+        'projections.read' ? { label: '', writable: false, football: '',
+          data: { ...invalid, week: request.arguments.week } } : port(request));
+      expect(rejected.projections).toBeUndefined();
+      expect(rejected.lineup).toBeDefined();
+      expect(rejected.errors.length).toBeGreaterThan(0);
+    }
     for (const value of [
       { ...clockWire, value: { ...clockWire.value, week: undefined } },
       { ...clockWire, value: { ...clockWire.value, season: 2025, week: 8 } },

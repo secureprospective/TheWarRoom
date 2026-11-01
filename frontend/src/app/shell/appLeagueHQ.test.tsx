@@ -12,6 +12,7 @@ import assets from '../../../../testdata/wire/native/assets.json';
 import lineup from '../../../../testdata/wire/native/lineup.json';
 import week from '../../../../testdata/wire/native/week.json';
 import rules from '../../../../testdata/wire/commissioner/rules.json';
+import projections from '../data/projections.wire.testdata.json';
 import cap from '../../../../testdata/wire/native/cap-check.json';
 
 vi.mock('../data/provider', async (original) => {
@@ -68,6 +69,8 @@ beforeEach(() => {
     const franchise = 'franchise' in request.arguments ? request.arguments.franchise : 'franchise.02';
     const data: Record<string, unknown> = {
       'native.assets.read': { ...assets, league },
+      'projections.read': { ...projections, league, week: request.command === 'projections.read' ?
+        request.arguments.week : 1 },
       'commish.rules.read': { ...rules, league, revision: assets.revision },
       'native.cap.check': { ...cap, league },
       'week.read': { ...week, schedule: { ...week.schedule, league, franchise, revision: assets.revision } },
@@ -92,6 +95,7 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   expect(container.querySelector('.hq-v10 .board')?.textContent)
     .toContain('Player, 1000');
   expect(container.querySelector('.hq-v10')).not.toBeNull();
+  expect(container.querySelector('.hq-v10 .insp')?.textContent).toContain('Projection10.0');
   expect(container.querySelector('.hq-v10 .tray')?.textContent).not.toContain('OPEN MFL');
   expect(document.querySelector('body > .hq-v10')).toBeNull();
   expect(container.querySelectorAll('.rail')).toHaveLength(1);
