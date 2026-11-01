@@ -127,7 +127,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
       /></Suspense></div>
   </>;
   return (
-    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}>
+    <div className="twr-app target-frame" ref={root} data-inspector={s.inspector} data-comms={s.comms}
+      data-native-workspace={appLeagueView === 'hq' || undefined}>
       <aside className="rail">
         <LeaguePicker
           leagues={leagues.leagues}
@@ -287,7 +288,7 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           {error && <p role="alert">{error}</p>}
         </div>
       </section>
-      <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
+      {appLeagueView !== 'hq' && <aside className="insp" aria-label="Inspector" aria-hidden={s.inspector === 'closed'}>
         <div className="insp-head">
           Inspector
           <span className="x">
@@ -321,8 +322,8 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           )}
           <EndpointIndex placement="Inspector" />
         </div>
-      </aside>
-      {s.inspector === 'closed' && (
+      </aside>}
+      {appLeagueView !== 'hq' && s.inspector === 'closed' && (
         <aside className="inspector-closed">
           <Act variant="button" verb="inspector.toggle" args={{}} label="Open inspector">
             Open

@@ -95,8 +95,11 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   expect(localStorage.getItem(`${FRANCHISE_KEY}:native.seed`)).toBe('franchise.02');
   expect(vi.mocked(localWorkflow).mock.calls.some(([r]) => r.command === 'lineup.read' &&
     r.arguments.franchise === 'franchise.02')).toBe(true);
-  const contracts = [...container.querySelectorAll('.hq-v10 button')].find(
-    b => b.textContent === 'CONTRACTS AND CAP');
+  expect(container.querySelector('.hq-v10 .ws-tabs')).toBeNull();
+  expect(container.querySelector('.target-frame')?.getAttribute('data-native-workspace')).toBe('true');
+  expect(container.querySelector('.target-frame > .insp')).toBeNull();
+  const contracts = [...container.querySelectorAll('.wtabs button')].find(
+    b => b.textContent?.toLowerCase() === 'contracts and cap');
   await act(async () => { (contracts as HTMLButtonElement).click(); });
   expect(container.querySelector('.hq-v10')?.textContent).toContain('Player, 1000');
   expect(vi.mocked(localWorkflow).mock.calls.every(([r]) => r.mode === 'read')).toBe(true);

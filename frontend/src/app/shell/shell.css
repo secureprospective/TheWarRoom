@@ -180,7 +180,7 @@
   gap: 14px;
   align-content: start;
   }
-.twr-app .insp {
+.twr-app > .insp {
   background: var(--surface-1);
   border-left: 1px solid var(--surface-line);
   display: flex;
@@ -255,8 +255,8 @@
   font-size: 11px;
   color: var(--surface-tx3);
   }
-.twr-app .insp, .twr-app .inspector-closed { grid-column: 3; grid-row: 1; }
-.twr-app .inspector-closed {
+.twr-app > .insp, .twr-app > .inspector-closed { grid-column: 3; grid-row: 1; }
+.twr-app > .inspector-closed {
   padding: 14px;
   border-left: 1px solid var(--surface-line);
   font-size: 11px;
@@ -368,7 +368,7 @@
 .twr-app .app-settings .act:disabled:hover { background: transparent; }
 /* The shell is exactly one viewport tall; the workspace body and inspector are the scrollers. */
 .twr-app.target-frame { grid-template-rows: minmax(0, 1fr); }
-.twr-app .ws, .twr-app .insp { min-height: 0; }
+.twr-app .ws, .twr-app > .insp { min-height: 0; }
 /* Narrow screens: title, tabs and density never shrink; the status strip gives way first. */
 .twr-app .ws-head h3, .twr-app .wtabs, .twr-app .dens { flex: none; }
 .twr-app .strip { flex: 1 1 0; justify-content: flex-end; overflow: hidden; }
@@ -384,7 +384,7 @@
 .twr-app[data-density="matrix"] .act-density[data-d="matrix"] {
   background: var(--surface-4); color: var(--surface-tx1);
 }
-.twr-app .insp {
+.twr-app > .insp {
   position: absolute; right: 48px; top: 0; bottom: 0; width: 320px; z-index: 10;
   grid-column: auto; grid-row: auto;
   transition: width 120ms ease-out, transform 120ms ease-out, opacity 120ms ease-out, visibility 120ms;
@@ -400,16 +400,16 @@
 .twr-app .shell-overlay[data-open="true"] {
   transform: translateX(0); opacity: 1; visibility: visible;
 }
-.twr-app .insp .player-identity {
+.twr-app > .insp .player-identity {
   display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 4px 8px; align-items: center;
 }
-.twr-app .insp .player-identity .player-photo { grid-row: 1 / span 2; }
-.twr-app .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
-.twr-app .insp .player-context { grid-column: 2 / span 2; }
-.twr-app .insp .card-header { display: block; }
-.twr-app .insp .card-provenance { display: block; margin: 8px 0 0; }
+.twr-app > .insp .player-identity .player-photo { grid-row: 1 / span 2; }
+.twr-app > .insp .player-identity .card-title { white-space: normal; overflow-wrap: anywhere; }
+.twr-app > .insp .player-context { grid-column: 2 / span 2; }
+.twr-app > .insp .card-header { display: block; }
+.twr-app > .insp .card-provenance { display: block; margin: 8px 0 0; }
 .twr-app .two-numbers small { white-space: nowrap; }
-.twr-app .insp .two-numbers > div { padding: 6px; }
+.twr-app > .insp .two-numbers > div { padding: 6px; }
 .twr-app .two-numbers > div { min-width: 0; }
 .twr-app .command-bar input { text-transform: none; }
 .twr-app[data-density="tactical"] .roster-cards {
@@ -469,17 +469,17 @@
 .twr-app .two-numbers b { white-space: nowrap; }
 .twr-app .roster-cards .two-numbers > div { flex-wrap: wrap; gap: 4px; }
 @media (prefers-reduced-motion: reduce) {
-  .twr-app .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
+  .twr-app > .insp, .twr-app .shell-overlay, .twr-app .command-bar { transition: none; }
 }
 
 .twr-app.target-frame[data-inspector="closed"] { grid-template-columns: 192px minmax(0, 1fr) 40px 48px; }
-.twr-app .inspector-closed {
+.twr-app > .inspector-closed {
   padding: 12px 0;
   display: flex;
   justify-content: center;
   background: var(--surface-1);
   }
-.twr-app .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
+.twr-app > .inspector-closed .act { writing-mode: vertical-rl; padding: 8px; align-self: flex-start; }
 .twr-app[data-inspector="closed"] .command-bar { right: 104px; }
 .twr-app select {
   appearance: none;
@@ -552,11 +552,14 @@
   grid-template-columns: 192px minmax(0, 1fr) 320px 48px;
 }
 .twr-app[data-comms="true"] .insp { right: 328px; }
-.twr-app .inspector-closed { width: 40px; box-sizing: border-box; }
+.twr-app > .inspector-closed { width: 40px; box-sizing: border-box; }
 .twr-app .comms-panel { box-sizing: border-box; }
-.twr-app .insp .draft-report th, .twr-app .insp .draft-report th .act-button {
+.twr-app > .insp .draft-report th, .twr-app > .insp .draft-report th .act-button {
   overflow-wrap: normal; word-break: normal;
 }
 
 .twr-app .rail .me label{display:grid;gap:6px}
 .twr-app .rail .me select{width:100%;min-width:0}
+
+.twr-app[data-native-workspace="true"] > .ws { grid-column: 2 / 4; }
+.twr-app[data-native-workspace="true"] .wbody { display: block; padding: 0; }

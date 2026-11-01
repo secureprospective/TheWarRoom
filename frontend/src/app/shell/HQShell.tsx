@@ -46,7 +46,7 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         title={unavailable}>CUSTOMIZE</HQAct><span>/ command</span></div>
     </nav>}
     <main className="work">
-      <div className="ws-tabs" role="tablist">
+      {!embedded && <div className="ws-tabs" role="tablist">
         <HQAct role="tab" selected={tab === 'lineup-and-roster'} onAction={() =>
           navigate('lineup-and-roster')}>LINEUP AND ROSTER</HQAct>
         <HQAct role="tab" selected={tab === 'contracts-and-cap'} onAction={() =>
@@ -54,7 +54,7 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         <HQAct className={`queue ${tab === 'my-moves' ? 'on' : ''}`} onAction={() => navigate('my-moves')}
           label="My moves queue"><span
           className="ql">MY MOVES</span>{queue}</HQAct>
-      </div>
+      </div>}
       {children}
     </main>
     {inspector}
