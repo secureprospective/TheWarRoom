@@ -107,3 +107,23 @@ func BackfillSchedule(ctx context.Context, ledger leaguemigration.Ledger, league
 	}
 	return receipts, nil
 }
+
+// FollowingLeague resolves the importer's recorded identity, not a league-engine kind.
+// Cut-over leagues no longer follow the reference feed.
+func FollowingLeague(league string, records []commissioner.Record) (string, int, string, bool) {
+	if len(records) == 0 || commissioner.LeagueSource(records) != commissioner.SourceMFLImport {
+		return "", 0, "", false
+	}
+	season := records[0].Command.Args.Season
+	prefix, suffix := "native.mfl-", "-"+strconv.Itoa(season)
+	id := strings.TrimSuffix(strings.TrimPrefix(league, prefix), suffix)
+	if id == "" || leaguemigration.AppLeagueID(id, season) != league {
+		return "", 0, "", false
+	}
+	for _, r := range id {
+		if r < '0' || r > '9' {
+			return "", 0, "", false
+		}
+	}
+	return id, season, records[0].Principal, true
+}
