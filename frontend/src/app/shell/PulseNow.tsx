@@ -153,10 +153,10 @@ function Starters({ reading, week, results, row, league, port }: {
     <div className="mh">
       <span className="a">{row.game.awayName.toUpperCase()}</span>
       <span className="t" style={{ textAlign: 'right', paddingRight: '10px' }}>
-        {pointsLabel(awayScore?.points)}</span>
+        {pointsLabel(awayScore?.points ?? awayScore?.provisional)}</span>
       <span className="t" />
       <span className="t" style={{ textAlign: 'left', paddingLeft: '10px' }}>
-        {pointsLabel(homeScore?.points)}</span>
+        {pointsLabel(homeScore?.points ?? homeScore?.provisional)}</span>
       <span className="b">{row.game.homeName.toUpperCase()}</span>
     </div>
     {[['OFFENCE', offence], ['DEFENCE', defence]].flatMap(([label, group]) =>

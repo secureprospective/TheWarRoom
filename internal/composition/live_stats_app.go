@@ -1,0 +1,127 @@
+package composition
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"time"
+
+	nowapp "github.com/secureprospective/TheWarRoom/internal/app/now"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livegame"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livestats"
+)
+
+// Live stat polling: while any NFL game is being played, every minute the ESPN box scores of the
+// games in progress (and those just finished, until the final feed lands) are read, matched to
+// league players through the held id directory, and held as the newest live revision. League
+// screens re-read on the moves signal, so a running score moves without a click. Between games it
+// checks the scoreboard every few minutes and holds nothing.
+const (
+	liveStatsBusy = time.Minute
+	liveStatsIdle = 5 * time.Minute
+)
+
+func (a *App) startLiveStats() {
+	a.startWorker(func() {
+		ctx := a.core.WorkCtx
+		for {
+			wait := a.pollLiveStats(ctx)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(wait):
+			}
+		}
+	})
+}
+
+func (a *App) pollLiveStats(ctx context.Context) time.Duration {
+	if a.core.History == nil {
+		return liveStatsIdle
+	}
+	endpoints, err := nowapp.LiveEndpoints()
+	if err != nil {
+		log.Printf("live stats: %v", err)
+		return liveStatsIdle
+	}
+	fetch := livegame.HTTPFetch(&http.Client{Timeout: 10 * time.Second, Transport: a.core.Network}, endpoints)
+	adapter := livegame.Adapter{Fetch: fetch}
+	body, err := fetch(ctx, "espn", "")
+	if err != nil {
+		log.Printf("live stats: scoreboard: %v", err)
+		return liveStatsIdle
+	}
+	games, err := livegame.ParseScoreboard(body)
+	if err != nil {
+		log.Printf("live stats: scoreboard: %v", err)
+		return liveStatsIdle
+	}
+	busy := false
+	for _, g := range games {
+		if g.Status == "in" {
+			busy = true
+		}
+	}
+	espn, err := a.core.History.SourceIDs(ctx, "espn")
+	if err != nil {
+		log.Printf("live stats: %v", err)
+		return liveStatsIdle
+	}
+	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), a.core.Season, a.marketWeek())
+	if len(lines) > 0 {
+		a.core.History.SetLiveStats(a.core.Season, a.marketWeek(), time.Now(), livestats.Authority,
+			livestats.Pending(), lines)
+		if a.core.MovesChanged != nil {
+			a.core.MovesChanged(ctx)
+		}
+	}
+	if busy {
+		return liveStatsBusy
+	}
+	return liveStatsIdle
+}
+
+// liveStatLines reads the box score of every game in progress or finished on the board and keys
+// each athlete line by league player id. An athlete the directory cannot place is left out: a
+// missing line stays pending, never a zero.
+func liveStatLines(ctx context.Context, adapter livegame.Adapter, games []livegame.Game,
+	byESPN map[string]string, season, week int) map[string]source.PlayerWeek {
+	out := map[string]source.PlayerWeek{}
+	for _, g := range games {
+		if g.Status == "pre" {
+			continue
+		}
+		body, err := adapter.Fetch(ctx, "summary", g.ID)
+		if err != nil {
+			log.Printf("live stats: game %s: %v", g.ID, err)
+			continue
+		}
+		game, err := livegame.ParseSummary(body)
+		if err != nil {
+			log.Printf("live stats: game %s: %v", g.ID, err)
+			continue
+		}
+		lines, err := livestats.Lines(game)
+		if err != nil {
+			log.Printf("live stats: game %s: %v", g.ID, err)
+			continue
+		}
+		for _, l := range lines {
+			player, ok := byESPN[l.SourceID]
+			if !ok {
+				continue
+			}
+			out[player] = source.PlayerWeek{Season: season, Week: week, GameID: g.ID, SeasonType: "REG", Line: l.Stats}
+		}
+	}
+	return out
+}
+
+func invertIDs(byPlayer map[string]string) map[string]string {
+	out := make(map[string]string, len(byPlayer))
+	for player, id := range byPlayer {
+		out[id] = player
+	}
+	return out
+}

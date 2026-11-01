@@ -123,10 +123,15 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 	}
 }
 
-// syncFollowedLineups records the played weeks and then the week in play. Each is reported on its
-// own: a refused franchise-week never stops the other weeks, and held lineups are kept.
+// syncFollowedLineups records the week in play first, then the played weeks. The week in play goes
+// first because it is what a live screen needs and it is one small read; the played-week import can
+// take minutes on a big league and must not hold it back. Each is reported on its own: a refused
+// franchise-week never stops the other weeks, and held lineups are kept.
 func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
 	league, principal string, season int, source string) {
+	if err := a.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
+		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
+	}
 	weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
 	if lineupErr == nil {
 		var directory map[string]string
@@ -137,9 +142,6 @@ func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.Migr
 	}
 	if lineupErr != nil {
 		log.Printf("refresh lineups for %s (refused franchise-weeks kept unchanged): %v", league, lineupErr)
-	}
-	if err := a.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
-		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
 	}
 }
 

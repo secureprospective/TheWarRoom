@@ -16,12 +16,14 @@ export function pointsLabel(value: number | undefined): string {
 }
 
 export type PulseStarter = { player: string; name: string; position?: string; words: string;
-  points?: number };
+  points?: number; provisional?: number };
 export type PulseScore = { franchise: string; name: string; status: string; points?: number;
+  provisional?: number;
   words: string; starters: PulseStarter[]; adjustment: number; lineupStatus: string;
   lineupWords: string; flagged: boolean; zeroed?: string };
 export type PulseGame = { week: number; home: string; away: string; homeName: string; awayName: string;
-  status: string; homePoints?: number; awayPoints?: number; winner?: string; words: string;
+  status: string; homePoints?: number; awayPoints?: number; homeProvisional?: number;
+  awayProvisional?: number; winner?: string; words: string;
   why: string[] };
 export type PulseResults = { league: string; season: number; week: number; revision: number;
   published: boolean; words: string; games: PulseGame[]; bye?: string; byeName?: string;
@@ -29,21 +31,24 @@ export type PulseResults = { league: string; season: number; week: number; revis
 
 function parseStarters(value: unknown): PulseStarter[] {
   return array(value, 'Starters', (v, p) => {
-    const s = object(v, p, ['player', 'name', 'position', 'words', 'points']);
+    const s = object(v, p, ['player', 'name', 'position', 'words', 'points',
+      'provisional']);
     return { player: text(s.player, p), name: text(s.name, p),
       position: s.position === undefined ? undefined : text(s.position, p),
-      words: text(s.words, p), points: optionalPoints(s.points, p) };
+      words: text(s.words, p), points: optionalPoints(s.points, p),
+      provisional: optionalPoints(s.provisional, p) };
   });
 }
 function parseScores(value: unknown): PulseScore[] {
   return array(value, 'Week scores', (v, p) => {
-    const s = object(v, p, ['franchise', 'name', 'status', 'points', 'words', 'starters',
+    const s = object(v, p, ['franchise', 'name', 'status', 'points', 'provisional', 'words', 'starters',
       'adjustment', 'changes', 'lineup', 'zeroed']);
     const lineup = object(s.lineup, 'Lineup verdict', ['status', 'words', 'problems', 'flagged',
       'penalty']);
     if (typeof lineup.flagged !== 'boolean') throw new Error('Unreadable lineup flag');
     return { franchise: text(s.franchise, p), name: text(s.name, p), status: text(s.status, p),
-      points: optionalPoints(s.points, p), words: text(s.words, p), starters: parseStarters(s.starters),
+      points: optionalPoints(s.points, p), provisional: optionalPoints(s.provisional, p),
+      words: text(s.words, p), starters: parseStarters(s.starters),
       adjustment: points(s.adjustment, p), lineupStatus: text(lineup.status, p),
       lineupWords: text(lineup.words, p), flagged: lineup.flagged,
       zeroed: s.zeroed === undefined ? undefined : text(s.zeroed, p) };
@@ -60,10 +65,12 @@ export function parsePulseResults(value: unknown, league: string, week: number):
     published: r.published, words: text(r.words, 'Results'),
     games: array(r.games, 'Games', (v, p) => {
       const g = object(v, p, ['week', 'home', 'away', 'homeName', 'awayName', 'status', 'homePoints',
-        'awayPoints', 'winner', 'words', 'why']);
+        'awayPoints', 'homeProvisional', 'awayProvisional', 'winner', 'words', 'why']);
       return { week: integer(g.week, p, 1), home: text(g.home, p), away: text(g.away, p),
         homeName: text(g.homeName, p), awayName: text(g.awayName, p), status: text(g.status, p),
         homePoints: optionalPoints(g.homePoints, p), awayPoints: optionalPoints(g.awayPoints, p),
+        homeProvisional: optionalPoints(g.homeProvisional, p),
+        awayProvisional: optionalPoints(g.awayProvisional, p),
         winner: g.winner === undefined ? undefined : text(g.winner, p), words: text(g.words, p),
         why: array(g.why, 'Reasons', (v, p) => text(v, p)) };
     }),

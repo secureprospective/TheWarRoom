@@ -170,6 +170,7 @@ func (a *App) finishStartup(ctx context.Context, refreshed bool) {
 // load run now, off the startup path. A windowless -probe never reaches it.
 func (a *App) domReady(ctx context.Context) {
 	a.refreshInBackground(ctx)
+	a.startLiveStats()
 	a.startDatabaseChecks()      //nolint:contextcheck // The app lifetime cancels and joins database checks on shutdown.
 	a.compileFactsInBackground() //nolint:contextcheck // The app lifetime cancels and joins facts work on shutdown.
 	a.startWorker(func() { a.publishAssetModel(ctx); a.sourceHealthChanged(ctx) })

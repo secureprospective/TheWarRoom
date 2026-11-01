@@ -32,7 +32,8 @@ export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[
   return results.games.map(game => {
     const decided = game.homePoints !== undefined && game.awayPoints !== undefined;
     return { key: gameKey(game), game, mine: game.home === mine || game.away === mine,
-      division: divisionOf(game.home), home: game.homePoints, away: game.awayPoints, decided,
+      division: divisionOf(game.home), home: game.homePoints ?? game.homeProvisional,
+      away: game.awayPoints ?? game.awayProvisional, decided,
       margin: decided ? Math.abs(game.homePoints! - game.awayPoints!) : undefined,
       status: statusLabel(game, current) };
   });
@@ -79,7 +80,7 @@ export function starterRows(score: PulseScore | undefined, lineup: PulseLineupPl
   return (score?.starters ?? []).map((s: PulseStarter) => {
     const held = lineup?.find(p => p.player === s.player);
     return { slot: s.position ?? '—', player: s.player, name: s.name, team: held?.team,
-      locked: held?.locked, points: s.points, projection: projections[s.player],
+      locked: held?.locked, points: s.points ?? s.provisional, projection: projections[s.player],
       words: s.words };
   });
 }
