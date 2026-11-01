@@ -27,6 +27,34 @@ type NativeAssetIdentity struct {
 	Position  string `json:"position"`
 }
 
+// NativeAssetsAsOf reads receipt-dated history at or after the starting observation.
+// It does not infer a roster before that observation or admit backdated commands.
+func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAssets, error) {
+	if at.IsZero() {
+		return NativeAssets{}, fmt.Errorf("choose the roster observation time")
+	}
+	seed, err := seedNativeAssets(league, records)
+	if err != nil {
+		return NativeAssets{}, err
+	}
+	if seed.Seeded && at.Before(seed.Snapshot.RosterAt) {
+		return NativeAssets{}, fmt.Errorf("roster history before the starting observation is not recorded")
+	}
+	visible := make([]Record, 0, len(records))
+	for _, record := range records {
+		// The snapshot may have been received after the roster was observed.
+		if record.Command.Command == Create || record.Command.Command == NativeSeed || !record.Receipt.RecordedAt.After(at) {
+			visible = append(visible, record)
+		}
+	}
+	assets, err := NativeAssetsReading(league, visible, at)
+	if err != nil {
+		return NativeAssets{}, fmt.Errorf("read roster at observation time: %w", err)
+	}
+	assets.Revision = int64(len(records))
+	return assets, nil
+}
+
 func NativeAssetsReading(league string, records []Record, at ...time.Time) (NativeAssets, error) {
 	assets, _, err := nativeAssetsState(league, records, at...)
 	return assets, err
