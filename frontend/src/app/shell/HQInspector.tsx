@@ -95,7 +95,7 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
   const player = snapshot.players.value.find(p => p.id === id);
   const position = selectedPosition ?? player?.position;
   const contract = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players.find(p => p.id === id);
-  const arc = useHQRead('market.TargetAgeArc', [id], arcRead, !native);
+  const arc = useHQRead('market.TargetAgeArc', [id], arcRead);
   const usage = useHQRead('research.TargetPlayerUsage', [id], usageRead, !native);
   const [revision, setRevision] = useState(0);
   const readNotes = useContractRead(JSON.stringify([mine, id, revision]), () => native ? Promise.reject(new

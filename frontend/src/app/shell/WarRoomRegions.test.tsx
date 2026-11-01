@@ -313,7 +313,7 @@ describe('inspector and request lifetimes', () => {
       kind: 'note', text: 'Private observation' }));
     expect(host.textContent).toContain('Private observation'); expect(noteRead).toHaveBeenCalledTimes(2);
   });
-  it('does not call local notes, research or age reads for a native inspector', async () => {
+  it('does not call mirror notes or research for an app inspector', async () => {
     const notes = vi.spyOn(personalWire, 'read');
     const port = vi.fn<HostedPort>(async r => r.command === 'projections.read' ? reply({
       league: 'native.seed', season: 2026, week: 9, players: [{ player: '0042', floor: 2, median: 7.1,

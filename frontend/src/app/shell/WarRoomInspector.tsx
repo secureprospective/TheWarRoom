@@ -38,7 +38,7 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
   const research = facts?.research;
   const nativeContract = context.native ? context.snapshot.rosters.value.flatMap(r => r.players)
     .find(p => p.id === asset?.token) : undefined;
-  const age = researchFact(research, 'Age');
+  const age = researchFact(research, 'Age') ?? facts?.arc?.age.toFixed(1);
   const arc = facts?.arc;
   const maxArc = Math.max(1, ...arc?.points.map(p => p.level) ?? []);
   const projection = facts?.projection;

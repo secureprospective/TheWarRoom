@@ -20,6 +20,7 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
   if (c.native) {
     const native = c.native;
     await Promise.all([
+      apply(async () => { result.arc = parseArc(await readAgeArc(id)); }),
       apply(async () => { result.cut = await readNativeCut(native.league, c.mine, id, native.port); }),
       apply(async () => {
         if (!c.week) return;
