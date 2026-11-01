@@ -10,7 +10,7 @@ import { parsePreview } from '../commissioner/preview';
 import { newKey } from '../commissioner/forms';
 import type { WarRoomContext } from './warroomReads';
 import { finite } from './hqPlayerData';
-import { money } from './hqModel';
+import { money, rosterContract } from './hqModel';
 export type WarRoomAsset = TradeAsset & { age?: number;
   pick?: { season: number; round: number; original: string } };
 export type WarRoomCatalog = { teams: { id: string; name: string; assets: WarRoomAsset[] }[];
@@ -60,8 +60,7 @@ export async function readWarRoomCatalog(c: WarRoomContext): Promise<WarRoomCata
         ?? c.snapshot.players.value.find(i => i.id === p.id);
       return { token: p.id, name: identity?.name ?? p.name,
         position: identity?.position,
-        contract: contract ? `${money(contract.salary)} · ${
-        contract.yearsRemaining === undefined ? '—' : `${contract.yearsRemaining}y`}` : undefined };
+        contract: rosterContract(contract) };
     }), ...roster.picks.filter(p => p.owner === f.value).map(p => ({ token:
       `pick:${p.season}:${p.round}:${p.original}`, name: `${p.season} round ${p.round}`, pick: p }))] })) };
 }

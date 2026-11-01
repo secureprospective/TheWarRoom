@@ -150,7 +150,8 @@ it('shows an imported-shaped 35-player roster before any schedule is published',
   const imported = structuredClone(assets);
   const player = imported.snapshot.players[0];
   const players = Array.from({ length: 35 }, (_, i) => ({ ...player, id: String(2000 + i),
-    franchise: 'franchise.02', name: `Imported player ${i}`, contractStatus: '',
+    franchise: 'franchise.02', name: `Imported player ${i}`, salaryCents: 300_000_000,
+    expirationYear: 2027, contractStatus: '',
     heldContractStatus: 'EXT (2024)', contractInfo: 'Imported contract' }));
   imported.snapshot.players = players;
   vi.mocked(localWorkflow).mockImplementation(async request => {
@@ -166,7 +167,9 @@ it('shows an imported-shaped 35-player roster before any schedule is published',
   expect(container.textContent).toContain('Viewing week 8 · The schedule is not published yet.');
   expect(container.querySelectorAll('.hq-v10 .blist [data-player]')).toHaveLength(35);
   expect(container.querySelector('.hq-v10 .blist')?.textContent).toContain('Imported player 34');
+  expect(container.querySelector('.hq-v10 .blist .roster-contract')?.textContent).toBe('$3.00M · 2y');
   await act(async () => { commands.dispatch('nav.open', { node: 'war' }); }); await settle();
   expect(container.querySelectorAll('.wr-v6 .shelf:first-child .blk')).toHaveLength(35);
   expect(container.querySelector('.wr-v6 .shelf')?.textContent).toContain('Imported player 34');
+  expect(container.querySelector('.wr-v6 .shelf .nm small')?.textContent).toBe('$3.00M · 2y');
 });

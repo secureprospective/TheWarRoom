@@ -357,3 +357,5 @@
 .hq-v10.embedded .mu-h{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .hq-v10.embedded .wp{grid-column:1/-1;grid-row:2;width:100%}
 .hq-v10.embedded .ch{flex-wrap:wrap;gap:4px}
+
+.hq-v10 .roster-contract{font:10px var(--mono);color:var(--ink2);white-space:nowrap}
