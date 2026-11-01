@@ -180,3 +180,16 @@ func TestDraftPickCatalogMatchesOwnerInput(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkflowDesktopGravityDependsOnAction(t *testing.T) {
+	t.Parallel()
+	for _, command := range Commands() {
+		if command.Method == "TargetWorkflow" {
+			if command.Gravity != "argument-dependent" {
+				t.Fatalf("workflow gravity = %q", command.Gravity)
+			}
+			return
+		}
+	}
+	t.Fatal("workflow is missing from the desktop catalog")
+}

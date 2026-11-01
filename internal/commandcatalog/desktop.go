@@ -35,7 +35,7 @@ func commissionerDesktop(related []Command) []Command {
 		{"TargetCommissionerSchedule", "commish", "G0"},
 		{"TargetCommissionerSeat", "gm,commish,admin", "G0"},
 		{"TargetCommissionerSeatSignIn", "gm,commish,admin", "G1"},
-		{"TargetWorkflow", "gm,commish", "G0"},
+		{"TargetWorkflow", "gm,commish", "argument-dependent"},
 		{"TargetCorrections", "gm,commish", "G0"},
 		{"TargetLeagueCalendar", "gm,commish", "G0"},
 		{"TargetLeagueSchedule", "gm,commish", "G0"},
