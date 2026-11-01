@@ -120,7 +120,8 @@ func TestStartupDraftJobFollowsFirstRostersSourceAndStart(t *testing.T) {
 	}{
 		{"drafted first rosters", func(*ledgerBuilder) {}, true},
 		{"free agency", func(b *ledgerBuilder) { b.set("league.initialRosters", `"free_agency"`, "now", seasonMoment(2)) }, false},
-		{"imported from MFL", func(b *ledgerBuilder) { b.records[0].Command.Args.Source = SourceMFLImport }, false},
+		// Where a league came from does not enter into it: the same settings and start give the same draft.
+		{"imported from MFL, same settings", func(b *ledgerBuilder) { b.records[0].Command.Args.Source = SourceMFLImport }, true},
 		{"rosters at the start", func(b *ledgerBuilder) {
 			native := b.records[2].Command.Args.Native
 			native.Players = []NativePlayer{{ID: "20000", Franchise: "franchise.01", Status: domain.RosterActive,

@@ -48,6 +48,7 @@ bloat:
 placement:
 	scripts/check-placement.sh
 	scripts/check-root-ratchet.sh
+	scripts/check-source-branches.sh
 
 # measure-dictionary renders docs/data-layer/Measure_Dictionary.md from the registry CSVs in
 # internal/measures. A test fails while the checked-in copy is stale.

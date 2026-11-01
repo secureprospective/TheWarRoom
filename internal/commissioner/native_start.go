@@ -157,9 +157,6 @@ func scopedOLineLots(seed RawNativeSnapshot) []NativePoolEntry {
 // startingCardLot distinguishes the open start auction from later free-agent bidding and older
 // leagues that already assigned cards. The immutable seed, not today's roster size, defines it.
 func StartingCardLot(records []Record, player string) bool {
-	if LeagueSource(records) != SourceNative {
-		return false
-	}
 	if _, ok := nativecheck.LineCardTeam(player); !ok {
 		return false
 	}

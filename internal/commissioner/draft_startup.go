@@ -102,11 +102,11 @@ func startedEmpty(records []Record) bool {
 	return i >= 0 && records[i].Command.Args.Native != nil && len(records[i].Command.Args.Native.Players) == 0
 }
 
-// draftsFirstRosters says the league's first rosters are drafted: an app league started here, with empty
-// rosters, whose rules choose a draft for them.
+// draftsFirstRosters says the league's first rosters are drafted: a league that started with empty
+// rosters, whose rules choose a draft for them. Where the league came from does not enter into it.
 func draftsFirstRosters(records []Record, rules leaguerules.RuleSet) bool {
 	v := rules.League.InitialRosters
-	return LeagueSource(records) == SourceNative && v.State == leaguerules.IsKnown && v.Value == leaguerules.ByDraft &&
+	return v.State == leaguerules.IsKnown && v.Value == leaguerules.ByDraft &&
 		startedEmpty(records)
 }
 
