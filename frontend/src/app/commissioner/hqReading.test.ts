@@ -24,6 +24,15 @@ describe('native HQ existing reads', () => {
       room:
       99_960_000_000 });
   });
+  it('reads an imported league whose MFL contract status was blank or held as written', () => {
+    const imported = structuredClone(assets) as { snapshot: { players: Record<string, unknown>[] } };
+    imported.snapshot.players[0].contractStatus = '';
+    imported.snapshot.players[0].heldContractStatus = 'EXT (2024)';
+    const snapshot = nativeHQAssets(imported, 'native.seed');
+    const id = imported.snapshot.players[0].id;
+    const player = snapshot.rosters.value.flatMap(r => r.players).find(p => p.id === id);
+    expect(player?.contractStatus).toBe('FLAG');
+  });
   it('changes the view model when cap, total slots, IR and taxi settings change', () => {
     const changed = parseRules(structuredClone(rules));
     const rows = changed.sections.flatMap(s => s.rows);

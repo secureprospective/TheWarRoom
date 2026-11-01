@@ -56,8 +56,8 @@ export function nativeHQAssets(value: unknown, league: string): Snapshot {
   const players = array(raw.snapshot.players, 'Roster contracts', (v, p) => {
     const r = v as Record<string, unknown>;
     return { id: text(r.id, p), franchise: text(r.franchise, p), salary: integer(r.salaryCents, p),
-      expiration: integer(r.expirationYear, p), contractStatus: choice(r.contractStatus, p,
-        CONTRACT_STATUSES),
+      expiration: integer(r.expirationYear, p), // An imported league may hold no contract status (MFL left it blank); the MFL mirror reads blank as FLAG.
+      contractStatus: choice(r.contractStatus === '' ? 'FLAG' : r.contractStatus, p, CONTRACT_STATUSES),
       rosterStatus: choice(r.status, p, ROSTER_STATUSES) };
   });
   const provenance: Provenance = { source: 'League ledger', kind: 'live', freshness: { state: 'live',
