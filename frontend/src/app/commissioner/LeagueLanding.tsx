@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { ControlGroupView } from './ControlGroupView';
 import { ControlSearch } from './ControlSearch';
 import { entriesOf } from './controls';
@@ -9,7 +9,7 @@ import { draftRoom } from '../draftroom/state';
 import { JobsStrip } from './JobsStrip';
 import { startingJob, startupDraftJob } from './jobs';
 import { parseOpen, parseTray, scopedRules, type ActionKind, type LandingView } from './landing';
-import { LeaguePicker } from './LeaguePicker';
+import { LeagueContext } from '../shell/leaguePicker';
 import type { People } from './people';
 import { leagueState } from './proxy';
 import { surfaceActions } from './surfaceActions';
@@ -37,12 +37,14 @@ function mayOpen(action: ActionKind, people?: People): boolean {
 export default function LeagueLanding() {
   const { choices, selected, jobs, controls, rules, people, landingError, error, pending }
     = leagueState.use();
+  const rail = useContext(LeagueContext);
+  const picked = rail ? (rail.selected?.app ? rail.selected.id : '') : undefined;
   const [tray, setTray] = useState<Tray>();
   const background = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<LandingView>({ open: null });
   const rows = useRef(new Map<string, HTMLLIElement>());
   const entries = useMemo(() => (controls ? entriesOf(controls) : []), [controls]);
-  useEffect(() => { void leagueState.choose(); }, []);
+  useEffect(() => { void leagueState.choose(picked); }, [picked]);
   useEffect(() => surfaceActions.register('landing', args => {
     if (args.action === 'close') {
       setTray(undefined);
@@ -113,7 +115,6 @@ export default function LeagueLanding() {
       <div className="league-landing" ref={background} aria-hidden={tray ? true : undefined}>
         {error && <p role="alert">{error}</p>}
         {landingError && <p role="alert">{landingError}</p>}
-        <LeaguePicker />
         {noLeague && <p>No app league has been started yet. Start one under Constitution.</p>}
         {jobs && <JobsStrip jobs={jobs} />}
         {!jobs && selected && pending && <p role="status">Reading the league’s jobs…</p>}

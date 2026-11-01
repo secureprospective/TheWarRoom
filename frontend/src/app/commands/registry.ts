@@ -418,7 +418,7 @@ export function createCommands(
       id: 'commissioner.read',
       run: (args: BrowserArguments<'commissioner.read'>) => {
         return import('../commissioner/proxy').then(m =>
-          completed(m.leagueState.choose(args.league), () => m.leagueState.peek().error));
+          completed(m.leagueState.choose(args.league || undefined), () => m.leagueState.peek().error));
       },
     }),
     'commissioner.draft': command({
