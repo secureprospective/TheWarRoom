@@ -3,6 +3,9 @@ import type { Report } from '../reports/contract';
 import type { Readings } from '../contracts/contract';
 
 export const unavailable = 'Not available yet';
+// Nothing selected is not a failed read. The detail panels say what to do next, in one calm line,
+// and keep the unavailable words for a read that actually failed.
+export const pickPlayer = 'Pick a player to see their details';
 export type HQSettings = { active?: number; ir?: number; taxi?: number; starters?: number;
   offence?: number; defence?: number; reserveExcluded?: boolean; positions: { code: string; min: number;
     max?: number }[] };

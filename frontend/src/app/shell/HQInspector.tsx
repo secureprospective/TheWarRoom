@@ -16,7 +16,7 @@ import { useHQRead, hqEvents, addHQTrade } from './hqReads';
 import { parseArc, parseUsage, parseNotes, researchFact, type Arc, type Usage, type Note } from
   './hqPlayerData';
 import type { RosterFacts } from './hqRosterFacts';
-import { money, unavailable } from './hqModel';
+import { money, pickPlayer, unavailable } from './hqModel';
 
 const arcRead = async (id: string) => parseArc(await readAgeArc(id));
 const usageRead = async (id: string) => parseUsage(await readPlayerUsage(id));
@@ -82,10 +82,8 @@ export function HQInspector({ snapshot, mine, id, facts, projection, native = fa
 }) {
   return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
     native, bench, position, cut, toIR, annual, leagueValue, valuesPreparing }} />
-    : <aside className="insp" aria-label="Inspector"><div className="ihead"><div
-      className="nm">{unavailable}</div></div><div className="nums"><div /><div /></div><div
-      className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div
-      className="ifoot">{unavailable}</div></aside>;
+    : <aside className="insp" aria-label="Inspector"><p className="empty"
+      role="status">{pickPlayer}</p></aside>;
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
   selectedPosition, cut, toIR, annual, leagueValue, valuesPreparing

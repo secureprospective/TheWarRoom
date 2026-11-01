@@ -4,7 +4,7 @@ import { useWarRoomRead, type WarRoomContext } from './warroomReads';
 import type { WarRoomAsset } from './warroomTradeReads';
 import { readWarRoomInspector, changeWarRoomNote } from './warroomInspectorReads';
 import { researchFact } from './hqPlayerData';
-import { money, unavailable } from './hqModel';
+import { money, pickPlayer, unavailable } from './hqModel';
 import { CompactAbsent, WarRoomEmpty } from './WarRoomHeader';
 function Drawer({ label, detail, children, initial = true }: { label: string; detail?: ReactNode;
   children: ReactNode; initial?: boolean }) {
@@ -16,7 +16,9 @@ function Drawer({ label, detail, children, initial = true }: { label: string; de
 }
 export function WarRoomInspector({ context, asset, add, watch }: { context: WarRoomContext;
   asset?: WarRoomAsset; add?: () => void; watch?: () => Promise<void> }) {
-  return <LoadedInspector key={`${context.native?.league}:${context.mine}:${asset?.token}`}
+  if (!asset) return <aside className="insp" aria-label="Inspector"><p className="empty"
+    role="status">{pickPlayer}</p></aside>;
+  return <LoadedInspector key={`${context.native?.league}:${context.mine}:${asset.token}`}
     context={context} asset={asset} add={add} watch={watch} />;
 }
 function LoadedInspector({ context, asset, add, watch }: { context: WarRoomContext; asset?: WarRoomAsset;
