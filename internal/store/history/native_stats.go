@@ -26,12 +26,19 @@ func (f seasonStatFeed) Weeks(ctx context.Context) ([]commissioner.StatWeek, err
 		return f.store.statWeeks(ctx, f.season)
 	}
 	book := source.NewLineBook(f.season)
-	err := f.store.heldWeeklyFiles(ctx, f.season, book.Add)
+	files, err := f.store.heldSeason(ctx, f.season)
 	if errors.Is(err, source.ErrSeasonNotLoaded) {
 		return []commissioner.StatWeek{}, nil
 	}
 	if err != nil {
 		return nil, err
+	}
+	for _, file := range files {
+		if file.complete {
+			book.AddFile(file.sha, file.at, file.weeks, nil)
+		} else {
+			book.Add(file.sha, file.at, file.weeks)
+		}
 	}
 	gsis, err := f.store.SourceIDs(ctx, "gsis")
 	if err != nil {

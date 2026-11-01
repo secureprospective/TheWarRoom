@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
@@ -95,6 +96,11 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 		if err := a.fillScheduleDates(ctx, records); err != nil {
 			log.Printf("refresh NFL dates for %s (held dates kept): %v", league.ID, err)
 		}
+		a.core.SerializeSourcesLoad(ctx, func() {
+			if err := sourcesapp.SyncScheduledScoring(ctx, a.core.History, a.core.Fetches, league.ID, records); err != nil {
+				log.Printf("refresh scoring evidence for %s (held data kept): %v", league.ID, err)
+			}
+		})
 		source, season, principal, follows := mflsource.FollowingLeague(league.ID, records)
 		if !follows {
 			continue
