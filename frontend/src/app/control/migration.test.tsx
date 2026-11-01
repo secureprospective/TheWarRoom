@@ -25,8 +25,8 @@ it('prepares, chooses a bundle, answers catalogue inputs and imports once into t
   flow.input('12345');
   flow.key('fixture-key-no-real-secret');
   await flow.prepare();
-  expect(flow.use.getState().preset).toBe('mirror16');
-  expect(flow.use.getState().key).toBe('');
+  expect(flow.peek().preset).toBe('mirror16');
+  expect(flow.peek().key).toBe('');
   await flow.importLeague();
   expect(calls).toHaveLength(1);
   await flow.prepare('legacy_nfl');
@@ -54,7 +54,7 @@ it('blocks problems, invalid answers and missing reasons without recording', asy
   await flow.importLeague();
   expect(imports).toBe(0);
   flow.input('22222');
-  expect(flow.use.getState().prep).toBeUndefined();
+  expect(flow.peek().prep).toBeUndefined();
 });
 it('keeps a failed import retryable but never imports again after recording', async () => {
   let imports = 0;
@@ -65,11 +65,11 @@ it('keeps a failed import retryable but never imports again after recording', as
   }, open: async () => { throw new Error('League readings unavailable'); } });
   flow.input('12345'); await flow.prepare(); flow.reason('Move');
   await flow.importLeague();
-  expect(flow.use.getState().done).toBe('');
+  expect(flow.peek().done).toBe('');
   await flow.importLeague(); await flow.importLeague();
   expect(imports).toBe(2);
-  expect(flow.use.getState().done).toBe(prep.league);
-  expect(flow.use.getState().error).toContain('League readings unavailable');
+  expect(flow.peek().done).toBe(prep.league);
+  expect(flow.peek().error).toContain('League readings unavailable');
 });
 it('renders the desktop import entry and refuses malformed preparation', () => {
   const html = renderToStaticMarkup(createElement(MoveMFL));
@@ -81,6 +81,21 @@ it('clears the credential and typed reason when choosing a different MFL league'
   const flow = createMigration({ run: async () => prep, open: async () => {} });
   flow.input('12345'); flow.key('first-league-fixture-key'); flow.reason('First league');
   flow.input('23456');
-  expect(flow.use.getState().key).toBe('');
-  expect(flow.use.getState().reason).toBe('');
+  expect(flow.peek().key).toBe('');
+  expect(flow.peek().reason).toBe('');
+});
+
+it('edits a nested waiting setting through the migration controller', async () => {
+  const nested: Preparation = { ...prep, waiting: [{ field: 'lineup.positions', label: 'Positions',
+    schema: { kind: 'list', minimum: 0, maximum: 20, choices: [], fields: [],
+      element: { kind: 'count', minimum: 1, maximum: 20, choices: [], fields: [] } } }] };
+  const flow = createMigration({ run: async () => nested, open: async () => {} });
+  flow.input('12345'); await flow.prepare();
+  flow.edit({ action: 'add', path: ['lineup.positions'], index: 0 });
+  expect(flow.peek().drafts['lineup.positions']).toMatchObject({ t: 'list', items: [{ t: 'text' }] });
+  flow.edit({ action: 'remove', path: ['lineup.positions'], index: 0 });
+  expect(flow.peek().drafts['lineup.positions']).toMatchObject({ t: 'list', items: [] });
+  const before = flow.peek();
+  flow.edit({ action: 'add', path: ['unknown'], index: 0 });
+  expect(flow.peek()).toBe(before);
 });

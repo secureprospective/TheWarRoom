@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Act } from '../commands/Act';
 import { RuleInput } from '../commissioner/RuleInput';
 import { draftEditor } from '../commissioner/draftEditor';
-import { editDraft } from '../commissioner/ruleDraft';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { migration } from './migration';
 
@@ -17,13 +16,7 @@ export default function MoveMFL() {
   }), []);
   const blocked = migration.blocked();
   const edit = () => {
-    draftEditor.handler = change => {
-      const [field, ...path] = change.path;
-      const current = migration.use.getState();
-      const setting = current.prep?.waiting.find(f => f.field === field);
-      if (setting) migration.answer(setting.field, editDraft(setting.schema,
-        current.drafts[setting.field], { ...change, path }));
-    };
+    draftEditor.handler = migration.edit;
   };
   return <details className="move-mfl">
     <summary>Move my MFL league</summary>

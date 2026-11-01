@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { array, integer, object, text } from '../data/parseValues';
 import { parseSchema, type RuleSchema } from '../commissioner/rules';
-import { blankDraft, toNatural, type Draft } from '../commissioner/ruleDraft';
+import { blankDraft, editDraft, toNatural, type Draft, type Edit } from '../commissioner/ruleDraft';
 import { leagueState, parseReceipt } from '../commissioner/proxy';
 import { runMigration } from './api';
 
@@ -83,7 +83,14 @@ export function createMigration(port: MigrationPort) {
     } catch (cause) { set({ error: String(cause) }); }
     finally { set({ pending: false }); }
   }
-  return { use, input, prepare, importLeague, blocked,
+  function edit(change: Edit) {
+    const [field, ...path] = change.path;
+    const s = use.getState();
+    const setting = s.prep?.waiting.find(f => f.field === field);
+    if (setting) set({ drafts: { ...s.drafts, [setting.field]: editDraft(setting.schema,
+      s.drafts[setting.field], { ...change, path }) } });
+  }
+  return { use, peek: use.getState, input, prepare, importLeague, blocked, edit,
     key: (key: string) => { if (!use.getState().pending) set({ key, prep: undefined, drafts: {} }); },
     reason: (reason: string) => set({ reason }),
     answer: (field: string, draft: Draft) => set(s => ({ drafts: { ...s.drafts, [field]: draft } })),
