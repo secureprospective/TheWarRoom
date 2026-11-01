@@ -246,6 +246,23 @@ string
 "starters": (string)[]
 }
 ];
+"commissioner.TargetNativeLineupDelta": [
+{
+"league": string;
+"franchise": string;
+"partner": string;
+"give": (string)[];
+"get": (string)[];
+"season": number;
+"week": number
+}
+];
+"commissioner.TargetNativeProjections": [
+string,
+string,
+number,
+number
+];
 "commissioner.TargetNativePlayerScore": [
 string,
 string,
@@ -371,6 +388,9 @@ string
 ];
 "commissioner.TargetCommissionerSeatSignIn": [
 string,
+string
+];
+"commissioner.TargetWorkflow": [
 string
 ];
 "commissioner.TargetNativeBidAction": [
@@ -1995,7 +2015,8 @@ string
 "id": string;
 "text": string;
 "action": string;
-"at"?: string
+"at"?: string;
+"with"?: string
 }
 ];
 "offers.TargetPersonalNotes": [
@@ -2023,6 +2044,9 @@ string
 string
 ];
 "platform.TargetInjuries": [
+
+];
+"platform.TargetLeagues": [
 
 ];
 "platform.TargetMoves": [

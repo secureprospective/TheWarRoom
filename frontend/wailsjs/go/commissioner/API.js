@@ -201,3 +201,7 @@ export function TargetNativeWeek(arg1) {
 export function TargetStatQueue(arg1, arg2) {
   return window['go']['commissioner']['API']['TargetStatQueue'](arg1, arg2);
 }
+
+export function TargetWorkflow(arg1) {
+  return window['go']['commissioner']['API']['TargetWorkflow'](arg1);
+}

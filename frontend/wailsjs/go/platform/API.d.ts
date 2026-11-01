@@ -17,6 +17,8 @@ export function TargetHandOff(arg1:string):Promise<envelope.Receipt>;
 
 export function TargetInjuries():Promise<Array<leaguefeed.Injury>>;
 
+export function TargetLeagues():Promise<Array<platform.League>>;
+
 export function TargetMoves(arg1:string):Promise<Array<envelope.Receipt>>;
 
 export function TargetPhoto(arg1:string):Promise<platform.PhotoView>;

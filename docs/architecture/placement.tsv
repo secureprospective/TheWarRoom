@@ -138,3 +138,6 @@ internal/mflref/whatif	contracts
 internal/app/mflref/seed	commissioner
 internal/store/mflref/tradeplans	trades
 internal/mflref/bid	offers
+internal/lineupdelta	trades
+internal/projection	scoring
+internal/teamneeds	trades

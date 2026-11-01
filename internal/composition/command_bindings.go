@@ -67,6 +67,7 @@ func commissionerCommandBindings(api *commissionerapi.API) map[string]catalog.Bi
 		"TargetCommissionerSchedule":       catalog.Bind1(api.TargetCommissionerSchedule, "league"),
 		"TargetCommissionerSeat":           catalog.Bind0(api.TargetCommissionerSeat),
 		"TargetCommissionerSeatSignIn":     catalog.Bind2(api.TargetCommissionerSeatSignIn, "username", "password"),
+		"TargetWorkflow":                   catalog.Bind1(api.TargetWorkflow, "body"),
 		"TargetBackupNow":                  catalog.Bind0(api.TargetBackupNow),
 		"TargetCommissionerPreview":        catalog.Bind1(api.TargetCommissionerPreview, "body"),
 		"TargetLeagueCalendar":             catalog.Bind1(api.TargetLeagueCalendar, "raw"),
@@ -158,6 +159,7 @@ func offersCommandBindings(api *offersapi.API) map[string]catalog.Binding {
 func platformCommandBindings(api *platformapi.API) map[string]catalog.Binding {
 	return map[string]catalog.Binding{
 		"TargetSnapshot":       catalog.Bind0(api.TargetSnapshot),
+		"TargetLeagues":        catalog.Bind0(api.TargetLeagues),
 		"TargetClock":          catalog.Bind0(api.TargetClock),
 		"TargetInjuries":       catalog.Bind0(api.TargetInjuries),
 		"TargetDraftIR":        catalog.Bind2(api.TargetDraftIR, "franchiseID", "playerID"),

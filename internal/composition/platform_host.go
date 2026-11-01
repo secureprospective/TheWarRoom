@@ -26,6 +26,12 @@ func (a *App) platformAPI() *platformapp.API { return platformapp.New(platformHo
 
 func (h platformHost) Snapshot() (snapshot.Snapshot, error) { return h.app.takeSnapshot() }
 
+func (h platformHost) Leagues() ([]platformapp.League, error) {
+	//nolint:wrapcheck // BuildLeagues already names the failing league read.
+	return platformapp.BuildLeagues(h.app.core.Ctx, h.app.takeSnapshot,
+		h.app.core.Rulebook.ActiveConfig().Name, h.app.core.NativeLeagues, h.app.leagueRecords)
+}
+
 func (h platformHost) Injuries() ([]leaguefeed.Injury, error) { return h.app.injuryReturns(), nil }
 
 func (a *App) injuryReturns() []leaguefeed.Injury {

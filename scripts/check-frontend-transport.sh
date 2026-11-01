@@ -61,7 +61,7 @@ const moved = new Map([
     'TargetBidRevise', 'TargetBidWithdraw', 'TargetPersonal', 'TargetPersonalChange',
     'TargetPersonalHandOff', 'TargetPool', 'TargetPoolRefresh'].map(name => [name, 'offers']),
   ...['TargetCheckMoves', 'TargetClock', 'TargetDraftIR', 'TargetDraftTaxi', 'TargetHandOff', 'TargetMoves',
-    'TargetPhoto', 'TargetSnapshot', 'TargetWithdrawRoster'].map(name => [name, 'platform']),
+    'TargetLeagues', 'TargetPhoto', 'TargetSnapshot', 'TargetWithdrawRoster'].map(name => [name, 'platform']),
   ['TargetRace', 'race'], ['TargetRaceRefresh', 'race'],
   ...['TargetOpenResearchArticle', 'TargetResearch', 'TargetResearchNewsRefresh', 'TargetResearchPlayer',
     'TargetResearchRefresh', 'TargetResearchStatus'].map(name => [name, 'research']),

@@ -1130,6 +1130,205 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetNativeLineupDelta": {
+  "command": "lineupdelta.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "league",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "franchise",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "partner",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "give",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "get",
+              "Optional": false,
+              "Schema": {
+                "Type": "array",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": {
+                  "Type": "string",
+                  "Enum": null,
+                  "Format": "",
+                  "Validator": "",
+                  "Nullable": false,
+                  "Fields": null,
+                  "Items": null
+                }
+              }
+            },
+            {
+              "Name": "season",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "week",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
+"commissioner.TargetNativeProjections": {
+  "command": "projections.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "league",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "players",
+        "Optional": false,
+        "Schema": {
+          "Type": "string",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "season",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      },
+      {
+        "Name": "week",
+        "Optional": false,
+        "Schema": {
+          "Type": "integer",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": null,
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetNativePlayerScore": {
   "command": "score.player.read",
   "arguments": {

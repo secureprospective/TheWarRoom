@@ -47,6 +47,7 @@ func TestNativeCatalogPublication(t *testing.T) {
 	// The desktop's local sign-in links an identity, and its backup copies its own files; neither is
 	// a league command a server could publish.
 	generic := map[string]bool{"TargetCommissionerExecute": true, "TargetCommissionerPreview": true, "TargetNativeScorePreview": true,
+		"TargetWorkflow":         true,
 		"TargetCommissionerSeat": true, "TargetCommissionerSeatSignIn": true, "TargetBackupNow": true}
 	typ := reflect.TypeFor[*API]()
 	for i := range typ.NumMethod() {

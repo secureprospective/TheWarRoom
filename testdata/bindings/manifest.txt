@@ -48,6 +48,7 @@ commissioner.API.TargetNativeWaiverAction
 commissioner.API.TargetNativeWaivers
 commissioner.API.TargetNativeWeek
 commissioner.API.TargetStatQueue
+commissioner.API.TargetWorkflow
 comms.API.TargetComms
 comms.API.TargetCommsRefresh
 comms.API.TargetOpenComms
@@ -106,6 +107,7 @@ platform.API.TargetDraftIR
 platform.API.TargetDraftTaxi
 platform.API.TargetHandOff
 platform.API.TargetInjuries
+platform.API.TargetLeagues
 platform.API.TargetMoves
 platform.API.TargetPhoto
 platform.API.TargetSnapshot
