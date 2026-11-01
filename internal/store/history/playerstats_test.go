@@ -245,3 +245,17 @@ func TestExactArchiveLookupExcludesSimilarURLs(t *testing.T) {
 		t.Fatalf("exact archive: %d calls, found %v, %v", calls, found, err)
 	}
 }
+
+func TestHeldWeeksReadsNewestAndMissingSeason(t *testing.T) {
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "history.db"))
+	weeks, sha, err := s.HeldWeeks(t.Context(), 2025)
+	if err != nil || len(weeks) != 0 || sha != "" {
+		t.Fatalf("missing season: %v %s %v", weeks, sha, err)
+	}
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	want := putStatBody(t, s, statBody(t, "245", true), "", t0().Add(time.Hour))
+	weeks, sha, err = s.HeldWeeks(t.Context(), 2025)
+	if err != nil || sha != want || len(weeks) == 0 || weeks[0].Line.Quantities["passing_yards"] != 2450000 {
+		t.Fatalf("newest: %v %s %v", weeks, sha, err)
+	}
+}

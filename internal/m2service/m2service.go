@@ -301,6 +301,21 @@ func (s *Service) inputStatus(values []PlayerValue) map[string]model.InputStatus
 	return out
 }
 
+// Count is one franchise's value over vals in mode, and the value-weighted age of the players it
+// counted (NaN when none of them has a known age and positive value). It is the board's own
+// counting rule, exposed so a league valued from its own settings counts its best N the same way
+// rather than growing a second counter. rules are the league's starting limits: top-N reads only
+// their total, the lineup reads every slot, and either falls back to the whole roster without them.
+func Count(mode string, rules powerrankings.LineupRules, vals []PlayerValue) (value, age float64) {
+	switch {
+	case mode == AggTopN && rules.Total > 0:
+	case mode == AggLineup && len(rules.Slots) > 0 && rules.Total > 0:
+	default:
+		mode = AggSum
+	}
+	return counter{mode: mode, rules: rules}.count(vals)
+}
+
 // count is a franchise's value in the counter's mode, and the value-weighted age of the players
 // it counted (NaN when none of them has a known age and positive value). It sorts a copy.
 func (c counter) count(vals []PlayerValue) (value, age float64) {

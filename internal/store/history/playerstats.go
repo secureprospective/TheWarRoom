@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -219,4 +220,22 @@ func clonePlayerWeek(week source.PlayerWeek) source.PlayerWeek {
 		week.Line.Events[stat] = slices.Clone(events)
 	}
 	return week
+}
+
+// HeldWeeks is the newest held copy of an NFL season's weekly statistics and that copy's sha.
+// held is empty, with no error, when the season has not been loaded: a valuation that reads it
+// runs on the seasons still flowing (R11). It exists so a league valued from its own scoring
+// settings reads exactly the weekly lines the projections read.
+func (s *Store) HeldWeeks(ctx context.Context, season int) (held []source.PlayerWeek, sha string, err error) {
+	files, err := s.heldSeason(ctx, season)
+	if errors.Is(err, source.ErrSeasonNotLoaded) {
+		return nil, "", nil
+	}
+	if err != nil {
+		return nil, "", err
+	}
+	if len(files) == 0 {
+		return nil, "", nil
+	}
+	return files[0].weeks, files[0].sha, nil
 }

@@ -278,7 +278,7 @@ func TestCountByMode(t *testing.T) {
 		{AggTopN, 50, 24},   // top 2 by value: QB 30 and WR 20, whose age is unknown
 		{AggLineup, 50, 24}, // one QB may start: QB 30 and WR 20
 	} {
-		value, age := counter{mode: c.mode, rules: rules}.count(vals)
+		value, age := Count(c.mode, rules, vals)
 		if value != c.value || math.Abs(age-c.age) > 1e-9 {
 			t.Errorf("%s: %v at age %v, want %v at %v", c.mode, value, age, c.value, c.age)
 		}
