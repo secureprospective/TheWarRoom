@@ -134,7 +134,13 @@ func (a *App) nativeScheduleDates(parent context.Context, season int, at time.Ti
 	error) {
 	ctx, cancel := context.WithTimeout(parent, refreshTimeout)
 	defer cancel()
-	return nativeapp.ScheduleDates(ctx, a.core.History.ReferenceBodies, season, at) //nolint:wrapcheck // Preserve the held NFL week dates refusal.
+	//nolint:wrapcheck // Preserve the held NFL week dates refusal.
+	return a.scheduleCache.Dates(ctx, a.heldArchiveMark, a.core.History.ReferenceBodies, season, at)
+}
+
+func (a *App) heldArchiveMark(ctx context.Context, part string) (nativeapp.ArchiveMark, error) {
+	count, newest, err := a.core.History.ArchiveMark(ctx, part)
+	return nativeapp.ArchiveMark{Count: count, Newest: newest}, err //nolint:wrapcheck // The store names its failure.
 }
 
 type appBidEnv struct{ app *App }

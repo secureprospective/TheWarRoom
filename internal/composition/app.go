@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
+
 	platformapp "github.com/secureprospective/TheWarRoom/internal/app/platform"
 
 	archiveapp "github.com/secureprospective/TheWarRoom/internal/app/archive"
@@ -52,6 +54,7 @@ type App struct {
 	core                *core.State
 	tradeBuilderTimeout time.Duration
 	archiveCache        archiveapp.Snapshot
+	scheduleCache       nativeapp.ScheduleCache
 	controlHeld         *controlapp.Held
 	researchHeld        *researchapp.Held
 	raceHeld            *raceapp.Held
