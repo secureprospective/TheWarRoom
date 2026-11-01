@@ -6,13 +6,14 @@ import { controlAPI } from '../control/api';
 import { raceAPI } from '../race/api';
 import { report } from '../reports/contract';
 import type { Snapshot } from '../data/contract';
-import { readNativeHQ } from '../commissioner/hqReading';
+import { readNativeHQ, type NativeHQ } from '../commissioner/hqReading';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import { hqEvents } from './hqReads';
 import { settingsFromReport, type HQCap } from './hqModel';
 import { standingFromReport } from './hqPlayerData';
 export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
-  leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null };
+  leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null;
+  reading?: NativeHQ };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   starterN?: number; best?: string; rank?: string; age?: AgeBand[]; valueNote?: string;
@@ -27,7 +28,7 @@ export function useWarRoomRead<T>(key: string, read: () => Promise<T>) {
 export async function readWarRoomHeader({ snapshot, mine, week, native }: WarRoomContext):
   Promise<WarRoomHeaderReading> {
   if (native) {
-    const r = await readNativeHQ(native.league, mine, native.port);
+    const r = native.reading ?? await readNativeHQ(native.league, mine, native.port);
     return { name: r.leagueName, record: r.record, standing: r.standing,
       starterN: r.values?.best.starterN || r.settings.starters,
       best: r.values?.best.available ? r.values.best.value.toFixed(1) : undefined,

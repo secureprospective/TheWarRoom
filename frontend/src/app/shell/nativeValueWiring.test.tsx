@@ -8,7 +8,7 @@ import { WarRoomHeader } from './WarRoomHeader';
 import { HQInspector } from './HQInspector';
 import { WarRoomInspector } from './WarRoomInspector';
 import { readInspectorFit } from './inspectorFit';
-import type { WarRoomContext } from './warroomReads';
+import { readWarRoomHeader, type WarRoomContext } from './warroomReads';
 
 const player = () => ({ player: '0042', franchise: 'other', position: 'WR', nowPPG: 0,
   dynastyPPG: 12.3, age: 25, ageKnown: true, available: true, words: 'Held model inputs' });
@@ -32,6 +32,21 @@ function context(port?: HostedPort): WarRoomContext {
     leave: () => {} } : undefined };
 }
 afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
+it('reuses the mounted native reading for the header, including cap runway, without a second read', async () => {
+  const port = vi.fn<HostedPort>(async () => { throw new Error('Must not read twice'); });
+  const c = context(port);
+  c.native!.reading = { revision: 7, snapshot: c.snapshot, settings: { positions: [], starters: 21 },
+    values: parseNativeValues(wire(), 'native.test', '', 2026), errors: [],
+    runway: [{ season: 2026, max: 12500000000, room: 108000000 },
+      { season: 2027, max: 12500000000, room: 4558000000 },
+      { season: 2028, max: 12500000000, room: 6994000000 }] };
+  const header = await readWarRoomHeader(c);
+  expect(port).not.toHaveBeenCalled();
+  expect(header.best).toBe('321.9');
+  expect(header.runway?.map(y => y.room)).toEqual([108000000, 4558000000, 6994000000]);
+  const html = renderToStaticMarkup(<WarRoomHeader reading={header} />);
+  for (const amount of ['$1.08M', '$45.58M', '$69.94M']) expect(html).toContain(amount);
+});
 it('checks league/owner/season, finite values, duplicates and known zero independently of absence', () => {
   expect(parseNativeValues(wire(), 'native.test', '', 2026).players[0].nowPPG).toBe(0);
   for (const broken of [{ ...wire(), league: 'wrong' }, { ...wire(), season: 2025 },
