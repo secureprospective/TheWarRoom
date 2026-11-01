@@ -129,3 +129,8 @@ MFL-only bid-plan checks live in `internal/mflref/bid`; exact arithmetic stays i
 
 The frozen reference surface and compatible stored-plan names are documented in
 `docs/architecture/mfl-reference-fence.md`.
+
+Move my MFL league: Control Room's desktop `TargetMFLMigration` binding reuses
+`internal/leaguemigration` and its MFL source. Frontend: `app/control/MoveMFL.tsx`
+and `migration.ts`; flow, transaction boundaries and verification limits:
+`docs/ui/move-mfl.md`.

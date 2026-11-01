@@ -36,7 +36,7 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 		if raw.League != league {
 			return nil, fmt.Errorf("record changes to one league at a time")
 		}
-		if !batchable(raw.Command) {
+		if !batchable(raw.Command, raws[0].Command == commissioner.Create) {
 			return nil, fmt.Errorf("%s is recorded on its own, not in a batch", raw.Command)
 		}
 		now := s.now().UTC()
@@ -91,8 +91,10 @@ func (s *Store) batchStep(ctx context.Context, tx *sql.Tx, raw commissioner.RawC
 }
 
 // batchable are the setup changes a batch may hold: none needs football facts gathered before the write.
-func batchable(command string) bool {
+func batchable(command string, creating bool) bool {
 	switch command {
+	case commissioner.RulesSet:
+		return creating
 	case commissioner.Create, commissioner.NativeSeed, "commish.seat.invite":
 		return true
 	}

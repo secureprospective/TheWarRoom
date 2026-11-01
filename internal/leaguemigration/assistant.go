@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
 // The move's commands in the command registry. Reads change nothing; each execute is a recorded act.
@@ -21,16 +23,30 @@ const (
 // RawStep is every move command's argument: which MFL league, which app league, the review or list the
 // commissioner read (its digest), and the typed reason for an act.
 type RawStep struct {
-	MFLLeague string `json:"mflLeague"`
-	League    string `json:"league,omitempty"`
-	Digest    string `json:"digest,omitempty"`
-	Reason    string `json:"reason,omitempty"`
+	MFLLeague string                   `json:"mflLeague"`
+	Preset    string                   `json:"preset,omitempty"`
+	Answers   []commissioner.SeedValue `json:"answers,omitempty"`
+	League    string                   `json:"league,omitempty"`
+	Digest    string                   `json:"digest,omitempty"`
+	Reason    string                   `json:"reason,omitempty"`
 }
 
 // Validate refuses a step without its MFL league.
 func (r RawStep) Validate() error {
 	if strings.TrimSpace(r.MFLLeague) == "" || strings.TrimSpace(r.MFLLeague) != r.MFLLeague {
 		return fmt.Errorf("name the MFL league by its league number")
+	}
+	if _, err := Base(r.Preset); err != nil {
+		return err
+	}
+
+	for _, c := range r.MFLLeague {
+		if c < '0' || c > '9' {
+			return fmt.Errorf("enter the MFL league number")
+		}
+	}
+	if len(r.MFLLeague) > 6 {
+		return fmt.Errorf("enter the MFL league number")
 	}
 	return nil
 }

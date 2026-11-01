@@ -1,8 +1,12 @@
 package history
 
 import (
+	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
@@ -66,5 +70,34 @@ func TestMalformedSourcePortLeavesNoDestination(t *testing.T) {
 	src.Export.Rosters[0].Salary = "1.30"
 	if _, err := svc.Import(ctx, export.LeagueID, "Retry corrected source", "creator"); err != nil {
 		t.Fatalf("corrected source could not be imported: %v", err)
+	}
+}
+
+func TestMigrationAnswersRollbackWithCreation(t *testing.T) {
+	t.Parallel()
+	export := migrationtest.Synthetic("Answered league", migrationtest.Specs()["8 teams"])
+	svc, store, _ := migrationService(t, export)
+	// Read without a bundle so contract years is one of the catalogue's waiting settings.
+	options := leaguemigration.ImportOptions{Answers: []commissioner.SeedValue{
+		{Field: "contracts.maximumYears", Value: json.RawMessage(`7`)},
+	}}
+	store.batchFault = func(i int) error {
+		if i == 2 {
+			return errors.New("answer write failed")
+		}
+		return nil
+	}
+	if _, err := svc.ImportWithOptions(t.Context(), export.LeagueID, "Move with answers", "creator", options); err == nil {
+		t.Fatal("failed answer was reported successful")
+	}
+	if n := count(t, store, "league_event"); n != 0 {
+		t.Fatalf("partial league after answer failure: %d", n)
+	}
+	store.batchFault = nil
+	if _, err := svc.ImportWithOptions(t.Context(), export.LeagueID, "Move with answers", "creator", options); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, store, "league_event"); n != 3 {
+		t.Fatalf("want creation, snapshot and answer; got %d", n)
 	}
 }

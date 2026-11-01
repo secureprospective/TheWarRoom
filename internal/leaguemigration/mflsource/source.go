@@ -147,14 +147,25 @@ func (s *Source) Players(context.Context) (map[string]string, error) {
 // Read reads every source part before preparing a native plan. A malformed plan
 // retains its metadata and owners so preparation and invitation wording stay intact.
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
-	return ReadCandidate(ctx, s, now, s.Base)
+	return readCandidate(ctx, s, now, s.Base, true)
 }
 
 // ReadCandidate adapts a raw read-only source to the native migration port; base fills what MFL does not hold.
 func ReadCandidate(ctx context.Context, src Reader, now time.Time, base leaguerules.RuleSet) (leaguemigration.Candidate, error) {
+	return readCandidate(ctx, src, now, base, false)
+}
+
+func readCandidate(ctx context.Context, src Reader, now time.Time, base leaguerules.RuleSet, suggest bool) (leaguemigration.Candidate, error) {
 	export, err := Read(ctx, src, now)
 	if err != nil {
 		return leaguemigration.Candidate{}, err
+	}
+
+	if suggest && base.League.Teams.State == leaguerules.NeedsRuling {
+		base, err = leaguemigration.Base(leaguemigration.DefaultPreset(len(export.Config.Franchises)))
+		if err != nil {
+			return leaguemigration.Candidate{}, fmt.Errorf("choose starting settings: %w", err)
+		}
 	}
 	export.Base = base
 	plan, err := Prepare(export)
@@ -163,5 +174,6 @@ func ReadCandidate(ctx context.Context, src Reader, now time.Time, base leagueru
 		return leaguemigration.Candidate{}, err
 	}
 	return leaguemigration.Candidate{Name: export.Name, Season: export.Season,
-		Owners: export.Owners, Plan: plan, Problems: problems}, nil
+		Owners: export.Owners, Plan: plan, Problems: problems,
+		Franchises: len(export.Config.Franchises), Players: len(export.Rosters), Picks: len(export.Draft) + len(export.Future)}, nil
 }

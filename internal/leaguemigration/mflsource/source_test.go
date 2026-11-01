@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -64,5 +65,38 @@ func TestSourceAdapterOnlyReadsMFL(t *testing.T) {
 	}
 	if transport.reads == 0 || transport.writes != 0 {
 		t.Fatalf("source traffic: reads=%d writes=%d", transport.reads, transport.writes)
+	}
+}
+
+func TestSourceThreadsSelectedBase(t *testing.T) {
+	t.Parallel()
+	fixture, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, preset := range []string{"legacy_nfl", "default32", "mirror16"} {
+		t.Run(preset, func(t *testing.T) {
+			base, err := leaguemigration.Base(preset)
+			if err != nil {
+				t.Fatal(err)
+			}
+			transport := &fixtureTransport{t: t}
+			client, err := mfl.New("api", 100000, mfl.WithTransport(transport))
+			if err != nil {
+				t.Fatal(err)
+			}
+			source := &mflsource.Source{Client: client, ID: fixture.LeagueID, Base: base,
+				Now: func() time.Time { return migrationtest.ReadAt }, Held: func() map[string]string { return fixture.Players }}
+			candidate, err := source.Read(t.Context(), migrationtest.ReadAt)
+			if err != nil || len(candidate.Problems) > 0 {
+				t.Fatalf("%v: %v", err, candidate.Problems)
+			}
+			if candidate.Plan.Rules.Draft.StartupRounds.Value != base.Draft.StartupRounds.Value {
+				t.Fatal("source dropped the selected base")
+			}
+			if candidate.Plan.Rules.Cap.Amount.Value != 12500000000 || transport.writes != 0 {
+				t.Fatal("base replaced MFL's cap or the source attempted a write")
+			}
+		})
 	}
 }

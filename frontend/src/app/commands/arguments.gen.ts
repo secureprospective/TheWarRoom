@@ -1917,6 +1917,10 @@ string
 "move": string
 }
 ];
+"control.TargetMFLMigration": [
+string,
+string
+];
 "control.DeleteMFLKey": [
 
 ];

@@ -26,6 +26,7 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 	rules, problems, notes := Settings(export.Config, export.Base, export.DraftType)
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
+	plan.Waiting = waitingSettings(rules)
 	plan.Seed, plan.Mapping = p.snapshot()
 	plan.Owners = p.owners(plan.Mapping)
 	plan.Create = p.create(rules)

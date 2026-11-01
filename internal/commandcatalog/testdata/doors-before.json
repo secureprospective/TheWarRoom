@@ -3965,6 +3965,18 @@
   },
   {
     "Door": "wails",
+    "Feature": "control",
+    "ID": "unset",
+    "Method": "TargetMFLMigration",
+    "Role": "commish",
+    "Gravity": "G3",
+    "Availability": "desktop",
+    "Permission": "",
+    "Schema": "d090bf9b221f078e67943ce3f77ce51527104186265db4ff11bbcd617dc5e931",
+    "Modes": null
+  },
+  {
+    "Door": "wails",
     "Feature": "platform",
     "ID": "unset",
     "Method": "TargetLeagues",
