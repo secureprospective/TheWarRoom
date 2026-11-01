@@ -943,3 +943,8 @@
 .lp-v14 #ws-live .follow .fchip{cursor:pointer}
 .lp-v14 #ws-live .onf b small{font-weight:400;font-size:9px}
 .lp-v14 #ws-live .sp-row{grid-template-columns:44px 3px 34px minmax(0,1fr) 54px}
+/* the centre column never grows past its track: chips clip, panels shrink */
+.lp-v14 #ws-live>.pcol{min-width:0}
+.lp-v14 .fieldwrap{grid-template-columns:minmax(0,1fr)}
+.lp-v14 #ws-live .follow{min-width:0;overflow:hidden;flex-wrap:nowrap}
+.lp-v14 #ws-live .follow .fchip{flex:0 0 auto;white-space:nowrap;padding:3px 8px;gap:6px;font-size:10.5px}

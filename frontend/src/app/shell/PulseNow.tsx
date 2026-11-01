@@ -55,11 +55,11 @@ export function PulseNow({ reading, mine, week, results, league, port }: {
     <div className="pcol fieldwrap">
       <div className="follow">
         <span className="h">FOLLOWING</span>
-        {games.filter(g => g.status === 'in' || g.id === followed?.id).slice(0, 4).map(g =>
+        {games.filter(g => g.status === 'in' || g.id === followed?.id).slice(0, 3).map(g =>
           <PulseAct key={g.id} className={`fchip${g.id === followed?.id ? ' on' : ''}`}
             label={`Follow ${g.away.abbreviation} at ${g.home.abbreviation}`}
             onAction={() => live.follow(followKey(g))}>
-            {g.away.abbreviation} <b>{g.away.score}</b> · {g.home.abbreviation} <b>{g.home.score}</b>
+            {g.away.abbreviation} <b>{g.away.score}–{g.home.score}</b> {g.home.abbreviation}
             <span className="q">{clockWords(g)}</span>
           </PulseAct>)}
         {!games.some(g => g.status === 'in') && !followed && <span className="src">
