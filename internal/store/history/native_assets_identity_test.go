@@ -41,4 +41,14 @@ func TestNativeAssetsPublicIdentities(t *testing.T) {
 	if len(absent.Identities) != 0 {
 		t.Fatalf("invented facts: %+v", absent.Identities)
 	}
+	// A partial catalogue must not invent identities for players it does not hold.
+	enrichNativeAssets(&absent, nativecheck.Facts{"other": {Name: "Other", Position: leaguerules.QB}})
+	if len(absent.Identities) != 0 {
+		t.Fatalf("invented facts from partial catalogue: %+v", absent.Identities)
+	}
+	empty := commissioner.NativeAssets{}
+	enrichNativeAssets(&empty, nativecheck.Facts{"1000": {Name: "Public player"}})
+	if len(empty.Identities) != 0 {
+		t.Fatalf("invented facts without roster: %+v", empty.Identities)
+	}
 }

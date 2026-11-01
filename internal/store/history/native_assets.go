@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
@@ -36,20 +37,26 @@ func (s *Store) NativeAssets(ctx context.Context, league string) (commissioner.N
 		return commissioner.NativeAssets{}, fmt.Errorf("read native assets: %w", err)
 	}
 	reading.Revision = commissioner.ViewRevision(ctx, records, reading.Revision)
-	if s.lineupEnv != nil && reading.Snapshot != nil {
-		facts := s.lineupEnv.PlayerFacts()
-		for _, player := range reading.Snapshot.Players {
-			identity, held := facts[player.ID]
-			if !held {
-				continue
-			}
-			reading.Identities = append(reading.Identities, commissioner.NativeAssetIdentity{
-				Player: player.ID, Franchise: player.Franchise, Side: reading.Snapshot.SideOf(player.Franchise),
-				Name: identity.Name, Position: string(identity.Position),
-			})
-		}
+	if s.lineupEnv != nil {
+		enrichNativeAssets(&reading, s.lineupEnv.PlayerFacts())
 	}
 	return reading, nil
+}
+
+func enrichNativeAssets(reading *commissioner.NativeAssets, facts nativecheck.Facts) {
+	if reading.Snapshot == nil {
+		return
+	}
+	for _, player := range reading.Snapshot.Players {
+		identity, held := facts[player.ID]
+		if !held {
+			continue
+		}
+		reading.Identities = append(reading.Identities, commissioner.NativeAssetIdentity{
+			Player: player.ID, Franchise: player.Franchise, Side: reading.Snapshot.SideOf(player.Franchise),
+			Name: identity.Name, Position: string(identity.Position),
+		})
+	}
 }
 
 func (s *Store) NativeDirectory(ctx context.Context, league string) (commissioner.NativeDirectory, error) {

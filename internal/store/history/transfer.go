@@ -184,6 +184,7 @@ func TransferReadings(ctx context.Context, league string, records []commissioner
 	if out.Assets, err = commissioner.NativeAssetsReading(league, records, at); err != nil {
 		return out, fmt.Errorf("replay league reading: %w", err)
 	}
+	enrichNativeAssets(&out.Assets, evidence.PlayerFacts())
 	if out.Cap, err = commissioner.NativeCapCheckReading(commissioner.RawNativeCapScope{League: league, ViewerZone: "UTC"}, records, at); err != nil {
 		return out, fmt.Errorf("replay league reading: %w", err)
 	}
