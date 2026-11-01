@@ -72,3 +72,17 @@ shim per read:
 
 Frontend still forks: `FranchiseHQ` (mirror) vs `NativeFranchiseHQ`, and the War Room's `native?` branches. Once the reads
 answer, mount the native screen for the mirror league with `league=14432` and delete the mirror branches.
+
+### Open question 1 answered (21:45 CT): yes, records build without the executor
+
+`internal/commissioner/default32_preset_test.go` `default32League` shows the recipe:
+
+    raw, _ := (RawCommand{League, Command: Create, Args, Reason, Request, Effective: "now", Visibility: "league"}).Prepared()
+    raw.Args.validateCreation()
+    Record{Command: raw, Principal: "creator", Role: "commissioner", Receipt: Receipt{Entry: "create", Revision: 1, RecordedAt: t}}
+
+- For the mirror, build Create from `mflsource` create args (`PresetMFLLeague`, Seed values from `Settings`), plus a Seed
+  record (see `commissionerapp.BuildLeagueSeedCommand`) carrying `CaptureSeed`.
+- Seeded franchises are `franchise.NN` with `HeldID` = MFL ID. The frontend maps the MFL owner franchise to
+  `franchise.NN` through the assets franchises list.
+- If you take this route, switch the three landed reads to it too, so one revision rule holds.
