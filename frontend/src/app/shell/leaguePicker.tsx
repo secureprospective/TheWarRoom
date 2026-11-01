@@ -142,7 +142,6 @@ export function LeaguePicker({
   const name = selected?.name ?? (loading ? 'Opening league…' : 'Choose a league');
   return (
     <div className="league">
-      <p>{selected?.app ? 'App league' : 'From MFL (reference only)'}</p>
       <div className="crest">
         <i>{leagueInitials(name)}</i>
         <div>

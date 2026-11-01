@@ -127,3 +127,14 @@ it('uses desktop native reads with league authority for regions outside the work
     vi.unstubAllGlobals();
   }
 });
+
+it('uses the selected league as the rail header without a static source label', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { createElement } = await import('react');
+  const { LeaguePicker } = await import('./leaguePicker');
+  const html = renderToStaticMarkup(createElement(LeaguePicker, {
+    leagues, selected: leagues[0], onSelect: () => {},
+  }));
+  expect(html).toContain('Legacy NFL');
+  expect(html).not.toContain('From MFL (reference only)');
+});
