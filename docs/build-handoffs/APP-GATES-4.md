@@ -18,7 +18,7 @@
 - Whole Vitest, once: 161 files / 1,751 tests PASS. After adding the calendar regression, its whole region file passed: 35 tests (reference success/failure plus existing hosted calendar assertions). No claim of a second whole run.
 - Plain `make build`: PASS, compiled frontend/application and packaged desktop binary. Wails emitted existing missing-model notices; this is build evidence, not a UI/live-feed acceptance test. Wails regenerated `frontend/wailsjs/go/models.ts`; it was not hand edited.
 - `heavy-ok.sh`: STOP (swap 83%, another full race suite running). No full-repo race suite was launched.
-- Three local commits planned: A1 settings, A2 calendar, B boundary cleanup/fingerprints. Every code commit uses normal hooks; no bypass or push.
+- Local code commits: `dc3191373` (A1), `cd0c2070b` (A2), `fde9ecbc8` (B). Every code commit passed normal hooks; no bypass or push.
 
 ## Residual debt / unknowns
 

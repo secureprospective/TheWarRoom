@@ -1,19 +1,24 @@
 # Handoff
 
 ## Baton
-Bee / APP-GATES-3 — 2026-11-01, build/GATES-1. Local only; do not contact remote.
+Bee / APP-GATES-4 — 2026-11-01, build/GATES-1. Local commits only; do not push.
 
 ## Where it stands
-- `709695a8` raises only the all-rule-form test timeout after the isolated test took 2.89s (88% in the test). Full Vitest passed twice: 161 files, 1751 tests each. The timeout cascade is consistent with this result, not independently proven as the only possible leak.
-- Placement still fails: `internal/leaguemigration/mflsource/schedule.go:114` checks origin, and `frontend/src/app/shell/WarRoom.tsx:100` added the 20th native fork in `edc9a259`. No ratchet changed. Existing `internal/leaguerules/competition.go:3` schedule rules have weeks and pattern, not a reference-feed following setting; `internal/commissioner/migration.go:25` tracks cutover, but origin still decides who follows. Need a real setting and backward-compatible migration, not an accessor that hides an origin check. The calendar sources need a shared status path, not a syntax-only ratchet dodge.
-- Boundary inventory has 15 changed/new fingerprints; not refreshed. Includes nontrivial later changes `31c71c7e` (value preparation) and `d0479ccb`/`3318ec6c` (league picker), in addition to migration/schedule/lineup wiring. Review each source and decision before accepting; `make boundary` stops at startValuePreparation.
-- `make lint` stops at placement; ifaceguard and bloat pass. Plain `make build` passed (Wails reported missing model types but compiled and packaged). No Go files touched this session, so no targeted Go race test. Full Go race deliberately skipped. Preset archive remains not reproducible per prior handoff.
-- `.golangci-cache/` was already untracked. No remote operations.
+- `dc3191373`: A1 done. `schedule.follow` is an ordinary league rule; importer seeds it, launch backfills old imports by one optimistic ordinary command, explicit clear survives, cutover clears through the rule fold. Following reads no origin or app-ID convention. Compatibility initializer is the sole new allowlisted origin read.
+- `cd0c2070b`: A2 done. Shared calendar reader owns dates/failure for both hosts. Native forks tightened 19 → 18.
+- `fde9ecbc8`: B done. Refreshed the 15 approved boundary fingerprints plus launch backfill (16 identities total). Removed native transitive MFL leaks by putting shared counting in powerrankings and resolved listing facts in domain; no model math change, no fence exemption. Tiny files tightened 25 → 24.
+- `make placement` PASS (140 paths), `make boundary` PASS (169 functions/sources), `make lint` PASS (0 issues). Plain `make build` PASS; generated models committed from Wails.
+- Final race batch: 11 packages PASS, 752 named test/subtest passes. Composition migration/schedule batch: four PASS; enhanced ordinary set/clear/backfill/cutover integration passed afterward.
+- Whole Vitest once: 161 files / 1751 PASS. Added calendar regression afterward: region file 35 PASS.
+- Full race skipped: heavy-ok STOP, swap 83%, another full race suite active. No process interfered with.
+- Full evidence, current flow and all 16 hashes/causing commits: `docs/build-handoffs/APP-GATES-4.md`.
 
 ## Next move / blocked on
-- Design and test explicit reference-feed following setting and historical league compatibility, including cutover and native leagues; unify calendar status from the existing clock/calendar readers. Then `make placement`.
-- Review all boundary fingerprints against the branch changes; move policy inward where needed, refresh only reviewed wiring. Run `make boundary`, `make lint`, targeted race tests for changed Go packages, and plain `make build`.
+- Whole composition package remains unproven: earlier broad race attempt failed frozen-door schedule schemas and four native-stat tests, one panicking after an empty preview. Exact names in report. Their baseline origin was not independently reproduced; do not call the package green.
+- Preset archive guard remains not reproducible. Live UI/feed acceptance was not run.
+- Manual acceptance: change Follow reference schedule in settings, clear it and refresh (no following), then set it again; cutover must show an empty setting. Tests establish the backend path; no click-through claim.
 
 ## Tried and rejected
-- Did not replace origin check with a differently named origin accessor or alter fork spelling; either would hide the violations rather than fix them.
-- Did not blindly refresh boundary hashes; value-preparation and league-picker changes require review alongside intended migration wiring.
+- Did not batch cutover + clear: store requires standalone cutover. Its existing atomic act now contributes the clear through the ordinary rules resolver, as other ledger acts contribute settings.
+- Did not exempt catalog credentials or native transitive MFL dependencies; removed them instead.
+- Initial pull attempt failed for lack of tracking before predecessor local-only rule was loaded. No merge or push; keep work local.
