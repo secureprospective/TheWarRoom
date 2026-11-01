@@ -322,3 +322,23 @@ GPT (Sol/Terra) resets ~09:50 CT.
 2. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up (Gonzalez no-roster zero; 15 diffs).
 3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
 4. Tell Christopher Pulse is demo-ready only after a clean fresh-launch walk.
+
+## §24 — 11-01 16:10–16:55 CT: launch lag fixed (live points ~2 s after launch)
+
+**In flight: NOTHING.** App closed on Claude-OS. GPT back ~18:20 CT, Tom ~18:00.
+
+**Commits on integrate:** 380f6e96a (ScheduleCache: held NFL schedule copies parsed once per season, keyed on count+newest fetch id; same output as ScheduleDates) · 83bfcca3f (played-week lineup import = own background worker, outside RefreshMu, never two at once, 10-min bound) · 6b1f2c6c5 (first played-week import of a launch waits 5 min) · a35d8f66f (**root cause of the 7-min lag**: domReady started the live poller before startup opened History; first poll saw nil store and slept the 5-min idle interval; now waits on core.Started; logs "live stats: N players…" only on start/stop/week change) · da6dfe56b (finished games' box scores re-read every 10 min, not every minute; test TestLiveStatLinesRereadsFinishedGamesOnlyEveryTenMinutes) · 46ec19f9b (In this game says "Reading this matchup's lineups…" instead of falsely "No starter…" while loading).
+
+**Walk 16:48 CT, fresh launch, full 1920x1080:** live lines 4 s after launch (683 players, 14 games); launch refresh 14 s (was 2 min); crosswalk 76 s (was 3–7 min); at 2:00 every matchup + starter scored, field/plays live; starter team/lock/proj + In This Game land ~1 min later.
+
+**Refuted (do not retest):** schedule re-parsing was NOT the 2-min import cost (cache kept, harmless); cost is ~7 s per refused franchise-week re-validated each launch (≈76 refusals; APP-ROSTER-5 should remove them).
+
+**Walk-script lesson:** after `kill`, wait until `pgrep -x thewarroom` is empty before relaunching — the old instance can take >3 s (background import) and the new one hits the instance lock. Log has binary bytes: use `grep -a`.
+
+**Open, small:** matchup read waits on projections (ready after the first value-engine run, ~1.5 min) → split lineup.read from projections.read in readPulseMatchup so team/lock show with points. Refused week-8 lineups "–" → APP-ROSTER-5.
+
+**Next actions:**
+1. After 18:20 CT launch APP-ROSTER-5 (Sol medium, roster wt); then sched follow-up.
+2. Optional: split readPulseMatchup (lineups first, projections second).
+3. Cherry-pick gates, sched, roster into integrate; heavy-ok + ONE full suite; full walk.
+4. Tell Christopher Pulse is demo-ready only after that clean fresh-launch walk.
