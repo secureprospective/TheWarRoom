@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"slices"
 	"strconv"
-
-	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 )
 
 // Schedule maps only source identities. Empty playoff weeks and resting teams remain empty;
@@ -58,7 +58,7 @@ func scheduleWeek(w leagueschedule.RawScheduleWeek, n int, mapping map[string]st
 	week := commissioner.ScheduleWeek{Week: n, Games: []commissioner.ScheduleGame{}}
 	for _, matchup := range w.Matchups {
 		home, away := matchup.Franchises[0], matchup.Franchises[1]
-		if home.IsHome == "0" {
+		if strings.TrimSpace(home.IsHome) == "0" {
 			home, away = away, home
 		}
 		h, a := mapping[home.FranchiseID], mapping[away.FranchiseID]

@@ -145,7 +145,7 @@ func TestMigrationLeavesNothingOnAFailedStep(t *testing.T) {
 	t.Parallel()
 	export := migrationtest.Synthetic("Fault league", migrationtest.Specs()["8 teams"])
 	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
-	steps := []string{"read:league", "read:rosters", "read:adjustments", "read:draft", "read:players",
+	steps := []string{"read:league", "read:rosters", "read:adjustments", "read:draft", "read:players", "read:schedule",
 		"record:0", "record:1"}
 	for _, step := range steps {
 		t.Run(step, func(t *testing.T) {

@@ -1,21 +1,21 @@
 # Handoff
 
 ## Baton
-Review / ClaudeBox — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-6 implemented; local commits only, no remote operations.
+Review / ClaudeBox — 2026-11-01, build/SCHED-1. APP-SCHED-1; local commits only, no remote contact.
 
 ## Where it stands
-- Profiled cold Source.Read: 19,143 ms; history Book/Features dominate, no per-player refits. Removed redundant latest-row SQL window before preparation: 18,078 ms, identical Bills values.
-- Desktop lifetime owns a single background producer, discovering seeded league/seasons at startup and every second. Separate per-scope prepared passes; screen reads never run valuation. Refresh/roster/contract/settings/params/revision/as-of changes refuse stale reuse. In-flight commits prevent publication.
-- Preparing reads return non-error state; only value regions show “Values are being prepared”. Existing season signal fills them when ready. Actual preparation failures remain errors. Shutdown cancels and joins before closing stores.
-- Copied-profile actual API/workflow harness: cold-after-startup 49.167 ms, first workflow 40.269 ms (preparing); ready at 18,499.677 ms; first prepared/repeat workflows 33.489/31.025 ms. Bills 35/35, Best 21 = 243.26284592650194, rank 3/32 unchanged. DB opening excluded.
-- PASS: exact imported 25-player parity, targeted Go race 56 top-level / 68 named outcomes across four packages, tsc, whole Vitest 159 files / 1,732 tests, plain make build; screen-computation mutant rejected. Placement/transport and targeted lint pass. No desktop launch/live profile/network use.
-- Flow/contract: docs/architecture/value-preparation.md. Profile top ten and ignored harness/log evidence: .tmp/app-value6/. Handwritten production 1,960 → 2,151 lines; tests 467 → 753 versus f954d1f6. No reduction claimed.
+- New imports read all MFL schedule weeks and map IDs in the importer. Explicit fixtures use ordinary schedule.generate / schedule.publish and shared ledger reads; no source-dependent engine path.
+- Existing leagues: `go run ./cmd/twr schedule-backfill --help`. Explicit destination, commissioner identity and reason; recorded franchise mapping; atomic publication; unchanged re-sync/re-import writes nothing. Instructions: docs/architecture/schedule-import.md.
+- SQLite-backup proof under .tmp/sched/profile: 17 weeks, two appends, retry zero. Bills week 8 away at Patriots. Native matchup confirms it. Starting assets preserved; real supplied profile and live config untouched.
+- Comprehensive targeted-package race run: 542 top-level / 1,108 named PASS, four skips, one inherited startup-draft digest failure. Baseline schedule/owner source overlay reproduces identical failure. Final affected-behavior batch: 25 top-level / 65 named PASS. tsc, plain make build and targeted golangci-lint pass. Commit hooks not bypassed.
+- Affected handwritten Go file set vs 330f33b1: production 2,070 → 2,418 physical lines; tests 689 → 963. No reduction claimed.
 
 ## Next move / blocked on
-- Background preparation still takes ~18.5 s; in-memory only, broad history revision invalidates on unrelated commits, multiple leagues serialize. Reads return preparing quickly, not completed values in 200 ms. Real desktop visuals and hosted-server valuation plumbing remain unverified/inherited debt.
-- Full make lint blocked by inherited tiny-file mismatch: 26 both at f954d1f6 and now, baseline 25. Standalone boundary blocked by untouched migrationInputs fingerprint (other inherited migration/platform/binding mismatches also remain). Only task-owned resource adapters/source fingerprints reviewed and updated; no unrelated allowlist refresh or baseline increase.
+- Played standings are NOT available: prior import has no weekly lineups/results; live MFL schedule scores blank. Native standings returns 0 decided / 208 pending. Displayed first three Bills, Patriots, Jets all 0–0, not historical rankings.
+- week.read contains real week-8 opponent but Current remains unset: only five distinct NFL week-date exports held; existing selector requires every scheduled week's dates. No dates guessed or results zeroed. No GUI test performed.
+- make lint stops at inherited bloat tiny-files 26 vs baseline 25 (no increase retained). Standalone boundary fails untouched (*App).startValuePreparation fingerprint. Neither gate weakened.
+- Profile proof/logs remain in ignored .tmp/sched/. Untracked .golangci-cache/ is the brief-required lint cache.
 
 ## Tried and rejected
-- Repeated per-player fitting/N+1 hypothesis: profile/source show one valuation and one history query per season, not per player.
-- Query-only fix: ~1.1 s saved, nowhere near 200 ms. Kept the safe reduction, then moved production off screen reads.
-- Cache-hit-only proof: harness also measures immediate post-startup/preparing reads and actual workflow reads after publication; no hidden warm-up counted as cold values.
+- Separate fixture helper file increased tiny-file count; folded into the existing schedule responsibility instead.
+- Do not turn source schedule score strings into fabricated native lineups or zero-point results. Scoring engines unchanged.
