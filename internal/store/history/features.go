@@ -2,8 +2,11 @@ package history
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 )
@@ -151,4 +154,63 @@ ORDER BY a.measure, a.season, a.week, a.player_id, a.source, b.source`, formatTi
 		return nil, fmt.Errorf("history: disagreements rows: %w", err)
 	}
 	return out, nil
+}
+
+// valueEvidenceTables are the mutable tables a league valuation reads besides observations.
+// Each is small enough to hash whole; observations and loads are append-only, so their newest
+// row ids name their content.
+func valueEvidenceTables() []string {
+	return []string{"player_record", "player_external_id", "source_fields", "measures", "sources"}
+}
+
+// ValueEvidence fingerprints everything a valuation reads from this database. Unlike
+// PRAGMA data_version it survives reopening, so a saved pass can be reused after a relaunch;
+// any added observation or changed record, link or source priority changes it.
+func (s *Store) ValueEvidence(ctx context.Context) (string, error) {
+	h := sha256.New()
+	var obs, loads int64
+	if err := s.pools.Read().QueryRowContext(ctx,
+		`SELECT (SELECT COALESCE(MAX(rowid), 0) FROM observations), (SELECT COALESCE(MAX(load_id), 0) FROM loads)`).
+		Scan(&obs, &loads); err != nil {
+		return "", fmt.Errorf("history: value evidence: %w", err)
+	}
+	_, _ = fmt.Fprintf(h, "observations %d loads %d\n", obs, loads)
+	for _, table := range valueEvidenceTables() {
+		if err := s.hashTable(ctx, h, table); err != nil {
+			return "", err
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func (s *Store) hashTable(ctx context.Context, h io.Writer, table string) error {
+	rows, err := s.pools.Read().QueryContext(ctx, "SELECT * FROM "+table+" ORDER BY 1, 2")
+	if err != nil {
+		return fmt.Errorf("history: value evidence %s: %w", table, err)
+	}
+	defer func() { _ = rows.Close() }()
+	cols, err := rows.Columns()
+	if err != nil {
+		return fmt.Errorf("history: value evidence %s: %w", table, err)
+	}
+	cells := make([]sql.RawBytes, len(cols))
+	dest := make([]any, len(cols))
+	for i := range cells {
+		dest[i] = &cells[i]
+	}
+	_, _ = fmt.Fprintf(h, "table %s %d\n", table, len(cols))
+	for rows.Next() {
+		if err := rows.Scan(dest...); err != nil {
+			return fmt.Errorf("history: value evidence %s: %w", table, err)
+		}
+		for _, c := range cells {
+			_, _ = fmt.Fprintf(h, "%d:", len(c))
+			_, _ = h.Write(c)
+		}
+		_, _ = h.Write([]byte{'\n'})
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("history: value evidence %s: %w", table, err)
+	}
+	return nil
 }

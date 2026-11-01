@@ -102,3 +102,59 @@ func checkSourceCache(t *testing.T, src Source, league string, want Reading) {
 		t.Fatalf("revision failure hidden: %v", err)
 	}
 }
+
+type memSaved map[Scope][]byte
+
+func (m memSaved) Load(scope Scope) ([]byte, error) { return m[scope], nil }
+func (m memSaved) Save(scope Scope, body []byte) error {
+	m[scope] = body
+	return nil
+}
+
+// checkSavedPass proves a relaunch with unchanged evidence shows the saved pass without
+// valuing, and changed evidence, a damaged file or a passed as-of window values afresh.
+func checkSavedPass(t *testing.T, src Source, league string, want Reading) {
+	t.Helper()
+	at := src.Now().Add(time.Minute)
+	now := at
+	reads := 0
+	evidence := "e1"
+	saved := memSaved{}
+	src.Facts = countedFacts{src.Facts, &reads}
+	src.Now = func() time.Time { return now }
+	src.Revision = func(context.Context) (int64, error) { return 1, nil }
+	src.NextFeatureAt = func(context.Context, time.Time) (time.Time, error) { return at.Add(time.Hour), nil }
+	src.Evidence = func(context.Context) (string, error) { return evidence, nil }
+	src.Saved = saved
+	launch := func() Reading {
+		t.Helper()
+		src.Cache = &Cache{} // a relaunch: empty memory, data_version back at 1
+		out, err := src.Read(t.Context(), league, "", season)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	if got := launch(); !reflect.DeepEqual(got, want) || reads != 1 || len(saved) != 1 {
+		t.Fatalf("first launch: reads=%d saved=%d", reads, len(saved))
+	}
+	if got := launch(); !reflect.DeepEqual(got, want) || reads != 1 {
+		t.Fatalf("relaunch with unchanged evidence valued again or changed values: reads=%d", reads)
+	}
+	evidence = "e2"
+	launch()
+	if reads != 2 {
+		t.Fatal("changed history evidence reused a saved pass")
+	}
+	for scope := range saved {
+		saved[scope] = []byte("{not json")
+	}
+	if got := launch(); !reflect.DeepEqual(got, want) || reads != 3 {
+		t.Fatal("damaged saved pass was not replaced by a fresh valuation")
+	}
+	now = at.Add(time.Hour)
+	launch()
+	if reads != 4 {
+		t.Fatal("saved pass outlived its as-of window")
+	}
+}

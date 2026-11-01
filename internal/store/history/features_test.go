@@ -1,9 +1,12 @@
 package history
 
 import (
+	"context"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
 )
 
@@ -33,5 +36,50 @@ func TestLatestFeatureKeepsValueAndTextFromNewestRow(t *testing.T) {
 				t.Fatalf("wrong latest row: %+v", f)
 			}
 		}
+	}
+}
+
+func TestValueEvidenceSurvivesReopenAndFollowsChanges(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "history.db")
+	open := func() (*Store, *db.Pools) {
+		t.Helper()
+		pools, err := db.Open(context.Background(), path, SchemaVersion())
+		if err != nil {
+			t.Fatal(err)
+		}
+		s, _, _ := reopen(t, pools, registry(t, ""))
+		return s, pools
+	}
+	evidence := func(s *Store) string {
+		t.Helper()
+		e, err := s.ValueEvidence(t.Context())
+		if err != nil || e == "" {
+			t.Fatalf("evidence %q: %v", e, err)
+		}
+		return e
+	}
+	s, pools := open()
+	if _, err := s.Ingest(t.Context(), solo("alpha", "Solo", "13604", "2")); err != nil {
+		t.Fatal(err)
+	}
+	first := evidence(s)
+	_ = pools.Close()
+	s, pools = open()
+	defer func() { _ = pools.Close() }()
+	if got := evidence(s); got != first {
+		t.Fatal("unchanged data fingerprinted differently after reopening")
+	}
+	if _, err := s.Ingest(t.Context(), solo("alpha", "Solo", "13605", "1")); err != nil {
+		t.Fatal(err)
+	}
+	added := evidence(s)
+	if added == first {
+		t.Fatal("added observation left the fingerprint unchanged")
+	}
+	if _, err := pools.Write().ExecContext(t.Context(), `UPDATE source_fields SET priority = priority + 1`); err != nil {
+		t.Fatal(err)
+	}
+	if evidence(s) == added {
+		t.Fatal("changed source priority left the fingerprint unchanged")
 	}
 }

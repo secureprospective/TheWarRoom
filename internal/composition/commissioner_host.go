@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
@@ -164,13 +165,21 @@ func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week in
 }
 
 func (a *App) valueSource() appvalue.Source {
-	return appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.leagueRecords,
+	src := appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.leagueRecords,
 		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: a.core.HistPools.Revision,
-		NextFeatureAt: a.core.History.NextFeatureAt}
+		NextFeatureAt: a.core.History.NextFeatureAt, Evidence: a.core.History.ValueEvidence,
+	}
+	if a.core.Paths.DataDir != "" { // no profile directory, nothing to keep across launches
+		src.Saved = appvalue.SavedFiles{Dir: filepath.Join(a.core.Paths.DataDir, "prepared-values")}
+	}
+	return src
 }
 
 func (a *App) startValuePreparation() {
 	ctx := a.core.WorkCtx
+	if ctx == nil || a.core.History == nil { // a host without history has no values to prepare
+		return
+	}
 	a.startWorker(func() {
 		src := a.valueSource()
 		a.valuePreparation.Run(ctx, src,

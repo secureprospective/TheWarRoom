@@ -29,7 +29,9 @@ type Source struct {
 	Cache         *Cache
 	Revision      func(context.Context) (int64, error)
 	NextFeatureAt func(context.Context, time.Time) (time.Time, error)
-	PreparedOnly  bool // A screen may read a completed pass, never compute one.
+	Evidence      func(context.Context) (string, error) // relaunch-stable fingerprint of history evidence
+	Saved         Saved                                 // completed passes kept across launches
+	PreparedOnly  bool                                  // A screen may read a completed pass, never compute one.
 }
 
 // seasonsRead is how many seasons of league points the pass reads: the valued season and the

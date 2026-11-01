@@ -173,7 +173,11 @@ func checkStartupPreparation(t *testing.T, src Source, league string) {
 			return src.Scopes(ctx, func(context.Context) ([]commissioner.NativeLeague, error) {
 				return []commissioner.NativeLeague{{ID: league}}, nil
 			})
-		}, func() { ready <- struct{}{} }, func(err error) { t.Error(err) })
+		}, func() { ready <- struct{}{} }, func(err error) {
+			if ctx.Err() == nil { // production drops errors from its own shutdown the same way
+				t.Error(err)
+			}
+		})
 	}()
 	select {
 	case <-ready:
