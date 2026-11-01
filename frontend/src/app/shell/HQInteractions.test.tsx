@@ -42,6 +42,33 @@ it('adds and removes dated notes through the existing backend, then re-reads the
     at: '2026-10-31T10:00:00Z' }));
   expect(read).toHaveBeenCalledTimes(3);
 });
+it('shows unavailable rather than an internal notes read error', async () => {
+  const snapshot = heldSnapshot();
+  const host = await mount(render(HQInspector, { snapshot, mine: '0025', id: snapshot.players.value[0].id }),
+    {}, { offers: { API: { TargetPersonalNotes: async () => {
+      throw new Error('No recorded read: offers.TargetPersonalNotes');
+    } } } });
+  await flush();
+  expect(host.textContent).toContain('MY NOTES');
+  expect(host.textContent).toContain('Not available yet');
+  expect(host.textContent).not.toContain('offers.TargetPersonalNotes');
+  expect(host.textContent).not.toContain('No recorded read');
+});
+it('does not expose a failed what-if read in the release panel', async () => {
+  const whatIf = await import('../contracts/whatif');
+  vi.spyOn(whatIf, 'whatIfProvider').mockReturnValue({
+    query: async () => { throw new Error('No recorded read: contracts.TargetWhatIf'); },
+    change: async () => {}, onChange: () => () => {},
+  });
+  const { HQRelease } = await import('./HQRelease');
+  const snapshot = heldSnapshot();
+  const host = await mount(render(HQRelease, { snapshot, mine: '0025', id: snapshot.players.value[0].id,
+    close: () => {} }));
+  await flush();
+  expect(host.textContent).toContain('Not available yet');
+  expect(host.textContent).not.toContain('contracts.TargetWhatIf');
+  expect(host.textContent).not.toContain('No recorded read');
+});
 it('picks a bench player, places him through a command-backed row, and filters positions', async () => {
   const snapshot = heldSnapshot(), reading = heldLineup(), place = vi.fn(), select = vi.fn();
   const host = await mount(render(HQBoard, { snapshot, mine: '0025', reading,
@@ -77,4 +104,34 @@ it('never calls local private-list reads for a native franchise', async () => {
   await mount(render(HQInspector, { native: true, snapshot, mine: 'franchise.01',
     id: snapshot.players.value[0].id }), {}, { offers: { API: { TargetPersonalNotes: notes } } });
   await flush(); expect(notes).not.toHaveBeenCalled();
+});
+it('promotes a native reserve through its hosted review callback', async () => {
+  const { HQReserves } = await import('./HQPanels');
+  const snapshot = heldSnapshot();
+  const reserve = snapshot.rosters.value[0].players.find(p => p.rosterStatus === 'IR')!;
+  const activate = vi.fn();
+  const host = await mount(render(HQReserves, { native: true, kind: 'ir', snapshot, mine: '0025',
+    settings: { positions: [], ir: 12 }, close: () => {}, activate,
+    reserveNotes: new Map([[reserve.id, 'League reserve verdict']]) }));
+  expect(host.textContent).toContain('League reserve verdict');
+  const actions = all(host, 'button').filter(b => b.textContent === 'ACTIVATE');
+  await click(actions[0]);
+  expect(activate).toHaveBeenCalledWith(reserve.id);
+});
+it('selects a real native cut quote without borrowing the previous selection or executing a move',
+  async () => {
+  const { HQNativeWhatIf } = await import('./HQNativeWhatIf');
+  const snapshot = heldSnapshot(), id = snapshot.rosters.value[0].players[0].id, select = vi.fn();
+  const props = { snapshot, mine: '0025', chosen: id, select, beforeRoom: 800000000,
+    cut: { player: id, revision: 1, season: 2026, deadNow: 100000000, roomAfter: 900000000, reason: '' },
+    close: () => {} };
+  const host = await mount(render(HQNativeWhatIf, props));
+  expect(host.textContent).toContain('$9.00M');
+  const other = snapshot.rosters.value[0].players[1].id;
+  const name = snapshot.players.value.find(p => p.id === other)!.name!;
+  await click(all(host, 'button').find(b => b.textContent.includes(name))!);
+  expect(select).toHaveBeenCalledWith(other);
+  await rerender(render(HQNativeWhatIf, { ...props, chosen: other }));
+  expect(host.textContent).not.toContain('$9.00M');
+  expect(host.textContent).toContain('Not available yet');
 });

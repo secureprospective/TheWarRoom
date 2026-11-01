@@ -79,7 +79,7 @@ export function nativeHQCap(value: unknown, league: string, mine: string): HQCap
   const franchises = array(r.franchises, 'Franchise caps', (v, p) => {
     const f = object(v, p, ['exception', 'capCents', 'salaryCents', 'activeCents', 'irCents', 'taxiCents',
       'adjustmentCents', 'committedCents', 'roomCents', 'quantumCents', 'mode', 'deadline', 'words',
-      'enforcement', 'franchise', 'name', 'abbreviation', 'charges', 'runway']);
+      'enforcement', 'franchise', 'name', 'abbreviation', 'charges', 'runway', 'contracts']);
     return { franchise: text(f.franchise, p), runway: array(f.runway, 'Runway', (v, p) => {
       const y = object(v, p, ['season', 'committedCents', 'deadCents', 'capCents', 'roomCents']);
       const amount = (key: string) => y[key] === null ? undefined : integer(y[key], key,
@@ -105,7 +105,7 @@ export function nativeHQMoves(value: unknown, league: string, mine: string): { m
 
 }
 export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSettings; leagueName?: string;
-  lineup?: HQLineup;
+  lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
   reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
@@ -133,7 +133,17 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
       leagueRules = rules; result.settings = nativeHQSettings(rules); result.leagueName = rules.name; }),
     apply(async () => { const r = await port({ command: 'native.cap.check', mode: 'read', arguments: {
       league, viewerZone: zone } }); sameRevision(r.data); result.runway = nativeHQCap(r.data, league,
-        mine); }),
+        mine);
+      const caps = (r.data as { franchises: unknown[] }).franchises;
+      const cap = caps.find(v => (v as { franchise: string }).franchise === mine) as {
+        contracts?: unknown } | undefined;
+      result.contracts = new Map(array(cap?.contracts ?? [], 'Contract schedules', (v, p) => {
+        const row = object(v, p, ['player', 'years']);
+        return [text(row.player, p), array(row.years, 'Annual salaries', (v, p) => {
+          const y = object(v, p, ['season', 'cents']);
+          return { season: integer(y.season, p), cents: integer(y.cents, p) };
+        })] as const;
+      })); }),
     apply(async () => { const r = await port({ command: 'native.reserve.check', mode: 'read', arguments: {
       league } });
       sameRevision(r.data);

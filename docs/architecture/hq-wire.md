@@ -3,7 +3,8 @@
 Visual authority: `docs/ui/mocks/franchise-hq-mock-v10.html`, unchanged. The HQ route uses
 `HQShell` and the scoped copy of its CSS; other workspaces retain their existing shell.
 The native account's hosted franchise opens the same shell. Its Control Room rail destination
-returns to the existing hosted workflows/account surface. No backend or generated bindings changed.
+returns to the existing hosted workflows/account surface. Existing reads now carry the MFL display name, complete-pair model win probability and native annual
+contract schedules. Wails models were regenerated; no new bound method was introduced.
 
 ## Data and state owners
 
@@ -20,8 +21,8 @@ returns to the existing hosted workflows/account surface. No backend or generate
 
 MFL projections expose player names, not IDs: only unique exact directory names are joined, and
 only for the matching week. Missing projections are never zero. Matchup totals from M-018 require
-complete inputs; player deltas join report entities to real projections. Form charts use only the
-three finished weeks the existing research report actually exposes, not five fabricated bars.
+complete inputs; player deltas join report entities to real projections. Form charts use five held finished-week rows from the extended existing research read; missing
+weeks stay missing and known byes are hatched, never fabricated.
 
 ## Settings consumed
 
@@ -50,6 +51,16 @@ The bundle gate now follows MyMoves' actual static dependency graph instead of a
 rail chunk is named EnvelopeRail. It still rejects eager rail/form/fixture leaks; its deliberate
 violations pass the self-test. No budget or security requirement was weakened.
 
-Known incomplete behavior is recorded in `docs/build-handoffs/HQ-WIRE-report.md`; no exact pixel or
-live Wails acceptance is claimed. The existing editor is membership-based: named slot persistence,
-compatible-target-only dragging and the mock's weakest-player cascade/autofill are not implemented.
+Current delivery status and recorded-browser limits: `docs/build-handoffs/HQ-FIX-report.md`.
+`hqPlacement` owns presentation-only compatible targeting, swaps, bounded cascade and autofill from
+held projections. Existing MFL commands own draft membership, checks, persisted plans and handoff.
+Native HQ uses `createHostedRoom` for fresh revision/evidence admission, previews and explicit hold
+confirmation; failure does not create an offline queue. Named slot persistence remains unsupported
+by the membership-only command shapes. No exact pixel or authenticated Wails acceptance is claimed.
+
+The mounted mirror HQ owns a separate `createLiveState` scope and existing visibility-aware poll.
+Unmount removes timer/listeners; failed feeds do not paint a new live verdict. Team game state means
+LIVE, not proof that an individual is on the field. The existing Now preview composes
+`powerrankings.WinProbability` only for a complete projected pair. Native annual schedules are an
+additive cap-read field over the existing contract pricer schedule, fenced to the assets revision.
+The native What-if quote is a single-player read, never mislabeled as a saved stacked plan.

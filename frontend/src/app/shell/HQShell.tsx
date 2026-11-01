@@ -1,8 +1,13 @@
 import { HQAct } from './HQAct';
 import type { ReactNode, RefObject } from 'react';
-import { commands } from '../commands/registry';
 import { unavailable } from './hqModel';
 import type { Node } from './nodes';
+export function lockLabel(at: string): string {
+  const date = new Date(at);
+  const day = date.toLocaleDateString(undefined, { weekday: 'short' });
+  const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `Locks ${day} ${time}`;
+}
 export type HQTab = 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves';
 export function HQShell({ root, week, lock, tab, navigate, navigateNode, children, inspector, queue,
   leagueName, fullscreen, liveCount }: {
@@ -28,8 +33,7 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
             'pulse', 'control'] as const)[index]); }}>
             <span className="k">{index + 1}</span>{name}<span className="car">›</span></HQAct>
           {index === 2 && <><HQAct className="leaf now" disabled><span className="tag">NOW</span>{lock?.at
-            ? `Locks ${new Date(lock.at).toLocaleString(undefined, { weekday: 'short', hour: '2-digit',
-              minute: '2-digit', hour12: false })}` : unavailable}</HQAct>
+            ? lockLabel(lock.at) : unavailable}</HQAct>
             {(['lineup-and-roster', 'contracts-and-cap', 'my-moves'] as const).map((ws, i) => <HQAct
               key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`} onAction={() => navigate(ws)}>
               <span className="tr">{i === 2 ? '└' : '├'}</span>{['Lineup and roster', 'Contracts and cap',
@@ -47,7 +51,6 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         <HQAct className={`queue ${tab === 'my-moves' ? 'on' : ''}`} onAction={() => navigate('my-moves')}
           label="My moves queue"><span
           className="ql">MY MOVES</span>{queue}</HQAct>
-        <div className="cmd"><kbd>/</kbd> lineup.swap out=… in=…</div>
       </div>
       {children}
     </main>

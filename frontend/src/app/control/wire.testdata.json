@@ -189,7 +189,15 @@
         "group": "Starters"
       }
     ],
-    "summary": null,
+    "summary": [
+      {
+        "cells": [
+          "League name",
+          "Legacy NFL"
+        ],
+        "range": null
+      }
+    ],
     "link": null
   }
 }

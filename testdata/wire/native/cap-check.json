@@ -81,6 +81,688 @@
      "capCents": 100000000000,
      "roomCents": 100000000000
     }
+   ],
+   "contracts": [
+    {
+     "player": "4000",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4001",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4002",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4003",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4004",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4005",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4006",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4007",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4008",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4009",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4010",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4011",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4012",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4013",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4014",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4015",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4016",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4017",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4018",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4019",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4020",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4021",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4022",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4023",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4024",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4025",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4026",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4027",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4028",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4029",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4030",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4031",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4032",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4033",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4034",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4035",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4036",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4037",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4038",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "4039",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    }
    ]
   },
   {
@@ -135,6 +817,1470 @@
      "deadCents": 0,
      "capCents": 100000000000,
      "roomCents": 100000000000
+    }
+   ],
+   "contracts": [
+    {
+     "player": "1000",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 100000000
+      },
+      {
+       "season": 2027,
+       "cents": 100000000
+      },
+      {
+       "season": 2028,
+       "cents": 100000000
+      }
+     ]
+    },
+    {
+     "player": "1002",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1003",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1004",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1005",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1006",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1007",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1008",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1009",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1010",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1011",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1012",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1013",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1014",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1015",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1016",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1017",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1018",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1019",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1020",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1021",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1022",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1023",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1024",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1025",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1026",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1027",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1028",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1029",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1030",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1031",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1032",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1033",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1034",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1035",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1036",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1037",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1038",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1039",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1040",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1041",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1042",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1043",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1044",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1045",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1046",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1047",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1048",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1049",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1050",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1051",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1052",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1053",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1054",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1055",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1056",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1057",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1058",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1059",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1060",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1061",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1062",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1063",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1064",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1065",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1066",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1067",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1068",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1069",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1070",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1071",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1072",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1073",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1074",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1075",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1076",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1077",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1078",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1079",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1080",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "1081",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "2001",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "2002",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "3001",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "3002",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
+    },
+    {
+     "player": "3003",
+     "years": [
+      {
+       "season": 2026,
+       "cents": 1000000
+      },
+      {
+       "season": 2027,
+       "cents": 1000000
+      },
+      {
+       "season": 2028,
+       "cents": 1000000
+      }
+     ]
     }
    ]
   },

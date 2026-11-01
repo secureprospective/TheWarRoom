@@ -53,7 +53,9 @@ describe('native HQ existing reads', () => {
     const mine = 'franchise.02', league = 'native.seed';
     const data: Record<string, unknown> = {
       'native.assets.read': assets, 'commish.rules.read': { ...rules, league, revision: assets.revision },
-      'native.reserve.check': reserves, 'native.cap.check': cap, 'moves.read': { league, franchise: mine,
+      'native.reserve.check': reserves, 'native.cap.check': { ...cap, franchises: cap.franchises.map(f =>
+        ({ ...f, contracts: [{ player: '1000', years: [{ season: 2026, cents: 100000000 },
+          { season: 2027, cents: 100000000 }] }] })) }, 'moves.read': { league, franchise: mine,
         planned: [], moves: [], reason:
         'native plans not yet stored' },
       'standings.read': { ...standings, league, revision: assets.revision },
@@ -66,6 +68,8 @@ describe('native HQ existing reads', () => {
     const result = await readNativeHQ(league, mine, port);
     expect(result.errors).toEqual([]); expect(result.lineup?.starters[0].id).toBe('1000');
     expect(result.snapshot.players.value.find(p => p.id === '1008')?.position).toBe('K');
+    expect(result.contracts?.get('1000')).toEqual([{ season: 2026, cents: 100000000 },
+      { season: 2027, cents: 100000000 }]);
     expect(result.week).toBe(1); expect(result.moves).toEqual([]); expect(result.settings.active).toBe(90);
     expect(port.mock.calls.map(c => c[0].command)).toContain('moves.read');
     expect(port.mock.calls.every(c => c[0].mode === 'read')).toBe(true);

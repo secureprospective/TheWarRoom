@@ -6,6 +6,7 @@ import "github.com/secureprospective/TheWarRoom/internal/ingestion"
 // Points keep MFL's form ("*0.5", "3"): a leading "*" means per unit of the stat, none means
 // a flat award. The engine interprets them.
 type RawConfig struct {
+	Name                  string // display name from the league export, never a ledger identifier
 	Source                string // provenance, e.g. "mfl:2026"
 	SalaryCapAmount       string // cap amount, e.g. "120"
 	RosterSize            string // total roster slots, e.g. "80"
@@ -88,6 +89,7 @@ type ScoringRule struct {
 type leagueEnvelope struct {
 	League struct {
 		ID                          string `json:"id"`
+		Name                        string `json:"name"`
 		SalaryCapAmount             string `json:"salaryCapAmount"`
 		RosterSize                  string `json:"rosterSize"`
 		TaxiSquad                   string `json:"taxiSquad"`

@@ -1,4 +1,7 @@
+import { liveTeam } from './hqLive';
+import type { LiveView } from '../now/liveContract';
 import { HQAct } from './HQAct';
+import { fitsSlot, placePlayer } from './hqPlacement';
 import { useRef, useState, type PointerEvent } from 'react';
 import type { LineupReading, Snapshot } from '../data/contract';
 import type { HQSettings } from './hqModel';
@@ -12,8 +15,10 @@ export type HQLineup = Omit<LineupReading, 'starters' | 'bench'> & { starters: {
   string }[]; bench: { id: string; position?: string }[] };
 export type HQBoardProps = { snapshot: Snapshot; mine: string; reading?: HQLineup;
   settings: HQSettings; values: Map<string, number>; facts?: RosterFacts;
-  byes?: Map<string, number>; injuries?: Injury[]; now?: Now; changed?: string[]; canEdit?: boolean; select: (id: string) => void;
-  place?: (id: string, out?: string) => void; bench?: (id: string) => void };
+  byes?: Map<string, number>; injuries?: Injury[]; now?: Now; live?: LiveView; changed?: string[];
+    canEdit?: boolean; select: (id: string) => void;
+  place?: (id: string, out?: string) => void; bench?: (id: string) => void;
+  assign?: (ids: string[]) => void };
 const defensive = (position?: string) => ['DT', 'DE', 'LB', 'CB', 'S', 'DL', 'DB'].includes(position ?? '');
 export type HQSlot = { code: string; side: 'off' | 'def'; id?: string };
 export function boardSlots(reading: HQLineup | undefined, settings: HQSettings): HQSlot[] {
@@ -25,7 +30,8 @@ export function boardSlots(reading: HQLineup | undefined, settings: HQSettings):
     const player = index < 0 ? undefined : remaining.splice(index, 1)[0];
     slots.push({ code: rule.code, side: defensive(rule.code) ? 'def' : 'off', id: player?.id });
   }
-  for (const player of remaining) slots.push({ code: player.position ?? '—',
+  for (const player of remaining) slots.push({ code: defensive(player.position) ? 'D·FLX' :
+    ['RB', 'WR', 'TE'].includes(player.position ?? '') ? 'FLEX' : player.position ?? '—',
     side: defensive(player.position) ? 'def' : 'off', id: player.id });
   const fill = (side: HQSlot['side'], count?: number) => {
     if (count === undefined) return;
@@ -57,24 +63,51 @@ export function FormChart({ id, facts, projection, week, bye }: { id: string; fa
     <b>avg {real.length ? (real.reduce((n, p) => n + p.points, 0) / real.length).toFixed(1) : '—'}</b>
   </span>;
 }
-export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes, injuries, now,
-  select, place, bench }: HQBoardProps) {
+export function HQBoard({ snapshot, mine, reading, settings, values, facts, changed = [], canEdit, byes,
+  injuries, now, live,
+  select, place, bench, assign }: HQBoardProps) {
   const [filter, setFilter] = useState('ALL');
   const [picked, setPicked] = useState<string>();
   const [drag, setDrag] = useState<{ id: string; x: number; y: number }>();
   const moving = useRef(false);
-  const slots = boardSlots(reading, settings);
+  const base = boardSlots(reading, settings);
+  const scope = JSON.stringify([mine, reading?.week, settings]);
+  const membership = (ids: string[]) => [...ids].sort().join(',');
+  const key = scope + membership(reading?.starters.map(p => p.id) ?? []);
+  const [layout, setLayout] = useState<{ key: string; slots: HQSlot[] }>();
+  const slots = layout?.key === key ? layout.slots : base;
+  const players = reading?.starters.concat(reading.bench) ?? [];
+  const canPlace = (id: string, slot: HQSlot) => canEdit && fitsSlot(players.find(p => p.id === id), slot,
+    settings) && (!slot.id || !slots.some(s => s.id === id) || fitsSlot(players.find(p => p.id === slot.id),
+      slots.find(s => s.id === id)!, settings));
+  function move(id: string, slot?: HQSlot, toBench = false) {
+    if (!canEdit || !players.some(p => p.id === id)) return;
+    if (slot && !canPlace(id, slot)) return;
+    const next = placePlayer(slots, players, settings, values, id, slot ? slots.indexOf(slot) : undefined,
+      toBench);
+    if (next === slots) return;
+    const ids = next.flatMap(s => s.id ? [s.id] : []);
+    setLayout({ key: scope + membership(ids), slots: next });
+    if (assign) assign(ids);
+    else if (toBench) bench?.(id);
+    else place?.(id, slot?.id);
+  }
   const directory = new Map(snapshot.players.value.map(p => [p.id, p]));
-  const starters = reading?.starters ?? [];
-  const benchPlayers = reading?.bench ?? [];
+  const starters = slots.flatMap(s => s.id ? [{ id: s.id }] : []);
+  const benchPlayers = players.filter(p => !slots.some(s => s.id === p.id));
   const positions = Array.from(new Set([...settings.positions.map(p => p.code), ...benchPlayers.flatMap(p =>
      p.position ? [p.position] : [])]));
   function drop(event: PointerEvent) {
     if (!drag) return;
     const target = document.elementFromPoint(event.clientX,
       event.clientY)?.closest<HTMLElement>('[data-hq-slot], [data-hq-bench]');
-    if (target?.hasAttribute('data-hq-bench')) bench?.(drag.id);
-    else if (target) place?.(drag.id, target.dataset.player || undefined);
+    if (target?.hasAttribute('data-hq-bench')) {
+      if (slots.some(s => s.id === drag.id)) move(drag.id, undefined, true);
+    } else if (target) {
+      const index = Number(target.dataset.hqSlot);
+      if (Number.isInteger(index) && slots[index]) move(drag.id, slots[index]);
+    } else if (document.elementFromPoint(event.clientX, event.clientY)?.closest('.col:not(.bench)')
+      && !slots.some(s => s.id === drag.id)) move(drag.id);
     setDrag(undefined); setPicked(undefined);
   }
   const row = (id: string, slot?: HQSlot) => {
@@ -87,14 +120,14 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       ?? '';
     const bye = byes?.get(id) === reading?.week;
     const status = bye ? 'BYE' : /Questionable|\bQ\b/i.test(injuryText) ? 'Q' : /^Out\b/i.test(injuryText)
-      ? 'OUT' : /^IR\b/.test(injuryText) ? 'IR' : '';
+      ? 'OUT' : /^IR\b/.test(injuryText) ? 'IR' : liveTeam(player?.team, live) ? 'LIVE' : '';
     return <HQAct key={id} className={`slot ${picked === id ? 'picked' : ''} ${changed.includes(id) ? 'chg'
-      : ''} ${picked && slot ? 'target' : ''}`}
-      attributes={{ 'data-player': id, 'data-hq-slot': slot ? '' : undefined }}
+      : ''} ${(drag?.id || picked) && slot && canPlace((drag?.id || picked)!, slot) ? 'target' : ''}`}
+      attributes={{ 'data-player': id, 'data-hq-slot': slot ? String(slots.indexOf(slot)) : undefined }}
       style={{ width: '100%', textAlign: 'left' }}
       label={`${slot?.code ?? 'Bench'} · ${player?.name ?? id}`}
       onAction={() => { if (moving.current) { moving.current = false; return; } select(id);
-        if (slot && picked && canEdit) { place?.(picked, id); setPicked(undefined); }
+        if (slot && picked && canEdit) { move(picked, slot); setPicked(undefined); }
         else if (!slot) setPicked(id); }}>
       {slot && <span className="sl">{slot.code}</span>}
       <span className={`pg ${canEdit ? 'drag' : ''}`} onPointerDown={e => {
@@ -106,13 +139,15 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       <span className="nm">{player?.name ?? id}<small>{player?.team}</small></span>
       {noContext ? <span className="form" style={{ gridColumn: slot ? '4 / 6' : '3 / 5' }}>
         <em>{unavailable}</em></span> : <>
-        <FormChart id={id} facts={facts} projection={values.get(id)} week={reading?.week} bye={byes?.get(id)} />
+        <FormChart id={id} facts={facts} projection={values.get(id)} week={reading?.week}
+          bye={byes?.get(id)} />
         <span className="elig" title={usage?.reason || unavailable}>{bye ? 'BYE' : usage?.opponent ||
           '—'}</span>
       </>}
       <span className="pr" title={values.has(id) ? undefined : unavailable}>
         {values.get(id)?.toFixed(1) ?? '—'}</span>
-      <span className={`st ${status === 'Q' ? 'q' : status === 'BYE' ? 'bye' : 'out'}`}
+      <span className={`st ${status === 'Q' ? 'q' : status === 'BYE' ? 'bye' : status === 'LIVE' ? 'live' :
+        'out'}`}
         title={injury?.reason}>{status}</span>
     </HQAct>;
   };
@@ -128,23 +163,28 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
             values) : unavailable}</span></div>
         <div className="slots">{!reading ? <p className="empty">{unavailable}</p> : slots.filter(s =>
           s.side === side).map((slot, i) => slot.id ? row(slot.id, slot)
-          : <HQAct key={`empty:${i}`} className={`slot gap ${picked ? 'target' : ''}`} attributes={{
-            'data-hq-slot': '' }} style={{ width: '100%', textAlign: 'left' }}
-            onAction={() => { if (picked && canEdit) { place?.(picked); setPicked(undefined); } }}>
-            <span className="sl">{slot.code}</span><span /><span className="nm">Empty</span><span /><span
+          : <HQAct key={`empty:${i}`} className={`slot gap ${(drag?.id || picked) && canPlace((drag?.id ||
+            picked)!, slot) ? 'target' : ''}`} attributes={{
+            'data-hq-slot': String(slots.indexOf(slot)) }} style={{ width: '100%', textAlign: 'left' }}
+            onAction={() => { if (picked && canEdit) { move(picked, slot); setPicked(undefined); } }}>
+            <span className="sl">{slot.code}</span><span /><span className="nm">Empty · drop any {slot.side
+              === 'def' ? 'defender' : 'eligible player'}</span><span /><span
               /><span className="pr">—</span><span className="st warn">OPEN</span></HQAct>)}</div>
       </div>)}
       <HQMatchup now={now} values={values}
+        liveCount={live ? starters.filter(p => liveTeam(directory.get(p.id)?.team, live)).length : undefined}
         ownProjection={reading ? totalProjection(starters.map(p => p.id), values) : unavailable} />
     </div>
-    <div className="col bench" data-hq-bench=""><div
+    <div className={`col bench ${drag && slots.some(s => s.id === drag.id) ? 'dropzone' : ''}`}
+      data-hq-bench=""><div
       className="ch"><b>BENCH · <span>{reading ? benchPlayers.length : unavailable}</span></b>
       <span>{'drag a tag into the lineup'}</span></div>
       <div className="filters">{['ALL', ...positions].map(pos => <HQAct key={pos} className="chip"
         active={filter === pos} onAction={() => setFilter(pos)}>{pos}</HQAct>)}</div>
       <div className="blist">{benchPlayers.filter(p => filter === 'ALL' || p.position === filter).map(p =>
         row(p.id))}
-        {!benchPlayers.length && <p className="empty">{unavailable}</p>}</div><InlineReserves snapshot={snapshot} mine={mine} settings={settings}
+        {!benchPlayers.length && <p className="empty">{unavailable}</p>}</div><InlineReserves
+          snapshot={snapshot} mine={mine} settings={settings}
           injuries={injuries} select={select} />
     </div>
     {drag && <span className="pg ghost" style={{ transform: `translate(${drag.x}px,${drag.y}px)`
@@ -152,10 +192,15 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
   </section>;
 }
 
-export function HQMatchup({ now, values = new Map(), ownProjection = unavailable }: {
-  now?: Now; values?: Map<string, number>; ownProjection?: string;
+export function HQMatchup({ now, values = new Map(), ownProjection = unavailable, liveCount }: {
+  now?: Now; values?: Map<string, number>; ownProjection?: string; liveCount?: number;
 }) {
   const report = now?.matchup;
+  const actual = report?.rows.find(r => r.cells[0] === 'Total');
+  const probability = now?.board.reports.find(r => r.id === 'M-018' && ['ok', 'stale'].includes(r.status))
+    ?.summary.find(r => r.cells[0] === 'My win probability')?.cells[1];
+  const percent = probability && /^\d+(?:\.\d+)?%$/.test(probability)
+    ? Number(probability.slice(0, -1)) : undefined;
   const opponent = report?.summary.find(r => r.cells[0] === 'Opponent')?.cells[1];
   const previews = now?.board.reports.find(r => r.id === 'M-018');
   const preview = previews?.rows.find(r => r.mine);
@@ -167,7 +212,8 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
     const identities = report?.entities?.filter(e => e.kind === 'player' && name.includes(e.text)) ?? [];
     return identities.length === 1 ? values.get(identities[0].id) : undefined;
   };
-  const rows = report && ['ok', 'stale'].includes(report.status) ? report.rows.map(r => {
+  const rows = report && ['ok', 'stale'].includes(report.status) ? report.rows.filter(r => r.cells[0] !==
+    'Total').map(r => {
     const mine = projected(r.cells[1]), theirs = projected(r.cells[3]);
     return { row: r, mine, theirs, delta: mine === undefined || theirs === undefined ? undefined : mine -
       theirs };
@@ -177,9 +223,13 @@ export function HQMatchup({ now, values = new Map(), ownProjection = unavailable
     <span>closest matchups first</span></div>
     <div className="mu-h"><div className="side"><b data-empty={ownProjection ===
       unavailable}>{ownProjection}</b>
-      <span>you · proj</span></div><div className="wp">{unavailable}</div>
+      <span>you · proj · score {actual?.cells[2] ?? '—'}</span></div><div className="wp"><div
+        className="bar"><i style={{ width: percent !== undefined &&
+        percent >= 0 && percent <= 100 ? `${percent}%` : '0%' }} /></div>
+        {probability ? `${probability} to win` : unavailable}
+        {liveCount !== undefined && ` · ${liveCount} of yours live now`}</div>
       <div className="side them"><b data-empty={opponentProjection === unavailable}>{opponentProjection}</b>
-        <span>{opponent ?? unavailable} · proj</span></div></div>
+        <span>{opponent ?? unavailable} · proj · score {actual?.cells[4] ?? '—'}</span></div></div>
     <div className="mu-rows">{rows.length ? rows.map(({ row, mine, theirs, delta }, i) => <div key={i}>
       <span className="sl">{row.cells[0]}</span><span>{row.cells[1]} {mine?.toFixed(1)} vs {row.cells[3]}
         {theirs?.toFixed(1)}</span>
@@ -207,8 +257,9 @@ export function InlineReserves({ snapshot, mine, settings, injuries, select }: {
         return <HQAct key={p.id} className="slot" onAction={() => select(p.id)}>
           <span className="pg">{player?.position ?? '—'}</span>
           <span className="nm">{player?.name ?? p.id}</span>
-          <span className="elig" title={injury?.returnReason}>{kind === 'ir' ? back :
-            player?.isRookie ? 'yr 1' : unavailable}</span><span />
+          <span className="elig" title={injury?.returnReason || unavailable}>{kind === 'ir' ? back ===
+            unavailable ? '—' : back :
+            player?.isRookie ? 'yr 1' : '—'}</span><span />
         </HQAct>;
       })}</div>;
   })}</div>;

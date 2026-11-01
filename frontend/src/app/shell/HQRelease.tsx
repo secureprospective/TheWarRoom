@@ -66,7 +66,7 @@ export function HQRelease({ id, mine, snapshot, activeLimit, facts, close, nativ
         selectedStarter ? 'Slot goes empty' : 'Lineup unchanged'}</b><small>{unavailable}</small></div>
       <div className="sd-sec">BEFORE YOU CUT<span>other ways out</span></div><p
         className="note">{unavailable}</p>
-      {(message || error) && <p className="note" role="status">{message || error}</p>}
+      {(message || error) && <p className="note" role="status">{message || unavailable}</p>}
     </div><div className="sd-act"><HQAct className="btn" disabled={native || !reading?.value ||
       reading.value.stale
       || Boolean(move)} onAction={() => { void commands.dispatch('contracts.set', { field: 'whatif', value:

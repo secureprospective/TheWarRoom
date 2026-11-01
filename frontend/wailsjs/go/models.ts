@@ -1749,6 +1749,38 @@ export namespace commissioner {
 	        this.amountCents = source["amountCents"];
 	    }
 	}
+	export class NativeContractYears {
+	    player: string;
+	    years: nativecheck.SeasonAmount[];
+	
+	    static createFrom(source: any = {}) {
+	        return new NativeContractYears(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.years = this.convertValues(source["years"], nativecheck.SeasonAmount);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class NativeCapYear {
 	    season: number;
 	    committedCents?: number;
@@ -1789,6 +1821,7 @@ export namespace commissioner {
 	    abbreviation: string;
 	    charges: NativeCapCharge[];
 	    runway: NativeCapYear[];
+	    contracts?: NativeContractYears[];
 	
 	    static createFrom(source: any = {}) {
 	        return new NativeCapFranchise(source);
@@ -1815,6 +1848,7 @@ export namespace commissioner {
 	        this.abbreviation = source["abbreviation"];
 	        this.charges = this.convertValues(source["charges"], NativeCapCharge);
 	        this.runway = this.convertValues(source["runway"], NativeCapYear);
+	        this.contracts = this.convertValues(source["contracts"], NativeContractYears);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -1899,6 +1933,7 @@ export namespace commissioner {
 		    return a;
 		}
 	}
+	
 	
 	
 	
