@@ -293,8 +293,8 @@ func TestStartupListOffersTheLeaguesFranchises(t *testing.T) {
 	t.Fatal("no startup list row")
 }
 
-// A single-pool startup draft reads exactly as it did before per-side pools: its room, the assets it
-// signs and the league's jobs hash to what they were at b8a933e4.
+// A single-pool startup draft preserves the room, order and signed assets from before per-side pools.
+// Jobs also reflect which unresolved settings actually apply to the league.
 func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	b := startupLeague(t)
 	facts := startupFacts()
@@ -311,7 +311,18 @@ func TestSinglePoolStartupDraftIsUnchanged(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "90ca21fd230f0aa6" {
+	for _, component := range []struct {
+		name, got, want string
+	}{
+		{"draft", digest(t, basis.draft), "988607205db9be4c"},
+		{"order", digest(t, basis.order), "43a01438c298d436"},
+		{"assets", digest(t, assets), "1589ca7aa9c8f465"},
+	} {
+		if component.got != component.want {
+			t.Errorf("single-pool startup %s digest %s", component.name, component.got)
+		}
+	}
+	if got := digest(t, basis.draft, basis.order, assets, jobs); got != "8a6936145d37309e" {
 		t.Fatalf("single-pool startup digest %s", got)
 	}
 }

@@ -1,32 +1,19 @@
 # Handoff
 
 ## Baton
-ClaudeBox / review — 2026-11-01, build/SCHED-1. APP-SCHED-7 measurement only at 1207f2da.
-Local docs/evidence commit only; no remote contact or push.
+Bee / gate debt — 2026-11-01, build/GATES-1. Local work only; no remote contact.
 
 ## Where it stands
-- Fresh scratch-profile SQLite backup; ordinary archived lineup/schedule backfill, scoring acquisition,
-  stat ledger, native results/standings: 148 recorded weeks, 24 exact / 0 within .01 / 9 differ /
-  115 unavailable. Evidence: `docs/build-handoffs/APP-SCHED-7-evidence.md` and its two TSVs.
-- Previous part 5 TSV is actually 4 exact / 29 differ / 115 unavailable; previous prose 4/33/111
-  was an arithmetic error. Completeness did not regress.
-- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable (displayed zeros not outcomes).
-- 472 absent rows: 36 bye candidates (historical affiliation unverified), 53 exact-week injury Out,
-  141 positive snap/absent scoring-row, 242 unresolved. Seven separate 0835 identity gaps.
-- Disposable measurement PASS 208.44 s; eight native player-item readings race PASS 33.82 s.
-  Initial full measurement race run interrupted at external 600 s deadline during adoption;
-  non-race retry resumed idempotently on copy. No production changes, GUI or independent review.
+- APP-GATES-1 is incomplete. Digest bisect identified 511bc901: the setup job excludes inapplicable rulings. Draft, order and assets hashes match its parent; only Jobs changed (8 rulings to 6). The test now pins the unchanged components and the revised aggregate.
+- Focused commissioner race tests 3/3 passed. Preset guard `TestOnlyTheCatalogNamesAPreset` passes here; the reported baseline archive is not present in this worktree, so the failure remains unverified.
+- `make bloat` fails 26 tiny files vs 25; `make boundary` fails first at value preparation, with additional migration and other composition inventory differences; `make placement` fails source-origin check and native-fork ratchet (20 vs 19).
+- Frontend tests: full run 1732 passed, 19 failed in 3 files; isolated reruns of those 3 files passed all 28 tests. Possible load/concurrency flake, cause not established. Typecheck, golangci-lint, ifaceguard, vet, frontend transport, filelen, Wails version and existing bundle/CSP checks passed.
 
 ## Next move / blocked on
-- Position queue integration remains DEFERRED; do not start without head-brain authorization.
-- Resolve 242 unknown absences and historical affiliation for 36 bye candidates; existing MFL
-  bye and nflverse exact-week Out/snap sources are documented, no did-not-play zero built.
-- Nine complete score differences: largest Giants invalid-lineup penalty; remaining player credit
-  residuals need MFL stat breakdown, including Schultz W4. No scoring-rule diagnosis established.
-- Earlier debt: verified identity 0835; slow adoption/native reads; live/advanced inputs;
-  source-health UI; 76 historical-roster refusals.
+- Fix bloat by merging a tiny file into its natural neighbour, then re-run the ratchet. Resolve origin-based schedule following and the frontend fork without hiding policy.
+- Move decision logic to the correct service boundaries, including migration, value preparation and the other changed composition functions; do not refresh fingerprints to mask policy.
+- Reproduce preset guard with the original archive context; investigate frontend failures separately. Run remaining gates and one full race suite only after `heavy-ok.sh` passes.
 
 ## Tried and rejected
-- Missing weekly row or missing snaps as proof of inactivity/zero: unsupported.
-- Current MFL injury status as historical nonparticipation: not week-specific.
-- Treating weekly StatApprove as durable player-position approval remains rejected.
+- Updating boundary fingerprints or raising ratchets: would hide unreviewed changes.
+- Assuming the aggregate digest drift was a draft regression: component hashes and bisect show a deliberate Jobs change instead.
