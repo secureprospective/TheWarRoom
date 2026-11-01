@@ -61,22 +61,31 @@ func (p *preparation) problem(format string, args ...any) {
 }
 
 func (p *preparation) create(rules leaguerules.RuleSet) commissioner.RawArgs {
-	changes := leaguerules.SeedChanges(rules, "", p.export.Season, time.Unix(1, 0).UTC())
+	args, problems := CreateArgs(p.export.Name, p.export.Season, len(p.export.Config.Franchises), rules)
+	p.problems = append(p.problems, problems...)
+	return args
+}
+
+// CreateArgs are the league-creation arguments for an MFL league: its translated settings stored as
+// seed values. A migration records them; the mirror league replays them in memory for its reads.
+func CreateArgs(name string, season, franchises int, rules leaguerules.RuleSet) (commissioner.RawArgs, []string) {
+	var problems []string
+	changes := leaguerules.SeedChanges(rules, "", season, time.Unix(1, 0).UTC())
 	seed := make([]commissioner.SeedValue, 0, len(changes))
 	for _, c := range changes {
 		body, err := leaguerules.EncodeStored(c.New)
 		if err != nil {
-			p.problem("the setting %s could not be kept: %v", c.Field, err)
+			problems = append(problems, fmt.Sprintf("the setting %s could not be kept: %v", c.Field, err))
 			continue
 		}
 		seed = append(seed, commissioner.SeedValue{Field: string(c.Field), Value: body})
 	}
-	name := strings.TrimSpace(p.export.Name)
+	name = strings.TrimSpace(name)
 	if name == "" {
-		p.problem("MFL lists the league with no name")
+		problems = append(problems, "MFL lists the league with no name")
 	}
 	return commissioner.RawArgs{Name: name, Preset: commissioner.PresetMFLLeague, Source: commissioner.SourceMFLImport,
-		Season: p.export.Season, FranchiseCount: len(p.export.Config.Franchises), Seed: seed}
+		Season: season, FranchiseCount: franchises, Seed: seed}, problems
 }
 
 // snapshot is the starting assets: franchises in MFL id order, then rosters, adjustments and picks.

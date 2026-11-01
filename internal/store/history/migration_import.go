@@ -19,6 +19,9 @@ func (s *Store) ExecuteCommissionerBatch(ctx context.Context, raws []commissione
 	if len(raws) == 0 {
 		return nil, fmt.Errorf("choose at least one league change")
 	}
+	if err := s.refuseMirror(raws...); err != nil {
+		return nil, err
+	}
 	s.wmu.Lock()
 	defer s.wmu.Unlock()
 	tx, err := s.pools.BeginWrite(ctx)
