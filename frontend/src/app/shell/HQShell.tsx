@@ -5,8 +5,9 @@ import { unavailable } from './hqModel';
 import type { Node } from './nodes';
 export function lockLabel(at: string): string {
   const date = new Date(at);
-  return `Locks ${date.toLocaleDateString(undefined, { weekday: 'short' })} ${date.toLocaleTimeString(undefined,
-    { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+  const day = date.toLocaleDateString(undefined, { weekday: 'short' });
+  const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `Locks ${day} ${time}`;
 }
 export type HQTab = 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves';
 export function HQShell({ root, week, lock, tab, navigate, navigateNode, children, inspector, queue,

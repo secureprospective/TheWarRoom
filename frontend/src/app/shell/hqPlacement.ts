@@ -9,7 +9,8 @@ export function fitsSlot(player: PlacementPlayer | undefined, slot: HQSlot, sett
   if (rule?.max === 0) return false;
   if (slot.code === position) return true;
   const defense = ['DT', 'DE', 'LB', 'CB', 'S', 'DL', 'DB'].includes(position);
-  return slot.code === 'D·FLX' ? defense : slot.code === 'FLEX' ? !defense : false;
+  return slot.code === 'D·FLX' ? defense : slot.code === 'FLEX' ? ['RB', 'WR', 'TE'].includes(position) :
+    false;
 }
 
 // Slot choice is presentation; the existing lineup command still checks league legality.

@@ -22,7 +22,8 @@ it('previews native lineup membership with the read revision; discard never exec
   await act(async () => editor.assign([lineup.bench[0].id]));
   await act(async () => { await editor.save(); });
   expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'commish.lineup.set',
-    mode: 'preview', arguments: expect.objectContaining({ expected: (readings['lineup.read'].data as { revision: number }).revision, visibility: 'private',
+    mode: 'preview', arguments: expect.objectContaining({ expected: (readings['lineup.read'].data as {
+      revision: number }).revision, visibility: 'private',
       args: { lineup: { season: 2026, franchise: 'franchise.01', week: 1,
         starters: [lineup.bench[0].id] } } }) }), readings['lineup.read'].football);
   await act(async () => editor.discard());

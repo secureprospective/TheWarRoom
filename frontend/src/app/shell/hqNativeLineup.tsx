@@ -33,9 +33,11 @@ export function useNativeLineup(league: string, mine: string, lineup?: HQLineup,
     await room.review({ command: 'roster.reserve', mode: 'preview', arguments: {
       league, command: 'roster.reserve', args: { waiver: { player, franchise: mine, bucket } },
       reason: '', expected: reading.roster.revision, request: newKey(), effective: 'now',
-      visibility: 'league' } }, `Move player to ${bucket === 'active' ? 'active roster' : bucket === 'ir' ? 'injured reserve' : 'taxi squad'}`);
+      visibility: 'league' } }, `Move player to ${bucket === 'active' ? 'active roster' : bucket === 'ir' ?
+        'injured reserve' : 'taxi squad'}`);
   };
-  const message = state.error || state.message || (changed.length ? `${changed.length} players changed from saved`
+  const message = state.error || state.message || (changed.length ?
+    `${changed.length} players changed from saved`
     : 'No changes. Swaps stay a plan until you save.');
   return { room, state, edited, changed, assign: setIds, version, discard, save, reserve, message,
     canEdit: room.canChange() && !state.review, dirty: ids !== undefined };

@@ -4,21 +4,24 @@
 Review — 2026-10-31, build/HQ-wire. Local only; no pull/push authorized.
 
 ## Where it stands
-- Locked v10 CSS/regions ported; existing editor, commands, reports and plan reads reused.
-- Native HQ uses existing hosted reads, including moves, runway, reserves and selected cut quotes.
-- No Go, generated binding, dependency or locked-mock changes.
-- Full frontend: 1,638 PASS / 144 files; typecheck, transport, make build, bundle self-test and
-  static/browser CSP PASS. Entry 148,925 / 321,818 bytes. No live Wails gate claimed.
-- Coverage, exact gaps and suspected upstream issues: docs/build-handoffs/HQ-WIRE-report.md.
-  State/read ownership and settings: docs/architecture/hq-wire.md.
+- HQ-FIX D–I implemented in separate commits, with explicit partial regions.
+- Compatible targeting, swaps/cascade/autofill; native guarded lineup/reserve previews and confirmation;
+  model win probability, live badges/counts, native quote what-if and annual schedules, MFL name/lock.
+- No new bound method/dependency/migration. Existing reads extended; generated models and four
+  additive-only cap wire fixtures updated. Locked mock unchanged.
+- Frontend 1,652 PASS / 148 files, tsc/build/transport/bundle/CSP PASS. Required composition,
+  serverhttp, commandcatalog race suites PASS with project 60m timeout; changed Go feature suites PASS.
+- Recorded real-snapshot app/mock captures at 1920x1080 and 2550x1352 under .tmp/hq/.
+  Not authenticated Wails acceptance. Temporary capture servers/browser stopped.
 
 ## Next move / blocked on
-- Review and disposable-profile mirror/native click-through. Exact slot-target/cascade/autofill
-  parity, native plan persistence and the explicitly unavailable regions remain open.
-- Do not treat passing compilation/tests as full locked-mock acceptance.
+- docs/build-handoffs/HQ-FIX-report.md has per-letter status, exact searches, source trace and gaps.
+- Named slot persistence is NOT implemented: both commands persist membership only. Native private
+  notes/watch/scoped model reads, matchup/live, stacked/saved plans and complete ledger remain open.
+- Human native division names require actual names in settings; ledger IDs are not displayed.
+- Finish the remaining gaps and disposable mirror/native round trips before calling HQ accepted.
 
 ## Tried and rejected
-- No mock sample numbers or invented missing projections/percentages.
-- No calling signed adjustments dead money; no pretending all-history moves are a season ledger.
-- No local MFL private/model data substituted for a native hosted seat.
-- Bundle filename assumption replaced by graph verification, retaining eager-leak rejection.
+- No invented projections, recommendations, tenure, dead classification or on-field participation.
+- No local MFL private/model reading mislabeled as hosted league data.
+- Composition default 10m timed out; Makefile's 60m passed. Wire regeneration added only contracts.

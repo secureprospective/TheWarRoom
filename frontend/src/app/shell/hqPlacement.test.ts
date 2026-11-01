@@ -27,3 +27,11 @@ it('changes eligibility when the position allowance changes', () => {
   expect(fitsSlot(players[0], slots[1], settings)).toBe(true);
   expect(fitsSlot(players[0], slots[1], { positions: [{ code: 'LB', min: 0, max: 0 }] })).toBe(false);
 });
+
+it('keeps quarterbacks, kickers and offensive line out of skill flex slots', () => {
+ const slot: HQSlot = { code: 'FLEX', side: 'off' };
+ for (const position of ['QB', 'K', 'OL'])
+  expect(fitsSlot({ id: position, position }, slot, { positions: [] })).toBe(false);
+ for (const position of ['RB', 'WR', 'TE'])
+  expect(fitsSlot({ id: position, position }, slot, { positions: [] })).toBe(true);
+});

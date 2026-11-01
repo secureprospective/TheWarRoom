@@ -75,7 +75,8 @@ it('renders real opponent projection only when the existing preview reports comp
   const render = () => renderToStaticMarkup(<HQMatchup now={now} ownProjection="171.2"
     values={new Map([['0042', 22.1], ['0043', 20.8]])} />);
   expect(render()).toContain('164.9'); expect(render()).toContain('+1.3');
-  expect(render()).toContain('62.1%'); expect(render()).toContain('score 70.5');
+  expect(render()).toContain('62.1% to win'); expect(render()).toContain('width:62.1%');
+    expect(render()).toContain('score 70.5');
   expect(render()).toContain('score 66.1'); expect(render()).not.toContain('sl\">Total');
   preview.summary[0].cells[1] = '1';
   expect(render()).not.toContain('164.9'); expect(render()).toContain(unavailable);

@@ -91,7 +91,8 @@ it('promotes a native reserve through its hosted review callback', async () => {
   await click(actions[0]);
   expect(activate).toHaveBeenCalledWith(reserve.id);
 });
-it('selects a real native cut quote without borrowing the previous selection or executing a move', async () => {
+it('selects a real native cut quote without borrowing the previous selection or executing a move',
+  async () => {
   const { HQNativeWhatIf } = await import('./HQNativeWhatIf');
   const snapshot = heldSnapshot(), id = snapshot.rosters.value[0].players[0].id, select = vi.fn();
   const props = { snapshot, mine: '0025', chosen: id, select, beforeRoom: 800000000,

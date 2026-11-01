@@ -29,7 +29,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
   const [selected, select] = useState<string>();
   const [revision, refresh] = useState(0);
   const provider = useMemo(() => ({ onChange: hqEvents.onChange }), [port]);
-  const { reading, error } = useContractRead(JSON.stringify([league, mine, revision]), () => readNativeHQ(league,
+  const { reading, error } = useContractRead(JSON.stringify([league, mine, revision]), () =>
+    readNativeHQ(league,
     mine, port), provider);
   const editor = useNativeLineup(league, mine, reading?.lineup, port);
   const chosen = selected ?? reading?.lineup?.starters[0]?.id;
@@ -58,7 +59,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
     navigateNode={node => { if (node !== 'hq') leave(); }} lock={reading.lock ? { at: reading.lock } :
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
-    inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut} annual={reading.contracts?.get(chosen ?? '')}
+    inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut}
+      annual={reading.contracts?.get(chosen ?? '')}
       position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position}
       bench={editor.canEdit && chosen && editor.edited?.starters.some(p => p.id === chosen) ?
         id => editor.assign(editor.edited!.starters.filter(p => p.id !== id).map(p => p.id)) : undefined}
@@ -69,11 +71,13 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
       cap={runway?.[0] ?? { season: snapshot.league.value.season }} check={reading.check ?? unavailable}
       record={reading.record} standing={reading.standing} lock={reading.lock ? { id: 'native-lineup', at:
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} />
-    {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} key={editor.version} reading={editor.edited}
+    {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} key={editor.version}
+      reading={editor.edited}
       settings={settings} values={new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
-        positions={positions} annual={reading.contracts} cutCosts={cut?.deadNow === undefined ? undefined : new Map([[cut.player,
+        positions={positions} annual={reading.contracts} cutCosts={cut?.deadNow === undefined ? undefined :
+          new Map([[cut.player,
           cut.deadNow]])}
         select={id => { select(id); setRelease(id); }} />
         : <HQMoves native snapshot={snapshot} moves={moves} available={reading.moves !== undefined}
@@ -88,7 +92,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
         onAction={() => setDrawer(drawer === 'whatif' ? undefined : 'whatif')}>WHAT-IF</HQAct></div>
       <span className="msg" title={[...reading.errors, quote.error ??
         ''].join(' · ')}>{editor.message}</span><HQAct
-        className="btn sp" disabled={!editor.dirty || editor.state.pending} onAction={editor.discard}>DISCARD</HQAct><HQAct className="btn g2"
+        className="btn sp" disabled={!editor.dirty || editor.state.pending}
+          onAction={editor.discard}>DISCARD</HQAct><HQAct className="btn g2"
         disabled={!editor.canEdit || !editor.changed.length} onAction={() => { void editor.save(); }}
         >CHECK AND SAVE PLAN</HQAct>
       <HQAct className="btn solid" disabled
@@ -96,9 +101,11 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} mine={mine} chosen={chosen}
       select={select} cut={cut} beforeRoom={runway?.[0]?.room} close={() => setDrawer(undefined)} />}
-    {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot} mine={mine} settings={settings}
+    {(drawer === 'ir' || drawer === 'taxi') && <HQReserves native kind={drawer} snapshot={snapshot}
+      mine={mine} settings={settings}
       countedIRPay={runway?.[0]?.ir} reserveNotes={reading.reserveNotes}
-      activate={editor.canEdit ? id => { setDrawer(undefined); void editor.reserve(id, 'active'); } : undefined}
+      activate={editor.canEdit ? id => { setDrawer(undefined); void editor.reserve(id, 'active'); } :
+        undefined}
       week={reading.week} close={() => setDrawer(undefined)} />}
     {release && <HQRelease native id={release} mine={mine} snapshot={snapshot} activeLimit={settings.active}
       cut={cut?.player === release ? cut : undefined} beforeRoom={runway?.[0]?.room}

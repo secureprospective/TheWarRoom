@@ -90,7 +90,9 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
   const tab = s.workspace.hq;
   const navigate = (workspace: 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves') => { void
     commands.dispatch('nav.open', { node: 'hq', workspace }); };
-  return <HQShell root={root} leagueName={settings.value?.summary.find(r => r.cells[0] === 'League name')?.cells[1]} liveCount={live?.games.filter(g => g.status === 'in').length} week={week} lock={lock} tab={tab as HQTab} navigate={navigate}
+  return <HQShell root={root} leagueName={settings.value?.summary.find(r => r.cells[0] ===
+    'League name')?.cells[1]} liveCount={live?.games.filter(g => g.status === 'in').length} week={week}
+    lock={lock} tab={tab as HQTab} navigate={navigate}
     navigateNode={node => { void commands.dispatch('nav.open', { node }); }}
     queue={<HQQueue available={movesReady && plans.reading?.errors.length === 0}
       moves={mergeHQMoves(moves.map(r => ({ id: r.correlationId, state: r.state,
@@ -112,11 +114,13 @@ function HQFranchise({ snapshot, mine, roster }: { snapshot: Snapshot; mine: str
               editor.error)}
             lock={lock && { ...lock, text: countdown(lock.at, Date.now()) }}
             {...standingFromReport(race.value?.standings)} />
-          {tab === 'lineup-and-roster' ? <HQBoard key={boardVersion} snapshot={snapshot} mine={mine} reading={editor.error ?
+          {tab === 'lineup-and-roster' ? <HQBoard key={boardVersion} snapshot={snapshot} mine={mine}
+            reading={editor.error ?
             undefined : editor.reading}
             settings={rules} values={projections(snapshot, market.value, editor.reading?.week)}
               facts={facts.reading}
-            injuries={injuries.reading} byes={byeWeeks(snapshot, reports.reading)} now={now.value} live={live} changed={editor.changes}
+            injuries={injuries.reading} byes={byeWeeks(snapshot, reports.reading)} now={now.value}
+              live={live} changed={editor.changes}
               canEdit={!editor.reason && !teamReason}
             select={id => { void commands.dispatch('inspector.open', { subject: { kind: 'player', id,
               franchiseId: mine } }); }}
