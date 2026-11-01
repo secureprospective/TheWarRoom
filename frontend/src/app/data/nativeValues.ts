@@ -13,7 +13,7 @@ export type LeaguePlayerValue = { player: string; franchise: string; position?: 
 export type AgeBand = { from: number; to: number; open: boolean; value: number; players: number };
 export function parseNativeValues(value: unknown, league: string, franchise: string, season: number) {
   const r = object(value, 'League values', ['league', 'season', 'franchise', 'players', 'best', 'age',
-    'notes']);
+    'notes', 'preparing']);
   if (r.league !== league || r.franchise !== franchise || r.season !== season)
     throw new Error('Values belong to another league, franchise or season');
   const b = object(r.best, 'Best N', ['franchise', 'starterN', 'value', 'age', 'ageKnown', 'rank', 'of',
@@ -42,6 +42,9 @@ export function parseNativeValues(value: unknown, league: string, franchise: str
     return { from: integer(b.from, path), to: integer(b.to, path), open: flag(b.open, path),
       value: finite(b.value, path), players: integer(b.players, path) };
   });
-  return { best, players, age, notes: array(r.notes, 'Value notes', text) };
+  const preparing = r.preparing === undefined ? false : flag(r.preparing, 'Preparation');
+  if (preparing && (best.available || players.length || age.length))
+    throw new Error('Preparing values cannot include completed values');
+  return { preparing, best, players, age, notes: array(r.notes, 'Value notes', text) };
 }
 export type LeagueValues = ReturnType<typeof parseNativeValues>;

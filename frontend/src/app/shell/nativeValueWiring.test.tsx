@@ -90,3 +90,19 @@ it('shares the app/mirror lineup read, fences scope and renders the inspector fi
   port.mockResolvedValue({ label: 'Local', writable: false, football: '', data: delta('wrong') });
   await expect(readInspectorFit(context(port), '0042')).rejects.toThrow('another player context');
 });
+
+it('checks preparation shape and keeps unavailable values distinct from preparation', () => {
+  const pending = { ...wire(), preparing: true, players: [], age: [],
+    best: { ...wire().best, available: false, words: 'Values are being prepared' } };
+  expect(parseNativeValues(pending, 'native.test', '', 2026).preparing).toBe(true);
+  expect(() => parseNativeValues({ ...wire(), preparing: true }, 'native.test', '', 2026)).toThrow();
+  expect(() => parseNativeValues({ ...pending, preparing: 'true' }, 'native.test', '', 2026)).toThrow();
+  const html = renderToStaticMarkup(<WarRoomHeader reading={{ valuesPreparing: true,
+    runway: [{ season: 2026, max: 12500000000, room: 108000000 }], errors: [] }} />);
+  expect(html).toContain('Values are being prepared'); expect(html).toContain('$1.08M');
+  expect(html).not.toContain('role="alert"');
+  const inspector = renderToStaticMarkup(<HQInspector native snapshot={context().snapshot}
+    mine="mine" id="0042" valuesPreparing />);
+  expect(inspector).toContain('Values are being prepared');
+  expect(inspector).not.toContain('>0.0</b>');
+});

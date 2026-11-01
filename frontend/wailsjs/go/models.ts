@@ -96,6 +96,7 @@ export namespace appvalue {
 	    }
 	}
 	export class Reading {
+	    preparing?: boolean;
 	    league: string;
 	    season: number;
 	    franchise: string;
@@ -110,6 +111,7 @@ export namespace appvalue {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.preparing = source["preparing"];
 	        this.league = source["league"];
 	        this.season = source["season"];
 	        this.franchise = source["franchise"];

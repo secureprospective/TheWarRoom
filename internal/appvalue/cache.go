@@ -14,22 +14,24 @@ import (
 
 // Cache retains one league's completed pass, shared by its franchise headers and inspectors.
 // Database commits, changed settings/params and the next as-of observation invalidate it.
-// Cold reads still assemble the full evidence and run the unchanged model.
+// Only the producer assembles evidence and runs the unchanged model for prepared screens.
 type Cache struct {
 	mu          sync.Mutex
 	key         [sha256.Size]byte
 	from, until time.Time
 	reading     Reading
 	ready       bool
+	failure     error
+	generation  uint64
 }
 
-func (c *Cache) get(key [sha256.Size]byte, at time.Time) (Reading, bool) {
+func (c *Cache) get(key [sha256.Size]byte, at time.Time) (Reading, bool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if !c.ready || c.key != key || at.Before(c.from) || (!c.until.IsZero() && !at.Before(c.until)) {
-		return Reading{}, false
+		return Reading{}, false, nil
 	}
-	return cloneReading(c.reading), true
+	return cloneReading(c.reading), true, c.failure
 }
 
 func (src Source) cached(ctx context.Context, revision int64, set params.Set, franchise string, in Inputs) (Reading, error) {
@@ -40,17 +42,20 @@ func (src Source) cached(ctx context.Context, revision int64, set params.Set, fr
 	if err != nil {
 		return Reading{}, err
 	}
-	if out, ok := src.Cache.get(key, in.AsOf); ok {
+	if out, ok, failure := src.Cache.get(key, in.AsOf); ok && (failure == nil || src.PreparedOnly) {
+		if failure != nil {
+			return Reading{}, failure
+		}
 		return scoped(out, in, franchise), nil
+	}
+	if src.PreparedOnly {
+		return preparing(in, franchise), nil
 	}
 	until, err := src.NextFeatureAt(ctx, in.AsOf)
 	if err != nil {
 		return Reading{}, fmt.Errorf("league values expiry: %w", err)
 	}
-	out, err := src.value(ctx, set, "", in)
-	if err != nil {
-		return Reading{}, err
-	}
+	out, valueErr := src.value(ctx, set, "", in)
 	after, err := src.revision(ctx)
 	if err != nil {
 		return Reading{}, err
@@ -58,10 +63,20 @@ func (src Source) cached(ctx context.Context, revision int64, set params.Set, fr
 	if after == revision {
 		src.Cache.mu.Lock()
 		src.Cache.key, src.Cache.from, src.Cache.until = key, in.AsOf, until
-		src.Cache.reading, src.Cache.ready = cloneReading(out), true
+		src.Cache.reading, src.Cache.ready, src.Cache.failure = cloneReading(out), true, valueErr
+		src.Cache.generation++
 		src.Cache.mu.Unlock()
 	}
+	if valueErr != nil {
+		return Reading{}, valueErr
+	}
 	return scoped(out, in, franchise), nil
+}
+
+func preparing(in Inputs, franchise string) Reading {
+	return Reading{League: in.League, Season: in.Season, Franchise: franchise, Preparing: true,
+		Players: []Player{}, Age: []Band{}, Notes: []string{},
+		Best: Best{Franchise: franchise, Words: "Values are being prepared"}}
 }
 
 func cacheKey(revision int64, set params.Set, in Inputs) ([sha256.Size]byte, error) {

@@ -84,6 +84,7 @@ type Band struct {
 
 // Reading is the one league-scoped value read.
 type Reading struct {
+	Preparing bool     `json:"preparing,omitempty"`
 	League    string   `json:"league"`
 	Season    int      `json:"season"`
 	Franchise string   `json:"franchise"`

@@ -13,7 +13,7 @@ import { parseWarRoomProjections } from './warroomMarketReads';
 import type { WarRoomContext } from './warroomReads';
 export type WarRoomInspectorReading = { research?: PlayerReading; arc?: Arc;
   contract?: Reading<PlayerContract>; cut?: NativeCut; notes?: ReturnType<typeof parseNotes>;
-  value?: LeaguePlayerValue; fit?: InspectorFit;
+  valuesPreparing?: boolean; value?: LeaguePlayerValue; fit?: InspectorFit;
   projection?: ReturnType<typeof parseWarRoomProjections>[number]; errors: string[] };
 export async function readWarRoomInspector(c: WarRoomContext, id: string):
   Promise<WarRoomInspectorReading> {
@@ -26,8 +26,9 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
       apply(async () => { const season = c.snapshot.league.value.season;
         const { data } = await (native.port ?? hostedWorkflow)({ command: 'value.read', mode: 'read',
           arguments: { league: native.league, franchise: '', season } });
-        result.value = parseNativeValues(data, native.league, '', season).players
-          .find(p => p.player === id); }),
+        const values = parseNativeValues(data, native.league, '', season);
+        result.valuesPreparing = values.preparing;
+        result.value = values.players.find(p => p.player === id); }),
       apply(async () => { result.fit = await readInspectorFit(c, id); }),
       apply(async () => { result.arc = parseArc(await readAgeArc(id)); }),
       apply(async () => {

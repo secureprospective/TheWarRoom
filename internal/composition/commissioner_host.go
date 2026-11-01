@@ -156,12 +156,32 @@ func (a *App) nativeWaiverClock(ctx context.Context) {
 }
 
 func (h commissionerHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
-	src := appvalue.Source{Facts: h.app.recordStore(), Held: h.History, Records: h.CommissionerRecords,
-		Params: h.Params.Snapshot, Now: h.app.timeNow, Cache: &h.app.valueCache,
-		Revision: h.HistPools.Revision, NextFeatureAt: h.History.NextFeatureAt}
-	return src.Read(ctx, league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
+	return h.app.valuePreparation.Read(ctx, h.app.valueSource(), league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
 }
 
 func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week int, trade history.TradeSides) (history.NativeLineupDelta, error) {
 	return tradesapp.ReadLineupDelta(ctx, h.Rulebook.ActiveConfig(), h.League.Reader(), season, week, trade, h.History.LineupDelta) //nolint:wrapcheck // The adapter supplies fit context.
+}
+
+func (a *App) valueSource() appvalue.Source {
+	return appvalue.Source{Facts: a.recordStore(), Held: a.core.History, Records: a.leagueRecords,
+		Params: a.core.Params.Snapshot, Now: a.timeNow, Revision: a.core.HistPools.Revision,
+		NextFeatureAt: a.core.History.NextFeatureAt}
+}
+
+func (a *App) startValuePreparation() {
+	ctx := a.core.WorkCtx
+	a.startWorker(func() {
+		src := a.valueSource()
+		a.valuePreparation.Run(ctx, src,
+			func(ctx context.Context) ([]appvalue.Scope, error) {
+				return src.Scopes(ctx, a.core.History.NativeLeagues)
+			},
+			func() { a.core.SeasonChanged(ctx) },
+			func(err error) {
+				if ctx.Err() == nil {
+					log.Printf("the war room: prepare values: %v", err)
+				}
+			})
+	})
 }

@@ -67,6 +67,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       undefined}
     queue={<HQQueue moves={moves} available={reading.moves !== undefined} />}
     inspector={<HQInspector native snapshot={snapshot} mine={mine} id={chosen} cut={cut}
+      valuesPreparing={reading.values?.preparing}
       leagueValue={reading.values?.players.find(p => p.player === chosen)}
       projection={reading.projections?.get(chosen ?? '')}
       annual={reading.contracts?.get(chosen ?? '')}

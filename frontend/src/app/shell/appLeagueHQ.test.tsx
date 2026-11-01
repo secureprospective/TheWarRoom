@@ -2,6 +2,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { hqEvents } from './hqReads';
 import { TargetApp } from './TargetApp';
 import { commands } from '../commands/registry';
 import { LEAGUE_KEY, readAppLeaguePeople } from './leaguePicker';
@@ -227,4 +228,35 @@ it('shows an imported-shaped 35-player roster before any schedule is published',
   expect(container.querySelectorAll('.wr-v6 .shelf:first-child .blk')).toHaveLength(35);
   expect(container.querySelector('.wr-v6 .shelf')?.textContent).toContain('Imported player 34');
   expect(container.querySelector('.wr-v6 .shelf .nm small')?.textContent).toBe('$3.00M · 2y');
+});
+
+it.each(['hq', 'war'] as const)('fills %s prepared values on publication', async node => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  let preparing = true;
+  const listeners = new Set<() => void>();
+  const subscription = vi.spyOn(hqEvents, 'onChange').mockImplementation(load => {
+    listeners.add(load); return () => { listeners.delete(load); };
+  });
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    if (request.command !== 'value.read') return original(request);
+    const { league, franchise, season } = request.arguments;
+    return { label: 'Local', writable: false, football: '', data: { league, franchise, season,
+      ...(preparing ? { preparing: true } : {}), players: [],
+      best: { franchise, starterN: preparing ? 0 : 21, value: preparing ? 0 : 243.3,
+        age: 27, ageKnown: !preparing, rank: preparing ? 0 : 3, of: 32,
+        available: !preparing, words: preparing ? 'Values are being prepared' : 'Held values' },
+      age: [], notes: [] } };
+  });
+  try {
+    localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.02');
+    commands.dispatch('nav.open', { node }); await mount();
+    expect(container.textContent).toContain('Values are being prepared');
+    expect(container.querySelector('.franchise-context')?.textContent ?? container.textContent)
+      .toContain(node === 'war' ? 'CAP RUNWAY' : 'Player');
+    expect(container.querySelector('[role="alert"]')).toBeNull();
+    preparing = false;
+    await act(async () => { for (const load of [...listeners]) load(); }); await settle();
+    expect(container.textContent).not.toContain('Values are being prepared');
+    if (node === 'war') expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
+  } finally { subscription.mockRestore(); }
 });

@@ -1,23 +1,21 @@
 # Handoff
 
 ## Baton
-Review / ClaudeBox — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-5 partially fixed; local commits only, no remote operations.
+Review / ClaudeBox — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-6 implemented; local commits only, no remote operations.
 
 ## Where it stands
-- Copied-profile desktop composition/workflow returns Bills (`franchise.01`) values: Best 21 = 243.262845927, rank 3/32, 35/35 roster players valued. No native read error reproduced, including on b7726819.
-- Removed War Room's second HQ read. HQ/War Room publish independent regions while values load; late publications are scope-fenced. Cap runway held: 2026 $1.08M / 2027 $45.58M / 2028 $69.94M.
-- One in-memory league valuation reused across headers/inspectors, invalidated by DB commits, input/param changes, clock rewind and future observation visibility. No engine/model math or persistent schema changes.
-- Harness before: value cold/repeat 18,890/16,252 ms; cap 23/21, rules 8/8, assets 1/1. After: value cold/repeat 18,786/31 ms; cap 29/21, rules 9/9, assets 2/2; league-wide inspector 32 ms. Errors all nil. Timings include workflow/JSON; exclude database initialization.
-- PASS: parity 25 players, max Now/dynasty difference 0; TypeScript; Vitest 159 files / 1,729 tests; targeted race Go 108 top-level / 295 named outcomes; plain make build. Hooks passed; two cache/revision mutants rejected.
-- Affected handwritten production: 2,025 → 2,215 physical lines; tests: 1,401 → 1,650 (against b7726819). No reduction claimed.
-- Ignored evidence in `.tmp/app-value5/`; throwaway harness removed after measurement. No desktop launch, live profile access, network fetch or remote operation.
+- Profiled cold Source.Read: 19,143 ms; history Book/Features dominate, no per-player refits. Removed redundant latest-row SQL window before preparation: 18,078 ms, identical Bills values.
+- Desktop lifetime owns a single background producer, discovering seeded league/seasons at startup and every second. Separate per-scope prepared passes; screen reads never run valuation. Refresh/roster/contract/settings/params/revision/as-of changes refuse stale reuse. In-flight commits prevent publication.
+- Preparing reads return non-error state; only value regions show “Values are being prepared”. Existing season signal fills them when ready. Actual preparation failures remain errors. Shutdown cancels and joins before closing stores.
+- Copied-profile actual API/workflow harness: cold-after-startup 49.167 ms, first workflow 40.269 ms (preparing); ready at 18,499.677 ms; first prepared/repeat workflows 33.489/31.025 ms. Bills 35/35, Best 21 = 243.26284592650194, rank 3/32 unchanged. DB opening excluded.
+- PASS: exact imported 25-player parity, targeted Go race 56 top-level / 68 named outcomes across four packages, tsc, whole Vitest 159 files / 1,732 tests, plain make build; screen-computation mutant rejected. Placement/transport and targeted lint pass. No desktop launch/live profile/network use.
+- Flow/contract: docs/architecture/value-preparation.md. Profile top ten and ignored harness/log evidence: .tmp/app-value6/. Handwritten production 1,960 → 2,151 lines; tests 467 → 753 versus f954d1f6. No reduction claimed.
 
 ## Next move / blocked on
-- Cold `value.read` still FAILS the 200 ms budget. Cache hits are not cold-read proof. Any history commit or another league can cause another expensive pass. Review refresh-owned preparation/materialization and its freshness contract before choosing durable storage; start at `internal/appvalue/source.go` and `internal/store/playerrecord/store.go:Book`.
-- Real desktop visual confirmation, league-specific age arc and real-profile lineup-fit availability remain unverified. Server-only player-record/params plumbing, copy-scoped valuation and free-agent fit remain inherited debt.
-- Growth finding D10 recorded in `docs/data-layer/Database_Growth_Catalog.md`. Do not accept this as full APP-VALUE-5 completion.
+- Background preparation still takes ~18.5 s; in-memory only, broad history revision invalidates on unrelated commits, multiple leagues serialize. Reads return preparing quickly, not completed values in 200 ms. Real desktop visuals and hosted-server valuation plumbing remain unverified/inherited debt.
+- Full make lint blocked by inherited tiny-file mismatch: 26 both at f954d1f6 and now, baseline 25. Standalone boundary blocked by untouched migrationInputs fingerprint (other inherited migration/platform/binding mismatches also remain). Only task-owned resource adapters/source fingerprints reviewed and updated; no unrelated allowlist refresh or baseline increase.
 
 ## Tried and rejected
-- Unwired desktop host hypothesis: actual `TargetWorkflow` and directly bound reads both return values.
-- Re-reading all HQ data inside War Room delayed/discarded the already-loaded header; reuse the scoped reading.
-- No fabricated zeros, model-math changes, league-origin branches, stale TTL cache or hidden warm-up counted as a cold read.
+- Repeated per-player fitting/N+1 hypothesis: profile/source show one valuation and one history query per season, not per player.
+- Query-only fix: ~1.1 s saved, nowhere near 200 ms. Kept the safe reduction, then moved production off screen reads.
+- Cache-hit-only proof: harness also measures immediate post-startup/preparing reads and actual workflow reads after publication; no hidden warm-up counted as cold values.

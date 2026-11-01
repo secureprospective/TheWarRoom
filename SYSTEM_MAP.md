@@ -134,3 +134,7 @@ Move my MFL league: Control Room's desktop `TargetMFLMigration` binding reuses
 `internal/leaguemigration` and its MFL source. Frontend: `app/control/MoveMFL.tsx`
 and `migration.ts`; flow, transaction boundaries and verification limits:
 `docs/ui/move-mfl.md`.
+
+League-scoped values are prepared by `internal/appvalue` under the desktop lifetime worker;
+startup/refresh discovery, freshness keys and the nonblocking screen contract are documented
+in `docs/architecture/value-preparation.md`.

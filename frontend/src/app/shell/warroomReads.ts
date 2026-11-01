@@ -17,6 +17,7 @@ export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   starterN?: number; best?: string; rank?: string; age?: AgeBand[]; valueNote?: string;
+  valuesPreparing?: boolean;
   runway?: HQCap[]; errors: string[] };
 export function useWarRoomRead<T>(key: string,
   read: (publish: ReadPublish<T>) => Promise<T>) {
@@ -31,7 +32,8 @@ export function nativeWarRoomHeader(r: NativeHQ): WarRoomHeaderReading {
     starterN: r.values?.best.starterN || r.settings.starters,
     best: r.values?.best.available ? r.values.best.value.toFixed(1) : undefined,
     rank: r.values?.best.available ? `${r.values.best.rank} of ${r.values.best.of}` : undefined,
-    age: r.values?.age, valueNote: r.values ? [r.values.best.words, ...r.values.notes]
+    valuesPreparing: r.values?.preparing, age: r.values?.age,
+    valueNote: r.values ? [r.values.best.words, ...r.values.notes]
       .join(' · ') : undefined,
     runway: r.runway, errors: r.errors };
 }

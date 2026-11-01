@@ -53,9 +53,10 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
         unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
-    {context.native && <div className="nums"><div><b>{value?.available ? value.nowPPG.toFixed(1) :
+    {context.native && (facts?.valuesPreparing ? <p role="status">Values are being prepared</p> :
+    <div className="nums"><div><b>{value?.available ? value.nowPPG.toFixed(1) :
       unavailable}</b><span>pts / game</span></div><div><b title={value?.words}>{value?.available ?
-      value.dynastyPPG.toFixed(1) : unavailable}</b><span>dynasty value</span></div></div>}
+      value.dynastyPPG.toFixed(1) : unavailable}</b><span>dynasty value</span></div></div>)}
     <div className="lensrow"><div><b><CompactAbsent /></b><span>to you</span></div>
       <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why"
         title={reading.error || facts?.errors.length ? unavailable : undefined}>{unavailable}</div>

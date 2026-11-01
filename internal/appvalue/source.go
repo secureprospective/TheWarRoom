@@ -29,6 +29,7 @@ type Source struct {
 	Cache         *Cache
 	Revision      func(context.Context) (int64, error)
 	NextFeatureAt func(context.Context, time.Time) (time.Time, error)
+	PreparedOnly  bool // A screen may read a completed pass, never compute one.
 }
 
 // seasonsRead is how many seasons of league points the pass reads: the valued season and the
@@ -63,9 +64,27 @@ func (src Source) Read(ctx context.Context, league, franchise string, season int
 
 	set := src.Params()
 	if src.Cache != nil && src.Revision != nil && src.NextFeatureAt != nil {
-		return src.cached(ctx, revision, set, franchise, in)
+		return src.readCached(ctx, revision, set, franchise, in)
+	}
+	if src.PreparedOnly {
+		return Reading{}, fmt.Errorf("league values: preparation is not wired")
 	}
 	return src.value(ctx, set, franchise, in)
+}
+
+func (src Source) readCached(ctx context.Context, revision int64, set params.Set, franchise string, in Inputs) (Reading, error) {
+	out, err := src.cached(ctx, revision, set, franchise, in)
+	if err != nil || !src.PreparedOnly {
+		return out, err
+	}
+	after, err := src.revision(ctx)
+	if err != nil {
+		return Reading{}, err
+	}
+	if after != revision {
+		return preparing(in, franchise), nil
+	}
+	return out, nil
 }
 
 func (src Source) revision(ctx context.Context) (int64, error) {

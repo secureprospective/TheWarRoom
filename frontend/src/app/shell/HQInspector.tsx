@@ -73,23 +73,25 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
   </Drawer>;
 }
 export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut,
-  toIR, annual, leagueValue }: {
-  leagueValue?: LeaguePlayerValue; snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts;
+  toIR, annual, leagueValue, valuesPreparing }: {
+  valuesPreparing?: boolean; leagueValue?: LeaguePlayerValue;
+  snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts;
     projection?: number; native?: boolean;
   bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?: {
     season: number; cents: number }[];
 }) {
   return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
-    native, bench, position, cut, toIR, annual, leagueValue }} />
+    native, bench, position, cut, toIR, annual, leagueValue, valuesPreparing }} />
     : <aside className="insp" aria-label="Inspector"><div className="ihead"><div
       className="nm">{unavailable}</div></div><div className="nums"><div /><div /></div><div
       className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div
       className="ifoot">{unavailable}</div></aside>;
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
-  selectedPosition, cut, toIR, annual, leagueValue
+  selectedPosition, cut, toIR, annual, leagueValue, valuesPreparing
   }: {
-  leagueValue?: LeaguePlayerValue; snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts;
+  valuesPreparing?: boolean; leagueValue?: LeaguePlayerValue;
+  snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts;
     projection?: number; native: boolean;
     bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?:
       { season: number; cents: number }[];
@@ -130,10 +132,11 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
       className="on">{unavailable}</span></div>
       <div className="nm">{player?.name ?? id}</div><div className="sub">{player?.team ?? unavailable}
         · {money(contract?.salary)} · {contract?.contractStatus ?? unavailable}</div></div>
+    {valuesPreparing ? <p role="status">Values are being prepared</p> :
     <div className="nums"><div><b data-empty={!ppg}>{ppg ??
       unavailable}</b><span>pts / game</span></div><div><b data-empty={!dynasty?.held}
       title={dynasty?.detail}>{dynasty?.held ? dynasty.text :
-      unavailable}</b><span>dynasty value</span></div></div>
+      unavailable}</b><span>dynasty value</span></div></div>}
     <div className="idrawers">
       <Drawer title="THIS WEEK" detail={usage.value?.opponent || unavailable}><UsageRows
         usage={usage.value} projection={projection} position={position} /></Drawer>

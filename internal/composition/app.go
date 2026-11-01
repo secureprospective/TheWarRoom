@@ -61,7 +61,7 @@ type App struct {
 	marketHeld          *marketapp.Held
 	seatStore           *accountstore.Store
 	seat                *accounts.LocalSeat
-	valueCache          appvalue.Cache
+	valuePreparation    appvalue.Preparation
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.
@@ -156,6 +156,9 @@ func (a *App) settleStartupFailure() {
 }
 
 func (a *App) finishStartup(ctx context.Context, refreshed bool) {
+	if a.core.StartupErr == nil {
+		a.startValuePreparation() //nolint:contextcheck // The app lifetime cancels and joins preparation before closing stores.
+	}
 	platformapp.FinishStartup(a.core.StartupErr, refreshed, func() { close(a.core.Started) }, func() {
 		a.core.RefreshMu.Lock()
 		defer a.core.RefreshMu.Unlock()
