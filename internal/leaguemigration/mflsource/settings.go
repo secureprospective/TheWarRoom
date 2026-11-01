@@ -21,7 +21,7 @@ const notHeld = "Your MFL league does not hold this setting"
 // Settings carries an MFL league's settings into the app value for value. What MFL holds is set as MFL
 // holds it; what it does not hold is taken from base, how the league runs on MFL; anything left after
 // that waits for a ruling and is listed; what MFL holds but the app cannot read is a problem, never a guess.
-func Settings(config league.RawConfig, base leaguerules.RuleSet) (leaguerules.RuleSet, []string, []string) {
+func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType string) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
 	t.league(&r, config)
@@ -32,6 +32,12 @@ func Settings(config league.RawConfig, base leaguerules.RuleSet) (leaguerules.Ru
 	t.cap(&r, config)
 	if weeks, ok := t.regularWeeks(config); ok {
 		r.Schedule.RegularWeeks = known(weeks)
+	}
+	switch strings.ToUpper(strings.TrimSpace(draftType)) {
+	case "SAME":
+		r.Draft.LaterPattern = known(leaguerules.Linear)
+	case "SNAKE":
+		r.Draft.LaterPattern = known(leaguerules.Snake)
 	}
 	r = leaguerules.Fill(r, base)
 	t.waiting(r)
@@ -268,7 +274,7 @@ func (t *translation) waiting(r leaguerules.RuleSet) {
 	skip := leaguemigration.CarriedFields()
 	var labels []string
 	for _, c := range leaguerules.SeedChanges(r, "", 0, time.Unix(1, 0).UTC()) {
-		if skip[c.Field] || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
+		if skip[c.Field] || unused(r, c.Field) || leaguerules.DescribeField(c.Field, c.New).State == "Set" {
 			continue
 		}
 		if f, ok := leaguerules.Field(c.Field); ok {
@@ -279,4 +285,18 @@ func (t *translation) waiting(r leaguerules.RuleSet) {
 		t.notes = append(t.notes, fmt.Sprintf("%d settings are neither held by your MFL league nor in the "+
 			"bundle it runs by; each waits for your ruling on the rules screen: %s", len(labels), strings.Join(labels, ", ")))
 	}
+}
+
+// unused says a setting does nothing in this league as it stands, so it waits for no ruling: keepers in a
+// dynasty league (every player stays), a soft cap deadline under a hard cap, review seats with no review panel.
+func unused(r leaguerules.RuleSet, path leaguerules.FieldPath) bool {
+	switch path {
+	case "league.keepers":
+		return r.League.Dynasty.State == leaguerules.IsKnown && r.League.Dynasty.Value
+	case "cap.complianceDeadline":
+		return r.Cap.Enforcement.State == leaguerules.IsKnown && r.Cap.Enforcement.Value == leaguerules.HardCap
+	case "trades.dotSeats":
+		return r.Trades.Review.State == leaguerules.IsKnown && r.Trades.Review.Value != leaguerules.DOTReview
+	}
+	return false
 }

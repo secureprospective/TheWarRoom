@@ -27,6 +27,8 @@ type Export struct {
 	// Players names each player MFL's player list holds, by MFL id.
 	Players   map[string]string
 	Champions []Champion
+	// DraftType is MFL's rookie draft order kind ("SAME" every round alike, "SNAKE"); empty when MFL states none.
+	DraftType string
 	ReadAt    time.Time
 }
 
@@ -51,6 +53,11 @@ type Reader interface {
 	Adjustments(ctx context.Context) ([]Adjustment, error)
 	Draft(ctx context.Context) ([]draftreports.Pick, []draftreports.FuturePick, error)
 	Players(ctx context.Context) (map[string]string, error)
+}
+
+// DraftTyper is a Reader that also reads the kind of order MFL's rookie draft keeps from round to round.
+type DraftTyper interface {
+	DraftType(ctx context.Context) (string, error)
 }
 
 // LeagueRead is MFL's league export: its settings, franchises, owners and past champions.
@@ -88,6 +95,13 @@ func Read(ctx context.Context, src Reader, now time.Time) (Export, error) {
 		if err := ctx.Err(); err != nil {
 			return Export{}, &leaguemigration.ReadError{Part: step.part, Err: err}
 		}
+	}
+	if d, ok := src.(DraftTyper); ok {
+		kind, err := d.DraftType(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "draft order kind", Err: err}
+		}
+		out.DraftType = kind
 	}
 	out.ReadAt = now.UTC()
 	return out, nil

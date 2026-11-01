@@ -4,6 +4,7 @@ package mflsource
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
@@ -101,6 +102,38 @@ func (s *Source) Draft(ctx context.Context) ([]draftreports.Pick, []draftreports
 		return nil, nil, fmt.Errorf("read future picks: %w", err)
 	}
 	return results, future, nil
+}
+
+// DraftType reads the kind of order MFL's rookie draft keeps from round to round.
+func (s *Source) DraftType(ctx context.Context) (string, error) {
+	type results struct {
+		DraftResults struct {
+			DraftUnit json.RawMessage `json:"draftUnit"`
+		} `json:"draftResults"`
+	}
+	env, err := ingestion.FetchLeagueExport[results](ctx, s.Client, "draftResults", s.year(), s.ID, nil)
+	if err != nil {
+		return "", fmt.Errorf("read the draft order kind: %w", err)
+	}
+	var units []struct {
+		DraftType string `json:"draftType"`
+	}
+	raw := env.DraftResults.DraftUnit
+	if len(raw) > 0 && raw[0] != '[' {
+		raw = append(append([]byte{'['}, raw...), ']')
+	}
+	if len(raw) == 0 {
+		return "", nil
+	}
+	if err := json.Unmarshal(raw, &units); err != nil {
+		return "", fmt.Errorf("read the draft order kind: %w", err)
+	}
+	for _, u := range units {
+		if u.DraftType != "" {
+			return u.DraftType, nil
+		}
+	}
+	return "", nil
 }
 
 func (s *Source) Players(context.Context) (map[string]string, error) {
