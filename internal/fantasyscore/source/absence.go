@@ -206,7 +206,7 @@ func zeroCoverage(plays []RawPlay) (map[string]bool, map[string]bool, error) {
 	}
 	final := make(map[string]bool)
 	for _, p := range plays {
-		if p.EndGame == "END GAME" && p.GameSeconds == "0" && games[p.GameID] {
+		if p.EndGame == "END GAME" && (p.GameSeconds == "0" || p.GameHalf == "Overtime") && games[p.GameID] {
 			final[p.GameID] = true
 		}
 	}

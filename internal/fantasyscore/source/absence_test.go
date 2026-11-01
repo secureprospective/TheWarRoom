@@ -103,3 +103,15 @@ func TestZeroStatRulesStillApply(t *testing.T) {
 		t.Fatalf("zero-stat award lost: %+v %v", points, err)
 	}
 }
+
+func TestOvertimeEndGameDoesNotNeedAnExpiredClock(t *testing.T) {
+	p := creditPlay()
+	p.EndGame = "END GAME"
+	p.GameSeconds = "323"
+	p.GameHalf = "Overtime"
+	proof := RawAbsenceProof{GSIS: "00-0030001", Season: "2026", Week: "1", GameID: p.GameID, Position: "LB", Evidence: "positive snaps; no play-by-play stat events"}
+	got, err := AddProvenZeros(nil, []RawPlay{p}, []RawAbsenceProof{proof})
+	if err != nil || len(got) != 1 {
+		t.Fatalf("overtime final stayed unavailable: %+v %v", got, err)
+	}
+}
