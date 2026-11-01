@@ -17,6 +17,129 @@ export namespace accounts {
 
 }
 
+export namespace appvalue {
+	
+	export class Band {
+	    from: number;
+	    to: number;
+	    open: boolean;
+	    value: number;
+	    players: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new Band(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.from = source["from"];
+	        this.to = source["to"];
+	        this.open = source["open"];
+	        this.value = source["value"];
+	        this.players = source["players"];
+	    }
+	}
+	export class Best {
+	    franchise: string;
+	    starterN: number;
+	    value: number;
+	    age: number;
+	    ageKnown: boolean;
+	    rank: number;
+	    of: number;
+	    available: boolean;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Best(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.franchise = source["franchise"];
+	        this.starterN = source["starterN"];
+	        this.value = source["value"];
+	        this.age = source["age"];
+	        this.ageKnown = source["ageKnown"];
+	        this.rank = source["rank"];
+	        this.of = source["of"];
+	        this.available = source["available"];
+	        this.words = source["words"];
+	    }
+	}
+	export class Player {
+	    player: string;
+	    franchise: string;
+	    position?: string;
+	    nowPPG: number;
+	    dynastyPPG: number;
+	    age: number;
+	    ageKnown: boolean;
+	    available: boolean;
+	    words: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Player(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.player = source["player"];
+	        this.franchise = source["franchise"];
+	        this.position = source["position"];
+	        this.nowPPG = source["nowPPG"];
+	        this.dynastyPPG = source["dynastyPPG"];
+	        this.age = source["age"];
+	        this.ageKnown = source["ageKnown"];
+	        this.available = source["available"];
+	        this.words = source["words"];
+	    }
+	}
+	export class Reading {
+	    league: string;
+	    season: number;
+	    franchise: string;
+	    players: Player[];
+	    best: Best;
+	    age: Band[];
+	    notes: string[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Reading(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.season = source["season"];
+	        this.franchise = source["franchise"];
+	        this.players = this.convertValues(source["players"], Player);
+	        this.best = this.convertValues(source["best"], Best);
+	        this.age = this.convertValues(source["age"], Band);
+	        this.notes = source["notes"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+
+}
+
 export namespace bid {
 	
 	export class Result {
@@ -11029,6 +11152,22 @@ export namespace leagueservice {
 	        this.get = source["get"];
 	        this.season = source["season"];
 	        this.week = source["week"];
+	    }
+	}
+	export class RawValueScope {
+	    league: string;
+	    franchise: string;
+	    season: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new RawValueScope(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.league = source["league"];
+	        this.franchise = source["franchise"];
+	        this.season = source["season"];
 	    }
 	}
 

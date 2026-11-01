@@ -1264,6 +1264,72 @@ export const readCommands = {
     "Items": null
   }
 },
+"commissioner.TargetNativeValues": {
+  "command": "value.read",
+  "arguments": {
+    "Type": "object",
+    "Enum": null,
+    "Format": "",
+    "Validator": "desktop adapter Raw validation",
+    "Nullable": false,
+    "Fields": [
+      {
+        "Name": "raw",
+        "Optional": false,
+        "Schema": {
+          "Type": "object",
+          "Enum": null,
+          "Format": "",
+          "Validator": "",
+          "Nullable": false,
+          "Fields": [
+            {
+              "Name": "league",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "franchise",
+              "Optional": false,
+              "Schema": {
+                "Type": "string",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            },
+            {
+              "Name": "season",
+              "Optional": false,
+              "Schema": {
+                "Type": "integer",
+                "Enum": null,
+                "Format": "",
+                "Validator": "",
+                "Nullable": false,
+                "Fields": null,
+                "Items": null
+              }
+            }
+          ],
+          "Items": null
+        }
+      }
+    ],
+    "Items": null
+  }
+},
 "commissioner.TargetNativeProjections": {
   "command": "projections.read",
   "arguments": {

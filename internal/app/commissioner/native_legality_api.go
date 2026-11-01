@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -105,4 +106,10 @@ func (a *API) TargetNativeBracket(league string, season int) (commissioner.Nativ
 func (a *API) TargetStatQueue(league string, season int) (commissioner.StatQueue, error) {
 	//nolint:wrapcheck // The shared service supplies the existing user-facing context.
 	return a.reads.TargetStatQueue(league, season)
+}
+
+// TargetNativeValues reads this league's player values, Best N and dynasty value by age.
+func (a *API) TargetNativeValues(raw leagueservice.RawValueScope) (appvalue.Reading, error) {
+	//nolint:wrapcheck // The shared service supplies the read's context.
+	return a.reads.TargetNativeValues(raw)
 }

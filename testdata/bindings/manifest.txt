@@ -44,6 +44,7 @@ commissioner.API.TargetNativeSeed
 commissioner.API.TargetNativeStandings
 commissioner.API.TargetNativeTradeAction
 commissioner.API.TargetNativeTrades
+commissioner.API.TargetNativeValues
 commissioner.API.TargetNativeWaiverAction
 commissioner.API.TargetNativeWaivers
 commissioner.API.TargetNativeWeek

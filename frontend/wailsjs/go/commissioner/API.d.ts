@@ -5,6 +5,7 @@ import {market} from '../models';
 import {accounts} from '../models';
 import {leagueservice} from '../models';
 import {history} from '../models';
+import {appvalue} from '../models';
 import {time} from '../models';
 
 export function TargetBackupNow():Promise<commissioner.BackupResult>;
@@ -98,6 +99,8 @@ export function TargetNativeStandings(arg1:string,arg2:number):Promise<commissio
 export function TargetNativeTradeAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
 
 export function TargetNativeTrades(arg1:string,arg2:string):Promise<market.NativeTrades>;
+
+export function TargetNativeValues(arg1:leagueservice.RawValueScope):Promise<appvalue.Reading>;
 
 export function TargetNativeWaiverAction(arg1:commissioner.RawCommand):Promise<commissioner.Receipt>;
 

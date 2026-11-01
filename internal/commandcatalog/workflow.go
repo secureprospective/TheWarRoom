@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner/market"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -78,6 +79,9 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 	case "results.read":
 		kept.Season, kept.Week = r.Season, r.Week
 		return kept, r.Season >= 1920 && r.Week > 0
+	case "value.read":
+		kept.Franchise, kept.Season = r.Franchise, r.Season
+		return kept, r.Season >= 1920
 	case "standings.read":
 		kept.Season = r.Season
 		return kept, r.Season >= 1920
@@ -141,7 +145,7 @@ func (r RawWorkflow) League() (string, error) {
 }
 
 type workflowOutput interface {
-	market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
+	appvalue.Reading | market.NativeMoves | market.Market | market.NativeBids | market.NativeWaivers | market.NativeTrades | commissioner.NativeResults | commissioner.NativeStandings | commissioner.Corrections | commissioner.NativeAssets | commissioner.NativeLineup | commissioner.NativeDraft | commissioner.NativeReserveCheck | commissioner.NativeRosterCheck | commissioner.Preview | commissioner.Receipt | commissioner.Rules
 }
 
 func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error) {

@@ -257,6 +257,13 @@ string
 "week": number
 }
 ];
+"commissioner.TargetNativeValues": [
+{
+"league": string;
+"franchise": string;
+"season": number
+}
+];
 "commissioner.TargetNativeProjections": [
 string,
 string,
@@ -2173,6 +2180,7 @@ export type WorkflowArgumentMap = {
 "bids.read": NativeArguments<"bids.read">;
 "draft.read": NativeArguments<"draft.read">;
 "lineup.read": NativeArguments<"lineup.read">;
+"value.read": NativeArguments<"value.read">;
 "native.reserve.check": NativeArguments<"native.reserve.check">;
 "results.read": NativeArguments<"results.read">;
 "native.roster.check": NativeArguments<"native.roster.check">;

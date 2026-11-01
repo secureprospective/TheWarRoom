@@ -127,7 +127,7 @@ linters:
             - "!**/internal/app/**"
             - "!**/internal/composition/**"
           deny:
-            - pkg: github.com/secureprospective/TheWarRoom/internal/app
+            - pkg: github.com/secureprospective/TheWarRoom/internal/app/
               desc: "non-app internals cannot import application services"
             - pkg: github.com/secureprospective/TheWarRoom$
               desc: "internals cannot import the root composition package"

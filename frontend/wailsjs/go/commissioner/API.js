@@ -186,6 +186,10 @@ export function TargetNativeTrades(arg1, arg2) {
   return window['go']['commissioner']['API']['TargetNativeTrades'](arg1, arg2);
 }
 
+export function TargetNativeValues(arg1) {
+  return window['go']['commissioner']['API']['TargetNativeValues'](arg1);
+}
+
 export function TargetNativeWaiverAction(arg1) {
   return window['go']['commissioner']['API']['TargetNativeWaiverAction'](arg1);
 }

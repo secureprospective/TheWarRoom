@@ -14,6 +14,7 @@ import (
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
@@ -151,4 +152,10 @@ func (nativeDueClock) Trusted() error   { return nil }
 func (a *App) nativeWaiverClock(ctx context.Context) {
 	worker := leagueservice.NewDueWorker(a.core.History, a.nativeFacts, nativeDueClock{now: a.timeNow})
 	worker.Run(ctx, func(err error) { log.Printf("the war room: process native deadlines: %v", err) })
+}
+
+func (h commissionerHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
+	src := appvalue.Source{Facts: h.app.recordStore(), Held: h.History, Records: h.CommissionerRecords,
+		Params: h.Params.Snapshot, Now: h.app.timeNow}
+	return src.Read(ctx, league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
 }
