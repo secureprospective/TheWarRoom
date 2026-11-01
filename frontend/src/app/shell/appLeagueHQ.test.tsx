@@ -313,3 +313,35 @@ it.each(['hq', 'war'] as const)('fills %s prepared values on publication', async
     if (node === 'war') expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
   } finally { subscription.mockRestore(); }
 });
+
+// Value preparation emits target:season about once a second while it works. Each event asks the
+// screen to re-read. A re-read that restarts the one in flight, and blanks what is already on
+// screen, can never finish while the events keep coming: every region reads as unavailable.
+it.each(['hq', 'war'] as const)('fills %s while change events keep arriving', async node => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  const listeners = new Set<() => void>();
+  vi.spyOn(hqEvents, 'onChange').mockImplementation(load => {
+    listeners.add(load); return () => { listeners.delete(load); };
+  });
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    await new Promise(resolve => setTimeout(resolve, 40));
+    return original(request);
+  });
+  localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.02');
+  commands.dispatch('nav.open', { node });
+  await mount();
+  let storm = true;
+  const keepChanging = (async () => {
+    while (storm) {
+      await new Promise(resolve => setTimeout(resolve, 60));
+      listeners.forEach(load => load());
+    }
+  })();
+  try {
+    await vi.waitFor(async () => {
+      await settle();
+      expect(container.querySelector(node === 'war' ? '.wr-v6 .shelf' : '.hq-v10 .board')?.textContent)
+        .toContain('Player, 1000');
+    }, { timeout: 4000 });
+  } finally { storm = false; await keepChanging; }
+});

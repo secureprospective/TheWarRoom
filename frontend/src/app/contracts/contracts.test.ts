@@ -398,7 +398,11 @@ it('covers each failed surface and refreshes on held-feed change', async () => {
     changed();
   });
   expect(p.contracts).toHaveBeenCalledTimes(2);
-  expect(test.element.textContent?.match(/No figures yet/g)).toHaveLength(3);
+  // A re-read in flight is not an empty screen: what was read last stays until the new answer lands.
+  expect(test.element.textContent).not.toContain('No figures yet');
+  for (const key of ['table', 'cap', 'adjustments']) {
+    expect(test.element.textContent).toContain(`${key} unavailable`);
+  }
   await act(async () => {
     test.renderer.unmount();
   });
