@@ -73,7 +73,7 @@ func TestScheduleSeasonBoundaryKeepsEndedPublication(t *testing.T) {
 	}
 }
 
-func TestFranchiseGameRejectsIdleAndReadsBothSides(t *testing.T) {
+func TestFranchiseGameReadsRestingTeamsAndBothSides(t *testing.T) {
 	week := ScheduleWeek{Week: 3, Games: []ScheduleGame{{ID: "g", Home: "a", Away: "b"}}}
 	for _, test := range []struct{ team, opponent, venue string }{
 		{"a", "b", "Home"}, {"b", "a", "Away"},
@@ -83,8 +83,8 @@ func TestFranchiseGameRejectsIdleAndReadsBothSides(t *testing.T) {
 			t.Fatal(got, err)
 		}
 	}
-	if _, err := franchiseScheduleGame(week, "c"); err == nil {
-		t.Fatal("unaccounted-for idle franchise accepted")
+	if got, err := franchiseScheduleGame(week, "c"); err != nil || got.Venue != "Bye" {
+		t.Fatal("a resting franchise must have a bye", got, err)
 	}
 	week.Bye = "c"
 	got, err := franchiseScheduleGame(week, "c")
