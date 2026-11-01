@@ -44,11 +44,11 @@ func (a *App) migrationInputs() *catalog.MigrationInputs {
 				Base: base}, nil
 		}}
 	return &catalog.MigrationInputs{Service: service, Principal: a.commissionerPrincipal,
-		SaveKey: func(ctx context.Context, league string, key mflkey.Key) error {
+		SaveKey: func(ctx context.Context, league string, key string) error {
 			if a.core.KeyStore == nil {
 				return mflkey.ErrUnavailable
 			}
-			return a.core.KeyStore.ForLeague(league).Set(ctx, key)
+			return a.core.KeyStore.ForLeague(league).Set(ctx, mflkey.Key(key))
 		}}
 }
 
@@ -156,4 +156,21 @@ func (a *App) heldLineupPlayers(ctx context.Context) (map[string]string, error) 
 		return nil, fmt.Errorf("no held player directory for lineup import")
 	}
 	return directory, nil
+}
+
+func (a *App) backfillScheduleFollowing(ctx context.Context) {
+	if a.core.History == nil {
+		return
+	}
+	leagues, err := a.core.History.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("read leagues for reference settings: %v", err)
+		return
+	}
+	ledger := leagueservice.MigrationLedger{Store: a.core.History, Auth: func() commissioner.Authorizer { return a.core.CommissionerAuthorizer }}
+	for _, league := range leagues {
+		if err := leaguemigration.BackfillFollowing(ctx, ledger, league.ID); err != nil {
+			log.Printf("backfill schedule setting for %s: %v", league.ID, err)
+		}
+	}
 }

@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "2bea4b37aff5eee013365992d3e3c090e710d324a5ea9da46a37ff0add080af1",
+  "beforeDigest": "5db2d43cd24e75532a9f357fed28fd62d4e55dfff0388d1d9003799d7481c97d",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -4041,6 +4041,15 @@
       }
     },
     "Schedule": {
+      "Follow": {
+        "State": 1,
+        "Value": {
+          "Source": "",
+          "League": "",
+          "Season": 0
+        },
+        "Citation": "Reference schedule following is off until selected"
+      },
       "RegularWeeks": {
         "State": 1,
         "Value": 13,

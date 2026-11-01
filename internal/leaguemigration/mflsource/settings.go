@@ -24,6 +24,7 @@ const notHeld = "Your MFL league does not hold this setting"
 func Settings(config league.RawConfig, base leaguerules.RuleSet, draftType string) (leaguerules.RuleSet, []string, []string) {
 	t := translation{}
 	r := leaguerules.RuleSet{}
+	r.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{})
 	t.league(&r, config)
 	t.roster(&r, config)
 	t.lineup(&r, config)

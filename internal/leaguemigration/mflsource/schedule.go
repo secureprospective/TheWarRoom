@@ -6,10 +6,12 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
 // Schedule maps only source identities. Empty playoff weeks and resting teams remain empty;
@@ -108,22 +110,15 @@ func BackfillSchedule(ctx context.Context, ledger leaguemigration.Ledger, league
 	return receipts, nil
 }
 
-// FollowingLeague resolves the importer's recorded identity, not a league-engine kind.
-// Cut-over leagues no longer follow the reference feed.
-func FollowingLeague(league string, records []commissioner.Record) (string, int, string, bool) {
-	if len(records) == 0 || commissioner.LeagueSource(records) != commissioner.SourceMFLImport {
+// FollowingLeague reads only the league's current reference schedule setting.
+func FollowingLeague(_ string, records []commissioner.Record) (string, int, string, bool) {
+	rules, err := commissioner.RulesNow(records, time.Time{})
+	if err != nil || len(records) == 0 {
 		return "", 0, "", false
 	}
-	season := records[0].Command.Args.Season
-	prefix, suffix := "native.mfl-", "-"+strconv.Itoa(season)
-	id := strings.TrimSuffix(strings.TrimPrefix(league, prefix), suffix)
-	if id == "" || leaguemigration.AppLeagueID(id, season) != league {
+	follow := rules.Schedule.Follow
+	if follow.State != leaguerules.IsKnown || follow.Value.Source != "mfl" {
 		return "", 0, "", false
 	}
-	for _, r := range id {
-		if r < '0' || r > '9' {
-			return "", 0, "", false
-		}
-	}
-	return id, season, records[0].Principal, true
+	return follow.Value.League, follow.Value.Season, records[0].Principal, true
 }

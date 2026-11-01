@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -21,7 +22,9 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
+	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 )
@@ -228,5 +231,98 @@ func TestLaunchAutomaticallyImportsPlayedLineups(t *testing.T) {
 		if _, found, err := commissioner.RecordedLineupFor(records, p.Franchise, export.Season, 2); err != nil || found {
 			t.Fatal("future lineup imported", err)
 		}
+	}
+}
+
+func TestScheduleFollowingBackfillAndCutover(t *testing.T) {
+	a := commissionerTestApp(t)
+	a.core.ClockNow = func() time.Time { return migrationtest.ReadAt.Add(time.Hour) }
+	export, err := migrationtest.Legacy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := mflsource.Prepare(export)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Reproduce an import recorded before the setting existed.
+	for i, seed := range plan.Create.Seed {
+		if seed.Field == "schedule.follow" {
+			plan.Create.Seed = append(plan.Create.Seed[:i], plan.Create.Seed[i+1:]...)
+			break
+		}
+	}
+	league := leaguemigration.AppLeagueID(export.LeagueID, export.Season)
+	ledger := leagueservice.MigrationLedger{Store: a.core.History}
+	raws := []commissioner.RawCommand{
+		{League: league, Command: commissioner.Create, Args: plan.Create, Request: "old.create", Reason: "Import", Effective: "now", Visibility: "league"},
+		{League: league, Command: commissioner.NativeSeed, Args: commissioner.RawArgs{Native: &plan.Seed}, Request: "old.seed", Reason: "Import", Effective: "now", Visibility: "league"},
+	}
+	if _, err := ledger.Batch(t.Context(), raws, "creator"); err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		if err := leaguemigration.BackfillFollowing(t.Context(), ledger, league); err != nil {
+			t.Fatal(err)
+		}
+	}
+	records, err := ledger.Records(t.Context(), league)
+	if err != nil || len(records) != 3 {
+		t.Fatalf("backfill entries=%d: %v", len(records), err)
+	}
+	if id, _, _, ok := mflsource.FollowingLeague(league, records); !ok || id != export.LeagueID {
+		t.Fatal("backfill did not follow", id, ok)
+	}
+	setFollow := func(value, request string) {
+		t.Helper()
+		held, err := ledger.Records(t.Context(), league)
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw := commissioner.RawCommand{League: league, Command: commissioner.RulesSet, Expected: int64(len(held)),
+			Args:    commissioner.RawArgs{Field: "schedule.follow", Value: json.RawMessage(value)},
+			Request: request, Reason: "Choose reference following", Effective: "now", Visibility: "league"}
+		if _, err := ledger.Execute(t.Context(), raw, "creator"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setFollow(`{"Source":"","League":"","Season":0}`, "clear.follow")
+	if err := leaguemigration.BackfillFollowing(t.Context(), ledger, league); err != nil {
+		t.Fatal(err)
+	}
+	cleared, err := ledger.Records(t.Context(), league)
+	if err != nil || len(cleared) != 4 {
+		t.Fatal("backfill replaced explicit clear", err)
+	}
+	if _, _, _, ok := mflsource.FollowingLeague(league, cleared); ok {
+		t.Fatal("explicit clear still follows")
+	}
+	setFollow(fmt.Sprintf(`{"Source":"mfl","League":%q,"Season":%d}`, export.LeagueID, export.Season), "set.follow")
+	svc := leaguemigration.Service{Ledger: ledger, Now: a.timeNow, Source: func(string) (leaguemigration.Source, error) { return &migrationtest.Source{Export: export}, nil }}
+	req := leaguemigration.Request{League: league, MFLLeague: export.LeagueID}
+	review, err := svc.Review(t.Context(), req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Cutover(t.Context(), req, review.Digest, "Run here", "creator"); err != nil {
+		t.Fatal(err)
+	}
+	records, err = ledger.Records(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, ok := mflsource.FollowingLeague(league, records); ok {
+		t.Fatal("cutover still follows")
+	}
+	rules, err := commissioner.RulesNow(records, a.timeNow())
+	if err != nil || rules.Schedule.Follow.Value != (leaguerules.ScheduleFollow{}) {
+		t.Fatal("cutover did not clear setting", err)
+	}
+	if err := leaguemigration.BackfillFollowing(t.Context(), ledger, league); err != nil {
+		t.Fatal(err)
+	}
+	after, err := ledger.Records(t.Context(), league)
+	if err != nil || len(after) != len(records) {
+		t.Fatal("backfill undid cutover", err)
 	}
 }

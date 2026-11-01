@@ -1,8 +1,11 @@
 package leaguemigration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -71,4 +74,59 @@ func answerCommands(plan Plan, league, reason string, answers []commissioner.See
 			Reason: reason, Effective: "now", Visibility: "league"})
 	}
 	return out, nil
+}
+
+func followCommand(league, sourceLeague string, season int, reason string) (commissioner.RawCommand, error) {
+	follow := leaguerules.ScheduleFollow{}
+	if sourceLeague != "" {
+		follow = leaguerules.ScheduleFollow{Source: "mfl", League: strings.TrimSpace(sourceLeague), Season: season}
+	}
+	value, err := json.Marshal(follow)
+	if err != nil {
+		return commissioner.RawCommand{}, fmt.Errorf("encode reference schedule: %w", err)
+	}
+	return commissioner.RawCommand{League: league, Command: commissioner.RulesSet,
+		Args: commissioner.RawArgs{Field: "schedule.follow", Value: value}, Request: "schedule.follow." + strconv.Itoa(season),
+		Reason: reason, Effective: "now", Visibility: "league"}, nil
+}
+
+// BackfillFollowing records the reference setting once for imports predating it.
+// Any recorded setting, including a clear, belongs to the commissioner and is never replaced.
+func BackfillFollowing(ctx context.Context, ledger Ledger, league string) error {
+	records, err := ledger.Records(ctx, league)
+	if err != nil {
+		return fmt.Errorf("read reference setting: %w", err)
+	}
+	if len(records) == 0 || commissioner.CutOver(records) {
+		return nil
+	}
+	for _, r := range records {
+		if r.Command.Command == commissioner.RulesSet && r.Command.Args.Field == "schedule.follow" {
+			return nil
+		}
+	}
+	for _, seed := range records[0].Command.Args.Seed {
+		if seed.Field == "schedule.follow" {
+			return nil
+		}
+	}
+	if commissioner.LeagueSource(records) != commissioner.SourceMFLImport {
+		return nil
+	}
+	season := records[0].Command.Args.Season
+	prefix, suffix := "native.mfl-", "-"+strconv.Itoa(season)
+	id := strings.TrimSuffix(strings.TrimPrefix(league, prefix), suffix)
+	if id == "" || AppLeagueID(id, season) != league {
+		return fmt.Errorf("recorded import has no reference league identity")
+	}
+	raw, err := followCommand(league, id, season, "Record reference schedule setting from the original import")
+	if err != nil {
+		return err
+	}
+	raw.Request = "schedule.follow.backfill"
+	raw.Expected = int64(len(records))
+	if _, err := ledger.Execute(ctx, raw, records[0].Principal); err != nil {
+		return fmt.Errorf("record reference setting: %w", err)
+	}
+	return nil
 }

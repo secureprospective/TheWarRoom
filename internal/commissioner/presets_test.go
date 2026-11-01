@@ -74,13 +74,14 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) {
 	f8 := func(field string) bool {
 		return field == poolsField || field == sidesField || field == "scoring.rules" ||
-			field == "draft.startupRookies"
+			field == "draft.startupRookies" || field == "schedule.follow"
 	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
+	rules.Schedule.Follow = leaguerules.Value[leaguerules.ScheduleFollow]{}
 	sections := []RuleSection{}
 	for _, s := range reading.Sections {
 		s.Rows = slices.DeleteFunc(slices.Clone(s.Rows), func(r RuleRow) bool { return f8(r.Field) })

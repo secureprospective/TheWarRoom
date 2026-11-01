@@ -111,5 +111,6 @@ func (a *App) syncLeagueSchedulesAtLaunch(parent context.Context) {
 	defer cancel()
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
+	a.backfillScheduleFollowing(ctx)
 	a.syncLeagueSchedules(ctx)
 }

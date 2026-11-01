@@ -3723,6 +3723,15 @@
     }
   },
   "Schedule": {
+    "Follow": {
+      "State": 1,
+      "Value": {
+        "Source": "",
+        "League": "",
+        "Season": 0
+      },
+      "Citation": "Reference schedule following is off until selected"
+    },
     "RegularWeeks": {
       "State": 1,
       "Value": 13,

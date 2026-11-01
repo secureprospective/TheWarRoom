@@ -24,6 +24,7 @@ func Prepare(export Export) (leaguemigration.Plan, error) {
 	p := preparation{export: export}
 	plan := leaguemigration.Plan{}
 	rules, problems, notes := Settings(export.Config, export.Base, export.DraftType)
+	rules.Schedule.Follow = leaguerules.Known(leaguerules.ScheduleFollow{Source: "mfl", League: export.LeagueID, Season: export.Season})
 	p.problems = append(p.problems, problems...)
 	plan.Rules, plan.Notes = rules, notes
 	plan.Waiting = waitingSettings(rules)
