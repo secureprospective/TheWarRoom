@@ -4,6 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"strconv"
+
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -64,4 +68,37 @@ func (h controlHost) Migrate(command, body string) (json.RawMessage, error) {
 		return nil, fmt.Errorf("move the MFL league: %w", err)
 	}
 	return reply, nil
+}
+
+// syncLeagueSchedules is a reference-feed refresh. Failures retain the published ledger
+// and retry on the next refresh; they never stop the rest of the board.
+func (a *App) syncLeagueSchedules(ctx context.Context) {
+	if a.core.History == nil {
+		return
+	}
+	leagues, err := a.core.History.NativeLeagues(ctx)
+	if err != nil {
+		log.Printf("read leagues for schedule refresh: %v", err)
+		return
+	}
+	ledger := leagueservice.MigrationLedger{Store: a.core.History,
+		Auth: func() commissioner.Authorizer { return a.core.CommissionerAuthorizer }}
+	for _, league := range leagues {
+		records, err := ledger.Records(ctx, league.ID)
+		if err != nil {
+			log.Printf("read schedule refresh league: %v", err)
+			continue
+		}
+		source, season, principal, follows := mflsource.FollowingLeague(league.ID, records)
+		if !follows {
+			continue
+		}
+		raw, err := leagueschedule.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
+		if err == nil {
+			_, err = mflsource.BackfillSchedule(ctx, ledger, league.ID, "Refresh the published schedule", principal, season, raw)
+		}
+		if err != nil {
+			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
+		}
+	}
 }
