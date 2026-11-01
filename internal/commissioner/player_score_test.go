@@ -35,6 +35,22 @@ func TestNativePlayerScoreCompleteAndIncompleteNeverShareTotal(t *testing.T) {
 	}
 }
 
+func TestNativePlayerScoreRetainsCountedRevisionGaps(t *testing.T) {
+	b := newLedger(t, PresetLegacy)
+	b.seed(2026, nil, seasonMoment(2))
+	evidence := completeScoreEvidence()
+	old := *evidence.Held
+	old.Missing = []string{"The counted revision lacks play-by-play"}
+	evidence.Lines = []source.LineRevision{{Seq: 0, Digest: "older", Held: old},
+		{Seq: 1, Digest: "completed", Held: *evidence.Held}}
+	out, err := NativePlayerScoreReading("native.test", source.RawNativeScope{Player: "0099", Season: 2026, Week: 1},
+		b.records, evidence, seasonMoment(5))
+	if err != nil || out.Status != "Incomplete" || out.Points != nil || out.PartialPoints == nil ||
+		!strings.Contains(out.Words, old.Missing[0]) {
+		t.Fatalf("new evidence hid the counted revision's gaps: %+v %v", out, err)
+	}
+}
+
 func TestNativePlayerScorePositionVocabularyAndUnresolvedPosition(t *testing.T) {
 	for _, tc := range []struct {
 		feed string

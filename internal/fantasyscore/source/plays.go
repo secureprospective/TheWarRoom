@@ -1,6 +1,8 @@
 package source
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"slices"
@@ -8,6 +10,29 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
+
+// PlaysURL names the compressed nflverse season release used for final scoring.
+func PlaysURL(season int) string {
+	return fmt.Sprintf("https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_%d.csv.gz", season)
+}
+
+// ReadCompressedPlays bounds the expanded release before parsing its validated rows.
+func ReadCompressedPlays(body []byte) ([]RawPlay, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("open compressed plays: %w", err)
+	}
+	defer func() { _ = reader.Close() }()
+	const limit = 256 << 20
+	plain, err := io.ReadAll(io.LimitReader(reader, limit+1))
+	if err != nil {
+		return nil, fmt.Errorf("expand plays: %w", err)
+	}
+	if len(plain) > limit {
+		return nil, fmt.Errorf("expanded plays exceed 256 MiB")
+	}
+	return ReadPlays(bytes.NewReader(plain))
+}
 
 // RawPlay retains the source's player credits and distances, not parsed descriptions.
 type RawPlay struct {

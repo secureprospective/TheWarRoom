@@ -44,10 +44,6 @@ func LineDigest(week PlayerWeek) string {
 // lineHistory collects one player-week's versions while files are offered newest first.
 type lineHistory struct{ newestFirst []LineRevision }
 
-func (h *lineHistory) add(week PlayerWeek, sha string, at time.Time) {
-	h.addHeld(HeldWeek{SHA256: sha, FetchedAt: at, Week: &week, Missing: []string{missingPlayByPlay}})
-}
-
 func (h *lineHistory) addHeld(held HeldWeek) {
 	digest := LineDigest(*held.Week)
 	if n := len(h.newestFirst); n != 0 && h.newestFirst[n-1].Digest == digest {
@@ -90,6 +86,11 @@ func NewLineBook(season int) *LineBook {
 
 // Add offers one held file's weeks. Files must be added newest first.
 func (b *LineBook) Add(sha string, at time.Time, weeks []PlayerWeek) {
+	b.AddFile(sha, at, weeks, []string{missingPlayByPlay})
+}
+
+// AddFile records a file with its actual evidence gaps, including completed play-by-play revisions.
+func (b *LineBook) AddFile(sha string, at time.Time, weeks []PlayerWeek, missing []string) {
 	for _, week := range weeks {
 		if week.Season != b.season || week.SeasonType != "REG" || week.Week < 1 || week.Week > 22 {
 			continue
@@ -98,7 +99,7 @@ func (b *LineBook) Add(sha string, at time.Time, weeks []PlayerWeek) {
 		if b.history[key] == nil {
 			b.history[key] = &lineHistory{}
 		}
-		b.history[key].add(week, sha, at)
+		b.history[key].addHeld(HeldWeek{SHA256: sha, FetchedAt: at, Week: &week, Missing: slices.Clone(missing)})
 	}
 }
 

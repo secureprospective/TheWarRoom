@@ -2,6 +2,7 @@ package commissioner
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -84,6 +85,11 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 	var week source.PlayerWeek
 	switch {
 	case counted != nil:
+		for _, missing := range counted.Held.Missing {
+			if !slices.Contains(out.Missing, missing) {
+				out.Missing = append(out.Missing, missing)
+			}
+		}
 		week = *counted.Held.Week
 		out.SHA256, out.FetchedAt = counted.Held.SHA256, &counted.Held.FetchedAt
 	case len(corrections) != 0:
