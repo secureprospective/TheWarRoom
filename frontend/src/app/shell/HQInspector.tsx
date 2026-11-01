@@ -112,7 +112,8 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
     catch (e) { setError(String(e)); throw e; }
     finally { setBusy(false); }
   };
-  const noteData = !native && readNotes.reading?.player === id ? readNotes.reading : undefined;
+  const noteData = !native && !readNotes.error && readNotes.reading?.player === id ? readNotes.reading :
+    undefined;
   const research = facts?.get(id)?.research;
   const ppg = researchFact(research, 'Points per game')?.split(' · ')[0];
   const dynasty = assets.value?.values.find(v => v.id === id)?.dynasty;
@@ -141,8 +142,7 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
       </Drawer>
       <Drawer title="AGE ARC" mine detail={arc.value?.age.toFixed(1) ?? unavailable}><AgeArc
         arc={arc.value} season={snapshot.league.value.season} /></Drawer>
-      <NotesThread notes={noteData?.notes} count={noteData?.count} pending={busy} error={error || (!native
-        ? readNotes.error : '')}
+      <NotesThread notes={noteData?.notes} count={noteData?.count} pending={busy} error={error}
         add={!native && noteData ? text => change('add', text) : undefined} remove={!native && noteData ?
           note => change('remove', '', note.at).catch(() => {}) : undefined} />
     </div>

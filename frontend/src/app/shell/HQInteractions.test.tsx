@@ -42,6 +42,33 @@ it('adds and removes dated notes through the existing backend, then re-reads the
     at: '2026-10-31T10:00:00Z' }));
   expect(read).toHaveBeenCalledTimes(3);
 });
+it('shows unavailable rather than an internal notes read error', async () => {
+  const snapshot = heldSnapshot();
+  const host = await mount(render(HQInspector, { snapshot, mine: '0025', id: snapshot.players.value[0].id }),
+    {}, { offers: { API: { TargetPersonalNotes: async () => {
+      throw new Error('No recorded read: offers.TargetPersonalNotes');
+    } } } });
+  await flush();
+  expect(host.textContent).toContain('MY NOTES');
+  expect(host.textContent).toContain('Not available yet');
+  expect(host.textContent).not.toContain('offers.TargetPersonalNotes');
+  expect(host.textContent).not.toContain('No recorded read');
+});
+it('does not expose a failed what-if read in the release panel', async () => {
+  const whatIf = await import('../contracts/whatif');
+  vi.spyOn(whatIf, 'whatIfProvider').mockReturnValue({
+    query: async () => { throw new Error('No recorded read: contracts.TargetWhatIf'); },
+    change: async () => {}, onChange: () => () => {},
+  });
+  const { HQRelease } = await import('./HQRelease');
+  const snapshot = heldSnapshot();
+  const host = await mount(render(HQRelease, { snapshot, mine: '0025', id: snapshot.players.value[0].id,
+    close: () => {} }));
+  await flush();
+  expect(host.textContent).toContain('Not available yet');
+  expect(host.textContent).not.toContain('contracts.TargetWhatIf');
+  expect(host.textContent).not.toContain('No recorded read');
+});
 it('picks a bench player, places him through a command-backed row, and filters positions', async () => {
   const snapshot = heldSnapshot(), reading = heldLineup(), place = vi.fn(), select = vi.fn();
   const host = await mount(render(HQBoard, { snapshot, mine: '0025', reading,

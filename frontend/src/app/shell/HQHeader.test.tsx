@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { HQHeader } from './HQHeader';
+import { HQShell } from './HQShell';
 import { capFromReads, lineupCheck, settingsFromReport, unavailable } from './hqModel';
 import { heldLineup, heldSnapshot } from '../data/lineupTestData';
 import type { Report } from '../reports/contract';
@@ -8,6 +9,13 @@ import type { Report } from '../reports/contract';
 const settings = (active: number): Report => ({ id: 'M-091', title: '', note: '', status: 'ok',
   source: '', asOf: '', how: '', columns: ['Setting', 'Value'], summary: [], link: null,
   rows: [{ cells: ['Roster size', `${active} players`], range: null }] });
+it('does not show a sample command beside My Moves', () => {
+  const html = renderToStaticMarkup(<HQShell tab="lineup-and-roster" navigate={() => {}}
+    navigateNode={() => {}} inspector={null}><div>Roster</div></HQShell>);
+  expect(html).toContain('MY MOVES');
+  expect(html).not.toContain('lineup.swap');
+  expect(html).not.toContain('out=');
+});
 describe('HQ franchise plate', () => {
   it('renders read values, preserving cents and unknown committed/dead split', () => {
     const snapshot = heldSnapshot();

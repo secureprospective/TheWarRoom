@@ -1,6 +1,5 @@
 import { HQAct } from './HQAct';
 import type { ReactNode, RefObject } from 'react';
-import { commands } from '../commands/registry';
 import { unavailable } from './hqModel';
 import type { Node } from './nodes';
 export function lockLabel(at: string): string {
@@ -52,7 +51,6 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         <HQAct className={`queue ${tab === 'my-moves' ? 'on' : ''}`} onAction={() => navigate('my-moves')}
           label="My moves queue"><span
           className="ql">MY MOVES</span>{queue}</HQAct>
-        <div className="cmd"><kbd>/</kbd> lineup.swap out=… in=…</div>
       </div>
       {children}
     </main>
