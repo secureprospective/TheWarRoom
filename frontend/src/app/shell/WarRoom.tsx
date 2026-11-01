@@ -1,4 +1,5 @@
 import { HQAct as WarRoomAct } from './HQAct';
+import { RailLeaguePicker } from './leaguePicker';
 import { useRef, useState } from 'react';
 import type { Snapshot } from '../data/contract';
 import { commands } from '../commands/registry';
@@ -24,9 +25,9 @@ export default function WarRoom({ snapshot, native }: { snapshot: Snapshot; nati
   const state = commands.use();
   const key = commands.useMFLKey();
   const mine = native?.mine ?? (key.myFranchise || state.franchiseId);
-  if (!mine) return <FranchisePicker snapshot={snapshot} />;
+  if (!mine && !native) return <FranchisePicker snapshot={snapshot} />;
   return <WarRoomWorkspace key={`${native?.league ?? 'mirror'}:${mine}`} snapshot={snapshot}
-    mine={mine} native={native} />;
+    mine={mine ?? ''} native={native} />;
 }
 function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine: string;
   native?: WarRoomNative }) {
@@ -49,11 +50,12 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     clock?.value.deadlines ?? [];
   const deadline = deadlines.find(d => /trade/i.test(d.id + d.label));
   const navigate = (node: 'home' | 'war' | 'hq' | 'pulse' | 'control') => {
-    if (native) { if (node !== 'war') native.leave(); }
+    if (native) { if (node !== 'war') native.leave(node); }
     else void commands.dispatch('nav.open', { node });
   };
   return <div className="wr-v6" ref={root}><div className="shell">
-    <nav className="rail" aria-label="Main"><div className="rail-head"><div className="lg">THE WAR ROOM
+    <nav className="rail" aria-label="Main"><RailLeaguePicker />
+      {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head"><div className="lg">THE WAR ROOM
       </div><div className="ph">{header.reading?.name ?? unavailable} · <i>{week ? `Wk ${week}` :
         unavailable}</i></div></div><div className="rail-body"><div className="gl">MY SHORTCUTS</div>
       <WarRoomAct className="leaf" onAction={() => navigate('hq')}>

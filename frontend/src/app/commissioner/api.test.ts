@@ -19,7 +19,7 @@ it('routes every moved method through the generated Commissioner module', async 
     const args = ['scope', { request: 'retry-key' }, 2026, 1, 'UTC', 'viewer', 'extra'];
     expect(await call(...args)).toBe(name);
     // The generated signature forwards exactly its declared arguments, not a rest tuple.
-    expect(calls[name]).toHaveBeenCalledWith(...args.slice(0, method.length));
+    expect(calls[name]).toHaveBeenCalledWith(...args.slice(0, call.length));
   }
   expect(api.ledgerBindings().TargetCommissionerLedger).toBe(api.TargetCommissionerLedger);
   expect(api.nativeBindings().TargetNativeAssets).toBe(api.TargetNativeAssets);

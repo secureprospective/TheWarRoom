@@ -1,0 +1,129 @@
+import { describe, expect, it } from 'vitest';
+import {
+  LEAGUE_KEY,
+  chooseLeague,
+  parseLeagues,
+  resolveLeagueId,
+  type LeagueChoice,
+} from './leaguePicker';
+
+const leagues: LeagueChoice[] = [
+  { id: 'mirror', name: 'Legacy NFL', teams: 32, app: false },
+  { id: 'native.one', name: 'One', teams: 12, app: true },
+  { id: 'native.two', name: 'Two', teams: 14, app: true },
+];
+
+function fakeStorage(initial?: string) {
+  const values = new Map<string, string>();
+  if (initial !== undefined) values.set(LEAGUE_KEY, initial);
+  return {
+    getItem: (key: string) => values.get(key) ?? null,
+    setItem: (key: string, value: string) => {
+      values.set(key, value);
+    },
+  };
+}
+
+describe('League picker selection', () => {
+  it('restores the stored league when it is still available', () => {
+    const storage = fakeStorage('native.two');
+    expect(resolveLeagueId(leagues, storage.getItem(LEAGUE_KEY))).toBe('native.two');
+  });
+
+  it('falls back to the first league when nothing is stored', () => {
+    expect(resolveLeagueId(leagues, fakeStorage().getItem(LEAGUE_KEY))).toBe('mirror');
+  });
+
+  it('falls back to the first league when the stored league was deleted', () => {
+    expect(resolveLeagueId(leagues, 'native.deleted')).toBe('mirror');
+  });
+
+  it('accepts an empty league list without inventing a league', () => {
+    expect(parseLeagues([])).toEqual([]);
+    expect(resolveLeagueId([], 'native.deleted')).toBe('');
+  });
+
+  it('persists a pick and resolves it back after a relaunch', () => {
+    const storage = fakeStorage();
+    expect(chooseLeague(leagues, 'native.two', storage)).toBe('native.two');
+    expect(storage.getItem(LEAGUE_KEY)).toBe('native.two');
+    expect(resolveLeagueId(leagues, storage.getItem(LEAGUE_KEY))).toBe('native.two');
+  });
+
+  it('refuses an unknown league without writing it', () => {
+    const storage = fakeStorage('mirror');
+    expect(() => chooseLeague(leagues, 'native.deleted', storage)).toThrow('unknown league');
+    expect(storage.getItem(LEAGUE_KEY)).toBe('mirror');
+  });
+
+  it('parses the desktop list and rejects an unreadable authority bit', () => {
+    expect(parseLeagues(leagues)).toEqual(leagues);
+    expect(() => parseLeagues([{ id: 'mirror', name: 'Legacy NFL', teams: 32, app: 'no' }])).toThrow(
+      'expected boolean',
+    );
+  });
+});
+
+it('renders the Home choices as visible actions', async () => {
+  const { renderToStaticMarkup } = await import('react-dom/server');
+  const { createElement } = await import('react');
+  const { LeagueChoices } = await import('./leaguePicker');
+  const html = renderToStaticMarkup(createElement(LeagueChoices, {
+    leagues, selectedId: 'native.one', onSelect: () => {},
+  }));
+  expect(html).toContain('<button');
+  expect(html).toContain('One — 12 teams');
+  expect(html).not.toContain('<select');
+});
+
+it('refuses changes in a league with no assigned franchise', async () => {
+  const { localReadOnlyWorkflow } = await import('./localWorkflow');
+  const request = { command: 'commish.lineup.set', mode: 'preview', arguments: {} } as never;
+  await expect(localReadOnlyWorkflow(request)).rejects.toThrow('read-only');
+});
+
+it('uses only the signed-in person’s franchise, including an empty seat', async () => {
+  const { vi } = await import('vitest');
+  const api = await import('../commissioner/api');
+  const { appLeagueFranchise } = await import('./leaguePicker');
+  const people = {
+    league: 'native.one', name: 'One', revision: 1,
+    seats: [{ franchise: 'other', name: 'Other', abbreviation: 'O', owner: 'someone' }],
+    roles: [], invites: [], dotCount: 0, dotStatus: '', votes: [], succession: '',
+    yourRole: 'Commissioner', yourFranchise: '', mayChangeRules: true, mayGrantRoles: true,
+    mayPostNotices: true,
+  };
+  vi.stubGlobal('window', { go: {} });
+  const read = vi.fn().mockResolvedValue(people);
+  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetCommissionerPeople: read } as never);
+  try {
+    expect(await appLeagueFranchise('native.one')).toBe('');
+    read.mockResolvedValue({ ...people, yourFranchise: 'mine' });
+    expect(await appLeagueFranchise('native.one')).toBe('mine');
+  } finally {
+    spy.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});
+
+it('uses desktop native reads with league authority for regions outside the workflow catalog', async () => {
+  const { vi } = await import('vitest');
+  const api = await import('../commissioner/api');
+  const { localWorkflow } = await import('./localWorkflow');
+  vi.stubGlobal('window', { go: {} });
+  const cap = vi.fn().mockResolvedValue({ league: 'native.one' });
+  const authority = vi.fn().mockResolvedValue({ label: 'Local league', writable: true,
+    football: '', data: {} });
+  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetNativeCapCheck: cap,
+    TargetWorkflow: authority } as never);
+  try {
+    const result = await localWorkflow({ command: 'native.cap.check', mode: 'read',
+      arguments: { league: 'native.one', viewerZone: 'UTC' } });
+    expect(cap).toHaveBeenCalledWith('native.one', 'UTC');
+    expect(JSON.parse(authority.mock.calls[0][0]).arguments.league).toBe('native.one');
+    expect(result.data).toEqual({ league: 'native.one' });
+  } finally {
+    spy.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});

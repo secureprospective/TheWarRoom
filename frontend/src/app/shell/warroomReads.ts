@@ -1,3 +1,4 @@
+import type { Node } from './nodes';
 import { useContractRead } from '../contracts/Contracts';
 import { contractsProvider } from '../contracts/provider';
 import { controlAPI } from '../control/api';
@@ -10,7 +11,7 @@ import { hqEvents } from './hqReads';
 import { settingsFromReport, type HQCap } from './hqModel';
 import { standingFromReport } from './hqPlayerData';
 export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
-  leave: () => void; week?: number };
+  leave: (node?: Node) => void; week?: number };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   starterN?: number; best?: string; rank?: string; runway?: HQCap[]; errors: string[] };

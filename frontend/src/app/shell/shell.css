@@ -38,6 +38,37 @@
   }
 .twr-app .league b { display: block; font-size: 13px; }
 .twr-app .league small { color: var(--surface-tx3); font-size: 11px; }
+
+.twr-app .league .pick {
+  width: 100%;
+  margin-top: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--surface-line);
+  border-radius: 2px;
+  background: var(--surface-2);
+  color: var(--surface-tx2);
+  font: inherit;
+  font-size: 11px;
+}
+.twr-app .league .pick:focus-visible { outline: 1px solid var(--surface-line-hi); }
+.twr-app .league-choices {
+  border: 1px solid var(--surface-line);
+  background: var(--surface-2);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.twr-app .league-choices button, .twr-app .league li button {
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid var(--surface-line);
+  border-radius: 2px;
+  background: var(--surface-3);
+  color: var(--surface-tx1);
+  font: inherit;
+}
+.twr-app .league-choices ul, .twr-app .league ul { list-style: none; margin: 8px 0 0; padding: 0; }
+.twr-app .league-choices li + li, .twr-app .league li + li { margin-top: 4px; }
+.twr-app .league-choices small { color: var(--surface-tx3); font-size: 11px; white-space: nowrap; }
 .twr-app .act-command {
   margin: 10px 12px;
   padding: 7px 9px;

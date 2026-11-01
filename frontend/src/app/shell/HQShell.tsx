@@ -1,4 +1,5 @@
 import { HQAct } from './HQAct';
+import { RailLeaguePicker } from './leaguePicker';
 import type { ReactNode, RefObject } from 'react';
 import { unavailable } from './hqModel';
 import type { Node } from './nodes';
@@ -19,6 +20,7 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
   return <div className="hq-v10 shell" ref={root} style={fullscreen ? { position: 'fixed', inset: 0,
     zIndex: 10 } : undefined}>
     <nav className="rail" aria-label="Main">
+      <RailLeaguePicker />
       <div className="rail-head"><div className="lg">THE WAR ROOM</div><div className="ph">{leagueName ||
         unavailable} · <i>{week ? `Wk ${week}` : unavailable} · {liveCount === undefined ? unavailable :
           `${liveCount} live`}</i></div></div>
