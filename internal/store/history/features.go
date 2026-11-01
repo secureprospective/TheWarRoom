@@ -24,13 +24,16 @@ GROUP BY player_id, season, week, measure, source`
 
 // featuresSQL keeps one row per player, period and measure: the highest-priority source's
 // latest value. A source with no source_fields row for the measure is not read.
+// Materializing the small mapping lets SQLite index both join columns, rather than scan
+// every field of a source for each observation through source_fields' (source, field) key.
 func featuresSQL(asOf, where string) string {
 	return `
+WITH fields AS MATERIALIZED (SELECT source, measure, priority FROM source_fields)
 SELECT player_id, season, week, measure, source, as_of, value, text FROM (
 	SELECT l.*, ROW_NUMBER() OVER (
 		PARTITION BY l.player_id, l.season, l.week, l.measure ORDER BY f.priority) AS pick
 	FROM (` + latestSQL(asOf, where) + `) l
-	JOIN source_fields f ON f.source = l.source AND f.measure = l.measure
+	JOIN fields f ON f.source = l.source AND f.measure = l.measure
 	WHERE l.newest = 1
 ) WHERE pick = 1`
 }

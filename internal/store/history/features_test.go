@@ -3,6 +3,7 @@ package history
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -36,6 +37,34 @@ func TestLatestFeatureKeepsValueAndTextFromNewestRow(t *testing.T) {
 				t.Fatalf("wrong latest row: %+v", f)
 			}
 		}
+	}
+}
+
+func TestFeatureReadIndexesBothSourceAndMeasure(t *testing.T) {
+	s, _, _ := newStore(t)
+	query := featuresSQL("?", " AND season = ? AND measure IN (?)")
+	rows, err := s.pools.Read().QueryContext(t.Context(), "EXPLAIN QUERY PLAN "+query,
+		formatTime(t0()), 2025, "outcome.sacks")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = rows.Close() }()
+	indexed := false
+	for rows.Next() {
+		var id, parent, unused int
+		var detail string
+		if err := rows.Scan(&id, &parent, &unused, &detail); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(detail, "INDEX") && strings.Contains(detail, "source=? AND measure=?") {
+			indexed = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if !indexed {
+		t.Fatal("feature join scans every source field instead of indexing source and measure")
 	}
 }
 
