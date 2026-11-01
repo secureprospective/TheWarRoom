@@ -109,6 +109,10 @@ func AddProvenZeros(weeks []PlayerWeek, plays []RawPlay, proofs []RawAbsenceProo
 	if err != nil {
 		return nil, err
 	}
+	games := make(map[string]bool)
+	for _, p := range plays {
+		games[p.GameID] = true
+	}
 	out := append([]PlayerWeek(nil), weeks...)
 	for _, r := range proofs {
 		if err := r.Validate(); err != nil {
@@ -120,7 +124,7 @@ func AddProvenZeros(weeks []PlayerWeek, plays []RawPlay, proofs []RawAbsenceProo
 		season, _ := strconv.Atoi(r.Season)
 		week, _ := strconv.Atoi(r.Week)
 		key := playKey(r.GSIS, season, week)
-		if known[key] || actors[key] {
+		if known[key] || actors[key] || (r.Evidence == "team bye per schedule" && proofGame(r, games) != "") {
 			continue
 		}
 		game := r.GameID

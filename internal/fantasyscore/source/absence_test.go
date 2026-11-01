@@ -135,3 +135,14 @@ func TestScheduleByeNeedsIdentityAndDoesNotOverrideEvents(t *testing.T) {
 		t.Fatalf("unlinked bye became zero: %+v %v", got, err)
 	}
 }
+
+func TestScheduleByeDoesNotContradictACompletedGame(t *testing.T) {
+	p := creditPlay()
+	p.EndGame = "END GAME"
+	p.GameSeconds = "0"
+	proof := RawAbsenceProof{GSIS: "00-0030001", Season: "2026", Week: "1", Team: "BUF", Evidence: "team bye per schedule"}
+	got, err := AddProvenZeros(nil, []RawPlay{p}, []RawAbsenceProof{proof})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("conflicting game admitted a bye: %+v %v", got, err)
+	}
+}
