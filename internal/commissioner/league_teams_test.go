@@ -220,18 +220,18 @@ func TestDivisionsChangeRewritesAlignment(t *testing.T) {
 	}
 }
 
-func TestTeamsAndDivisionsFollowAnImport(t *testing.T) {
-	b := newLedger(t, PresetLegacy)
+// Where a league came from is not a kind of league: an imported league's teams and divisions change
+// through the same checks as any league's.
+func TestTeamsAndDivisionsChangeTheSameForAnImport(t *testing.T) {
+	imported, native := newLedger(t, PresetLegacy), newLedger(t, PresetDefault32)
 	for _, field := range []string{"league.teams", "league.divisions"} {
 		for _, effective := range []string{"now", "next_rollover"} {
-			err := CheckRulesAppend(ruleRaw(field, `12`, effective, "Agreed"), b.records, seasonMoment(2))
-			if err == nil || !strings.Contains(err.Error(), "follows the league's MFL franchises in an imported league") {
-				t.Fatalf("%s %s: %v", field, effective, err)
+			raw := ruleRaw(field, `12`, effective, "Agreed")
+			got, want := CheckRulesAppend(raw, imported.records, seasonMoment(2)), CheckRulesAppend(raw, native.records, seasonMoment(2))
+			if fmt.Sprint(got) != fmt.Sprint(want) {
+				t.Fatalf("%s %s: imported %v, app league %v", field, effective, got, want)
 			}
 		}
-	}
-	if got := len(LeagueFranchises(b.records)); got != 32 {
-		t.Fatalf("import franchises: %d", got)
 	}
 }
 

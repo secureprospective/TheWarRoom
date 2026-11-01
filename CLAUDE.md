@@ -124,6 +124,10 @@ frontend, SQLite (WAL), MFL API. The first user is Christopher as a GM (R1).
   and no code asks which preset a league came from. Each setting stands alone; changing one never forces
   another. Every setting changes through the one rule-change flow. The only refusals are what the
   engine truly cannot run, said in plain words. Be accommodating, not restrictive.
+  **An MFL import is just settings in the same app (10-31):** where a league came from is not a kind of
+  league. No code branches on a league's source or on one league's ID, and nothing is locked because it
+  came from MFL. Frontend = how a human works the backend; backend = engines (the math) + stores. Test:
+  could a human reach this league by changing settings by hand, and change it back? If not, it is slop.
 - **Do not reopen locked decisions** or add features the documents don't call for. If a locked
   decision creates a constraint that feels wrong, flag it to Christopher.
 

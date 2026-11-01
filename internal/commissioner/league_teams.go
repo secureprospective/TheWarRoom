@@ -177,9 +177,6 @@ func checkShapeChange(raw RawCommand, records []Record, at time.Time) error {
 	if raw.Args.Field == divisionsField {
 		label = "Divisions"
 	}
-	if LeagueSource(records) != SourceNative {
-		return Refused(fmt.Errorf("rule change refused: %s follows the league's MFL franchises in an imported league", label))
-	}
 	if raw.Effective != "now" {
 		return Refused(fmt.Errorf("rule change refused: a %s change takes effect now; choose now", label))
 	}
