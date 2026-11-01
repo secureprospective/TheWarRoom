@@ -107,6 +107,8 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   await settle();
   expect(container.querySelector('.wr-v6.embedded')).not.toBeNull();
   expect(container.querySelector('.wr-v6 .ws-tabs')).toBeNull();
+  expect(container.querySelector('.wr-v6 .work.external-tabs')).not.toBeNull();
+  expect(container.querySelector('.wr-v6 .franchise-context')?.classList.contains('fixed')).toBe(false);
   expect(container.querySelector('.target-frame > .insp')).toBeNull();
   const tabs = [...container.querySelectorAll<HTMLButtonElement>('.wtabs [role="tab"]')];
   expect(tabs.map(t => t.textContent)).toEqual(['TRADE DESK', 'MARKET', 'DRAFT ROOM', 'PLANS']);

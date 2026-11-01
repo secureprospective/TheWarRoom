@@ -81,7 +81,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="rail-foot">
       <WarRoomAct className="btn" disabled title={unavailable}>CUSTOMIZE</WarRoomAct>
         <span>/ command</span></div></nav>}
-    <main className="work">{native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
+    <main className={`work${native?.embedded && native.tabs ? ' external-tabs' : ''}`}>{native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
         reading={header.reading} />

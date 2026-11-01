@@ -340,7 +340,7 @@
 .wr-v6 .work{grid-template-rows:auto auto 1fr auto auto}
 
 /* the Table: direction at a glance */
-.wr-v6 .table{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:26px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
+.wr-v6 .franchise-context{display:grid;grid-template-columns:auto auto 1fr auto auto;gap:26px;align-items:center;padding:10px 20px;border-bottom:2px solid var(--black)}
 .wr-v6 .post{display:flex;border:2px solid var(--edge)}
 .wr-v6 .post button{padding:6px 10px;font:700 10px var(--mono);letter-spacing:.12em;color:var(--ink3);border-right:1px solid var(--black)}
 .wr-v6 .post button:last-child{border-right:0}
@@ -930,13 +930,14 @@
 .wr-v6 .partner select{min-width:0}
 .wr-v6 .dir{white-space:nowrap}
 /* Live data must not reflow the header: fixed height, runway values never wrap. */
-.wr-v6 .table.fixed{height:90px;box-sizing:border-box;overflow:hidden}
+.wr-v6 .franchise-context{height:90px;box-sizing:border-box;overflow:hidden}
 .wr-v6 .runw .y.fit{grid-template-columns:28px 1fr 56px;white-space:nowrap}
 
 .wr-v6.embedded{position:relative;inset:auto;z-index:auto;height:100%;min-height:650px;min-width:1040px}
 .wr-v6.embedded .shell{grid-template-columns:minmax(0,1fr) 316px}
 
-.wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto auto}
+.wr-v6.embedded .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto}
+.wr-v6.embedded .work.external-tabs{grid-template-rows:auto minmax(0,1fr) auto auto}
 .wr-v6.embedded .empty{overflow-wrap:anywhere}
 
 .wr-v6.embedded .desk{grid-template-columns:minmax(180px,1fr) minmax(360px,2fr) minmax(180px,1fr)}
@@ -946,5 +947,13 @@
 .wr-v6.embedded .mk3>div{min-height:220px;overflow:auto}
 .wr-v6.embedded .fa-h,.wr-v6.embedded .fa-r{min-width:780px}
 .wr-v6.embedded .dr5{grid-template-columns:minmax(180px,1fr) minmax(300px,2fr) minmax(180px,1fr)}
-.wr-v6.embedded .table.fixed{height:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.wr-v6.embedded .franchise-context{height:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .wr-v6.embedded .ch{flex-wrap:wrap;gap:4px}
+
+.wr-v6.embedded .franchise-context{overflow:visible;align-items:start}
+.wr-v6.embedded .franchise-context>div{min-width:0;overflow-wrap:anywhere}
+.wr-v6.embedded .post{flex-wrap:wrap}
+.wr-v6.embedded .shelf>.ch,.wr-v6.embedded .shelf>.bench,.wr-v6.embedded .shelf>.read{flex-shrink:0}
+.wr-v6.embedded .read{grid-auto-rows:max-content}
+.wr-v6.embedded .vers{flex-wrap:wrap;gap:4px}
+.wr-v6.embedded .vers .t{padding:4px 14px}

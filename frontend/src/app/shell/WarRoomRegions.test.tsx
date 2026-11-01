@@ -51,6 +51,8 @@ describe('War Room header and settings congruence', () => {
           mine: true, range: null }] }] }, starterN: 17, team: '', teams: [], week: 9, weeks: [] });
     const reading = await readWarRoomHeader(context());
     const html = renderToStaticMarkup(<WarRoomHeader name="Actual franchise" reading={reading} />);
+    expect(html).toContain('class="franchise-context"');
+    expect(html).not.toContain('class="table fixed"');
     expect(html).toContain('Actual franchise'); expect(html).toContain('5–3');
     expect(html).toContain('Best 17 (any position)'); expect(html).toContain('321.9');
     expect(raceAPI.read).toHaveBeenCalledWith(9, '0025', '0025', 'topn');
