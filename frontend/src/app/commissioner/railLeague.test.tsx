@@ -24,7 +24,7 @@ it('follows the rail league, without a second picker or app readings on the mirr
   const root = createRoot(container);
   const show = async (id: string) => {
     const state: LeagueState = { leagues, selectedId: id, selected: leagues.find(l => l.id === id),
-      loading: false, select: () => {} };
+      loading: false, select: () => {}, refresh: () => {} };
     await act(async () => { root.render(<LeagueContext.Provider value={state}>
       <LeagueRoom /></LeagueContext.Provider>); });
     for (let i = 0; i < 60 && (!container.querySelector('.move-mfl') ||

@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useContext, useEffect } from 'react';
+import { LeagueContext } from '../shell/leaguePicker';
 import { Act } from '../commands/Act';
 import { RuleInput } from '../commissioner/RuleInput';
 import { draftEditor } from '../commissioner/draftEditor';
@@ -8,6 +9,8 @@ import { migration } from './migration';
 // The same catalogue inputs used for later rule changes answer the import's remaining questions.
 export default function MoveMFL() {
   const s = migration.use();
+  const refresh = useContext(LeagueContext)?.refresh;
+  useEffect(() => { if (s.done) refresh?.(s.done); }, [s.done, refresh]);
   useEffect(() => surfaceActions.register('move-mfl', args => {
     if (args.action === 'clear') { migration.input(''); return; }
     if (args.action === 'check') return migration.prepare();

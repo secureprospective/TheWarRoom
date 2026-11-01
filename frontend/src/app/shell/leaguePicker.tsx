@@ -53,6 +53,7 @@ export type LeagueState = {
   loading: boolean;
   error?: string;
   select: (id: string) => void;
+  refresh: (id: string) => void;
 };
 
 export function useLeagues(
@@ -65,26 +66,29 @@ export function useLeagues(
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [reload, setReload] = useState<{ id: string }>();
+  const refresh = useCallback((id: string) => setReload({ id }), []);
   useEffect(() => {
     let active = true;
     setLoading(true);
-    read().then(
-      (choices) => {
+    async function load() {
+      try {
+        const choices = await read();
         if (!active) return;
+        const picked = reload ? chooseLeague(choices, reload.id, storage) : undefined;
         setLeagues(choices);
-        setSelectedId((current) => resolveLeagueId(choices, current));
-        setLoading(false);
-      },
-      (cause) => {
-        if (!active) return;
-        setError(`League list failed: ${cause instanceof Error ? cause.message : String(cause)}`);
-        setLoading(false);
-      },
-    );
-    return () => {
-      active = false;
-    };
-  }, [read]);
+        setSelectedId(current => picked ?? resolveLeagueId(choices, current));
+        setError(undefined);
+      } catch (cause) {
+        if (active)
+          setError(`League list failed: ${cause instanceof Error ? cause.message : String(cause)}`);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+    void load();
+    return () => { active = false; };
+  }, [read, reload, storage]);
   const select = useCallback(
     (id: string) => {
       try {
@@ -98,8 +102,8 @@ export function useLeagues(
   );
   const selected = leagues.find((league) => league.id === selectedId);
   return useMemo(
-    () => ({ leagues, selectedId, selected, loading, error, select }),
-    [leagues, selectedId, selected, loading, error, select],
+    () => ({ leagues, selectedId, selected, loading, error, select, refresh }),
+    [leagues, selectedId, selected, loading, error, select, refresh],
   );
 }
 
