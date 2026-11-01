@@ -1,47 +1,41 @@
 # Handoff
 
 ## Baton
-Review / ClaudeBox — 2026-11-01, build/SCHED-1. APP-SCHED-4 **partial**, local commits only;
-no remote contact. Do not claim full scoring or parity.
+Review / ClaudeBox — 2026-11-01, build/SCHED-1. APP-SCHED-5 implemented; parity partial.
+Local commits only; no git remote contact or push authorized.
 
 ## Where it stands
-- 28ee30a3: traced existing acquisition and copied-profile gap.
-- b311aae1: ordinary launch/manual/watched sync acquires cached, validated 2026 nflverse plays
-  through the existing archived transport, for any already-published NFL league season.
-  History offers a completed newest revision, preserving all original weekly revisions;
-  native results and stat queue see it. No math/settings/player exceptions changed.
-  Scorer retains the counted revision's missing-evidence labels (regression prevents false completion).
-- ab6b7391: native-league cold launch acquires weekly + plays, repeat fetches neither; held evidence verified.
-- Copy proof: scoring acquisition 1.472 s cold / .002–.003 s cached; history 461,660,160 →
-  469,966,848 B (+7.92 MiB including reference sync), one distinct 2026 plays body after repeats.
-  Whole proof 126.83 s first / 39.32 s repeat; page latency not certified.
-- Recorded-lineup-only comparison: 148 rows; before AND after exact=0 / within .01=0 /
-  complete differ=0 / unavailable=148. New complete evidence is not automatically approved.
-  Current recorded-starter occurrences: 2,304 counted revisions lack plays, 472 absent weeks,
-  300 unresolved positions, 7 unlinked identities. No fabricated zeroes or partial-score totals.
-- Targeted race: 623 top-level / 1,004 named pass, 9 skip, 1 inherited failure:
-  TestSinglePoolStartupDraftIsUnchanged digest 8a6936145d37309e != 90ca21fd230f0aa6;
-  same failure proven on clean local archive of starting f5366b23. Final focused tests pass.
-  Plain make build and commit hooks pass. No GUI/full verify/independent review.
-- Durable evidence: `docs/build-handoffs/APP-SCHED-4-evidence.md` and its comparison TSV.
-  Raw logs/copied profile under `.tmp/sched4`; one-use harness removed. Pre-existing
-  untracked `.golangci-cache/` left alone. Prior part-3 evidence remains.
+- Automatic counted revision: newest live, then nflverse authority; later live cannot displace it.
+  Commissioner revision pins and per-stat corrections win. Ordinary scheduled scoring sync records
+  current selections via existing StatApprove ledger/queue/provenance. Worker uses a locked batch,
+  standard admission/checks/event/audit writes; stat-only changes leave roster recovery unchanged.
+- Player-record fallback resolves all 300 position-blocked starter occurrences (93 players), no guesses
+  or exceptions. Specific NFL positions remain authoritative over differing player-record positions.
+- Copied scratch profile: 148 recorded franchise-weeks → exact 4 / within .01 0 / differ 33 /
+  unavailable 111. Largest differences are existing invalid-lineup penalties caused by specific
+  NFL-vs-league position differences, plus positional rates. No settings/math fixes.
+- Bills MFL 6–1 / PF 1912.35; app unsupported (no complete Bills week). Missing weekly evidence:
+  472 starter occurrences; 0835 Zion Childress unlinked in seven. No missing-position/play blockers.
+- Full affected race run: 961 named PASS (588 top-level), 9 skip, 2 inherited/environment failures:
+  startup draft digest (already clean-baseline proven) and preset-name guard scanning the pre-existing
+  `.tmp/sched4/baseline` archive. Final focused race 51 PASS; after helper extraction 11/11 PASS.
+  Final plain make build + commit hooks PASS. No GUI/full verify/independent reviewer.
+- Initial remaining 6,988 feed selections committed in 91.710 s; repeat 2.193 s. Final copy proof
+  121.96 s (seven results + standings + reconciliation). Not fast page/first-sync certification.
+- Evidence + 148-row detail: `docs/build-handoffs/APP-SCHED-5-evidence.md` and comparison TSV.
+  Raw logs/copy under `.tmp/sched5`; one-use harnesses removed. Pre-existing cache/archive untouched.
 
 ## Next move / blocked on
-- Head brain decision: default `countedVersion` is earliest revision; newer complete evidence does not
-  silently approve a correction. Resolve completeness/approval policy without changing scoring math.
-- Finish ordinary Sleeper edge/advanced-rushing acquisition and live ESPN scoring integration.
-  Existing ESPN live display path is unchanged; full live-to-final suite NOT delivered.
-- Resolve true historical positions and absent weekly evidence through approved data.
-  Zion Childress custom MFL 0835 has no verified NFL link: fresh DP candidate is MFL 17372,
-  GSIS 00-0040044. Same name alone is not a verified identity. No manual exception installed.
-- First schedule publication is seen by scoring acquisition on next ordinary sync; immediate first-sync
-  acquisition and source-health UI failure integration remain debt. Re-run parity after blockers.
-- Prior 76 historical-roster refusals and empty-lineup representation remain separate issues.
+- Review specific NFL-vs-league position precedence: e.g. Collins/Chaisson LB vs listed DE triggers
+  existing minimum-DE failure and top-starter penalty. No origin-specific branch or manual fix added.
+- Establish missing NFL weekly/inactivity evidence and verified custom-ID alias (0835); no zero fiction.
+- Trace Schultz W4 one-point residual. Complete ordinary live ESPN/Sleeper/advanced-rushing inputs.
+- Improve slow ledger bootstrap and result reads; first-publication timing/source-health UI remain debt.
+- Prior 76 historical-roster refusals and empty-lineup limitations remain separate.
 
 ## Tried and rejected
-- Refreshing weekly stats alone: already loaded 2026, does not supply play-by-play.
-- Relabelling the old counted weekly revision as complete because a newer revision has plays:
-  regression showed false Complete; missing metadata now follows the selected revision too.
-- Replacing older revisions, auto-approving corrections, inventing inactive zeroes, mapping a custom ID
-  by name alone, using MFL totals or changing scoring settings: not done.
+- Replaying all archived revisions as if each had been counted: wrong bootstrap history and too slow.
+  Adoption records only actual current selection; future moves each use the same ledger command.
+- Per-move archive rereads/roster reconstruction: trial only recorded 142 approvals in 45 s.
+  Batch and unchanged-stat-only recovery optimization preserve append/audit flow; cancelled batch
+  observed zero writes. No settings tweaks, name-only links or absent-stat zeroes installed.
