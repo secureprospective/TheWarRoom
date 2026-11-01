@@ -14,7 +14,7 @@ func feedReason(version source.LineRevision) string {
 	return "feed: newest live"
 }
 
-// FeedStatMoves replays retained feed revisions through the ordinary approval ledger.
+// FeedStatMoves records the currently selected feed revision through the ordinary approval ledger.
 // Commissioner choices pin the revision; per-stat corrections still overlay the selected line.
 func FeedStatMoves(league string, records []Record, weeks []StatWeek, season int) ([]RawCommand, error) {
 	effects, err := foldStatEffects(records)
@@ -34,17 +34,17 @@ func FeedStatMoves(league string, records []Record, weeks []StatWeek, season int
 			continue
 		}
 		versions := week.Evidence.Versions()
-		for i, version := range versions {
-			if FeedVersion(versions[:i+1]).Seq != version.Seq {
-				continue
-			}
-			id := StatItemID{Player: week.Player, Season: season, Week: week.Week, Seq: version.Seq, Digest: version.Digest[:statDigestLen]}.String()
-			if seen[id] {
-				continue
-			}
-			out = append(out, RawCommand{League: league, Command: StatApprove, Args: RawArgs{Stat: &RawStatChange{Item: id}},
-				Request: "feed." + id, Reason: feedReason(version), Effective: "now", Visibility: "league"})
+		selected := FeedVersion(versions)
+		if selected == nil {
+			continue
 		}
+		version := *selected
+		id := StatItemID{Player: week.Player, Season: season, Week: week.Week, Seq: version.Seq, Digest: version.Digest[:statDigestLen]}.String()
+		if seen[id] {
+			continue
+		}
+		out = append(out, RawCommand{League: league, Command: StatApprove, Args: RawArgs{Stat: &RawStatChange{Item: id}},
+			Request: "feed." + id, Reason: feedReason(version), Effective: "now", Visibility: "league"})
 	}
 	return out, nil
 }
