@@ -152,3 +152,48 @@ My local watchers (die at compaction; re-arm by PID loops if needed): b1im6oew4 
 3. 03:05+: review Tom D28 (mirror STOP clause), run regression batch once.
 4. Merge d33 (A12, teamneeds, bar3) into the wr-wire line when wiring needs it.
 5. Then Christopher's click test: HQ, then War Room — only after my real-app walk shows values filled.
+
+## 17. UPDATE 21:56 CT 10-31 — SETTINGS SLOP RESET (supersedes §16 mirror plan)
+
+**Ruling (binding):** the app houses the settings.
+- An MFL import is just settings inside the one app. A 12-, 16- or 8-team league are all just settings.
+- Frontend = how humans work the backend. Backend = engines (the math) + stores.
+- No code branches on a league's source or on one league's ID, and nothing is locked because it came from MFL.
+- Test: can a human reach the league by settings and change it back?
+
+**Done (wr-wire, local only):**
+- d487e34c: reverted the mirror ledger and MFL per-read overrides (8c099d9c..91a86bbf); added
+  docs/build-handoffs/SETTINGS-SLOP-AUDIT.md.
+- 334d96d9: removed the source-gated refusals (teams/divisions/pools on imported leagues); updated the rule text in
+  CLAUDE.md and North_Star.
+- Earlier, kept: bb40b41d (D33 merge), b1d42c61 (WR calendar labels and header height).
+- REFUTED, do not redo: a hard-coded read-only mirror league ID (native.mfl.14432, in-memory ledger). It is slop.
+
+**Dry-run import proof:**
+- Throwaway: wr-wire/.tmp/importcheck/main.go (gitignored). Held IDs: ~/scratch/importcheck/held.json.
+- Ran `go run ./.tmp/importcheck 14432 ~/scratch/importcheck/held.json`. Read-only MFL.
+- Result: Ready, 0 problems; native.mfl-14432-2026; 32 franchises / 1460 players / 480 picks / 130 settings.
+- 102 settings are not held by MFL → today they land as "Needs a ruling".
+
+**Christopher 21:55 rulings:**
+1. Those 102 settings must OPERATE LIKE THE SOURCE LEAGUE (MFL's behaviour), not "Needs a ruling".
+2. Yes: missing settings get filled (rule 1 sets how).
+3. Yes: import his league into the Claude-OS profile copy and walk HQ + War Room, target before 23:30.
+
+**NEXT ACTIONS:**
+1. Find where import marks unheld settings "Needs a ruling": mflsource/settings.go (translation; notes list). Fill each
+   with the value matching how MFL behaves (an MFL-behaviour bundle = data, like a preset), labelled "as on MFL".
+   Commit with a test.
+2. Import into the Claude-OS copy. Commands are only on the AI-assist door (commandcatalog/migration.go:
+   migration.prepare/import/review/cutover). Run it through the app, or a throwaway tool on Claude-OS against
+   ~/f2click/config/TheWarRoom. NEVER Christopher's real ~/.config/TheWarRoom on the Beelink (read-only sqlite only).
+   Check ~/jobs/RUNNING and that the desktop is idle.
+3. make build → copy to claudeos:f2click/thewarroom → desk.sh → open HQ + War Room on native.mfl-14432-2026 →
+   screenshot → list the real gaps → brief Sol (frontend). Sol's MIRROR-ONE-PATH brief is OBSOLETE; rewrite it.
+4. Then: settings sandbox screen (many values, one preview, one save), presets as data, CI guard (audit order).
+
+**In flight:**
+- Sol launcher STOPPED (by PID).
+- Tom launcher PID in ~/fleet/runs/tom-at-0305.pid fires 03:05 CT on d33 D28-posture; watcher bgt95zuia (will die
+  at compaction; re-arm with a kill -0 loop).
+- Output: ~/fleet/runs/tom-d33/.
