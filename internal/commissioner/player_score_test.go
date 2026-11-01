@@ -88,3 +88,32 @@ func TestNativePlayerScoreDeltaOverflowAndUnusedStatWords(t *testing.T) {
 		t.Fatalf("unused stat became zero: %+v", item)
 	}
 }
+
+func TestNativeScoreUsesSpecificPlayerRecordOnlyForAmbiguousFeedPosition(t *testing.T) {
+	b := seededLedger(t)
+	evidence := completeScoreEvidence()
+	evidence.Held.Week.Position = "DB"
+	evidence.ListedPosition = "S"
+	scope := source.RawNativeScope{Player: "0099", Season: 2026, Week: 1}
+	out, err := NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
+	if err != nil || out.Position != leaguerules.S || out.Points == nil || !strings.Contains(out.PositionWhy, "player record") {
+		t.Fatalf("record fallback: %+v %v", out, err)
+	}
+	evidence.Held.Week.Position = "CB"
+	out, err = NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
+	if err != nil || out.Position != leaguerules.CB {
+		t.Fatalf("specific feed position replaced: %+v %v", out, err)
+	}
+	evidence.Held.Week.Position = "DL"
+	evidence.ListedPosition = "DL"
+	out, err = NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
+	if err != nil || out.Points != nil || out.Position != "" {
+		t.Fatalf("ambiguous record guessed: %+v %v", out, err)
+	}
+	evidence.ListedPosition = "DE"
+	b.add(RawCommand{League: "native.test", Command: PlayerPosition, Args: RawArgs{Score: &RawScoreChange{Player: "0099", Position: leaguerules.DT}}, Request: "position", Effective: "now", Visibility: "league"}, seasonMoment(10))
+	out, err = NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
+	if err != nil || out.Position != leaguerules.DT || !strings.Contains(out.PositionWhy, "commissioner") {
+		t.Fatalf("manual position lost: %+v %v", out, err)
+	}
+}

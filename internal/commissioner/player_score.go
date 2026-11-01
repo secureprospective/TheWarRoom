@@ -103,7 +103,7 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 		return out.withoutStatistics(evidence), nil
 	}
 	week = withCorrections(week, corrections)
-	out.Position, out.PositionWhy = changes.PositionUsed(scoreFeedPosition(week.Position))
+	out.Position, out.PositionWhy = scoringPosition(week.Position, evidence.ListedPosition, changes)
 	if out.Position == "" {
 		out.Status, out.Words = "Needs a ruling", "Choose this player's position for league scoring"
 		return out, nil
@@ -206,4 +206,16 @@ func scoreFeedPosition(position string) leaguerules.Position {
 	default:
 		return ""
 	}
+}
+
+func scoringPosition(feed, listed string, changes ScoreChanges) (leaguerules.Position, string) {
+	position := scoreFeedPosition(feed)
+	if position != "" || changes.Position != "" {
+		return changes.PositionUsed(position)
+	}
+	position = scoreFeedPosition(listed)
+	if position != "" {
+		return position, "The position held in the player record; NFL statistics report " + orNone(feed)
+	}
+	return changes.PositionUsed("")
 }
