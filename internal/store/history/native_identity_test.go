@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func TestNativeEvidenceUsesDirectoryAndNewestHeldRevision(t *testing.T) {
@@ -66,5 +68,18 @@ func TestNativeEvidenceScopeAndUnloadedSeason(t *testing.T) {
 	if err != nil || evidence.Held != nil || len(evidence.Missing) != 1 ||
 		!strings.Contains(evidence.Missing[0], "No NFL statistics") {
 		t.Fatalf("no held files became evidence: %+v %v", evidence, err)
+	}
+}
+
+func TestNativeEvidenceCarriesPlayerRecordScoringPosition(t *testing.T) {
+	s, _ := statStore(t, filepath.Join(t.TempDir(), "position.db"))
+	if _, err := s.LinkPlayerIDs(t.Context(), "dynastyprocess", []PlayerIDLink{{IDType: "gsis", IDValue: "00-0023459", PlayerID: "0099"}}); err != nil {
+		t.Fatal(err)
+	}
+	putStatBody(t, s, statBody(t, "244", true), "", t0())
+	s.SetLineupEnvironment(&lineupEnvFake{facts: nativecheck.Facts{"0099": {Position: leaguerules.QB}}})
+	evidence, err := s.nativeEvidence(t.Context(), s, source.RawNativeScope{Player: "0099", Season: 2025, Week: 1})
+	if err != nil || evidence.ListedPosition != "QB" {
+		t.Fatalf("existing record not supplied: %+v %v", evidence, err)
 	}
 }

@@ -234,7 +234,7 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 		if err != nil {
 			return out, fmt.Errorf("read pinned native evidence: %w", err)
 		}
-		return out, nil
+		return s.withScoringPosition(out, scope.Player), nil
 	}
 	if s.evidence != nil {
 		return s.evidence(ctx, scope)
@@ -243,7 +243,14 @@ func (s *Store) nativeEvidence(ctx context.Context, stats source.StatPort,
 	if err != nil {
 		return out, fmt.Errorf("read held native evidence: %w", err)
 	}
-	return out, nil
+	return s.withScoringPosition(out, scope.Player), nil
+}
+
+func (s *Store) withScoringPosition(evidence source.NativeEvidence, player string) source.NativeEvidence {
+	if s.lineupEnv != nil {
+		evidence.ListedPosition = string(s.lineupEnv.PlayerFacts()[player].Position)
+	}
+	return evidence
 }
 
 // lineCardEvidence reads an O-Line card's evidence: the season's held line games. A card has no NFL

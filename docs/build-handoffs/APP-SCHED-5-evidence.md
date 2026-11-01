@@ -39,3 +39,21 @@ Stat-only commands do not rebuild the unchanged roster recovery point. The trial
 appended zero events (atomic rollback). Final remaining 6,988 selections committed in **91.710 s**;
 142 earlier trial records remain on the disposable copy. Initial bootstrap latency is debt, not claimed fast.
 Later incomplete live evidence cannot downgrade a selected complete nflverse revision.
+
+## Item 2 — positions
+
+`history.nativeEvidence` supplies the existing lineup/player facts' position by the same canonical
+player ID already linked to NFL statistics. Scoring uses it only when the stat-feed position is
+ambiguous/absent; it does not replace a specific feed position. The existing commissioner position
+choice still wins. No name matching, player exceptions, guessed DB/DL split or invented stat rows.
+Both ordinary and pinned evidence use this fallback. Tests exercise the store-to-evidence handoff,
+specific fallback, ambiguous refusal, preservation of specific feed positions and commissioner choice.
+
+On the copied profile, **300/300** previously position-blocked starter occurrences now have positions
+(**93 distinct players**); truly unresolved scoring positions among those occurrences: **none**.
+Absent-stat weeks (472 occurrences) and the unmatched identity (0835 Zion Childress, seven occurrences)
+are separate gaps, not unresolved positions. Childress's held listed position exists; no verified
+alias for that custom ID was invented. The scorer never manufactures inactivity/zero for absent data.
+
+Specific NFL positions that disagree with league player records remain unchanged by this fallback.
+That policy now has observable scoring/lineup consequences; see item 3. It is not a scoring-settings fix.
