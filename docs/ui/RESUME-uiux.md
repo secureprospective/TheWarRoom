@@ -197,3 +197,32 @@ My local watchers (die at compaction; re-arm by PID loops if needed): b1im6oew4 
 - Tom launcher PID in ~/fleet/runs/tom-at-0305.pid fires 03:05 CT on d33 D28-posture; watcher bgt95zuia (will die
   at compaction; re-arm with a kill -0 loop).
 - Output: ~/fleet/runs/tom-d33/.
+
+## 18. 10-31 night (22:40 CT) — settings fill, import, picker, origin sweep; OVERNIGHT LOOP
+
+**Rulings tonight (binding):**
+- Unheld MFL settings "operate like the league it's imported from". Calendar settings are set by humans outside MFL (don't pull MFL calendar).
+- Goal: leagues import and play seamlessly; "if that doesn't happen we fail". I decide the details.
+- League picker: "don't overthink". App opens on the last league; picker button at the top switches; Home lists leagues. Stage 3 leagues to test: 32-Team Default, 16-Team Mirror, Legacy.
+- Overnight builder order: GPT first (Sol medium, Terra high) → Tom low effort → build myself. Keep moving. Protect context.
+
+**Commits (local only):**
+- wr-wire a3379a30: leaguerules.Fill + import fills unheld settings from a base bundle (Legacy NFL). 102 → 8.
+- wr-wire 66173552: MFL draftType SAME/SNAKE → later-round pattern; unused settings (keepers in dynasty, soft-cap deadline under hard cap, DOT seats without DOT) not listed. 14432 leaves 5 human calls: DOT seats, date boundary, rollover instant, trade deadline, draft tie rule.
+- build/SRC-fix (.worktrees/src-fix, from 66173552) 8e12392e: draft_startup + StartingCardLot no origin gate; seed errors say "imported league"; scripts/check-source-branches.sh in `make placement` (allowlist docs/architecture/source-branch-allowlist.txt 13 files; ratchet source-branch-baseline.txt league_id=57 native_forks=19).
+- Sweep findings: Beelink ~/fleet/runs/source-sweep/SOURCE-SWEEP-findings.md.
+
+**Found:** desktop shell (TargetApp) is MFL-only; app leagues open only in hosted sign-in mode. No in-app import door (assist door has no caller). Legacy preset carries source=mfl_import: preset decides origin (fix = origin from the act; tests must pass Source explicitly; reverted tonight because 20 tests seed held data under Legacy). Import MFL key only for ingestion.LeagueID.
+
+**Claude-OS copy (~/f2click/config/TheWarRoom):** leagues native.mfl-14432-2026 (imported, 2 events), native.default32-2026, native.mirror16-2026 (create only). Pre-import backup ~/f2click/pre-import/. App closed. Throwaways: wr-wire/.tmp/importrun, src-fix/.tmp/stage (gitignored); held.json ~/scratch/importcheck/.
+
+**In flight:**
+- DeepSeek LEAGUE-PICKER on wr-wire: ~/fleet/runs/glm-ds-picker/ (pid.txt, completion.txt, stdout.log); brief ~/fleet/briefs/build/LEAGUE-PICKER.md; 90 min cap from ~22:27.
+- Tom 03:05 D28-posture (d33): ~/fleet/runs/tom-at-0305.pid → ~/fleet/runs/tom-d33/.
+- Overnight queue: ~/fleet/runs/overnight/QUEUE.md (launcher ~/fleet/bin/overnight-queue.sh).
+
+**NEXT ACTIONS:**
+1. Picker done → review diff, make build, walk on Claude-OS with 3 leagues (switch, relaunch reopens last). Fix or re-brief.
+2. Merge build/SRC-fix into wr-wire after picker (check-source-branches ratchet will need new counts).
+3. Queue items in order (see QUEUE.md): ORIGIN-FROM-ACT (Terra high), MOVE-MY-MFL (Sol medium), then settings sandbox screen, presets as data.
+4. Review Tom D28 output when done; regression batch once.
