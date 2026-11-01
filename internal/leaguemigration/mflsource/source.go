@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
@@ -176,4 +177,12 @@ func readCandidate(ctx context.Context, src Reader, now time.Time, base leagueru
 	return leaguemigration.Candidate{Name: export.Name, Season: export.Season,
 		Owners: export.Owners, Plan: plan, Problems: problems,
 		Franchises: len(export.Config.Franchises), Players: len(export.Rosters), Picks: len(export.Draft) + len(export.Future)}, nil
+}
+
+func (s *Source) Schedule(ctx context.Context) ([]leagueschedule.RawScheduleWeek, error) {
+	weeks, err := leagueschedule.Fetch(ctx, s.Client, s.year(), s.ID)
+	if err != nil {
+		return nil, fmt.Errorf("read weekly schedule: %w", err)
+	}
+	return weeks, nil
 }

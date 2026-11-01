@@ -69,7 +69,7 @@ func (e env) root() *cobra.Command {
 	root.SetIn(e.in)
 	root.SetOut(e.out)
 	root.AddCommand(e.connectCommand(), e.ledgerCommand(), e.changeCommand("preview"), e.changeCommand("execute"),
-		e.disconnectCommand(), e.mcpCommand(), e.transferCommand(), e.importCommand(), e.moveCommand())
+		e.disconnectCommand(), e.mcpCommand(), e.transferCommand(), e.importCommand(), e.moveCommand(), e.scheduleBackfillCommand())
 	root.AddCommand(e.commandVerbs()...)
 	return root
 }

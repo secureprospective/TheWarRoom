@@ -15,6 +15,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/mflsource"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -171,4 +172,8 @@ func pid(raw string) *playerid.PlayerID {
 
 func (s *Source) Read(ctx context.Context, now time.Time) (leaguemigration.Candidate, error) {
 	return mflsource.ReadCandidate(ctx, s, now, leaguerules.RuleSet{}) //nolint:wrapcheck // Fixtures preserve production source refusals.
+}
+
+func (s *Source) Schedule(context.Context) ([]leagueschedule.RawScheduleWeek, error) {
+	return s.Export.Schedule, s.fail("schedule")
 }
