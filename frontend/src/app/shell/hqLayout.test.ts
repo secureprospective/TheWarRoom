@@ -19,3 +19,13 @@ it('reserves the native inspector only once and protects narrow embedded rows', 
     'grid-template-rows:auto minmax(0,1fr) auto auto}');
   expect(war).toContain('.wr-v6.embedded .mk3{grid-template-columns:minmax(0,1fr);overflow:auto}');
 });
+
+it('keeps a value band on one line and gives an empty lineup slot the whole row', () => {
+  const war = readFileSync(new URL('./warroom.css', import.meta.url), 'utf8');
+  expect(war).toContain('.wr-v6 .value-ages dt, .wr-v6 .value-ages dd ' +
+    '{ white-space: nowrap; overflow-wrap: normal; }');
+  expect(war).toContain('.wr-v6 .value-ages { flex-wrap: wrap; }');
+  const board = readFileSync(new URL('./HQBoard.tsx', import.meta.url), 'utf8');
+  expect(board).toContain("<span className=\"nm\" style={{ gridColumn: '2 / 7' }}>Empty · any ");
+  expect(board).not.toContain('eligible player}</span><span /><span');
+});

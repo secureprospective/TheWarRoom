@@ -173,9 +173,12 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
             picked)!, slot) ? 'target' : ''}`} attributes={{
             'data-hq-slot': String(slots.indexOf(slot)) }} style={{ width: '100%', textAlign: 'left' }}
             onAction={() => { if (picked && canEdit) { move(picked, slot); setPicked(undefined); } }}>
-            <span className="sl">{slot.code}</span><span /><span className="nm">Empty · drop any {slot.side
-              === 'def' ? 'defender' : 'eligible player'}</span><span /><span
-              /><span className="pr">—</span><span className="st warn">OPEN</span></HQAct>)}</div>
+            <span className="sl">{slot.code}</span>
+            {/* An empty slot has no figures, so its words take the whole row rather than being cut
+                off behind the OPEN tag. */}
+            <span className="nm" style={{ gridColumn: '2 / 7' }}>Empty · any {slot.side === 'def' ?
+              'defender' : 'eligible player'}</span>
+            <span className="st warn">OPEN</span></HQAct>)}</div>
       </div>)}
       <HQMatchup now={now} values={values}
         liveCount={live ? starters.filter(p => liveTeam(directory.get(p.id)?.team, live)).length : undefined}

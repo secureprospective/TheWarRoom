@@ -962,3 +962,7 @@
 .wr-v6 .value-ages { display: flex; gap: 10px; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
 .wr-v6 .value-ages dt { font-size: 11px; }
 .wr-v6 .value-ages dd { margin: 2px 0 0; font-weight: 600; }
+/* A band's label and its value are each one unbreakable figure; the row wraps between bands. */
+.wr-v6 .value-ages { flex-wrap: wrap; }
+.wr-v6 .value-ages > div { flex: 0 0 auto; }
+.wr-v6 .value-ages dt, .wr-v6 .value-ages dd { white-space: nowrap; overflow-wrap: normal; }
