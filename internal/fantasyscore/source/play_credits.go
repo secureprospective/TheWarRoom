@@ -109,7 +109,7 @@ func MissingPlayWeeks(weeks []PlayerWeek, plays []RawPlay) ([]PlayerWeek, error)
 		season, _ := strconv.Atoi(p.Season)
 		week, _ := strconv.Atoi(p.Week)
 		add := func(id string, stat leaguerules.StatID, value leaguerules.Decimal) {
-			if id == "" || id == "NA" || strings.Contains(id, ";") || value == 0 {
+			if id == "" || id == "NA" || strings.Contains(id, ";") {
 				return
 			}
 			key := playKey(id, season, week)

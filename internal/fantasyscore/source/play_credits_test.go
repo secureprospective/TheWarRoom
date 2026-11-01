@@ -103,3 +103,18 @@ func TestMissingPlayWeeksReturnsAndFumbles(t *testing.T) {
 		t.Fatalf("%+v", got)
 	}
 }
+
+func TestMissingPlayWeeksKeepsZeroYardReturn(t *testing.T) {
+	p := creditPlay()
+	p.Punt = "1"
+	p.Credits["punt_returner_player_id"] = "00-0030001"
+	p.Credits["return_yards"] = "0"
+	got, err := MissingPlayWeeks(nil, []RawPlay{p})
+	if err != nil || len(got) != 1 {
+		t.Fatalf("recorded zero return lost: %+v %v", got, err)
+	}
+	yards, ok := got[0].Line.Quantities["punt_return_yards"]
+	if !ok || yards != 0 {
+		t.Fatalf("%+v", got[0])
+	}
+}
