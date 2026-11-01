@@ -1,32 +1,29 @@
 # Handoff
 
 ## Baton
-ClaudeBox / review — 2026-11-01, build/SCHED-1. APP-SCHED-7 measurement only at 1207f2da.
-Local docs/evidence commit only; no remote contact or push.
+Bee → ClaudeBox / review — 2026-11-01, build/ROSTER-1.
+APP-ROSTER-1 incomplete: baseline/evidence only. Local commit; no remote contact.
 
 ## Where it stands
-- Fresh scratch-profile SQLite backup; ordinary archived lineup/schedule backfill, scoring acquisition,
-  stat ledger, native results/standings: 148 recorded weeks, 24 exact / 0 within .01 / 9 differ /
-  115 unavailable. Evidence: `docs/build-handoffs/APP-SCHED-7-evidence.md` and its two TSVs.
-- Previous part 5 TSV is actually 4 exact / 29 differ / 115 unavailable; previous prose 4/33/111
-  was an arithmetic error. Completeness did not regress.
-- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable (displayed zeros not outcomes).
-- 472 absent rows: 36 bye candidates (historical affiliation unverified), 53 exact-week injury Out,
-  141 positive snap/absent scoring-row, 242 unresolved. Seven separate 0835 identity gaps.
-- Disposable measurement PASS 208.44 s; eight native player-item readings race PASS 33.82 s.
-  Initial full measurement race run interrupted at external 600 s deadline during adoption;
-  non-race retry resumed idempotently on copy. No production changes, GUI or independent review.
+- No production code changed. Item 1 traced; history import and roster-at-lock not implemented.
+- Ordinary copied-profile lineup backfill remains 148 accepted / 76 refused of 224;
+  repeat records zero. Bills weeks 1–7 already record through the ordinary path.
+- Archived transactions validate: 895 rows. Existing seed vs latest archived roster:
+  28 franchises equal, 4 mismatched; not a history replay proof.
+- Targeted race tests: 24 test/subtest PASS; plain make build PASS.
+- Copy measurement race run timed out at 600 s; non-race resume completed.
+- Evidence: docs/build-handoffs/APP-ROSTER-1-evidence.md and APP-ROSTER-1-baseline.tsv
+  in the same directory. Private disposable copy/logs/harness: .tmp/roster1/.
 
 ## Next move / blocked on
-- Position queue integration remains DEFERRED; do not start without head-brain authorization.
-- Resolve 242 unknown absences and historical affiliation for 36 bye candidates; existing MFL
-  bye and nflverse exact-week Out/snap sources are documented, no did-not-play zero built.
-- Nine complete score differences: largest Giants invalid-lineup penalty; remaining player credit
-  residuals need MFL stat breakdown, including Schultz W4. No scoring-rule diagnosis established.
-- Earlier debt: verified identity 0835; slow adoption/native reads; live/advanced inputs;
-  source-health UI; 76 historical-roster refusals.
+- Review generic historical roster admission/projection: ordinary cuts/reserves/trades
+  require effective=now; native asset reads ignore the historical instant for roster projection.
+- Establish historical baseline and contract provenance for players dropped before seed;
+  correct.roster refuses to invent contracts. Respect differing seed/feed observation times.
+- Then implement generic as-of behavior, importer mapping, automatic sync and replay-equality proof.
+- Earlier scoring debt and position queue deferral remain as described in prior handoff/history.
 
 ## Tried and rejected
-- Missing weekly row or missing snaps as proof of inactivity/zero: unsupported.
-- Current MFL injury status as historical nonparticipation: not week-specific.
-- Treating weekly StatApprove as durable player-position approval remains rejected.
+- Passing historical time to NativeAssetsReading alone: still projects every active roster entry.
+- Raw SQL, backdating receipt clock, fabricating contracts, bypassing lineup roster checks:
+  would evade the ordinary ledger contract; none implemented.
