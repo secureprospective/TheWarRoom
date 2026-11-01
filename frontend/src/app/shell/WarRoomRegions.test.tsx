@@ -82,6 +82,16 @@ describe('War Room header and settings congruence', () => {
     for (const word of ['Win now', 'Retool', 'Rebuild', 'Not set']) expect(html).toContain(word);
     expect(html).not.toContain('CONTEND');
   });
+  it('names the open action window and says plainly when no window is open', () => {
+    expect(renderToStaticMarkup(<WarRoomHeader windowLabel="Trade" />)).toContain('window Trade');
+    expect(renderToStaticMarkup(<WarRoomHeader windowLabel="none open" />))
+      .toContain('window none open');
+  });
+  it('says next-season needs are not built rather than calling them unavailable', () => {
+    const html = renderToStaticMarkup(<WarRoomHeader />);
+    expect(html).toContain('NEEDS · NEXT SEASON');
+    expect(html.split('NEEDS · NEXT SEASON')[1]).toContain('Not built yet');
+  });
   it('renders honest empty regions rather than mock figures when all reads fail', () => {
     const html = renderToStaticMarkup(<WarRoomHeader />);
     expect(html).toContain(unavailable); expect(html).not.toContain('2026–27');

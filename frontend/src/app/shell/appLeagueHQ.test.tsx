@@ -257,6 +257,32 @@ it('shows held names and positions when the lineup read has only stand-in labels
     'WR']);
 });
 
+it('says games are not ranked yet rather than calling the record unavailable', async () => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  const words = 'The league schedule is not published yet, so there are no games to rank';
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    if (request.command === 'calendar.read') return { label: 'Import shape', writable: false,
+      football: '', data: { league: 'native.seed', revision: assets.revision, decision: {},
+        clock: { windows: [{ id: 'trades', opens: ['trade'], start: '2026-09-01T12:00:00Z',
+          close: null, live: true, secondsToClose: null }], exceptions: [], tradeDeadline: null,
+          secondsToTradeDeadline: null } } };
+    if (request.command !== 'standings.read') return original(request);
+    return { label: 'Import shape', writable: false, football: '', data: { league: 'native.seed',
+      name: 'App league', season: assets.snapshot.season, revision: assets.revision,
+      status: 'Unavailable', words, through: 0, decided: 0, pending: 0, criteria: [], noData: [],
+      computed: [], changes: [] } };
+  });
+  await mount(); await choose('franchise.02');
+  const line = container.querySelector('.hq-v10 .plate .who div')!;
+  expect(line.textContent).toContain('No games ranked yet');
+  expect(line.textContent).not.toContain('Not available yet');
+  expect(line.getAttribute('title')).toBe(words);
+  await act(async () => { commands.dispatch('nav.open', { node: 'war' }); }); await settle();
+  const warLine = container.querySelector('.wr-v6 .franchise-context .who div')!;
+  expect(warLine.textContent).toContain('No games ranked yet');
+  expect(warLine.textContent).toContain('window trade');
+});
+
 it.each(['hq', 'war'] as const)('fills %s prepared values on publication', async node => {
   const original = vi.mocked(localWorkflow).getMockImplementation()!;
   let preparing = true;

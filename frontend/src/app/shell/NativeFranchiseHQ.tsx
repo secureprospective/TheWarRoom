@@ -83,7 +83,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     <HQHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name ?? name}
       active={roster.filter(p => p.rosterStatus === 'ROSTER').length} settings={settings}
       cap={runway?.[0] ?? { season: snapshot.league.value.season }} check={reading.check ?? unavailable}
-      record={reading.record} standing={reading.standing} lock={reading.lock ? { id: 'native-lineup', at:
+      record={reading.record} standing={reading.standing} standingsNote={reading.standingsNote}
+      lock={reading.lock ? { id: 'native-lineup', at:
         reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} /></div>
     {tab === 'lineup-and-roster' ? <HQBoard showContracts snapshot={snapshot} mine={mine} key={editor.version}
       reading={editor.edited} error={reading.errors.join(' · ')}

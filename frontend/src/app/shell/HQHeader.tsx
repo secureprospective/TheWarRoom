@@ -1,5 +1,5 @@
 import type { HQCap, HQSettings } from './hqModel';
-import { capacity, money, unavailable } from './hqModel';
+import { capacity, money, placeLine, unavailable } from './hqModel';
 
 export function CapStrip({ cap }: { cap: HQCap }) {
   const width = (value?: number) => cap.max && value !== undefined
@@ -16,13 +16,14 @@ export function CapStrip({ cap }: { cap: HQCap }) {
         />Room {money(cap.room)}</span></div>
   </div>;
 }
-export function HQHeader({ name, record, standing, active, settings, cap, check, lock }: {
-  name: string; record?: string; standing?: string; active: number; settings: HQSettings;
+export function HQHeader({ name, record, standing, standingsNote, active, settings, cap, check, lock }: {
+  name: string; record?: string; standing?: string; standingsNote?: string; active: number;
+  settings: HQSettings;
   cap: HQCap; check: string; lock?: { id: string; at?: string; text: string };
 }) {
   return <section className="plate">
-    <div className="who"><b>{name}</b><div>{record || unavailable} · {standing || unavailable}
-      · {capacity(active, settings.active)} active</div></div>
+    <div className="who"><b>{name}</b><div title={standingsNote}>{placeLine(record, standing,
+      standingsNote)} · {capacity(active, settings.active)} active</div></div>
     <CapStrip cap={cap} />
     <div className="check"><span className="h">LINEUP CHECK</span><span className="v">{check}</span>
       <span className="t" data-deadline={lock?.id}>{lock ? <>Locks in <span

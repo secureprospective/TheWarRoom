@@ -45,6 +45,12 @@ export function lineupCheck(reading?: LineupReading, error?: string): string {
     return reading.check.problems.map(p => p.message).join(' · ') || 'Lineup is partial';
   return 'Lineup is full';
 }
+// A league whose games are not ranked yet has no record and no place. Say that plainly, and keep the
+// standings read's own words in the hover, rather than calling a fact that does not exist unavailable.
+export function placeLine(record?: string, standing?: string, note?: string): string {
+  const held = [record, standing].filter(Boolean).join(' · ');
+  return held || (note ? 'No games ranked yet' : unavailable);
+}
 export function capacity(count: number, limit?: number): string {
   return `${count} / ${limit ?? unavailable}`;
 }

@@ -51,6 +51,10 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     clock?.provenance.freshness.state === 'fail' ? [] :
     clock?.value.deadlines ?? [];
   const deadline = deadlines.find(d => /trade/i.test(d.id + d.label));
+  // The calendar says which action window is open now. An app league with none open is not an
+  // unavailable fact: it is a closed window, and the header says so.
+  const windowLabel = !native || calendar.error ? undefined :
+    calendar.reading ? deadlines.find(d => d.live)?.label ?? 'none open' : undefined;
   const navigate = (node: 'home' | 'war' | 'hq' | 'pulse' | 'control') => {
     if (native) { if (node !== 'war') native.leave(node); }
     else void commands.dispatch('nav.open', { node });
@@ -86,7 +90,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       {native?.embedded && native.tabs ? createPortal(tabs, native.tabs) :
       <div className="ws-tabs" role="tablist">{tabs}</div>}
       <WarRoomHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name}
-        reading={headerReading} />
+        reading={headerReading} windowLabel={windowLabel} />
       {tab === 'desk' ? <WarRoomTrade context={context} catalog={catalog.reading} deal={deal}
         change={changeDeal} select={select} /> : tab === 'market' ? <WarRoomMarket context={context}
           room={headerReading?.runway?.[0]?.room} select={p => select({ token: p.id, name: p.name })} /> :

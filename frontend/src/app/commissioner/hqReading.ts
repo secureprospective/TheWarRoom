@@ -118,7 +118,8 @@ export function nativeHQMoves(value: unknown, league: string, mine: string): { m
 export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSettings; leagueName?: string;
   lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
-  reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string;
+  reserveNotes?: Map<string, string>; record?: string; standing?: string; standingsNote?: string;
+  week?: number; weekNote?: string;
   values?: LeagueValues; projections?: Map<string, number>; errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow,
   publish?: (reading: NativeHQ) => void):
@@ -186,7 +187,8 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
         return { franchise: text(row.franchise, p), rank: integer(row.rank, p), record: text(row.record,
           p), division: row.division === undefined ? '' : text(row.division, p) }; });
       standingRows = rows;
-      result.record = rows.find(r => r.franchise === mine)?.record; }),
+      result.record = rows.find(r => r.franchise === mine)?.record;
+      result.standingsNote = raw.words === undefined ? undefined : text(raw.words, 'Standings words'); }),
     apply(async () => { const r = await port({ command: 'week.read', mode: 'read', arguments: { league,
       franchise: mine, season, localZone: zone, at: new Date().toISOString() } });
       const raw = object(r.data, 'Native week', ['schedule', 'current', 'nextWeek', 'message']);

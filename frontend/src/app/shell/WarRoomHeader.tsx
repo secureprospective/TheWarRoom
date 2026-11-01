@@ -1,16 +1,18 @@
 import { HQAct as WarRoomAct } from './HQAct';
 import type { WarRoomHeaderReading } from './warroomReads';
-import { money, unavailable } from './hqModel';
+import { money, placeLine, unavailable } from './hqModel';
 export function CompactAbsent() {
   return <span title={unavailable} aria-label={unavailable}>—</span>;
 }
 export function WarRoomEmpty({ reason }: { reason?: string }) {
   return <p className="empty" title={reason ? unavailable : undefined}>{unavailable}</p>;
 }
-export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarRoomHeaderReading }) {
+export function WarRoomHeader({ name, reading, windowLabel }: { name?: string;
+  reading?: WarRoomHeaderReading; windowLabel?: string }) {
   return <section className="franchise-context" aria-label="Franchise context">
-    <div className="who"><b>{name ?? unavailable}</b><div>{reading?.record ?? unavailable} · {
-      reading?.standing ?? unavailable} · window {unavailable}</div></div>
+    <div className="who"><b>{name ?? unavailable}</b><div title={reading?.standingsNote}>{placeLine(
+      reading?.record, reading?.standing, reading?.standingsNote)} · window {windowLabel || unavailable}</div>
+    </div>
     <div className="mini"><span className="h">DIRECTION</span><div className="post">
       {['Win now', 'Retool', 'Rebuild'].map(p => <WarRoomAct key={p} disabled title={unavailable}
         active={false}>{p}</WarRoomAct>)}</div><small>Not set</small></div>
@@ -27,7 +29,9 @@ export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarR
           {reading.age.map(b => <div key={b.from}><dt>{b.open ? `${b.from}+` : b.from === 0 ?
             `≤${b.to}` : `${b.from}–${b.to}`}</dt><dd title={`${b.players} players`}>{b.value.toFixed(1)}</dd>
           </div>)}</dl> : <WarRoomEmpty />}</div></div>
-    <div className="mini"><span className="h">NEEDS · NEXT SEASON</span><WarRoomEmpty /></div>
+    {/* Nothing computes next-season needs yet; say so rather than implying the read failed. */}
+    <div className="mini"><span className="h">NEEDS · NEXT SEASON</span>
+      <p className="empty" title="No engine works out next-season needs yet.">Not built yet</p></div>
     <div className="mini"><span className="h">CAP RUNWAY</span><div className="runw">
       {reading?.runway?.length ? reading.runway.slice(0, 3).map(y => <div className="y fit" key={y.season}>
         <span>{y.season}</span><span className="bar">{y.max && y.room !== undefined ? <i
