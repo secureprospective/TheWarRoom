@@ -150,6 +150,10 @@ func (s *Store) completedWeeks(sha string, weekly []source.PlayerWeek, body []by
 	for i := range weekly {
 		weeks[i] = clonePlayerWeek(weekly[i])
 	}
+	weeks, err = source.MissingPlayWeeks(weeks, plays)
+	if err != nil {
+		return nil, fmt.Errorf("build missing player weeks: %w", err)
+	}
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return nil, fmt.Errorf("attach held plays: %w", err)
 	}

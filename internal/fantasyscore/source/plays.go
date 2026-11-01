@@ -36,6 +36,7 @@ func ReadCompressedPlays(body []byte) ([]RawPlay, error) {
 
 // RawPlay retains the source's player credits and distances, not parsed descriptions.
 type RawPlay struct {
+	Credits      RawPlayerCredits
 	GameID       string
 	PlayID       string
 	Season       string
@@ -84,6 +85,9 @@ func (r RawPlay) Validate() error {
 		if !slices.Contains([]string{"0", "1", "NA", ""}, raw) {
 			return fmt.Errorf("play flag must be 0, 1 or absent")
 		}
+	}
+	if err := r.Credits.Validate(); err != nil {
+		return err
 	}
 	if err := r.validateEdge(); err != nil {
 		return err
@@ -155,7 +159,7 @@ func ReadPlays(input io.Reader) ([]RawPlay, error) {
 }
 
 func rawPlay(f map[string]string) RawPlay {
-	return RawPlay{GameID: f["game_id"], PlayID: f["play_id"],
+	return RawPlay{Credits: rawCredits(f), GameID: f["game_id"], PlayID: f["play_id"],
 		Season: f["season"], Week: f["week"], SeasonType: f["season_type"],
 		Passer: f["passer_player_id"], Receiver: f["receiver_player_id"], Rusher: f["rusher_player_id"],
 		Passing: f["passing_yards"], Receiving: f["receiving_yards"], Rushing: f["rushing_yards"],

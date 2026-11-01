@@ -102,6 +102,10 @@ func (r RawFootballEvidence) scoringFile(raw RawFootballStats, parts partSource)
 			return heldFile{}, fmt.Errorf("statistics name a different season")
 		}
 	}
+	weeks, err = source.MissingPlayWeeks(weeks, plays)
+	if err != nil {
+		return heldFile{}, fmt.Errorf("build missing pinned player weeks: %w", err)
+	}
 	if err := source.AttachPlays(weeks, plays); err != nil {
 		return heldFile{}, fmt.Errorf("complete pinned statistics: %w", err)
 	}
