@@ -16,10 +16,10 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/lineupdelta"
-	"github.com/secureprospective/TheWarRoom/internal/m2service"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/modelrun"
 	"github.com/secureprospective/TheWarRoom/internal/playerrecord"
+	"github.com/secureprospective/TheWarRoom/internal/powerrankings"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/params"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -338,7 +338,7 @@ func best(all []Player, in Inputs, franchise string) Best {
 	byFranchise := countable(all)
 	counted := map[string]float64{}
 	for _, fid := range franchises(in) {
-		value, age := m2service.Count(m2service.AggTopN, rules, byFranchise[fid])
+		value, age := powerrankings.Count("topn", rules, byFranchise[fid])
 		counted[fid] = value
 		if fid != franchise {
 			continue
@@ -427,8 +427,8 @@ func bandOf(age float64, first []int) int {
 	return -1
 }
 
-func countable(all []Player) map[string][]m2service.PlayerValue {
-	byFranchise := map[string][]m2service.PlayerValue{}
+func countable(all []Player) map[string][]powerrankings.CountValue {
+	byFranchise := map[string][]powerrankings.CountValue{}
 	for _, p := range all {
 		if !p.Available || p.Franchise == "" {
 			continue
@@ -437,8 +437,8 @@ func countable(all []Player) map[string][]m2service.PlayerValue {
 		if p.AgeKnown {
 			age = p.Age
 		}
-		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], m2service.PlayerValue{
-			MFLID: p.Player, Position: p.Position, Value: p.DynastyPP, Age: age})
+		byFranchise[p.Franchise] = append(byFranchise[p.Franchise], powerrankings.CountValue{
+			Position: p.Position, Value: p.DynastyPP, Age: age})
 	}
 	return byFranchise
 }

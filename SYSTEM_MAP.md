@@ -66,6 +66,11 @@ availability is in Commissioner/native, model ID scope in Scoring, trade evidenc
 Trades, and rule-week capture/clock selection in Control. Composition retains their resource
 capture/refresh coordination, not those decisions.
 
+Reference schedule following is `schedule.follow` in `internal/leaguerules/competition.go`;
+import/backfill wiring and gate evidence: `docs/build-handoffs/APP-GATES-4.md`.
+Shared roster counting lives in `internal/powerrankings/lineup.go`, not the MFL-backed M2 service.
+Resolved player listing facts live in `internal/domain/types.go`; `normalize.PlayerFacts` is a compatibility alias.
+
 ## Where new code goes
 
 Wails binds the legacy App plus each extracted feature API. App has a named core.State field;

@@ -2,6 +2,7 @@ package powerrankings
 
 import (
 	"math"
+	"slices"
 	"sort"
 )
 
@@ -107,4 +108,55 @@ func ExpectedWins(games []Game, expected map[string]float64) map[string]float64 
 		out[g.Away] += 1 - p
 	}
 	return out
+}
+
+// CountValue is the position, value and age needed to count a roster.
+type CountValue struct {
+	Position string
+	Value    float64
+	Age      float64
+}
+
+// Count returns the counted value and its value-weighted age (NaN without known ages).
+// Missing starter rules fall back to the whole roster. Inputs are never reordered.
+func Count(mode string, rules LineupRules, vals []CountValue) (value, age float64) {
+	switch {
+	case mode == "topn" && rules.Total > 0:
+	case mode == "lineup" && len(rules.Slots) > 0 && rules.Total > 0:
+	default:
+		mode = "sum"
+	}
+	return countValues(mode, rules, vals)
+}
+
+func countValues(mode string, rules LineupRules, vals []CountValue) (value, age float64) {
+	counted := vals
+	switch mode {
+	case "topn":
+		cp := slices.Clone(vals)
+		sort.SliceStable(cp, func(i, j int) bool { return cp[i].Value > cp[j].Value })
+		counted = cp[:min(rules.Total, len(cp))]
+	case "lineup":
+		cands := make([]Candidate, len(vals))
+		for i, v := range vals {
+			cands[i] = Candidate{Position: v.Position, Value: v.Value}
+		}
+		_, idx := Lineup(cands, rules)
+		counted = make([]CountValue, len(idx))
+		for i, j := range idx {
+			counted[i] = vals[j]
+		}
+	}
+	var weight, aged float64
+	for _, v := range counted {
+		value += v.Value
+		if !math.IsNaN(v.Age) && v.Value > 0 {
+			weight += v.Value
+			aged += v.Value * v.Age
+		}
+	}
+	if weight == 0 {
+		return value, math.NaN()
+	}
+	return value, aged / weight
 }
