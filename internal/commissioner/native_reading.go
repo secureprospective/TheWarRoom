@@ -27,8 +27,8 @@ type NativeAssetIdentity struct {
 	Position  string `json:"position"`
 }
 
-// NativeAssetsAsOf reads receipt-dated history at or after the starting observation.
-// It does not infer a roster before that observation or admit backdated commands.
+// NativeAssetsAsOf projects effective-dated history at or after the starting observation.
+// Entries learned later may repair earlier history; receipt times remain unchanged.
 func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAssets, error) {
 	if at.IsZero() {
 		return NativeAssets{}, fmt.Errorf("choose the roster observation time")
@@ -40,19 +40,7 @@ func NativeAssetsAsOf(league string, records []Record, at time.Time) (NativeAsse
 	if seed.Seeded && at.Before(seed.Snapshot.RosterAt) {
 		return NativeAssets{}, fmt.Errorf("roster history before the starting observation is not recorded")
 	}
-	visible := make([]Record, 0, len(records))
-	for _, record := range records {
-		// The snapshot may have been received after the roster was observed.
-		if record.Command.Command == Create || record.Command.Command == NativeSeed || !record.Receipt.RecordedAt.After(at) {
-			visible = append(visible, record)
-		}
-	}
-	assets, err := NativeAssetsReading(league, visible, at)
-	if err != nil {
-		return NativeAssets{}, fmt.Errorf("read roster at observation time: %w", err)
-	}
-	assets.Revision = int64(len(records))
-	return assets, nil
+	return NativeAssetsReading(league, records, at)
 }
 
 func NativeAssetsReading(league string, records []Record, at ...time.Time) (NativeAssets, error) {
@@ -66,14 +54,21 @@ func nativeAssetsState(league string, records []Record, at ...time.Time) (Native
 	if err != nil {
 		return NativeAssets{}, waivers, err
 	}
-	if err := projectNativeOverrides(&out, records, &waivers, nil); err != nil {
-		return NativeAssets{}, waivers, err
-	}
 	now := records[len(records)-1].Receipt.RecordedAt
 	if len(at) != 0 {
 		now = at[0]
 	}
-	changes, err := CorrectionsReading(league, records, now)
+	visible := records
+	if len(at) != 0 {
+		visible, err = nativeRecordsAt(records, now)
+		if err != nil {
+			return NativeAssets{}, waivers, err
+		}
+	}
+	if err := projectNativeOverrides(&out, visible, &waivers, nil); err != nil {
+		return NativeAssets{}, waivers, err
+	}
+	changes, err := CorrectionsReading(league, visible, now)
 	if err != nil {
 		return NativeAssets{}, waivers, err
 	}

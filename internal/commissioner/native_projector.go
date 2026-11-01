@@ -1,7 +1,10 @@
 package commissioner
 
 import (
+	"cmp"
 	"fmt"
+	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,15 +15,21 @@ import (
 // given, sees the assets after each entry is applied.
 func projectNativeOverrides(assets *NativeAssets, records []Record, waivers *MarketBook, visit func(*NativeAssets)) error {
 	active := Replay(records).Active
+	order, backdated, err := nativeEffectiveOrder(records)
+	if err != nil {
+		return err
+	}
 	since := 0
-	if visit == nil {
-		var err error
+	if visit == nil && !backdated {
 		since, err = resumeClosedNative(assets, records, waivers)
 		if err != nil {
 			return err
 		}
 	}
-	for i := since; i < len(records); i++ {
+	for _, i := range order {
+		if i < since {
+			continue
+		}
 		record := records[i]
 		if !active[record.Receipt.Entry] {
 			continue
@@ -175,4 +184,52 @@ func projectNativeTrade(assets *NativeAssets, book *MarketBook, record Record) e
 		return fmt.Errorf("record starting assets before trading")
 	}
 	return projectTrade(assets.Snapshot, book, record)
+}
+
+// Support entries keep receipt order. Only roster moves have independent effective times.
+func nativeEntryTime(r Record) (time.Time, error) {
+	if RosterTimed(r.Command.Command) {
+		return r.Command.EffectiveTime(r.Receipt.RecordedAt)
+	}
+	return r.Receipt.RecordedAt, nil
+}
+
+func nativeRecordsAt(records []Record, at time.Time) ([]Record, error) {
+	visible := make([]Record, 0, len(records))
+	for _, r := range records {
+		effective, err := nativeEntryTime(r)
+		if err != nil {
+			return nil, err
+		}
+		// The starting observation may have been received later than it was observed.
+		if r.Command.Command == Create || r.Command.Command == NativeSeed || !effective.After(at) {
+			visible = append(visible, r)
+		}
+	}
+	return visible, nil
+}
+
+func nativeEffectiveOrder(records []Record) ([]int, bool, error) {
+	order := make([]int, len(records))
+	times := make([]time.Time, len(records))
+	revisions := make([]int64, len(records))
+	backdated := false
+	for i, r := range records {
+		at, err := nativeEntryTime(r)
+		if err != nil {
+			return nil, false, err
+		}
+		order[i], times[i], revisions[i] = i, at, r.Receipt.Revision
+		if revisions[i] == 0 {
+			revisions[i] = math.MaxInt64 // Proposed records follow durable entries at the same instant.
+		}
+		backdated = backdated || !at.Equal(r.Receipt.RecordedAt)
+	}
+	slices.SortStableFunc(order, func(a, b int) int {
+		if c := times[a].Compare(times[b]); c != 0 {
+			return c
+		}
+		return cmp.Compare(revisions[a], revisions[b])
+	})
+	return order, backdated, nil
 }

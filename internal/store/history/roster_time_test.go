@@ -64,3 +64,55 @@ func TestRosterEffectiveTimeStoredAndRefused(t *testing.T) {
 		})
 	}
 }
+
+func TestRosterOwnerTimingAuthority(t *testing.T) {
+	r := newRolloverDB(t)
+	player := heldSeedCommand(t).Args.Native.Players[0]
+	executePeople(t, r.s, "creator", "commish.seat.invite",
+		commissioner.RawPeople{ID: "owner-invite", Franchise: player.Franchise, Principal: "owner"}, r.version(t))
+	executePeople(t, r.s, "owner", "commish.seat.invite.redeem",
+		commissioner.RawPeople{ID: "owner-invite", Principal: "owner"}, r.version(t))
+	records, err := r.s.nativeRecords(t.Context(), "native.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name, principal, effective, role, want string
+	}{
+		{"owner now", "owner", "now", "owner", ""},
+		{"owner explicit now", "owner", r.c.now.Format(time.RFC3339Nano), "owner", ""},
+		{"owner past", "owner", r.c.now.Add(-time.Hour).Format(time.RFC3339Nano), "", "only a commissioner"},
+		{"commissioner past", "creator", r.c.now.Add(-time.Hour).Format(time.RFC3339Nano), "commissioner", ""},
+		{"owner future", "owner", r.c.now.Add(time.Hour).Format(time.RFC3339Nano), "", "cannot take effect in the future"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := commissioner.RawCommand{League: "native.test", Command: commissioner.RosterCut,
+				Args:     commissioner.RawArgs{Waiver: &commissioner.RawWaiverArgs{Player: player.ID, Franchise: player.Franchise}},
+				Expected: r.version(t), Effective: tc.effective, Request: "cut", Visibility: "league"}
+			before := fingerprint(t, r.s)
+			role, _, err := r.s.checkCommissionerCommand(t.Context(), raw, tc.principal, nil, records, appendFacts{}, r.c.now)
+			if tc.want == "" && (err != nil || role != tc.role) || tc.want != "" && (err == nil || !strings.Contains(err.Error(), tc.want)) {
+				t.Fatalf("role=%q err=%v, want role=%q error=%q", role, err, tc.role, tc.want)
+			}
+			if before != fingerprint(t, r.s) {
+				t.Fatal("authority check wrote state")
+			}
+		})
+	}
+}
+
+func TestRosterTimeDoesNotWidenTradeOverrideAuthority(t *testing.T) {
+	r := newRolloverDB(t)
+	executePeople(t, r.s, "creator", "commish.role.grant",
+		commissioner.RawPeople{Principal: "deputy", Role: "co-commissioner"}, r.version(t))
+	records, err := r.s.nativeRecords(t.Context(), "native.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := commissioner.RawCommand{League: "native.test", Command: commissioner.TradeOverride,
+		Args:      commissioner.RawArgs{Trade: &commissioner.RawTradeArgs{ID: "trade", Decision: "approve"}},
+		Effective: r.c.now.Add(-time.Hour).Format(time.RFC3339Nano)}
+	if _, err := timedCommandRole(raw, "deputy", nil, records, r.c.now); err == nil {
+		t.Fatal("backdating widened a commissioner-only permission")
+	}
+}
