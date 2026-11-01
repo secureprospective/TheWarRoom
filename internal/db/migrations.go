@@ -50,6 +50,12 @@ func (p *Pools) Migrate(ctx context.Context, steps ...Migration) (Findings, erro
 		result.Backup = ""
 		return result, nil
 	}
+	if version == len(steps) {
+		// Nothing to migrate: the full integrity check is the routine check that runs after
+		// launch (RoutineCheck), not a launch blocker; on a large history it took ~17 s.
+		p.migrationChecked, p.checkedVersion = true, version
+		return result, nil
+	}
 	before, err := Check(ctx, p.write)
 	result.Before = before
 	if err != nil {
