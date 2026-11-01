@@ -151,10 +151,8 @@ func CheckCorrectionAppend(raw RawCommand, records []Record, now time.Time) erro
 		if why := rolloverReversalRefusal(records, c.Entry); why != "" {
 			return Refused(fmt.Errorf("%s", why))
 		}
-		index := slices.IndexFunc(records, func(r Record) bool { return r.Receipt.Entry == c.Entry })
-		if index < 0 || !Replay(records).Active[c.Entry] ||
-			!slices.Contains([]string{RosterCut, WaiverProcess, WaiverOverride, DraftPick}, records[index].Command.Command) {
-			return Refused(fmt.Errorf("choose one active recorded cut, waiver award or draft pick"))
+		if err := reversibleEntry(raw.League, records, c.Entry); err != nil {
+			return Refused(err)
 		}
 	}
 	trial := append(slices.Clone(records), Record{Command: raw,
@@ -215,4 +213,29 @@ func (r RawCorrection) validatePick() error {
 		return fmt.Errorf("choose the draft season, round, original franchise and corrected owner")
 	}
 	return nil
+}
+
+// reversibleEntry is the rule for which recorded entry a commissioner may reverse: an active cut, waiver
+// award or draft pick, or an owner's free-agent bid that is still standing. Owners cannot withdraw a bid
+// (a bid is a bid); a mistaken one is removed only by this recorded correction.
+func reversibleEntry(league string, records []Record, entry string) error {
+	index := slices.IndexFunc(records, func(r Record) bool { return r.Receipt.Entry == entry })
+	if index < 0 || !Replay(records).Active[entry] {
+		return fmt.Errorf("choose one active recorded cut, waiver award, draft pick or standing bid")
+	}
+	switch records[index].Command.Command {
+	case RosterCut, WaiverProcess, WaiverOverride, DraftPick:
+		return nil
+	case BidPlace, BidRaise:
+		_, market, err := nativeAssetsState(league, records)
+		if err != nil {
+			return err
+		}
+		a, j, err := market.Bids.Find(entry)
+		if err != nil || a.Decided || !a.Bids[j].Live() {
+			return fmt.Errorf("only a bid that is still standing can be reversed; correct a decided award instead")
+		}
+		return nil
+	}
+	return fmt.Errorf("choose one active recorded cut, waiver award, draft pick or standing bid")
 }

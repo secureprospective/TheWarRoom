@@ -26,7 +26,7 @@ func (f *bidFixture) probe(t *testing.T, franchise, player string, salary int64,
 	if row == nil || row.YourBid == nil {
 		t.Fatal("an accepted bid is missing from the owner's reading")
 	}
-	if err := f.withdraw(t, principal, franchise, commissioner.Receipt{Entry: row.YourBid.ID}); err != nil {
+	if err := f.reverse(t, commissioner.Receipt{Entry: row.YourBid.ID}); err != nil {
 		t.Fatal(err)
 	}
 	return row.YourBid.Points, nil

@@ -126,11 +126,11 @@ func TestNativeBidProcessingRefusals(t *testing.T) {
 	}
 	f.command(t, "commish.role.grant", commissioner.RawArgs{People: &commissioner.RawPeople{
 		Principal: "owner.three", Role: governance.CoCommissioner}}, "private")
-	if err := f.withdraw(t, "owner.one", "franchise.01", bid); err != nil {
+	if err := f.reverse(t, bid); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.tryDecide(t, "owner.three", "5004"); err == nil || !strings.Contains(err.Error(), "has been withdrawn") {
-		t.Fatalf("withdrawn bids were decided: %v", err)
+	if err := f.tryDecide(t, "owner.three", "5004"); err == nil || !strings.Contains(err.Error(), "no bids waiting") {
+		t.Fatalf("a reversed bid was decided: %v", err)
 	}
 	f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
 	if err := f.tryDecide(t, "owner.three", "5004"); err != nil {

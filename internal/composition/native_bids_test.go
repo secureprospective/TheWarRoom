@@ -64,7 +64,20 @@ func TestNativeBidPlaceRaiseAndWithdrawThroughReopen(t *testing.T) {
 	if _, err := f.raise(t, "owner.one", "franchise.01", first, 9*million, 2); err == nil {
 		t.Fatal("a bid that was already raised was raised again")
 	}
-	if err := f.withdraw(t, "owner.one", "franchise.01", raised); err != nil {
+	if err := f.withdraw(t, "owner.one", "franchise.01", raised); err == nil || !strings.Contains(err.Error(), "binding") {
+		t.Fatalf("an owner withdrew a standing bid: %v", err)
+	}
+	if err := f.reverse(t, first); err == nil {
+		t.Fatal("a raised-over bid was reversed before the raise")
+	}
+	if err := f.reverse(t, raised); err != nil {
+		t.Fatal(err)
+	}
+	if row := playerRow(f.bids(t, "owner.one", "franchise.01"), "5001"); row == nil || row.YourBid == nil ||
+		row.YourBid.ID != first.Entry {
+		t.Fatalf("reversing the raise did not restore the first bid: %+v", row)
+	}
+	if err := f.reverse(t, first); err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
@@ -75,8 +88,8 @@ func TestNativeBidPlaceRaiseAndWithdrawThroughReopen(t *testing.T) {
 		}
 		f.restart(t)
 	}
-	if err := f.withdraw(t, "owner.one", "franchise.01", raised); err == nil {
-		t.Fatal("a withdrawn bid was withdrawn twice")
+	if err := f.reverse(t, first); err == nil {
+		t.Fatal("a reversed bid was reversed twice")
 	}
 }
 
@@ -205,7 +218,7 @@ func TestNativeBidLimitsOnLengthAndSalary(t *testing.T) {
 		}
 		if err == nil {
 			row := playerRow(f.bids(t, "owner.one", "franchise.01"), player)
-			if err := f.withdraw(t, "owner.one", "franchise.01", commissioner.Receipt{Entry: row.YourBid.ID}); err != nil {
+			if err := f.reverse(t, commissioner.Receipt{Entry: row.YourBid.ID}); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -241,7 +254,7 @@ func TestNativeBidPhaseRules(t *testing.T) {
 		err := f.tryPlace(t, principal, franchise, "5001", salary, years)
 		if err == nil {
 			row := playerRow(f.bids(t, principal, franchise), "5001")
-			if werr := f.withdraw(t, principal, franchise, commissioner.Receipt{Entry: row.YourBid.ID}); werr != nil {
+			if werr := f.reverse(t, commissioner.Receipt{Entry: row.YourBid.ID}); werr != nil {
 				t.Fatal(werr)
 			}
 		}
@@ -445,5 +458,28 @@ func TestNativeBidsWire(t *testing.T) {
 	}
 	if string(want) != string(body) {
 		t.Fatal("native bids wire differs; regenerate with Go")
+	}
+}
+
+// A bid is a bid: the owner cannot withdraw it and nothing is recorded; the commissioner may reverse only a
+// bid that still stands, and a decided award is corrected with the award override instead.
+func TestNativeBidIsBindingAndOnlyAStandingBidIsReversed(t *testing.T) {
+	t.Parallel()
+	f := bidApp(t)
+	bid := f.place(t, "owner.one", "franchise.01", "5004", 5*million, 1)
+	records, err := f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.withdraw(t, "owner.one", "franchise.01", bid); err == nil || !strings.Contains(err.Error(), "binding") {
+		t.Fatalf("an owner withdrew a standing bid: %v", err)
+	}
+	after, err := f.app.leagueRecords(t.Context(), legalityLeague)
+	if err != nil || len(after) != len(records) {
+		t.Fatalf("a refused withdrawal was recorded: %d -> %d %v", len(records), len(after), err)
+	}
+	f.decide(t, "5004")
+	if err := f.reverse(t, bid); err == nil || !strings.Contains(err.Error(), "still standing") {
+		t.Fatalf("a decided bid was reversed: %v", err)
 	}
 }

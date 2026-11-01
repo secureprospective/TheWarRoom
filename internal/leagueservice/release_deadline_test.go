@@ -10,7 +10,7 @@ import (
 
 func TestReleaseMatrixBidDeadlineWithoutWorker(t *testing.T) {
 	t.Parallel()
-	for _, command := range []string{commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw} {
+	for _, command := range []string{commissioner.BidPlace, commissioner.BidRaise} {
 		t.Run(command, func(t *testing.T) {
 			t.Parallel()
 			f := newDueFixture(t)
@@ -79,7 +79,7 @@ func releaseBidCommand(t *testing.T, f *dueFixture, command, entry string) (comm
 
 func TestReleaseMatrixQueuedBidsUseCommitClock(t *testing.T) {
 	t.Parallel()
-	for _, command := range []string{commissioner.BidPlace, commissioner.BidRaise, commissioner.BidWithdraw} {
+	for _, command := range []string{commissioner.BidPlace, commissioner.BidRaise} {
 		t.Run(command, func(t *testing.T) {
 			t.Parallel()
 			f := newDueFixture(t)
