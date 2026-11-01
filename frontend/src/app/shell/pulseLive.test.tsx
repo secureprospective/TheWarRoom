@@ -2,7 +2,7 @@ import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parseLive } from '../now/liveContract';
 import wire from '../now/live.testdata.json';
-import { FollowedGame, NflList, Plays } from './PulseNow';
+import { FollowedGame, InThisGame, NflList, Plays, espnTeam } from './PulseNow';
 import { pulseRows } from './pulseModel';
 import { parsePulseResults } from '../data/nativePulse';
 import pulse from './pulse.wire.testdata.json';
@@ -46,4 +46,17 @@ it('tags a matchup LIVE only while an NFL game is being played', () => {
   expect(pulseRows(pending, '', [], true, false).every(r => r.status === 'IN PLAY')).toBe(true);
   expect(pulseRows(pending, '', [], true, true).every(r => r.status === 'LIVE')).toBe(true);
   expect(pulseRows(pending, '', [], false, true).every(r => r.status === 'WAITING')).toBe(true);
+});
+
+it("lists the matchup starters playing in the followed game, across league and ESPN team codes", () => {
+  const g = parseLive(wire).games[0];
+  const game = { ...g, away: { ...g.away, abbreviation: "NO" }, home: { ...g.home, abbreviation: "MIA" } };
+  const row = (player: string, name: string, team: string, points?: number) => ({ slot: "QB", player,
+    name, team, points, projection: undefined, words: "" });
+  const html = renderToStaticMarkup(<InThisGame followed={game} sides={{ private: false,
+    left: [row("1", "Mine In", "MIA", 12.5), row("2", "Mine Out", "BUF")],
+    right: [row("3", "Theirs In", "NOS")] }} />);
+  expect(html).toContain("Mine In"); expect(html).toContain("12.5");
+  expect(html).toContain("Theirs In"); expect(html).not.toContain("Mine Out");
+  expect(espnTeam("JAC")).toBe("JAX"); expect(espnTeam("MIA")).toBe("MIA");
 });

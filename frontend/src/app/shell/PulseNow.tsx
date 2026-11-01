@@ -24,12 +24,15 @@ export function PulseNow({ reading, mine, week, results, league, port }: {
   const [side, setSide] = useState<'mu' | 'nfl'>('mu');
   const [filter, setFilter] = useState<PulseFilter>('all');
   const [picked, pick] = useState<string>();
-  const live = usePulseLive(mine);
+  // The NFL board and the followed game are the same for every league; the matchup's own starters
+  // say who is in a game, so the live read is asked for no franchise.
+  const live = usePulseLive('');
   const current = week === reading.week;
   // Only the week being played can be live, and only while an NFL game is actually under way.
   const playing = Boolean(live.view?.games.some(g => g.status === 'in'));
   const rows = results.reading ? pulseRows(results.reading, mine, reading.seats, current, playing) : [];
   const selected = rows.find(r => r.key === picked) ?? rows.find(r => r.mine) ?? rows[0];
+  const sides = useStarterSides(reading, week, results.reading, selected, league, port);
   const games = current ? live.view?.games ?? [] : [];
   const followed = current ? live.view?.followed ?? undefined : undefined;
   return <section className="ws cols on" id="ws-live">
@@ -73,15 +76,14 @@ export function PulseNow({ reading, mine, week, results, league, port }: {
           <b>{selected?.mine ? 'MY MATCHUP · STARTERS' : 'MATCHUP · STARTERS'}</b>
           <span>{selected ? `${selected.game.awayName} · ${selected.game.homeName}` : ''}</span>
         </div>
-        <Starters reading={reading} week={week} results={results.reading} row={selected}
-          league={league} port={port} />
+        <Starters results={results.reading} row={selected} sides={sides} />
       </div>
     </div>
     <div className="pcol">
       <div className="ch"><b>IN THIS GAME</b>
         <span className="src">{followed ? `${followed.away.abbreviation} at ${followed.home.abbreviation}`
           : 'follow a game'}</span></div>
-      <InThisGame view={live.view} followed={followed} />
+      <InThisGame followed={followed} sides={sides} row={selected} />
       <div className="ch" style={{ borderTop: '2px solid var(--black)' }}>
         <b>PLAY-BY-PLAY</b><span className="src">{followed ? `${followed.plays.length} plays` : ''}</span>
       </div>
@@ -162,22 +164,26 @@ export function FollowedGame({ game }: { game: LiveNflGame }) {
 }
 function ordinal(n: number) { return `${n}${['th', 'st', 'nd', 'rd'][n] ?? 'th'}`; }
 
-function InThisGame({ view, followed }: { view?: LiveNflView; followed?: LiveNflGame }) {
+/** League team codes and ESPN's differ for a few clubs; both name the same NFL team. */
+const ESPN_TEAM: Record<string, string> = { JAC: 'JAX', WAS: 'WSH', GBP: 'GB', KCC: 'KC', NEP: 'NE',
+  NOS: 'NO', SFO: 'SF', TBB: 'TB', LVR: 'LV', OAK: 'LV', SDC: 'LAC', STL: 'LAR' };
+export function espnTeam(team?: string) { return team ? ESPN_TEAM[team] ?? team : ''; }
+
+export function InThisGame({ followed, sides, row }: { followed?: LiveNflGame; sides: StarterSides;
+  row?: PulseRow }) {
   if (!followed) return <PulseIdle words="Follow an NFL game to see who in this matchup is playing in it." />;
-  const players = new Map<string, { name: string; team: string; mine: boolean; plays: number }>();
-  for (const e of view?.spine ?? []) {
-    const p = players.get(e.player.id) ?? { name: e.player.name, team: e.player.team,
-      mine: e.player.mine, plays: 0 };
-    p.plays++; players.set(e.player.id, p);
-  }
-  if (!players.size) return <PulseIdle words={followed.plays.length
-    ? 'No starter from your matchup has a play in this game yet.'
-    : 'No plays are held for this game yet.'} />;
-  return <div className="scroll">{[...players.entries()].map(([id, p]) =>
-    <div key={id} className={`onf ${p.mine ? 'me' : 'th'}`}>
+  const teams = [followed.away.abbreviation, followed.home.abbreviation];
+  const inGame = (rows: PulseStarterRow[], mine: boolean) => rows
+    .filter(r => teams.includes(espnTeam(r.team))).map(r => ({ ...r, mine }));
+  const players = [...inGame(sides.left, true), ...inGame(sides.right, false)];
+  if (!players.length) return <PulseIdle words={`No starter in ${row ? `${row.game.awayName} v `
+    + row.game.homeName : 'this matchup'} plays in ${teams.join(' at ')}.`} />;
+  return <div className="scroll">{players.map(p =>
+    <div key={p.player} className={`onf ${p.mine ? 'me' : 'th'}`} title={p.words}>
       <span className="rib" />
-      <span className="nm">{p.name}<small>{p.team} · {p.mine ? 'yours' : 'opponent'}</small></span>
-      <b>{p.plays}<small className="src"> {p.plays === 1 ? 'play' : 'plays'}</small></b>
+      <span className="nm">{p.name}<small>{p.slot} · {p.team} · {p.mine ? row?.game.awayName
+        : row?.game.homeName}</small></span>
+      <b>{pointsLabel(p.points)}</b>
     </div>)}</div>;
 }
 
@@ -249,15 +255,14 @@ function GameRow({ row, selected, onPick }: { row: PulseRow; selected: boolean;
   </PulseAct>;
 }
 
-function Starters({ reading, week, results, row, league, port }: {
-  reading: NativePulse; week?: number; results?: PulseResults; row?: PulseRow; league: string;
-  port: HostedPort;
-}) {
-  const [side, setSide] = useState<'off' | 'def'>('off');
+type StarterSides = { left: PulseStarterRow[]; right: PulseStarterRow[]; private: boolean };
+
+/** useStarterSides reads the chosen matchup's two lineups once, for the starters and for who is in
+ *  the followed NFL game. */
+function useStarterSides(reading: NativePulse, week: number | undefined, results: PulseResults | undefined,
+  row: PulseRow | undefined, league: string, port: HostedPort): StarterSides {
   const away = row?.game.away;
   const home = row?.game.home;
-  const awayScore = scoreOf(results, away ?? '');
-  const homeScore = scoreOf(results, home ?? '');
   const starters = (franchise?: string) => scoreOf(results, franchise ?? '')?.starters
     .map(s => s.player) ?? [];
   const matchup = usePulseRead<PulseMatchup>(
@@ -266,17 +271,28 @@ function Starters({ reading, week, results, row, league, port }: {
       ? readPulseMatchup(league, reading.season, week, [away, home],
         { [away]: starters(away), [home]: starters(home) }, port)
       : Promise.reject(new Error('Choose a matchup to read its lineups.')));
+  const projections = matchup.reading?.projections ?? {};
+  return {
+    left: starterRows(scoreOf(results, away ?? ''), matchup.reading?.lineups[away ?? ''], projections),
+    right: starterRows(scoreOf(results, home ?? ''), matchup.reading?.lineups[home ?? ''], projections),
+    private: Boolean(matchup.reading?.errors.length || matchup.error),
+  };
+}
+
+function Starters({ results, row, sides }: { results?: PulseResults; row?: PulseRow;
+  sides: StarterSides }) {
+  const [side, setSide] = useState<'off' | 'def'>('off');
   if (!row) return <PulseIdle words="No game is read for this week yet." />;
+  const awayScore = scoreOf(results, row.game.away);
+  const homeScore = scoreOf(results, row.game.home);
   if (!awayScore?.starters.length && !homeScore?.starters.length)
     return <PulseIdle words={`${row.game.words} Starters appear once both franchises have a lineup `
       + 'recorded for this week.'} />;
   // Each side keeps its own offence and defence in lineup order, so a pair is always like for like.
   const split = (rows: PulseStarterRow[]) => ({ off: rows.filter(r => OFFENCE.includes(r.slot)),
     def: rows.filter(r => !OFFENCE.includes(r.slot)) });
-  const left = split(starterRows(awayScore, matchup.reading?.lineups[away ?? ''],
-    matchup.reading?.projections ?? {}));
-  const right = split(starterRows(homeScore, matchup.reading?.lineups[home ?? ''],
-    matchup.reading?.projections ?? {}));
+  const left = split(sides.left);
+  const right = split(sides.right);
   const total = (rows: PulseStarterRow[]) => rows.reduce((n, r) => n + (r.points ?? 0), 0);
   const count = (k: 'off' | 'def') => Math.max(left[k].length, right[k].length);
   const shown = count(side) ? side : side === 'off' ? 'def' : 'off';
@@ -302,7 +318,7 @@ function Starters({ reading, week, results, row, league, port }: {
       {pairs.map(([a, b], i) => <StarterRow key={`${shown}-${a?.player ?? i}-${b?.player ?? i}`}
         away={a} home={b} />)}
     </div>
-    {(matchup.reading?.errors.length || matchup.error) && <p role="status" className="src">
+    {sides.private && <p role="status" className="src">
       A starter&rsquo;s NFL team and lock come from that franchise&rsquo;s own lineup, which is
       private to its team.</p>}
   </div>;
