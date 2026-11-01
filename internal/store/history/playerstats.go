@@ -22,6 +22,14 @@ import (
 // feed really did change back.
 func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 	accept func(sha string, at time.Time, weeks []source.PlayerWeek)) error {
+	return s.readWeeklyFiles(ctx, season, func(sha string, at time.Time, weeks []source.PlayerWeek) bool {
+		accept(sha, at, weeks)
+		return false
+	})
+}
+
+func (s *Store) readWeeklyFiles(ctx context.Context, season int,
+	accept func(sha string, at time.Time, weeks []source.PlayerWeek) bool) error {
 	feed, ok := s.reg.Feed("stats_player_week")
 	if !ok {
 		return fmt.Errorf("weekly NFL statistics feed is not registered")
@@ -47,8 +55,7 @@ func (s *Store) heldWeeklyFiles(ctx context.Context, season int,
 			parseErr = fmt.Errorf("read held weekly statistics %s: %w", sha, err)
 			return true
 		}
-		accept(sha, at, weeks)
-		return false
+		return accept(sha, at, weeks)
 	})
 	if err != nil {
 		return fmt.Errorf("read weekly statistics archive: %w", err)
@@ -227,15 +234,12 @@ func clonePlayerWeek(week source.PlayerWeek) source.PlayerWeek {
 // runs on the seasons still flowing (R11). It exists so a league valued from its own scoring
 // settings reads exactly the weekly lines the projections read.
 func (s *Store) HeldWeeks(ctx context.Context, season int) (held []source.PlayerWeek, sha string, err error) {
-	files, err := s.heldSeason(ctx, season)
+	err = s.readWeeklyFiles(ctx, season, func(hash string, _ time.Time, weeks []source.PlayerWeek) bool {
+		held, sha = weeks, hash
+		return true
+	})
 	if errors.Is(err, source.ErrSeasonNotLoaded) {
 		return nil, "", nil
 	}
-	if err != nil {
-		return nil, "", err
-	}
-	if len(files) == 0 {
-		return nil, "", nil
-	}
-	return files[0].weeks, files[0].sha, nil
+	return held, sha, err
 }
