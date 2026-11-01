@@ -29,12 +29,15 @@ func (f *fixtureTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 		"draftResults":     "draftreports/testdata/results-2026.json",
 		"futureDraftPicks": "draftreports/testdata/future-2026.json",
 	}
-	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments") {
+	if req.Method != http.MethodGet || (paths[kind] == "" && kind != "salaryAdjustments" && kind != "schedule") {
 		f.writes++
 		return nil, fmt.Errorf("unexpected MFL operation: %s %s", req.Method, kind)
 	}
 	f.reads++
 	body := []byte(`{"salaryAdjustments":{}}`)
+	if kind == "schedule" {
+		body = []byte(`{"schedule":{"weeklySchedule":{"week":"1"}}}`)
+	}
 	if path := paths[kind]; path != "" {
 		var err error
 		body, err = os.ReadFile("../../ingestion/" + path)
@@ -63,7 +66,7 @@ func TestSourceAdapterOnlyReadsMFL(t *testing.T) {
 	if err != nil || len(candidate.Problems) != 0 || len(candidate.Plan.Seed.Players) != len(fixture.Rosters) {
 		t.Fatalf("source adapter: candidate=%+v err=%v", candidate.Problems, err)
 	}
-	if transport.reads == 0 || transport.writes != 0 {
+	if len(candidate.Plan.Schedule) != 1 || transport.reads == 0 || transport.writes != 0 {
 		t.Fatalf("source traffic: reads=%d writes=%d", transport.reads, transport.writes)
 	}
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -29,6 +30,7 @@ type Export struct {
 	Champions []Champion
 	// DraftType is MFL's rookie draft order kind ("SAME" every round alike, "SNAKE"); empty when MFL states none.
 	DraftType string
+	Schedule  []leagueschedule.RawScheduleWeek
 	ReadAt    time.Time
 }
 
@@ -53,6 +55,10 @@ type Reader interface {
 	Adjustments(ctx context.Context) ([]Adjustment, error)
 	Draft(ctx context.Context) ([]draftreports.Pick, []draftreports.FuturePick, error)
 	Players(ctx context.Context) (map[string]string, error)
+}
+
+type ScheduleReader interface {
+	Schedule(context.Context) ([]leagueschedule.RawScheduleWeek, error)
 }
 
 // DraftTyper is a Reader that also reads the kind of order MFL's rookie draft keeps from round to round.
@@ -102,6 +108,13 @@ func Read(ctx context.Context, src Reader, now time.Time) (Export, error) {
 			return Export{}, &leaguemigration.ReadError{Part: "draft order kind", Err: err}
 		}
 		out.DraftType = kind
+	}
+	if reader, ok := src.(ScheduleReader); ok {
+		var err error
+		out.Schedule, err = reader.Schedule(ctx)
+		if err != nil {
+			return Export{}, &leaguemigration.ReadError{Part: "weekly schedule", Err: err}
+		}
 	}
 	out.ReadAt = now.UTC()
 	return out, nil

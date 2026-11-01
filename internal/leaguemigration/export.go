@@ -78,12 +78,13 @@ func AsProblems(err error) ([]string, bool) {
 // owners for the invitations, and notes on what waits for the commissioner. Go builds every part of it
 // from the read; no caller supplies rosters or settings.
 type Plan struct {
-	Create  commissioner.RawArgs
-	Seed    commissioner.RawNativeSnapshot
-	Rules   leaguerules.RuleSet
-	Owners  []Owner
-	Waiting []WaitingSetting
-	Notes   []string
+	Schedule []commissioner.ScheduleWeek
+	Create   commissioner.RawArgs
+	Seed     commissioner.RawNativeSnapshot
+	Rules    leaguerules.RuleSet
+	Owners   []Owner
+	Waiting  []WaitingSetting
+	Notes    []string
 	// Mapping is each MFL franchise id's app franchise.
 	Mapping map[string]string
 }

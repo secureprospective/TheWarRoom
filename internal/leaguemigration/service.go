@@ -127,6 +127,16 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 		return nil, err
 	}
 	league := AppLeagueID(mflLeague, export.Season)
+	records, err := s.Ledger.Records(ctx, league)
+	if err != nil {
+		return nil, fmt.Errorf("check existing league: %w", err)
+	}
+	if len(records) > 0 {
+		if err := checkScheduleMapping(records, plan.Mapping); err != nil {
+			return nil, err
+		}
+		return SyncSchedule(ctx, s.Ledger, league, reason, principal, export.Season, plan.Schedule)
+	}
 	create := commissioner.RawCommand{League: league, Command: commissioner.Create, Args: plan.Create,
 		Request: "mfl-import.create", Reason: reason, Effective: "now", Visibility: "league"}
 	seed := plan.Seed
@@ -138,6 +148,7 @@ func (s *Service) ImportWithOptions(ctx context.Context, mflLeague, reason, prin
 		return nil, err
 	}
 	raws := append([]commissioner.RawCommand{create, start}, answers...)
+	raws = append(raws, ScheduleCommands(league, reason, plan.Schedule, 0)...)
 	receipts, err := s.Ledger.Batch(ctx, raws, principal)
 	if err != nil {
 		return nil, fmt.Errorf("import the MFL league (nothing was recorded; start the import again): %w", err)

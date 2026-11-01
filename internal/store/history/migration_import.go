@@ -95,7 +95,7 @@ func batchable(command string, creating bool) bool {
 	switch command {
 	case commissioner.RulesSet:
 		return creating
-	case commissioner.Create, commissioner.NativeSeed, "commish.seat.invite":
+	case commissioner.Create, commissioner.NativeSeed, commissioner.ScheduleGenerate, commissioner.SchedulePublish, "commish.seat.invite":
 		return true
 	}
 	return false
