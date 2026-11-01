@@ -280,7 +280,7 @@ it('says games are not ranked yet rather than calling the record unavailable', a
   await act(async () => { commands.dispatch('nav.open', { node: 'war' }); }); await settle();
   const warLine = container.querySelector('.wr-v6 .franchise-context .who div')!;
   expect(warLine.textContent).toContain('No games ranked yet');
-  expect(warLine.textContent).toContain('window trade');
+  expect(warLine.textContent).toContain('window Trade');
 });
 
 it.each(['hq', 'war'] as const)('fills %s prepared values on publication', async node => {

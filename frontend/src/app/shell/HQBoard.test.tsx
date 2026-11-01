@@ -40,6 +40,23 @@ describe('HQ starter and bench board', () => {
     expect(boardSlots({ ...reading, starterCount: 7 }, { positions: [] })).toHaveLength(7);
     expect(boardSlots(undefined, { positions: [] })).toEqual([]);
   });
+  // MFL's own counts for the imported Legacy league: 21 starters, 8 offensive, 12 defensive. The
+  // kicker is in neither side's count, so the board must not pad a 21st, codeless slot.
+  it('fits the slots to the league settings and names each section by the rows it holds', () => {
+    const reading = { ...heldLineup(), starters: [], starterCount: 21 };
+    const settings = { starters: 21, offence: 8, defence: 12, positions: [
+      { code: 'QB', min: 1 }, { code: 'RB', min: 1 }, { code: 'WR', min: 2 }, { code: 'TE', min: 1 },
+      { code: 'K', min: 1 }, { code: 'DT', min: 2 }, { code: 'DE', min: 2 }, { code: 'LB', min: 2 },
+      { code: 'CB', min: 2 }, { code: 'S', min: 2 }] };
+    const slots = boardSlots(reading, settings);
+    expect(slots).toHaveLength(21);
+    expect(slots.filter(s => s.code === '—')).toHaveLength(0);
+    expect(slots.filter(s => s.side === 'off')).toHaveLength(9);
+    expect(slots.filter(s => s.side === 'def')).toHaveLength(12);
+    const html = renderToStaticMarkup(<HQBoard snapshot={heldSnapshot()} mine="0025" reading={reading}
+      settings={settings} values={new Map()} select={() => {}} />);
+    expect(html).toContain('OFFENCE · 9'); expect(html).toContain('DEFENCE · 12');
+  });
   it('charts only held finished scores, retaining real zero and negative weeks', () => {
     const research = { report: { rows: [{ cells: ['Form', 'W2: 0.00, W3: -2.25, W4: 15.50 · 4.42 PPG'] }] }
       } as PlayerReading;

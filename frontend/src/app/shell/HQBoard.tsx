@@ -34,9 +34,12 @@ export function boardSlots(reading: HQLineup | undefined, settings: HQSettings):
   for (const player of remaining) slots.push({ code: defensive(player.position) ? 'D·FLX' :
     ['RB', 'WR', 'TE'].includes(player.position ?? '') ? 'FLEX' : player.position ?? '—',
     side: defensive(player.position) ? 'def' : 'off', id: player.id });
+  // MFL counts offensive and defensive starters without the kicker: a 21-starter league is 8 + 12 + K.
+  // The kicker already has his own slot from the position rules, so counting him toward the offence
+  // group would fill one flex too few and leave the board padding a slot the league does not have.
   const fill = (side: HQSlot['side'], count?: number) => {
     if (count === undefined) return;
-    while (slots.filter(s => s.side === side).length < count)
+    while (slots.filter(s => s.side === side && s.code !== 'K').length < count)
       slots.push({ code: side === 'off' ? 'FLEX' : 'D·FLX', side });
   };
   fill('off', settings.offence); fill('def', settings.defence);
@@ -162,8 +165,10 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
       unavailable}</b><span>proj <b>{reading ? totalProjection(starters.map(p => p.id), values) :
       unavailable}</b></span></div>
       {(['off', 'def'] as const).map(side => <div key={side}>
-        <div className="sec">{side === 'off' ? 'OFFENCE' : 'DEFENCE'} · {side === 'off' ? settings.offence
-          ?? unavailable : settings.defence ?? unavailable}
+        {/* The count names the rows this section holds, so the two can never disagree. */}
+        <div className="sec">{side === 'off' ? 'OFFENCE' : 'DEFENCE'} · {slots.length ?
+          slots.filter(s => s.side === side).length : (side === 'off' ? settings.offence :
+            settings.defence) ?? unavailable}
           <span>{reading ? totalProjection(slots.filter(s => s.side === side && s.id).map(s => s.id!),
             values) : unavailable}</span></div>
         <div className="slots">{!reading ? <p className="empty" title={error}>{unavailable}</p> :
