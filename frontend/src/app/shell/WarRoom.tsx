@@ -93,7 +93,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
       <div className="tray"><div className="pulls">{(['pocket', 'offers'] as const).map(d => <WarRoomAct
         key={d} className="pull" expanded={drawer === d} onAction={() =>
           setDrawer(drawer === d ? undefined : d)}>{d === 'pocket' ? 'POCKET' : 'NEGOTIATIONS'}</WarRoomAct>)}
-      </div><span className="msg" title={header.error || header.reading?.errors.length ? unavailable : undefined}>{unavailable}
+      </div><span className="msg" title={header.error || header.reading?.errors.length ?
+        unavailable : undefined}>{unavailable}
       </span>
       <WarRoomAct className="btn sp" disabled>SAVE TO POCKET</WarRoomAct>
       <WarRoomAct className="btn" onAction={() =>

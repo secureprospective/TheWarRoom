@@ -12,7 +12,8 @@ import { WarRoomInspector } from './WarRoomInspector';
 import { WarRoomPlans } from './WarRoomPlans';
 import { WarRoomDrawers } from './WarRoomDrawers';
 import { WarRoomDraft } from './WarRoomDraft';
-import { parseWarRoomDelta, readWarRoomCatalog, readWarRoomPreview, type WarRoomCatalog } from './warroomTradeReads';
+import { parseWarRoomDelta, readWarRoomCatalog, readWarRoomPreview, type WarRoomCatalog }
+  from './warroomTradeReads';
 import { readWarRoomHeader, type WarRoomContext } from './warroomReads';
 import { readWarRoomMarket, parseWarRoomOwnBids, changeWarRoomTarget, parseWarRoomProjections }
   from './warroomMarketReads';

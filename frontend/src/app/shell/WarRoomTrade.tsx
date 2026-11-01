@@ -18,7 +18,8 @@ export function WarRoomAssetBlock({ asset, used, select, toggle, from, inTray }:
       <small>{asset.contract ?? unavailable}</small>
       </WarRoomAct>
       <span className="ag">{asset.age ?? <CompactAbsent />}</span>
-    <span className="vl" title={asset.now?.detail}>{asset.now?.held ? asset.now.text : <CompactAbsent />}</span>
+    <span className="vl" title={asset.now?.detail}>{asset.now?.held ? asset.now.text :
+      <CompactAbsent />}</span>
     {inTray && <span className="v3"><CompactAbsent /></span>}
   </div>;
 }
@@ -92,10 +93,12 @@ export function WarRoomTrade({ context, catalog, deal, change, select }: { conte
       })}</div>
       <div className="lenses">{['YOUR LENS', 'THEIR LENS'].map(label => <div className="lens" key={label}>
         <span className="lb">{label}<small>{unavailable}</small></span><div className="scale" />
-        <span className="n"><CompactAbsent /></span></div>)}<div className="verdict" title={preview.error ? unavailable : undefined}>
+        <span className="n"><CompactAbsent /></span></div>)}<div className="verdict"
+        title={preview.error ? unavailable : undefined}>
         <span className="vd">{preview.reading ? preview.reading.reasons.join(' · ') || 'Preview checked' :
           unavailable}</span></div></div>
-      <div className="effect" title={delta.error ? unavailable : undefined}>{preview.reading?.teams.flatMap(t => t.figures.map(f =>
+      <div className="effect" title={delta.error ? unavailable : undefined}>{preview.reading?.teams
+        .flatMap(t => t.figures.map(f =>
         <div key={`${t.team}:${f.label}`}><span className="h">{t.team} · {f.label}</span><b>{f.after}</b>
           <small>{f.before} → {f.after} · {f.change}</small></div>))}
         <WarRoomDeltaSidePanel side={delta.reading?.you} name="YOU" names={names} />
