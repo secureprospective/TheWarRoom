@@ -1,12 +1,17 @@
 package composition
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,6 +19,7 @@ import (
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration"
 	"github.com/secureprospective/TheWarRoom/internal/leaguemigration/migrationtest"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -94,6 +100,36 @@ func TestLaunchAutomaticallyBackfillsSchedule(t *testing.T) {
 	}
 }
 
+type scoringLaunchTransport struct{ reads int }
+
+func (f *scoringLaunchTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	name := "weeks.csv"
+	plays := r.URL.String() == source.PlaysURL(2026)
+	if plays {
+		name = "plays.csv"
+	}
+	body, err := os.ReadFile("internal/fantasyscore/source/testdata/" + name)
+	if err != nil {
+		return nil, err
+	}
+	body = bytes.ReplaceAll(body, []byte("2025"), []byte("2026"))
+	if plays {
+		var compressed bytes.Buffer
+		writer := gzip.NewWriter(&compressed)
+		if _, err := writer.Write(body); err != nil {
+			return nil, err
+		}
+		if err := writer.Close(); err != nil {
+			return nil, err
+		}
+		body = compressed.Bytes()
+	} else if !strings.Contains(r.URL.Path, "stats_player_week_2026.csv") {
+		return nil, errors.New("unexpected scoring request")
+	}
+	f.reads++
+	return &http.Response{StatusCode: 200, Header: http.Header{}, Body: io.NopCloser(bytes.NewReader(body))}, nil
+}
+
 type nflDatesTransport struct{ weeks []int }
 
 func (f *nflDatesTransport) RoundTrip(r *http.Request) (*http.Response, error) {
@@ -128,12 +164,21 @@ func TestScheduleRefreshFillsOnlyMissingNFLDates(t *testing.T) {
 		heldNativeWeek(t, a, week, time.Date(2026, 9, 11, 0, 15, 0, 0, time.UTC).AddDate(0, 0, (week-1)*7), week < 8)
 	}
 	feed := &nflDatesTransport{}
+	stats := &scoringLaunchTransport{}
+	a.core.Fetches = &archive.Transport{Base: stats, Sink: a.core.History}
 	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(&archive.Transport{Base: feed, Sink: a.core.History}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	for range 2 {
 		a.syncLeagueSchedulesAtLaunch(t.Context())
+	}
+	if stats.reads != 2 {
+		t.Fatalf("ordinary launch did not acquire/cache scoring evidence: %d reads", stats.reads)
+	}
+	held, err := a.core.History.PlayerWeekStats(t.Context(), source.RawStatScope{GSIS: "00-0023459", Season: 2026, Week: 1})
+	if err != nil || len(held) != 2 || len(held[0].Missing) != 0 || held[0].Week == nil {
+		t.Fatalf("launch held evidence: %+v %v", held, err)
 	}
 	if !reflect.DeepEqual(feed.weeks, []int{1, 2, 3, 4, 5, 6, 10, 11, 12}) {
 		t.Fatalf("missing dates requested: %v", feed.weeks)
