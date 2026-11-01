@@ -129,6 +129,7 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 	if season < 1920 || season > 9999 || week < 1 || week > 22 {
 		return NativeProjections{}, fmt.Errorf("projections: choose an NFL season and week")
 	}
+	out := NativeProjections{League: league, Season: season, Week: week, Players: []NativeProjection{}, Notes: []string{}}
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return NativeProjections{}, err
@@ -137,17 +138,6 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 	if err != nil {
 		return NativeProjections{}, fmt.Errorf("projections: rules: %w", err)
 	}
-	return s.ProjectionsUnder(ctx, league, rules, season, week, players)
-}
-
-// ProjectionsUnder projects players under rules the caller has read: a native league's rules in
-// force, or the MFL-mirror league's held settings. Same model, same cache key, any league.
-func (s *Store) ProjectionsUnder(ctx context.Context, league string, rules leaguerules.RuleSet, season, week int,
-	players []string) (NativeProjections, error) {
-	if season < 1920 || season > 9999 || week < 1 || week > 22 {
-		return NativeProjections{}, fmt.Errorf("projections: choose an NFL season and week")
-	}
-	out := NativeProjections{League: league, Season: season, Week: week, Players: []NativeProjection{}, Notes: []string{}}
 	held := map[int][]source.PlayerWeek{}
 	encoded, err := json.Marshal(rules.Scoring)
 	if err != nil {

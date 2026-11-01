@@ -264,7 +264,6 @@ func (a *App) initStoreFloor(parent context.Context, hist *history.Store) (refre
 			a.core.Moves = moveStore
 			hist.SetLineupEnvironment(appLineupEnv{app: a})
 			hist.SetBidEnvironment(appBidEnv{app: a})
-			a.installMirrorLedger()
 		}, DraftReports: a.refreshDraftReportsFeeds, SeedClock: a.seedClockSchedules, Log: func(line string) { log.Print(line) },
 	}).Run(ctx)
 }

@@ -22,12 +22,7 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
 	//nolint:wrapcheck // Preserve held starting-snapshot refusal.
-	return nativeapp.CaptureSeed(a.heldSource())
-}
-
-// heldSource reads the held MFL league; callers hold RefreshMu so a refresh cannot change it mid-read.
-func (a *App) heldSource() nativeapp.SeedSource {
-	return nativeapp.SeedSource{
+	return nativeapp.CaptureSeed(nativeapp.SeedSource{
 		Available: func() bool { return a.core.League != nil && a.core.Rulebook != nil },
 		Roster:    func() (state.MirrorSnapshot, string) { snap, at, _ := a.core.League.ContractsView(); return snap, at },
 		Season:    func() int { return a.core.Season },
@@ -42,5 +37,5 @@ func (a *App) heldSource() nativeapp.SeedSource {
 			defer a.core.TargetSnapshotMu.Unlock()
 			return a.core.TargetSnapshot.Players.Value
 		},
-	}
+	})
 }

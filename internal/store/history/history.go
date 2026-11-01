@@ -50,7 +50,6 @@ type Store struct {
 	statWeeks func(context.Context, int) ([]commissioner.StatWeek, error)
 	lineups   LineupSource
 	lineupEnv LineupEnvironment
-	mirror    *MirrorLedger
 	// bidEnv says which week of the NFL season it is and who is in the playoffs when a bid is judged.
 	bidEnv BidEnvironmentSource
 	// aliases is the desktop's linked-identity map, read when a caller supplies none.

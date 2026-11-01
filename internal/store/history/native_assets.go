@@ -11,9 +11,6 @@ import (
 )
 
 func (s *Store) nativeRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
-	if records, held, err := s.mirrorRecords(ctx, league); held {
-		return records, err
-	}
 	if !strings.HasPrefix(league, "native.") || league == "native." || strings.TrimSpace(league) != league {
 		return nil, fmt.Errorf("choose an app league")
 	}

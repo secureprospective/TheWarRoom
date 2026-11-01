@@ -133,9 +133,6 @@ func (s *Store) ExecuteCommissionerWithFacts(ctx context.Context, raw commission
 func (s *Store) executeCommissioner(ctx context.Context, raw commissioner.RawCommand,
 	principal string, auth commissioner.Authorizer, facts nativecheck.Facts, zone *time.Location,
 	startNative bool) (commissioner.Receipt, error) {
-	if err := s.refuseMirror(raw); err != nil {
-		return commissioner.Receipt{}, err
-	}
 	raw, canonical, err := preparedCommand(raw, principal, true)
 	if err != nil {
 		return commissioner.Receipt{}, err
@@ -546,9 +543,6 @@ func (s *Store) CommissionerDigests(ctx context.Context, league, principal strin
 }
 
 func (s *Store) leagueRecords(ctx context.Context, league string) ([]commissioner.Record, error) {
-	if records, held, err := s.mirrorRecords(ctx, league); held {
-		return records, err
-	}
 	tx, err := s.pools.Read().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("read league records: %w", err)
