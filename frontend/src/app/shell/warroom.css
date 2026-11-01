@@ -442,6 +442,9 @@
 
 /* off-season calendar strip (sim play controls attach here later) */
 .wr-v6 .cal{display:grid;grid-template-columns:repeat(8,1fr);border-top:2px solid var(--black);background:var(--sunken)}
+/* The strip is eight equal columns; its message is one child. Give it the whole row and one line,
+   so it never wraps between words into an eighth of the strip. */
+.wr-v6 .cal>.empty{grid-column:1/-1;white-space:nowrap;padding:7px 10px}
 .wr-v6 .ev{position:relative;padding:7px 10px 7px;border-right:1px solid var(--black);display:grid;gap:2px;transition:transform 70ms linear;cursor:pointer;min-width:0}
 .wr-v6 .ev:hover{background:var(--raised)}
 .wr-v6 .ev .w{font:600 9px var(--mono);letter-spacing:.12em;color:var(--ink3)}

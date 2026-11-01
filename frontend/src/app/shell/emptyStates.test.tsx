@@ -37,3 +37,19 @@ it('says a quiet War Room strip is quiet, and never breaks a word to fit a narro
   expect(css).toContain('.wr-v6.embedded .empty{overflow-wrap:break-word}');
   expect(css).not.toContain('overflow-wrap:anywhere');
 });
+
+// The dates strip is eight equal columns. Its message is one child, so without a rule of its own it
+// is squeezed into an eighth of the strip and wraps between words: "No dates / yet", "Not /
+// available / yet". The message takes the whole row and stays on one line.
+it('gives the War Room dates strip message the whole row, on one line', () => {
+  const css = readFileSync(new URL('./warroom.css', import.meta.url), 'utf8');
+  const rule = /\.wr-v6 \.cal>\.empty\{([^}]*)\}/.exec(css);
+  expect(rule).not.toBeNull();
+  expect(rule![1]).toContain('grid-column:1/-1');
+  expect(rule![1]).toContain('white-space:nowrap');
+  for (const empty of [<WarRoomDates key="none" events={[]} />,
+    <WarRoomDates key="failed" events={[]} failed reason="port down" />]) {
+    const html = renderToStaticMarkup(empty);
+    expect(html.match(/class="empty"/g)).toHaveLength(1);
+  }
+});
