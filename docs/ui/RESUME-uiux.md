@@ -343,3 +343,5 @@ GPT (Sol/Terra) resets ~09:50 CT.
 4. Tell Christopher Pulse is demo-ready only after that clean fresh-launch walk.
 
 **Prep 17:05 CT for Tom + GPT (not launched):** briefs on Beelink ~/fleet/briefs: APP-SCHED-10.md (Tom, Opus medium, sched wt @61c50a5c6: Gonzalez "on no NFL roster that week" zero, Bills W4 McLaurin/W6 Warren/W7 Ridley, 15 half-point diffs, re-run 148 rows + Bills) · APP-ROSTER-5.md + addendum (Sol medium, roster wt @dca039191; stay below syncPlayedLineups; report refused before/after incl. week 8 and sync time). Exact launch lines: ~/fleet/briefs/LAUNCH-1101-evening.md. Both worktrees clean.
+
+**Compact-safe 17:08 CT:** in flight NOTHING (app closed, no agents). Next on resume: at ~18:00 launch Tom APP-SCHED-10, at ~18:20 Sol APP-ROSTER-5 (lines in ~/fleet/briefs/LAUNCH-1101-evening.md) with done-watchers; then cherry-pick gates/sched/roster → integrate, heavy-ok + ONE full suite, fresh-launch full-screen walk; only then tell Christopher Pulse is demo-ready.
