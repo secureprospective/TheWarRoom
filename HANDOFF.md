@@ -1,32 +1,32 @@
 # Handoff
 
 ## Baton
-Review / ClaudeBox — 2026-11-01, build/SCHED-1. APP-SCHED-6 stopped, partial item 1.
-Local commits only; no remote contact or push authorized.
+ClaudeBox / review — 2026-11-01, build/SCHED-1. APP-SCHED-7 measurement only at 1207f2da.
+Local docs/evidence commit only; no remote contact or push.
 
 ## Where it stands
-- League held player-record position now wins over a conflicting NFL-feed position for scoring and
-  lineup legality. Explicit commissioner position choices still win. No scoring math/settings changed.
-- Regression observed failing first (feed LB over league DE); final targeted race 14 named PASS,
-  zero failures. Plain make build PASS. Existing stat-queue tests pass but do not prove the requested
-  league-position suggestion behavior.
-- Evidence and precise blocker: `docs/build-handoffs/APP-SCHED-6-evidence.md`.
-- APP-SCHED-5 copied-profile comparison remains previous-build evidence only: 148 recorded weeks,
-  4 exact / 0 within .01 / 33 differ / 111 unavailable. Not rerun on this change.
+- Fresh scratch-profile SQLite backup; ordinary archived lineup/schedule backfill, scoring acquisition,
+  stat ledger, native results/standings: 148 recorded weeks, 24 exact / 0 within .01 / 9 differ /
+  115 unavailable. Evidence: `docs/build-handoffs/APP-SCHED-7-evidence.md` and its two TSVs.
+- Previous part 5 TSV is actually 4 exact / 29 differ / 115 unavailable; previous prose 4/33/111
+  was an arithmetic error. Completeness did not regress.
+- Bills MFL 6–1 / PF 1912.35; native 0/7 complete, W-L/PF unavailable (displayed zeros not outcomes).
+- 472 absent rows: 36 bye candidates (historical affiliation unverified), 53 exact-week injury Out,
+  141 positive snap/absent scoring-row, 242 unresolved. Seven separate 0835 identity gaps.
+- Disposable measurement PASS 208.44 s; eight native player-item readings race PASS 33.82 s.
+  Initial full measurement race run interrupted at external 600 s deadline during adoption;
+  non-race retry resumed idempotently on copy. No production changes, GUI or independent review.
 
 ## Next move / blocked on
-- Existing stat queue approves a weekly revision, not a durable player position; newest==counted
-  suppression hides feed-vs-league disagreement. Integrate player-level position suggestions with
-  existing PlayerPosition ledger, preserving preview, atomic append checks, undo and rejection.
-  Deduplicate across weeks/unchanged feed. Stopped per brief's balloon rule at this boundary.
-- Then rerun 148 comparison on a fresh scratch-profile copy, isolate Schultz W4 stat/rule residual,
-  classify 472 absent starter-stat occurrences with participation/status evidence and wire legitimate
-  inactive zeroes without masking real gaps. These items are not delivered.
-- Earlier debt: verified custom identity 0835 (seven occurrences); slow initial ledger adoption and
-  native reads; live ESPN/Sleeper/advanced-rushing inputs; source-health UI; historical roster refusals.
+- Position queue integration remains DEFERRED; do not start without head-brain authorization.
+- Resolve 242 unknown absences and historical affiliation for 36 bye candidates; existing MFL
+  bye and nflverse exact-week Out/snap sources are documented, no did-not-play zero built.
+- Nine complete score differences: largest Giants invalid-lineup penalty; remaining player credit
+  residuals need MFL stat breakdown, including Schultz W4. No scoring-rule diagnosis established.
+- Earlier debt: verified identity 0835; slow adoption/native reads; live/advanced inputs;
+  source-health UI; 76 historical-roster refusals.
 
 ## Tried and rejected
-- Treating a weekly StatApprove as league-wide position approval: conflates unrelated stat choices
-  and cannot govern future weeks from the current evidence contract.
-- One position suggestion per player-week: repeats unchanged feed changes.
-- No source-origin branches, guessed aliases, fabricated inactivity/zeroes or settings tweaks.
+- Missing weekly row or missing snaps as proof of inactivity/zero: unsupported.
+- Current MFL injury status as historical nonparticipation: not week-specific.
+- Treating weekly StatApprove as durable player-position approval remains rejected.
