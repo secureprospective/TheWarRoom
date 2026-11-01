@@ -107,7 +107,7 @@ export function nativeHQMoves(value: unknown, league: string, mine: string): { m
 export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSettings; leagueName?: string;
   lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
-  reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; errors: string[] };
+  reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string; errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
   Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
@@ -123,7 +123,7 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
   const result: NativeHQ = { revision, snapshot, settings: { positions: [] }, errors: [] };
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const apply = async (read: () => Promise<void>) => { try { await read(); } catch (e) {
-    result.errors.push(String(e)); } };
+    result.errors.push(String(e)); console.warn('Franchise HQ read failed:', e); } };
   await Promise.all([
     apply(async () => { const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: {
       league } });
@@ -173,13 +173,19 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
       franchise: mine, season, localZone: zone, at: new Date().toISOString() } });
       const raw = object(r.data, 'Native week', ['schedule', 'current', 'nextWeek', 'message']);
       sameRevision(raw.schedule);
-      const schedule = raw.schedule as { league?: unknown; franchise?: unknown };
-      if (schedule.league !== league || schedule.franchise !== mine) throw new
+      const schedule = object(raw.schedule, 'Franchise schedule', ['league', 'franchise', 'season',
+        'revision', 'message', 'games']);
+      if (schedule.league !== league || schedule.franchise !== mine || schedule.season !== season) throw new
         Error('Week belongs to another franchise');
       const current = raw.current == null ? undefined : object(raw.current, 'Current week', ['week',
         'game', 'opponent', 'venue', 'kickoff']);
       result.week = current ? integer(current.week, 'Current week', 1) : raw.nextWeek === undefined ?
         undefined : integer(raw.nextWeek, 'Next week', 1);
+      if (result.week === undefined) {
+        result.week = 1;
+        result.weekNote = `Viewing week 1 · ${text(raw.message ?? schedule.message ??
+          'No current scheduled week.', 'Week message')}`;
+      }
     }),
   ]);
   result.standing = nativeHQStanding(leagueRules, standingRows, mine);

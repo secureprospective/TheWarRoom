@@ -75,13 +75,14 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       toIR={editor.canEdit && roster.some(p => p.id === chosen && p.rosterStatus === 'ROSTER') ?
         id => { void editor.reserve(id); } : undefined} />}>
     {!mine && <p role="status">No franchise is assigned to you. This view is read-only.</p>}
+    <div>{reading.weekNote && <p role="status" className="empty">{reading.weekNote}</p>}
     <HQHeader name={snapshot.franchises.value.find(f => f.id === mine)?.name ?? name}
       active={roster.filter(p => p.rosterStatus === 'ROSTER').length} settings={settings}
       cap={runway?.[0] ?? { season: snapshot.league.value.season }} check={reading.check ?? unavailable}
       record={reading.record} standing={reading.standing} lock={reading.lock ? { id: 'native-lineup', at:
-        reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} />
+        reading.lock, text: countdown(reading.lock, Date.now()) } : undefined} /></div>
     {tab === 'lineup-and-roster' ? <HQBoard snapshot={snapshot} mine={mine} key={editor.version}
-      reading={editor.edited}
+      reading={editor.edited} error={reading.errors.join(' · ')}
       settings={settings} values={new Map()} select={select} canEdit={editor.canEdit}
       changed={editor.changed} assign={editor.assign} />
       : tab === 'contracts-and-cap' ? <HQContracts native snapshot={snapshot} mine={mine} runway={runway}
