@@ -12,7 +12,7 @@ import { WarRoomInspector } from './WarRoomInspector';
 import { WarRoomPlans } from './WarRoomPlans';
 import { WarRoomDrawers } from './WarRoomDrawers';
 import { WarRoomDraft } from './WarRoomDraft';
-import { parseWarRoomDelta, readWarRoomPreview, type WarRoomCatalog } from './warroomTradeReads';
+import { parseWarRoomDelta, readWarRoomCatalog, readWarRoomPreview, type WarRoomCatalog } from './warroomTradeReads';
 import { readWarRoomHeader, type WarRoomContext } from './warroomReads';
 import { readWarRoomMarket, parseWarRoomOwnBids, changeWarRoomTarget, parseWarRoomProjections }
   from './warroomMarketReads';
@@ -21,6 +21,7 @@ import { readWarRoomCalendar } from './warroomCalendar';
 import { readWarRoomOffers } from './WarRoomDrawers';
 import { useWarRoomRead } from './warroomReads';
 import type { HostedPort } from '../commissioner/hostedRoom';
+import assetsWire from '../../../../testdata/wire/native/assets.json';
 import bidsWire from '../../../../testdata/wire/native/bids.json';
 import draftWire from '../../../../testdata/wire/native/draft.json';
 import tradesWire from '../../../../testdata/wire/native/trades.json';
@@ -71,6 +72,15 @@ describe('War Room header and settings congruence', () => {
   });
 });
 describe('private trade workspace and lineup changes', () => {
+  it('uses the HQ-resolved name for a native roster asset', async () => {
+    const c = nativeContext(async () => reply(assetsWire));
+    const id = assetsWire.snapshot.players[0].id;
+    c.snapshot.players.value = [{ id, name: 'Resolved player', position: 'QB' }];
+    const catalog = await readWarRoomCatalog(c);
+    const asset = catalog.teams.flatMap(t => t.assets).find(a => a.token === id);
+    expect(asset?.name).toBe('Resolved player');
+    expect(asset?.position).toBe('QB');
+  });
   const catalog: WarRoomCatalog = { revision: 7, teams: [
     { id: '0025', name: 'Mine', assets: [{ token: '0042', name: 'Held player', position: 'RB',
       contract: '$3M thru 2030' }] },

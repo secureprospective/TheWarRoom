@@ -56,8 +56,9 @@ export async function readWarRoomCatalog(c: WarRoomContext): Promise<WarRoomCata
     assets: [...roster.players.filter(p => p.franchise === f.value).map(p => {
       const contract = snapshot.rosters.value.find(r => r.franchiseId === f.value)?.players.find(r =>
         r.id === p.id);
-      return { token: p.id, name: p.name,
-        position: c.snapshot.players.value.find(i => i.id === p.id)?.position,
+      const identity = c.snapshot.players.value.find(i => i.id === p.id);
+      return { token: p.id, name: identity?.name ?? p.name,
+        position: identity?.position,
         contract: contract ? `${money(contract.salary)} · ${
         contract.yearsRemaining ?? 'Not available yet'} yrs · ${contract.contractStatus}` : undefined };
     }), ...roster.picks.filter(p => p.owner === f.value).map(p => ({ token:
