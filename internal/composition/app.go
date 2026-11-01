@@ -24,6 +24,7 @@ import (
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/archive"
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
@@ -60,6 +61,7 @@ type App struct {
 	marketHeld          *marketapp.Held
 	seatStore           *accountstore.Store
 	seat                *accounts.LocalSeat
+	valueCache          appvalue.Cache
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.

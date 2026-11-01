@@ -137,6 +137,7 @@ func TestImported14432ValueParity(t *testing.T) {
 	if checked != regulars || maxNow != 0 || maxDyn != 0 {
 		t.Fatalf("parity: %d players; Now %.17g dynasty %.17g", checked, maxNow, maxDyn)
 	}
+	t.Run("cache", func(t *testing.T) { checkSourceCache(t, src, league, got) })
 	after, err := records(t.Context(), league)
 	if err != nil || len(after) != len(before) {
 		t.Fatalf("value read wrote ledger: %d -> %d, %v", len(before), len(after), err)

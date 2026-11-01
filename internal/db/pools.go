@@ -37,6 +37,9 @@ type Pools struct {
 	findings         Findings
 	checkedVersion   int
 	migrationChecked bool
+	revisionMu       sync.Mutex
+	revisionConn     *sql.Conn
+	revisionClosed   bool
 }
 
 // Open refuses newer files before opening a writer. The optional version is the file's
@@ -198,9 +201,40 @@ func (p *Pools) Read() *sql.DB { return p.read }
 // Write returns the single-connection write pool, for the stores' write paths.
 func (p *Pools) Write() *sql.DB { return p.write }
 
+// Revision changes after any commit on another connection, including this pool's writer.
+// SQLite's data_version is connection-local, so this observer stays pinned until Close.
+func (p *Pools) Revision(ctx context.Context) (int64, error) {
+	p.revisionMu.Lock()
+	defer p.revisionMu.Unlock()
+	if p.revisionClosed {
+		return 0, fmt.Errorf("db: revision observer is closed")
+	}
+	if p.revisionConn == nil {
+		conn, err := p.read.Conn(ctx)
+		if err != nil {
+			return 0, fmt.Errorf("db: open revision observer: %w", err)
+		}
+		p.revisionConn = conn
+	}
+	var revision int64
+	if err := p.revisionConn.QueryRowContext(ctx, "PRAGMA data_version").Scan(&revision); err != nil {
+		return 0, fmt.Errorf("db: read revision: %w", err)
+	}
+	return revision, nil
+}
+
 // Close releases both pools. Safe to call on a partially-open Pools.
 func (p *Pools) Close() error {
 	var errs []error
+	p.revisionMu.Lock()
+	p.revisionClosed = true
+	if p.revisionConn != nil {
+		if err := p.revisionConn.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("db: close revision observer: %w", err))
+		}
+		p.revisionConn = nil
+	}
+	p.revisionMu.Unlock()
 	if p.read != nil {
 		if err := p.read.Close(); err != nil {
 			errs = append(errs, fmt.Errorf("db: close read pool: %w", err))

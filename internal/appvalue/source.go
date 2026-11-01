@@ -21,11 +21,14 @@ type Held interface {
 
 // Source gathers one league's inputs and reads its values. Everything it reads is a read.
 type Source struct {
-	Facts   Facts
-	Held    Held
-	Records func(ctx context.Context, league string) ([]commissioner.Record, error)
-	Params  func() params.Set
-	Now     func() time.Time
+	Facts         Facts
+	Held          Held
+	Records       func(ctx context.Context, league string) ([]commissioner.Record, error)
+	Params        func() params.Set
+	Now           func() time.Time
+	Cache         *Cache
+	Revision      func(context.Context) (int64, error)
+	NextFeatureAt func(context.Context, time.Time) (time.Time, error)
 }
 
 // seasonsRead is how many seasons of league points the pass reads: the valued season and the
@@ -39,29 +42,55 @@ func (src Source) Read(ctx context.Context, league, franchise string, season int
 	if src.Held == nil || src.Records == nil || src.Params == nil || src.Now == nil {
 		return Reading{}, fmt.Errorf("league values: the read is not wired")
 	}
+	now := src.Now()
+	revision, err := src.revision(ctx)
+	if err != nil {
+		return Reading{}, err
+	}
 	records, err := src.Records(ctx, league)
 	if err != nil {
 
 		return Reading{}, fmt.Errorf("league values records: %w", err)
 	}
-	base, err := commissioner.ReadNativeBase(league, records, src.Now())
+	base, err := commissioner.ReadNativeBase(league, records, now)
 	if err != nil {
 		return Reading{}, fmt.Errorf("league values: %w", err)
 	}
-	in, err := leagueInputs(league, season, franchise, base, src.Now())
+	in, err := leagueInputs(league, season, franchise, base, now)
 	if err != nil {
 		return Reading{}, err
 	}
 
+	set := src.Params()
+	if src.Cache != nil && src.Revision != nil && src.NextFeatureAt != nil {
+		return src.cached(ctx, revision, set, franchise, in)
+	}
+	return src.value(ctx, set, franchise, in)
+}
+
+func (src Source) revision(ctx context.Context) (int64, error) {
+	if src.Revision == nil {
+		return 0, nil
+	}
+	revision, err := src.Revision(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("league values revision: %w", err)
+	}
+	return revision, nil
+}
+
+func (src Source) value(ctx context.Context, set params.Set, franchise string, in Inputs) (Reading, error) {
 	if err := src.weeks(ctx, &in); err != nil {
 		return Reading{}, err
 	}
 
-	if in.GSIS, err = src.Held.SourceIDs(ctx, "gsis"); err != nil {
+	ids, err := src.Held.SourceIDs(ctx, "gsis")
+	if err != nil {
 		//nolint:wrapcheck // Preserve the directory read's wording.
 		return Reading{}, err
 	}
-	return Value(ctx, src.Facts, src.Params(), franchise, in)
+	in.GSIS = ids
+	return Value(ctx, src.Facts, set, franchise, in)
 }
 
 // lastScoringWeek is the last week this league scores: its final playoff week, or its regular

@@ -157,7 +157,8 @@ func (a *App) nativeWaiverClock(ctx context.Context) {
 
 func (h commissionerHost) NativeValues(ctx context.Context, league, franchise string, season int) (appvalue.Reading, error) {
 	src := appvalue.Source{Facts: h.app.recordStore(), Held: h.History, Records: h.CommissionerRecords,
-		Params: h.Params.Snapshot, Now: h.app.timeNow}
+		Params: h.Params.Snapshot, Now: h.app.timeNow, Cache: &h.app.valueCache,
+		Revision: h.HistPools.Revision, NextFeatureAt: h.History.NextFeatureAt}
 	return src.Read(ctx, league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
 }
 

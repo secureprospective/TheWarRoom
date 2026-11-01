@@ -95,6 +95,19 @@ func (s *Store) Features(ctx context.Context, q FeatureQuery) ([]Feature, error)
 	return out, nil
 }
 
+// NextFeatureAt is the first future observation that could change an as-of book without a write.
+func (s *Store) NextFeatureAt(ctx context.Context, after time.Time) (time.Time, error) {
+	var at sql.NullString
+	if err := s.pools.Read().QueryRowContext(ctx, `SELECT MIN(as_of) FROM observations WHERE as_of > ?`,
+		formatTime(after)).Scan(&at); err != nil {
+		return time.Time{}, fmt.Errorf("history: next feature time: %w", err)
+	}
+	if !at.Valid {
+		return time.Time{}, nil
+	}
+	return parseTime(at.String)
+}
+
 // Disagreement is two sources holding different latest values for the same player, period and
 // measure.
 type Disagreement struct {
