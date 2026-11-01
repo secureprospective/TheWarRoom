@@ -69,6 +69,12 @@ func TestValueEvidenceSurvivesReopenAndFollowsChanges(t *testing.T) {
 	if got := evidence(s); got != first {
 		t.Fatal("unchanged data fingerprinted differently after reopening")
 	}
+	if _, err := s.Ingest(t.Context(), solo("alpha", "Solo", "13604", "2")); err != nil {
+		t.Fatal(err)
+	}
+	if got := evidence(s); got != first {
+		t.Fatal("a load that added nothing changed the fingerprint")
+	}
 	if _, err := s.Ingest(t.Context(), solo("alpha", "Solo", "13605", "1")); err != nil {
 		t.Fatal(err)
 	}
