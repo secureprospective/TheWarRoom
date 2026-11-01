@@ -56,7 +56,10 @@ func rosterByes(season int, depth []researchfeeds.RawDepth, snaps []source.RawSn
 			if r.GSIS == nil || *r.GSIS == "" || livegame.Canonical(r.Team) != livegame.Canonical(bye.Team) {
 				continue
 			}
-			out = append(out, source.RawAbsenceProof{GSIS: *r.GSIS, Season: strconv.Itoa(season), Week: bye.Week, Team: r.Team, Position: r.Position, Evidence: "team bye per schedule"})
+			proof := source.RawAbsenceProof{GSIS: *r.GSIS, Season: strconv.Itoa(season), Week: bye.Week, Team: r.Team, Position: r.Position, Evidence: "team bye per schedule"}
+			if proof.Validate() == nil {
+				out = append(out, proof)
+			}
 		}
 	}
 	return out

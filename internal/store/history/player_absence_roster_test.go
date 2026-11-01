@@ -55,3 +55,12 @@ func TestRosterByesRequireHistoricalTeamAndPositiveSchedule(t *testing.T) {
 		t.Fatal("unknown identity zeroed", got)
 	}
 }
+
+func TestRosterByeLeavesLegacyNonGSISIdentifiersPending(t *testing.T) {
+	id := "THO581952"
+	depth := []researchfeeds.RawDepth{{DT: "2026-10-07T12:00:00Z", Team: "NE", GSIS: &id, Position: "LB"}}
+	snaps := []source.RawSnap{{Proof: source.RawAbsenceProof{Week: "5", Team: "NYJ"}, Date: "20261008"}}
+	if got := rosterByes(2026, depth, snaps, []nflschedule.RawBye{{Team: "NEP", Week: "5"}}); len(got) != 0 {
+		t.Fatal("legacy identity became zero", got)
+	}
+}
