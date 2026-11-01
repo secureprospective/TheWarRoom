@@ -10,6 +10,7 @@ import (
 
 	sourcesapp "github.com/secureprospective/TheWarRoom/internal/app/sources"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/leagueschedule"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/livescoring"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults"
 
@@ -118,18 +119,52 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 		if err != nil {
 			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)
 		}
-		weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
+		a.syncFollowedLineups(ctx, ledger, league.ID, principal, season, source)
+	}
+}
+
+// syncFollowedLineups records the played weeks and then the week in play. Each is reported on its
+// own: a refused franchise-week never stops the other weeks, and held lineups are kept.
+func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
+	league, principal string, season int, source string) {
+	weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
+	if lineupErr == nil {
+		var directory map[string]string
+		directory, lineupErr = a.heldLineupPlayers(ctx)
 		if lineupErr == nil {
-			var directory map[string]string
-			directory, lineupErr = a.heldLineupPlayers(ctx)
-			if lineupErr == nil {
-				_, lineupErr = mflsource.BackfillLineups(ctx, ledger, league.ID, "Import played starting lineups from the reference sync", principal, season, weeks, directory)
-			}
-		}
-		if lineupErr != nil {
-			log.Printf("refresh lineups for %s (refused franchise-weeks kept unchanged): %v", league.ID, lineupErr)
+			_, lineupErr = mflsource.BackfillLineups(ctx, ledger, league, "Import played starting lineups from the reference sync", principal, season, weeks, directory)
 		}
 	}
+	if lineupErr != nil {
+		log.Printf("refresh lineups for %s (refused franchise-weeks kept unchanged): %v", league, lineupErr)
+	}
+	if err := a.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
+		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
+	}
+}
+
+// syncCurrentWeekLineups records the starters the reference league holds for the week in play.
+// The played-week import only reads weeks MFL has scored, so without this a week in progress has
+// no lineups at all and every franchise reads as a missed lineup while its game is being played.
+func (a *App) syncCurrentWeekLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
+	league, principal string, season int, source string) error {
+	raw, err := livescoring.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source, 0)
+	if err != nil {
+		return fmt.Errorf("read this week's live lineups: %w", err)
+	}
+	live, err := livescoring.ToLineups(raw)
+	if err != nil {
+		return fmt.Errorf("read this week's live lineups: %w", err)
+	}
+	directory, err := a.heldLineupPlayers(ctx)
+	if err != nil {
+		return err
+	}
+	if _, err := mflsource.BackfillLiveLineups(ctx, ledger, league,
+		"Record this week's starting lineups from the reference sync", principal, season, live, directory); err != nil {
+		return fmt.Errorf("record this week's lineups: %w", err)
+	}
+	return nil
 }
 
 // Launch can precede the first target snapshot. Read the held directory, never

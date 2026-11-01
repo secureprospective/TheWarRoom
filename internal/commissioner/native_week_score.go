@@ -65,6 +65,13 @@ func franchiseWeekScore(ctx context.Context, records []Record, src ResultSources
 	if !lineup.Set || len(lineup.Starters) == 0 {
 		out.Lineup = nativecheck.JudgeLineup(rules, false, nil)
 		out.Words = fmt.Sprintf("%s has no lineup set for week %d", seat.Name, week)
+		if out.Lineup.Flagged && LineupSyncPending(records, season, week) {
+			out.Lineup.Flagged = false
+			out.Lineup.Words = "No lineup was set. The league reads lineups from a sync source that has not " +
+				"reached this week yet, so nothing is flagged to the commissioner"
+			out.Words += "; the league has not read this week's lineups yet, so nothing is flagged."
+			return out, nil
+		}
 		if out.Lineup.Flagged {
 			out.Words += "; it is flagged to the commissioner as a missed lineup, and nothing is zeroed"
 		}
