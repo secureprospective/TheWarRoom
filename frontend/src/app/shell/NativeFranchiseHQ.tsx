@@ -106,8 +106,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
           onAction={editor.discard}>DISCARD</HQAct><HQAct className="btn g2"
         disabled={!editor.canEdit || !editor.changed.length} onAction={() => { void editor.save(); }}
         >CHECK AND SAVE PLAN</HQAct>
-      <HQAct className="btn solid" disabled
-        title="This league is native, not an MFL mirror">OPEN MFL ↗</HQAct></div>
+      </div>
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {drawer === 'whatif' && <HQNativeWhatIf snapshot={snapshot} mine={mine} chosen={chosen}
       select={select} cut={cut} beforeRoom={runway?.[0]?.room} close={() => setDrawer(undefined)} />}

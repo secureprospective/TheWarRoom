@@ -92,6 +92,7 @@ it('shows a no-seat shell chooser, then native roster and contracts from a fake 
   expect(container.querySelector('.hq-v10 .board')?.textContent)
     .toContain('Player, 1000');
   expect(container.querySelector('.hq-v10')).not.toBeNull();
+  expect(container.querySelector('.hq-v10 .tray')?.textContent).not.toContain('OPEN MFL');
   expect(document.querySelector('body > .hq-v10')).toBeNull();
   expect(container.querySelectorAll('.rail')).toHaveLength(1);
   expect(localStorage.getItem(`${FRANCHISE_KEY}:native.seed`)).toBe('franchise.02');
