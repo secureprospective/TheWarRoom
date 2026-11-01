@@ -53,8 +53,8 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
     if (native) { if (node !== 'war') native.leave(node); }
     else void commands.dispatch('nav.open', { node });
   };
-  return <div className="wr-v6" ref={root}><div className="shell">
-    <nav className="rail" aria-label="Main"><RailLeaguePicker />
+  return <div className={`wr-v6${native?.embedded ? ' embedded' : ''}`} ref={root}><div className="shell">
+    {!native?.embedded && <nav className="rail" aria-label="Main"><RailLeaguePicker />
       {native && !mine && <p role="status">No franchise assigned · read-only</p>}<div className="rail-head"><div className="lg">THE WAR ROOM
       </div><div className="ph">{header.reading?.name ?? unavailable} · <i>{week ? `Wk ${week}` :
         unavailable}</i></div></div><div className="rail-body"><div className="gl">MY SHORTCUTS</div>
@@ -74,7 +74,7 @@ function WarRoomWorkspace({ snapshot, mine, native }: { snapshot: Snapshot; mine
               'Plans'][j]}</WarRoomAct>)}</>}</div>)}</div>
       <div className="rail-foot">
       <WarRoomAct className="btn" disabled title={unavailable}>CUSTOMIZE</WarRoomAct>
-        <span>/ command</span></div></nav>
+        <span>/ command</span></div></nav>}
     <main className="work"><div className="ws-tabs" role="tablist">
       {(['desk', 'market', 'draft', 'plans'] as const).map((t, i) => <WarRoomAct role="tab" key={t}
         selected={tab === t} onAction={() => setTab(t)}>{['TRADE DESK', 'MARKET', 'DRAFT ROOM',

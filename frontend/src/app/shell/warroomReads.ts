@@ -11,7 +11,7 @@ import { hqEvents } from './hqReads';
 import { settingsFromReport, type HQCap } from './hqModel';
 import { standingFromReport } from './hqPlayerData';
 export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
-  leave: (node?: Node) => void; week?: number };
+  leave: (node?: Node) => void; week?: number; embedded?: boolean };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
   starterN?: number; best?: string; rank?: string; runway?: HQCap[]; errors: string[] };

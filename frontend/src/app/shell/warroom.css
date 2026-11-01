@@ -932,3 +932,6 @@
 /* Live data must not reflow the header: fixed height, runway values never wrap. */
 .wr-v6 .table.fixed{height:90px;box-sizing:border-box;overflow:hidden}
 .wr-v6 .runw .y.fit{grid-template-columns:28px 1fr 56px;white-space:nowrap}
+
+.wr-v6.embedded{position:relative;inset:auto;z-index:auto;min-height:650px}
+.wr-v6.embedded .shell{grid-template-columns:minmax(0,1fr) 316px}

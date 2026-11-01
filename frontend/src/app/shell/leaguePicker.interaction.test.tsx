@@ -50,3 +50,29 @@ it('switches the rendered route and stores the selected league', async () => {
     delete (window as unknown as { go?: unknown }).go;
   }
 });
+
+it('keeps app HQ and War Room failures inside the navigable shell', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  Object.defineProperty(window, 'go', { configurable: true, value: {} });
+  localStorage.setItem(LEAGUE_KEY, 'native.one');
+  commands.dispatch('nav.open', { node: 'hq' });
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => { root.render(<TargetApp />); });
+    expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
+    expect(container.querySelector('.rail .me')).not.toBeNull();
+    expect(container.querySelector('.ws')).not.toBeNull();
+    await act(async () => { commands.dispatch('nav.open', { node: 'war' }); });
+    expect(container.querySelector('.rail nav[aria-label="Workspaces"]')).not.toBeNull();
+    const home = [...container.querySelectorAll('.rail nav button')].find(b => b.textContent === 'Home');
+    expect(home).toBeDefined();
+    await act(async () => { (home as HTMLButtonElement).click(); });
+    expect(container.querySelector('.ws')?.getAttribute('aria-label')).toBe('Home');
+  } finally {
+    await act(async () => { root.unmount(); });
+    container.remove();
+    delete (window as unknown as { go?: unknown }).go;
+  }
+});

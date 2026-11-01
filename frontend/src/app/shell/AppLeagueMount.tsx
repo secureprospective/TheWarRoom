@@ -52,6 +52,7 @@ export default function AppLeagueMount({
       <Suspense fallback={<div className="twr-app"><RailLeaguePicker />
         <p role="status">Opening {league.name}…</p></div>}>
         <NativeFranchiseHQ
+          embedded
           key={`${league.id}:${mine}`}
           league={league.id}
           mine={mine}
@@ -64,7 +65,7 @@ export default function AppLeagueMount({
   return (
     <Suspense fallback={<div className="twr-app"><RailLeaguePicker />
         <p role="status">Opening {league.name}…</p></div>}>
-      <WarRoomNative league={league.id} mine={mine} port={port} leave={leave} />
+      <WarRoomNative embedded league={league.id} mine={mine} port={port} leave={leave} />
     </Suspense>
   );
 }

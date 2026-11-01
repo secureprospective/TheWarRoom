@@ -346,3 +346,5 @@
 .hq-v10 .nums b[data-empty=true]{font:11px var(--mono);height:35px;display:flex;align-items:center;white-space:nowrap;color:var(--ink3)}
 .hq-v10 .mu-h .side b[data-empty=true]{font:11px var(--mono);height:30px;display:flex;align-items:center;color:var(--ink3)}
 .hq-v10 .mu-h .side.them b[data-empty=true]{justify-content:flex-end}
+
+.hq-v10.shell.embedded{grid-template-columns:minmax(0,1fr) 316px;min-height:650px}

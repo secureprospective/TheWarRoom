@@ -11,15 +11,15 @@ export function lockLabel(at: string): string {
 }
 export type HQTab = 'lineup-and-roster' | 'contracts-and-cap' | 'my-moves';
 export function HQShell({ root, week, lock, tab, navigate, navigateNode, children, inspector, queue,
-  leagueName, fullscreen, liveCount }: {
+  leagueName, fullscreen, liveCount, embedded }: {
   root?: RefObject<HTMLDivElement>; week?: number; lock?: { at?: string }; tab: HQTab;
   navigate: (tab: HQTab) => void; navigateNode: (node: Node) => void;
   children: ReactNode; inspector: ReactNode; queue?: ReactNode; leagueName?: string; fullscreen?: boolean;
-    liveCount?: number;
+    liveCount?: number; embedded?: boolean;
 }) {
-  return <div className="hq-v10 shell" ref={root} style={fullscreen ? { position: 'fixed', inset: 0,
+  return <div className={`hq-v10 shell${embedded ? ' embedded' : ''}`} ref={root} style={fullscreen ? { position: 'fixed', inset: 0,
     zIndex: 10 } : undefined}>
-    <nav className="rail" aria-label="Main">
+    {!embedded && <nav className="rail" aria-label="Main">
       <RailLeaguePicker />
       <div className="rail-head"><div className="lg">THE WAR ROOM</div><div className="ph">{leagueName ||
         unavailable} · <i>{week ? `Wk ${week}` : unavailable} · {liveCount === undefined ? unavailable :
@@ -43,7 +43,7 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
         </div>)}
       </div><div className="rail-foot"><HQAct className="btn" disabled
         title={unavailable}>CUSTOMIZE</HQAct><span>/ command</span></div>
-    </nav>
+    </nav>}
     <main className="work">
       <div className="ws-tabs" role="tablist">
         <HQAct role="tab" selected={tab === 'lineup-and-roster'} onAction={() =>

@@ -21,8 +21,8 @@ import { countdown } from '../clock/urgency';
 import { connectClock } from '../clock/ticker';
 import './hq.css';
 
-export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
-  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void;
+export default function NativeFranchiseHQ({ league, mine, name, port, leave, embedded }: {
+  league: string; mine: string; name: string; port?: HostedPort; leave: (node?: Node) => void; embedded?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<HQTab>('lineup-and-roster');
@@ -56,7 +56,7 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
   if (settings.reserveExcluded === false && settings.active !== undefined)
     settings.active -= roster.filter(p => p.rosterStatus !== 'ROSTER').length;
   const cut = quote.reading?.revision === reading.revision ? quote.reading : undefined;
-  const view = <HQShell fullscreen root={root} tab={tab} navigate={setTab} week={reading.week}
+  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab} navigate={setTab} week={reading.week}
     leagueName={reading.leagueName}
     navigateNode={node => { if (node !== 'hq') leave(node); }} lock={reading.lock ? { at: reading.lock } :
       undefined}
@@ -115,5 +115,5 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave }: {
         starter={lineup?.starters.some(p => p.id === release)}
       close={() => setRelease(undefined)} />}
   </HQShell>;
-  return typeof document === 'undefined' ? view : createPortal(view, document.body);
+  return embedded || typeof document === 'undefined' ? view : createPortal(view, document.body);
 }

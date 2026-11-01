@@ -114,8 +114,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
   const appLeagueView = selectedLeague?.app
     ? s.node === 'hq' ? 'hq' : s.node === 'war' && workspace.slug !== 'research' ? 'war' : undefined
     : undefined;
-  if (appLeagueView && selectedLeague) return <AppLeagueMount key={selectedLeague.id} league={selectedLeague} view={appLeagueView}
-    leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} />;
   if (selectedLeague && !selectedLeague.app && s.node === 'war' && workspace.slug !== 'research' && snapshot) return <Suspense
     fallback={<div className="twr-app"><LeaguePicker leagues={leagues.leagues} selected={selectedLeague}
       onSelect={leagues.select} /><p role="status">Opening War Room…</p></div>}><WarRoom snapshot={snapshot} /></Suspense>;
@@ -215,7 +213,9 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
           )}
           {s.node === 'home' && workspace.slug === 'digests' && selectedLeague && !selectedLeague.app &&
             <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId} onSelect={leagues.select} />}
-          {leagues.loading && !selectedLeague ? <p role="status">Opening league…</p> :
+          {appLeagueView && selectedLeague ? <AppLeagueMount key={selectedLeague.id} league={selectedLeague}
+            view={appLeagueView} leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
+          leagues.loading && !selectedLeague ? <p role="status">Opening league…</p> :
           selectedLeague?.app || !selectedLeague ? (
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>

@@ -10,5 +10,5 @@ export default function WarRoomNative(native: NativeScope) {
   if (!reading.reading) return <div className="wr-v6"><RailLeaguePicker /><WarRoomEmpty reason={reading.error} /></div>;
   const view = <WarRoom snapshot={reading.reading.snapshot} native={{ ...native, week: reading.reading.week }}
     />;
-  return typeof document === 'undefined' ? view : createPortal(view, document.body);
+  return native.embedded || typeof document === 'undefined' ? view : createPortal(view, document.body);
 }
