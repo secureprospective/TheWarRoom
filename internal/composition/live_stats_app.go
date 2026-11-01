@@ -2,6 +2,7 @@ package composition
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -25,6 +26,13 @@ const (
 func (a *App) startLiveStats() {
 	a.startWorker(func() {
 		ctx := a.core.WorkCtx
+		// The window can be ready before startup has opened the stores. Polling then would find no
+		// history and wait the idle interval, holding live points back five minutes after launch.
+		select {
+		case <-ctx.Done():
+			return
+		case <-a.core.Started:
+		}
 		for {
 			wait := a.pollLiveStats(ctx)
 			select {
@@ -69,6 +77,12 @@ func (a *App) pollLiveStats(ctx context.Context) time.Duration {
 		return liveStatsIdle
 	}
 	lines := liveStatLines(ctx, adapter, games, invertIDs(espn), a.core.Season, a.marketWeek())
+	// Say so when live lines first land, stop, or move to another week; not on every poll.
+	if state := fmt.Sprintf("%t/%d/%d", len(lines) > 0, a.core.Season, a.marketWeek()); state != a.liveStatsSaid {
+		a.liveStatsSaid = state
+		log.Printf("live stats: %d players from %d games, season %d week %d, %d ESPN ids held",
+			len(lines), len(games), a.core.Season, a.marketWeek(), len(espn))
+	}
 	if len(lines) > 0 {
 		a.core.History.SetLiveStats(a.core.Season, a.marketWeek(), time.Now(), livestats.Authority,
 			livestats.Pending(), lines)
