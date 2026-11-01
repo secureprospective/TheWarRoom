@@ -8,6 +8,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore"
 	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
 func completeScoreEvidence() source.NativeEvidence {
@@ -89,7 +90,7 @@ func TestNativePlayerScoreDeltaOverflowAndUnusedStatWords(t *testing.T) {
 	}
 }
 
-func TestNativeScoreUsesSpecificPlayerRecordOnlyForAmbiguousFeedPosition(t *testing.T) {
+func TestNativeScoreUsesLeaguePlayerPositionBeforeFeedPosition(t *testing.T) {
 	b := seededLedger(t)
 	evidence := completeScoreEvidence()
 	evidence.Held.Week.Position = "DB"
@@ -99,10 +100,15 @@ func TestNativeScoreUsesSpecificPlayerRecordOnlyForAmbiguousFeedPosition(t *test
 	if err != nil || out.Position != leaguerules.S || out.Points == nil || !strings.Contains(out.PositionWhy, "player record") {
 		t.Fatalf("record fallback: %+v %v", out, err)
 	}
-	evidence.Held.Week.Position = "CB"
+	evidence.Held.Week.Position = "LB"
+	evidence.ListedPosition = "DE"
 	out, err = NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
-	if err != nil || out.Position != leaguerules.CB {
-		t.Fatalf("specific feed position replaced: %+v %v", out, err)
+	if err != nil || out.Position != leaguerules.DE || out.Points == nil {
+		t.Fatalf("league position replaced by feed: %+v %v", out, err)
+	}
+	want, _, err := fantasyscore.Score(leaguerules.LegacyNFL().Scoring, leaguerules.DE, evidence.Held.Week.Line)
+	if err != nil || *out.Points != want.Value {
+		t.Fatalf("score did not use DE rules: %+v, want %+v, %v", out, want, err)
 	}
 	evidence.Held.Week.Position = "DL"
 	evidence.ListedPosition = "DL"
@@ -115,5 +121,29 @@ func TestNativeScoreUsesSpecificPlayerRecordOnlyForAmbiguousFeedPosition(t *test
 	out, err = NativePlayerScoreReading("native.test", scope, b.records, evidence, seasonMoment(20))
 	if err != nil || out.Position != leaguerules.DT || !strings.Contains(out.PositionWhy, "commissioner") {
 		t.Fatalf("manual position lost: %+v %v", out, err)
+	}
+}
+
+func TestLeaguePositionGovernsLineupLegality(t *testing.T) {
+	b := seededLedger(t)
+	evidence := completeScoreEvidence()
+	evidence.ListedPosition = "DE"
+	score, err := NativePlayerScoreReading("native.test", source.RawNativeScope{Player: "0099", Season: 2026, Week: 1},
+		b.records, evidence, seasonMoment(20))
+	if err != nil || score.Points == nil {
+		t.Fatalf("score: %+v %v", score, err)
+	}
+	rules := leaguerules.LegacyNFL().Lineup
+	rules.Positions = leaguerules.Known(map[leaguerules.Position]leaguerules.Bounds{
+		leaguerules.DE: {Min: leaguerules.Known(1), Max: leaguerules.Known(1)},
+	})
+	rules.Groups = leaguerules.Known(map[leaguerules.LineupGroup]leaguerules.Bounds{})
+	out := FranchiseWeekScore{Starters: []StarterScore{{Player: "0099", Position: score.Position, Points: score.Points}}}
+	_, err = out.judge(rules, *score.Points)
+	if err != nil || out.Lineup.Status != nativecheck.LineupValid || out.Zeroed != "" {
+		t.Fatalf("league DE judged as feed LB: %+v %v", out, err)
+	}
+	if evidence.Held.Week.Position != "LB" || evidence.ListedPosition != "DE" {
+		t.Fatal("scoring mutated held position evidence")
 	}
 }

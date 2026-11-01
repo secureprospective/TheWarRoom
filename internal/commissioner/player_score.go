@@ -209,13 +209,11 @@ func scoreFeedPosition(position string) leaguerules.Position {
 }
 
 func scoringPosition(feed, listed string, changes ScoreChanges) (leaguerules.Position, string) {
-	position := scoreFeedPosition(feed)
-	if position != "" || changes.Position != "" {
-		return changes.PositionUsed(position)
+	if changes.Position != "" {
+		return changes.PositionUsed("")
 	}
-	position = scoreFeedPosition(listed)
-	if position != "" {
-		return position, "The position held in the player record; NFL statistics report " + orNone(feed)
+	if listed != "" {
+		return scoreFeedPosition(listed), "The position held in the player record; NFL statistics report " + orNone(feed)
 	}
-	return changes.PositionUsed("")
+	return changes.PositionUsed(scoreFeedPosition(feed))
 }
