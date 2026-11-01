@@ -17,6 +17,8 @@ import cap from '../../../../testdata/wire/native/cap-check.json';
 vi.mock('../data/provider', async (original) => {
   const actual = await original<typeof import('../data/provider')>();
   const fixture = new actual.FixtureProvider();
+  const baseClock = await fixture.clock();
+  fixture.clock = async () => ({ ...baseClock, value: { ...baseClock.value, week: 8 } });
   return { ...actual, selectProvider: () => fixture };
 });
 vi.mock('../data/api', async (original) => ({
@@ -154,13 +156,13 @@ it('shows an imported-shaped 35-player roster before any schedule is published',
     const data = request.command === 'native.assets.read' ? imported : request.command === 'week.read' ?
       { schedule: { league: 'native.seed', franchise: 'franchise.02', season: imported.snapshot.season,
         revision: imported.revision, games: [] }, message: 'The schedule is not published yet.' } :
-      request.command === 'lineup.read' ? { ...lineup, revision: imported.revision, starters: [],
+      request.command === 'lineup.read' ? { ...lineup, week: 8, revision: imported.revision, starters: [],
         bench: players.map(p => ({ player: p.id, name: p.name, position: 'QB',
           locked: false, words: 'No NFL game this week' })) } : undefined;
     return data ? { label: 'Import shape', writable: false, football: '', data } : original(request);
   });
   await mount(); await choose('franchise.02');
-  expect(container.textContent).toContain('Viewing week 1 · The schedule is not published yet.');
+  expect(container.textContent).toContain('Viewing week 8 · The schedule is not published yet.');
   expect(container.querySelectorAll('.hq-v10 .blist [data-player]')).toHaveLength(35);
   expect(container.querySelector('.hq-v10 .blist')?.textContent).toContain('Imported player 34');
   await act(async () => { commands.dispatch('nav.open', { node: 'war' }); }); await settle();

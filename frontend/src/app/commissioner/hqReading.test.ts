@@ -9,6 +9,11 @@ import week from '../../../../testdata/wire/native/week.json';
 import standings from '../../../../testdata/wire/native/standings.json';
 import { parseRules } from './rules';
 import { nativeHQAssets, nativeHQCap, nativeHQMoves, nativeHQSettings, readNativeHQ } from './hqReading';
+import { selectProvider } from '../data/provider';
+import clockWire from '../data/fixtures/clock.json';
+
+vi.mock('../data/provider', () => ({ selectProvider: vi.fn() }));
+
 import type { HostedPort } from './hostedRoom';
 
 describe('native HQ existing reads', () => {
@@ -98,13 +103,29 @@ describe('native HQ existing reads', () => {
       message: 'The schedule is not published yet.' };
     data['lineup.read'] = { ...lineup, starters: [], bench: [...lineup.starters, ...lineup.bench],
       revision: assets.revision };
+    const clock = vi.fn().mockResolvedValue({ ...clockWire, value: { ...clockWire.value, week: 8 } });
+    vi.mocked(selectProvider).mockReturnValue({ clock } as unknown as ReturnType<typeof selectProvider>);
+    data['lineup.read'] = { ...data['lineup.read'] as object, week: 8 };
     const unscheduled = await readNativeHQ(league, mine, port);
     expect(unscheduled.errors).toEqual([]);
-    expect(unscheduled.weekNote).toBe('Viewing week 1 · The schedule is not published yet.');
+    expect(unscheduled.week).toBe(8);
+    expect(unscheduled.weekNote).toBe('Viewing week 8 · The schedule is not published yet.');
     expect(unscheduled.lineup?.starters).toEqual([]);
     expect(unscheduled.lineup?.bench).toHaveLength(lineup.starters.length + lineup.bench.length);
     expect(unscheduled.snapshot.players.value.find(p => p.id === '1008')?.position).toBe('K');
     expect(unscheduled.lock).toBeUndefined();
+    expect(port.mock.calls.at(-1)?.[0]).toMatchObject({ command: 'lineup.read', arguments: { week: 8 } });
+    for (const value of [
+      { ...clockWire, value: { ...clockWire.value, week: undefined } },
+      { ...clockWire, value: { ...clockWire.value, season: 2025, week: 8 } },
+      { ...clockWire, value: { ...clockWire.value, week: 8 }, provenance: { ...clockWire.provenance,
+        freshness: { ...clockWire.provenance.freshness, state: 'fail' } } },
+    ]) {
+      clock.mockResolvedValue(value);
+      const unknown = await readNativeHQ(league, mine, port);
+      expect(unknown.week).toBeUndefined(); expect(unknown.lineup).toBeUndefined();
+      expect(unknown.weekNote).toContain('Current NFL week is unknown');
+    }
     const failedWeek = await readNativeHQ(league, mine, async request => {
       if (request.command === 'week.read') throw new Error('Week unavailable');
       return port(request);

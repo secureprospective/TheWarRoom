@@ -9,6 +9,7 @@ import type { HQCap, HQSettings } from '../shell/hqModel';
 import type { HQLineup } from '../shell/HQBoard';
 import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from './api';
+import { selectProvider } from '../data/provider';
 import { ordinal } from '../shell/hqPlayerData';
 
 export function nativeHQStanding(rules: Rules | undefined,
@@ -182,9 +183,13 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
       result.week = current ? integer(current.week, 'Current week', 1) : raw.nextWeek === undefined ?
         undefined : integer(raw.nextWeek, 'Next week', 1);
       if (result.week === undefined) {
-        result.week = 1;
-        result.weekNote = `Viewing week 1 · ${text(raw.message ?? schedule.message ??
-          'No current scheduled week.', 'Week message')}`;
+        const clock = await selectProvider().clock();
+        if (clock.provenance.freshness.state !== 'fail' && clock.value.season === season)
+          result.week = clock.value.week;
+        const message = text(raw.message ?? schedule.message ??
+          'No current scheduled week.', 'Week message');
+        result.weekNote = result.week ? `Viewing week ${result.week} · ${message}` :
+          `Current NFL week is unknown · ${message}`;
       }
     }),
   ]);
