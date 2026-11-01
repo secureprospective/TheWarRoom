@@ -76,3 +76,29 @@ it('keeps app HQ and War Room failures inside the navigable shell', async () => 
     delete (window as unknown as { go?: unknown }).go;
   }
 });
+
+it('opens both Control Room tabs and MFL import for a picked app league', async () => {
+  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  Object.defineProperty(window, 'go', { configurable: true, value: {} });
+  localStorage.setItem(LEAGUE_KEY, 'native.one');
+  commands.dispatch('nav.open', { node: 'control', workspace: 'app' });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => { root.render(<TargetApp />); });
+    for (let i = 0; i < 50 && !container.querySelector('.app-settings'); i++)
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(container.querySelector('.app-settings')).not.toBeNull();
+    expect(container.querySelector('.shell-unwired')).toBeNull();
+    await act(async () => { commands.dispatch('nav.open', { node: 'control', workspace: 'league' }); });
+    for (let i = 0; i < 50 && (!container.querySelector('.move-mfl') || !container.querySelector('.league-landing')); i++)
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    expect(container.querySelector('.league-landing')).not.toBeNull();
+    expect(container.querySelector('.move-mfl summary')?.textContent).toBe('Move my MFL league');
+    expect(container.querySelector('.shell-unwired')).toBeNull();
+    expect([...container.querySelectorAll('.wtabs button')].map(b => b.textContent)).toEqual(['App', 'League']);
+  } finally {
+    await act(async () => { root.unmount(); });
+    delete (window as unknown as { go?: unknown }).go;
+  }
+});

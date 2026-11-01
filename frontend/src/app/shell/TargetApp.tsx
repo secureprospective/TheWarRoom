@@ -227,6 +227,15 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             hqTab={s.node === 'hq' ? s.workspace.hq : undefined}
             leave={(node) => commands.dispatch('nav.open', { node: node ?? 'home' })} /> :
           leagues.loading && !selectedLeague ? <p role="status">Reading the league…</p> :
+          s.node === 'control' && workspace.slug === 'app' ? (
+            <Suspense fallback={null}>
+              <AppSettings />
+            </Suspense>
+          ) : s.node === 'control' && workspace.slug === 'league' ? (
+            <Suspense fallback={<p role="status">Opening League…</p>}>
+              <LeagueRoom />
+            </Suspense>
+          ) :
           selectedLeague?.app || !selectedLeague ? (
             s.node === 'home' ? <LeagueChoices leagues={leagues.leagues} selectedId={leagues.selectedId}
               onSelect={leagues.select} /> : <section className="shell-unwired"><h4>{workspace.label}</h4>
@@ -267,14 +276,6 @@ function TargetAppContent({ leagues }: { leagues: LeagueState }) {
             <Suspense fallback={<p role="status">Opening Digests…</p>}>
               <Comms />
               <Research newsOnly />
-            </Suspense>
-          ) : s.node === 'control' && workspace.slug === 'app' ? (
-            <Suspense fallback={null}>
-              <AppSettings />
-            </Suspense>
-          ) : s.node === 'control' && workspace.slug === 'league' ? (
-            <Suspense fallback={<p role="status">Opening League…</p>}>
-              <LeagueRoom />
             </Suspense>
           ) : !snapshot && snapshotWorkspaces.includes(`${s.node}/${workspace.slug}`) ? (
             <p role="status">
