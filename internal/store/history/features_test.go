@@ -2,7 +2,9 @@ package history
 
 import (
 	"context"
+	"database/sql"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -42,7 +44,7 @@ func TestLatestFeatureKeepsValueAndTextFromNewestRow(t *testing.T) {
 
 func TestFeatureReadIndexesBothSourceAndMeasure(t *testing.T) {
 	s, _, _ := newStore(t)
-	query := featuresSQL("?", " AND season = ? AND measure IN (?)")
+	query := featureReadSQL(1)
 	rows, err := s.pools.Read().QueryContext(t.Context(), "EXPLAIN QUERY PLAN "+query,
 		formatTime(t0()), 2025, "outcome.sacks")
 	if err != nil {
@@ -66,6 +68,74 @@ func TestFeatureReadIndexesBothSourceAndMeasure(t *testing.T) {
 	if !indexed {
 		t.Fatal("feature join scans every source field instead of indexing source and measure")
 	}
+}
+
+func TestStreamedFeaturesMatchSQLSelection(t *testing.T) {
+	_, _, pools := newStore(t)
+	s, c, _ := reopen(t, pools, registry(t, betaField))
+	for _, value := range []string{"2", "8", "0"} {
+		for _, batch := range []measures.Batch{
+			solo("alpha", "Solo", "13604", value),
+			solo("beta", "soloTackles", "13604", "99"),
+			solo("beta", "soloTackles", "13605", value),
+			{Source: "alpha", Facts: []measures.Fact{
+				{IDType: measures.IDTypeMFL, ID: "13604", Season: 2025, Week: 3, Field: "Sacks", Raw: value},
+				{IDType: measures.IDTypeMFL, ID: "13604", Season: 2025, Week: 3, Field: "Status", Raw: "Active"},
+			}},
+		} {
+			if _, err := s.Ingest(t.Context(), batch); err != nil {
+				t.Fatal(err)
+			}
+			c.now = c.now.Add(time.Hour)
+		}
+	}
+	for _, season := range []int{2024, 2025} {
+		for _, at := range []time.Time{t0().Add(-time.Second), t0(), t0().Add(5 * time.Hour), c.now} {
+			q := FeatureQuery{AsOf: at, Season: season, Measures: []string{
+				"outcome.tackles_solo", "outcome.sacks", "availability.game_status"}}
+			got, err := s.Features(t.Context(), q)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if want := sqlFeatures(t, s, q); !reflect.DeepEqual(got, want) {
+				t.Fatalf("season %d as-of %s: streamed %+v; SQL %+v", season, at, got, want)
+			}
+		}
+	}
+}
+
+func sqlFeatures(t *testing.T, s *Store, q FeatureQuery) []Feature {
+	t.Helper()
+	where := " AND season = ? AND measure IN (?" + strings.Repeat(", ?", len(q.Measures)-1) + ")"
+	args := []any{formatTime(q.AsOf), q.Season}
+	for _, m := range q.Measures {
+		args = append(args, m)
+	}
+	rows, err := s.pools.Read().QueryContext(t.Context(), featuresSQL("?", where)+" ORDER BY player_id, week, measure", args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = rows.Close() }()
+	var out []Feature
+	for rows.Next() {
+		var f Feature
+		var stamp string
+		var value sql.NullFloat64
+		var text sql.NullString
+		if err := rows.Scan(&f.PlayerID, &f.Season, &f.Week, &f.Measure, &f.Source, &stamp, &value, &text); err != nil {
+			t.Fatal(err)
+		}
+		f.AsOf, err = parseTime(stamp)
+		if err != nil {
+			t.Fatal(err)
+		}
+		f.Value, f.Text = value.Float64, text.String
+		out = append(out, f)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return out
 }
 
 func TestValueEvidenceSurvivesReopenAndFollowsChanges(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 )
@@ -67,39 +68,75 @@ type FeatureQuery struct {
 	Measures []string
 }
 
+func featureReadSQL(count int) string {
+	return `
+WITH fields AS MATERIALIZED (SELECT source, measure, priority FROM source_fields)
+SELECT o.player_id, o.season, o.week, o.measure, o.source, o.as_of, o.value, o.text, f.priority
+FROM observations o JOIN fields f ON f.source = o.source AND f.measure = o.measure
+WHERE o.as_of <= ? AND o.season = ? AND o.measure IN (?` + strings.Repeat(", ?", count-1) + ")"
+}
+
 // Features returns one row per player, period and measure, as known at q.AsOf.
+// Select winners while streaming to avoid SQLite sorting every observation twice.
 func (s *Store) Features(ctx context.Context, q FeatureQuery) ([]Feature, error) {
 	if len(q.Measures) == 0 {
 		return nil, nil
 	}
-	where := " AND season = ? AND measure IN (?" + strings.Repeat(", ?", len(q.Measures)-1) + ")"
 	args := []any{formatTime(q.AsOf), q.Season}
 	for _, m := range q.Measures {
 		args = append(args, m)
 	}
-	rows, err := s.pools.Read().QueryContext(ctx, featuresSQL("?", where)+` ORDER BY player_id, week, measure`, args...)
+	rows, err := s.pools.Read().QueryContext(ctx, featureReadSQL(len(q.Measures)), args...)
 	if err != nil {
 		return nil, fmt.Errorf("history: features: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
-	var out []Feature
+	type featureKey struct {
+		player, measure string
+		week            int
+	}
+	type chosenFeature struct {
+		feature  Feature
+		priority int
+		stamp    string
+	}
+	chosen := make(map[featureKey]chosenFeature)
 	for rows.Next() {
 		var f Feature
+		var priority int
 		var asOf string
 		var v sql.NullFloat64
 		var t sql.NullString
-		if err := rows.Scan(&f.PlayerID, &f.Season, &f.Week, &f.Measure, &f.Source, &asOf, &v, &t); err != nil {
+		if err := rows.Scan(&f.PlayerID, &f.Season, &f.Week, &f.Measure, &f.Source, &asOf, &v, &t, &priority); err != nil {
 			return nil, fmt.Errorf("history: scan feature: %w", err)
+		}
+		key := featureKey{f.PlayerID, f.Measure, f.Week}
+		prior, ok := chosen[key]
+		if ok && (priority > prior.priority || (priority == prior.priority && asOf <= prior.stamp)) {
+			continue
 		}
 		if f.AsOf, err = parseTime(asOf); err != nil {
 			return nil, err
 		}
 		f.Value, f.Text = v.Float64, t.String
-		out = append(out, f)
+		chosen[key] = chosenFeature{f, priority, asOf}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("history: features rows: %w", err)
 	}
+	var out []Feature
+	for _, selected := range chosen {
+		out = append(out, selected.feature)
+	}
+	slices.SortFunc(out, func(a, b Feature) int {
+		if a.PlayerID != b.PlayerID {
+			return strings.Compare(a.PlayerID, b.PlayerID)
+		}
+		if a.Week != b.Week {
+			return a.Week - b.Week
+		}
+		return strings.Compare(a.Measure, b.Measure)
+	})
 	return out, nil
 }
 
