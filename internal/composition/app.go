@@ -8,6 +8,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
@@ -50,21 +51,22 @@ import (
 // App is the Wails root and the backend's composition root: it wires the stores and routes
 // IPC calls. Business logic lives in the engine, store and transaction packages, never here.
 type App struct {
-	commands            *catalog.Registry
-	core                *core.State
-	tradeBuilderTimeout time.Duration
-	archiveCache        archiveapp.Snapshot
-	scheduleCache       nativeapp.ScheduleCache
-	controlHeld         *controlapp.Held
-	researchHeld        *researchapp.Held
-	raceHeld            *raceapp.Held
-	now                 nowSchedules
-	nowHeld             *nowapp.Held
-	sourcesHeld         *sourcesapp.Held
-	marketHeld          *marketapp.Held
-	seatStore           *accountstore.Store
-	seat                *accounts.LocalSeat
-	valuePreparation    appvalue.Preparation
+	commands             *catalog.Registry
+	core                 *core.State
+	tradeBuilderTimeout  time.Duration
+	archiveCache         archiveapp.Snapshot
+	scheduleCache        nativeapp.ScheduleCache
+	playedLineupsRunning atomic.Bool
+	controlHeld          *controlapp.Held
+	researchHeld         *researchapp.Held
+	raceHeld             *raceapp.Held
+	now                  nowSchedules
+	nowHeld              *nowapp.Held
+	sourcesHeld          *sourcesapp.Held
+	marketHeld           *marketapp.Held
+	seatStore            *accountstore.Store
+	seat                 *accounts.LocalSeat
+	valuePreparation     appvalue.Preparation
 }
 
 // attachSeat keeps the local sign-in beside the ledger, so a matched backup carries it.

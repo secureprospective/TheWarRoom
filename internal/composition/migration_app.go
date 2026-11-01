@@ -123,15 +123,37 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 	}
 }
 
-// syncFollowedLineups records the week in play first, then the played weeks. The week in play goes
-// first because it is what a live screen needs and it is one small read; the played-week import can
-// take minutes on a big league and must not hold it back. Each is reported on its own: a refused
-// franchise-week never stops the other weeks, and held lineups are kept.
+// syncFollowedLineups records the week in play, then starts the played-week import on its own. The
+// week in play goes first because it is what a live screen needs and it is one small read. The
+// played-week import re-checks every franchise-week the reference league starts differently from
+// the held lineup, which takes minutes on a big league; it runs as its own job, outside the refresh
+// lock, so the player load and live points never wait behind it. A refused franchise-week never
+// stops the other weeks, and held lineups are kept.
 func (a *App) syncFollowedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
 	league, principal string, season int, source string) {
 	if err := a.syncCurrentWeekLineups(ctx, ledger, league, principal, season, source); err != nil {
 		log.Printf("refresh this week's lineups for %s (held lineups kept): %v", league, err)
 	}
+	if a.core.WorkCtx == nil { // no worker lifetime yet: import inline
+		a.syncPlayedLineups(ctx, ledger, league, principal, season, source)
+		return
+	}
+	if !a.playedLineupsRunning.CompareAndSwap(false, true) {
+		return
+	}
+	a.startWorker(func() { //nolint:contextcheck // Outlives the refresh by design; bound by the app worker lifetime.
+		defer a.playedLineupsRunning.Store(false)
+		work, cancel := context.WithTimeout(a.core.WorkCtx, playedLineupsTimeout)
+		defer cancel()
+		a.syncPlayedLineups(work, ledger, league, principal, season, source)
+	})
+}
+
+// playedLineupsTimeout bounds one played-week import; what it does not reach is retried next refresh.
+const playedLineupsTimeout = 10 * time.Minute
+
+func (a *App) syncPlayedLineups(ctx context.Context, ledger leagueservice.MigrationLedger,
+	league, principal string, season int, source string) {
 	weeks, lineupErr := weeklyresults.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
 	if lineupErr == nil {
 		var directory map[string]string
