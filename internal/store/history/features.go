@@ -10,11 +10,13 @@ import (
 
 // latestSQL is each source's latest value per player, period and measure, as of the bound or
 // literal time asOf. where adds further conditions on observations.
+// SQLite takes bare columns from the MAX row; the primary key makes that row unique.
+// This avoids sorting every observation through a second window before source selection.
 func latestSQL(asOf, where string) string {
 	return `
-SELECT player_id, season, week, measure, source, as_of, value, text,
-	ROW_NUMBER() OVER (PARTITION BY player_id, season, week, measure, source ORDER BY as_of DESC) AS newest
-FROM observations WHERE as_of <= ` + asOf + where
+SELECT player_id, season, week, measure, source, MAX(as_of) AS as_of, value, text, 1 AS newest
+FROM observations WHERE as_of <= ` + asOf + where + `
+GROUP BY player_id, season, week, measure, source`
 }
 
 // featuresSQL keeps one row per player, period and measure: the highest-priority source's
