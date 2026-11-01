@@ -84,7 +84,8 @@ func franchiseScheduleGame(week ScheduleWeek, franchise string) (FranchiseGame, 
 			return game, nil
 		}
 	}
-	return FranchiseGame{}, fmt.Errorf("the published week leaves this franchise without a game or bye")
+	game.Venue = "Bye"
+	return game, nil
 }
 
 func NativeWeekReading(schedule FranchiseSchedule, at time.Time, weeks []leagueweek.Week) (NativeWeek, error) {

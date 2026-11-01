@@ -18,6 +18,7 @@ const (
 )
 
 type RawScheduleArgs struct {
+	Fixtures  []ScheduleWeek              `json:"fixtures,omitempty"`
 	Weeks     int                         `json:"weeks,omitempty"`
 	Pattern   leaguerules.SchedulePattern `json:"pattern,omitempty"`
 	Week      int                         `json:"week,omitempty"`
@@ -44,7 +45,12 @@ func (a RawArgs) validateSchedule(command string) error {
 		if details.Pattern != "" && details.Pattern != leaguerules.DivisionWeighted {
 			return fmt.Errorf("choose a recognised schedule pattern")
 		}
-		details.Weeks, details.Pattern = 0, ""
+		if len(details.Fixtures) != 0 {
+			if err := validateFixtures(details.Fixtures, details.Weeks); err != nil {
+				return err
+			}
+		}
+		details.Weeks, details.Pattern, details.Fixtures = 0, "", nil
 	case ScheduleEdit:
 		if err := details.validateGamePatches(); err != nil {
 			return err
@@ -196,6 +202,9 @@ func FreezeSchedule(raw RawCommand, records []Record) ([]ScheduleWeek, error) {
 	if len(records) == 0 {
 		return nil, fmt.Errorf("create the league before generating its schedule")
 	}
+	if len(raw.Args.Schedule.Fixtures) != 0 {
+		return checkedFixtures(raw.Args.Schedule.Fixtures, raw.Args.Schedule.Weeks, LeagueFranchises(records))
+	}
 	rules, err := resolveRecords(records)
 	if err != nil {
 		return nil, err
@@ -303,9 +312,12 @@ func (r Record) validateGeneratedSchedule() error {
 	if len(r.GeneratedSchedule) != r.Command.Args.Schedule.Weeks {
 		return fmt.Errorf("the recorded schedule does not contain its requested weeks")
 	}
+	if len(r.Command.Args.Schedule.Fixtures) != 0 && !reflect.DeepEqual(r.Command.Args.Schedule.Fixtures, r.GeneratedSchedule) {
+		return fmt.Errorf("the recorded schedule differs from the chosen fixtures")
+	}
 	ids := make(map[string]bool)
 	for i, week := range r.GeneratedSchedule {
-		if week.Week != i+1 || len(week.Games) == 0 {
+		if week.Week != i+1 || (len(week.Games) == 0 && len(r.Command.Args.Schedule.Fixtures) == 0) {
 			return fmt.Errorf("the recorded schedule has an invalid week")
 		}
 		if err := validateFrozenGames(week, ids); err != nil {

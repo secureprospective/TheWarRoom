@@ -3488,6 +3488,7 @@ export namespace commissioner {
 		}
 	}
 	export class RawScheduleArgs {
+	    fixtures?: competition.ScheduleWeek[];
 	    weeks?: number;
 	    pattern?: string;
 	    week?: number;
@@ -3500,6 +3501,7 @@ export namespace commissioner {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.fixtures = this.convertValues(source["fixtures"], competition.ScheduleWeek);
 	        this.weeks = source["weeks"];
 	        this.pattern = source["pattern"];
 	        this.week = source["week"];
