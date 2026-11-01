@@ -93,6 +93,13 @@ func (p *RolloverPlan) dateCalendar(at time.Time, labels map[string]string) {
 		p.block("League timezone needs a ruling: " + err.Error())
 		return
 	}
+	// A reading may leave out a window whose shared date has no boundary ruling; a rollover may not:
+	// it dates the whole new season, so every window needs a date it can keep.
+	if unruled := leagueclock.UnruledWindows(calendar); len(unruled) > 0 {
+		p.block("League action windows need a ruling: choose which side of the shared date opens " +
+			strings.Join(unruled, ", ") + ".")
+		return
+	}
 	reading, err := leagueclock.Calendar(at, p.To, calendar, nil)
 	if err != nil {
 		p.block("League action windows need a ruling: " + err.Error())

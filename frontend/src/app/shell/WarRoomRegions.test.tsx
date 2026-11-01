@@ -273,6 +273,16 @@ describe('calendar draft drawer and plans', () => {
     expect(events[0].label).toBe('Draft'); expect(events[1].at).toBe('2026-11-13T12:00:00Z');
     expect(port.mock.calls[0][0]).toMatchObject({ command: 'calendar.read', mode: 'read' });
   });
+  it('names the actions an app league window opens, so the header can say which one is live', async () => {
+    const port = vi.fn<HostedPort>(async () => reply({ league: 'native.seed', revision: 7, decision: {},
+      clock: { windows: [{ id: 'lineups', opens: ['lineup'], start: '2026-03-01T05:00:00Z',
+        close: null, live: true, secondsToClose: null }, { id: 'waivers', opens: ['cut', 'waiver_claim'],
+        start: '2026-03-01T05:00:00Z', close: null, live: false, secondsToClose: null }],
+        exceptions: [], tradeDeadline: null, secondsToTradeDeadline: null } }));
+    const events = await readWarRoomCalendar(nativeContext(port));
+    expect(events.find(e => e.live)!.label).toBe('Lineup');
+    expect(events[1].label).toBe('Cut · Waiver claim');
+  });
   it('renders the native draft read and honors round/mine filters', async () => {
     const port = vi.fn<HostedPort>(async () => reply(draftWire));
     const host = await mount(render(WarRoomDraft, { context: nativeContext(port), select: vi.fn() }));

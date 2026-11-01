@@ -68,8 +68,34 @@ func TestSharedDateHasOneSide(t *testing.T) {
 		}
 	}
 	rules.Boundary = leaguerules.Needs[leaguerules.BoundarySide]("choose a side")
-	if _, err := Calendar(at, 2026, rules, nil); err == nil {
+	got, err := Calendar(at, 2026, rules, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An unset side is not a guess and not an empty calendar: the window that shares the date is
+	// left out, the rest of the calendar reads, and neither shared action opens.
+	if len(got.Windows) != 1 || got.Windows[0].ID != "rfa" {
+		t.Fatal(got.Windows)
+	}
+	if got.Decide(at, "rfa_tender", "one").Open || got.Decide(at, "ufa_bid", "one").Open {
 		t.Fatal("unset side must not guess")
+	}
+}
+
+// One unruled shared date must not empty a whole league calendar: the Legacy preset shares two dates
+// (ufa opens the day resign-era windows close), and every other window still has to read.
+func TestUnruledBoundaryKeepsTheRestOfTheCalendar(t *testing.T) {
+	rules := leaguerules.LegacyNFL().Calendar
+	at := time.Date(2026, 11, 1, 12, 0, 0, 0, time.UTC)
+	got, err := Calendar(at, 2026, rules, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Windows)+2 != len(rules.Windows.Value) {
+		t.Fatalf("windows read: %d of %d", len(got.Windows), len(rules.Windows.Value))
+	}
+	if !got.Decide(at, "lineup", "one").Open {
+		t.Fatal("a window with unambiguous dates must still open its action")
 	}
 }
 
