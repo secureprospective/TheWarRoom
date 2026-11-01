@@ -252,3 +252,22 @@ Walked on Claude-OS (real-profile copy ~/f2click/config/TheWarRoom): app opens i
 GPT (Sol/Terra) resets ~09:50 CT.
 
 **Next:** 1) Re-arm watcher: `until [ -s R/completion.txt ] && [ R/completion.txt -nt /tmp/p8/tom9.mark ]` (R=~/fleet/runs/tom-integrate). 2) Review Tom's result, walk HQ + War Room on Claude-OS (copy via gzip|ssh claudeos; launch `ssh -f claudeos 'setsid ~/f2click/desk.sh ...'`; War Room click 396,348; HQ 407,384). 3) GPT back: slices — first-launch prep 2 min (prepare at import/refresh time), schedule import, gate debt (tiny-file 26>25, migrationInputs boundary). 4) One full Go suite. 5) Hand Christopher the build; merge only after his OK. 6) Delete ~/scratch/cos-profile (839M) when done.
+
+## §21 — 2026-11-01 08:00–13:20 CT: HQ/WR fixed, schedule+scoring import underway, 4 builders live
+
+**State:** integrate branch build/INTEGRATE-1101 HEAD ~68de3421 + docs commits (roadmap 43b347f8, 9ff7ba4f, 26230943, 007ddfec). HQ + War Room on imported league walked OK on Claude-OS (parts 9–11: names/positions/salaries, empty panel "Pick a player", 9 offence rows, bench above bar, second-screen-opened fix, loading≠failure, window from league calendar). First-launch values ~30 s (GPT perf 4 commits, byte-identical). Schedule: 17 weeks auto-import at launch/sync, current week 8, played starters imported (148/224; 76 refused vs today's roster), play-by-play acquired, counted revision follows live / nflverse final / commish wins, league position governs. MFL parity on 148 recorded weeks: 24 exact, 9 differ, 115 unavailable (missing nflverse rows). Bills app still 0/7 complete (MFL 6–1, 1912.35).
+
+**In flight (check: `ls -la ~/fleet/runs/<run>/sessions/*.jsonl` mtime; result in completion.txt + stdout.log):**
+- GPT Sol `app-sched-8` in .worktrees/sched (brief ~/fleet/briefs/APP-SCHED-8.md): play-by-play defensive credits + missing-row fallback + evidence-backed 0 + review flag; ESPN adapter only if gaps. Aborted first attempt is in `git stash` there (ignore).
+- GPT Sol `app-roster-1` in .worktrees/roster (APP-ROSTER-1.md): MFL transactions → ledger, roster as of week, 76 refused lineups.
+- GPT Terra `app-gates-1` in .worktrees/gates (APP-GATES-1.md): TestSinglePoolStartupDraftIsUnchanged digest drift (bisect), preset-guard failure, tiny-file 26>25, migrationInputs boundary, one full suite.
+- Tom `tom-integrate` (APP-PULSE-1.md, ~/fleet/briefs/purge/) League Pulse v14 wiring in integrate, started 13:03.
+- Watcher: one loop fires on first GPT finish (touches /tmp/p8/seen-<run>); re-arm for the others after compaction.
+- CT105 probe: week-8 live capture today 11:30 CT→00:30, MNF 18:45→23:45; keepalive.sh cron guards (remove entries after 11-03). Speed report: `python3 -I /root/mnf-probe/speed_week.py 8` (run 11-02 morning with compare).
+
+**Rulings today (Christopher):** counted stat revision follows live, nflverse auto-final, commish override wins, ledgered · a player missing from nflverse is checked against pbp/ESPN/Sleeper — real stats scored (flagged), 0 only with evidence, else pending; identity gap never 0 · League Pulse demo: tell him ONLY when fully working, no rushing · glance widgets/pop-outs: roadmap only, logged, not built (Wails v2 no 2nd window → v3 or Document PiP; phone = view-only video-PiP hack or Live Activities). **Mine:** played weeks score via imported lineups + app engine (no reported-score adapter); league-held position governs, feed position → commish queue (queue integration DEFERRED).
+
+**Refuted / don't retest:** part-9 "wrong league" = Tom built VERSION=dev (history-dev.db) — always plain make build · TNF probe stop = CT105 reboot by Christopher, not a bug · War Room blank at 4 s = second-screen poisoning (fixed 6757784a), not slowness.
+
+**Next:** 1) on each finish: review, cherry-pick into integrate, walk on Claude-OS if UI; 2) launch ledger first-adoption speed job (92 s → fast) when RAM allows; 3) walk Home / Trade Floor / Control Room on imported league; 4) Pulse walk after Tom; 5) one full suite; 6) hand Christopher build (flag CM-005/CM-008 ruling count change); merge only after his OK; 7) delete ~/scratch/cos-profile at end.
+**Hygiene:** /home 77% (24+9 old worktrees removed, logs in ~/logs/TheWarRoom/worktree-logs/); RAM ~7 GB avail, Claude-OS VM 8 GB; max 3 GPT lanes.
