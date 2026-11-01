@@ -69,7 +69,15 @@ func (s *Store) heldNonParticipation(ctx context.Context, season int, snapBody [
 			roster = append(roster, source.RawAbsenceProof{GSIS: *row.GSIS, PFR: pfr[*row.GSIS], Season: strconv.Itoa(season), Week: snap.Proof.Week, GameID: snap.Proof.GameID, Team: row.Team, Position: row.Position, Evidence: "complete snaps + pbp, no snap"})
 		}
 	}
-	return source.NonParticipationProofs(snaps, roster), body, at, nil
+	proofs := source.NonParticipationProofs(snaps, roster)
+	byes, byeBody, byeAt, err := s.heldRosterByes(ctx, season, depth, snaps)
+	if err != nil {
+		return nil, nil, time.Time{}, err
+	}
+	if byeAt.After(at) {
+		at = byeAt
+	}
+	return append(proofs, byes...), append(body, byeBody...), at, nil
 }
 
 // depthAt uses one complete dated snapshot, not the last row ever seen for a player

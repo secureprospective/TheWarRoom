@@ -32,7 +32,7 @@ func (r RawAbsenceProof) Validate() error {
 	if err := r.validateGame(season, week); err != nil {
 		return err
 	}
-	if r.Evidence != "positive snaps; no play-by-play stat events" && r.Evidence != "exact-week injury Out; no play-by-play stat events" && r.Evidence != "complete snaps + pbp, no snap" {
+	if r.Evidence != "positive snaps; no play-by-play stat events" && r.Evidence != "exact-week injury Out; no play-by-play stat events" && r.Evidence != "complete snaps + pbp, no snap" && r.Evidence != "team bye per schedule" {
 		return fmt.Errorf("unknown absence evidence")
 	}
 	return nil
@@ -127,7 +127,7 @@ func AddProvenZeros(weeks []PlayerWeek, plays []RawPlay, proofs []RawAbsenceProo
 		if game == "" {
 			game = proofGame(r, final)
 		}
-		if !final[game] {
+		if !final[game] && r.Evidence != "team bye per schedule" {
 			continue
 		}
 		w := PlayerWeek{GSIS: r.GSIS, Season: season, Week: week, SeasonType: "REG", GameID: game, Position: r.Position, Line: emptyRecordedLine()}

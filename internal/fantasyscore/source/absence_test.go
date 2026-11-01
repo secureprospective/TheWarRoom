@@ -115,3 +115,23 @@ func TestOvertimeEndGameDoesNotNeedAnExpiredClock(t *testing.T) {
 		t.Fatalf("overtime final stayed unavailable: %+v %v", got, err)
 	}
 }
+
+func TestScheduleByeNeedsIdentityAndDoesNotOverrideEvents(t *testing.T) {
+	proof := RawAbsenceProof{GSIS: "00-0030001", Season: "2026", Week: "1", Team: "MIA", Position: "LB", Evidence: "team bye per schedule"}
+	got, err := AddProvenZeros(nil, nil, []RawAbsenceProof{proof})
+	if err != nil || len(got) != 1 || got[0].Evidence != proof.Evidence {
+		t.Fatalf("bye unavailable: %+v %v", got, err)
+	}
+	p := creditPlay()
+	p.Credits["solo_tackle_1_player_id"] = proof.GSIS
+	got, err = AddProvenZeros(nil, []RawPlay{p}, []RawAbsenceProof{proof})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("event replaced by bye: %+v %v", got, err)
+	}
+	proof.GSIS = ""
+	proof.PFR = "Unlinked00"
+	got, err = AddProvenZeros(nil, nil, []RawAbsenceProof{proof})
+	if err != nil || len(got) != 0 {
+		t.Fatalf("unlinked bye became zero: %+v %v", got, err)
+	}
+}
