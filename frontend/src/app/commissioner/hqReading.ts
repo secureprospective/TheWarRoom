@@ -74,7 +74,13 @@ export function nativeHQAssets(value: unknown, league: string): Snapshot {
       rosterStatus: p.rosterStatus,
       ...(p.expiration ? { yearsRemaining: Math.max(0, p.expiration - held.season + 1) } : {}) })) })),
         provenance },
-    players: { value: held.players.map(p => ({ id: p.id, name: p.name })), provenance },
+    // Names and positions are football facts: the identity block carries them, and the recorded
+    // roster name stands in when the app holds no identity for a player.
+    players: { value: held.players.map(p => {
+      const identity = held.identities.find(i => i.player === p.id && i.franchise === p.franchise);
+      return { id: p.id, name: identity?.name ?? p.name,
+        ...(identity?.position ? { position: identity.position } : {}) };
+    }), provenance },
     eligibility: { players: {}, feeds: { injuries: provenance, players: provenance, rosters: provenance } } };
 }
 export function nativeHQCap(value: unknown, league: string, mine: string): HQCap[] {
@@ -216,10 +222,12 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
     const raw = r.data as { starters: { player: string; team?: string; locksAt?: string }[]; bench: {
       player: string; team?: string; locksAt?: string }[] };
     const players = [...held.starters, ...held.bench];
+    // The lineup read fills gaps only: a name or position already held for a player is the
+    // app's own fact, and must not be replaced by the lineup's stand-in label.
     for (const p of snapshot.players.value) { const identity = players.find(i => i.player === p.id);
-      if (identity) { p.name = identity.name;
+      if (identity) { if (!p.name) p.name = identity.name;
         const position = identity.position === 'PK' ? 'K' : identity.position;
-        p.position = POSITIONS.includes(position as Position) ? position as Position : undefined;
+        if (!p.position && POSITIONS.includes(position as Position)) p.position = position as Position;
         p.team = [...raw.starters, ...raw.bench].find(i => i.player === p.id)?.team; } }
     const locks = [...raw.starters, ...raw.bench].flatMap(p => p.locksAt ? [timestamp(p.locksAt,
       'Kickoff')] : []).filter(at => Date.parse(at) > Date.now()).sort();

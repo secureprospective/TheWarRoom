@@ -230,6 +230,33 @@ it('shows an imported-shaped 35-player roster before any schedule is published',
   expect(container.querySelector('.wr-v6 .shelf .nm small')?.textContent).toBe('$3.00M · 2y');
 });
 
+it('shows held names and positions when the lineup read has only stand-in labels', async () => {
+  const original = vi.mocked(localWorkflow).getMockImplementation()!;
+  const imported = structuredClone(assets);
+  const player = imported.snapshot.players[0];
+  const players = Array.from({ length: 3 }, (_, i) => ({ ...player, id: String(2000 + i),
+    franchise: 'franchise.02', name: `Imported player ${i}`, contractStatus: '' }));
+  imported.snapshot.players = players;
+  imported.identities = players.map((p, i) => ({ player: p.id, franchise: p.franchise,
+    name: `Held, Player ${i}`, position: 'WR' }));
+  vi.mocked(localWorkflow).mockImplementation(async request => {
+    const data = request.command === 'native.assets.read' ? imported :
+      request.command === 'week.read' ? { schedule: { league: 'native.seed', franchise: 'franchise.02',
+        season: imported.snapshot.season, revision: imported.revision, games: [] },
+        message: 'The schedule is not published yet.' } :
+      request.command === 'lineup.read' ? { ...lineup, week: 8, revision: imported.revision,
+        starters: [], bench: players.map(p => ({ player: p.id, name: `player ${p.id}`, position: '',
+          locked: false, words: 'No NFL game this week' })) } : undefined;
+    return data ? { label: 'Import shape', writable: false, football: '', data } : original(request);
+  });
+  await mount(); await choose('franchise.02');
+  const bench = container.querySelector('.hq-v10 .blist')!;
+  expect(bench.textContent).toContain('Held, Player 0');
+  expect(bench.textContent).not.toContain('player 2000');
+  expect([...bench.querySelectorAll('[data-player] .pg')].map(p => p.textContent)).toEqual(['WR', 'WR',
+    'WR']);
+});
+
 it.each(['hq', 'war'] as const)('fills %s prepared values on publication', async node => {
   const original = vi.mocked(localWorkflow).getMockImplementation()!;
   let preparing = true;

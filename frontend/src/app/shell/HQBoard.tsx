@@ -137,7 +137,7 @@ export function HQBoard({ snapshot, mine, reading, settings, values, facts, chan
         if (!canEdit) return;
         e.preventDefault(); moving.current = true;
         e.currentTarget.setPointerCapture(e.pointerId); setDrag({ id, x: e.clientX, y: e.clientY });
-      }}>{reading?.starters.concat(reading.bench).find(p => p.id === id)?.position ?? player?.position ??
+      }}>{reading?.starters.concat(reading.bench).find(p => p.id === id)?.position || player?.position ||
         '—'}</span>
       <span className="nm">{player?.name ?? id}<small>{player?.team}</small></span>
       {showContracts ? <span className="roster-contract" aria-label="Contract"

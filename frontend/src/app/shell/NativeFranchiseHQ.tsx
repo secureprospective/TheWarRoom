@@ -55,7 +55,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
     title={error}>{unavailable}</p></div>;
   const { snapshot, lineup, runway, moves = [] } = reading;
   const settings = { ...reading.settings };
-  const positions = new Map(lineup?.starters.concat(lineup.bench).map(p => [p.id, p.position ?? '—']));
+  const positions = new Map(lineup?.starters.concat(lineup.bench).map(p => [p.id, p.position ||
+    snapshot.players.value.find(v => v.id === p.id)?.position || '—']));
   const roster = snapshot.rosters.value.find(r => r.franchiseId === mine)?.players ?? [];
   if (settings.reserveExcluded === false && settings.active !== undefined)
     settings.active -= roster.filter(p => p.rosterStatus !== 'ROSTER').length;
@@ -71,7 +72,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       leagueValue={reading.values?.players.find(p => p.player === chosen)}
       projection={reading.projections?.get(chosen ?? '')}
       annual={reading.contracts?.get(chosen ?? '')}
-      position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position}
+      position={lineup?.starters.concat(lineup.bench).find(p => p.id === chosen)?.position ||
+        snapshot.players.value.find(v => v.id === chosen)?.position}
       bench={editor.canEdit && chosen && editor.edited?.starters.some(p => p.id === chosen) ?
         id => editor.assign(editor.edited!.starters.filter(p => p.id !== id).map(p => p.id)) : undefined}
       toIR={editor.canEdit && roster.some(p => p.id === chosen && p.rosterStatus === 'ROSTER') ?
