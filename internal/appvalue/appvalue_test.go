@@ -296,3 +296,17 @@ func doubleReceivingYards(t *testing.T, rules leaguerules.ScoringRules) leagueru
 	out.Rules.Value["receiving_yards"] = changed
 	return out
 }
+
+func TestMissingWeeksRefusesValuesInsteadOfFabricatingZero(t *testing.T) {
+	in := inputs(t, "native.test", legacySettings(t))
+	in.Weeks = nil
+	got := read(t, "0001", in)
+	if got.Best.Available || len(got.Notes) == 0 {
+		t.Fatalf("missing weeks looked valued: %+v", got)
+	}
+	for _, p := range got.Players {
+		if p.Available || p.Words == "" {
+			t.Fatalf("missing production silently valued %s: %+v", p.Player, p)
+		}
+	}
+}

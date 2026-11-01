@@ -39,6 +39,17 @@ func (s *Store) NativeLineupDelta(ctx context.Context, league string, season, we
 	if err != nil {
 		return out, fmt.Errorf("lineup delta: %w", err)
 	}
+	scoring, err := commissioner.RulesInForce(records, season, s.now())
+	if err != nil {
+		return out, fmt.Errorf("lineup delta scoring rules: %w", err)
+	}
+	base.Rules.Scoring = scoring.Scoring
+	return s.LineupDelta(ctx, league, season, week, trade, base)
+}
+
+// LineupDelta shares the projection and lineup evaluation with the local reference adapter.
+func (s *Store) LineupDelta(ctx context.Context, league string, season, week int, trade TradeSides, base commissioner.NativeBase) (NativeLineupDelta, error) {
+	out := NativeLineupDelta{League: league, Season: season, Week: week, Notes: []string{}}
 	rules, ok := lineupdelta.Rules(base.Rules.Lineup)
 	if !ok {
 		return out, fmt.Errorf("lineup delta: this league's starting limits are not all set")
@@ -48,7 +59,7 @@ func (s *Store) NativeLineupDelta(ctx context.Context, league string, season, we
 		return out, err
 	}
 	ids := append(append([]string{}, mine...), theirs...)
-	proj, err := s.NativeProjections(ctx, league, season, week, ids)
+	proj, err := s.ProjectPlayers(ctx, league, base.Rules.Scoring, season, week, ids)
 	if err != nil {
 		return out, err
 	}

@@ -958,3 +958,7 @@
 .wr-v6.embedded .read{grid-auto-rows:max-content}
 .wr-v6.embedded .vers{flex-wrap:wrap;gap:4px}
 .wr-v6.embedded .vers .t{padding:4px 14px}
+
+.wr-v6 .value-ages { display: flex; gap: 10px; margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.wr-v6 .value-ages dt { font-size: 11px; }
+.wr-v6 .value-ages dd { margin: 2px 0 0; font-weight: 600; }

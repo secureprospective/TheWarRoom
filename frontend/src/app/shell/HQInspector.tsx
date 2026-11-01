@@ -1,3 +1,4 @@
+import type { LeaguePlayerValue } from '../data/nativeValues';
 import { Act } from '../commands/Act';
 import type { NativeCut } from '../commissioner/hqReading';
 import { HQAct } from './HQAct';
@@ -72,22 +73,24 @@ export function NotesThread({ notes, count, pending, error, add, remove }: { not
   </Drawer>;
 }
 export function HQInspector({ snapshot, mine, id, facts, projection, native = false, bench, position, cut,
-  toIR, annual }: {
-  snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts; projection?: number; native?: boolean;
+  toIR, annual, leagueValue }: {
+  leagueValue?: LeaguePlayerValue; snapshot: Snapshot; mine: string; id?: string; facts?: RosterFacts;
+    projection?: number; native?: boolean;
   bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?: {
     season: number; cents: number }[];
 }) {
   return id ? <LoadedInspector key={`${native}:${mine}:${id}`} {...{ snapshot, mine, id, facts, projection,
-    native, bench, position, cut, toIR, annual }} />
+    native, bench, position, cut, toIR, annual, leagueValue }} />
     : <aside className="insp" aria-label="Inspector"><div className="ihead"><div
       className="nm">{unavailable}</div></div><div className="nums"><div /><div /></div><div
       className="idrawers" /><div className="iact"><span className="h">ACT ON THIS PLAYER</span></div><div
       className="ifoot">{unavailable}</div></aside>;
 }
 function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench, position:
-  selectedPosition, cut, toIR, annual
+  selectedPosition, cut, toIR, annual, leagueValue
   }: {
-  snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts; projection?: number; native: boolean;
+  leagueValue?: LeaguePlayerValue; snapshot: Snapshot; mine: string; id: string; facts?: RosterFacts;
+    projection?: number; native: boolean;
     bench?: (id: string) => void; toIR?: (id: string) => void; position?: string; cut?: NativeCut; annual?:
       { season: number; cents: number }[];
 }) {
@@ -115,8 +118,11 @@ function LoadedInspector({ snapshot, mine, id, facts, projection, native, bench,
   const noteData = !native && !readNotes.error && readNotes.reading?.player === id ? readNotes.reading :
     undefined;
   const research = facts?.get(id)?.research;
-  const ppg = researchFact(research, 'Points per game')?.split(' · ')[0];
-  const dynasty = assets.value?.values.find(v => v.id === id)?.dynasty;
+  const ppg = leagueValue ? (leagueValue.available ? leagueValue.nowPPG.toFixed(1) : undefined) :
+    researchFact(research, 'Points per game')?.split(' · ')[0];
+  const dynasty = leagueValue ? { held: leagueValue.available,
+    text: leagueValue.dynastyPPG.toFixed(1), detail: leagueValue.words } :
+    assets.value?.values.find(v => v.id === id)?.dynasty;
   const status = snapshot.eligibility.players[id]?.ir;
   const subject = { kind: 'player' as const, id, franchiseId: mine };
   return <aside className="insp" aria-label="Inspector">

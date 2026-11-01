@@ -129,7 +129,6 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 	if season < 1920 || season > 9999 || week < 1 || week > 22 {
 		return NativeProjections{}, fmt.Errorf("projections: choose an NFL season and week")
 	}
-	out := NativeProjections{League: league, Season: season, Week: week, Players: []NativeProjection{}, Notes: []string{}}
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return NativeProjections{}, err
@@ -138,8 +137,17 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 	if err != nil {
 		return NativeProjections{}, fmt.Errorf("projections: rules: %w", err)
 	}
+	return s.ProjectPlayers(ctx, league, rules.Scoring, season, week, players)
+}
+
+// ProjectPlayers applies the shared held D11 read to supplied scoring settings.
+func (s *Store) ProjectPlayers(ctx context.Context, league string, rules leaguerules.ScoringRules, season, week int, players []string) (NativeProjections, error) {
+	if season < 1920 || season > 9999 || week < 1 || week > 22 {
+		return NativeProjections{}, fmt.Errorf("projections: choose an NFL season and week")
+	}
+	out := NativeProjections{League: league, Season: season, Week: week, Players: []NativeProjection{}, Notes: []string{}}
 	held := map[int][]source.PlayerWeek{}
-	encoded, err := json.Marshal(rules.Scoring)
+	encoded, err := json.Marshal(rules)
 	if err != nil {
 		return NativeProjections{}, fmt.Errorf("projections: rules digest: %w", err)
 	}
@@ -161,7 +169,7 @@ func (s *Store) NativeProjections(ctx context.Context, league string, season, we
 	if err != nil {
 		return NativeProjections{}, err
 	}
-	out.Players = s.projectionBook(key, rules.Scoring, held).project(players, ids, season, week)
+	out.Players = s.projectionBook(key, rules, held).project(players, ids, season, week)
 	return out, nil
 }
 

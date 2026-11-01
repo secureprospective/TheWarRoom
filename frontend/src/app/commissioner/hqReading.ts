@@ -11,6 +11,7 @@ import type { HostedPort } from './hostedRoom';
 import { hostedWorkflow } from './api';
 import { selectProvider } from '../data/provider';
 import { ordinal } from '../shell/hqPlayerData';
+import { parseNativeValues, type LeagueValues } from '../data/nativeValues';
 import { parseWarRoomProjections } from '../data/nativeProjections';
 
 export function nativeHQStanding(rules: Rules | undefined,
@@ -112,7 +113,7 @@ export type NativeHQ = { revision: number; snapshot: Snapshot; settings: HQSetti
   lineup?: HQLineup; contracts?: Map<string, { season: number; cents: number }[]>;
   check?: string; lock?: string; runway?: HQCap[]; moves?: HQMove[]; moveReason?: string;
   reserveNotes?: Map<string, string>; record?: string; standing?: string; week?: number; weekNote?: string;
-  projections?: Map<string, number>; errors: string[] };
+  values?: LeagueValues; projections?: Map<string, number>; errors: string[] };
 export async function readNativeHQ(league: string, mine: string, port: HostedPort = hostedWorkflow):
   Promise<NativeHQ> {
   const assets = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
@@ -130,6 +131,9 @@ export async function readNativeHQ(league: string, mine: string, port: HostedPor
   const apply = async (read: () => Promise<void>) => { try { await read(); } catch (e) {
     result.errors.push(String(e)); console.warn('Franchise HQ read failed:', e); } };
   await Promise.all([
+    apply(async () => { const r = await port({ command: 'value.read', mode: 'read', arguments: {
+      league, franchise: mine, season } });
+      result.values = parseNativeValues(r.data, league, mine, season); }),
     apply(async () => { const r = await port({ command: 'commish.rules.read', mode: 'read', arguments: {
       league } });
       sameRevision(r.data);

@@ -13,6 +13,7 @@ const maxTradePlayers = 20
 
 // RawLineupDeltaScope is a proposed trade to judge against both parties' best lineups: what the
 // franchise gives and what it gets from the partner, for a season and its coming week.
+// An empty league selects the local reference only; hosted sessions may never use that scope.
 type RawLineupDeltaScope struct {
 	League    string   `json:"league"`
 	Franchise string   `json:"franchise"`
@@ -24,7 +25,10 @@ type RawLineupDeltaScope struct {
 }
 
 func (r RawLineupDeltaScope) Validate() error {
-	if r.League == "" || r.Franchise == "" || r.Partner == "" || r.Franchise == r.Partner {
+	if r.Season < 1920 || r.Season > 9999 || r.Week < 1 || r.Week > 22 {
+		return fmt.Errorf("choose an NFL season and scoring week")
+	}
+	if r.Franchise == "" || r.Partner == "" || r.Franchise == r.Partner {
 		return fmt.Errorf("name the league and the two franchises in the trade")
 	}
 	if len(r.Give)+len(r.Get) == 0 || len(r.Give) > maxTradePlayers || len(r.Get) > maxTradePlayers {
@@ -44,6 +48,9 @@ func (r RawLineupDeltaScope) Validate() error {
 // TargetNativeLineupDelta reads what a proposed trade does to both parties' best lineups (D33).
 // It is a what-if: the asking franchise's own view, computed per request and never recorded.
 func (a *Service) TargetNativeLineupDelta(raw RawLineupDeltaScope) (history.NativeLineupDelta, error) {
+	if raw.League == "" {
+		return a.referenceLineupDelta(raw)
+	}
 	if err := a.admitRead(raw.League, "lineupdelta.read", raw.Franchise); err != nil {
 		return history.NativeLineupDelta{}, err
 	}
@@ -61,4 +68,31 @@ func (a *Service) TargetNativeLineupDelta(raw RawLineupDeltaScope) (history.Nati
 		return history.NativeLineupDelta{}, fmt.Errorf("lineup delta: %w", err)
 	}
 	return reading, nil
+}
+
+type referenceDeltaHost interface {
+	MirrorLineupDelta(context.Context, int, int, history.TradeSides) (history.NativeLineupDelta, error)
+}
+
+func (a *Service) referenceLineupDelta(raw RawLineupDeltaScope) (history.NativeLineupDelta, error) {
+	if a.hosted {
+		return history.NativeLineupDelta{}, fmt.Errorf("the local reference is not available on a hosted session")
+	}
+	if err := raw.Validate(); err != nil {
+		return history.NativeLineupDelta{}, fmt.Errorf("lineup fit input: %w", err)
+	}
+	if err := a.host.Ready(); err != nil {
+		return history.NativeLineupDelta{}, fmt.Errorf("lineup fit startup: %w", err)
+	}
+	host, ok := a.host.(referenceDeltaHost)
+	if !ok {
+		return history.NativeLineupDelta{}, fmt.Errorf("the local reference lineup read is not wired")
+	}
+	ctx, cancel := context.WithTimeout(a.host.CommissionerContext(), refreshTimeout)
+	defer cancel()
+	got, err := host.MirrorLineupDelta(ctx, raw.Season, raw.Week, history.TradeSides{Franchise: raw.Franchise, Partner: raw.Partner, Give: raw.Give, Get: raw.Get})
+	if err != nil {
+		return got, fmt.Errorf("lineup fit: %w", err)
+	}
+	return got, nil
 }

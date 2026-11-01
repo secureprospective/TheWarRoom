@@ -68,6 +68,9 @@ describe('native HQ existing reads', () => {
      {
     const mine = 'franchise.02', league = 'native.seed';
     const data: Record<string, unknown> = {
+      'value.read': { league, season: 2026, franchise: mine, players: [], best: { franchise: mine,
+        starterN: 21, value: 0, age: 0, ageKnown: false, rank: 0, of: 32, available: false,
+        words: 'No player records' }, age: [], notes: [] },
       'native.assets.read': assets, 'commish.rules.read': { ...rules, league, revision: assets.revision },
       'native.reserve.check': reserves, 'native.cap.check': { ...cap, franchises: cap.franchises.map(f =>
         ({ ...f, contracts: [{ player: '1000', years: [{ season: 2026, cents: 100000000 },

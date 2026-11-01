@@ -1,3 +1,5 @@
+import { parseNativeValues, type LeaguePlayerValue } from '../data/nativeValues';
+import { readInspectorFit, type InspectorFit } from './inspectorFit';
 import type { PlayerReading } from '../research/contract';
 import type { Reading, PlayerContract } from '../contracts/contract';
 import { contractsProvider } from '../contracts/provider';
@@ -11,6 +13,7 @@ import { parseWarRoomProjections } from './warroomMarketReads';
 import type { WarRoomContext } from './warroomReads';
 export type WarRoomInspectorReading = { research?: PlayerReading; arc?: Arc;
   contract?: Reading<PlayerContract>; cut?: NativeCut; notes?: ReturnType<typeof parseNotes>;
+  value?: LeaguePlayerValue; fit?: InspectorFit;
   projection?: ReturnType<typeof parseWarRoomProjections>[number]; errors: string[] };
 export async function readWarRoomInspector(c: WarRoomContext, id: string):
   Promise<WarRoomInspectorReading> {
@@ -20,6 +23,12 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
   if (c.native) {
     const native = c.native;
     await Promise.all([
+      apply(async () => { const season = c.snapshot.league.value.season;
+        const { data } = await (native.port ?? hostedWorkflow)({ command: 'value.read', mode: 'read',
+          arguments: { league: native.league, franchise: '', season } });
+        result.value = parseNativeValues(data, native.league, '', season).players
+          .find(p => p.player === id); }),
+      apply(async () => { result.fit = await readInspectorFit(c, id); }),
       apply(async () => { result.arc = parseArc(await readAgeArc(id)); }),
       apply(async () => {
         const owners = c.snapshot.rosters.value.filter(r => r.players.some(p => p.id === id));
@@ -40,6 +49,7 @@ export async function readWarRoomInspector(c: WarRoomContext, id: string):
     return result;
   }
   await Promise.all([
+    apply(async () => { result.fit = await readInspectorFit(c, id); }),
     apply(async () => { const research = await researchAPI.player!(id);
       if (research.id !== id) throw new Error('Research belongs to another player');
       result.research = research; }),

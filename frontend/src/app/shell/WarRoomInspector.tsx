@@ -42,11 +42,20 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
   const arc = facts?.arc;
   const maxArc = Math.max(1, ...arc?.points.map(p => p.level) ?? []);
   const projection = facts?.projection;
+  const value = facts?.value;
+  const fit = facts?.fit;
+  const fitNames = (ids: string[]) => ids.map(id => context.snapshot.players.value.find(p =>
+    p.id === id)?.name ?? id).join(', ');
+  const changedStarters = fit?.side.changes.filter(c => c.kind === (fit.removing ? 'promoted' : 'benched'))
+    .map(c => c.player);
   return <aside className="insp" aria-label="Inspector"><div className="ihead"><div className="top">
     <span className="pg">{research?.position || asset?.position || projection?.position || '—'}</span>
     <span className="on">{asset ? 'PLAYER' : unavailable}</span></div><div className="nm">
       {research?.name ?? asset?.name ?? unavailable}</div><div className="sub">{research?.owner ??
         unavailable} · age {age ?? unavailable} · {asset?.contract ?? unavailable}</div></div>
+    {context.native && <div className="nums"><div><b>{value?.available ? value.nowPPG.toFixed(1) :
+      unavailable}</b><span>pts / game</span></div><div><b title={value?.words}>{value?.available ?
+      value.dynastyPPG.toFixed(1) : unavailable}</b><span>dynasty value</span></div></div>}
     <div className="lensrow"><div><b><CompactAbsent /></b><span>to you</span></div>
       <div><b><CompactAbsent /></b><span>to them</span></div></div><div className="why"
         title={reading.error || facts?.errors.length ? unavailable : undefined}>{unavailable}</div>
@@ -72,8 +81,16 @@ function LoadedInspector({ context, asset, add, watch }: { context: WarRoomConte
         className={p.season === context.snapshot.league.value.season ? 'now' : ''}
         style={{ height: `${Math.max(0, p.level / maxArc * 100)}%` }}
         title={`${p.season} · age ${p.age} · ${p.level}`} />)}</div> : <WarRoomEmpty />}</Drawer>
-    <Drawer label="IN YOUR LINEUP"><div className="kv"><span>Replaces</span><span>{unavailable}</span>
-      </div><div className="kv"><span>L5 avg</span><span>{researchFact(research, 'L5 avg') ?? unavailable}
+    <Drawer label="IN YOUR LINEUP"><div className="kv"><span>
+      {fit?.removing ? 'Promotes' : 'Replaces'}</span><span>{fit ?
+      fitNames(changedStarters ?? []) || 'No starter change' : unavailable}</span>
+      </div>{fit && <><div className="kv"><span>
+        {fit.removing ? 'Without him / week' : 'Adds / week'}</span><span
+        title={fit.notes.join(' · ')}>{fit.side.unprojected.length ? unavailable :
+          fit.side.perWeek.toFixed(1)}</span></div>
+        <div className="kv"><span>This week</span><span>{fit.side.unprojected.length ? unavailable :
+          fit.side.thisWeek.toFixed(1)}</span></div></>}<div className="kv"><span>L5 avg</span><span>
+          {researchFact(research, 'L5 avg') ?? unavailable}
       </span></div><div className="kv"><span>Fills need</span><span>{unavailable}</span></div>
       {projection && <div className="kv"><span>Floor · median · ceiling</span><span
         title={`${projection.games} games · ${projection.words}`}>{projection.available ?

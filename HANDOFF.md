@@ -1,22 +1,23 @@
 # Handoff
 
 ## Baton
-Review — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-2 incomplete; local commits only.
+Review — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-4 implemented for app leagues; local commits only.
 
 ## Where it stands
-- 511bc901: Prepare and Jobs share applicability in `internal/leaguerules/applicability.go`; no stored rules changed.
-- 69d0f8a8: calendar errors keep contract quotes refused but no longer erase known cut pricing. Frontend preserves priced zero; inspector uses the recorded owner and rejects ambiguous copies.
-- `internal/store/history/migration_port_test.go` additionally proves Jobs=Prepare=5 after explicitly recording the same draft evidence; older ledger is 6, not 8.
-- `.app-value-state.md` contains per-item status, source traces, cut root cause, verification and debt. Models unchanged.
-- TypeScript PASS; whole Vitest PASS (158 files / 1,722 tests); targeted Go race PASS (12 named outcomes); plain `make build` PASS. Old Jobs count mutant rejected. No desktop walk, full Go suite, remote operation or push.
+- Existing model pass/count/held-week reads exposed; math and mirror run unchanged.
+- League-scored adapter feeds `value.read` / `TargetNativeValues`, app Best N + rank, dynasty value by age and HQ/War Room card values.
+- Inspector lineup fit uses the shared D11/lineup read in app and local-reference contexts. Hosted sessions cannot select the local reference.
+- Proof: imported 14432 settings/paid contracts with controlled 25-WR production; max Now/dynasty differences 0. Mirror golden 832 JSON bytes unchanged.
+- TypeScript PASS; Vitest 159 files / 1,725 tests PASS; targeted race Go 23 tests / 44 named outcomes PASS; plain `make build` PASS. No full Go suite, desktop walk or remote operation.
+- Full findings and verification: `.app-value3-state.md`.
 
 ## Next move / blocked on
-- Still unfinished: app-scored pts/game/dynasty read, Best-N over those values, age aggregation, and inspector lineup fit for both contexts. Existing model pass and lineupdelta engine must be exposed, not replaced.
-- No implemented next-season-needs or your/their-lens evaluator found; skipped rather than invented.
-- Actual live imported ledger not inspected. Fixture proves calendar coupling; missing pricing rules or contract terms still legitimately produce no price.
-- No external blocker established: remaining value work simply is not implemented.
+- Review and visual gate against disposable data; no desktop launch was attempted.
+- Full real-history parity, server-only player-record/params plumbing, copy-scoped valuations and free-agent lineup fit remain.
+- Mirror age header, needs and valuation lenses remain unwired.
+- Inherited gates: tiny-file count 26 > 25; boundarycheck flags unchanged `migration_app.go: migrationInputs`. Baselines not weakened.
 
 ## Tried and rejected
-- Mirror research/model scores are not a substitute for app-scored production.
-- D11 projection medians are not the model's Now/dynasty output and cannot masquerade as Best-N model value.
-- A closed or unresolved calendar must not authorize a move, but it need not suppress a known contract price.
+- Per-player pass alone misses paid-roster contract tilt: reuse the existing batch adjustment.
+- D11 medians are not the model's Now/dynasty values.
+- No origin branches, refit, guessed zero for missing evidence, or silent overwrite of duplicate player copies.

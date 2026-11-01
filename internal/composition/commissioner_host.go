@@ -14,6 +14,7 @@ import (
 	commissionerapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner"
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/commissioner/native"
 	"github.com/secureprospective/TheWarRoom/internal/app/core"
+	tradesapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/trades"
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
@@ -158,4 +159,8 @@ func (h commissionerHost) NativeValues(ctx context.Context, league, franchise st
 	src := appvalue.Source{Facts: h.app.recordStore(), Held: h.History, Records: h.CommissionerRecords,
 		Params: h.Params.Snapshot, Now: h.app.timeNow}
 	return src.Read(ctx, league, franchise, season) //nolint:wrapcheck // The adapter names its failures.
+}
+
+func (h commissionerHost) MirrorLineupDelta(ctx context.Context, season, week int, trade history.TradeSides) (history.NativeLineupDelta, error) {
+	return tradesapp.ReadLineupDelta(ctx, h.Rulebook.ActiveConfig(), h.League.Reader(), season, week, trade, h.History.LineupDelta) //nolint:wrapcheck // The adapter supplies fit context.
 }

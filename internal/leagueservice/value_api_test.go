@@ -7,6 +7,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/appvalue"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/lineupdelta"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 type valueTestHost struct {
@@ -43,5 +45,31 @@ func TestNativeValuesValidatesAndAdmitsBeforeReading(t *testing.T) {
 	}
 	if _, err := New(admissionHost{}).TargetNativeValues(raw); err == nil {
 		t.Fatal("host with no player record returned values")
+	}
+}
+
+type referenceFitHost struct {
+	admissionHost
+	calls *int
+}
+
+func (h referenceFitHost) MirrorLineupDelta(_ context.Context, season, week int, trade history.TradeSides) (history.NativeLineupDelta, error) {
+	*h.calls++
+	return history.NativeLineupDelta{Season: season, Week: week, You: lineupdelta.Side{Franchise: trade.Franchise, PerWeek: 2.4}}, nil
+}
+func TestReferenceLineupFitIsLocalOnly(t *testing.T) {
+	calls := 0
+	host := referenceFitHost{calls: &calls}
+	raw := RawLineupDeltaScope{Franchise: "0001", Partner: "0002", Get: []string{"0042"}, Season: 2026, Week: 9}
+	if _, err := NewHosted(host, admissionFunc(func(context.Context, commissioner.Access) error { return nil })).TargetNativeLineupDelta(raw); err == nil || calls != 0 {
+		t.Fatal("hosted session reached the local mirror")
+	}
+	got, err := New(host).TargetNativeLineupDelta(raw)
+	if err != nil || calls != 1 || got.You.PerWeek != 2.4 {
+		t.Fatalf("local fit: %+v %v", got, err)
+	}
+	raw.Get = []string{"bad"}
+	if _, err := New(host).TargetNativeLineupDelta(raw); err == nil || calls != 1 {
+		t.Fatal("invalid local request reached the read")
 	}
 }

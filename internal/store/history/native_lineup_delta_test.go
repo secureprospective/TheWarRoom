@@ -1,8 +1,11 @@
 package history
 
 import (
+	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
@@ -16,6 +19,18 @@ func TestNativeLineupDelta(t *testing.T) {
 		TradeSides{Franchise: f.a, Partner: f.b, Give: []string{give}, Get: []string{get}})
 	if err != nil {
 		t.Fatal(err)
+	}
+	records, err := f.s.nativeRecords(t.Context(), "native.test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err := commissioner.ReadNativeBase("native.test", records, f.s.now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	shared, err := f.s.LineupDelta(t.Context(), "native.test", 2026, 1, TradeSides{Franchise: f.a, Partner: f.b, Give: []string{give}, Get: []string{get}}, base)
+	if err != nil || !reflect.DeepEqual(got, shared) {
+		t.Fatalf("shared lineup route changed native output: %+v %v", shared, err)
 	}
 	if len(got.You.Before) != 21 || len(got.You.After) != 21 || len(got.Them.After) != 21 {
 		t.Fatalf("a Legacy lineup starts 21: %d %d %d", len(got.You.Before), len(got.You.After), len(got.Them.After))

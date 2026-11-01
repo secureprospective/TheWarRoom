@@ -16,9 +16,15 @@ export function WarRoomHeader({ name, reading }: { name?: string; reading?: WarR
         active={false}>{p}</WarRoomAct>)}</div><small>Not set</small></div>
     <div style={{ display: 'flex', gap: 28, alignItems: 'center' }}>
       <div className="mini"><span className="h">{reading?.starterN === undefined ? 'BEST' :
-        `Best ${reading.starterN} (any position)`}</span><div><b>{reading?.best ?? <CompactAbsent />}</b>
+        `Best ${reading.starterN} (any position)`}</span><div><b title={reading?.valueNote}>
+          {reading?.best ?? <CompactAbsent />}</b>
         <small>{reading?.rank ?? <CompactAbsent />}</small></div></div>
-      <div className="mini"><span className="h">VALUE BY AGE</span><WarRoomEmpty /></div></div>
+      <div className="mini"><span className="h">VALUE BY AGE</span>
+        {reading?.age?.some(b => b.players > 0) ? <dl className="value-ages"
+          aria-label="Dynasty value by age">
+          {reading.age.map(b => <div key={b.from}><dt>{b.open ? `${b.from}+` : b.from === 0 ?
+            `≤${b.to}` : `${b.from}–${b.to}`}</dt><dd title={`${b.players} players`}>{b.value.toFixed(1)}</dd>
+          </div>)}</dl> : <WarRoomEmpty />}</div></div>
     <div className="mini"><span className="h">NEEDS · NEXT SEASON</span><WarRoomEmpty /></div>
     <div className="mini"><span className="h">CAP RUNWAY</span><div className="runw">
       {reading?.runway?.length ? reading.runway.slice(0, 3).map(y => <div className="y fit" key={y.season}>

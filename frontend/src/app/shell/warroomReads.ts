@@ -1,3 +1,4 @@
+import type { AgeBand } from '../data/nativeValues';
 import type { Node } from './nodes';
 import { useContractRead } from '../contracts/Contracts';
 import { contractsProvider } from '../contracts/provider';
@@ -14,7 +15,8 @@ export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
   leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null };
 export type WarRoomContext = { snapshot: Snapshot; mine: string; week: number; native?: WarRoomNative };
 export type WarRoomHeaderReading = { name?: string; record?: string; standing?: string;
-  starterN?: number; best?: string; rank?: string; runway?: HQCap[]; errors: string[] };
+  starterN?: number; best?: string; rank?: string; age?: AgeBand[]; valueNote?: string;
+  runway?: HQCap[]; errors: string[] };
 export function useWarRoomRead<T>(key: string, read: () => Promise<T>) {
   return useContractRead(key, async () => {
     try { return await read(); } catch (error) {
@@ -27,7 +29,12 @@ export async function readWarRoomHeader({ snapshot, mine, week, native }: WarRoo
   if (native) {
     const r = await readNativeHQ(native.league, mine, native.port);
     return { name: r.leagueName, record: r.record, standing: r.standing,
-      starterN: r.settings.starters, runway: r.runway, errors: r.errors };
+      starterN: r.values?.best.starterN || r.settings.starters,
+      best: r.values?.best.available ? r.values.best.value.toFixed(1) : undefined,
+      rank: r.values?.best.available ? `${r.values.best.rank} of ${r.values.best.of}` : undefined,
+      age: r.values?.age, valueNote: r.values ? [r.values.best.words, ...r.values.notes]
+        .join(' · ') : undefined,
+      runway: r.runway, errors: r.errors };
   }
   const result: WarRoomHeaderReading = { errors: [] };
   const attempt = async (read: () => Promise<void>) => { try { await read(); } catch (e) {
