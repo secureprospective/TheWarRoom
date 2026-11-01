@@ -7,6 +7,7 @@ import (
 	nativeapp "github.com/secureprospective/TheWarRoom/internal/app/mflref/seed"
 	"github.com/secureprospective/TheWarRoom/internal/app/season"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/draftreports"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
@@ -22,7 +23,12 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 	a.core.RefreshMu.Lock()
 	defer a.core.RefreshMu.Unlock()
 	//nolint:wrapcheck // Preserve held starting-snapshot refusal.
-	return nativeapp.CaptureSeed(nativeapp.SeedSource{
+	return nativeapp.CaptureSeed(a.heldSource())
+}
+
+// heldSource reads the held MFL league; callers hold RefreshMu so a refresh cannot change it mid-read.
+func (a *App) heldSource() nativeapp.SeedSource {
+	return nativeapp.SeedSource{
 		Available: func() bool { return a.core.League != nil && a.core.Rulebook != nil },
 		Roster:    func() (state.MirrorSnapshot, string) { snap, at, _ := a.core.League.ContractsView(); return snap, at },
 		Season:    func() int { return a.core.Season },
@@ -37,5 +43,16 @@ func (a *App) heldNativeSnapshot() (commissioner.RawNativeSnapshot, error) {
 			defer a.core.TargetSnapshotMu.Unlock()
 			return a.core.TargetSnapshot.Players.Value
 		},
-	})
+	}
+}
+
+// NativeAssets answers the MFL-mirror league from its held rosters in the native shape: the mirror is a
+// league setting, so screens read every league through the same command.
+func (h commissionerHost) NativeAssets(ctx context.Context, league string) (commissioner.NativeAssets, error) {
+	if league != ingestion.LeagueID {
+		return h.State.NativeAssets(ctx, league) //nolint:wrapcheck // Preserve the store wording.
+	}
+	h.app.core.RefreshMu.Lock()
+	defer h.app.core.RefreshMu.Unlock()
+	return nativeapp.MirrorAssets(h.app.heldSource(), league) //nolint:wrapcheck // Preserve the held-data refusal.
 }
