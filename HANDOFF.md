@@ -1,21 +1,22 @@
 # Handoff
 
 ## Baton
-Review — 2026-11-01, build/INTEGRATE-1101. APP-VALUE partially implemented; local commits only.
+Review — 2026-11-01, build/INTEGRATE-1101. APP-VALUE-2 incomplete; local commits only.
 
 ## Where it stands
-- f26e00e3: app HQ/War Room inspectors read the existing held player age arc; WR age fallback.
-- 71a4c3cf: app HQ roster/season/week projections feed Starting N and player inspector. Scope/availability preserved, no mirror-score fallback.
-- `.app-value-state.md` records the initial per-region trace, implemented routes and missing regions. No model changes or refits.
-- TypeScript PASS; whole Vitest PASS: 158 files / 1720 tests. Targeted Go race PASS: 24 test/subtest outcomes. Plain `make build` PASS. Hooks passed on both region commits.
-- 14432 fixture reproduces 8-vs-5: unused dynasty keepers, unused hard-cap deadline, and an older unresolved later-round draft pattern. Actual imported ledger not inspected; draft-age explanation is inferred, not live-confirmed.
+- 511bc901: Prepare and Jobs share applicability in `internal/leaguerules/applicability.go`; no stored rules changed.
+- 69d0f8a8: calendar errors keep contract quotes refused but no longer erase known cut pricing. Frontend preserves priced zero; inspector uses the recorded owner and rejects ambiguous copies.
+- `internal/store/history/migration_port_test.go` additionally proves Jobs=Prepare=5 after explicitly recording the same draft evidence; older ledger is 6, not 8.
+- `.app-value-state.md` contains per-item status, source traces, cut root cause, verification and debt. Models unchanged.
+- TypeScript PASS; whole Vitest PASS (158 files / 1,722 tests); targeted Go race PASS (12 named outcomes); plain `make build` PASS. Old Jobs count mutant rejected. No desktop walk, full Go suite, remote operation or push.
 
 ## Next move / blocked on
-- Task incomplete: expose app-settings/roster model aggregation for Best N and player values; wire age distribution, next-season needs and lenses. Current UI placeholders exist on mirror too. THIS WEEK usage still needs app-scored matchup context.
-- Existing cut quote and trade lineup delta remain wired. Actual imported cut-price absence still needs diagnosis; no made-up zero.
-- No full Go suite, desktop walk, remote operations or pushes. Logs `.app-value-*`; pre-existing `.cr-*` and `.integ-*` untouched.
+- Still unfinished: app-scored pts/game/dynasty read, Best-N over those values, age aggregation, and inspector lineup fit for both contexts. Existing model pass and lineupdelta engine must be exposed, not replaced.
+- No implemented next-season-needs or your/their-lens evaluator found; skipped rather than invented.
+- Actual live imported ledger not inspected. Fixture proves calendar coupling; missing pricing rules or contract terms still legitimately produce no price.
+- No external blocker established: remaining value work simply is not implemented.
 
 ## Tried and rejected
-- Reusing mirror research/asset boards wholesale leaks mirror scoring/ownership into app readings.
-- Importing the WR market reader into HQ data creates command/provider initialization coupling. Shared projection parser now lives under data, with the old export retained.
-- Eight-versus-five is not three missing universal rules: current Prepare filters irrelevant settings and learns draft kind; older stored settings do not change themselves.
+- Mirror research/model scores are not a substitute for app-scored production.
+- D11 projection medians are not the model's Now/dynasty output and cannot masquerade as Best-N model value.
+- A closed or unresolved calendar must not authorize a move, but it need not suppress a known contract price.

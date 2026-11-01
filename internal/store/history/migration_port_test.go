@@ -164,4 +164,20 @@ func TestPrepareAndJobsRulingDifference(t *testing.T) {
 	if len(waiting) != 5 || !slices.Equal(extra, want) {
 		t.Fatalf("unexpected count/difference: %d / %v", len(waiting), extra)
 	}
+	// Once the old ledger has the same draft evidence, its count must match Prepare.
+	_, err = svc.Ledger.Execute(t.Context(), commissioner.RawCommand{League: league,
+		Command: commissioner.RulesSet, Args: commissioner.RawArgs{Field: "draft.laterPattern",
+			Value: json.RawMessage(`"linear"`)}, Expected: int64(len(records)), Request: "draft-evidence",
+		Reason: "Record the held draft pattern", Effective: "now", Visibility: "league"}, "creator")
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs, err = store.CommissionerJobs(t.Context(), league)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index = slices.IndexFunc(jobs.Jobs, func(job commissioner.Job) bool { return job.ID == "setup" })
+	if index < 0 || jobs.Jobs[index].Words != "5 league rules still need a ruling." {
+		t.Fatalf("Jobs must match Prepare with the same settings: %+v", jobs.Jobs)
+	}
 }
