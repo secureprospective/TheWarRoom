@@ -24,6 +24,7 @@ func TestProvenZeroRequiresFinalCoverageAndPositiveEvidence(t *testing.T) {
 	for _, mutate := range []func(*RawPlay){
 		func(p *RawPlay) { p.EndGame = "" }, func(p *RawPlay) { p.GameSeconds = "1" },
 		func(p *RawPlay) { delete(p.Credits, "sack_player_id") },
+		func(p *RawPlay) { delete(p.Credits, "lateral_rusher_player_id") },
 		func(p *RawPlay) { p.Credits["solo_tackle_1_player_id"] = "00-0030001" },
 		func(p *RawPlay) { p.Credits["lateral_receiver_player_id"] = "00-0030001" },
 	} {

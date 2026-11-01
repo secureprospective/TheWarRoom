@@ -193,7 +193,7 @@ func zeroCoverage(plays []RawPlay) (map[string]bool, map[string]bool, error) {
 		if _, ok := games[p.GameID]; !ok {
 			games[p.GameID] = true
 		}
-		games[p.GameID] = games[p.GameID] && p.Credits.complete()
+		games[p.GameID] = games[p.GameID] && p.Credits.zeroComplete()
 		season, _ := strconv.Atoi(p.Season)
 		week, _ := strconv.Atoi(p.Week)
 		for _, id := range append([]string{p.Passer, p.Receiver, p.Rusher, p.Scorer}, p.Credits.actors()...) {
@@ -218,4 +218,23 @@ func (r RawAbsenceProof) validatePeriod(season, week int) error {
 		return fmt.Errorf("absence proof needs identity, period and game or team")
 	}
 	return nil
+}
+
+func zeroActorColumns() []string {
+	return []string{"passer_player_id", "receiver_player_id", "rusher_player_id", "td_player_id",
+		"lateral_receiver_player_id", "lateral_rusher_player_id", "lateral_sack_player_id", "lateral_interception_player_id",
+		"lateral_punt_returner_player_id", "lateral_kickoff_returner_player_id", "own_kickoff_recovery_player_id",
+		"kicker_player_id", "punter_player_id", "penalty_player_id"}
+}
+
+func (r RawPlayerCredits) zeroComplete() bool {
+	if !r.complete() {
+		return false
+	}
+	for _, column := range zeroActorColumns() {
+		if _, ok := r[column]; !ok {
+			return false
+		}
+	}
+	return true
 }

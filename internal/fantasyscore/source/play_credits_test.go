@@ -11,7 +11,7 @@ import (
 
 func creditPlay() RawPlay {
 	c := make(RawPlayerCredits)
-	for _, column := range creditColumns() {
+	for _, column := range append(creditColumns(), zeroActorColumns()...) {
 		c[column] = ""
 	}
 	return RawPlay{GameID: "2026_01_BUF_NYJ", PlayID: "1", Season: "2026", Week: "1", SeasonType: "REG", Credits: c}
