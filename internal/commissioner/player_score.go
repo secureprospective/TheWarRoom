@@ -100,6 +100,8 @@ func nativePlayerScore(league string, scope source.RawNativeScope, records []Rec
 		week = source.PlayerWeek{Season: scope.Season, Week: scope.Week}
 		out.Missing = append(out.Missing, "Only the statistics the commissioner entered are counted; the NFL feed has none for this week")
 	default:
+		// A starter whose game has not produced a line yet still plays a position; the record says which.
+		out.Position, out.PositionWhy = scoringPosition("", evidence.ListedPosition, changes)
 		return out.withoutStatistics(evidence), nil
 	}
 	week = withCorrections(week, corrections)

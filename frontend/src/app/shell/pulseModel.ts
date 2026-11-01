@@ -19,14 +19,15 @@ export function gameKey(game: PulseGame): string { return `${game.away}-${game.h
 
 /** statusLabel says where a game stands in the league's own words: a result, or still to come.
  *  Only the week the league is playing now can be live; an earlier week is simply waiting. */
-export function statusLabel(game: PulseGame, current: boolean): string {
+export function statusLabel(game: PulseGame, current: boolean, playing = true): string {
   if (game.status === 'Tie') return 'TIED';
   if (game.status !== 'No result yet') return 'FINAL';
-  return current ? 'LIVE' : 'WAITING';
+  if (!current) return 'WAITING';
+  return playing ? 'LIVE' : 'IN PLAY';
 }
 
 export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[],
-  current: boolean): PulseRow[] {
+  current: boolean, playing = true): PulseRow[] {
   const divisionOf = (franchise: string) =>
     seats.find(s => s.franchise === franchise)?.division ?? '';
   return results.games.map(game => {
@@ -35,7 +36,7 @@ export function pulseRows(results: PulseResults, mine: string, seats: PulseSeat[
       division: divisionOf(game.home), home: game.homePoints ?? game.homeProvisional,
       away: game.awayPoints ?? game.awayProvisional, decided,
       margin: decided ? Math.abs(game.homePoints! - game.awayPoints!) : undefined,
-      status: statusLabel(game, current) };
+      status: statusLabel(game, current, playing) };
   });
 }
 

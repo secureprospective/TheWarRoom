@@ -106,14 +106,15 @@ it('renders the Now tab from the week the league has actually scored', async () 
   // Nothing claims a fact the league does not hold.
   expect(container.textContent).not.toContain('Not available yet');
   expect(container.textContent).not.toContain('Not wired');
-  expect(container.querySelector('#ws-live')?.textContent)
-    .toContain('needs the NFL read');
+  // The NFL side reads the held live view; with none held it says so instead of inventing a game.
+  expect(container.querySelector('#ws-live .follow')?.textContent).toContain('FOLLOWING');
+  expect(container.querySelector('#ws-live')?.textContent).not.toContain('needs the NFL read');
   const nfl = [...container.querySelectorAll('#ws-live .seg button')]
     .find(b => b.textContent === 'NFL GAMES')!;
   await act(async () => { (nfl as HTMLButtonElement).click(); });
   await settle();
-  expect(container.querySelector('#ws-live')?.textContent)
-    .toContain('NFL game scores, clocks and possession are not held');
+  expect(container.querySelector('#ws-live .scroll .idle')?.textContent)
+    .toMatch(/NFL scoreboard|NFL games/);
 });
 
 it('renders the Race tab standings, playoff field and road from the same reads', async () => {
