@@ -89,6 +89,9 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 			log.Printf("read schedule refresh league: %v", err)
 			continue
 		}
+		if err := a.fillScheduleDates(ctx, records); err != nil {
+			log.Printf("refresh NFL dates for %s (held dates kept): %v", league.ID, err)
+		}
 		source, season, principal, follows := mflsource.FollowingLeague(league.ID, records)
 		if !follows {
 			continue
@@ -96,6 +99,12 @@ func (a *App) syncLeagueSchedules(ctx context.Context) {
 		raw, err := leagueschedule.Fetch(ctx, a.core.MFLClient, strconv.Itoa(season), source)
 		if err == nil {
 			_, err = mflsource.BackfillSchedule(ctx, ledger, league.ID, "Refresh the published schedule", principal, season, raw)
+		}
+		if err == nil {
+			records, err = ledger.Records(ctx, league.ID)
+			if err == nil {
+				err = a.fillScheduleDates(ctx, records)
+			}
 		}
 		if err != nil {
 			log.Printf("refresh schedule for %s (held schedule kept): %v", league.ID, err)

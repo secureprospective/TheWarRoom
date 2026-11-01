@@ -3,9 +3,14 @@ package composition
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/secureprospective/TheWarRoom/internal/archive"
 
 	controlapp "github.com/secureprospective/TheWarRoom/internal/app/control"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -80,5 +85,55 @@ func TestLaunchAutomaticallyBackfillsSchedule(t *testing.T) {
 	}
 	if feed.reads < 3 {
 		t.Fatal("refresh did not retry")
+	}
+}
+
+type nflDatesTransport struct{ weeks []int }
+
+func (f *nflDatesTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	week, err := strconv.Atoi(r.URL.Query().Get("W"))
+	if err != nil || r.URL.Query().Get("TYPE") != "nflSchedule" {
+		return nil, errors.New("unexpected NFL date request")
+	}
+	f.weeks = append(f.weeks, week)
+	at := time.Date(2026, 9, 11, 0, 15, 0, 0, time.UTC).AddDate(0, 0, (week-1)*7)
+	final := "0"
+	if week >= 8 {
+		final = "3600"
+	}
+	return seasonResponse(fmt.Sprintf(`{"nflSchedule":{"week":"%d","matchup":{"kickoff":"%d","gameSecondsRemaining":"%s","team":[{"id":"A"},{"id":"B"}]}}}`, week, at.Unix(), final)), nil
+}
+
+func TestScheduleRefreshFillsOnlyMissingNFLDates(t *testing.T) {
+	at := time.Date(2026, 11, 1, 18, 0, 0, 0, time.UTC)
+	a, _ := calendarTestApp(t, at)
+	raw := seedScheduleTest(t, a)
+	raw.Args.Schedule.Weeks = 13
+	raw.Args.Schedule.Pattern = ""
+	executeCommissionerTest(t, a, raw)
+	records, err := a.leagueRecords(t.Context(), raw.League)
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw.Command, raw.Expected, raw.Request = commissioner.SchedulePublish, int64(len(records)), "publish-dates"
+	raw.Args = commissioner.RawArgs{Schedule: &commissioner.RawScheduleArgs{}}
+	executeCommissionerTest(t, a, raw)
+	for _, week := range []int{7, 8, 9, 13} {
+		heldNativeWeek(t, a, week, time.Date(2026, 9, 11, 0, 15, 0, 0, time.UTC).AddDate(0, 0, (week-1)*7), week < 8)
+	}
+	feed := &nflDatesTransport{}
+	a.core.MFLClient, err = mfl.New("api", 10000, mfl.WithTransport(&archive.Transport{Base: feed, Sink: a.core.History}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 2 {
+		a.syncLeagueSchedulesAtLaunch(t.Context())
+	}
+	if !reflect.DeepEqual(feed.weeks, []int{1, 2, 3, 4, 5, 6, 10, 11, 12}) {
+		t.Fatalf("missing dates requested: %v", feed.weeks)
+	}
+	week, _ := nativeOwnerRead(t, a, at)
+	if week.Current == nil || week.Current.Week != 8 {
+		t.Fatalf("current week: %+v", week)
 	}
 }
