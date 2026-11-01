@@ -226,3 +226,5 @@ My local watchers (die at compaction; re-arm by PID loops if needed): b1im6oew4 
 2. Merge build/SRC-fix into wr-wire after picker (check-source-branches ratchet will need new counts).
 3. Queue items in order (see QUEUE.md): ORIGIN-FROM-ACT (Terra high), MOVE-MY-MFL (Sol medium), then settings sandbox screen, presets as data.
 4. Review Tom D28 output when done; regression batch once.
+
+**Watchers (die at compaction; re-arm with a kill -0 loop on each pid):** picker ~/fleet/runs/glm-ds-picker/pid.txt · overnight queue ~/fleet/runs/overnight/pid (log QUEUE.log; GPT runs ~/fleet/runs/gpt-origin-act, gpt-move-mfl; Tom fallback ~/fleet/runs/tom-origin-act, tom-move-mfl) · Tom D28 ~/fleet/runs/tom-at-0305.pid. Merge order when done: picker (wr-wire) → SRC-fix → ORIGIN-act → MOVE-mfl; re-lock check-source-branches baseline counts at each merge.
