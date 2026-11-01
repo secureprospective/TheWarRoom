@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"runtime"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -159,14 +161,15 @@ func leagueSeasons(in Inputs, book playerrecord.Book) (map[string]map[int]*model
 	}
 	out := map[string]map[int]*model.Season{}
 	counted := 0
-	for _, weeks := range in.Weeks {
-		for _, w := range weeks {
-			id := ours[w.GSIS]
-			if id == "" || w.SeasonType != "REG" || w.Week < 1 || w.Week > in.LastWeek {
+	for _, result := range scoreSeasons(in, book, ours) {
+		counted += result.counted
+		for id, years := range result.seasons {
+			if out[id] == nil {
+				out[id] = years
 				continue
 			}
-			if addWeek(out, in.Scoring, book, id, w) {
-				counted++
+			for year, season := range years {
+				out[id][year] = season
 			}
 		}
 	}
@@ -177,6 +180,56 @@ func leagueSeasons(in Inputs, book playerrecord.Book) (map[string]map[int]*model
 			for _, week := range weekOrder(s) {
 				s.Total += s.Points[week]
 			}
+		}
+	}
+	return out, counted
+}
+
+type seasonResult struct {
+	seasons map[string]map[int]*model.Season
+	counted int
+}
+
+func scoreSeasons(in Inputs, book playerrecord.Book, ours map[string]string) []seasonResult {
+	bySeason := map[int][]source.PlayerWeek{}
+	for _, weeks := range in.Weeks {
+		for _, week := range weeks {
+			bySeason[week.Season] = append(bySeason[week.Season], week)
+		}
+	}
+	weeks := make([][]source.PlayerWeek, 0, len(bySeason))
+	for _, season := range bySeason {
+		weeks = append(weeks, season)
+	}
+	jobs := make(chan int, len(weeks))
+	results := make([]seasonResult, len(weeks))
+	for i := range weeks {
+		jobs <- i
+	}
+	close(jobs)
+	// A worker owns one season's maps; weekly additions keep their original order.
+	var workers sync.WaitGroup
+	for range min(len(weeks), runtime.GOMAXPROCS(0), seasonsRead) {
+		workers.Go(func() {
+			for i := range jobs {
+				results[i].seasons, results[i].counted = scoreWeeks(in, book, ours, weeks[i])
+			}
+		})
+	}
+	workers.Wait()
+	return results
+}
+
+func scoreWeeks(in Inputs, book playerrecord.Book, ours map[string]string, weeks []source.PlayerWeek) (map[string]map[int]*model.Season, int) {
+	out := map[string]map[int]*model.Season{}
+	counted := 0
+	for _, w := range weeks {
+		id := ours[w.GSIS]
+		if id == "" || w.SeasonType != "REG" || w.Week < 1 || w.Week > in.LastWeek {
+			continue
+		}
+		if addWeek(out, in.Scoring, book, id, w) {
+			counted++
 		}
 	}
 	return out, counted

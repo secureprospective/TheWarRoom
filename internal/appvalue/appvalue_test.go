@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -295,6 +296,48 @@ func doubleReceivingYards(t *testing.T, rules leaguerules.ScoringRules) leagueru
 	changed[0].Points *= 2
 	out.Rules.Value["receiving_yards"] = changed
 	return out
+}
+
+func TestConcurrentLeagueSeasonsMatchSerialScoring(t *testing.T) {
+	in := inputs(t, "native.test", legacySettings(t))
+	base := in.Weeks[season-1]
+	in.Weeks = map[int][]source.PlayerWeek{}
+	var serial []source.PlayerWeek
+	for year := season - seasonsRead + 1; year <= season; year++ {
+		for _, week := range base {
+			week.Season = year
+			in.Weeks[year] = append(in.Weeks[year], week)
+			serial = append(serial, week)
+		}
+		// Multiple lines for one week must still accumulate in input order.
+		duplicate := receivingWeek(gsisOf(0), year, 1, 3)
+		in.Weeks[year] = append(in.Weeks[year], duplicate)
+		serial = append(serial, duplicate)
+	}
+	l, f := identities()
+	book, err := (modelrun.Held{Listing: l, Features: f}).Book(t.Context(),
+		modelrun.BookQuery(modelrun.Spec{Season: season, AsOf: in.AsOf, LastWeek: lastWeek}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ours := map[string]string{}
+	for id, gsis := range in.GSIS {
+		ours[gsis], _ = book.ID(id)
+	}
+	want, wantCount := scoreWeeks(in, book, ours, serial)
+	for _, years := range want {
+		for _, s := range years {
+			for _, week := range weekOrder(s) {
+				s.Total += s.Points[week]
+			}
+		}
+	}
+	for range 3 {
+		got, count := leagueSeasons(in, book)
+		if count != wantCount || !reflect.DeepEqual(got, want) {
+			t.Fatalf("parallel scoring changed seasons or counts: %d vs %d", count, wantCount)
+		}
+	}
 }
 
 func TestMissingWeeksRefusesValuesInsteadOfFabricatingZero(t *testing.T) {
