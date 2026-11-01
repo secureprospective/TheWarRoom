@@ -86,3 +86,27 @@ answer, mount the native screen for the mirror league with `league=14432` and de
 - Seeded franchises are `franchise.NN` with `HeldID` = MFL ID. The frontend maps the MFL owner franchise to
   `franchise.NN` through the assets franchises list.
 - If you take this route, switch the three landed reads to it too, so one revision rule holds.
+
+## BACKEND DONE (b1c8968c, 21:40 CT): in-memory mirror ledger
+
+- The mirror league app ID is **`native.mfl.14432`** (`composition.MirrorLeague`). Store `nativeRecords`/`leagueRecords`
+  answer it from two in-memory records:
+  - a Create built from the held MFL settings (`mflsource.CreateArgs`);
+  - a Seed built from the held rosters (`CaptureSeed`).
+  - The records are cached per refresh.
+- EVERY native read (assets, cap, reserve, roster check, rules, directory, projections, standings, week, lineup, moves,
+  calendar, trades…) now answers it unchanged.
+- Writes are refused in the store: "this league is run on MFL; make the change there".
+- Franchises are seeded as `franchise.NN` with `heldId` = MFL ID. Map the MFL owner franchise to its seeded ID via
+  `assets.snapshot.franchises[].heldId`.
+- Revision is 2 for every read (len(records)), so `sameRevision` agrees.
+- The three per-read overrides and ReadableLeague were removed (superseded).
+- Unit-proven only. The real-profile proof is the live walk after the frontend switch.
+
+## Remaining: frontend only
+
+- Mount `NativeFranchiseHQ` and the War Room native path for the mirror league with `league = "native.mfl.14432"` and
+  `mine` = the seeded franchise whose heldId is the owner MFL franchise.
+- Delete the mirror-only branches (`FranchiseHQ` report-joins, `native ?` forks) only after the native path renders
+  real data on the live app.
+- `NativeFranchiseHQ` passes `values={new Map()}`: wire values from `projections.read`.
