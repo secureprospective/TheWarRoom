@@ -1,24 +1,22 @@
 # Handoff
 
 ## Baton
-Review — 2026-11-01, build/INTEGRATE-1101. INTEG-FIX complete; local commits only, no remote contact.
+Review — 2026-11-01, build/INTEGRATE-1101. CR-APP complete; local commits only, no remote contact.
 
 ## Where it stands
-- 04b1de9e: wrapped 21 overlong frontend lines; assertion strings retained exactly.
-- dedc191a: whole report headers apply inside nested Inspectors too.
-- 2bf6df30: embedded War Room reserves an extra tab row only when tabs are local.
-- a8bec5e9: migration draft edits belong to its controller, not raw store access in a view; added edit/unknown-setting regression.
-- 6ec45c31: restored locked mock `.table` rule alongside the current franchise-context rule; no fixed-position header.
-- a7ebf122: preload the selected app-league workspace while the franchise chooser is open, retaining lazy boundaries and no roster reads before selection. Addresses intermittent cold-load HQ failures.
-- Final candidate a7ebf122: full frontend Vitest PASS, 155 files / 1714 tests, zero failures; `pnpm exec tsc --noEmit` PASS; plain `make build` PASS, no stamp overrides. Wails still emits existing unresolved-type generator warnings.
-- Mechanical design detector: zero findings. Local logs: `.integ-vitest.log`, `.integ-tsc.log`, `.integ-build.log`, `.integ-design.json`.
+- c8b524f8: app league selections open the existing Control Room App/League tabs; import remains reachable.
+- c62d7fcb: LeagueLanding follows the rail selection; removed its duplicate picker. Mirror selection clears app readings and retains MFL references.
+- e94c6216: successful import rereads the rail list and selects/persists the recorded league. Refresh failures preserve the existing list/selection and report the failure.
+- Final check: TypeScript PASS; whole Vitest PASS, 157 files / 1717 tests; targeted Go race tests PASS in control, commissioner and commissioner/native (commissionertest has no tests); plain `make build` PASS.
+- Two regression mutants rejected: missing import refresh and ignoring the picked league. Restored tested source afterward.
+- Mechanical design detector: zero findings. Affected handwritten production files: 1901 → 1899 physical lines versus cd2d6c68; tests counted separately.
+- Logs: `.cr-vitest.log`, `.cr-go.log`, `.cr-build.log`, `.cr-design.json`. Existing `.integ-*` artifacts left untouched.
 
 ## Next move / blocked on
-- Review the fixes; no remaining failing assertion or conflicting test found.
-- Live desktop geometry and actual imported-league behavior remain unverified. Test franchise selection into HQ, the 35-player bench, contract labels, and War Room context/tab rows at narrow widths.
-- Go untouched; prior 131-package race-suite pass supplied by the brief, not rerun here.
+- Desktop behavior remains unverified by instruction. Verify app Control Room tabs, selected league jobs/rules, mirror reference sections, and import → new selected picker entry without restart.
+- Existing Wails unresolved-type generator warnings remain; build succeeds. No full Go suite, desktop launch, remote operation or stamp override.
 
 ## Tried and rejected
-- Adding the mock's table class to the live header breaks the exact franchise-context contract; retain both scoped CSS selectors instead.
-- Cold HQ sometimes passed alone but failed in the full suite; no timing/assertion relaxation. Workspace code now warms while choosing a franchise.
-- No remote operations, push, production launch, VERSION override, assertion weakening or hook bypass.
+- Treating an empty commissioner selection as a default league loads an unrelated app league for the mirror. Empty now explicitly clears selection; refresh commands omit the optional selection to retain their existing behavior.
+- Initial whole frontend run caught three overlong test lines; wrapped them without changing assertions. Final whole run passes.
+- Initial targeted Go command timed out; rerun completed with a longer limit.

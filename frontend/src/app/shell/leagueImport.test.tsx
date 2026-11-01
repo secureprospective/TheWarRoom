@@ -6,7 +6,7 @@ import { LeagueContext, LeaguePicker, useLeagues, LEAGUE_KEY, type LeagueState }
 import { createMigration, migration } from '../control/migration';
 import MoveMFL from '../control/MoveMFL';
 
-it('rereads the picker after import, selects the recorded league and preserves it on refresh failure', async () => {
+it('rereads after import, selects the league and preserves it on refresh failure', async () => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   const mirror = { id: 'mirror', name: 'Reference', teams: 32, app: false };
   const added = { id: 'league.new', name: 'Our imported league', teams: 12, app: true };
