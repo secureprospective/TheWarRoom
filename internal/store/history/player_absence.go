@@ -22,27 +22,21 @@ func (s *Store) heldAbsenceProofs(ctx context.Context, season int) ([]source.Raw
 	if blocked {
 		return nil, "", time.Time{}, nil
 	}
-	gsis, err := s.SourceIDs(ctx, "gsis")
+	bridge, err := s.absenceIdentities(ctx)
 	if err != nil {
 		return nil, "", time.Time{}, err
-	}
-	pfr, err := s.SourceIDs(ctx, "pfr")
-	if err != nil {
-		return nil, "", time.Time{}, err
-	}
-	bridge := make(map[string]string)
-	for player, id := range pfr {
-		if gsis[player] != "" {
-			bridge[id] = gsis[player]
-		}
 	}
 	var out []source.RawAbsenceProof
 	var hash bytes.Buffer
 	var at time.Time
+	var snapBody []byte
 	for _, name := range []string{"snap_counts", "injuries"} {
 		rows, body, stamp, err := s.heldProofFeed(ctx, season, name)
 		if err != nil {
 			return nil, "", time.Time{}, err
+		}
+		if name == "snap_counts" {
+			snapBody = body
 		}
 		for _, r := range rows {
 			if r.GSIS == "" {
@@ -56,6 +50,15 @@ func (s *Store) heldAbsenceProofs(ctx context.Context, season int) ([]source.Raw
 		if stamp.After(at) {
 			at = stamp
 		}
+	}
+	missing, depthBody, depthAt, err := s.heldNonParticipation(ctx, season, snapBody, bridge)
+	if err != nil {
+		return nil, "", time.Time{}, err
+	}
+	out = append(out, missing...)
+	hash.Write(depthBody)
+	if depthAt.After(at) {
+		at = depthAt
 	}
 	encoded, err := json.Marshal(out)
 	if err != nil {
@@ -104,4 +107,22 @@ func (s *Store) unsupportedZeroSources(ctx context.Context) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (s *Store) absenceIdentities(ctx context.Context) (map[string]string, error) {
+	gsis, err := s.SourceIDs(ctx, "gsis")
+	if err != nil {
+		return nil, err
+	}
+	pfr, err := s.SourceIDs(ctx, "pfr")
+	if err != nil {
+		return nil, err
+	}
+	bridge := make(map[string]string)
+	for player, id := range pfr {
+		if gsis[player] != "" {
+			bridge[id] = gsis[player]
+		}
+	}
+	return bridge, nil
 }

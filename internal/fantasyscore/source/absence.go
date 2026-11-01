@@ -10,7 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 )
 
-// RawAbsenceProof is positive participation or an exact-week Out designation, not missing data.
+// RawAbsenceProof carries exact-week evidence, never an inferred zero from a missing row.
 type RawAbsenceProof struct {
 	GSIS, PFR, Season, Week, GameID, Team, Position, Evidence string
 }
@@ -32,7 +32,7 @@ func (r RawAbsenceProof) Validate() error {
 	if err := r.validateGame(season, week); err != nil {
 		return err
 	}
-	if r.Evidence != "positive snaps; no play-by-play stat events" && r.Evidence != "exact-week injury Out; no play-by-play stat events" {
+	if r.Evidence != "positive snaps; no play-by-play stat events" && r.Evidence != "exact-week injury Out; no play-by-play stat events" && r.Evidence != "complete snaps + pbp, no snap" {
 		return fmt.Errorf("unknown absence evidence")
 	}
 	return nil
