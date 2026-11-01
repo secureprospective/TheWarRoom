@@ -32,7 +32,7 @@ function context(port?: HostedPort): WarRoomContext {
     leave: () => {} } : undefined };
 }
 afterEach(async () => { await unmount(); vi.restoreAllMocks(); });
-it('reuses the mounted native reading for the header, including cap runway, without a second read', async () => {
+it('reuses the mounted native header and cap runway without a second read', async () => {
   const port = vi.fn<HostedPort>(async () => { throw new Error('Must not read twice'); });
   const c = context(port);
   c.native!.reading = { revision: 7, snapshot: c.snapshot, settings: { positions: [], starters: 21 },

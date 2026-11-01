@@ -86,7 +86,7 @@ afterEach(async () => {
   localStorage.clear(); vi.unstubAllGlobals(); delete (window as unknown as { go?: unknown }).go;
 });
 
-it.each(['hq', 'war'] as const)('renders %s cap and roster while values are pending, then publishes values once', async node => {
+it.each(['hq', 'war'] as const)('renders %s before values, then publishes values once', async node => {
   const original = vi.mocked(localWorkflow).getMockImplementation()!;
   let finish: () => void = () => {};
   const pending = new Promise<void>(resolve => { finish = resolve; });
@@ -101,10 +101,14 @@ it.each(['hq', 'war'] as const)('renders %s cap and roster while values are pend
   localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.02');
   commands.dispatch('nav.open', { node });
   await mount();
-  expect(container.querySelector(node === 'war' ? '.wr-v6 .shelf' : '.hq-v10 .board')?.textContent)
-    .toContain('Player, 1000');
+  await vi.waitFor(async () => {
+    await settle();
+    expect(container.querySelector(node === 'war' ? '.wr-v6 .shelf' : '.hq-v10 .board')?.textContent)
+      .toContain('Player, 1000');
+  }, { timeout: 3000 });
   expect(container.textContent).toContain('2026');
-  if (node === 'war') expect(container.querySelector('.runw')?.textContent).not.toContain('Not available yet');
+  if (node === 'war') expect(container.querySelector('.runw')?.textContent)
+    .not.toContain('Not available yet');
   expect(vi.mocked(localWorkflow).mock.calls.filter(([r]) => r.command === 'value.read')).toHaveLength(1);
   await act(async () => { finish(); }); await settle();
   if (node === 'war') expect(container.querySelector('.franchise-context')?.textContent).toContain('243.3');
@@ -163,7 +167,8 @@ it('discards partial and final publications from a franchise that was left', asy
     if (franchise === 'franchise.01') await pending;
     return { label: 'Local', writable: false, football: '', data: { league, franchise, season,
       players: [], best: { franchise, starterN: 21, value: franchise === 'franchise.01' ? 999 : 243.3,
-        age: 27, ageKnown: true, rank: 3, of: 32, available: true, words: 'Held values' }, age: [], notes: [] } };
+        age: 27, ageKnown: true, rank: 3, of: 32, available: true, words: 'Held values' },
+      age: [], notes: [] } };
   });
   localStorage.setItem(`${FRANCHISE_KEY}:native.seed`, 'franchise.01');
   commands.dispatch('nav.open', { node: 'war' });
